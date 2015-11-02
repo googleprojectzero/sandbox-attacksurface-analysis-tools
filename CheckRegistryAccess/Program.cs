@@ -233,7 +233,9 @@ namespace CheckRegistryAccess
 
             int pid = Process.GetCurrentProcess().Id;
 
-            OptionSet opts = new OptionSet() {
+            try
+            {
+                OptionSet opts = new OptionSet() {
                         { "r", "Recursive tree directory listing",  
                             v => _recursive = v != null },                                  
                         { "sddl", "Print full SDDL security descriptors", v => _print_sddl = v != null },
@@ -247,18 +249,16 @@ namespace CheckRegistryAccess
                         { "h|help",  "show this message and exit", v => show_help = v != null },
                     };
 
-            List<string> paths = opts.Parse(args);
+                List<string> paths = opts.Parse(args);
 
-            if (show_help || (paths.Count == 0))
-            {
-                ShowHelp(opts);
-            }
-            else
-            {
-                try
+                if (show_help || (paths.Count == 0))
+                {
+                    ShowHelp(opts);
+                }
+                else
                 {
                     _type = ObjectTypeInfo.GetTypeByName("key");
-                    _token = NativeBridge.OpenProcessToken(pid);                    
+                    _token = NativeBridge.OpenProcessToken(pid);
 
                     foreach (string path in paths)
                     {
@@ -274,13 +274,14 @@ namespace CheckRegistryAccess
                             {
                                 key.Close();
                             }
-                        }                        
+                        }
                     }
                 }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                }
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
             }
         }
     }

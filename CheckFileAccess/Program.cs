@@ -176,66 +176,65 @@ namespace CheckFileAccess
         {
             return (uint)Enum.Parse(enumtype, name, true);
         }
-        
+
         static void Main(string[] args)
         {
             bool show_help = false;
             uint standard_filter = 0;
-           
-            int  pid = Process.GetCurrentProcess().Id;
 
-            OptionSet opts = new OptionSet() {
-                        { "r", "Recursive tree directory listing",  
-                            v => _recursive = v != null },                                  
-                        { "sddl", "Print full SDDL security descriptors", v => _print_sddl = v != null },
-                        { "p|pid=", "Specify a PID of a process to impersonate when checking", v => pid = int.Parse(v.Trim()) },
-                        { "w", "Show only write permissions granted", v => _show_write_only = v != null },
-                        { "f=", String.Format("Filter on a specific file right [{0}]", 
-                            String.Join(",", Enum.GetNames(typeof(FileAccessRights)))), v => _file_filter |= ParseRight(v, typeof(FileAccessRights)) },  
-                        { "d=", String.Format("Filter on a specific directory right [{0}]", 
-                            String.Join(",", Enum.GetNames(typeof(FileDirectoryAccessRights)))), v => _dir_filter |= ParseRight(v, typeof(FileDirectoryAccessRights)) },  
-                        { "s=", String.Format("Filter on a standard right [{0}]", 
-                            String.Join(",", Enum.GetNames(typeof(StandardAccessRights)))), v => standard_filter |= ParseRight(v, typeof(StandardAccessRights)) },  
-                        { "x=", "Specify a base path to exclude from recursive search", v => _walked.Add(v.ToLower()) },
-                        { "q", "Don't print errors", v => _quiet = v != null },
-                        { "onlydirs", "Only check the permissions of directories", v => _only_dirs = v != null },
-                        { "h|help",  "show this message and exit", v => show_help = v != null },
-                    };
+            int pid = Process.GetCurrentProcess().Id;
 
-            List<string> paths = opts.Parse(args);
-
-            if(show_help || (paths.Count == 0))
+            try
             {
-                ShowHelp(opts);
+                OptionSet opts = new OptionSet() {
+                            { "r", "Recursive tree directory listing",  
+                                v => _recursive = v != null },                                  
+                            { "sddl", "Print full SDDL security descriptors", v => _print_sddl = v != null },
+                            { "p|pid=", "Specify a PID of a process to impersonate when checking", v => pid = int.Parse(v.Trim()) },
+                            { "w", "Show only write permissions granted", v => _show_write_only = v != null },
+                            { "f=", String.Format("Filter on a specific file right [{0}]", 
+                                String.Join(",", Enum.GetNames(typeof(FileAccessRights)))), v => _file_filter |= ParseRight(v, typeof(FileAccessRights)) },  
+                            { "d=", String.Format("Filter on a specific directory right [{0}]", 
+                                String.Join(",", Enum.GetNames(typeof(FileDirectoryAccessRights)))), v => _dir_filter |= ParseRight(v, typeof(FileDirectoryAccessRights)) },  
+                            { "s=", String.Format("Filter on a standard right [{0}]", 
+                                String.Join(",", Enum.GetNames(typeof(StandardAccessRights)))), v => standard_filter |= ParseRight(v, typeof(StandardAccessRights)) },  
+                            { "x=", "Specify a base path to exclude from recursive search", v => _walked.Add(v.ToLower()) },
+                            { "q", "Don't print errors", v => _quiet = v != null },
+                            { "onlydirs", "Only check the permissions of directories", v => _only_dirs = v != null },
+                            { "h|help",  "show this message and exit", v => show_help = v != null },
+                        };
+
+                List<string> paths = opts.Parse(args);
+
+                if (show_help || (paths.Count == 0))
+                {
+                    ShowHelp(opts);
+                }
+                else
+                {
+                        _type = ObjectTypeInfo.GetTypeByName("file");
+                        _token = NativeBridge.OpenProcessToken(pid);
+
+                        _file_filter |= standard_filter;
+                        _dir_filter |= standard_filter;
+
+                        foreach (string path in paths)
+                        {
+                            if ((File.GetAttributes(path) & FileAttributes.Directory) == FileAttributes.Directory)
+                            {
+                                DumpDirectory(new DirectoryInfo(path));
+                            }
+                            else
+                            {
+                                DumpFile(new FileInfo(path));
+                            }
+                        }
+                }
             }
-            else
+            catch(Exception e)
             {
-                try
-                {
-                    _type = ObjectTypeInfo.GetTypeByName("file");
-                    _token = NativeBridge.OpenProcessToken(pid);                    
-
-                    _file_filter |= standard_filter;
-                    _dir_filter |= standard_filter;
-
-                    foreach (string path in paths)
-                    {
-                        if ((File.GetAttributes(path) & FileAttributes.Directory) == FileAttributes.Directory)
-                        {
-                            DumpDirectory(new DirectoryInfo(path));
-                        }
-                        else
-                        {
-                            DumpFile(new FileInfo(path));
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    //Console.WriteLine(e.Message);
-                    Console.WriteLine(e);
-                }
+                Console.WriteLine(e.Message);
             }
         }
-    }
+    }    
 }

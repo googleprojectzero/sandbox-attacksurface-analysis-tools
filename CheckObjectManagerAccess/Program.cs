@@ -27,7 +27,7 @@ namespace CheckObjectManagerAccess
         static bool _show_write_only = false;
         static HashSet<string> _walked = new HashSet<string>();        
         static NativeHandle _token;
-        static int _dir_rights = 0;
+        static uint _dir_rights = 0;
         static HashSet<string> _type_filter = new HashSet<string>();
        
         static void ShowHelp(OptionSet p)
@@ -165,55 +165,54 @@ namespace CheckObjectManagerAccess
             }
         }
 
-        static int ParseRight(string name, Type enumtype)
+        static uint ParseRight(string name, Type enumtype)
         {
-            return (int)Enum.Parse(enumtype, name, true);
+            return (uint)Enum.Parse(enumtype, name, true);
         }
 
         static void Main(string[] args)
         {
             bool show_help = false;
 
-            int pid = Process.GetCurrentProcess().Id;            
-
-            OptionSet opts = new OptionSet() {
-                        { "r", "Recursive tree directory listing",  
-                            v => _recursive = v != null },                                  
-                        { "sddl", "Print full SDDL security descriptors", v => _print_sddl = v != null },
-                        { "p|pid=", "Specify a PID of a process to impersonate when checking", v => pid = int.Parse(v.Trim()) },
-                        { "w", "Show only write permissions granted", v => _show_write_only = v != null },
-                        { "k=", String.Format("Filter on a specific directory right [{0}]", 
-                            String.Join(",", Enum.GetNames(typeof(DirectoryAccessRights)))), v => _dir_rights |= ParseRight(v, typeof(DirectoryAccessRights)) },  
-                        { "s=", String.Format("Filter on a standard right [{0}]", 
-                            String.Join(",", Enum.GetNames(typeof(StandardAccessRights)))), v => _dir_rights |= ParseRight(v, typeof(StandardAccessRights)) },  
-                        { "x=", "Specify a base path to exclude from recursive search", v => _walked.Add(v.ToLower()) },
-                        { "t=", "Specify a type of object to include", v => _type_filter.Add(v.ToLower()) },
-                        { "h|help",  "show this message and exit", v => show_help = v != null },
-                    };
-
-            List<string> paths = opts.Parse(args);
-
-            if (show_help || (paths.Count == 0))
+            int pid = Process.GetCurrentProcess().Id;
+            try
             {
-                ShowHelp(opts);
-            }
-            else
-            {
-                try
-                {                    
+                OptionSet opts = new OptionSet() {
+                            { "r", "Recursive tree directory listing",  
+                                v => _recursive = v != null },                                  
+                            { "sddl", "Print full SDDL security descriptors", v => _print_sddl = v != null },
+                            { "p|pid=", "Specify a PID of a process to impersonate when checking", v => pid = int.Parse(v.Trim()) },
+                            { "w", "Show only write permissions granted", v => _show_write_only = v != null },
+                            { "k=", String.Format("Filter on a specific directory right [{0}]", 
+                                String.Join(",", Enum.GetNames(typeof(DirectoryAccessRights)))), v => _dir_rights |= ParseRight(v, typeof(DirectoryAccessRights)) },  
+                            { "s=", String.Format("Filter on a standard right [{0}]", 
+                                String.Join(",", Enum.GetNames(typeof(StandardAccessRights)))), v => _dir_rights |= ParseRight(v, typeof(StandardAccessRights)) },  
+                            { "x=", "Specify a base path to exclude from recursive search", v => _walked.Add(v.ToLower()) },
+                            { "t=", "Specify a type of object to include", v => _type_filter.Add(v.ToLower()) },
+                            { "h|help",  "show this message and exit", v => show_help = v != null },
+                        };
+
+                List<string> paths = opts.Parse(args);
+
+                if (show_help || (paths.Count == 0))
+                {
+                    ShowHelp(opts);
+                }
+                else
+                {
                     _token = NativeBridge.OpenProcessToken(pid);
 
                     foreach (string path in paths)
                     {
                         ObjectDirectory dir = ObjectNamespace.OpenDirectory(path);
 
-                        DumpDirectory(dir);                                                    
+                        DumpDirectory(dir);
                     }
                 }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
             }
         }
     }
