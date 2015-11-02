@@ -16,6 +16,59 @@
 #include <strsafe.h>
 #include <sddl.h>
 #include <vector>
+#include <string>
+
+BOOL EnableDebugPrivilege()
+{
+	HANDLE hToken;
+
+	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &hToken))
+	{
+		return FALSE;
+	}
+	LUID luid;
+
+	if (LookupPrivilegeValue(nullptr, SE_DEBUG_NAME, &luid))
+	{
+		TOKEN_PRIVILEGES tp;
+
+		tp.PrivilegeCount = 1;
+		tp.Privileges[0].Luid = luid;
+		tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+		AdjustTokenPrivileges(hToken, FALSE, &tp, 0, nullptr, nullptr);
+	}
+
+	CloseHandle(hToken);
+
+	return TRUE;
+}
+
+std::wstring GetErrorMessage()
+{
+	WCHAR lpMessage[1024] = {};
+	DWORD dwError = GetLastError();
+	if (FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		0, dwError, 0, lpMessage, _countof(lpMessage), nullptr) == 0)
+	{
+		StringCchPrintf(lpMessage, _countof(lpMessage), L"%d", dwError);
+	}
+	size_t len = wcslen(lpMessage);
+	while (len > 0)
+	{
+		if (isspace(lpMessage[len - 1]))
+		{
+			lpMessage[len - 1] = 0;
+			len--;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return lpMessage;
+}
 
 BOOL SetTokenIL(HANDLE hToken, DWORD dwIntegrityLevel)
 {
@@ -37,7 +90,7 @@ BOOL SetTokenIL(HANDLE hToken, DWORD dwIntegrityLevel)
 
 	if (!fRet)
 	{
-		printf("Error converting IL string %d\n", GetLastError());
+		printf("Error converting IL string %ls\n", GetErrorMessage().c_str());
 		goto CleanExit;
 	}
 
@@ -92,7 +145,7 @@ int ParseILLevel(LPCWSTR ilstr)
 
 #define DEC_AND_CHECK_ARGC() if (--argc <= 0) { return false; }
 
-bool ParseArgs(int argc, WCHAR** argv, int* pid, bool* parentprocess, WCHAR** cmdline, int* illevel)
+bool ParseArgs(int argc, WCHAR** argv, int* pid, bool* parentprocess, DWORD *createflags, WCHAR** cmdline, int* illevel)
 {
 	WCHAR** curr_arg = &argv[1];
 
@@ -103,6 +156,14 @@ bool ParseArgs(int argc, WCHAR** argv, int* pid, bool* parentprocess, WCHAR** cm
 		if (wcscmp(*curr_arg, L"-p") == 0)
 		{
 			*parentprocess = true;		
+		}
+		if (wcscmp(*curr_arg, L"-j") == 0)
+		{
+			*createflags |= CREATE_BREAKAWAY_FROM_JOB;
+		}
+		if (wcscmp(*curr_arg, L"-c") == 0)
+		{
+			*createflags |= CREATE_NEW_CONSOLE;
 		}
 		if (wcscmp(*curr_arg, L"-il") == 0)
 		{
@@ -130,16 +191,26 @@ bool ParseArgs(int argc, WCHAR** argv, int* pid, bool* parentprocess, WCHAR** cm
 int _tmain(int argc, _TCHAR* argv[])
 {
 	bool parentprocess = false;
+	DWORD createflags = 0;
 	WCHAR* cmdline = nullptr;
 	int pid = 0;
 	int illevel = -1;
 
-	if (!ParseArgs(argc, argv, &pid, &parentprocess, &cmdline, &illevel))
+	if (!ParseArgs(argc, argv, &pid, &parentprocess, &createflags, &cmdline, &illevel))
 	{
-		printf("NewProcessFromToken: [-p] pid cmdline\n");
+		printf("NewProcessFromToken: [options] pid cmdline\n");
 		printf("Options:\n");
 		printf("-p : Use parent process technique to create the new process\n");
+		printf("-j : Try and break away from the current process job\n");
+		printf("-c : Create a new console for the process\n");
 		printf("-il level: Set the process IL level\n");
+		printf("* level:\n");
+		printf("  u - Untrusted\n");
+		printf("  l - Low\n");
+		printf("  m - Medium\n");
+		printf("  h - High\n");
+		printf("  s - System\n");
+		printf("  0xXXXX - Arbitrary IL\n");
 	}
 	else
 	{
@@ -148,6 +219,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			pid = GetCurrentProcessId();
 		}
 
+		EnableDebugPrivilege();
 		HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, 
 			FALSE, pid);
 		if (hProcess)
@@ -172,23 +244,31 @@ int _tmain(int argc, _TCHAR* argv[])
 
 						startInfo.cb = sizeof(startInfo);
 
-						if (CreateProcessAsUserW(hDupToken, nullptr, cmdline, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &startInfo, &procInfo))
+						if (CreateProcessAsUserW(hDupToken, nullptr, cmdline, nullptr, nullptr, FALSE, createflags, nullptr, nullptr, &startInfo, &procInfo))
 						{
 							printf("Created process %d\n", procInfo.dwProcessId);
 						}
 						else
 						{
-							printf("Error CPAU %d\n", GetLastError());
+							printf("Error CreateProcessAsUser: %ls\n", GetErrorMessage().c_str());
+							if (CreateProcessWithTokenW(hDupToken, 0, nullptr, cmdline, createflags, nullptr, nullptr, &startInfo, &procInfo))
+							{
+								printf("Created process %d\n", procInfo.dwProcessId);
+							}
+							else
+							{
+								printf("Error CreateProcessWithToken: %ls\n", GetErrorMessage().c_str());
+							}
 						}
 					}
 					else
 					{
-						printf("Error Dup: %d\n", GetLastError());
+						printf("Error Duplicating Token: %ls\n", GetErrorMessage().c_str());
 					}
 				}
 				else
 				{
-					printf("Error OPT: %d\n", GetLastError());
+					printf("Error OpenProcessToken: %ls\n", GetErrorMessage().c_str());
 				}
 			}
 			else
@@ -210,7 +290,7 @@ int _tmain(int argc, _TCHAR* argv[])
 					startInfo.StartupInfo.cb = sizeof(startInfo);
 					startInfo.lpAttributeList = pattrlist;
 
-					if (CreateProcess(nullptr, cmdline, nullptr, nullptr, FALSE, CREATE_SUSPENDED | EXTENDED_STARTUPINFO_PRESENT, 
+					if (CreateProcess(nullptr, cmdline, nullptr, nullptr, FALSE, CREATE_SUSPENDED | EXTENDED_STARTUPINFO_PRESENT | createflags,
 						nullptr, nullptr, &startInfo.StartupInfo, &procInfo))
 					{
 						printf("Created process %d\n", procInfo.dwProcessId);
@@ -228,10 +308,9 @@ int _tmain(int argc, _TCHAR* argv[])
 					}
 					else
 					{
-						printf("Error: CreateProcess %d\n", GetLastError());
+						printf("Error: CreateProcess %ls\n", GetErrorMessage().c_str());
 					}
 				}
-
 
 				DeleteProcThreadAttributeList(pattrlist);
 			}
@@ -239,7 +318,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 		else
 		{
-			printf("Error OP: %d\n", GetLastError());
+			printf("Error OpenProcess: %ls\n", GetErrorMessage().c_str());
 		}
 	}
 
