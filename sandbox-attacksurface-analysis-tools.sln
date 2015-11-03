@@ -27,7 +27,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckProcessAccess", "Check
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NewProcessFromToken", "NewProcessFromToken\NewProcessFromToken.vcxproj", "{2EAE5943-E28B-4F24-8814-3AB422B319CD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckExeManifest", "CheckExeManifest\CheckExeManifest.csproj", "{7477C04B-E558-49BF-A9F2-C4A1DBBAC73D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DumpExeManifest", "DumpExeManifest\DumpExeManifest.csproj", "{7477C04B-E558-49BF-A9F2-C4A1DBBAC73D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckNetworkAccess", "CheckNetworkAccess\CheckNetworkAccess.csproj", "{A6BA67F9-F91C-4F4F-B677-FE8BB78B1B9D}"
 EndProject
