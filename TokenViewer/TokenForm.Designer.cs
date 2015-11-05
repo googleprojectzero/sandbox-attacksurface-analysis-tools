@@ -33,6 +33,7 @@
             System.Windows.Forms.Label label7;
             System.Windows.Forms.Label label6;
             System.Windows.Forms.GroupBox groupBoxToken;
+            System.Windows.Forms.Label label25;
             System.Windows.Forms.Label label13;
             System.Windows.Forms.Label label8;
             System.Windows.Forms.Label label5;
@@ -76,6 +77,7 @@
             this.groupBoxSource = new System.Windows.Forms.GroupBox();
             this.txtSourceId = new System.Windows.Forms.TextBox();
             this.txtSourceName = new System.Windows.Forms.TextBox();
+            this.txtIsElevated = new System.Windows.Forms.TextBox();
             this.btnSetIL = new System.Windows.Forms.Button();
             this.comboBoxIL = new System.Windows.Forms.ComboBox();
             this.txtOriginLoginId = new System.Windows.Forms.TextBox();
@@ -96,6 +98,7 @@
             this.listViewDefDacl = new System.Windows.Forms.ListView();
             this.txtPrimaryGroup = new System.Windows.Forms.TextBox();
             this.txtOwner = new System.Windows.Forms.TextBox();
+            this.checkBoxLuaToken = new System.Windows.Forms.CheckBox();
             this.comboBoxILForDup = new System.Windows.Forms.ComboBox();
             this.btnDuplicate = new System.Windows.Forms.Button();
             this.comboBoxImpLevel = new System.Windows.Forms.ComboBox();
@@ -132,11 +135,11 @@
             this.txtPackageSid = new System.Windows.Forms.TextBox();
             this.tabPageMisc = new System.Windows.Forms.TabPage();
             this.tabPageOperations = new System.Windows.Forms.TabPage();
-            this.checkBoxLuaToken = new System.Windows.Forms.CheckBox();
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
             groupBoxToken = new System.Windows.Forms.GroupBox();
+            label25 = new System.Windows.Forms.Label();
             label13 = new System.Windows.Forms.Label();
             label8 = new System.Windows.Forms.Label();
             label5 = new System.Windows.Forms.Label();
@@ -258,6 +261,8 @@
             // 
             // groupBoxToken
             // 
+            groupBoxToken.Controls.Add(this.txtIsElevated);
+            groupBoxToken.Controls.Add(label25);
             groupBoxToken.Controls.Add(this.btnSetIL);
             groupBoxToken.Controls.Add(this.comboBoxIL);
             groupBoxToken.Controls.Add(this.txtOriginLoginId);
@@ -284,10 +289,27 @@
             groupBoxToken.Controls.Add(this.txtTokenId);
             groupBoxToken.Location = new System.Drawing.Point(6, 6);
             groupBoxToken.Name = "groupBoxToken";
-            groupBoxToken.Size = new System.Drawing.Size(453, 307);
+            groupBoxToken.Size = new System.Drawing.Size(453, 333);
             groupBoxToken.TabIndex = 19;
             groupBoxToken.TabStop = false;
             groupBoxToken.Text = "Token";
+            // 
+            // txtIsElevated
+            // 
+            this.txtIsElevated.Location = new System.Drawing.Point(115, 303);
+            this.txtIsElevated.Name = "txtIsElevated";
+            this.txtIsElevated.ReadOnly = true;
+            this.txtIsElevated.Size = new System.Drawing.Size(142, 20);
+            this.txtIsElevated.TabIndex = 27;
+            // 
+            // label25
+            // 
+            label25.AutoSize = true;
+            label25.Location = new System.Drawing.Point(8, 306);
+            label25.Name = "label25";
+            label25.Size = new System.Drawing.Size(63, 13);
+            label25.TabIndex = 26;
+            label25.Text = "Is Elevated:";
             // 
             // btnSetIL
             // 
@@ -666,6 +688,16 @@
             groupBoxDuplicate.TabIndex = 0;
             groupBoxDuplicate.TabStop = false;
             groupBoxDuplicate.Text = "Duplicate Token";
+            // 
+            // checkBoxLuaToken
+            // 
+            this.checkBoxLuaToken.AutoSize = true;
+            this.checkBoxLuaToken.Location = new System.Drawing.Point(317, 48);
+            this.checkBoxLuaToken.Name = "checkBoxLuaToken";
+            this.checkBoxLuaToken.Size = new System.Drawing.Size(111, 17);
+            this.checkBoxLuaToken.TabIndex = 7;
+            this.checkBoxLuaToken.Text = "Make LUA Token";
+            this.checkBoxLuaToken.UseVisualStyleBackColor = true;
             // 
             // lblILForDup
             // 
@@ -1192,16 +1224,6 @@
             this.tabPageOperations.Text = "Operations";
             this.tabPageOperations.UseVisualStyleBackColor = true;
             // 
-            // checkBoxLuaToken
-            // 
-            this.checkBoxLuaToken.AutoSize = true;
-            this.checkBoxLuaToken.Location = new System.Drawing.Point(317, 48);
-            this.checkBoxLuaToken.Name = "checkBoxLuaToken";
-            this.checkBoxLuaToken.Size = new System.Drawing.Size(111, 17);
-            this.checkBoxLuaToken.TabIndex = 7;
-            this.checkBoxLuaToken.Text = "Make LUA Token";
-            this.checkBoxLuaToken.UseVisualStyleBackColor = true;
-            // 
             // TokenForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1304,5 +1326,6 @@
         private System.Windows.Forms.ContextMenuStrip contextMenuStripPrivileges;
         private System.Windows.Forms.ToolStripMenuItem enablePrivilegeToolStripMenuItem;
         private System.Windows.Forms.CheckBox checkBoxLuaToken;
+        private System.Windows.Forms.TextBox txtIsElevated;
     }
 }

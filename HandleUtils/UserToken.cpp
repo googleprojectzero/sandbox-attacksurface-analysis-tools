@@ -296,6 +296,11 @@ namespace TokenLibrary {
 		}
 	}
 
+	bool UserToken::IsElevated()
+	{
+		return !!GetTokenInfoDword(_token, ::TokenElevation);
+	}
+
 	bool UserToken::IsRestricted()
 	{
 		return !!IsTokenRestricted(_token->DangerousGetHandle().ToPointer());

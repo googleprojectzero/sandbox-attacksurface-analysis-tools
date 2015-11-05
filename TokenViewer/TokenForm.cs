@@ -124,6 +124,7 @@ namespace TokenViewer
             txtSourceId.Text = FormatLuid(_token.GetSourceId());
             TokenElevationType evtype = _token.GetElevationType();
             txtElevationType.Text = evtype.ToString();
+            txtIsElevated.Text = _token.IsElevated().ToString();
             txtOriginLoginId.Text = FormatLuid(_token.GetTokenOriginId());
 
             btnLinkedToken.Enabled = evtype != TokenElevationType.Default;

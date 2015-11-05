@@ -211,6 +211,7 @@ namespace TokenLibrary {
 		bool IsVirtualizationEnabled();
 
 		TokenElevationType GetElevationType();
+		bool IsElevated();
 		bool IsRestricted();
 		array<UserGroup^>^ GetRestrictedSids();
 		bool IsAppContainer();
