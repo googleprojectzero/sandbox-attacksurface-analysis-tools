@@ -193,6 +193,23 @@ namespace HandleUtils {
 		PHANDLE NewThreadHandle
 		);
 
+	typedef enum _XPROCESSINFOCLASS {
+		ProcessMitigation = 52,
+	} XPROCESSINFOCLASS;
+
+	typedef struct _PROCESS_MITIGATION {
+		PROCESS_MITIGATION_POLICY MitigationType;
+		DWORD Result;
+	} PROCESS_MITIGATION;
+
+	typedef NTSTATUS(NTAPI* _NtQueryInformationProcess)(
+		HANDLE ProcessHandle, 
+		XPROCESSINFOCLASS ProcessInformationClass, 
+		PVOID ProcessInformation, 
+		ULONG ProcessInformationLength, 
+		PULONG ReturnLength
+		);
+
 #define DIRECTORY_QUERY 0x0001
 #define DIRECTORY_TRAVERSE 0x0002
 #define DIRECTORY_CREATE_OBJECT 0x0004

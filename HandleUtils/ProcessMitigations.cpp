@@ -15,6 +15,7 @@
 #include "stdafx.h"
 #include "ProcessMitigations.h"
 #include "typed_buffer.h"
+#include "WindowsInternals.h"
 #include <memory>
 
 namespace TokenLibrary
@@ -108,10 +109,15 @@ namespace TokenLibrary
 				DisableExtensionPoints = ext_policy.DisableExtensionPoints;
 			}
 
-			XPROCESS_MITIGATION_BINARY_SIGNATURE_POLICY sig_policy;
-			if (GetMitigationPolicy(h, XProcessSignaturePolicy, sig_policy))
+			// ProcessSignaturePolicy doesn't seem to actually work, use the NT form.
+			DEFINE_NTDLL(NtQueryInformationProcess);
+			HandleUtils::PROCESS_MITIGATION policy = {};
+			policy.MitigationType = ProcessSignaturePolicy;
+			ULONG ReturnedLength = 0;
+			if (NT_SUCCESS(fNtQueryInformationProcess(h->DangerousGetHandle().ToPointer(), 
+				HandleUtils::ProcessMitigation, &policy, sizeof(policy), &ReturnedLength)))
 			{
-				MicrosoftSignedOnly = sig_policy.MicrosoftSignedOnly;
+				MicrosoftSignedOnly = policy.Result & 1;
 			}
 		}
 		finally
