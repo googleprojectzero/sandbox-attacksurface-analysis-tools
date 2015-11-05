@@ -311,9 +311,19 @@ namespace TokenViewer
         {
             try
             {
-                OpenForm(this, _token.DuplicateToken((TokenType)comboBoxTokenType.SelectedItem,
+                using (UserToken token = _token.DuplicateToken((TokenType)comboBoxTokenType.SelectedItem,
                     (TokenLibrary.TokenImpersonationLevel)comboBoxImpLevel.SelectedItem,
-                    (TokenLibrary.TokenIntegrityLevel)comboBoxILForDup.SelectedItem), false);
+                    (TokenLibrary.TokenIntegrityLevel)comboBoxILForDup.SelectedItem))
+                {
+                    if (checkBoxLuaToken.Checked)
+                    {
+                        OpenForm(this, token.MakeLuaToken(), false);
+                    }
+                    else
+                    {
+                        OpenForm(this, token, true);
+                    }
+                }
             }
             catch (Exception ex)
             {

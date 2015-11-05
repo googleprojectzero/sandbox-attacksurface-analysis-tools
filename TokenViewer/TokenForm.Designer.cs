@@ -118,6 +118,8 @@
             this.tabControlMain = new System.Windows.Forms.TabControl();
             this.tabPagePrivs = new System.Windows.Forms.TabPage();
             this.listViewPrivs = new System.Windows.Forms.ListView();
+            this.contextMenuStripPrivileges = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.enablePrivilegeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tabPageRestricted = new System.Windows.Forms.TabPage();
             this.listViewRestrictedSids = new System.Windows.Forms.ListView();
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -130,8 +132,7 @@
             this.txtPackageSid = new System.Windows.Forms.TextBox();
             this.tabPageMisc = new System.Windows.Forms.TabPage();
             this.tabPageOperations = new System.Windows.Forms.TabPage();
-            this.contextMenuStripPrivileges = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.enablePrivilegeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.checkBoxLuaToken = new System.Windows.Forms.CheckBox();
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
@@ -188,11 +189,11 @@
             groupBox4.SuspendLayout();
             this.tabControlMain.SuspendLayout();
             this.tabPagePrivs.SuspendLayout();
+            this.contextMenuStripPrivileges.SuspendLayout();
             this.tabPageRestricted.SuspendLayout();
             this.tabPageAppContainer.SuspendLayout();
             this.tabPageMisc.SuspendLayout();
             this.tabPageOperations.SuspendLayout();
-            this.contextMenuStripPrivileges.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabPageMain
@@ -651,6 +652,7 @@
             // 
             // groupBoxDuplicate
             // 
+            groupBoxDuplicate.Controls.Add(this.checkBoxLuaToken);
             groupBoxDuplicate.Controls.Add(lblILForDup);
             groupBoxDuplicate.Controls.Add(this.comboBoxILForDup);
             groupBoxDuplicate.Controls.Add(this.btnDuplicate);
@@ -1058,6 +1060,21 @@
             this.listViewPrivs.UseCompatibleStateImageBehavior = false;
             this.listViewPrivs.View = System.Windows.Forms.View.Details;
             // 
+            // contextMenuStripPrivileges
+            // 
+            this.contextMenuStripPrivileges.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.enablePrivilegeToolStripMenuItem});
+            this.contextMenuStripPrivileges.Name = "contextMenuStripPrivileges";
+            this.contextMenuStripPrivileges.Size = new System.Drawing.Size(158, 26);
+            this.contextMenuStripPrivileges.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStripPrivileges_Opening);
+            // 
+            // enablePrivilegeToolStripMenuItem
+            // 
+            this.enablePrivilegeToolStripMenuItem.Name = "enablePrivilegeToolStripMenuItem";
+            this.enablePrivilegeToolStripMenuItem.Size = new System.Drawing.Size(157, 22);
+            this.enablePrivilegeToolStripMenuItem.Text = "Enable Privilege";
+            this.enablePrivilegeToolStripMenuItem.Click += new System.EventHandler(this.enablePrivilegeToolStripMenuItem_Click);
+            // 
             // tabPageRestricted
             // 
             this.tabPageRestricted.Controls.Add(this.listViewRestrictedSids);
@@ -1175,20 +1192,15 @@
             this.tabPageOperations.Text = "Operations";
             this.tabPageOperations.UseVisualStyleBackColor = true;
             // 
-            // contextMenuStripPrivileges
+            // checkBoxLuaToken
             // 
-            this.contextMenuStripPrivileges.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.enablePrivilegeToolStripMenuItem});
-            this.contextMenuStripPrivileges.Name = "contextMenuStripPrivileges";
-            this.contextMenuStripPrivileges.Size = new System.Drawing.Size(158, 26);
-            this.contextMenuStripPrivileges.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStripPrivileges_Opening);
-            // 
-            // enablePrivilegeToolStripMenuItem
-            // 
-            this.enablePrivilegeToolStripMenuItem.Name = "enablePrivilegeToolStripMenuItem";
-            this.enablePrivilegeToolStripMenuItem.Size = new System.Drawing.Size(157, 22);
-            this.enablePrivilegeToolStripMenuItem.Text = "Enable Privilege";
-            this.enablePrivilegeToolStripMenuItem.Click += new System.EventHandler(this.enablePrivilegeToolStripMenuItem_Click);
+            this.checkBoxLuaToken.AutoSize = true;
+            this.checkBoxLuaToken.Location = new System.Drawing.Point(317, 48);
+            this.checkBoxLuaToken.Name = "checkBoxLuaToken";
+            this.checkBoxLuaToken.Size = new System.Drawing.Size(111, 17);
+            this.checkBoxLuaToken.TabIndex = 7;
+            this.checkBoxLuaToken.Text = "Make LUA Token";
+            this.checkBoxLuaToken.UseVisualStyleBackColor = true;
             // 
             // TokenForm
             // 
@@ -1220,12 +1232,12 @@
             groupBox4.PerformLayout();
             this.tabControlMain.ResumeLayout(false);
             this.tabPagePrivs.ResumeLayout(false);
+            this.contextMenuStripPrivileges.ResumeLayout(false);
             this.tabPageRestricted.ResumeLayout(false);
             this.tabPageAppContainer.ResumeLayout(false);
             this.tabPageAppContainer.PerformLayout();
             this.tabPageMisc.ResumeLayout(false);
             this.tabPageOperations.ResumeLayout(false);
-            this.contextMenuStripPrivileges.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -1291,5 +1303,6 @@
         private System.Windows.Forms.ListView listViewPrivs;
         private System.Windows.Forms.ContextMenuStrip contextMenuStripPrivileges;
         private System.Windows.Forms.ToolStripMenuItem enablePrivilegeToolStripMenuItem;
+        private System.Windows.Forms.CheckBox checkBoxLuaToken;
     }
 }

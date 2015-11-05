@@ -218,9 +218,10 @@ namespace TokenLibrary {
 		unsigned int GetAppContainerNumber();
 		array<UserGroup^>^ GetCapabilities();
 		UserToken^ DuplicateToken(TokenType type, TokenImpersonationLevel implevel);
-		UserToken^ DuplicateToken(TokenType type, TokenImpersonationLevel implevel, TokenIntegrityLevel token_il);
+		UserToken^ DuplicateToken(TokenType type, TokenImpersonationLevel implevel, TokenIntegrityLevel token_il);		
 		UserToken^ DuplicateHandle();
 		UserToken^ DuplicateHandle(unsigned int access_rights);
+		UserToken^ MakeLuaToken();
 		TokenIntegrityLevelPolicy GetIntegrityLevelPolicy();
 		ImpersonateProcess^ Impersonate();
 		void EnablePrivilege(TokenPrivilege^ priv, bool enable);

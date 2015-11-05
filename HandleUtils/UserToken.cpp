@@ -463,7 +463,7 @@ namespace TokenLibrary {
 				level = HandleUtils::TokenSecurityLevel::Delegate;
 				break;
 			default:
-				throw gcnew System::ComponentModel::Win32Exception(ERROR_NO_IMPERSONATION_TOKEN);				
+				throw gcnew System::ComponentModel::Win32Exception(ERROR_NO_IMPERSONATION_TOKEN);
 			}
 
 			UserToken^ ret = gcnew UserToken(HandleUtils::NativeBridge::CreateImpersonationToken(_token, level));
@@ -477,6 +477,21 @@ namespace TokenLibrary {
 		}
 	}
 
+	UserToken^ UserToken::MakeLuaToken()
+	{
+		ScopedHandle newtoken;
+
+		if (CreateRestrictedToken(_token->DangerousGetHandle().ToPointer(),
+			LUA_TOKEN, 0, nullptr, 0, nullptr, 0, nullptr, newtoken.GetBuffer()))
+		{
+			return gcnew UserToken(newtoken.DetachAsNativeHandle());
+		}
+		else
+		{
+			throw gcnew System::ComponentModel::Win32Exception(::GetLastError());
+		}
+	}
+	
 	TokenIntegrityLevelPolicy UserToken::GetIntegrityLevelPolicy()
 	{
 		typed_buffer_ptr<TOKEN_MANDATORY_POLICY> policy = GetTokenInfo<TOKEN_MANDATORY_POLICY>(_token, ::TokenMandatoryPolicy);
