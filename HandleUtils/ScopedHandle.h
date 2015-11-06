@@ -23,8 +23,8 @@ class ScopedHandle
 public:
 	ScopedHandle() : g_h(nullptr) {} 
 	ScopedHandle(HANDLE h, bool duplicate);	
-	void Close();
-	void Reset(HANDLE h);
+	void Close();	
+	void Reset(ScopedHandle& h);
 	bool IsValid() const {
 		return (g_h != nullptr) && (g_h != INVALID_HANDLE_VALUE);
 	}

@@ -18,6 +18,7 @@
 #include <vector>
 #include <sddl.h>
 #include "ScopedHandle.h"
+#include "WindowsInternals.h"
 
 #pragma comment(lib, "advapi32.lib")
 
@@ -170,5 +171,29 @@ namespace TokenLibrary
 	System::Collections::Generic::List<ProcessEntry^>^ ProcessEntry::GetProcesses()
 	{
 		return ProcessEntry::GetProcesses(false);
+	}
+
+	System::Collections::Generic::List<ThreadEntry^>^ ProcessEntry::GetThreadsWithTokens()
+	{
+		System::Collections::Generic::List<ThreadEntry^>^ ret = gcnew System::Collections::Generic::List<ThreadEntry^>();
+		EnableDebugPrivilege();
+
+		DEFINE_NTDLL(NtGetNextThread);
+
+		ScopedHandle hThread;
+		ScopedHandle hNextThread;
+		while (NT_SUCCESS(fNtGetNextThread(_process->DangerousGetHandle().ToPointer(),
+			hThread, THREAD_QUERY_INFORMATION, 0, 0, hNextThread.GetBuffer())))
+		{
+			ScopedHandle hToken;
+			if (::OpenThreadToken(hNextThread, MAXIMUM_ALLOWED, TRUE, hToken.GetBuffer()))
+			{
+				ret->Add(gcnew ThreadEntry(GetThreadId(hNextThread), this, gcnew UserToken(hToken.DetachAsNativeHandle())));
+			}			
+			
+			hThread.Reset(hNextThread);			
+		}
+
+		return ret;
 	}
 }

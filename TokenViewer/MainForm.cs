@@ -25,8 +25,8 @@ using HandleUtils;
 namespace TokenViewer
 {
     public partial class MainForm : Form
-    {
-        private void AddProcessNode(ProcessEntry entry, bool hideUnrestricted)
+    {        
+        private void AddProcessNode(ProcessEntry entry)
         {
             try
             {
@@ -41,6 +41,28 @@ namespace TokenViewer
             catch (Win32Exception)
             {
                 // Do nothing
+            }
+        }
+
+        private void AddThreads(ProcessEntry entry)
+        {
+            List<ThreadEntry> threads = entry.GetThreadsWithTokens();
+
+            foreach (ThreadEntry thread in threads)
+            {
+                try
+                {
+                    ListViewItem item = new ListViewItem(String.Format("{0} - {1}", entry.Pid, entry.Name));
+                    item.SubItems.Add(thread.Tid.ToString());
+                    UserToken token = thread.Token;
+                    item.SubItems.Add(token.GetUser().GetName());
+                    item.SubItems.Add(token.GetImpersonationLevel().ToString());
+                    item.Tag = thread;
+                    listViewThreads.Items.Add(item);
+                }
+                catch (Win32Exception)
+                { 
+                }
             }
         }
 
@@ -63,10 +85,14 @@ namespace TokenViewer
             }
 
             treeViewProcesses.Nodes.Clear();
+            listViewThreads.Items.Clear();
             foreach (ProcessEntry entry in filtered)
             {                
-                AddProcessNode(entry, hideUnrestricted);
+                AddProcessNode(entry);
+                AddThreads(entry);
             }
+            listViewThreads.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+            listViewThreads.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
         public MainForm()
@@ -312,6 +338,30 @@ namespace TokenViewer
                     }
                 }
                 node.ExpandAll();
+            }
+        }
+
+        private void toolStripMenuItemOpenThreadToken_Click(object sender, EventArgs e)
+        {
+            if (listViewThreads.SelectedItems.Count > 0)
+            {                
+                ThreadEntry thread = listViewThreads.SelectedItems[0].Tag as ThreadEntry;
+                if(thread != null)
+                {                 
+                    TokenForm.OpenForm(this, thread.Token, true);
+                }
+            }
+        }
+
+        private void openProcessTokenToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (listViewThreads.SelectedItems.Count > 0)
+            {
+                ThreadEntry thread = listViewThreads.SelectedItems[0].Tag as ThreadEntry;
+                if (thread != null)
+                {
+                    TokenForm.OpenForm(this, thread.Process.Token, true);
+                }
             }
         }
     }

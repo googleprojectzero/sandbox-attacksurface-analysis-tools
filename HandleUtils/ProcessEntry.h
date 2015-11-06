@@ -22,10 +22,50 @@ using namespace System;
 
 namespace TokenLibrary
 {
+	ref class ProcessEntry;
+
+	public ref class ThreadEntry
+	{		
+		ProcessEntry^ _process;
+		UserToken^ _token;
+
+	public:
+		ThreadEntry(int tid, ProcessEntry^ process, UserToken^ token)
+		{
+			Tid = tid;
+			_process = process;
+			_token = token;
+		}
+
+		property int Tid;
+
+		property UserToken^ Token
+		{
+			UserToken^ get() {
+				return _token;
+			}
+		}
+
+		property ProcessEntry^ Process
+		{
+			ProcessEntry^ get() {
+				return _process;
+			}
+		}
+
+		~ThreadEntry()
+		{			
+			if (_token != nullptr)
+			{
+				_token->Close();
+			}
+		}
+	};
+
 	public ref class ProcessEntry
 	{
 		NativeHandle^ _process;
-		UserToken^ _token;
+		UserToken^ _token;		
 
 	public:
 		ProcessEntry(System::Diagnostics::Process^ process);
@@ -54,6 +94,8 @@ namespace TokenLibrary
 				return gcnew ProcessMitigations(_process);
 			}
 		}
+
+		System::Collections::Generic::List<ThreadEntry^>^ GetThreadsWithTokens();
 
 		static System::Collections::Generic::List<ProcessEntry^>^ GetProcesses();
 		static System::Collections::Generic::List<ProcessEntry^>^ GetProcesses(bool all);

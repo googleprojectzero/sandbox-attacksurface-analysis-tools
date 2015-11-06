@@ -77,15 +77,16 @@ void ScopedHandle::Close()
 {
 	if (IsValid())
 	{
-		CloseHandle(g_h);
+		HANDLE h = g_h;
 		g_h = nullptr;
+		CloseHandle(h);
 	}
 }
 
-void ScopedHandle::Reset(HANDLE h)
+void ScopedHandle::Reset(ScopedHandle& h)
 {
 	Close();
-	g_h = h;
+	g_h = h.Detach();
 }
 
 ScopedHandle::~ScopedHandle()

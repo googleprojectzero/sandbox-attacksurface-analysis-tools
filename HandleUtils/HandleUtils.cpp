@@ -136,7 +136,7 @@ namespace HandleUtils {
 		{
 			if (!DuplicateHandle(GetCurrentProcess(), h, GetCurrentProcess(), dupHandle.GetBuffer(), 0, FALSE, DUPLICATE_SAME_ACCESS))
 			{
-				dupHandle.Reset(nullptr);
+				// Do nothing
 			}
 		}
 
@@ -1158,7 +1158,7 @@ namespace HandleUtils {
 		{
 			if (!DuplicateHandle(GetCurrentProcess(), hProcess, GetCurrentProcess(), dupHandle.GetBuffer(), 0, FALSE, DUPLICATE_SAME_ACCESS))
 			{
-				dupHandle.Reset(nullptr);
+				// Do nothing
 			}
 		}
 
