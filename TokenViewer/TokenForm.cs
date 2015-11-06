@@ -17,10 +17,10 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
-using System.Security.AccessControl;
-using System.Security.Principal;
-using System.Windows.Forms;
 using System.IO;
+using System.Linq;
+using System.Security.AccessControl;
+using System.Windows.Forms;
 using TokenLibrary;
 
 namespace TokenViewer
@@ -35,7 +35,7 @@ namespace TokenViewer
                 luid >> 32, luid & 0xFFFFFFFFUL);
         }
 
-        private static void PopulateGroupList(ListView listView, UserGroup[] groups)
+        private static void PopulateGroupList(ListView listView, IEnumerable<UserGroup> groups)
         {
             foreach (UserGroup group in groups)
             {
@@ -54,10 +54,20 @@ namespace TokenViewer
                     {
                         item.BackColor = Color.LightSalmon;
                     }
-
+                    item.Tag = group;
                     listView.Items.Add(item);
                 }
             }
+        }
+
+        private void UpdateGroupList()
+        {
+            listViewGroups.Items.Clear();
+            List<UserGroup> groups = new List<UserGroup>();
+            groups.Add(_token.GetUser());
+            groups.AddRange(_token.GetGroups());
+
+            PopulateGroupList(listViewGroups, groups);
         }
 
         private void UpdatePrivileges()
@@ -95,8 +105,8 @@ namespace TokenViewer
             UserGroup user = _token.GetUser();
 
             txtUsername.Text = user.GetName();
-            txtUserSid.Text = user.Sid.ToString();
-
+            txtUserSid.Text = user.Sid.ToString();                       
+            
             TokenType tokentype = _token.GetTokenType();
 
             txtTokenType.Text = _token.GetTokenType().ToString();
@@ -129,7 +139,7 @@ namespace TokenViewer
 
             btnLinkedToken.Enabled = evtype != TokenElevationType.Default;
 
-            PopulateGroupList(listViewGroups, _token.GetGroups());
+            UpdateGroupList();
 
             txtPrimaryGroup.Text = _token.GetPrimaryGroup().GetName();
             txtOwner.Text = _token.GetDefaultOwner().GetName();
@@ -433,22 +443,35 @@ namespace TokenViewer
             }
         }
 
+        static bool AllPrivsEnabled(IEnumerable<ListViewItem> privs)
+        {            
+            foreach (TokenPrivilege priv in privs.Select(i => i.Tag))
+            {
+                if (priv != null && !priv.IsEnabled())
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         private void contextMenuStripPrivileges_Opening(object sender, CancelEventArgs e)
         {
             if (listViewPrivs.SelectedItems.Count > 0)
             {
-                TokenPrivilege priv = listViewPrivs.SelectedItems[0].Tag as TokenPrivilege;
-                if (priv != null)
+                if (AllPrivsEnabled(listViewPrivs.SelectedItems.OfType<ListViewItem>()))
                 {
-                    if (priv.IsEnabled())
-                    {
-                        enablePrivilegeToolStripMenuItem.Text = "Disable Privilege";
-                    }
-                    else
-                    {
-                        enablePrivilegeToolStripMenuItem.Text = "Enable Privilege";
-                    }
+                    enablePrivilegeToolStripMenuItem.Text = "Disable Privilege";
                 }
+                else
+                {
+                    enablePrivilegeToolStripMenuItem.Text = "Enable Privilege";
+                }
+                enablePrivilegeToolStripMenuItem.Enabled = true;
+            }
+            else
+            {
+                enablePrivilegeToolStripMenuItem.Enabled = false;
             }
         }
 
@@ -456,17 +479,126 @@ namespace TokenViewer
         {
             if (listViewPrivs.SelectedItems.Count > 0)
             {
-                TokenPrivilege priv = listViewPrivs.SelectedItems[0].Tag as TokenPrivilege;
+                bool multi_enable = listViewPrivs.SelectedItems.Count > 1;
+                bool all_enabled = AllPrivsEnabled(listViewPrivs.SelectedItems.OfType<ListViewItem>());
 
-                try
+                foreach (TokenPrivilege priv in 
+                    listViewPrivs.SelectedItems.OfType<ListViewItem>().Select(i => i.Tag))
                 {
-                    _token.EnablePrivilege(priv, !priv.IsEnabled());
-                    UpdatePrivileges();
+                    try
+                    {
+                        if (priv != null)
+                        {
+                            _token.EnablePrivilege(priv, !all_enabled);
+                        }
+                    }
+                    catch (Win32Exception ex)
+                    {
+                        if (!multi_enable)
+                        {
+                            MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
                 }
-                catch (Win32Exception ex)
+                UpdatePrivileges();
+            }
+        }
+
+        private static void SelectAllItems(ListView listView)
+        {
+            foreach (ListViewItem item in listView.Items)
+            {
+                item.Selected = true;
+            }
+        }
+
+        private void selectAllToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SelectAllItems(listViewPrivs);
+        }
+
+        private void selectAllGroupsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SelectAllItems(listViewGroups);
+        }
+
+        List<UserGroup> GetSelectedModifiableGroups()
+        {
+            List<UserGroup> groups = new List<UserGroup>();
+            foreach (UserGroup group in
+                    listViewGroups.SelectedItems.OfType<ListViewItem>().Select(i => i.Tag))
+            {
+                if (group != null && !group.IsMandatory() && !group.IsDenyOnly())
                 {
-                    MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    groups.Add(group);
                 }
+            }
+            return groups;
+        }
+
+        static bool AllGroupsEnabled(IEnumerable<UserGroup> groups)
+        {
+            foreach (UserGroup group in groups)
+            {
+                if (!group.IsEnabled())
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private void enableGroupToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            List<UserGroup> groups = GetSelectedModifiableGroups();
+            if (groups.Count > 0)
+            {
+                bool multi_enable = groups.Count > 1;
+                bool all_enabled = AllGroupsEnabled(groups);
+
+                foreach (UserGroup group in groups)
+                {
+                    try
+                    {
+                        if (group != null)
+                        {
+                            _token.EnableGroup(group, !all_enabled);
+                        }
+                    }
+                    catch (Win32Exception ex)
+                    {
+                        if (!multi_enable)
+                        {
+                            MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                }
+                UpdateGroupList();
+            }
+            else
+            {
+                MessageBox.Show(this, "No Modifable Groups Selected", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void contextMenuStripGroups_Opening(object sender, CancelEventArgs e)
+        {
+            List<UserGroup> groups = GetSelectedModifiableGroups();
+            if (groups.Count > 0)
+            {
+                if (AllGroupsEnabled(groups))
+                {
+                    enableGroupToolStripMenuItem.Text = "Disable Group";
+                }
+                else
+                {
+                    enableGroupToolStripMenuItem.Text = "Enable Group";
+                }
+                enableGroupToolStripMenuItem.Enabled = true;
+            }
+            else
+            {
+                enableGroupToolStripMenuItem.Enabled = false;
             }
         }
     }

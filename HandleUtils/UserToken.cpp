@@ -120,9 +120,14 @@ namespace TokenLibrary {
 
 	UserGroup^ UserToken::GetUser()
 	{
-		typed_buffer_ptr<TOKEN_USER> user = GetTokenInfo<TOKEN_USER>(_token, TokenUser);		
-		
-		return gcnew UserGroup(IntPtr(user->User.Sid), GroupFlags::None);
+		typed_buffer_ptr<TOKEN_USER> user = GetTokenInfo<TOKEN_USER>(_token, TokenUser);
+		GroupFlags flags = (GroupFlags)user->User.Attributes;
+		if (flags != GroupFlags::UseForDenyOnly)
+		{
+			// If not user for deny only we fake out a mandatory enabled group
+			flags = GroupFlags::Enabled | GroupFlags::Mandatory;
+		}
+		return gcnew UserGroup(IntPtr(user->User.Sid), flags);
 	}
 
 	TokenType UserToken::GetTokenType()
@@ -314,7 +319,7 @@ namespace TokenLibrary {
 	UserGroup^ UserToken::GetDefaultOwner()
 	{
 		typed_buffer_ptr<TOKEN_OWNER> owner =
-			GetTokenInfo<TOKEN_OWNER>(_token, ::TokenOwner);
+			GetTokenInfo<TOKEN_OWNER>(_token, ::TokenOwner);		
 
 		return gcnew UserGroup(IntPtr(owner->Owner), GroupFlags::None);
 	}
@@ -322,7 +327,7 @@ namespace TokenLibrary {
 	UserGroup^ UserToken::GetPrimaryGroup()
 	{
 		typed_buffer_ptr<TOKEN_PRIMARY_GROUP> group =
-			GetTokenInfo<TOKEN_PRIMARY_GROUP>(_token, ::TokenPrimaryGroup);
+			GetTokenInfo<TOKEN_PRIMARY_GROUP>(_token, ::TokenPrimaryGroup);		
 
 		return gcnew UserGroup(IntPtr(group->PrimaryGroup), GroupFlags::None);
 	}
@@ -561,21 +566,60 @@ namespace TokenLibrary {
 
 		privs->PrivilegeCount = 1;
 		ULARGE_INTEGER luid;
-		
-		luid.QuadPart = priv->Luid;
 
-		privs->Privileges[0].Luid.HighPart = luid.HighPart;
-		privs->Privileges[0].Luid.LowPart = luid.LowPart;
-		privs->Privileges[0].Attributes = enable ? SE_PRIVILEGE_ENABLED : 0;
-
-		if (!AdjustTokenPrivileges(_token->DangerousGetHandle().ToPointer(), 
-			FALSE, privs, (DWORD)privs.size(), nullptr, nullptr))
+		NativeHandle^ handle = _token->Duplicate(TOKEN_ADJUST_PRIVILEGES);
+		try
 		{
-			throw gcnew System::ComponentModel::Win32Exception(::GetLastError());
+			luid.QuadPart = priv->Luid;
+
+			privs->Privileges[0].Luid.HighPart = luid.HighPart;
+			privs->Privileges[0].Luid.LowPart = luid.LowPart;
+			privs->Privileges[0].Attributes = enable ? SE_PRIVILEGE_ENABLED : 0;
+
+			if (!AdjustTokenPrivileges(handle->DangerousGetHandle().ToPointer(),
+				FALSE, privs, (DWORD)privs.size(), nullptr, nullptr))
+			{
+				throw gcnew System::ComponentModel::Win32Exception(::GetLastError());
+			}
+			else if (::GetLastError() != ERROR_SUCCESS)
+			{
+				throw gcnew System::ComponentModel::Win32Exception(::GetLastError());
+			}
 		}
-		else if (::GetLastError() != ERROR_SUCCESS)
+		finally
 		{
-			throw gcnew System::ComponentModel::Win32Exception(::GetLastError());
+			delete handle;
+		}
+	}
+
+	void UserToken::EnableGroup(UserGroup^ group, bool enable)
+	{
+		TOKEN_GROUPS groups = {};
+
+		groups.GroupCount = 1;
+		array<byte>^ sid = gcnew array<byte>(group->Sid->BinaryLength);
+		pin_ptr<byte> psid = &sid[0];
+		groups.Groups[0].Sid = psid;
+		groups.Groups[0].Attributes = enable ? SE_GROUP_ENABLED : 0;
+
+		group->Sid->GetBinaryForm(sid, 0);
+
+		NativeHandle^ handle = _token->Duplicate(TOKEN_ADJUST_GROUPS);
+		try
+		{		
+			if(!AdjustTokenGroups(handle->DangerousGetHandle().ToPointer(), 
+				FALSE, &groups, 0, nullptr, nullptr))
+			{
+				throw gcnew System::ComponentModel::Win32Exception(::GetLastError());
+			}
+			else if (::GetLastError() != ERROR_SUCCESS)
+			{
+				throw gcnew System::ComponentModel::Win32Exception(::GetLastError());
+			}
+		}
+		finally
+		{
+			delete handle;
 		}
 	}
 }

@@ -164,6 +164,16 @@ namespace TokenLibrary {
 			return (_flags & GroupFlags::Enabled) == GroupFlags::Enabled;
 		}
 
+		bool IsMandatory()
+		{
+			return (_flags & GroupFlags::Mandatory) == GroupFlags::Mandatory;
+		}
+
+		bool IsDenyOnly()
+		{
+			return (_flags & GroupFlags::UseForDenyOnly) == GroupFlags::UseForDenyOnly;
+		}
+
 		System::String^ GetName()
 		{
 			try
@@ -226,6 +236,7 @@ namespace TokenLibrary {
 		TokenIntegrityLevelPolicy GetIntegrityLevelPolicy();
 		ImpersonateProcess^ Impersonate();
 		void EnablePrivilege(TokenPrivilege^ priv, bool enable);
+		void EnableGroup(UserGroup^ group, bool enable);
 
 		property System::IntPtr Handle 
 		{
