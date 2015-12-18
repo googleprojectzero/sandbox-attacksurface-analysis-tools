@@ -107,8 +107,8 @@ namespace TokenViewer
             comboBoxS4ULogonType.Items.Add(LogonType.NetworkCleartext);
             comboBoxS4ULogonType.Items.Add(LogonType.NewCredentials);
             comboBoxS4ULogonType.Items.Add(LogonType.Service);
-
             comboBoxS4ULogonType.SelectedItem = LogonType.Network;
+            TokenForm.RegisterMainForm(this);
         }
 
         private void btnTestS4U_Click(object sender, EventArgs e)
@@ -121,14 +121,14 @@ namespace TokenViewer
                 {
                     using (UserToken token = TokenUtils.GetLogonUserToken(txtS4UUserName.Text, txtS4URealm.Text, txtLUPassword.Text, null, logonType))
                     {
-                        TokenForm.OpenForm(this, token, true);
+                        TokenForm.OpenForm(token, true);
                     }
                 }
                 else
                 {
                     using (UserToken token = TokenUtils.GetLogonS4UToken(txtS4UUserName.Text, txtS4URealm.Text, logonType))
                     {
-                        TokenForm.OpenForm(this, token, true);
+                        TokenForm.OpenForm(token, true);
                     }
                 }
             }
@@ -154,13 +154,13 @@ namespace TokenViewer
                 HandleEntry handle = selectedNode.Tag as HandleEntry;
                 if (process != null)
                 {
-                    TokenForm.OpenForm(this, process.Token, true);
+                    TokenForm.OpenForm(process.Token, true);
                 }
                 else if (handle != null)
                 {
                     try
                     {
-                        TokenForm.OpenForm(this, new UserToken(NativeBridge.DuplicateHandleFromProcess(handle,
+                        TokenForm.OpenForm(new UserToken(NativeBridge.DuplicateHandleFromProcess(handle,
                             (uint)(TokenAccessRights.Query | TokenAccessRights.QuerySource), 0)), false);
                     }
                     catch (Exception ex)
@@ -183,7 +183,7 @@ namespace TokenViewer
         {
             try
             {
-                TokenForm.OpenForm(this, TokenUtils.GetAnonymousToken(), false);
+                TokenForm.OpenForm(TokenUtils.GetAnonymousToken(), false);
             }
             catch (Win32Exception ex)
             {
@@ -195,7 +195,7 @@ namespace TokenViewer
         {
             try
             {
-                TokenForm.OpenForm(this, TokenUtils.GetLogonUserToken(name, "NT AUTHORITY", null, null, LogonType.Service), false);
+                TokenForm.OpenForm(TokenUtils.GetLogonUserToken(name, "NT AUTHORITY", null, null, LogonType.Service), false);
             }
             catch (Win32Exception ex)
             {
@@ -227,7 +227,7 @@ namespace TokenViewer
         {
             try
             {
-                TokenForm.OpenForm(this, TokenUtils.GetTokenFromBits(), false);
+                TokenForm.OpenForm(TokenUtils.GetTokenFromBits(), false);
             }
             catch (Exception ex)
             {
@@ -257,7 +257,7 @@ namespace TokenViewer
 
                     if (token != null)
                     {
-                        TokenForm.OpenForm(this, token, false);
+                        TokenForm.OpenForm(token, false);
                     }
                 }
             }
@@ -290,7 +290,7 @@ namespace TokenViewer
         {
             try
             {
-                TokenForm.OpenForm(this, TokenUtils.GetTokenFromCurrentProcess(), false);
+                TokenForm.OpenForm(TokenUtils.GetTokenFromCurrentProcess(), false);
             }
             catch (Win32Exception ex)
             {
@@ -302,7 +302,7 @@ namespace TokenViewer
         {
             try
             {
-                TokenForm.OpenForm(this, TokenUtils.GetTokenFromClipboard(), false);
+                TokenForm.OpenForm(TokenUtils.GetTokenFromClipboard(), false);
             }
             catch (Win32Exception ex)
             {
@@ -348,7 +348,7 @@ namespace TokenViewer
                 ThreadEntry thread = listViewThreads.SelectedItems[0].Tag as ThreadEntry;
                 if(thread != null)
                 {                 
-                    TokenForm.OpenForm(this, thread.Token, true);
+                    TokenForm.OpenForm(thread.Token, true);
                 }
             }
         }
@@ -360,7 +360,7 @@ namespace TokenViewer
                 ThreadEntry thread = listViewThreads.SelectedItems[0].Tag as ThreadEntry;
                 if (thread != null)
                 {
-                    TokenForm.OpenForm(this, thread.Process.Token, true);
+                    TokenForm.OpenForm(thread.Process.Token, true);
                 }
             }
         }

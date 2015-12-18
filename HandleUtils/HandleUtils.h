@@ -271,6 +271,8 @@ namespace HandleUtils {
 		static NativeHandle^ OpenProcessToken(int pid);
 		static NativeHandle^ OpenProcessToken(NativeHandle^ process);
 		static NativeHandle^ OpenThreadToken(NativeHandle^ thread);
+		static NativeHandle^ OpenProcessToken();
+		static NativeHandle^ OpenThreadToken();
 		static NativeHandle^ CreateImpersonationToken(NativeHandle^ token, TokenSecurityLevel level);
 		static NativeHandle^ CreatePrimaryToken(NativeHandle^ token);
 		static ImpersonateProcess^ Impersonate(int pid, TokenSecurityLevel level);

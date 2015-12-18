@@ -148,6 +148,7 @@
     <ClInclude Include="ProcessEntry.h" />
     <ClInclude Include="ProcessMitigations.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="SafeWin32Exception.h" />
     <ClInclude Include="ScopedHandle.h" />
     <ClInclude Include="SecurityInformationImpl.h" />
     <ClInclude Include="Stdafx.h" />

@@ -269,8 +269,14 @@ namespace TokenViewer
         }
 
         static List<TokenForm> _forms = new List<TokenForm>();
+        static IWin32Window _main_form;
 
-        public static void OpenForm(IWin32Window parent, UserToken token, bool copy)
+        public static void RegisterMainForm(MainForm window)
+        {
+            _main_form = window;
+        }
+
+        public static void OpenForm(UserToken token, bool copy)
         {
             if (token != null)
             {
@@ -279,7 +285,7 @@ namespace TokenViewer
                 _forms.Add(form);
                 form.FormClosed += form_FormClosed;
 
-                form.Show(parent);
+                form.Show(_main_form);
             }
         }
 
@@ -298,7 +304,7 @@ namespace TokenViewer
         {
             try
             {
-                OpenForm(this, _token.GetLinkedToken(), false);
+                OpenForm(_token.GetLinkedToken(), false);
             }
             catch (Exception ex)
             {
@@ -321,20 +327,10 @@ namespace TokenViewer
         private void btnDuplicate_Click(object sender, EventArgs e)
         {
             try
-            {
-                using (UserToken token = _token.DuplicateToken((TokenType)comboBoxTokenType.SelectedItem,
-                    (TokenLibrary.TokenImpersonationLevel)comboBoxImpLevel.SelectedItem,
-                    (TokenLibrary.TokenIntegrityLevel)comboBoxILForDup.SelectedItem))
-                {
-                    if (checkBoxLuaToken.Checked)
-                    {
-                        OpenForm(this, token.MakeLuaToken(), false);
-                    }
-                    else
-                    {
-                        OpenForm(this, token, true);
-                    }
-                }
+            {                
+                OpenForm(_token.DuplicateToken((TokenType)comboBoxTokenType.SelectedItem,
+                        (TokenLibrary.TokenImpersonationLevel)comboBoxImpLevel.SelectedItem,
+                        (TokenLibrary.TokenIntegrityLevel)comboBoxILForDup.SelectedItem), false);                                                  
             }
             catch (Exception ex)
             {
@@ -360,7 +356,7 @@ namespace TokenViewer
         {
             try
             {
-                OpenForm(this, TokenUtils.GetTokenFromSaferLevel(_token,
+                OpenForm(TokenUtils.GetTokenFromSaferLevel(_token,
                     (SaferLevel)comboBoxSaferLevel.SelectedItem, checkBoxSaferMakeInert.Checked), false);                  
             }
             catch (Exception ex)
@@ -599,6 +595,50 @@ namespace TokenViewer
             else
             {
                 enableGroupToolStripMenuItem.Enabled = false;
+            }
+        }
+
+        private void btnCreateRestricted_Click(object sender, EventArgs e)
+        {
+            using (CreateRestrictedTokenForm form = new CreateRestrictedTokenForm(_token))
+            {
+                if (form.ShowDialog(this) == DialogResult.OK)
+                {
+                    OpenForm(form.RestrictedToken, false);
+                }
+            }
+        }
+
+        private void btnImpersonate_Click(object sender, EventArgs e)
+        {
+            TokenImpersonationLevel implevel = TokenImpersonationLevel.Impersonation;
+            try
+            {
+                if (_token.GetTokenType() == TokenType.Impersonation)
+                {
+                    implevel = _token.GetImpersonationLevel();       
+                }
+
+                using (UserToken token = _token.DuplicateToken(TokenType.Impersonation, implevel, (TokenLibrary.TokenIntegrityLevel)comboBoxILForDup.SelectedItem))
+                {
+                    NativeHandle imptoken = null;
+                    using (ImpersonateProcess imp = token.Impersonate())
+                    {
+                        imptoken = NativeBridge.OpenThreadToken();
+                    }
+                    if (imptoken != null)
+                    {
+                        OpenForm(new UserToken(imptoken), false);
+                    }
+                    else
+                    {
+                        MessageBox.Show(this, "Couldn't open thread token", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

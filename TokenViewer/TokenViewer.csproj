@@ -65,6 +65,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AddSidForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AddSidForm.Designer.cs">
+      <DependentUpon>AddSidForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CreateRestrictedTokenForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CreateRestrictedTokenForm.Designer.cs">
+      <DependentUpon>CreateRestrictedTokenForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -79,6 +91,12 @@
     <Compile Include="TokenForm.Designer.cs">
       <DependentUpon>TokenForm.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="AddSidForm.resx">
+      <DependentUpon>AddSidForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CreateRestrictedTokenForm.resx">
+      <DependentUpon>CreateRestrictedTokenForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>

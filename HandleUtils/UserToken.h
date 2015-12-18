@@ -82,6 +82,16 @@ namespace TokenLibrary {
 		UsedForAccess = SE_PRIVILEGE_USED_FOR_ACCESS,
 	};
 
+	[System::Flags]
+	public enum class RestrictedTokenFlags : unsigned int
+	{
+		None = 0,
+		DisableMaxPrivilege = 1,
+		SandboxInert = 2,
+		LuaToken = 4,
+		WriteRestricted = 8
+	};
+
 	public ref class TokenPrivilege
 	{
 		System::String^ _name;
@@ -156,7 +166,6 @@ namespace TokenLibrary {
 		UserGroup(System::IntPtr rawsid, GroupFlags flags) 
 			: UserGroup(gcnew System::Security::Principal::SecurityIdentifier(rawsid), flags)
 		{
-
 		}
 
 		bool IsEnabled()
@@ -233,6 +242,7 @@ namespace TokenLibrary {
 		UserToken^ DuplicateHandle();
 		UserToken^ DuplicateHandle(unsigned int access_rights);
 		UserToken^ MakeLuaToken();
+		UserToken^ CreateRestrictedToken(array<UserGroup^>^ disable_sids, array<TokenPrivilege^>^ disable_privs, array<UserGroup^>^ restricted_sids, RestrictedTokenFlags flags);
 		TokenIntegrityLevelPolicy GetIntegrityLevelPolicy();
 		ImpersonateProcess^ Impersonate();
 		void EnablePrivilege(TokenPrivilege^ priv, bool enable);

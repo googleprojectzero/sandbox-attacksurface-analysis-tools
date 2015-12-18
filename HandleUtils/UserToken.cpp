@@ -491,7 +491,7 @@ namespace TokenLibrary {
 	{
 		ScopedHandle newtoken;
 
-		if (CreateRestrictedToken(_token->DangerousGetHandle().ToPointer(),
+		if (::CreateRestrictedToken(_token->DangerousGetHandle().ToPointer(),
 			LUA_TOKEN, 0, nullptr, 0, nullptr, 0, nullptr, newtoken.GetBuffer()))
 		{
 			return gcnew UserToken(newtoken.DetachAsNativeHandle());
@@ -500,6 +500,71 @@ namespace TokenLibrary {
 		{
 			throw gcnew System::ComponentModel::Win32Exception(::GetLastError());
 		}
+	}
+
+	void SerializeSidsAndAttributes(array<UserGroup^>^ groups, std::vector<SID_AND_ATTRIBUTES>& sids, std::vector<char>& sid_data)
+	{		
+		size_t total_size = 0;
+		for each (UserGroup^ group in groups)
+		{
+			total_size += group->Sid->BinaryLength;
+		}
+
+		array<byte>^ data = gcnew array<byte>(SecurityIdentifier::MaxBinaryLength);
+		sid_data.resize(total_size);
+		sids.resize(groups->Length);
+
+		size_t curr_pos = 0;
+		for(int i = 0; i < groups->Length; ++i)
+		{
+			SecurityIdentifier^ sid = groups[i]->Sid;						
+			sid->GetBinaryForm(data, 0);
+			pin_ptr<byte> p = &data[0];
+			memcpy(&sid_data[curr_pos], p, sid->BinaryLength);
+			sids[i].Sid = &sid_data[curr_pos];
+			sids[i].Attributes = 0;
+			curr_pos += sid->BinaryLength;
+		}
+	}
+
+	UserToken^ UserToken::CreateRestrictedToken(array<UserGroup^>^ disable_sids, array<TokenPrivilege^>^ disable_privs,
+		array<UserGroup^>^ restricted_sids, RestrictedTokenFlags flags)
+	{
+		std::vector<SID_AND_ATTRIBUTES> vdisable_sids;
+		std::vector<char> vdisable_sids_data;
+		SerializeSidsAndAttributes(disable_sids, vdisable_sids, vdisable_sids_data);
+		std::vector<SID_AND_ATTRIBUTES> vrestricted_sids;
+		std::vector<char> vrestricted_sids_data;
+		SerializeSidsAndAttributes(restricted_sids, vrestricted_sids, vrestricted_sids_data);
+		std::vector<LUID_AND_ATTRIBUTES> vdisable_privs;
+		vdisable_privs.resize(disable_privs->Length);
+		for (int i = 0; i < disable_privs->Length; ++i)
+		{
+			unsigned long long luid = disable_privs[i]->Luid;
+			memcpy(&vdisable_privs[i].Luid, &luid, sizeof(vdisable_privs[i].Luid));
+			vdisable_privs[i].Attributes = 0;
+		}
+
+		PSID_AND_ATTRIBUTES pdisable_sids = vdisable_sids.size() > 0 ? &vdisable_sids[0] : nullptr;
+		PSID_AND_ATTRIBUTES prestricted_sids = vrestricted_sids.size() > 0 ? &vrestricted_sids[0] : nullptr;
+		PLUID_AND_ATTRIBUTES pdisable_privs = vdisable_privs.size() > 0 ? &vdisable_privs[0] : nullptr;
+		ScopedHandle hToken;		
+		NativeHandle^ oldtoken = _token->Duplicate(TOKEN_QUERY | TOKEN_QUERY_SOURCE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY);
+		try
+		{
+			if (!::CreateRestrictedToken(oldtoken->DangerousGetHandle().ToPointer(), static_cast<DWORD>(flags),
+				disable_sids->Length, pdisable_sids, disable_privs->Length, pdisable_privs,
+				restricted_sids->Length, prestricted_sids, hToken.GetBuffer()))
+			{
+				throw gcnew System::ComponentModel::Win32Exception(::GetLastError());
+			}
+		}
+		finally
+		{
+			delete oldtoken;
+		}
+		
+		return gcnew UserToken(hToken.DetachAsNativeHandle());
 	}
 	
 	TokenIntegrityLevelPolicy UserToken::GetIntegrityLevelPolicy()

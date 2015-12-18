@@ -67,7 +67,7 @@
             System.Windows.Forms.Label label19;
             System.Windows.Forms.Label label18;
             System.Windows.Forms.Label label17;
-            System.Windows.Forms.GroupBox groupBox3;
+            System.Windows.Forms.GroupBox groupBoxSafer;
             System.Windows.Forms.Label label21;
             System.Windows.Forms.GroupBox groupBox4;
             System.Windows.Forms.Label label24;
@@ -101,7 +101,6 @@
             this.listViewDefDacl = new System.Windows.Forms.ListView();
             this.txtPrimaryGroup = new System.Windows.Forms.TextBox();
             this.txtOwner = new System.Windows.Forms.TextBox();
-            this.checkBoxLuaToken = new System.Windows.Forms.CheckBox();
             this.comboBoxILForDup = new System.Windows.Forms.ComboBox();
             this.btnDuplicate = new System.Windows.Forms.Button();
             this.comboBoxImpLevel = new System.Windows.Forms.ComboBox();
@@ -114,6 +113,7 @@
             this.txtVirtualizationAllowed = new System.Windows.Forms.TextBox();
             this.txtSandboxInert = new System.Windows.Forms.TextBox();
             this.txtUIAccess = new System.Windows.Forms.TextBox();
+            this.btnCreateRestricted = new System.Windows.Forms.Button();
             this.comboBoxSaferLevel = new System.Windows.Forms.ComboBox();
             this.checkBoxSaferMakeInert = new System.Windows.Forms.CheckBox();
             this.btnComputeSafer = new System.Windows.Forms.Button();
@@ -139,6 +139,8 @@
             this.txtPackageSid = new System.Windows.Forms.TextBox();
             this.tabPageMisc = new System.Windows.Forms.TabPage();
             this.tabPageOperations = new System.Windows.Forms.TabPage();
+            this.btnImpersonate = new System.Windows.Forms.Button();
+            this.toolTip = new System.Windows.Forms.ToolTip(this.components);
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
@@ -177,7 +179,7 @@
             label19 = new System.Windows.Forms.Label();
             label18 = new System.Windows.Forms.Label();
             label17 = new System.Windows.Forms.Label();
-            groupBox3 = new System.Windows.Forms.GroupBox();
+            groupBoxSafer = new System.Windows.Forms.GroupBox();
             label21 = new System.Windows.Forms.Label();
             groupBox4 = new System.Windows.Forms.GroupBox();
             label24 = new System.Windows.Forms.Label();
@@ -193,7 +195,7 @@
             groupBoxDuplicate.SuspendLayout();
             groupBox1.SuspendLayout();
             groupBox2.SuspendLayout();
-            groupBox3.SuspendLayout();
+            groupBoxSafer.SuspendLayout();
             groupBox4.SuspendLayout();
             this.tabControlMain.SuspendLayout();
             this.tabPagePrivs.SuspendLayout();
@@ -704,7 +706,7 @@
             // 
             // groupBoxDuplicate
             // 
-            groupBoxDuplicate.Controls.Add(this.checkBoxLuaToken);
+            groupBoxDuplicate.Controls.Add(this.btnImpersonate);
             groupBoxDuplicate.Controls.Add(lblILForDup);
             groupBoxDuplicate.Controls.Add(this.comboBoxILForDup);
             groupBoxDuplicate.Controls.Add(this.btnDuplicate);
@@ -718,16 +720,6 @@
             groupBoxDuplicate.TabIndex = 0;
             groupBoxDuplicate.TabStop = false;
             groupBoxDuplicate.Text = "Duplicate Token";
-            // 
-            // checkBoxLuaToken
-            // 
-            this.checkBoxLuaToken.AutoSize = true;
-            this.checkBoxLuaToken.Location = new System.Drawing.Point(317, 48);
-            this.checkBoxLuaToken.Name = "checkBoxLuaToken";
-            this.checkBoxLuaToken.Size = new System.Drawing.Size(111, 17);
-            this.checkBoxLuaToken.TabIndex = 7;
-            this.checkBoxLuaToken.Text = "Make LUA Token";
-            this.checkBoxLuaToken.UseVisualStyleBackColor = true;
             // 
             // lblILForDup
             // 
@@ -948,18 +940,29 @@
             this.txtUIAccess.Size = new System.Drawing.Size(108, 20);
             this.txtUIAccess.TabIndex = 7;
             // 
-            // groupBox3
+            // groupBoxSafer
             // 
-            groupBox3.Controls.Add(label21);
-            groupBox3.Controls.Add(this.comboBoxSaferLevel);
-            groupBox3.Controls.Add(this.checkBoxSaferMakeInert);
-            groupBox3.Controls.Add(this.btnComputeSafer);
-            groupBox3.Location = new System.Drawing.Point(3, 225);
-            groupBox3.Name = "groupBox3";
-            groupBox3.Size = new System.Drawing.Size(458, 90);
-            groupBox3.TabIndex = 2;
-            groupBox3.TabStop = false;
-            groupBox3.Text = "Computer Safer Token";
+            groupBoxSafer.Controls.Add(this.btnCreateRestricted);
+            groupBoxSafer.Controls.Add(label21);
+            groupBoxSafer.Controls.Add(this.comboBoxSaferLevel);
+            groupBoxSafer.Controls.Add(this.checkBoxSaferMakeInert);
+            groupBoxSafer.Controls.Add(this.btnComputeSafer);
+            groupBoxSafer.Location = new System.Drawing.Point(3, 225);
+            groupBoxSafer.Name = "groupBoxSafer";
+            groupBoxSafer.Size = new System.Drawing.Size(458, 90);
+            groupBoxSafer.TabIndex = 2;
+            groupBoxSafer.TabStop = false;
+            groupBoxSafer.Text = "Restricted Tokens";
+            // 
+            // btnCreateRestricted
+            // 
+            this.btnCreateRestricted.Location = new System.Drawing.Point(338, 56);
+            this.btnCreateRestricted.Name = "btnCreateRestricted";
+            this.btnCreateRestricted.Size = new System.Drawing.Size(100, 23);
+            this.btnCreateRestricted.TabIndex = 8;
+            this.btnCreateRestricted.Text = "Create Restricted";
+            this.btnCreateRestricted.UseVisualStyleBackColor = true;
+            this.btnCreateRestricted.Click += new System.EventHandler(this.btnCreateRestricted_Click);
             // 
             // label21
             // 
@@ -995,7 +998,7 @@
             this.btnComputeSafer.Name = "btnComputeSafer";
             this.btnComputeSafer.Size = new System.Drawing.Size(75, 23);
             this.btnComputeSafer.TabIndex = 3;
-            this.btnComputeSafer.Text = "Create";
+            this.btnComputeSafer.Text = "Create Safer";
             this.btnComputeSafer.UseVisualStyleBackColor = true;
             this.btnComputeSafer.Click += new System.EventHandler(this.btnComputeSafer_Click);
             // 
@@ -1252,7 +1255,7 @@
             // tabPageOperations
             // 
             this.tabPageOperations.Controls.Add(groupBox4);
-            this.tabPageOperations.Controls.Add(groupBox3);
+            this.tabPageOperations.Controls.Add(groupBoxSafer);
             this.tabPageOperations.Controls.Add(groupBox1);
             this.tabPageOperations.Controls.Add(groupBoxDuplicate);
             this.tabPageOperations.Location = new System.Drawing.Point(4, 22);
@@ -1262,6 +1265,17 @@
             this.tabPageOperations.TabIndex = 5;
             this.tabPageOperations.Text = "Operations";
             this.tabPageOperations.UseVisualStyleBackColor = true;
+            // 
+            // btnImpersonate
+            // 
+            this.btnImpersonate.Location = new System.Drawing.Point(338, 76);
+            this.btnImpersonate.Name = "btnImpersonate";
+            this.btnImpersonate.Size = new System.Drawing.Size(75, 23);
+            this.btnImpersonate.TabIndex = 7;
+            this.btnImpersonate.Text = "Round-Trip";
+            this.toolTip.SetToolTip(this.btnImpersonate, "This impersonates the token then reads it back from the thread");
+            this.btnImpersonate.UseVisualStyleBackColor = true;
+            this.btnImpersonate.Click += new System.EventHandler(this.btnImpersonate_Click);
             // 
             // TokenForm
             // 
@@ -1288,8 +1302,8 @@
             groupBox1.PerformLayout();
             groupBox2.ResumeLayout(false);
             groupBox2.PerformLayout();
-            groupBox3.ResumeLayout(false);
-            groupBox3.PerformLayout();
+            groupBoxSafer.ResumeLayout(false);
+            groupBoxSafer.PerformLayout();
             groupBox4.ResumeLayout(false);
             groupBox4.PerformLayout();
             this.tabControlMain.ResumeLayout(false);
@@ -1365,11 +1379,13 @@
         private System.Windows.Forms.ListView listViewPrivs;
         private System.Windows.Forms.ContextMenuStrip contextMenuStripPrivileges;
         private System.Windows.Forms.ToolStripMenuItem enablePrivilegeToolStripMenuItem;
-        private System.Windows.Forms.CheckBox checkBoxLuaToken;
         private System.Windows.Forms.TextBox txtIsElevated;
         private System.Windows.Forms.ToolStripMenuItem selectAllPrivsToolStripMenuItem;
         private System.Windows.Forms.ContextMenuStrip contextMenuStripGroups;
         private System.Windows.Forms.ToolStripMenuItem enableGroupToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem selectAllGroupsToolStripMenuItem;
+        private System.Windows.Forms.Button btnCreateRestricted;
+        private System.Windows.Forms.Button btnImpersonate;
+        private System.Windows.Forms.ToolTip toolTip;
     }
 }

@@ -69,6 +69,9 @@
     <ClInclude Include="ProcessMitigations.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SafeWin32Exception.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HandleUtils.cpp">

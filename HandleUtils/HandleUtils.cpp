@@ -27,6 +27,7 @@
 #include "typed_buffer.h"
 #include "SecurityInformationImpl.h"
 #include "UserToken.h"
+#include "SafeWin32Exception.h"
 
 #pragma comment(lib, "user32.lib")
 
@@ -858,6 +859,30 @@ namespace HandleUtils {
 		if (!::OpenThreadToken(thread->DangerousGetHandle().ToPointer(), MAXIMUM_ALLOWED, FALSE, hToken.GetBuffer()))
 		{
 			return nullptr;
+		}
+
+		return gcnew NativeHandle(IntPtr(hToken.Detach()));
+	}
+
+	NativeHandle^ NativeBridge::OpenProcessToken()
+	{
+		ScopedHandle hToken;
+
+		if (!::OpenProcessToken(::GetCurrentProcess(), MAXIMUM_ALLOWED, hToken.GetBuffer()))
+		{
+			throw gcnew System::ComponentModel::Win32Exception(::GetLastError());
+		}
+
+		return gcnew NativeHandle(IntPtr(hToken.Detach()));
+	}
+
+	NativeHandle^ NativeBridge::OpenThreadToken()
+	{
+		ScopedHandle hToken;
+
+		if (!::OpenThreadToken(::GetCurrentThread(), MAXIMUM_ALLOWED, TRUE, hToken.GetBuffer()))
+		{
+			throw gcnew SafeWin32Exception();
 		}
 
 		return gcnew NativeHandle(IntPtr(hToken.Detach()));
