@@ -38,5 +38,7 @@ namespace TokenLibrary
 		property bool ProhibitDynamicCode;
 		property bool DisableExtensionPoints;
 		property bool MicrosoftSignedOnly;
+		property bool StoreSignedOnly;
+		property bool SignedMitigationOptIn;
 	};
 }

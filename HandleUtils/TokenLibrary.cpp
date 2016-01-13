@@ -16,7 +16,10 @@
 #include "TokenLibrary.h"
 #include "ScopedHandle.h"
 #include <winsafer.h>
+#include <Wtsapi32.h>
 #include "typed_buffer.h"
+
+#pragma comment(lib, "Wtsapi32.lib")
 
 NativeHandle^ LogonS4U(System::String^ user, System::String^ realm, SECURITY_LOGON_TYPE type);
 typedef BOOL (WINAPI *fLogonUserExExW)(
@@ -319,6 +322,28 @@ namespace TokenLibrary
 		{
 			throw gcnew System::ComponentModel::Win32Exception(::GetLastError());
 		}
+	}
+
+	array<UserToken^>^ TokenUtils::GetSessionTokens()
+	{
+		System::Collections::Generic::List<UserToken^>^ tokens = gcnew System::Collections::Generic::List<UserToken^>();
+		PWTS_SESSION_INFO pSessions;
+		DWORD dwSessionCount;
+
+		if (WTSEnumerateSessions(WTS_CURRENT_SERVER_HANDLE, 0, 1, &pSessions, &dwSessionCount))
+		{
+			for (DWORD i = 0; i < dwSessionCount; ++i)
+			{
+				ScopedHandle handle;
+				if (WTSQueryUserToken(i, handle.GetBuffer()))
+				{
+					tokens->Add(gcnew UserToken(handle.DetachAsNativeHandle()));
+				}
+			}
+			WTSFreeMemory(pSessions);
+		}
+
+		return tokens->ToArray();
 	}
 }
 

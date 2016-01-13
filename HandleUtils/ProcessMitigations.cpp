@@ -118,6 +118,8 @@ namespace TokenLibrary
 				HandleUtils::ProcessMitigation, &policy, sizeof(policy), &ReturnedLength)))
 			{
 				MicrosoftSignedOnly = policy.Result & 1;
+				StoreSignedOnly = (policy.Result & 2) == 2;
+				SignedMitigationOptIn = (policy.Result & 4) == 4;
 			}
 		}
 		finally

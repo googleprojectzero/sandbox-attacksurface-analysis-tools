@@ -95,12 +95,25 @@ namespace TokenViewer
             listViewThreads.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
+        private void RefreshSessionList()
+        {
+            UserToken[] tokens = TokenUtils.GetSessionTokens();
+            listViewSessions.Items.Clear();
+            foreach (UserToken token in tokens)
+            {
+                ListViewItem item = new ListViewItem(token.GetSessionId().ToString());
+                item.SubItems.Add(token.GetUser().GetName());
+                item.Tag = token;
+                listViewSessions.Items.Add(item);
+            }
+        }
+
         public MainForm()
         {
             InitializeComponent();
 
             RefreshProcessList(null, false);
-
+            RefreshSessionList();
             comboBoxS4ULogonType.Items.Add(LogonType.Batch);
             comboBoxS4ULogonType.Items.Add(LogonType.Interactive);
             comboBoxS4ULogonType.Items.Add(LogonType.Network);
@@ -108,7 +121,7 @@ namespace TokenViewer
             comboBoxS4ULogonType.Items.Add(LogonType.NewCredentials);
             comboBoxS4ULogonType.Items.Add(LogonType.Service);
             comboBoxS4ULogonType.SelectedItem = LogonType.Network;
-            TokenForm.RegisterMainForm(this);
+            TokenForm.RegisterMainForm(this);            
         }
 
         private void btnTestS4U_Click(object sender, EventArgs e)
@@ -361,6 +374,23 @@ namespace TokenViewer
                 if (thread != null)
                 {
                     TokenForm.OpenForm(thread.Process.Token, true);
+                }
+            }
+        }
+
+        private void refreshSessionsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            RefreshSessionList();
+        }
+
+        private void openSessionTokenToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (listViewSessions.SelectedItems.Count > 0)
+            {
+                UserToken token = listViewSessions.SelectedItems[0].Tag as UserToken;
+                if (token != null)
+                {
+                    TokenForm.OpenForm(token, true);
                 }
             }
         }
