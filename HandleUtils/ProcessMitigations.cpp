@@ -24,6 +24,7 @@ namespace TokenLibrary
 	{
 		#define XProcessSignaturePolicy static_cast<PROCESS_MITIGATION_POLICY>(8)
 		#define XProcessFontDisablePolicy static_cast<PROCESS_MITIGATION_POLICY>(9)
+		#define XProcessImageLoadPolicy static_cast<PROCESS_MITIGATION_POLICY>(10)
 		
 		typedef struct _XPROCESS_MITIGATION_FONT_DISABLE_POLICY {
 			DWORD DisableNonSystemFonts : 1;
@@ -31,10 +32,11 @@ namespace TokenLibrary
 			DWORD ReservedFlags : 30;		
 		} XPROCESS_MITIGATION_FONT_DISABLE_POLICY;
 
-		typedef struct _XPROCESS_MITIGATION_BINARY_SIGNATURE_POLICY {
-			ULONG MicrosoftSignedOnly : 1;
-			ULONG ReservedFlags : 31;			
-		} XPROCESS_MITIGATION_BINARY_SIGNATURE_POLICY;
+		typedef struct _XPROCESS_MITIGATION_IMAGE_LOAD_POLICY {			
+			DWORD NoRemoteImages : 1;
+			DWORD NoLowMandatoryLabelImages : 1;
+			DWORD ReservedFlags : 30;
+		} XPROCESS_MITIGATION_IMAGE_LOAD_POLICY;
 
 		typedef decltype(::GetProcessMitigationPolicy)* GetProcessMitigationPolicyType;
 				
@@ -109,7 +111,7 @@ namespace TokenLibrary
 				DisableExtensionPoints = ext_policy.DisableExtensionPoints;
 			}
 
-			// ProcessSignaturePolicy doesn't seem to actually work, use the NT form.
+			// ProcessSignaturePolicy doesn't seem to actually work on Windows 8, use the NT form.
 			DEFINE_NTDLL(NtQueryInformationProcess);
 			HandleUtils::PROCESS_MITIGATION policy = {};
 			policy.MitigationType = ProcessSignaturePolicy;
@@ -120,6 +122,13 @@ namespace TokenLibrary
 				MicrosoftSignedOnly = policy.Result & 1;
 				StoreSignedOnly = (policy.Result & 2) == 2;
 				SignedMitigationOptIn = (policy.Result & 4) == 4;
+			}
+
+			XPROCESS_MITIGATION_IMAGE_LOAD_POLICY image_policy;
+			if (GetMitigationPolicy(h, XProcessImageLoadPolicy, image_policy))
+			{
+				NoRemoteImages = image_policy.NoRemoteImages;
+				NoLowMandatoryLabelImages = image_policy.NoLowMandatoryLabelImages;
 			}
 		}
 		finally

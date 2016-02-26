@@ -40,5 +40,7 @@ namespace TokenLibrary
 		property bool MicrosoftSignedOnly;
 		property bool StoreSignedOnly;
 		property bool SignedMitigationOptIn;
+		property bool NoRemoteImages;
+		property bool NoLowMandatoryLabelImages;
 	};
 }
