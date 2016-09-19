@@ -30,3 +30,6 @@ Release/
 ipch/
 packages/
 bin/
+
+*.opendb
+*.db

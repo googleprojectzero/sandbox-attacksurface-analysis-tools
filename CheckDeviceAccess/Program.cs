@@ -43,7 +43,7 @@ namespace CheckDeviceAccess
                 string name = dumpList.Dequeue();
                 try
                 {
-                    ObjectDirectory directory = ObjectNamespace.OpenDirectory(name);
+                    ObjectDirectory directory = ObjectNamespace.OpenDirectory(null, name);
 
                     if (!dumpedDirs.Contains(directory.FullPath))
                     {
@@ -151,7 +151,7 @@ namespace CheckDeviceAccess
                 string name = dumpList.Dequeue();
                 try
                 {
-                    ObjectDirectory directory = ObjectNamespace.OpenDirectory(name);
+                    ObjectDirectory directory = ObjectNamespace.OpenDirectory(null, name);
 
                     if (!dumpedDirs.Contains(directory.FullPath))
                     {

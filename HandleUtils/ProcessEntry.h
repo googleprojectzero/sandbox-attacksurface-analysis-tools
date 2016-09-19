@@ -60,6 +60,7 @@ namespace TokenLibrary
 				_token->Close();
 			}
 		}
+
 	};
 
 	public ref class ProcessEntry

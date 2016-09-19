@@ -46,15 +46,15 @@ namespace ObjectList
         }
 
         static void OutputNone(ObjectDirectory base_dir, IEnumerable<ObjectDirectoryEntry> objs)
-        {       
+        {
             if (print_sddl)
             {
                 Console.WriteLine("SDDL: {0} -> {1}", base_dir.FullPath, base_dir.StringSecurityDescriptor);
-            }     
+            }
 
             foreach (ObjectDirectoryEntry ent in objs.Where(e => e.IsDirectory))
             {
-                Console.WriteLine("<DIR> {0}", ent.FullPath);                
+                Console.WriteLine("<DIR> {0}", ent.FullPath);
             }
 
             foreach (ObjectDirectoryEntry ent in objs.Where(e => !e.IsDirectory))
@@ -121,61 +121,63 @@ namespace ObjectList
 
         static void DumpDirectories(IEnumerable<string> names)
         {
-            Queue<string> dumpList = new Queue<string>(names);
+            Queue<Tuple<ObjectDirectory, string>> dumpList
+                = new Queue<Tuple<ObjectDirectory, string>>(names.Select(s => new Tuple<ObjectDirectory, string>(null, s)));
             HashSet<string> dumpedDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            List<ObjectDirectoryEntry> totalEntries = new List<ObjectDirectoryEntry>();
+            List<ObjectDirectoryEntry> totalEntries = new List<ObjectDirectoryEntry>();            
 
             while (dumpList.Count > 0)
             {
-                string name = dumpList.Dequeue();                
+                Tuple<ObjectDirectory, string> name = dumpList.Dequeue();
                 try
-                {
-                    ObjectDirectory directory = ObjectNamespace.OpenDirectory(name);
-
-                    if (!dumpedDirs.Contains(directory.FullPath))
+                {                    
+                    using (ObjectDirectory directory = ObjectNamespace.OpenDirectory(name.Item1, name.Item2))
                     {
-                        dumpedDirs.Add(directory.FullPath);
-                        List<ObjectDirectoryEntry> sortedEntries = new List<ObjectDirectoryEntry>(directory.Entries);
-                        sortedEntries.Sort();
-
-                        string base_name = name.TrimEnd('\\');
-                        
-                        IEnumerable<ObjectDirectoryEntry> objs = sortedEntries;
-
-                        if (recursive)
+                        if (!dumpedDirs.Contains(directory.FullPath))
                         {
-                            foreach (ObjectDirectoryEntry entry in sortedEntries.Where(d => d.IsDirectory))
+                            dumpedDirs.Add(directory.FullPath);
+                            List<ObjectDirectoryEntry> sortedEntries = new List<ObjectDirectoryEntry>(directory.Entries);
+                            sortedEntries.Sort();
+
+                            string base_name = name.Item2.TrimEnd('\\');
+
+                            IEnumerable<ObjectDirectoryEntry> objs = sortedEntries;
+
+                            if (recursive)
                             {
-                                dumpList.Enqueue(entry.FullPath);
+                                foreach (ObjectDirectoryEntry entry in sortedEntries.Where(d => d.IsDirectory))
+                                {
+                                    dumpList.Enqueue(new Tuple<ObjectDirectory, string>(directory.Duplicate(), entry.ObjectName));
+                                }
                             }
-                        }
 
-                        if (typeFilter.Count > 0)
-                        {
-                            objs = objs.Where(e => typeFilter.Contains(e.TypeName.ToLower()));                            
-                        }
+                            if (typeFilter.Count > 0)
+                            {
+                                objs = objs.Where(e => typeFilter.Contains(e.TypeName.ToLower()));
+                            }
 
-                        switch (format)
-                        {
-                            case OutputFormat.NameOnly:
-                                OutputNameOnly(directory, objs);
-                                break;
-                            case OutputFormat.TypeGroup:
-                                totalEntries.AddRange(objs);
-                                break;
-                            case OutputFormat.None:
-                            default:
-                                OutputNone(directory, objs);
-                                break;
+                            switch (format)
+                            {
+                                case OutputFormat.NameOnly:
+                                    OutputNameOnly(directory, objs);
+                                    break;
+                                case OutputFormat.TypeGroup:
+                                    totalEntries.AddRange(objs);
+                                    break;
+                                case OutputFormat.None:
+                                default:
+                                    OutputNone(directory, objs);
+                                    break;
+                            }
                         }
                     }
                 }
                 catch (Win32Exception ex)
                 {
-                    Console.Error.WriteLine("Error querying {0} - {1}", name, ex.Message);
+                    Console.Error.WriteLine("Error querying {0} - {1}", name.Item2, ex.Message);
                 }
             }
-            
+
             switch (format)
             {
                 case OutputFormat.TypeGroup:
@@ -193,17 +195,17 @@ namespace ObjectList
         static void Main(string[] args)
         {
             try
-            {                
+            {
                 OptionSet opts = new OptionSet() {
-                        { "r", "Recursive tree directory listing",  
-                            v => recursive = v != null },          
-                        { "f|format=", "Specify output format [" + GetNamesForEnum(typeof(OutputFormat)) + "]",  
+                        { "r", "Recursive tree directory listing",
+                            v => recursive = v != null },
+                        { "f|format=", "Specify output format [" + GetNamesForEnum(typeof(OutputFormat)) + "]",
                             v => format = (OutputFormat)Enum.Parse(typeof(OutputFormat), v, true) },
-                        { "t|type=", "An object type to filter on, can be repeated",  
+                        { "t|type=", "An object type to filter on, can be repeated",
                             v => typeFilter.Add(v.Trim().ToLower()) },
                         { "l", "Print symlink target", v => print_link = v != null },
                         { "sddl", "Print SDDL security descriptors for directories", v => print_sddl = v != null },
-                        { "h|help",  "show this message and exit", 
+                        { "h|help",  "show this message and exit",
                            v => show_help = v != null },
                     };
 

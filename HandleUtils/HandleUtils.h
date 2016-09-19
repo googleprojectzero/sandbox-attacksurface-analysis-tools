@@ -266,7 +266,7 @@ namespace HandleUtils {
 		static long GetSectionSize(NativeHandle^ sectionHandle);		
 		static array<unsigned char>^ GetNamedSecurityDescriptor(System::String^ name, System::String^ typeName);
 		static System::String^ GetStringSecurityDescriptor(array<unsigned char>^ sd);
-		static array<unsigned char>^ GetSecurityDescriptorForNameAndType(System::String^ name, System::String^ type);
+		static array<unsigned char>^ GetSecurityDescriptorForNameAndType(NativeHandle^ root, System::String^ name, System::String^ type);
 		static array<unsigned char>^ GetSecurityDescriptorForHandle(NativeHandle^ handle);
 		static NativeHandle^ OpenProcessToken(int pid);
 		static NativeHandle^ OpenProcessToken(NativeHandle^ process);
@@ -281,21 +281,25 @@ namespace HandleUtils {
 		static unsigned int GetAllowedAccess(NativeHandle^ token, ObjectTypeInfo^ type, unsigned int access_mask, array<unsigned char>^ sd);
 		static NativeHandle^ CreateFileNative(System::String^ lpPath, unsigned int dwAccess,
 			unsigned int dwAttributes, FileShareMode dwShareMode, FileCreateDisposition dwCreateDisposition, FileOpenOptions dwCreateOptions);		
-		static void EditSecurity(System::IntPtr hwnd, System::String^ fullPath, System::String^ typeName, bool writeable);
+		static void EditSecurity(System::IntPtr hwnd, NativeHandle^ root, System::String^ path, System::String^ typeName, bool writeable);
 		static void EditSecurity(System::IntPtr hwnd, System::IntPtr handle, System::String^ object_name, System::String^ typeName, bool writeable);
 		static unsigned int GetGrantedAccess(NativeHandle^ handle);
 		static array<NativeHandle^>^ GetProcesses();
 		static array<NativeHandle^>^ GetThreadsForProcess(NativeHandle^ process);
+		static array<NativeHandle^>^ GetThreads();
 		static String^ MapAccessToString(unsigned int access_mask, Type^ enumType);
 		static int GetPidForProcess(NativeHandle^ handle);
 		static int GetTidForThread(NativeHandle^ handle);
+		static int GetPidForThread(NativeHandle^ handle);
 		static String^ GetProcessPath(NativeHandle^ process);
 		static NativeHandle^ OpenProcess(int pid);
+		static NativeHandle^ OpenThread(int tid);
 		static String^ GetUserNameForToken(NativeHandle^ token);
+		static NativeHandle^ OpenObject(NativeHandle^ root, String^ name, String^ type, GenericAccessRights access);
 	};
 
 	String^ QueryObjectName(HANDLE h);
 	array<unsigned char>^ GetSecurityDescriptor(HANDLE h);			
-	ScopedHandle OpenObjectForNameAndType(System::String^ name, System::String^ type, ACCESS_MASK DesiredAccess);
+	ScopedHandle OpenObjectForNameAndType(NativeHandle^ handle, System::String^ name, System::String^ type, ACCESS_MASK DesiredAccess);
 	Type^ TypeNameToEnum(System::String^ name);	
 }

@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.AccessControl;
@@ -330,7 +331,7 @@ namespace TokenViewer
             {                
                 OpenForm(_token.DuplicateToken((TokenType)comboBoxTokenType.SelectedItem,
                         (TokenLibrary.TokenImpersonationLevel)comboBoxImpLevel.SelectedItem,
-                        (TokenLibrary.TokenIntegrityLevel)comboBoxILForDup.SelectedItem), false);                                                  
+                        GetILFromComboBox(comboBoxILForDup)), false);                                                  
             }
             catch (Exception ex)
             {
@@ -365,41 +366,64 @@ namespace TokenViewer
             }
         }
 
+        private static bool ParseNum(string str, out uint num)
+        {
+            num = 0;
+            if (String.IsNullOrWhiteSpace(str))
+            {
+                return false;
+            }
+
+            if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            {
+                return uint.TryParse(str.Substring(2), NumberStyles.HexNumber, null, out num);
+            }
+
+            return uint.TryParse(str, out num);            
+        }
+
+        private static TokenIntegrityLevel GetILFromComboBox(ComboBox comboBox)
+        {
+            uint il_num;
+            if (ParseNum(comboBox.Text, out il_num))
+                return (TokenIntegrityLevel)il_num;
+
+            if (comboBox.SelectedItem == null)
+            {
+                return TokenIntegrityLevel.Medium;
+            }
+            
+            return (TokenIntegrityLevel)comboBox.SelectedItem;
+        }
+
         private void comboBoxIL_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (comboBoxIL.SelectedItem != null)
-            {
-                TokenIntegrityLevel il = (TokenIntegrityLevel)comboBoxIL.SelectedItem;
+            TokenIntegrityLevel il = GetILFromComboBox(comboBoxIL);
 
-                if (_token.GetTokenIntegrityLevel() != il)
-                {
-                    btnSetIL.Enabled = true;
-                }
-                else
-                {
-                    btnSetIL.Enabled = false;
-                }
+            if (_token.GetTokenIntegrityLevel() != il)
+            {
+                btnSetIL.Enabled = true;
+            }
+            else
+            {
+                btnSetIL.Enabled = false;
             }
         }
 
         private void btnSetIL_Click(object sender, EventArgs e)
         {
-            if (comboBoxIL.SelectedItem != null)
+            TokenIntegrityLevel il = GetILFromComboBox(comboBoxIL);
+            if (_token.GetTokenIntegrityLevel() != il)
             {
-                TokenIntegrityLevel il = (TokenIntegrityLevel)comboBoxIL.SelectedItem;
-
-                if (_token.GetTokenIntegrityLevel() != il)
+                try
                 {
-                    try
-                    {
-                        _token.SetTokenIntegrityLevel(il);
-                        btnSetIL.Enabled = false;
-                        UpdatePrivileges();
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
+                    _token.SetTokenIntegrityLevel(il);
+                    btnSetIL.Enabled = false;
+                    UpdatePrivileges();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
@@ -619,7 +643,7 @@ namespace TokenViewer
                     implevel = _token.GetImpersonationLevel();       
                 }
 
-                using (UserToken token = _token.DuplicateToken(TokenType.Impersonation, implevel, (TokenLibrary.TokenIntegrityLevel)comboBoxILForDup.SelectedItem))
+                using (UserToken token = _token.DuplicateToken(TokenType.Impersonation, implevel, GetILFromComboBox(comboBoxILForDup)))
                 {
                     NativeHandle imptoken = null;
                     using (ImpersonateProcess imp = token.Impersonate())
@@ -640,6 +664,11 @@ namespace TokenViewer
             {
                 MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void comboBoxIL_TextUpdate(object sender, EventArgs e)
+        {
+            comboBoxIL_SelectedIndexChanged(sender, e);
         }
     }
 }

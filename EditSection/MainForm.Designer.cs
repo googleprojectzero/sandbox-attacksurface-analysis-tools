@@ -49,6 +49,7 @@
             this.openSectionToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openNamedSectionToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.setNamedEventToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -121,6 +122,7 @@
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.openSectionToolStripMenuItem,
             this.openNamedSectionToolStripMenuItem,
+            this.setNamedEventToolStripMenuItem,
             this.exitToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
@@ -146,6 +148,13 @@
             this.exitToolStripMenuItem.Size = new System.Drawing.Size(187, 22);
             this.exitToolStripMenuItem.Text = "E&xit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
+            // 
+            // setNamedEventToolStripMenuItem
+            // 
+            this.setNamedEventToolStripMenuItem.Name = "setNamedEventToolStripMenuItem";
+            this.setNamedEventToolStripMenuItem.Size = new System.Drawing.Size(187, 22);
+            this.setNamedEventToolStripMenuItem.Text = "Set Named Event";
+            this.setNamedEventToolStripMenuItem.Click += new System.EventHandler(this.setNamedEventToolStripMenuItem_Click);
             // 
             // MainForm
             // 
@@ -173,6 +182,7 @@
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem openSectionToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem openNamedSectionToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem setNamedEventToolStripMenuItem;
     }
 }
 

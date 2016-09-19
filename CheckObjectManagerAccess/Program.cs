@@ -145,7 +145,10 @@ namespace CheckObjectManagerAccess
                         {                            
                             if (entry.IsDirectory)
                             {
-                                DumpDirectory(ObjectNamespace.OpenDirectory(entry.FullPath));
+                                using (ObjectDirectory newdir = ObjectNamespace.OpenDirectory(dir, entry.ObjectName))
+                                {
+                                    DumpDirectory(newdir);
+                                }
                             }
                             else
                             {                                
@@ -204,9 +207,10 @@ namespace CheckObjectManagerAccess
 
                     foreach (string path in paths)
                     {
-                        ObjectDirectory dir = ObjectNamespace.OpenDirectory(path);
-
-                        DumpDirectory(dir);
+                        using (ObjectDirectory dir = ObjectNamespace.OpenDirectory(null, path))
+                        {
+                            DumpDirectory(dir);
+                        }
                     }
                 }
             }

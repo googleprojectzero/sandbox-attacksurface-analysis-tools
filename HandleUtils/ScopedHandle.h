@@ -25,6 +25,7 @@ public:
 	ScopedHandle(HANDLE h, bool duplicate);	
 	void Close();	
 	void Reset(ScopedHandle& h);
+  void Reset(HANDLE h, bool duplicate);
 	bool IsValid() const {
 		return (g_h != nullptr) && (g_h != INVALID_HANDLE_VALUE);
 	}

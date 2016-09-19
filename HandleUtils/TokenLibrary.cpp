@@ -17,6 +17,7 @@
 #include "ScopedHandle.h"
 #include <winsafer.h>
 #include <Wtsapi32.h>
+#include <sddl.h>
 #include "typed_buffer.h"
 
 #pragma comment(lib, "Wtsapi32.lib")
@@ -345,5 +346,25 @@ namespace TokenLibrary
 
 		return tokens->ToArray();
 	}
+
+  struct LocalFreeDeleter
+  {
+    typedef void* pointer;
+    void operator()(void* p) {
+      ::LocalFree(p);
+    }
+  };
+
+  System::Security::Principal::SecurityIdentifier^ TokenUtils::StringSidToSecurityIdentitfier(String^ sid)
+  {
+    pin_ptr<const wchar_t> psid = PtrToStringChars(sid);
+    PSID p;
+    if (!::ConvertStringSidToSid(psid, &p))
+      throw gcnew System::ComponentModel::Win32Exception();
+    std::unique_ptr<void, LocalFreeDeleter> sid_buf = nullptr;
+    sid_buf.reset(p);
+
+    return gcnew System::Security::Principal::SecurityIdentifier(IntPtr(p));
+  }
 }
 

@@ -12,7 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using HandleUtils;
 using System;
+using System.Threading;
 using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
 
@@ -45,13 +47,40 @@ namespace EditSection
 
         private void openNamedSectionToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            using (NamedSectionForm frm = new NamedSectionForm())
+            using (NamedObjectForm frm = new NamedObjectForm("Section"))
             {
                 if (frm.ShowDialog(this) == DialogResult.OK)
                 {
-                    SectionEditorForm c = new SectionEditorForm(frm.MappedFile, frm.SectionName, frm.ReadOnly);
+                    using (NativeHandle handle = frm.ObjectHandle)
+                    {
+                        NativeMappedFile mapped_file = NativeBridge.MapFile(handle.Duplicate(), !frm.ReadOnly);
+                        SectionEditorForm c = new SectionEditorForm(mapped_file, frm.ObjectName, frm.ReadOnly);
 
-                    c.Show(dockPanel, DockState.Document);
+                        c.Show(dockPanel, DockState.Document);
+                    }
+                }
+            }
+        }
+
+        private void setNamedEventToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (NamedObjectForm frm = new NamedObjectForm("Event"))
+            {
+                if (frm.ShowDialog(this) == DialogResult.OK)
+                {
+                    using(NativeHandle handle = frm.ObjectHandle)
+                    {
+                        try
+                        {
+                            EventWaitHandle ev = new EventWaitHandle(false, EventResetMode.AutoReset);
+                            ev.SafeWaitHandle = new Microsoft.Win32.SafeHandles.SafeWaitHandle(handle.DangerousGetHandle(), false);
+                            ev.Set();
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
                 }
             }
         }

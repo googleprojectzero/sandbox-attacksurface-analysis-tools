@@ -21,6 +21,7 @@
 #include <AccCtrl.h>
 #include <AclAPI.h>
 #include <vector>
+#include <TlHelp32.h>
 #include "ScopedHandle.h"
 #include "HandleUtils.h"
 #include "WindowsInternals.h"
@@ -737,9 +738,10 @@ namespace HandleUtils {
 		}
 	}
 
-	ScopedHandle OpenObjectForNameAndType(System::String^ name, System::String^ type_name, ACCESS_MASK DesiredAccess)
+	ScopedHandle OpenObjectForNameAndType(NativeHandle^ handle, System::String^ name, System::String^ type_name, ACCESS_MASK DesiredAccess)
 	{
-		OBJECT_ATTRIBUTES_WITH_NAME obj_attr(name, OBJ_CASE_INSENSITIVE, nullptr);
+		OBJECT_ATTRIBUTES_WITH_NAME obj_attr(name, OBJ_CASE_INSENSITIVE, 
+      handle != nullptr ? handle->DangerousGetHandle().ToPointer() : nullptr);
 		ScopedHandle obj;
 		NTSTATUS status;
 
@@ -817,9 +819,9 @@ namespace HandleUtils {
 		}
 	}
 
-	array<unsigned char>^ NativeBridge::GetSecurityDescriptorForNameAndType(System::String^ name, System::String^ type)
+	array<unsigned char>^ NativeBridge::GetSecurityDescriptorForNameAndType(NativeHandle^ root, System::String^ name, System::String^ type)
 	{		
-		return GetSecurityDescriptor(OpenObjectForNameAndType(name, type, READ_CONTROL));		
+		return GetSecurityDescriptor(OpenObjectForNameAndType(root, name, type, READ_CONTROL));
 	}
 
 	NativeHandle^ NativeBridge::OpenProcessToken(int pid)
@@ -896,6 +898,11 @@ namespace HandleUtils {
 	int NativeBridge::GetTidForThread(NativeHandle^ handle)
 	{
 		return GetThreadId(handle->DangerousGetHandle().ToPointer());
+	}
+
+	int NativeBridge::GetPidForThread(NativeHandle^ handle)
+	{
+		return GetProcessIdOfThread(handle->DangerousGetHandle().ToPointer());
 	}
 
 	unsigned int NativeBridge::GetAllowedAccess(NativeHandle^ token, ObjectTypeInfo^ type, unsigned int access_mask, array<unsigned char>^ sd)
@@ -986,6 +993,39 @@ namespace HandleUtils {
 			}
 
 			(void)handle.Detach();
+
+			return threads->ToArray();
+		}
+		finally
+		{
+			NativeBridge::EnablePrivilege(SE_DEBUG_NAME, false);
+		}
+	}
+
+	array<NativeHandle^>^ NativeBridge::GetThreads()
+	{
+		try
+		{
+			NativeBridge::EnablePrivilege(SE_DEBUG_NAME, true);
+
+			ScopedHandle hThreadSnap(CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0), false);
+			List<NativeHandle^>^ threads = gcnew List<NativeHandle^>();			
+
+
+			THREADENTRY32 thread_entry;
+			thread_entry.dwSize = sizeof(THREADENTRY32);
+
+			if (hThreadSnap.IsValid() && Thread32First(hThreadSnap, &thread_entry))			
+			{
+				do
+				{
+					ScopedHandle handle(::OpenThread(MAXIMUM_ALLOWED, FALSE, thread_entry.th32ThreadID), false);
+					if (handle.IsValid())
+						threads->Add(handle.DetachAsNativeHandle());
+
+				} while (Thread32Next(hThreadSnap, &thread_entry));
+				
+			}
 
 			return threads->ToArray();
 		}
@@ -1135,18 +1175,18 @@ namespace HandleUtils {
 		return String::Join("|", names);
 	}
 
-	void NativeBridge::EditSecurity(System::IntPtr hwnd, System::String^ fullPath, System::String^ typeName, bool writeable)
+	void NativeBridge::EditSecurity(System::IntPtr hwnd, NativeHandle^ root, System::String^ path, System::String^ typeName, bool writeable)
 	{
-		ScopedHandle obj = HandleUtils::OpenObjectForNameAndType(fullPath, typeName, READ_CONTROL | (writeable ? WRITE_DAC : 0));
-		int index = fullPath->LastIndexOf("\\");
+		ScopedHandle obj = HandleUtils::OpenObjectForNameAndType(root, path, typeName, READ_CONTROL | (writeable ? WRITE_DAC : 0));
+		int index = path->LastIndexOf("\\");
 		System::String^ object_name;
 		if (index > 0)
 		{
-			object_name = fullPath->Substring(index + 1);
+			object_name = path->Substring(index + 1);
 		}
 		else
 		{
-			object_name = fullPath;
+			object_name = path;
 		}
 
 		EditSecurity(hwnd, IntPtr(obj), object_name, typeName, writeable);
@@ -1214,7 +1254,19 @@ namespace HandleUtils {
 		}
 	}
 
-	
+	NativeHandle^ NativeBridge::OpenThread(int tid)
+	{
+		ScopedHandle hThread(::OpenThread(MAXIMUM_ALLOWED, FALSE, tid), false);
+
+		if (hThread.IsValid())
+		{
+			return hThread.DetachAsNativeHandle();
+		}
+		else
+		{
+			throw gcnew System::ComponentModel::Win32Exception(::GetLastError());
+		}
+	}
 
 	String^ NativeBridge::GetUserNameForToken(NativeHandle^ token)
 	{
@@ -1241,5 +1293,10 @@ namespace HandleUtils {
 		}
 
 		return "";
+	}
+
+	NativeHandle^ NativeBridge::OpenObject(NativeHandle^ root, String^ name, String^ type, GenericAccessRights access)
+	{
+		return OpenObjectForNameAndType(root, name, type, static_cast<unsigned int>(access)).DetachAsNativeHandle();
 	}
 }

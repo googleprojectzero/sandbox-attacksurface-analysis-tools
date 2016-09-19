@@ -184,14 +184,21 @@ namespace TokenLibrary {
 			GetTokenInfo<TOKEN_MANDATORY_LABEL>(_token, ::TokenIntegrityLevel);
 
 		PDWORD pil = GetSidSubAuthority(tokenil->Label.Sid, 0);
-
 		*pil = (DWORD)token_il;
 
-		if (!::SetTokenInformation(_token->DangerousGetHandle().ToPointer(), 
-			::TokenIntegrityLevel, tokenil, (DWORD)tokenil.size()))
-		{
-			throw gcnew System::ComponentModel::Win32Exception(::GetLastError());
-		}
+    NativeHandle^ dup_token = _token->Duplicate(TOKEN_ADJUST_DEFAULT);
+    try
+    {
+      if (!::SetTokenInformation(dup_token->DangerousGetHandle().ToPointer(),
+        ::TokenIntegrityLevel, tokenil, (DWORD)tokenil.size()))
+      {
+        throw gcnew System::ComponentModel::Win32Exception(::GetLastError());
+      }
+    }
+    finally
+    {
+      delete dup_token;
+    }
 	}
 
 	unsigned long long UserToken::GetAuthenticationId()
@@ -450,9 +457,10 @@ namespace TokenLibrary {
 
 	UserToken^ UserToken::DuplicateToken(TokenType type, TokenImpersonationLevel implevel, TokenIntegrityLevel token_il)
 	{
+    UserToken^ ret = nullptr;
 		if (type == TokenType::Primary)
 		{
-			return gcnew UserToken(HandleUtils::NativeBridge::CreatePrimaryToken(_token));
+			ret = gcnew UserToken(HandleUtils::NativeBridge::CreatePrimaryToken(_token));
 		}
 		else
 		{
@@ -476,15 +484,16 @@ namespace TokenLibrary {
 				throw gcnew System::ComponentModel::Win32Exception(ERROR_NO_IMPERSONATION_TOKEN);
 			}
 
-			UserToken^ ret = gcnew UserToken(HandleUtils::NativeBridge::CreateImpersonationToken(_token, level));
-
-			if (ret->GetTokenIntegrityLevel() != token_il)
-			{
-				ret->SetTokenIntegrityLevel(token_il);
-			}
-
+			ret = gcnew UserToken(HandleUtils::NativeBridge::CreateImpersonationToken(_token, level));
 			return ret;
 		}
+
+    if (ret->GetTokenIntegrityLevel() != token_il)
+    {
+      ret->SetTokenIntegrityLevel(token_il);
+    }
+
+    return ret;
 	}
 
 	UserToken^ UserToken::MakeLuaToken()

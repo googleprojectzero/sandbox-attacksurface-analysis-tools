@@ -31,6 +31,7 @@ namespace CheckProcessAccess
         static bool _dump_token;
         static bool _print_sddl;
         static bool _named_process;
+        static bool _all_threads;
 
         class TokenEntry
         {
@@ -77,11 +78,20 @@ namespace CheckProcessAccess
 
         class ProcessEntry
         {
-            public ProcessEntry(NativeHandle handle)
+            public ProcessEntry(NativeHandle handle) : this(handle, null)
+            {
+            }
+
+            public ProcessEntry(NativeHandle handle, NativeHandle[] threads)
             {
                 Handle = handle;
                 Pid = NativeBridge.GetPidForProcess(handle);
-                Threads = NativeBridge.GetThreadsForProcess(handle).Select(h => new ThreadEntry(h)).ToArray();
+                if (threads == null)
+                {
+                    threads = NativeBridge.GetThreadsForProcess(handle);
+                }
+
+                Threads = threads.Select(h => new ThreadEntry(h)).ToArray();
                 Array.Sort(Threads, (a, b) => a.Tid - b.Tid);
 
                 SecurityDescriptor = NativeBridge.GetSecurityDescriptorForHandle(handle);
@@ -109,6 +119,31 @@ namespace CheckProcessAccess
                 }
             }
 
+            // Dummy constructor, used when we can't open the process for the thread.
+            public ProcessEntry(int pid, NativeHandle[] threads)
+            {
+                Pid = pid;
+                Threads = threads.Select(h => new ThreadEntry(h)).ToArray();
+                Array.Sort(Threads, (a, b) => a.Tid - b.Tid);
+                
+                ImagePath = "Unknown";
+                if (Pid == 0)
+                {
+                    Name = "Idle";
+                }
+                else if (Pid == 4)
+                {
+                    Name = "System";
+                }
+                else
+                {
+                    ImagePath = "Unknown";
+                    Name = Path.GetFileNameWithoutExtension(ImagePath);
+                }
+                StringSecurityDescriptor = String.Empty;
+                SecurityDescriptor = new byte[0];
+            }
+
             public NativeHandle Handle { get; private set; }
             public ThreadEntry[] Threads { get; private set; }
             public int Pid { get; private set; }
@@ -120,7 +155,11 @@ namespace CheckProcessAccess
 
             public string GetGrantedAccess()
             {
-                return NativeBridge.MapAccessToString(NativeBridge.GetGrantedAccess(Handle), typeof(ProcessAccessRights));
+                if (Handle != null)
+                {
+                    return NativeBridge.MapAccessToString(NativeBridge.GetGrantedAccess(Handle), typeof(ProcessAccessRights));
+                }
+                return String.Empty;
             }
         }
         
@@ -146,6 +185,7 @@ namespace CheckProcessAccess
                         { "i", "Use an indentify level token when impersonating", v => _identify_only = v != null },                        
                         { "t", "Dump accessible threads for process", v => _dump_threads = v != null },                        
                         { "k", "Dump tokens for accessible objects", v => _dump_token = v != null },
+                        { "a", "Start with all accessible threads instead of processes", v => _dump_threads = _all_threads = v != null },
                         { "sddl", "Dump SDDL strings for objects", v => _print_sddl = v != null },
                         { "h|help",  "show this message and exit", 
                            v => show_help = v != null },
@@ -161,45 +201,96 @@ namespace CheckProcessAccess
                 {
                     IEnumerable<ProcessEntry> processes = new ProcessEntry[0];
 
-                    if (pids.Count > 0 && !_named_process)
+                    if (_all_threads)
                     {
-                        List<ProcessEntry> procs = new List<ProcessEntry>();
+                        NativeHandle[] all_threads = null;
+
                         using (ImpersonateProcess imp = NativeBridge.Impersonate(_pid,
-                            _identify_only ? TokenSecurityLevel.Identification : TokenSecurityLevel.Impersonate))
-                        {
-                            foreach (string pid_name in pids)
+                           _identify_only ? TokenSecurityLevel.Identification : TokenSecurityLevel.Impersonate))
+                        {                            
+                            if (pids.Count > 0)
                             {
+                                List<NativeHandle> ths = new List<NativeHandle>();                              
+                                foreach (string pid_name in pids)
+                                {
+                                    try
+                                    {
+                                        ths.Add(NativeBridge.OpenThread(int.Parse(pid_name)));
+                                    }
+                                    catch (Win32Exception ex)
+                                    {
+                                        Console.WriteLine("Error opening tid {0} - {1}", pid_name, ex.Message);
+                                    }
+                                }
+
+                                all_threads = ths.ToArray();
+                            }
+                            else
+                            {
+                                all_threads = NativeBridge.GetThreads();
+                            }
+
+                            List<ProcessEntry> procs = new List<ProcessEntry>();
+
+                            foreach (var group in all_threads.GroupBy(t => NativeBridge.GetPidForThread(t)))
+                            {
+                                ProcessEntry entry = null;
+                                NativeHandle[] threads = group.ToArray();
                                 try
                                 {
-                                    procs.Add(new ProcessEntry(NativeBridge.OpenProcess(int.Parse(pid_name))));
+                                    entry = new ProcessEntry(NativeBridge.OpenProcess(group.Key), threads);
                                 }
-                                catch (Win32Exception ex)
+                                catch (Win32Exception)
                                 {
-                                    Console.WriteLine("Error opening pid {0} - {1}", pid_name, ex.Message);
+                                    entry = new ProcessEntry(group.Key, threads);
                                 }
+                                procs.Add(entry);
                             }
+                            processes = procs;
                         }
-
-                        processes = procs;                        
                     }
                     else
                     {
-                        try
+                        if (pids.Count > 0 && !_named_process)
                         {
+                            List<ProcessEntry> procs = new List<ProcessEntry>();
                             using (ImpersonateProcess imp = NativeBridge.Impersonate(_pid,
                                 _identify_only ? TokenSecurityLevel.Identification : TokenSecurityLevel.Impersonate))
                             {
-                                processes = NativeBridge.GetProcesses().Select(h => new ProcessEntry(h));
+                                foreach (string pid_name in pids)
+                                {
+                                    try
+                                    {
+                                        procs.Add(new ProcessEntry(NativeBridge.OpenProcess(int.Parse(pid_name))));
+                                    }
+                                    catch (Win32Exception ex)
+                                    {
+                                        Console.WriteLine("Error opening pid {0} - {1}", pid_name, ex.Message);
+                                    }
+                                }
                             }
 
-                            if (_named_process && pids.Count > 0)
-                            {
-                                processes = processes.Where(p => pids.Contains(p.Name.ToLower()));
-                            }
+                            processes = procs;
                         }
-                        catch (Win32Exception ex)
+                        else
                         {
-                            Console.WriteLine(ex);
+                            try
+                            {
+                                using (ImpersonateProcess imp = NativeBridge.Impersonate(_pid,
+                                    _identify_only ? TokenSecurityLevel.Identification : TokenSecurityLevel.Impersonate))
+                                {
+                                    processes = NativeBridge.GetProcesses().Select(h => new ProcessEntry(h));
+                                }
+
+                                if (_named_process && pids.Count > 0)
+                                {
+                                    processes = processes.Where(p => pids.Contains(p.Name.ToLower()));
+                                }
+                            }
+                            catch (Win32Exception ex)
+                            {
+                                Console.WriteLine(ex);
+                            }
                         }
                     }
 

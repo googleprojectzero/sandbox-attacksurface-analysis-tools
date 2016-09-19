@@ -27,7 +27,7 @@ namespace HandleUtils
 	{	
 		try
 		{
-			_sd = NativeBridge::GetSecurityDescriptorForNameAndType(this->FullPath, this->TypeName);
+			_sd = NativeBridge::GetSecurityDescriptorForNameAndType(this->_directory->Handle, this->_name, this->_type_name);
 		}		
 		catch (System::Exception^)
 		{

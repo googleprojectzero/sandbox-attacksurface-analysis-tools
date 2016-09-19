@@ -85,11 +85,11 @@
     <Compile Include="MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="NamedSectionForm.cs">
+    <Compile Include="NamedObjectForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="NamedSectionForm.Designer.cs">
-      <DependentUpon>NamedSectionForm.cs</DependentUpon>
+    <Compile Include="NamedObjectForm.Designer.cs">
+      <DependentUpon>NamedObjectForm.cs</DependentUpon>
     </Compile>
     <Compile Include="NativeMappedFileByteProvider.cs" />
     <Compile Include="ProcessTreeNode.cs" />
@@ -114,8 +114,8 @@
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="NamedSectionForm.resx">
-      <DependentUpon>NamedSectionForm.cs</DependentUpon>
+    <EmbeddedResource Include="NamedObjectForm.resx">
+      <DependentUpon>NamedObjectForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

@@ -22,8 +22,8 @@ namespace HandleUtils {
 	{
 		ObjectNamespace();
 
-	public:
-		static ObjectDirectory^ OpenDirectory(System::String^ object_path);
+	public:		
+    static ObjectDirectory^ OpenDirectory(ObjectDirectory^ root, System::String^ object_path);
 		static System::String^ ReadSymlink(System::String^ symlink_path);
 		static ObjectDirectory^ OpenSessionDirectory(int sessionid);
 		static ObjectDirectory^ OpenSessionDirectory();

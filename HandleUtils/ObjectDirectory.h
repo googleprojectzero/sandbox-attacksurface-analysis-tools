@@ -14,24 +14,38 @@
 
 #pragma once
 
+#include "NativeHandle.h"
+
 namespace HandleUtils {
 
 	ref class ObjectDirectoryEntry;
 
-	public ref class ObjectDirectory
+  public ref class ObjectDirectory
 	{		
 		System::String^ _orig_path;
 		System::String^ _full_path;
 		System::Collections::Generic::List<ObjectDirectoryEntry^>^ _entries;		
 		System::String^ _sddl;
 		array<unsigned char>^ _sd;
+    NativeHandle^ _handle;    
 
 		void PopulateEntries();
+    NativeHandle^ OpenPath(ObjectDirectory^ root, System::String^ path);
+    NativeHandle^ OpenNamespace(System::String^ path);
 
 	internal:
-		ObjectDirectory(System::String^ object_path);
+		ObjectDirectory(ObjectDirectory^ root, System::String^ object_path);
+    ObjectDirectory() {}
 
 	public:
+
+    ~ObjectDirectory()
+    {
+      if (_handle != nullptr)
+        _handle->Close();
+    }
+
+    ObjectDirectory^ Duplicate();
 
 		void Refresh()
 		{
@@ -67,7 +81,7 @@ namespace HandleUtils {
 				int index = _full_path->LastIndexOf("\\");
 				if (index > 0)
 				{
-					return gcnew ObjectDirectory(_full_path->Substring(0, index));
+					return gcnew ObjectDirectory(nullptr, _full_path->Substring(0, index));
 				}
 				else
 				{
@@ -100,9 +114,15 @@ namespace HandleUtils {
 		}
 
 		void EditSecurity(System::IntPtr hwnd, bool writeable)
-		{
-
+    {
 		}
+
+    property NativeHandle^ Handle
+    {
+      NativeHandle^ get() {
+        return _handle;
+      }    
+    }
 	};
 
 }

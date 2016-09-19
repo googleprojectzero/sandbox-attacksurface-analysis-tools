@@ -89,6 +89,19 @@ void ScopedHandle::Reset(ScopedHandle& h)
 	g_h = h.Detach();
 }
 
+void ScopedHandle::Reset(HANDLE h, bool duplicate)
+{
+  Close();
+  if (duplicate)
+  {
+    g_h = Duplicate(h);
+  }
+  else
+  {
+    g_h = h;
+  }
+}
+
 ScopedHandle::~ScopedHandle()
 {
 	Close();

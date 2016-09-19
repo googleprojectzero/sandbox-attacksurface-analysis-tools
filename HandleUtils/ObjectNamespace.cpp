@@ -23,14 +23,14 @@ namespace HandleUtils {
 	{
 	}
 
-	ObjectDirectory^ ObjectNamespace::OpenDirectory(System::String^ object_path)
+	ObjectDirectory^ ObjectNamespace::OpenDirectory(ObjectDirectory^ root, System::String^ object_path)
 	{		
-		return gcnew ObjectDirectory(object_path);	
+		return gcnew ObjectDirectory(root, object_path);	
 	}	
 
 	ObjectDirectory^ ObjectNamespace::OpenSessionDirectory(int sessionid)
 	{
-		return gcnew ObjectDirectory(System::String::Format("\\Sessions\\{0}", sessionid));
+		return gcnew ObjectDirectory(nullptr, System::String::Format("\\Sessions\\{0}", sessionid));
 	}
 
 	ObjectDirectory^ ObjectNamespace::OpenSessionDirectory()

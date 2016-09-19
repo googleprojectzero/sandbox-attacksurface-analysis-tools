@@ -52,5 +52,6 @@ namespace TokenLibrary {
 		static UserToken^ CreateProcessForToken(System::String^ cmdline, UserToken^ token, bool make_interactive);
 		static UserToken^ GetTokenFromSaferLevel(UserToken^ token, SaferLevel level, bool make_inert);
 		static array<UserToken^>^ GetSessionTokens();
+    static System::Security::Principal::SecurityIdentifier^ StringSidToSecurityIdentitfier(String^ sid);
 	};
 }

@@ -101,6 +101,7 @@
             this.listViewDefDacl = new System.Windows.Forms.ListView();
             this.txtPrimaryGroup = new System.Windows.Forms.TextBox();
             this.txtOwner = new System.Windows.Forms.TextBox();
+            this.btnImpersonate = new System.Windows.Forms.Button();
             this.comboBoxILForDup = new System.Windows.Forms.ComboBox();
             this.btnDuplicate = new System.Windows.Forms.Button();
             this.comboBoxImpLevel = new System.Windows.Forms.ComboBox();
@@ -139,7 +140,6 @@
             this.txtPackageSid = new System.Windows.Forms.TextBox();
             this.tabPageMisc = new System.Windows.Forms.TabPage();
             this.tabPageOperations = new System.Windows.Forms.TabPage();
-            this.btnImpersonate = new System.Windows.Forms.Button();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
@@ -331,13 +331,13 @@
             // 
             // comboBoxIL
             // 
-            this.comboBoxIL.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxIL.FormattingEnabled = true;
             this.comboBoxIL.Location = new System.Drawing.Point(115, 224);
             this.comboBoxIL.Name = "comboBoxIL";
             this.comboBoxIL.Size = new System.Drawing.Size(142, 21);
             this.comboBoxIL.TabIndex = 24;
             this.comboBoxIL.SelectedIndexChanged += new System.EventHandler(this.comboBoxIL_SelectedIndexChanged);
+            this.comboBoxIL.TextUpdate += new System.EventHandler(this.comboBoxIL_TextUpdate);
             // 
             // txtOriginLoginId
             // 
@@ -721,6 +721,17 @@
             groupBoxDuplicate.TabStop = false;
             groupBoxDuplicate.Text = "Duplicate Token";
             // 
+            // btnImpersonate
+            // 
+            this.btnImpersonate.Location = new System.Drawing.Point(338, 76);
+            this.btnImpersonate.Name = "btnImpersonate";
+            this.btnImpersonate.Size = new System.Drawing.Size(75, 23);
+            this.btnImpersonate.TabIndex = 7;
+            this.btnImpersonate.Text = "Round-Trip";
+            this.toolTip.SetToolTip(this.btnImpersonate, "This impersonates the token then reads it back from the thread");
+            this.btnImpersonate.UseVisualStyleBackColor = true;
+            this.btnImpersonate.Click += new System.EventHandler(this.btnImpersonate_Click);
+            // 
             // lblILForDup
             // 
             lblILForDup.AutoSize = true;
@@ -732,7 +743,6 @@
             // 
             // comboBoxILForDup
             // 
-            this.comboBoxILForDup.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxILForDup.FormattingEnabled = true;
             this.comboBoxILForDup.Location = new System.Drawing.Point(317, 22);
             this.comboBoxILForDup.Name = "comboBoxILForDup";
@@ -1265,17 +1275,6 @@
             this.tabPageOperations.TabIndex = 5;
             this.tabPageOperations.Text = "Operations";
             this.tabPageOperations.UseVisualStyleBackColor = true;
-            // 
-            // btnImpersonate
-            // 
-            this.btnImpersonate.Location = new System.Drawing.Point(338, 76);
-            this.btnImpersonate.Name = "btnImpersonate";
-            this.btnImpersonate.Size = new System.Drawing.Size(75, 23);
-            this.btnImpersonate.TabIndex = 7;
-            this.btnImpersonate.Text = "Round-Trip";
-            this.toolTip.SetToolTip(this.btnImpersonate, "This impersonates the token then reads it back from the thread");
-            this.btnImpersonate.UseVisualStyleBackColor = true;
-            this.btnImpersonate.Click += new System.EventHandler(this.btnImpersonate_Click);
             // 
             // TokenForm
             // 
