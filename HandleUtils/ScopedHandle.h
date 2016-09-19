@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include "NativeHandle.h"
-
 class ScopedHandle
 {
 	HANDLE g_h;
@@ -54,9 +52,9 @@ public:
 		return ret;
 	}
 
-	NativeHandle^ DetachAsNativeHandle()
+	HandleUtils::NativeHandle^ DetachAsNativeHandle()
 	{
-		return gcnew NativeHandle(System::IntPtr(Detach()));
+		return gcnew HandleUtils::NativeHandle(System::IntPtr(Detach()));
 	}
 
 	~ScopedHandle();

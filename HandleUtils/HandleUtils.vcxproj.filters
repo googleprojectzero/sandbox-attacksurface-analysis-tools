@@ -24,15 +24,6 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HandleEntry.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NativeMappedFile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NativeHandle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ProcessEntry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -54,9 +45,6 @@
     <ClInclude Include="ObjectTypeInfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ImpersonateProcess.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SecurityInformationImpl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -69,9 +57,6 @@
     <ClInclude Include="ProcessMitigations.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SafeWin32Exception.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HandleUtils.cpp">
@@ -81,9 +66,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="NativeMappedFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ProcessEntry.cpp">

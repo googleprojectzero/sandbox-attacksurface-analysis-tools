@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include "NativeHandle.h"
-
 namespace HandleUtils {
 
 	ref class ObjectDirectoryEntry;

@@ -14,14 +14,12 @@
 
 #pragma once
 
-#include "NativeHandle.h"
-
 namespace TokenLibrary
 {
 	public ref class ProcessMitigations
 	{
 	public:
-		ProcessMitigations(NativeHandle^ process);
+		ProcessMitigations(HandleUtils::NativeHandle^ process);
 		
 		property bool DisallowWin32kSystemCalls;
 		property bool DepEnabled;

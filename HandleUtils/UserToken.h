@@ -14,9 +14,6 @@
 
 #pragma once
 
-#include "NativeHandle.h"
-#include "ImpersonateProcess.h"
-
 namespace TokenLibrary {
 
 	public enum class TokenType
@@ -201,7 +198,7 @@ namespace TokenLibrary {
 
 	public ref class UserToken
 	{
-		NativeHandle^ _token;
+    HandleUtils::NativeHandle^ _token;
 		System::Security::Principal::SecurityIdentifier^ _usersid;
 
 	public:
@@ -244,7 +241,7 @@ namespace TokenLibrary {
 		UserToken^ MakeLuaToken();
 		UserToken^ CreateRestrictedToken(array<UserGroup^>^ disable_sids, array<TokenPrivilege^>^ disable_privs, array<UserGroup^>^ restricted_sids, RestrictedTokenFlags flags);
 		TokenIntegrityLevelPolicy GetIntegrityLevelPolicy();
-		ImpersonateProcess^ Impersonate();
+    HandleUtils::ImpersonateProcess^ Impersonate();
 		void EnablePrivilege(TokenPrivilege^ priv, bool enable);
 		void EnableGroup(UserGroup^ group, bool enable);
 
@@ -261,7 +258,7 @@ namespace TokenLibrary {
 			_token->Close();
 		}
 
-		UserToken(NativeHandle^ token);
+		UserToken(HandleUtils::NativeHandle^ token);
 		~UserToken();
 	};
 

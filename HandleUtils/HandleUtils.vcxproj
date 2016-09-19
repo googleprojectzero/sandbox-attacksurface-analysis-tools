@@ -137,11 +137,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="HandleEntry.h" />
     <ClInclude Include="HandleUtils.h" />
-    <ClInclude Include="ImpersonateProcess.h" />
-    <ClInclude Include="NativeHandle.h" />
-    <ClInclude Include="NativeMappedFile.h" />
     <ClInclude Include="ObjectDirectory.h" />
     <ClInclude Include="ObjectDirectoryEntry.h" />
     <ClInclude Include="ObjectNamespace.h" />
@@ -149,7 +145,6 @@
     <ClInclude Include="ProcessEntry.h" />
     <ClInclude Include="ProcessMitigations.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="SafeWin32Exception.h" />
     <ClInclude Include="ScopedHandle.h" />
     <ClInclude Include="SecurityInformationImpl.h" />
     <ClInclude Include="Stdafx.h" />
@@ -162,7 +157,6 @@
     <ClCompile Include="CaptureImpersonationToken.cpp" />
     <ClCompile Include="HandleUtils.cpp" />
     <ClCompile Include="LogonS4U.cpp" />
-    <ClCompile Include="NativeMappedFile.cpp" />
     <ClCompile Include="ObjectDirectory.cpp" />
     <ClCompile Include="ObjectDirectoryEntry.cpp" />
     <ClCompile Include="ObjectNamespace.cpp" />
@@ -185,6 +179,11 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="app.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ManagedHandleUtils\ManagedHandleUtils.csproj">
+      <Project>{4146b337-25d5-4ceb-a1a0-c6b9cca19a3f}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

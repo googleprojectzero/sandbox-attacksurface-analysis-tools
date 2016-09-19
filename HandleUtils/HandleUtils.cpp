@@ -28,7 +28,6 @@
 #include "typed_buffer.h"
 #include "SecurityInformationImpl.h"
 #include "UserToken.h"
-#include "SafeWin32Exception.h"
 
 #pragma comment(lib, "user32.lib")
 
@@ -653,7 +652,7 @@ namespace HandleUtils {
 		return MapFileCommon(sectionHandle->DangerousGetHandle().ToPointer(), writable);
 	}
 
-	long NativeBridge::GetSectionSize(NativeHandle^ sectionHandle)
+	long long NativeBridge::GetSectionSize(NativeHandle^ sectionHandle)
 	{
 		NativeMappedFile^ map = MapFile(sectionHandle, false);
 

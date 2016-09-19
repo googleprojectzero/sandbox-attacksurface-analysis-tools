@@ -151,6 +151,10 @@
       <Project>{b560e20b-1509-4fd1-9ee1-963d97a08a2d}</Project>
       <Name>HandleUtils</Name>
     </ProjectReference>
+    <ProjectReference Include="..\ManagedHandleUtils\ManagedHandleUtils.csproj">
+      <Project>{4146b337-25d5-4ceb-a1a0-c6b9cca19a3f}</Project>
+      <Name>ManagedHandleUtils</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

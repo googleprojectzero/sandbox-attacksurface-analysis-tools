@@ -17,7 +17,6 @@
 #include <vcclr.h>
 #include "typed_buffer.h"
 #include "ScopedHandle.h"
-#include "NativeHandle.h"
 
 #pragma comment(lib, "secur32.lib") 
 #pragma comment(lib, "Advapi32.lib")
@@ -89,12 +88,12 @@ static ScopedHandle s4uLogon(const wchar_t* user, const wchar_t* realm, SECURITY
 	return htok;
 }
 
-NativeHandle^ LogonS4U(System::String^ user, System::String^ realm, SECURITY_LOGON_TYPE type)
+HandleUtils::NativeHandle^ LogonS4U(System::String^ user, System::String^ realm, SECURITY_LOGON_TYPE type)
 {
 	pin_ptr<const wchar_t> user_p = PtrToStringChars(user);
 	pin_ptr<const wchar_t> realm_p = PtrToStringChars(realm);
 
 	ScopedHandle handle = s4uLogon(user_p, realm_p, type);
 
-	return gcnew NativeHandle(System::IntPtr(handle.Detach()));
+	return gcnew HandleUtils::NativeHandle(System::IntPtr(handle.Detach()));
 }

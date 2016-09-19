@@ -16,7 +16,6 @@
 
 using namespace System;
 
-#include "NativeHandle.h"
 #include "UserToken.h"
 #include "ProcessMitigations.h"
 
@@ -65,7 +64,7 @@ namespace TokenLibrary
 
 	public ref class ProcessEntry
 	{
-		NativeHandle^ _process;
+    HandleUtils::NativeHandle^ _process;
 		UserToken^ _token;		
 
 	public:
@@ -75,9 +74,9 @@ namespace TokenLibrary
 		property int Pid;		
 		property int SessionId;		
 
-		property NativeHandle^ ProcessHandle
+		property HandleUtils::NativeHandle^ ProcessHandle
 		{
-			NativeHandle^ get() {
+      HandleUtils::NativeHandle^ get() {
 				return _process;
 			}
 		}

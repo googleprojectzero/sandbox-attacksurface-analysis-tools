@@ -21,7 +21,7 @@
 #include <vector>
 
 namespace {
-	template<typename T> typed_buffer_ptr<T> GetTokenInfo(NativeHandle^ handle,
+	template<typename T> typed_buffer_ptr<T> GetTokenInfo(HandleUtils::NativeHandle^ handle,
 		TOKEN_INFORMATION_CLASS TokenInformationClass)
 	{
 		HANDLE h = handle->DangerousGetHandle().ToPointer();
@@ -49,7 +49,7 @@ namespace {
 		return ret;
 	}
 
-	template<typename T> void GetTokenInfo(NativeHandle^ handle, TOKEN_INFORMATION_CLASS TokenInformationClass, T& value)
+	template<typename T> void GetTokenInfo(HandleUtils::NativeHandle^ handle, TOKEN_INFORMATION_CLASS TokenInformationClass, T& value)
 	{
 		HANDLE h = handle->DangerousGetHandle().ToPointer();
 		DWORD dwRetLen = 0;
@@ -60,7 +60,7 @@ namespace {
 		}
 	}
 
-	DWORD GetTokenInfoDword(NativeHandle^ handle, TOKEN_INFORMATION_CLASS TokenInformationClass)
+	DWORD GetTokenInfoDword(HandleUtils::NativeHandle^ handle, TOKEN_INFORMATION_CLASS TokenInformationClass)
 	{
 		HANDLE h = handle->DangerousGetHandle().ToPointer();
 		DWORD dwRet = 0;
@@ -91,7 +91,7 @@ using namespace System::Security::AccessControl;
 
 namespace TokenLibrary {
 
-	array<UserGroup^>^ GetGroupArray(NativeHandle^ token, TOKEN_INFORMATION_CLASS TokenInformationClass)
+	array<UserGroup^>^ GetGroupArray(HandleUtils::NativeHandle^ token, TOKEN_INFORMATION_CLASS TokenInformationClass)
 	{
 		typed_buffer_ptr<TOKEN_GROUPS> groups =
 			GetTokenInfo<TOKEN_GROUPS>(token, TokenInformationClass);
@@ -108,7 +108,7 @@ namespace TokenLibrary {
 		return ret->ToArray();
 	}
 
-	UserToken::UserToken(NativeHandle^ hToken)
+	UserToken::UserToken(HandleUtils::NativeHandle^ hToken)
 	{
 		_token = hToken;
 	}
@@ -186,7 +186,7 @@ namespace TokenLibrary {
 		PDWORD pil = GetSidSubAuthority(tokenil->Label.Sid, 0);
 		*pil = (DWORD)token_il;
 
-    NativeHandle^ dup_token = _token->Duplicate(TOKEN_ADJUST_DEFAULT);
+    HandleUtils::NativeHandle^ dup_token = _token->Duplicate(TOKEN_ADJUST_DEFAULT);
     try
     {
       if (!::SetTokenInformation(dup_token->DangerousGetHandle().ToPointer(),
@@ -282,7 +282,7 @@ namespace TokenLibrary {
 
 		if (el.LinkedToken)
 		{
-			return gcnew UserToken(gcnew NativeHandle(IntPtr(el.LinkedToken)));
+			return gcnew UserToken(gcnew HandleUtils::NativeHandle(IntPtr(el.LinkedToken)));
 		}
 		else
 		{
@@ -558,7 +558,7 @@ namespace TokenLibrary {
 		PSID_AND_ATTRIBUTES prestricted_sids = vrestricted_sids.size() > 0 ? &vrestricted_sids[0] : nullptr;
 		PLUID_AND_ATTRIBUTES pdisable_privs = vdisable_privs.size() > 0 ? &vdisable_privs[0] : nullptr;
 		ScopedHandle hToken;		
-		NativeHandle^ oldtoken = _token->Duplicate(TOKEN_QUERY | TOKEN_QUERY_SOURCE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY);
+    HandleUtils::NativeHandle^ oldtoken = _token->Duplicate(TOKEN_QUERY | TOKEN_QUERY_SOURCE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY);
 		try
 		{
 			if (!::CreateRestrictedToken(oldtoken->DangerousGetHandle().ToPointer(), static_cast<DWORD>(flags),
@@ -583,9 +583,9 @@ namespace TokenLibrary {
 		return (TokenIntegrityLevelPolicy)policy->Policy;
 	}
 
-	ImpersonateProcess^ UserToken::Impersonate()
+  HandleUtils::ImpersonateProcess^ UserToken::Impersonate()
 	{
-		return gcnew ImpersonateProcess(_token->Duplicate(TOKEN_ALL_ACCESS));
+		return gcnew HandleUtils::ImpersonateProcess(_token->Duplicate(TOKEN_ALL_ACCESS));
 	}
 
 	array<TokenPrivilege^>^ UserToken::GetPrivileges()
@@ -641,7 +641,7 @@ namespace TokenLibrary {
 		privs->PrivilegeCount = 1;
 		ULARGE_INTEGER luid;
 
-		NativeHandle^ handle = _token->Duplicate(TOKEN_ADJUST_PRIVILEGES);
+    HandleUtils::NativeHandle^ handle = _token->Duplicate(TOKEN_ADJUST_PRIVILEGES);
 		try
 		{
 			luid.QuadPart = priv->Luid;
@@ -678,7 +678,7 @@ namespace TokenLibrary {
 
 		group->Sid->GetBinaryForm(sid, 0);
 
-		NativeHandle^ handle = _token->Duplicate(TOKEN_ADJUST_GROUPS);
+    HandleUtils::NativeHandle^ handle = _token->Duplicate(TOKEN_ADJUST_GROUPS);
 		try
 		{		
 			if(!AdjustTokenGroups(handle->DangerousGetHandle().ToPointer(), 

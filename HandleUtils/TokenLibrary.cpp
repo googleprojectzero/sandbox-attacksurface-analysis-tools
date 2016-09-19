@@ -22,7 +22,7 @@
 
 #pragma comment(lib, "Wtsapi32.lib")
 
-NativeHandle^ LogonS4U(System::String^ user, System::String^ realm, SECURITY_LOGON_TYPE type);
+HandleUtils::NativeHandle^ LogonS4U(System::String^ user, System::String^ realm, SECURITY_LOGON_TYPE type);
 typedef BOOL (WINAPI *fLogonUserExExW)(
 	_In_      LPCWSTR        lpszUsername,
 	_In_opt_  LPCWSTR        lpszDomain,

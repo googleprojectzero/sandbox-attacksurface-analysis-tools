@@ -40,7 +40,7 @@ namespace TokenLibrary
 
 		typedef decltype(::GetProcessMitigationPolicy)* GetProcessMitigationPolicyType;
 				
-		template<typename T> bool GetMitigationPolicy(NativeHandle^ h, PROCESS_MITIGATION_POLICY policy, T& buffer)
+		template<typename T> bool GetMitigationPolicy(HandleUtils::NativeHandle^ h, PROCESS_MITIGATION_POLICY policy, T& buffer)
 		{
 			GetProcessMitigationPolicyType GetProcessMitigationPolicyFunc =
 				reinterpret_cast<GetProcessMitigationPolicyType>(GetProcAddress(
@@ -57,9 +57,9 @@ namespace TokenLibrary
 		}
 	}
 
-	ProcessMitigations::ProcessMitigations(NativeHandle^ process)
+	ProcessMitigations::ProcessMitigations(HandleUtils::NativeHandle^ process)
 	{
-		NativeHandle^ h = process->Duplicate(PROCESS_QUERY_INFORMATION);
+    HandleUtils::NativeHandle^ h = process->Duplicate(PROCESS_QUERY_INFORMATION);
 		try
 		{
 			PROCESS_MITIGATION_DEP_POLICY dep_policy;
