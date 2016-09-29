@@ -15,6 +15,7 @@
 using HandleUtils;
 using Microsoft.Win32;
 using NDesk.Options;
+using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -29,7 +30,7 @@ namespace CheckRegistryAccess
         static bool _show_write_only = false;
         static HashSet<string> _walked = new HashSet<string>();        
         static ObjectTypeInfo _type;
-        static NativeHandle _token;
+        static NtToken _token;
         static uint _key_rights = 0;
 
         static void ShowHelp(OptionSet p)
@@ -47,35 +48,33 @@ namespace CheckRegistryAccess
                 return "Full Permission";
             }
 
-            KeyAccessRights rights = (KeyAccessRights)(granted_access & 0xFFFF);
-            StandardAccessRights standard = (StandardAccessRights)(granted_access & 0x1F0000);
-            return String.Join(", ", new string[] { standard.ToString(), rights.ToString() });
+            return ((KeyAccessRights)granted_access).ToString();
         }
 
         static void CheckAccess(string name)
         {
             try
             {                
-                byte[] sd = NativeBridge.GetNamedSecurityDescriptor(MapKeyName(name), "key");
-                if (sd.Length > 0)
+                SecurityDescriptor sd = NtSecurity.FromNamedResource(MapKeyName(name), "key");
+                if (sd != null)
                 {
                     uint granted_access = 0;
 
                     if (_key_rights != 0)
                     {
-                        granted_access = NativeBridge.GetAllowedAccess(_token, _type, _key_rights, sd);
+                        granted_access = NtSecurity.GetAllowedAccess(_token, _type, _key_rights, sd.ToByteArray());
                     }
                     else
                     {
-                        granted_access = NativeBridge.GetMaximumAccess(_token, _type, sd);
+                        granted_access = NtSecurity.GetMaximumAccess(_token, _type, sd.ToByteArray());
                     }
 
                     if (granted_access != 0)
                     {
-                        // As we can get all the righs for the key get maximum
+                        // As we can get all the rights for the key get maximum
                         if (_key_rights != 0)
                         {
-                            granted_access = NativeBridge.GetMaximumAccess(_token, _type, sd);
+                            granted_access = NtSecurity.GetMaximumAccess(_token, _type, sd.ToByteArray());
                         }
 
                         if (!_show_write_only || _type.HasWritePermission(granted_access))
@@ -83,7 +82,7 @@ namespace CheckRegistryAccess
                             Console.WriteLine("{0} : {1:X08} {2}", name, granted_access, AccessMaskToString(granted_access));
                             if (_print_sddl)
                             {
-                                Console.WriteLine("{0}", NativeBridge.GetStringSecurityDescriptor(sd));
+                                Console.WriteLine("{0}", sd.ToSddl());
                             }
                         }
                     }
@@ -152,16 +151,16 @@ namespace CheckRegistryAccess
             switch (nameparts[0].ToLower())
             {
                 case "hkey_local_machine":
-                    mapped = "MACHINE";
+                    mapped = @"\Registry\MACHINE";
                     break;
                 case "hkey_current_user":
-                    mapped = "CURRENT_USER";
+                    mapped = @"\Registry\User\" + NtToken.GetCurrentUser().Sid.ToString();
                     break;
                 case "hkey_users":
-                    mapped = "USERS";
+                    mapped = @"\Registry\User";
                     break;
                 case "hkey_classes_root":
-                    mapped = "CLASSES_ROOT";
+                    mapped = @"\Registry\MACHINE\Software\Classes";
                     break;
                 default:
                     throw new ArgumentException(String.Format("Invalid root keyname {0}", nameparts[0]));
@@ -241,10 +240,8 @@ namespace CheckRegistryAccess
                         { "sddl", "Print full SDDL security descriptors", v => _print_sddl = v != null },
                         { "p|pid=", "Specify a PID of a process to impersonate when checking", v => pid = int.Parse(v.Trim()) },
                         { "w", "Show only write permissions granted", v => _show_write_only = v != null },
-                        { "k=", String.Format("Filter on a specific key right [{0}]", 
+                        { "k=", String.Format("Filter on a specific right [{0}]", 
                             String.Join(",", Enum.GetNames(typeof(KeyAccessRights)))), v => _key_rights |= ParseRight(v, typeof(KeyAccessRights)) },  
-                        { "s=", String.Format("Filter on a standard right [{0}]", 
-                            String.Join(",", Enum.GetNames(typeof(StandardAccessRights)))), v => _key_rights |= ParseRight(v, typeof(StandardAccessRights)) },  
                         { "x=", "Specify a base path to exclude from recursive search", v => _walked.Add(v.ToLower()) },
                         { "h|help",  "show this message and exit", v => show_help = v != null },
                     };
@@ -258,7 +255,7 @@ namespace CheckRegistryAccess
                 else
                 {
                     _type = ObjectTypeInfo.GetTypeByName("key");
-                    _token = NativeBridge.OpenProcessToken(pid);
+                    _token = NtToken.OpenProcessToken(pid);
 
                     foreach (string path in paths)
                     {

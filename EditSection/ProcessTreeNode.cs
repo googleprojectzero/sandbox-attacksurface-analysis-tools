@@ -12,13 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using HandleUtils;
+using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace EditSection
@@ -39,10 +36,9 @@ namespace EditSection
         public void PopulateChildren()
         {
             Nodes.Clear();
-            List<HandleEntry> handles = NativeBridge.GetHandlesForPid(_id);
-            foreach (HandleEntry h in handles)
+            foreach (HandleEntry h in NtSystemInfo.GetHandles(_id))
             {
-                if (h.TypeName.Equals("section", StringComparison.OrdinalIgnoreCase))
+                if (h.ObjectType.Equals("section", StringComparison.OrdinalIgnoreCase))
                 {
                     Nodes.Add(new SectionTreeNode(h));
                 }

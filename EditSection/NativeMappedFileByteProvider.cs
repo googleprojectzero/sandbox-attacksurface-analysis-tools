@@ -13,22 +13,17 @@
 //  limitations under the License.
 
 using Be.Windows.Forms;
-using HandleUtils;
+using NtApiDotNet;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace EditSection
 {
     class NativeMappedFileByteProvider : IByteProvider
     {
-        NativeMappedFile _map;
+        NtMappedSection _map;
         bool _readOnly;
 
-        public NativeMappedFileByteProvider(NativeMappedFile map, bool readOnly)
+        public NativeMappedFileByteProvider(NtMappedSection map, bool readOnly)
         {
             _readOnly = readOnly;
             _map = map;
@@ -57,16 +52,16 @@ namespace EditSection
 
         public long Length
         {
-            get { return (long)_map.GetSize(); }
+            get { return _map.Length; }
         }
 
         public event EventHandler LengthChanged;
 
         public byte ReadByte(long index)
-        {
-            if (index < _map.GetSize())
+        {            
+            if (index < _map.Length)
             {
-                return Marshal.ReadByte(_map.DangerousGetHandle(), (int)index);
+                return _map.Read<byte>((ulong)index);
             }
 
             return 0;
@@ -89,11 +84,11 @@ namespace EditSection
 
         public void WriteByte(long index, byte value)
         {
-            if (index < _map.GetSize())
+            if (index < _map.Length)
             {
                 try
                 {
-                    Marshal.WriteByte(_map.DangerousGetHandle(), (int)index, value);
+                    _map.Write((ulong)index, value);
                 }
                 catch
                 {

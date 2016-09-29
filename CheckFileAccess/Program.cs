@@ -14,6 +14,7 @@
 
 using HandleUtils;
 using NDesk.Options;
+using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -28,7 +29,7 @@ namespace CheckFileAccess
         static bool _show_write_only = false;
         static HashSet<string> _walked = new HashSet<string>();        
         static ObjectTypeInfo _type;
-        static NativeHandle _token;
+        static NtToken _token;
         static uint _file_filter;
         static uint _dir_filter;
         static bool _only_dirs;
@@ -48,44 +49,40 @@ namespace CheckFileAccess
             {
                 return "Full Permission";
             }
-            string file_rights;
-
+            
             if (directory)
             {
-                FileDirectoryAccessRights rights = (FileDirectoryAccessRights)(granted_access & 0x1FF);
-                file_rights = rights.ToString();
+                FileDirectoryAccessRights rights = (FileDirectoryAccessRights)granted_access;
+                return rights.ToString();
             }
             else
             {
-                FileAccessRights rights = (FileAccessRights)(granted_access & 0x1FF);
-                file_rights = rights.ToString();
+                FileAccessRights rights = (FileAccessRights)granted_access;
+                return rights.ToString();
             }
-
-            StandardAccessRights standard = (StandardAccessRights)(granted_access & 0x1F0000);
-            return String.Join(", ", new string[] { standard.ToString(), file_rights });
         }
 
         static void CheckAccess(FileSystemInfo entry)
         {
             try
             {
-                byte[] sd = NativeBridge.GetNamedSecurityDescriptor(entry.FullName, "file");
-                if (sd.Length > 0)
+                SecurityDescriptor sd = NtSecurity.FromNamedResource(@"\??\" + entry.FullName, "file");
+                if (sd != null)
                 {
                     bool is_dir = entry is DirectoryInfo;
                     uint granted_access;
                     
                     if(is_dir && _dir_filter != 0)
                     {
-                        granted_access = NativeBridge.GetAllowedAccess(_token, _type, _dir_filter, sd);
+                        granted_access = NtSecurity.GetAllowedAccess(_token.Handle, _type, _dir_filter, sd.ToByteArray());
                     }
                     else if (!is_dir && _file_filter != 0)
                     {
-                        granted_access = NativeBridge.GetAllowedAccess(_token, _type, _file_filter, sd);
+                        granted_access = NtSecurity.GetAllowedAccess(_token.Handle, _type, _file_filter, sd.ToByteArray());
                     }
                     else
                     {
-                        granted_access = NativeBridge.GetMaximumAccess(_token, _type, sd);
+                        granted_access = NtSecurity.GetMaximumAccess(_token.Handle, _type, sd.ToByteArray());
                     }
 
                     if (granted_access != 0)
@@ -93,7 +90,7 @@ namespace CheckFileAccess
                         // Now reget maximum access rights
                         if (_dir_filter != 0 || _file_filter != 0)
                         {
-                            granted_access = NativeBridge.GetMaximumAccess(_token, _type, sd);
+                            granted_access = NtSecurity.GetMaximumAccess(_token.Handle, _type, sd.ToByteArray());
                         }
 
                         if (!_show_write_only || _type.HasWritePermission(granted_access))
@@ -101,7 +98,7 @@ namespace CheckFileAccess
                             Console.WriteLine("{0}{1} : {2:X08} {3}", entry.FullName, is_dir ? "\\" : "", granted_access, AccessMaskToString(granted_access, is_dir));
                             if (_print_sddl)
                             {
-                                Console.WriteLine("{0}", NativeBridge.GetStringSecurityDescriptor(sd));
+                                Console.WriteLine("{0}", sd.ToSddl());
                             }
                         }
                     }
@@ -180,7 +177,6 @@ namespace CheckFileAccess
         static void Main(string[] args)
         {
             bool show_help = false;
-            uint standard_filter = 0;
 
             int pid = Process.GetCurrentProcess().Id;
 
@@ -192,12 +188,10 @@ namespace CheckFileAccess
                             { "sddl", "Print full SDDL security descriptors", v => _print_sddl = v != null },
                             { "p|pid=", "Specify a PID of a process to impersonate when checking", v => pid = int.Parse(v.Trim()) },
                             { "w", "Show only write permissions granted", v => _show_write_only = v != null },
-                            { "f=", String.Format("Filter on a specific file right [{0}]", 
+                            { "f=", String.Format("Filter on a file right [{0}]", 
                                 String.Join(",", Enum.GetNames(typeof(FileAccessRights)))), v => _file_filter |= ParseRight(v, typeof(FileAccessRights)) },  
-                            { "d=", String.Format("Filter on a specific directory right [{0}]", 
-                                String.Join(",", Enum.GetNames(typeof(FileDirectoryAccessRights)))), v => _dir_filter |= ParseRight(v, typeof(FileDirectoryAccessRights)) },  
-                            { "s=", String.Format("Filter on a standard right [{0}]", 
-                                String.Join(",", Enum.GetNames(typeof(StandardAccessRights)))), v => standard_filter |= ParseRight(v, typeof(StandardAccessRights)) },  
+                            { "d=", String.Format("Filter on a directory right [{0}]", 
+                                String.Join(",", Enum.GetNames(typeof(FileDirectoryAccessRights)))), v => _dir_filter |= ParseRight(v, typeof(FileDirectoryAccessRights)) },
                             { "x=", "Specify a base path to exclude from recursive search", v => _walked.Add(v.ToLower()) },
                             { "q", "Don't print errors", v => _quiet = v != null },
                             { "onlydirs", "Only check the permissions of directories", v => _only_dirs = v != null },
@@ -212,23 +206,20 @@ namespace CheckFileAccess
                 }
                 else
                 {
-                        _type = ObjectTypeInfo.GetTypeByName("file");
-                        _token = NativeBridge.OpenProcessToken(pid);
+                    _type = ObjectTypeInfo.GetTypeByName("file");
+                    _token = NtToken.OpenProcessToken(pid);
 
-                        _file_filter |= standard_filter;
-                        _dir_filter |= standard_filter;
-
-                        foreach (string path in paths)
+                    foreach (string path in paths)
+                    {
+                        if ((File.GetAttributes(path) & System.IO.FileAttributes.Directory) == System.IO.FileAttributes.Directory)
                         {
-                            if ((File.GetAttributes(path) & FileAttributes.Directory) == FileAttributes.Directory)
-                            {
-                                DumpDirectory(new DirectoryInfo(path));
-                            }
-                            else
-                            {
-                                DumpFile(new FileInfo(path));
-                            }
+                            DumpDirectory(new DirectoryInfo(path));
                         }
+                        else
+                        {
+                            DumpFile(new FileInfo(path));
+                        }
+                    }
                 }
             }
             catch(Exception e)

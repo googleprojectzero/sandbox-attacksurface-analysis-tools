@@ -14,6 +14,7 @@
 
 using HandleUtils;
 using NDesk.Options;
+using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -91,26 +92,31 @@ namespace CheckDeviceAccess
             p.WriteOptionDescriptions(Console.Out);
         }
 
+        static void PrintError(string name, Win32Exception ex)
+        {
+            if (_show_errors && (ex.NativeErrorCode != 5) && (ex.NativeErrorCode != 1))
+            {
+                Console.Error.WriteLine("Error checking {0} - {1}", name, ex.Message);
+            }
+        }
+
         static bool CheckDevice(string name, bool writable)
         {
             bool success = false;
 
             try
             {
-                using (ImpersonateProcess imp = NativeBridge.Impersonate(_pid, 
-                    _identify_only ? TokenSecurityLevel.Identification : TokenSecurityLevel.Impersonate))
+                using (var imp = NtToken.Impersonate(_pid,
+                    _identify_only ? SecurityImpersonationLevel.Identification : SecurityImpersonationLevel.Impersonation))
                 {
-                    uint access_mask = (uint)GenericAccessRights.GenericRead;
+                    FileAccessRights access_mask = FileAccessRights.GenericRead;
                     if (writable)
                     {
-                        access_mask |= (uint)GenericAccessRights.GenericWrite;
+                        access_mask |= FileAccessRights.GenericWrite;
                     }
 
-                    FileOpenOptions opts = _open_as_dir ? FileOpenOptions.DIRECTORY_FILE : FileOpenOptions.NON_DIRECTORY_FILE;
-
-                    using (NativeHandle handle = NativeBridge.CreateFileNative(name,
-                        access_mask, 0, FileShareMode.All, FileCreateDisposition.Open,
-                        opts))
+                    FileOpenOptions opts = _open_as_dir ? FileOpenOptions.DirectoryFile : FileOpenOptions.NonDirectoryFile;
+                    using (NtFile file = NtFile.Open(name, null, access_mask, FileShareMode.All, opts))
                     {
                         success = true;
                     }
@@ -119,10 +125,11 @@ namespace CheckDeviceAccess
             catch (Win32Exception ex)
             {
                 // Ignore access denied and invalid function (indicates there's no IRP_MJ_CREATE handler)
-                if (_show_errors && (ex.NativeErrorCode != 5) && (ex.NativeErrorCode != 1))
-                {
-                    Console.Error.WriteLine("Error checking {0} - {1}", name, ex.Message);
-                }
+                PrintError(name, ex);
+            }
+            catch (NtException ex)
+            {
+                PrintError(name, ex.AsWin32Exception());
             }
 
             return success;
@@ -132,9 +139,12 @@ namespace CheckDeviceAccess
         {
             try
             {
-                return ObjectNamespace.ReadSymlink(entry.FullPath);
+                using (NtSymbolicLink link = NtSymbolicLink.Open(entry.FullPath, null))
+                {
+                    return link.Query();
+                }
             }
-            catch (System.ComponentModel.Win32Exception)
+            catch (NtException)
             {
                 return "";
             }

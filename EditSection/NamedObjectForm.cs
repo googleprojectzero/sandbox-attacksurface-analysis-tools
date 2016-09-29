@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using HandleUtils;
+using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -117,13 +118,13 @@ namespace EditSection
                     GenericAccessRights access = GenericAccessRights.GenericRead;
                     if (!checkReadOnly.Checked)
                         access |= GenericAccessRights.GenericWrite;
-                    ObjectHandle = NativeBridge.OpenObject(null, name, _typename, access);
+                    ObjectHandle = NtObject.OpenWithType(_typename, name, null, access);
                     ObjectName = name;
                     ReadOnly = checkReadOnly.Checked;
                     DialogResult = DialogResult.OK;
                     Close();
                 }
-                catch (Win32Exception ex)
+                catch (NtException ex)
                 {
                     MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
@@ -131,7 +132,7 @@ namespace EditSection
         }
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
-        public NativeHandle ObjectHandle { get; private set; }
+        public NtObject ObjectHandle { get; private set; }
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
         public bool ReadOnly { get; private set; }

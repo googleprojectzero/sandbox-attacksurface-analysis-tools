@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32.SafeHandles;
+using NtApiDotNet;
 using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -16,7 +17,7 @@ namespace HandleUtils
         static extern bool DuplicateHandle(IntPtr hSourceProcessHandle, IntPtr hSourceHandle, IntPtr hTargetProcessHandle, out IntPtr lpTargetHandle,
             uint dwDesiredAccess,
             [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle,
-            DuplicateHandleOptions dwOptions);
+            DuplicateObjectOptions dwOptions);
 
         static IntPtr DupHandle(IntPtr h, uint access_rights, bool same_access)
         {
@@ -24,7 +25,7 @@ namespace HandleUtils
 
             if (!DuplicateHandle(new IntPtr(-1), h,
                 new IntPtr(-1), out hDup, access_rights,
-                false, same_access ? DuplicateHandleOptions.DuplicateSameAccess : DuplicateHandleOptions.None))
+                false, same_access ? DuplicateObjectOptions.SameAccess : DuplicateObjectOptions.None))
             {
                 throw new Win32Exception();
             }
@@ -54,6 +55,15 @@ namespace HandleUtils
         public NativeHandle Duplicate(uint access_rights)
         {
             return new NativeHandle(DupHandle(handle, access_rights, false));
+        }
+
+        /// <summary>
+        /// Returns a kernel object handle.
+        /// </summary>
+        /// <returns>The kernel object handle. This needs to be disposed after use.</returns>
+        internal SafeKernelObjectHandle GetNtApiHandle()
+        {
+            return new SafeKernelObjectHandle(DupHandle(DangerousGetHandle(), 0, true), true);
         }
     }
 }

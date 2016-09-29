@@ -14,6 +14,7 @@
 
 using HandleUtils;
 using NDesk.Options;
+using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,7 +27,7 @@ namespace CheckObjectManagerAccess
         static bool _print_sddl = false;
         static bool _show_write_only = false;
         static HashSet<string> _walked = new HashSet<string>();        
-        static NativeHandle _token;
+        static NtToken _token;
         static uint _dir_rights = 0;
         static HashSet<string> _type_filter = new HashSet<string>();
        
@@ -53,7 +54,7 @@ namespace CheckObjectManagerAccess
                 case "semaphore":
                     return typeof(SemaphoreAccessRights);
                 case "job":
-                    return typeof(JobObjectAccessRights);
+                    return typeof(JobAccessRights);
                 case "symboliclink":
                     return typeof(SymbolicLinkAccessRights);
                 default:
@@ -68,11 +69,7 @@ namespace CheckObjectManagerAccess
                 return "Full Permission";
             }
 
-            Object rights = Enum.ToObject(GetTypeAccessRights(type), granted_access & 0xFFFF);
-            
-            StandardAccessRights standard = (StandardAccessRights)(granted_access & 0x1F0000);            
-
-            return String.Join(", ", new string[] { standard.ToString(), rights.ToString() });
+            return NtObject.AccessRightsToString(GetTypeAccessRights(type), type.MapGenericRights(granted_access));
         }
 
         static void CheckAccess(string path, byte[] sd, ObjectTypeInfo type)
@@ -93,19 +90,19 @@ namespace CheckObjectManagerAccess
 
                     if (_dir_rights != 0)
                     {
-                        granted_access = NativeBridge.GetAllowedAccess(_token, type, (uint)_dir_rights, sd);
+                        granted_access = NtSecurity.GetAllowedAccess(_token, type, (uint)_dir_rights, sd);
                     }
                     else
                     {
-                        granted_access = NativeBridge.GetMaximumAccess(_token, type, sd);
+                        granted_access = NtSecurity.GetMaximumAccess(_token, type, sd);
                     }
 
                     if (granted_access != 0)
                     {
-                        // As we can get all the righs for the key get maximum
+                        // As we can get all the rights for the directory get maximum
                         if (_dir_rights != 0)
                         {
-                            granted_access = NativeBridge.GetMaximumAccess(_token, type, sd);
+                            granted_access = NtSecurity.GetMaximumAccess(_token, type, sd);
                         }
 
                         if (!_show_write_only || type.HasWritePermission(granted_access))
@@ -113,7 +110,7 @@ namespace CheckObjectManagerAccess
                             Console.WriteLine("<{0}> {1} : {2:X08} {3}", type.Name, path, granted_access, AccessMaskToString(type, granted_access));
                             if (_print_sddl)
                             {
-                                Console.WriteLine("{0}", NativeBridge.GetStringSecurityDescriptor(sd));
+                                Console.WriteLine("{0}", NtSecurity.SecurityDescriptorToSddl(sd, SecurityInformation.AllBasic));
                             }
                         }
                     }
@@ -188,8 +185,6 @@ namespace CheckObjectManagerAccess
                             { "w", "Show only write permissions granted", v => _show_write_only = v != null },
                             { "k=", String.Format("Filter on a specific directory right [{0}]", 
                                 String.Join(",", Enum.GetNames(typeof(DirectoryAccessRights)))), v => _dir_rights |= ParseRight(v, typeof(DirectoryAccessRights)) },  
-                            { "s=", String.Format("Filter on a standard right [{0}]", 
-                                String.Join(",", Enum.GetNames(typeof(StandardAccessRights)))), v => _dir_rights |= ParseRight(v, typeof(StandardAccessRights)) },  
                             { "x=", "Specify a base path to exclude from recursive search", v => _walked.Add(v.ToLower()) },
                             { "t=", "Specify a type of object to include", v => _type_filter.Add(v.ToLower()) },
                             { "h|help",  "show this message and exit", v => show_help = v != null },
@@ -203,7 +198,7 @@ namespace CheckObjectManagerAccess
                 }
                 else
                 {
-                    _token = NativeBridge.OpenProcessToken(pid);
+                    _token = NtToken.OpenProcessToken(pid);
 
                     foreach (string path in paths)
                     {

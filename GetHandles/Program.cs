@@ -12,13 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using HandleUtils;
 using NDesk.Options;
+using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using TokenLibrary;
 
 namespace GetHandles
 {
@@ -54,14 +53,14 @@ namespace GetHandles
             {
                 if (shareMode == ShareMode.All)
                 {
-                    if (group.GroupBy(k => k.ProcessId).Count() != pidCount)
+                    if (group.GroupBy(k => k.Pid).Count() != pidCount)
                     {
                         continue;
                     }
                 }
                 else if (shareMode == ShareMode.Partial)
                 {
-                    if (group.GroupBy(k => k.ProcessId).Count() <= 1)
+                    if (group.GroupBy(k => k.Pid).Count() <= 1)
                     {
                         continue;
                     }
@@ -71,12 +70,13 @@ namespace GetHandles
 
                 foreach (HandleEntry ent in group)
                 {
-                    Console.WriteLine("{0}/0x{0:X}/{1} {2}/0x{2:X}: {3}", ent.ProcessId, pidToName[ent.ProcessId], 
+                    Console.WriteLine("{0}/0x{0:X}/{1} {2}/0x{2:X}: {3}", ent.Pid, pidToName[ent.Pid], 
                         ent.Handle.ToInt32(), formatHandle(ent));
-                    if (showsd && !String.IsNullOrWhiteSpace(ent.StringSecurityDescriptor))
-                    {
-                        Console.WriteLine("SDDL: {0}", ent.StringSecurityDescriptor);
-                    }
+                    // TODO: Fix
+                    //if (showsd && !String.IsNullOrWhiteSpace(ent.StringSecurityDescriptor))
+                    //{
+                    //    Console.WriteLine("SDDL: {0}", ent.StringSecurityDescriptor);
+                    //}
                 }
                 Console.WriteLine();
             }
@@ -115,22 +115,20 @@ namespace GetHandles
                 }
                 else
                 {
-                    List<ProcessEntry> pss = ProcessEntry.GetProcesses();
-
-                    IEnumerable<ProcessEntry> filtered = pss;
+                    IEnumerable<NtProcess> filtered = NtProcess.GetProcesses(ProcessAccessRights.MaximumAllowed);
 
                     if (pidFilter.Count > 0)
                     {
-                        filtered = filtered.Where(ps => pidFilter.Contains(ps.Pid));
+                        filtered = filtered.Where(ps => pidFilter.Contains(ps.GetProcessId()));
                     }
 
                     if (nameFilter.Count > 0)
                     {
-                        filtered = filtered.Where(ps => nameFilter.Contains(ps.Name, StringComparer.OrdinalIgnoreCase));
+                        filtered = filtered.Where(ps => nameFilter.Contains(ps.GetName(), StringComparer.OrdinalIgnoreCase));
                     }
                     
-                    HashSet<int> pids = new HashSet<int>(filtered.Select(process => process.Pid));
-                    Dictionary<int, string> pidToName = filtered.ToDictionary(pk => pk.Pid, pv => pv.Name);                    
+                    HashSet<int> pids = new HashSet<int>(filtered.Select(process => process.GetProcessId()));
+                    Dictionary<int, string> pidToName = filtered.ToDictionary(pk => pk.GetProcessId(), pv => pv.GetName());                    
 
                     List<HandleEntry> totalHandles = new List<HandleEntry>();
 
@@ -141,18 +139,19 @@ namespace GetHandles
                             continue;
                         }
 
-                        IEnumerable<HandleEntry> handles = NativeBridge.GetHandlesForPid(pid, noquery).Where(ent => (typeFilter.Count == 0) || typeFilter.Contains(ent.TypeName.ToLower()));
+                        IEnumerable<HandleEntry> handles = NtSystemInfo.GetHandles(pid).Where(ent => (typeFilter.Count == 0) || typeFilter.Contains(ent.ObjectType.ToLower()));
                         totalHandles.AddRange(handles);
                         if (mode == GroupingMode.Pid)
                         {
                             Console.WriteLine("Process ID: {0} - Name: {1}", pid, pidToName[pid]);
                             foreach (HandleEntry ent in handles)
                             {                                
-                                Console.WriteLine("{0:X04}: {1:X016} {2:X08} {3,20} {4}", ent.Handle.ToInt32(), ent.Object.ToInt64(), ent.GrantedAccess, ent.TypeName, ent.ObjectName);
-                                if (showsd && !String.IsNullOrWhiteSpace(ent.StringSecurityDescriptor))
-                                {
-                                    Console.WriteLine("SDDL: {0}", ent.StringSecurityDescriptor);
-                                }
+                                Console.WriteLine("{0:X04}: {1:X016} {2:X08} {3,20} {4}", ent.Handle.ToInt32(), ent.Object.ToInt64(), ent.GrantedAccess, ent.ObjectType, ent.GetName());
+                                // TODO: Fix
+                                //if (showsd && !String.IsNullOrWhiteSpace(ent.StringSecurityDescriptor))
+                                //{
+                                //    Console.WriteLine("SDDL: {0}", ent.StringSecurityDescriptor);
+                                //}
                             }
                             Console.WriteLine();
                         } 
@@ -161,18 +160,18 @@ namespace GetHandles
                     switch(mode)
                     {
                         case GroupingMode.Type:
-                            PrintGrouping(totalHandles.GroupBy(f => f.TypeName), pidToName, k => String.Format("Type: {0}", k), 
-                                e => String.Format("{0:X08} {1:X08} {2}", e.Object.ToInt64(), e.GrantedAccess, e.ObjectName), 
+                            PrintGrouping(totalHandles.GroupBy(f => f.ObjectType), pidToName, k => String.Format("Type: {0}", k), 
+                                e => String.Format("{0:X08} {1:X08} {2}", e.Object.ToInt64(), e.GrantedAccess, e.GetName()), 
                                 shareMode, pids.Count, showsd);
                             break;
                         case GroupingMode.Object:
                             PrintGrouping(totalHandles.GroupBy(f => f.Object), pidToName, k => String.Format("Object: {0:X08}", k.ToInt64()),
-                                e => String.Format("{0,20} {1:X08} {2}", e.TypeName, e.GrantedAccess, e.ObjectName),
+                                e => String.Format("{0,20} {1:X08} {2}", e.ObjectType, e.GrantedAccess, e.GetName()),
                                 shareMode, pids.Count, showsd);
                             break;
                         case GroupingMode.Name:
-                            PrintGrouping(totalHandles.GroupBy(f => f.ObjectName), pidToName, k => String.Format("Name: {0:X08}", k),
-                                e => String.Format("{0:X08} {1,20} {2:X08} {2}", e.Object.ToInt64(), e.TypeName, e.GrantedAccess), 
+                            PrintGrouping(totalHandles.GroupBy(f => f.ObjectType), pidToName, k => String.Format("Name: {0:X08}", k),
+                                e => String.Format("{0:X08} {1,20} {2:X08} {2}", e.Object.ToInt64(), e.GetName(), e.GrantedAccess), 
                                 shareMode, pids.Count, showsd);
                             break;                        
                     }

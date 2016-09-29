@@ -141,6 +141,7 @@
             this.tabPageMisc = new System.Windows.Forms.TabPage();
             this.tabPageOperations = new System.Windows.Forms.TabPage();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
+            this.checkBoxUseWmi = new System.Windows.Forms.CheckBox();
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
@@ -798,6 +799,7 @@
             // 
             // groupBox1
             // 
+            groupBox1.Controls.Add(this.checkBoxUseWmi);
             groupBox1.Controls.Add(this.checkBoxMakeInteractive);
             groupBox1.Controls.Add(this.btnCreateProcess);
             groupBox1.Controls.Add(this.txtCommandLine);
@@ -1276,6 +1278,16 @@
             this.tabPageOperations.Text = "Operations";
             this.tabPageOperations.UseVisualStyleBackColor = true;
             // 
+            // checkBoxUseWmi
+            // 
+            this.checkBoxUseWmi.AutoSize = true;
+            this.checkBoxUseWmi.Location = new System.Drawing.Point(202, 59);
+            this.checkBoxUseWmi.Name = "checkBoxUseWmi";
+            this.checkBoxUseWmi.Size = new System.Drawing.Size(71, 17);
+            this.checkBoxUseWmi.TabIndex = 4;
+            this.checkBoxUseWmi.Text = "Use WMI";
+            this.checkBoxUseWmi.UseVisualStyleBackColor = true;
+            // 
             // TokenForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1386,5 +1398,6 @@
         private System.Windows.Forms.Button btnCreateRestricted;
         private System.Windows.Forms.Button btnImpersonate;
         private System.Windows.Forms.ToolTip toolTip;
+        private System.Windows.Forms.CheckBox checkBoxUseWmi;
     }
 }

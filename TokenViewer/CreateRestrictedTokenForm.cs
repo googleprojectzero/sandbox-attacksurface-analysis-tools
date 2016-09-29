@@ -12,22 +12,22 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows.Forms;
-using TokenLibrary;
 
 namespace TokenViewer
 {
     public partial class CreateRestrictedTokenForm : Form
     {
-        private UserToken _token;
-        private UserToken _newtoken;
+        private NtToken _token;
+        private NtToken _newtoken;
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
-        public UserToken RestrictedToken
+        public NtToken RestrictedToken
         {
             get { return _newtoken; }
         }
@@ -36,34 +36,34 @@ namespace TokenViewer
         {
             foreach (UserGroup group in groups)
             {
-                ListViewItem item = new ListViewItem(group.GetName());
-                item.SubItems.Add(group.Sid.Value);
+                ListViewItem item = new ListViewItem(group.ToString());
+                item.SubItems.Add(group.Sid.ToString());
                 item.Tag = group;
                 listView.Items.Add(item);
             }
         }
 
-        private UserGroup[] GetGroupFromList(IEnumerable<ListViewItem> items)
+        private Sid[] GetGroupFromList(IEnumerable<ListViewItem> items)
         {
-            List<UserGroup> groups = new List<UserGroup>();
+            List<Sid> groups = new List<Sid>();
             foreach (ListViewItem item in items)
             {
-                groups.Add((UserGroup)item.Tag);
+                groups.Add(((UserGroup)item.Tag).Sid);
             }
             return groups.ToArray();
         }
 
-        private TokenPrivilege[] GetPrivileges()
+        private Luid[] GetPrivileges()
         {
-            List<TokenPrivilege> privs = new List<TokenPrivilege>();
+            List<Luid> privs = new List<Luid>();
             foreach (ListViewItem item in listViewDeletePrivs.CheckedItems)
             {
-                privs.Add((TokenPrivilege)item.Tag);
+                privs.Add(((TokenPrivilege)item.Tag).Luid);
             }
             return privs.ToArray();
         }
 
-        public CreateRestrictedTokenForm(UserToken token)
+        public CreateRestrictedTokenForm(NtToken token)
         {
             InitializeComponent();
             _token = token;
@@ -71,35 +71,35 @@ namespace TokenViewer
             PopulateGroupList(listViewDisableSids, token.GetGroups().Where(g => !g.IsDenyOnly()));
             foreach (TokenPrivilege priv in token.GetPrivileges())
             {
-                ListViewItem item = new ListViewItem(priv.Name);
-                item.SubItems.Add(priv.DisplayName);
+                ListViewItem item = new ListViewItem(priv.GetName());
+                item.SubItems.Add(priv.GetDisplayName());
                 item.Tag = priv;
                 listViewDeletePrivs.Items.Add(item);
             }
         }
 
-        private UserToken CreateRestrictedToken()
+        private NtToken CreateRestrictedToken()
         {
-            RestrictedTokenFlags flags = RestrictedTokenFlags.None;
+            FilterTokenFlags flags = FilterTokenFlags.None;
             if (checkBoxDisableMaxPrivs.Checked)
             {
-                flags |= RestrictedTokenFlags.DisableMaxPrivilege;
+                flags |= FilterTokenFlags.DisableMaxPrivileges;
             }
             if (checkBoxMakeLuaToken.Checked)
             {
-                flags |= RestrictedTokenFlags.LuaToken;
+                flags |= FilterTokenFlags.LuaToken;
             }
             if (checkBoxSandboxInert.Checked)
             {
-                flags |= RestrictedTokenFlags.SandboxInert;
+                flags |= FilterTokenFlags.SandboxInert;
             }
             if (checkBoxWriteRestricted.Checked)
             {
-                flags |= RestrictedTokenFlags.WriteRestricted;
+                flags |= FilterTokenFlags.WriteRestricted;
             }
-
-            return _token.CreateRestrictedToken(GetGroupFromList(listViewDisableSids.CheckedItems.OfType<ListViewItem>()),
-                GetPrivileges(), GetGroupFromList(listViewRestrictedSids.Items.OfType<ListViewItem>()), flags);
+            
+            return _token.Filter(flags, GetGroupFromList(listViewDisableSids.CheckedItems.OfType<ListViewItem>()),
+                GetPrivileges(), GetGroupFromList(listViewRestrictedSids.Items.OfType<ListViewItem>()));
         }
 
         private void btnCreate_Click(object sender, EventArgs e)
@@ -156,7 +156,7 @@ namespace TokenViewer
             {
                 if (form.ShowDialog(this) == DialogResult.OK)
                 {
-                    UserGroup group = new UserGroup(form.Sid, GroupFlags.None);
+                    UserGroup group = new UserGroup(new Sid(form.Sid), GroupAttributes.None);
                     PopulateGroupList(listViewRestrictedSids, new UserGroup[] { group });
                 }
             }

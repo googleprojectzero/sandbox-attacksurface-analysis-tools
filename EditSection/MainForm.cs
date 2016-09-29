@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using HandleUtils;
+using NtApiDotNet;
 using System;
 using System.Threading;
 using System.Windows.Forms;
@@ -51,9 +52,9 @@ namespace EditSection
             {
                 if (frm.ShowDialog(this) == DialogResult.OK)
                 {
-                    using (NativeHandle handle = frm.ObjectHandle)
+                    using (NtSection handle = (NtSection)frm.ObjectHandle)
                     {
-                        NativeMappedFile mapped_file = NativeBridge.MapFile(handle.Duplicate(), !frm.ReadOnly);
+                        NtMappedSection mapped_file = handle.Map(frm.ReadOnly ? ProtectionType.ReadOnly : ProtectionType.ReadWrite);
                         SectionEditorForm c = new SectionEditorForm(mapped_file, frm.ObjectName, frm.ReadOnly);
 
                         c.Show(dockPanel, DockState.Document);
@@ -68,13 +69,11 @@ namespace EditSection
             {
                 if (frm.ShowDialog(this) == DialogResult.OK)
                 {
-                    using(NativeHandle handle = frm.ObjectHandle)
+                    using(NtEvent handle = (NtEvent)frm.ObjectHandle)
                     {
                         try
                         {
-                            EventWaitHandle ev = new EventWaitHandle(false, EventResetMode.AutoReset);
-                            ev.SafeWaitHandle = new Microsoft.Win32.SafeHandles.SafeWaitHandle(handle.DangerousGetHandle(), false);
-                            ev.Set();
+                            handle.Set();
                         }
                         catch (Exception ex)
                         {

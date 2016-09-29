@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using HandleUtils;
+using NtApiDotNet;
 using System;
 using System.IO;
 using System.Windows.Forms;
@@ -22,12 +23,12 @@ namespace EditSection
 {
     public partial class SectionEditorForm : DockContent
     {
-        NativeMappedFile _map;        
+        NtMappedSection _map;        
         bool _readOnly;
         NativeMappedFileByteProvider _prov;
         Random _random;
 
-        private SectionEditorForm(NativeMappedFile map, bool readOnly)
+        private SectionEditorForm(NtMappedSection map, bool readOnly)
         {
             _random = new Random();
             _map = map;
@@ -46,13 +47,13 @@ namespace EditSection
             Disposed += SectionEditorForm_Disposed;
         }
 
-        public SectionEditorForm(NativeMappedFile map, HandleEntry handle, bool readOnly) 
+        public SectionEditorForm(NtMappedSection map, HandleEntry handle, bool readOnly) 
             : this(map, readOnly)        
         {                           
-            TabText = String.Format("Process {0} - Handle {1} {2}", handle.ProcessId, handle.Handle.ToInt64(), _readOnly ? "(RO)" : "");            
+            TabText = String.Format("Process {0} - Handle {1} {2}", handle.Pid, handle.Handle.ToInt64(), _readOnly ? "(RO)" : "");            
         }
 
-        public SectionEditorForm(NativeMappedFile map, string name, bool readOnly)
+        public SectionEditorForm(NtMappedSection map, string name, bool readOnly)
             : this(map, readOnly)
         {            
             TabText = String.Format("{0} {1}", name, _readOnly ? "(RO)" : "");

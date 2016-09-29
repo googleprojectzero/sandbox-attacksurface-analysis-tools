@@ -12,12 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using HandleUtils;
+using NtApiDotNet;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace EditSection
@@ -28,28 +25,33 @@ namespace EditSection
 
         private static string FormatText(HandleEntry ent)
         {
-            NativeHandle h = NativeBridge.DuplicateHandleFromProcess(ent.ProcessId, ent.Handle, 0, DuplicateHandleOptions.DuplicateSameAccess);
-
+            string size = String.Empty;
             try
             {
-                StringBuilder builder = new StringBuilder();
-
-                if ((ent.GrantedAccess & (int)HandleUtils.AccessRights.SectionMapRead) != 0)
+                using (NtSection section = NtSection.DuplicateFrom(ent.Pid, ent.Handle, SectionAccessRights.Query))
                 {
-                    builder.Append("R");
+                    size = section.GetSize().ToString();
                 }
-
-                if ((ent.GrantedAccess & (int)HandleUtils.AccessRights.SectionMapWrite) != 0)
-                {
-                    builder.Append("W");
-                }
-
-                return String.Format("[{0}/0x{0:X}] {1} Size: {2} Access: {3}", ent.Handle.ToInt64(), ent.ObjectName, NativeBridge.GetSectionSize(h), builder.ToString());
             }
-            finally
+            catch (NtException)
             {
-                h.Close();
+                size = "Unknown";
             }
+
+            StringBuilder builder = new StringBuilder();
+            ObjectTypeInfo section_type = ObjectTypeInfo.GetTypeByName("section");
+
+            if (section_type.HasReadPermission(ent.GrantedAccess))
+            {
+                builder.Append("R");
+            }
+
+            if (section_type.HasWritePermission(ent.GrantedAccess))
+            {
+                builder.Append("W");
+            }
+
+            return String.Format("[{0}/0x{0:X}] {1} Size: {2} Access: {3}", ent.Handle.ToInt64(), ent.GetName(), size, builder.ToString());            
         }
 
         public SectionTreeNode(HandleEntry ent)
@@ -58,19 +60,18 @@ namespace EditSection
             _ent = ent;
         }
 
-        public NativeMappedFile OpenMappedFile(bool writable)
+        public NtMappedSection OpenMappedFile(bool writable)
         {
-            AccessRights accessRights = AccessRights.SectionMapRead;
+            SectionAccessRights accessRights = SectionAccessRights.MapRead;
 
             if (writable)
             {
-                accessRights |= AccessRights.SectionMapWrite;
+                accessRights |= SectionAccessRights.MapWrite;
             }
 
-            using (NativeHandle h = NativeBridge.DuplicateHandleFromProcess(_ent.ProcessId, 
-                _ent.Handle, (uint)accessRights, DuplicateHandleOptions.None))
+            using (NtSection section = NtSection.DuplicateFrom(_ent.Pid, _ent.Handle, accessRights))
             {
-                return NativeBridge.MapFile(h, writable);
+                return section.Map(writable ? ProtectionType.ReadWrite : ProtectionType.ReadOnly);
             }
         }
 

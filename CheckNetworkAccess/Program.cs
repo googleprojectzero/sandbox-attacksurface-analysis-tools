@@ -14,6 +14,7 @@
 
 using HandleUtils;
 using NDesk.Options;
+using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -38,8 +39,8 @@ namespace CheckNetworkAccess
         }
 
         static void ConnectTest(int pid, IPEndPoint ep)
-        {           
-            using (ImpersonateProcess imp = NativeBridge.Impersonate(pid, TokenSecurityLevel.Impersonate))
+        {
+            using (var imp = NtToken.Impersonate(pid, NtApiDotNet.SecurityImpersonationLevel.Impersonation))
             {
                 TcpClient client = new TcpClient();
                 client.Connect(ep);
@@ -51,7 +52,7 @@ namespace CheckNetworkAccess
 
         static void ListenTest(int pid, IPEndPoint ep)
         {
-            using (ImpersonateProcess imp = NativeBridge.Impersonate(pid, TokenSecurityLevel.Impersonate))
+            using (var imp = NtToken.Impersonate(pid, NtApiDotNet.SecurityImpersonationLevel.Impersonation))
             {
                 TcpListener listener = new TcpListener(ep);
 

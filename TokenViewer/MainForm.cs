@@ -12,99 +12,185 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using HandleUtils;
+using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO.Pipes;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Linq;
-using TokenLibrary;
-using HandleUtils;
 
 namespace TokenViewer
 {
     public partial class MainForm : Form
-    {        
-        private void AddProcessNode(ProcessEntry entry)
+    {
+        private void AddProcessNode(NtProcess entry)
         {
             try
             {
-                UserToken token = entry.Token;
-                TreeNode node = new TreeNode(String.Format("Pid: {0} - Name: {1} (User:{2}, IL: {3}, R: {4}, AC: {5})",
-                   entry.Pid, entry.Name, token.GetUser().GetName(), token.GetTokenIntegrityLevel(),
-                   token.IsRestricted(), token.IsAppContainer()));
-                node.Tag = entry;
-
-                treeViewProcesses.Nodes.Add(node);
+                using (NtToken token = entry.OpenToken())
+                {
+                    TreeNode node = new TreeNode(String.Format("Pid: {0} - Name: {1} (User:{2}, IL: {3}, R: {4}, AC: {5})",
+                       entry.GetProcessId(), entry.GetName(), token.GetUser(), token.GetIntegrityLevel(),
+                       token.IsRestricted(), token.IsAppContainer()));
+                    node.Tag = entry.Duplicate();
+                    treeViewProcesses.Nodes.Add(node);
+                }
             }
-            catch (Win32Exception)
+            catch
             {
                 // Do nothing
             }
         }
 
-        private void AddThreads(ProcessEntry entry)
+        private void AddThreads(NtProcess entry)
         {
-            List<ThreadEntry> threads = entry.GetThreadsWithTokens();
-
-            foreach (ThreadEntry thread in threads)
+            using (DisposableList<NtThread> threads = new DisposableList<NtThread>(entry.GetThreads(ThreadAccessRights.QueryInformation)))
             {
-                try
+                foreach (NtThread thread in threads)
                 {
-                    ListViewItem item = new ListViewItem(String.Format("{0} - {1}", entry.Pid, entry.Name));
-                    item.SubItems.Add(thread.Tid.ToString());
-                    UserToken token = thread.Token;
-                    item.SubItems.Add(token.GetUser().GetName());
-                    item.SubItems.Add(token.GetImpersonationLevel().ToString());
-                    item.Tag = thread;
-                    listViewThreads.Items.Add(item);
-                }
-                catch (Win32Exception)
-                { 
+                    try
+                    {
+                        using (NtToken token = thread.OpenToken())
+                        {
+                            if (token != null)
+                            {
+                                ListViewItem item = new ListViewItem(String.Format("{0} - {1}", entry.GetProcessId(), entry.GetName()));
+                                item.SubItems.Add(thread.GetThreadId().ToString());
+                                item.SubItems.Add(token.GetUser().ToString());
+                                item.SubItems.Add(token.GetImpersonationLevel().ToString());
+                                item.Tag = thread.Duplicate();
+                                listViewThreads.Items.Add(item);
+                            }
+                        }
+                    }
+                    catch (NtException)
+                    {
+                    }
                 }
             }
+        }
+
+        private static NtToken GetToken(NtProcess process)
+        {
+            try
+            {
+                return process.OpenToken();
+            }
+            catch (NtException)
+            {
+                return null;
+            }
+        }
+
+        private static NtToken GetToken(NtThread thread)
+        {
+            try
+            {
+                return thread.OpenToken();
+            }
+            catch (NtException)
+            {
+                return null;
+            }
+        }
+
+        private static bool IsRestrictedToken(NtProcess process)
+        {
+            NtToken token = null;
+            try
+            {
+                token = GetToken(process);
+                if (token == null)
+                {
+                    return false;
+                }
+                return token.IsRestricted() || token.IsAppContainer() || token.GetIntegrityLevel() < TokenIntegrityLevel.Medium;
+            }
+            catch (NtException)
+            {
+                return false;
+            }
+            finally
+            {
+                if (token != null)
+                {
+                    token.Close();
+                }
+            }
+        }
+
+        private void ClearList(ListView view)
+        {
+            foreach (ListViewItem item in view.Items)
+            {
+                IDisposable disp = item.Tag as IDisposable;
+                if (disp != null)
+                {
+                    disp.Dispose();
+                }
+            }
+            view.Items.Clear();
+        }
+
+        private void ClearTree(TreeView view)
+        {
+            foreach (TreeNode node in view.Nodes)
+            {
+                IDisposable disp = node.Tag as IDisposable;
+                if (disp != null)
+                {
+                    disp.Dispose();
+                }
+            }
+            view.Nodes.Clear();
         }
 
         private void RefreshProcessList(string filter, bool hideUnrestricted)
         {
-            List<ProcessEntry> processes = ProcessEntry.GetProcesses();
-            processes.Sort((a, b) => a.Pid - b.Pid);
-
-            IEnumerable<ProcessEntry> filtered = processes.Where(p => p.Token != null);
-
-            if(!String.IsNullOrWhiteSpace(filter))
+            using (var processes = new DisposableList<NtProcess>(NtProcess.GetProcesses(ProcessAccessRights.QueryInformation)))
             {
-                filter = filter.ToLower();
-                filtered = filtered.Where(p => p.Name.ToLower().Contains(filter));
-            }
+                processes.Sort((a, b) => a.GetProcessId() - b.GetProcessId());
 
-            if(hideUnrestricted)
-            {
-                filtered = filtered.Where(p => p.Token.IsRestricted() || p.Token.IsAppContainer() || p.Token.GetTokenIntegrityLevel() < TokenIntegrityLevel.Medium);
-            }
+                IEnumerable<NtProcess> filtered = processes.Where(p => GetToken(p) != null);
 
-            treeViewProcesses.Nodes.Clear();
-            listViewThreads.Items.Clear();
-            foreach (ProcessEntry entry in filtered)
-            {                
-                AddProcessNode(entry);
-                AddThreads(entry);
+                if (!String.IsNullOrWhiteSpace(filter))
+                {
+                    filter = filter.ToLower();
+                    filtered = filtered.Where(p => p.GetName().ToLower().Contains(filter));
+                }
+
+                if (hideUnrestricted)
+                {
+                    filtered = filtered.Where(p => IsRestrictedToken(p));
+                }
+
+                ClearTree(treeViewProcesses);
+                ClearList(listViewThreads);
+                foreach (NtProcess entry in filtered)
+                {
+                    AddProcessNode(entry);
+                    AddThreads(entry);
+                }
+                listViewThreads.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+                listViewThreads.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
             }
-            listViewThreads.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
-            listViewThreads.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
         private void RefreshSessionList()
         {
-            UserToken[] tokens = TokenUtils.GetSessionTokens();
-            listViewSessions.Items.Clear();
-            foreach (UserToken token in tokens)
+            using (DisposableList<NtToken> tokens = new DisposableList<NtToken>(TokenUtils.GetSessionTokens()))
             {
-                ListViewItem item = new ListViewItem(token.GetSessionId().ToString());
-                item.SubItems.Add(token.GetUser().GetName());
-                item.Tag = token;
-                listViewSessions.Items.Add(item);
+                ClearList(listViewSessions);
+                foreach (NtToken token in tokens)
+                {
+                    ListViewItem item = new ListViewItem(token.GetSessionId().ToString());
+                    item.SubItems.Add(token.GetUser().ToString());
+                    item.Tag = token.Duplicate();
+                    listViewSessions.Items.Add(item);
+                }
             }
         }
 
@@ -114,13 +200,13 @@ namespace TokenViewer
 
             RefreshProcessList(null, false);
             RefreshSessionList();
-            comboBoxS4ULogonType.Items.Add(LogonType.Batch);
-            comboBoxS4ULogonType.Items.Add(LogonType.Interactive);
-            comboBoxS4ULogonType.Items.Add(LogonType.Network);
-            comboBoxS4ULogonType.Items.Add(LogonType.NetworkCleartext);
-            comboBoxS4ULogonType.Items.Add(LogonType.NewCredentials);
-            comboBoxS4ULogonType.Items.Add(LogonType.Service);
-            comboBoxS4ULogonType.SelectedItem = LogonType.Network;
+            comboBoxS4ULogonType.Items.Add(SecurityLogonType.Batch);
+            comboBoxS4ULogonType.Items.Add(SecurityLogonType.Interactive);
+            comboBoxS4ULogonType.Items.Add(SecurityLogonType.Network);
+            comboBoxS4ULogonType.Items.Add(SecurityLogonType.NetworkCleartext);
+            comboBoxS4ULogonType.Items.Add(SecurityLogonType.NewCredentials);
+            comboBoxS4ULogonType.Items.Add(SecurityLogonType.Service);
+            comboBoxS4ULogonType.SelectedItem = SecurityLogonType.Network;
             TokenForm.RegisterMainForm(this);            
         }
 
@@ -128,18 +214,18 @@ namespace TokenViewer
         {
             try
             {
-                LogonType logonType = (LogonType)comboBoxS4ULogonType.SelectedItem;
+                SecurityLogonType logonType = (SecurityLogonType)comboBoxS4ULogonType.SelectedItem;
 
                 if (radioLUNormal.Checked)
                 {
-                    using (UserToken token = TokenUtils.GetLogonUserToken(txtS4UUserName.Text, txtS4URealm.Text, txtLUPassword.Text, null, logonType))
+                    using (NtToken token = TokenUtils.GetLogonUserToken(txtS4UUserName.Text, txtS4URealm.Text, txtLUPassword.Text, logonType))
                     {
                         TokenForm.OpenForm(token, true);
                     }
                 }
                 else
                 {
-                    using (UserToken token = TokenUtils.GetLogonS4UToken(txtS4UUserName.Text, txtS4URealm.Text, logonType))
+                    using (NtToken token = TokenUtils.GetLogonS4UToken(txtS4UUserName.Text, txtS4URealm.Text, logonType))
                     {
                         TokenForm.OpenForm(token, true);
                     }
@@ -163,18 +249,21 @@ namespace TokenViewer
 
             if (selectedNode != null)
             {
-                ProcessEntry process = selectedNode.Tag as ProcessEntry;
+                NtProcess process = selectedNode.Tag as NtProcess;
                 HandleEntry handle = selectedNode.Tag as HandleEntry;
                 if (process != null)
                 {
-                    TokenForm.OpenForm(process.Token, true);
+                    NtToken token = GetToken(process);
+                    if (token != null)
+                    {
+                        TokenForm.OpenForm(token, true);
+                    }
                 }
                 else if (handle != null)
                 {
                     try
                     {
-                        TokenForm.OpenForm(new UserToken(NativeBridge.DuplicateHandleFromProcess(handle,
-                            (uint)(TokenAccessRights.Query | TokenAccessRights.QuerySource), 0)), false);
+                        TokenForm.OpenForm(NtToken.DuplicateFrom(handle.Pid, handle.Handle, TokenAccessRights.Query | TokenAccessRights.QuerySource), false);
                     }
                     catch (Exception ex)
                     {
@@ -208,7 +297,7 @@ namespace TokenViewer
         {
             try
             {
-                TokenForm.OpenForm(TokenUtils.GetLogonUserToken(name, "NT AUTHORITY", null, null, LogonType.Service), false);
+                TokenForm.OpenForm(TokenUtils.GetLogonUserToken(name, "NT AUTHORITY", null, SecurityLogonType.Service), false);
             }
             catch (Win32Exception ex)
             {
@@ -240,7 +329,8 @@ namespace TokenViewer
         {
             try
             {
-                TokenForm.OpenForm(TokenUtils.GetTokenFromBits(), false);
+                // TODO: Fix
+                //TokenForm.OpenForm(TokenUtils3.GetTokenFromBits(), false);
             }
             catch (Exception ex)
             {
@@ -260,11 +350,11 @@ namespace TokenViewer
                     await Task.Factory.FromAsync(pipe.BeginWaitForConnection,
                         pipe.EndWaitForConnection, null);
 
-                    UserToken token = null;
+                    NtToken token = null;
 
                     if (pipe.IsConnected)
                     {
-                        pipe.RunAsClient(() => token = TokenUtils.GetTokenFromThread());
+                        pipe.RunAsClient(() => token = NtToken.OpenThreadToken());
                         pipe.Disconnect();
                     }
 
@@ -303,9 +393,9 @@ namespace TokenViewer
         {
             try
             {
-                TokenForm.OpenForm(TokenUtils.GetTokenFromCurrentProcess(), false);
+                TokenForm.OpenForm(NtToken.OpenProcessToken(), false);
             }
-            catch (Win32Exception ex)
+            catch (NtException ex)
             {
                 MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -336,14 +426,14 @@ namespace TokenViewer
         private void refreshTokenHandlesToolStripMenuItem_Click(object sender, EventArgs e)
         {
             TreeNode node = treeViewProcesses.SelectedNode;
-            if (node != null && node.Tag is ProcessEntry)
+            if (node != null && node.Tag is NtProcess)
             {
-                ProcessEntry entry = (ProcessEntry)node.Tag;
-                IEnumerable<HandleEntry> handles = NativeBridge.GetHandlesForPid(entry.Pid, false);
+                NtProcess entry = (NtProcess)node.Tag;
+                IEnumerable<HandleEntry> handles = NtSystemInfo.GetHandles(entry.GetProcessId());
                 node.Nodes.Clear();
                 foreach (HandleEntry handle in handles)
                 {
-                    if (handle.TypeName == "Token")
+                    if (handle.ObjectType.Equals("Token", StringComparison.OrdinalIgnoreCase))
                     {
                         TreeNode token_node = new TreeNode(String.Format("Handle: 0x{0:X}", handle.Handle.ToInt32()));
                         token_node.Tag = handle;
@@ -358,10 +448,14 @@ namespace TokenViewer
         {
             if (listViewThreads.SelectedItems.Count > 0)
             {                
-                ThreadEntry thread = listViewThreads.SelectedItems[0].Tag as ThreadEntry;
+                NtThread thread = listViewThreads.SelectedItems[0].Tag as NtThread;
                 if(thread != null)
-                {                 
-                    TokenForm.OpenForm(thread.Token, true);
+                {
+                    NtToken token = GetToken(thread);
+                    if (token != null)
+                    {
+                        TokenForm.OpenForm(token, false);
+                    }
                 }
             }
         }
@@ -370,10 +464,11 @@ namespace TokenViewer
         {
             if (listViewThreads.SelectedItems.Count > 0)
             {
-                ThreadEntry thread = listViewThreads.SelectedItems[0].Tag as ThreadEntry;
+                NtThread thread = listViewThreads.SelectedItems[0].Tag as NtThread;
                 if (thread != null)
                 {
-                    TokenForm.OpenForm(thread.Process.Token, true);
+                    // TODO
+                    //TokenForm.OpenForm(thread.Process.Token, true);
                 }
             }
         }
@@ -387,7 +482,7 @@ namespace TokenViewer
         {
             if (listViewSessions.SelectedItems.Count > 0)
             {
-                UserToken token = listViewSessions.SelectedItems[0].Tag as UserToken;
+                NtToken token = listViewSessions.SelectedItems[0].Tag as NtToken;
                 if (token != null)
                 {
                     TokenForm.OpenForm(token, true);

@@ -12,7 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using HandleUtils;
 using NDesk.Options;
+using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,13 +34,13 @@ namespace DumpTypeInfo
 
         static void DumpGenericTypeInfo(IEnumerable<ObjectTypeInfo> types)
         {
-            Console.WriteLine("{0,25}   READ     WRITE   EXECUTE   ALL   ", "Name");
-            Console.WriteLine("{0}", new String('-', 61));
+            Console.WriteLine("{0,25}   READ     WRITE   EXECUTE   ALL     VALID ", "Name");
+            Console.WriteLine("{0}", new String('-', 70));
 
             foreach (ObjectTypeInfo type in types)
             {
-                Console.WriteLine("{0,25} {1:X08} {2:X08} {3:X08} {4:X08}", type.Name, type.GenericReadMapping,
-                    type.GenericWriteMapping, type.GenericExecuteMapping, type.GenericAllMapping);
+                Console.WriteLine("{0,25} {1:X08} {2:X08} {3:X08} {4:X08} {5:X08}", type.Name, type.GenericMapping.GenericRead,
+                    type.GenericMapping.GenericWrite, type.GenericMapping.GenericExecute, type.GenericMapping.GenericAll, type.ValidAccess);
             }
         }
 

@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using HandleUtils;
+using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -147,7 +147,7 @@ namespace EditSection
         }
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
-        public NativeMappedFile MappedFile { get; private set; }
+        public NtApiDotNet.NtMappedSection MappedFile { get; private set; }
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
         public HandleEntry OpenedHandle { get; private set; }

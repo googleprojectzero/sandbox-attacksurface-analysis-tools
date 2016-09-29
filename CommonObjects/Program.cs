@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using HandleUtils;
 using NDesk.Options;
+using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,6 +28,21 @@ namespace CommonObjects
             Console.WriteLine();
             Console.WriteLine("Options:");
             p.WriteOptionDescriptions(Console.Out);
+        }
+
+        static string GetObjectName(IEnumerable<HandleEntry> entries)
+        {
+            foreach (HandleEntry entry in entries)
+            {
+                using (NtObject obj = entry.GetObject())
+                {
+                    if (obj != null)
+                    {
+                        return obj.GetName();
+                    }
+                }
+            }
+            return String.Empty;
         }
 
         static void Main(string[] args)
@@ -57,8 +72,8 @@ namespace CommonObjects
                     Dictionary<IntPtr, List<HandleEntry>> entries = new Dictionary<IntPtr, List<HandleEntry>>();
 
                     foreach (int pid in pids)
-                    {
-                        foreach(HandleEntry entry in NativeBridge.GetHandlesForPid(pid))
+                    {                        
+                        foreach(HandleEntry entry in NtApiDotNet.NtSystemInfo.GetHandles(pid))
                         {
                             if (!entries.ContainsKey(entry.Object))
                             {
@@ -70,18 +85,18 @@ namespace CommonObjects
 
                     int limit = show_all ? 2 : pids.Count;
 
-                    var output = entries.Where(x => x.Value.GroupBy(y => y.ProcessId).Count() >= limit);
+                    var output = entries.Where(x => x.Value.GroupBy(y => y.Pid).Count() >= limit);
 
                     foreach (KeyValuePair<IntPtr, List<HandleEntry>> pair in output)
                     {
-                        if (String.IsNullOrWhiteSpace(typeFilter) || pair.Value[0].TypeName.Equals(typeFilter, StringComparison.OrdinalIgnoreCase))
+                        if (String.IsNullOrWhiteSpace(typeFilter) || pair.Value[0].ObjectType.Equals(typeFilter, StringComparison.OrdinalIgnoreCase))
                         {
-                            Console.WriteLine("{0:X} {1} {2}", pair.Key.ToInt64(), pair.Value[0].TypeName, pair.Value[0].ObjectName);
+                            Console.WriteLine("{0:X} {1} {2}", pair.Key.ToInt64(), pair.Value[0].ObjectType, GetObjectName(pair.Value));
 
                             foreach (HandleEntry entry in pair.Value)
                             {
                                 Console.WriteLine("\t{0}/0x{0:X} {1}/0x{1:X} 0x{2:X08}",
-                                    entry.ProcessId, entry.Handle.ToInt32(), entry.GrantedAccess);
+                                    entry.Pid, entry.Handle.ToInt32(), entry.GrantedAccess);
                             }
                         }
                     }
