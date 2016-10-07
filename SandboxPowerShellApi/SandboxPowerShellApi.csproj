@@ -4,14 +4,13 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{6AEB5004-6093-4C23-AEAE-911D64CACC58}</ProjectGuid>
+    <ProjectGuid>{2B17A3DD-0970-482F-976A-A4027B9B8817}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>NtApiDotNet</RootNamespace>
-    <AssemblyName>NtApiDotNet</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <RootNamespace>SandboxPowerShellApi</RootNamespace>
+    <AssemblyName>SandboxPowerShellApi</AssemblyName>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -33,6 +32,10 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Management.Automation, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Management.Automation.6.1.7601.17515\lib\net45\System.Management.Automation.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -41,47 +44,31 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CreateUserProcess.cs" />
-    <Compile Include="CreateUserProcessResult.cs" />
-    <Compile Include="DisposableList.cs" />
-    <Compile Include="EaBuffer.cs" />
-    <Compile Include="NtAlpc.cs" />
-    <Compile Include="NtAtom.cs" />
-    <Compile Include="NtDebug.cs" />
-    <Compile Include="NtDirectory.cs" />
-    <Compile Include="NtEvent.cs" />
-    <Compile Include="NtException.cs" />
-    <Compile Include="NtFile.cs" />
-    <Compile Include="NtJob.cs" />
-    <Compile Include="NtKey.cs" />
-    <Compile Include="NtLocale.cs" />
-    <Compile Include="NtMutant.cs" />
-    <Compile Include="NtRegistryTransaction.cs" />
-    <Compile Include="NtSemaphore.cs" />
-    <Compile Include="NtSymbolicLink.cs" />
-    <Compile Include="NtSystemInfo.cs" />
-    <Compile Include="NtObject.cs" />
-    <Compile Include="NtProcess.cs" />
-    <Compile Include="NtRtl.cs" />
-    <Compile Include="NtSection.cs" />
-    <Compile Include="NtStatus.cs" />
-    <Compile Include="NtStructures.cs" />
-    <Compile Include="NtThread.cs" />
-    <Compile Include="NtToken.cs" />
-    <Compile Include="NtWait.cs" />
-    <Compile Include="NtWnf.cs" />
-    <Compile Include="ObjectAttributes.cs" />
-    <Compile Include="ObjectTypeInfo.cs" />
-    <Compile Include="OptionalLength.cs" />
-    <Compile Include="NtProcessMitigations.cs" />
+    <Compile Include="NtDirectoryCmdlets.cs" />
+    <Compile Include="NtFileCmdlets.cs" />
+    <Compile Include="NtKeyCmdlets.cs" />
+    <Compile Include="NtMutantCmdlets.cs" />
+    <Compile Include="NtObjectCmdlets.cs" />
+    <Compile Include="NtTypesCmdlets.cs" />
+    <Compile Include="NtSymbolicLinkCmdlet.cs" />
+    <Compile Include="ObjectDirectoryEntry.cs" />
+    <Compile Include="ObjectManagerProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="AnnontationAttributes.cs" />
-    <Compile Include="SafeHandles.cs" />
-    <Compile Include="NtSecurity.cs" />
-    <Compile Include="SecurityQualityOfService.cs" />
-    <Compile Include="ThreadImpersonationContext.cs" />
-    <Compile Include="UnicodeString.cs" />
-    <Compile Include="Utils.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Formatters.ps1xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="packages.config" />
+    <None Include="SandboxPowerShellApi.psd1">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NtApiDotNet\NtApiDotNet.csproj">
+      <Project>{6aeb5004-6093-4c23-aeae-911d64cacc58}</Project>
+      <Name>NtApiDotNet</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

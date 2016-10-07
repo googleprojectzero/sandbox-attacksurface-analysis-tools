@@ -402,8 +402,35 @@ namespace NtApiDotNet
             StatusToNtException(NtSystemCalls.NtMakePermanentObject(Handle));
         }
 
+        public NtStatus Wait(bool alertable, long timeout)
+        {
+            return NtWait.Wait(this, alertable, timeout);
+        }
+
+        public NtStatus Wait()
+        {
+            return Wait(false, NtWait.Infinite);
+        }
+
+        /// <summary>
+        /// Open an NT object with a specified type.
+        /// </summary>
+        /// <param name="typename">The name of the type to open (e.g. Event). If null the method will try and lookup the appropriate type.</param>
+        /// <param name="path">The path to the object to open.</param>
+        /// <param name="root">A root directory to open from.</param>
+        /// <param name="access">Generic access rights to the object.</param>
+        /// <returns></returns>
         public static NtObject OpenWithType(string typename, string path, NtObject root, GenericAccessRights access)
         {
+            if (typename == null)
+            {
+                typename = NtDirectory.GetDirectoryEntryType(path, root);
+                if (typename == null)
+                {
+                    throw new ArgumentException(String.Format("Can't find type for path {0}", path));
+                }
+            }
+
             switch (typename.ToLower())
             {
                 case "device":
@@ -424,6 +451,8 @@ namespace NtApiDotNet
                     return NtSection.Open(path, root, (SectionAccessRights)access);
                 case "job":
                     return NtJob.Open(path, root, (JobAccessRights)access);
+                case "key":
+                    return NtKey.Open(path, root, (KeyAccessRights)access);
                 default:
                     throw new ArgumentException(String.Format("Can't open type {0}", typename));
             }

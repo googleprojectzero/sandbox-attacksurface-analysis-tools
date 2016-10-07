@@ -47,9 +47,10 @@ namespace NtApiDotNet
             return ret;
         }
 
-        internal static void ToNtException(this NtStatus status)
+        internal static NtStatus ToNtException(this NtStatus status)
         {
             NtObject.StatusToNtException(status);
+            return status;
         }
 
         internal static bool IsSuccess(this NtStatus status)

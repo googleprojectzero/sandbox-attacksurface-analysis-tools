@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -18,16 +20,26 @@ namespace NtApiDotNet
         public string Name { get; private set; }
         public string TypeName { get; private set; }
 
-        internal ObjectDirectoryInformation(NtDirectory root, OBJECT_DIRECTORY_INFORMATION info)
+        internal ObjectDirectoryInformation(NtDirectory root, OBJECT_DIRECTORY_INFORMATION info) 
+            : this(root, info.Name.ToString(), info.TypeName.ToString())
+        {
+        }
+
+        public ObjectDirectoryInformation(NtDirectory root, string name, string typename)
         {
             _root = root;
-            Name = info.Name.ToString();
-            TypeName = info.TypeName.ToString();
+            Name = name;
+            TypeName = typename;
         }
 
         public NtObject Open(GenericAccessRights access)
         {
             return NtObject.OpenWithType(TypeName, Name, _root, access);
+        }
+
+        public bool IsDirectory
+        {
+            get { return TypeName.Equals("directory", StringComparison.OrdinalIgnoreCase); }
         }
     }
 
@@ -116,6 +128,21 @@ namespace NtApiDotNet
         }
         
         public IntPtr Handle { get { return _boundary_descriptor; } }
+
+        public static BoundaryDescriptor CreateFromString(string descriptor)
+        {
+            string[] parts = descriptor.Split(new char[] { '@' }, 2);
+            string obj_name = parts.Length > 1 ? parts[1] : parts[0];
+
+            BoundaryDescriptor boundary = new BoundaryDescriptor(obj_name);
+
+            if (parts.Length > 1)
+            {
+                boundary.AddSids(parts[0].Split(':').Select(s => new Sid(s)));
+            }
+
+            return boundary;
+        }
 
         #region IDisposable Support
     private bool disposedValue = false; // To detect redundant calls
@@ -241,7 +268,7 @@ namespace NtApiDotNet
         /// <param name="desired_access">The desired access to the directory</param>
         /// <param name="root">Root directory from where to start the creation operation</param>
         /// <returns>The directory object</returns>
-        /// <exception cref="NtException">Throw on error</exception>
+        /// <exception cref="NtException">Thrown on error</exception>
         public static NtDirectory Create(string name, NtObject root, DirectoryAccessRights desired_access)
         {
             return Create(name, root, desired_access, null);
@@ -255,14 +282,21 @@ namespace NtApiDotNet
         /// <param name="root">Root directory from where to start the creation operation</param>
         /// <param name="shadow_dir">The shadow directory</param>
         /// <returns>The directory object</returns>
-        /// <exception cref="NtException">Throw on error</exception>
+        /// <exception cref="NtException">Thrown on error</exception>
         public static NtDirectory Create(string name, NtObject root, DirectoryAccessRights desired_access, NtDirectory shadow_dir)
         {
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
                 SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtCreateDirectoryObjectEx(out handle, desired_access, obja, 
-                    shadow_dir != null ? shadow_dir.Handle : SafeKernelObjectHandle.Null, 0));
+                if (shadow_dir == null)
+                {
+                    StatusToNtException(NtSystemCalls.NtCreateDirectoryObject(out handle, desired_access, obja));
+                }
+                else
+                {
+                    StatusToNtException(NtSystemCalls.NtCreateDirectoryObjectEx(out handle, desired_access, obja,
+                        shadow_dir.Handle, 0));
+                }
                 return new NtDirectory(handle);
             }
         }
@@ -336,12 +370,29 @@ namespace NtApiDotNet
             }
         }
 
-        public static NtDirectory CreatePrivateNamespace(BoundaryDescriptor boundary_descriptor)
+        public static NtDirectory CreatePrivateNamespace(BoundaryDescriptor boundary_descriptor, DirectoryAccessRights access)
         {
             using (ObjectAttributes obja = new ObjectAttributes())
             {
                 SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtCreatePrivateNamespace(out handle, DirectoryAccessRights.MaximumAllowed, obja, boundary_descriptor.Handle));
+                StatusToNtException(NtSystemCalls.NtCreatePrivateNamespace(out handle, access, obja, boundary_descriptor.Handle));
+                NtDirectory ret = new NtDirectory(handle);
+                ret._private_namespace = true;
+                return ret;
+            }
+        }
+
+        public static NtDirectory CreatePrivateNamespace(BoundaryDescriptor boundary_descriptor)
+        {
+            return CreatePrivateNamespace(boundary_descriptor, DirectoryAccessRights.MaximumAllowed);
+        }
+
+        public static NtDirectory OpenPrivateNamespace(BoundaryDescriptor boundary_descriptor, DirectoryAccessRights access)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes())
+            {
+                SafeKernelObjectHandle handle;
+                StatusToNtException(NtSystemCalls.NtOpenPrivateNamespace(out handle, access, obja, boundary_descriptor.Handle));
                 NtDirectory ret = new NtDirectory(handle);
                 ret._private_namespace = true;
                 return ret;
@@ -350,14 +401,7 @@ namespace NtApiDotNet
 
         public static NtDirectory OpenPrivateNamespace(BoundaryDescriptor boundary_descriptor)
         {
-            using (ObjectAttributes obja = new ObjectAttributes())
-            {
-                SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtOpenPrivateNamespace(out handle, DirectoryAccessRights.MaximumAllowed, obja, boundary_descriptor.Handle));
-                NtDirectory ret = new NtDirectory(handle);
-                ret._private_namespace = true;
-                return ret;
-            }
+            return OpenPrivateNamespace(boundary_descriptor, DirectoryAccessRights.MaximumAllowed);
         }
 
         /// <summary>
@@ -369,6 +413,103 @@ namespace NtApiDotNet
             {
                 StatusToNtException(NtSystemCalls.NtDeletePrivateNamespace(Handle));
             }
+        }
+
+        public ObjectDirectoryInformation GetDirectoryEntry(string name, string typename, bool case_sensitive)
+        {
+            StringComparison comparison_type = case_sensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+            foreach (ObjectDirectoryInformation dir_info in Query())
+            {
+                if (!dir_info.Name.Equals(name, comparison_type))
+                {
+                    continue;
+                }
+
+                if (typename != null && !typename.Equals(typename, comparison_type))
+                {
+                    continue;
+                }
+
+                return dir_info;
+            }
+            return null;
+        }
+
+        public ObjectDirectoryInformation GetDirectoryEntry(string name)
+        {
+            return GetDirectoryEntry(name, null, false);
+        }
+
+        /// <summary>
+        /// Returns whether a directory exists for this path.
+        /// </summary>
+        /// <param name="path">The path to the entry.</param>
+        /// <param name="root"></param>
+        /// <returns></returns>
+        public static bool DirectoryExists(string path, NtDirectory root)
+        {
+            try
+            {
+                using (NtDirectory dir = NtDirectory.Open(path, root, DirectoryAccessRights.MaximumAllowed))
+                {
+                    return true;
+                }
+            }
+            catch (NtException)
+            {
+                return false;
+            }
+        }
+
+        private static string GetDirectoryName(string path)
+        {
+            int index = path.LastIndexOf('\\');
+            if (index < 0)
+            {
+                return String.Empty;
+            }
+            else
+            {
+                return path.Substring(0, index);
+            }
+        }
+
+        private static string GetFileName(string path)
+        {
+            int index = path.LastIndexOf('\\');
+            if (index < 0)
+            {
+                return path;
+            }
+            else
+            {
+                return path.Substring(index + 1);
+            }
+        }
+
+        public static string GetDirectoryEntryType(string name, NtObject root)
+        {
+            try
+            {
+                using (NtDirectory dir = NtDirectory.Open(GetDirectoryName(name), root, DirectoryAccessRights.Query))
+                {
+                    ObjectDirectoryInformation dir_info = dir.GetDirectoryEntry(GetFileName(name));
+                    if (dir_info != null)
+                    {
+                        return dir_info.TypeName;
+                    }
+                }
+            }
+            catch (NtException)
+            {
+            }
+
+            return null;
+        }
+
+        public bool DirectoryExists(string path)
+        {
+            return DirectoryExists(path, this);
         }
 
         private bool _private_namespace;

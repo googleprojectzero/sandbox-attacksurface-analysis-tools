@@ -137,10 +137,28 @@ namespace NtApiDotNet
         OverwriteIf = 0x00000005,
     }
 
-    public enum FileAttributes
+    [Flags]
+    public enum FileAttributes : uint
     {
         None = 0,
-        Normal = 0x80,
+        ReadOnly = 0x00000001,
+        Hidden = 0x00000002,
+        System = 0x00000004,
+        Directory = 0x00000010,
+        Achive = 0x00000020,
+        Device = 0x00000040,
+        Normal = 0x00000080,
+        Temporary = 0x00000100,
+        SparseFile = 0x00000200,
+        RepasePoint = 0x00000400,
+        Compressed = 0x00000800,
+        Offline = 0x00001000,
+        NotContentIndexed = 0x00002000,
+        Encrypted = 0x00004000,
+        IntegrityStream = 0x00008000,
+        Virtual = 0x00010000,
+        NoScrubData = 0x00020000,
+        Ea = 0x00040000,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -449,7 +467,7 @@ namespace NtApiDotNet
             {
                 SafeKernelObjectHandle handle;
                 IoStatus iostatus = new IoStatus();
-                byte[] buffer = eabuffer != null ? eabuffer.ToArray() : null;
+                byte[] buffer = eabuffer != null ? eabuffer.ToByteArray() : null;
                 int status = NtSystemCalls.NtCreateFile(out handle, DesiredAccess, obja, iostatus, null, FileAttributes.Normal,
                     ShareAccess, disposition, OpenOptions, buffer, buffer != null ? buffer.Length : 0);
                 StatusToNtException(status);
@@ -544,7 +562,7 @@ namespace NtApiDotNet
             }
         }
 
-        public void CreateHardlinkRelative(string linkname, NtFile root)
+        public void CreateHardlink(string linkname, NtFile root)
         {
             FileLinkRenameInformation link = new FileLinkRenameInformation();
             link.ReplaceIfExists = true;
@@ -562,7 +580,7 @@ namespace NtApiDotNet
 
         public void CreateHardlink(string linkname)
         {
-            CreateHardlinkRelative(linkname, null);
+            CreateHardlink(linkname, (NtFile)null);
         }
 
         public static void CreateHardlink(string path, string linkname)

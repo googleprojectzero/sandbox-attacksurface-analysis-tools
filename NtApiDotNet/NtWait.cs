@@ -1,0 +1,48 @@
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
+
+namespace NtApiDotNet
+{
+    public enum WaitType
+    {
+        WaitAll,
+        WaitAny
+    }
+
+    public static partial class NtSystemCalls
+    {
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtWaitForSingleObject(
+          SafeKernelObjectHandle Handle,
+          bool Alertable,
+          LargeInteger Timeout
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtWaitForMultipleObjects(int HandleCount, 
+            [Out] SafeKernelObjectHandle[] Handles, WaitType WaitType, bool Alertable, LargeInteger Timeout);
+    }
+
+    public class NtWait
+    {
+        private static LargeInteger LongToTimeout(long timeout)
+        {
+            return timeout == Infinite ? null : new LargeInteger(timeout);
+        }
+
+        public static NtStatus Wait(NtObject obj, bool alertable, long timeout)
+        {
+            return NtSystemCalls.NtWaitForSingleObject(obj.Handle, alertable, LongToTimeout(timeout)).ToNtException();
+        }
+
+        public static NtStatus Wait(IEnumerable<NtObject> objs, bool alertable, bool wait_all, long timeout)
+        {
+            SafeKernelObjectHandle[] handles = objs.Select(o => o.Handle).ToArray();
+            return NtSystemCalls.NtWaitForMultipleObjects(handles.Length, handles,
+                wait_all ? WaitType.WaitAll : WaitType.WaitAny, alertable, LongToTimeout(timeout)).ToNtException();
+        }
+
+        public const long Infinite = long.MinValue;
+    }
+}

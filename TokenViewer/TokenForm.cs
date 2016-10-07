@@ -373,7 +373,7 @@ namespace TokenViewer
                 }
                 else
                 {
-                    using (UserToken token = TokenUtils.CreateProcessForToken(txtCommandLine.Text, _token, checkBoxMakeInteractive.Checked))
+                    using (var token = TokenUtils.CreateProcessForToken(txtCommandLine.Text, _token, checkBoxMakeInteractive.Checked))
                     {
                     }
                 }

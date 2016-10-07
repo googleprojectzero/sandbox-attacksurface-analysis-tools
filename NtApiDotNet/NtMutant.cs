@@ -29,6 +29,9 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtOpenMutant(out SafeKernelObjectHandle MutantHandle, MutantAccessRights DesiredAccess, 
             ObjectAttributes ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtReleaseMutant(SafeKernelObjectHandle MutantHandle, out uint PreviousState);
     }
 
     public class NtMutant : NtObjectWithDuplicate<NtMutant, MutantAccessRights>
@@ -55,6 +58,13 @@ namespace NtApiDotNet
                 StatusToNtException(NtSystemCalls.NtOpenMutant(out handle, access_rights, obja));
                 return new NtMutant(handle);
             }
+        }
+
+        public uint Release()
+        {
+            uint ret = 0;
+            NtSystemCalls.NtReleaseMutant(Handle, out ret).ToNtException();
+            return ret;
         }
     }
 }

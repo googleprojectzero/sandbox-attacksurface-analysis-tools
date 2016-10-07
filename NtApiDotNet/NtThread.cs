@@ -320,7 +320,5 @@ namespace NtApiDotNet
 
             return status == NtStatus.STATUS_ALERTED;
         }
-
-        public const long InfiniteSleep = long.MinValue;
     }    
 }

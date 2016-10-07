@@ -2,6 +2,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Linq;
 
 namespace NtApiDotNet
 {
@@ -155,18 +156,25 @@ namespace NtApiDotNet
             Data = data;
         }
 
-        public string AsString()
+        public override string ToString()
         {
             switch (Type)
             {
                 case RegistryValueType.String:
                 case RegistryValueType.ExpandString:
                 case RegistryValueType.MultiString:
-                    break;
+                case RegistryValueType.Link:
+                    return Encoding.Unicode.GetString(Data);
+                case RegistryValueType.Dword:
+                    return BitConverter.ToUInt32(Data, 0).ToString();
+                case RegistryValueType.DwordBigEndian:
+                    return BitConverter.ToUInt32(Data.Reverse().ToArray(), 0).ToString();
+                case RegistryValueType.Qword:
+                    return BitConverter.ToUInt64(Data, 0).ToString();
                 default:
-                    throw new ArgumentException("Value is not a string");
+                    throw new ArgumentException("Value can't be converted to a string");
             }
-            return Encoding.Unicode.GetString(Data);
+            
         }
     }
 
@@ -199,7 +207,7 @@ namespace NtApiDotNet
             }
         }
 
-        public static NtKey Create(string key_name, NtKey root, AttributeFlags flags, KeyAccessRights access, KeyCreateOptions options)
+        public static NtKey Create(string key_name, NtObject root, AttributeFlags flags, KeyAccessRights access, KeyCreateOptions options)
         {
             using (ObjectAttributes obja = new ObjectAttributes(key_name, flags, root))
             {
@@ -210,7 +218,7 @@ namespace NtApiDotNet
             }
         }
 
-        public static NtKey Create(string key_name, NtKey root, KeyAccessRights access, KeyCreateOptions options)
+        public static NtKey Create(string key_name, NtObject root, KeyAccessRights access, KeyCreateOptions options)
         {
             return Create(key_name, root, AttributeFlags.CaseInsensitive | AttributeFlags.OpenIf, access, options);
         }
@@ -225,7 +233,7 @@ namespace NtApiDotNet
             return Create(key_name, this, access, options);
         }
 
-        public static NtKey Open(string key_name, NtKey root, KeyAccessRights access)
+        public static NtKey Open(string key_name, NtObject root, KeyAccessRights access)
         {
             using (ObjectAttributes obja = new ObjectAttributes(key_name, AttributeFlags.CaseInsensitive, root))
             {

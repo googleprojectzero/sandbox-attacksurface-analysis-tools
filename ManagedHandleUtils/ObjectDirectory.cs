@@ -158,19 +158,12 @@ namespace HandleUtils
 
         private static NtDirectory OpenNamespace(string path)
         {
-            string[] parts = path.Split(new char[] { '@' }, 2);
-            string obj_name = parts.Length > 1 ? parts[1] : parts[0];
-
             try
             {
-                BoundaryDescriptor boundary = new BoundaryDescriptor(obj_name);
-
-                if (parts.Length > 1)
+                using (BoundaryDescriptor boundary = BoundaryDescriptor.CreateFromString(path))
                 {
-                    boundary.AddSids(parts[0].Split(':').Select(s => new Sid(s)));
+                    return NtDirectory.OpenPrivateNamespace(boundary);
                 }
-
-                return NtDirectory.OpenPrivateNamespace(boundary);
             }
             catch (NtException ex)
             {

@@ -51,7 +51,6 @@
     <Compile Include="SafeWin32Exception.cs" />
     <Compile Include="SecurityInformationImpl.cs" />
     <Compile Include="TokenUtils.cs" />
-    <Compile Include="UserToken.cs" />
     <Compile Include="Win32Process.cs" />
   </ItemGroup>
   <ItemGroup>
