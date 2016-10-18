@@ -82,17 +82,55 @@ namespace NtApiDotNet
         public LargeIntegerStruct OtherTransferCount;
         public SystemThreadInformation Threads;
     }
-    
+
     public class HandleEntry
     {
         public int Pid { get; private set; }
-        public string ObjectType { get; private set; }        
+        public string ObjectType { get; private set; }
         public AttributeFlags Attributes { get; private set; }
-        public IntPtr Handle { get; private set; }
-        public IntPtr Object { get; private set; }
-        public uint GrantedAccess { get; private set; }        
+        public int Handle { get; private set; }
+        public ulong Object { get; private set; }
+        public uint GrantedAccess { get; private set; }
+        public string Name
+        {
+            get
+            {
+                QueryValues();
+                return _name;
+            }
+        }
 
-        public HandleEntry(SystemHandleTableInfoEntry entry)
+        public SecurityDescriptor SecurityDescriptor
+        {
+            get
+            {
+                QueryValues();
+                return _sd;
+            }
+        }
+
+        private void QueryValues()
+        {
+            if (_allow_query)
+            {
+                _allow_query = false;
+                try
+                {
+                    using (NtGeneric obj = NtGeneric.DuplicateFrom(Pid, new IntPtr(Handle)))
+                    {
+                        // Ensure we get the real type, in case it changed _or_ it was wrong to begin with.
+                        ObjectType = obj.GetTypeName();
+                        _name = GetName(obj);
+                        _sd = GetSecurityDescriptor(obj);
+                    }
+                }
+                catch (NtException)
+                {
+                }
+            }
+        }
+
+        internal HandleEntry(SystemHandleTableInfoEntry entry, bool allow_query)
         {
             Pid = entry.UniqueProcessId;
             ObjectTypeInfo info = ObjectTypeInfo.GetTypeByIndex(entry.ObjectTypeIndex);
@@ -105,38 +143,22 @@ namespace NtApiDotNet
                 ObjectType = String.Format("Unknown {0}", entry.ObjectTypeIndex);
             }
             Attributes = (AttributeFlags)entry.HandleAttributes;
-            Handle = new IntPtr(entry.HandleValue);
-            Object = entry.Object;
+            Handle = entry.HandleValue;
+            Object = (ulong)entry.Object.ToInt64();
             GrantedAccess = entry.GrantedAccess;
+            _allow_query = allow_query;
         }
 
         public NtObject GetObject()
         {
             NtToken.EnableDebugPrivilege();
             try
-            {                
-                switch (ObjectType.ToLower())
+            {
+                using (NtGeneric generic = NtGeneric.DuplicateFrom(Pid, new IntPtr(Handle)))
                 {
-                    case "device":
-                        return NtFile.DuplicateFrom(Pid, Handle);
-                    case "file":
-                        return NtFile.DuplicateFrom(Pid, Handle);
-                    case "event":
-                        return NtEvent.DuplicateFrom(Pid, Handle);
-                    case "directory":
-                        return NtDirectory.DuplicateFrom(Pid, Handle);
-                    case "symboliclink":
-                        return NtSymbolicLink.DuplicateFrom(Pid, Handle);
-                    case "mutant":
-                        return NtMutant.DuplicateFrom(Pid, Handle);
-                    case "semaphore":
-                        return NtSemaphore.DuplicateFrom(Pid, Handle);
-                    case "section":
-                        return NtSection.DuplicateFrom(Pid, Handle);
-                    case "job":
-                        return NtJob.DuplicateFrom(Pid, Handle);
-                    default:
-                        return NtGeneric.DuplicateFrom(Pid, Handle);
+                    // Ensure that we get the actual type from the handle.
+                    ObjectType = generic.GetTypeName();
+                    return generic.ToTypedObject();
                 }
             }
             catch
@@ -145,25 +167,36 @@ namespace NtApiDotNet
             return null;
         }
 
-        public string GetName()
+        private string GetName(NtGeneric obj)
         {
-            NtObject obj = GetObject();
+            if (obj == null)
+            {
+                return String.Empty;
+            }
+            return obj.GetName();
+        }
+
+        private SecurityDescriptor GetSecurityDescriptor(NtGeneric obj)
+        {
             try
             {
                 if (obj != null)
                 {
-                    return obj.GetName();
+                    using (NtGeneric dup = obj.Duplicate(GenericAccessRights.ReadControl))
+                    {
+                        return dup.GetSecurityDescriptor();
+                    }
                 }
-                return String.Empty;
             }
-            finally
+            catch
             {
-                if (obj != null)
-                {
-                    obj.Dispose();
-                }
-            } 
+            }
+            return null;
         }
+
+        private string _name;
+        private SecurityDescriptor _sd;
+        private bool _allow_query;
     }
 
     public enum SystemInformationClass
@@ -348,7 +381,7 @@ namespace NtApiDotNet
 
     public class NtSystemInfo
     {
-        public static IEnumerable<HandleEntry> GetHandles(int pid)
+        public static IEnumerable<HandleEntry> GetHandles(int pid, bool allow_query)
         {
             SafeHGlobalBuffer handleInfo = new SafeHGlobalBuffer(0x10000);
             try
@@ -376,7 +409,7 @@ namespace NtApiDotNet
 
                     if (pid == -1 || entry.UniqueProcessId == pid)
                     {
-                        ret.Add(new HandleEntry(entry));
+                        ret.Add(new HandleEntry(entry, allow_query));
                     }
                     handleInfoBuf += Marshal.SizeOf(typeof(SystemHandleTableInfoEntry));
                 }
@@ -390,7 +423,7 @@ namespace NtApiDotNet
 
         public static IEnumerable<HandleEntry> GetHandles()
         {
-            return GetHandles(-1);
+            return GetHandles(-1, true);
         }
     }
 }

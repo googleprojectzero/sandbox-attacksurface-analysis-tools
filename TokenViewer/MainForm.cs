@@ -263,7 +263,7 @@ namespace TokenViewer
                 {
                     try
                     {
-                        TokenForm.OpenForm(NtToken.DuplicateFrom(handle.Pid, handle.Handle, TokenAccessRights.Query | TokenAccessRights.QuerySource), false);
+                        TokenForm.OpenForm(NtToken.DuplicateFrom(handle.Pid, new IntPtr(handle.Handle), TokenAccessRights.Query | TokenAccessRights.QuerySource), false);
                     }
                     catch (Exception ex)
                     {
@@ -429,13 +429,13 @@ namespace TokenViewer
             if (node != null && node.Tag is NtProcess)
             {
                 NtProcess entry = (NtProcess)node.Tag;
-                IEnumerable<HandleEntry> handles = NtSystemInfo.GetHandles(entry.GetProcessId());
+                IEnumerable<HandleEntry> handles = NtSystemInfo.GetHandles(entry.GetProcessId(), false);
                 node.Nodes.Clear();
                 foreach (HandleEntry handle in handles)
                 {
                     if (handle.ObjectType.Equals("Token", StringComparison.OrdinalIgnoreCase))
                     {
-                        TreeNode token_node = new TreeNode(String.Format("Handle: 0x{0:X}", handle.Handle.ToInt32()));
+                        TreeNode token_node = new TreeNode(String.Format("Handle: 0x{0:X}", handle.Handle));
                         token_node.Tag = handle;
                         node.Nodes.Add(token_node);
                     }

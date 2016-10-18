@@ -154,7 +154,7 @@ namespace HandleUtils
         {
             try
             {
-                using (NtToken newtoken = token.DuplicateToken(TokenType.Primary, SecurityImpersonationLevel.Anonymous))
+                using (NtToken newtoken = token.DuplicateToken(TokenType.Primary, SecurityImpersonationLevel.Anonymous, TokenAccessRights.MaximumAllowed))
                 {
                     string desktop = null;
                     if (make_interactive)

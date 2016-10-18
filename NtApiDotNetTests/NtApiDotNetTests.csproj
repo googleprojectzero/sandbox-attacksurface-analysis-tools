@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{E61D53AB-7BFD-460B-9C60-7266E5947D44}</ProjectGuid>
+    <ProjectGuid>{369C4B1F-AFC0-4777-B427-C03C41557D46}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>NewProcessFromToken</RootNamespace>
-    <AssemblyName>NewProcessFromToken</AssemblyName>
+    <RootNamespace>NtApiDotNetTests</RootNamespace>
+    <AssemblyName>NtApiDotNetTests</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -28,17 +28,13 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\bin\Release\</OutputPath>
+    <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="NDesk.Options, Version=0.2.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -54,13 +50,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ManagedHandleUtils\ManagedHandleUtils.csproj">
-      <Project>{4146b337-25d5-4ceb-a1a0-c6b9cca19a3f}</Project>
-      <Name>ManagedHandleUtils</Name>
-    </ProjectReference>
     <ProjectReference Include="..\NtApiDotNet\NtApiDotNet.csproj">
       <Project>{6aeb5004-6093-4c23-aeae-911d64cacc58}</Project>
       <Name>NtApiDotNet</Name>

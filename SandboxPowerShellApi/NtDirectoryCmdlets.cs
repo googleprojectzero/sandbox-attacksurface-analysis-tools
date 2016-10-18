@@ -1,82 +1,60 @@
 ﻿using NtApiDotNet;
-using System;
 using System.Management.Automation;
 
 namespace SandboxPowerShellApi
 {
     [Cmdlet(VerbsCommon.Get, "NtDirectory")]
-    public sealed class GetNtDirectoryCmdlet : NtObjectBaseCmdletWithAccess<DirectoryAccessRights>
+    public class GetNtDirectoryCmdlet : NtObjectBaseCmdletWithAccess<DirectoryAccessRights>
     {
-        [Parameter()]
-        public bool PrivateNamespace { get; set; }
+        [Parameter]
+        public string PrivateNamespaceDescriptor { get; set; }
 
-        public GetNtDirectoryCmdlet()
+        protected override string GetPath()
         {
-            Access = DirectoryAccessRights.MaximumAllowed;
+            if (PrivateNamespaceDescriptor != null)
+            {
+                return null;
+            }
+            else
+            {
+                return base.GetPath();
+            }
         }
 
-        protected override object CreateObject()
+        protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            if (PrivateNamespace)
+            if (PrivateNamespaceDescriptor != null)
             {
-                using (BoundaryDescriptor descriptor = BoundaryDescriptor.CreateFromString(Path))
+                using (BoundaryDescriptor descriptor = BoundaryDescriptor.CreateFromString(PrivateNamespaceDescriptor))
                 {
-                    return NtDirectory.OpenPrivateNamespace(descriptor, Access);
+                    return NtDirectory.OpenPrivateNamespace(obj_attributes, descriptor, Access);
                 }
             }
             else
             {
-                return NtDirectory.Open(Path, Root, Access);
+                return NtDirectory.Open(obj_attributes, Access);
             }
-        }
-
-        protected override void VerifyParameters()
-        {
-            if (PrivateNamespace && Path == null)
-            {
-                throw new ArgumentException("Must specify a path for a private namespace");
-            }
-
-            base.VerifyParameters();
         }
     }
     
     [Cmdlet(VerbsCommon.New, "NtDirectory")]
-    public sealed class NewNtDirectoryCmdlet : NtObjectBaseCmdletWithAccess<DirectoryAccessRights>
+    public sealed class NewNtDirectoryCmdlet : GetNtDirectoryCmdlet
     {
-        [Parameter()]
+        [Parameter]
         public NtDirectory ShadowDirectory { get; set; }
 
-        [Parameter()]
-        public bool PrivateNamespace { get; set; }
-
-        protected override void VerifyParameters()
+        protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            if (PrivateNamespace && Path == null)
+            if (PrivateNamespaceDescriptor != null)
             {
-                throw new ArgumentException("Must specify a path for a private namespace");
-            }
-
-            if (PrivateNamespace && ShadowDirectory != null)
-            {
-                throw new ArgumentException("Private namespaces can't specify a ShadowDirectory");
-            }
-
-            base.VerifyParameters();
-        }
-
-        protected override object CreateObject()
-        {
-            if (PrivateNamespace)
-            {
-                using (BoundaryDescriptor descriptor = BoundaryDescriptor.CreateFromString(Path))
+                using (BoundaryDescriptor descriptor = BoundaryDescriptor.CreateFromString(PrivateNamespaceDescriptor))
                 {
-                    return NtDirectory.CreatePrivateNamespace(descriptor, Access);
+                    return NtDirectory.CreatePrivateNamespace(obj_attributes, descriptor, Access);
                 }
             }
             else
             {
-                return NtDirectory.Create(Path, Root, Access, ShadowDirectory);
+                return NtDirectory.Create(obj_attributes, Access, ShadowDirectory);
             }
         }
     }

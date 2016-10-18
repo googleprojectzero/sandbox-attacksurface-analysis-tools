@@ -28,7 +28,7 @@ namespace EditSection
             string size = String.Empty;
             try
             {
-                using (NtSection section = NtSection.DuplicateFrom(ent.Pid, ent.Handle, SectionAccessRights.Query))
+                using (NtSection section = NtSection.DuplicateFrom(ent.Pid, new IntPtr(ent.Handle), SectionAccessRights.Query))
                 {
                     size = section.GetSize().ToString();
                 }
@@ -51,7 +51,7 @@ namespace EditSection
                 builder.Append("W");
             }
 
-            return String.Format("[{0}/0x{0:X}] {1} Size: {2} Access: {3}", ent.Handle.ToInt64(), ent.GetName(), size, builder.ToString());            
+            return String.Format("[{0}/0x{0:X}] {1} Size: {2} Access: {3}", ent.Handle, ent.Name, size, builder.ToString());
         }
 
         public SectionTreeNode(HandleEntry ent)
@@ -69,7 +69,7 @@ namespace EditSection
                 accessRights |= SectionAccessRights.MapWrite;
             }
 
-            using (NtSection section = NtSection.DuplicateFrom(_ent.Pid, _ent.Handle, accessRights))
+            using (NtSection section = NtSection.DuplicateFrom(_ent.Pid, new IntPtr(_ent.Handle), accessRights))
             {
                 return section.Map(writable ? ProtectionType.ReadWrite : ProtectionType.ReadOnly);
             }

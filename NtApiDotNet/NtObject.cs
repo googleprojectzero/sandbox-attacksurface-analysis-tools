@@ -547,6 +547,27 @@ namespace NtApiDotNet
             return AccessRightsToString(typeof(T), mapped_access);
         }
 
+        public string GetShortName()
+        {
+            string name = GetName();
+            if (name == @"\")
+            {
+                return String.Empty;
+            }
+
+            int index = name.LastIndexOf('\\');
+            if (index >= 0)
+            {
+                return name.Substring(index + 1);
+            }
+            return name;
+        }
+
+        public override string ToString()
+        {
+            return GetShortName();
+        }
+
         #region IDisposable Support
         private bool disposedValue = false;
 
@@ -677,9 +698,33 @@ namespace NtApiDotNet
         {
         }
 
-        public T Cast<T>() where T : NtObject
+        public NtObject ToTypedObject()
         {
-            return null;
+            switch (GetTypeName())
+            {
+                case "device":
+                    return new NtFile(DuplicateHandle());
+                case "file":
+                    return new NtFile(DuplicateHandle());
+                case "event":
+                    return new NtEvent(DuplicateHandle());
+                case "directory":
+                    return new NtDirectory(DuplicateHandle());
+                case "symboliclink":
+                    return new NtSymbolicLink(DuplicateHandle());
+                case "mutant":
+                    return new NtMutant(DuplicateHandle());
+                case "semaphore":
+                    return new NtSemaphore(DuplicateHandle());
+                case "section":
+                    return new NtSection(DuplicateHandle());
+                case "job":
+                    return new NtJob(DuplicateHandle());
+                case "key":
+                    return new NtKey(DuplicateHandle());
+                default:
+                    return Duplicate();
+            }
         }
     }
 }

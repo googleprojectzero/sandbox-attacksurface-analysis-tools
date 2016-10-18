@@ -69,11 +69,11 @@ namespace CommonObjects
                 else
                 {
                     HashSet<IntPtr> sharedObjects = new HashSet<IntPtr>();
-                    Dictionary<IntPtr, List<HandleEntry>> entries = new Dictionary<IntPtr, List<HandleEntry>>();
+                    Dictionary<ulong, List<HandleEntry>> entries = new Dictionary<ulong, List<HandleEntry>>();
 
                     foreach (int pid in pids)
                     {                        
-                        foreach(HandleEntry entry in NtApiDotNet.NtSystemInfo.GetHandles(pid))
+                        foreach(HandleEntry entry in NtApiDotNet.NtSystemInfo.GetHandles(pid, true))
                         {
                             if (!entries.ContainsKey(entry.Object))
                             {
@@ -87,16 +87,16 @@ namespace CommonObjects
 
                     var output = entries.Where(x => x.Value.GroupBy(y => y.Pid).Count() >= limit);
 
-                    foreach (KeyValuePair<IntPtr, List<HandleEntry>> pair in output)
+                    foreach (KeyValuePair<ulong, List<HandleEntry>> pair in output)
                     {
                         if (String.IsNullOrWhiteSpace(typeFilter) || pair.Value[0].ObjectType.Equals(typeFilter, StringComparison.OrdinalIgnoreCase))
                         {
-                            Console.WriteLine("{0:X} {1} {2}", pair.Key.ToInt64(), pair.Value[0].ObjectType, GetObjectName(pair.Value));
+                            Console.WriteLine("{0:X} {1} {2}", pair.Key, pair.Value[0].ObjectType, GetObjectName(pair.Value));
 
                             foreach (HandleEntry entry in pair.Value)
                             {
                                 Console.WriteLine("\t{0}/0x{0:X} {1}/0x{1:X} 0x{2:X08}",
-                                    entry.Pid, entry.Handle.ToInt32(), entry.GrantedAccess);
+                                    entry.Pid, entry.Handle, entry.GrantedAccess);
                             }
                         }
                     }

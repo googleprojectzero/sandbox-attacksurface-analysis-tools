@@ -332,7 +332,7 @@ namespace TokenViewer
             try
             {
                 using (NtToken token = _token.DuplicateToken((TokenType)comboBoxTokenType.SelectedItem,
-                        (SecurityImpersonationLevel)comboBoxImpLevel.SelectedItem))
+                        (SecurityImpersonationLevel)comboBoxImpLevel.SelectedItem, TokenAccessRights.MaximumAllowed))
                 {
                     TokenIntegrityLevel il = GetILFromComboBox(comboBoxILForDup);
                     if (il != token.GetIntegrityLevel())
@@ -478,7 +478,7 @@ namespace TokenViewer
             try
             {
                 using (NtToken token = _token.DuplicateToken(TokenType.Impersonation,
-                    SecurityImpersonationLevel.Impersonation))
+                    SecurityImpersonationLevel.Impersonation, TokenAccessRights.MaximumAllowed))
                 {
                     using (var imp = token.Impersonate())
                     {
@@ -674,7 +674,7 @@ namespace TokenViewer
                     implevel = _token.GetImpersonationLevel();       
                 }
 
-                using (NtToken token = _token.DuplicateToken(TokenType.Impersonation, implevel))
+                using (NtToken token = _token.DuplicateToken(TokenType.Impersonation, implevel, TokenAccessRights.MaximumAllowed))
                 {
                     TokenIntegrityLevel il = GetILFromComboBox(comboBoxILForDup);
                     if (il != token.GetIntegrityLevel())

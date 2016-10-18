@@ -24,7 +24,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>..\bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -44,6 +44,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="NtDisposableListCmdlets.cs" />
+    <Compile Include="NtProcessCmdlets.cs" />
+    <Compile Include="NtThreadCmdlets.cs" />
+    <Compile Include="NtTokenCmdlets.cs" />
+    <Compile Include="NtHandleCmdlets.cs" />
     <Compile Include="NtDirectoryCmdlets.cs" />
     <Compile Include="NtFileCmdlets.cs" />
     <Compile Include="NtKeyCmdlets.cs" />

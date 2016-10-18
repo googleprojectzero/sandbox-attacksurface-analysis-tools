@@ -104,7 +104,6 @@ namespace HandleUtils
         private SafeStringBuffer _obj_name;
         private NativeHandle _handle;
 
-        // TODO: Replace generic arguments once better merged.
         public SecurityInformationImpl(string obj_name, NativeHandle handle,
             Dictionary<uint, string> names, GenericMapping generic_mapping)
         {

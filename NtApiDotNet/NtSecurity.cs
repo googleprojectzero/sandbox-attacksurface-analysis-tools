@@ -348,13 +348,13 @@ namespace NtApiDotNet
         AclRevisionInformation = 1,
         AclSizeInformation
     }
-    
+
     [StructLayout(LayoutKind.Sequential)]
     public struct AclRevisionInformation
     {
         public AclRevision AclRevision;
     }
-    
+
     [StructLayout(LayoutKind.Sequential)]
     public struct AclSizeInformation
     {
@@ -374,7 +374,7 @@ namespace NtApiDotNet
 
     public class SafePrivilegeSetBuffer : SafeStructureArrayBuffer<PrivilegeSet>
     {
-        public SafePrivilegeSetBuffer(int count) 
+        public SafePrivilegeSetBuffer(int count)
             : base(new PrivilegeSet() { Privilege = new LuidAndAttributes[1] })
         {
         }
@@ -492,6 +492,17 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern void RtlMapGenericMask(ref uint AccessMask, ref GenericMapping mapping);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlDeleteSecurityObject(ref IntPtr ObjectDescriptor);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlNewSecurityObject(SafeBuffer ParentDescriptor,
+                     SafeBuffer CreatorDescriptor,
+                     out SafeSecurityObjectHandle NewDescriptor,
+                     bool IsDirectoryObject,
+                     SafeKernelObjectHandle Token,
+                     ref GenericMapping GenericMapping);
     }
 
     public static partial class NtSystemCalls
@@ -518,11 +529,11 @@ namespace NtApiDotNet
     }
 
     public enum AceType : byte
-    {        
+    {
         Allowed = 0x0,
         Denied = 0x1,
         Audit = 0x2,
-        Alerm = 0x3,        
+        Alerm = 0x3,
         AllowedCompound = 0x4,
         AllowedObject = 0x5,
         DeniedObject = 0x6,
@@ -587,7 +598,7 @@ namespace NtApiDotNet
             }
             return false;
         }
-        
+
         internal Ace(BinaryReader reader)
         {
             long current_position = reader.BaseStream.Position;
@@ -658,7 +669,7 @@ namespace NtApiDotNet
         }
 
         public AceType AceType { get; set; }
-        public AceFlags AceFlags { get; set; }        
+        public AceFlags AceFlags { get; set; }
         public uint Mask { get; set; }
         public Sid Sid { get; set; }
         public Guid? ObjectType { get; set; }
@@ -695,7 +706,7 @@ namespace NtApiDotNet
                 return false;
             }
 
-            return ace.AceType == AceType && ace.AceFlags == AceFlags && ace.Sid == Sid && ace.Mask == Mask 
+            return ace.AceType == AceType && ace.AceFlags == AceFlags && ace.Sid == Sid && ace.Mask == Mask
                 && ace.ObjectType == ObjectType && ace.InheritedObjectType == InheritedObjectType;
         }
 
@@ -720,7 +731,7 @@ namespace NtApiDotNet
             {
                 return false;
             }
-            
+
             return a.Equals(b);
         }
 
@@ -737,7 +748,7 @@ namespace NtApiDotNet
             Sid = sid;
         }
 
-        public Ace(AceType type, AceFlags flags, GenericAccessRights mask, Sid sid) 
+        public Ace(AceType type, AceFlags flags, GenericAccessRights mask, Sid sid)
             : this(type, flags, (uint)mask, sid)
         {
         }
@@ -756,8 +767,8 @@ namespace NtApiDotNet
         public ushort AclSize;
         public ushort AceCount;
         public ushort Sbz2;
-    }    
-        
+    }
+
     public sealed class Acl : List<Ace>
     {
         static T GetAclInformation<T>(IntPtr acl, AclInformationClass info_class) where T : new()
@@ -773,7 +784,7 @@ namespace NtApiDotNet
         {
             AclSizeInformation size_info = GetAclInformation<AclSizeInformation>(acl, AclInformationClass.AclSizeInformation);
             using (SafeBuffer buffer = new SafeHGlobalBuffer(acl, size_info.AclBytesInUse, false))
-            {                
+            {
                 using (BinaryReader reader = new BinaryReader(new UnmanagedMemoryStream(buffer, 0, size_info.AclBytesInUse)))
                 {
                     for (int i = 0; i < size_info.AceCount; ++i)
@@ -799,14 +810,15 @@ namespace NtApiDotNet
                 NullAcl = true;
             }
 
-            Defaulted = defaulted;            
+            Defaulted = defaulted;
         }
 
         public Acl(bool defaulted) : this(IntPtr.Zero, defaulted)
         {
+            Defaulted = defaulted;
         }
 
-        public Acl() : this(false)
+        public Acl() : this(new Ace[0], false)
         {
         }
 
@@ -862,24 +874,82 @@ namespace NtApiDotNet
             }
         }
 
-        public void AddAccessAllowedAce(Enum mask, AceFlags flags, Sid sid)
+        public void AddAccessAllowedAce(GenericAccessRights mask, AceFlags flags, string sid)
         {
-            IConvertible conv = mask;
-            Add(new Ace(AceType.Allowed, flags, conv.ToUInt32(null), sid));
+            AddAccessAllowedAce((uint)mask, flags, sid);
         }
 
-        public void AddAccessAllowedAce(Enum mask, Sid sid)
+        public void AddAccessAllowedAce(uint mask, AceFlags flags, string sid)
+        {
+            Add(new Ace(AceType.Allowed, flags, mask, new Sid(sid)));
+        }
+
+        public void AddAccessAllowedAce(uint mask, string sid)
         {
             AddAccessAllowedAce(mask, AceFlags.None, sid);
         }
 
-        public void AddAccessDeniedAce(Enum mask, AceFlags flags, Sid sid)
+        public void AddAccessAllowedAce(GenericAccessRights mask, string sid)
         {
-            IConvertible conv = mask;
-            Add(new Ace(AceType.Denied, flags, conv.ToUInt32(null), sid));
+            AddAccessAllowedAce(mask, AceFlags.None, sid);
         }
 
-        public void AddAccessDeniedAce(Enum mask, Sid sid)
+        public void AddAccessDeniedAce(uint mask, AceFlags flags, string sid)
+        {
+            Add(new Ace(AceType.Denied, flags, mask, new Sid(sid)));
+        }
+
+        public void AddAccessDeniedAce(GenericAccessRights mask, AceFlags flags, string sid)
+        {
+            AddAccessDeniedAce((uint)mask, flags, sid);
+        }
+
+        public void AddAccessDeniedAce(uint mask, string sid)
+        {
+            AddAccessDeniedAce(mask, AceFlags.None, sid);
+        }
+
+        public void AddAccessDeniedAce(GenericAccessRights mask, string sid)
+        {
+            AddAccessDeniedAce(mask, AceFlags.None, sid);
+        }
+
+        public void AddAccessAllowedAce(GenericAccessRights mask, AceFlags flags, Sid sid)
+        {
+            AddAccessAllowedAce((uint)mask, flags, sid);
+        }
+
+        public void AddAccessAllowedAce(uint mask, AceFlags flags, Sid sid)
+        {
+            Add(new Ace(AceType.Allowed, flags, mask, sid));
+        }
+
+        public void AddAccessAllowedAce(uint mask, Sid sid)
+        {
+            AddAccessAllowedAce(mask, AceFlags.None, sid);
+        }
+
+        public void AddAccessAllowedAce(GenericAccessRights mask, Sid sid)
+        {
+            AddAccessAllowedAce(mask, AceFlags.None, sid);
+        }
+
+        public void AddAccessDeniedAce(uint mask, AceFlags flags, Sid sid)
+        {
+            Add(new Ace(AceType.Denied, flags, mask, sid));
+        }
+
+        public void AddAccessDeniedAce(GenericAccessRights mask, AceFlags flags, Sid sid)
+        {
+            AddAccessDeniedAce((uint)mask, flags, sid);
+        }
+
+        public void AddAccessDeniedAce(uint mask, Sid sid)
+        {
+            AddAccessDeniedAce(mask, AceFlags.None, sid);
+        }
+
+        public void AddAccessDeniedAce(GenericAccessRights mask, Sid sid)
         {
             AddAccessDeniedAce(mask, AceFlags.None, sid);
         }
@@ -951,24 +1021,24 @@ namespace NtApiDotNet
     [Flags]
     public enum SecurityDescriptorControl : ushort
     {
-        OwnerDefaulted    = 0x0001,
-        GroupDefaulted    = 0x0002,
-        DaclPresent       = 0x0004,
-        DaclDefaulted     = 0x0008,
-        SaclPresent       = 0x0010,
-        SaclDefaulted     = 0x0020,
-        DaclAutoInheritReq= 0x0100,
-        SaclAutoInheritReq= 0x0200,
+        OwnerDefaulted = 0x0001,
+        GroupDefaulted = 0x0002,
+        DaclPresent = 0x0004,
+        DaclDefaulted = 0x0008,
+        SaclPresent = 0x0010,
+        SaclDefaulted = 0x0020,
+        DaclAutoInheritReq = 0x0100,
+        SaclAutoInheritReq = 0x0200,
         DaclAutoInherited = 0x0400,
         SaclAutoInherited = 0x0800,
-        DaclProtected     = 0x1000,
-        SaclProtected     = 0x2000,
-        RmControlValid    = 0x4000,
-        SelfRelative      = 0x8000,
+        DaclProtected = 0x1000,
+        SaclProtected = 0x2000,
+        RmControlValid = 0x4000,
+        SelfRelative = 0x8000,
         ValidControlSetMask = DaclAutoInheritReq | SaclAutoInheritReq
         | DaclAutoInherited | SaclAutoInherited | DaclProtected | SaclProtected
     }
-    
+
     public sealed class SecurityDescriptorSid
     {
         public Sid Sid { get; private set; }
@@ -989,7 +1059,7 @@ namespace NtApiDotNet
     public sealed class SecurityDescriptor
     {
         public Acl Dacl { get; set; }
-        public Acl Sacl { get; set; }        
+        public Acl Sacl { get; set; }
         public SecurityDescriptorSid Owner { get; set; }
         public SecurityDescriptorSid Group { get; set; }
         public SecurityDescriptorControl Control { get; set; }
@@ -1021,7 +1091,7 @@ namespace NtApiDotNet
             if (!acl_present)
             {
                 return null;
-            }            
+            }
 
             return new Acl(acl, acl_defaulted);
         }
@@ -1042,12 +1112,11 @@ namespace NtApiDotNet
             NtRtl.RtlGetControlSecurityDescriptor(buffer, out control, out revision).ToNtException();
             Control = control;
             Revision = revision;
-            Dacl = QueryAcl(buffer, NtRtl.RtlGetDaclSecurityDescriptor);
-            Sacl = QueryAcl(buffer, NtRtl.RtlGetSaclSecurityDescriptor);
         }
 
         public SecurityDescriptor()
         {
+            Revision = 1;
         }
 
         public SecurityDescriptor(byte[] security_descriptor)
@@ -1058,7 +1127,79 @@ namespace NtApiDotNet
             }
         }
 
-        public SecurityDescriptor(string sddl) 
+        public SecurityDescriptor(NtToken token) : this()
+        {
+            Owner = new SecurityDescriptorSid(token.GetOwner(), true);
+            Group = new SecurityDescriptorSid(token.GetPrimaryGroup(), true);
+            Dacl = token.GetDefaultDalc();
+            if (token.GetIntegrityLevel() < TokenIntegrityLevel.Medium)
+            {
+                Sacl = new Acl();
+                Sacl.Add(new Ace(AceType.MandatoryLabel, AceFlags.None, 1, token.GetIntegrityLevelSid().Sid));
+            }
+        }
+
+        public SecurityDescriptor(NtObject base_object, NtToken token, bool is_directory) : this()
+        {
+            if ((base_object == null) && (token == null))
+            {
+                throw new ArgumentNullException();
+            }
+
+            SecurityDescriptor parent_sd = null;
+            if (base_object != null)
+            {
+                parent_sd = base_object.GetSecurityDescriptor();
+            }
+
+            SecurityDescriptor creator_sd = null;
+            if (token != null)
+            {
+                creator_sd = new SecurityDescriptor();
+                creator_sd.Owner = new SecurityDescriptorSid(token.GetOwner(), false);
+                creator_sd.Group = new SecurityDescriptorSid(token.GetPrimaryGroup(), false);
+                creator_sd.Dacl = token.GetDefaultDalc();
+            }
+
+            ObjectTypeInfo type = ObjectTypeInfo.GetTypeByName(base_object.GetTypeName());
+
+            SafeBuffer parent_sd_buffer = SafeHGlobalBuffer.Null;
+            SafeBuffer creator_sd_buffer = SafeHGlobalBuffer.Null;
+            SafeSecurityObjectHandle security_obj = null;
+            try
+            {
+                if (parent_sd != null)
+                {
+                    parent_sd_buffer = parent_sd.ToSafeBuffer();
+                }
+                if (creator_sd != null)
+                {
+                    creator_sd_buffer = creator_sd.ToSafeBuffer();
+                }
+
+                GenericMapping mapping = type.GenericMapping;
+                NtRtl.RtlNewSecurityObject(parent_sd_buffer, creator_sd_buffer, out security_obj, is_directory, 
+                    token != null ? token.Handle : SafeKernelObjectHandle.Null, ref mapping).ToNtException();
+                ParseSecurityDescriptor(security_obj);
+            }
+            finally
+            {
+                if (parent_sd_buffer != null)
+                {
+                    parent_sd_buffer.Close();
+                }
+                if (creator_sd_buffer != null)
+                {
+                    creator_sd_buffer.Close();
+                }
+                if (security_obj != null)
+                {
+                    security_obj.Close();
+                }
+            }
+        }
+
+        public SecurityDescriptor(string sddl)
             : this(NtSecurity.SddlToSecurityDescriptor(sddl))
         {
         }
@@ -1120,12 +1261,12 @@ namespace NtApiDotNet
                 {
                     status.ToNtException();
                 }
-                    
+
                 using (SafeHGlobalBuffer relative_sd = new SafeHGlobalBuffer(total_length))
                 {
                     NtRtl.RtlAbsoluteToSelfRelativeSD(sd_buffer, relative_sd, ref total_length).ToNtException();
                     return relative_sd.ToArray();
-                }                
+                }
             }
             finally
             {
@@ -1166,6 +1307,141 @@ namespace NtApiDotNet
         {
             return new SafeHGlobalBuffer(ToByteArray());
         }
+
+        public void AddAccessAllowedAce(GenericAccessRights mask, AceFlags flags, string sid)
+        {
+            AddAccessAllowedAce((uint)mask, flags, sid);
+        }
+
+        private void AddAce(AceType type, uint mask, AceFlags flags, Sid sid)
+        {
+            if (Dacl == null)
+            {
+                Dacl = new Acl();
+            }
+            Dacl.NullAcl = false;
+            Dacl.Add(new NtApiDotNet.Ace(type, flags, mask, sid));
+        }
+
+        public void AddAccessAllowedAce(uint mask, AceFlags flags, string sid)
+        {
+            AddAccessAllowedAceInternal(mask, flags, sid);
+        }
+
+        public void AddAccessAllowedAce(uint mask, string sid)
+        {
+            AddAccessAllowedAceInternal(mask, AceFlags.None, sid);
+        }
+
+        public void AddAccessAllowedAce(GenericAccessRights mask, string sid)
+        {
+            AddAccessAllowedAceInternal((uint)mask, AceFlags.None, sid);
+        }
+
+        public void AddAccessAllowedAce(GenericAccessRights mask, AceFlags flags, Sid sid)
+        {
+            AddAccessAllowedAceInternal((uint)mask, flags, sid);
+        }
+
+        public void AddAccessAllowedAce(uint mask, AceFlags flags, Sid sid)
+        {
+            AddAccessAllowedAceInternal(mask, AceFlags.None, sid);
+        }
+
+        public void AddAccessAllowedAce(uint mask, Sid sid)
+        {
+            AddAccessAllowedAceInternal((uint)mask, AceFlags.None, sid);
+        }
+
+        public void AddAccessAllowedAce(GenericAccessRights mask, Sid sid)
+        {
+            AddAccessAllowedAceInternal((uint)mask, AceFlags.None, sid);
+        }
+
+        private void AddAccessAllowedAceInternal(uint mask, AceFlags flags, Sid sid)
+        {
+            AddAce(AceType.Allowed, mask, flags, sid);
+        }
+
+        private void AddAccessAllowedAceInternal(uint mask, AceFlags flags, string sid)
+        {
+            AddAce(AceType.Allowed, mask, flags, NtSecurity.SidFromSddl(sid));
+        }
+
+        public void AddAccessDeniedAce(uint mask, AceFlags flags, string sid)
+        {
+            AddAccessDeniedAce(mask, flags, sid);
+        }
+
+        public void AddAccessDeniedAce(GenericAccessRights mask, AceFlags flags, string sid)
+        {
+            AddAccessDeniedAceInternal((uint)mask, flags, sid);
+        }
+
+        public void AddAccessDeniedAce(uint mask, string sid)
+        {
+            AddAccessDeniedAceInternal(mask, AceFlags.None, sid);
+        }
+
+        public void AddAccessDeniedAce(GenericAccessRights mask, string sid)
+        {
+            AddAccessDeniedAceInternal((uint)mask, AceFlags.None, sid);
+        }
+
+        public void AddAccessDeniedAce(GenericAccessRights mask, AceFlags flags, Sid sid)
+        {
+            AddAccessDeniedAceInternal((uint)mask, flags, sid);
+        }
+
+        public void AddAccessDeniedAce(uint mask, Sid sid)
+        {
+            AddAccessDeniedAceInternal(mask, AceFlags.None, sid);
+        }
+
+        public void AddAccessDeniedAce(GenericAccessRights mask, Sid sid)
+        {
+            AddAccessDeniedAceInternal((uint)mask, AceFlags.None, sid);
+        }
+
+        public void AddAccessDeniedAce(uint mask, AceFlags flags, Sid sid)
+        {
+            AddAccessDeniedAceInternal(mask, flags, sid);
+        }
+
+        private void AddAccessDeniedAceInternal(uint mask, AceFlags flags, Sid sid)
+        {
+            AddAce(AceType.Denied, mask, flags, sid);
+        }
+
+        private void AddAccessDeniedAceInternal(uint mask, AceFlags flags, string sid)
+        {
+            AddAce(AceType.Denied, mask, flags, NtSecurity.SidFromSddl(sid));
+        }
+
+        public void AddMandatoryLabel(TokenIntegrityLevel level)
+        {
+            AddMandatoryLabel(Sid.GetIntegritySid(level), AceFlags.None, MandatoryLabelPolicy.NoWriteUp);
+        }
+
+        public void AddMandatoryLabel(TokenIntegrityLevel level, MandatoryLabelPolicy policy)
+        {
+            AddMandatoryLabel(Sid.GetIntegritySid(level), AceFlags.None, policy);
+        }
+
+        public void AddMandatoryLabel(TokenIntegrityLevel level, AceFlags flags, MandatoryLabelPolicy policy)
+        {
+            AddMandatoryLabel(Sid.GetIntegritySid(level), flags, policy);
+        }
+
+        public void AddMandatoryLabel(Sid label, AceFlags flags, MandatoryLabelPolicy policy)
+        {
+            if (Sacl == null)
+            {
+                Sacl = new Acl();
+            }
+            Sacl.NullAcl = false;
+            Sacl.Add(new Ace(AceType.MandatoryLabel, flags, (uint)policy, label));
+        }
     }
 
     public static class NtSecurity
@@ -1184,8 +1460,8 @@ namespace NtApiDotNet
             SidTypeLabel
         }
 
-        [DllImport("Advapi32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
-        static extern bool LookupAccountSid(string lpSystemName, SafeSidBufferHandle lpSid, StringBuilder lpName, 
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern bool LookupAccountSid(string lpSystemName, SafeSidBufferHandle lpSid, StringBuilder lpName,
                 ref int cchName, StringBuilder lpReferencedDomainName, ref int cchReferencedDomainName, out SidNameUse peUse);
 
         /// <summary>
@@ -1232,13 +1508,13 @@ namespace NtApiDotNet
             int return_length;
             if (!ConvertSecurityDescriptorToStringSecurityDescriptor(sd, 1, security_information, out handle, out return_length))
             {
-                throw new Win32Exception();
+                throw new NtException(NtStatus.STATUS_INVALID_SID);
             }
 
             using (handle)
             {
                 return Marshal.PtrToStringUni(handle.DangerousGetHandle());
-            }            
+            }
         }
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -1254,7 +1530,7 @@ namespace NtApiDotNet
             int return_length;
             if (!ConvertStringSecurityDescriptorToSecurityDescriptor(sddl, 1, out handle, out return_length))
             {
-                throw new Win32Exception();
+                throw new NtException(NtStatus.STATUS_INVALID_SID);
             }
 
             using (handle)
@@ -1275,7 +1551,7 @@ namespace NtApiDotNet
             SafeLocalAllocHandle handle;
             if (!ConvertStringSidToSid(sddl, out handle))
             {
-                throw new Win32Exception();
+                throw new NtException(NtStatus.STATUS_INVALID_SID);
             }
             using (handle)
             {
@@ -1355,6 +1631,19 @@ namespace NtApiDotNet
             }
 
             return null;
+        }
+    }
+
+    public class SafeSecurityObjectHandle : SafeBuffer
+    {
+        public SafeSecurityObjectHandle() : base(true)
+        {
+            Initialize(0);
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            return NtRtl.RtlDeleteSecurityObject(ref handle).IsSuccess();
         }
     }
 }

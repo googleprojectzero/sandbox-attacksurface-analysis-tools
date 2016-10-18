@@ -5,7 +5,8 @@ using System.Text;
 
 namespace NtApiDotNet
 {
-    public class NtException : ApplicationException
+    [Serializable]
+    public sealed class NtException : ApplicationException
     {
         private NtStatus _status;
 

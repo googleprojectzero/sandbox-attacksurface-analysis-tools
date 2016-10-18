@@ -121,7 +121,7 @@ namespace NewProcessFromToken
                     {
                         using (NtToken token = process.OpenToken())
                         {
-                            using (NtToken target_token = token.DuplicateToken(TokenType.Primary, SecurityImpersonationLevel.Anonymous))
+                            using (NtToken target_token = token.DuplicateToken(TokenType.Primary, SecurityImpersonationLevel.Anonymous, TokenAccessRights.MaximumAllowed))
                             {
                                 if (set_il)
                                 {

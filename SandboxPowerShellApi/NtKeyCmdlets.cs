@@ -14,9 +14,9 @@ namespace SandboxPowerShellApi
             return Path;
         }
 
-        protected override object CreateObject()
+        protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            return NtKey.Open(Path, Root, Access);
+            return NtKey.Open(obj_attributes, Access);
         }
     }
 
@@ -25,9 +25,27 @@ namespace SandboxPowerShellApi
     {
         public KeyCreateOptions Options { get; set; }
 
-        protected override object CreateObject()
+        protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            return NtKey.Create(Path, Root, Access, Options);
+            return NtKey.Create(obj_attributes, Access, Options);
+        }
+    }
+
+    [Cmdlet(VerbsCommon.Add, "NtKey")]
+    public sealed class AddNtKeyHiveCmdlet : GetNtKeyCmdlet
+    {
+        [Parameter(Position = 1, Mandatory = true)]
+        public string KeyPath { get; set; }
+
+        [Parameter]
+        public LoadKeyFlags LoadFlags { get; set; }
+
+        protected override object CreateObject(ObjectAttributes obj_attributes)
+        {
+            using (ObjectAttributes name = new ObjectAttributes(KeyPath, AttributeFlags.CaseInsensitive))
+            {
+                return NtKey.LoadKey(name, obj_attributes, LoadFlags, Access);
+            }
         }
     }
 }

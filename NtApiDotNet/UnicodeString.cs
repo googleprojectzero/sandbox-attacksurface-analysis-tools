@@ -20,6 +20,13 @@ namespace NtApiDotNet
             MaximumLength = (ushort)((str.Length * 2) + 1);
             Buffer = str;
         }
+
+        public UnicodeString()
+        {
+            Length = 0;
+            MaximumLength = 0;
+            Buffer = null;
+        }
     }
 
     /// <summary>

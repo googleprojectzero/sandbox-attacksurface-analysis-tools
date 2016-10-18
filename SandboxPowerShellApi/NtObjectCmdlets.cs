@@ -9,10 +9,32 @@ namespace SandboxPowerShellApi
         [Parameter(Position = 0)]
         public string Path { get; set; }
 
-        [Parameter()]
+        [Parameter]
         public NtObject Root { get; set; }
-        
-        protected abstract object CreateObject();
+
+        [Parameter]
+        public AttributeFlags Flags { get; set; }
+
+        [Parameter]
+        public SecurityDescriptor SecurityDescriptor { get; set; }
+
+        [Parameter]
+        public SecurityQualityOfService SecurityQOS { get; set; }
+
+        [Parameter]
+        public SwitchParameter AddToDisposeList { get; set; }
+
+        private ObjectAttributes CreateObjAttributes()
+        {
+            return new ObjectAttributes(GetPath(), Flags, Root, SecurityQOS, SecurityDescriptor);
+        }
+
+        protected NtObjectBaseCmdlet()
+        {
+            Flags = AttributeFlags.CaseInsensitive;
+        }
+
+        protected abstract object CreateObject(ObjectAttributes obj_attributes);
 
         protected virtual void VerifyParameters()
         {
@@ -34,13 +56,25 @@ namespace SandboxPowerShellApi
         protected override void ProcessRecord()
         {
             VerifyParameters();
-            WriteObject(CreateObject());
+            using (ObjectAttributes obja = new ObjectAttributes(GetPath(), Flags, Root, SecurityQOS, SecurityDescriptor))
+            {
+                object obj = CreateObject(obja);
+                if (AddToDisposeList && obj is IDisposable)
+                {
+                    if (!StackHolder.Add((IDisposable)obj))
+                    {
+                        WriteWarning("No list on the top of the stack");
+                    }
+                }
+
+                WriteObject(obj);
+            }
         }
     }
 
     public abstract class NtObjectBaseCmdletWithAccess<T> : NtObjectBaseCmdlet where T : struct, IConvertible
     {
-        [Parameter()]
+        [Parameter]
         public T Access { get; set; }
 
         protected NtObjectBaseCmdletWithAccess()
@@ -52,12 +86,44 @@ namespace SandboxPowerShellApi
     [Cmdlet(VerbsCommon.Get, "NtObject")]
     public sealed class GetNtObjectCmdlet : NtObjectBaseCmdletWithAccess<GenericAccessRights>
     {
-        [Parameter()]
+        [Parameter]
         public string TypeName { get; set; }
 
-        protected override object CreateObject()
+        protected override object CreateObject(ObjectAttributes obj_attributes)
         {
             return NtObject.OpenWithType(TypeName, Path, Root, Access);
+        }
+    }
+
+    [Cmdlet(VerbsCommon.New, "SecurityDescriptor")]
+    public sealed class NewSecurityDescriptorCmdlet : Cmdlet
+    {
+        [Parameter]
+        public bool NullDacl { get; set; }
+        [Parameter]
+        public string Sddl { get; set; }
+        [Parameter]
+        public NtToken Token { get; set; }
+
+        protected override void ProcessRecord()
+        {
+            SecurityDescriptor sd = null;
+            if (!String.IsNullOrWhiteSpace(Sddl))
+            {
+                sd = new SecurityDescriptor(Sddl);
+            }
+            else if (Token != null)
+            {
+                sd = new SecurityDescriptor(Token);
+            }
+            else
+            {
+                sd = new SecurityDescriptor();
+            }
+
+            sd.Dacl = new Acl();
+            sd.Dacl.NullAcl = NullDacl;
+            WriteObject(sd);
         }
     }
 }

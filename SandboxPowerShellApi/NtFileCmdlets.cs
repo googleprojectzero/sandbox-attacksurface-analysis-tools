@@ -9,10 +9,10 @@ namespace SandboxPowerShellApi
         [Parameter(Position = 0, Mandatory = true)]
         new public string Path { get; set; }
 
-        [Parameter()]
+        [Parameter]
         public FileShareMode ShareMode { get; set; }
 
-        [Parameter()]
+        [Parameter]
         public FileOpenOptions Options { get; set; }
 
         protected override string GetPath()
@@ -20,26 +20,26 @@ namespace SandboxPowerShellApi
             return Path;
         }
 
-        protected override object CreateObject()
+        protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            return NtFile.Open(Path, Root, Access, ShareMode, Options);
+            return NtFile.Open(obj_attributes, Access, ShareMode, Options);
         }
     }
 
     [Cmdlet(VerbsCommon.New, "NtFile")]
     public sealed class NewNtFileCmdlet : GetNtFileCmdlet
     {
-        [Parameter()]
+        [Parameter]
         public FileAttributes Attributes { get; set; }
 
-        [Parameter()]
+        [Parameter]
         public FileDisposition Disposition { get; set; }
 
         public EaBuffer EaBuffer { get; set; }
 
-        protected override object CreateObject()
+        protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            return NtFile.Create(Path, Root, Access, Attributes, ShareMode, Options, Disposition, EaBuffer);
+            return NtFile.Create(obj_attributes, Access, Attributes, ShareMode, Options, Disposition, EaBuffer);
         }
     }
 

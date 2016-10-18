@@ -453,32 +453,47 @@ namespace NtApiDotNet
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public class FileBasicInformation
+    {
+        public LargeIntegerStruct CreationTime;
+        public LargeIntegerStruct LastAccessTime;
+        public LargeIntegerStruct LastWriteTime;
+        public LargeIntegerStruct ChangeTime;
+        public FileAttributes FileAttributes;
+    }
+
     public class NtFile : NtObjectWithDuplicate<NtFile, FileAccessRights>
     {
         internal NtFile(SafeKernelObjectHandle handle) : base(handle)
         {
         }
 
-        public static NtFile Create(string name, NtObject root, FileAccessRights DesiredAccess, FileAttributes Attributes, FileShareMode ShareAccess,
-            FileOpenOptions OpenOptions, FileDisposition disposition, EaBuffer eabuffer)
+        public static NtFile Create(ObjectAttributes obj_attributes, FileAccessRights desired_access, FileAttributes file_attributes, FileShareMode share_access,
+            FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer)
         {
-            AttributeFlags flags = AttributeFlags.CaseInsensitive;
-            using (ObjectAttributes obja = new ObjectAttributes(name, flags, root))
+            SafeKernelObjectHandle handle;
+            IoStatus iostatus = new IoStatus();
+            byte[] buffer = ea_buffer != null ? ea_buffer.ToByteArray() : null;
+            int status = NtSystemCalls.NtCreateFile(out handle, desired_access, obj_attributes, iostatus, null, FileAttributes.Normal,
+                share_access, disposition, open_options, buffer, buffer != null ? buffer.Length : 0);
+            StatusToNtException(status);
+            return new NtFile(handle);
+        }
+
+        public static NtFile Create(string name, NtObject root, FileAccessRights desired_access, FileAttributes file_attributes, FileShareMode share_access,
+            FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle;
-                IoStatus iostatus = new IoStatus();
-                byte[] buffer = eabuffer != null ? eabuffer.ToByteArray() : null;
-                int status = NtSystemCalls.NtCreateFile(out handle, DesiredAccess, obja, iostatus, null, FileAttributes.Normal,
-                    ShareAccess, disposition, OpenOptions, buffer, buffer != null ? buffer.Length : 0);
-                StatusToNtException(status);
-                return new NtFile(handle);
+                return Create(obja, desired_access, file_attributes, share_access, open_options, disposition, ea_buffer);
             }
         }
 
-        public static NtFile Create(string name, FileAccessRights DesiredAccess, FileShareMode ShareAccess,
-            FileOpenOptions OpenOptions, FileDisposition disposition, EaBuffer eabuffer)
+        public static NtFile Create(string name, FileAccessRights desired_access, FileShareMode share_access,
+            FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer)
         {
-            return Create(name, null, DesiredAccess, FileAttributes.Normal, ShareAccess, OpenOptions, disposition, eabuffer);
+            return Create(name, null,  desired_access, FileAttributes.Normal, share_access, open_options, disposition, ea_buffer);
         }
 
         static IntPtr GetSafePointer(SafeHGlobalBuffer buffer)
@@ -505,15 +520,19 @@ namespace NtApiDotNet
                 control_code, GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)));
         }
 
+        public static NtFile Open(ObjectAttributes obj_attributes, FileAccessRights DesiredAccess, FileShareMode ShareAccess, FileOpenOptions OpenOptions)
+        {
+            SafeKernelObjectHandle handle;
+            IoStatus iostatus = new IoStatus();
+            StatusToNtException(NtSystemCalls.NtOpenFile(out handle, DesiredAccess, obj_attributes, iostatus, ShareAccess, OpenOptions));
+            return new NtFile(handle);
+        }
+
         public static NtFile Open(string name, NtObject root, FileAccessRights DesiredAccess, FileShareMode ShareAccess, FileOpenOptions OpenOptions)
         {
-            AttributeFlags flags = AttributeFlags.CaseInsensitive;
-            using (ObjectAttributes obja = new ObjectAttributes(name, flags, root))
+            using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle;
-                IoStatus iostatus = new IoStatus();
-                StatusToNtException(NtSystemCalls.NtOpenFile(out handle, DesiredAccess, obja, iostatus, ShareAccess, OpenOptions));
-                return new NtFile(handle);
+                return Open(obja, DesiredAccess, ShareAccess, OpenOptions);
             }
         }
 
@@ -524,6 +543,16 @@ namespace NtApiDotNet
                 IoStatus iostatus = new IoStatus();
                 StatusToNtException(NtSystemCalls.NtQueryInformationFile(Handle, iostatus, internal_info, internal_info.Length, FileInformationClass.FileInternalInformation));
                 return Encoding.Unicode.GetString(BitConverter.GetBytes(internal_info.Result.IndexNumber.QuadPart));
+            }
+        }
+
+        public FileAttributes GetFileAttributes()
+        {
+            using (var basic_info = new SafeStructureInOutBuffer<FileBasicInformation>())
+            {
+                IoStatus iostatus = new IoStatus();
+                StatusToNtException(NtSystemCalls.NtQueryInformationFile(Handle, iostatus, basic_info, basic_info.Length, FileInformationClass.FileBasicInformation));
+                return basic_info.Result.FileAttributes;
             }
         }
 

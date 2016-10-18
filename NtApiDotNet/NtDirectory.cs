@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 
@@ -231,7 +230,21 @@ namespace NtApiDotNet
         internal NtDirectory(SafeKernelObjectHandle handle) : base(handle)
         {            
         }
-        
+
+        /// <summary>
+        /// Open a directory object
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes to use for the open call.</param>
+        /// <param name="desired_access">Access rights for directory object</param>
+        /// <returns>The directory object</returns>
+        /// <exception cref="NtException">Throw on error</exception>
+        public static NtDirectory Open(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access)
+        {
+            SafeKernelObjectHandle handle;
+            StatusToNtException(NtSystemCalls.NtOpenDirectoryObject(out handle, desired_access, obj_attributes));
+            return new NtDirectory(handle);
+        }
+
         /// <summary>
         /// Open a directory object by name
         /// </summary>
@@ -244,9 +257,7 @@ namespace NtApiDotNet
         {
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtOpenDirectoryObject(out handle, desired_access, obja));
-                return new NtDirectory(handle);
+                return Open(obja, desired_access);
             }
         }
 
@@ -259,6 +270,29 @@ namespace NtApiDotNet
         public static NtDirectory Open(string name)
         {
             return Open(name, null, DirectoryAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Create a directory object with a shadow
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes to create the directory with</param>
+        /// <param name="desired_access">The desired access to the directory</param>
+        /// <param name="shadow_dir">The shadow directory</param>
+        /// <returns>The directory object</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public static NtDirectory Create(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access, NtDirectory shadow_dir)
+        {
+            SafeKernelObjectHandle handle;
+            if (shadow_dir == null)
+            {
+                StatusToNtException(NtSystemCalls.NtCreateDirectoryObject(out handle, desired_access, obj_attributes));
+            }
+            else
+            {
+                StatusToNtException(NtSystemCalls.NtCreateDirectoryObjectEx(out handle, desired_access, obj_attributes,
+                    shadow_dir.Handle, 0));
+            }
+            return new NtDirectory(handle);
         }
 
         /// <summary>
@@ -287,17 +321,7 @@ namespace NtApiDotNet
         {
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle;
-                if (shadow_dir == null)
-                {
-                    StatusToNtException(NtSystemCalls.NtCreateDirectoryObject(out handle, desired_access, obja));
-                }
-                else
-                {
-                    StatusToNtException(NtSystemCalls.NtCreateDirectoryObjectEx(out handle, desired_access, obja,
-                        shadow_dir.Handle, 0));
-                }
-                return new NtDirectory(handle);
+                return Create(obja, desired_access, shadow_dir);
             }
         }
 
@@ -370,38 +394,38 @@ namespace NtApiDotNet
             }
         }
 
-        public static NtDirectory CreatePrivateNamespace(BoundaryDescriptor boundary_descriptor, DirectoryAccessRights access)
+        public static NtDirectory CreatePrivateNamespace(ObjectAttributes obj_attributes, BoundaryDescriptor boundary_descriptor, DirectoryAccessRights access)
         {
-            using (ObjectAttributes obja = new ObjectAttributes())
-            {
-                SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtCreatePrivateNamespace(out handle, access, obja, boundary_descriptor.Handle));
-                NtDirectory ret = new NtDirectory(handle);
-                ret._private_namespace = true;
-                return ret;
-            }
+            SafeKernelObjectHandle handle;
+            StatusToNtException(NtSystemCalls.NtCreatePrivateNamespace(out handle, access, obj_attributes, boundary_descriptor.Handle));
+            NtDirectory ret = new NtDirectory(handle);
+            ret._private_namespace = true;
+            return ret;         
         }
 
         public static NtDirectory CreatePrivateNamespace(BoundaryDescriptor boundary_descriptor)
         {
-            return CreatePrivateNamespace(boundary_descriptor, DirectoryAccessRights.MaximumAllowed);
-        }
-
-        public static NtDirectory OpenPrivateNamespace(BoundaryDescriptor boundary_descriptor, DirectoryAccessRights access)
-        {
             using (ObjectAttributes obja = new ObjectAttributes())
             {
-                SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtOpenPrivateNamespace(out handle, access, obja, boundary_descriptor.Handle));
-                NtDirectory ret = new NtDirectory(handle);
-                ret._private_namespace = true;
-                return ret;
+                return CreatePrivateNamespace(obja, boundary_descriptor, DirectoryAccessRights.MaximumAllowed);
             }
+        }
+
+        public static NtDirectory OpenPrivateNamespace(ObjectAttributes obj_attributes, BoundaryDescriptor boundary_descriptor, DirectoryAccessRights access)
+        {
+            SafeKernelObjectHandle handle;
+            StatusToNtException(NtSystemCalls.NtOpenPrivateNamespace(out handle, access, obj_attributes, boundary_descriptor.Handle));
+            NtDirectory ret = new NtDirectory(handle);
+            ret._private_namespace = true;
+            return ret;
         }
 
         public static NtDirectory OpenPrivateNamespace(BoundaryDescriptor boundary_descriptor)
         {
-            return OpenPrivateNamespace(boundary_descriptor, DirectoryAccessRights.MaximumAllowed);
+            using (ObjectAttributes obja = new ObjectAttributes())
+            {
+                return OpenPrivateNamespace(obja, boundary_descriptor, DirectoryAccessRights.MaximumAllowed);
+            }
         }
 
         /// <summary>

@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using HandleUtils;
 using NDesk.Options;
 using NtApiDotNet;
 using System;
@@ -100,11 +99,20 @@ namespace CheckProcessAccess
                     }
                 }
 
+                CommandLine = String.Empty;
                 if (Handle.IsAccessGranted(ProcessAccessRights.QueryInformation))
                 {
                     try
                     {
                         Token = Handle.OpenToken();
+                    }
+                    catch (NtException)
+                    {
+                    }
+
+                    try
+                    {
+                        CommandLine = Handle.GetCommandLine();
                     }
                     catch (NtException)
                     {
@@ -118,7 +126,8 @@ namespace CheckProcessAccess
                 Pid = pid;
                 Threads = threads.Select(h => new ThreadEntry(h)).ToArray();
                 Array.Sort(Threads, (a, b) => a.Tid - b.Tid);
-                
+
+                CommandLine = String.Empty;
                 ImagePath = "Unknown";
                 if (Pid == 0)
                 {
@@ -153,6 +162,7 @@ namespace CheckProcessAccess
             public string Name { get; private set; }
             public string ImagePath { get; private set; }
             public NtToken Token { get; private set; }
+            public string CommandLine { get; private set; }
         }
         
         static void ShowHelp(OptionSet p)

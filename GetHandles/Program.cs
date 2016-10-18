@@ -71,7 +71,7 @@ namespace GetHandles
                 foreach (HandleEntry ent in group)
                 {
                     Console.WriteLine("{0}/0x{0:X}/{1} {2}/0x{2:X}: {3}", ent.Pid, pidToName[ent.Pid], 
-                        ent.Handle.ToInt32(), formatHandle(ent));
+                        ent.Handle, formatHandle(ent));
                     // TODO: Fix
                     //if (showsd && !String.IsNullOrWhiteSpace(ent.StringSecurityDescriptor))
                     //{
@@ -139,19 +139,18 @@ namespace GetHandles
                             continue;
                         }
 
-                        IEnumerable<HandleEntry> handles = NtSystemInfo.GetHandles(pid).Where(ent => (typeFilter.Count == 0) || typeFilter.Contains(ent.ObjectType.ToLower()));
+                        IEnumerable<HandleEntry> handles = NtSystemInfo.GetHandles(pid, true).Where(ent => (typeFilter.Count == 0) || typeFilter.Contains(ent.ObjectType.ToLower()));
                         totalHandles.AddRange(handles);
                         if (mode == GroupingMode.Pid)
                         {
                             Console.WriteLine("Process ID: {0} - Name: {1}", pid, pidToName[pid]);
                             foreach (HandleEntry ent in handles)
                             {                                
-                                Console.WriteLine("{0:X04}: {1:X016} {2:X08} {3,20} {4}", ent.Handle.ToInt32(), ent.Object.ToInt64(), ent.GrantedAccess, ent.ObjectType, ent.GetName());
-                                // TODO: Fix
-                                //if (showsd && !String.IsNullOrWhiteSpace(ent.StringSecurityDescriptor))
-                                //{
-                                //    Console.WriteLine("SDDL: {0}", ent.StringSecurityDescriptor);
-                                //}
+                                Console.WriteLine("{0:X04}: {1:X016} {2:X08} {3,20} {4}", ent.Handle, ent.Object, ent.GrantedAccess, ent.ObjectType, ent.Name);
+                                if (showsd && ent.SecurityDescriptor != null)
+                                {
+                                    Console.WriteLine("SDDL: {0}", ent.SecurityDescriptor.ToSddl());
+                                }
                             }
                             Console.WriteLine();
                         } 
@@ -161,17 +160,17 @@ namespace GetHandles
                     {
                         case GroupingMode.Type:
                             PrintGrouping(totalHandles.GroupBy(f => f.ObjectType), pidToName, k => String.Format("Type: {0}", k), 
-                                e => String.Format("{0:X08} {1:X08} {2}", e.Object.ToInt64(), e.GrantedAccess, e.GetName()), 
+                                e => String.Format("{0:X08} {1:X08} {2}", e.Object, e.GrantedAccess, e.Name), 
                                 shareMode, pids.Count, showsd);
                             break;
                         case GroupingMode.Object:
-                            PrintGrouping(totalHandles.GroupBy(f => f.Object), pidToName, k => String.Format("Object: {0:X08}", k.ToInt64()),
-                                e => String.Format("{0,20} {1:X08} {2}", e.ObjectType, e.GrantedAccess, e.GetName()),
+                            PrintGrouping(totalHandles.GroupBy(f => f.Object), pidToName, k => String.Format("Object: {0:X08}", k),
+                                e => String.Format("{0,20} {1:X08} {2}", e.ObjectType, e.GrantedAccess, e.Name),
                                 shareMode, pids.Count, showsd);
                             break;
                         case GroupingMode.Name:
                             PrintGrouping(totalHandles.GroupBy(f => f.ObjectType), pidToName, k => String.Format("Name: {0:X08}", k),
-                                e => String.Format("{0:X08} {1,20} {2:X08} {2}", e.Object.ToInt64(), e.GetName(), e.GrantedAccess), 
+                                e => String.Format("{0:X08} {1,20} {2:X08} {2}", e.Object, e.Name, e.GrantedAccess), 
                                 shareMode, pids.Count, showsd);
                             break;                        
                     }

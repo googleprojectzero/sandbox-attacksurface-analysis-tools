@@ -233,7 +233,7 @@ namespace NtApiDotNet
         {
             return String.Format("{0:X08}-{1:X08}", HighPart, LowPart);
         }
-
+        
         public override bool Equals(object obj)
         {
             if (obj is Luid)
@@ -464,6 +464,11 @@ namespace NtApiDotNet
         public TokenPrivilege(TokenPrivilegeValue value, PrivilegeAttributes attribute) 
             : this(new Luid((uint)value, 0), attribute)
         {
+        }
+
+        public override string ToString()
+        {
+            return GetName();
         }
     }
 
@@ -771,14 +776,14 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
         public static extern NtStatus NtOpenProcessTokenEx(
           SafeKernelObjectHandle ProcessHandle,
-          GenericAccessRights DesiredAccess,
+          TokenAccessRights DesiredAccess,
           AttributeFlags HandleAttributes,
           out SafeKernelObjectHandle TokenHandle);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtOpenThreadTokenEx(
           SafeKernelObjectHandle ThreadHandle,
-          GenericAccessRights DesiredAccess,
+          TokenAccessRights DesiredAccess,
           [MarshalAs(UnmanagedType.U1)] bool OpenAsSelf,
           AttributeFlags HandleAttributes,
           out SafeKernelObjectHandle TokenHandle
@@ -787,7 +792,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
         public static extern NtStatus NtDuplicateToken(
             SafeKernelObjectHandle ExistingTokenHandle,
-            GenericAccessRights DesiredAccess,
+            TokenAccessRights DesiredAccess,
             ObjectAttributes ObjectAttributes,
             bool EffectiveOnly,
             TokenType TokenType,
@@ -877,9 +882,10 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="type">The token type</param>
         /// <param name="level">The impersonation level us type is Impersonation</param>
+        /// <param name="desired_access">Open with the desired access.</param>
         /// <returns>The new token</returns>
         /// <exception cref="NtException">Thrown on error</exception>
-        public NtToken DuplicateToken(TokenType type, SecurityImpersonationLevel level)
+        public NtToken DuplicateToken(TokenType type, SecurityImpersonationLevel level, TokenAccessRights desired_access)
         {
             SafeKernelObjectHandle new_token;
             SecurityQualityOfService sqos = null;
@@ -893,7 +899,7 @@ namespace NtApiDotNet
             using (ObjectAttributes obja = new ObjectAttributes(null, AttributeFlags.None, SafeKernelObjectHandle.Null, sqos, null))
             {
                 StatusToNtException(NtSystemCalls.NtDuplicateToken(Handle,
-                  GenericAccessRights.MaximumAllowed, obja, false, type, out new_token));
+                  desired_access, obja, false, type, out new_token));
                 return new NtToken(new_token);
             }
         }
@@ -905,7 +911,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error</exception>
         public NtToken DuplicateToken()
         {
-            return DuplicateToken(TokenType.Primary, SecurityImpersonationLevel.Anonymous);
+            return DuplicateToken(TokenType.Primary, SecurityImpersonationLevel.Anonymous, TokenAccessRights.MaximumAllowed);
         }
 
         /// <summary>
@@ -916,7 +922,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error</exception>
         public NtToken DuplicateToken(SecurityImpersonationLevel level)
         {
-            return DuplicateToken(TokenType.Impersonation, level);
+            return DuplicateToken(TokenType.Impersonation, level, TokenAccessRights.MaximumAllowed);
         }
         
         private bool SetPrivileges(TokenPrivilegesBuilder tp)
@@ -970,9 +976,14 @@ namespace NtApiDotNet
 
         public static NtToken OpenProcessToken(NtProcess process, bool duplicate)
         {
+            return OpenProcessToken(process, duplicate, TokenAccessRights.MaximumAllowed);
+        }
+
+        public static NtToken OpenProcessToken(NtProcess process, bool duplicate, TokenAccessRights desired_access)
+        {
             SafeKernelObjectHandle new_token;
             StatusToNtException(NtSystemCalls.NtOpenProcessTokenEx(process.Handle,
-              GenericAccessRights.MaximumAllowed, AttributeFlags.None, out new_token));
+              desired_access, AttributeFlags.None, out new_token));
             NtToken ret = new NtToken(new_token);
             if (duplicate)
             {
@@ -1000,14 +1011,24 @@ namespace NtApiDotNet
 
         public static NtToken OpenProcessToken(bool duplicate)
         {
-            return OpenProcessToken(NtProcess.Current, duplicate);
+            return OpenProcessToken(duplicate, TokenAccessRights.MaximumAllowed);
+        }
+
+        public static NtToken OpenProcessToken(bool duplicate, TokenAccessRights desired_access)
+        {
+            return OpenProcessToken(NtProcess.Current, duplicate, desired_access);
         }
 
         public static NtToken OpenProcessToken(int pid, bool duplicate)
         {
+            return OpenProcessToken(pid, duplicate, TokenAccessRights.MaximumAllowed);
+        }
+
+        public static NtToken OpenProcessToken(int pid, bool duplicate, TokenAccessRights desired_access)
+        {
             using (NtProcess process = NtProcess.Open(pid, ProcessAccessRights.QueryInformation))
             {
-                return OpenProcessToken(process, duplicate);
+                return OpenProcessToken(process, duplicate, desired_access);
             }
         }
 
@@ -1015,11 +1036,12 @@ namespace NtApiDotNet
         {
             return OpenProcessToken(pid, false);
         }
-        public static NtToken OpenThreadToken(NtThread thread, bool open_as_self, bool duplicate)
+
+        public static NtToken OpenThreadToken(NtThread thread, bool open_as_self, bool duplicate, TokenAccessRights desired_access)
         {
             SafeKernelObjectHandle new_token;
             NtStatus status = NtSystemCalls.NtOpenThreadTokenEx(thread.Handle,
-              GenericAccessRights.MaximumAllowed, open_as_self, AttributeFlags.None, out new_token);
+              desired_access, open_as_self, AttributeFlags.None, out new_token);
             if (status == NtStatus.STATUS_NO_TOKEN)
                 return null;
             StatusToNtException(status);
@@ -1036,6 +1058,19 @@ namespace NtApiDotNet
                 }
             }
             return ret;
+        }
+
+        public static NtToken OpenThreadToken(int tid, bool open_as_self, bool duplicate, TokenAccessRights desired_access)
+        {
+            using (NtThread thread = NtThread.Open(tid, ThreadAccessRights.QueryInformation))
+            {
+                return OpenThreadToken(thread, open_as_self, duplicate, desired_access);
+            }
+        }
+
+        public static NtToken OpenThreadToken(NtThread thread, bool open_as_self, bool duplicate)
+        {
+            return OpenThreadToken(thread, open_as_self, duplicate, TokenAccessRights.MaximumAllowed);
         }
 
         public static NtToken OpenThreadToken(NtThread thread)
@@ -1055,14 +1090,16 @@ namespace NtApiDotNet
 
         public static NtToken OpenEffectiveToken(bool duplicate)
         {
+            NtToken token = null;
             try
             {
-                return OpenThreadToken(duplicate);
+                token = OpenThreadToken(duplicate);
             }
             catch (NtException)
             {
-                return OpenProcessToken(duplicate);
             }
+
+            return token ?? OpenProcessToken(duplicate);
         }
 
         public static NtToken OpenEffectiveToken()
@@ -1156,7 +1193,6 @@ namespace NtApiDotNet
             }
         }
         
-
         public void SetSessionId(int session_id)
         {
             SetToken(TokenInformationClass.TokenSessionId, session_id);
@@ -1212,9 +1248,9 @@ namespace NtApiDotNet
             return GetTokenStats().TokenType;
         }
 
-        public LargeInteger GetExpirationTime()
+        public DateTime GetExpirationTime()
         {
-            return new LargeInteger(GetTokenStats().ExpirationTime.QuadPart);
+            return DateTime.FromFileTime(GetTokenStats().ExpirationTime.QuadPart);
         }
 
         public Luid GetId()
@@ -1349,6 +1385,11 @@ namespace NtApiDotNet
             {
                 return buf.Result != 0;
             }
+        }
+
+        public void SetVirtualizationEnabled(bool enable)
+        {
+            SetToken(TokenInformationClass.TokenVirtualizationEnabled, enable ? 1 : 0);
         }
 
         public bool IsRestricted()
@@ -1502,5 +1543,17 @@ namespace NtApiDotNet
         public static Luid LocalSystemAuthId { get { return new Luid(0x3e7, 0); } }
         public static Luid LocalServiceAuthId { get { return new Luid(0x3e5, 0); } }
         public static Luid NetworkServiceAuthId { get { return new Luid(0x3e4, 0); } }
+
+        public override string GetName()
+        {
+            try
+            {
+                return String.Format("{0} - {1}", GetUser().Sid.GetName(), GetAuthenticationId());
+            }
+            catch
+            {
+                return String.Empty;
+            }
+        }
     }
 }

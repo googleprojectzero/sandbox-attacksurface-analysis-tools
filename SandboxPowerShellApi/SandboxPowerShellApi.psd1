@@ -81,7 +81,7 @@ AliasesToExport = '*'
 # DscResourcesToExport = @()
 
 # List of all modules packaged with this module
-# ModuleList = @()
+# ModuleList = @("SandboxPowerShellApi.psm1")
 
 # List of all files packaged with this module
 # FileList = @()

@@ -4,7 +4,8 @@ using System.Runtime.InteropServices;
 
 namespace HandleUtils
 {
-    public class SafeWin32Exception :ApplicationException
+    [Serializable]
+    public class SafeWin32Exception : ApplicationException
 	{
 		int _last_error;
                 

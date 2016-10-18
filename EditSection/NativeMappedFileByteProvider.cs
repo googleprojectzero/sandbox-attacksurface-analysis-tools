@@ -15,6 +15,7 @@
 using Be.Windows.Forms;
 using NtApiDotNet;
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace EditSection
 {

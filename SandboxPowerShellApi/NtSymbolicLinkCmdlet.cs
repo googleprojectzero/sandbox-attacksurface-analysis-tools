@@ -12,7 +12,7 @@ namespace SandboxPowerShellApi
             Access = SymbolicLinkAccessRights.MaximumAllowed;
         }
 
-        protected override object CreateObject()
+        protected override object CreateObject(ObjectAttributes obj_attributes)
         {
             return NtSymbolicLink.Open(Path, Root, Access);
         }
@@ -21,7 +21,15 @@ namespace SandboxPowerShellApi
     [Cmdlet(VerbsCommon.Get, "NtSymbolicLinkTarget")]
     public class GetNtSymbolicLinkTargetCmdlet : NtObjectBaseCmdlet
     {
-        protected override object CreateObject()
+        [Parameter(Position = 0, Mandatory = true)]
+        new public string Path { get; set; }
+
+        protected override string GetPath()
+        {
+            return Path;
+        }
+
+        protected override object CreateObject(ObjectAttributes obj_attributes)
         {
             using (NtSymbolicLink link = NtSymbolicLink.Open(Path, Root, SymbolicLinkAccessRights.Query))
             {
@@ -33,10 +41,10 @@ namespace SandboxPowerShellApi
     [Cmdlet(VerbsCommon.New, "NtSymbolicLink")]
     public class NewNtSymbolicLinkCmdlet : NtObjectBaseCmdletWithAccess<SymbolicLinkAccessRights>
     {
-        [Parameter(Position = 1, Mandatory = true)]
+        [Parameter(Position = 1, Mandatory = true), AllowEmptyString()]
         public string TargetPath { get; set; }
 
-        protected override object CreateObject()
+        protected override object CreateObject(ObjectAttributes obj_attributes)
         {
             if (TargetPath == null)
             {

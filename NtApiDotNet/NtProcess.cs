@@ -601,8 +601,7 @@ namespace NtApiDotNet
         ProcessReserved1Policy, // Unused
         ProcessSignaturePolicy,
         ProcessFontDisablePolicy,
-        ProcessImageLoadPolicy,
-        MaxProcessMitigationPolicy
+        ProcessImageLoadPolicy
     }
 
     public struct MitigationPolicy
