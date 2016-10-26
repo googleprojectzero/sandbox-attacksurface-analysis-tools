@@ -58,20 +58,30 @@ namespace NtApiDotNet
         {
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtCreateMutant(out handle, MutantAccessRights.MaximumAllowed, obja, initial_owner));
-                return new NtMutant(handle);
+                return Create(obja, initial_owner, MutantAccessRights.MaximumAllowed);
             }
+        }
+
+        public static NtMutant Create(ObjectAttributes object_attributes, bool initial_owner, MutantAccessRights access_rights)
+        {
+            SafeKernelObjectHandle handle;
+            StatusToNtException(NtSystemCalls.NtCreateMutant(out handle, access_rights, object_attributes, initial_owner));
+            return new NtMutant(handle);
         }
 
         public static NtMutant Open(string name, NtObject root, MutantAccessRights access_rights)
         {
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtOpenMutant(out handle, access_rights, obja));
-                return new NtMutant(handle);
+                return Open(obja, access_rights);
             }
+        }
+
+        public static NtMutant Open(ObjectAttributes object_attributes, MutantAccessRights access_rights)
+        {
+            SafeKernelObjectHandle handle;
+            StatusToNtException(NtSystemCalls.NtOpenMutant(out handle, access_rights, object_attributes));
+            return new NtMutant(handle);
         }
 
         public uint Release()

@@ -17,24 +17,27 @@ using System.Management.Automation;
 
 namespace SandboxPowerShellApi
 {
-    [Cmdlet(VerbsCommon.Get, "NtMutant")]
-    public sealed class GetNtMutantCmdlet : NtObjectBaseCmdletWithAccess<MutantAccessRights>
+    [Cmdlet(VerbsCommon.Get, "NtEvent")]
+    public sealed class GetNtEventCmdlet : NtObjectBaseCmdletWithAccess<EventAccessRights>
     {
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            return NtMutant.Open(obj_attributes, Access);
+            return NtEvent.Open(obj_attributes, Access);
         }
     }
 
-    [Cmdlet(VerbsCommon.New, "NtMutant")]
-    public sealed class NewNtMutantCmdlet : NtObjectBaseCmdletWithAccess<MutantAccessRights>
+    [Cmdlet(VerbsCommon.New, "NtEvent")]
+    public sealed class NewNtEventCmdlet : NtObjectBaseCmdletWithAccess<EventAccessRights>
     {
         [Parameter]
-        public SwitchParameter InitialOwner { get; set; }
+        public bool InitialState { get; set; }
+
+        [Parameter]
+        public EventType EventType { get; set; }
 
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            return NtMutant.Create(obj_attributes, InitialOwner, Access);
+            return NtEvent.Create(obj_attributes, EventType, InitialState, Access);
         }
     }
 }

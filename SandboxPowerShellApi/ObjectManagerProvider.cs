@@ -197,48 +197,65 @@ namespace SandboxPowerShellApi
         
         protected override bool ItemExists(string path)
         {
-            try
-            {
-                if (GetDrive() == null)
-                {
-                    return false;
-                }
+            bool exists = false;
 
-                path = NormalizePath(path);
-                // The root always exists.
-                if (path.Length == 0)
-                {
-                    return true;
-                }
-
-                using (NtDirectory dir = GetPathDirectory(path))
-                {
-                    return GetEntry(dir, path) != null;
-                }
-            }
-            catch (NtException)
-            {
-            }
-
-            return false;
-        }
-
-        protected override bool IsItemContainer(string path)
-        {
             if (GetDrive() == null)
             {
                 return false;
             }
 
             path = NormalizePath(path);
+            // The root always exists.
             if (path.Length == 0)
             {
                 return true;
             }
 
-            return GetDrive().DirectoryRoot.DirectoryExists(NormalizePath(path));
+            try
+            {
+                using (NtDirectory dir = GetPathDirectory(path))
+                {
+                    exists = GetEntry(dir, path) != null;
+                }
+            }
+            catch (NtException)
+            {
+            }
+
+            // If we can't find it indirectly, at least see if there's a directory with this name.
+            return exists || GetDrive().DirectoryRoot.DirectoryExists(path);
         }
 
+        protected override bool IsItemContainer(string path)
+        {
+            bool is_container = false;
+
+            if (GetDrive() == null)
+            {
+                return false;
+            }
+
+            path = NormalizePath(path);
+            // The root always exists.
+            if (path.Length == 0)
+            {
+                return true;
+            }
+
+            try
+            {
+                using (NtDirectory dir = GetPathDirectory(path))
+                {
+                    ObjectDirectoryInformation dir_info = GetEntry(dir, path);
+                    is_container = dir_info != null && dir_info.TypeName.Equals("directory", StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            catch (NtException)
+            {   
+            }
+
+            return is_container || GetDrive().DirectoryRoot.DirectoryExists(path); 
+        }
 
         protected override void GetChildItems(string path, bool recurse)
         {
@@ -308,6 +325,7 @@ namespace SandboxPowerShellApi
         {
             return s.Contains('*') || s.Contains('?');
         }
+         
 
         private void AddMatches(NtDirectory root, string base_path, IEnumerable<string> remaining, List<string> matches)
         {
@@ -380,8 +398,27 @@ namespace SandboxPowerShellApi
         {
             Queue<string> remaining = new Queue<string>(NormalizePath(path).Split('\\'));
             List<string> matches = new List<string>();
-            if (remaining.Count > 0)
+
+            if (remaining.Count == 0)
             {
+                return matches;
+            }
+
+            try
+            {
+                string base_path = String.Join(@"\", remaining.Take(remaining.Count - 1));
+                NtDirectory root_dir = GetDrive().DirectoryRoot;
+                // We'll first try the general case of unglobbed dir and a globbed final name.
+                using (NtDirectory base_dir = 
+                    remaining.Count > 1 ? NtDirectory.Open(base_path, root_dir, DirectoryAccessRights.Query) 
+                                        : root_dir.Duplicate(DirectoryAccessRights.Query))
+                {
+                    AddMatches(base_dir, @"\" + base_path + @"\", new string[] { remaining.Last() }, matches);
+                }
+            }
+            catch (NtException)
+            {
+                // If we couldn't open the drive then try brute force approach.
                 AddMatches(GetDrive().DirectoryRoot, @"\", remaining, matches);
             }
 
@@ -394,7 +431,7 @@ namespace SandboxPowerShellApi
             {
                 return new string[0];
             }
-
+            
             return ExpandDirectoryEntryMatches(path).ToArray();
         }
 

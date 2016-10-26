@@ -68,11 +68,16 @@ namespace NtApiDotNet
         {
             using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtCreateSymbolicLinkObject(out handle,
-                    access, obja, new UnicodeString(target)));
-                return new NtSymbolicLink(handle);
+                return Create(obja, access, target);
             }
+        }
+
+        public static NtSymbolicLink Create(ObjectAttributes object_attributes, SymbolicLinkAccessRights access, string target)
+        {
+            SafeKernelObjectHandle handle;
+            StatusToNtException(NtSystemCalls.NtCreateSymbolicLinkObject(out handle,
+                access, object_attributes, new UnicodeString(target)));
+            return new NtSymbolicLink(handle);
         }
 
         public static NtSymbolicLink Create(string path, NtObject root, string target)
@@ -96,10 +101,20 @@ namespace NtApiDotNet
             }
         }
 
+        public static NtSymbolicLink Open(ObjectAttributes object_attributes, SymbolicLinkAccessRights access)
+        {
+            SafeKernelObjectHandle handle;
+            StatusToNtException(NtSystemCalls.NtOpenSymbolicLinkObject(out handle,
+                access, object_attributes));
+            return new NtSymbolicLink(handle);
+        }
+
         public static NtSymbolicLink Open(string path, NtObject root)
         {
             return Open(path, root, SymbolicLinkAccessRights.MaximumAllowed);
         }
+
+        
 
         public string Query()
         {

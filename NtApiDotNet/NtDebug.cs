@@ -12,17 +12,37 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+    [Flags]
+    public enum DebugAccessRights : uint
+    {
+        ReadEvent = 0x1,
+        ProcessAssign = 0x2,
+        SetInformation = 0x4,
+        QueryInformation = 0x8,
+        GenericRead = GenericAccessRights.GenericRead,
+        GenericWrite = GenericAccessRights.GenericWrite,
+        GenericExecute = GenericAccessRights.GenericExecute,
+        GenericAll = GenericAccessRights.GenericAll,
+        Delete = GenericAccessRights.Delete,
+        ReadControl = GenericAccessRights.ReadControl,
+        WriteDac = GenericAccessRights.WriteDac,
+        WriteOwner = GenericAccessRights.WriteOwner,
+        Synchronize = GenericAccessRights.Synchronize,
+        MaximumAllowed = GenericAccessRights.MaximumAllowed,
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtDebugActiveProcess(SafeKernelObjectHandle ProcessHandle, SafeKernelObjectHandle DebugHandle);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCreateDebugObject(out SafeKernelObjectHandle DebugHandle, GenericAccessRights DesiredAccess, ObjectAttributes ObjectAttributes, int Flags);
+        public static extern NtStatus NtCreateDebugObject(out SafeKernelObjectHandle DebugHandle, DebugAccessRights DesiredAccess, ObjectAttributes ObjectAttributes, int Flags);
     }
 
     public class NtDebug : NtObjectWithDuplicate<NtDebug, GenericAccessRights>
@@ -35,10 +55,15 @@ namespace NtApiDotNet
         {
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtCreateDebugObject(out handle, GenericAccessRights.MaximumAllowed, obja, 0));
-                return new NtDebug(handle);
+                return Create(obja, DebugAccessRights.MaximumAllowed);
             }
+        }
+
+        public static NtDebug Create(ObjectAttributes object_attributes, DebugAccessRights desired_access)
+        {
+            SafeKernelObjectHandle handle;
+            StatusToNtException(NtSystemCalls.NtCreateDebugObject(out handle, desired_access, object_attributes, 0));
+            return new NtDebug(handle);
         }
 
         public static NtDebug Create()

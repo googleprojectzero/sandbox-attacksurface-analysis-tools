@@ -17,6 +17,9 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+    /// <summary>
+    /// Semaphore access rights.
+    /// </summary>
     [Flags]
     public enum SemaphoreAccessRights : uint
     {

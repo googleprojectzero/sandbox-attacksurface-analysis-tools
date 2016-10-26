@@ -98,10 +98,15 @@ namespace NtApiDotNet
         {            
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtCreateEvent(out handle, EventAccessRights.MaximumAllowed, obja, type, initial_state));
-                return new NtEvent(handle);
+                return Create(obja, type, initial_state, EventAccessRights.MaximumAllowed);
             }
+        }
+
+        public static NtEvent Create(ObjectAttributes object_attributes, EventType type, bool initial_state, EventAccessRights desired_access)
+        {
+            SafeKernelObjectHandle handle;
+            StatusToNtException(NtSystemCalls.NtCreateEvent(out handle, desired_access, object_attributes, type, initial_state));
+            return new NtEvent(handle);        
         }
 
         public static NtEvent Create(string name, EventType type, bool initial_state)
@@ -117,6 +122,13 @@ namespace NtApiDotNet
                 StatusToNtException(NtSystemCalls.NtOpenEvent(out handle, access, obja));
                 return new NtEvent(handle);
             }
+        }
+
+        public static NtEvent Open(ObjectAttributes object_attributes, EventAccessRights access)
+        {
+            SafeKernelObjectHandle handle;
+            StatusToNtException(NtSystemCalls.NtOpenEvent(out handle, access, object_attributes));
+            return new NtEvent(handle);        
         }
 
         public static NtEvent Open(string name, NtObject root)

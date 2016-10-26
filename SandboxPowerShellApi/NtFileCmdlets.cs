@@ -29,9 +29,19 @@ namespace SandboxPowerShellApi
         [Parameter]
         public FileOpenOptions Options { get; set; }
 
+        [Parameter]
+        public SwitchParameter Win32Path { get; set; }
+
         protected override string GetPath()
         {
-            return Path;
+            if (Win32Path)
+            {
+                return FileUtils.DosFileNameToNt(Path);
+            }
+            else
+            {
+                return Path;
+            }
         }
 
         protected override object CreateObject(ObjectAttributes obj_attributes)
@@ -49,6 +59,7 @@ namespace SandboxPowerShellApi
         [Parameter]
         public FileDisposition Disposition { get; set; }
 
+        [Parameter]
         public EaBuffer EaBuffer { get; set; }
 
         protected override object CreateObject(ObjectAttributes obj_attributes)

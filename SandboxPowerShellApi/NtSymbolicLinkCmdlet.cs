@@ -28,7 +28,7 @@ namespace SandboxPowerShellApi
 
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            return NtSymbolicLink.Open(Path, Root, Access);
+            return NtSymbolicLink.Open(obj_attributes, Access);
         }
     }
 
@@ -45,7 +45,7 @@ namespace SandboxPowerShellApi
 
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            using (NtSymbolicLink link = NtSymbolicLink.Open(Path, Root, SymbolicLinkAccessRights.Query))
+            using (NtSymbolicLink link = NtSymbolicLink.Open(obj_attributes, SymbolicLinkAccessRights.Query))
             {
                 return link.Query();
             }
@@ -65,7 +65,7 @@ namespace SandboxPowerShellApi
                 throw new ArgumentNullException("TargetPath");
             }
 
-            return NtSymbolicLink.Create(Path, Root, Access, TargetPath);
+            return NtSymbolicLink.Create(obj_attributes, Access, TargetPath);
         }
     }
     

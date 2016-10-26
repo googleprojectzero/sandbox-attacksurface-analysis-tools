@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="NtDisposableListCmdlets.cs" />
+    <Compile Include="NtEventCmdlets.cs" />
     <Compile Include="NtProcessCmdlets.cs" />
     <Compile Include="NtThreadCmdlets.cs" />
     <Compile Include="NtTokenCmdlets.cs" />
