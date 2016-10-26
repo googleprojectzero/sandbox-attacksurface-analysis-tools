@@ -39,7 +39,7 @@ namespace CheckObjectManagerAccess
             p.WriteOptionDescriptions(Console.Out);
         }
 
-        static Type GetTypeAccessRights(ObjectTypeInfo type)
+        static Type GetTypeAccessRights(NtType type)
         {
             switch (type.Name.ToLower())
             {
@@ -62,7 +62,7 @@ namespace CheckObjectManagerAccess
             }
         }
 
-        static string AccessMaskToString(ObjectTypeInfo type, uint granted_access)
+        static string AccessMaskToString(NtType type, uint granted_access)
         {
             if (type.HasFullPermission(granted_access))
             {
@@ -72,7 +72,7 @@ namespace CheckObjectManagerAccess
             return NtObject.AccessRightsToString(GetTypeAccessRights(type), type.MapGenericRights(granted_access));
         }
 
-        static void CheckAccess(string path, byte[] sd, ObjectTypeInfo type)
+        static void CheckAccess(string path, byte[] sd, NtType type)
         {
             try
             {
@@ -132,7 +132,7 @@ namespace CheckObjectManagerAccess
 
             try
             {
-                CheckAccess(dir.FullPath, dir.SecurityDescriptor, ObjectTypeInfo.GetTypeByName("Directory"));
+                CheckAccess(dir.FullPath, dir.SecurityDescriptor, NtType.GetTypeByName("Directory"));
 
                 if (_recursive)
                 {
@@ -149,7 +149,7 @@ namespace CheckObjectManagerAccess
                             }
                             else
                             {                                
-                                CheckAccess(entry.FullPath, entry.SecurityDescriptor, ObjectTypeInfo.GetTypeByName(entry.TypeName));
+                                CheckAccess(entry.FullPath, entry.SecurityDescriptor, NtType.GetTypeByName(entry.TypeName));
                             }
                         }
                         catch (Exception ex)

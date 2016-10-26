@@ -39,7 +39,7 @@ namespace EditSection
             }
 
             StringBuilder builder = new StringBuilder();
-            ObjectTypeInfo section_type = ObjectTypeInfo.GetTypeByName("section");
+            NtType section_type = NtType.GetTypeByName("section");
 
             if (section_type.HasReadPermission(ent.GrantedAccess))
             {

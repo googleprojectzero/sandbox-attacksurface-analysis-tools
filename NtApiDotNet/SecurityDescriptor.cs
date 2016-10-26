@@ -181,7 +181,7 @@ namespace NtApiDotNet
                 creator_sd.Dacl = token.GetDefaultDalc();
             }
 
-            ObjectTypeInfo type = ObjectTypeInfo.GetTypeByName(base_object.GetTypeName());
+            NtType type = NtType.GetTypeByName(base_object.GetTypeName());
 
             SafeBuffer parent_sd_buffer = SafeHGlobalBuffer.Null;
             SafeBuffer creator_sd_buffer = SafeHGlobalBuffer.Null;

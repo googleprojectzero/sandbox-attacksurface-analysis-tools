@@ -536,7 +536,7 @@ namespace NtApiDotNet
             return AccessRightsToString(typeof(T), access.ToUInt32(null));
         }
 
-        public static string AccessRightsToString<T>(T access, ObjectTypeInfo typeinfo) where T : struct, IConvertible
+        public static string AccessRightsToString<T>(T access, NtType typeinfo) where T : struct, IConvertible
         {
             CheckEnumType(typeof(T));
             uint mapped_access = typeinfo.MapGenericRights(access.ToUInt32(null));
@@ -652,7 +652,7 @@ namespace NtApiDotNet
 
         public string GetGrantedAccessString()
         {
-            ObjectTypeInfo type = ObjectTypeInfo.GetTypeByName(GetTypeName());
+            NtType type = NtType.GetTypeByName(GetTypeName());
 
             return AccessRightsToString(GetGrantedAccess(), type);
         }

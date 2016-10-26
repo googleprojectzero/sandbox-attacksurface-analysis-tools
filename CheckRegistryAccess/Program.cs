@@ -26,7 +26,7 @@ namespace CheckRegistryAccess
         static bool _print_sddl = false;
         static bool _show_write_only = false;
         static HashSet<string> _walked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);        
-        static ObjectTypeInfo _type;
+        static NtType _type;
         static NtToken _token;
         static uint _key_rights = 0;
 
@@ -199,7 +199,7 @@ namespace CheckRegistryAccess
                 }
                 else
                 {
-                    _type = ObjectTypeInfo.GetTypeByName("key");
+                    _type = NtType.GetTypeByName("key");
                     _token = NtToken.OpenProcessToken(pid);
 
                     foreach (string path in paths)

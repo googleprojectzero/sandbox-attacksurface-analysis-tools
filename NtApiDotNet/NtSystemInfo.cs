@@ -147,7 +147,7 @@ namespace NtApiDotNet
         internal HandleEntry(SystemHandleTableInfoEntry entry, bool allow_query)
         {
             Pid = entry.UniqueProcessId;
-            ObjectTypeInfo info = ObjectTypeInfo.GetTypeByIndex(entry.ObjectTypeIndex);
+            NtType info = NtType.GetTypeByIndex(entry.ObjectTypeIndex);
             if (info != null)
             {
                 ObjectType = info.Name;

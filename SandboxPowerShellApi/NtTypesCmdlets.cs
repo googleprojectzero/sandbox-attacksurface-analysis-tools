@@ -13,16 +13,35 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using System;
 using System.Management.Automation;
 
 namespace SandboxPowerShellApi
 {
-    [Cmdlet(VerbsCommon.Get, "NtTypes")]
+    [Cmdlet(VerbsCommon.Get, "NtType")]
     public sealed class GetNtTypesCmdlet : Cmdlet
     {
+        [Parameter()]
+        public string TypeName { get; set; }
+
         protected override void ProcessRecord()
         {
-            WriteObject(ObjectTypeInfo.GetTypes(), true);
+            if (!string.IsNullOrWhiteSpace(TypeName))
+            {
+                NtType type_info = NtType.GetTypeByName(TypeName);
+                if (type_info != null)
+                {
+                    WriteObject(type_info);
+                }
+                else
+                {
+                    throw new ArgumentException(String.Format("Invalid Type Name {0}", TypeName));
+                }
+            }
+            else
+            {
+                WriteObject(NtType.GetTypes(), true);
+            }
         }
     }
 }

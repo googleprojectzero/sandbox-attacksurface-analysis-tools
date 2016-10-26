@@ -55,7 +55,7 @@ namespace NtApiDotNet
         //ObjectTypeInformation TypeInformation; // Type Info list
     }
 
-    public class ObjectTypeInfo
+    public class NtType
     {
         public string Name { get; private set; }
         public AttributeFlags InvalidAttribute { get; private set; }
@@ -114,7 +114,7 @@ namespace NtApiDotNet
             return GenericMapping.MapMask(access_mask);
         }
 
-        internal ObjectTypeInfo(int id, ObjectTypeInformation info)
+        internal NtType(int id, ObjectTypeInformation info)
         {
             Index = id;
             Name = info.Name.ToString();
@@ -143,11 +143,11 @@ namespace NtApiDotNet
             NonPagedPoolUsage = info.NonPagedPoolUsage;
         }
 
-        private static Dictionary<string, ObjectTypeInfo> _types;
+        private static Dictionary<string, NtType> _types;
 
-        public static ObjectTypeInfo GetTypeByIndex(int index)
+        public static NtType GetTypeByIndex(int index)
         {
-            foreach (ObjectTypeInfo info in GetTypes())
+            foreach (NtType info in GetTypes())
             {
                 if (info.Index == index)
                     return info;
@@ -156,7 +156,7 @@ namespace NtApiDotNet
             return null;
         }
 
-        public static ObjectTypeInfo GetTypeByName(string name)
+        public static NtType GetTypeByName(string name)
         {
             LoadTypes();
             if (_types.ContainsKey(name))
@@ -177,7 +177,7 @@ namespace NtApiDotNet
 
                 try
                 {
-                    Dictionary<string, ObjectTypeInfo> ret = new Dictionary<string, ObjectTypeInfo>(StringComparer.OrdinalIgnoreCase);
+                    Dictionary<string, NtType> ret = new Dictionary<string, NtType>(StringComparer.OrdinalIgnoreCase);
                     int return_length;
                     NtStatus status = NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectAllInformation,
                         type_info.DangerousGetHandle(), type_info.Length, out return_length);
@@ -196,7 +196,7 @@ namespace NtApiDotNet
                     for (int count = 0; count < result.NumberOfTypes; ++count)
                     {
                         ObjectTypeInformation info = (ObjectTypeInformation)Marshal.PtrToStructure(curr_typeinfo, typeof(ObjectTypeInformation));
-                        ObjectTypeInfo ti = new ObjectTypeInfo(count + 2, info);
+                        NtType ti = new NtType(count + 2, info);
                         ret[ti.Name] = ti;
 
                         int offset = (info.Name.MaximumLength + alignment) & ~alignment;
@@ -216,7 +216,7 @@ namespace NtApiDotNet
 
         }
 
-        public static IEnumerable<ObjectTypeInfo> GetTypes()
+        public static IEnumerable<NtType> GetTypes()
         {
             LoadTypes();
             return _types.Values;

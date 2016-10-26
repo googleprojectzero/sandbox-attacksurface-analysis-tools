@@ -946,7 +946,7 @@ namespace NtApiDotNet
             return GetAllowedAccess(sd, token, GenericAccessRights.MaximumAllowed, generic_mapping);
         }
 
-        public static uint GetAllowedAccess(SafeHandle token, ObjectTypeInfo type, uint allowed_access, byte[] sd)
+        public static uint GetAllowedAccess(SafeHandle token, NtType type, uint allowed_access, byte[] sd)
         {
             if (sd == null || sd.Length == 0)
             {
@@ -959,17 +959,17 @@ namespace NtApiDotNet
             }
         }
 
-        public static uint GetAllowedAccess(NtToken token, ObjectTypeInfo type, uint allowed_access, byte[] sd)
+        public static uint GetAllowedAccess(NtToken token, NtType type, uint allowed_access, byte[] sd)
         {
             return GetAllowedAccess(token.Handle, type, allowed_access, sd);
         }
 
-        public static uint GetMaximumAccess(SafeHandle token, ObjectTypeInfo type, byte[] sd)
+        public static uint GetMaximumAccess(SafeHandle token, NtType type, byte[] sd)
         {
             return GetAllowedAccess(token, type, (uint)GenericAccessRights.MaximumAllowed, sd);
         }
 
-        public static uint GetMaximumAccess(NtToken token, ObjectTypeInfo type, byte[] sd)
+        public static uint GetMaximumAccess(NtToken token, NtType type, byte[] sd)
         {
             return GetMaximumAccess(token.Handle, type, sd);
         }
