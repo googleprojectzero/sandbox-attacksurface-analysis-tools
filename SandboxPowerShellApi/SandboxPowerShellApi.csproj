@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GenericObjectSecurity.cs" />
     <Compile Include="NtDisposableListCmdlets.cs" />
     <Compile Include="NtEventCmdlets.cs" />
     <Compile Include="NtProcessCmdlets.cs" />

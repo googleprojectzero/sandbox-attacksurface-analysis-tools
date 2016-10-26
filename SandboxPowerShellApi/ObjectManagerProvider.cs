@@ -42,7 +42,8 @@ namespace SandboxPowerShellApi
 
         private static string NormalizePath(string path)
         {
-            return path.Replace('\u2044', '/').Trim('\\');
+            string ret = path.Replace('\u2044', '/').Trim('\\');
+            return ret;
         }
 
         private static string DenomalizePath(string path)
@@ -52,7 +53,7 @@ namespace SandboxPowerShellApi
 
         protected override Collection<PSDriveInfo> InitializeDefaultDrives()
         {
-            PSDriveInfo drive = new PSDriveInfo("Objects", this.ProviderInfo, "\\", "Object Manager Root Directory", null);
+            PSDriveInfo drive = new PSDriveInfo("Objects", this.ProviderInfo, @"\", "Object Manager Root Directory", null);
             Collection<PSDriveInfo> drives = new Collection<PSDriveInfo>() { drive };
             return drives;
         }
@@ -70,7 +71,7 @@ namespace SandboxPowerShellApi
                 return null;
             }
 
-            if (String.IsNullOrEmpty(drive.Root))
+            if (String.IsNullOrWhiteSpace(drive.Root))
             {
                 WriteError(new ErrorRecord(
                            new ArgumentException("drive.Root"),
@@ -88,6 +89,7 @@ namespace SandboxPowerShellApi
                 {
                     path = "\\";
                 }
+
                 using (NtDirectory dir = NtDirectory.Open(path))
                 {
                     ObjectManagerPSDriveInfo objmgr_drive = new ObjectManagerPSDriveInfo(dir.Duplicate(), drive);
@@ -153,7 +155,6 @@ namespace SandboxPowerShellApi
         {
             return (ObjectManagerPSDriveInfo)this.PSDriveInfo;
         }
-
         private NtDirectory GetPathDirectory(string path)
         {
             path = NormalizePath(path);
@@ -164,9 +165,36 @@ namespace SandboxPowerShellApi
             }
             else
             {
-                return NtDirectory.Open(path.Substring(0, last_slash), 
-                    GetDrive().DirectoryRoot, DirectoryAccessRights.MaximumAllowed);
+                NtDirectory dir = GetDrive().DirectoryRoot;
+                string base_path = path.Substring(0, last_slash);
+                if (IsGlobalRoot(base_path))
+                {
+                    base_path = @"\";
+                    dir = null;
+                }
+                
+                return NtDirectory.Open(base_path,
+                        dir, DirectoryAccessRights.MaximumAllowed);
             }
+        }
+
+        private bool IsGlobalRoot(string path)
+        {
+            try
+            {
+                using (NtSymbolicLink link = NtSymbolicLink.Open(path, GetDrive().DirectoryRoot, SymbolicLinkAccessRights.Query))
+                {
+                    if (String.IsNullOrEmpty(link.Query()))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch (NtException)
+            {
+            }
+
+            return false;
         }
 
         private NtDirectory GetDirectory(string path)
@@ -176,11 +204,16 @@ namespace SandboxPowerShellApi
             {
                 return GetDrive().DirectoryRoot.Duplicate();
             }
-            else
+
+            NtDirectory dir = GetDrive().DirectoryRoot;
+            if (IsGlobalRoot(path))
             {
-                return NtDirectory.Open(path,
-                    GetDrive().DirectoryRoot, DirectoryAccessRights.MaximumAllowed);
+                path = @"\";
+                dir = null;
             }
+
+            return NtDirectory.Open(path,
+                dir, DirectoryAccessRights.MaximumAllowed);
         }
 
         private ObjectDirectoryInformation GetEntry(NtDirectory dir, string path)
@@ -229,6 +262,7 @@ namespace SandboxPowerShellApi
         protected override bool IsItemContainer(string path)
         {
             bool is_container = false;
+            bool is_symlink = false;
 
             if (GetDrive() == null)
             {
@@ -247,11 +281,19 @@ namespace SandboxPowerShellApi
                 using (NtDirectory dir = GetPathDirectory(path))
                 {
                     ObjectDirectoryInformation dir_info = GetEntry(dir, path);
-                    is_container = dir_info != null && dir_info.TypeName.Equals("directory", StringComparison.OrdinalIgnoreCase);
+                    is_container = dir_info != null
+                        && dir_info.TypeName.Equals("directory", StringComparison.OrdinalIgnoreCase);
+                    is_symlink = dir_info != null
+                        && dir_info.TypeName.Equals("symboliclink", StringComparison.OrdinalIgnoreCase);
                 }
             }
             catch (NtException)
             {   
+            }
+
+            if (is_symlink && IsGlobalRoot(path))
+            {
+                is_container = true;
             }
 
             return is_container || GetDrive().DirectoryRoot.DirectoryExists(path); 
@@ -309,7 +351,7 @@ namespace SandboxPowerShellApi
                     ObjectDirectoryInformation dir_info = GetEntry(dir, path);
                     if (dir_info != null)
                     {
-                        WriteItemObject(new ObjectDirectoryEntry(GetDrive().DirectoryRoot, normalized_path, dir_info), path, dir_info.IsDirectory);
+                        WriteItemObject(new ObjectDirectoryEntry(GetDrive().DirectoryRoot, normalized_path, dir_info), path.TrimStart('\\'), dir_info.IsDirectory);
                     }
                 }
             }
@@ -413,13 +455,13 @@ namespace SandboxPowerShellApi
                     remaining.Count > 1 ? NtDirectory.Open(base_path, root_dir, DirectoryAccessRights.Query) 
                                         : root_dir.Duplicate(DirectoryAccessRights.Query))
                 {
-                    AddMatches(base_dir, @"\" + base_path + @"\", new string[] { remaining.Last() }, matches);
+                    AddMatches(base_dir, base_path + @"\", new string[] { remaining.Last() }, matches);
                 }
             }
             catch (NtException)
             {
                 // If we couldn't open the drive then try brute force approach.
-                AddMatches(GetDrive().DirectoryRoot, @"\", remaining, matches);
+                AddMatches(GetDrive().DirectoryRoot, @"", remaining, matches);
             }
 
             return matches.Select(s => DenomalizePath(s));
@@ -437,38 +479,96 @@ namespace SandboxPowerShellApi
 
         public void GetSecurityDescriptor(string path, AccessControlSections includeSections)
         {
-            string normalized_path = NormalizePath(path);
-            SecurityDescriptor sd = null;
-            if (_item_cache.ContainsKey(normalized_path))
+            using (NtDirectory dir = GetPathDirectory(path))
             {
-                ObjectDirectoryEntry entry = _item_cache[normalized_path];
-                sd = entry.SecurityDescriptor;
-            }
-            else
-            {
-                using (NtDirectory dir = GetPathDirectory(path))
+                ObjectDirectoryInformation dir_info = GetEntry(dir, path);
+                if (dir_info == null)
                 {
-                    ObjectDirectoryInformation dir_info = GetEntry(dir, path);
-                    ObjectDirectoryEntry entry = new ObjectDirectoryEntry(GetDrive().DirectoryRoot, NormalizePath(path), dir_info);
-                    sd = entry.SecurityDescriptor;
+                    throw new NtException(NtStatus.STATUS_OBJECT_NAME_NOT_FOUND);
+                }
+
+                using (NtObject obj = dir_info.Open(GenericAccessRights.ReadControl))
+                {
+                    WriteItemObject(new GenericObjectSecurity(obj, includeSections), path, false);
                 }
             }
-            WriteItemObject(sd, path, false);
+        }
+
+        protected override void NewItem(string path, string itemTypeName, object newItemValue)
+        {
+            if (itemTypeName == null)
+            {
+                throw new ArgumentNullException("itemTypeName", "Must specify a typename");
+            }
+
+            NtObject obj = null;
+            string normalized_path = NormalizePath(path);
+            bool container = false;
+
+            switch (itemTypeName.ToLower())
+            {
+                case "event":
+                    obj = NtEvent.Create(normalized_path, GetDrive().DirectoryRoot, EventType.NotificationEvent, false);
+                    break;
+                case "directory":
+                    obj = NtDirectory.Create(normalized_path, GetDrive().DirectoryRoot, DirectoryAccessRights.MaximumAllowed);
+                    container = true;
+                    break;
+                case "symboliclink":
+                case "link":
+                    if (newItemValue == null)
+                    {
+                        throw new ArgumentNullException("newItemValue", "Must specify value for the symbolic link");
+                    }
+                    obj = NtSymbolicLink.Create(normalized_path, GetDrive().DirectoryRoot, newItemValue.ToString());
+                    break;
+                case "mutant":
+                    obj = NtMutant.Create(normalized_path, GetDrive().DirectoryRoot, false);
+                    break;
+                case "semaphore":
+                    int max_count = 1;
+                    if (newItemValue != null)
+                    {
+                        max_count = Convert.ToInt32(newItemValue);
+                    }
+                    obj = NtSemaphore.Create(normalized_path, GetDrive().DirectoryRoot, 0, max_count);
+                    break;
+                default:
+                    throw new ArgumentException(String.Format("Can't create new object of type {0}", itemTypeName));
+            }
+
+            WriteItemObject(obj, path, container);
         }
 
         public void SetSecurityDescriptor(string path, ObjectSecurity securityDescriptor)
         {
-            throw new NotImplementedException();
+            GenericObjectSecurity obj_security = securityDescriptor as GenericObjectSecurity;
+            if (obj_security != null)
+            {
+                using (NtDirectory dir = GetPathDirectory(path))
+                {
+                    ObjectDirectoryInformation dir_info = GetEntry(dir, path);
+                    if (dir_info == null)
+                    {
+                        throw new NtException(NtStatus.STATUS_OBJECT_NAME_NOT_FOUND);
+                    }
+
+                    using (NtObject obj = dir_info.Open(GenericAccessRights.WriteDac))
+                    {
+                        obj_security.PersistHandle(obj.Handle);
+                    }
+                }
+            }
         }
 
         public ObjectSecurity NewSecurityDescriptorFromPath(string path, AccessControlSections includeSections)
         {
-            throw new NotImplementedException();
+            return new GenericObjectSecurity();
         }
 
         public ObjectSecurity NewSecurityDescriptorOfType(string type, AccessControlSections includeSections)
         {
-            throw new NotImplementedException();
+            return new GenericObjectSecurity();
         }
     }
 }

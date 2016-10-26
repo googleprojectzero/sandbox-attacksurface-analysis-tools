@@ -109,8 +109,8 @@ namespace SandboxPowerShellApi
         }
     }
 
-    [Cmdlet(VerbsCommon.New, "SecurityDescriptor")]
-    public sealed class NewSecurityDescriptorCmdlet : Cmdlet
+    [Cmdlet(VerbsCommon.New, "NtSecurityDescriptor")]
+    public sealed class NewNtSecurityDescriptorCmdlet : Cmdlet
     {
         [Parameter]
         public bool NullDacl { get; set; }

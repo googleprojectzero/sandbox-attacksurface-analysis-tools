@@ -482,7 +482,7 @@ namespace NtApiDotNet
         /// Returns whether a directory exists for this path.
         /// </summary>
         /// <param name="path">The path to the entry.</param>
-        /// <param name="root"></param>
+        /// <param name="root">The root directory.</param>
         /// <returns></returns>
         public static bool DirectoryExists(string path, NtDirectory root)
         {

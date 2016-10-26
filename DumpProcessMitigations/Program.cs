@@ -67,28 +67,35 @@ namespace DumpProcessMitigations
 
         static void DumpProcessEntry(NtProcess entry, HashSet<string> mitigation_filter, bool all_mitigations, bool print_command_line)
         {
-            NtProcessMitigations mitigations = entry.GetProcessMitigations();
+            try
+            {
+                NtProcessMitigations mitigations = entry.GetProcessMitigations();
 
-            Console.WriteLine("Process Mitigations: {0,8} - {1}", entry.GetProcessId(), entry.GetImageFileName(false));
-            if (print_command_line)
-            {
-                Console.WriteLine("Command Line: {0}", GetCommandLine(entry));
-            }
-            IEnumerable<PropertyInfo> props = _props.Values.Where(p => mitigation_filter.Count == 0 || mitigation_filter.Contains(p.Name));
-            foreach (PropertyInfo prop in props.OrderBy(p => p.Name))
-            {
-                object value = prop.GetValue(mitigations);
-                if (!all_mitigations && (value is bool))
+                Console.WriteLine("Process Mitigations: {0,8} - {1}", entry.GetProcessId(), entry.GetImageFileName(false));
+                if (print_command_line)
                 {
-                    if (!(bool)value)
-                    {
-                        continue;
-                    }
+                    Console.WriteLine("Command Line: {0}", GetCommandLine(entry));
                 }
+                IEnumerable<PropertyInfo> props = _props.Values.Where(p => mitigation_filter.Count == 0 || mitigation_filter.Contains(p.Name));
+                foreach (PropertyInfo prop in props.OrderBy(p => p.Name))
+                {
+                    object value = prop.GetValue(mitigations);
+                    if (!all_mitigations && (value is bool))
+                    {
+                        if (!(bool)value)
+                        {
+                            continue;
+                        }
+                    }
 
-                FormatEntry(prop.Name, prop.GetValue(mitigations));
+                    FormatEntry(prop.Name, prop.GetValue(mitigations));
+                }
+                Console.WriteLine();
             }
-            Console.WriteLine();
+            catch (NtException)
+            {
+                // Can end up here if the process is exiting.
+            }
         }
 
         static bool ContainsString(string s, HashSet<string> filter_set)
