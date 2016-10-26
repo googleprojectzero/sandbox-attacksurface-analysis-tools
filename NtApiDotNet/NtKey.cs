@@ -501,6 +501,28 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Return a list of subkeys which can be accessed.
+        /// </summary>
+        /// <param name="desired_access">The required access rights for the subkeys</param>
+        /// <returns>The disposable list of subkeys.</returns>
+        public DisposableList<NtKey> QueryAccessibleKeys(KeyAccessRights desired_access)
+        {
+            DisposableList<NtKey> ret = new DisposableList<NtKey>();
+
+            foreach (string name in QueryKeys())
+            {
+                try
+                {
+                    ret.Add(Open(name, desired_access));
+                }
+                catch (NtException)
+                {
+                }
+            }
+            return ret;
+        }
+
         public static NtKey CreateSymbolicLink(NtKey rootkey, string path, string target)
         {
             using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive | AttributeFlags.OpenIf | AttributeFlags.OpenLink, rootkey))
