@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using HandleUtils;
 using NDesk.Options;
 using NtApiDotNet;
 using System;
@@ -138,7 +137,7 @@ namespace CheckFileAccess
                 return;
             }
             
-            _walked.Add(dir.FullName.ToLower());            
+            _walked.Add(dir.FullName.ToLower());
 
             try
             {

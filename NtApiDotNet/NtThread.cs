@@ -1,4 +1,18 @@
-﻿using System;
+﻿//  Copyright 2016 Google Inc. All Rights Reserved.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//  http ://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
@@ -299,9 +313,48 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get first thread for process.
+        /// </summary>
+        /// <param name="process">The process handle to get the threads.</param>
+        /// <param name="desired_access">The desired access for the thread.</param>
+        /// <returns>The first thread, or null if no more available.</returns>
+        public static NtThread GetFirstThread(NtProcess process, ThreadAccessRights desired_access)
+        {
+            SafeKernelObjectHandle new_handle;
+            NtStatus status = NtSystemCalls.NtGetNextThread(
+                process.Handle, SafeKernelObjectHandle.Null, desired_access,
+                AttributeFlags.None, 0, out new_handle);
+            if (status == NtStatus.STATUS_SUCCESS)
+            {
+                return new NtThread(new_handle);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Get next thread for process relative to current thread.
+        /// </summary>
+        /// <param name="process">The process handle to get the threads.</param>
+        /// <param name="desired_access">The desired access for the thread.</param>
+        /// <returns>The next thread, or null if no more available.</returns>
+        public NtThread GetNextThread(NtProcess process, ThreadAccessRights desired_access)
+        {
+            SafeKernelObjectHandle new_handle;
+            NtStatus status = NtSystemCalls.NtGetNextThread(
+                process.Handle, Handle, desired_access,
+                AttributeFlags.None, 0, out new_handle);
+            if (status == NtStatus.STATUS_SUCCESS)
+            {
+                return new NtThread(new_handle);
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Get the current thread.        
         /// </summary>
         /// <remarks>This only uses the pseudo handle, for the thread. You can't use it in different threads. If you need to do that use OpenCurrent.</remarks>
+        /// <see cref="OpenCurrent"/>
         public static NtThread Current { get { return new NtThread(new SafeKernelObjectHandle(new IntPtr(-2), false)); } }
 
         /// <summary>

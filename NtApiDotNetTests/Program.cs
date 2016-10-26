@@ -13,6 +13,9 @@ namespace NtApiDotNetTests
         {
             try
             {
+                Sid sid = NtSecurity.LookupAccountName("forshaw");
+                Console.WriteLine(sid);
+                
                 using (NtKey key = NtKey.GetCurrentUserKey().Open("Console"))
                 {
                     Console.WriteLine(key.GetName());

@@ -12,9 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet;
 using System;
 using System.ComponentModel;
-using System.Security.Principal;
 using System.Windows.Forms;
 
 namespace TokenViewer
@@ -27,7 +27,7 @@ namespace TokenViewer
         }
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
-        public SecurityIdentifier Sid {
+        public Sid Sid {
             get; private set;
         }
 
@@ -36,7 +36,7 @@ namespace TokenViewer
             bool success = false;
             try
             {
-                Sid = new SecurityIdentifier(textBoxSid.Text);
+                Sid = new Sid(textBoxSid.Text);
                 success = true;
             }
             catch (Exception)
@@ -47,8 +47,7 @@ namespace TokenViewer
             {
                 try
                 {
-                    NTAccount acct = new NTAccount(textBoxSid.Text);
-                    Sid = (SecurityIdentifier)acct.Translate(typeof(SecurityIdentifier));
+                    Sid = NtSecurity.LookupAccountName(textBoxSid.Text);
                     success = true;
                 }
                 catch (Exception ex)

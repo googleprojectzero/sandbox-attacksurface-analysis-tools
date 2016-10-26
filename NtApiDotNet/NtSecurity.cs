@@ -1,333 +1,78 @@
-﻿using Microsoft.Win32.SafeHandles;
+﻿//  Copyright 2016 Google Inc. All Rights Reserved.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//  http ://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security.Principal;
 using System.Text;
 
 namespace NtApiDotNet
 {
     /// <summary>
-    /// Predefined security authorities
+    /// Access rights generic mapping.
     /// </summary>
-    public enum SecurityAuthority : byte
-    {
-        Null = 0,
-        World = 1,
-        Local = 2,
-        Creator = 3,
-        NonUnique = 4,
-        Nt = 5,
-        ResourceManager = 9,
-        Package = 15,
-        Label = 16,
-        ScopedPolicyId = 17,
-        Authentication = 18,
-        ProcessTrust = 19,
-    }
-
     [StructLayout(LayoutKind.Sequential)]
-    public sealed class SidIdentifierAuthority
+    public struct GenericMapping
     {
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)]
-        private byte[] _value;
+        public uint GenericRead;
+        public uint GenericWrite;
+        public uint GenericExecute;
+        public uint GenericAll;
 
         /// <summary>
-        /// Get a reference to the identifier authority. This can be used to modify the value
+        /// Map a generic access mask to a specific one.
         /// </summary>
-        public byte[] Value
+        /// <param name="mask">The generic mask to map.</param>
+        /// <returns>The mapped mask.</returns>
+        public uint MapMask(uint mask)
         {
-            get
-            {
-                return _value;
-            }
-        }
-
-        public SidIdentifierAuthority()
-        {
-            _value = new byte[6];
-        }
-
-        public SidIdentifierAuthority(byte[] authority)
-        {
-            if (authority.Length != 6)
-            {
-                throw new ArgumentOutOfRangeException("authority", "Authority must be 6 bytes in size");
-            }
-
-            _value = (byte[])authority.Clone();
-        }
-
-        public SidIdentifierAuthority(SecurityAuthority authority)
-            : this(new byte[6] { 0, 0, 0, 0, 0, (byte)authority })
-        {
-        }
-
-        public override bool Equals(object obj)
-        {
-            SidIdentifierAuthority auth = obj as SidIdentifierAuthority;
-            if (auth == null)
-                return false;
-
-            if (!base.Equals(obj))
-            {
-                return false;
-            }
-
-            for (int i = 0; i < 6; i++)
-            {
-                if (_value[i] != auth._value[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        public override int GetHashCode()
-        {
-            int result = 0;
-            foreach (byte b in _value)
-            {
-                result += b;
-            }
-            return result;
-        }
-    }
-
-    public sealed class Sid
-    {
-        public SidIdentifierAuthority Authority { get; private set; }
-        public List<uint> SubAuthorities { get; private set; }
-
-        private void InitializeFromPointer(IntPtr sid)
-        {
-            if (!NtRtl.RtlValidSid(sid))
-                throw new NtException(NtStatus.STATUS_INVALID_SID);
-
-            IntPtr authority = NtRtl.RtlIdentifierAuthoritySid(sid);
-            Authority = (SidIdentifierAuthority)Marshal.PtrToStructure(authority, typeof(SidIdentifierAuthority));
-            int sub_authority_count = Marshal.ReadByte(NtRtl.RtlSubAuthorityCountSid(sid));
-            SubAuthorities = new List<uint>();
-            for (int i = 0; i < sub_authority_count; ++i)
-            {
-                SubAuthorities.Add((uint)Marshal.ReadInt32(NtRtl.RtlSubAuthoritySid(sid, i), 0));
-            }
-        }
-
-        public Sid(SidIdentifierAuthority authority, params uint[] sub_authorities)
-        {
-            Authority = new SidIdentifierAuthority(authority.Value);
-            SubAuthorities = new List<uint>(sub_authorities);
-        }
-
-        public Sid(SecurityAuthority authority, params uint[] sub_authorities)
-            : this(new SidIdentifierAuthority(authority), sub_authorities)
-        {
-        }
-
-        public Sid(IntPtr sid)
-        {
-            InitializeFromPointer(sid);
-        }
-
-        public Sid(byte[] sid)
-        {
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(sid))
-            {
-                InitializeFromPointer(buffer.DangerousGetHandle());
-            }
-        }
-
-        private static byte[] SidToArray(SecurityIdentifier sid)
-        {
-            byte[] ret = new byte[sid.BinaryLength];
-            sid.GetBinaryForm(ret, 0);
-            return ret;
-        }
-
-        public Sid(SecurityIdentifier sid) : this(SidToArray(sid))
-        {
-        }
-
-        public Sid(string sid) : this(new SecurityIdentifier(sid))
-        {
-        }
-
-        public SafeSidBufferHandle ToSafeBuffer()
-        {
-            SafeSidBufferHandle sid;
-            NtObject.StatusToNtException(NtRtl.RtlAllocateAndInitializeSidEx(Authority,
-                (byte)SubAuthorities.Count, SubAuthorities.ToArray(), out sid));
-            return sid;
-        }
-
-        public byte[] ToArray()
-        {
-            using (SafeSidBufferHandle handle = ToSafeBuffer())
-            {
-                return Utils.SafeHandleToArray(handle, handle.Length);
-            }
+            NtRtl.RtlMapGenericMask(ref mask, ref this);
+            return mask;
         }
 
         /// <summary>
-        /// Compares two sids to see if their prefixes are the same.
+        /// Convert generic mapping to a string.
         /// </summary>
-        /// <param name="sid">The sid to compare against</param>
-        /// <returns>True if the sids share a prefix.</returns>
-        public bool EqualPrefix(Sid sid)
-        {
-            using (SafeSidBufferHandle sid1 = ToSafeBuffer(), sid2 = sid.ToSafeBuffer())
-            {
-                return NtRtl.RtlEqualPrefixSid(sid1, sid2);
-            }
-        }
-
-        public override bool Equals(object obj)
-        {
-            Sid sid = obj as Sid;
-            if (sid == null)
-            {
-                return false;
-            }
-
-            if (Authority.Equals(sid.Authority))
-            {
-                return false;
-            }
-
-            if (SubAuthorities.Count != sid.SubAuthorities.Count)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < this.SubAuthorities.Count; ++i)
-            {
-                if (SubAuthorities[i] != sid.SubAuthorities[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        public static bool operator ==(Sid a, Sid b)
-        {
-            if (System.Object.ReferenceEquals(a, b))
-            {
-                return true;
-            }
-
-            if (System.Object.ReferenceEquals(a, null))
-            {
-                return false;
-            }
-
-            if (System.Object.ReferenceEquals(b, null))
-            {
-                return false;
-            }
-
-            return a.Equals(b);
-        }
-
-        public static bool operator !=(Sid a, Sid b)
-        {
-            return !(a == b);
-        }
-
-        public override int GetHashCode()
-        {
-            int sub_hash_code = 0;
-            foreach (uint sub_auth in SubAuthorities)
-            {
-                sub_hash_code ^= sub_auth.GetHashCode();
-            }
-            return Authority.GetHashCode() ^ sub_hash_code;
-        }
-
+        /// <returns>The generic mapping as a string.</returns>
         public override string ToString()
         {
-            using (SafeSidBufferHandle sid = ToSafeBuffer())
-            {
-                UnicodeStringOut str = new UnicodeStringOut();
-                NtObject.StatusToNtException(NtRtl.RtlConvertSidToUnicodeString(ref str, sid.DangerousGetHandle(), true));
-                try
-                {
-                    return str.ToString();
-                }
-                finally
-                {
-                    NtRtl.RtlFreeUnicodeString(ref str);
-                }
-            }
-        }
-
-        public static Sid GetIntegritySid(int level)
-        {
-            return new Sid(SecurityAuthority.Label, (uint)level);
-        }
-
-        public static bool IsIntegritySid(Sid sid)
-        {
-            return GetIntegritySid(TokenIntegrityLevel.Untrusted).EqualPrefix(sid);
-        }
-
-        public static Sid GetIntegritySid(TokenIntegrityLevel level)
-        {
-            return GetIntegritySid((int)level);
-        }
-
-        public string GetName()
-        {
-            return NtSecurity.LookupAccountSid(this) ?? ToString();
+            return String.Format("R:{0:X08} W:{1:X08} E:{2:X08} A:{3:X08}",
+                GenericRead, GenericWrite, GenericExecute, GenericAll);
         }
     }
 
-    public static class KnownSids
+    /// <summary>
+    /// Security information class for security descriptors.
+    /// </summary>
+    [Flags]
+    public enum SecurityInformation : uint
     {
-        public static Sid Null { get { return new Sid(SecurityAuthority.Null, 0); } }
-        public static Sid World { get { return new Sid(SecurityAuthority.World, 0); } }
-        public static Sid Local { get { return new Sid(SecurityAuthority.Local, 0); } }
-        public static Sid CreatorOwner { get { return new Sid(SecurityAuthority.Creator, 0); } }
-        public static Sid CreatorGroup { get { return new Sid(SecurityAuthority.Creator, 1); } }
-        public static Sid Service { get { return new Sid(SecurityAuthority.Nt, 6); } }
-        public static Sid Anonymous { get { return new Sid(SecurityAuthority.Nt, 7); } }
-        public static Sid AuthenticatedUsers { get { return new Sid(SecurityAuthority.Nt, 11); } }
-        public static Sid Restricted { get { return new Sid(SecurityAuthority.Nt, 12); } }
-        public static Sid LocalSystem { get { return new Sid(SecurityAuthority.Nt, 18); } }
-        public static Sid LocalService { get { return new Sid(SecurityAuthority.Nt, 19); } }
-        public static Sid NetworkService { get { return new Sid(SecurityAuthority.Nt, 20); } }
-    }
-
-    public sealed class SafeSidBufferHandle : SafeHandleZeroOrMinusOneIsInvalid
-    {
-        public SafeSidBufferHandle(IntPtr sid, bool owns_handle) : base(owns_handle)
-        {
-            SetHandle(sid);
-        }
-
-        public SafeSidBufferHandle() : base(true)
-        {
-        }
-
-        public int Length
-        {
-            get { return NtRtl.RtlLengthSid(handle); }
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            if (!IsInvalid)
-            {
-                NtRtl.RtlFreeSid(handle);
-                handle = IntPtr.Zero;
-            }
-            return true;
-        }
+        Owner = 1,
+        Group = 2,
+        Dacl = 4,
+        Sacl = 8,
+        Label = 0x10,
+        Attribute = 0x20,
+        Scope = 0x40,
+        ProcessTrustLabel = 0x80,
+        Backup = 0x10000,
+        ProtectedDacl = 0x80000000,
+        ProtectedSacl = 0x40000000,
+        UnprotectedDacl = 0x20000000,
+        UnprotectedSacl = 0x1000000,
+        AllBasic = Dacl | Owner | Group | Label,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -1017,432 +762,6 @@ namespace NtApiDotNet
         }
     }
 
-    [Flags]
-    public enum SecurityDescriptorControl : ushort
-    {
-        OwnerDefaulted = 0x0001,
-        GroupDefaulted = 0x0002,
-        DaclPresent = 0x0004,
-        DaclDefaulted = 0x0008,
-        SaclPresent = 0x0010,
-        SaclDefaulted = 0x0020,
-        DaclAutoInheritReq = 0x0100,
-        SaclAutoInheritReq = 0x0200,
-        DaclAutoInherited = 0x0400,
-        SaclAutoInherited = 0x0800,
-        DaclProtected = 0x1000,
-        SaclProtected = 0x2000,
-        RmControlValid = 0x4000,
-        SelfRelative = 0x8000,
-        ValidControlSetMask = DaclAutoInheritReq | SaclAutoInheritReq
-        | DaclAutoInherited | SaclAutoInherited | DaclProtected | SaclProtected
-    }
-
-    public sealed class SecurityDescriptorSid
-    {
-        public Sid Sid { get; private set; }
-        public bool Defaulted { get; private set; }
-
-        public SecurityDescriptorSid(Sid sid, bool defaulted)
-        {
-            Sid = sid;
-            Defaulted = defaulted;
-        }
-
-        public override string ToString()
-        {
-            return String.Format("{0} - Defaulted: {1}", Sid, Defaulted);
-        }
-    }
-
-    public sealed class SecurityDescriptor
-    {
-        public Acl Dacl { get; set; }
-        public Acl Sacl { get; set; }
-        public SecurityDescriptorSid Owner { get; set; }
-        public SecurityDescriptorSid Group { get; set; }
-        public SecurityDescriptorControl Control { get; set; }
-        public uint Revision { get; set; }
-
-        private delegate NtStatus QuerySidFunc(SafeBuffer SecurityDescriptor, out IntPtr sid, out bool defaulted);
-
-        private delegate NtStatus QueryAclFunc(SafeBuffer SecurityDescriptor, out bool acl_present, out IntPtr acl, out bool acl_defaulted);
-
-        private static SecurityDescriptorSid QuerySid(SafeBuffer buffer, QuerySidFunc func)
-        {
-            IntPtr sid;
-            bool sid_defaulted;
-            func(buffer, out sid, out sid_defaulted).ToNtException();
-            if (sid != IntPtr.Zero)
-            {
-                return new SecurityDescriptorSid(new Sid(sid), sid_defaulted);
-            }
-            return null;
-        }
-
-        private static Acl QueryAcl(SafeBuffer buffer, QueryAclFunc func)
-        {
-            IntPtr acl;
-            bool acl_present;
-            bool acl_defaulted;
-
-            func(buffer, out acl_present, out acl, out acl_defaulted).ToNtException();
-            if (!acl_present)
-            {
-                return null;
-            }
-
-            return new Acl(acl, acl_defaulted);
-        }
-
-        private void ParseSecurityDescriptor(SafeBuffer buffer)
-        {
-            if (!NtRtl.RtlValidSecurityDescriptor(buffer))
-            {
-                throw new ArgumentException("Invalid security descriptor");
-            }
-
-            Owner = QuerySid(buffer, NtRtl.RtlGetOwnerSecurityDescriptor);
-            Group = QuerySid(buffer, NtRtl.RtlGetGroupSecurityDescriptor);
-            Dacl = QueryAcl(buffer, NtRtl.RtlGetDaclSecurityDescriptor);
-            Sacl = QueryAcl(buffer, NtRtl.RtlGetSaclSecurityDescriptor);
-            SecurityDescriptorControl control;
-            uint revision;
-            NtRtl.RtlGetControlSecurityDescriptor(buffer, out control, out revision).ToNtException();
-            Control = control;
-            Revision = revision;
-        }
-
-        public SecurityDescriptor()
-        {
-            Revision = 1;
-        }
-
-        public SecurityDescriptor(byte[] security_descriptor)
-        {
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(security_descriptor))
-            {
-                ParseSecurityDescriptor(buffer);
-            }
-        }
-
-        public SecurityDescriptor(NtToken token) : this()
-        {
-            Owner = new SecurityDescriptorSid(token.GetOwner(), true);
-            Group = new SecurityDescriptorSid(token.GetPrimaryGroup(), true);
-            Dacl = token.GetDefaultDalc();
-            if (token.GetIntegrityLevel() < TokenIntegrityLevel.Medium)
-            {
-                Sacl = new Acl();
-                Sacl.Add(new Ace(AceType.MandatoryLabel, AceFlags.None, 1, token.GetIntegrityLevelSid().Sid));
-            }
-        }
-
-        public SecurityDescriptor(NtObject base_object, NtToken token, bool is_directory) : this()
-        {
-            if ((base_object == null) && (token == null))
-            {
-                throw new ArgumentNullException();
-            }
-
-            SecurityDescriptor parent_sd = null;
-            if (base_object != null)
-            {
-                parent_sd = base_object.GetSecurityDescriptor();
-            }
-
-            SecurityDescriptor creator_sd = null;
-            if (token != null)
-            {
-                creator_sd = new SecurityDescriptor();
-                creator_sd.Owner = new SecurityDescriptorSid(token.GetOwner(), false);
-                creator_sd.Group = new SecurityDescriptorSid(token.GetPrimaryGroup(), false);
-                creator_sd.Dacl = token.GetDefaultDalc();
-            }
-
-            ObjectTypeInfo type = ObjectTypeInfo.GetTypeByName(base_object.GetTypeName());
-
-            SafeBuffer parent_sd_buffer = SafeHGlobalBuffer.Null;
-            SafeBuffer creator_sd_buffer = SafeHGlobalBuffer.Null;
-            SafeSecurityObjectHandle security_obj = null;
-            try
-            {
-                if (parent_sd != null)
-                {
-                    parent_sd_buffer = parent_sd.ToSafeBuffer();
-                }
-                if (creator_sd != null)
-                {
-                    creator_sd_buffer = creator_sd.ToSafeBuffer();
-                }
-
-                GenericMapping mapping = type.GenericMapping;
-                NtRtl.RtlNewSecurityObject(parent_sd_buffer, creator_sd_buffer, out security_obj, is_directory, 
-                    token != null ? token.Handle : SafeKernelObjectHandle.Null, ref mapping).ToNtException();
-                ParseSecurityDescriptor(security_obj);
-            }
-            finally
-            {
-                if (parent_sd_buffer != null)
-                {
-                    parent_sd_buffer.Close();
-                }
-                if (creator_sd_buffer != null)
-                {
-                    creator_sd_buffer.Close();
-                }
-                if (security_obj != null)
-                {
-                    security_obj.Close();
-                }
-            }
-        }
-
-        public SecurityDescriptor(string sddl)
-            : this(NtSecurity.SddlToSecurityDescriptor(sddl))
-        {
-        }
-
-        public byte[] ToByteArray()
-        {
-            SafeStructureInOutBuffer<SecurityDescriptorStructure> sd_buffer = null;
-            SafeHGlobalBuffer dacl_buffer = null;
-            SafeHGlobalBuffer sacl_buffer = null;
-            SafeSidBufferHandle owner_buffer = null;
-            SafeSidBufferHandle group_buffer = null;
-
-            try
-            {
-                sd_buffer = new SafeStructureInOutBuffer<SecurityDescriptorStructure>();
-                NtRtl.RtlCreateSecurityDescriptor(sd_buffer, Revision).ToNtException();
-                SecurityDescriptorControl control = Control & SecurityDescriptorControl.ValidControlSetMask;
-                NtRtl.RtlSetControlSecurityDescriptor(sd_buffer, control, control).ToNtException();
-                if (Dacl != null)
-                {
-                    if (!Dacl.NullAcl)
-                    {
-                        dacl_buffer = new SafeHGlobalBuffer(Dacl.ToByteArray());
-                    }
-                    else
-                    {
-                        dacl_buffer = new SafeHGlobalBuffer(IntPtr.Zero, 0, false);
-                    }
-
-                    NtRtl.RtlSetDaclSecurityDescriptor(sd_buffer, true, dacl_buffer.DangerousGetHandle(), Dacl.Defaulted).ToNtException();
-                }
-                if (Sacl != null)
-                {
-                    if (!Sacl.NullAcl)
-                    {
-                        sacl_buffer = new SafeHGlobalBuffer(Sacl.ToByteArray());
-                    }
-                    else
-                    {
-                        sacl_buffer = new SafeHGlobalBuffer(IntPtr.Zero, 0, false);
-                    }
-
-                    NtRtl.RtlSetSaclSecurityDescriptor(sd_buffer, true, sacl_buffer.DangerousGetHandle(), Sacl.Defaulted).ToNtException();
-                }
-                if (Owner != null)
-                {
-                    owner_buffer = Owner.Sid.ToSafeBuffer();
-                    NtRtl.RtlSetOwnerSecurityDescriptor(sd_buffer, owner_buffer.DangerousGetHandle(), Owner.Defaulted);
-                }
-                if (Group != null)
-                {
-                    group_buffer = Group.Sid.ToSafeBuffer();
-                    NtRtl.RtlSetGroupSecurityDescriptor(sd_buffer, group_buffer.DangerousGetHandle(), Group.Defaulted);
-                }
-
-                int total_length = 0;
-                NtStatus status = NtRtl.RtlAbsoluteToSelfRelativeSD(sd_buffer, new SafeHGlobalBuffer(IntPtr.Zero, 0, false), ref total_length);
-                if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
-                {
-                    status.ToNtException();
-                }
-
-                using (SafeHGlobalBuffer relative_sd = new SafeHGlobalBuffer(total_length))
-                {
-                    NtRtl.RtlAbsoluteToSelfRelativeSD(sd_buffer, relative_sd, ref total_length).ToNtException();
-                    return relative_sd.ToArray();
-                }
-            }
-            finally
-            {
-                if (sd_buffer != null)
-                {
-                    sd_buffer.Close();
-                }
-                if (dacl_buffer != null)
-                {
-                    dacl_buffer.Close();
-                }
-                if (sacl_buffer != null)
-                {
-                    sacl_buffer.Close();
-                }
-                if (owner_buffer != null)
-                {
-                    owner_buffer.Close();
-                }
-                if (group_buffer != null)
-                {
-                    group_buffer.Close();
-                }
-            }
-        }
-
-        public string ToSddl(SecurityInformation security_information)
-        {
-            return NtSecurity.SecurityDescriptorToSddl(ToByteArray(), security_information);
-        }
-
-        public string ToSddl()
-        {
-            return ToSddl(SecurityInformation.Dacl | SecurityInformation.Label | SecurityInformation.Owner | SecurityInformation.Group);
-        }
-
-        public SafeBuffer ToSafeBuffer()
-        {
-            return new SafeHGlobalBuffer(ToByteArray());
-        }
-
-        public void AddAccessAllowedAce(GenericAccessRights mask, AceFlags flags, string sid)
-        {
-            AddAccessAllowedAce((uint)mask, flags, sid);
-        }
-
-        private void AddAce(AceType type, uint mask, AceFlags flags, Sid sid)
-        {
-            if (Dacl == null)
-            {
-                Dacl = new Acl();
-            }
-            Dacl.NullAcl = false;
-            Dacl.Add(new NtApiDotNet.Ace(type, flags, mask, sid));
-        }
-
-        public void AddAccessAllowedAce(uint mask, AceFlags flags, string sid)
-        {
-            AddAccessAllowedAceInternal(mask, flags, sid);
-        }
-
-        public void AddAccessAllowedAce(uint mask, string sid)
-        {
-            AddAccessAllowedAceInternal(mask, AceFlags.None, sid);
-        }
-
-        public void AddAccessAllowedAce(GenericAccessRights mask, string sid)
-        {
-            AddAccessAllowedAceInternal((uint)mask, AceFlags.None, sid);
-        }
-
-        public void AddAccessAllowedAce(GenericAccessRights mask, AceFlags flags, Sid sid)
-        {
-            AddAccessAllowedAceInternal((uint)mask, flags, sid);
-        }
-
-        public void AddAccessAllowedAce(uint mask, AceFlags flags, Sid sid)
-        {
-            AddAccessAllowedAceInternal(mask, AceFlags.None, sid);
-        }
-
-        public void AddAccessAllowedAce(uint mask, Sid sid)
-        {
-            AddAccessAllowedAceInternal((uint)mask, AceFlags.None, sid);
-        }
-
-        public void AddAccessAllowedAce(GenericAccessRights mask, Sid sid)
-        {
-            AddAccessAllowedAceInternal((uint)mask, AceFlags.None, sid);
-        }
-
-        private void AddAccessAllowedAceInternal(uint mask, AceFlags flags, Sid sid)
-        {
-            AddAce(AceType.Allowed, mask, flags, sid);
-        }
-
-        private void AddAccessAllowedAceInternal(uint mask, AceFlags flags, string sid)
-        {
-            AddAce(AceType.Allowed, mask, flags, NtSecurity.SidFromSddl(sid));
-        }
-
-        public void AddAccessDeniedAce(uint mask, AceFlags flags, string sid)
-        {
-            AddAccessDeniedAce(mask, flags, sid);
-        }
-
-        public void AddAccessDeniedAce(GenericAccessRights mask, AceFlags flags, string sid)
-        {
-            AddAccessDeniedAceInternal((uint)mask, flags, sid);
-        }
-
-        public void AddAccessDeniedAce(uint mask, string sid)
-        {
-            AddAccessDeniedAceInternal(mask, AceFlags.None, sid);
-        }
-
-        public void AddAccessDeniedAce(GenericAccessRights mask, string sid)
-        {
-            AddAccessDeniedAceInternal((uint)mask, AceFlags.None, sid);
-        }
-
-        public void AddAccessDeniedAce(GenericAccessRights mask, AceFlags flags, Sid sid)
-        {
-            AddAccessDeniedAceInternal((uint)mask, flags, sid);
-        }
-
-        public void AddAccessDeniedAce(uint mask, Sid sid)
-        {
-            AddAccessDeniedAceInternal(mask, AceFlags.None, sid);
-        }
-
-        public void AddAccessDeniedAce(GenericAccessRights mask, Sid sid)
-        {
-            AddAccessDeniedAceInternal((uint)mask, AceFlags.None, sid);
-        }
-
-        public void AddAccessDeniedAce(uint mask, AceFlags flags, Sid sid)
-        {
-            AddAccessDeniedAceInternal(mask, flags, sid);
-        }
-
-        private void AddAccessDeniedAceInternal(uint mask, AceFlags flags, Sid sid)
-        {
-            AddAce(AceType.Denied, mask, flags, sid);
-        }
-
-        private void AddAccessDeniedAceInternal(uint mask, AceFlags flags, string sid)
-        {
-            AddAce(AceType.Denied, mask, flags, NtSecurity.SidFromSddl(sid));
-        }
-
-        public void AddMandatoryLabel(TokenIntegrityLevel level)
-        {
-            AddMandatoryLabel(Sid.GetIntegritySid(level), AceFlags.None, MandatoryLabelPolicy.NoWriteUp);
-        }
-
-        public void AddMandatoryLabel(TokenIntegrityLevel level, MandatoryLabelPolicy policy)
-        {
-            AddMandatoryLabel(Sid.GetIntegritySid(level), AceFlags.None, policy);
-        }
-
-        public void AddMandatoryLabel(TokenIntegrityLevel level, AceFlags flags, MandatoryLabelPolicy policy)
-        {
-            AddMandatoryLabel(Sid.GetIntegritySid(level), flags, policy);
-        }
-
-        public void AddMandatoryLabel(Sid label, AceFlags flags, MandatoryLabelPolicy policy)
-        {
-            if (Sacl == null)
-            {
-                Sacl = new Acl();
-            }
-            Sacl.NullAcl = false;
-            Sacl.Add(new Ace(AceType.MandatoryLabel, flags, (uint)policy, label));
-        }
-    }
-
     public static class NtSecurity
     {
         enum SidNameUse
@@ -1462,6 +781,15 @@ namespace NtApiDotNet
         [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static extern bool LookupAccountSid(string lpSystemName, SafeSidBufferHandle lpSid, StringBuilder lpName,
                 ref int cchName, StringBuilder lpReferencedDomainName, ref int cchReferencedDomainName, out SidNameUse peUse);
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern bool LookupAccountName(string lpSystemName, string lpAccountName,
+            SafeBuffer Sid,
+            ref int cbSid,
+            SafeBuffer ReferencedDomainName,
+            ref int cchReferencedDomainName,
+            out SidNameUse peUse
+        );
 
         /// <summary>
         /// Looks up the account name of a SID. 
@@ -1490,6 +818,37 @@ namespace NtApiDotNet
                 {
                     return String.Format("{0}\\{1}", domain, name);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Lookup a SID from a username.
+        /// </summary>
+        /// <param name="username">The username, can be in the form domain\account.</param>
+        /// <returns>The Security Identifier.</returns>
+        /// <exception cref="NtException">Thrown if account cannot be found.</exception>
+        public static Sid LookupAccountName(string username)
+        {
+            int sid_length = 0;
+            int domain_length = 0;
+            SidNameUse name;
+            if (!LookupAccountName(null, username, SafeHGlobalBuffer.Null, ref sid_length, 
+                SafeHGlobalBuffer.Null, ref domain_length, out name))
+            {
+                if (sid_length <= 0)
+                {
+                    throw new NtException(NtStatus.STATUS_INVALID_USER_PRINCIPAL_NAME);
+                }
+            }
+
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(sid_length), domain = new SafeHGlobalBuffer(domain_length * 2))
+            {
+                if (!LookupAccountName(null, username, buffer, ref sid_length, domain, ref domain_length, out name))
+                {
+                    throw new NtException(NtStatus.STATUS_INVALID_USER_PRINCIPAL_NAME);
+                }
+
+                return new Sid(buffer);
             }
         }
 
@@ -1582,7 +941,6 @@ namespace NtApiDotNet
             }
         }
 
-
         public static uint GetMaximumAccess(SecurityDescriptor sd, NtToken token, GenericMapping generic_mapping)
         {
             return GetAllowedAccess(sd, token, GenericAccessRights.MaximumAllowed, generic_mapping);
@@ -1631,18 +989,20 @@ namespace NtApiDotNet
 
             return null;
         }
-    }
 
-    public class SafeSecurityObjectHandle : SafeBuffer
-    {
-        public SafeSecurityObjectHandle() : base(true)
+        public static Sid GetIntegritySid(int level)
         {
-            Initialize(0);
+            return new Sid(SecurityAuthority.Label, (uint)level);
         }
 
-        protected override bool ReleaseHandle()
+        public static bool IsIntegritySid(Sid sid)
         {
-            return NtRtl.RtlDeleteSecurityObject(ref handle).IsSuccess();
+            return GetIntegritySid(TokenIntegrityLevel.Untrusted).EqualPrefix(sid);
+        }
+
+        public static Sid GetIntegritySid(TokenIntegrityLevel level)
+        {
+            return GetIntegritySid((int)level);
         }
     }
 }

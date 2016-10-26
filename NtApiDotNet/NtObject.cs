@@ -1,4 +1,18 @@
-﻿using Microsoft.Win32.SafeHandles;
+﻿//  Copyright 2016 Google Inc. All Rights Reserved.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//  http ://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -6,6 +20,9 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+    /// <summary>
+    /// Generic access rights.
+    /// </summary>
     [Flags]
     public enum GenericAccessRights : uint
     {
@@ -22,15 +39,31 @@ namespace NtApiDotNet
         MaximumAllowed = 0x02000000,
     };
 
+    /// <summary>
+    /// Options for duplicating objects.
+    /// </summary>
     [Flags]
     public enum DuplicateObjectOptions
     {
         None = 0,
+        /// <summary>
+        /// Close the original handle.
+        /// </summary>
         CloseSource = 1,
+        /// <summary>
+        /// Duplicate with the same access.
+        /// </summary>
         SameAccess = 2,
+        /// <summary>
+        /// Duplicate with the same handle attributes.
+        /// </summary>
         SameAttributes = 4,
     }
 
+    /// <summary>
+    /// Information class for NtQueryObject
+    /// </summary>
+    /// <see cref="NtSystemCalls.NtQueryObject(SafeHandle, ObjectInformationClass, IntPtr, int, out int)"/>
     public enum ObjectInformationClass
     {
         ObjectBasicInformation,
@@ -40,12 +73,18 @@ namespace NtApiDotNet
         ObjectDataInformation
     }
 
+    /// <summary>
+    /// Structure to return Object Name
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public class ObjectNameInformation
     {
         public UnicodeStringOut Name;
     }
 
+    /// <summary>
+    /// Structure to return Object basic information
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct ObjectBasicInformation
     {
@@ -64,6 +103,9 @@ namespace NtApiDotNet
         public LargeIntegerStruct CreationTime;
     }
 
+    /// <summary>
+    /// Type of kernel pool used for object allocation
+    /// </summary>
     public enum PoolType
     {
         NonPagedPool,
@@ -73,48 +115,6 @@ namespace NtApiDotNet
         NonPagedPoolCacheAligned,
         PagedPoolCacheAligned,
         NonPagedPoolCacheAlignedMustS
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct GenericMapping
-    {
-        public uint GenericRead;
-        public uint GenericWrite;
-        public uint GenericExecute;
-        public uint GenericAll;
-
-        public uint MapMask(uint mask)
-        {
-            NtRtl.RtlMapGenericMask(ref mask, ref this);
-            return mask;
-        }
-
-        public override string ToString()
-        {
-            return String.Format("R:{0:X08} W:{1:X08} E:{2:X08} A:{3:X08}",
-                GenericRead, GenericWrite, GenericExecute, GenericAll);
-        }
-    }
-
-    
-
-    [Flags]
-    public enum SecurityInformation : uint
-    {
-        Owner = 1,
-        Group = 2,
-        Dacl = 4,
-        Sacl = 8,
-        Label = 0x10,
-        Attribute = 0x20,
-        Scope = 0x40,
-        ProcessTrustLabel = 0x80,
-        Backup = 0x10000,
-        ProtectedDacl = 0x80000000,
-        ProtectedSacl = 0x40000000,
-        UnprotectedDacl = 0x20000000,
-        UnprotectedSacl = 0x1000000,
-        AllBasic = Dacl | Owner | Group | Label,
     }
 
     public static partial class NtSystemCalls

@@ -78,7 +78,9 @@
     <Compile Include="AnnontationAttributes.cs" />
     <Compile Include="SafeHandles.cs" />
     <Compile Include="NtSecurity.cs" />
+    <Compile Include="SecurityDescriptor.cs" />
     <Compile Include="SecurityQualityOfService.cs" />
+    <Compile Include="Sid.cs" />
     <Compile Include="ThreadImpersonationContext.cs" />
     <Compile Include="UnicodeString.cs" />
     <Compile Include="Utils.cs" />

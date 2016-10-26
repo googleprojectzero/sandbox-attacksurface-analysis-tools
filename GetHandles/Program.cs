@@ -72,11 +72,11 @@ namespace GetHandles
                 {
                     Console.WriteLine("{0}/0x{0:X}/{1} {2}/0x{2:X}: {3}", ent.Pid, pidToName[ent.Pid], 
                         ent.Handle, formatHandle(ent));
-                    // TODO: Fix
-                    //if (showsd && !String.IsNullOrWhiteSpace(ent.StringSecurityDescriptor))
-                    //{
-                    //    Console.WriteLine("SDDL: {0}", ent.StringSecurityDescriptor);
-                    //}
+
+                    if (showsd && ent.SecurityDescriptor != null)
+                    {
+                        Console.WriteLine("SDDL: {0}", ent.SecurityDescriptor.ToSddl());
+                    }
                 }
                 Console.WriteLine();
             }

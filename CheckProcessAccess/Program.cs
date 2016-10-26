@@ -347,6 +347,5 @@ namespace CheckProcessAccess
                 Console.WriteLine(ex);
             }
         }
-
     }
 }
