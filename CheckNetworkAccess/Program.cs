@@ -40,7 +40,7 @@ namespace CheckNetworkAccess
 
         static void ConnectTest(int pid, IPEndPoint ep)
         {
-            using (var imp = NtToken.Impersonate(pid, NtApiDotNet.SecurityImpersonationLevel.Impersonation))
+            using (var imp = NtToken.Impersonate(pid, SecurityImpersonationLevel.Impersonation))
             {
                 TcpClient client = new TcpClient();
                 client.Connect(ep);
@@ -52,7 +52,7 @@ namespace CheckNetworkAccess
 
         static void ListenTest(int pid, IPEndPoint ep)
         {
-            using (var imp = NtToken.Impersonate(pid, NtApiDotNet.SecurityImpersonationLevel.Impersonation))
+            using (var imp = NtToken.Impersonate(pid, SecurityImpersonationLevel.Impersonation))
             {
                 TcpListener listener = new TcpListener(ep);
 

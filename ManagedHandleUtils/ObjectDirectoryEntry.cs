@@ -29,7 +29,7 @@ namespace HandleUtils
         {
             try
             {
-                using (NtObject obj = NtObject.OpenWithType(_type_name, _name, _directory.Directory, NtApiDotNet.GenericAccessRights.ReadControl))
+                using (NtObject obj = NtObject.OpenWithType(_type_name, _name, _directory.Directory, GenericAccessRights.ReadControl))
                 {
                     _sd = obj.GetRawSecurityDescriptor(SecurityInformation.Owner | SecurityInformation.Group | SecurityInformation.Dacl | SecurityInformation.Label);
                 }

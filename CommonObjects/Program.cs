@@ -73,7 +73,7 @@ namespace CommonObjects
 
                     foreach (int pid in pids)
                     {                        
-                        foreach(HandleEntry entry in NtApiDotNet.NtSystemInfo.GetHandles(pid, true))
+                        foreach(HandleEntry entry in NtSystemInfo.GetHandles(pid, true))
                         {
                             if (!entries.ContainsKey(entry.Object))
                             {

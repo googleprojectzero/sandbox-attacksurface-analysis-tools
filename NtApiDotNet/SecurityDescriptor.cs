@@ -340,7 +340,7 @@ namespace NtApiDotNet
                 Dacl = new Acl();
             }
             Dacl.NullAcl = false;
-            Dacl.Add(new NtApiDotNet.Ace(type, flags, mask, sid));
+            Dacl.Add(new Ace(type, flags, mask, sid));
         }
 
         public void AddAccessAllowedAce(uint mask, AceFlags flags, string sid)

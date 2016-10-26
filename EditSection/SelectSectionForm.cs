@@ -147,7 +147,7 @@ namespace EditSection
         }
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
-        public NtApiDotNet.NtMappedSection MappedFile { get; private set; }
+        public NtMappedSection MappedFile { get; private set; }
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
         public HandleEntry OpenedHandle { get; private set; }

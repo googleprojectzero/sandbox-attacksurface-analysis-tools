@@ -38,7 +38,7 @@ namespace HandleUtils
 	    {
             try
             {
-                using (NtSymbolicLink symlink = NtSymbolicLink.Open(symlink_path, null, NtApiDotNet.SymbolicLinkAccessRights.Query))
+                using (NtSymbolicLink symlink = NtSymbolicLink.Open(symlink_path, null, SymbolicLinkAccessRights.Query))
                 {
                     return symlink.Query();
                 }

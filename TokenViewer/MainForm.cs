@@ -97,6 +97,18 @@ namespace TokenViewer
             }
         }
 
+        private static NtToken GetProcessToken(NtThread thread)
+        {
+            try
+            {
+                return NtToken.OpenProcessToken(thread.GetProcessId());
+            }
+            catch (NtException)
+            {
+                return null;
+            }
+        }
+
         private static bool IsRestrictedToken(NtProcess process)
         {
             NtToken token = null;
@@ -467,8 +479,7 @@ namespace TokenViewer
                 NtThread thread = listViewThreads.SelectedItems[0].Tag as NtThread;
                 if (thread != null)
                 {
-                    // TODO
-                    //TokenForm.OpenForm(thread.Process.Token, true);
+                    TokenForm.OpenForm(GetProcessToken(thread), false);
                 }
             }
         }

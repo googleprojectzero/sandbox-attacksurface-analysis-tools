@@ -78,12 +78,12 @@ namespace HandleUtils
         }
 
         [DllImport("user32.dll", SetLastError=true)]
-        private static extern bool GetClipboardAccessToken(out SafeKernelObjectHandle handle, NtApiDotNet.TokenAccessRights desired_access);
+        private static extern bool GetClipboardAccessToken(out SafeKernelObjectHandle handle, TokenAccessRights desired_access);
 
         private static SafeKernelObjectHandle OpenClipboardToken()
         {
             SafeKernelObjectHandle handle;
-            if (!GetClipboardAccessToken(out handle, NtApiDotNet.TokenAccessRights.Query | NtApiDotNet.TokenAccessRights.QuerySource | NtApiDotNet.TokenAccessRights.ReadControl))
+            if (!GetClipboardAccessToken(out handle, TokenAccessRights.Query | TokenAccessRights.QuerySource | TokenAccessRights.ReadControl))
             {
                 throw new SafeWin32Exception();
             }

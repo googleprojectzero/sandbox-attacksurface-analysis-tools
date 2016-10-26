@@ -196,7 +196,7 @@ namespace NtApiDotNet
                     for (int count = 0; count < result.NumberOfTypes; ++count)
                     {
                         ObjectTypeInformation info = (ObjectTypeInformation)Marshal.PtrToStructure(curr_typeinfo, typeof(ObjectTypeInformation));
-                        ObjectTypeInfo ti = new NtApiDotNet.ObjectTypeInfo(count + 2, info);
+                        ObjectTypeInfo ti = new ObjectTypeInfo(count + 2, info);
                         ret[ti.Name] = ti;
 
                         int offset = (info.Name.MaximumLength + alignment) & ~alignment;

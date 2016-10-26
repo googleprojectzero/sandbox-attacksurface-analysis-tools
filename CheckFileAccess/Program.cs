@@ -26,7 +26,7 @@ namespace CheckFileAccess
         static bool _recursive = false;
         static bool _print_sddl = false; 
         static bool _show_write_only = false;
-        static HashSet<string> _walked = new HashSet<string>();        
+        static HashSet<string> _walked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);        
         static ObjectTypeInfo _type;
         static NtToken _token;
         static uint _file_filter;
@@ -110,12 +110,12 @@ namespace CheckFileAccess
 
         static void DumpFile(FileInfo file)
         {
-            if (_walked.Contains(file.FullName.ToLower()))
+            if (_walked.Contains(file.FullName))
             {
                 return;
             }
 
-            _walked.Add(file.FullName.ToLower()); 
+            _walked.Add(file.FullName); 
 
             try
             {
@@ -132,12 +132,12 @@ namespace CheckFileAccess
 
         static void DumpDirectory(DirectoryInfo dir)
         {
-            if (_walked.Contains(dir.FullName.ToLower()))
+            if (_walked.Contains(dir.FullName))
             {
                 return;
             }
             
-            _walked.Add(dir.FullName.ToLower());
+            _walked.Add(dir.FullName);
 
             try
             {
@@ -191,7 +191,7 @@ namespace CheckFileAccess
                                 String.Join(",", Enum.GetNames(typeof(FileAccessRights)))), v => _file_filter |= ParseRight(v, typeof(FileAccessRights)) },  
                             { "d=", String.Format("Filter on a directory right [{0}]", 
                                 String.Join(",", Enum.GetNames(typeof(FileDirectoryAccessRights)))), v => _dir_filter |= ParseRight(v, typeof(FileDirectoryAccessRights)) },
-                            { "x=", "Specify a base path to exclude from recursive search", v => _walked.Add(v.ToLower()) },
+                            { "x=", "Specify a base path to exclude from recursive search", v => _walked.Add(v) },
                             { "q", "Don't print errors", v => _quiet = v != null },
                             { "onlydirs", "Only check the permissions of directories", v => _only_dirs = v != null },
                             { "h|help",  "show this message and exit", v => show_help = v != null },

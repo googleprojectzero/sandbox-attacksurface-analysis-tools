@@ -19,7 +19,7 @@ namespace NtApiDotNet
     {
         internal NtProcessMitigations(NtProcess process)
         {
-            NtApiDotNet.ProcessDepStatus dep_status = process.GetProcessDepStatus();
+            ProcessDepStatus dep_status = process.GetProcessDepStatus();
             DisableAtlThunkEmulation = dep_status.DisableAtlThunkEmulation;
             DepEnabled = dep_status.Enabled;
             DepPermanent = dep_status.Permanent;

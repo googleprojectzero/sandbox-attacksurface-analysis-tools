@@ -697,7 +697,7 @@ namespace NtApiDotNet
             {
                 try
                 {
-                    IoStatus status = new NtApiDotNet.IoStatus();
+                    IoStatus status = new IoStatus();
                     StatusToNtException(NtSystemCalls.NtQueryInformationFile(Handle, status, buffer, buffer.Length, FileInformationClass.FileNameInformation));
                     char[] result = new char[buffer.Result.NameLength / 2];
                     buffer.Data.ReadArray(0, result, 0, result.Length);
