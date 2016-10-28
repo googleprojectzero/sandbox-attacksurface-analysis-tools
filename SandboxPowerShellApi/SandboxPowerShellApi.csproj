@@ -59,7 +59,7 @@
     <Compile Include="NtTypesCmdlets.cs" />
     <Compile Include="NtSymbolicLinkCmdlet.cs" />
     <Compile Include="ObjectDirectoryEntry.cs" />
-    <Compile Include="ObjectManagerProvider.cs" />
+    <Compile Include="NtObjectManagerProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -76,6 +76,11 @@
       <Project>{6aeb5004-6093-4c23-aeae-911d64cacc58}</Project>
       <Name>NtApiDotNet</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="en-US\about_NtObjectManagerProvider.help.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -29,9 +29,12 @@ namespace HandleUtils
         {
             try
             {
-                using (NtObject obj = NtObject.OpenWithType(_type_name, _name, _directory.Directory, GenericAccessRights.ReadControl))
+                if (NtObject.CanOpenType(_type_name))
                 {
-                    _sd = obj.GetRawSecurityDescriptor(SecurityInformation.Owner | SecurityInformation.Group | SecurityInformation.Dacl | SecurityInformation.Label);
+                    using (NtObject obj = NtObject.OpenWithType(_type_name, _name, _directory.Directory, GenericAccessRights.ReadControl))
+                    {
+                        _sd = obj.GetRawSecurityDescriptor(SecurityInformation.Owner | SecurityInformation.Group | SecurityInformation.Dacl | SecurityInformation.Label);
+                    }
                 }
             }
             catch

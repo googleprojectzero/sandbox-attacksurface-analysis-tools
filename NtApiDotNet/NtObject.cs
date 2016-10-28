@@ -344,6 +344,20 @@ namespace NtApiDotNet
         {
             return GetGrantedAccessInternal(Handle);
         }
+
+        public virtual object GetGrantedAccessObject()
+        {
+            return GetGrantedAccessRaw();
+        }
+
+
+        public bool IsAccessGrantedRaw<T>(T access) where T : IConvertible
+        {
+            uint granted = GetGrantedAccessRaw();
+            uint required = access.ToUInt32(null);
+            return (granted & required) == required;
+        }
+
         public static byte[] GetRawSecurityDescriptor(SafeKernelObjectHandle handle, SecurityInformation security_information)
         {
             int return_length;
@@ -410,6 +424,31 @@ namespace NtApiDotNet
         public NtStatus Wait()
         {
             return Wait(false, NtWait.Infinite);
+        }
+
+        /// <summary>
+        /// Indicates whether a specific type of kernel object can be opened.
+        /// </summary>
+        /// <param name="typename">The kernel typename to check.</param>
+        /// <returns>True if this type of object can be opened.</returns>
+        /// <see cref="OpenWithType(string, string, NtObject, GenericAccessRights)"/>
+        public static bool CanOpenType(string typename)
+        {
+            switch (typename.ToLower())
+            {
+                case "device":
+                case "file":
+                case "event":
+                case "directory":
+                case "symboliclink":
+                case "mutant":
+                case "semaphore":
+                case "section":
+                case "job":
+                case "key":
+                    return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -635,6 +674,11 @@ namespace NtApiDotNet
         public A GetGrantedAccess() 
         {
             return GetGrantedAccess(Handle);
+        }
+
+        public override object GetGrantedAccessObject()
+        {
+            return GetGrantedAccess();
         }
 
         public static A GetGrantedAccess(SafeKernelObjectHandle handle) 

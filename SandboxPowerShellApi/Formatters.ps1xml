@@ -2,7 +2,7 @@
 <Configuration>
   <ViewDefinitions>
     <View>
-      <Name>ObjectDirectoryEntry</Name>
+      <Name>ObjectDirectoryEntryTable</Name>
       <ViewSelectedBy>
         <TypeName>SandboxPowerShellApi.ObjectDirectoryEntry</TypeName>
       </ViewSelectedBy>
@@ -32,6 +32,46 @@
           </TableRowEntry>
         </TableRowEntries>
       </TableControl>
+    </View>
+    <View>
+      <Name>ObjectDirectoryEntryList</Name>
+      <ViewSelectedBy>
+        <TypeName>SandboxPowerShellApi.ObjectDirectoryEntry</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <PropertyName>Name</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>TypeName</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>IsDirectory</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>IsSymbolicLink</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>RelativePath</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>SymbolicLinkTarget</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>MaximumGrantedAccess</PropertyName>
+                <FormatString>X08</FormatString>
+              </ListItem>
+              <ListItem>
+                <ScriptBlock>$_.SecurityDescriptor.ToSddl()</ScriptBlock>
+                <Label>SecurityDescriptor</Label>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
     </View>
     <View>
       <Name>ObjectTypeInfo</Name>

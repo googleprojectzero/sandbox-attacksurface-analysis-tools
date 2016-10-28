@@ -1,0 +1,26 @@
+﻿TOPIC
+    about_ObjectManagerPSProvider
+
+SHORT DESCRIPTION
+    The Sandbox Powershell Module includes an object manager PS drive provider to inspect and
+	manipulate the object manager namespace.
+
+LONG DESCRIPTION
+	Under the hood of the Win32 API is the NT Object Manager which acts similar to a filesystem.
+	This is normally hidden from view and requires specialist tools such as WinObj to inspect it.
+	This Sandbox Powershell API comes with a PS drive provider which allows you to enumerate entries
+	and modify certain properties in the name space.
+
+	By default a new drive will be created, Objects: which can be used to access the namespace. It's
+	also possible to add other drives with different roots if needed. Accessing the namespace works 
+	just like other PS driver providers. You can use Get-ChildItems to enumerate items Get-Item to
+	get an individual object. 
+
+EXAMPLES
+    Examples of how to use the module or how the subject feature works in practice.
+
+KEYWORDS
+    Terms or titles on which you might expect your users to search for the information in this topic.
+
+SEE ALSO
+    Text-only references for further read/ing. Hyperlinks cannot work in the Windows PowerShell console. 

@@ -47,6 +47,14 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtOpenSemaphore(out SafeKernelObjectHandle MutantHandle, SemaphoreAccessRights DesiredAccess,
             ObjectAttributes ObjectAttributes);
+
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtReleaseSemaphore(
+           SafeKernelObjectHandle SemaphoreHandle,
+           int ReleaseCount,
+           out int PreviousCount
+        );
     }
 
     public class NtSemaphore : NtObjectWithDuplicate<NtSemaphore, SemaphoreAccessRights>
@@ -73,6 +81,13 @@ namespace NtApiDotNet
                 StatusToNtException(NtSystemCalls.NtOpenSemaphore(out handle, access_rights, obja));
                 return new NtSemaphore(handle);
             }
+        }
+
+        public int Release(int count)
+        {
+            int previous_count;
+            NtSystemCalls.NtReleaseSemaphore(Handle, count, out previous_count).ToNtException();
+            return previous_count;
         }
     }
 }
