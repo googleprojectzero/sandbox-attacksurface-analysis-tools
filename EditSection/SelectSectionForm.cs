@@ -150,7 +150,7 @@ namespace EditSection
         public NtMappedSection MappedFile { get; private set; }
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
-        public HandleEntry OpenedHandle { get; private set; }
+        public NtHandle OpenedHandle { get; private set; }
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
         public bool ReadOnly { get; private set; }

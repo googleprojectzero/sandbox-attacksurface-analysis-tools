@@ -14,8 +14,11 @@
 
 using NtApiDotNet;
 
-namespace SandboxPowerShellApi
+namespace NtObjectManager
 {
+    /// <summary>
+    /// A class representing a NT object manager directory entry.
+    /// </summary>
     public class ObjectDirectoryEntry
     {
         private NtDirectory _base_directory;
@@ -56,11 +59,34 @@ namespace SandboxPowerShellApi
             }
         }
 
+        /// <summary>
+        /// Get the name of the entry.
+        /// </summary>
         public string Name { get; private set; }
+
+        /// <summary>
+        /// Get the NT type name of the entry.
+        /// </summary>
         public string TypeName { get; private set; }
+
+        /// <summary>
+        /// Indicates if this entry is a directory.
+        /// </summary>
         public bool IsDirectory { get; private set; }
+
+        /// <summary>
+        /// Indicates if this entry is a symbolic link.
+        /// </summary>
         public bool IsSymbolicLink { get; private set; }
+
+        /// <summary>
+        /// The relative path from the drive base to the entry.
+        /// </summary>
         public string RelativePath { get; private set; }
+
+        /// <summary>
+        /// The security descriptor of the entry. This can be null if caller does not have permission to open the actual object.
+        /// </summary>
         public SecurityDescriptor SecurityDescriptor
         {
             get
@@ -70,6 +96,9 @@ namespace SandboxPowerShellApi
             }
         }
 
+        /// <summary>
+        /// The symbolic link target if IsSymbolicLink is true. Can be null if caller doesn't have permission to open the actual object.
+        /// </summary>
         public string SymbolicLinkTarget
         {
             get
@@ -79,6 +108,9 @@ namespace SandboxPowerShellApi
             }
         }
 
+        /// <summary>
+        /// The maximum granted access to the entry. Can be set to 0 if the caller doesn't have permission to open the actual object.
+        /// </summary>
         public object MaximumGrantedAccess
         {
             get
@@ -88,7 +120,12 @@ namespace SandboxPowerShellApi
             }
         }
 
-
+        /// <summary>
+        /// Try and open the directory entry and return an actual NtObject handle.
+        /// </summary>
+        /// <returns>The object opened.</returns>
+        /// <exception cref="NtException">Thrown if error opening object.</exception>
+        /// <exception cref="System.ArgumentException">Thrown if invalid typename.</exception>
         public NtObject ToObject()
         {
             return NtObject.OpenWithType(TypeName, RelativePath, _base_directory, GenericAccessRights.MaximumAllowed);

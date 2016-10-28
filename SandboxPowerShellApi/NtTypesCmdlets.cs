@@ -16,14 +16,38 @@ using NtApiDotNet;
 using System;
 using System.Management.Automation;
 
-namespace SandboxPowerShellApi
+namespace NtObjectManager
 {
+    /// <summary>
+    /// <para type="synopsis">Get NT type information.</para>
+    /// <para type="description">This cmdlet gets NT type information from the operating system. If run without parameters it'll retrieve all types. 
+    /// You can limit it to only one type using the -TypeName parameter.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>Get-NtType</code>
+    ///   <para>Get all NT types.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtType | Where-Object SecurityRequired -eq $False</code>
+    ///   <para>Get all NT types which don't require security.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtType Directory</code>
+    ///   <para>Get the Directory NT type.</para>
+    /// </example>
     [Cmdlet(VerbsCommon.Get, "NtType")]
+    [OutputType(typeof(NtType))]
     public sealed class GetNtTypesCmdlet : Cmdlet
     {
-        [Parameter()]
+        /// <summary>
+        /// <para type="description">Specify a specific NT type to retrieve.</para>
+        /// </summary>
+        [Parameter(Position = 0)]
         public string TypeName { get; set; }
 
+        /// <summary>
+        /// Overridden ProcessRecord method.
+        /// </summary>
         protected override void ProcessRecord()
         {
             if (!string.IsNullOrWhiteSpace(TypeName))

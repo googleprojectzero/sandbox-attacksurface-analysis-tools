@@ -15,44 +15,64 @@
 using NtApiDotNet;
 using System.Management.Automation;
 
-namespace SandboxPowerShellApi
+namespace NtObjectManager
 {
+    /// <summary>
+    /// <para type="synopsis">Get NT threads.</para>
+    /// <para type="description">This cmdlet gets all accessible threads on the system. You can specify a specific thread by setting the -ThreadId parameter.</para>
+    /// <para>Note that thread objects need to be disposed of after use, therefore capture them in a Dispose List or manually Close them once used.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>$ts = Get-NtThread | Push-NtDisposeList</code>
+    ///   <para>Get all NT threads accessible by the current user and put then in a dispose list.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$ts = Get-NtThread -Access Impersonate</code>
+    ///   <para>Get all NT threads accessible by the current user for impersonate access.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$t = Get-NtThread 1234</code>
+    ///   <para>Get a specific thread.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtThread")]
+    [OutputType(typeof(NtThread))]
     public class GetNtThreadCmdlet : Cmdlet
     {
-        [Parameter]        
+        /// <summary>
+        /// <para type="description">Specify a thread ID to open.</para>
+        /// </summary>
+        [Parameter(Position = 0)]
         public int ThreadId { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify access rights for each thread opened.</para>
+        /// </summary>
         [Parameter]
         public ThreadAccessRights Access { get; set; }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public GetNtThreadCmdlet()
         {
             Access = ThreadAccessRights.MaximumAllowed;
             ThreadId = -1;
         }
 
+        /// <summary>
+        /// Overridden ProcessRecord method.
+        /// </summary>
         protected override void ProcessRecord()
         {
-            NtThread thread = null;
-
             if (ThreadId == -1)
             {
-                if ((Access & ThreadAccessRights.MaximumAllowed) == ThreadAccessRights.MaximumAllowed)
-                {
-                    thread = NtThread.Current.Duplicate();
-                }
-                else
-                {
-                    thread = NtThread.Current.Duplicate(Access);
-                }
+                WriteObject(NtThread.GetThreads(Access));
             }
             else
             {
-                thread = NtThread.Open(ThreadId, Access);
+                WriteObject(NtThread.Open(ThreadId, Access));
             }
-
-            WriteObject(thread);
         }
     }
 }

@@ -262,7 +262,7 @@ namespace TokenViewer
             if (selectedNode != null)
             {
                 NtProcess process = selectedNode.Tag as NtProcess;
-                HandleEntry handle = selectedNode.Tag as HandleEntry;
+                NtHandle handle = selectedNode.Tag as NtHandle;
                 if (process != null)
                 {
                     NtToken token = GetToken(process);
@@ -441,9 +441,9 @@ namespace TokenViewer
             if (node != null && node.Tag is NtProcess)
             {
                 NtProcess entry = (NtProcess)node.Tag;
-                IEnumerable<HandleEntry> handles = NtSystemInfo.GetHandles(entry.GetProcessId(), false);
+                IEnumerable<NtHandle> handles = NtSystemInfo.GetHandles(entry.GetProcessId(), false);
                 node.Nodes.Clear();
-                foreach (HandleEntry handle in handles)
+                foreach (NtHandle handle in handles)
                 {
                     if (handle.ObjectType.Equals("Token", StringComparison.OrdinalIgnoreCase))
                     {

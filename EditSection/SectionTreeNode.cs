@@ -21,9 +21,9 @@ namespace EditSection
 {
     class SectionTreeNode : TreeNode
     {
-        private HandleEntry _ent;
+        private NtHandle _ent;
 
-        private static string FormatText(HandleEntry ent)
+        private static string FormatText(NtHandle ent)
         {
             string size = String.Empty;
             try
@@ -54,7 +54,7 @@ namespace EditSection
             return String.Format("[{0}/0x{0:X}] {1} Size: {2} Access: {3}", ent.Handle, ent.Name, size, builder.ToString());
         }
 
-        public SectionTreeNode(HandleEntry ent)
+        public SectionTreeNode(NtHandle ent)
             : base(FormatText(ent))
         {
             _ent = ent;
@@ -75,6 +75,6 @@ namespace EditSection
             }
         }
 
-        public HandleEntry SectionHandle { get { return _ent; } }
+        public NtHandle SectionHandle { get { return _ent; } }
     }
 }

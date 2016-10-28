@@ -1554,6 +1554,24 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Get the state of a privilege.
+        /// </summary>
+        /// <param name="privilege">The privilege to get the state of.</param>
+        /// <returns></returns>
+        public TokenPrivilege GetPrivilege(TokenPrivilegeValue privilege)
+        {
+            Luid priv_value = new Luid((uint)privilege, 0);
+            foreach (TokenPrivilege priv in GetPrivileges())
+            {
+                if (priv.Luid.Equals(priv_value))
+                {
+                    return priv;
+                }
+            }
+            return null;
+        }
+
         public static Luid LocalSystemAuthId { get { return new Luid(0x3e7, 0); } }
         public static Luid LocalServiceAuthId { get { return new Luid(0x3e5, 0); } }
         public static Luid NetworkServiceAuthId { get { return new Luid(0x3e4, 0); } }

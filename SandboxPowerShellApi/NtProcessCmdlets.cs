@@ -15,44 +15,76 @@
 using NtApiDotNet;
 using System.Management.Automation;
 
-namespace SandboxPowerShellApi
+namespace NtObjectManager
 {
+    /// <summary>
+    /// <para type="synopsis">Get NT processes.</para>
+    /// <para type="description">This cmdlet gets all accessible processes on the system. You can specify a specific process by setting the -ProcessId parameter.</para>
+    /// <para>Note that process objects need to be disposed of after use, therefore capture them in a Dispose List or manually Close them once used.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>$ps = Get-NtProcess | Push-NtDisposeList</code>
+    ///   <para>Get all NT processes accessible by the current user and put then in a dispose list.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$ps = Get-NtProcess -Access DupHandle</code>
+    ///   <para>Get all NT processes accessible by the current user for duplicate handle access.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$p = Get-NtProcess 1234</code>
+    ///   <para>Get a specific process</para>
+    /// </example>
+    /// <example>
+    ///   <code>$p = Get-NtProcess 1234 -Access QueryInformation&#x0A;$p.GetCommandLine()</code>
+    ///   <para>Get a command line of a specific process.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$p = Get-NtProcess 1234 -Access QueryInformation&#x0A;$p.GetImageFileName($true)</code>
+    ///   <para>Get a native image path of a specific process.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$p = Get-NtProcess $pid</code>
+    ///   <para>Get the current process.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtProcess")]
+    [OutputType(typeof(NtProcess))]
     public class GetNtProcessCmdlet : Cmdlet
     {
-        [Parameter]
+        /// <summary>
+        /// <para type="description">Specify a process ID to open.</para>
+        /// </summary>
+        [Parameter(Position = 0)]
         public int ProcessId { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify access rights for each process opened.</para>
+        /// </summary>
         [Parameter]
         public ProcessAccessRights Access { get; set; }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public GetNtProcessCmdlet()
         {
             Access = ProcessAccessRights.MaximumAllowed;
             ProcessId = -1;
         }
 
+        /// <summary>
+        /// Overridden ProcessRecord method.
+        /// </summary>
         protected override void ProcessRecord()
         {
-            NtProcess process = null;
-
             if (ProcessId == -1)
             {
-                if ((Access & ProcessAccessRights.MaximumAllowed) == ProcessAccessRights.MaximumAllowed)
-                {
-                    process = NtProcess.Current.Duplicate();
-                }
-                else
-                {
-                    process = NtProcess.Current.Duplicate(Access);
-                }
+                WriteObject(NtProcess.GetProcesses(Access), true);
             }
             else
             {
-                process = NtProcess.Open(ProcessId, Access);
+                WriteObject(NtProcess.Open(ProcessId, Access));
             }
-
-            WriteObject(process);
         }
     }
 }

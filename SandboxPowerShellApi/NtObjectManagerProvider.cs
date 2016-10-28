@@ -24,8 +24,11 @@ using System.Security.AccessControl;
 using System.Diagnostics;
 using System.Reflection;
 
-namespace SandboxPowerShellApi
+namespace NtObjectManager
 {
+    /// <summary>
+    /// Object manager provider.
+    /// </summary>
     [CmdletProvider("NtObjectManager", ProviderCapabilities.ExpandWildcards)]
     public class NtObjectManagerProvider : NavigationCmdletProvider, ISecurityDescriptorCmdletProvider
     {
@@ -62,6 +65,10 @@ namespace SandboxPowerShellApi
             return path.Replace('/', '\u2044');
         }
 
+        /// <summary>
+        /// Overridden method to initialize default drives.
+        /// </summary>
+        /// <returns>The list of default drives.</returns>
         protected override Collection<PSDriveInfo> InitializeDefaultDrives()
         {
             PSDriveInfo drive = new PSDriveInfo("NtObject", this.ProviderInfo, GLOBAL_ROOT, "NT Object Manager Root Directory", null);
@@ -85,6 +92,11 @@ namespace SandboxPowerShellApi
         const string GLOBAL_ROOT = @"nt:";
         const string NAMESPACE_ROOT = @"ntpriv:";
 
+        /// <summary>
+        /// Overridden method to create a new drive.
+        /// </summary>
+        /// <param name="drive">The template drive info.</param>
+        /// <returns>The new drive info.</returns>
         protected override PSDriveInfo NewDrive(PSDriveInfo drive)
         {
             if (drive == null)
@@ -142,6 +154,11 @@ namespace SandboxPowerShellApi
             }
         }
 
+        /// <summary>
+        /// Overridden method to remove a drive.
+        /// </summary>
+        /// <param name="drive">The drive to remove.</param>
+        /// <returns>The removed drive.</returns>
         protected override PSDriveInfo RemoveDrive(PSDriveInfo drive)
         {
             if (drive == null)
@@ -166,6 +183,11 @@ namespace SandboxPowerShellApi
             return objmgr_drive;
         }
 
+        /// <summary>
+        /// Overridden method to check if path is valid.
+        /// </summary>
+        /// <param name="path">The path to check.</param>
+        /// <returns>True if the path is valid.</returns>
         protected override bool IsValidPath(string path)
         {
             //System.Diagnostics.Trace.WriteLine(String.Format("{0} {1}", MethodInfo.GetCurrentMethod().Name, path));
@@ -245,6 +267,11 @@ namespace SandboxPowerShellApi
             return dir.GetDirectoryEntry(path);
         }
         
+        /// <summary>
+        /// Overriden method to check if an item exists.
+        /// </summary>
+        /// <param name="path">The drive path to check.</param>
+        /// <returns>True if the item exists.</returns>
         protected override bool ItemExists(string path)
         {
             //System.Diagnostics.Trace.WriteLine(String.Format("{0} {1}", MethodInfo.GetCurrentMethod().Name, path));
@@ -276,6 +303,11 @@ namespace SandboxPowerShellApi
             return exists || GetDrive().DirectoryRoot.DirectoryExists(path);
         }
 
+        /// <summary>
+        /// Overidden method to check if an item is a container.
+        /// </summary>
+        /// <param name="path">The drive path to check.</param>
+        /// <returns>True if the item is a container.</returns>
         protected override bool IsItemContainer(string path)
         {
             //System.Diagnostics.Trace.WriteLine(String.Format("{0} {1}", MethodInfo.GetCurrentMethod().Name, path));
@@ -370,6 +402,11 @@ namespace SandboxPowerShellApi
             }
         }
 
+        /// <summary>
+        /// Overridden method to get the child items of a path.
+        /// </summary>
+        /// <param name="path">The drive path.</param>
+        /// <param name="recurse">True if the path should be enumerated recursively.</param>
         protected override void GetChildItems(string path, bool recurse)
         {
             if (GetDrive() == null)
@@ -382,6 +419,11 @@ namespace SandboxPowerShellApi
             GetChildItemsRecursive(relative_path, recurse);
         }
 
+        /// <summary>
+        /// Overridden method to get the child item names of a path.
+        /// </summary>
+        /// <param name="path">The drive path.</param>
+        /// <param name="returnContainers">Return containers.</param>
         protected override void GetChildNames(string path, ReturnContainers returnContainers)
         {
             if (GetDrive() == null)
@@ -400,6 +442,10 @@ namespace SandboxPowerShellApi
             }
         }
 
+        /// <summary>
+        /// Overridden method to get the item from a path.
+        /// </summary>
+        /// <param name="path">The drive path.</param>
         protected override void GetItem(string path)
         {
             if (GetDrive() == null)
@@ -536,6 +582,11 @@ namespace SandboxPowerShellApi
             return matches.Select(s => NTPathToPS(BuildDrivePath(s)));
         }
 
+        /// <summary>
+        /// Overidden method expand a wildcard in a path.
+        /// </summary>
+        /// <param name="path">The drive path with wildcards.</param>
+        /// <returns>The list of expanded paths.</returns>
         protected override string[] ExpandPath(string path)
         {
             //System.Diagnostics.Trace.WriteLine(String.Format("{0} {1}", MethodInfo.GetCurrentMethod().Name, path));
@@ -547,31 +598,12 @@ namespace SandboxPowerShellApi
             return ExpandDirectoryEntryMatches(GetRelativePath(PSPathToNT(path))).ToArray();
         }
 
-        public void GetSecurityDescriptor(string path, AccessControlSections includeSections)
-        {
-            string relative_path = GetRelativePath(PSPathToNT(path));
-            using (NtDirectory dir = GetPathDirectory(relative_path))
-            {
-                if (relative_path.Length == 0)
-                {
-                    WriteItemObject(new GenericObjectSecurity(dir, includeSections), path, true);
-                }
-                else
-                {
-                    ObjectDirectoryInformation dir_info = GetEntry(dir, relative_path);
-                    if (dir_info == null)
-                    {
-                        throw new NtException(NtStatus.STATUS_OBJECT_NAME_NOT_FOUND);
-                    }
-
-                    using (NtObject obj = dir_info.Open(GenericAccessRights.ReadControl))
-                    {
-                        WriteItemObject(new GenericObjectSecurity(obj, includeSections), path, obj is NtDirectory);
-                    }
-                }
-            }
-        }
-
+        /// <summary>
+        /// Overridden method to create a new item.
+        /// </summary>
+        /// <param name="path">The drive path to create.</param>
+        /// <param name="itemTypeName">The NT object type to create.</param>
+        /// <param name="newItemValue">Additional item value data.</param>
         protected override void NewItem(string path, string itemTypeName, object newItemValue)
         {
             //System.Diagnostics.Trace.WriteLine(String.Format("{0} {1}", MethodInfo.GetCurrentMethod().Name, path));
@@ -619,7 +651,33 @@ namespace SandboxPowerShellApi
             WriteItemObject(obj, path, container);
         }
 
-        public void SetSecurityDescriptor(string path, ObjectSecurity securityDescriptor)
+        void ISecurityDescriptorCmdletProvider.GetSecurityDescriptor(string path, AccessControlSections includeSections)
+        {
+            string relative_path = GetRelativePath(PSPathToNT(path));
+            using (NtDirectory dir = GetPathDirectory(relative_path))
+            {
+                if (relative_path.Length == 0)
+                {
+                    WriteItemObject(new GenericObjectSecurity(dir, includeSections), path, true);
+                }
+                else
+                {
+                    ObjectDirectoryInformation dir_info = GetEntry(dir, relative_path);
+                    if (dir_info == null)
+                    {
+                        throw new NtException(NtStatus.STATUS_OBJECT_NAME_NOT_FOUND);
+                    }
+
+                    using (NtObject obj = dir_info.Open(GenericAccessRights.ReadControl))
+                    {
+                        WriteItemObject(new GenericObjectSecurity(obj, includeSections), path, obj is NtDirectory);
+                    }
+                }
+            }
+        }
+
+
+        void ISecurityDescriptorCmdletProvider.SetSecurityDescriptor(string path, ObjectSecurity securityDescriptor)
         {
             GenericObjectSecurity obj_security = securityDescriptor as GenericObjectSecurity;
             if (obj_security != null)
@@ -641,12 +699,12 @@ namespace SandboxPowerShellApi
             }
         }
 
-        public ObjectSecurity NewSecurityDescriptorFromPath(string path, AccessControlSections includeSections)
+        ObjectSecurity ISecurityDescriptorCmdletProvider.NewSecurityDescriptorFromPath(string path, AccessControlSections includeSections)
         {
             return new GenericObjectSecurity();
         }
 
-        public ObjectSecurity NewSecurityDescriptorOfType(string type, AccessControlSections includeSections)
+        ObjectSecurity ISecurityDescriptorCmdletProvider.NewSecurityDescriptorOfType(string type, AccessControlSections includeSections)
         {
             return new GenericObjectSecurity();
         }

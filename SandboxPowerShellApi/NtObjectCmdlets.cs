@@ -16,7 +16,7 @@ using NtApiDotNet;
 using System;
 using System.Management.Automation;
 
-namespace SandboxPowerShellApi
+namespace NtObjectManager
 {
     /// <summary>
     /// Base object cmdlet.
@@ -39,7 +39,7 @@ namespace SandboxPowerShellApi
         /// <para type="description">Object Attribute flags used during Open/Create calls.</para>
         /// </summary>
         [Parameter]
-        public AttributeFlags Flags { get; set; }
+        public AttributeFlags ObjectAttributes { get; set; }
 
         /// <summary>
         /// <para type="description">Set to provide an explicit security descriptor to a newly created object.</para>
@@ -67,7 +67,7 @@ namespace SandboxPowerShellApi
 
         private ObjectAttributes CreateObjAttributes()
         {
-            return new ObjectAttributes(GetPath(), Flags, Root, SecurityQualityOfService, SecurityDescriptor);
+            return new ObjectAttributes(GetPath(), ObjectAttributes, Root, SecurityQualityOfService, SecurityDescriptor);
         }
 
         /// <summary>
@@ -75,7 +75,7 @@ namespace SandboxPowerShellApi
         /// </summary>
         protected NtObjectBaseCmdlet()
         {
-            Flags = AttributeFlags.CaseInsensitive;
+            ObjectAttributes = AttributeFlags.CaseInsensitive;
         }
 
         /// <summary>
@@ -115,7 +115,7 @@ namespace SandboxPowerShellApi
         protected override void ProcessRecord()
         {
             VerifyParameters();
-            using (ObjectAttributes obja = new ObjectAttributes(GetPath(), Flags, Root, SecurityQualityOfService, SecurityDescriptor))
+            using (ObjectAttributes obja = new ObjectAttributes(GetPath(), ObjectAttributes, Root, SecurityQualityOfService, SecurityDescriptor))
             {
                 object obj = CreateObject(obja);
                 if (AddToDisposeList && obj is IDisposable)
@@ -172,7 +172,7 @@ namespace SandboxPowerShellApi
     /// <summary>
     /// Base object cmdlet which has an access parameter.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">The access enumeration type.</typeparam>
     public abstract class NtObjectBaseCmdletWithAccess<T> : NtObjectBaseCmdlet where T : struct, IConvertible
     {
         /// <summary>
@@ -196,8 +196,21 @@ namespace SandboxPowerShellApi
     /// will be a type specific to the actual underlying NT type.
     /// </para>
     /// </summary>
+    /// <example>
+    ///   <code>$obj = Get-NtObject \BaseNamedObjects\ABC</code>
+    ///   <para>Get a existing object with an absolute path.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtObject \BaseNamedObjects -TypeName Directory</code>
+    ///   <para>Get a existing object with an explicit type.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtObject \BaseNamedObjects&#x0A;$obj = Get-NtObject ABC -Root $root</code>
+    ///   <para>Get an existing object with a relative path.</para>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtObject")]
+    [OutputType(typeof(NtObject))]
     public sealed class GetNtObjectCmdlet : NtObjectBaseCmdletWithAccess<GenericAccessRights>
     {
         /// <summary>
@@ -215,9 +228,9 @@ namespace SandboxPowerShellApi
         new public string Path { get; set; }
 
         /// <summary>
-        /// Overridden GetPath
+        /// Virtual method to return the value of the Path variable.
         /// </summary>
-        /// <returns>The path to the object.</returns>
+        /// <returns>The object path.</returns>
         protected override string GetPath()
         {
             return Path;
@@ -234,16 +247,54 @@ namespace SandboxPowerShellApi
         }
     }
 
+    /// <summary>
+    /// <para type="synopsis">Create a new security descriptor which can be used on NT objects.</para>
+    /// <para type="description">This cmdlet creates a new instance of a SecurityDescriptor object. This can be 
+    /// used directly with one of the New-Nt* cmdlets (via the -SecurityDescriptor parameter) or by calling
+    /// SetSecurityDescriptor on an existing object (assume the object has been opened with the correct permissions.
+    /// </para>
+    /// </summary>
+    /// <example>
+    ///   <code>$sd = New-NtSecurityDescriptor</code>
+    ///   <para>Create a new security descriptor object.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$sd = New-NtSecurityDescriptor -Sddl "O:BAG:BAD:(A;;GA;;;WD)"</code>
+    ///   <para>Create a new security descriptor object from an SDDL string</para>
+    /// </example>
+    /// <example>
+    ///   <code>$sd = New-NtSecurityDescriptor -NullDacl</code>
+    ///   <para>Create a new security descriptor object with a NULL DACL.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$sd = New-NtSecurityDescriptor -Sddl "D:(A;;GA;;;WD)"&#x0A;$obj = New-NtDirectory \BaseNamedObjects\ABC -SecurityDescriptor $sd</code>
+    ///   <para>Create a new object directory with an explicit security descriptor.</para>
+    /// </example>
     [Cmdlet(VerbsCommon.New, "NtSecurityDescriptor")]
+    [OutputType(typeof(SecurityDescriptor))]
     public sealed class NewNtSecurityDescriptorCmdlet : Cmdlet
     {
+        /// <summary>
+        /// <para type="description">Specify to create the security descriptor with a NULL DACL.</para>
+        /// </summary>
         [Parameter]
-        public bool NullDacl { get; set; }
+        public SwitchParameter NullDacl { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to create the security descriptor from an SDDL representation.</para>
+        /// </summary>
         [Parameter]
         public string Sddl { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to create the security descriptor from the default DACL of a token object.</para>
+        /// </summary>
         [Parameter]
         public NtToken Token { get; set; }
 
+        /// <summary>
+        /// Overridden ProcessRecord method.
+        /// </summary>
         protected override void ProcessRecord()
         {
             SecurityDescriptor sd = null;
@@ -258,10 +309,10 @@ namespace SandboxPowerShellApi
             else
             {
                 sd = new SecurityDescriptor();
+                sd.Dacl = new Acl();
+                sd.Dacl.NullAcl = NullDacl;
             }
 
-            sd.Dacl = new Acl();
-            sd.Dacl.NullAcl = NullDacl;
             WriteObject(sd);
         }
     }

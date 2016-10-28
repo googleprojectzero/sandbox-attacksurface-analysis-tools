@@ -30,9 +30,9 @@ namespace CommonObjects
             p.WriteOptionDescriptions(Console.Out);
         }
 
-        static string GetObjectName(IEnumerable<HandleEntry> entries)
+        static string GetObjectName(IEnumerable<NtHandle> entries)
         {
-            foreach (HandleEntry entry in entries)
+            foreach (NtHandle entry in entries)
             {
                 using (NtObject obj = entry.GetObject())
                 {
@@ -69,15 +69,15 @@ namespace CommonObjects
                 else
                 {
                     HashSet<IntPtr> sharedObjects = new HashSet<IntPtr>();
-                    Dictionary<ulong, List<HandleEntry>> entries = new Dictionary<ulong, List<HandleEntry>>();
+                    Dictionary<ulong, List<NtHandle>> entries = new Dictionary<ulong, List<NtHandle>>();
 
                     foreach (int pid in pids)
                     {                        
-                        foreach(HandleEntry entry in NtSystemInfo.GetHandles(pid, true))
+                        foreach(NtHandle entry in NtSystemInfo.GetHandles(pid, true))
                         {
                             if (!entries.ContainsKey(entry.Object))
                             {
-                                entries[entry.Object] = new List<HandleEntry>();
+                                entries[entry.Object] = new List<NtHandle>();
                             }
                             entries[entry.Object].Add(entry);
                         }
@@ -87,13 +87,13 @@ namespace CommonObjects
 
                     var output = entries.Where(x => x.Value.GroupBy(y => y.Pid).Count() >= limit);
 
-                    foreach (KeyValuePair<ulong, List<HandleEntry>> pair in output)
+                    foreach (KeyValuePair<ulong, List<NtHandle>> pair in output)
                     {
                         if (String.IsNullOrWhiteSpace(typeFilter) || pair.Value[0].ObjectType.Equals(typeFilter, StringComparison.OrdinalIgnoreCase))
                         {
                             Console.WriteLine("{0:X} {1} {2}", pair.Key, pair.Value[0].ObjectType, GetObjectName(pair.Value));
 
-                            foreach (HandleEntry entry in pair.Value)
+                            foreach (NtHandle entry in pair.Value)
                             {
                                 Console.WriteLine("\t{0}/0x{0:X} {1}/0x{1:X} 0x{2:X08}",
                                     entry.Pid, entry.Handle, entry.GrantedAccess);

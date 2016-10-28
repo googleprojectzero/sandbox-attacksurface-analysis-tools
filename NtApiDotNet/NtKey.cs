@@ -219,7 +219,7 @@ namespace NtApiDotNet
                 case RegistryValueType.Qword:
                     return BitConverter.ToUInt64(Data, 0).ToString();
                 default:
-                    throw new ArgumentException("Value can't be converted to a string");
+                    return Convert.ToBase64String(Data);
             }
         }
 

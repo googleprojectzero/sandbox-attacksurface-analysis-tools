@@ -4,7 +4,7 @@
     <View>
       <Name>ObjectDirectoryEntryTable</Name>
       <ViewSelectedBy>
-        <TypeName>SandboxPowerShellApi.ObjectDirectoryEntry</TypeName>
+        <TypeName>NtObjectManager.ObjectDirectoryEntry</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -36,7 +36,7 @@
     <View>
       <Name>ObjectDirectoryEntryList</Name>
       <ViewSelectedBy>
-        <TypeName>SandboxPowerShellApi.ObjectDirectoryEntry</TypeName>
+        <TypeName>NtObjectManager.ObjectDirectoryEntry</TypeName>
       </ViewSelectedBy>
       <ListControl>
         <ListEntries>
@@ -750,6 +750,106 @@
           </WideEntry>
         </WideEntries>
       </WideControl>
+    </View>
+    <View>
+      <Name>NtHandleTable</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.NtHandle</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Process ID</Label>
+            <Width>10</Width>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Handle</Label>
+            <Width>10</Width>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Object Type</Label>
+            <Width>30</Width>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Object</Label>
+            <Width>30</Width>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Granted Access</Label>
+            <Width>30</Width>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Pid</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Handle</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>ObjectType</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Object</PropertyName>
+                <FormatString>X</FormatString>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>GrantedAccess</PropertyName>
+                <FormatString>X08</FormatString>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <View>
+      <Name>NtHandleList</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.NtHandle</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <PropertyName>Pid</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>ObjectType</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>Attributes</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>Handle</PropertyName>
+                <FormatString>X</FormatString>
+              </ListItem>
+              <ListItem>
+                <PropertyName>Object</PropertyName>
+                <FormatString>X</FormatString>
+              </ListItem>
+              <ListItem>
+                <PropertyName>GrantedAccess</PropertyName>
+                <FormatString>X08</FormatString>
+              </ListItem>
+              <ListItem>
+                <PropertyName>Name</PropertyName>
+              </ListItem>
+              <ListItem>
+                <ScriptBlock>$_.SecurityDescriptor.ToSddl()</ScriptBlock>
+                <Label>SecurityDescriptor</Label>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
     </View>
   </ViewDefinitions>
 </Configuration>

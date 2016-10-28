@@ -36,7 +36,7 @@ namespace EditSection
         public void PopulateChildren()
         {
             Nodes.Clear();
-            foreach (HandleEntry h in NtSystemInfo.GetHandles(_id, true))
+            foreach (NtHandle h in NtSystemInfo.GetHandles(_id, true))
             {
                 if (h.ObjectType.Equals("section", StringComparison.OrdinalIgnoreCase))
                 {

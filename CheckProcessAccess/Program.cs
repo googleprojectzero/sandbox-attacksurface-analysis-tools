@@ -229,7 +229,7 @@ namespace CheckProcessAccess
                             }
                             else
                             {
-                                all_threads = NtThread.GetThreads().ToArray();
+                                all_threads = NtThread.GetThreads(ThreadAccessRights.MaximumAllowed).ToArray();
                             }
 
                             List<ProcessEntry> procs = new List<ProcessEntry>();

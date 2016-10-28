@@ -47,7 +47,7 @@ namespace EditSection
             Disposed += SectionEditorForm_Disposed;
         }
 
-        public SectionEditorForm(NtMappedSection map, HandleEntry handle, bool readOnly) 
+        public SectionEditorForm(NtMappedSection map, NtHandle handle, bool readOnly) 
             : this(map, readOnly)        
         {                           
             TabText = String.Format("Process {0} - Handle {1} {2}", handle.Pid, handle.Handle, _readOnly ? "(RO)" : "");            

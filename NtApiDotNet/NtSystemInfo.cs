@@ -97,7 +97,7 @@ namespace NtApiDotNet
         public SystemThreadInformation Threads;
     }
 
-    public class HandleEntry
+    public class NtHandle
     {
         public int Pid { get; private set; }
         public string ObjectType { get; private set; }
@@ -144,7 +144,7 @@ namespace NtApiDotNet
             }
         }
 
-        internal HandleEntry(SystemHandleTableInfoEntry entry, bool allow_query)
+        internal NtHandle(SystemHandleTableInfoEntry entry, bool allow_query)
         {
             Pid = entry.UniqueProcessId;
             NtType info = NtType.GetTypeByIndex(entry.ObjectTypeIndex);
@@ -395,7 +395,7 @@ namespace NtApiDotNet
 
     public class NtSystemInfo
     {
-        public static IEnumerable<HandleEntry> GetHandles(int pid, bool allow_query)
+        public static IEnumerable<NtHandle> GetHandles(int pid, bool allow_query)
         {
             SafeHGlobalBuffer handleInfo = new SafeHGlobalBuffer(0x10000);
             try
@@ -415,7 +415,7 @@ namespace NtApiDotNet
 
                 IntPtr handleInfoBuf = handleInfo.DangerousGetHandle();
                 int handle_count = Marshal.ReadInt32(handleInfoBuf);
-                List<HandleEntry> ret = new List<HandleEntry>();
+                List<NtHandle> ret = new List<NtHandle>();
                 handleInfoBuf += IntPtr.Size;
                 for (int i = 0; i < handle_count; ++i)
                 {
@@ -423,7 +423,7 @@ namespace NtApiDotNet
 
                     if (pid == -1 || entry.UniqueProcessId == pid)
                     {
-                        ret.Add(new HandleEntry(entry, allow_query));
+                        ret.Add(new NtHandle(entry, allow_query));
                     }
                     handleInfoBuf += Marshal.SizeOf(typeof(SystemHandleTableInfoEntry));
                 }
@@ -435,7 +435,7 @@ namespace NtApiDotNet
             }
         }
 
-        public static IEnumerable<HandleEntry> GetHandles()
+        public static IEnumerable<NtHandle> GetHandles()
         {
             return GetHandles(-1, true);
         }

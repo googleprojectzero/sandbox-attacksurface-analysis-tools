@@ -3,9 +3,9 @@
 
 SHORT DESCRIPTION
 	Various Cmdlets in this library return objects which hold references to system resources. Its 
-	common that resources will need to be left open while operating on this otherwise the kernel will
-	delete them. It's also important to ensurethese resources don't leak. The library provides a few 
-	to manage the lifetime of a resource.
+	common that resources will need to be left open while operating on them otherwise the kernel will
+	delete them. It's also important to ensure these resources don't leak. The library provides a few 
+	techniques to manage the lifetime of a resource.
 
 LONG DESCRIPTION
 	Almost all the objects returns by the various cmdlets in this library hold open a reference to a
@@ -14,7 +14,7 @@ LONG DESCRIPTION
 
 	When you create a named resource (e.g. New-NtDirectory \Some\Path) the name only lasts as long as the
 	last handle to that resource exists. If you assign it to a script variable then it should persist,
-	however if you don't then eventually the garbage collector will pick it up and finalize removing the name.
+	however if you don't then eventually the garbage collector will pick it up and finalize, removing the name.
 	To prevent pollution of the variable namespace but maintain references to these objects you can use
 	the builtin feature, Dispose Lists. 
 
@@ -24,7 +24,7 @@ LONG DESCRIPTION
 	disposable objects (such as New-Nt*) also take an -AddToDisposeList parameter which will automatically place 
 	the generated objects onto the top of the stack.
 
-	When the pop the dispose list off the stack (using Pop-NtDisposeList) all objects in the list will be automatically
+	When popping the dispose list off the stack (using Pop-NtDisposeList) all objects in the list will be automatically
 	disposed. By providing a stack it's possible to use this in recursive functions and only dispose of the objects
 	important to the current function.
 

@@ -46,8 +46,8 @@ namespace GetHandles
             All,
         }
 
-        private static void PrintGrouping<T>(IEnumerable<IGrouping<T, HandleEntry>> grouping, Dictionary<int, string> pidToName, 
-            Func<T, string> formatHeader, Func<HandleEntry, string> formatHandle, ShareMode shareMode, int pidCount, bool showsd)
+        private static void PrintGrouping<T>(IEnumerable<IGrouping<T, NtHandle>> grouping, Dictionary<int, string> pidToName, 
+            Func<T, string> formatHeader, Func<NtHandle, string> formatHandle, ShareMode shareMode, int pidCount, bool showsd)
         {
             foreach (var group in grouping)
             {
@@ -68,7 +68,7 @@ namespace GetHandles
 
                 Console.WriteLine(formatHeader(group.Key));
 
-                foreach (HandleEntry ent in group)
+                foreach (NtHandle ent in group)
                 {
                     Console.WriteLine("{0}/0x{0:X}/{1} {2}/0x{2:X}: {3}", ent.Pid, pidToName[ent.Pid], 
                         ent.Handle, formatHandle(ent));
@@ -130,7 +130,7 @@ namespace GetHandles
                     HashSet<int> pids = new HashSet<int>(filtered.Select(process => process.GetProcessId()));
                     Dictionary<int, string> pidToName = filtered.ToDictionary(pk => pk.GetProcessId(), pv => pv.GetName());                    
 
-                    List<HandleEntry> totalHandles = new List<HandleEntry>();
+                    List<NtHandle> totalHandles = new List<NtHandle>();
 
                     foreach (int pid in pids)
                     {
@@ -139,12 +139,12 @@ namespace GetHandles
                             continue;
                         }
 
-                        IEnumerable<HandleEntry> handles = NtSystemInfo.GetHandles(pid, true).Where(ent => (typeFilter.Count == 0) || typeFilter.Contains(ent.ObjectType.ToLower()));
+                        IEnumerable<NtHandle> handles = NtSystemInfo.GetHandles(pid, true).Where(ent => (typeFilter.Count == 0) || typeFilter.Contains(ent.ObjectType.ToLower()));
                         totalHandles.AddRange(handles);
                         if (mode == GroupingMode.Pid)
                         {
                             Console.WriteLine("Process ID: {0} - Name: {1}", pid, pidToName[pid]);
-                            foreach (HandleEntry ent in handles)
+                            foreach (NtHandle ent in handles)
                             {                                
                                 Console.WriteLine("{0:X04}: {1:X016} {2:X08} {3,20} {4}", ent.Handle, ent.Object, ent.GrantedAccess, ent.ObjectType, ent.Name);
                                 if (showsd && ent.SecurityDescriptor != null)

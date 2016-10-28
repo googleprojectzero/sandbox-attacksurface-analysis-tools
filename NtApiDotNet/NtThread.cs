@@ -278,8 +278,9 @@ namespace NtApiDotNet
         /// <summary>
         /// Gets all accessible threads on the system.
         /// </summary>
+        /// <param name="desired_access">The desired access for each thread.</param>
         /// <returns>The list of accessible threads.</returns>
-        public static IEnumerable<NtThread> GetThreads()
+        public static IEnumerable<NtThread> GetThreads(ThreadAccessRights desired_access)
         {
             using (SafeKernelObjectHandle thread_snap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0))
             {
@@ -298,7 +299,7 @@ namespace NtApiDotNet
                     {
                         try
                         {
-                            NtThread thread = NtThread.Open(thread_entry.th32ThreadID, ThreadAccessRights.MaximumAllowed);
+                            NtThread thread = NtThread.Open(thread_entry.th32ThreadID, desired_access);
                             thread._pid = thread_entry.th32OwnerProcessID;
                             threads.Add(thread);
                         }

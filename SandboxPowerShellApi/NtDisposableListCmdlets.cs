@@ -17,7 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Management.Automation;
 
-namespace SandboxPowerShellApi
+namespace NtObjectManager
 {
     internal static class StackHolder
     {
@@ -98,6 +98,14 @@ namespace SandboxPowerShellApi
     /// without assigning them to individual variables or an arbitrary list.
     /// </para>
     /// </summary>
+    /// <example>
+    ///   <code>Push-NtDisposeList</code>
+    ///   <para>Creates a new dispose list and pushes it to the stack.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$root = Get-NtDirectory \BaseNamedObjects | Push-NtDisposeList</code>
+    ///   <para>Creates a new dispose list and pushes it to the stack with an object passed via the pipeline.</para>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Push, "NtDisposeList")]
     public class PushNtDisposableList : Cmdlet
@@ -125,6 +133,10 @@ namespace SandboxPowerShellApi
     /// without assigning them to individual variables or an arbitrary list.
     /// </para>
     /// </summary>
+    /// <example>
+    ///   <code>Pop-NtDisposeList</code>
+    ///   <para>Pops the top dispose list off the stack and disposes and objects within it.</para>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Pop, "NtDisposeList")]
     public class PopNtDisposableList : Cmdlet
@@ -145,6 +157,10 @@ namespace SandboxPowerShellApi
     /// without assigning them to individual variables or an arbitrary list.
     /// </para>
     /// </summary>
+    /// <example>
+    ///   <code>$root = Get-NtDirectory \BaseNamedObjects | Add-NtDisposeList</code>
+    ///   <para>Adds an object from the pipeline to the existing top of the dispose list.</para>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Add, "NtDisposeList")]
     public class AddNtDisposableList : Cmdlet
@@ -172,6 +188,10 @@ namespace SandboxPowerShellApi
     /// <para type="synopsis">Clears all dispose lists on the stack and disposes all their objects.</para>
     /// <para type="description">This will enumerate all disposable lists on the stack and dispose them.</para>
     /// </summary>
+    /// <example>
+    ///   <code>Clear-NtDisposeList</code>
+    ///   <para>Pops all dispose lists off the stack and objects within them.</para>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Clear, "NtDisposeList")]
     public class ClearNtDisposableList : Cmdlet

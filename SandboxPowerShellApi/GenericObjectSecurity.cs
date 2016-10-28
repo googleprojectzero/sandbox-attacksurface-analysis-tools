@@ -16,7 +16,7 @@ using NtApiDotNet;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 
-namespace SandboxPowerShellApi
+namespace NtObjectManager
 {
     /// <summary>
     /// Generic object security which takes an integer access mask.
