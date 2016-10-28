@@ -17,6 +17,11 @@ using System.Management.Automation;
 
 namespace SandboxPowerShellApi
 {
+    /// <summary>
+    /// <para type="synopsis">Open a NT object directory by path.</para>
+    /// <para type="description">This cmdlet opens an existing NT object directory.</para>
+    /// <para type="description">Also part of the longer cmdlet description.</para>
+    /// </summary>
     [Cmdlet(VerbsCommon.Get, "NtDirectory")]
     public class GetNtDirectoryCmdlet : NtObjectBaseCmdletWithAccess<DirectoryAccessRights>
     {

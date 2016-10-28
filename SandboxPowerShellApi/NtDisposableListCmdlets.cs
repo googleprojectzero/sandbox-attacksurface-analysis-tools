@@ -91,37 +91,73 @@ namespace SandboxPowerShellApi
         }
     }
 
-    [Cmdlet(VerbsCommon.Push, "DisposeList")]
-    public class PushDisposableList : Cmdlet
+    /// <summary>
+    /// <para type="synopsis">Push a new dispose list onto the stack.</para>
+    /// <para type="description">This cmdlet pushes a new dispose list on the stack of dispose lists.
+    /// A dispose list can be used as a container for disposable objects (such as NtObjects) which you want to maintain the lifetime of
+    /// without assigning them to individual variables or an arbitrary list.
+    /// </para>
+    /// </summary>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet(VerbsCommon.Push, "NtDisposeList")]
+    public class PushNtDisposableList : Cmdlet
     {
-        [Parameter(ValueFromPipeline = true)]
+        /// <summary>
+        /// <para type="description">A list of objects which implement IDisposable to automatically add to the pushed list. This can be taken from the pipeline.</para>
+        /// </summary>
+        [Parameter(ValueFromPipeline = true, Position = 0)]
         public IDisposable[] Objects { get; set; }
 
-        
+        /// <summary>
+        /// Overridden ProcessRecord method.
+        /// </summary>
         protected override void ProcessRecord()
         {
             WriteObject(StackHolder.Push(Objects), true);
         }
     }
 
-    [Cmdlet(VerbsCommon.Pop, "DisposeList")]
-    public class PopDisposableList : Cmdlet
+    /// <summary>
+    /// <para type="synopsis">Pop the current dispose list onto the stack.</para>
+    /// <para type="description">This cmdlet pops the last dispose list off the stack of dispose lists.
+    /// Once the list has been pops all objects contained in the list will have their Dispose methods called.
+    /// A dispose list can be used as a container for disposable objects (such as NtObjects) which you want to maintain the lifetime of
+    /// without assigning them to individual variables or an arbitrary list.
+    /// </para>
+    /// </summary>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet(VerbsCommon.Pop, "NtDisposeList")]
+    public class PopNtDisposableList : Cmdlet
     {
-        [Parameter(ValueFromPipeline = true)]
-        public IDisposable[] Objects { get; set; }
-
+        /// <summary>
+        /// Overridden ProcessRecord method.
+        /// </summary>
         protected override void ProcessRecord()
         {
             StackHolder.Pop();
         }
     }
 
-    [Cmdlet(VerbsCommon.Add, "DisposeList")]
-    public class AddDisposableList : Cmdlet
+    /// <summary>
+    /// <para type="synopsis">Add a list of disposable objects to the current list onto the stack.</para>
+    /// <para type="description">This adds a list of disposable objects to the last list on the stack which was created using Push-DisposableList.
+    /// A dispose list can be used as a container for disposable objects (such as NtObjects) which you want to maintain the lifetime of
+    /// without assigning them to individual variables or an arbitrary list.
+    /// </para>
+    /// </summary>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet(VerbsCommon.Add, "NtDisposeList")]
+    public class AddNtDisposableList : Cmdlet
     {
+        /// <summary>
+        /// <para type="description">A list of objects which implement IDisposable to add to the current list. This can be taken from the pipeline.</para>
+        /// </summary>
         [Parameter(ValueFromPipeline = true, Mandatory = true, Position=0)]
         public IDisposable[] Objects { get; set; }
 
+        /// <summary>
+        /// Overridden ProcessRecord method.
+        /// </summary>
         protected override void ProcessRecord()
         {
             if (!StackHolder.Add(Objects))
@@ -132,12 +168,17 @@ namespace SandboxPowerShellApi
         }
     }
 
-    [Cmdlet(VerbsCommon.Clear, "DisposeList")]
-    public class ClearDisposableList : Cmdlet
+    /// <summary>
+    /// <para type="synopsis">Clears all dispose lists on the stack and disposes all their objects.</para>
+    /// <para type="description">This will enumerate all disposable lists on the stack and dispose them.</para>
+    /// </summary>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet(VerbsCommon.Clear, "NtDisposeList")]
+    public class ClearNtDisposableList : Cmdlet
     {
-        [Parameter(ValueFromPipeline = true)]
-        public IDisposable[] Objects { get; set; }
-
+        /// <summary>
+        /// Overridden ProcessRecord method.
+        /// </summary>
         protected override void ProcessRecord()
         {
             StackHolder.Clear();

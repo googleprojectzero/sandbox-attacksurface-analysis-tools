@@ -527,6 +527,11 @@ namespace NtApiDotNet
 
         public static string GetDirectoryEntryType(string name, NtObject root)
         {
+            if (root == null && name == @"\")
+            {
+                return "Directory";
+            }
+
             try
             {
                 using (NtDirectory dir = NtDirectory.Open(GetDirectoryName(name), root, DirectoryAccessRights.Query))
