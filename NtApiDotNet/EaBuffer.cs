@@ -23,15 +23,30 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class EaBufferEntry
     {
+        /// <summary>
+        /// Name of the entry
+        /// </summary>
         public string Name { get; private set; }
+        /// <summary>
+        /// Data associated with the entry
+        /// </summary>
         public byte[] Data { get; private set; }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="name">The name of the entry</param>
+        /// <param name="data">Data associated with the entry</param>
         public EaBufferEntry(string name, byte[] data)
         {
             Name = name;
             Data = data;
         }
 
+        /// <summary>
+        /// Convery entry to a string
+        /// </summary>
+        /// <returns>The entry as a string</returns>
         public override string ToString()
         {
             return string.Format("Name: {0} - Data Size: {1}", Name, Data.Length);
@@ -43,11 +58,18 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class EaBuffer : List<EaBufferEntry>
     {
+        /// <summary>
+        /// Constructor
+        /// </summary>
         public EaBuffer()
         {
             _buffers = new List<EaBufferEntry>();
         }
 
+        /// <summary>
+        /// Constructor from a binary EA buffer
+        /// </summary>
+        /// <param name="buffer">The EA buffer to parse</param>
         public EaBuffer(byte[] buffer)
         {
             MemoryStream stm = new MemoryStream(buffer);
@@ -119,11 +141,20 @@ namespace NtApiDotNet
             return stm.ToArray();
         }
 
+        /// <summary>
+        /// Add a new EA entry
+        /// </summary>
+        /// <param name="name">The name of the entry</param>
+        /// <param name="data">The associated data</param>
         public void AddEntry(string name, byte[] data)
         {
             _buffers.Add(new EaBufferEntry(name, (byte[])data.Clone()));
         }
 
+        /// <summary>
+        /// Convert to a byte array
+        /// </summary>
+        /// <returns>The byte array</returns>
         public byte[] ToByteArray()
         {
             MemoryStream stm = new MemoryStream();

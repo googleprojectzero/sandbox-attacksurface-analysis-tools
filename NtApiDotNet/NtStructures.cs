@@ -16,6 +16,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     [StructLayout(LayoutKind.Explicit)]
     public class LargeInteger
     {
@@ -46,5 +47,5 @@ namespace NtApiDotNet
         [FieldOffset(0)]
         public long QuadPart;
     }
-
+#pragma warning restore 1591
 }

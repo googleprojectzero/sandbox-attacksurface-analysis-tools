@@ -23,16 +23,49 @@ namespace NtApiDotNet
     [Flags]
     public enum AttributeFlags : uint
     {
+        /// <summary>
+        /// None
+        /// </summary>
         None = 0,
+        /// <summary>
+        /// The handle created can be inherited
+        /// </summary>
         Inherit = 0x00000002,
+        /// <summary>
+        /// The object created is marked as permanent
+        /// </summary>
         Permanent = 0x00000010,
+        /// <summary>
+        /// The object must be created exclusively
+        /// </summary>
         Exclusive = 0x00000020,
+        /// <summary>
+        /// The object name lookup should be done case insensitive
+        /// </summary>
         CaseInsensitive = 0x00000040,
+        /// <summary>
+        /// Open the object if it already exists
+        /// </summary>
         OpenIf = 0x00000080,
+        /// <summary>
+        /// Open the object as a link
+        /// </summary>
         OpenLink = 0x00000100,
+        /// <summary>
+        /// Create as a kernel handle (not used in user-mode)
+        /// </summary>
         KernelHandle = 0x00000200,
+        /// <summary>
+        /// Force an access check to occur (not used in user-mode)
+        /// </summary>
         ForceAccessCheck = 0x00000400,
+        /// <summary>
+        /// Ignore impersonated device map when looking up object
+        /// </summary>
         IgnoreImpersonatedDevicemap = 0x00000800,
+        /// <summary>
+        /// Fail if a reparse is encountered
+        /// </summary>
         DontReparse = 0x00001000,
     }
 
@@ -64,25 +97,47 @@ namespace NtApiDotNet
             p = IntPtr.Zero;
         }
 
+        /// <summary>
+        /// Constructor. Sets flags to None
+        /// </summary>
         public ObjectAttributes() : this(AttributeFlags.None)
         {
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="object_name">The name of the object</param>
+        /// <param name="attributes">Attribute flags</param>
         public ObjectAttributes(string object_name, AttributeFlags attributes) 
             : this(object_name, attributes, SafeKernelObjectHandle.Null, null, null)
         {
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="object_name">The name of the object</param>
+        /// <param name="attributes">Attribute flags</param>
+        /// <param name="root">A root object to lookup a relative path</param>
         public ObjectAttributes(string object_name, AttributeFlags attributes, NtObject root) 
             : this(object_name, attributes, root, null, null)
         {
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="attributes">Attribute flags</param>
         public ObjectAttributes(AttributeFlags attributes) 
             : this(null, attributes, SafeKernelObjectHandle.Null, null, null)
         {
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="object_name">The name of the object</param>
         public ObjectAttributes(string object_name) : this(object_name, AttributeFlags.CaseInsensitive, SafeKernelObjectHandle.Null, null, null)
         {
         }
@@ -129,12 +184,23 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="object_name">The object name, can be null.</param>
+        /// <param name="attributes">The object attribute flags.</param>
+        /// <param name="root">An optional root handle, can be SafeKernelObjectHandle.Null. Will duplicate the handle.</param>
+        /// <param name="sqos">An optional security quality of service.</param>
+        /// <param name="security_descriptor">An optional security descriptor.</param>
         public ObjectAttributes(string object_name, AttributeFlags attributes, NtObject root, 
             SecurityQualityOfService sqos, SecurityDescriptor security_descriptor) 
             : this(object_name, attributes, root != null ? root.Handle : SafeKernelObjectHandle.Null, sqos, security_descriptor)
-        {            
+        {
         }
 
+        /// <summary>
+        /// Dispose
+        /// </summary>
         public void Dispose()
         {
             ObjectName.Close();
@@ -144,6 +210,9 @@ namespace NtApiDotNet
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Finalizer
+        /// </summary>
         ~ObjectAttributes()
         {
             Dispose();

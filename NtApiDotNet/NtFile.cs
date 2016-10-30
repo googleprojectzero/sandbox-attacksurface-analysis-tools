@@ -21,10 +21,11 @@ using System.Text;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
-        public static extern int NtOpenFile(
+        public static extern NtStatus NtOpenFile(
             out SafeKernelObjectHandle FileHandle,
             FileAccessRights DesiredAccess,
             ObjectAttributes ObjAttr,
@@ -33,7 +34,7 @@ namespace NtApiDotNet
             FileOpenOptions OpenOptions);
 
         [DllImport("ntdll.dll")]
-        public static extern int NtCreateFile(
+        public static extern NtStatus NtCreateFile(
             out SafeKernelObjectHandle FileHandle,
             FileAccessRights DesiredAccess,
             ObjectAttributes ObjAttr,
@@ -48,13 +49,13 @@ namespace NtApiDotNet
 
 
         [DllImport("ntdll.dll")]
-        public static extern int NtDeviceIoControlFile(
+        public static extern NtStatus NtDeviceIoControlFile(
           SafeKernelObjectHandle FileHandle,
           SafeKernelObjectHandle Event,
           IntPtr ApcRoutine,
           IntPtr ApcContext,
           [Out] IoStatus IoStatusBlock,
-          uint IoControlCode,
+          int IoControlCode,
           IntPtr InputBuffer,
           int InputBufferLength,
           IntPtr OutputBuffer,
@@ -62,13 +63,13 @@ namespace NtApiDotNet
         );
 
         [DllImport("ntdll.dll")]
-        public static extern int NtFsControlFile(
+        public static extern NtStatus NtFsControlFile(
           SafeKernelObjectHandle FileHandle,
           SafeKernelObjectHandle Event,
           IntPtr ApcRoutine,
           IntPtr ApcContext,
           [Out] IoStatus IoStatusBlock,
-          uint FSControlCode,
+          int FSControlCode,
           IntPtr InputBuffer,
           int InputBufferLength,
           IntPtr OutputBuffer,
@@ -76,7 +77,7 @@ namespace NtApiDotNet
         );
 
         [DllImport("ntdll.dll")]
-        public static extern int NtSetInformationFile(
+        public static extern NtStatus NtSetInformationFile(
           SafeKernelObjectHandle FileHandle,
           [Out] IoStatus IoStatusBlock,
           SafeBuffer FileInformation,
@@ -303,55 +304,55 @@ namespace NtApiDotNet
         CD_ROM_FILE_SYSTEM = 0x00000003,
         CHANGER = 0x00000030,
         CONTROLLER = 0x00000004,
-        DATALINK = 0x00000005
-        , DFS = 0x00000006
-        , DFS_FILE_SYSTEM = 0x00000035
-        , DFS_VOLUME = 0x00000036
-        , DISK = 0x00000007
-        , DISK_FILE_SYSTEM = 0x00000008
-        , DVD = 0x00000033
-        , FILE_SYSTEM = 0x00000009
-        , FIPS = 0x0000003a
-        , FULLSCREEN_VIDEO = 0x00000034
-        , INPORT_PORT = 0x0000000a
-        , KEYBOARD = 0x0000000b
-        , KS = 0x0000002f
-        , KSEC = 0x00000039
-        , MAILSLOT = 0x0000000c
-        , MASS_STORAGE = 0x0000002d
-        , MIDI_IN = 0x0000000d
-        , MIDI_OUT = 0x0000000e
-        , MODEM = 0x0000002b
-        , MOUSE = 0x0000000f
-        , MULTI_UNC_PROVIDER = 0x00000010
-        , NAMED_PIPE = 0x00000011
-        , NETWORK = 0x00000012
-        , NETWORK_BROWSER = 0x00000013
-        , NETWORK_FILE_SYSTEM = 0x00000014
-        , NETWORK_REDIRECTOR = 0x00000028
-        , NULL = 0x00000015
-        , PARALLEL_PORT = 0x00000016
-        , PHYSICAL_NETCARD = 0x00000017
-        , PRINTER = 0x00000018
-        , SCANNER = 0x00000019
-        , SCREEN = 0x0000001c
-        , SERENUM = 0x00000037
-        , SERIAL_MOUSE_PORT = 0x0000001a
-        , SERIAL_PORT = 0x0000001b
-        , SMARTCARD = 0x00000031
-        , SMB = 0x0000002e
-        , SOUND = 0x0000001d
-        , STREAMS = 0x0000001e
-        , TAPE = 0x0000001f
-        , TAPE_FILE_SYSTEM = 0x00000020
-        , TERMSRV = 0x00000038
-        , TRANSPORT = 0x00000021
-        , UNKNOWN = 0x00000022
-        , VDM = 0x0000002c
-        , VIDEO = 0x00000023
-        , VIRTUAL_DISK = 0x00000024
-        , WAVE_IN = 0x00000025
-        , WAVE_OUT = 0x00000026
+        DATALINK = 0x00000005,
+        DFS = 0x00000006,
+        DFS_FILE_SYSTEM = 0x00000035,
+        DFS_VOLUME = 0x00000036,
+        DISK = 0x00000007,
+        DISK_FILE_SYSTEM = 0x00000008,
+        DVD = 0x00000033,
+        FILE_SYSTEM = 0x00000009,
+        FIPS = 0x0000003a,
+        FULLSCREEN_VIDEO = 0x00000034,
+        INPORT_PORT = 0x0000000a,
+        KEYBOARD = 0x0000000b,
+        KS = 0x0000002f,
+        KSEC = 0x00000039,
+        MAILSLOT = 0x0000000c,
+        MASS_STORAGE = 0x0000002d,
+        MIDI_IN = 0x0000000d,
+        MIDI_OUT = 0x0000000e,
+        MODEM = 0x0000002b,
+        MOUSE = 0x0000000f,
+        MULTI_UNC_PROVIDER = 0x00000010,
+        NAMED_PIPE = 0x00000011,
+        NETWORK = 0x00000012,
+        NETWORK_BROWSER = 0x00000013,
+        NETWORK_FILE_SYSTEM = 0x00000014,
+        NETWORK_REDIRECTOR = 0x00000028,
+        NULL = 0x00000015,
+        PARALLEL_PORT = 0x00000016,
+        PHYSICAL_NETCARD = 0x00000017,
+        PRINTER = 0x00000018,
+        SCANNER = 0x00000019,
+        SCREEN = 0x0000001c,
+        SERENUM = 0x00000037,
+        SERIAL_MOUSE_PORT = 0x0000001a,
+        SERIAL_PORT = 0x0000001b,
+        SMARTCARD = 0x00000031,
+        SMB = 0x0000002e,
+        SOUND = 0x0000001d,
+        STREAMS = 0x0000001e,
+        TAPE = 0x0000001f,
+        TAPE_FILE_SYSTEM = 0x00000020,
+        TERMSRV = 0x00000038,
+        TRANSPORT = 0x00000021,
+        UNKNOWN = 0x00000022,
+        VDM = 0x0000002c,
+        VIDEO = 0x00000023,
+        VIRTUAL_DISK = 0x00000024,
+        WAVE_IN = 0x00000025,
+        WAVE_OUT = 0x00000026,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -477,24 +478,126 @@ namespace NtApiDotNet
         public FileAttributes FileAttributes;
     }
 
+    public enum FileControlMethod
+    {
+        Buffered = 0,
+        InDirect = 1,
+        OutDirect = 2,
+        Neither = 3
+    }
+
+    [Flags]
+    public enum FileControlAccess
+    {
+        Any = 0,
+        Read = 1,
+        Write = 2,
+    }
+
+    /// <summary>
+    /// Represnt a NT file IO control code.
+    /// </summary>
+    public class NtIoControlCode 
+    {
+        /// <summary>
+        /// Type of device
+        /// </summary>
+        public FileDeviceType DeviceType { get; private set; }
+        /// <summary>
+        /// Function number
+        /// </summary>
+        public int Function { get; private set; }
+        /// <summary>
+        /// Buffering method
+        /// </summary>
+        public FileControlMethod Method { get; private set; }
+        /// <summary>
+        /// Access of file handle
+        /// </summary>
+        public FileControlAccess Access { get; private set; }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="device_type">Type of device</param>
+        /// <param name="function">Function number</param>
+        /// <param name="method">Buffering method</param>
+        /// <param name="access">Access of file handle</param>
+        public NtIoControlCode(FileDeviceType device_type, int function, FileControlMethod method, FileControlAccess access)
+        {
+            DeviceType = device_type;
+            Function = function;
+            Method = method;
+            Access = access;
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="code">Raw IO control code to convert.</param>
+        public NtIoControlCode(int code)
+        {
+            DeviceType = (FileDeviceType)(code >> 16);
+            Access = (FileControlAccess)((code >> 14) & 3);
+            Function = (code >> 2) & 0xFFF;
+            Method = (FileControlMethod)(code & 3);
+        }
+
+        /// <summary>
+        /// Convert the io control code to an Int32
+        /// </summary>
+        /// <returns>The int32 version of the code</returns>
+        public int ToInt32()
+        {
+            return (((int)DeviceType) << 16) | (((int)Access) << 14) | (((int)Function) << 2) | ((int)Method);
+        }
+    }
+
+#pragma warning restore 1591
+
+    /// <summary>
+    /// Class representing a NT File object
+    /// </summary>
     public class NtFile : NtObjectWithDuplicate<NtFile, FileAccessRights>
     {
         internal NtFile(SafeKernelObjectHandle handle) : base(handle)
         {
         }
 
+        /// <summary>
+        /// Create a new file
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes</param>
+        /// <param name="desired_access">Desired access for the file</param>
+        /// <param name="file_attributes">Attributes for the file</param>
+        /// <param name="share_access">Share access for the file</param>
+        /// <param name="open_options">Open options for file</param>
+        /// <param name="disposition">Disposition when opening the file</param>
+        /// <param name="ea_buffer">Extended Attributes buffer</param>
+        /// <returns>The created/opened file object.</returns>
         public static NtFile Create(ObjectAttributes obj_attributes, FileAccessRights desired_access, FileAttributes file_attributes, FileShareMode share_access,
             FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer)
         {
             SafeKernelObjectHandle handle;
             IoStatus iostatus = new IoStatus();
             byte[] buffer = ea_buffer != null ? ea_buffer.ToByteArray() : null;
-            int status = NtSystemCalls.NtCreateFile(out handle, desired_access, obj_attributes, iostatus, null, FileAttributes.Normal,
-                share_access, disposition, open_options, buffer, buffer != null ? buffer.Length : 0);
-            StatusToNtException(status);
+            NtSystemCalls.NtCreateFile(out handle, desired_access, obj_attributes, iostatus, null, FileAttributes.Normal,
+                share_access, disposition, open_options, buffer, buffer != null ? buffer.Length : 0).ToNtException();
             return new NtFile(handle);
         }
 
+        /// <summary>
+        /// Create a new file
+        /// </summary>
+        /// <param name="name">The path to the file</param>
+        /// <param name="root">A root object to parse relative filenames</param>
+        /// <param name="desired_access">Desired access for the file</param>
+        /// <param name="file_attributes">Attributes for the file</param>
+        /// <param name="share_access">Share access for the file</param>
+        /// <param name="open_options">Open options for file</param>
+        /// <param name="disposition">Disposition when opening the file</param>
+        /// <param name="ea_buffer">Extended Attributes buffer</param>
+        /// <returns>The created/opened file object.</returns>
         public static NtFile Create(string name, NtObject root, FileAccessRights desired_access, FileAttributes file_attributes, FileShareMode share_access,
             FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer)
         {
@@ -504,72 +607,134 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Create a new file
+        /// </summary>
+        /// <param name="name">The path to the file</param>
+        /// <param name="desired_access">Desired access for the file</param>
+        /// <param name="share_access">Share access for the file</param>
+        /// <param name="open_options">Open options for file</param>
+        /// <param name="disposition">Disposition when opening the file</param>
+        /// <param name="ea_buffer">Extended Attributes buffer</param>
+        /// <returns>The created/opened file object.</returns>
         public static NtFile Create(string name, FileAccessRights desired_access, FileShareMode share_access,
             FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer)
         {
             return Create(name, null,  desired_access, FileAttributes.Normal, share_access, open_options, disposition, ea_buffer);
         }
 
-        static IntPtr GetSafePointer(SafeHGlobalBuffer buffer)
+        static IntPtr GetSafePointer(SafeBuffer buffer)
         {
             return buffer != null ? buffer.DangerousGetHandle() : IntPtr.Zero;
         }
 
-        static int GetSafeLength(SafeHGlobalBuffer buffer)
+        static int GetSafeLength(SafeBuffer buffer)
         {
-            return buffer != null ? buffer.Length : 0;
+            return buffer != null ? (int)buffer.ByteLength : 0;
         }
 
-        public void DeviceIoControl(uint control_code, SafeHGlobalBuffer input_buffer, SafeHGlobalBuffer output_buffer)
+        /// <summary>
+        /// Send an Device IO Control code to the file driver
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="output_buffer">Output buffer can be null</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void DeviceIoControl(int control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
         {
             IoStatus status = new IoStatus();
-            StatusToNtException(NtSystemCalls.NtDeviceIoControlFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero, status,
-                control_code, GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)));
+            NtSystemCalls.NtDeviceIoControlFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero, status,
+                control_code, GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)).ToNtException();
         }
 
-        public void FsControl(uint control_code, SafeHGlobalBuffer input_buffer, SafeHGlobalBuffer output_buffer)
+        /// <summary>
+        /// Send an File System Control code to the file driver
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer</param>
+        /// <param name="output_buffer"></param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void FsControl(int control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
         {
+            if (input_buffer == null)
+            {
+            }
             IoStatus status = new IoStatus();
-            StatusToNtException(NtSystemCalls.NtFsControlFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero, status,
-                control_code, GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)));
+            NtSystemCalls.NtFsControlFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero, status,
+                control_code, GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)).ToNtException();
         }
 
+        /// <summary>
+        /// Open a file
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes</param>
+        /// <param name="DesiredAccess">The desired access for the file handle</param>
+        /// <param name="ShareAccess">The file share access</param>
+        /// <param name="OpenOptions">File open options</param>
+        /// <returns>The opened file</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static NtFile Open(ObjectAttributes obj_attributes, FileAccessRights DesiredAccess, FileShareMode ShareAccess, FileOpenOptions OpenOptions)
         {
             SafeKernelObjectHandle handle;
             IoStatus iostatus = new IoStatus();
-            StatusToNtException(NtSystemCalls.NtOpenFile(out handle, DesiredAccess, obj_attributes, iostatus, ShareAccess, OpenOptions));
+            NtSystemCalls.NtOpenFile(out handle, DesiredAccess, obj_attributes, iostatus, ShareAccess, OpenOptions).ToNtException();
             return new NtFile(handle);
         }
 
-        public static NtFile Open(string name, NtObject root, FileAccessRights DesiredAccess, FileShareMode ShareAccess, FileOpenOptions OpenOptions)
+        /// <summary>
+        /// Open a file
+        /// </summary>
+        /// <param name="path">The path to the file</param>
+        /// <param name="root">The root directory if path is relative.</param>
+        /// <param name="DesiredAccess">The desired access for the file handle</param>
+        /// <param name="ShareAccess">The file share access</param>
+        /// <param name="OpenOptions">File open options</param>
+        /// <returns>The opened file</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtFile Open(string path, NtObject root, FileAccessRights DesiredAccess, FileShareMode ShareAccess, FileOpenOptions OpenOptions)
         {
-            using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
+            using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
                 return Open(obja, DesiredAccess, ShareAccess, OpenOptions);
             }
         }
 
+        /// <summary>
+        /// Get object ID for current file
+        /// </summary>
+        /// <returns>The object ID as a string</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public string GetFileId()
         {
             using (var internal_info = new SafeStructureInOutBuffer<FileInternalInformation>())
             {
                 IoStatus iostatus = new IoStatus();
-                StatusToNtException(NtSystemCalls.NtQueryInformationFile(Handle, iostatus, internal_info, internal_info.Length, FileInformationClass.FileInternalInformation));
+                NtSystemCalls.NtQueryInformationFile(Handle, iostatus, internal_info, internal_info.Length, FileInformationClass.FileInternalInformation).ToNtException();
                 return Encoding.Unicode.GetString(BitConverter.GetBytes(internal_info.Result.IndexNumber.QuadPart));
             }
         }
 
+        /// <summary>
+        /// Get the attributes of a file.
+        /// </summary>
+        /// <returns>The file attributes</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public FileAttributes GetFileAttributes()
         {
             using (var basic_info = new SafeStructureInOutBuffer<FileBasicInformation>())
             {
                 IoStatus iostatus = new IoStatus();
-                StatusToNtException(NtSystemCalls.NtQueryInformationFile(Handle, iostatus, basic_info, basic_info.Length, FileInformationClass.FileBasicInformation));
+                NtSystemCalls.NtQueryInformationFile(Handle, iostatus, basic_info, basic_info.Length, FileInformationClass.FileBasicInformation).ToNtException();
                 return basic_info.Result.FileAttributes;
             }
         }
 
+        /// <summary>
+        /// Get the object ID of a file as a string
+        /// </summary>
+        /// <param name="path">The path to the file</param>
+        /// <returns>The object ID as a string</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static string GetFileId(string path)
         {
             using (NtFile file = NtFile.Open(path, null, FileAccessRights.MaximumAllowed, FileShareMode.None, FileOpenOptions.None))
@@ -578,33 +743,50 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Open a file by its object ID
+        /// </summary>
+        /// <param name="volume">A handle to the volume on which the file resides.</param>
+        /// <param name="id">The object ID as a binary string</param>
+        /// <param name="DesiredAccess">The desired access for the file</param>
+        /// <param name="ShareAccess">File share access</param>
+        /// <param name="OpenOptions">Open options.</param>
+        /// <returns>The opened file object</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static NtFile OpenFileById(NtFile volume, string id,
-            FileAccessRights DesiredAccess, FileShareMode ShareAccess, FileOpenOptions OpenOptions, bool inherit)
+            FileAccessRights DesiredAccess, FileShareMode ShareAccess, FileOpenOptions OpenOptions)
         {
-            AttributeFlags flags = AttributeFlags.CaseInsensitive;
-            if (inherit)
-                flags |= AttributeFlags.Inherit;
             StringBuilder name_builder = new StringBuilder();
-            using (ObjectAttributes obja = new ObjectAttributes(id, flags, volume, null, null))
+            using (ObjectAttributes obja = new ObjectAttributes(id, AttributeFlags.CaseInsensitive, volume, null, null))
             {
                 SafeKernelObjectHandle handle;
                 IoStatus iostatus = new IoStatus();
-                StatusToNtException(NtSystemCalls.NtOpenFile(out handle, DesiredAccess, obja,
-                    iostatus, ShareAccess, OpenOptions | FileOpenOptions.OpenByFileId));
+                NtSystemCalls.NtOpenFile(out handle, DesiredAccess, obja,
+                    iostatus, ShareAccess, OpenOptions | FileOpenOptions.OpenByFileId).ToNtException();
                 return new NtFile(handle);
             }
         }
 
+        /// <summary>
+        /// Delete the file. Must have been opened with DELETE access.
+        /// </summary>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public void Delete()
         {
             IoStatus iostatus = new IoStatus();
             using (var deletefile = new FileDispositionInformation() { DeleteFile = true }.ToBuffer())
             {
-                StatusToNtException(NtSystemCalls.NtSetInformationFile(Handle, iostatus, deletefile,
-                    deletefile.Length, FileInformationClass.FileDispositionInformation));
+                NtSystemCalls.NtSetInformationFile(Handle, iostatus, deletefile,
+                    deletefile.Length, FileInformationClass.FileDispositionInformation).ToNtException();
             }
         }
 
+        /// <summary>
+        /// Create a new hardlink to this file.
+        /// </summary>
+        /// <param name="linkname">The target NT path.</param>
+        /// <param name="root">The root directory if linkname is relative</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public void CreateHardlink(string linkname, NtFile root)
         {
             FileLinkRenameInformation link = new FileLinkRenameInformation();
@@ -616,16 +798,27 @@ namespace NtApiDotNet
             {
                 IoStatus iostatus = new IoStatus();
                 buffer.Data.WriteArray(0, chars, 0, chars.Length);
-                StatusToNtException(NtSystemCalls.NtSetInformationFile(Handle, iostatus, buffer,
-                        buffer.Length, FileInformationClass.FileLinkInformation));
+                NtSystemCalls.NtSetInformationFile(Handle, iostatus, buffer,
+                        buffer.Length, FileInformationClass.FileLinkInformation).ToNtException();
             }
         }
 
+        /// <summary>
+        /// Create a new hardlink to this file.
+        /// </summary>
+        /// <param name="linkname">The target absolute NT path.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public void CreateHardlink(string linkname)
         {
             CreateHardlink(linkname, (NtFile)null);
         }
 
+        /// <summary>
+        /// Create a hardlink to another file.
+        /// </summary>
+        /// <param name="path">The file to hardlink to.</param>
+        /// <param name="linkname">The desintation hardlink path.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static void CreateHardlink(string path, string linkname)
         {
             using (NtFile file = Open(path, null, FileAccessRights.MaximumAllowed,
@@ -635,14 +828,25 @@ namespace NtApiDotNet
             }
         }
 
-        public FileStream ToStream(bool writeable)
+        /// <summary>
+        /// Convert this NtFile to a FileStream for reading/writing.
+        /// </summary>
+        /// <remarks>The stream must be closed separately from the NtFile.</remarks>
+        /// <returns>The file stream.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public FileStream ToStream()
         {
-            SafeFileHandle handle = NtObject.DuplicateAsFile(Handle);
-            return new FileStream(handle, FileAccess.Read | (writeable ? FileAccess.Write : 0));
+            FileAccess access = FileAccess.Read;
+
+            if (GetNtType().HasWritePermission(GetGrantedAccessRaw()))
+            {
+                access = FileAccess.ReadWrite;
+            }
+            return new FileStream(NtObject.DuplicateAsFile(Handle), access);
         }
 
         [Flags]
-        public enum FinalPathNameFlags
+        enum FinalPathNameFlags
         {
             None = 0,
             NameGuid = 1,
@@ -665,11 +869,15 @@ namespace NtApiDotNet
             return builder.ToString();
         }
 
+        /// <summary>
+        /// Get the Win32 path name for the file.
+        /// </summary>
+        /// <returns>The path, String.Empty on error.</returns>
         public string GetWin32PathName()
         {
             try
             {
-                return GetPathNameInternal(FinalPathNameFlags.None);
+                return GetPathNameInternal(FinalPathNameFlags.NameNone);
             }
             catch (Win32Exception)
             {
@@ -677,13 +885,17 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Get the low-level device type of the file.
+        /// </summary>
+        /// <returns>The file device type.</returns>
         public FileDeviceType GetDeviceType()
         {
             using (SafeStructureInOutBuffer<FileFsDeviceInformation> file_info = new SafeStructureInOutBuffer<FileFsDeviceInformation>())
             {
                 IoStatus status = new IoStatus();
-                StatusToNtException(NtSystemCalls.NtQueryVolumeInformationFile(Handle, status, file_info, 
-                    file_info.Length, FsInformationClass.FileFsDeviceInformation));
+                NtSystemCalls.NtQueryVolumeInformationFile(Handle, status, file_info, 
+                    file_info.Length, FsInformationClass.FileFsDeviceInformation).ToNtException();
                 return file_info.Result.DeviceType;
             }
         }
@@ -698,7 +910,7 @@ namespace NtApiDotNet
                 try
                 {
                     IoStatus status = new IoStatus();
-                    StatusToNtException(NtSystemCalls.NtQueryInformationFile(Handle, status, buffer, buffer.Length, FileInformationClass.FileNameInformation));
+                    NtSystemCalls.NtQueryInformationFile(Handle, status, buffer, buffer.Length, FileInformationClass.FileNameInformation).ToNtException();
                     char[] result = new char[buffer.Result.NameLength / 2];
                     buffer.Data.ReadArray(0, result, 0, result.Length);
                     return new string(result);
@@ -710,6 +922,10 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Get the name of the file.
+        /// </summary>
+        /// <returns>The name of the file.</returns>
         public override string GetName()
         {
             if (GetDeviceType() != FileDeviceType.NAMED_PIPE)
@@ -724,15 +940,23 @@ namespace NtApiDotNet
         }
     }
 
+    /// <summary>
+    /// Utility functions for files
+    /// </summary>
     public static class FileUtils
     {
+        /// <summary>
+        /// Convert a DOS filename to an absolute NT filename
+        /// </summary>
+        /// <param name="filename">The filename, can be relative</param>
+        /// <returns>The NT filename</returns>
         public static string DosFileNameToNt(string filename)
         {
             UnicodeStringOut nt_name = new UnicodeStringOut();
             try
             {
                 IntPtr short_path;
-                NtObject.StatusToNtException(NtRtl.RtlDosPathNameToRelativeNtPathName_U_WithStatus(filename, out nt_name, out short_path, null));
+                NtRtl.RtlDosPathNameToRelativeNtPathName_U_WithStatus(filename, out nt_name, out short_path, null).ToNtException();
                 return nt_name.ToString();
             }
             finally
@@ -744,6 +968,11 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Convert a DOS filename to an NT filename and get as an ObjectAttributes structure
+        /// </summary>
+        /// <param name="filename">The filename</param>
+        /// <returns>The object attributes</returns>
         public static ObjectAttributes DosFileNameToObjectAttributes(string filename)
         {
             UnicodeStringOut nt_name = new UnicodeStringOut();
@@ -751,7 +980,7 @@ namespace NtApiDotNet
             try
             {
                 IntPtr short_path;
-                NtObject.StatusToNtException(NtRtl.RtlDosPathNameToRelativeNtPathName_U_WithStatus(filename, out nt_name, out short_path, relative_name));
+                NtRtl.RtlDosPathNameToRelativeNtPathName_U_WithStatus(filename, out nt_name, out short_path, relative_name).ToNtException();
                 if (relative_name.RelativeName.Buffer != IntPtr.Zero)
                 {
                     return new ObjectAttributes(relative_name.RelativeName.ToString(), AttributeFlags.CaseInsensitive,
@@ -776,11 +1005,21 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Convert a DOS filename to a UNICODE_STRING structure
+        /// </summary>
+        /// <param name="filename">The DOS filename</param>
+        /// <returns>The UNICODE_STRING</returns>
         public static UnicodeString DosFileNameToUnicodeString(string filename)
         {
             return new UnicodeString(DosFileNameToNt(filename));
         }
 
+        /// <summary>
+        /// Get type of DOS path
+        /// </summary>
+        /// <param name="filename">The DOS filename</param>
+        /// <returns>The type of DOS path</returns>
         public static RtlPathType GetDosPathType(string filename)
         {
             return NtRtl.RtlDetermineDosPathNameType_U(filename);

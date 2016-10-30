@@ -18,7 +18,10 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
-    static class Utils
+    /// <summary>
+    /// Static utility methods.
+    /// </summary>
+    public static class NtObjectUtils
     {
         internal static byte[] StructToBytes<T>(T value)
         {
@@ -61,18 +64,32 @@ namespace NtApiDotNet
             return ret;
         }
 
-        internal static NtStatus ToNtException(this NtStatus status)
+        /// <summary>
+        /// Convert an NtStatus to an exception if the status is an erro
+        /// </summary>
+        /// <param name="status">The NtStatus</param>
+        /// <returns>The original NtStatus if not an error</returns>
+        /// <exception cref="NtException">Thrown if status is an error.</exception>
+        public static NtStatus ToNtException(this NtStatus status)
         {
-            NtObject.StatusToNtException(status);
+            if (!IsSuccess(status))
+            {
+                throw new NtException(status);
+            }
             return status;
         }
 
-        internal static bool IsSuccess(this NtStatus status)
+        /// <summary>
+        /// Checks if the NtStatus value is a success
+        /// </summary>
+        /// <param name="status">The NtStatus value</param>
+        /// <returns>True if a success</returns>
+        public static bool IsSuccess(this NtStatus status)
         {
-            return NtObject.IsSuccess(status);
+            return (int)status >= 0;
         }
-        
-        public static bool GetBit(this int result, int bit)
+
+        internal static bool GetBit(this int result, int bit)
         {
             return (result & (1 << bit)) != 0;
         }

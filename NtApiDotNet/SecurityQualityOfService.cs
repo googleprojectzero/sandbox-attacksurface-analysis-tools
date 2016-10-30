@@ -16,6 +16,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     public enum SecurityImpersonationLevel
     {
         Anonymous = 0,
@@ -53,4 +54,5 @@ namespace NtApiDotNet
         [MarshalAs(UnmanagedType.U1)]
         public bool EffectiveOnly;
     }
+#pragma warning restore 1591
 }

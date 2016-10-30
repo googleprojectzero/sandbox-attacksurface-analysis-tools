@@ -17,6 +17,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     [Flags]
     public enum MutantAccessRights : uint
     {
@@ -47,6 +48,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtReleaseMutant(SafeKernelObjectHandle MutantHandle, out uint PreviousState);
     }
+#pragma warning restore 1591
 
     public class NtMutant : NtObjectWithDuplicate<NtMutant, MutantAccessRights>
     {
@@ -65,7 +67,7 @@ namespace NtApiDotNet
         public static NtMutant Create(ObjectAttributes object_attributes, bool initial_owner, MutantAccessRights access_rights)
         {
             SafeKernelObjectHandle handle;
-            StatusToNtException(NtSystemCalls.NtCreateMutant(out handle, access_rights, object_attributes, initial_owner));
+            NtSystemCalls.NtCreateMutant(out handle, access_rights, object_attributes, initial_owner).ToNtException();
             return new NtMutant(handle);
         }
 
@@ -80,7 +82,7 @@ namespace NtApiDotNet
         public static NtMutant Open(ObjectAttributes object_attributes, MutantAccessRights access_rights)
         {
             SafeKernelObjectHandle handle;
-            StatusToNtException(NtSystemCalls.NtOpenMutant(out handle, access_rights, object_attributes));
+            NtSystemCalls.NtOpenMutant(out handle, access_rights, object_attributes).ToNtException();
             return new NtMutant(handle);
         }
 

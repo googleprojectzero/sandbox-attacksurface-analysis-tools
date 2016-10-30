@@ -579,7 +579,7 @@ namespace TokenViewer
             foreach (UserGroup group in
                     listViewGroups.SelectedItems.OfType<ListViewItem>().Select(i => i.Tag))
             {
-                if (group != null && !group.IsMandatory() && !group.IsDenyOnly())
+                if (group != null && !group.IsMandatory && !group.IsDenyOnly)
                 {
                     groups.Add(group);
                 }
@@ -591,7 +591,7 @@ namespace TokenViewer
         {
             foreach (UserGroup group in groups)
             {
-                if (!group.IsEnabled())
+                if (!group.IsEnabled)
                 {
                     return false;
                 }

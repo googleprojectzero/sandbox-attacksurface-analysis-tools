@@ -18,6 +18,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     public enum AtomInformationClass
     {
         AtomBasicInformation,
@@ -63,9 +64,16 @@ namespace NtApiDotNet
             out int ReturnLength
         );
     }
+#pragma warning restore 1591
 
+    /// <summary>
+    /// Class to handle NT atoms
+    /// </summary>
     public class NtAtom
     {
+        /// <summary>
+        /// The atom value
+        /// </summary>
         public ushort Atom { get; private set; }
 
         internal NtAtom(ushort atom)
@@ -73,26 +81,39 @@ namespace NtApiDotNet
             Atom = atom;
         }
 
+        /// <summary>
+        /// Add an atom name
+        /// </summary>
+        /// <param name="name">The name to add</param>
+        /// <returns>A reference to the atom</returns>
         public static NtAtom Add(string name)
         {
             ushort atom;
-            NtObject.StatusToNtException(NtSystemCalls.NtAddAtom(name + "\0", (name.Length + 1) * 2, out atom));
+            NtSystemCalls.NtAddAtom(name + "\0", (name.Length + 1) * 2, out atom).ToNtException();
             return new NtAtom(atom);
         }
 
+        /// <summary>
+        /// Get the name of the stom
+        /// </summary>
+        /// <returns>The name of the atom</returns>
         public string GetName()
         {
             using (SafeStructureInOutBuffer<AtomBasicInformation> buffer = new SafeStructureInOutBuffer<AtomBasicInformation>(2048, false))
             {
                 int return_length;
-                NtObject.StatusToNtException(NtSystemCalls.NtQueryInformationAtom(Atom, AtomInformationClass.AtomBasicInformation, 
-                    buffer, buffer.Length, out return_length));
+               NtSystemCalls.NtQueryInformationAtom(Atom, AtomInformationClass.AtomBasicInformation, 
+                    buffer, buffer.Length, out return_length).ToNtException();
                 AtomBasicInformation basic_info = buffer.Result;
 
                 return Marshal.PtrToStringUni(buffer.Data.DangerousGetHandle(), basic_info.NameLength / 2);
             }
         }
 
+        /// <summary>
+        /// Enumerate all atoms.
+        /// </summary>
+        /// <returns>An enumeration of all atoms on the system.</returns>
         public static IEnumerable<NtAtom> GetAtoms()
         {
             int size = 1024;
@@ -102,7 +123,7 @@ namespace NtApiDotNet
                 {
                     int return_length;
                     NtStatus status = NtSystemCalls.NtQueryInformationAtom(0, AtomInformationClass.AtomTableInformation, buffer, buffer.Length, out return_length);
-                    if (NtObject.IsSuccess(status))
+                    if (status.IsSuccess())
                     {
                         AtomTableInformation table = buffer.Result;
                         IntPtr data = buffer.Data.DangerousGetHandle();

@@ -65,7 +65,7 @@ namespace CheckFileAccess
         {
             try
             {
-                SecurityDescriptor sd = NtSecurity.FromNamedResource(@"\??\" + entry.FullName, "file");
+                SecurityDescriptor sd = NtSecurity.FromNamedObject(@"\??\" + entry.FullName, "file");
                 if (sd != null)
                 {
                     bool is_dir = entry is DirectoryInfo;
@@ -73,15 +73,15 @@ namespace CheckFileAccess
                     
                     if(is_dir && _dir_filter != 0)
                     {
-                        granted_access = NtSecurity.GetAllowedAccess(_token.Handle, _type, _dir_filter, sd.ToByteArray());
+                        granted_access = NtSecurity.GetAllowedAccess(_token, _type, _dir_filter, sd.ToByteArray());
                     }
                     else if (!is_dir && _file_filter != 0)
                     {
-                        granted_access = NtSecurity.GetAllowedAccess(_token.Handle, _type, _file_filter, sd.ToByteArray());
+                        granted_access = NtSecurity.GetAllowedAccess(_token, _type, _file_filter, sd.ToByteArray());
                     }
                     else
                     {
-                        granted_access = NtSecurity.GetMaximumAccess(_token.Handle, _type, sd.ToByteArray());
+                        granted_access = NtSecurity.GetMaximumAccess(_token, _type, sd.ToByteArray());
                     }
 
                     if (granted_access != 0)
@@ -89,7 +89,7 @@ namespace CheckFileAccess
                         // Now reget maximum access rights
                         if (_dir_filter != 0 || _file_filter != 0)
                         {
-                            granted_access = NtSecurity.GetMaximumAccess(_token.Handle, _type, sd.ToByteArray());
+                            granted_access = NtSecurity.GetMaximumAccess(_token, _type, sd.ToByteArray());
                         }
 
                         if (!_show_write_only || _type.HasWritePermission(granted_access))

@@ -20,39 +20,7 @@ using System.Text;
 
 namespace NtApiDotNet
 {
-    /// <summary>
-    /// Access rights generic mapping.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
-    public struct GenericMapping
-    {
-        public uint GenericRead;
-        public uint GenericWrite;
-        public uint GenericExecute;
-        public uint GenericAll;
-
-        /// <summary>
-        /// Map a generic access mask to a specific one.
-        /// </summary>
-        /// <param name="mask">The generic mask to map.</param>
-        /// <returns>The mapped mask.</returns>
-        public uint MapMask(uint mask)
-        {
-            NtRtl.RtlMapGenericMask(ref mask, ref this);
-            return mask;
-        }
-
-        /// <summary>
-        /// Convert generic mapping to a string.
-        /// </summary>
-        /// <returns>The generic mapping as a string.</returns>
-        public override string ToString()
-        {
-            return String.Format("R:{0:X08} W:{1:X08} E:{2:X08} A:{3:X08}",
-                GenericRead, GenericWrite, GenericExecute, GenericAll);
-        }
-    }
-
+#pragma warning disable 1591
     /// <summary>
     /// Security information class for security descriptors.
     /// </summary>
@@ -326,8 +294,78 @@ namespace NtApiDotNet
         InheritedObjectTypePresent = 0x2,
     }
 
+
+    public enum AclRevision
+    {
+        Revision = 2,
+        RevisionDS = 4,
+    }
+
+    public struct AclStructure
+    {
+        public byte AclRevision;
+        public byte Sbz1;
+        public ushort AclSize;
+        public ushort AceCount;
+        public ushort Sbz2;
+    }
+
+#pragma warning restore 1591
+
+    /// <summary>
+    /// Access rights generic mapping.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct GenericMapping
+    {
+        /// <summary>
+        /// Mapping for Generic Read
+        /// </summary>
+        public uint GenericRead;
+        /// <summary>
+        /// Mapping for Generic Write
+        /// </summary>
+        public uint GenericWrite;
+        /// <summary>
+        /// Mapping for Generic Execute
+        /// </summary>
+        public uint GenericExecute;
+        /// <summary>
+        /// Mapping for Generic All
+        /// </summary>
+        public uint GenericAll;
+
+        /// <summary>
+        /// Map a generic access mask to a specific one.
+        /// </summary>
+        /// <param name="mask">The generic mask to map.</param>
+        /// <returns>The mapped mask.</returns>
+        public uint MapMask(uint mask)
+        {
+            NtRtl.RtlMapGenericMask(ref mask, ref this);
+            return mask;
+        }
+
+        /// <summary>
+        /// Convert generic mapping to a string.
+        /// </summary>
+        /// <returns>The generic mapping as a string.</returns>
+        public override string ToString()
+        {
+            return String.Format("R:{0:X08} W:{1:X08} E:{2:X08} A:{3:X08}",
+                GenericRead, GenericWrite, GenericExecute, GenericAll);
+        }
+    }
+
+    /// <summary>
+    /// Class to represent an Access Control Entry (ACE)
+    /// </summary>
     public sealed class Ace
     {
+        /// <summary>
+        /// Check if the ACE is an Object ACE
+        /// </summary>
+        /// <returns>True if an object ACE</returns>
         public bool IsObjectAce()
         {
             switch (AceType)
@@ -412,19 +450,52 @@ namespace NtApiDotNet
             writer.Write(sid_data);
         }
 
+        /// <summary>
+        /// Get ACE type
+        /// </summary>
         public AceType AceType { get; set; }
+
+        /// <summary>
+        /// Get ACE flags
+        /// </summary>
         public AceFlags AceFlags { get; set; }
+
+        /// <summary>
+        /// Get ACE access mask
+        /// </summary>
         public uint Mask { get; set; }
+
+        /// <summary>
+        /// Get ACE Security Identifier
+        /// </summary>
         public Sid Sid { get; set; }
+
+        /// <summary>
+        /// Get optional Object Type
+        /// </summary>
         public Guid? ObjectType { get; set; }
+
+        /// <summary>
+        /// Get optional Inherited Object Type
+        /// </summary>
         public Guid? InheritedObjectType { get; set; }
 
+        /// <summary>
+        /// Convert ACE to a string
+        /// </summary>
+        /// <returns>The ACE as a string</returns>
         public override string ToString()
         {
             return String.Format("Type {0} - Flags {1} - Mask {2:X08} - Sid {3}",
                 AceType, AceFlags, Mask, Sid);
         }
 
+        /// <summary>
+        /// Convert ACE to a string
+        /// </summary>
+        /// <param name="access_rights_type">An enumeration type to format the access mask</param>
+        /// <param name="resolve_sid">True to try and resolve SID to a name</param>
+        /// <returns>The ACE as a string</returns>
         public string ToString(Type access_rights_type, bool resolve_sid)
         {
             object mask = Enum.ToObject(access_rights_type, Mask);
@@ -437,6 +508,11 @@ namespace NtApiDotNet
                 AceType, AceFlags, mask, account);
         }
 
+        /// <summary>
+        /// Compare ACE to another object.
+        /// </summary>
+        /// <param name="obj">The other object.</param>
+        /// <returns>True if the other object equals this ACE</returns>
         public override bool Equals(object obj)
         {
             if (Object.ReferenceEquals(obj, this))
@@ -454,11 +530,21 @@ namespace NtApiDotNet
                 && ace.ObjectType == ObjectType && ace.InheritedObjectType == InheritedObjectType;
         }
 
+        /// <summary>
+        /// Get hash code.
+        /// </summary>
+        /// <returns>The hash code</returns>
         public override int GetHashCode()
         {
             return AceType.GetHashCode() ^ AceFlags.GetHashCode() ^ Mask.GetHashCode() ^ Sid.GetHashCode() ^ ObjectType.GetHashCode() ^ InheritedObjectType.GetHashCode();
         }
 
+        /// <summary>
+        /// Equality operator
+        /// </summary>
+        /// <param name="a">Left ACE</param>
+        /// <param name="b">Right ACE</param>
+        /// <returns>True if the ACEs are equal</returns>
         public static bool operator ==(Ace a, Ace b)
         {
             if (Object.ReferenceEquals(a, b))
@@ -479,11 +565,24 @@ namespace NtApiDotNet
             return a.Equals(b);
         }
 
+        /// <summary>
+        /// Not Equal operator
+        /// </summary>
+        /// <param name="a">Left ACE</param>
+        /// <param name="b">Right ACE</param>
+        /// <returns>True if the ACEs are not equal</returns>
         public static bool operator !=(Ace a, Ace b)
         {
             return !(a == b);
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="type">ACE type</param>
+        /// <param name="flags">ACE flags</param>
+        /// <param name="mask">ACE access mask</param>
+        /// <param name="sid">ACE sid</param>
         public Ace(AceType type, AceFlags flags, uint mask, Sid sid)
         {
             AceType = type;
@@ -492,27 +591,22 @@ namespace NtApiDotNet
             Sid = sid;
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="type">ACE type</param>
+        /// <param name="flags">ACE flags</param>
+        /// <param name="mask">ACE access mask</param>
+        /// <param name="sid">ACE sid</param>
         public Ace(AceType type, AceFlags flags, GenericAccessRights mask, Sid sid)
             : this(type, flags, (uint)mask, sid)
         {
         }
     }
 
-    public enum AclRevision
-    {
-        Revision = 2,
-        RevisionDS = 4,
-    }
-
-    public struct AclStructure
-    {
-        public byte AclRevision;
-        public byte Sbz1;
-        public ushort AclSize;
-        public ushort AceCount;
-        public ushort Sbz2;
-    }
-
+    /// <summary>
+    /// Class to represent an Access Control List (ACL)
+    /// </summary>
     public sealed class Acl : List<Ace>
     {
         static T GetAclInformation<T>(IntPtr acl, AclInformationClass info_class) where T : new()
@@ -543,6 +637,11 @@ namespace NtApiDotNet
             Revision = GetAclInformation<AclRevisionInformation>(acl, AclInformationClass.AclRevisionInformation).AclRevision;
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="acl">Pointer to a raw ACL in memory</param>
+        /// <param name="defaulted">True if the ACL was defaulted</param>
         public Acl(IntPtr acl, bool defaulted)
         {
             if (acl != IntPtr.Zero)
@@ -557,28 +656,57 @@ namespace NtApiDotNet
             Defaulted = defaulted;
         }
 
+        /// <summary>
+        /// Constructor for a NULL ACL
+        /// </summary>
+        /// <param name="defaulted">True if the ACL was defaulted</param>
         public Acl(bool defaulted) : this(IntPtr.Zero, defaulted)
         {
             Defaulted = defaulted;
         }
 
+        /// <summary>
+        /// Constructor for an empty ACL
+        /// </summary>
         public Acl() : this(new Ace[0], false)
         {
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="aces">List of ACEs to add to ACL</param>
+        /// <param name="defaulted">True if the ACL was defaulted</param>
         public Acl(IEnumerable<Ace> aces, bool defaulted) : base(aces)
         {
             Defaulted = defaulted;
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="aces">List of ACEs to add to ACL</param>
         public Acl(IEnumerable<Ace> aces) : this(aces, false)
         {
         }
 
+        /// <summary>
+        /// Get or set whether the ACL was defaulted
+        /// </summary>
         public bool Defaulted { get; set; }
+        /// <summary>
+        /// Get or set whether the ACL is NULL (no security)
+        /// </summary>
         public bool NullAcl { get; set; }
+        /// <summary>
+        /// Get or set the ACL revision
+        /// </summary>
         public AclRevision Revision { get; set; }
 
+        /// <summary>
+        /// Convert the ACL to a byte array
+        /// </summary>
+        /// <returns>The ACL as a byte array</returns>
         public byte[] ToByteArray()
         {
             MemoryStream ace_stm = new MemoryStream();
@@ -606,6 +734,10 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Convert the ACL to a safe buffer
+        /// </summary>
+        /// <returns>The safe buffer</returns>
         public SafeHGlobalBuffer ToSafeBuffer()
         {
             if (!NullAcl)
@@ -618,81 +750,169 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Add an access allowed ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The ACE SID</param>
         public void AddAccessAllowedAce(GenericAccessRights mask, AceFlags flags, string sid)
         {
             AddAccessAllowedAce((uint)mask, flags, sid);
         }
 
+        /// <summary>
+        /// Add an access allowed ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The ACE SID</param>
         public void AddAccessAllowedAce(uint mask, AceFlags flags, string sid)
         {
             Add(new Ace(AceType.Allowed, flags, mask, new Sid(sid)));
         }
 
+        /// <summary>
+        /// Add an access allowed ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="sid">The ACE SID</param>
         public void AddAccessAllowedAce(uint mask, string sid)
         {
             AddAccessAllowedAce(mask, AceFlags.None, sid);
         }
 
+        /// <summary>
+        /// Add an access allowed ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="sid">The ACE SID</param>
         public void AddAccessAllowedAce(GenericAccessRights mask, string sid)
         {
             AddAccessAllowedAce(mask, AceFlags.None, sid);
         }
 
-        public void AddAccessDeniedAce(uint mask, AceFlags flags, string sid)
-        {
-            Add(new Ace(AceType.Denied, flags, mask, new Sid(sid)));
-        }
-
-        public void AddAccessDeniedAce(GenericAccessRights mask, AceFlags flags, string sid)
-        {
-            AddAccessDeniedAce((uint)mask, flags, sid);
-        }
-
-        public void AddAccessDeniedAce(uint mask, string sid)
-        {
-            AddAccessDeniedAce(mask, AceFlags.None, sid);
-        }
-
-        public void AddAccessDeniedAce(GenericAccessRights mask, string sid)
-        {
-            AddAccessDeniedAce(mask, AceFlags.None, sid);
-        }
-
+        /// <summary>
+        /// Add an access allowed ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The ACE SID</param>
         public void AddAccessAllowedAce(GenericAccessRights mask, AceFlags flags, Sid sid)
         {
             AddAccessAllowedAce((uint)mask, flags, sid);
         }
 
+        /// <summary>
+        /// Add an access allowed ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The ACE SID</param>
         public void AddAccessAllowedAce(uint mask, AceFlags flags, Sid sid)
         {
             Add(new Ace(AceType.Allowed, flags, mask, sid));
         }
 
+        /// <summary>
+        /// Add an access allowed ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="sid">The ACE SID</param>
         public void AddAccessAllowedAce(uint mask, Sid sid)
         {
             AddAccessAllowedAce(mask, AceFlags.None, sid);
         }
 
+        /// <summary>
+        /// Add an access allowed ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="sid">The ACE SID</param>
         public void AddAccessAllowedAce(GenericAccessRights mask, Sid sid)
         {
             AddAccessAllowedAce(mask, AceFlags.None, sid);
         }
 
+        /// <summary>
+        /// Add an access denied ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The ACE SID</param>
+        public void AddAccessDeniedAce(uint mask, AceFlags flags, string sid)
+        {
+            Add(new Ace(AceType.Denied, flags, mask, new Sid(sid)));
+        }
+
+        /// <summary>
+        /// Add an access denied ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The ACE SID</param>
+        public void AddAccessDeniedAce(GenericAccessRights mask, AceFlags flags, string sid)
+        {
+            AddAccessDeniedAce((uint)mask, flags, sid);
+        }
+
+        /// <summary>
+        /// Add an access denied ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="sid">The ACE SID</param>
+        public void AddAccessDeniedAce(uint mask, string sid)
+        {
+            AddAccessDeniedAce(mask, AceFlags.None, sid);
+        }
+
+        /// <summary>
+        /// Add an access denied ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="sid">The ACE SID</param>
+        public void AddAccessDeniedAce(GenericAccessRights mask, string sid)
+        {
+            AddAccessDeniedAce(mask, AceFlags.None, sid);
+        }
+
+        /// <summary>
+        /// Add an access denied ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The ACE SID</param>
         public void AddAccessDeniedAce(uint mask, AceFlags flags, Sid sid)
         {
             Add(new Ace(AceType.Denied, flags, mask, sid));
         }
 
+        /// <summary>
+        /// Add an access denied ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The ACE SID</param>
         public void AddAccessDeniedAce(GenericAccessRights mask, AceFlags flags, Sid sid)
         {
             AddAccessDeniedAce((uint)mask, flags, sid);
         }
 
+        /// <summary>
+        /// Add an access denied ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="sid">The ACE SID</param>
         public void AddAccessDeniedAce(uint mask, Sid sid)
         {
             AddAccessDeniedAce(mask, AceFlags.None, sid);
         }
 
+        /// <summary>
+        /// Add an access denied ace to the ACL
+        /// </summary>
+        /// <param name="mask">The ACE access mask</param>
+        /// <param name="sid">The ACE SID</param>
         public void AddAccessDeniedAce(GenericAccessRights mask, Sid sid)
         {
             AddAccessDeniedAce(mask, AceFlags.None, sid);
@@ -701,6 +921,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Gets an indication if this ACL is canonical.
         /// </summary>
+        /// <remarks>Canonical basically means that deny ACEs are before allow ACEs.</remarks>
         /// <returns>True if the ACL is canonical.</returns>
         public bool IsCanonical()
         {
@@ -762,6 +983,9 @@ namespace NtApiDotNet
         }
     }
 
+    /// <summary>
+    /// Static class to access NT security manager routines.
+    /// </summary>
     public static class NtSecurity
     {
         enum SidNameUse
@@ -860,6 +1084,13 @@ namespace NtApiDotNet
             out SafeLocalAllocHandle StringSecurityDescriptor,
             out int StringSecurityDescriptorLen);
 
+        /// <summary>
+        /// Convert a security descriptor to SDDL string
+        /// </summary>
+        /// <param name="sd">The security descriptor</param>
+        /// <param name="security_information">Indicates what parts of the security descriptor to include</param>
+        /// <returns>The SDDL string</returns>
+        /// <exception cref="NtException">Thrown if cannot convert to a SDDL string.</exception>
         public static string SecurityDescriptorToSddl(byte[] sd, SecurityInformation security_information)
         {
             SafeLocalAllocHandle handle;
@@ -882,6 +1113,12 @@ namespace NtApiDotNet
             out SafeLocalAllocHandle SecurityDescriptor,
             out int SecurityDescriptorSize);
 
+        /// <summary>
+        /// Convert an SDDL string to a binary security descriptor
+        /// </summary>
+        /// <param name="sddl">The SDDL string</param>
+        /// <returns>The binary security descriptor</returns>
+        /// <exception cref="NtException">Thrown if cannot convert from a SDDL string.</exception>
         public static byte[] SddlToSecurityDescriptor(string sddl)
         {
             SafeLocalAllocHandle handle;
@@ -904,6 +1141,12 @@ namespace NtApiDotNet
             string StringSid,
             out SafeLocalAllocHandle Sid);
 
+        /// <summary>
+        /// Convert an SDDL SID string to a Sid
+        /// </summary>
+        /// <param name="sddl">The SDDL SID string</param>
+        /// <returns>The converted Sid</returns>
+        /// <exception cref="NtException">Thrown if cannot convert from a SDDL string.</exception>
         public static Sid SidFromSddl(string sddl)
         {
             SafeLocalAllocHandle handle;
@@ -917,8 +1160,27 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Do an access check between a security descriptor and a token to determine the allowed access.
+        /// </summary>
+        /// <param name="sd">The security descriptor</param>
+        /// <param name="token">The access token.</param>
+        /// <param name="access_rights">The set of access rights to check against</param>
+        /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
+        /// <returns>The allowed access mask as a unsigned integer.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
         public static uint GetAllowedAccess(SecurityDescriptor sd, NtToken token, GenericAccessRights access_rights, GenericMapping generic_mapping)
         {
+            if (sd == null)
+            {
+                throw new ArgumentNullException("sd");
+            }
+
+            if (token == null)
+            {
+                throw new ArgumentNullException("token");
+            }
+
             using (var sd_buffer = sd.ToSafeBuffer())
             {
                 using (NtToken imp_token = token.DuplicateToken(SecurityImpersonationLevel.Identification))
@@ -941,40 +1203,60 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Do an access check between a security descriptor and a token to determine the maximum allowed access.
+        /// </summary>
+        /// <param name="sd">The security descriptor</param>
+        /// <param name="token">The access token.</param>
+        /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
+        /// <returns>The maximum allowed access mask as a unsigned integer.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
         public static uint GetMaximumAccess(SecurityDescriptor sd, NtToken token, GenericMapping generic_mapping)
         {
             return GetAllowedAccess(sd, token, GenericAccessRights.MaximumAllowed, generic_mapping);
         }
 
-        public static uint GetAllowedAccess(SafeHandle token, NtType type, uint allowed_access, byte[] sd)
+        /// <summary>
+        /// Do an access check between a security descriptor and a token to determine the allowed access.
+        /// </summary>
+        /// <param name="sd">The security descriptor</param>
+        /// <param name="token">The access token.</param>
+        /// <param name="access_rights">The set of access rights to check against</param>
+        /// <param name="type">The type used to determine generic access mapping..</param>
+        /// <returns>The allowed access mask as a unsigned integer.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
+        public static uint GetAllowedAccess(NtToken token, NtType type, uint access_rights, byte[] sd)
         {
             if (sd == null || sd.Length == 0)
             {
                 return 0;
             }
 
-            using (NtToken token_obj = NtToken.FromHandle(NtObject.DuplicateHandle(token)))
-            {
-                return GetAllowedAccess(new SecurityDescriptor(sd), token_obj, (GenericAccessRights)allowed_access, type.GenericMapping);
-            }
+            return GetAllowedAccess(new SecurityDescriptor(sd), token, (GenericAccessRights)access_rights, type.GenericMapping);
         }
 
-        public static uint GetAllowedAccess(NtToken token, NtType type, uint allowed_access, byte[] sd)
-        {
-            return GetAllowedAccess(token.Handle, type, allowed_access, sd);
-        }
-
-        public static uint GetMaximumAccess(SafeHandle token, NtType type, byte[] sd)
+        /// <summary>
+        /// Do an access check between a security descriptor and a token to determine the maximum allowed access.
+        /// </summary>
+        /// <param name="sd">The security descriptor</param>
+        /// <param name="token">The access token.</param>
+        /// <param name="type">The type used to determine generic access mapping..</param>
+        /// <returns>The allowed access mask as a unsigned integer.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
+        public static uint GetMaximumAccess(NtToken token, NtType type, byte[] sd)
         {
             return GetAllowedAccess(token, type, (uint)GenericAccessRights.MaximumAllowed, sd);
         }
 
-        public static uint GetMaximumAccess(NtToken token, NtType type, byte[] sd)
-        {
-            return GetMaximumAccess(token.Handle, type, sd);
-        }
-
-        public static SecurityDescriptor FromNamedResource(string name, string type)
+        /// <summary>
+        /// Get a security descriptor from a named object.
+        /// </summary>
+        /// <param name="name">The path to the resource (such as \BaseNamedObejct\ABC)</param>
+        /// <param name="type">The type of resource, can be null to get the method to try and discover the correct type.</param>
+        /// <returns>The named resource security descriptor.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred opening the object.</exception>
+        /// <exception cref="ArgumentException">Thrown if type of resource couldn't be found.</exception>
+        public static SecurityDescriptor FromNamedObject(string name, string type)
         {
             try
             {
@@ -990,19 +1272,35 @@ namespace NtApiDotNet
             return null;
         }
 
+        /// <summary>
+        /// Get a SID for a specific mandatory integrity level.
+        /// </summary>
+        /// <param name="level">The mandatory integrity level.</param>
+        /// <returns>The integrity SID</returns>
         public static Sid GetIntegritySid(int level)
         {
             return new Sid(SecurityAuthority.Label, (uint)level);
         }
 
+        /// <summary>
+        /// Get a SID for a specific mandatory integrity level.
+        /// </summary>
+        /// <param name="level">The mandatory integrity level.</param>
+        /// <returns>The integrity SID</returns>
+        public static Sid GetIntegritySid(TokenIntegrityLevel level)
+        {
+            return GetIntegritySid((int)level);
+        }
+
+        /// <summary>
+        /// Checks if a SID is an integrity level SID
+        /// </summary>
+        /// <param name="sid">The SID to check</param>
+        /// <returns>True if an integrity SID</returns>
         public static bool IsIntegritySid(Sid sid)
         {
             return GetIntegritySid(TokenIntegrityLevel.Untrusted).EqualPrefix(sid);
         }
 
-        public static Sid GetIntegritySid(TokenIntegrityLevel level)
-        {
-            return GetIntegritySid((int)level);
-        }
     }
 }

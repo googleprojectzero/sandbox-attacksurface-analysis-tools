@@ -13,14 +13,6 @@ namespace NtApiDotNetTests
         {
             try
             {
-                IConvertible b = GenericAccessRights.GenericRead;
-                int a = (int)b.ToUInt32(null);
-                Console.WriteLine(a);
-                return;                
-
-                Sid sid = NtSecurity.LookupAccountName("forshaw");
-                Console.WriteLine(sid);
-                
                 using (NtKey key = NtKey.GetCurrentUserKey().Open("Console"))
                 {
                     Console.WriteLine(key.GetName());

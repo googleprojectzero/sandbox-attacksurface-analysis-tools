@@ -18,6 +18,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
@@ -97,121 +98,6 @@ namespace NtApiDotNet
         public SystemThreadInformation Threads;
     }
 
-    public class NtHandle
-    {
-        public int Pid { get; private set; }
-        public string ObjectType { get; private set; }
-        public AttributeFlags Attributes { get; private set; }
-        public int Handle { get; private set; }
-        public ulong Object { get; private set; }
-        public uint GrantedAccess { get; private set; }
-        public string Name
-        {
-            get
-            {
-                QueryValues();
-                return _name;
-            }
-        }
-
-        public SecurityDescriptor SecurityDescriptor
-        {
-            get
-            {
-                QueryValues();
-                return _sd;
-            }
-        }
-
-        private void QueryValues()
-        {
-            if (_allow_query)
-            {
-                _allow_query = false;
-                try
-                {
-                    using (NtGeneric obj = NtGeneric.DuplicateFrom(Pid, new IntPtr(Handle)))
-                    {
-                        // Ensure we get the real type, in case it changed _or_ it was wrong to begin with.
-                        ObjectType = obj.GetTypeName();
-                        _name = GetName(obj);
-                        _sd = GetSecurityDescriptor(obj);
-                    }
-                }
-                catch (NtException)
-                {
-                }
-            }
-        }
-
-        internal NtHandle(SystemHandleTableInfoEntry entry, bool allow_query)
-        {
-            Pid = entry.UniqueProcessId;
-            NtType info = NtType.GetTypeByIndex(entry.ObjectTypeIndex);
-            if (info != null)
-            {
-                ObjectType = info.Name;
-            }
-            else
-            {
-                ObjectType = String.Format("Unknown {0}", entry.ObjectTypeIndex);
-            }
-            Attributes = (AttributeFlags)entry.HandleAttributes;
-            Handle = entry.HandleValue;
-            Object = (ulong)entry.Object.ToInt64();
-            GrantedAccess = entry.GrantedAccess;
-            _allow_query = allow_query;
-        }
-
-        public NtObject GetObject()
-        {
-            NtToken.EnableDebugPrivilege();
-            try
-            {
-                using (NtGeneric generic = NtGeneric.DuplicateFrom(Pid, new IntPtr(Handle)))
-                {
-                    // Ensure that we get the actual type from the handle.
-                    ObjectType = generic.GetTypeName();
-                    return generic.ToTypedObject();
-                }
-            }
-            catch
-            {
-            }
-            return null;
-        }
-
-        private string GetName(NtGeneric obj)
-        {
-            if (obj == null)
-            {
-                return String.Empty;
-            }
-            return obj.GetName();
-        }
-
-        private SecurityDescriptor GetSecurityDescriptor(NtGeneric obj)
-        {
-            try
-            {
-                if (obj != null)
-                {
-                    using (NtGeneric dup = obj.Duplicate(GenericAccessRights.ReadControl))
-                    {
-                        return dup.GetSecurityDescriptor();
-                    }
-                }
-            }
-            catch
-            {
-            }
-            return null;
-        }
-
-        private string _name;
-        private SecurityDescriptor _sd;
-        private bool _allow_query;
-    }
 
     public enum SystemInformationClass
     {
@@ -392,9 +278,172 @@ namespace NtApiDotNet
         SystemRootSiloInformation, // q: SYSTEM_ROOT_SILO_INFORMATION
         MaxSystemInfoClass
     }
+#pragma warning restore 1591
 
+    /// <summary>
+    /// Class to represent a system handle
+    /// </summary>
+    public class NtHandle
+    {
+        /// <summary>
+        /// The ID of the process holding the handle
+        /// </summary>
+        public int Pid { get; private set; }
+        /// <summary>
+        /// The object type name
+        /// </summary>
+        public string ObjectType { get; private set; }
+
+        /// <summary>
+        /// The handle attribute flags.
+        /// </summary>
+        public AttributeFlags Attributes { get; private set; }
+
+        /// <summary>
+        /// The handle value
+        /// </summary>
+        public int Handle { get; private set; }
+
+        /// <summary>
+        /// The address of the object.
+        /// </summary>
+        public ulong Object { get; private set; }
+
+        /// <summary>
+        /// The granted access mask
+        /// </summary>
+        public uint GrantedAccess { get; private set; }
+
+        /// <summary>
+        /// The name of the object (needs to have set query access in constructor)
+        /// </summary>
+        public string Name
+        {
+            get
+            {
+                QueryValues();
+                return _name;
+            }
+        }
+
+        /// <summary>
+        /// The security of the object  (needs to have set query access in constructor)
+        /// </summary>
+        public SecurityDescriptor SecurityDescriptor
+        {
+            get
+            {
+                QueryValues();
+                return _sd;
+            }
+        }
+
+        private void QueryValues()
+        {
+            if (_allow_query)
+            {
+                _allow_query = false;
+                try
+                {
+                    using (NtGeneric obj = NtGeneric.DuplicateFrom(Pid, new IntPtr(Handle)))
+                    {
+                        // Ensure we get the real type, in case it changed _or_ it was wrong to begin with.
+                        ObjectType = obj.GetNtTypeName();
+                        _name = GetName(obj);
+                        _sd = GetSecurityDescriptor(obj);
+                    }
+                }
+                catch (NtException)
+                {
+                }
+            }
+        }
+
+        internal NtHandle(SystemHandleTableInfoEntry entry, bool allow_query)
+        {
+            Pid = entry.UniqueProcessId;
+            NtType info = NtType.GetTypeByIndex(entry.ObjectTypeIndex);
+            if (info != null)
+            {
+                ObjectType = info.Name;
+            }
+            else
+            {
+                ObjectType = String.Format("Unknown {0}", entry.ObjectTypeIndex);
+            }
+            Attributes = (AttributeFlags)entry.HandleAttributes;
+            Handle = entry.HandleValue;
+            Object = (ulong)entry.Object.ToInt64();
+            GrantedAccess = entry.GrantedAccess;
+            _allow_query = allow_query;
+        }
+
+        /// <summary>
+        /// Get handle into the current process
+        /// </summary>
+        /// <returns>The handle to the object</returns>
+        public NtObject GetObject()
+        {
+            NtToken.EnableDebugPrivilege();
+            try
+            {
+                using (NtGeneric generic = NtGeneric.DuplicateFrom(Pid, new IntPtr(Handle)))
+                {
+                    // Ensure that we get the actual type from the handle.
+                    ObjectType = generic.GetNtTypeName();
+                    return generic.ToTypedObject();
+                }
+            }
+            catch
+            {
+            }
+            return null;
+        }
+
+        private string GetName(NtGeneric obj)
+        {
+            if (obj == null)
+            {
+                return String.Empty;
+            }
+            return obj.GetName();
+        }
+
+        private SecurityDescriptor GetSecurityDescriptor(NtGeneric obj)
+        {
+            try
+            {
+                if (obj != null)
+                {
+                    using (NtGeneric dup = obj.Duplicate(GenericAccessRights.ReadControl))
+                    {
+                        return dup.GetSecurityDescriptor();
+                    }
+                }
+            }
+            catch
+            {
+            }
+            return null;
+        }
+
+        private string _name;
+        private SecurityDescriptor _sd;
+        private bool _allow_query;
+    }
+
+
+    /// <summary>
+    /// Class to access some NT system information
+    /// </summary>
     public class NtSystemInfo
     {
+        /// <summary>
+        /// Get a list of handles
+        /// </summary>
+        /// <param name="pid">A process ID to filter on. If -1 will get all handles</param>
+        /// <param name="allow_query">True to allow the handles returned to query for certain properties</param>
+        /// <returns>The list of handles</returns>
         public static IEnumerable<NtHandle> GetHandles(int pid, bool allow_query)
         {
             SafeHGlobalBuffer handleInfo = new SafeHGlobalBuffer(0x10000);
@@ -411,7 +460,7 @@ namespace NtApiDotNet
                     handleInfo.Close();
                     handleInfo = new SafeHGlobalBuffer(length);
                 }
-                NtObject.StatusToNtException(status);
+                status.ToNtException();
 
                 IntPtr handleInfoBuf = handleInfo.DangerousGetHandle();
                 int handle_count = Marshal.ReadInt32(handleInfoBuf);
@@ -435,6 +484,10 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Get a list of all handles
+        /// </summary>
+        /// <returns>The list of handles</returns>
         public static IEnumerable<NtHandle> GetHandles()
         {
             return GetHandles(-1, true);

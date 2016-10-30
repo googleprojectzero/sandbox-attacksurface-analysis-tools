@@ -14,6 +14,7 @@
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     /// <summary>
     /// NT status values
     /// </summary>

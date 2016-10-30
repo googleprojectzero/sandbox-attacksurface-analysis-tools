@@ -24,14 +24,25 @@ namespace NtApiDotNet
     /// <typeparam name="T">An IDisposable implementing type</typeparam>
     public class DisposableList<T> : List<T>, IDisposable where T : IDisposable
     {
+        /// <summary>
+        /// Constructor
+        /// </summary>
         public DisposableList()
         {
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="capacity">The initial capacity of the list</param>
         public DisposableList(int capacity) : base(capacity)
         {
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="collection">A collection to initialize the list</param>
         public DisposableList(IEnumerable<T> collection) : base(collection)
         {
         }
@@ -39,8 +50,9 @@ namespace NtApiDotNet
         #region IDisposable Support
         private bool disposedValue = false;
 
-        // We don't support finalizable, as if this is the only container
-        // it will finalize anything important anyway.
+        /// <summary>
+        /// Dispose method
+        /// </summary>
         public void Dispose()
         {
             if (!disposedValue)
@@ -57,16 +69,30 @@ namespace NtApiDotNet
 
     }
 
+    /// <summary>
+    /// Disposable list of safe handles
+    /// </summary>
     public sealed class SafeHandleList : DisposableList<SafeHandle>
     {
+        /// <summary>
+        /// Constructor
+        /// </summary>
         public SafeHandleList()
         {
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="capacity">The initial capacity of the list</param>
         public SafeHandleList(int capacity) : base(capacity)
         {
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="collection">A collection to initialize the list</param>
         public SafeHandleList(IEnumerable<SafeHandle> collection) : base(collection)
         {
         }

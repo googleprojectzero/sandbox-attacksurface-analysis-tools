@@ -16,6 +16,10 @@ using System;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
+    /// <summary>
+    /// Supported windows verion
+    /// </summary>
     public enum SupportedVersion
     {
         Windows7,
@@ -25,6 +29,7 @@ namespace NtApiDotNet
         Windows10_TH2,
         Windows10_RS1,
     }
+#pragma warning restore 1591
 
     /// <summary>
     /// Attribute to indicate the required version for a function.
@@ -32,7 +37,15 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class SupportedVersionAttribute : Attribute
     {
+        /// <summary>
+        /// The supported version.
+        /// </summary>
         public SupportedVersion Version { get; private set; }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="version">The supported version</param>
         public SupportedVersionAttribute(SupportedVersion version)
         {
             Version = version;

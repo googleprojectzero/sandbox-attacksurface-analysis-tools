@@ -17,6 +17,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     [StructLayout(LayoutKind.Sequential)]
     public struct WnfStateName
     {
@@ -101,8 +102,13 @@ namespace NtApiDotNet
              out int BufferSize
          );
     }
+#pragma warning restore 1591
 
+    /// <summary>
+    /// Currently unused.
+    /// </summary>
     public class NtWnf
     {
     }
+
 }

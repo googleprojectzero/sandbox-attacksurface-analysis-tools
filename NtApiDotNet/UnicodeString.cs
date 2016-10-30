@@ -17,6 +17,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     /// <summary>
     /// Standard UNICODE_STRING class
     /// </summary>
@@ -114,4 +115,5 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern void RtlFreeUnicodeString([In, Out] ref UnicodeStringOut UnicodeString);
     }
+#pragma warning restore 1591
 }

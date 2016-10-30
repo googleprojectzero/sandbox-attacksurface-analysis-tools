@@ -18,6 +18,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     public enum WaitType
     {
         WaitAll,
@@ -37,6 +38,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtWaitForMultipleObjects(int HandleCount, 
             [Out] SafeKernelObjectHandle[] Handles, WaitType WaitType, bool Alertable, LargeInteger Timeout);
     }
+#pragma warning disable 1591
 
     public class NtWait
     {

@@ -16,9 +16,11 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     public static partial class NtRtl
     {
         [DllImport("ntdll.dll")]
         public static extern int RtlNtStatusToDosError(NtStatus status);        
     }
+#pragma warning restore 1591
 }

@@ -23,6 +23,7 @@ namespace NtApiDotNet
     [Flags]
     public enum SecurityDescriptorControl : ushort
     {
+#pragma warning disable 1591
         OwnerDefaulted = 0x0001,
         GroupDefaulted = 0x0002,
         DaclPresent = 0x0004,
@@ -39,6 +40,7 @@ namespace NtApiDotNet
         SelfRelative = 0x8000,
         ValidControlSetMask = DaclAutoInheritReq | SaclAutoInheritReq
         | DaclAutoInherited | SaclAutoInherited | DaclProtected | SaclProtected
+#pragma warning restore 1591
     }
 
     /// <summary>
@@ -67,6 +69,10 @@ namespace NtApiDotNet
             Defaulted = defaulted;
         }
 
+        /// <summary>
+        /// Convert to a string.
+        /// </summary>
+        /// <returns>The string form of the SID</returns>
         public override string ToString()
         {
             return String.Format("{0} - Defaulted: {1}", Sid, Defaulted);
@@ -78,11 +84,29 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class SecurityDescriptor
     {
+        /// <summary>
+        /// Discretionary access control list (can be null)
+        /// </summary>
         public Acl Dacl { get; set; }
+        /// <summary>
+        /// Systerm access control list (can be null)
+        /// </summary>
         public Acl Sacl { get; set; }
+        /// <summary>
+        /// Owner (can be null)
+        /// </summary>
         public SecurityDescriptorSid Owner { get; set; }
+        /// <summary>
+        /// Group (can be null)
+        /// </summary>
         public SecurityDescriptorSid Group { get; set; }
+        /// <summary>
+        /// Control flags
+        /// </summary>
         public SecurityDescriptorControl Control { get; set; }
+        /// <summary>
+        /// Revision value
+        /// </summary>
         public uint Revision { get; set; }
 
         private delegate NtStatus QuerySidFunc(SafeBuffer SecurityDescriptor, out IntPtr sid, out bool defaulted);
@@ -134,11 +158,18 @@ namespace NtApiDotNet
             Revision = revision;
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
         public SecurityDescriptor()
         {
             Revision = 1;
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="security_descriptor">Binary form of security descriptor</param>
         public SecurityDescriptor(byte[] security_descriptor)
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(security_descriptor))
@@ -147,6 +178,10 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Constructor from a token default DACL and ownership values.
+        /// </summary>
+        /// <param name="token">The token to use for its default DACL</param>
         public SecurityDescriptor(NtToken token) : this()
         {
             Owner = new SecurityDescriptorSid(token.GetOwner(), true);
@@ -159,6 +194,12 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="base_object">Base object for security descriptor</param>
+        /// <param name="token">Token for determining user rights</param>
+        /// <param name="is_directory">True if a directory security descriptor</param>
         public SecurityDescriptor(NtObject base_object, NtToken token, bool is_directory) : this()
         {
             if ((base_object == null) && (token == null))
@@ -181,7 +222,7 @@ namespace NtApiDotNet
                 creator_sd.Dacl = token.GetDefaultDalc();
             }
 
-            NtType type = NtType.GetTypeByName(base_object.GetTypeName());
+            NtType type = NtType.GetTypeByName(base_object.GetNtTypeName());
 
             SafeBuffer parent_sd_buffer = SafeHGlobalBuffer.Null;
             SafeBuffer creator_sd_buffer = SafeHGlobalBuffer.Null;
@@ -219,11 +260,20 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Constructor from an SDDL string
+        /// </summary>
+        /// <param name="sddl">The SDDL string</param>
+        /// <exception cref="NtException">Thrown if invalid SDDL</exception>
         public SecurityDescriptor(string sddl)
             : this(NtSecurity.SddlToSecurityDescriptor(sddl))
         {
         }
 
+        /// <summary>
+        /// Convert security descriptor to a byte array
+        /// </summary>
+        /// <returns>The binary security descriptor</returns>
         public byte[] ToByteArray()
         {
             SafeStructureInOutBuffer<SecurityDescriptorStructure> sd_buffer = null;
@@ -313,24 +363,32 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Convert security descriptor to SDDL string
+        /// </summary>
+        /// <param name="security_information">The parts of the security descriptor to return</param>
+        /// <returns>The SDDL string</returns>
         public string ToSddl(SecurityInformation security_information)
         {
             return NtSecurity.SecurityDescriptorToSddl(ToByteArray(), security_information);
         }
 
+        /// <summary>
+        /// Convert security descriptor to SDDL string
+        /// </summary>
+        /// <returns>The SDDL string</returns>
         public string ToSddl()
         {
             return ToSddl(SecurityInformation.Dacl | SecurityInformation.Label | SecurityInformation.Owner | SecurityInformation.Group);
         }
 
+        /// <summary>
+        /// Convert security descriptor to a safe buffer.
+        /// </summary>
+        /// <returns></returns>
         public SafeBuffer ToSafeBuffer()
         {
             return new SafeHGlobalBuffer(ToByteArray());
-        }
-
-        public void AddAccessAllowedAce(GenericAccessRights mask, AceFlags flags, string sid)
-        {
-            AddAccessAllowedAce((uint)mask, flags, sid);
         }
 
         private void AddAce(AceType type, uint mask, AceFlags flags, Sid sid)
@@ -343,36 +401,85 @@ namespace NtApiDotNet
             Dacl.Add(new Ace(type, flags, mask, sid));
         }
 
+        /// <summary>
+        /// Add an access allowed ACE to the DACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The SID in SDDL form</param>
+        public void AddAccessAllowedAce(GenericAccessRights mask, AceFlags flags, string sid)
+        {
+            AddAccessAllowedAce((uint)mask, flags, sid);
+        }
+
+        /// <summary>
+        /// Add an access allowed ACE to the DACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The SID in SDDL form</param>
         public void AddAccessAllowedAce(uint mask, AceFlags flags, string sid)
         {
             AddAccessAllowedAceInternal(mask, flags, sid);
         }
 
+        /// <summary>
+        /// Add an access allowed ACE to the DACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="sid">The SID in SDDL form</param>
         public void AddAccessAllowedAce(uint mask, string sid)
         {
             AddAccessAllowedAceInternal(mask, AceFlags.None, sid);
         }
 
+        /// <summary>
+        /// Add an access allowed ACE to the DACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="sid">The SID in SDDL form</param>
         public void AddAccessAllowedAce(GenericAccessRights mask, string sid)
         {
             AddAccessAllowedAceInternal((uint)mask, AceFlags.None, sid);
         }
 
+        /// <summary>
+        /// Add an access allowed ACE to the DACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The SID</param>
         public void AddAccessAllowedAce(GenericAccessRights mask, AceFlags flags, Sid sid)
         {
             AddAccessAllowedAceInternal((uint)mask, flags, sid);
         }
 
+        /// <summary>
+        /// Add an access allowed ACE to the DACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The SID</param>
         public void AddAccessAllowedAce(uint mask, AceFlags flags, Sid sid)
         {
             AddAccessAllowedAceInternal(mask, AceFlags.None, sid);
         }
 
+        /// <summary>
+        /// Add an access allowed ACE to the DACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="sid">The SID</param>
         public void AddAccessAllowedAce(uint mask, Sid sid)
         {
             AddAccessAllowedAceInternal((uint)mask, AceFlags.None, sid);
         }
 
+        /// <summary>
+        /// Add an access allowed ACE to the DACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="sid">The SID</param>
         public void AddAccessAllowedAce(GenericAccessRights mask, Sid sid)
         {
             AddAccessAllowedAceInternal((uint)mask, AceFlags.None, sid);
@@ -388,45 +495,90 @@ namespace NtApiDotNet
             AddAce(AceType.Allowed, mask, flags, NtSecurity.SidFromSddl(sid));
         }
 
+        /// <summary>
+        /// Add an access denied ACE to the DACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The SID in SDDL form</param>
         public void AddAccessDeniedAce(uint mask, AceFlags flags, string sid)
         {
             AddAccessDeniedAce(mask, flags, sid);
         }
 
+        /// <summary>
+        /// Add an access denied ACE to the DACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The SID in SDDL form</param>
         public void AddAccessDeniedAce(GenericAccessRights mask, AceFlags flags, string sid)
         {
             AddAccessDeniedAceInternal((uint)mask, flags, sid);
         }
 
+        /// <summary>
+        /// Add an access denied ACE to the DACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="sid">The SID in SDDL form</param>
         public void AddAccessDeniedAce(uint mask, string sid)
         {
             AddAccessDeniedAceInternal(mask, AceFlags.None, sid);
         }
 
+        /// <summary>
+        /// Add an access denied ACE to the DACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="sid">The SID in SDDL form</param>
         public void AddAccessDeniedAce(GenericAccessRights mask, string sid)
         {
             AddAccessDeniedAceInternal((uint)mask, AceFlags.None, sid);
         }
 
+        /// <summary>
+        /// Add an access denied ACE to the DACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The SID</param>
         public void AddAccessDeniedAce(GenericAccessRights mask, AceFlags flags, Sid sid)
         {
             AddAccessDeniedAceInternal((uint)mask, flags, sid);
         }
 
+        /// <summary>
+        /// Add an access denied ACE to the DACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="sid">The SID</param>
         public void AddAccessDeniedAce(uint mask, Sid sid)
         {
             AddAccessDeniedAceInternal(mask, AceFlags.None, sid);
         }
 
+        /// <summary>
+        /// Add an access denied ACE to the DACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="sid">The SID</param>
         public void AddAccessDeniedAce(GenericAccessRights mask, Sid sid)
         {
             AddAccessDeniedAceInternal((uint)mask, AceFlags.None, sid);
         }
 
+        /// <summary>
+        /// Add an access denied ACE to the DACL
+        /// </summary>
+        /// <param name="mask">The access mask</param>
+        /// <param name="flags">The ACE flags</param>
+        /// <param name="sid">The SID</param>
         public void AddAccessDeniedAce(uint mask, AceFlags flags, Sid sid)
         {
             AddAccessDeniedAceInternal(mask, flags, sid);
         }
+
 
         private void AddAccessDeniedAceInternal(uint mask, AceFlags flags, Sid sid)
         {
@@ -438,21 +590,42 @@ namespace NtApiDotNet
             AddAce(AceType.Denied, mask, flags, NtSecurity.SidFromSddl(sid));
         }
 
+        /// <summary>
+        /// Add mandatory integrity label to SACL
+        /// </summary>
+        /// <param name="level">The integrity level</param>
         public void AddMandatoryLabel(TokenIntegrityLevel level)
         {
             AddMandatoryLabel(NtSecurity.GetIntegritySid(level), AceFlags.None, MandatoryLabelPolicy.NoWriteUp);
         }
 
+        /// <summary>
+        /// Add mandatory integrity label to SACL
+        /// </summary>
+        /// <param name="level">The integrity level</param>
+        /// <param name="policy">The mandatory label policy</param>
         public void AddMandatoryLabel(TokenIntegrityLevel level, MandatoryLabelPolicy policy)
         {
             AddMandatoryLabel(NtSecurity.GetIntegritySid(level), AceFlags.None, policy);
         }
 
+        /// <summary>
+        /// Add mandatory integrity label to SACL
+        /// </summary>
+        /// <param name="level">The integrity level</param>
+        /// <param name="flags">The ACE flags.</param>
+        /// <param name="policy">The mandatory label policy</param>
         public void AddMandatoryLabel(TokenIntegrityLevel level, AceFlags flags, MandatoryLabelPolicy policy)
         {
             AddMandatoryLabel(NtSecurity.GetIntegritySid(level), flags, policy);
         }
 
+        /// <summary>
+        /// Add mandatory integrity label to SACL
+        /// </summary>
+        /// <param name="label">The integrity label SID</param>
+        /// <param name="flags">The ACE flags.</param>
+        /// <param name="policy">The mandatory label policy</param>
         public void AddMandatoryLabel(Sid label, AceFlags flags, MandatoryLabelPolicy policy)
         {
             if (Sacl == null)

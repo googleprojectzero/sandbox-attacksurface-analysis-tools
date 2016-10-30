@@ -22,6 +22,7 @@ using System.Text;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     public enum TokenType
     {
         Primary = 1,
@@ -403,88 +404,110 @@ namespace NtApiDotNet
         UsedForAccess = 0x80000000U,
     }
 
-    public class TokenPrivilege
+    [Flags]
+    public enum GroupAttributes : uint
     {
-        [DllImport("Advapi32.dll", CharSet=CharSet.Unicode, SetLastError =true)]
-        static extern bool LookupPrivilegeName(
-           string lpSystemName,
-           ref Luid lpLuid,
-           [Out] StringBuilder lpName,
-           ref int cchName);
+        None = 0,
+        Mandatory = 0x00000001,
+        EnabledByDefault = 0x00000002,
+        Enabled = 0x00000004,
+        Owner = 0x00000008,
+        UseForDenyOnly = 0x00000010,
+        Integrity = 0x00000020,
+        IntegrityEnabled = 0x00000040,
+        LogonId = 0xC0000000,
+        Resource = 0x20000000,
+    };
 
-        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern bool LookupPrivilegeDisplayName(
-          string lpSystemName,
-          string lpName,
-          StringBuilder lpDisplayName,
-          ref int cchDisplayName,
-          out int lpLanguageId
+    [Flags]
+    public enum FilterTokenFlags
+    {
+        None = 0,
+        DisableMaxPrivileges = 0x1,
+        SandboxInert = 0x2,
+        LuaToken = 0x4,
+        WriteRestricted = 0x8,
+    }
+
+    public static partial class NtSystemCalls
+    {
+        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+        public static extern NtStatus NtCreateLowBoxToken(
+          out SafeKernelObjectHandle token,
+          SafeHandle original_token,
+          GenericAccessRights access,
+          ObjectAttributes object_attribute,
+          byte[] appcontainer_sid,
+          int capabilityCount,
+          SidAndAttributes[] capabilities,
+          int handle_count,
+          IntPtr[] handles);
+
+        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+        public static extern NtStatus NtOpenProcessTokenEx(
+          SafeKernelObjectHandle ProcessHandle,
+          TokenAccessRights DesiredAccess,
+          AttributeFlags HandleAttributes,
+          out SafeKernelObjectHandle TokenHandle);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtOpenThreadTokenEx(
+          SafeKernelObjectHandle ThreadHandle,
+          TokenAccessRights DesiredAccess,
+          [MarshalAs(UnmanagedType.U1)] bool OpenAsSelf,
+          AttributeFlags HandleAttributes,
+          out SafeKernelObjectHandle TokenHandle
         );
 
-        public PrivilegeAttributes Attributes { get; set; }
+        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+        public static extern NtStatus NtDuplicateToken(
+            SafeKernelObjectHandle ExistingTokenHandle,
+            TokenAccessRights DesiredAccess,
+            ObjectAttributes ObjectAttributes,
+            bool EffectiveOnly,
+            TokenType TokenType,
+            out SafeKernelObjectHandle NewTokenHandle
+        );
 
-        public Luid Luid { get; private set; }
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSetInformationToken(
+          SafeKernelObjectHandle TokenHandle,
+          TokenInformationClass TokenInformationClass,
+          SafeBuffer TokenInformation,
+          int TokenInformationLength);
 
-        public string GetName()
-        {
-            if ((Luid.HighPart == 0) && Enum.IsDefined(typeof(TokenPrivilegeValue), Luid.LowPart))
-            {
-                return Enum.GetName(typeof(TokenPrivilegeValue), Luid.LowPart);
-            }
-            else
-            {
-                Luid luid = Luid;
-                StringBuilder builder = new StringBuilder(256);
-                int name_length = 256;
-                if (LookupPrivilegeName(null, ref luid, builder, ref name_length))
-                {
-                    return builder.ToString();
-                }
-                return String.Format("UnknownPrivilege-{0}", luid);
-            }
-        }
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQueryInformationToken(
+          SafeKernelObjectHandle TokenHandle,
+          TokenInformationClass TokenInformationClass,
+          IntPtr TokenInformation,
+          int TokenInformationLength,
+          out int ReturnLength);
 
-        public string GetDisplayName()
-        {
-            int name_length = 0;
-            int lang_id = 0;
-            string name = GetName();
-            LookupPrivilegeDisplayName(null, name, null, ref name_length, out lang_id);
-            if (name_length <= 0)
-            {
-                return String.Empty;
-            }
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAdjustPrivilegesToken(
+           SafeHandle TokenHandle,
+           bool DisableAllPrivileges,
+           SafeTokenPrivilegesBuffer NewState,
+           int BufferLength,
+           IntPtr PreviousState,
+           IntPtr ReturnLength);
 
-            StringBuilder builder = new StringBuilder(name_length + 1);
-            name_length = builder.Capacity;
-            if (LookupPrivilegeDisplayName(null, name, builder, ref name_length, out lang_id))
-            {
-                return builder.ToString();
-            }
-            return String.Empty;
-        }
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAdjustGroupsToken(
+            SafeHandle TokenHandle,
+            bool ResetToDefault,
+            SafeTokenGroupsBuffer TokenGroups,
+            int PreviousGroupsLength,
+            IntPtr PreviousGroups,
+            IntPtr RequiredLength);
 
-        public bool IsEnabled
-        {
-            get { return (Attributes & PrivilegeAttributes.Enabled) == PrivilegeAttributes.Enabled; }
-        }
-
-        public TokenPrivilege(Luid luid, PrivilegeAttributes attribute)
-        {
-            Luid = luid;
-            Attributes = attribute;
-        }
-
-        public TokenPrivilege(TokenPrivilegeValue value, PrivilegeAttributes attribute) 
-            : this(new Luid((uint)value, 0), attribute)
-        {
-        }
-
-        public override string ToString()
-        {
-            return GetName();
-        }
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtFilterToken(SafeKernelObjectHandle ExistingTokenHandle,
+            FilterTokenFlags Flags, SafeTokenGroupsBuffer SidsToDisable, SafeTokenPrivilegesBuffer PrivilegesToDelete,
+            SafeTokenGroupsBuffer RestrictedSids, out SafeKernelObjectHandle NewTokenHandle);
     }
+
 
     internal class TokenPrivilegesBuilder
     {
@@ -494,7 +517,7 @@ namespace NtApiDotNet
         {
             _privs = new List<LuidAndAttributes>();
         }
-        
+
         // Don't think there's a direct NT equivalent as this talks to LSASS.
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -507,7 +530,7 @@ namespace NtApiDotNet
         public void AddPrivilege(Luid luid, PrivilegeAttributes attributes)
         {
             LuidAndAttributes priv = new LuidAndAttributes();
-            priv.Luid = luid;            
+            priv.Luid = luid;
             priv.Attributes = (uint)attributes;
             _privs.Add(priv);
         }
@@ -618,8 +641,8 @@ namespace NtApiDotNet
             using (SafeHandleList sids = new SafeHandleList(_sid_and_attrs.Count))
             {
                 SidAndAttributes[] result = new SidAndAttributes[_sid_and_attrs.Count];
-                for(int i = 0; i < _sid_and_attrs.Count; ++i)
-                {                
+                for (int i = 0; i < _sid_and_attrs.Count; ++i)
+                {
                     sids.Add(_sid_and_attrs[i].sid.ToSafeBuffer());
                     result[i] = new SidAndAttributes();
                     result[i].Sid = sids[i].DangerousGetHandle();
@@ -633,71 +656,6 @@ namespace NtApiDotNet
         }
     }
 
-    [Flags]
-    public enum GroupAttributes : uint
-    {
-        None = 0,
-		Mandatory = 0x00000001,
-		EnabledByDefault = 0x00000002,
-		Enabled = 0x00000004,
-		Owner = 0x00000008,
-		UseForDenyOnly = 0x00000010,
-		Integrity = 0x00000020,
-		IntegrityEnabled = 0x00000040,
-		LogonId = 0xC0000000,
-		Resource = 0x20000000,
-	};
-
-    [Flags]
-    public enum FilterTokenFlags
-    {
-        None = 0,
-        DisableMaxPrivileges = 0x1,
-        SandboxInert = 0x2,
-        LuaToken = 0x4,
-        WriteRestricted = 0x8,
-    }
-
-    public sealed class UserGroup
-    {
-        public Sid Sid { get; private set; }
-        public GroupAttributes Attributes { get; private set; }
-
-        public bool IsEnabled()
-        {
-            return (Attributes & GroupAttributes.Enabled) == GroupAttributes.Enabled;
-        }
-
-        public bool IsMandatory()
-        {
-            return (Attributes & GroupAttributes.Mandatory) == GroupAttributes.Mandatory;
-        }
-
-        public bool IsDenyOnly()
-        {
-            return (Attributes & GroupAttributes.UseForDenyOnly) == GroupAttributes.UseForDenyOnly;
-        }
-
-        public UserGroup(Sid sid, GroupAttributes attributes)
-        {
-            Sid = sid;
-            Attributes = attributes;
-        }
-
-        public override string ToString()
-        {
-            string ret = null;
-            try
-            {
-                ret = NtSecurity.LookupAccountSid(Sid);
-            }
-            catch
-            {
-            }
-
-            return ret ?? Sid.ToString();
-        }        
-    }
 
     [StructLayout(LayoutKind.Sequential)]
     public class TokenStatistics
@@ -735,7 +693,7 @@ namespace NtApiDotNet
             {
                 return new object[0];
             }
-            
+
             switch (type)
             {
                 case ClaimSecurityValueType.Int64:
@@ -773,85 +731,207 @@ namespace NtApiDotNet
         }
     }
 
-    public static partial class NtSystemCalls
+#pragma warning restore 1591
+
+    /// <summary>
+    /// Class to represent the state of a token privilege
+    /// </summary>
+    public class TokenPrivilege
     {
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
-        public static extern NtStatus NtCreateLowBoxToken(
-          out SafeKernelObjectHandle token,
-          SafeHandle original_token,
-          GenericAccessRights access,
-          ObjectAttributes object_attribute,
-          byte[] appcontainer_sid,
-          int capabilityCount,
-          SidAndAttributes[] capabilities,
-          int handle_count,
-          IntPtr[] handles);
+        [DllImport("Advapi32.dll", CharSet=CharSet.Unicode, SetLastError =true)]
+        static extern bool LookupPrivilegeName(
+           string lpSystemName,
+           ref Luid lpLuid,
+           [Out] StringBuilder lpName,
+           ref int cchName);
 
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
-        public static extern NtStatus NtOpenProcessTokenEx(
-          SafeKernelObjectHandle ProcessHandle,
-          TokenAccessRights DesiredAccess,
-          AttributeFlags HandleAttributes,
-          out SafeKernelObjectHandle TokenHandle);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtOpenThreadTokenEx(
-          SafeKernelObjectHandle ThreadHandle,
-          TokenAccessRights DesiredAccess,
-          [MarshalAs(UnmanagedType.U1)] bool OpenAsSelf,
-          AttributeFlags HandleAttributes,
-          out SafeKernelObjectHandle TokenHandle
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern bool LookupPrivilegeDisplayName(
+          string lpSystemName,
+          string lpName,
+          StringBuilder lpDisplayName,
+          ref int cchDisplayName,
+          out int lpLanguageId
         );
 
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
-        public static extern NtStatus NtDuplicateToken(
-            SafeKernelObjectHandle ExistingTokenHandle,
-            TokenAccessRights DesiredAccess,
-            ObjectAttributes ObjectAttributes,
-            bool EffectiveOnly,
-            TokenType TokenType,
-            out SafeKernelObjectHandle NewTokenHandle
-        );
+        /// <summary>
+        /// Privilege attributes
+        /// </summary>
+        public PrivilegeAttributes Attributes { get; set; }
 
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtSetInformationToken(
-          SafeKernelObjectHandle TokenHandle,
-          TokenInformationClass TokenInformationClass,
-          SafeBuffer TokenInformation,
-          int TokenInformationLength);
+        /// <summary>
+        /// Privilege LUID
+        /// </summary>
+        public Luid Luid { get; private set; }
 
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtQueryInformationToken(
-          SafeKernelObjectHandle TokenHandle,
-          TokenInformationClass TokenInformationClass,
-          IntPtr TokenInformation,
-          int TokenInformationLength,
-          out int ReturnLength);
+        /// <summary>
+        /// Get the name of the privilege
+        /// </summary>
+        /// <returns></returns>
+        public string GetName()
+        {
+            if ((Luid.HighPart == 0) && Enum.IsDefined(typeof(TokenPrivilegeValue), Luid.LowPart))
+            {
+                return Enum.GetName(typeof(TokenPrivilegeValue), Luid.LowPart);
+            }
+            else
+            {
+                Luid luid = Luid;
+                StringBuilder builder = new StringBuilder(256);
+                int name_length = 256;
+                if (LookupPrivilegeName(null, ref luid, builder, ref name_length))
+                {
+                    return builder.ToString();
+                }
+                return String.Format("UnknownPrivilege-{0}", luid);
+            }
+        }
 
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtAdjustPrivilegesToken(
-           SafeHandle TokenHandle,
-           bool DisableAllPrivileges,
-           SafeTokenPrivilegesBuffer NewState,
-           int BufferLength,
-           IntPtr PreviousState,
-           IntPtr ReturnLength);
+        /// <summary>
+        /// Get the display name/description of the privilege
+        /// </summary>
+        /// <returns></returns>
+        public string GetDisplayName()
+        {
+            int name_length = 0;
+            int lang_id = 0;
+            string name = GetName();
+            LookupPrivilegeDisplayName(null, name, null, ref name_length, out lang_id);
+            if (name_length <= 0)
+            {
+                return String.Empty;
+            }
 
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtAdjustGroupsToken(
-            SafeHandle TokenHandle,
-            bool ResetToDefault,
-            SafeTokenGroupsBuffer TokenGroups,
-            int PreviousGroupsLength,
-            IntPtr PreviousGroups,
-            IntPtr RequiredLength);
+            StringBuilder builder = new StringBuilder(name_length + 1);
+            name_length = builder.Capacity;
+            if (LookupPrivilegeDisplayName(null, name, builder, ref name_length, out lang_id))
+            {
+                return builder.ToString();
+            }
+            return String.Empty;
+        }
 
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtFilterToken(SafeKernelObjectHandle ExistingTokenHandle,
-            FilterTokenFlags Flags, SafeTokenGroupsBuffer SidsToDisable, SafeTokenPrivilegesBuffer PrivilegesToDelete,
-            SafeTokenGroupsBuffer RestrictedSids, out SafeKernelObjectHandle NewTokenHandle);
+        /// <summary>
+        /// Get whether privilege is enabled
+        /// </summary>
+        public bool IsEnabled
+        {
+            get { return (Attributes & PrivilegeAttributes.Enabled) == PrivilegeAttributes.Enabled; }
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="luid">The privilege LUID</param>
+        /// <param name="attribute">The privilege attributes</param>
+        public TokenPrivilege(Luid luid, PrivilegeAttributes attribute)
+        {
+            Luid = luid;
+            Attributes = attribute;
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="value">The privilege value</param>
+        /// <param name="attribute">The privilege attributes</param>
+        public TokenPrivilege(TokenPrivilegeValue value, PrivilegeAttributes attribute) 
+            : this(new Luid((uint)value, 0), attribute)
+        {
+        }
+
+        /// <summary>
+        /// Conver to a string
+        /// </summary>
+        /// <returns>The privilege name.</returns>
+        public override string ToString()
+        {
+            return GetName();
+        }
     }
 
+
+    /// <summary>
+    /// Class to represent a user group
+    /// </summary>
+    public sealed class UserGroup
+    {
+        /// <summary>
+        /// The SID of the user group
+        /// </summary>
+        public Sid Sid { get; private set; }
+
+        /// <summary>
+        /// The attributes of the user group
+        /// </summary>
+        public GroupAttributes Attributes { get; private set; }
+
+        /// <summary>
+        /// Get whether the user group is enabled
+        /// </summary>
+        public bool IsEnabled
+        {
+            get
+            {
+                return (Attributes & GroupAttributes.Enabled) == GroupAttributes.Enabled;
+            }
+        }
+
+        /// <summary>
+        /// Get whether the user group is mandatory
+        /// </summary>
+        public bool IsMandatory
+        {
+            get
+            {
+                return (Attributes & GroupAttributes.Mandatory) == GroupAttributes.Mandatory;
+            }
+        }
+
+        /// <summary>
+        /// Get whether the user group is used for deny only
+        /// </summary>
+        public bool IsDenyOnly
+        {
+            get
+            {
+                return (Attributes & GroupAttributes.UseForDenyOnly) == GroupAttributes.UseForDenyOnly;
+            }
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="sid">The SID</param>
+        /// <param name="attributes">The attributes</param>
+        public UserGroup(Sid sid, GroupAttributes attributes)
+        {
+            Sid = sid;
+            Attributes = attributes;
+        }
+
+        /// <summary>
+        /// Convert to a string
+        /// </summary>
+        /// <returns>The account name if available or the SDDL SID</returns>
+        public override string ToString()
+        {
+            string ret = null;
+            try
+            {
+                ret = NtSecurity.LookupAccountSid(Sid);
+            }
+            catch
+            {
+            }
+
+            return ret ?? Sid.ToString();
+        }        
+    }
+
+    /// <summary>
+    /// Class representing a Token object
+    /// </summary>
     public sealed class NtToken : NtObjectWithDuplicate<NtToken, TokenAccessRights>
     {
         internal NtToken(SafeKernelObjectHandle handle) : base(handle)
@@ -867,14 +947,13 @@ namespace NtApiDotNet
                 int return_length;
                 status = NtSystemCalls.NtQueryInformationToken(Handle, token_info, IntPtr.Zero, 0, out return_length);
                 if ((status != NtStatus.STATUS_BUFFER_TOO_SMALL) && (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH))
-                    StatusToNtException(status);
+                    throw new NtException(status);
                 ret = new SafeStructureInOutBuffer<T>(return_length, false);
-                status = NtSystemCalls.NtQueryInformationToken(Handle, token_info, ret.DangerousGetHandle(), ret.Length, out return_length);
-                StatusToNtException(status);
+                status = NtSystemCalls.NtQueryInformationToken(Handle, token_info, ret.DangerousGetHandle(), ret.Length, out return_length).ToNtException();                
             }
             finally
             {
-                if (ret != null && !IsSuccess(status))
+                if (ret != null && !status.IsSuccess())
                 {
                     ret.Close();
                     ret = null;
@@ -887,7 +966,7 @@ namespace NtApiDotNet
         {
             using (var buffer = value.ToBuffer())
             {
-                StatusToNtException(NtSystemCalls.NtSetInformationToken(Handle, token_info, buffer, buffer.Length));
+                NtSystemCalls.NtSetInformationToken(Handle, token_info, buffer, buffer.Length).ToNtException();
             }
         }
 
@@ -912,8 +991,8 @@ namespace NtApiDotNet
 
             using (ObjectAttributes obja = new ObjectAttributes(null, AttributeFlags.None, SafeKernelObjectHandle.Null, sqos, null))
             {
-                StatusToNtException(NtSystemCalls.NtDuplicateToken(Handle,
-                  desired_access, obja, false, type, out new_token));
+                NtSystemCalls.NtDuplicateToken(Handle,
+                  desired_access, obja, false, type, out new_token).ToNtException();
                 return new NtToken(new_token);
             }
         }
@@ -944,14 +1023,19 @@ namespace NtApiDotNet
             using (var priv_buffer = tp.ToBuffer())
             {
                 NtStatus status = NtSystemCalls.NtAdjustPrivilegesToken(Handle, false, 
-                    priv_buffer, priv_buffer.Length, IntPtr.Zero, IntPtr.Zero);
+                    priv_buffer, priv_buffer.Length, IntPtr.Zero, IntPtr.Zero).ToNtException();
                 if (status == NtStatus.STATUS_NOT_ALL_ASSIGNED)
                     return false;
-                StatusToNtException(status);
                 return true;
             }
         }
 
+        /// <summary>
+        /// Set a privilege state
+        /// </summary>
+        /// <param name="privilege">The name of the privilege (e.g. SeDebugPrivilege)</param>
+        /// <param name="enable">True to enable the privilege, false to disable</param>
+        /// <returns>True if successfully changed the state of the privilege</returns>
         public bool SetPrivilege(string privilege, bool enable)
         {
             TokenPrivilegesBuilder tp = new TokenPrivilegesBuilder();
@@ -959,6 +1043,12 @@ namespace NtApiDotNet
             return SetPrivileges(tp);
         }
 
+        /// <summary>
+        /// Set a privilege state
+        /// </summary>
+        /// <param name="luid">The luid of the privilege</param>
+        /// <param name="enable">True to enable the privilege, false to disable</param>
+        /// <returns>True if successfully changed the state of the privilege</returns>
         public bool SetPrivilege(Luid luid, bool enable)
         {
             TokenPrivilegesBuilder tp = new TokenPrivilegesBuilder();
@@ -966,6 +1056,12 @@ namespace NtApiDotNet
             return SetPrivileges(tp);
         }
 
+        /// <summary>
+        /// Set a privilege state
+        /// </summary>
+        /// <param name="privilege">The value of the privilege</param>
+        /// <param name="attributes">The privilege attributes to set.</param>
+        /// <returns>True if successfully changed the state of the privilege</returns>
         public bool SetPrivilege(TokenPrivilegeValue privilege, PrivilegeAttributes attributes)
         {
             TokenPrivilegesBuilder tp = new TokenPrivilegesBuilder();
@@ -973,13 +1069,10 @@ namespace NtApiDotNet
             return SetPrivileges(tp);
         }
 
-        public bool SetPrivilege(TokenPrivilege privilege)
-        {
-            TokenPrivilegesBuilder tp = new TokenPrivilegesBuilder();
-            tp.AddPrivilege(privilege);
-            return SetPrivileges(tp);
-        }
-
+        /// <summary>
+        /// Enable debug privilege for the current process token.
+        /// </summary>
+        /// <returns>True if set the debug privilege</returns>
         public static bool EnableDebugPrivilege()
         {
             using (NtToken token = NtProcess.Current.OpenToken())
@@ -988,16 +1081,31 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Open the process token of another process
+        /// </summary>
+        /// <param name="process">The process to open the token for</param>
+        /// <param name="duplicate">True to duplicate the token before returning</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenProcessToken(NtProcess process, bool duplicate)
         {
             return OpenProcessToken(process, duplicate, TokenAccessRights.MaximumAllowed);
         }
 
+        /// <summary>
+        /// Open the process token of another process
+        /// </summary>
+        /// <param name="process">The process to open the token for</param>
+        /// <param name="duplicate">True to duplicate the token before returning</param>
+        /// <param name="desired_access">The desired access for the token</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenProcessToken(NtProcess process, bool duplicate, TokenAccessRights desired_access)
         {
             SafeKernelObjectHandle new_token;
-            StatusToNtException(NtSystemCalls.NtOpenProcessTokenEx(process.Handle,
-              desired_access, AttributeFlags.None, out new_token));
+            NtSystemCalls.NtOpenProcessTokenEx(process.Handle,
+              desired_access, AttributeFlags.None, out new_token).ToNtException();
             NtToken ret = new NtToken(new_token);
             if (duplicate)
             {
@@ -1013,31 +1121,71 @@ namespace NtApiDotNet
             return ret;
         }
 
+        /// <summary>
+        /// Open the process token of another process
+        /// </summary>
+        /// <param name="process">The process to open the token for</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenProcessToken(NtProcess process)
         {
             return OpenProcessToken(process, false);
         }
 
+        /// <summary>
+        /// Open the process token of the current process
+        /// </summary>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenProcessToken()
         {
             return OpenProcessToken(false);
         }
 
+        /// <summary>
+        /// Open the process token of the current process
+        /// </summary>        
+        /// <param name="duplicate">True to duplicate the token before returning</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenProcessToken(bool duplicate)
         {
             return OpenProcessToken(duplicate, TokenAccessRights.MaximumAllowed);
         }
 
+        /// <summary>
+        /// Open the process token of the current process
+        /// </summary>        
+        /// <param name="duplicate">True to duplicate the token before returning</param>
+        /// <param name="desired_access">The desired access for the token</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenProcessToken(bool duplicate, TokenAccessRights desired_access)
         {
             return OpenProcessToken(NtProcess.Current, duplicate, desired_access);
         }
 
+
+        /// <summary>
+        /// Open the process token of another process
+        /// </summary>
+        /// <param name="pid">The id of the process to open the token for</param>
+        /// <param name="duplicate">True to duplicate the token before returning</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenProcessToken(int pid, bool duplicate)
         {
             return OpenProcessToken(pid, duplicate, TokenAccessRights.MaximumAllowed);
         }
 
+        /// <summary>
+        /// Open the process token of another process
+        /// </summary>
+        /// <param name="pid">The id of the process to open the token for</param>
+        /// <param name="duplicate">True to duplicate the token before returning</param>
+        /// <param name="desired_access">The desired access for the token</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenProcessToken(int pid, bool duplicate, TokenAccessRights desired_access)
         {
             using (NtProcess process = NtProcess.Open(pid, ProcessAccessRights.QueryInformation))
@@ -1046,11 +1194,26 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Open the process token of another process
+        /// </summary>
+        /// <param name="pid">The id of the process to open the token for</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenProcessToken(int pid)
         {
             return OpenProcessToken(pid, false);
         }
 
+        /// <summary>
+        /// Open the thread token
+        /// </summary>
+        /// <param name="thread">The thread to open the token for</param>
+        /// <param name="open_as_self">Open the token as the current identify rather than the impersonated one</param>
+        /// <param name="duplicate">True to duplicate the token before returning</param>
+        /// <param name="desired_access">The desired access for the token</param>
+        /// <returns>The opened token, if no token return null</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenThreadToken(NtThread thread, bool open_as_self, bool duplicate, TokenAccessRights desired_access)
         {
             SafeKernelObjectHandle new_token;
@@ -1058,7 +1221,7 @@ namespace NtApiDotNet
               desired_access, open_as_self, AttributeFlags.None, out new_token);
             if (status == NtStatus.STATUS_NO_TOKEN)
                 return null;
-            StatusToNtException(status);
+            status.ToNtException();
             NtToken ret = new NtToken(new_token);
             if (duplicate)
             {
@@ -1074,6 +1237,15 @@ namespace NtApiDotNet
             return ret;
         }
 
+        /// <summary>
+        /// Open the thread token
+        /// </summary>
+        /// <param name="tid">The ID of the thread to open the token for</param>
+        /// <param name="open_as_self">Open the token as the current identify rather than the impersonated one</param>
+        /// <param name="duplicate">True to duplicate the token before returning</param>
+        /// <param name="desired_access">The desired access for the token</param>
+        /// <returns>The opened token, if no token return null</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenThreadToken(int tid, bool open_as_self, bool duplicate, TokenAccessRights desired_access)
         {
             using (NtThread thread = NtThread.Open(tid, ThreadAccessRights.QueryInformation))
@@ -1082,51 +1254,91 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Open the thread token
+        /// </summary>
+        /// <param name="thread">The thread to open the token for</param>
+        /// <param name="open_as_self">Open the token as the current identify rather than the impersonated one</param>
+        /// <param name="duplicate">True to duplicate the token before returning</param>
+        /// <returns>The opened token, if no token return null</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenThreadToken(NtThread thread, bool open_as_self, bool duplicate)
         {
             return OpenThreadToken(thread, open_as_self, duplicate, TokenAccessRights.MaximumAllowed);
         }
 
+        /// <summary>
+        /// Open the thread token
+        /// </summary>
+        /// <param name="thread">The thread to open the token for</param>
+        /// <returns>The opened token, if no token return null</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenThreadToken(NtThread thread)
         {
             return OpenThreadToken(thread, true, false);
         }
 
+        /// <summary>
+        /// Open the current thread token
+        /// </summary>
+        /// <param name="duplicate">True to duplicate the token before returning</param>
+        /// <returns>The opened token, if no token return null</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenThreadToken(bool duplicate)
         {
             return OpenThreadToken(NtThread.Current, true, duplicate);
         }
 
+        /// <summary>
+        /// Open the current thread token
+        /// </summary>
+        /// <returns>The opened token, if no token return null</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenThreadToken()
         {
             return OpenThreadToken(false);
         }
 
-        public static NtToken OpenEffectiveToken(bool duplicate)
+        /// <summary>
+        /// Open the effective token, thread if available or process
+        /// </summary>
+        /// <param name="thread">The thread to open the token for</param>
+        /// <param name="duplicate">True to duplicate the token before returning</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
+        public static NtToken OpenEffectiveToken(NtThread thread, bool duplicate)
         {
             NtToken token = null;
             try
             {
-                token = OpenThreadToken(duplicate);
+                token = OpenThreadToken(thread, true, duplicate);
             }
             catch (NtException)
             {
             }
 
-            return token ?? OpenProcessToken(duplicate);
+            return token ?? OpenProcessToken(thread.GetProcessId(), duplicate);
         }
 
+        /// <summary>
+        /// Open the current effective token, thread if available or process
+        /// </summary>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenEffectiveToken()
         {
-            return OpenEffectiveToken(false);
+            return OpenEffectiveToken(NtThread.Current, false);
         }
 
-        public NtToken CreateLowBoxToken(string package_sid, params SafeHandle[] handles)
+        /// <summary>
+        /// Create a LowBox token from the current token.
+        /// </summary>
+        /// <param name="package_sid">The package SID</param>
+        /// <param name="handles">List of handles to capture with the token</param>
+        /// <returns></returns>
+        public NtToken CreateLowBoxToken(Sid package_sid, params NtObject[] handles)
         {
             SafeKernelObjectHandle token;
-            SecurityIdentifier sid = new SecurityIdentifier(package_sid);
-            byte[] sid_bin = new byte[sid.BinaryLength];
-            sid.GetBinaryForm(sid_bin, 0);
 
             IntPtr[] handle_array = null;
             int handle_count = handles != null ? handles.Length : 0;
@@ -1135,13 +1347,13 @@ namespace NtApiDotNet
                 handle_array = new IntPtr[handle_count];
                 for (int i = 0; i < handle_count; ++i)
                 {
-                    handle_array[i] = handles[i].DangerousGetHandle();
+                    handle_array[i] = handles[i].Handle.DangerousGetHandle();
                 }
             }
 
-            StatusToNtException(NtSystemCalls.NtCreateLowBoxToken(out token, 
+            NtSystemCalls.NtCreateLowBoxToken(out token, 
                 Handle, GenericAccessRights.MaximumAllowed,
-              new ObjectAttributes(), sid_bin, 0, null, handle_count, handle_array));
+              new ObjectAttributes(), package_sid.ToArray(), 0, null, handle_count, handle_array).ToNtException();
 
             return new NtToken(token);
         }
@@ -1203,7 +1415,7 @@ namespace NtApiDotNet
         {
             using (var buffer = BuildGroups(new Sid[] { group }, attributes))
             {
-                StatusToNtException(NtSystemCalls.NtAdjustGroupsToken(Handle, false, buffer, 0, IntPtr.Zero, IntPtr.Zero));
+                NtSystemCalls.NtAdjustGroupsToken(Handle, false, buffer, 0, IntPtr.Zero, IntPtr.Zero).ToNtException();
             }
         }
         
@@ -1543,6 +1755,11 @@ namespace NtApiDotNet
             return QueryGroups(TokenInformationClass.TokenRestrictedDeviceGroups);
         }
 
+        /// <summary>
+        /// Get list of privileges for token
+        /// </summary>
+        /// <returns>The list of privileges</returns>
+        /// <exception cref="NtException">Thrown if can't query privileges</exception>
         public TokenPrivilege[] GetPrivileges()
         {
             using (var buffer = QueryToken<TokenPrivileges>(TokenInformationClass.TokenPrivileges))
@@ -1558,7 +1775,8 @@ namespace NtApiDotNet
         /// Get the state of a privilege.
         /// </summary>
         /// <param name="privilege">The privilege to get the state of.</param>
-        /// <returns></returns>
+        /// <returns>The privilege, or null if it can't be found</returns>
+        /// <exception cref="NtException">Thrown if can't query privileges</exception>
         public TokenPrivilege GetPrivilege(TokenPrivilegeValue privilege)
         {
             Luid priv_value = new Luid((uint)privilege, 0);

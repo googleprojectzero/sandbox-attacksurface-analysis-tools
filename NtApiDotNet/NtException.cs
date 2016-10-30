@@ -18,6 +18,9 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+    /// <summary>
+    /// Exception class representing an NT status error.
+    /// </summary>
     [Serializable]
     public sealed class NtException : ApplicationException
     {
@@ -46,18 +49,23 @@ namespace NtApiDotNet
           IntPtr Arguments
         );
 
-        public NtException(int status)
-        {
-            _status = (NtStatus)status;
-        }
-
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="status">Status result</param>
         public NtException(NtStatus status) 
-            : this((int)status)
         {
+            _status = status;
         }
 
+        /// <summary>
+        /// Returns the contained NT status code
+        /// </summary>
         public NtStatus Status { get { return _status; } }
 
+        /// <summary>
+        /// Returns a string form of the NT status code.
+        /// </summary>
         public override string Message
         {
             get
@@ -81,6 +89,10 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Convert this exception to a corresponding Win32Exception
+        /// </summary>
+        /// <returns></returns>
         public Win32Exception AsWin32Exception()
         {
             return new Win32Exception(NtRtl.RtlNtStatusToDosError(_status));

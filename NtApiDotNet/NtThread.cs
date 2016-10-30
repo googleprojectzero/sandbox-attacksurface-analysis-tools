@@ -18,6 +18,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     public enum ThreadAccessRights : uint
     {        
         DirectImpersonation = 0x0200,
@@ -144,6 +145,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtDelayExecution(bool Alertable, LargeInteger DelayInterval);    
     }
+#pragma warning restore 1591
 
     public class NtThread : NtObjectWithDuplicate<NtThread, ThreadAccessRights>
     {
@@ -158,20 +160,20 @@ namespace NtApiDotNet
         public int Resume()
         {
             int suspend_count;
-            StatusToNtException(NtSystemCalls.NtResumeThread(Handle, out suspend_count));
+            NtSystemCalls.NtResumeThread(Handle, out suspend_count).ToNtException();
             return suspend_count;
         }
 
         public int Suspend()
         {
             int suspend_count;
-            StatusToNtException(NtSystemCalls.NtSuspendThread(Handle, out suspend_count));
+            NtSystemCalls.NtSuspendThread(Handle, out suspend_count).ToNtException();
             return suspend_count;
         }
 
         public void Terminate(NtStatus status)
         {
-            StatusToNtException(NtSystemCalls.NtTerminateThread(Handle, status));
+            NtSystemCalls.NtTerminateThread(Handle, status).ToNtException();
         }
 
         public void Terminate(int status)
@@ -182,7 +184,7 @@ namespace NtApiDotNet
         public static NtThread Open(int thread_id, ThreadAccessRights access)
         {
             SafeKernelObjectHandle handle;
-            StatusToNtException(NtSystemCalls.NtOpenThread(out handle, access, new ObjectAttributes(), new ClientId() { UniqueThread = new IntPtr(thread_id) }));
+            NtSystemCalls.NtOpenThread(out handle, access, new ObjectAttributes(), new ClientId() { UniqueThread = new IntPtr(thread_id) }).ToNtException();
             return new NtThread(handle) { _tid = thread_id };       
         }
 
@@ -194,8 +196,8 @@ namespace NtApiDotNet
             using (SafeStructureInOutBuffer<ThreadBasicInformation> basic_info = new SafeStructureInOutBuffer<ThreadBasicInformation>())
             {
                 int return_length = 0;
-                StatusToNtException(NtSystemCalls.NtQueryInformationThread(Handle, ThreadInfoClass.ThreadBasicInformation,
-                  basic_info.DangerousGetHandle(), basic_info.Length, out return_length));
+                NtSystemCalls.NtQueryInformationThread(Handle, ThreadInfoClass.ThreadBasicInformation,
+                  basic_info.DangerousGetHandle(), basic_info.Length, out return_length).ToNtException();
                 _tid = basic_info.Result.ClientId.UniqueThread.ToInt32();
                 return _tid.Value;
             }
@@ -209,8 +211,8 @@ namespace NtApiDotNet
             using (SafeStructureInOutBuffer<ThreadBasicInformation> basic_info = new SafeStructureInOutBuffer<ThreadBasicInformation>())
             {
                 int return_length = 0;
-                StatusToNtException(NtSystemCalls.NtQueryInformationThread(Handle, ThreadInfoClass.ThreadBasicInformation,
-                  basic_info.DangerousGetHandle(), basic_info.Length, out return_length));
+                NtSystemCalls.NtQueryInformationThread(Handle, ThreadInfoClass.ThreadBasicInformation,
+                  basic_info.DangerousGetHandle(), basic_info.Length, out return_length).ToNtException();
                 _pid = basic_info.Result.ClientId.UniqueProcess.ToInt32();
                 return _pid.Value;
             }
@@ -221,14 +223,14 @@ namespace NtApiDotNet
             IntPtr handle = token != null ? token.Handle.DangerousGetHandle() : IntPtr.Zero;
             using (var buf = handle.ToBuffer())
             {
-                StatusToNtException(NtSystemCalls.NtSetInformationThread(Handle, ThreadInfoClass.ThreadImpersonationToken, 
-                    buf.DangerousGetHandle(), buf.Length));
+                NtSystemCalls.NtSetInformationThread(Handle, ThreadInfoClass.ThreadImpersonationToken, 
+                    buf.DangerousGetHandle(), buf.Length).ToNtException();
             }
         }
 
         public ThreadImpersonationContext ImpersonateAnonymousToken()
         {
-            StatusToNtException(NtSystemCalls.NtImpersonateAnonymousToken(Handle));
+            NtSystemCalls.NtImpersonateAnonymousToken(Handle).ToNtException();
             return new ThreadImpersonationContext(Duplicate());
         }
 
@@ -367,7 +369,7 @@ namespace NtApiDotNet
         public static bool Sleep(bool alertable, long delay)
         {
             NtStatus status = NtSystemCalls.NtDelayExecution(alertable, new LargeInteger(delay));
-            if (!NtObject.IsSuccess(status))
+            if (!status.IsSuccess())
             {
                 throw new NtException(status);                
             }

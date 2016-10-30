@@ -18,38 +18,67 @@ using System;
 
 namespace NtApiDotNet
 {
+    /// <summary>
+    /// Result from a native create process call.
+    /// </summary>
     public sealed class CreateUserProcessResult : IDisposable
     {
+        /// <summary>
+        /// Handle to the process
+        /// </summary>
         public NtProcess Process
         {
             get; private set;
         }
+
+        /// <summary>
+        /// Handle to the initial thread
+        /// </summary>
         public NtThread Thread
         {
             get; private set;
         }
+
+        /// <summary>
+        /// Handle to the image file
+        /// </summary>
         public NtFile ImageFile
         {
             get; private set;
         }
 
+        /// <summary>
+        /// Handle to the image section
+        /// </summary>
         public NtSection SectionHandle { get; private set; }
 
+        /// <summary>
+        /// Handle to the IFEO key (if it exists)
+        /// </summary>
         public RegistryKey IFEOKeyHandle
         {
             get; private set;
         }
 
+        /// <summary>
+        /// Image information
+        /// </summary>
         public SectionImageInformation ImageInfo
         {
             get; private set;
         }
 
+        /// <summary>
+        /// Client ID of process and thread
+        /// </summary>
         public ClientId ClientId
         {
             get; private set;
         }
 
+        /// <summary>
+        /// Process ID
+        /// </summary>
         public int ProcessId
         {
             get
@@ -58,6 +87,9 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Thread ID
+        /// </summary>
         public int ThreadId
         {
             get
@@ -66,11 +98,17 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Create status
+        /// </summary>
         public NtStatus Status
         {
             get; private set;
         }
 
+        /// <summary>
+        /// True if create succeeded
+        /// </summary>
         public bool Success
         {
             get
@@ -79,11 +117,17 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Result of the create information
+        /// </summary>
         public ProcessCreateInfoData CreateInfo
         {
             get; private set;
         }
 
+        /// <summary>
+        /// Creation state
+        /// </summary>
         public ProcessCreateState CreateState
         {
             get; private set;
@@ -125,12 +169,20 @@ namespace NtApiDotNet
             ClientId = new ClientId();
         }
 
-        public void Terminate(int exitcode)
+        /// <summary>
+        /// Terminate the process
+        /// </summary>
+        /// <param name="exitcode">Exit code for termination</param>
+        public void Terminate(NtStatus exitcode)
         {
             if (Process != null)
                 Process.Terminate(exitcode);
         }
 
+        /// <summary>
+        /// Resume initial thread
+        /// </summary>
+        /// <returns>The suspend count</returns>
         public int Resume()
         {
             if (Thread != null)
@@ -138,6 +190,9 @@ namespace NtApiDotNet
             return 0;
         }
 
+        /// <summary>
+        /// Set to true to terminate process on disposal
+        /// </summary>
         public bool TerminateOnDispose
         {
             get; set;
@@ -154,7 +209,7 @@ namespace NtApiDotNet
                 {
                     try
                     {
-                        Terminate(1);
+                        Terminate(NtStatus.STATUS_WAIT_1);
                     }
                     catch (NtException)
                     {
@@ -173,11 +228,17 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Finalizer
+        /// </summary>
         ~CreateUserProcessResult()
         {
             Dispose(false);
         }
 
+        /// <summary>
+        /// Dispose
+        /// </summary>
         public void Dispose()
         {
             Dispose(true);

@@ -17,6 +17,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     [Flags]
     public enum SymbolicLinkAccessRights : uint
     {
@@ -57,6 +58,7 @@ namespace NtApiDotNet
             out int ReturnedLength
         );
     }
+#pragma warning restore 1591
 
     public class NtSymbolicLink : NtObjectWithDuplicate<NtSymbolicLink, SymbolicLinkAccessRights>
     {
@@ -75,8 +77,8 @@ namespace NtApiDotNet
         public static NtSymbolicLink Create(ObjectAttributes object_attributes, SymbolicLinkAccessRights access, string target)
         {
             SafeKernelObjectHandle handle;
-            StatusToNtException(NtSystemCalls.NtCreateSymbolicLinkObject(out handle,
-                access, object_attributes, new UnicodeString(target)));
+            NtSystemCalls.NtCreateSymbolicLinkObject(out handle,
+                access, object_attributes, new UnicodeString(target)).ToNtException();
             return new NtSymbolicLink(handle);
         }
 
@@ -95,8 +97,8 @@ namespace NtApiDotNet
             using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
                 SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtOpenSymbolicLinkObject(out handle,
-                    access, obja));
+                NtSystemCalls.NtOpenSymbolicLinkObject(out handle,
+                    access, obja).ToNtException();
                 return new NtSymbolicLink(handle);
             }
         }
@@ -104,8 +106,8 @@ namespace NtApiDotNet
         public static NtSymbolicLink Open(ObjectAttributes object_attributes, SymbolicLinkAccessRights access)
         {
             SafeKernelObjectHandle handle;
-            StatusToNtException(NtSystemCalls.NtOpenSymbolicLinkObject(out handle,
-                access, object_attributes));
+            NtSystemCalls.NtOpenSymbolicLinkObject(out handle,
+                access, object_attributes).ToNtException();
             return new NtSymbolicLink(handle);
         }
 
@@ -121,7 +123,7 @@ namespace NtApiDotNet
             using (UnicodeStringAllocated ustr = new UnicodeStringAllocated())
             {
                 int return_length;
-                StatusToNtException(NtSystemCalls.NtQuerySymbolicLinkObject(Handle, ustr, out return_length));
+                NtSystemCalls.NtQuerySymbolicLinkObject(Handle, ustr, out return_length).ToNtException();
                 return ustr.ToString();
             }
         }

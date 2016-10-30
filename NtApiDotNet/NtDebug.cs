@@ -17,6 +17,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     [Flags]
     public enum DebugAccessRights : uint
     {
@@ -42,15 +43,25 @@ namespace NtApiDotNet
         public static extern NtStatus NtDebugActiveProcess(SafeKernelObjectHandle ProcessHandle, SafeKernelObjectHandle DebugHandle);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCreateDebugObject(out SafeKernelObjectHandle DebugHandle, DebugAccessRights DesiredAccess, ObjectAttributes ObjectAttributes, int Flags);
+        public static extern NtStatus NtCreateDebugObject(out SafeKernelObjectHandle DebugHandle, DebugAccessRights DesiredAccess, [In] ObjectAttributes ObjectAttributes, int Flags);
     }
+#pragma warning restore 1591
 
+    /// <summary>
+    /// Class representing a NT Debug object
+    /// </summary>
     public class NtDebug : NtObjectWithDuplicate<NtDebug, GenericAccessRights>
     {
         internal NtDebug(SafeKernelObjectHandle handle) : base(handle)
         {
         }
 
+        /// <summary>
+        /// Create a debug object
+        /// </summary>
+        /// <param name="name">The debug object name (can be null)</param>
+        /// <param name="root">The root directory for relative names</param>
+        /// <returns>The debug object</returns>
         public static NtDebug Create(string name, NtObject root)
         {
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
@@ -59,13 +70,23 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Create a debug object
+        /// </summary>
+        /// <param name="desired_access">Desired access for the debug object</param>
+        /// <param name="object_attributes">Object attributes for debug object</param>
+        /// <returns>The debug object</returns>
         public static NtDebug Create(ObjectAttributes object_attributes, DebugAccessRights desired_access)
         {
             SafeKernelObjectHandle handle;
-            StatusToNtException(NtSystemCalls.NtCreateDebugObject(out handle, desired_access, object_attributes, 0));
+            NtSystemCalls.NtCreateDebugObject(out handle, desired_access, object_attributes, 0).ToNtException();
             return new NtDebug(handle);
         }
 
+        /// <summary>
+        /// Create a debug object
+        /// </summary>
+        /// <returns>The debug object</returns>
         public static NtDebug Create()
         {
             return Create(null, null);

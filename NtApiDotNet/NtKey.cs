@@ -22,6 +22,7 @@ using System.Threading;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     [Flags]
     public enum LoadKeyFlags
     {
@@ -95,155 +96,6 @@ namespace NtApiDotNet
         MaxKeyValueInfoClass
     }
 
-    public static partial class NtSystemCalls
-    {
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCreateKey(
-            out SafeKernelObjectHandle KeyHandle,
-            KeyAccessRights DesiredAccess,
-            ObjectAttributes ObjectAttributes,
-            int TitleIndex,
-            UnicodeString Class,
-            KeyCreateOptions CreateOptions,
-            out KeyDisposition Disposition
-        );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtOpenKey(
-            out SafeKernelObjectHandle KeyHandle,
-            KeyAccessRights DesiredAccess,
-            ObjectAttributes ObjectAttributes
-        );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtDeleteKey(SafeKernelObjectHandle KeyHandle);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtSetValueKey(
-          SafeKernelObjectHandle KeyHandle,
-          UnicodeString ValueName,
-          int TitleIndex,
-          RegistryValueType Type,
-          byte[] Data,
-          int DataSize);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtQueryValueKey(
-            SafeKernelObjectHandle KeyHandle,
-            UnicodeString ValueName,
-            KeyValueInformationClass KeyValueInformationClass,
-            SafeBuffer KeyValueInformation,
-            int Length,
-            out int ResultLength
-        );
-        
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtOpenKeyTransacted(out SafeKernelObjectHandle KeyHandle, KeyAccessRights DesiredAccess, ObjectAttributes ObjectAttributes, SafeKernelObjectHandle TransactionHandle);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtOpenKeyTransactedEx(out SafeKernelObjectHandle KeyHandle, KeyAccessRights DesiredAccess, ObjectAttributes ObjectAttributes, int OpenOptions, SafeKernelObjectHandle TransactionHandle);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCreateKeyTransacted(
-            out SafeKernelObjectHandle KeyHandle,
-            KeyAccessRights DesiredAccess,
-            ObjectAttributes ObjectAttributes,
-            int TitleIndex,
-            UnicodeString Class,
-            KeyCreateOptions CreateOptions,
-            SafeKernelObjectHandle TransactionHandle,
-            out KeyDisposition Disposition
-        );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtLoadKeyEx(ObjectAttributes DestinationName, ObjectAttributes FileName, LoadKeyFlags Flags,
-          IntPtr TrustKeyHandle, IntPtr EventHandle, KeyAccessRights DesiredAccess, out SafeKernelObjectHandle KeyHandle, int Unused);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtEnumerateKey(
-              SafeKernelObjectHandle KeyHandle,
-              int Index,
-              KeyInformationClass KeyInformationClass,
-              SafeBuffer KeyInformation,
-              int Length,
-              out int ResultLength
-        );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtEnumerateValueKey(
-          SafeKernelObjectHandle KeyHandle,
-          int      Index,
-          KeyValueInformationClass KeyValueInformationClass,
-          SafeBuffer KeyValueInformation,
-          int      Length,
-          out int  ResultLength
-        );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtQueryKey(
-                SafeKernelObjectHandle KeyHandle,
-                KeyInformationClass KeyInformationClass,
-                SafeBuffer KeyInformation,
-                int Length,
-                out int ResultLength
-            );
-    }
-
-    public class NtKeyValue
-    {
-        public string Name { get; private set; }
-        public RegistryValueType Type { get; private set; }
-        public byte[] Data { get; private set; }
-        public int TitleIndex { get; private set; }
-        public NtKeyValue(string name, RegistryValueType type, byte[] data, int title_index)
-        {
-            Name = name;
-            Type = type;
-            Data = data;
-            TitleIndex = title_index;
-        }
-
-        public override string ToString()
-        {
-            switch (Type)
-            {
-                case RegistryValueType.String:
-                case RegistryValueType.ExpandString:
-                case RegistryValueType.Link:
-                case RegistryValueType.MultiString:
-                    return Encoding.Unicode.GetString(Data);
-                case RegistryValueType.Dword:
-                    return BitConverter.ToUInt32(Data, 0).ToString();
-                case RegistryValueType.DwordBigEndian:
-                    return BitConverter.ToUInt32(Data.Reverse().ToArray(), 0).ToString();
-                case RegistryValueType.Qword:
-                    return BitConverter.ToUInt64(Data, 0).ToString();
-                default:
-                    return Convert.ToBase64String(Data);
-            }
-        }
-
-        public object ToObject()
-        {
-            switch (Type)
-            {
-                case RegistryValueType.String:
-                case RegistryValueType.ExpandString:
-                case RegistryValueType.Link:
-                    return Encoding.Unicode.GetString(Data);
-                case RegistryValueType.MultiString:
-                    return Encoding.Unicode.GetString(Data).Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
-                case RegistryValueType.Dword:
-                    return BitConverter.ToUInt32(Data, 0);
-                case RegistryValueType.DwordBigEndian:
-                    return BitConverter.ToUInt32(Data.Reverse().ToArray(), 0);
-                case RegistryValueType.Qword:
-                    return BitConverter.ToUInt64(Data, 0);
-                default:
-                    return Data;
-            }
-        }
-    }
 
     [StructLayout(LayoutKind.Sequential)]
     [DataStart("Data")]
@@ -327,12 +179,199 @@ namespace NtApiDotNet
         public ushort Class; // Variable length string
     }
 
+
+    public static partial class NtSystemCalls
+    {
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtCreateKey(
+            out SafeKernelObjectHandle KeyHandle,
+            KeyAccessRights DesiredAccess,
+            [In] ObjectAttributes ObjectAttributes,
+            int TitleIndex,
+            UnicodeString Class,
+            KeyCreateOptions CreateOptions,
+            out KeyDisposition Disposition
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtOpenKey(
+            out SafeKernelObjectHandle KeyHandle,
+            KeyAccessRights DesiredAccess,
+            [In] ObjectAttributes ObjectAttributes
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtDeleteKey(SafeKernelObjectHandle KeyHandle);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSetValueKey(
+          SafeKernelObjectHandle KeyHandle,
+          UnicodeString ValueName,
+          int TitleIndex,
+          RegistryValueType Type,
+          byte[] Data,
+          int DataSize);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQueryValueKey(
+            SafeKernelObjectHandle KeyHandle,
+            UnicodeString ValueName,
+            KeyValueInformationClass KeyValueInformationClass,
+            SafeBuffer KeyValueInformation,
+            int Length,
+            out int ResultLength
+        );
+        
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtOpenKeyTransacted(out SafeKernelObjectHandle KeyHandle, KeyAccessRights DesiredAccess, [In] ObjectAttributes ObjectAttributes, [In] SafeKernelObjectHandle TransactionHandle);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtOpenKeyTransactedEx(out SafeKernelObjectHandle KeyHandle, KeyAccessRights DesiredAccess, [In] ObjectAttributes ObjectAttributes, int OpenOptions, [In] SafeKernelObjectHandle TransactionHandle);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtCreateKeyTransacted(
+            out SafeKernelObjectHandle KeyHandle,
+            KeyAccessRights DesiredAccess,
+            ObjectAttributes ObjectAttributes,
+            int TitleIndex,
+            UnicodeString Class,
+            KeyCreateOptions CreateOptions,
+            SafeKernelObjectHandle TransactionHandle,
+            out KeyDisposition Disposition
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtLoadKeyEx([In] ObjectAttributes DestinationName, [In] ObjectAttributes FileName, LoadKeyFlags Flags,
+          IntPtr TrustKeyHandle, IntPtr EventHandle, KeyAccessRights DesiredAccess, out SafeKernelObjectHandle KeyHandle, int Unused);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtEnumerateKey(
+              SafeKernelObjectHandle KeyHandle,
+              int Index,
+              KeyInformationClass KeyInformationClass,
+              SafeBuffer KeyInformation,
+              int Length,
+              out int ResultLength
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtEnumerateValueKey(
+          SafeKernelObjectHandle KeyHandle,
+          int      Index,
+          KeyValueInformationClass KeyValueInformationClass,
+          SafeBuffer KeyValueInformation,
+          int      Length,
+          out int  ResultLength
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQueryKey(
+                SafeKernelObjectHandle KeyHandle,
+                KeyInformationClass KeyInformationClass,
+                SafeBuffer KeyInformation,
+                int Length,
+                out int ResultLength
+            );
+    }
+#pragma warning restore 1591
+
+    /// <summary>
+    /// Class representing a single Key value
+    /// </summary>
+    public class NtKeyValue
+    {
+        /// <summary>
+        /// Name of the value
+        /// </summary>
+        public string Name { get; private set; }
+        /// <summary>
+        /// Type of the value
+        /// </summary>
+        public RegistryValueType Type { get; private set; }
+        /// <summary>
+        /// Raw data for the value
+        /// </summary>
+        public byte[] Data { get; private set; }
+        /// <summary>
+        /// Title index for the value
+        /// </summary>
+        public int TitleIndex { get; private set; }
+
+        internal NtKeyValue(string name, RegistryValueType type, byte[] data, int title_index)
+        {
+            Name = name;
+            Type = type;
+            Data = data;
+            TitleIndex = title_index;
+        }
+
+        /// <summary>
+        /// Convert the value to a string
+        /// </summary>
+        /// <returns>The value as a string</returns>
+        public override string ToString()
+        {
+            switch (Type)
+            {
+                case RegistryValueType.String:
+                case RegistryValueType.ExpandString:
+                case RegistryValueType.Link:
+                case RegistryValueType.MultiString:
+                    return Encoding.Unicode.GetString(Data);
+                case RegistryValueType.Dword:
+                    return BitConverter.ToUInt32(Data, 0).ToString();
+                case RegistryValueType.DwordBigEndian:
+                    return BitConverter.ToUInt32(Data.Reverse().ToArray(), 0).ToString();
+                case RegistryValueType.Qword:
+                    return BitConverter.ToUInt64(Data, 0).ToString();
+                default:
+                    return Convert.ToBase64String(Data);
+            }
+        }
+
+        /// <summary>
+        /// Convert value to an object
+        /// </summary>
+        /// <returns>The value as an object</returns>
+        public object ToObject()
+        {
+            switch (Type)
+            {
+                case RegistryValueType.String:
+                case RegistryValueType.ExpandString:
+                case RegistryValueType.Link:
+                    return Encoding.Unicode.GetString(Data);
+                case RegistryValueType.MultiString:
+                    return Encoding.Unicode.GetString(Data).Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
+                case RegistryValueType.Dword:
+                    return BitConverter.ToUInt32(Data, 0);
+                case RegistryValueType.DwordBigEndian:
+                    return BitConverter.ToUInt32(Data.Reverse().ToArray(), 0);
+                case RegistryValueType.Qword:
+                    return BitConverter.ToUInt64(Data, 0);
+                default:
+                    return Data;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Class to represent an NT Key object
+    /// </summary>
     public class NtKey : NtObjectWithDuplicate<NtKey, KeyAccessRights>
     {
         internal NtKey(SafeKernelObjectHandle handle) : base(handle)
         {
         }
 
+        /// <summary>
+        /// Load a new hive
+        /// </summary>
+        /// <param name="destination">The destination path</param>
+        /// <param name="filename">The path to the hive</param>
+        /// <param name="flags">Load flags</param>
+        /// <returns>The opened root key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey LoadKey(string destination, string filename, LoadKeyFlags flags)
         {
             using (ObjectAttributes dest = new ObjectAttributes(destination, AttributeFlags.CaseInsensitive))
@@ -344,80 +383,170 @@ namespace NtApiDotNet
             }
         }
 
-        public static NtKey LoadKey(ObjectAttributes keyname, ObjectAttributes file, LoadKeyFlags flags, KeyAccessRights desired_access)
+        /// <summary>
+        /// Load a new hive
+        /// </summary>
+        /// <param name="key">Object attributes for the key name</param>
+        /// <param name="file">Object attributes for the path to the hive file</param>
+        /// <param name="flags">Load flags</param>
+        /// <param name="desired_access">Desired access for the root key</param>
+        /// <returns>The opened root key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtKey LoadKey(ObjectAttributes key, ObjectAttributes file, LoadKeyFlags flags, KeyAccessRights desired_access)
         {
-            SafeKernelObjectHandle key;
-            StatusToNtException(NtSystemCalls.NtLoadKeyEx(keyname, file, flags, 
-                IntPtr.Zero, IntPtr.Zero, desired_access, out key, 0));
-            return new NtKey(key);
+            SafeKernelObjectHandle key_handle;
+            NtSystemCalls.NtLoadKeyEx(key, file, flags, 
+                IntPtr.Zero, IntPtr.Zero, desired_access, out key_handle, 0).ToNtException();
+            return new NtKey(key_handle);
         }
 
-        public static NtKey Create(ObjectAttributes obj_attributes, KeyAccessRights access, KeyCreateOptions options)
+        /// <summary>
+        /// Create a new Key
+        /// </summary>
+        /// <param name="obj_attributes">Object attributes for the key name</param>
+        /// <param name="desired_access">Desired access for the root key</param>
+        /// <param name="options">Create options</param>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtKey Create(ObjectAttributes obj_attributes, KeyAccessRights desired_access, KeyCreateOptions options)
         {
             SafeKernelObjectHandle key;
             KeyDisposition disposition;
-            StatusToNtException(NtSystemCalls.NtCreateKey(out key, access, obj_attributes, 0, null, options, out disposition));
+            NtSystemCalls.NtCreateKey(out key, desired_access, obj_attributes, 0, null, options, out disposition).ToNtException();
             return new NtKey(key);
         }
 
-        public static NtKey Create(string key_name, NtObject root, KeyAccessRights access, KeyCreateOptions options)
+        /// <summary>
+        /// Create a new Key
+        /// </summary>
+        /// <param name="key_name">Path to the key to create</param>
+        /// <param name="root">Root key if key_name is relative</param>
+        /// <param name="desired_access">Desired access for the root key</param>
+        /// <param name="options">Create options</param>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtKey Create(string key_name, NtObject root, KeyAccessRights desired_access, KeyCreateOptions options)
         {
             using (ObjectAttributes obja = new ObjectAttributes(key_name, AttributeFlags.CaseInsensitive, root))
             {
-                return Create(obja, access, options);
+                return Create(obja, desired_access, options);
             }
         }
 
+        /// <summary>
+        /// Create a new Key
+        /// </summary>
+        /// <param name="key_name">Path to the key to create</param>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public NtKey Create(string key_name)
         {
             return Create(key_name, this, KeyAccessRights.MaximumAllowed, KeyCreateOptions.NonVolatile);
         }
 
-        public NtKey Create(string key_name, KeyAccessRights access, KeyCreateOptions options)
+        /// <summary>
+        /// Create a new Key
+        /// </summary>
+        /// <param name="key_name">Path to the key to create</param>
+        /// <param name="desired_access">Desired access for the root key</param>
+        /// <param name="options">Create options</param>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtKey Create(string key_name, KeyAccessRights desired_access, KeyCreateOptions options)
         {
-            return Create(key_name, this, access, options);
+            return Create(key_name, this, desired_access, options);
         }
 
-        public static NtKey Open(ObjectAttributes obj_attributes, KeyAccessRights access)
+        /// <summary>
+        /// Open a Key
+        /// </summary>
+        /// <param name="obj_attributes">Object attributes for the key name</param>
+        /// <param name="desired_access">Desired access for the root key</param>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtKey Open(ObjectAttributes obj_attributes, KeyAccessRights desired_access)
         {
             SafeKernelObjectHandle key;
-            StatusToNtException(NtSystemCalls.NtOpenKey(out key, access, obj_attributes));
+            NtSystemCalls.NtOpenKey(out key, desired_access, obj_attributes).ToNtException();
             return new NtKey(key);
         }
 
-        public static NtKey Open(string key_name, NtObject root, KeyAccessRights access)
+        /// <summary>
+        /// Open a Key
+        /// </summary>
+        /// <param name="key_name">Path to the key to open</param>
+        /// <param name="root">Root key if key_name is relative</param>
+        /// <param name="desired_access">Desired access for the root key</param>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtKey Open(string key_name, NtObject root, KeyAccessRights desired_access)
         {
             using (ObjectAttributes obja = new ObjectAttributes(key_name, AttributeFlags.CaseInsensitive, root))
             {
-                return Open(obja, access);
+                return Open(obja, desired_access);
             }
         }
         
+        /// <summary>
+        /// Delete the key
+        /// </summary>
         public void Delete()
         {
-            StatusToNtException(NtSystemCalls.NtDeleteKey(Handle));            
+           NtSystemCalls.NtDeleteKey(Handle).ToNtException();
         }
 
+        /// <summary>
+        /// Set a resistry value
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <param name="type">The type of the value</param>
+        /// <param name="data">The raw value data</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public void SetValue(string value_name, RegistryValueType type, byte[] data)
         {            
-            StatusToNtException(NtSystemCalls.NtSetValueKey(Handle, new UnicodeString(value_name), 0, type, data, data.Length));            
+            NtSystemCalls.NtSetValueKey(Handle, new UnicodeString(value_name), 0, type, data, data.Length).ToNtException();
         }
 
+        /// <summary>
+        /// Set a string resistry value
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <param name="type">The type of the value</param>
+        /// <param name="data">The value data</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public void SetValue(string value_name, RegistryValueType type, string data)
         {
             SetValue(value_name, type, Encoding.Unicode.GetBytes(data));
         }
 
+        /// <summary>
+        /// Set a DWORD resistry value
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <param name="data">The value data</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public void SetValue(string value_name, uint data)
         {
             SetValue(value_name, RegistryValueType.Dword, BitConverter.GetBytes(data));
         }
 
+        /// <summary>
+        /// Set a QWORD resistry value
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <param name="data">The value data</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public void SetValue(string value_name, ulong data)
         {
             SetValue(value_name, RegistryValueType.Qword, BitConverter.GetBytes(data));
         }
 
+        /// <summary>
+        /// Query a value by name
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <returns>The value information</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public NtKeyValue QueryValue(string value_name)
         {            
             UnicodeString name = new UnicodeString(value_name);
@@ -430,19 +559,24 @@ namespace NtApiDotNet
                 {
                     NtStatus status = NtSystemCalls.NtQueryValueKey(Handle, name, KeyValueInformationClass.KeyValuePartialInformation,
                         info, info.Length, out return_len);
-                    if (IsSuccess(status))
+                    if (status.IsSuccess())
                     {
                         KeyValuePartialInformation result = info.Result;                        
                         return new NtKeyValue(value_name, info.Result.Type, info.Data.ReadBytes(result.DataLength), result.TitleIndex);
                     }
                     if (status != NtStatus.STATUS_BUFFER_OVERFLOW && status != NtStatus.STATUS_BUFFER_TOO_SMALL)
-                        StatusToNtException(status);
+                        status.ToNtException(); ;
                 }
                 query_count++;
             }
             throw new NtException(NtStatus.STATUS_BUFFER_TOO_SMALL);
         }
 
+        /// <summary>
+        /// Query all values for this key
+        /// </summary>
+        /// <returns>A list of values</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public IEnumerable<NtKeyValue> QueryValues()
         {
             int index = 0;
@@ -474,6 +608,11 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Query all subkey names
+        /// </summary>
+        /// <returns>The list of subkey names</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public IEnumerable<string> QueryKeys()
         {
             int index = 0;
@@ -506,6 +645,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="desired_access">The required access rights for the subkeys</param>
         /// <returns>The disposable list of subkeys.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public DisposableList<NtKey> QueryAccessibleKeys(KeyAccessRights desired_access)
         {
             DisposableList<NtKey> ret = new DisposableList<NtKey>();
@@ -523,7 +663,15 @@ namespace NtApiDotNet
             return ret;
         }
 
-        public static NtKey CreateSymbolicLink(NtKey rootkey, string path, string target)
+        /// <summary>
+        /// Create a registry key symbolic link
+        /// </summary>
+        /// <param name="rootkey">Root key if path is relative</param>
+        /// <param name="path">Path to the key to create</param>
+        /// <param name="target">Target resistry path</param>
+        /// <returns>The create symbolic key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtKey CreateSymbolicLink(string path, NtKey rootkey, string target)
         {
             using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive | AttributeFlags.OpenIf | AttributeFlags.OpenLink, rootkey))
             {
@@ -545,41 +693,84 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Open a key
+        /// </summary>
+        /// <param name="key_name">The path to the key to open</param>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public NtKey Open(string key_name)
         {
             return Open(key_name, this, KeyAccessRights.MaximumAllowed);
         }
 
-        public NtKey Open(string key_name, KeyAccessRights access)
+        /// <summary>
+        /// Open a key
+        /// </summary>
+        /// <param name="key_name">The path to the key to open</param>
+        /// <param name="desired_access">Access rights for the key</param>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtKey Open(string key_name, KeyAccessRights desired_access)
         {
-            return Open(key_name, this, access);
+            return Open(key_name, this, desired_access);
         }
 
+        /// <summary>
+        /// Open the machine key
+        /// </summary>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey GetMachineKey()
         {
             return Open(@"\Registry\Machine", null, KeyAccessRights.MaximumAllowed);
         }
 
+        /// <summary>
+        /// Open the user key
+        /// </summary>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey GetUserKey()
         {
             return Open(@"\Registry\User", null, KeyAccessRights.MaximumAllowed);
         }
 
+        /// <summary>
+        /// Open a specific user key
+        /// </summary>
+        /// <param name="sid">The SID fo the user to open</param>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey GetUserKey(Sid sid)
         {
             return Open(@"\Registry\User\" + sid.ToString(), null, KeyAccessRights.MaximumAllowed);
         }
 
+        /// <summary>
+        /// Open the current user key
+        /// </summary>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey GetCurrentUserKey()
         {
             return GetUserKey(NtToken.GetCurrentUser().Sid);
         }
 
+        /// <summary>
+        /// Open the root key
+        /// </summary>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey GetRootKey()
         {
             return Open(@"\Registry", null, KeyAccessRights.MaximumAllowed);
         }
 
+        /// <summary>
+        /// Convert object to a .NET RegistryKey object
+        /// </summary>
+        /// <returns>The registry key object</returns>
         public RegistryKey ToRegistryKey()
         {
             return RegistryKey.FromHandle(DuplicateAsRegistry(Handle));
@@ -622,46 +813,91 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Get key last write time
+        /// </summary>
+        /// <returns>The last write time</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public DateTime GetLastWriteTime()
         {
             return DateTime.FromFileTime(GetFullInfo().Item1.LastWriteTime.QuadPart);
         }
 
+        /// <summary>
+        /// Get key subkey count
+        /// </summary>
+        /// <returns>The subkey count</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public int GetSubKeyCount()
         {
             return GetFullInfo().Item1.SubKeys;
         }
 
+        /// <summary>
+        /// Get key value count
+        /// </summary>
+        /// <returns>The key value count</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public int GetValueCount()
         {
             return GetFullInfo().Item1.Values;
         }
 
+        /// <summary>
+        /// Get the key title index
+        /// </summary>
+        /// <returns>The key title index</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public int GetTitleIndex()
         {
             return GetFullInfo().Item1.TitleIndex;
         }
 
+        /// <summary>
+        /// Get the key class name
+        /// </summary>
+        /// <returns>The key class name</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public string GetClassName()
         {
             return GetFullInfo().Item2;
         }
 
+        /// <summary>
+        /// Get the maximum key value name length
+        /// </summary>
+        /// <returns>The maximum key value name length</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public int GetMaxValueNameLength()
         {
             return GetFullInfo().Item1.MaxValueNameLen;
         }
 
+        /// <summary>
+        /// Get the maximum key value data length
+        /// </summary>
+        /// <returns>The maximum key value data length</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public int GetMaxValueDataLength()
         {
             return GetFullInfo().Item1.MaxValueDataLen;
         }
 
+        /// <summary>
+        /// Get the maximum subkey name length
+        /// </summary>
+        /// <returns>The maximum subkey name length</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public int GetMaxNameLength()
         {
             return GetFullInfo().Item1.MaxNameLen;
         }
 
+        /// <summary>
+        /// Get the maximum class name length
+        /// </summary>
+        /// <returns>The maximum class name length</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public int GetMaxClassLength()
         {
             return GetFullInfo().Item1.MaxClassLen;

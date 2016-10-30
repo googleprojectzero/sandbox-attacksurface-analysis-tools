@@ -18,6 +18,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     /// <summary>
     /// Native structure used for getting type information.
     /// </summary>
@@ -54,6 +55,7 @@ namespace NtApiDotNet
         public int NumberOfTypes;
         //ObjectTypeInformation TypeInformation; // Type Info list
     }
+#pragma warning restore 1591
 
     public class NtType
     {

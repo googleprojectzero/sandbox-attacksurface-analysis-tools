@@ -20,6 +20,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     /// <summary>
     /// Generic access rights.
     /// </summary>
@@ -164,6 +165,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtMakePermanentObject(SafeKernelObjectHandle Handle);
     }
+#pragma warning restore 1591
 
     /// <summary>
     /// Base class for all NtObject types we handle
@@ -189,17 +191,17 @@ namespace NtApiDotNet
                 int return_length;
                 status = NtSystemCalls.NtQueryObject(handle, object_info, IntPtr.Zero, 0, out return_length);
                 if ((status != NtStatus.STATUS_BUFFER_TOO_SMALL) && (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH))
-                    StatusToNtException(status);
+                    status.ToNtException();
                 if (return_length == 0)
                     ret = new SafeStructureInOutBuffer<T>();
                 else
                     ret = new SafeStructureInOutBuffer<T>(return_length, false);
                 status = NtSystemCalls.NtQueryObject(handle, object_info, ret.DangerousGetHandle(), ret.Length, out return_length);
-                StatusToNtException(status);
+                status.ToNtException();
             }
             finally
             {
-                if (ret != null && !IsSuccess(status))
+                if (ret != null && !status.IsSuccess())
                 {
                     ret.Close();
                     ret = null;
@@ -208,36 +210,13 @@ namespace NtApiDotNet
             return ret;
         }
 
-        public static bool IsSuccess(int status)
-        {
-            return status >= 0;
-        }
-
-        public static bool IsSuccess(NtStatus status)
-        {
-            return IsSuccess((int)status);
-        }
-
-        public static void StatusToNtException(int status)
-        {
-            StatusToNtException((NtStatus)status);            
-        }
-
-        public static void StatusToNtException(NtStatus status)
-        {
-            if (!IsSuccess(status))
-            {
-                throw new NtException(status);
-            }
-        }
-
         public SafeKernelObjectHandle DuplicateHandle(NtProcess dest_process, uint access, DuplicateObjectOptions options)
         {
             SafeKernelObjectHandle new_handle;
 
-            StatusToNtException(NtSystemCalls.NtDuplicateObject(NtProcess.Current.Handle, Handle,
+            NtSystemCalls.NtDuplicateObject(NtProcess.Current.Handle, Handle,
               dest_process.Handle, out new_handle, (GenericAccessRights)access, AttributeFlags.None, 
-              options));
+              options).ToNtException();
 
             return new_handle;
         }
@@ -261,10 +240,10 @@ namespace NtApiDotNet
         {
             SafeKernelObjectHandle new_handle;
 
-            StatusToNtException(NtSystemCalls.NtDuplicateObject(source_process.Handle, handle,
+            NtSystemCalls.NtDuplicateObject(source_process.Handle, handle,
               dest_process.Handle, out new_handle,
               GenericAccessRights.None, AttributeFlags.None, 
-              DuplicateObjectOptions.SameAccess));            
+              DuplicateObjectOptions.SameAccess).ToNtException();
 
             return new_handle;
         }
@@ -363,9 +342,9 @@ namespace NtApiDotNet
             int return_length;
             NtStatus status = NtSystemCalls.NtQuerySecurityObject(handle, security_information, null, 0, out return_length);
             if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
-                StatusToNtException(status);
+                status.ToNtException();
             byte[] buffer = new byte[return_length];
-            StatusToNtException(NtSystemCalls.NtQuerySecurityObject(handle, security_information, buffer, buffer.Length, out return_length));
+            NtSystemCalls.NtQuerySecurityObject(handle, security_information, buffer, buffer.Length, out return_length).ToNtException();
             return buffer;
         }
 
@@ -381,7 +360,7 @@ namespace NtApiDotNet
 
         public void SetSecurityDescriptor(byte[] security_desc, SecurityInformation security_information)
         {
-            StatusToNtException(NtSystemCalls.NtSetSecurityObject(Handle, security_information, security_desc));            
+            NtSystemCalls.NtSetSecurityObject(Handle, security_information, security_desc).ToNtException();
         }
 
         public void SetSecurityDescriptor(SecurityDescriptor security_desc, SecurityInformation security_information)
@@ -408,12 +387,12 @@ namespace NtApiDotNet
 
         public void MakeTemporary()
         {
-            StatusToNtException(NtSystemCalls.NtMakeTemporaryObject(Handle));
+            NtSystemCalls.NtMakeTemporaryObject(Handle).ToNtException();
         }
 
         public void MakePermanent()
         {
-            StatusToNtException(NtSystemCalls.NtMakePermanentObject(Handle));
+           NtSystemCalls.NtMakePermanentObject(Handle).ToNtException();
         }
 
         public NtStatus Wait(bool alertable, long timeout)
@@ -458,7 +437,9 @@ namespace NtApiDotNet
         /// <param name="path">The path to the object to open.</param>
         /// <param name="root">A root directory to open from.</param>
         /// <param name="access">Generic access rights to the object.</param>
-        /// <returns></returns>
+        /// <returns>The opened object.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred opening the object.</exception>
+        /// <exception cref="ArgumentException">Thrown if type of resource couldn't be found.</exception>
         public static NtObject OpenWithType(string typename, string path, NtObject root, GenericAccessRights access)
         {
             if (typename == null)
@@ -497,17 +478,36 @@ namespace NtApiDotNet
             }
         }
 
-        public string GetTypeName()
+        /// <summary>
+        /// Get the NT type name for this object.
+        /// </summary>
+        /// <returns>The NT type name.</returns>
+        public string GetNtTypeName()
         {
             using (SafeStructureInOutBuffer<ObjectTypeInformation> type_info = new SafeStructureInOutBuffer<ObjectTypeInformation>(1024, true))
             {
                 int return_length;
-                StatusToNtException(NtSystemCalls.NtQueryObject(Handle, 
-                    ObjectInformationClass.ObjectTypeInformation, type_info.DangerousGetHandle(), type_info.Length, out return_length));
+                NtSystemCalls.NtQueryObject(Handle, 
+                    ObjectInformationClass.ObjectTypeInformation, type_info.DangerousGetHandle(), type_info.Length, out return_length).ToNtException();
                 return type_info.Result.Name.ToString();
             }
         }
 
+        /// <summary>
+        /// Get the NtType for this object.
+        /// </summary>
+        /// <returns>The NtType for the type name</returns>
+        public NtType GetNtType()
+        {
+            return NtType.GetTypeByName(GetNtTypeName());
+        }
+
+        /// <summary>
+        /// Convert an access rights type to a string.
+        /// </summary>
+        /// <param name="t">The enumeration type for the string conversion</param>
+        /// <param name="access">The access mask to convert</param>
+        /// <returns>The string version of the access</returns>
         public static string AccessRightsToString(Type t, uint access)
         {
             List<string> names = new List<string>();
@@ -644,7 +644,7 @@ namespace NtApiDotNet
     /// <typeparam name="A">An enum which represents the access mask values for the type</typeparam>
     public abstract class NtObjectWithDuplicate<O, A> : NtObject where O : NtObject where A : struct, IConvertible
     {
-        public NtObjectWithDuplicate(SafeKernelObjectHandle handle) : base(handle)
+        internal NtObjectWithDuplicate(SafeKernelObjectHandle handle) : base(handle)
         {
         }
 
@@ -653,12 +653,22 @@ namespace NtApiDotNet
             return (O)Activator.CreateInstance(typeof(O), BindingFlags.NonPublic | BindingFlags.Instance, null, ps, null);
         }
 
+        /// <summary>
+        /// Duplicate the object with specific access rights
+        /// </summary>
+        /// <param name="access">The access rights for the new handle</param>
+        /// <returns>The duplicated object</returns>
         public O Duplicate(A access)
         {
             IConvertible a = access;
             return Duplicate(a.ToUInt32(null));            
         }
 
+        /// <summary>
+        /// Duplicate the object with specific access rights
+        /// </summary>
+        /// <param name="access">The access rights for the new handle</param>
+        /// <returns>The duplicated object</returns>
         public O Duplicate(uint access)
         {
             IConvertible a = access;
@@ -666,51 +676,91 @@ namespace NtApiDotNet
             return Create(DuplicateHandle(access));
         }
 
+        /// <summary>
+        /// Duplicate the object with same access rights
+        /// </summary>
+        /// <returns>The duplicated object</returns>
         public O Duplicate()
         {
             return Create(DuplicateHandle());
         }
 
+        /// <summary>
+        /// Get granted access for handle.
+        /// </summary>
+        /// <returns>Granted access</returns>
         public A GetGrantedAccess() 
         {
             return GetGrantedAccess(Handle);
         }
 
+        /// <summary>
+        /// Get granted access as an object
+        /// </summary>
+        /// <returns>The granted access</returns>
         public override object GetGrantedAccessObject()
         {
             return GetGrantedAccess();
         }
 
-        public static A GetGrantedAccess(SafeKernelObjectHandle handle) 
+        private static A GetGrantedAccess(SafeKernelObjectHandle handle) 
         {
             if (!typeof(A).IsEnum)
                 throw new ArgumentException("Type of access must be an enum");
             return (A)Enum.ToObject(typeof(A), GetGrantedAccessInternal(handle));
         }
 
+        /// <summary>
+        /// Check if a specific set of access rights is granted
+        /// </summary>
+        /// <param name="access">The access rights to check</param>
+        /// <returns>True if all access rights are granted</returns>
         public bool IsAccessGranted(A access)
         {
             uint access_raw = access.ToUInt32(null);
             return (GetGrantedAccessInternal(Handle) & access_raw) == access_raw;
         }
 
+        /// <summary>
+        /// Get the granted access as a string
+        /// </summary>
+        /// <returns>The string form of the granted access</returns>
         public string GetGrantedAccessString()
         {
-            NtType type = NtType.GetTypeByName(GetTypeName());
+            NtType type = NtType.GetTypeByName(GetNtTypeName());
 
             return AccessRightsToString(GetGrantedAccess(), type);
         }
 
+        /// <summary>
+        /// Create a new instance from a kernel handle
+        /// </summary>
+        /// <param name="handle">The kernel handle</param>
+        /// <returns>The new typed instance</returns>
         public static O FromHandle(SafeKernelObjectHandle handle)
         {
             return Create(handle);
         }
 
+        /// <summary>
+        /// Duplicate an instance from a process
+        /// </summary>
+        /// <param name="process">The process (with DupHandle access)</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <param name="access">The access rights to duplicate with</param>
+        /// <returns>The duplicated handle</returns>
         public static O DuplicateFrom(NtProcess process, IntPtr handle, A access)
         {
             return FromHandle(NtObject.DuplicateHandle(process, new SafeKernelObjectHandle(handle, false), NtProcess.Current, (GenericAccessRights)access.ToUInt32(null)));
         }
 
+        /// <summary>
+        /// Duplicate an instance from a process
+        /// </summary>
+        /// <param name="pid">The process ID</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <param name="access">The access rights to duplicate with</param>
+        /// <returns>The duplicated handle</returns>
         public static O DuplicateFrom(int pid, IntPtr handle, A access)
         {
             using (NtProcess process = NtProcess.Open(pid, ProcessAccessRights.DupHandle))
@@ -719,11 +769,23 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Duplicate an instance from a process with same access rights.
+        /// </summary>
+        /// <param name="process">The process (with DupHandle access)</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <returns>The duplicated handle</returns>
         public static O DuplicateFrom(NtProcess process, IntPtr handle)
         {
             return FromHandle(NtObject.DuplicateHandle(process, new SafeKernelObjectHandle(handle, false), NtProcess.Current));
         }
 
+        /// <summary>
+        /// Duplicate an instance from a process with same access rights
+        /// </summary>
+        /// <param name="pid">The process ID</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <returns>The duplicated handle</returns>
         public static O DuplicateFrom(int pid, IntPtr handle)
         {
             using (NtProcess process = NtProcess.Open(pid, ProcessAccessRights.DupHandle))
@@ -742,9 +804,13 @@ namespace NtApiDotNet
         {
         }
 
+        /// <summary>
+        /// Convert the generic object to the best typed object.
+        /// </summary>
+        /// <returns>The typed object. Can be NtGeneric if no better type is known.</returns>
         public NtObject ToTypedObject()
         {
-            switch (GetTypeName())
+            switch (GetNtTypeName())
             {
                 case "device":
                     return new NtFile(DuplicateHandle());

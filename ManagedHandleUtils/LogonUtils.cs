@@ -116,8 +116,8 @@ namespace HandleUtils
         }
 
         protected override bool ReleaseHandle()
-        {            
-            return NtObject.IsSuccess(LsaClose(handle));
+        {
+            return LsaClose(handle).IsSuccess();
         }
     }
 
@@ -166,11 +166,11 @@ namespace HandleUtils
             SafeLsaHandle hlsa = null;
             LsaString pkgName = new LsaString("Negotiate");
 
-            NtObject.StatusToNtException(LsaConnectUntrusted(out hlsa));
+            LsaConnectUntrusted(out hlsa).ToNtException();
             using (hlsa)
             {
                 uint authnPkg;
-                NtObject.StatusToNtException(LsaLookupAuthenticationPackage(hlsa, pkgName, out authnPkg));
+                LsaLookupAuthenticationPackage(hlsa, pkgName, out authnPkg).ToNtException();
                 byte[] user_bytes = Encoding.Unicode.GetBytes(user);
                 byte[] realm_bytes = Encoding.Unicode.GetBytes(realm);
 
@@ -203,10 +203,10 @@ namespace HandleUtils
                     QUOTA_LIMITS quota_limits;
                     SafeKernelObjectHandle token_handle;
 
-                    NtObject.StatusToNtException(LsaLogonUser(hlsa, originName, type, authnPkg,
+                    LsaLogonUser(hlsa, originName, type, authnPkg,
                         buffer, buffer.Length, IntPtr.Zero,
                         tokenSource, out profile, out cbProfile, out logon_id, out token_handle,
-                        out quota_limits, out subStatus));
+                        out quota_limits, out subStatus).ToNtException();
                     LsaFreeReturnBuffer(profile);
                     return NtToken.FromHandle(token_handle);
                 }

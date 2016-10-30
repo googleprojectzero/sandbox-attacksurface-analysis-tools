@@ -17,6 +17,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     public enum NlsSectionType
     {
         CodePage = 11,
@@ -34,27 +35,47 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtQueryDefaultLocale(bool ThreadOrSystem, out uint Locale);
     }
+#pragma warning restore 1591
 
+    /// <summary>
+    /// Class to access NT locale information
+    /// </summary>
     public static class NtLocale
     {
+        /// <summary>
+        /// Get mapped NLS section
+        /// </summary>
+        /// <param name="type">The type of section</param>
+        /// <param name="codepage">The codepage number</param>
+        /// <returns>The mapped section if it exists.</returns>
         public static NtMappedSection GetNlsSectionPtr(NlsSectionType type, int codepage)
         {
             IntPtr ptr;
             IntPtr size;
-            NtObject.StatusToNtException(NtSystemCalls.NtGetNlsSectionPtr(type, codepage, IntPtr.Zero, out ptr, out size));
+            NtSystemCalls.NtGetNlsSectionPtr(type, codepage, IntPtr.Zero, out ptr, out size).ToNtException();
             return new NtMappedSection(ptr, size.ToInt64(), NtProcess.Current, false);
         }
 
+        /// <summary>
+        /// Get default locale ID
+        /// </summary>
+        /// <param name="thread">True if the locale should be the thread's, otherwise the systems</param>
+        /// <returns>The locale ID</returns>
         public static uint GetDefaultLocal(bool thread)
         {
             uint locale;
-            NtObject.StatusToNtException(NtSystemCalls.NtQueryDefaultLocale(thread, out locale));
+            NtSystemCalls.NtQueryDefaultLocale(thread, out locale).ToNtException();
             return locale;
         }
 
+        /// <summary>
+        /// Set default locale
+        /// </summary>
+        /// <param name="thread">True if the locale should be the thread's, otherwise the systems</param>
+        /// <param name="locale">The locale ID</param>
         public static void SetDefaultLocale(bool thread, uint locale)
         {
-            NtObject.StatusToNtException(NtSystemCalls.NtSetDefaultLocale(thread, locale));
+            NtSystemCalls.NtSetDefaultLocale(thread, locale).ToNtException();
         }
     }
 }

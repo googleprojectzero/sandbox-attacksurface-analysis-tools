@@ -242,8 +242,8 @@ namespace NtApiDotNet
         public SafeSidBufferHandle ToSafeBuffer()
         {
             SafeSidBufferHandle sid;
-            NtObject.StatusToNtException(NtRtl.RtlAllocateAndInitializeSidEx(Authority,
-                (byte)SubAuthorities.Count, SubAuthorities.ToArray(), out sid));
+            NtRtl.RtlAllocateAndInitializeSidEx(Authority,
+                (byte)SubAuthorities.Count, SubAuthorities.ToArray(), out sid).ToNtException();
             return sid;
         }
 
@@ -255,7 +255,7 @@ namespace NtApiDotNet
         {
             using (SafeSidBufferHandle handle = ToSafeBuffer())
             {
-                return Utils.SafeHandleToArray(handle, handle.Length);
+                return NtObjectUtils.SafeHandleToArray(handle, handle.Length);
             }
         }
 
@@ -366,7 +366,7 @@ namespace NtApiDotNet
             using (SafeSidBufferHandle sid = ToSafeBuffer())
             {
                 UnicodeStringOut str = new UnicodeStringOut();
-                NtObject.StatusToNtException(NtRtl.RtlConvertSidToUnicodeString(ref str, sid.DangerousGetHandle(), true));
+                NtRtl.RtlConvertSidToUnicodeString(ref str, sid.DangerousGetHandle(), true).ToNtException();
                 try
                 {
                     return str.ToString();
@@ -378,6 +378,10 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Get the account name of the SID or the SDDL form is no corresponding name.
+        /// </summary>
+        /// <returns>The account name or SDDL form.</returns>
         public string GetName()
         {
             return NtSecurity.LookupAccountSid(this) ?? ToString();
@@ -389,17 +393,53 @@ namespace NtApiDotNet
     /// </summary>
     public static class KnownSids
     {
+        /// <summary>
+        /// NULL SID
+        /// </summary>
         public static Sid Null { get { return new Sid(SecurityAuthority.Null, 0); } }
+        /// <summary>
+        /// Everyone SID
+        /// </summary>
         public static Sid World { get { return new Sid(SecurityAuthority.World, 0); } }
+        /// <summary>
+        /// Local user SID
+        /// </summary>
         public static Sid Local { get { return new Sid(SecurityAuthority.Local, 0); } }
+        /// <summary>
+        /// CREATOR OWNER SID
+        /// </summary>
         public static Sid CreatorOwner { get { return new Sid(SecurityAuthority.Creator, 0); } }
+        /// <summary>
+        /// CREATOR GROUP SID
+        /// </summary>
         public static Sid CreatorGroup { get { return new Sid(SecurityAuthority.Creator, 1); } }
+        /// <summary>
+        /// Service SID
+        /// </summary>
         public static Sid Service { get { return new Sid(SecurityAuthority.Nt, 6); } }
+        /// <summary>
+        /// ANONYMOUS LOGON SID
+        /// </summary>
         public static Sid Anonymous { get { return new Sid(SecurityAuthority.Nt, 7); } }
+        /// <summary>
+        /// Authenticated Users SID
+        /// </summary>
         public static Sid AuthenticatedUsers { get { return new Sid(SecurityAuthority.Nt, 11); } }
+        /// <summary>
+        /// RESTRICTED SID
+        /// </summary>
         public static Sid Restricted { get { return new Sid(SecurityAuthority.Nt, 12); } }
+        /// <summary>
+        /// LOCAL SYSTEM SID
+        /// </summary>
         public static Sid LocalSystem { get { return new Sid(SecurityAuthority.Nt, 18); } }
+        /// <summary>
+        /// LOCAL SERVICE SID
+        /// </summary>
         public static Sid LocalService { get { return new Sid(SecurityAuthority.Nt, 19); } }
+        /// <summary>
+        /// NETWORK SERVICE SID
+        /// </summary>
         public static Sid NetworkService { get { return new Sid(SecurityAuthority.Nt, 20); } }
     }
 }

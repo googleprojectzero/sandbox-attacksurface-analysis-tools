@@ -26,6 +26,7 @@ using System.Threading;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     /// <summary>
     /// A safe handle to an allocated global buffer.
     /// </summary>
@@ -386,7 +387,7 @@ namespace NtApiDotNet
 
         protected override bool ReleaseHandle()
         {
-            if (NtObject.IsSuccess(NtSystemCalls.NtClose(this.handle)))
+            if (NtSystemCalls.NtClose(this.handle).IsSuccess())
             {
                 this.handle = IntPtr.Zero;
                 return true;
@@ -618,4 +619,5 @@ namespace NtApiDotNet
             return NtRtl.RtlDeleteSecurityObject(ref handle).IsSuccess();
         }
     }
+#pragma warning restore 1591
 }

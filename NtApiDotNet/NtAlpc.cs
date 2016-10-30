@@ -17,6 +17,10 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+    /// <summary>
+    /// Access rights for ALPC
+    /// </summary>
+#pragma warning disable 1591
     [Flags]
     public enum AlpcAccessRights : uint
     {
@@ -33,6 +37,24 @@ namespace NtApiDotNet
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
     }
 
+    /// <summary>
+    /// ALPC Port Information Class
+    /// </summary>
+    public enum AlpcPortInformationClass
+    {
+        AlpcBasicInformation, 
+        AlpcPortInformation,
+        AlpcAssociateCompletionPortInformation, 
+        AlpcConnectedSIDInformation, 
+        AlpcServerInformation, 
+        AlpcMessageZoneInformation, 
+        AlpcRegisterCompletionListInformation, 
+        AlpcUnregisterCompletionListInformation,
+        AlpcAdjustCompletionListConcurrencyCountInformation,
+        AlpcRegisterCallbackInformation,
+        AlpcCompletionListRundownInformation,
+        AlpcWaitForPortReferences
+    }
 
     public class AlpcPortMessage
     {
@@ -106,28 +128,12 @@ namespace NtApiDotNet
         public uint CallbackId;
     }
 
-    public enum AlpcPortInformationClass
-    {
-        AlpcBasicInformation, // q: out ALPC_BASIC_INFORMATION
-        AlpcPortInformation, // s: in ALPC_PORT_ATTRIBUTES
-        AlpcAssociateCompletionPortInformation, // s: in ALPC_PORT_ASSOCIATE_COMPLETION_PORT
-        AlpcConnectedSIDInformation, // q: in SID
-        AlpcServerInformation, // q: inout ALPC_SERVER_INFORMATION
-        AlpcMessageZoneInformation, // s: in ALPC_PORT_MESSAGE_ZONE_INFORMATION
-        AlpcRegisterCompletionListInformation, // s: in ALPC_PORT_COMPLETION_LIST_INFORMATION
-        AlpcUnregisterCompletionListInformation, // s: VOID
-        AlpcAdjustCompletionListConcurrencyCountInformation, // s: in ULONG
-        AlpcRegisterCallbackInformation, // kernel-mode only
-        AlpcCompletionListRundownInformation, // s: VOID
-        AlpcWaitForPortReferences
-    }
-
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcCreatePort(
             out SafeKernelObjectHandle PortHandle,
-            ObjectAttributes ObjectAttributes,
+            [In] ObjectAttributes ObjectAttributes,
             AlpcPortAttributes PortAttributes
         );
 
@@ -234,7 +240,11 @@ namespace NtApiDotNet
             ProcessAccessRights DesiredAccess,
             [In] ObjectAttributes ObjectAttributes);
     }
+#pragma warning restore 1591
 
+    /// <summary>
+    /// Unused.
+    /// </summary>
     public class NtAlpc : NtObjectWithDuplicate<NtAlpc, AlpcAccessRights>
     {
         internal NtAlpc(SafeKernelObjectHandle handle) : base(handle)

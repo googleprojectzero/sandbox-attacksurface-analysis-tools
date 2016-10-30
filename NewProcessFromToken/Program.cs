@@ -160,7 +160,7 @@ namespace NewProcessFromToken
                 {
                     try
                     {
-                        new_process.Process.Terminate(1);
+                        new_process.Process.Terminate(NtStatus.STATUS_WAIT_1);
                     }
                     catch
                     {

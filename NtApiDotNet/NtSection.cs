@@ -18,6 +18,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     [Flags]
     public enum ProtectionType
     {
@@ -164,11 +165,21 @@ namespace NtApiDotNet
             IntPtr BaseAddress
         );
     }
+#pragma warning restore 1591
 
+    /// <summary>
+    /// Class representing a mapped section
+    /// </summary>
     public sealed class NtMappedSection : SafeBuffer
     {
+        /// <summary>
+        /// The process which the section is mapped into
+        /// </summary>
         public NtProcess Process { get; private set; }
 
+        /// <summary>
+        /// The length of the mapped section
+        /// </summary>
         public long Length { get; private set; }
 
         internal NtMappedSection(IntPtr pointer, long size, NtProcess process, bool writable) : base(true)
@@ -189,16 +200,22 @@ namespace NtApiDotNet
             _writable = writable;
         }
         
+        /// <summary>
+        /// Release the internal handle
+        /// </summary>
+        /// <returns></returns>
         protected override bool ReleaseHandle()
         {
-            if (NtObject.IsSuccess(NtSystemCalls.NtUnmapViewOfSection(Process.Handle, handle)))
-            {
-                handle = IntPtr.Zero;
-                return true;
-            }
-            return false;
+            bool ret = NtSystemCalls.NtUnmapViewOfSection(Process.Handle, handle).IsSuccess();
+            Process.Close();
+            handle = IntPtr.Zero;
+            return ret;
         }
 
+        /// <summary>
+        /// Get the mapped section as a memory stream
+        /// </summary>
+        /// <returns></returns>
         public UnmanagedMemoryStream GetStream()
         {
             return new UnmanagedMemoryStream(this, 0, (long)ByteLength, _writable ? FileAccess.ReadWrite : FileAccess.Read);
@@ -207,6 +224,9 @@ namespace NtApiDotNet
         private bool _writable;
     }
 
+    /// <summary>
+    /// Class to represent a NT Section object
+    /// </summary>
     public sealed class NtSection : NtObjectWithDuplicate<NtSection, SectionAccessRights>
     {
         internal NtSection(SafeKernelObjectHandle handle, SectionAttributes attributes, ProtectionType protection, LargeInteger size) : base(handle)
@@ -217,69 +237,157 @@ namespace NtApiDotNet
         {
         }
 
+        /// <summary>
+        /// Create an Image section object
+        /// </summary>
+        /// <param name="file">The file to create the image section from</param>
+        /// <returns>The opened section</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static NtSection CreateImageSection(NtFile file)
         {
             return Create(null, SectionAccessRights.MaximumAllowed, null, ProtectionType.Execute, SectionAttributes.Image, file);
         }
 
-        public static NtSection Create(string name, SectionAccessRights access, LargeInteger size, ProtectionType protection, SectionAttributes attributes, NtFile file)
+        /// <summary>
+        /// Create a section object
+        /// </summary>
+        /// <param name="object_attributes">The object attributes</param>
+        /// <param name="desired_access">The desired access</param>
+        /// <param name="size">Optional size of the section</param>
+        /// <param name="protection">The section protection</param>
+        /// <param name="attributes">The section attributes</param>
+        /// <param name="file">Optional backing file</param>
+        /// <returns>The opened section</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtSection Create(ObjectAttributes object_attributes, SectionAccessRights desired_access, long? size, ProtectionType protection, SectionAttributes attributes, NtFile file)
         {
-            using (ObjectAttributes obj_attr = new ObjectAttributes(name))
+            SafeKernelObjectHandle section_handle;
+            NtSystemCalls.NtCreateSection(out section_handle, desired_access, object_attributes,
+                size.HasValue ? new LargeInteger(size.Value) : null, protection, attributes, file == null ? SafeKernelObjectHandle.Null : file.Handle).ToNtException();
+            return new NtSection(section_handle);
+        }
+
+        /// <summary>
+        /// Create a section object
+        /// </summary>
+        /// <param name="path">The path to the section</param>
+        /// <param name="root">The root if path is relative</param>
+        /// <param name="desired_access">The desired access</param>
+        /// <param name="size">Optional size of the section</param>
+        /// <param name="protection">The section protection</param>
+        /// <param name="attributes">The section attributes</param>
+        /// <param name="file">Optional backing file</param>
+        /// <returns>The opened section</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtSection Create(string path, NtObject root, SectionAccessRights desired_access, long? size, ProtectionType protection, SectionAttributes attributes, NtFile file)
+        {
+            using (ObjectAttributes obj_attr = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle section_handle;                
-                StatusToNtException(NtSystemCalls.NtCreateSection(out section_handle, access, obj_attr,
-                    size, protection, attributes, file == null ? SafeKernelObjectHandle.Null : file.Handle));
-                return new NtSection(section_handle);
+                return Create(obj_attr, desired_access, size, protection, attributes, file);
             }            
         }
 
+        /// <summary>
+        /// Create a section object
+        /// </summary>
+        /// <param name="size">Size of the section</param>
+        /// <returns>The opened section</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static NtSection Create(long size)
         {
-            return Create(null, SectionAccessRights.MaximumAllowed, new LargeInteger(size), 
+            return Create(null, SectionAccessRights.MaximumAllowed, size, 
                 ProtectionType.ReadWrite, SectionAttributes.Commit, null);
         }
 
+        /// <summary>
+        /// Map section Read/Write into a specific process
+        /// </summary>
+        /// <param name="process">The process to map into</param>
+        /// <returns>The mapped section</returns>
         public NtMappedSection MapReadWrite(NtProcess process)
         {
             return Map(process, ProtectionType.ReadWrite);
         }
 
+        /// <summary>
+        /// Map section Read Only into a specific process
+        /// </summary>
+        /// <param name="process">The process to map into</param>
+        /// <returns>The mapped section</returns>
         public NtMappedSection MapRead(NtProcess process)
         {
             return Map(process, ProtectionType.ReadOnly);
         }
 
+        /// <summary>
+        /// Map section Read Only into a current process
+        /// </summary>
+        /// <returns>The mapped section</returns>
         public NtMappedSection MapRead()
         {
             return Map(NtProcess.Current, ProtectionType.ReadOnly);
         }
 
+        /// <summary>
+        /// Map section Read/Write into a current process
+        /// </summary>
+        /// <returns>The mapped section</returns>
         public NtMappedSection MapReadWrite()
         {
             return Map(NtProcess.Current, ProtectionType.ReadWrite);
         }
 
+        /// <summary>
+        /// Map section into a specific process
+        /// </summary>
+        /// <param name="process">The process to map into</param>
+        /// <param name="type">The protection of the mapping</param>
+        /// <returns>The mapped section</returns>
         public NtMappedSection Map(NtProcess process, ProtectionType type)
         {
             IntPtr base_address = IntPtr.Zero;
             IntPtr view_size = new IntPtr(0);
-            StatusToNtException(NtSystemCalls.NtMapViewOfSection(Handle, process.Handle, ref base_address, IntPtr.Zero,
-                new IntPtr(0), null, ref view_size, SectionInherit.ViewUnmap, AllocationType.None, type));
+            NtSystemCalls.NtMapViewOfSection(Handle, process.Handle, ref base_address, IntPtr.Zero,
+                new IntPtr(0), null, ref view_size, SectionInherit.ViewUnmap, AllocationType.None, type).ToNtException();
             return new NtMappedSection(base_address, view_size.ToInt64(), process, true);
         }
 
+
+        /// <summary>
+        /// Map section into the current process
+        /// </summary>
+        /// <param name="type">The protection of the mapping</param>
+        /// <returns>The mapped section</returns>
         public NtMappedSection Map(ProtectionType type)
         {
             return Map(NtProcess.Current, type);
         }
 
-        public static NtSection Open(string path, NtObject root, SectionAccessRights access_rights)
+        /// <summary>
+        /// Open a section object
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the section</param>
+        /// <param name="desired_access">The desired access for the sections</param>
+        /// <returns>The opened section</returns>
+        public static NtSection Open(ObjectAttributes object_attributes, SectionAccessRights desired_access)
+        {
+            SafeKernelObjectHandle handle;
+            NtSystemCalls.NtOpenSection(out handle, desired_access, object_attributes).ToNtException();
+            return new NtSection(handle);
+        }
+
+        /// <summary>
+        /// Open a section object
+        /// </summary>
+        /// <param name="path">The path to the section</param>
+        /// <param name="root">Root object if the path is relative</param>
+        /// <param name="desired_access">The desired access for the sections</param>
+        /// <returns>The opened section</returns>
+        public static NtSection Open(string path, NtObject root, SectionAccessRights desired_access)
         {
             using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtOpenSection(out handle, access_rights, obja));
-                return new NtSection(handle);
+                return Open(obja, desired_access);
             }
         }
 
@@ -288,17 +396,25 @@ namespace NtApiDotNet
             using (var buffer = new SafeStructureInOutBuffer<T>())
             {
                 int return_length = 0;
-                StatusToNtException(NtSystemCalls.NtQuerySection(Handle, info_class, buffer, buffer.Length, out return_length));
+                NtSystemCalls.NtQuerySection(Handle, info_class, buffer, buffer.Length, out return_length).ToNtException();
                 return buffer.Result;
             }
         }
 
+        /// <summary>
+        /// Get the size of the section
+        /// </summary>
+        /// <returns>The size</returns>
         public long GetSize()
         {
             SectionBasicInformation info = Query<SectionBasicInformation>(SectionInformationClass.SectionBasicInformation);
             return info.Size.QuadPart;
         }
 
+        /// <summary>
+        /// Get the attributes of the section
+        /// </summary>
+        /// <returns>The section attributes</returns>
         public SectionAttributes GetAttributes()
         {
             SectionBasicInformation info = Query<SectionBasicInformation>(SectionInformationClass.SectionBasicInformation);

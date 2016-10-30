@@ -17,6 +17,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     [Flags]
     public enum JobAccessRights : uint
     {
@@ -41,10 +42,10 @@ namespace NtApiDotNet
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCreateJobObject(out SafeKernelObjectHandle JobHandle, JobAccessRights DesiredAccess, ObjectAttributes ObjectAttributes);
+        public static extern NtStatus NtCreateJobObject(out SafeKernelObjectHandle JobHandle, JobAccessRights DesiredAccess, [In] ObjectAttributes ObjectAttributes);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtOpenJobObject(out SafeKernelObjectHandle JobHandle, JobAccessRights DesiredAccess, ObjectAttributes ObjectAttributes);
+        public static extern NtStatus NtOpenJobObject(out SafeKernelObjectHandle JobHandle, JobAccessRights DesiredAccess, [In] ObjectAttributes ObjectAttributes);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAssignProcessToJobObject(SafeKernelObjectHandle JobHandle, SafeKernelObjectHandle ProcessHandle);
@@ -58,34 +59,54 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtSetInformationJobObject(SafeKernelObjectHandle JobHandle, int JobInfoClass, IntPtr JobInformation, int JobInformationLength);
     }
+#pragma warning restore 1591
 
+    /// <summary>
+    /// Class representing a NT Job object
+    /// </summary>
     public class NtJob : NtObjectWithDuplicate<NtJob, GenericAccessRights>
     {
         internal NtJob(SafeKernelObjectHandle handle) : base(handle)
         {
         }
 
-        public static NtJob Create(string name, NtObject root)
-        {
-            using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
-            {
-                SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtCreateJobObject(out handle, JobAccessRights.MaximumAllowed, obja));
-                return new NtJob(handle);
-            }
-        }
-
-        public void CreateSilo()
-        {
-            StatusToNtException(NtSystemCalls.NtSetInformationJobObject(Handle, 35, IntPtr.Zero, 0));
-        }
-
-        public static NtJob Open(string path, NtObject root, JobAccessRights access_rights)
+        /// <summary>
+        /// Create a job object
+        /// </summary>
+        /// <param name="path">The path to the job object (can be null)</param>
+        /// <param name="root">The root object when path is relative</param>
+        /// <returns>The Job object</returns>
+        public static NtJob Create(string path, NtObject root)
         {
             using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
                 SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtOpenJobObject(out handle, access_rights, obja));
+                NtSystemCalls.NtCreateJobObject(out handle, JobAccessRights.MaximumAllowed, obja).ToNtException();
+                return new NtJob(handle);
+            }
+        }
+
+        /// <summary>
+        /// Convert Job object into a Silo
+        /// </summary>
+        public void CreateSilo()
+        {
+            NtSystemCalls.NtSetInformationJobObject(Handle, 35, IntPtr.Zero, 0).ToNtException();
+        }
+
+        /// <summary>
+        /// Open a job object
+        /// </summary>
+        /// <param name="path">The path to the job object</param>
+        /// <param name="root">The root object when path is relative</param>
+        /// <param name="desired_access">Desired access for the job object</param>
+        /// <returns>The Job object</returns>
+        public static NtJob Open(string path, NtObject root, JobAccessRights desired_access)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
+            {
+                SafeKernelObjectHandle handle;
+                NtSystemCalls.NtOpenJobObject(out handle, desired_access, obja).ToNtException();
                 return new NtJob(handle);
             }
         }

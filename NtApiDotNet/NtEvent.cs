@@ -16,6 +16,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     public enum EventAccessRights : uint
     {
         QueryState = 1,
@@ -43,7 +44,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtCreateEvent(
             out SafeKernelObjectHandle EventHandle,
             EventAccessRights DesiredAccess,
-            ObjectAttributes ObjectAttributes,
+            [In] ObjectAttributes ObjectAttributes,
             EventType EventType,
             bool InitialState);
 
@@ -51,7 +52,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtOpenEvent(
             out SafeKernelObjectHandle EventHandle,
             EventAccessRights DesiredAccess,
-            ObjectAttributes ObjectAttributes);
+            [In] ObjectAttributes ObjectAttributes);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtSetEvent(
@@ -67,7 +68,11 @@ namespace NtApiDotNet
             SafeHandle EventHandle,
             out int PreviousState);
     }
+#pragma warning restore 1591
 
+    /// <summary>
+    /// Class representing a NT Event object
+    /// </summary>
     public class NtEvent : NtObjectWithDuplicate<NtEvent, EventAccessRights>
     {
         internal NtEvent(SafeKernelObjectHandle handle) 
@@ -75,25 +80,44 @@ namespace NtApiDotNet
         {
         }
 
+        /// <summary>
+        /// Set the event state
+        /// </summary>
+        /// <returns>The previous state of the event</returns>
         public int Set()
         {
             int previous_state;
-            StatusToNtException(NtSystemCalls.NtSetEvent(Handle, out previous_state));
+            NtSystemCalls.NtSetEvent(Handle, out previous_state).ToNtException();
             return previous_state;
         }
 
+        /// <summary>
+        /// Clear the event state
+        /// </summary>
         public void Clear()
         {            
-            StatusToNtException(NtSystemCalls.NtClearEvent(Handle));            
+            NtSystemCalls.NtClearEvent(Handle).ToNtException();
         }
 
+        /// <summary>
+        /// Pulse the event state.
+        /// </summary>
+        /// <returns>The previous state of the event</returns>
         public int Pulse()
         {
             int previous_state;
-            StatusToNtException(NtSystemCalls.NtPulseEvent(Handle, out previous_state));
+            NtSystemCalls.NtPulseEvent(Handle, out previous_state).ToNtException();
             return previous_state;
         }
 
+        /// <summary>
+        /// Create an event object
+        /// </summary>
+        /// <param name="name">The path to the event</param>
+        /// <param name="root">The root object for relative path names</param>
+        /// <param name="type">The type of the even</param>
+        /// <param name="initial_state">The initial state of the event</param>
+        /// <returns>The event object</returns>
         public static NtEvent Create(string name, NtObject root, EventType type, bool initial_state)
         {            
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
@@ -102,40 +126,78 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Create an event object
+        /// </summary>
+        /// <param name="object_attributes">The event object attributes</param>
+        /// <param name="type">The type of the event</param>
+        /// <param name="initial_state">The initial state of the event</param>
+        /// <param name="desired_access">The desired access for the event</param>
+        /// <returns>The event object</returns>
         public static NtEvent Create(ObjectAttributes object_attributes, EventType type, bool initial_state, EventAccessRights desired_access)
         {
             SafeKernelObjectHandle handle;
-            StatusToNtException(NtSystemCalls.NtCreateEvent(out handle, desired_access, object_attributes, type, initial_state));
+            NtSystemCalls.NtCreateEvent(out handle, desired_access, object_attributes, type, initial_state).ToNtException();
             return new NtEvent(handle);        
         }
 
+        /// <summary>
+        /// Create an event object
+        /// </summary>
+        /// <param name="name">The path to the event</param>
+        /// <param name="type">The type of the even</param>
+        /// <param name="initial_state">The initial state of the event</param>
+        /// <returns>The event object</returns>
         public static NtEvent Create(string name, EventType type, bool initial_state)
         {
             return Create(name, null, type, initial_state);
         }
-
-        public static NtEvent Open(string name, NtObject root, EventAccessRights access)
+        /// <summary>
+        /// Open an event object
+        /// </summary>
+        /// <param name="name">The path to the event</param>
+        /// <param name="root">The root object for relative path names</param>
+        /// <param name="desired_access">The desired access for the event</param>
+        /// <returns>The event object</returns>
+        public static NtEvent Open(string name, NtObject root, EventAccessRights desired_access)
         {            
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
                 SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtOpenEvent(out handle, access, obja));
+                NtSystemCalls.NtOpenEvent(out handle, desired_access, obja).ToNtException();
                 return new NtEvent(handle);
             }
         }
 
-        public static NtEvent Open(ObjectAttributes object_attributes, EventAccessRights access)
+        /// <summary>
+        /// Open an event object
+        /// </summary>
+        /// <param name="object_attributes">The event object attributes</param>
+        /// <param name="desired_access">The desired access for the event</param>
+        /// <returns></returns>
+        public static NtEvent Open(ObjectAttributes object_attributes, EventAccessRights desired_access)
         {
             SafeKernelObjectHandle handle;
-            StatusToNtException(NtSystemCalls.NtOpenEvent(out handle, access, object_attributes));
+            NtSystemCalls.NtOpenEvent(out handle, desired_access, object_attributes).ToNtException();
             return new NtEvent(handle);        
         }
 
+        /// <summary>
+        /// Open an event object
+        /// </summary>
+        /// <param name="name">The path to the event</param>
+        /// <param name="root">The root object for relative path names</param>
+        /// <returns>The event object</returns>
         public static NtEvent Open(string name, NtObject root)
         {
             return Open(name, root, EventAccessRights.MaximumAllowed);
         }
 
+        /// <summary>
+        /// Open an event object
+        /// </summary>
+        /// <param name="name">The path to the event</param>
+        /// <returns>The event object</returns>
         public static NtEvent Open(string name)
         {
             return Open(name, null);

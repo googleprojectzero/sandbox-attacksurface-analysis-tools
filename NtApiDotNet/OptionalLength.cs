@@ -23,37 +23,72 @@ namespace NtApiDotNet
     [StructLayout(LayoutKind.Sequential)]
     public class OptionalLength
     {
+        /// <summary>
+        /// Optional length
+        /// </summary>
         public int Length;
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="length">The length value</param>
         public OptionalLength(int length)
         {
             Length = length;
         }
 
+        /// <summary>
+        /// Implicit conversion
+        /// </summary>
+        /// <param name="length">The length value</param>
         public static implicit operator OptionalLength(int length)
         {
             return new OptionalLength(length);
         }
     }
 
+    /// <summary>
+    /// This class allows a function to specify an optional length as a SizeT
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public class OptionalLengthSizeT
     {
+        /// <summary>
+        /// Optional length
+        /// </summary>
         public IntPtr Length;
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="length">The length value</param>
         public OptionalLengthSizeT(IntPtr length)
         {
             Length = length;
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="length">The length value</param>
         public OptionalLengthSizeT(int length)
         {
             Length = new IntPtr(length);
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="length">The length value</param>
         public OptionalLengthSizeT(long length)
         {
             Length = new IntPtr(length);
         }
 
+        /// <summary>
+        /// Implicit conversion
+        /// </summary>
+        /// <param name="length">The length value</param>
         public static implicit operator OptionalLengthSizeT(int length)
         {
             return new OptionalLengthSizeT(length);

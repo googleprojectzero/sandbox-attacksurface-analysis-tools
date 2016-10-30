@@ -17,6 +17,7 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     /// <summary>
     /// Semaphore access rights.
     /// </summary>
@@ -56,6 +57,7 @@ namespace NtApiDotNet
            out int PreviousCount
         );
     }
+#pragma warning restore 1591
 
     public class NtSemaphore : NtObjectWithDuplicate<NtSemaphore, SemaphoreAccessRights>
     {
@@ -68,7 +70,7 @@ namespace NtApiDotNet
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
                 SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtCreateSemaphore(out handle, SemaphoreAccessRights.MaximumAllowed, obja, initial_count, maximum_count));
+                NtSystemCalls.NtCreateSemaphore(out handle, SemaphoreAccessRights.MaximumAllowed, obja, initial_count, maximum_count).ToNtException();
                 return new NtSemaphore(handle);
             }
         }
@@ -78,7 +80,7 @@ namespace NtApiDotNet
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
                 SafeKernelObjectHandle handle;
-                StatusToNtException(NtSystemCalls.NtOpenSemaphore(out handle, access_rights, obja));
+                NtSystemCalls.NtOpenSemaphore(out handle, access_rights, obja).ToNtException();
                 return new NtSemaphore(handle);
             }
         }

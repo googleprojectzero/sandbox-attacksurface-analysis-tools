@@ -57,63 +57,106 @@ namespace NtApiDotNet
         /// Path to DLLs.
         /// </summary>
         public string DllPath { get; set; }
+        /// <summary>
+        /// Current directory for new process
+        /// </summary>
         public string CurrentDirectory { get; set; }
+        /// <summary>
+        /// Desktop information value
+        /// </summary>
         public string DesktopInfo { get; set; }
+
+        /// <summary>
+        /// Shell information value
+        /// </summary>
         public string ShellInfo
         {
             get; set;
         }
 
+        /// <summary>
+        /// Runtime data.
+        /// </summary>
         public string RuntimeData
         {
             get; set;
         }
 
+        /// <summary>
+        /// Prohibited image characteristics for new process
+        /// </summary>
         public ImageCharacteristics ProhibitedImageCharacteristics
         {
             get; set;
         }
 
+        /// <summary>
+        /// Additional file access for opened executable file.
+        /// </summary>
         public FileAccessRights AdditionalFileAccess
         {
             get; set;
         }
 
+        /// <summary>
+        /// Process create flags.
+        /// </summary>
         public ProcessCreateFlags ProcessFlags
         {
             get; set;
         }
 
+        /// <summary>
+        /// Thread create flags.
+        /// </summary>
         public ThreadCreateFlags ThreadFlags
         {
             get; set;
         }
 
+        /// <summary>
+        /// Initialization flags
+        /// </summary>
         public ProcessCreateInitFlag InitFlags
         {
             get; set;
         }
 
+        /// <summary>
+        /// Restrict new child processes
+        /// </summary>
         public bool RestrictChildProcess
         {
             get; set;
         }
 
+        /// <summary>
+        /// Override restrict child process
+        /// </summary>
         public bool OverrideRestrictChildProcess
         {
             get; set;
         }
 
+        /// <summary>
+        /// Extra process/thread attributes
+        /// </summary>
         public List<ProcessAttribute> AdditionalAttributes
         {
             get; private set;
         }
 
+        /// <summary>
+        /// Return on error instead of throwing an exception.
+        /// </summary>
         public bool ReturnOnError
         {
             get; set;
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
         public CreateUserProcess()
         {
             DesktopInfo = @"WinSta0\Default";
@@ -123,6 +166,10 @@ namespace NtApiDotNet
             AdditionalAttributes = new List<ProcessAttribute>();
         }
 
+        /// <summary>
+        /// For the current process
+        /// </summary>
+        /// <returns>The new forked process result</returns>
         public static CreateUserProcessResult Fork()
         {
             List<ProcessAttribute> attrs = new List<ProcessAttribute>();
@@ -141,9 +188,7 @@ namespace NtApiDotNet
                   out process_handle, out thread_handle,
                   ProcessAccessRights.MaximumAllowed, ThreadAccessRights.MaximumAllowed,
                   null, null, ProcessCreateFlags.InheritFromParent,
-                  ThreadCreateFlags.Suspended, IntPtr.Zero, create_info, attr_list);
-
-                NtObject.StatusToNtException(status);
+                  ThreadCreateFlags.Suspended, IntPtr.Zero, create_info, attr_list).ToNtException();
 
                 return new CreateUserProcessResult(process_handle, thread_handle,
                   create_info.Data, new SectionImageInformation(), client_id.Result);
@@ -157,6 +202,11 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Start the new process
+        /// </summary>
+        /// <param name="image_path">The image path to the file to execute</param>
+        /// <returns>The result of the process creation</returns>
         public CreateUserProcessResult Start(string image_path)
         {
             if (image_path == null)
@@ -195,7 +245,7 @@ namespace NtApiDotNet
                   null, null, ProcessFlags,
                   ThreadFlags, process_params, create_info, attr_list);
 
-                if ((int)status < 0 && !ReturnOnError)
+                if (!status.IsSuccess() && !ReturnOnError)
                 {
                     // Close handles which come from errors
                     switch (create_info.State)
@@ -208,7 +258,7 @@ namespace NtApiDotNet
                             break;
                     }
 
-                    NtObject.StatusToNtException(status);
+                    status.ToNtException();
                 }
 
                 if (create_info.State == ProcessCreateState.Success)
