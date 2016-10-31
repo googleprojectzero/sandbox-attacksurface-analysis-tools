@@ -704,13 +704,16 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>The object ID as a string</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public string GetFileId()
+        public string FileId
         {
-            using (var internal_info = new SafeStructureInOutBuffer<FileInternalInformation>())
+            get
             {
-                IoStatus iostatus = new IoStatus();
-                NtSystemCalls.NtQueryInformationFile(Handle, iostatus, internal_info, internal_info.Length, FileInformationClass.FileInternalInformation).ToNtException();
-                return Encoding.Unicode.GetString(BitConverter.GetBytes(internal_info.Result.IndexNumber.QuadPart));
+                using (var internal_info = new SafeStructureInOutBuffer<FileInternalInformation>())
+                {
+                    IoStatus iostatus = new IoStatus();
+                    NtSystemCalls.NtQueryInformationFile(Handle, iostatus, internal_info, internal_info.Length, FileInformationClass.FileInternalInformation).ToNtException();
+                    return Encoding.Unicode.GetString(BitConverter.GetBytes(internal_info.Result.IndexNumber.QuadPart));
+                }
             }
         }
 
@@ -719,13 +722,16 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>The file attributes</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public FileAttributes GetFileAttributes()
+        public FileAttributes FileAttributes
         {
-            using (var basic_info = new SafeStructureInOutBuffer<FileBasicInformation>())
+            get
             {
-                IoStatus iostatus = new IoStatus();
-                NtSystemCalls.NtQueryInformationFile(Handle, iostatus, basic_info, basic_info.Length, FileInformationClass.FileBasicInformation).ToNtException();
-                return basic_info.Result.FileAttributes;
+                using (var basic_info = new SafeStructureInOutBuffer<FileBasicInformation>())
+                {
+                    IoStatus iostatus = new IoStatus();
+                    NtSystemCalls.NtQueryInformationFile(Handle, iostatus, basic_info, basic_info.Length, FileInformationClass.FileBasicInformation).ToNtException();
+                    return basic_info.Result.FileAttributes;
+                }
             }
         }
 
@@ -739,7 +745,7 @@ namespace NtApiDotNet
         {
             using (NtFile file = NtFile.Open(path, null, FileAccessRights.MaximumAllowed, FileShareMode.None, FileOpenOptions.None))
             {
-                return file.GetFileId();
+                return file.FileId;
             }
         }
 
@@ -828,6 +834,16 @@ namespace NtApiDotNet
             }
         }
 
+        private static SafeFileHandle DuplicateAsFile(SafeHandle handle)
+        {
+            using (SafeKernelObjectHandle dup_handle = DuplicateHandle(NtProcess.Current, handle, NtProcess.Current))
+            {
+                SafeFileHandle ret = new SafeFileHandle(dup_handle.DangerousGetHandle(), true);
+                dup_handle.SetHandleAsInvalid();
+                return ret;
+            }
+        }
+
         /// <summary>
         /// Convert this NtFile to a FileStream for reading/writing.
         /// </summary>
@@ -838,11 +854,11 @@ namespace NtApiDotNet
         {
             FileAccess access = FileAccess.Read;
 
-            if (GetNtType().HasWritePermission(GetGrantedAccessRaw()))
+            if (NtType.HasWritePermission(GrantedAccessRaw))
             {
                 access = FileAccess.ReadWrite;
             }
-            return new FileStream(NtObject.DuplicateAsFile(Handle), access);
+            return new FileStream(DuplicateAsFile(Handle), access);
         }
 
         [Flags]
@@ -873,15 +889,18 @@ namespace NtApiDotNet
         /// Get the Win32 path name for the file.
         /// </summary>
         /// <returns>The path, String.Empty on error.</returns>
-        public string GetWin32PathName()
+        public string Win32PathName
         {
-            try
+            get
             {
-                return GetPathNameInternal(FinalPathNameFlags.NameNone);
-            }
-            catch (Win32Exception)
-            {
-                return String.Empty;
+                try
+                {
+                    return GetPathNameInternal(FinalPathNameFlags.NameNone);
+                }
+                catch (Win32Exception)
+                {
+                    return String.Empty;
+                }
             }
         }
 
@@ -889,14 +908,17 @@ namespace NtApiDotNet
         /// Get the low-level device type of the file.
         /// </summary>
         /// <returns>The file device type.</returns>
-        public FileDeviceType GetDeviceType()
+        public FileDeviceType DeviceType
         {
-            using (SafeStructureInOutBuffer<FileFsDeviceInformation> file_info = new SafeStructureInOutBuffer<FileFsDeviceInformation>())
+            get
             {
-                IoStatus status = new IoStatus();
-                NtSystemCalls.NtQueryVolumeInformationFile(Handle, status, file_info, 
-                    file_info.Length, FsInformationClass.FileFsDeviceInformation).ToNtException();
-                return file_info.Result.DeviceType;
+                using (SafeStructureInOutBuffer<FileFsDeviceInformation> file_info = new SafeStructureInOutBuffer<FileFsDeviceInformation>())
+                {
+                    IoStatus status = new IoStatus();
+                    NtSystemCalls.NtQueryVolumeInformationFile(Handle, status, file_info,
+                        file_info.Length, FsInformationClass.FileFsDeviceInformation).ToNtException();
+                    return file_info.Result.DeviceType;
+                }
             }
         }
 
@@ -926,16 +948,19 @@ namespace NtApiDotNet
         /// Get the name of the file.
         /// </summary>
         /// <returns>The name of the file.</returns>
-        public override string GetName()
+        public override string FullPath
         {
-            if (GetDeviceType() != FileDeviceType.NAMED_PIPE)
+            get
             {
-                return base.GetName();
-            }
-            else
-            {
-                Console.WriteLine("Granted Access: {0}", GetGrantedAccessString());
-                return base.GetName();
+                if (DeviceType!= FileDeviceType.NAMED_PIPE)
+                {
+                    return base.FullPath;
+                }
+                else
+                {
+                    Console.WriteLine("Granted Access: {0}", GetGrantedAccessString());
+                    return base.FullPath;
+                }
             }
         }
     }

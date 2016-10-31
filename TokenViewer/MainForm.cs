@@ -33,8 +33,8 @@ namespace TokenViewer
                 using (NtToken token = entry.OpenToken())
                 {
                     TreeNode node = new TreeNode(String.Format("Pid: {0} - Name: {1} (User:{2}, IL: {3}, R: {4}, AC: {5})",
-                       entry.GetProcessId(), entry.GetName(), token.GetUser(), token.GetIntegrityLevel(),
-                       token.IsRestricted(), token.IsAppContainer()));
+                       entry.ProcessId, entry.Name, token.User, token.IntegrityLevel,
+                       token.Restricted, token.AppContainer));
                     node.Tag = entry.Duplicate();
                     treeViewProcesses.Nodes.Add(node);
                 }
@@ -57,10 +57,10 @@ namespace TokenViewer
                         {
                             if (token != null)
                             {
-                                ListViewItem item = new ListViewItem(String.Format("{0} - {1}", entry.GetProcessId(), entry.GetName()));
-                                item.SubItems.Add(thread.GetThreadId().ToString());
-                                item.SubItems.Add(token.GetUser().ToString());
-                                item.SubItems.Add(token.GetImpersonationLevel().ToString());
+                                ListViewItem item = new ListViewItem(String.Format("{0} - {1}", entry.ProcessId, entry.Name));
+                                item.SubItems.Add(thread.ThreadId.ToString());
+                                item.SubItems.Add(token.User.ToString());
+                                item.SubItems.Add(token.ImpersonationLevel.ToString());
                                 item.Tag = thread.Duplicate();
                                 listViewThreads.Items.Add(item);
                             }
@@ -101,7 +101,7 @@ namespace TokenViewer
         {
             try
             {
-                return NtToken.OpenProcessToken(thread.GetProcessId());
+                return NtToken.OpenProcessToken(thread.ProcessId);
             }
             catch (NtException)
             {
@@ -119,7 +119,7 @@ namespace TokenViewer
                 {
                     return false;
                 }
-                return token.IsRestricted() || token.IsAppContainer() || token.GetIntegrityLevel() < TokenIntegrityLevel.Medium;
+                return token.Restricted|| token.AppContainer|| token.IntegrityLevel< TokenIntegrityLevel.Medium;
             }
             catch (NtException)
             {
@@ -164,14 +164,14 @@ namespace TokenViewer
         {
             using (var processes = new DisposableList<NtProcess>(NtProcess.GetProcesses(ProcessAccessRights.QueryInformation)))
             {
-                processes.Sort((a, b) => a.GetProcessId() - b.GetProcessId());
+                processes.Sort((a, b) => a.ProcessId- b.ProcessId);
 
                 IEnumerable<NtProcess> filtered = processes.Where(p => GetToken(p) != null);
 
                 if (!String.IsNullOrWhiteSpace(filter))
                 {
                     filter = filter.ToLower();
-                    filtered = filtered.Where(p => p.GetName().ToLower().Contains(filter));
+                    filtered = filtered.Where(p => p.FullPath.ToLower().Contains(filter));
                 }
 
                 if (hideUnrestricted)
@@ -198,8 +198,8 @@ namespace TokenViewer
                 ClearList(listViewSessions);
                 foreach (NtToken token in tokens)
                 {
-                    ListViewItem item = new ListViewItem(token.GetSessionId().ToString());
-                    item.SubItems.Add(token.GetUser().ToString());
+                    ListViewItem item = new ListViewItem(token.SessionId.ToString());
+                    item.SubItems.Add(token.User.ToString());
                     item.Tag = token.Duplicate();
                     listViewSessions.Items.Add(item);
                 }
@@ -275,7 +275,7 @@ namespace TokenViewer
                 {
                     try
                     {
-                        TokenForm.OpenForm(NtToken.DuplicateFrom(handle.Pid, new IntPtr(handle.Handle), TokenAccessRights.Query | TokenAccessRights.QuerySource), false);
+                        TokenForm.OpenForm(NtToken.DuplicateFrom(handle.ProcessId, new IntPtr(handle.Handle), TokenAccessRights.Query | TokenAccessRights.QuerySource), false);
                     }
                     catch (Exception ex)
                     {
@@ -441,7 +441,7 @@ namespace TokenViewer
             if (node != null && node.Tag is NtProcess)
             {
                 NtProcess entry = (NtProcess)node.Tag;
-                IEnumerable<NtHandle> handles = NtSystemInfo.GetHandles(entry.GetProcessId(), false);
+                IEnumerable<NtHandle> handles = NtSystemInfo.GetHandles(entry.ProcessId, false);
                 node.Nodes.Clear();
                 foreach (NtHandle handle in handles)
                 {

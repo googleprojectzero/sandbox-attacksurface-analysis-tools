@@ -19,7 +19,7 @@ namespace NtObjectManager
     /// <summary>
     /// A class representing a NT object manager directory entry.
     /// </summary>
-    public class ObjectDirectoryEntry
+    public class NtDirectoryEntry
     {
         private NtDirectory _base_directory;
         private SecurityDescriptor _sd;
@@ -40,16 +40,16 @@ namespace NtObjectManager
                         {
                             if (obj.IsAccessGrantedRaw(GenericAccessRights.ReadControl))
                             {
-                                _sd = obj.GetSecurityDescriptor();
+                                _sd = obj.SecurityDescriptor;
                             }
 
                             NtSymbolicLink link = obj as NtSymbolicLink;
                             if (link != null && link.IsAccessGranted(SymbolicLinkAccessRights.Query))
                             {
-                                _symlink_target = link.Query();
+                                _symlink_target = link.Target;
                             }
 
-                            _maximum_granted_access = obj.GetGrantedAccessObject();
+                            _maximum_granted_access = obj.GrantedAccessObject;
                         }
                     }
                     catch
@@ -131,7 +131,7 @@ namespace NtObjectManager
             return NtObject.OpenWithType(TypeName, RelativePath, _base_directory, GenericAccessRights.MaximumAllowed);
         }
 
-        internal ObjectDirectoryEntry(NtDirectory base_directory, string relative_path, string name, string typename)
+        internal NtDirectoryEntry(NtDirectory base_directory, string relative_path, string name, string typename)
         {
             Name = name;
             TypeName = typename;

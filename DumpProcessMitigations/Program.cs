@@ -57,7 +57,7 @@ namespace DumpProcessMitigations
         {
             try
             {
-                return process.GetCommandLine();
+                return process.CommandLine;
             }
             catch (NtException)
             {
@@ -69,9 +69,9 @@ namespace DumpProcessMitigations
         {
             try
             {
-                NtProcessMitigations mitigations = entry.GetProcessMitigations();
+                NtProcessMitigations mitigations = entry.Mitigations;
 
-                Console.WriteLine("Process Mitigations: {0,8} - {1}", entry.GetProcessId(), entry.GetImageFileName(false));
+                Console.WriteLine("Process Mitigations: {0,8} - {1}", entry.ProcessId, entry.GetImageFilePath(false));
                 if (print_command_line)
                 {
                     Console.WriteLine("Command Line: {0}", GetCommandLine(entry));
@@ -153,17 +153,17 @@ namespace DumpProcessMitigations
 
                     if (pid_filter.Count > 0)
                     {
-                        procs = procs.Where(e => pid_filter.Contains(e.GetProcessId()));
+                        procs = procs.Where(e => pid_filter.Contains(e.ProcessId));
                     }
 
                     if (process_filter.Count > 0)
                     {
-                        procs = procs.Where(e => ContainsString(e.GetImageFileName(false).ToLower(), process_filter));
+                        procs = procs.Where(e => ContainsString(e.GetImageFilePath(false).ToLower(), process_filter));
                     }
 
                     if (mitigation_filter.Count > 0)
                     {
-                        procs = procs.Where(e => HasPropertySet(e.GetProcessMitigations(), mitigation_filter));
+                        procs = procs.Where(e => HasPropertySet(e.Mitigations, mitigation_filter));
                     }
 
                     foreach (NtProcess entry in procs)

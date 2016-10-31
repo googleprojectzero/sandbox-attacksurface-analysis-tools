@@ -32,7 +32,7 @@ namespace NtObjectManager
     [CmdletProvider("NtObjectManager", ProviderCapabilities.ExpandWildcards)]
     public class NtObjectManagerProvider : NavigationCmdletProvider, ISecurityDescriptorCmdletProvider
     {
-        private static Dictionary<string, ObjectDirectoryEntry> _item_cache = new Dictionary<string, ObjectDirectoryEntry>();
+        private static Dictionary<string, NtDirectoryEntry> _item_cache = new Dictionary<string, NtDirectoryEntry>();
 
         private class ObjectManagerPSDriveInfo : PSDriveInfo
         {
@@ -376,7 +376,7 @@ namespace NtObjectManager
                     foreach (ObjectDirectoryInformation dir_info in dir.Query())
                     {
                         string new_path = BuildRelativePath(relative_path, dir_info.Name);
-                        WriteItemObject(new ObjectDirectoryEntry(GetDrive().DirectoryRoot, new_path,
+                        WriteItemObject(new NtDirectoryEntry(GetDrive().DirectoryRoot, new_path,
                             recurse ? new_path : dir_info.Name, dir_info.TypeName), NTPathToPS(BuildDrivePath(new_path)), dir_info.IsDirectory);
                         if (recurse && dir_info.IsDirectory)
                         {
@@ -458,7 +458,7 @@ namespace NtObjectManager
             {
                 if (relative_path.Length == 0)
                 {
-                    WriteItemObject(new ObjectDirectoryEntry(GetDrive().DirectoryRoot, relative_path, String.Empty, "Directory"),
+                    WriteItemObject(new NtDirectoryEntry(GetDrive().DirectoryRoot, relative_path, String.Empty, "Directory"),
                             NTPathToPS(BuildDrivePath(relative_path)), true);
                 }
                 else
@@ -466,7 +466,7 @@ namespace NtObjectManager
                     ObjectDirectoryInformation dir_info = GetEntry(dir, relative_path);
                     if (dir_info != null)
                     {
-                        WriteItemObject(new ObjectDirectoryEntry(GetDrive().DirectoryRoot, relative_path, dir_info.Name, dir_info.TypeName),
+                        WriteItemObject(new NtDirectoryEntry(GetDrive().DirectoryRoot, relative_path, dir_info.Name, dir_info.TypeName),
                             NTPathToPS(BuildDrivePath(relative_path)), dir_info.IsDirectory);
                     }
                 }
@@ -529,7 +529,7 @@ namespace NtObjectManager
                 foreach (ObjectDirectoryInformation dir_info in matching_entries)
                 {
                     string full_path = base_path + dir_info.Name;
-                    _item_cache[full_path] = new ObjectDirectoryEntry(GetDrive().DirectoryRoot, PSPathToNT(full_path), dir_info.Name, dir_info.TypeName);
+                    _item_cache[full_path] = new NtDirectoryEntry(GetDrive().DirectoryRoot, PSPathToNT(full_path), dir_info.Name, dir_info.TypeName);
                     matches.Add(full_path);
                 }
             }

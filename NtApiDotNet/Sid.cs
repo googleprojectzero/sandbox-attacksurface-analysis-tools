@@ -23,6 +23,7 @@ namespace NtApiDotNet
     /// </summary>
     public enum SecurityAuthority : byte
     {
+#pragma warning disable 1591
         Null = 0,
         World = 1,
         Local = 2,
@@ -35,6 +36,7 @@ namespace NtApiDotNet
         ScopedPolicyId = 17,
         Authentication = 18,
         ProcessTrust = 19,
+#pragma warning restore 1591
     }
 
     /// <summary>
@@ -381,10 +383,12 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the account name of the SID or the SDDL form is no corresponding name.
         /// </summary>
-        /// <returns>The account name or SDDL form.</returns>
-        public string GetName()
+        public string Name
         {
-            return NtSecurity.LookupAccountSid(this) ?? ToString();
+            get
+            {
+                return NtSecurity.LookupAccountSid(this) ?? ToString();
+            }
         }
     }
 

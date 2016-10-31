@@ -172,6 +172,10 @@ namespace NtApiDotNet
     /// </summary>
     public abstract class NtObject : IDisposable
     {
+        /// <summary>
+        /// Base constructor
+        /// </summary>
+        /// <param name="handle">Handle to the object</param>
         protected NtObject(SafeKernelObjectHandle handle)
         {
             SetHandle(handle);          
@@ -210,32 +214,62 @@ namespace NtApiDotNet
             return ret;
         }
 
-        public SafeKernelObjectHandle DuplicateHandle(NtProcess dest_process, uint access, DuplicateObjectOptions options)
+        /// <summary>
+        /// Duplicate the internal handle to a new handle.
+        /// </summary>
+        /// <param name="dest_process">The desination process for the handle</param>
+        /// <param name="options">Duplicate handle options</param>
+        /// <param name="access_rights">The access rights for the new handle</param>
+        /// <returns>The new duplicated handle.</returns>
+        public SafeKernelObjectHandle DuplicateHandle(NtProcess dest_process, uint access_rights, DuplicateObjectOptions options)
         {
             SafeKernelObjectHandle new_handle;
 
             NtSystemCalls.NtDuplicateObject(NtProcess.Current.Handle, Handle,
-              dest_process.Handle, out new_handle, (GenericAccessRights)access, AttributeFlags.None, 
+              dest_process.Handle, out new_handle, (GenericAccessRights)access_rights, AttributeFlags.None, 
               options).ToNtException();
 
             return new_handle;
         }
 
+        /// <summary>
+        /// Duplicate the internal handle to a new handle with the same access rights.
+        /// </summary>
+        /// <returns>The new duplicated handle.</returns>
         public SafeKernelObjectHandle DuplicateHandle()
         {
             return DuplicateHandle(NtProcess.Current, 0, DuplicateObjectOptions.SameAccess);
         }
 
-        public SafeKernelObjectHandle DuplicateHandle(uint access)
+        /// <summary>
+        /// Duplicate the internal handle to a new handle.
+        /// </summary>
+        /// <param name="access_rights">The access rights for the new handle</param>
+        /// <returns>The new duplicated handle.</returns>
+        public SafeKernelObjectHandle DuplicateHandle(uint access_rights)
         {
-            return DuplicateHandle(NtProcess.Current, access, DuplicateObjectOptions.None);
+            return DuplicateHandle(NtProcess.Current, access_rights, DuplicateObjectOptions.None);
         }
 
-        public SafeKernelObjectHandle DuplicateHandle(GenericAccessRights access)
+        /// <summary>
+        /// Duplicate the internal handle to a new handle.
+        /// </summary>
+        /// <param name="access_rights">The access rights for the new handle</param>
+        /// <returns>The new duplicated handle.</returns>
+        public SafeKernelObjectHandle DuplicateHandle(GenericAccessRights access_rights)
         {
-            return DuplicateHandle((uint)access);
+            return DuplicateHandle((uint)access_rights);
         }
 
+        /// <summary>
+        /// Duplicate the internal handle to a new handle.
+        /// </summary>
+        /// <param name="source_process">The source process for the handle</param>
+        /// <param name="dest_process">The desination process for the handle</param>
+        /// <param name="handle">The handle in the source process to duplicate</param>
+        /// <param name="options">Duplicate handle options</param>
+        /// <param name="access_rights">The access rights for the new handle</param>
+        /// <returns>The new duplicated handle.</returns>
         public static SafeKernelObjectHandle DuplicateHandle(NtProcess source_process, SafeHandle handle, NtProcess dest_process, GenericAccessRights access_rights, DuplicateObjectOptions options)
         {
             SafeKernelObjectHandle new_handle;
@@ -248,39 +282,39 @@ namespace NtApiDotNet
             return new_handle;
         }
 
+        /// <summary>
+        /// Duplicate the internal handle to a new handle.
+        /// </summary>
+        /// <param name="source_process">The source process for the handle</param>
+        /// <param name="dest_process">The desination process for the handle</param>
+        /// <param name="handle">The handle in the source process to duplicate</param>
+        /// <param name="access_rights">The access rights for the new handle</param>
+        /// <returns>The new duplicated handle.</returns>
         public static SafeKernelObjectHandle DuplicateHandle(NtProcess source_process, SafeHandle handle, NtProcess dest_process, GenericAccessRights access_rights)
         {
             return DuplicateHandle(source_process, handle, dest_process, access_rights, DuplicateObjectOptions.None);
         }
 
+        /// <summary>
+        /// Duplicate the internal handle to a new handle.
+        /// </summary>
+        /// <param name="source_process">The source process for the handle</param>
+        /// <param name="dest_process">The desination process for the handle</param>
+        /// <param name="handle">The handle in the source process to duplicate</param>
+        /// <returns>The new duplicated handle.</returns>
         public static SafeKernelObjectHandle DuplicateHandle(NtProcess source_process, SafeHandle handle, NtProcess dest_process)
         {
             return DuplicateHandle(source_process, handle, dest_process, GenericAccessRights.None, DuplicateObjectOptions.SameAccess);
         }
 
+        /// <summary>
+        /// Duplicate the internal handle to a new handle.
+        /// </summary>
+        /// <param name="handle">The handle in the source process to duplicate</param>
+        /// <returns>The new duplicated handle.</returns>
         public static SafeKernelObjectHandle DuplicateHandle(SafeHandle handle)
         {
             return DuplicateHandle(NtProcess.Current, handle, NtProcess.Current);
-        }
-
-        public static SafeFileHandle DuplicateAsFile(SafeHandle handle)
-        {
-            using (SafeKernelObjectHandle dup_handle = DuplicateHandle(NtProcess.Current, handle, NtProcess.Current))
-            {
-                SafeFileHandle ret = new SafeFileHandle(dup_handle.DangerousGetHandle(), true);
-                dup_handle.SetHandleAsInvalid();
-                return ret;
-            }
-        }
-
-        public static SafeRegistryHandle DuplicateAsRegistry(SafeHandle handle)
-        {
-            using (SafeKernelObjectHandle dup_handle = DuplicateHandle(NtProcess.Current, handle, NtProcess.Current))
-            {
-                SafeRegistryHandle ret = new SafeRegistryHandle(dup_handle.DangerousGetHandle(), true);
-                dup_handle.SetHandleAsInvalid();
-                return ret;
-            }            
         }
 
         private static string GetName(SafeKernelObjectHandle handle)
@@ -299,110 +333,193 @@ namespace NtApiDotNet
             }
         }
 
-        public virtual string GetName()
+        /// <summary>
+        /// Get full path to the object
+        /// </summary>
+        public virtual string FullPath
         {
-            return GetName(Handle);           
+            get
+            {
+                return GetName(Handle);
+            }
         }
 
-        protected static uint GetGrantedAccessInternal(SafeKernelObjectHandle handle)
+        private ObjectBasicInformation? _basic_info;
+
+        /// <summary>
+        /// Get the basic information for the object.
+        /// </summary>
+        /// <returns>The basic information</returns>
+        private ObjectBasicInformation QueryBasicInformation()
         {
-            try
+            if (!_basic_info.HasValue)
             {
-                using (var basic_info = QueryObject<ObjectBasicInformation>(handle, ObjectInformationClass.ObjectBasicInformation))
+                try
                 {
-                    return basic_info.Result.DesiredAccess;
+                    using (var basic_info = QueryObject<ObjectBasicInformation>(Handle, ObjectInformationClass.ObjectBasicInformation))
+                    {
+                        _basic_info = basic_info.Result;
+                    }
+                }
+                catch
+                {
+                    _basic_info = new ObjectBasicInformation();
                 }
             }
-            catch
+            return _basic_info.Value;
+        }
+
+        /// <summary>
+        /// Get the granted access as an unsigned integer
+        /// </summary>
+        public uint GrantedAccessRaw
+        {
+            get
             {
-                return 0;
+                return QueryBasicInformation().DesiredAccess;
             }
         }
 
-        public uint GetGrantedAccessRaw()
+        /// <summary>
+        /// Get the granted access as an object
+        /// </summary>
+        public virtual object GrantedAccessObject
         {
-            return GetGrantedAccessInternal(Handle);
+            get
+            {
+                return GrantedAccessRaw;
+            }
         }
 
-        public virtual object GetGrantedAccessObject()
-        {
-            return GetGrantedAccessRaw();
-        }
-
-
+        /// <summary>
+        /// Check if access is granted to a set of rights
+        /// </summary>
+        /// <typeparam name="T">The type of enumeration for the access rights</typeparam>
+        /// <param name="access">The access rights to check</param>
+        /// <returns>True if all the access rights are granted</returns>
         public bool IsAccessGrantedRaw<T>(T access) where T : IConvertible
         {
-            uint granted = GetGrantedAccessRaw();
+            uint granted = GrantedAccessRaw;
             uint required = access.ToUInt32(null);
             return (granted & required) == required;
         }
 
-        public static byte[] GetRawSecurityDescriptor(SafeKernelObjectHandle handle, SecurityInformation security_information)
+        /// <summary>
+        /// Get security descriptor as a byte array
+        /// </summary>
+        /// <param name="security_information">What parts of the security descriptor to retrieve</param>
+        /// <returns>The security descriptor</returns>
+        public byte[] GetSecurityDescriptorBytes(SecurityInformation security_information)
         {
             int return_length;
-            NtStatus status = NtSystemCalls.NtQuerySecurityObject(handle, security_information, null, 0, out return_length);
+            NtStatus status = NtSystemCalls.NtQuerySecurityObject(Handle, security_information, null, 0, out return_length);
             if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
                 status.ToNtException();
             byte[] buffer = new byte[return_length];
-            NtSystemCalls.NtQuerySecurityObject(handle, security_information, buffer, buffer.Length, out return_length).ToNtException();
+            NtSystemCalls.NtQuerySecurityObject(Handle, security_information, buffer, buffer.Length, out return_length).ToNtException();
             return buffer;
         }
 
-        public byte[] GetRawSecurityDescriptor(SecurityInformation security_information)
+        /// <summary>
+        /// Get security descriptor as a byte array
+        /// </summary>
+        /// <returns>Returns an array of bytes for the security descriptor</returns>
+        public byte[] GetSecurityDescriptorBytes()
         {
-            return GetRawSecurityDescriptor(Handle, security_information);         
+            return GetSecurityDescriptorBytes(SecurityInformation.AllBasic);
         }
 
-        public byte[] GetRawSecurityDescriptor()
-        {
-            return GetRawSecurityDescriptor(SecurityInformation.AllBasic);
-        }
-
+        /// <summary>
+        /// Set the object's security descriptor
+        /// </summary>
+        /// <param name="security_desc">The security descriptor to set.</param>
+        /// <param name="security_information">What parts of the security descriptor to set</param>
         public void SetSecurityDescriptor(byte[] security_desc, SecurityInformation security_information)
         {
             NtSystemCalls.NtSetSecurityObject(Handle, security_information, security_desc).ToNtException();
         }
 
+        /// <summary>
+        /// Set the object's security descriptor
+        /// </summary>
+        /// <param name="security_desc">The security descriptor to set.</param>
+        /// <param name="security_information">What parts of the security descriptor to set</param>
         public void SetSecurityDescriptor(SecurityDescriptor security_desc, SecurityInformation security_information)
         {
             SetSecurityDescriptor(security_desc.ToByteArray(), security_information);
         }
 
+        /// <summary>
+        /// Get the security descriptor specifying which parts to retrieve
+        /// </summary>
+        /// <param name="security_information">What parts of the security descriptor to retrieve</param>
+        /// <returns>The security descriptor</returns>
         public SecurityDescriptor GetSecurityDescriptor(SecurityInformation security_information)
         {
-            return new SecurityDescriptor(GetRawSecurityDescriptor(security_information));
+            return new SecurityDescriptor(GetSecurityDescriptorBytes(security_information));
         }
 
-        public SecurityDescriptor GetSecurityDescriptor()
+        /// <summary>
+        /// Get the security descriptor, with Dacl, Owner, Group and Label
+        /// </summary>
+        public SecurityDescriptor SecurityDescriptor
         {
-            return GetSecurityDescriptor(SecurityInformation.AllBasic);
+            get
+            {
+                return GetSecurityDescriptor(SecurityInformation.AllBasic);
+            }
         }
 
+        /// <summary>
+        /// Get the security descriptor as an SDDL string
+        /// </summary>
+        /// <returns></returns>
         public string GetSddl()
         {
-            return GetSecurityDescriptor().ToSddl();
+            return SecurityDescriptor.ToSddl();
         }
 
+        /// <summary>
+        /// The low-level handle to the object.
+        /// </summary>
         public SafeKernelObjectHandle Handle { get; private set; }
 
+        /// <summary>
+        /// Make the object a temporary object
+        /// </summary>
         public void MakeTemporary()
         {
             NtSystemCalls.NtMakeTemporaryObject(Handle).ToNtException();
         }
 
+        /// <summary>
+        /// Make the object a permanent object
+        /// </summary>
         public void MakePermanent()
         {
            NtSystemCalls.NtMakePermanentObject(Handle).ToNtException();
         }
 
-        public NtStatus Wait(bool alertable, long timeout)
+        /// <summary>
+        /// Wait on the object to become signalled
+        /// </summary>
+        /// <param name="alertable">True to make the wait alertable</param>
+        /// <param name="timeout">The time out</param>
+        /// <returns>The success status of the wait, such as STATUS_WAIT_OBJECT_0 or STATUS_USER_APC</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public NtStatus Wait(bool alertable, NtWaitTimeout timeout)
         {
             return NtWait.Wait(this, alertable, timeout);
         }
 
+        /// <summary>
+        /// Wait on the object to become signalled for an infinite time.
+        /// </summary>
+        /// <returns>The success status of the wait, such as STATUS_WAIT_OBJECT_0 or STATUS_USER_APC</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
         public NtStatus Wait()
         {
-            return Wait(false, NtWait.Infinite);
+            return Wait(false, NtWaitTimeout.Infinite);
         }
 
         /// <summary>
@@ -482,14 +599,17 @@ namespace NtApiDotNet
         /// Get the NT type name for this object.
         /// </summary>
         /// <returns>The NT type name.</returns>
-        public string GetNtTypeName()
+        public string NtTypeName
         {
-            using (SafeStructureInOutBuffer<ObjectTypeInformation> type_info = new SafeStructureInOutBuffer<ObjectTypeInformation>(1024, true))
+            get
             {
-                int return_length;
-                NtSystemCalls.NtQueryObject(Handle, 
-                    ObjectInformationClass.ObjectTypeInformation, type_info.DangerousGetHandle(), type_info.Length, out return_length).ToNtException();
-                return type_info.Result.Name.ToString();
+                using (SafeStructureInOutBuffer<ObjectTypeInformation> type_info = new SafeStructureInOutBuffer<ObjectTypeInformation>(1024, true))
+                {
+                    int return_length;
+                    NtSystemCalls.NtQueryObject(Handle,
+                        ObjectInformationClass.ObjectTypeInformation, type_info.DangerousGetHandle(), type_info.Length, out return_length).ToNtException();
+                    return type_info.Result.Name.ToString();
+                }
             }
         }
 
@@ -497,9 +617,12 @@ namespace NtApiDotNet
         /// Get the NtType for this object.
         /// </summary>
         /// <returns>The NtType for the type name</returns>
-        public NtType GetNtType()
+        public NtType NtType
         {
-            return NtType.GetTypeByName(GetNtTypeName());
+            get
+            {
+                return NtType.GetTypeByName(NtTypeName);
+            }
         }
 
         /// <summary>
@@ -569,12 +692,25 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Convert an enumerable access rights to a string
+        /// </summary>
+        /// <typeparam name="T">The enum type for the access rights</typeparam>
+        /// <param name="access">The access rights</param>
+        /// <returns>The string format of the access rights</returns>
         public static string AccessRightsToString<T>(T access) where T : struct, IConvertible
         {
             CheckEnumType(typeof(T));
             return AccessRightsToString(typeof(T), access.ToUInt32(null));
         }
 
+        /// <summary>
+        /// Convert an enumerable access rights to a string
+        /// </summary>
+        /// <typeparam name="T">The enum type for the access rights</typeparam>
+        /// <param name="access">The access rights</param>
+        /// <param name="typeinfo">NtType to map generic access masks to specific access masks</param>
+        /// <returns>The string format of the access rights</returns>
         public static string AccessRightsToString<T>(T access, NtType typeinfo) where T : struct, IConvertible
         {
             CheckEnumType(typeof(T));
@@ -586,30 +722,44 @@ namespace NtApiDotNet
             return AccessRightsToString(typeof(T), mapped_access);
         }
 
-        public string GetShortName()
+        /// <summary>
+        /// Get the name of the object
+        /// </summary>
+        public string Name
         {
-            string name = GetName();
-            if (name == @"\")
+            get
             {
-                return String.Empty;
-            }
+                string name = FullPath;
+                if (name == @"\")
+                {
+                    return String.Empty;
+                }
 
-            int index = name.LastIndexOf('\\');
-            if (index >= 0)
-            {
-                return name.Substring(index + 1);
+                int index = name.LastIndexOf('\\');
+                if (index >= 0)
+                {
+                    return name.Substring(index + 1);
+                }
+                return name;
             }
-            return name;
         }
 
+        /// <summary>
+        /// Convert to a string
+        /// </summary>
+        /// <returns>The string form of the object</returns>
         public override string ToString()
         {
-            return GetShortName();
+            return Name;
         }
 
         #region IDisposable Support
         private bool disposedValue = false;
 
+        /// <summary>
+        /// Virtual Dispose method.
+        /// </summary>
+        /// <param name="disposing">True if disposing, false if finalizing</param>
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -619,17 +769,26 @@ namespace NtApiDotNet
             }
         }
         
+        /// <summary>
+        /// Finalizer
+        /// </summary>
         ~NtObject()
         {            
             Dispose(false);
         }
 
+        /// <summary>
+        /// Dispose
+        /// </summary>
         public void Dispose()
         {
             Dispose(true);         
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Close handle
+        /// </summary>
         public void Close()
         {
             Dispose();
@@ -689,25 +848,26 @@ namespace NtApiDotNet
         /// Get granted access for handle.
         /// </summary>
         /// <returns>Granted access</returns>
-        public A GetGrantedAccess() 
+        public A GrantedAccess
         {
-            return GetGrantedAccess(Handle);
+            get
+            {
+                if (!typeof(A).IsEnum)
+                    throw new ArgumentException("Type of access must be an enum");
+                return (A)Enum.ToObject(typeof(A), GrantedAccessRaw);
+            }
         }
 
         /// <summary>
         /// Get granted access as an object
         /// </summary>
         /// <returns>The granted access</returns>
-        public override object GetGrantedAccessObject()
+        public override object GrantedAccessObject
         {
-            return GetGrantedAccess();
-        }
-
-        private static A GetGrantedAccess(SafeKernelObjectHandle handle) 
-        {
-            if (!typeof(A).IsEnum)
-                throw new ArgumentException("Type of access must be an enum");
-            return (A)Enum.ToObject(typeof(A), GetGrantedAccessInternal(handle));
+            get
+            {
+                return GrantedAccess;
+            }
         }
 
         /// <summary>
@@ -718,7 +878,7 @@ namespace NtApiDotNet
         public bool IsAccessGranted(A access)
         {
             uint access_raw = access.ToUInt32(null);
-            return (GetGrantedAccessInternal(Handle) & access_raw) == access_raw;
+            return (GrantedAccessRaw & access_raw) == access_raw;
         }
 
         /// <summary>
@@ -727,9 +887,9 @@ namespace NtApiDotNet
         /// <returns>The string form of the granted access</returns>
         public string GetGrantedAccessString()
         {
-            NtType type = NtType.GetTypeByName(GetNtTypeName());
+            NtType type = NtType.GetTypeByName(NtTypeName);
 
-            return AccessRightsToString(GetGrantedAccess(), type);
+            return AccessRightsToString(GrantedAccess, type);
         }
 
         /// <summary>
@@ -810,7 +970,7 @@ namespace NtApiDotNet
         /// <returns>The typed object. Can be NtGeneric if no better type is known.</returns>
         public NtObject ToTypedObject()
         {
-            switch (GetNtTypeName())
+            switch (NtTypeName)
             {
                 case "device":
                     return new NtFile(DuplicateHandle());

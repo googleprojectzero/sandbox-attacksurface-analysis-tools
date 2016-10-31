@@ -97,16 +97,19 @@ namespace NtApiDotNet
         /// Get the name of the stom
         /// </summary>
         /// <returns>The name of the atom</returns>
-        public string GetName()
+        public string Name
         {
-            using (SafeStructureInOutBuffer<AtomBasicInformation> buffer = new SafeStructureInOutBuffer<AtomBasicInformation>(2048, false))
+            get
             {
-                int return_length;
-               NtSystemCalls.NtQueryInformationAtom(Atom, AtomInformationClass.AtomBasicInformation, 
-                    buffer, buffer.Length, out return_length).ToNtException();
-                AtomBasicInformation basic_info = buffer.Result;
+                using (SafeStructureInOutBuffer<AtomBasicInformation> buffer = new SafeStructureInOutBuffer<AtomBasicInformation>(2048, false))
+                {
+                    int return_length;
+                    NtSystemCalls.NtQueryInformationAtom(Atom, AtomInformationClass.AtomBasicInformation,
+                         buffer, buffer.Length, out return_length).ToNtException();
+                    AtomBasicInformation basic_info = buffer.Result;
 
-                return Marshal.PtrToStringUni(buffer.Data.DangerousGetHandle(), basic_info.NameLength / 2);
+                    return Marshal.PtrToStringUni(buffer.Data.DangerousGetHandle(), basic_info.NameLength / 2);
+                }
             }
         }
 

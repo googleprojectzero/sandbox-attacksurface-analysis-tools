@@ -50,42 +50,80 @@ namespace NtApiDotNet
     }
 #pragma warning restore 1591
 
+    /// <summary>
+    /// Class representing a NT Mutant object
+    /// </summary>
     public class NtMutant : NtObjectWithDuplicate<NtMutant, MutantAccessRights>
     {
         internal NtMutant(SafeKernelObjectHandle handle) : base(handle)
         {
         }
 
-        public static NtMutant Create(string name, NtObject root, bool initial_owner)
+        /// <summary>
+        /// Create a new mutant
+        /// </summary>
+        /// <param name="path">The path to the mutant</param>
+        /// <param name="root">The root object if path is relative</param>
+        /// <param name="initial_owner">True to set current thread as initial owner</param>
+        /// <returns>The opened mutant</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public static NtMutant Create(string path, NtObject root, bool initial_owner)
         {
-            using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
+            using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
                 return Create(obja, initial_owner, MutantAccessRights.MaximumAllowed);
             }
         }
 
-        public static NtMutant Create(ObjectAttributes object_attributes, bool initial_owner, MutantAccessRights access_rights)
+        /// <summary>
+        /// Create a new mutant
+        /// </summary>
+        /// <param name="object_attributes">Object attributes</param>
+        /// <param name="initial_owner">True to set current thread as initial owner</param>
+        /// <param name="desired_access">Desired access for mutant</param>
+        /// <returns>The opened mutant</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public static NtMutant Create(ObjectAttributes object_attributes, bool initial_owner, MutantAccessRights desired_access)
         {
             SafeKernelObjectHandle handle;
-            NtSystemCalls.NtCreateMutant(out handle, access_rights, object_attributes, initial_owner).ToNtException();
+            NtSystemCalls.NtCreateMutant(out handle, desired_access, object_attributes, initial_owner).ToNtException();
             return new NtMutant(handle);
         }
 
-        public static NtMutant Open(string name, NtObject root, MutantAccessRights access_rights)
+        /// <summary>
+        /// Open a mutant
+        /// </summary>
+        /// <param name="path">The path to the mutant</param>
+        /// <param name="root">The root object if path is relative</param>
+        /// <param name="desired_access">Desired access for mutant</param>
+        /// <returns>The opened mutant</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public static NtMutant Open(string path, NtObject root, MutantAccessRights desired_access)
         {
-            using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
+            using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
-                return Open(obja, access_rights);
+                return Open(obja, desired_access);
             }
         }
 
-        public static NtMutant Open(ObjectAttributes object_attributes, MutantAccessRights access_rights)
+        /// <summary>
+        /// Open a mutant
+        /// </summary>
+        /// <param name="object_attributes">Object attributes</param>
+        /// <param name="desired_access">Desired access for mutant</param>
+        /// <returns>The opened mutant</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public static NtMutant Open(ObjectAttributes object_attributes, MutantAccessRights desired_access)
         {
             SafeKernelObjectHandle handle;
-            NtSystemCalls.NtOpenMutant(out handle, access_rights, object_attributes).ToNtException();
+            NtSystemCalls.NtOpenMutant(out handle, desired_access, object_attributes).ToNtException();
             return new NtMutant(handle);
         }
 
+        /// <summary>
+        /// Release the mutant
+        /// </summary>
+        /// <returns>The previous release count</returns>
         public uint Release()
         {
             uint ret = 0;

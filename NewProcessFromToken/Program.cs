@@ -149,7 +149,7 @@ namespace NewProcessFromToken
 
                     using (new_process)
                     {
-                        Console.WriteLine("Created Process: PID: {0}, SID {1}", new_process.Pid, new_process.Process.GetProcessSessionId());
+                        Console.WriteLine("Created Process: PID: {0}, SID {1}", new_process.Pid, new_process.Process.SessionId);
                     }
                 }
             }

@@ -69,12 +69,12 @@ namespace HandleUtils
             }
         }
 
-        public static void EditSecurity(IntPtr hwnd, IntPtr handle, string object_name, string typeName, bool writeable)
+        public static void EditSecurity(IntPtr hwnd, NtObject handle, string object_name, string typeName, bool writeable)
         {
             NtType typeInfo = NtType.GetTypeByName(typeName);
             Dictionary<uint, String> access = GetMaskDictionary(TypeNameToEnum(typeName));
 
-            using (SecurityInformationImpl impl = new SecurityInformationImpl(object_name, new NativeHandle(handle, true), access,
+            using (SecurityInformationImpl impl = new SecurityInformationImpl(object_name, handle, access,
                typeInfo.GenericMapping))
             {
                 EditSecurity(hwnd, impl);

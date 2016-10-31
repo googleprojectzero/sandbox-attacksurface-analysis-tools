@@ -14,6 +14,7 @@
 
 using NtApiDotNet;
 using System.Management.Automation;
+using System;
 
 namespace NtObjectManager
 {
@@ -46,6 +47,15 @@ namespace NtObjectManager
     [OutputType(typeof(NtDirectory))]
     public class GetNtDirectoryCmdlet : NtObjectBaseCmdletWithAccess<DirectoryAccessRights>
     {
+        /// <summary>
+        /// Determine if the cmdlet can create objects.
+        /// </summary>
+        /// <returns>True if objects can be created.</returns>
+        protected override bool CanCreateDirectories()
+        {
+            return false;
+        }
+
         /// <summary>
         /// <para type="description">A string format of a private namespace boundary descriptor.
         /// Uses the form [SID[:SID...]@]NAME where SID is an SDDL version of a SID to add to the
@@ -134,6 +144,15 @@ namespace NtObjectManager
         /// </summary>
         [Parameter]
         public NtDirectory ShadowDirectory { get; set; }
+
+        /// <summary>
+        /// Determine if the cmdlet can create objects.
+        /// </summary>
+        /// <returns>True if objects can be created.</returns>
+        protected override bool CanCreateDirectories()
+        {
+            return PrivateNamespaceDescriptor == null;
+        }
 
         /// <summary>
         /// Method to create an object from a set of object attributes.

@@ -202,6 +202,31 @@ namespace NtApiDotNet
             }
         }
 
+        private static UnicodeString GetString(string s)
+        {
+            return s != null ? new UnicodeString(s) : null;
+        }
+
+        private static IntPtr CreateProcessParameters(
+                string ImagePathName,
+                string DllPath,
+                string CurrentDirectory,
+                string CommandLine,
+                byte[] Environment,
+                string WindowTitle,
+                string DesktopInfo,
+                string ShellInfo,
+                string RuntimeData,
+                uint Flags)
+        {
+            IntPtr ret;
+
+            NtRtl.RtlCreateProcessParametersEx(out ret, GetString(ImagePathName), GetString(DllPath), GetString(CurrentDirectory),
+              GetString(CommandLine), Environment, GetString(WindowTitle), GetString(DesktopInfo), GetString(ShellInfo), GetString(RuntimeData), Flags).ToNtException();
+
+            return ret;
+        }
+
         /// <summary>
         /// Start the new process
         /// </summary>
@@ -212,7 +237,7 @@ namespace NtApiDotNet
             if (image_path == null)
                 throw new System.ArgumentNullException("image_path");
 
-            IntPtr process_params = NtProcess.CreateProcessParameters(ImagePath ?? image_path, DllPath, CurrentDirectory,
+            IntPtr process_params = CreateProcessParameters(ImagePath ?? image_path, DllPath, CurrentDirectory,
                   CommandLine, Environment, WindowTitle, DesktopInfo, ShellInfo, RuntimeData, 1);
             List<ProcessAttribute> attrs = new List<ProcessAttribute>();
             try
@@ -273,7 +298,7 @@ namespace NtApiDotNet
             }
             finally
             {
-                NtSystemCalls.RtlDestroyProcessParameters(process_params);
+                NtRtl.RtlDestroyProcessParameters(process_params);
                 foreach (ProcessAttribute attr in attrs)
                 {
                     attr.Dispose();

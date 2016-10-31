@@ -1262,7 +1262,7 @@ namespace NtApiDotNet
             {
                 using (NtObject obj = NtObject.OpenWithType(type, name, null, GenericAccessRights.ReadControl))
                 {
-                    return obj.GetSecurityDescriptor();
+                    return obj.SecurityDescriptor;
                 }
             }
             catch

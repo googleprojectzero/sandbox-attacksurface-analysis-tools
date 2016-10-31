@@ -184,13 +184,13 @@ namespace NtApiDotNet
         /// <param name="token">The token to use for its default DACL</param>
         public SecurityDescriptor(NtToken token) : this()
         {
-            Owner = new SecurityDescriptorSid(token.GetOwner(), true);
-            Group = new SecurityDescriptorSid(token.GetPrimaryGroup(), true);
-            Dacl = token.GetDefaultDalc();
-            if (token.GetIntegrityLevel() < TokenIntegrityLevel.Medium)
+            Owner = new SecurityDescriptorSid(token.Owner, true);
+            Group = new SecurityDescriptorSid(token.PrimaryGroup, true);
+            Dacl = token.DefaultDalc;
+            if (token.IntegrityLevel< TokenIntegrityLevel.Medium)
             {
                 Sacl = new Acl();
-                Sacl.Add(new Ace(AceType.MandatoryLabel, AceFlags.None, 1, token.GetIntegrityLevelSid().Sid));
+                Sacl.Add(new Ace(AceType.MandatoryLabel, AceFlags.None, 1, token.IntegrityLevelSid.Sid));
             }
         }
 
@@ -210,19 +210,19 @@ namespace NtApiDotNet
             SecurityDescriptor parent_sd = null;
             if (base_object != null)
             {
-                parent_sd = base_object.GetSecurityDescriptor();
+                parent_sd = base_object.SecurityDescriptor;
             }
 
             SecurityDescriptor creator_sd = null;
             if (token != null)
             {
                 creator_sd = new SecurityDescriptor();
-                creator_sd.Owner = new SecurityDescriptorSid(token.GetOwner(), false);
-                creator_sd.Group = new SecurityDescriptorSid(token.GetPrimaryGroup(), false);
-                creator_sd.Dacl = token.GetDefaultDalc();
+                creator_sd.Owner = new SecurityDescriptorSid(token.Owner, false);
+                creator_sd.Group = new SecurityDescriptorSid(token.PrimaryGroup, false);
+                creator_sd.Dacl = token.DefaultDalc;
             }
 
-            NtType type = NtType.GetTypeByName(base_object.GetNtTypeName());
+            NtType type = NtType.GetTypeByName(base_object.NtTypeName);
 
             SafeBuffer parent_sd_buffer = SafeHGlobalBuffer.Null;
             SafeBuffer creator_sd_buffer = SafeHGlobalBuffer.Null;

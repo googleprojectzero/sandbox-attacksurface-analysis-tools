@@ -45,6 +45,15 @@ namespace NtObjectManager
     public sealed class GetNtEventCmdlet : NtObjectBaseCmdletWithAccess<EventAccessRights>
     {
         /// <summary>
+        /// Determine if the cmdlet can create objects.
+        /// </summary>
+        /// <returns>True if objects can be created.</returns>
+        protected override bool CanCreateDirectories()
+        {
+            return false;
+        }
+
+        /// <summary>
         /// <para type="description">The NT object manager path to the object to use.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
@@ -106,6 +115,15 @@ namespace NtObjectManager
     [OutputType(typeof(NtEvent))]
     public sealed class NewNtEventCmdlet : NtObjectBaseCmdletWithAccess<EventAccessRights>
     {
+        /// <summary>
+        /// Determine if the cmdlet can create objects.
+        /// </summary>
+        /// <returns>True if objects can be created.</returns>
+        protected override bool CanCreateDirectories()
+        {
+            return true;
+        }
+
         /// <summary>
         /// <para type="description">The initial state of the event object.</para>
         /// </summary>

@@ -465,7 +465,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error</exception>
         public static NtDirectory OpenSessionDirectory()
         {
-            return OpenSessionDirectory(NtProcess.Current.GetProcessSessionId());
+            return OpenSessionDirectory(NtProcess.Current.SessionId);
         }
 
         /// <summary>
@@ -493,7 +493,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error</exception>
         public static NtDirectory OpenBaseNamedObjects()
         {
-            return OpenBaseNamedObjects(NtProcess.Current.GetProcessSessionId());
+            return OpenBaseNamedObjects(NtProcess.Current.SessionId);
         }
 
         /// <summary>
@@ -503,7 +503,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error</exception>
         public static NtDirectory OpenDosDevicesDirectory(NtToken token)
         {
-            Luid authid = token.GetAuthenticationId();
+            Luid authid = token.AuthenticationId;
             if (authid.Equals(NtToken.LocalSystemAuthId))
             {
                 return NtDirectory.Open(@"\GLOBAL??");

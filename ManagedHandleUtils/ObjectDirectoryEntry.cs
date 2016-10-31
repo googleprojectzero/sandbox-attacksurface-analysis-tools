@@ -33,7 +33,7 @@ namespace HandleUtils
                 {
                     using (NtObject obj = NtObject.OpenWithType(_type_name, _name, _directory.Directory, GenericAccessRights.ReadControl))
                     {
-                        _sd = obj.GetRawSecurityDescriptor(SecurityInformation.Owner | SecurityInformation.Group | SecurityInformation.Dacl | SecurityInformation.Label);
+                        _sd = obj.GetSecurityDescriptorBytes(SecurityInformation.Owner | SecurityInformation.Group | SecurityInformation.Dacl | SecurityInformation.Label);
                     }
                 }
             }

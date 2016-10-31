@@ -50,7 +50,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GenericObjectSecurity.cs" />
-    <Compile Include="NtDisposableListCmdlets.cs" />
     <Compile Include="NtEventCmdlets.cs" />
     <Compile Include="NtProcessCmdlets.cs" />
     <Compile Include="NtThreadCmdlets.cs" />
@@ -63,7 +62,7 @@
     <Compile Include="NtObjectCmdlets.cs" />
     <Compile Include="NtTypesCmdlets.cs" />
     <Compile Include="NtSymbolicLinkCmdlet.cs" />
-    <Compile Include="ObjectDirectoryEntry.cs" />
+    <Compile Include="NtDirectoryEntry.cs" />
     <Compile Include="NtObjectManagerProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

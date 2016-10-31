@@ -14,7 +14,11 @@
 
 using NtApiDotNet;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Management.Automation;
+using System.Text;
 
 namespace NtObjectManager
 {
@@ -54,22 +58,18 @@ namespace NtObjectManager
         public SecurityQualityOfService SecurityQualityOfService { get; set; }
 
         /// <summary>
-        /// <para type="description">Automatically add output objects to the top of the dispose list stack.</para>
-        /// </summary>
-        [Parameter]
-        public SwitchParameter AddToDisposeList { get; set; }
-
-        /// <summary>
         /// <para type="description">Automatically close the Root object when this cmdlet finishes processing. Useful for pipelines.</para>
         /// </summary>
         [Parameter]
         public SwitchParameter CloseRoot { get; set; }
 
-        private ObjectAttributes CreateObjAttributes()
-        {
-            return new ObjectAttributes(GetPath(), ObjectAttributes, Root, SecurityQualityOfService, SecurityDescriptor);
-        }
-
+        /// <summary>
+        /// <para type="description">Create any necessary NtDirectory objects to create the required object. Will return the created directories as well as the object in the output.
+        /// The new object will be the first entry in the list. This doesn't work when opening an object or creating keys/files.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter CreateDirectories { get; set; }
+        
         /// <summary>
         /// Base constructor.
         /// </summary>
@@ -98,6 +98,19 @@ namespace NtObjectManager
                     throw new ArgumentException("Relative paths with no Root directory are not allowed.");
                 }
             }
+
+            if (CreateDirectories)
+            {
+                if (!CanCreateDirectories())
+                {
+                    throw new ArgumentException("Can't specify CreateDirectories when opening an object.");
+                }
+
+                if (Root != null && !(Root is NtDirectory))
+                {
+                    throw new ArgumentException("Can't specify CreateDirectories when Root is not a directory.");
+                }
+            }
         }
 
         /// <summary>
@@ -109,24 +122,84 @@ namespace NtObjectManager
             return Path;
         }
 
+
+        /// <summary>
+        /// Determine if the cmdlet can create objects.
+        /// </summary>
+        /// <returns>True if objects can be created.</returns>
+        protected abstract bool CanCreateDirectories();
+
+        private object DoCreateObject(string path, AttributeFlags attributes, NtObject root, SecurityQualityOfService security_quality_of_service, SecurityDescriptor security_descriptor)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(path, attributes, root, security_quality_of_service, security_descriptor))
+            {
+                return CreateObject(obja);
+            }
+        }
+
+        private IEnumerable<NtObject> CreateDirectoriesAndObject()
+        {
+            DisposableList<NtObject> objects = new DisposableList<NtObject>();
+            string[] path_parts = GetPath().Split(new char[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
+            StringBuilder builder = new StringBuilder();
+            bool finished = false;
+            if (Root == null)
+            {
+                builder.Append(@"\");
+            }
+
+            try
+            {
+                for (int i = 0; i < path_parts.Length - 1; ++i)
+                {
+                    builder.Append(path_parts[i]);
+                    NtDirectory dir = null;
+                    try
+                    {
+                        dir = NtDirectory.Create(builder.ToString(), Root, DirectoryAccessRights.MaximumAllowed);
+                    }
+                    catch (NtException)
+                    {
+                    }
+
+                    if (dir != null)
+                    {
+                        objects.Add(dir);
+                    }
+                    builder.Append(@"\");
+                }
+                objects.Add((NtObject)DoCreateObject(GetPath(), ObjectAttributes, Root, SecurityQualityOfService, SecurityDescriptor));
+                finished = true;
+            }
+            finally
+            {
+                if (!finished)
+                {
+                    objects.Dispose();
+                    objects.Clear();
+                }
+            }
+            return objects.ToArray();
+        }
+        
         /// <summary>
         /// Overridden ProcessRecord method.
         /// </summary>
         protected override void ProcessRecord()
         {
             VerifyParameters();
-            using (ObjectAttributes obja = new ObjectAttributes(GetPath(), ObjectAttributes, Root, SecurityQualityOfService, SecurityDescriptor))
+            try
             {
-                object obj = CreateObject(obja);
-                if (AddToDisposeList && obj is IDisposable)
+                WriteObject(DoCreateObject(GetPath(), ObjectAttributes, Root, SecurityQualityOfService, SecurityDescriptor));
+            }
+            catch (NtException ex)
+            {
+                if (ex.Status != NtStatus.STATUS_OBJECT_PATH_NOT_FOUND || !CreateDirectories)
                 {
-                    if (!StackHolder.Add((IDisposable)obj))
-                    {
-                        WriteWarning("No list on the top of the stack");
-                    }
+                    throw;
                 }
 
-                WriteObject(obj);
+                WriteObject(CreateDirectoriesAndObject().Reverse(), true);
             }
         }
 
@@ -183,7 +256,7 @@ namespace NtObjectManager
 
         /// <summary>
         /// Constructor.
-        /// </summary>
+        /// </summary>        
         protected NtObjectBaseCmdletWithAccess()
         {
             Access = (T)Enum.ToObject(typeof(T), (uint)GenericAccessRights.MaximumAllowed);
@@ -226,6 +299,15 @@ namespace NtObjectManager
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
         new public string Path { get; set; }
+
+        /// <summary>
+        /// Determine if the cmdlet can create objects.
+        /// </summary>
+        /// <returns>True if objects can be created.</returns>
+        protected override bool CanCreateDirectories()
+        {
+            return false;
+        }
 
         /// <summary>
         /// Virtual method to return the value of the Path variable.
@@ -314,6 +396,72 @@ namespace NtObjectManager
             }
 
             WriteObject(sd);
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Use an NtObject (or list of NtObject) and automatically close the objects after use.</para>
+    /// <para type="description">This cmdlet allows you to scope the use of NtObject, similar to the using statement in C#.
+    /// When the script block passed to this cmdlet goes out of scope the input object is automatically disposed of, ensuring
+    /// any native resources are closed to prevent leaks.
+    /// </para>
+    /// </summary>
+    /// <example>
+    ///   <code>$ps = Use-NtObject (Get-NtProcess) { param ($ps); $ps | Select-Object Name, CommandLine }</code>
+    ///   <para>Select Name and CommandLine from a list of processes and dispose of the list afterwards.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet("Use", "NtObject")]
+    public class UseNtObjectCmdlet : Cmdlet, IDisposable
+    {
+        /// <summary>
+        /// <para type="description">Specify the input object to be disposed.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ValueFromPipeline = true, Position = 0)]
+        public object InputObject { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the script block to execute.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 1)]
+        public ScriptBlock ScriptBlock { get; set; }
+
+        /// <summary>
+        /// Overridden process record method
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            WriteObject(ScriptBlock.Invoke(InputObject), true);
+        }
+
+        private static void DisposeObject(object obj)
+        {
+            IDisposable disp = obj as IDisposable;
+            PSObject psobj = obj as PSObject;
+            if (psobj != null)
+            {
+                disp = psobj.BaseObject as IDisposable;
+            }
+
+            if (disp != null)
+            {
+                disp.Dispose();
+            }
+        }
+
+        void IDisposable.Dispose()
+        {
+            if (InputObject is IEnumerable)
+            {
+                foreach (object obj in ((IEnumerable)InputObject))
+                {
+                    DisposeObject(obj);
+                }
+            }
+            else
+            {
+                DisposeObject(InputObject);
+            }            
         }
     }
 }

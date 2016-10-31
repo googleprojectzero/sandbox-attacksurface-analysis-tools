@@ -15,7 +15,6 @@
 using Be.Windows.Forms;
 using NtApiDotNet;
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace EditSection
 {
@@ -34,8 +33,10 @@ namespace EditSection
         {
             System.Diagnostics.Trace.WriteLine("In ApplyChanges");
         }
-        
+
+#pragma warning disable 67
         public event EventHandler Changed;
+#pragma warning restore 67
 
         public void DeleteBytes(long index, long length)
         {
@@ -56,7 +57,9 @@ namespace EditSection
             get { return _map.Length; }
         }
 
+#pragma warning disable 67
         public event EventHandler LengthChanged;
+#pragma warning restore 67
 
         public byte ReadByte(long index)
         {            

@@ -38,7 +38,7 @@ namespace CommonObjects
                 {
                     if (obj != null)
                     {
-                        return obj.GetName();
+                        return obj.FullPath;
                     }
                 }
             }
@@ -85,7 +85,7 @@ namespace CommonObjects
 
                     int limit = show_all ? 2 : pids.Count;
 
-                    var output = entries.Where(x => x.Value.GroupBy(y => y.Pid).Count() >= limit);
+                    var output = entries.Where(x => x.Value.GroupBy(y => y.ProcessId).Count() >= limit);
 
                     foreach (KeyValuePair<ulong, List<NtHandle>> pair in output)
                     {
@@ -96,7 +96,7 @@ namespace CommonObjects
                             foreach (NtHandle entry in pair.Value)
                             {
                                 Console.WriteLine("\t{0}/0x{0:X} {1}/0x{1:X} 0x{2:X08}",
-                                    entry.Pid, entry.Handle, entry.GrantedAccess);
+                                    entry.ProcessId, entry.Handle, entry.GrantedAccess);
                             }
                         }
                     }

@@ -30,10 +30,10 @@ namespace HandleUtils
 
         private void PopulateEntries()
         {
-            DirectoryAccessRights granted_access = _directory.GetGrantedAccess();
+            DirectoryAccessRights granted_access = _directory.GrantedAccess;
             if ((granted_access & DirectoryAccessRights.ReadControl) == DirectoryAccessRights.ReadControl)
             {
-                _sd = _directory.GetRawSecurityDescriptor(SecurityInformation.Dacl | SecurityInformation.Label | SecurityInformation.Group | SecurityInformation.Owner);
+                _sd = _directory.GetSecurityDescriptorBytes(SecurityInformation.Dacl | SecurityInformation.Label | SecurityInformation.Group | SecurityInformation.Owner);
                 _sddl = NtSecurity.SecurityDescriptorToSddl(_sd, SecurityInformation.Dacl | SecurityInformation.Label | SecurityInformation.Group | SecurityInformation.Owner);
             }
             else
@@ -43,7 +43,7 @@ namespace HandleUtils
             }
 
 
-            _full_path = _directory.GetName();
+            _full_path = _directory.FullPath;
             if (String.IsNullOrWhiteSpace(_full_path))
             {
                 _full_path = _orig_path;

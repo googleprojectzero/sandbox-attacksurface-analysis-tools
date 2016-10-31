@@ -288,7 +288,7 @@ namespace NtApiDotNet
         /// <summary>
         /// The ID of the process holding the handle
         /// </summary>
-        public int Pid { get; private set; }
+        public int ProcessId { get; private set; }
         /// <summary>
         /// The object type name
         /// </summary>
@@ -345,10 +345,10 @@ namespace NtApiDotNet
                 _allow_query = false;
                 try
                 {
-                    using (NtGeneric obj = NtGeneric.DuplicateFrom(Pid, new IntPtr(Handle)))
+                    using (NtGeneric obj = NtGeneric.DuplicateFrom(ProcessId, new IntPtr(Handle)))
                     {
                         // Ensure we get the real type, in case it changed _or_ it was wrong to begin with.
-                        ObjectType = obj.GetNtTypeName();
+                        ObjectType = obj.NtTypeName;
                         _name = GetName(obj);
                         _sd = GetSecurityDescriptor(obj);
                     }
@@ -361,7 +361,7 @@ namespace NtApiDotNet
 
         internal NtHandle(SystemHandleTableInfoEntry entry, bool allow_query)
         {
-            Pid = entry.UniqueProcessId;
+            ProcessId = entry.UniqueProcessId;
             NtType info = NtType.GetTypeByIndex(entry.ObjectTypeIndex);
             if (info != null)
             {
@@ -387,10 +387,10 @@ namespace NtApiDotNet
             NtToken.EnableDebugPrivilege();
             try
             {
-                using (NtGeneric generic = NtGeneric.DuplicateFrom(Pid, new IntPtr(Handle)))
+                using (NtGeneric generic = NtGeneric.DuplicateFrom(ProcessId, new IntPtr(Handle)))
                 {
                     // Ensure that we get the actual type from the handle.
-                    ObjectType = generic.GetNtTypeName();
+                    ObjectType = generic.NtTypeName;
                     return generic.ToTypedObject();
                 }
             }
@@ -406,7 +406,7 @@ namespace NtApiDotNet
             {
                 return String.Empty;
             }
-            return obj.GetName();
+            return obj.FullPath;
         }
 
         private SecurityDescriptor GetSecurityDescriptor(NtGeneric obj)
@@ -417,7 +417,7 @@ namespace NtApiDotNet
                 {
                     using (NtGeneric dup = obj.Duplicate(GenericAccessRights.ReadControl))
                     {
-                        return dup.GetSecurityDescriptor();
+                        return dup.SecurityDescriptor;
                     }
                 }
             }

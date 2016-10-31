@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -754,7 +755,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey GetCurrentUserKey()
         {
-            return GetUserKey(NtToken.GetCurrentUser().Sid);
+            return GetUserKey(NtToken.CurrentUser.Sid);
         }
 
         /// <summary>
@@ -765,6 +766,16 @@ namespace NtApiDotNet
         public static NtKey GetRootKey()
         {
             return Open(@"\Registry", null, KeyAccessRights.MaximumAllowed);
+        }
+
+        private static SafeRegistryHandle DuplicateAsRegistry(SafeHandle handle)
+        {
+            using (SafeKernelObjectHandle dup_handle = DuplicateHandle(NtProcess.Current, handle, NtProcess.Current))
+            {
+                SafeRegistryHandle ret = new SafeRegistryHandle(dup_handle.DangerousGetHandle(), true);
+                dup_handle.SetHandleAsInvalid();
+                return ret;
+            }
         }
 
         /// <summary>
@@ -818,9 +829,12 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>The last write time</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public DateTime GetLastWriteTime()
+        public DateTime LastWriteTime
         {
-            return DateTime.FromFileTime(GetFullInfo().Item1.LastWriteTime.QuadPart);
+            get
+            {
+                return DateTime.FromFileTime(GetFullInfo().Item1.LastWriteTime.QuadPart);
+            }
         }
 
         /// <summary>
@@ -828,9 +842,12 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>The subkey count</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public int GetSubKeyCount()
+        public int SubKeyCount
         {
-            return GetFullInfo().Item1.SubKeys;
+            get
+            {
+                return GetFullInfo().Item1.SubKeys;
+            }
         }
 
         /// <summary>
@@ -848,9 +865,12 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>The key title index</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public int GetTitleIndex()
+        public int TitleIndex
         {
-            return GetFullInfo().Item1.TitleIndex;
+            get
+            {
+                return GetFullInfo().Item1.TitleIndex;
+            }
         }
 
         /// <summary>
@@ -858,9 +878,12 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>The key class name</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public string GetClassName()
+        public string ClassName
         {
-            return GetFullInfo().Item2;
+            get
+            {
+                return GetFullInfo().Item2;
+            }
         }
 
         /// <summary>
@@ -868,9 +891,12 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>The maximum key value name length</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public int GetMaxValueNameLength()
+        public int MaxValueNameLength
         {
-            return GetFullInfo().Item1.MaxValueNameLen;
+            get
+            {
+                return GetFullInfo().Item1.MaxValueNameLen;
+            }
         }
 
         /// <summary>
@@ -878,9 +904,12 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>The maximum key value data length</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public int GetMaxValueDataLength()
+        public int MaxValueDataLength
         {
-            return GetFullInfo().Item1.MaxValueDataLen;
+            get
+            {
+                return GetFullInfo().Item1.MaxValueDataLen;
+            }
         }
 
         /// <summary>
@@ -888,9 +917,12 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>The maximum subkey name length</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public int GetMaxNameLength()
+        public int MaxNameLength
         {
-            return GetFullInfo().Item1.MaxNameLen;
+            get
+            {
+                return GetFullInfo().Item1.MaxNameLen;
+            }
         }
 
         /// <summary>
@@ -898,9 +930,12 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>The maximum class name length</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public int GetMaxClassLength()
+        public int MaxClassLength
         {
-            return GetFullInfo().Item1.MaxClassLen;
+            get
+            {
+                return GetFullInfo().Item1.MaxClassLen;
+            }
         }
     }
 }

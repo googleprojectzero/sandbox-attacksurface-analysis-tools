@@ -60,71 +60,135 @@ namespace NtApiDotNet
     }
 #pragma warning restore 1591
 
+    /// <summary>
+    /// Class representing a NT SymbolicLink object
+    /// </summary>
     public class NtSymbolicLink : NtObjectWithDuplicate<NtSymbolicLink, SymbolicLinkAccessRights>
     {
-        public NtSymbolicLink(SafeKernelObjectHandle handle) : base(handle)
+        internal NtSymbolicLink(SafeKernelObjectHandle handle) : base(handle)
         {
         }
 
-        public static NtSymbolicLink Create(string path, NtObject root, SymbolicLinkAccessRights access, string target)
+        /// <summary>
+        /// Create a symbolic link object.
+        /// </summary>
+        /// <param name="path">The path to the object</param>
+        /// <param name="root">The root if path is relative</param>
+        /// <param name="desired_access">The desired access for the object</param>
+        /// <param name="target">The target path</param>
+        /// <returns>The opened object</returns>
+        public static NtSymbolicLink Create(string path, NtObject root, SymbolicLinkAccessRights desired_access, string target)
         {
             using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
-                return Create(obja, access, target);
+                return Create(obja, desired_access, target);
             }
         }
 
-        public static NtSymbolicLink Create(ObjectAttributes object_attributes, SymbolicLinkAccessRights access, string target)
+        /// <summary>
+        /// Create a symbolic link object.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the object</param>
+        /// <param name="desired_access">The desired access for the object</param>
+        /// <param name="target">The target path</param>
+        /// <returns>The opened object</returns>
+        public static NtSymbolicLink Create(ObjectAttributes object_attributes, SymbolicLinkAccessRights desired_access, string target)
         {
             SafeKernelObjectHandle handle;
             NtSystemCalls.NtCreateSymbolicLinkObject(out handle,
-                access, object_attributes, new UnicodeString(target)).ToNtException();
+                desired_access, object_attributes, new UnicodeString(target)).ToNtException();
             return new NtSymbolicLink(handle);
         }
 
+        /// <summary>
+        /// Create a symbolic link object.
+        /// </summary>
+        /// <param name="path">The path to the object</param>
+        /// <param name="root">The root if path is relative</param>
+        /// <param name="target">The target path</param>
+        /// <returns>The opened object</returns>
         public static NtSymbolicLink Create(string path, NtObject root, string target)
         {
             return Create(path, root, SymbolicLinkAccessRights.MaximumAllowed, target);
         }
 
+        /// <summary>
+        /// Create a symbolic link object.
+        /// </summary>
+        /// <param name="path">The path to the object</param>
+        /// <param name="target">The target path</param>
+        /// <returns>The opened object</returns>
         public static NtSymbolicLink Create(string path, string target)
         {
             return Create(path, null, SymbolicLinkAccessRights.MaximumAllowed, target);
         }
 
-        public static NtSymbolicLink Open(string path, NtObject root, SymbolicLinkAccessRights access)
+        /// <summary>
+        /// Open a symbolic link object.
+        /// </summary>
+        /// <param name="path">The path to the object</param>
+        /// <param name="root">The root if path is relative</param>
+        /// <param name="desired_access">The desired access for the object</param>
+        /// <returns>The opened object</returns>
+        public static NtSymbolicLink Open(string path, NtObject root, SymbolicLinkAccessRights desired_access)
         {
             using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
                 SafeKernelObjectHandle handle;
                 NtSystemCalls.NtOpenSymbolicLinkObject(out handle,
-                    access, obja).ToNtException();
+                    desired_access, obja).ToNtException();
                 return new NtSymbolicLink(handle);
             }
         }
 
-        public static NtSymbolicLink Open(ObjectAttributes object_attributes, SymbolicLinkAccessRights access)
+        /// <summary>
+        /// Open a symbolic link object.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the object</param>
+        /// <param name="desired_access">The desired access for the object</param>
+        /// <returns>The opened object</returns>
+        public static NtSymbolicLink Open(ObjectAttributes object_attributes, SymbolicLinkAccessRights desired_access)
         {
             SafeKernelObjectHandle handle;
             NtSystemCalls.NtOpenSymbolicLinkObject(out handle,
-                access, object_attributes).ToNtException();
+                desired_access, object_attributes).ToNtException();
             return new NtSymbolicLink(handle);
         }
 
+        /// <summary>
+        /// Open a symbolic link object.
+        /// </summary>
+        /// <param name="path">The path to the object</param>
+        /// <param name="root">The root if path is relative</param>
+        /// <returns>The opened object</returns>
         public static NtSymbolicLink Open(string path, NtObject root)
         {
             return Open(path, root, SymbolicLinkAccessRights.MaximumAllowed);
         }
 
-        
-
-        public string Query()
+        /// <summary>
+        /// Open a symbolic link object.
+        /// </summary>
+        /// <param name="path">The path to the object</param>
+        /// <returns>The opened object</returns>
+        public static NtSymbolicLink Open(string path)
         {
-            using (UnicodeStringAllocated ustr = new UnicodeStringAllocated())
+            return Open(path, null);
+        }
+
+        /// <summary>
+        /// Get the symbolic link target.
+        /// </summary>
+        public string Target
+        {
+            get
             {
-                int return_length;
-                NtSystemCalls.NtQuerySymbolicLinkObject(Handle, ustr, out return_length).ToNtException();
-                return ustr.ToString();
+                using (UnicodeStringAllocated ustr = new UnicodeStringAllocated())
+                {
+                    int return_length;
+                    NtSystemCalls.NtQuerySymbolicLinkObject(Handle, ustr, out return_length).ToNtException();
+                    return ustr.ToString();
+                }
             }
         }
     }

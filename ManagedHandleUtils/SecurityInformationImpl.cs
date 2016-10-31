@@ -116,9 +116,9 @@ namespace HandleUtils
         private DisposableList<SafeStringBuffer> _names;
         private SafeHGlobalBuffer _access_map; // SI_ACCESS
         private SafeStringBuffer _obj_name;
-        private NativeHandle _handle;
+        private NtObject _handle;
 
-        public SecurityInformationImpl(string obj_name, NativeHandle handle,
+        public SecurityInformationImpl(string obj_name, NtObject handle,
             Dictionary<uint, string> names, GenericMapping generic_mapping)
         {
             _mapping = generic_mapping;
@@ -168,13 +168,10 @@ namespace HandleUtils
 
         public void GetSecurity(SecurityInformation RequestedInformation, out IntPtr ppSecurityDescriptor, [MarshalAs(UnmanagedType.Bool)] bool fDefault)
         {
-            using (SafeKernelObjectHandle handle = _handle.GetNtApiHandle())
-            {
-                byte[] raw_sd = NtObject.GetRawSecurityDescriptor(handle, RequestedInformation);
-                IntPtr ret = LocalAlloc(0, new IntPtr(raw_sd.Length));
-                Marshal.Copy(raw_sd, 0, ret, raw_sd.Length);
-                ppSecurityDescriptor = ret;
-            }
+            byte[] raw_sd = _handle.GetSecurityDescriptorBytes(RequestedInformation);
+            IntPtr ret = LocalAlloc(0, new IntPtr(raw_sd.Length));
+            Marshal.Copy(raw_sd, 0, ret, raw_sd.Length);
+            ppSecurityDescriptor = ret;
         }
 
         public void MapGeneric(ref Guid pguidObjectType, IntPtr pAceFlags, ref uint pMask)
@@ -210,6 +207,10 @@ namespace HandleUtils
                 if (_obj_name != null)
                 {
                     _obj_name.Close();
+                }
+                if (_handle != null)
+                {
+                    _handle.Close();
                 }
                 
                 disposedValue = true;

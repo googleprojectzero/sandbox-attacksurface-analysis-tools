@@ -15,56 +15,45 @@ LONG DESCRIPTION
 	When you create a named resource (e.g. New-NtDirectory \Some\Path) the name only lasts as long as the
 	last handle to that resource exists. If you assign it to a script variable then it should persist,
 	however if you don't then eventually the garbage collector will pick it up and finalize, removing the name.
-	To prevent pollution of the variable namespace but maintain references to these objects you can use
-	the builtin feature, Dispose Lists. 
+	This makes it difficult to use pipelines to create a run of new objects. For that reason the majority of
+	the New-Nt* commands takes the -CreateDirectories parameter. When this is specified the cmdlet will
+	automatically create new object directories as appropriate to make the final object. These directories
+	are returned in a list with the new object, the new object is at the head of the list. You now have
+	all the objects necessary for as long as they're required.
 
-	The runtime maintains a stack of dispose lists, you create a new list on this stack using the Push-NtDisposeList
-	Cmdlet. This can take a list of objects to add initialy, or you can add more using the Add-NtDisposeList
-	that will add any passed objects into the list at the top of the stack. Many of the Cmdlets which generate
-	disposable objects (such as New-Nt*) also take an -AddToDisposeList parameter which will automatically place 
-	the generated objects onto the top of the stack.
+	If you don't need to maintain a reference to a directory object (for example it already exists) then
+	instead you can use the -CloseRoot parameter. This will close the -Root object (which is passed in
+	the pipeline) once the new object has been created.
 
-	When popping the dispose list off the stack (using Pop-NtDisposeList) all objects in the list will be automatically
-	disposed. By providing a stack it's possible to use this in recursive functions and only dispose of the objects
-	important to the current function.
-
-	Another common lifetime management scenario is dealing with pipelines of NtObjects. Cmdlets such as New-Nt* and
-	Get-Nt* take a common -Root parameter which represents the root object the supplied path is relative from. For 
-	example you can do the following:
-	$root = Get-NtDirectory \Some\Root
-	$dir = New-NtDirectory ABC -Root $root
-	$root.Close()
-	
-	As you can pass -Root from the pipeline you could also do Get-NtDirectory \Some\Root | New-NtDirectory ABC, however
-	this would potentially leak a handle to \Some\Root. In this case you can specify the -CloseRoot parameter to New-NtDirectory
-	which will close the Root object after the Cmdlet has finished processing. For example:
-	Get-NtDirectory \Some\Root | New-NtDirectory ABC -CloseRoot
-	You could also acheive the same thing using -AddToDisposeList but in this case you probably don't care about \Some\Root
-	persisting past the New-NtDirectory call.
+	The final lifetime management technique is by using Use-NtObject. This cmdlet takes an input object
+	(which can be from the pipeline) and executes a ScriptBlock with that object. Once the ScriptBlock
+	completes the input object will be disposed of. It can be used for NtObjects but also for anything
+	which implements IDisposable such as FileStream instances. It will also dispose enumerations of 
+	IDisposable	objects.
 
 EXAMPLES
-	Example 1: Push a new dispose list add an object and then pop to clear resources.
+	Example 1: Create a new event with a nested directory.
 
-	$dir = New-NtDirectory \Dir\Path | Push-NtDisposeList
+	$ev = New-NtEvent \BaseNamedObjects\ABC\XYZ\EventName -CreateDirectories	
 	try {
-	  # Do something with $dir
-    } finally {
-	  Pop-NtDisposeList 
-    }
-	# $dir is now disposed.
-
-	Example 2: Add an objects to the current dispose list using AddToDisposeList parameter.
-	$dir = New-NtDirectory \Dir -AddToDisposeList | New-NtDirectory Path
-
-	Example 3: Add a set of objects to the current dispose list using Add-NtDisposeList.
-	$obj.QueryObjects() | Add-NtDisposeList
-
-	Example 4: Manage lifetime in a pipeline using -CloseRoot.
+	  # Print out created event
+	  $ev[0] | Format-List
+	} finally {
+	  # Dispose objects
+	  $ev.Dispose()
+	}
+	
+	Example 2: Manage lifetime in a pipeline using -CloseRoot.
 	$software_key = Get-NtKey \Registry\Machine\Software | New-NtKey MyKey -CloseRoot
 	# Key object to \Registry\Machine\Software is automatically closed.
 
-	Example 5: Clear the entire dispose list stack.
-	Clear-NtDisposeList
+	Example 3: Using Use-NtObject to automatically close a list of processes
+	$pinfo = Use-NtObject($ps = Get-NtProcess) { $ps | select Name, CommandLine }
+	# $ps is now disposed of.
+
+	Example 4: Same as 3 but not polluting the variable namespace
+	$pinfo = Use-NtObject (Get-NtProcess) { param($ps); $ps | select Name, CommandLine }
+	# $ps no longer in scope
 
 KEYWORDS
-	DisposeList, ObjectManager, Lifetime
+	ObjectManager, Lifetime

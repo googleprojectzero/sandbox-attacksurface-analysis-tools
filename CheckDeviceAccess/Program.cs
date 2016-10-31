@@ -141,7 +141,7 @@ namespace CheckDeviceAccess
             {
                 using (NtSymbolicLink link = NtSymbolicLink.Open(entry.FullPath, null))
                 {
-                    return link.Query();
+                    return link.Target;
                 }
             }
             catch (NtException)

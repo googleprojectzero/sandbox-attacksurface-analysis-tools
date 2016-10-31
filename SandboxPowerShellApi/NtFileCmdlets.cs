@@ -43,12 +43,21 @@ namespace NtObjectManager
     [Cmdlet(VerbsCommon.Get, "NtFile")]
     [OutputType(typeof(NtFile))]
     public class GetNtFileCmdlet : NtObjectBaseCmdletWithAccess<FileAccessRights>
-    {
+    {        
         /// <summary>
         /// <para type="description">The NT object manager path to the object to use.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
         new public string Path { get; set; }
+
+        /// <summary>
+        /// Determine if the cmdlet can create objects.
+        /// </summary>
+        /// <returns>True if objects can be created.</returns>
+        protected override bool CanCreateDirectories()
+        {
+            return false;
+        }
 
         /// <summary>
         /// <para type="description">The access share mode to open the file with.</para>

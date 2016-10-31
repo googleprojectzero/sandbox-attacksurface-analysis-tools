@@ -405,20 +405,26 @@ namespace NtApiDotNet
         /// Get the size of the section
         /// </summary>
         /// <returns>The size</returns>
-        public long GetSize()
+        public long Size
         {
-            SectionBasicInformation info = Query<SectionBasicInformation>(SectionInformationClass.SectionBasicInformation);
-            return info.Size.QuadPart;
+            get
+            {
+                SectionBasicInformation info = Query<SectionBasicInformation>(SectionInformationClass.SectionBasicInformation);
+                return info.Size.QuadPart;
+            }
         }
 
         /// <summary>
         /// Get the attributes of the section
         /// </summary>
         /// <returns>The section attributes</returns>
-        public SectionAttributes GetAttributes()
+        public SectionAttributes Attributes
         {
-            SectionBasicInformation info = Query<SectionBasicInformation>(SectionInformationClass.SectionBasicInformation);
-            return info.Attributes;
+            get
+            {
+                SectionBasicInformation info = Query<SectionBasicInformation>(SectionInformationClass.SectionBasicInformation);
+                return info.Attributes;
+            }
         }
     }
 }

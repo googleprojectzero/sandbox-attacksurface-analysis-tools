@@ -116,7 +116,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtQueryInformationThread(
             SafeKernelObjectHandle ThreadHandle,
             ThreadInfoClass ThreadInformationClass,
-            IntPtr          ThreadInformation,
+            SafeBuffer          ThreadInformation,
             int             ThreadInformationLength,
             out int         ReturnLength
         );
@@ -125,7 +125,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtSetInformationThread(
             SafeKernelObjectHandle ThreadHandle,
             ThreadInfoClass ThreadInformationClass,
-            IntPtr ThreadInformation,
+            SafeBuffer ThreadInformation,
             int ThreadInformationLength            
         );
 
@@ -143,10 +143,16 @@ namespace NtApiDotNet
         public static extern NtStatus NtImpersonateAnonymousToken(SafeKernelObjectHandle ThreadHandle);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtDelayExecution(bool Alertable, LargeInteger DelayInterval);    
+        public static extern NtStatus NtDelayExecution(bool Alertable, LargeInteger DelayInterval);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAlertThread(SafeKernelObjectHandle ThreadHandle);
     }
 #pragma warning restore 1591
 
+    /// <summary>
+    /// Class to represent a NT Thread object
+    /// </summary>
     public class NtThread : NtObjectWithDuplicate<NtThread, ThreadAccessRights>
     {
         private int? _tid;
@@ -157,6 +163,10 @@ namespace NtApiDotNet
         {
         }        
 
+        /// <summary>
+        /// Resume the thread.
+        /// </summary>
+        /// <returns>The suspend count</returns>
         public int Resume()
         {
             int suspend_count;
@@ -164,6 +174,10 @@ namespace NtApiDotNet
             return suspend_count;
         }
 
+        /// <summary>
+        /// Suspend the thread
+        /// </summary>
+        /// <returns>The suspend count</returns>
         public int Suspend()
         {
             int suspend_count;
@@ -171,69 +185,146 @@ namespace NtApiDotNet
             return suspend_count;
         }
 
+        /// <summary>
+        /// Terminate the thread
+        /// </summary>
+        /// <param name="status">The thread status exit code</param>
         public void Terminate(NtStatus status)
         {
             NtSystemCalls.NtTerminateThread(Handle, status).ToNtException();
         }
 
-        public void Terminate(int status)
-        {
-            Terminate((NtStatus)status);
-        }
-
-        public static NtThread Open(int thread_id, ThreadAccessRights access)
+        /// <summary>
+        /// Open a thread
+        /// </summary>
+        /// <param name="thread_id">The thread ID to open</param>
+        /// <param name="desired_access">The desired access for the handle</param>
+        /// <returns>The opened object</returns>
+        public static NtThread Open(int thread_id, ThreadAccessRights desired_access)
         {
             SafeKernelObjectHandle handle;
-            NtSystemCalls.NtOpenThread(out handle, access, new ObjectAttributes(), new ClientId() { UniqueThread = new IntPtr(thread_id) }).ToNtException();
+            NtSystemCalls.NtOpenThread(out handle, desired_access, new ObjectAttributes(), new ClientId() { UniqueThread = new IntPtr(thread_id) }).ToNtException();
             return new NtThread(handle) { _tid = thread_id };       
         }
 
-        public int GetThreadId()
+        private ThreadBasicInformation QueryBasicInformation()
         {
-            if (_tid.HasValue)
-                return _tid.Value;
-
             using (SafeStructureInOutBuffer<ThreadBasicInformation> basic_info = new SafeStructureInOutBuffer<ThreadBasicInformation>())
             {
                 int return_length = 0;
                 NtSystemCalls.NtQueryInformationThread(Handle, ThreadInfoClass.ThreadBasicInformation,
-                  basic_info.DangerousGetHandle(), basic_info.Length, out return_length).ToNtException();
-                _tid = basic_info.Result.ClientId.UniqueThread.ToInt32();
+                  basic_info, basic_info.Length, out return_length).ToNtException();
+                return basic_info.Result;
+            }
+        }
+
+        /// <summary>
+        /// Get thread ID
+        /// </summary>
+        public int ThreadId
+        {
+            get
+            {
+                if (!_tid.HasValue)
+                {
+                    _tid = QueryBasicInformation().ClientId.UniqueThread.ToInt32();
+                }
                 return _tid.Value;
             }
         }
 
-        public int GetProcessId()
+        /// <summary>
+        /// Get process ID
+        /// </summary>
+        public int ProcessId
         {
-            if (_pid.HasValue)
-                return _pid.Value;
-
-            using (SafeStructureInOutBuffer<ThreadBasicInformation> basic_info = new SafeStructureInOutBuffer<ThreadBasicInformation>())
+            get
             {
-                int return_length = 0;
-                NtSystemCalls.NtQueryInformationThread(Handle, ThreadInfoClass.ThreadBasicInformation,
-                  basic_info.DangerousGetHandle(), basic_info.Length, out return_length).ToNtException();
-                _pid = basic_info.Result.ClientId.UniqueProcess.ToInt32();
+                if (!_pid.HasValue)
+                {
+                    _pid = QueryBasicInformation().ClientId.UniqueProcess.ToInt32();
+                }
                 return _pid.Value;
             }
         }
 
+        /// <summary>
+        /// Get thread's current priority
+        /// </summary>
+        public int Priority
+        {
+            get
+            {
+                return QueryBasicInformation().Priority;
+            }
+        }
+
+        /// <summary>
+        /// Get thread's base priority
+        /// </summary>
+        public int BasePriority
+        {
+            get
+            {
+                return QueryBasicInformation().BasePriority;
+            }
+        }
+
+        /// <summary>
+        /// Get the thread's TEB base address.
+        /// </summary>
+        public IntPtr TebBaseAddress
+        {
+            get
+            {
+                return QueryBasicInformation().TebBaseAddress;
+            }
+        }
+
+        /// <summary>
+        /// Wake the thread from an alertable state.
+        /// </summary>
+        public void Alert()
+        {
+            NtSystemCalls.NtAlertThread(Handle).ToNtException();
+        }
+
+        /// <summary>
+        /// Hide the thread from debug events.
+        /// </summary>
+        public void HideFromDebugger()
+        {
+            NtSystemCalls.NtSetInformationThread(Handle, ThreadInfoClass.ThreadHideFromDebugger, SafeHGlobalBuffer.Null, 0).ToNtException();
+        }
+
+        /// <summary>
+        /// The set the thread's impersonation token
+        /// </summary>
+        /// <param name="token">The impersonation token to set</param>
         public void SetImpersonationToken(NtToken token)
         {
             IntPtr handle = token != null ? token.Handle.DangerousGetHandle() : IntPtr.Zero;
             using (var buf = handle.ToBuffer())
             {
                 NtSystemCalls.NtSetInformationThread(Handle, ThreadInfoClass.ThreadImpersonationToken, 
-                    buf.DangerousGetHandle(), buf.Length).ToNtException();
+                    buf, buf.Length).ToNtException();
             }
         }
 
+        /// <summary>
+        /// Impersonate the anonymous token
+        /// </summary>
+        /// <returns>The impersonation context. Dispose to revert to self</returns>
         public ThreadImpersonationContext ImpersonateAnonymousToken()
         {
             NtSystemCalls.NtImpersonateAnonymousToken(Handle).ToNtException();
             return new ThreadImpersonationContext(Duplicate());
         }
 
+        /// <summary>
+        /// Impersonate a token
+        /// </summary>
+        /// <returns>The impersonation context. Dispose to revert to self</returns>
         public ThreadImpersonationContext Impersonate(NtToken token)
         {
             SetImpersonationToken(token);
@@ -249,6 +340,10 @@ namespace NtApiDotNet
             return new NtThread(Current.DuplicateHandle());
         }
 
+        /// <summary>
+        /// Open the thread's token
+        /// </summary>
+        /// <returns>The token, null if no token available</returns>
         public NtToken OpenToken()
         {
             return NtToken.OpenThreadToken(this);

@@ -31,7 +31,7 @@ namespace HandleUtils
 
         public static ObjectDirectory OpenSessionDirectory()
 	    {
-		    return OpenSessionDirectory(NtProcess.Current.GetProcessSessionId());
+		    return OpenSessionDirectory(NtProcess.Current.SessionId);
 	    }
 
 	    public static string ReadSymlink(string symlink_path)
@@ -40,7 +40,7 @@ namespace HandleUtils
             {
                 using (NtSymbolicLink symlink = NtSymbolicLink.Open(symlink_path, null, SymbolicLinkAccessRights.Query))
                 {
-                    return symlink.Query();
+                    return symlink.Target;
                 }
             }
             catch (NtException ex)

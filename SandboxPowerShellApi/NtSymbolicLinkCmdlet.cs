@@ -39,6 +39,16 @@ namespace NtObjectManager
     [Cmdlet(VerbsCommon.Get, "NtSymbolicLink")]
     public class GetNtSymbolicLinkCmdlet : NtObjectBaseCmdletWithAccess<SymbolicLinkAccessRights>
     {
+
+        /// <summary>
+        /// Determine if the cmdlet can create objects.
+        /// </summary>
+        /// <returns>True if objects can be created.</returns>
+        protected override bool CanCreateDirectories()
+        {
+            return false;
+        }
+
         /// <summary>
         /// <para type="description">The NT object manager path to the object to use.</para>
         /// </summary>
@@ -83,6 +93,15 @@ namespace NtObjectManager
     public class GetNtSymbolicLinkTargetCmdlet : NtObjectBaseCmdlet
     {
         /// <summary>
+        /// Determine if the cmdlet can create objects.
+        /// </summary>
+        /// <returns>True if objects can be created.</returns>
+        protected override bool CanCreateDirectories()
+        {
+            return false;
+        }
+
+        /// <summary>
         /// <para type="description">The NT object manager path to the object to use.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
@@ -106,7 +125,7 @@ namespace NtObjectManager
         {
             using (NtSymbolicLink link = NtSymbolicLink.Open(obj_attributes, SymbolicLinkAccessRights.Query))
             {
-                return link.Query();
+                return link.Target;
             }
         }
     }
@@ -134,6 +153,16 @@ namespace NtObjectManager
     [Cmdlet(VerbsCommon.New, "NtSymbolicLink")]
     public class NewNtSymbolicLinkCmdlet : NtObjectBaseCmdletWithAccess<SymbolicLinkAccessRights>
     {
+
+        /// <summary>
+        /// Determine if the cmdlet can create objects.
+        /// </summary>
+        /// <returns>True if objects can be created.</returns>
+        protected override bool CanCreateDirectories()
+        {
+            return true;
+        }
+
         /// <summary>
         /// <para type="description">Specify the target NT object manager path to follow if processing this symbolic link.</para>
         /// </summary>

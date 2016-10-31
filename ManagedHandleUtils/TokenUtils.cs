@@ -174,7 +174,7 @@ namespace HandleUtils
                     if (make_interactive)
                     {
                         desktop = @"WinSta0\Default";
-                        newtoken.SetSessionId(NtProcess.Current.GetProcessSessionId());
+                        newtoken.SetSessionId(NtProcess.Current.SessionId);
                     }
 
                     using (Win32Process process = Win32Process.CreateProcessAsUser(newtoken, null, cmdline, CreateProcessFlags.None, desktop))

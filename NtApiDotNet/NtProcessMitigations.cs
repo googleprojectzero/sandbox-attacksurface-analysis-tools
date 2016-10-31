@@ -15,11 +15,15 @@
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
+    /// <summary>
+    /// Class representing various process mitigations
+    /// </summary>
     public class NtProcessMitigations
     {
         internal NtProcessMitigations(NtProcess process)
         {
-            ProcessDepStatus dep_status = process.GetProcessDepStatus();
+            ProcessDepStatus dep_status = process.DepStatus;
             DisableAtlThunkEmulation = dep_status.DisableAtlThunkEmulation;
             DepEnabled = dep_status.Enabled;
             DepPermanent = dep_status.Permanent;
@@ -76,4 +80,5 @@ namespace NtApiDotNet
         public bool PreferSystem32Images { get; private set; }
         public bool AllowThreadOptOut { get; private set; }
     }
+#pragma warning restore 1591
 }

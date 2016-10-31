@@ -56,6 +56,15 @@ namespace NtObjectManager
         }
 
         /// <summary>
+        /// Determine if the cmdlet can create objects.
+        /// </summary>
+        /// <returns>True if objects can be created.</returns>
+        protected override bool CanCreateDirectories()
+        {
+            return false;
+        }
+
+        /// <summary>
         /// Method to create an object from a set of object attributes.
         /// </summary>
         /// <param name="obj_attributes">The object attributes to create/open from.</param>
@@ -103,6 +112,16 @@ namespace NtObjectManager
         /// </summary>
         [Parameter]
         public SwitchParameter InitialOwner { get; set; }
+
+
+        /// <summary>
+        /// Determine if the cmdlet can create objects.
+        /// </summary>
+        /// <returns>True if objects can be created.</returns>
+        protected override bool CanCreateDirectories()
+        {
+            return true;
+        }
 
         /// <summary>
         /// Method to create an object from a set of object attributes.

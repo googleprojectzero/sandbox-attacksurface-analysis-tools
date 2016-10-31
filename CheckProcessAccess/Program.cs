@@ -38,7 +38,7 @@ namespace CheckProcessAccess
             public ThreadEntry(NtThread handle)
             {
                 Handle = handle;
-                Tid = handle.GetThreadId();
+                Tid = handle.ThreadId;
                 try
                 {
                     Token = handle.OpenToken();
@@ -65,7 +65,7 @@ namespace CheckProcessAccess
 
                 if (handle.IsAccessGranted(ProcessAccessRights.QueryInformation) || handle.IsAccessGranted(ProcessAccessRights.QueryLimitedInformation))
                 {
-                    Pid = handle.GetProcessId();
+                    Pid = handle.ProcessId;
                 }
 
                 if (threads == null)
@@ -90,7 +90,7 @@ namespace CheckProcessAccess
                     {
                         try
                         {
-                            ImagePath = Handle.GetImageFileName(false);
+                            ImagePath = Handle.GetImageFilePath(false);
                             Name = Path.GetFileNameWithoutExtension(ImagePath);
                         }
                         catch (NtException)
@@ -112,7 +112,7 @@ namespace CheckProcessAccess
 
                     try
                     {
-                        CommandLine = Handle.GetCommandLine();
+                        CommandLine = Handle.CommandLine;
                     }
                     catch (NtException)
                     {
@@ -234,7 +234,7 @@ namespace CheckProcessAccess
 
                             List<ProcessEntry> procs = new List<ProcessEntry>();
 
-                            foreach (var group in all_threads.GroupBy(t => t.GetProcessId()))
+                            foreach (var group in all_threads.GroupBy(t => t.ProcessId))
                             {
                                 ProcessEntry entry = null;
                                 NtThread[] threads = group.ToArray();
@@ -312,7 +312,7 @@ namespace CheckProcessAccess
 
                         if (_dump_token && process.Token != null)
                         {
-                            Console.WriteLine("User: {0}", process.Token.GetUser());
+                            Console.WriteLine("User: {0}", process.Token.User);
                             if (_print_sddl && process.Token.IsAccessGranted(TokenAccessRights.ReadControl))
                             {
                                 Console.WriteLine("Token SDDL: {0}", process.Token.GetSddl());
@@ -331,7 +331,7 @@ namespace CheckProcessAccess
 
                                 if (_dump_token && thread.Token != null)
                                 {                                    
-                                    Console.WriteLine("---- Impersonating {0}", thread.Token.GetUser());
+                                    Console.WriteLine("---- Impersonating {0}", thread.Token.User);
                                     if (_print_sddl && thread.Token.IsAccessGranted(TokenAccessRights.ReadControl))
                                     {
                                         Console.WriteLine("---- Token SDDL: {0}", thread.Token.GetSddl());

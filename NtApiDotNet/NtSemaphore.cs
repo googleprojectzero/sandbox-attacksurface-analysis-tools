@@ -59,32 +59,79 @@ namespace NtApiDotNet
     }
 #pragma warning restore 1591
 
+    /// <summary>
+    /// Class to represent a NT Semaphore object.
+    /// </summary>
     public class NtSemaphore : NtObjectWithDuplicate<NtSemaphore, SemaphoreAccessRights>
     {
         internal NtSemaphore(SafeKernelObjectHandle handle) : base(handle)
         {
         }
 
-        public static NtSemaphore Create(string name, NtObject root, int initial_count, int maximum_count)
+        /// <summary>
+        /// Create a semaphore object.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the object</param>
+        /// <param name="desired_access">The desired access for the object</param>
+        /// <param name="initial_count">Initial count for semaphore</param>
+        /// <param name="maximum_count">Maximum count for semaphore</param>
+        /// <returns>The opened object</returns>
+        public static NtSemaphore Create(ObjectAttributes object_attributes, SemaphoreAccessRights desired_access, int initial_count, int maximum_count)
         {
-            using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
+            SafeKernelObjectHandle handle;
+            NtSystemCalls.NtCreateSemaphore(out handle, desired_access, object_attributes, initial_count, maximum_count).ToNtException();
+            return new NtSemaphore(handle);
+        }
+
+        /// <summary>
+        /// Create a semaphore object.
+        /// </summary>
+        /// <param name="path">The path to the object</param>
+        /// <param name="root">The root if path is relative</param>
+        /// <param name="initial_count">Initial count for semaphore</param>
+        /// /// <param name="maximum_count">Maximum count for semaphore</param>
+        /// <returns>The opened object</returns>
+        public static NtSemaphore Create(string path, NtObject root, int initial_count, int maximum_count)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle;
-                NtSystemCalls.NtCreateSemaphore(out handle, SemaphoreAccessRights.MaximumAllowed, obja, initial_count, maximum_count).ToNtException();
-                return new NtSemaphore(handle);
+                return Create(obja, SemaphoreAccessRights.MaximumAllowed, initial_count, maximum_count);
             }
         }
 
-        public static NtSemaphore Open(string name, NtObject root, SemaphoreAccessRights access_rights)
+        /// <summary>
+        /// Open a semaphore object.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the object</param>
+        /// <param name="desired_access">The desired access for the object</param>
+        /// <returns>The opened object</returns>
+        public static NtSemaphore Open(ObjectAttributes object_attributes, SemaphoreAccessRights desired_access)
         {
-            using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
+            SafeKernelObjectHandle handle;
+            NtSystemCalls.NtOpenSemaphore(out handle, desired_access, object_attributes).ToNtException();
+            return new NtSemaphore(handle);
+        }
+
+        /// <summary>
+        /// Open a semaphore object.
+        /// </summary>
+        /// <param name="path">The path to the object</param>
+        /// <param name="root">The root if path is relative</param>
+        /// <param name="desired_access">The desired access for the object</param>
+        /// <returns>The opened object</returns>
+        public static NtSemaphore Open(string path, NtObject root, SemaphoreAccessRights desired_access)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle;
-                NtSystemCalls.NtOpenSemaphore(out handle, access_rights, obja).ToNtException();
-                return new NtSemaphore(handle);
+                return Open(obja, desired_access);
             }
         }
 
+        /// <summary>
+        /// Release the semaphore
+        /// </summary>
+        /// <param name="count">The release count</param>
+        /// <returns>The previous count</returns>
         public int Release(int count)
         {
             int previous_count;

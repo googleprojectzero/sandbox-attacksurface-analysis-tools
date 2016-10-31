@@ -57,60 +57,153 @@ namespace NtApiDotNet
     }
 #pragma warning restore 1591
 
+    /// <summary>
+    /// Class representing an NT object type
+    /// </summary>
     public class NtType
     {
+        /// <summary>
+        /// The name of the type
+        /// </summary>
         public string Name { get; private set; }
-        public AttributeFlags InvalidAttribute { get; private set; }
+        /// <summary>
+        /// The mapping from generic to specific object rights
+        /// </summary>
         public GenericMapping GenericMapping { get; private set; }
+        /// <summary>
+        /// The valid access mask
+        /// </summary>
         public uint ValidAccess { get; private set; }
+        /// <summary>
+        /// True if the object needs security even if unnamed
+        /// </summary>
         public bool SecurityRequired { get; private set; }
-
+        /// <summary>
+        /// Total number of objects (when originally retrieved)
+        /// </summary>
         public uint TotalNumberOfObjects { get; private set; }
+        /// <summary>
+        /// Total number of handles (when originally retrieved)
+        /// </summary>
         public uint TotalNumberOfHandles { get; private set; }
+        /// <summary>
+        /// Total paged pool usage (when originally retrieved)
+        /// </summary>
         public uint TotalPagedPoolUsage { get; private set; }
+        /// <summary>
+        /// Total non-paged pool usage (when originally retrieved)
+        /// </summary>
         public uint TotalNonPagedPoolUsage { get; private set; }
+        /// <summary>
+        /// Total name pool usage (when originally retrieved)
+        /// </summary>
         public uint TotalNamePoolUsage { get; private set; }
+        /// <summary>
+        /// Total handle table usage (when originally retrieved)
+        /// </summary>
         public uint TotalHandleTableUsage { get; private set; }
+        /// <summary>
+        /// Maximum number of objects (when originally retrieved)
+        /// </summary>
         public uint HighWaterNumberOfObjects { get; private set; }
+        /// <summary>
+        /// Maximum number of handles (when originally retrieved)
+        /// </summary>
         public uint HighWaterNumberOfHandles { get; private set; }
+        /// <summary>
+        /// Maximum paged pool usage (when originally retrieved)
+        /// </summary>
         public uint HighWaterPagedPoolUsage { get; private set; }
+        /// <summary>
+        /// Maximum non-paged pool usage (when originally retrieved)
+        /// </summary>
         public uint HighWaterNonPagedPoolUsage { get; private set; }
+        /// <summary>
+        /// Maximum name pool usage (when originally retrieved)
+        /// </summary>
         public uint HighWaterNamePoolUsage { get; private set; }
+        /// <summary>
+        /// Maximum handle table usage (when originally retrieved)
+        /// </summary>
         public uint HighWaterHandleTableUsage { get; private set; }
+        /// <summary>
+        /// The attributes flags which are invalid
+        /// </summary>
         public AttributeFlags InvalidAttributes { get; private set; }
-
-        public byte MaintainHandleCount { get; private set; }
+        /// <summary>
+        /// Indicates whether handle count is mainted
+        /// </summary>
+        public bool MaintainHandleCount { get; private set; }
+        /// <summary>
+        /// Indicates the type list maintained
+        /// </summary>
         public ushort MaintainTypeList { get; private set; }
+        /// <summary>
+        /// Indicates the type of pool used in allocations
+        /// </summary>
         public PoolType PoolType { get; private set; }
+        /// <summary>
+        /// Current paged pool usage
+        /// </summary>
         public uint PagedPoolUsage { get; private set; }
+        /// <summary>
+        /// Current non-pages pool usage
+        /// </summary>
         public uint NonPagedPoolUsage { get; private set; }
-
+        /// <summary>
+        /// Type Index
+        /// </summary>
         public int Index { get; private set; }
 
+        /// <summary>
+        /// Checks if a access mask represents a read permission on this type
+        /// </summary>
+        /// <param name="access_mask">The access mask to check</param>
+        /// <returns>True if it has read permissions</returns>
         public bool HasReadPermission(uint access_mask)
         {
             access_mask = GenericMapping.MapMask(access_mask);
             return (access_mask & GenericMapping.GenericRead) != 0;
         }
 
+        /// <summary>
+        /// Checks if a access mask represents a write permission on this type
+        /// </summary>
+        /// <param name="access_mask">The access mask to check</param>
+        /// <returns>True if it has write permissions</returns>
         public bool HasWritePermission(uint access_mask)
         {
             access_mask = GenericMapping.MapMask(access_mask);
             return (access_mask & GenericMapping.GenericWrite & ~GenericMapping.GenericRead & ~GenericMapping.GenericExecute) != 0;
         }
 
+        /// <summary>
+        /// Checks if a access mask represents a execute permission on this type
+        /// </summary>
+        /// <param name="access_mask">The access mask to check</param>
+        /// <returns>True if it has execute permissions</returns>
         public bool HasExecutePermission(uint access_mask)
         {
             access_mask = GenericMapping.MapMask(access_mask);
             return (access_mask & GenericMapping.GenericExecute & ~GenericMapping.GenericRead) != 0;
         }
 
+        /// <summary>
+        /// Checks if a access mask represents a full permission on this type
+        /// </summary>
+        /// <param name="access_mask">The access mask to check</param>
+        /// <returns>True if it has full permissions</returns>
         public bool HasFullPermission(uint access_mask)
         {
             access_mask = GenericMapping.MapMask(access_mask);
             return (access_mask & GenericMapping.GenericAll) == GenericMapping.GenericAll;
         }
 
+        /// <summary>
+        /// Map generic access rights to specific access rights for this type
+        /// </summary>
+        /// <param name="access_mask">The access mask to map</param>
+        /// <returns>The mapped access mask</returns>
         public uint MapGenericRights(uint access_mask)
         {
             return GenericMapping.MapMask(access_mask);
@@ -120,7 +213,7 @@ namespace NtApiDotNet
         {
             Index = id;
             Name = info.Name.ToString();
-            InvalidAttribute = info.InvalidAttributes;
+            InvalidAttributes = info.InvalidAttributes;
             GenericMapping = info.GenericMapping;
             ValidAccess = info.ValidAccess;
             SecurityRequired = info.SecurityRequired != 0;
@@ -137,8 +230,7 @@ namespace NtApiDotNet
             HighWaterNonPagedPoolUsage = info.HighWaterNonPagedPoolUsage;
             HighWaterNamePoolUsage = info.HighWaterNamePoolUsage;
             HighWaterHandleTableUsage = info.HighWaterHandleTableUsage;
-            InvalidAttributes = info.InvalidAttributes;
-            MaintainHandleCount = info.MaintainHandleCount;
+            MaintainHandleCount = info.MaintainHandleCount != 0;
             MaintainTypeList = info.MaintainTypeList;
             PoolType = info.PoolType;
             PagedPoolUsage = info.PagedPoolUsage;
@@ -147,6 +239,11 @@ namespace NtApiDotNet
 
         private static Dictionary<string, NtType> _types;
 
+        /// <summary>
+        /// Get a type object by index
+        /// </summary>
+        /// <param name="index">The index</param>
+        /// <returns>The object type, null if not found</returns>
         public static NtType GetTypeByIndex(int index)
         {
             foreach (NtType info in GetTypes())
@@ -158,6 +255,11 @@ namespace NtApiDotNet
             return null;
         }
 
+        /// <summary>
+        /// Get a type object by name
+        /// </summary>
+        /// <param name="name">The name of the type</param>
+        /// <returns>The object type, null if not found</returns>
         public static NtType GetTypeByName(string name)
         {
             LoadTypes();
@@ -218,6 +320,10 @@ namespace NtApiDotNet
 
         }
 
+        /// <summary>
+        /// Get a list of all types.
+        /// </summary>
+        /// <returns>The list of types.</returns>
         public static IEnumerable<NtType> GetTypes()
         {
             LoadTypes();

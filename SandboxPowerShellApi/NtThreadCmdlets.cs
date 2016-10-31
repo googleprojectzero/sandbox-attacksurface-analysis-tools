@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using System.Linq;
 using System.Management.Automation;
 
 namespace NtObjectManager
@@ -34,6 +35,10 @@ namespace NtObjectManager
     ///   <code>$t = Get-NtThread 1234</code>
     ///   <para>Get a specific thread.</para>
     /// </example>
+    /// <example>
+    ///   <code>$t = Get-NtThread -ProcessId 1234</code>
+    ///   <para>Get threads for a specific process.</para>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtThread")]
     [OutputType(typeof(NtThread))]
@@ -44,6 +49,11 @@ namespace NtObjectManager
         /// </summary>
         [Parameter(Position = 0)]
         public int ThreadId { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a process ID to enumerate only its threads.</para>
+        /// </summary>
+        public int ProcessId { get; set; }
 
         /// <summary>
         /// <para type="description">Specify access rights for each thread opened.</para>
@@ -58,6 +68,7 @@ namespace NtObjectManager
         {
             Access = ThreadAccessRights.MaximumAllowed;
             ThreadId = -1;
+            ProcessId = 1;
         }
 
         /// <summary>
@@ -65,9 +76,16 @@ namespace NtObjectManager
         /// </summary>
         protected override void ProcessRecord()
         {
-            if (ThreadId == -1)
+            if (ThreadId == -1 && ProcessId == -1)
             {
                 WriteObject(NtThread.GetThreads(Access));
+            }
+            else if (ProcessId != -1)
+            {
+                using (NtProcess process = NtProcess.Open(ProcessId, ProcessAccessRights.MaximumAllowed))
+                {
+                    WriteObject(process.GetThreads());
+                }
             }
             else
             {

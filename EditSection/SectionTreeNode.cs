@@ -28,9 +28,9 @@ namespace EditSection
             string size = String.Empty;
             try
             {
-                using (NtSection section = NtSection.DuplicateFrom(ent.Pid, new IntPtr(ent.Handle), SectionAccessRights.Query))
+                using (NtSection section = NtSection.DuplicateFrom(ent.ProcessId, new IntPtr(ent.Handle), SectionAccessRights.Query))
                 {
-                    size = section.GetSize().ToString();
+                    size = section.Size.ToString();
                 }
             }
             catch (NtException)
@@ -69,7 +69,7 @@ namespace EditSection
                 accessRights |= SectionAccessRights.MapWrite;
             }
 
-            using (NtSection section = NtSection.DuplicateFrom(_ent.Pid, new IntPtr(_ent.Handle), accessRights))
+            using (NtSection section = NtSection.DuplicateFrom(_ent.ProcessId, new IntPtr(_ent.Handle), accessRights))
             {
                 return section.Map(writable ? ProtectionType.ReadWrite : ProtectionType.ReadOnly);
             }

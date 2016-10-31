@@ -50,7 +50,7 @@ namespace EditSection
         public SectionEditorForm(NtMappedSection map, NtHandle handle, bool readOnly) 
             : this(map, readOnly)        
         {                           
-            TabText = String.Format("Process {0} - Handle {1} {2}", handle.Pid, handle.Handle, _readOnly ? "(RO)" : "");            
+            TabText = String.Format("Process {0} - Handle {1} {2}", handle.ProcessId, handle.Handle, _readOnly ? "(RO)" : "");            
         }
 
         public SectionEditorForm(NtMappedSection map, string name, bool readOnly)

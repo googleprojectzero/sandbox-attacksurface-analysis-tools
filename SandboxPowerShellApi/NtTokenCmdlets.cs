@@ -240,7 +240,7 @@ namespace NtObjectManager
                 }
                 else
                 {
-                    token = NtToken.OpenProcessToken(Thread.GetProcessId(), false, desired_access);
+                    token = NtToken.OpenProcessToken(Thread.ProcessId, false, desired_access);
                 }
             }
             return token;

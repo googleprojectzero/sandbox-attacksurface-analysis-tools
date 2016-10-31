@@ -85,8 +85,8 @@
             this.tabPageSessions = new System.Windows.Forms.TabPage();
             this.listViewSessions = new System.Windows.Forms.ListView();
             this.contextMenuStripSessions = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.refreshSessionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openSessionTokenToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.refreshSessionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             tabPageGeneral = new System.Windows.Forms.TabPage();
             groupBoxLogonUser = new System.Windows.Forms.GroupBox();
             label6 = new System.Windows.Forms.Label();
@@ -408,6 +408,7 @@
             // 
             // btnCreateFromBits
             // 
+            this.btnCreateFromBits.Enabled = false;
             this.btnCreateFromBits.Location = new System.Drawing.Point(6, 19);
             this.btnCreateFromBits.Name = "btnCreateFromBits";
             this.btnCreateFromBits.Size = new System.Drawing.Size(75, 23);
@@ -429,6 +430,16 @@
             // 
             columnHeaderProcess.Text = "Process";
             columnHeaderProcess.Width = 71;
+            // 
+            // columnHeaderSessionId
+            // 
+            columnHeaderSessionId.Text = "Session ID";
+            columnHeaderSessionId.Width = 81;
+            // 
+            // columnHeaderUserName
+            // 
+            columnHeaderUserName.Text = "User Name";
+            columnHeaderUserName.Width = 248;
             // 
             // tabControlTests
             // 
@@ -516,12 +527,12 @@
             this.refreshToolStripMenuItem,
             this.refreshTokenHandlesToolStripMenuItem});
             this.contextMenuStripProcesses.Name = "contextMenuStripProcesses";
-            this.contextMenuStripProcesses.Size = new System.Drawing.Size(196, 70);
+            this.contextMenuStripProcesses.Size = new System.Drawing.Size(195, 70);
             // 
             // openTokenToolStripMenuItem
             // 
             this.openTokenToolStripMenuItem.Name = "openTokenToolStripMenuItem";
-            this.openTokenToolStripMenuItem.Size = new System.Drawing.Size(195, 22);
+            this.openTokenToolStripMenuItem.Size = new System.Drawing.Size(194, 22);
             this.openTokenToolStripMenuItem.Text = "Open Token";
             this.openTokenToolStripMenuItem.Click += new System.EventHandler(this.openTokenToolStripMenuItem_Click);
             // 
@@ -529,14 +540,14 @@
             // 
             this.refreshToolStripMenuItem.Name = "refreshToolStripMenuItem";
             this.refreshToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F5;
-            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(195, 22);
+            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(194, 22);
             this.refreshToolStripMenuItem.Text = "Refresh";
             this.refreshToolStripMenuItem.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
             // 
             // refreshTokenHandlesToolStripMenuItem
             // 
             this.refreshTokenHandlesToolStripMenuItem.Name = "refreshTokenHandlesToolStripMenuItem";
-            this.refreshTokenHandlesToolStripMenuItem.Size = new System.Drawing.Size(195, 22);
+            this.refreshTokenHandlesToolStripMenuItem.Size = new System.Drawing.Size(194, 22);
             this.refreshTokenHandlesToolStripMenuItem.Text = "Refresh Token Handles";
             this.refreshTokenHandlesToolStripMenuItem.Click += new System.EventHandler(this.refreshTokenHandlesToolStripMenuItem_Click);
             // 
@@ -591,19 +602,19 @@
             this.openProcessTokenToolStripMenuItem,
             this.toolStripMenuItemRefreshThreads});
             this.contextMenuStripThreads.Name = "contextMenuStripProcesses";
-            this.contextMenuStripThreads.Size = new System.Drawing.Size(183, 70);
+            this.contextMenuStripThreads.Size = new System.Drawing.Size(182, 70);
             // 
             // toolStripMenuItemOpenThreadToken
             // 
             this.toolStripMenuItemOpenThreadToken.Name = "toolStripMenuItemOpenThreadToken";
-            this.toolStripMenuItemOpenThreadToken.Size = new System.Drawing.Size(182, 22);
+            this.toolStripMenuItemOpenThreadToken.Size = new System.Drawing.Size(181, 22);
             this.toolStripMenuItemOpenThreadToken.Text = "Open Thread Token";
             this.toolStripMenuItemOpenThreadToken.Click += new System.EventHandler(this.toolStripMenuItemOpenThreadToken_Click);
             // 
             // openProcessTokenToolStripMenuItem
             // 
             this.openProcessTokenToolStripMenuItem.Name = "openProcessTokenToolStripMenuItem";
-            this.openProcessTokenToolStripMenuItem.Size = new System.Drawing.Size(182, 22);
+            this.openProcessTokenToolStripMenuItem.Size = new System.Drawing.Size(181, 22);
             this.openProcessTokenToolStripMenuItem.Text = "Open Process Token";
             this.openProcessTokenToolStripMenuItem.Click += new System.EventHandler(this.openProcessTokenToolStripMenuItem_Click);
             // 
@@ -611,7 +622,7 @@
             // 
             this.toolStripMenuItemRefreshThreads.Name = "toolStripMenuItemRefreshThreads";
             this.toolStripMenuItemRefreshThreads.ShortcutKeys = System.Windows.Forms.Keys.F5;
-            this.toolStripMenuItemRefreshThreads.Size = new System.Drawing.Size(182, 22);
+            this.toolStripMenuItemRefreshThreads.Size = new System.Drawing.Size(181, 22);
             this.toolStripMenuItemRefreshThreads.Text = "Refresh";
             this.toolStripMenuItemRefreshThreads.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
             // 
@@ -642,38 +653,28 @@
             this.listViewSessions.UseCompatibleStateImageBehavior = false;
             this.listViewSessions.View = System.Windows.Forms.View.Details;
             // 
-            // columnHeaderSessionId
-            // 
-            columnHeaderSessionId.Text = "Session ID";
-            columnHeaderSessionId.Width = 81;
-            // 
-            // columnHeaderUserName
-            // 
-            columnHeaderUserName.Text = "User Name";
-            columnHeaderUserName.Width = 248;
-            // 
             // contextMenuStripSessions
             // 
             this.contextMenuStripSessions.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.openSessionTokenToolStripMenuItem,
             this.refreshSessionsToolStripMenuItem});
             this.contextMenuStripSessions.Name = "contextMenuStripSessions";
-            this.contextMenuStripSessions.Size = new System.Drawing.Size(153, 70);
+            this.contextMenuStripSessions.Size = new System.Drawing.Size(139, 48);
+            // 
+            // openSessionTokenToolStripMenuItem
+            // 
+            this.openSessionTokenToolStripMenuItem.Name = "openSessionTokenToolStripMenuItem";
+            this.openSessionTokenToolStripMenuItem.Size = new System.Drawing.Size(138, 22);
+            this.openSessionTokenToolStripMenuItem.Text = "Open Token";
+            this.openSessionTokenToolStripMenuItem.Click += new System.EventHandler(this.openSessionTokenToolStripMenuItem_Click);
             // 
             // refreshSessionsToolStripMenuItem
             // 
             this.refreshSessionsToolStripMenuItem.Name = "refreshSessionsToolStripMenuItem";
             this.refreshSessionsToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F5;
-            this.refreshSessionsToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.refreshSessionsToolStripMenuItem.Size = new System.Drawing.Size(138, 22);
             this.refreshSessionsToolStripMenuItem.Text = "Refresh";
             this.refreshSessionsToolStripMenuItem.Click += new System.EventHandler(this.refreshSessionsToolStripMenuItem_Click);
-            // 
-            // openSessionTokenToolStripMenuItem
-            // 
-            this.openSessionTokenToolStripMenuItem.Name = "openSessionTokenToolStripMenuItem";
-            this.openSessionTokenToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.openSessionTokenToolStripMenuItem.Text = "Open Token";
-            this.openSessionTokenToolStripMenuItem.Click += new System.EventHandler(this.openSessionTokenToolStripMenuItem_Click);
             // 
             // MainForm
             // 

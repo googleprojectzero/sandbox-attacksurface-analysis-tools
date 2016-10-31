@@ -56,7 +56,7 @@ namespace CheckRegistryAccess
                 return;
             }
 
-            SecurityDescriptor sd = key.GetSecurityDescriptor();
+            SecurityDescriptor sd = key.SecurityDescriptor;
             uint granted_access = 0;
 
             if (_key_rights != 0)
@@ -78,7 +78,7 @@ namespace CheckRegistryAccess
 
                 if (!_show_write_only || _type.HasWritePermission(granted_access))
                 {
-                    Console.WriteLine("{0} : {1:X08} {2}", key.GetName(), granted_access, AccessMaskToString(granted_access));
+                    Console.WriteLine("{0} : {1:X08} {2}", key.FullPath, granted_access, AccessMaskToString(granted_access));
                     if (_print_sddl)
                     {
                         Console.WriteLine("{0}", sd.ToSddl());
@@ -89,7 +89,7 @@ namespace CheckRegistryAccess
 
         static void DumpKey(NtKey key)
         {
-            string key_name = key.GetName();
+            string key_name = key.FullPath;
             if (_walked.Contains(key_name))
             {
                 return;
@@ -114,7 +114,7 @@ namespace CheckRegistryAccess
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine("Error dumping key {0} {1}", key.GetName(), ex.Message);
+                Console.Error.WriteLine("Error dumping key {0} {1}", key.FullPath, ex.Message);
             }
         }
 
@@ -134,7 +134,7 @@ namespace CheckRegistryAccess
                     mapped = @"\Registry\MACHINE";
                     break;
                 case "hkey_current_user":
-                    mapped = @"\Registry\User\" + NtToken.GetCurrentUser().Sid.ToString();
+                    mapped = @"\Registry\User\" + NtToken.CurrentUser.Sid.ToString();
                     break;
                 case "hkey_users":
                     mapped = @"\Registry\User";

@@ -111,6 +111,13 @@ namespace NtApiDotNet
             return Create(null, null);
         }
 
+        /// <summary>
+        /// Open a transaction object.
+        /// </summary>
+        /// <param name="path">The path to the object</param>
+        /// <param name="root">The root if path is relative</param>
+        /// <param name="desired_access">The desired access for the object</param>
+        /// <returns>The opened object</returns>
         public static NtRegistryTransaction Open(string path, NtObject root, RegistryTransactionAccessRights desired_access)
         {
             using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
@@ -119,6 +126,12 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Open a transaction object.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the object</param>
+        /// <param name="desired_access">The desired access for the object</param>
+        /// <returns>The opened object</returns>
         public static NtRegistryTransaction Open(ObjectAttributes object_attributes, RegistryTransactionAccessRights desired_access)
         {
             SafeKernelObjectHandle handle;
@@ -126,9 +139,14 @@ namespace NtApiDotNet
             return new NtRegistryTransaction(handle);
         }
 
-        public static NtRegistryTransaction Open(string name)
+        /// <summary>
+        /// Open a transaction object.
+        /// </summary>
+        /// <param name="path">The path to the object</param>
+        /// <returns>The opened object</returns>
+        public static NtRegistryTransaction Open(string path)
         {
-            return Open(name, null, RegistryTransactionAccessRights.MaximumAllowed);
+            return Open(path, null, RegistryTransactionAccessRights.MaximumAllowed);
         }
 
         /// <summary>
@@ -138,6 +156,7 @@ namespace NtApiDotNet
         {
             NtSystemCalls.NtCommitRegistryTransaction(Handle, 0).ToNtException();
         }
+
         /// <summary>
         /// Rollback the transaction
         /// </summary>

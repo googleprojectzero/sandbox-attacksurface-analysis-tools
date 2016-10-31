@@ -67,12 +67,12 @@ namespace TokenViewer
         {
             InitializeComponent();
             _token = token;
-            PopulateGroupList(listViewDisableSids, new UserGroup[] { token.GetUser() });
-            PopulateGroupList(listViewDisableSids, token.GetGroups().Where(g => !g.IsDenyOnly));
-            foreach (TokenPrivilege priv in token.GetPrivileges())
+            PopulateGroupList(listViewDisableSids, new UserGroup[] { token.User});
+            PopulateGroupList(listViewDisableSids, token.Groups.Where(g => !g.DenyOnly));
+            foreach (TokenPrivilege priv in token.Privileges)
             {
-                ListViewItem item = new ListViewItem(priv.GetName());
-                item.SubItems.Add(priv.GetDisplayName());
+                ListViewItem item = new ListViewItem(priv.Name);
+                item.SubItems.Add(priv.DisplayName);
                 item.Tag = priv;
                 listViewDeletePrivs.Items.Add(item);
             }
@@ -118,8 +118,8 @@ namespace TokenViewer
 
         private void btnAddAllGroups_Click(object sender, EventArgs e)
         {
-            PopulateGroupList(listViewRestrictedSids, new UserGroup[] { _token.GetUser() });
-            PopulateGroupList(listViewRestrictedSids, _token.GetGroups().Where(g => !g.IsDenyOnly));
+            PopulateGroupList(listViewRestrictedSids, new UserGroup[] { _token.User});
+            PopulateGroupList(listViewRestrictedSids, _token.Groups.Where(g => !g.DenyOnly));
         }
 
         private static void DoListViewCheck(ListView listView, bool check)

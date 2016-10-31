@@ -53,14 +53,14 @@ namespace GetHandles
             {
                 if (shareMode == ShareMode.All)
                 {
-                    if (group.GroupBy(k => k.Pid).Count() != pidCount)
+                    if (group.GroupBy(k => k.ProcessId).Count() != pidCount)
                     {
                         continue;
                     }
                 }
                 else if (shareMode == ShareMode.Partial)
                 {
-                    if (group.GroupBy(k => k.Pid).Count() <= 1)
+                    if (group.GroupBy(k => k.ProcessId).Count() <= 1)
                     {
                         continue;
                     }
@@ -70,7 +70,7 @@ namespace GetHandles
 
                 foreach (NtHandle ent in group)
                 {
-                    Console.WriteLine("{0}/0x{0:X}/{1} {2}/0x{2:X}: {3}", ent.Pid, pidToName[ent.Pid], 
+                    Console.WriteLine("{0}/0x{0:X}/{1} {2}/0x{2:X}: {3}", ent.ProcessId, pidToName[ent.ProcessId], 
                         ent.Handle, formatHandle(ent));
 
                     if (showsd && ent.SecurityDescriptor != null)
@@ -119,16 +119,16 @@ namespace GetHandles
 
                     if (pidFilter.Count > 0)
                     {
-                        filtered = filtered.Where(ps => pidFilter.Contains(ps.GetProcessId()));
+                        filtered = filtered.Where(ps => pidFilter.Contains(ps.ProcessId));
                     }
 
                     if (nameFilter.Count > 0)
                     {
-                        filtered = filtered.Where(ps => nameFilter.Contains(ps.GetName(), StringComparer.OrdinalIgnoreCase));
+                        filtered = filtered.Where(ps => nameFilter.Contains(ps.FullPath, StringComparer.OrdinalIgnoreCase));
                     }
                     
-                    HashSet<int> pids = new HashSet<int>(filtered.Select(process => process.GetProcessId()));
-                    Dictionary<int, string> pidToName = filtered.ToDictionary(pk => pk.GetProcessId(), pv => pv.GetName());                    
+                    HashSet<int> pids = new HashSet<int>(filtered.Select(process => process.ProcessId));
+                    Dictionary<int, string> pidToName = filtered.ToDictionary(pk => pk.ProcessId, pv => pv.FullPath);                    
 
                     List<NtHandle> totalHandles = new List<NtHandle>();
 

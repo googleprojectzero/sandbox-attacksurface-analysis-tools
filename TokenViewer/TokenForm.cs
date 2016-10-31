@@ -65,8 +65,8 @@ namespace TokenViewer
         {
             listViewGroups.Items.Clear();
             List<UserGroup> groups = new List<UserGroup>();
-            groups.Add(_token.GetUser());
-            groups.AddRange(_token.GetGroups());
+            groups.Add(_token.User);
+            groups.AddRange(_token.Groups);
 
             PopulateGroupList(listViewGroups, groups);
         }
@@ -74,9 +74,9 @@ namespace TokenViewer
         private void UpdatePrivileges()
         {
             listViewPrivs.Items.Clear();
-            foreach (TokenPrivilege priv in _token.GetPrivileges())
+            foreach (TokenPrivilege priv in _token.Privileges)
             {
-                ListViewItem item = new ListViewItem(priv.GetName());
+                ListViewItem item = new ListViewItem(priv.Name);
                 bool enabled = false;
                 string flags = "Disabled";
 
@@ -92,7 +92,7 @@ namespace TokenViewer
                 }
 
                 item.SubItems.Add(flags);
-                item.SubItems.Add(priv.GetDisplayName());
+                item.SubItems.Add(priv.DisplayName);
 
                 item.BackColor = enabled ? Color.LightGreen : Color.LightPink;
                 item.Tag = priv;
@@ -103,18 +103,18 @@ namespace TokenViewer
 
         private void UpdateTokenData()
         {
-            UserGroup user = _token.GetUser();
+            UserGroup user = _token.User;
 
             txtUsername.Text = user.ToString();
             txtUserSid.Text = user.Sid.ToString();
 
-            TokenType tokentype = _token.GetTokenType();
+            TokenType tokentype = _token.TokenType;
 
-            txtTokenType.Text = _token.GetTokenType().ToString();
+            txtTokenType.Text = _token.TokenType.ToString();
 
-            if (_token.GetTokenType() == TokenType.Impersonation)
+            if (_token.TokenType== TokenType.Impersonation)
             {
-                SecurityImpersonationLevel implevel = _token.GetImpersonationLevel();
+                SecurityImpersonationLevel implevel = _token.ImpersonationLevel;
                 txtImpLevel.Text = implevel.ToString();
             }
             else
@@ -122,36 +122,36 @@ namespace TokenViewer
                 txtImpLevel.Text = "N/A";
             }
 
-            txtTokenId.Text = FormatLuid(_token.GetId());
-            txtModifiedId.Text = FormatLuid(_token.GetModifiedId());
-            txtAuthId.Text = FormatLuid(_token.GetAuthenticationId());
-            if (Enum.IsDefined(typeof(TokenIntegrityLevel), _token.GetIntegrityLevel()))
+            txtTokenId.Text = FormatLuid(_token.Id);
+            txtModifiedId.Text = FormatLuid(_token.ModifiedId);
+            txtAuthId.Text = FormatLuid(_token.AuthenticationId);
+            if (Enum.IsDefined(typeof(TokenIntegrityLevel), _token.IntegrityLevel))
             {
-                comboBoxIL.SelectedItem = _token.GetIntegrityLevel();
-                comboBoxILForDup.SelectedItem = _token.GetIntegrityLevel();
+                comboBoxIL.SelectedItem = _token.IntegrityLevel;
+                comboBoxILForDup.SelectedItem = _token.IntegrityLevel;
             }
             else
             {
-                comboBoxIL.Text = _token.GetIntegrityLevel().ToString();
-                comboBoxILForDup.Text = _token.GetIntegrityLevel().ToString();
+                comboBoxIL.Text = _token.IntegrityLevel.ToString();
+                comboBoxILForDup.Text = _token.IntegrityLevel.ToString();
             }
 
-            txtSessionId.Text = _token.GetSessionId().ToString();
-            txtSourceName.Text = _token.GetSource().SourceName;
-            txtSourceId.Text = FormatLuid(_token.GetSource().SourceIdentifier);
-            TokenElevationType evtype = _token.GetElevationType();
+            txtSessionId.Text = _token.SessionId.ToString();
+            txtSourceName.Text = _token.Source.SourceName;
+            txtSourceId.Text = FormatLuid(_token.Source.SourceIdentifier);
+            TokenElevationType evtype = _token.ElevationType;
             txtElevationType.Text = evtype.ToString();
-            txtIsElevated.Text = _token.IsElevated().ToString();
-            txtOriginLoginId.Text = FormatLuid(_token.GetOrigin());
+            txtIsElevated.Text = _token.Elevated.ToString();
+            txtOriginLoginId.Text = FormatLuid(_token.Origin);
 
             btnLinkedToken.Enabled = evtype != TokenElevationType.Default;
 
             UpdateGroupList();
 
-            txtPrimaryGroup.Text = _token.GetPrimaryGroup().GetName();
-            txtOwner.Text = _token.GetOwner().GetName();
+            txtPrimaryGroup.Text = _token.PrimaryGroup.Name;
+            txtOwner.Text = _token.Owner.Name;
 
-            Acl defdacl = _token.GetDefaultDalc();
+            Acl defdacl = _token.DefaultDalc;
             if (!defdacl.NullAcl)
             {
                 foreach (Ace ace in defdacl)
@@ -187,40 +187,40 @@ namespace TokenViewer
             listViewDefDacl.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
             listViewDefDacl.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
 
-            if (_token.IsRestricted())
+            if (_token.Restricted)
             {
-                PopulateGroupList(listViewRestrictedSids, _token.GetRestrictedSids());
+                PopulateGroupList(listViewRestrictedSids, _token.RestrictedSids);
             }
             else
             {
                 tabControlMain.TabPages.Remove(tabPageRestricted);                
             }
 
-            if (_token.IsAppContainer())
+            if (_token.AppContainer)
             {
-                PopulateGroupList(listViewCapabilities, _token.GetCapabilities());
-                txtACNumber.Text = _token.GetAppContainerNumber().ToString();
-                txtPackageSid.Text = _token.GetAppContainerSid().GetName();
+                PopulateGroupList(listViewCapabilities, _token.Capabilities);
+                txtACNumber.Text = _token.AppContainerNumber.ToString();
+                txtPackageSid.Text = _token.AppContainerSid.Name;
             }
             else
             {
                 tabControlMain.TabPages.Remove(tabPageAppContainer);
             }
 
-            txtUIAccess.Text = _token.IsUiAccess().ToString();
-            txtSandboxInert.Text = _token.IsSandboxInert().ToString();
-            bool virtAllowed = _token.IsVirtualizationAllowed();
+            txtUIAccess.Text = _token.UiAccess.ToString();
+            txtSandboxInert.Text = _token.SandboxInert.ToString();
+            bool virtAllowed = _token.VirtualizationAllowed;
             txtVirtualizationAllowed.Text = virtAllowed.ToString();
             if (virtAllowed)
             {
-                txtVirtualizationEnabled.Text = _token.IsVirtualizationEnabled().ToString();
+                txtVirtualizationEnabled.Text = _token.VirtualizationEnabled.ToString();
             }
             else
             {
                 txtVirtualizationEnabled.Text = "N/A";
             }
 
-            txtMandatoryILPolicy.Text = _token.GetMandatoryPolicy().ToString();
+            txtMandatoryILPolicy.Text = _token.MandatoryPolicy.ToString();
             UpdatePrivileges();            
         }
 
@@ -264,10 +264,11 @@ namespace TokenViewer
         {
             try
             {
-                NativeBridge.EditSecurity(Handle, _token.Handle.DangerousGetHandle(), "Token", "Token", false);
+                NativeBridge.EditSecurity(Handle, _token.Duplicate(TokenAccessRights.ReadControl), "Token", "Token", false);
             }
-            catch (Exception)
+            catch (NtException ex)
             {
+                MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -335,7 +336,7 @@ namespace TokenViewer
                         (SecurityImpersonationLevel)comboBoxImpLevel.SelectedItem, TokenAccessRights.MaximumAllowed))
                 {
                     TokenIntegrityLevel il = GetILFromComboBox(comboBoxILForDup);
-                    if (il != token.GetIntegrityLevel())
+                    if (il != token.IntegrityLevel)
                     {
                         token.SetIntegrityLevel(il);
                     }
@@ -431,7 +432,7 @@ namespace TokenViewer
         {
             TokenIntegrityLevel il = GetILFromComboBox(comboBoxIL);
 
-            if (_token.GetIntegrityLevel() != il)
+            if (_token.IntegrityLevel!= il)
             {
                 btnSetIL.Enabled = true;
             }
@@ -444,7 +445,7 @@ namespace TokenViewer
         private void btnSetIL_Click(object sender, EventArgs e)
         {
             TokenIntegrityLevel il = GetILFromComboBox(comboBoxIL);
-            if (_token.GetIntegrityLevel() != il)
+            if (_token.IntegrityLevel!= il)
             {
                 try
                 {
@@ -498,7 +499,7 @@ namespace TokenViewer
         {            
             foreach (TokenPrivilege priv in privs.Select(i => i.Tag))
             {
-                if (priv != null && !priv.IsEnabled)
+                if (priv != null && !priv.Enabled)
                 {
                     return false;
                 }
@@ -579,7 +580,7 @@ namespace TokenViewer
             foreach (UserGroup group in
                     listViewGroups.SelectedItems.OfType<ListViewItem>().Select(i => i.Tag))
             {
-                if (group != null && !group.IsMandatory && !group.IsDenyOnly)
+                if (group != null && !group.Mandatory && !group.DenyOnly)
                 {
                     groups.Add(group);
                 }
@@ -591,7 +592,7 @@ namespace TokenViewer
         {
             foreach (UserGroup group in groups)
             {
-                if (!group.IsEnabled)
+                if (!group.Enabled)
                 {
                     return false;
                 }
@@ -669,15 +670,15 @@ namespace TokenViewer
             SecurityImpersonationLevel implevel = SecurityImpersonationLevel.Impersonation;
             try
             {
-                if (_token.GetTokenType() == TokenType.Impersonation)
+                if (_token.TokenType== TokenType.Impersonation)
                 {
-                    implevel = _token.GetImpersonationLevel();       
+                    implevel = _token.ImpersonationLevel;       
                 }
 
                 using (NtToken token = _token.DuplicateToken(TokenType.Impersonation, implevel, TokenAccessRights.MaximumAllowed))
                 {
                     TokenIntegrityLevel il = GetILFromComboBox(comboBoxILForDup);
-                    if (il != token.GetIntegrityLevel())
+                    if (il != token.IntegrityLevel)
                     {
                         token.SetIntegrityLevel(il);
                     }

@@ -2,13 +2,13 @@
 	about_NtObjectManagerProvider
 
 SHORT DESCRIPTION
-	The Sandbox Powershell Module includes an NT object manager PS drive provider to inspect and
-	manipulate the object manager namespace.
+	The NtObjectManager Module includes a PS drive provider to inspect and manipulate the object 
+	manager namespace.
 
 LONG DESCRIPTION
 	Under the hood of the Win32 API is the NT Object Manager which acts similar to a filesystem.
 	This is normally hidden from view and requires specialist tools such as WinObj to inspect it.
-	This Sandbox Powershell API comes with a PS drive provider which allows you to enumerate entries
+	This NtObjectManager Module comes with a PS drive provider which allows you to enumerate entries
 	and modify certain properties in the name space.
 
 	By default two new drives will be created, NtObject: which can be used to access the root namespace,
