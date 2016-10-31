@@ -20,10 +20,8 @@ namespace NtObjectManager
     /// <summary>
     /// <para type="synopsis">Get NT handle information.</para>
     /// <para type="description">This cmdlet gets handle information for all process on the system. You can specify a specific process by setting the -ProcessId parameter.</para>
-    /// <para>By default
-    /// outside of what's provided by the system the handle entries will not query for information such as handle names. If you want to do this then set the -Query parameter. Querying
-    /// comes at a cost, it might cause the process to hang. Also it's requires that the caller has access to the target process to do the query. Finally querying will increase the time
-    /// it takes to list the handles.</para>
+    /// <para>By default extra information about the handle will be queried. This comes at a cost and could cause the process to hang, therefore if you don't want to query
+    /// pass the -NoQuery parameter.</para>
     /// </summary>
     /// <example>
     ///   <code>Get-NtHandle</code>
@@ -38,8 +36,8 @@ namespace NtObjectManager
     ///   <para>Get all NT handles for the current process.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-NtHandle 1234 -Query</code>
-    ///   <para>Get all NT handles filtered to a specific Process ID and try and query information about the handle such as name.</para>
+    ///   <code>Get-NtHandle 1234 -NoQuery</code>
+    ///   <para>Get all NT handles filtered to a specific Process ID but don't try and query information about the handle such as name.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "NtHandle")]
     [OutputType(typeof(NtHandle))]
@@ -52,10 +50,10 @@ namespace NtObjectManager
         public int ProcessId { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify that the returned handle entries can be queried for additional information.</para>
+        /// <para type="description">Specify that the returned handle entries should not be queried for additional information.</para>
         /// </summary>
         [Parameter]
-        public SwitchParameter Query { get; set; }
+        public SwitchParameter NoQuery { get; set; }
         
         /// <summary>
         /// Constructor.
@@ -70,7 +68,7 @@ namespace NtObjectManager
         /// </summary>
         protected override void ProcessRecord()
         {
-            WriteObject(NtSystemInfo.GetHandles(ProcessId, Query), true);
+            WriteObject(NtSystemInfo.GetHandles(ProcessId, !NoQuery), true);
         }
     }
 }

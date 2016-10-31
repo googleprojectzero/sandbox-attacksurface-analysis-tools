@@ -430,6 +430,11 @@ namespace NtApiDotNet
                     buffer.Resize(buffer.Length * 2);
                 }
 
+                if (status == NtStatus.STATUS_NO_MORE_ENTRIES)
+                {
+                    yield break;
+                }
+
                 status.ToNtException();
                 IntPtr current = buffer.DangerousGetHandle();
                 string name = String.Empty;

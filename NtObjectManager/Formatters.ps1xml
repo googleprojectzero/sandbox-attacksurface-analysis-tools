@@ -666,7 +666,7 @@
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>Object</PropertyName>
-                <FormatString>X</FormatString>
+                <FormatString>X016</FormatString>
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>GrantedAccess</PropertyName>
@@ -701,7 +701,7 @@
               </ListItem>
               <ListItem>
                 <PropertyName>Object</PropertyName>
-                <FormatString>X</FormatString>
+                <FormatString>X016</FormatString>
               </ListItem>
               <ListItem>
                 <PropertyName>GrantedAccess</PropertyName>

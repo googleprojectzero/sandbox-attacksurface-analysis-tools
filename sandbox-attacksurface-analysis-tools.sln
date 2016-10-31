@@ -37,7 +37,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NtApiDotNet", "NtApiDotNet\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewProcessFromToken", "NewProcessFromToken\NewProcessFromToken.csproj", "{E61D53AB-7BFD-460B-9C60-7266E5947D44}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NtObjectManager", "SandboxPowerShellApi\NtObjectManager.csproj", "{2B17A3DD-0970-482F-976A-A4027B9B8817}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NtObjectManager", "NtObjectManager\NtObjectManager.csproj", "{2B17A3DD-0970-482F-976A-A4027B9B8817}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NtApiDotNetTests", "NtApiDotNetTests\NtApiDotNetTests.csproj", "{369C4B1F-AFC0-4777-B427-C03C41557D46}"
 EndProject
