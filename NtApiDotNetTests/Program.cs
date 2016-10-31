@@ -13,10 +13,9 @@ namespace NtApiDotNetTests
         {
             try
             {
-                using (NtKey key = NtKey.GetCurrentUserKey().Open("Console"))
+                //using (NtKey key = NtKey.GetCurrentUserKey().Open("Console"))
+                using (NtDirectory dir = NtDirectory.Open(@"\"))
                 {
-                    Console.WriteLine(key.GetName());
-
                     //using (NtToken token = NtToken.OpenProcessToken(true))
                     //{
                     //    SecurityDescriptor sd = new SecurityDescriptor();

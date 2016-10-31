@@ -419,17 +419,30 @@ namespace NtApiDotNet
         public IEnumerable<ObjectDirectoryInformation> Query()
         {
             using (SafeStructureInOutBuffer<OBJECT_DIRECTORY_INFORMATION> buffer
-                = new SafeStructureInOutBuffer<OBJECT_DIRECTORY_INFORMATION>(ushort.MaxValue * 2, true))
+                = new SafeStructureInOutBuffer<OBJECT_DIRECTORY_INFORMATION>(2048, true))
             {
+                NtStatus status;
                 int context = 0;
                 int return_length = 0;
-                NtStatus status = NtSystemCalls.NtQueryDirectoryObject(Handle, buffer, buffer.Length, 
-                    true, true, ref context, out return_length);
-                while (status == NtStatus.STATUS_SUCCESS)
+                while ((status = NtSystemCalls.NtQueryDirectoryObject(Handle, buffer, buffer.Length, false,
+                    true, ref context, out return_length)) == NtStatus.STATUS_MORE_ENTRIES)
                 {
-                    yield return new ObjectDirectoryInformation(this, buffer.Result);
-                    status = NtSystemCalls.NtQueryDirectoryObject(Handle, buffer, buffer.Length, 
-                        true, false, ref context, out return_length);
+                    buffer.Resize(buffer.Length * 2);
+                }
+
+                status.ToNtException();
+                IntPtr current = buffer.DangerousGetHandle();
+                string name = String.Empty;
+                while(true)
+                {
+                    OBJECT_DIRECTORY_INFORMATION dir_info = (OBJECT_DIRECTORY_INFORMATION)Marshal.PtrToStructure(current, typeof(OBJECT_DIRECTORY_INFORMATION));
+                    name = dir_info.Name.ToString();
+                    if (name.Length == 0)
+                    {
+                        break;
+                    }
+                    yield return new ObjectDirectoryInformation(this, dir_info);
+                    current += Marshal.SizeOf(dir_info);
                 }
             }
         }
