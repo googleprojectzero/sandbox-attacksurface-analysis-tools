@@ -90,13 +90,13 @@ namespace NtObjectManager
         /// <para type="description">Specify the wait should be alertable.</para>
         /// </summary>
         [Parameter]
-        public bool Alertable { get; set; }
+        public SwitchParameter Alertable { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a multiple object wait should exit only when all objects becomes signalled.</para>
         /// </summary>
         [Parameter]
-        public bool WaitAll { get; set; }
+        public SwitchParameter WaitAll { get; set; }
 
         /// <summary>
         /// Overridden ProcessRecord method.
