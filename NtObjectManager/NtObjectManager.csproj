@@ -52,6 +52,7 @@
     <Compile Include="GenericObjectSecurity.cs" />
     <Compile Include="NtEventCmdlets.cs" />
     <Compile Include="NtProcessCmdlets.cs" />
+    <Compile Include="NtSemaphoreCmdlets.cs" />
     <Compile Include="NtThreadCmdlets.cs" />
     <Compile Include="NtTokenCmdlets.cs" />
     <Compile Include="NtHandleCmdlets.cs" />
@@ -64,6 +65,7 @@
     <Compile Include="NtSymbolicLinkCmdlet.cs" />
     <Compile Include="NtDirectoryEntry.cs" />
     <Compile Include="NtObjectManagerProvider.cs" />
+    <Compile Include="NtWaitCmdlets.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

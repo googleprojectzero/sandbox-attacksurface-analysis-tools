@@ -505,7 +505,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="alertable">True to make the wait alertable</param>
         /// <param name="timeout">The time out</param>
-        /// <returns>The success status of the wait, such as STATUS_WAIT_OBJECT_0 or STATUS_USER_APC</returns>
+        /// <returns>The success status of the wait, such as STATUS_SUCCESS or STATUS_TIMEOUT</returns>
         /// <exception cref="NtException">Thrown on error</exception>
         public NtStatus Wait(bool alertable, NtWaitTimeout timeout)
         {
@@ -513,9 +513,43 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Wait on the object to become signalled
+        /// </summary>
+        /// <param name="timeout">The time out</param>
+        /// <returns>The success status of the wait, such as STATUS_SUCCESS or STATUS_TIMEOUT</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public NtStatus Wait(NtWaitTimeout timeout)
+        {
+            return Wait(false, timeout);
+        }
+
+        /// <summary>
+        /// Wait on the object to become signalled
+        /// </summary>
+        /// <param name="alertable">True to make the wait alertable</param>
+        /// <param name="timeout_sec">The time out in seconds</param>
+        /// <returns>The success status of the wait, such as STATUS_SUCCESS or STATUS_TIMEOUT</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public NtStatus Wait(bool alertable, int timeout_sec)
+        {
+            return Wait(alertable, NtWaitTimeout.FromSeconds(timeout_sec));
+        }
+
+        /// <summary>
+        /// Wait on the object to become signalled
+        /// </summary>
+        /// <param name="timeout_sec">The time out in seconds</param>
+        /// <returns>The success status of the wait, such as STATUS_SUCCESS or STATUS_TIMEOUT</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public NtStatus Wait(int timeout_sec)
+        {
+            return Wait(false, timeout_sec);
+        }
+
+        /// <summary>
         /// Wait on the object to become signalled for an infinite time.
         /// </summary>
-        /// <returns>The success status of the wait, such as STATUS_WAIT_OBJECT_0 or STATUS_USER_APC</returns>
+        /// <returns>The success status of the wait, such as STATUS_SUCCESS or STATUS_TIMEOUT</returns>
         /// <exception cref="NtException">Thrown on error</exception>
         public NtStatus Wait()
         {

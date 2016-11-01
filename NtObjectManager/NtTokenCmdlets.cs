@@ -85,7 +85,7 @@ namespace NtObjectManager
     }
 
     /// <summary>
-    /// <para type="synopsis">Get primary NT token from a process.</para>
+    /// <para type="synopsis">Open primary NT token from a process.</para>
     /// <para type="description">This cmdlet gets a primary token from a process. You can specify a specific process -Process parameter otherwise the current process is used.</para>
     /// <para>Note that tokens objects need to be disposed of after use, therefore capture them in a Dispose List or manually Close them once used.</para>
     /// </summary>
@@ -135,7 +135,7 @@ namespace NtObjectManager
     }
 
     /// <summary>
-    /// <para type="synopsis">Get impersonation NT token from a thread.</para>
+    /// <para type="synopsis">Open impersonation NT token from a thread.</para>
     /// <para type="description">This cmdlet gets an impersonation token from a thread. You can specify a specific thread -Thread parameter otherwise the current thread is used.</para>
     /// <para>Note that tokens objects need to be disposed of after use, therefore capture them in a Dispose List or manually Close them once used.</para>
     /// </summary>
@@ -191,7 +191,7 @@ namespace NtObjectManager
     }
 
     /// <summary>
-    /// <para type="synopsis">Get the effective NT token from a thread.</para>
+    /// <para type="synopsis">Open the effective NT token from a thread.</para>
     /// <para type="description">This cmdlet gets a the effective token from a thread. If the thread is not currently impersonating the associated process primary token will be opened instead.
     /// You can specify a specific thread -Thread parameter otherwise the current thread is used.</para>
     /// <para>Note that tokens objects need to be disposed of after use, therefore capture them in a Dispose List or manually Close them once used.</para>

@@ -47,6 +47,7 @@ namespace NtObjectManager
         /// <para type="description">Specify a process ID to filter handles on.</para>
         /// </summary>
         [Parameter(Position = 0)]
+        [Alias(new string[] { "pid" })]
         public int ProcessId { get; set; }
 
         /// <summary>

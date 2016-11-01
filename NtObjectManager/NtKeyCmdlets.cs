@@ -80,7 +80,7 @@ namespace NtObjectManager
     }
 
     /// <summary>
-    /// <para type="synopsis">Creates a new NT key object.</para>
+    /// <para type="synopsis">Create a new NT key object.</para>
     /// <para type="description">This cmdlet creates a new NT key object. The absolute path to the object in the NT object manager name space must be specified. 
     /// It's also possible to create the object relative to an existing object by specified the -Root parameter.</para>
     /// </summary>

@@ -24,8 +24,8 @@ namespace NtObjectManager
     /// <para>Note that thread objects need to be disposed of after use, therefore capture them in a Dispose List or manually Close them once used.</para>
     /// </summary>
     /// <example>
-    ///   <code>$ts = Get-NtThread | Push-NtDisposeList</code>
-    ///   <para>Get all NT threads accessible by the current user and put then in a dispose list.</para>
+    ///   <code>$ts = Get-NtThread</code>
+    ///   <para>Get all NT threads accessible by the current user.</para>
     /// </example>
     /// <example>
     ///   <code>$ts = Get-NtThread -Access Impersonate</code>
@@ -48,11 +48,14 @@ namespace NtObjectManager
         /// <para type="description">Specify a thread ID to open.</para>
         /// </summary>
         [Parameter(Position = 0)]
+        [Alias(new string[] { "tid" })]
         public int ThreadId { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a process ID to enumerate only its threads.</para>
         /// </summary>
+        [Parameter]
+        [Alias(new string[] { "pid" })]
         public int ProcessId { get; set; }
 
         /// <summary>

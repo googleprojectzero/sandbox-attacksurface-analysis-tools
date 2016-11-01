@@ -76,7 +76,7 @@ namespace NtObjectManager
     }
 
     /// <summary>
-    /// <para type="synopsis">Gets the target path for an existing NT symbolic link object.</para>
+    /// <para type="synopsis">Get the target path for an existing NT symbolic link object.</para>
     /// <para type="description">This cmdlet opens a existing NT symbolic link object and queries its target path. That can be done using Get-NtSymbolicLink and the Query method but
     /// this simplifies the operation so that the object handle doesn't have to be closed.</para>
     /// </summary>
@@ -131,7 +131,7 @@ namespace NtObjectManager
     }
 
     /// <summary>
-    /// <para type="synopsis">Creates a new NT symbolic link object.</para>
+    /// <para type="synopsis">Create a new NT symbolic link object.</para>
     /// <para type="description">This cmdlet creates a new NT symbolic link object. The absolute path to the object in the NT object manager name space can be specified. 
     /// It's also possible to create the object relative to an existing object by specified the -Root parameter. If no path is specified than an unnamed object will be created which
     /// can only be duplicated by handle.</para>
