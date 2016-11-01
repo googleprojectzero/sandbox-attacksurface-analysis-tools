@@ -33,7 +33,7 @@ CompanyName = 'Google Inc.'
 Copyright = '(c) 2016 Google Inc. All rights reserved.'
 
 # Description of the functionality provided by this module
-# Description = 'This module adds a provider and cmdlets to access the NT object manager namespace.'
+Description = 'This module adds a provider and cmdlets to access the NT object manager namespace.'
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '3.0'
