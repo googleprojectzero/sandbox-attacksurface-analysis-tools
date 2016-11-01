@@ -16,13 +16,12 @@ using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Management.Automation;
 using System.Management.Automation.Provider;
-using System.Text.RegularExpressions;
 using System.Security.AccessControl;
-using System.Diagnostics;
-using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace NtObjectManager
 {
@@ -190,7 +189,6 @@ namespace NtObjectManager
         /// <returns>True if the path is valid.</returns>
         protected override bool IsValidPath(string path)
         {
-            //System.Diagnostics.Trace.WriteLine(String.Format("{0} {1}", MethodInfo.GetCurrentMethod().Name, path));
             if (String.IsNullOrEmpty(path))
             {
                 return false;
@@ -211,7 +209,6 @@ namespace NtObjectManager
 
         private string GetRelativePath(string path)
         {
-            //System.Diagnostics.Trace.WriteLine(String.Format("{0} {1}", MethodInfo.GetCurrentMethod().Name, path));
             // Remove extra path separators.
             path = path.TrimStart('\\');
             if (path.StartsWith(GetDrivePath(), StringComparison.OrdinalIgnoreCase))
@@ -274,7 +271,6 @@ namespace NtObjectManager
         /// <returns>True if the item exists.</returns>
         protected override bool ItemExists(string path)
         {
-            //System.Diagnostics.Trace.WriteLine(String.Format("{0} {1}", MethodInfo.GetCurrentMethod().Name, path));
             bool exists = false;
 
             if (GetDrive() == null)
@@ -310,7 +306,6 @@ namespace NtObjectManager
         /// <returns>True if the item is a container.</returns>
         protected override bool IsItemContainer(string path)
         {
-            //System.Diagnostics.Trace.WriteLine(String.Format("{0} {1}", MethodInfo.GetCurrentMethod().Name, path));
             bool is_container = false;
 
             if (GetDrive() == null)
@@ -589,7 +584,6 @@ namespace NtObjectManager
         /// <returns>The list of expanded paths.</returns>
         protected override string[] ExpandPath(string path)
         {
-            //System.Diagnostics.Trace.WriteLine(String.Format("{0} {1}", MethodInfo.GetCurrentMethod().Name, path));
             if (GetDrive() == null)
             {
                 return new string[0];
@@ -606,7 +600,6 @@ namespace NtObjectManager
         /// <param name="newItemValue">Additional item value data.</param>
         protected override void NewItem(string path, string itemTypeName, object newItemValue)
         {
-            //System.Diagnostics.Trace.WriteLine(String.Format("{0} {1}", MethodInfo.GetCurrentMethod().Name, path));
             if (itemTypeName == null)
             {
                 throw new ArgumentNullException("itemTypeName", "Must specify a typename");

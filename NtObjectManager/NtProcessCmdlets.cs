@@ -39,11 +39,11 @@ namespace NtObjectManager
     ///   <para>Get a specific process</para>
     /// </example>
     /// <example>
-    ///   <code>$p = Get-NtProcess 1234 -Access QueryInformation&#x0A;$p.GetCommandLine()</code>
+    ///   <code>$p = Get-NtProcess 1234 -Access QueryInformation&#x0A;$p.CommandLine</code>
     ///   <para>Get a command line of a specific process.</para>
     /// </example>
     /// <example>
-    ///   <code>$p = Get-NtProcess 1234 -Access QueryInformation&#x0A;$p.GetImageFileName($true)</code>
+    ///   <code>$p = Get-NtProcess 1234 -Access QueryInformation&#x0A;$p.FullPath</code>
     ///   <para>Get a native image path of a specific process.</para>
     /// </example>
     /// <example>
@@ -51,27 +51,23 @@ namespace NtObjectManager
     ///   <para>Get the current process.</para>
     /// </example>
     /// <example>
-    ///   <code>$p = Get-NtProcess -Name notepad.exe</code>
+    ///   <code>$ps = Get-NtProcess -Name notepad.exe</code>
     ///   <para>Get all processes with the name notepad.exe.</para>
     /// </example>
     /// <example>
-    ///   <code>$p = Get-NtProcess -CommandLine hello</code>
+    ///   <code>$ps = Get-NtProcess -CommandLine hello</code>
     ///   <para>Get all processes with where the command line contains the string "hello".</para>
     /// </example>
     /// <example>
-    ///   <code>$p = Get-NtProcess -Name notepad.exe -CommandLine hello</code>
+    ///   <code>$ps = Get-NtProcess -Name notepad.exe -CommandLine hello</code>
     ///   <para>Get all processes with the name notepad.exe where the command line contains the string "hello".</para>
     /// </example>
     /// <example>
-    ///   <code>$p = Get-NtProcess -Name notepad.exe -CommandLine hello</code>
-    ///   <para>Get all processes with the name notepad.exe where the command line contains the string "hello".</para>
-    /// </example>
-    /// <example>
-    ///   <code>$p = Get-NtProcess -FilterScript { param($p); p.SessionId -eq 1 }</code>
+    ///   <code>$ps = Get-NtProcess -FilterScript { param($p); p.SessionId -eq 1 }</code>
     ///   <para>Get all processes in session 1.</para>
     /// </example>
     /// <example>
-    ///   <code>$p = Get-NtProcess -FilterScript { param($p); $p.Mitigations.DisallowWin32kSystemCalls -eq $true }</code>
+    ///   <code>$ps = Get-NtProcess -FilterScript { param($p); $p.Mitigations.DisallowWin32kSystemCalls -eq $true }</code>
     ///   <para>Get all processes with the Disallow Win32k System Calls mitigation policy.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
