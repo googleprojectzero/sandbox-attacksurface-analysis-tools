@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("SandboxPowerShellApi")]
+[assembly: AssemblyTitle("NtObjectManager")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Google Inc.")]
-[assembly: AssemblyProduct("SandboxPowerShellApi")]
+[assembly: AssemblyProduct("NtObjectManager")]
 [assembly: AssemblyCopyright("Copyright © Google Inc. 2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
