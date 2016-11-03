@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.dll'
 
 # Version number of this module.
-ModuleVersion = '1.0'
+ModuleVersion = '1.0.1'
 
 # ID used to uniquely identify this module
 GUID = 'ac251c97-67a6-4bc4-bb8a-5ae300e93030'
@@ -111,6 +111,12 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = @'
+1.0.1
+-----
+* Fixed bug in Get-NtThread with -ProcessId
+* Added support for FilterScript for Get-NtThread
+* Added support for querying thread dynamic code opt-out policy
+* Added support for RFG mitigation
 1.0.0
 -----
 Initial release:
