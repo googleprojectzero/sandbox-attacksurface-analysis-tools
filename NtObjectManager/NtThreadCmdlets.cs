@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
 
@@ -39,6 +41,10 @@ namespace NtObjectManager
     ///   <code>$t = Get-NtThread -ProcessId 1234</code>
     ///   <para>Get threads for a specific process.</para>
     /// </example>
+    /// <example>
+    ///   <code>$ts = Get-NtThread -FilterScript { param($t); Use-NtObject($k = $t.OpenToken()) { $k -ne $null } }</code>
+    ///   <para>Get threads which have impersonation tokens set.</para>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtThread")]
     [OutputType(typeof(NtThread))]
@@ -59,6 +65,12 @@ namespace NtObjectManager
         public int ProcessId { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify an arbitrary filter script.</para>
+        /// </summary>
+        [Parameter]
+        public ScriptBlock FilterScript { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify access rights for each thread opened.</para>
         /// </summary>
         [Parameter]
@@ -71,7 +83,24 @@ namespace NtObjectManager
         {
             Access = ThreadAccessRights.MaximumAllowed;
             ThreadId = -1;
-            ProcessId = 1;
+            ProcessId = -1;
+        }
+
+        private static bool ArbitraryFilter(NtThread thread, ScriptBlock filter)
+        {
+            try
+            {
+                ICollection<PSObject> os = filter.Invoke(thread);
+                if (os.Count == 1)
+                {
+                    return (bool)os.First().BaseObject;
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -81,7 +110,18 @@ namespace NtObjectManager
         {
             if (ThreadId == -1 && ProcessId == -1)
             {
-                WriteObject(NtThread.GetThreads(Access));
+                IEnumerable<NtThread> threads = NtThread.GetThreads(Access);
+                if (FilterScript == null)
+                {
+                    WriteObject(threads);
+                }
+                else
+                {
+                    using (var ths = new DisposableList<NtThread>(threads))
+                    {
+                        WriteObject(ths.Where(t => ArbitraryFilter(t, FilterScript)).Select(t => t.Duplicate()).ToArray());
+                    }
+                }
             }
             else if (ProcessId != -1)
             {

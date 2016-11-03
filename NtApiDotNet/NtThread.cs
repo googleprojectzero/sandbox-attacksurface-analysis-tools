@@ -293,14 +293,7 @@ namespace NtApiDotNet
         {
             get
             {
-                try
-                {
-                    return Query<int>(ThreadInformationClass.ThreadDynamicCodePolicy) != 0;
-                }
-                catch (NtException)
-                {
-                    return false;
-                }
+                return Query<int>(ThreadInformationClass.ThreadDynamicCodePolicy) != 0;
             }
         }
 
@@ -370,6 +363,24 @@ namespace NtApiDotNet
         public NtToken OpenToken()
         {
             return NtToken.OpenThreadToken(this);
+        }
+
+        /// <summary>
+        /// Get name of the thread.
+        /// </summary>
+        public override string FullPath
+        {
+            get
+            {
+                try
+                {
+                    return string.Format("thread:{0} - process:{1}", ThreadId, ProcessId);
+                }
+                catch
+                {
+                    return "Unknown";
+                }
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]
