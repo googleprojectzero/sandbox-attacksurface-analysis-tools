@@ -968,7 +968,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Utility functions for files
     /// </summary>
-    public static class FileUtils
+    public static class NtFileUtils
     {
         /// <summary>
         /// Convert a DOS filename to an absolute NT filename

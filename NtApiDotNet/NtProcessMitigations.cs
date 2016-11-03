@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-
 namespace NtApiDotNet
 {
 #pragma warning disable 1591
@@ -56,6 +55,10 @@ namespace NtApiDotNet
             NoRemoteImages = result.GetBit(0);
             NoLowMandatoryLabelImages = result.GetBit(1);
             PreferSystem32Images = result.GetBit(2);
+
+            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessReturnFlowGuardPolicy);
+            EnabledReturnFlowGuard = result.GetBit(0);
+            ReturnFlowGuardStrictMode = result.GetBit(1);
         }
 
         public bool DisallowWin32kSystemCalls { get; private set; }
@@ -79,6 +82,8 @@ namespace NtApiDotNet
         public bool NoLowMandatoryLabelImages { get; private set; }
         public bool PreferSystem32Images { get; private set; }
         public bool AllowThreadOptOut { get; private set; }
+        public bool EnabledReturnFlowGuard { get; private set; }
+        public bool ReturnFlowGuardStrictMode { get; private set; }
     }
 #pragma warning restore 1591
 }

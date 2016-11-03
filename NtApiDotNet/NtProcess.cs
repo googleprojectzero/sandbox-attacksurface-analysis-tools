@@ -425,7 +425,8 @@ namespace NtApiDotNet
         ProcessReserved1Policy, // Unused
         ProcessSignaturePolicy,
         ProcessFontDisablePolicy,
-        ProcessImageLoadPolicy
+        ProcessImageLoadPolicy,
+        ProcessReturnFlowGuardPolicy,
     }
 
     public struct MitigationPolicy
@@ -1080,7 +1081,7 @@ namespace NtApiDotNet
                 NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInfoClass.ProcessMitigationPolicy, buffer, buffer.Length, out return_length);
                 if (!status.IsSuccess())
                 {
-                    if (status != NtStatus.STATUS_INVALID_PARAMETER)
+                    if (status != NtStatus.STATUS_INVALID_PARAMETER && status != NtStatus.STATUS_NOT_SUPPORTED)
                     {
                         status.ToNtException();
                     }

@@ -85,7 +85,7 @@ namespace NtObjectManager
         {
             if (Win32Path)
             {
-                return FileUtils.DosFileNameToNt(Path);
+                return NtFileUtils.DosFileNameToNt(Path);
             }
             else
             {
