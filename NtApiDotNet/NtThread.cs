@@ -44,7 +44,7 @@ namespace NtApiDotNet
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
     }
 
-    public enum ThreadInfoClass
+    public enum ThreadInformationClass
     {
         ThreadBasicInformation = 0,
         ThreadTimes = 1,
@@ -83,7 +83,7 @@ namespace NtApiDotNet
         ThreadCpuAccountingInformation = 34,
         ThreadSuspendCount = 35,
         ThreadActualGroupAffinity = 41,
-        MaxThreadInfoClass = 42,
+        ThreadDynamicCodePolicy = 42,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -115,7 +115,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtQueryInformationThread(
             SafeKernelObjectHandle ThreadHandle,
-            ThreadInfoClass ThreadInformationClass,
+            ThreadInformationClass ThreadInformationClass,
             SafeBuffer          ThreadInformation,
             int             ThreadInformationLength,
             out int         ReturnLength
@@ -124,7 +124,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtSetInformationThread(
             SafeKernelObjectHandle ThreadHandle,
-            ThreadInfoClass ThreadInformationClass,
+            ThreadInformationClass ThreadInformationClass,
             SafeBuffer ThreadInformation,
             int ThreadInformationLength            
         );
@@ -207,15 +207,20 @@ namespace NtApiDotNet
             return new NtThread(handle) { _tid = thread_id };       
         }
 
-        private ThreadBasicInformation QueryBasicInformation()
+        private T Query<T>(ThreadInformationClass info_class) where T : new()
         {
-            using (SafeStructureInOutBuffer<ThreadBasicInformation> basic_info = new SafeStructureInOutBuffer<ThreadBasicInformation>())
+            using (SafeStructureInOutBuffer<T> info = new SafeStructureInOutBuffer<T>())
             {
                 int return_length = 0;
-                NtSystemCalls.NtQueryInformationThread(Handle, ThreadInfoClass.ThreadBasicInformation,
-                  basic_info, basic_info.Length, out return_length).ToNtException();
-                return basic_info.Result;
+                NtSystemCalls.NtQueryInformationThread(Handle, info_class,
+                  info, info.Length, out return_length).ToNtException();
+                return info.Result;
             }
+        }
+
+        private ThreadBasicInformation QueryBasicInformation()
+        {
+            return Query<ThreadBasicInformation>(ThreadInformationClass.ThreadBasicInformation);
         }
 
         /// <summary>
@@ -282,6 +287,24 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get whether thread is allowed to create dynamic code.
+        /// </summary>
+        public bool AllowDynamicCode
+        {
+            get
+            {
+                try
+                {
+                    return Query<int>(ThreadInformationClass.ThreadDynamicCodePolicy) != 0;
+                }
+                catch (NtException)
+                {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>
         /// Wake the thread from an alertable state.
         /// </summary>
         public void Alert()
@@ -294,7 +317,7 @@ namespace NtApiDotNet
         /// </summary>
         public void HideFromDebugger()
         {
-            NtSystemCalls.NtSetInformationThread(Handle, ThreadInfoClass.ThreadHideFromDebugger, SafeHGlobalBuffer.Null, 0).ToNtException();
+            NtSystemCalls.NtSetInformationThread(Handle, ThreadInformationClass.ThreadHideFromDebugger, SafeHGlobalBuffer.Null, 0).ToNtException();
         }
 
         /// <summary>
@@ -306,7 +329,7 @@ namespace NtApiDotNet
             IntPtr handle = token != null ? token.Handle.DangerousGetHandle() : IntPtr.Zero;
             using (var buf = handle.ToBuffer())
             {
-                NtSystemCalls.NtSetInformationThread(Handle, ThreadInfoClass.ThreadImpersonationToken, 
+                NtSystemCalls.NtSetInformationThread(Handle, ThreadInformationClass.ThreadImpersonationToken, 
                     buf, buf.Length).ToNtException();
             }
         }
