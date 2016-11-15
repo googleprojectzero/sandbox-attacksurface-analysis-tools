@@ -298,6 +298,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get whether thread is impersonating another token.
+        /// </summary>
+        /// <remarks>Note that this tries to open the thread's token and return true if it could open. There a return of false
+        /// might just indicate that the caller doesn't have permission to open the token, not that it's not impersonating.</remarks>
+        public bool Impersonating
+        {
+            get { try { using (var token = OpenToken()) { return token != null; } } catch { return false; } }
+        }
+
+        /// <summary>
         /// Wake the thread from an alertable state.
         /// </summary>
         public void Alert()
