@@ -64,7 +64,7 @@ namespace HandleUtils
             public IntPtr hStdError;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
         class STARTUPINFOEX
         {
             public STARTUPINFO StartupInfo;
@@ -182,7 +182,7 @@ namespace HandleUtils
           CreateProcessFlags dwCreationFlags,
           IntPtr lpEnvironment,
           string lpCurrentDirectory,
-          ref STARTUPINFOEX lpStartupInfo,
+          [In] STARTUPINFOEX lpStartupInfo,
           out PROCESS_INFORMATION lpProcessInformation);
 
         public static Win32Process CreateProcessAsUser(NtToken token, string application_name, string command_line, CreateProcessFlags flags, string desktop)
@@ -210,14 +210,15 @@ namespace HandleUtils
             start_info.StartupInfo.lpDesktop = desktop;
             PROCESS_INFORMATION proc_info = new PROCESS_INFORMATION();
 
-            using (SafeProcThreadAttributeListBuffer buffer = new SafeProcThreadAttributeListBuffer(1))
+            using (SafeProcThreadAttributeListBuffer attr_list = new SafeProcThreadAttributeListBuffer(1))
             {
                 using (var handle_buffer = parent.Handle.DangerousGetHandle().ToBuffer())
                 {
-                    buffer.AddAttribute(new IntPtr(0x00020000), handle_buffer);
-                    start_info.lpAttributeList = buffer.DangerousGetHandle();
-
-                    if (!CreateProcess(application_name, command_line, IntPtr.Zero, IntPtr.Zero, false, flags, IntPtr.Zero, null, ref start_info, out proc_info))
+                    attr_list.AddAttribute(new IntPtr(0x00020000), handle_buffer);
+                    start_info.lpAttributeList = attr_list.DangerousGetHandle();
+                    
+                    if (!CreateProcess(application_name, command_line, IntPtr.Zero, IntPtr.Zero, false, 
+                        flags | CreateProcessFlags.EXTENDED_STARTUPINFO_PRESENT, IntPtr.Zero, null, start_info, out proc_info))
                     {
                         throw new SafeWin32Exception();
                     }
