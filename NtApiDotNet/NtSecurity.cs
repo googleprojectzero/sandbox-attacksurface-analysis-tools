@@ -215,11 +215,14 @@ namespace NtApiDotNet
                      bool IsDirectoryObject,
                      SafeKernelObjectHandle Token,
                      ref GenericMapping GenericMapping);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlCreateServiceSid([In] UnicodeString pServiceName, 
+            SafeBuffer pServiceSid, [In, Out] ref int cbServiceSid);
     }
 
     public static partial class NtSystemCalls
     {
-
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAccessCheck(
             SafeBuffer SecurityDescriptor,
@@ -1302,5 +1305,20 @@ namespace NtApiDotNet
             return GetIntegritySid(TokenIntegrityLevel.Untrusted).EqualPrefix(sid);
         }
 
+        /// <summary>
+        /// Gets the SID for a service name.
+        /// </summary>
+        /// <param name="service_name">The service name.</param>
+        /// <returns>The service SID.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static Sid GetServiceSid(string service_name)
+        {
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(1024))
+            {
+                int sid_length = buffer.Length;
+                NtRtl.RtlCreateServiceSid(new UnicodeString(service_name), buffer, ref sid_length).ToNtException();
+                return new Sid(buffer);
+            }
+        }
     }
 }
