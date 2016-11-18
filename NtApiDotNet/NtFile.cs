@@ -497,7 +497,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Represnt a NT file IO control code.
     /// </summary>
-    public class NtIoControlCode 
+    public class NtIoControlCode
     {
         /// <summary>
         /// Type of device
@@ -550,6 +550,233 @@ namespace NtApiDotNet
         public int ToInt32()
         {
             return (((int)DeviceType) << 16) | (((int)Access) << 14) | (((int)Function) << 2) | ((int)Method);
+        }
+    }
+
+    public enum ReparseTag : uint
+    {
+        MOUNT_POINT = 0xA0000003,
+        HSM = 0xC0000004,
+        DRIVE_EXTENDER = 0x80000005,
+        HSM2 = 0x80000006,
+        SIS = 0x80000007,
+        WIM = 0x80000008,
+        CSV = 0x80000009,
+        DFS = 0x8000000A,
+        FILTER_MANAGER = 0x8000000B,
+        SYMLINK = 0xA000000C,
+        IIS_CACHE = 0xA0000010,
+        DFSR = 0x80000012,
+        DEDUP = 0x80000013,
+        APPXSTRM = 0xC0000014,
+        NFS = 0x80000014,
+        FILE_PLACEHOLDER = 0x80000015,
+        DFM = 0x80000016,
+        WOF = 0x80000017,
+    }
+
+    public abstract class ReparseBuffer
+    {
+        public ReparseTag Tag { get; private set; }
+
+        protected abstract void ParseBuffer(int data_length, BinaryReader reader);
+        protected abstract byte[] GetBuffer();
+
+        protected ReparseBuffer(ReparseTag tag)
+        {
+            Tag = tag;
+        }
+
+        public static ReparseBuffer FromByteArray(byte[] ba)
+        {
+            BinaryReader reader = new BinaryReader(new MemoryStream(ba));
+            ReparseTag tag = (ReparseTag)reader.ReadUInt32();
+            int data_length = reader.ReadUInt16();
+            // Reserved
+            reader.ReadUInt16();
+
+            ReparseBuffer buffer = null;
+
+            switch (tag)
+            {
+                case ReparseTag.MOUNT_POINT:
+                    buffer = new MountPointReparseBuffer();
+                    break;
+                case ReparseTag.SYMLINK:
+                    buffer = new SymlinkReparseBuffer();
+                    break;
+                default:
+                    buffer = new GenericReparseBuffer(tag);
+                    break;
+            }
+
+            buffer.ParseBuffer(data_length, reader);
+            return buffer;
+        }
+
+        public byte[] ToByteArray()
+        {
+            byte[] buffer = GetBuffer();
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            writer.Write((uint)Tag);
+            if (buffer.Length > ushort.MaxValue)
+            {
+                throw new ArgumentException("Reparse buffer too large");
+            }
+            writer.Write((ushort)buffer.Length);
+            writer.Write((ushort)0);
+            writer.Write(buffer);
+            return stm.ToArray();
+        }
+    }
+
+    public sealed class GenericReparseBuffer : ReparseBuffer
+    {
+        public GenericReparseBuffer(ReparseTag tag, byte[] data) : base(tag)
+        {
+            Data = (byte[])data.Clone();
+        }
+
+        internal GenericReparseBuffer(ReparseTag tag) : base(tag)
+        {
+        }
+
+        public byte[] Data { get; private set; }
+
+        protected override byte[] GetBuffer()
+        {
+            return Data;
+        }
+
+        protected override void ParseBuffer(int data_length, BinaryReader reader)
+        {
+            Data = reader.ReadAllBytes(data_length);
+        }
+    }
+
+    public sealed class MountPointReparseBuffer : ReparseBuffer
+    {
+        public MountPointReparseBuffer(string substitution_name, string print_name) : base(ReparseTag.MOUNT_POINT)
+        {
+            if (String.IsNullOrEmpty(substitution_name))
+            {
+                throw new ArgumentException("substitution_name");
+            }
+            SubstitutionName = substitution_name;
+            PrintName = print_name ?? String.Empty;
+        }
+
+        internal MountPointReparseBuffer() : base(ReparseTag.MOUNT_POINT)
+        {
+        }
+
+        public string SubstitutionName { get; private set; }
+        public string PrintName { get; private set; }
+        
+        protected override void ParseBuffer(int data_length, BinaryReader reader)
+        {
+            int subname_ofs = reader.ReadUInt16();
+            int subname_len = reader.ReadUInt16();
+            int pname_ofs = reader.ReadUInt16();
+            int pname_len = reader.ReadUInt16();
+
+            byte[] path_buffer = reader.ReadAllBytes(data_length - 8);
+            SubstitutionName = Encoding.Unicode.GetString(path_buffer, subname_ofs, subname_len);
+            PrintName = Encoding.Unicode.GetString(path_buffer, pname_ofs, pname_len);
+        }
+
+        protected override byte[] GetBuffer()
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            byte[] subname = Encoding.Unicode.GetBytes(SubstitutionName);
+            byte[] pname = Encoding.Unicode.GetBytes(PrintName);
+            // SubstituteNameOffset
+            writer.Write((ushort)0);
+            // SubstituteNameLength
+            writer.Write((ushort)subname.Length);
+            // PrintNameOffset
+            writer.Write((ushort)(subname.Length + 2));
+            // PrintNameLength
+            writer.Write((ushort)pname.Length);
+            writer.Write(subname);
+            writer.Write(new byte[2]);
+            writer.Write(pname);
+            writer.Write(new byte[2]);
+            return stm.ToArray();
+        }
+    }
+
+    public enum SymlinkReparseBufferFlags
+    {
+        None = 0,
+        Relative = 1,
+    }
+
+    public sealed class SymlinkReparseBuffer : ReparseBuffer
+    {
+        public SymlinkReparseBuffer(string substitution_name, 
+            string print_name, SymlinkReparseBufferFlags flags) 
+            : base(ReparseTag.SYMLINK)
+        {
+            if (String.IsNullOrEmpty(substitution_name))
+            {
+                throw new ArgumentException("substitution_name");
+            }
+
+            if (String.IsNullOrEmpty(print_name))
+            {
+                throw new ArgumentException("print_name");
+            }
+            
+            SubstitutionName = substitution_name;
+            PrintName = print_name;
+            Flags = flags;
+        }
+
+        internal SymlinkReparseBuffer() : base(ReparseTag.SYMLINK)
+        {
+        }
+
+        public string SubstitutionName { get; private set; }
+        public string PrintName { get; private set; }
+        public SymlinkReparseBufferFlags Flags { get; private set; }
+
+        protected override void ParseBuffer(int data_length, BinaryReader reader)
+        {
+            int subname_ofs = reader.ReadUInt16();
+            int subname_len = reader.ReadUInt16();
+            int pname_ofs = reader.ReadUInt16();
+            int pname_len = reader.ReadUInt16();
+
+            Flags = (SymlinkReparseBufferFlags)reader.ReadInt32();
+
+            byte[] path_buffer = reader.ReadAllBytes(data_length - 12);
+            SubstitutionName = Encoding.Unicode.GetString(path_buffer, subname_ofs, subname_len);
+            PrintName = Encoding.Unicode.GetString(path_buffer, pname_ofs, pname_len);
+        }
+
+        protected override byte[] GetBuffer()
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            byte[] subname = Encoding.Unicode.GetBytes(SubstitutionName);
+            byte[] pname = Encoding.Unicode.GetBytes(PrintName);
+            // SubstituteNameOffset
+            writer.Write((ushort)0);
+            // SubstituteNameLength
+            writer.Write((ushort)subname.Length);
+            // PrintNameOffset
+            writer.Write((ushort)(subname.Length + 2));
+            // PrintNameLength
+            writer.Write((ushort)pname.Length);
+            writer.Write((int)Flags);
+            writer.Write(subname);
+            writer.Write(new byte[2]);
+            writer.Write(pname);
+            writer.Write(new byte[2]);
+            return stm.ToArray();
         }
     }
 
@@ -640,28 +867,29 @@ namespace NtApiDotNet
         /// <param name="input_buffer">Input buffer can be null</param>
         /// <param name="output_buffer">Output buffer can be null</param>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public void DeviceIoControl(int control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
+        /// <returns>The length of output bytes returned.</returns>
+        public int DeviceIoControl(int control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
         {
             IoStatus status = new IoStatus();
             NtSystemCalls.NtDeviceIoControlFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero, status,
                 control_code, GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)).ToNtException();
+            return status.Information.ToInt32();
         }
 
         /// <summary>
         /// Send an File System Control code to the file driver
         /// </summary>
         /// <param name="control_code">The control code</param>
-        /// <param name="input_buffer">Input buffer</param>
-        /// <param name="output_buffer"></param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="output_buffer">Output buffer can be null</param>
+        /// <returns>The length of output bytes returned.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public void FsControl(int control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
+        public int FsControl(int control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
         {
-            if (input_buffer == null)
-            {
-            }
             IoStatus status = new IoStatus();
             NtSystemCalls.NtFsControlFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero, status,
                 control_code, GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)).ToNtException();
+            return status.Information.ToInt32();
         }
 
         /// <summary>
@@ -831,6 +1059,130 @@ namespace NtApiDotNet
                 FileShareMode.Read, FileOpenOptions.NonDirectoryFile))
             {
                 file.CreateHardlink(linkname);
+            }
+        }
+        
+        static NtIoControlCode FSCTL_SET_REPARSE_POINT = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 41, FileControlMethod.Buffered, FileControlAccess.Any);
+        static NtIoControlCode FSCTL_GET_REPARSE_POINT = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 42, FileControlMethod.Buffered, FileControlAccess.Any);
+        static NtIoControlCode FSCTL_DELETE_REPARSE_POINT = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 43, FileControlMethod.Buffered, FileControlAccess.Any);
+
+        private void SetReparsePoint(ReparseBuffer reparse)
+        {
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(reparse.ToByteArray()))
+            {
+                FsControl(FSCTL_SET_REPARSE_POINT.ToInt32(), buffer, null);
+            }
+        }
+        
+        /// <summary>
+        /// Set a mount point on the current file object.
+        /// </summary>
+        /// <param name="substitute_name">The substitute name to reparse to.</param>
+        /// <param name="print_name">The print name to display (can be null).</param>
+        public void SetMountPoint(string substitute_name, string print_name)
+        {
+            SetReparsePoint(new MountPointReparseBuffer(substitute_name, print_name));
+        }
+
+        /// <summary>
+        /// Set a symlink on the current file object.
+        /// </summary>
+        /// <param name="substitute_name">The substitute name to reparse to.</param>
+        /// <param name="print_name">The print name to display.</param>
+        /// <param name="flags">Additional flags for the symlink.</param>
+        public void SetSymlink(string substitute_name, string print_name, SymlinkReparseBufferFlags flags)
+        {
+            SetReparsePoint(new SymlinkReparseBuffer(substitute_name, print_name, flags));
+        }
+
+        /// <summary>
+        /// Create a mount point.
+        /// </summary>
+        /// <param name="path">The path to the mount point to create.</param>
+        /// <param name="substitute_name">The substitute name to reparse to.</param>
+        /// <param name="print_name">The print name to display (can be null).</param>
+        public static void CreateMountPoint(string path, string substitute_name, string print_name)
+        {
+            using (NtFile file = NtFile.Create(path, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
+                FileShareMode.None, FileOpenOptions.DirectoryFile | FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint,
+                FileDisposition.OpenIf, null))
+            {
+                file.SetMountPoint(substitute_name, print_name);
+            }
+        }
+
+        /// <summary>
+        /// Create a symlink.
+        /// </summary>
+        /// <param name="path">The path to the mount point to create.</param>
+        /// <param name="directory">True to create a directory symlink, false for a file.</param>
+        /// <param name="substitute_name">The substitute name to reparse to.</param>
+        /// <param name="print_name">The print name to display.</param>
+        /// <param name="flags">Additional flags for the symlink.</param>
+        public static void CreateSymlink(string path, bool directory, string substitute_name, string print_name, SymlinkReparseBufferFlags flags)
+        {
+            using (NtFile file = NtFile.Create(path, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
+                FileShareMode.None, (directory ? FileOpenOptions.DirectoryFile : FileOpenOptions.NonDirectoryFile) 
+                | FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint,
+                FileDisposition.OpenIf, null))
+            {
+                file.SetSymlink(substitute_name, print_name, flags);
+            }
+        }
+
+        /// <summary>
+        /// Get the reparse point buffer for the file.
+        /// </summary>
+        /// <returns>The reparse point buffer.</returns>
+        public ReparseBuffer GetReparsePoint()
+        {
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(16 * 1024))
+            {
+                FsControl(FSCTL_GET_REPARSE_POINT.ToInt32(), null, buffer);
+                
+                return ReparseBuffer.FromByteArray(buffer.ToArray());
+            }
+        }
+
+        /// <summary>
+        /// Get the reparse point buffer for the file.
+        /// </summary>
+        /// <param name="path">The path to the reparse point.</param>
+        /// <returns>The reparse point buffer.</returns>
+        public static ReparseBuffer GetReparsePoint(string path)
+        {
+            using (NtFile file = NtFile.Open(path, null, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
+                FileShareMode.None, FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint))
+            {
+                return file.GetReparsePoint();
+            }
+        }
+
+        /// <summary>
+        /// Delete the reparse point buffer
+        /// </summary>
+        /// <returns>The original reparse buffer.</returns>
+        public ReparseBuffer DeleteReparsePoint()
+        {
+            ReparseBuffer reparse = GetReparsePoint();
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(new GenericReparseBuffer(reparse.Tag, new byte[0]).ToByteArray()))
+            {
+                FsControl(FSCTL_DELETE_REPARSE_POINT.ToInt32(), buffer, null);
+            }
+            return reparse;
+        }
+
+        /// <summary>
+        /// Delete the reparse point buffer.
+        /// </summary>
+        /// <param name="path">The path to the reparse point.</param>
+        /// <returns>The original reparse buffer.</returns>
+        public static ReparseBuffer DeleteReparsePoint(string path)
+        {
+            using (NtFile file = NtFile.Open(path, null, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
+                FileShareMode.None, FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint))
+            {
+                return file.DeleteReparsePoint();
             }
         }
 
