@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -27,6 +28,7 @@ namespace NtApiDotNet
         /// Name of the entry
         /// </summary>
         public string Name { get; private set; }
+
         /// <summary>
         /// Data associated with the entry
         /// </summary>
@@ -44,7 +46,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Convery entry to a string
+        /// Convert entry to a string
         /// </summary>
         /// <returns>The entry as a string</returns>
         public override string ToString()
@@ -56,7 +58,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class to create an Extended Attributes buffer for NtCreateFile
     /// </summary>
-    public sealed class EaBuffer : List<EaBufferEntry>
+    public sealed class EaBuffer
     {
         /// <summary>
         /// Constructor
@@ -80,7 +82,7 @@ namespace NtApiDotNet
             {
                 EaBufferEntry entry;
                 finished = DeserializeEntry(reader, out entry);
-                Add(entry);
+                _buffers.Add(entry);
             }
         }
 
@@ -141,6 +143,11 @@ namespace NtApiDotNet
             return stm.ToArray();
         }
 
+        private void AddEntry(string name, byte[] data, bool clone)
+        {
+            _buffers.Add(new EaBufferEntry(name, clone ? (byte[])data.Clone() : data));
+        }
+
         /// <summary>
         /// Add a new EA entry
         /// </summary>
@@ -148,7 +155,36 @@ namespace NtApiDotNet
         /// <param name="data">The associated data</param>
         public void AddEntry(string name, byte[] data)
         {
-            _buffers.Add(new EaBufferEntry(name, (byte[])data.Clone()));
+            AddEntry(name, data, true);
+        }
+
+        /// <summary>
+        /// Add a new EA entry
+        /// </summary>
+        /// <param name="name">The name of the entry</param>
+        /// <param name="data">The associated data</param>
+        public void AddEntry(string name, int data)
+        {
+            AddEntry(name, BitConverter.GetBytes(data), false);
+        }
+
+        /// <summary>
+        /// Add a new EA entry
+        /// </summary>
+        /// <param name="name">The name of the entry</param>
+        /// <param name="data">The associated data</param>
+        public void AddEntry(string name, string data)
+        {
+            AddEntry(name, Encoding.Unicode.GetBytes(data), false);
+        }
+
+        /// <summary>
+        /// Remove an entry from the buffer.
+        /// </summary>
+        /// <param name="entry">The entry to remove.</param>
+        public void RemoveEntry(EaBufferEntry entry)
+        {
+            _buffers.Remove(entry);
         }
 
         /// <summary>
@@ -165,6 +201,16 @@ namespace NtApiDotNet
             }
             return stm.ToArray();
         }
+        
+        /// <summary>
+        /// Get the list of entries.
+        /// </summary>
+        public IEnumerable<EaBufferEntry> Entries { get { return _buffers.AsReadOnly(); } }
+
+        /// <summary>
+        /// Get number of entries.
+        /// </summary>
+        public int Count { get { return _buffers.Count; } }
     }
 
 }
