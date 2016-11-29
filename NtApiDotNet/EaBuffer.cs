@@ -77,8 +77,8 @@ namespace NtApiDotNet
             MemoryStream stm = new MemoryStream(buffer);
             BinaryReader reader = new BinaryReader(stm);
             bool finished = false;
-
-            while(finished)
+            _buffers = new List<EaBufferEntry>();
+            while(!finished)
             {
                 EaBufferEntry entry;
                 finished = DeserializeEntry(reader, out entry);
@@ -102,10 +102,10 @@ namespace NtApiDotNet
             entry = new EaBufferEntry(name, data);
             if (next_offset == 0)
             {
-                return false;
+                return true;
             }
-            reader.BaseStream.Position = start_position = next_offset;
-            return true;
+            reader.BaseStream.Position = start_position + next_offset;
+            return false;
         }
 
         private byte[] SerializeEntry(string name, byte[] data, bool final)
