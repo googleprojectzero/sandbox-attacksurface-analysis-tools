@@ -871,8 +871,12 @@ namespace NtApiDotNet
         public int DeviceIoControl(int control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
         {
             IoStatus status = new IoStatus();
-            NtSystemCalls.NtDeviceIoControlFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero, status,
+            NtStatus result = NtSystemCalls.NtDeviceIoControlFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero, status,
                 control_code, GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)).ToNtException();
+            if (result == NtStatus.STATUS_PENDING)
+            {
+                Wait().ToNtException();
+            }
             return status.Information.ToInt32();
         }
 
@@ -887,8 +891,12 @@ namespace NtApiDotNet
         public int FsControl(int control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
         {
             IoStatus status = new IoStatus();
-            NtSystemCalls.NtFsControlFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero, status,
+            NtStatus result = NtSystemCalls.NtFsControlFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero, status,
                 control_code, GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)).ToNtException();
+            if (result == NtStatus.STATUS_PENDING)
+            {
+                Wait().ToNtException();
+            }
             return status.Information.ToInt32();
         }
 
