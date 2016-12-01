@@ -36,6 +36,7 @@ namespace CheckDeviceAccess
         {
             public string Path { get; private set; }
             public NtStatus Status { get; private set; }
+            public FileDeviceType DeviceType { get; private set; }
 
             public override bool Equals(object obj)
             {
@@ -56,10 +57,11 @@ namespace CheckDeviceAccess
                 return Path.ToLowerInvariant().GetHashCode() ^ Status.GetHashCode();
             }
 
-            public CheckResult(string path, NtStatus status)
+            public CheckResult(string path, NtStatus status, FileDeviceType device_type)
             {
                 Path = path;
                 Status = status;
+                DeviceType = device_type;
             }
         }
 
@@ -107,7 +109,6 @@ namespace CheckDeviceAccess
                     }
                     else
                     {
-                        //Console.Error.WriteLine("Error querying {0} - {1}", name, ex.Message);
                     }
                 }
             }
@@ -144,7 +145,7 @@ namespace CheckDeviceAccess
 
         static CheckResult CheckDevice(string name, bool writable, EaBuffer ea_buffer)
         {
-            CheckResult result = new CheckResult(name, NtStatus.STATUS_INVALID_PARAMETER);
+            CheckResult result = new CheckResult(name, NtStatus.STATUS_INVALID_PARAMETER, FileDeviceType.UNKNOWN);
             try
             {
                 using (var imp = NtToken.Impersonate(_pid,
@@ -160,13 +161,13 @@ namespace CheckDeviceAccess
                     using (NtFile file = NtFile.Create(name, null, access_mask, NtApiDotNet.FileAttributes.Normal, 
                         FileShareMode.All, opts, FileDisposition.Open, ea_buffer))
                     {
-                        result = new CheckResult(name, NtStatus.STATUS_SUCCESS);
+                        result = new CheckResult(name, NtStatus.STATUS_SUCCESS, file.DeviceType);
                     }
                 }
             }
             catch (NtException ex)
             {
-                result = new CheckResult(name, ex.Status);
+                result = new CheckResult(name, ex.Status, FileDeviceType.UNKNOWN);
             }
 
             return result;
@@ -243,11 +244,11 @@ namespace CheckDeviceAccess
 
                 if (map_to_symlink && symlinks.ContainsKey(result.Path))
                 {
-                    Console.WriteLine("{0} -> {1} - {2}", symlinks[result.Path], result.Path, result.Status);
+                    Console.WriteLine("{0} -> {1} - {2} {3}", symlinks[result.Path], result.Path, result.DeviceType, result.Status);
                 }
                 else
                 {
-                    Console.WriteLine("{0} - {1}", result.Path, result.Status);
+                    Console.WriteLine("{0} - {1} {2}", result.Path, result.DeviceType, result.Status);
                 }
             }
             Console.WriteLine("Total Count: {0}", count);
@@ -296,7 +297,16 @@ namespace CheckDeviceAccess
                 }
                 else
                 {
-                    List<string> device_objs = FindDeviceObjects(names);
+                    List<string> device_objs;
+
+                    if (_recursive)
+                    {
+                        device_objs = FindDeviceObjects(names);
+                    }
+                    else
+                    {
+                        device_objs = names;
+                    }
 
                     if (device_objs.Count > 0)
                     {
