@@ -234,7 +234,7 @@ namespace CheckDeviceAccess
             int count = 0;
             foreach (CheckResult result in results)
             {
-                if (!_show_errors || (!result.Status.IsSuccess() && IgnoreError(result.Status)))
+                if ((!result.Status.IsSuccess() && !_show_errors) || IgnoreError(result.Status))
                 {
                     continue;
                 }
@@ -308,7 +308,7 @@ namespace CheckDeviceAccess
                         }
 
                         IEnumerable<CheckResult> write_normal = device_objs.Select(n => CheckDevice(n, !readable, ea));
-                        IEnumerable<CheckResult> write_namespace = device_objs.Select(n => CheckDevice(n + "\\" + suffix, !readable, ea));                        
+                        IEnumerable<CheckResult> write_namespace = device_objs.Select(n => CheckDevice(n + "\\" + suffix, !readable, ea));
                         Dictionary<string, string> symlinks = FindSymlinks();
 
                         if (ea_buffer)
