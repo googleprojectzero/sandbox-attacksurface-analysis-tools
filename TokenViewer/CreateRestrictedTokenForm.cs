@@ -110,7 +110,7 @@ namespace TokenViewer
                 DialogResult = DialogResult.OK;
                 Close();
             }
-            catch (Win32Exception ex)
+            catch (NtException ex)
             {
                 MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -186,7 +186,7 @@ namespace TokenViewer
             {
                 TokenForm.OpenForm(CreateRestrictedToken(), false);
             }
-            catch (Win32Exception ex)
+            catch (NtException ex)
             {
                 MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }

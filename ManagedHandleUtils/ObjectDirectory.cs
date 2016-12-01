@@ -160,28 +160,14 @@ namespace HandleUtils
 
         private static NtDirectory OpenPath(ObjectDirectory root, string path)
         {
-            try
-            {
-                return NtDirectory.Open(path, root != null ? root._directory : null, DirectoryAccessRights.MaximumAllowed);
-            }
-            catch (NtException ex)
-            {
-                throw ex.AsWin32Exception();
-            }
+            return NtDirectory.Open(path, root != null ? root._directory : null, DirectoryAccessRights.MaximumAllowed);
         }
 
         private static NtDirectory OpenNamespace(string path)
         {
-            try
+            using (BoundaryDescriptor boundary = BoundaryDescriptor.CreateFromString(path))
             {
-                using (BoundaryDescriptor boundary = BoundaryDescriptor.CreateFromString(path))
-                {
-                    return NtDirectory.OpenPrivateNamespace(boundary);
-                }
-            }
-            catch (NtException ex)
-            {
-                throw ex.AsWin32Exception();
+                return NtDirectory.OpenPrivateNamespace(boundary);
             }
         }
 

@@ -46,16 +46,9 @@ namespace HandleUtils
 
         public static NtToken GetAnonymousToken()
         {
-            try
+            using (var imp = NtThread.Current.ImpersonateAnonymousToken())
             {
-                using (var imp = NtThread.Current.ImpersonateAnonymousToken())
-                {
-                    return NtToken.OpenThreadToken();
-                }
-            }
-            catch (NtException ex)
-            {
-                throw ex.AsWin32Exception();
+                return NtToken.OpenThreadToken();
             }
         }
 
@@ -85,7 +78,7 @@ namespace HandleUtils
             SafeKernelObjectHandle handle;
             if (!GetClipboardAccessToken(out handle, TokenAccessRights.Query | TokenAccessRights.QuerySource | TokenAccessRights.ReadControl))
             {
-                throw new SafeWin32Exception();
+                throw new NtException(NtStatus.STATUS_NO_TOKEN);
             }
             return handle;
         }
@@ -96,7 +89,7 @@ namespace HandleUtils
             {
                 return NtToken.FromHandle(OpenClipboardToken());
             }
-            catch (SafeWin32Exception)
+            catch (NtException)
             {
                 throw;
             }
@@ -166,26 +159,19 @@ namespace HandleUtils
 
         public static NtToken CreateProcessForToken(string cmdline, NtToken token, bool make_interactive)
         {
-            try
+            using (NtToken newtoken = token.DuplicateToken(TokenType.Primary, SecurityImpersonationLevel.Anonymous, TokenAccessRights.MaximumAllowed))
             {
-                using (NtToken newtoken = token.DuplicateToken(TokenType.Primary, SecurityImpersonationLevel.Anonymous, TokenAccessRights.MaximumAllowed))
+                string desktop = null;
+                if (make_interactive)
                 {
-                    string desktop = null;
-                    if (make_interactive)
-                    {
-                        desktop = @"WinSta0\Default";
-                        newtoken.SetSessionId(NtProcess.Current.SessionId);
-                    }
-
-                    using (Win32Process process = Win32Process.CreateProcessAsUser(newtoken, null, cmdline, CreateProcessFlags.None, desktop))
-                    {
-                        return process.Process.OpenToken();
-                    }
+                    desktop = @"WinSta0\Default";
+                    newtoken.SetSessionId(NtProcess.Current.SessionId);
                 }
-            }
-            catch (NtException ex)
-            {
-                throw ex.AsWin32Exception();
+
+                using (Win32Process process = Win32Process.CreateProcessAsUser(newtoken, null, cmdline, CreateProcessFlags.None, desktop))
+                {
+                    return process.Process.OpenToken();
+                }
             }
         }
 

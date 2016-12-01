@@ -36,16 +36,9 @@ namespace HandleUtils
 
 	    public static string ReadSymlink(string symlink_path)
 	    {
-            try
+            using (NtSymbolicLink symlink = NtSymbolicLink.Open(symlink_path, null, SymbolicLinkAccessRights.Query))
             {
-                using (NtSymbolicLink symlink = NtSymbolicLink.Open(symlink_path, null, SymbolicLinkAccessRights.Query))
-                {
-                    return symlink.Target;
-                }
-            }
-            catch (NtException ex)
-            {
-                throw ex.AsWin32Exception();
+                return symlink.Target;
             }
 	    }
     }

@@ -69,7 +69,7 @@ namespace EditSection
                 ObjectDirectory basedir = ObjectNamespace.OpenDirectory(null, "\\");
                 UpdateObjectList(typename, walked, basedir, names);
             }
-            catch (Win32Exception)
+            catch (NtException)
             {
             }
 
@@ -78,7 +78,7 @@ namespace EditSection
                 ObjectDirectory sessiondir = ObjectNamespace.OpenSessionDirectory();
                 UpdateObjectList(typename, walked, sessiondir, names);
             }
-            catch (Win32Exception)
+            catch (NtException)
             {
             }
 

@@ -617,7 +617,7 @@ namespace TokenViewer
                             _token.SetGroup(group.Sid, all_enabled ? GroupAttributes.Enabled : GroupAttributes.None);
                         }
                     }
-                    catch (Win32Exception ex)
+                    catch (NtException ex)
                     {
                         if (!multi_enable)
                         {

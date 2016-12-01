@@ -265,7 +265,7 @@ namespace CheckProcessAccess
                                     {
                                         procs.Add(new ProcessEntry(NtProcess.Open(int.Parse(pid_name), ProcessAccessRights.MaximumAllowed)));
                                     }
-                                    catch (Win32Exception ex)
+                                    catch (NtException ex)
                                     {
                                         Console.WriteLine("Error opening pid {0} - {1}", pid_name, ex.Message);
                                     }
@@ -289,7 +289,7 @@ namespace CheckProcessAccess
                                     processes = processes.Where(p => pids.Contains(p.Name.ToLower()));
                                 }
                             }
-                            catch (Win32Exception ex)
+                            catch (NtException ex)
                             {
                                 Console.WriteLine(ex);
                             }

@@ -43,7 +43,6 @@
   <ItemGroup>
     <Compile Include="LogonUtils.cs" />
     <Compile Include="NativeBridge.cs" />
-    <Compile Include="NativeHandle.cs" />
     <Compile Include="ObjectDirectoryEntry.cs" />
     <Compile Include="ObjectDirectory.cs" />
     <Compile Include="ObjectNamespace.cs" />

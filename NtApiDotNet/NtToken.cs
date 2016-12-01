@@ -547,7 +547,7 @@ namespace NtApiDotNet
             Luid luid;
             if (!LookupPrivilegeValue(null, name, out luid))
             {
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+                throw new NtException(NtStatus.STATUS_NO_SUCH_PRIVILEGE);
             }
             AddPrivilege(luid, enable ? PrivilegeAttributes.Enabled : PrivilegeAttributes.Disabled);
         }
@@ -1880,11 +1880,10 @@ namespace NtApiDotNet
         /// Impersonate the token
         /// </summary>
         /// <returns>An impersonation context, dispose to revert to process token</returns>
-        public WindowsImpersonationContext Impersonate()
+        public ThreadImpersonationContext Impersonate()
         {
-            return WindowsIdentity.Impersonate(Handle.DangerousGetHandle());
+            return NtThread.Current.Impersonate(this);
         }
-
 
         /// <summary>
         /// Impersonate another process' token
@@ -1892,7 +1891,7 @@ namespace NtApiDotNet
         /// <param name="impersonation_level">The impersonation level</param>
         /// <param name="pid">Process ID of the other process</param>
         /// <returns>An impersonation context, dispose to revert to process token</returns>
-        public static WindowsImpersonationContext Impersonate(int pid, SecurityImpersonationLevel impersonation_level)
+        public static ThreadImpersonationContext Impersonate(int pid, SecurityImpersonationLevel impersonation_level)
         {
             using (NtToken process_token = OpenProcessToken(pid))
             {

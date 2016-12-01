@@ -17,7 +17,6 @@ using NDesk.Options;
 using NtApiDotNet;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -32,6 +31,37 @@ namespace CheckDeviceAccess
         static bool _identify_only;
         static bool _open_as_dir;
         static bool _filter_direct;
+
+        class CheckResult
+        {
+            public string Path { get; private set; }
+            public NtStatus Status { get; private set; }
+
+            public override bool Equals(object obj)
+            {
+                if (base.Equals(obj))
+                {
+                    return true;
+                }
+                CheckResult result = obj as CheckResult;
+                if (result == null)
+                {
+                    return false;
+                }
+                return Path.Equals(result.Path, StringComparison.OrdinalIgnoreCase) && Status == result.Status;
+            }
+
+            public override int GetHashCode()
+            {
+                return Path.ToLowerInvariant().GetHashCode() ^ Status.GetHashCode();
+            }
+
+            public CheckResult(string path, NtStatus status)
+            {
+                Path = path;
+                Status = status;
+            }
+        }
 
         static List<string> FindDeviceObjects(IEnumerable<string> names)
         {
@@ -67,16 +97,17 @@ namespace CheckDeviceAccess
                         totalEntries.AddRange(objs.Where(e => e.TypeName.Equals("device", StringComparison.OrdinalIgnoreCase)).Select(e => e.FullPath));    
                     }
                 }
-                catch (Win32Exception ex)
+                catch (NtException ex)
                 {
-                    if (ex.NativeErrorCode == 6)
+                    int error = NtRtl.RtlNtStatusToDosError(ex.Status);
+                    if (NtRtl.RtlNtStatusToDosError(ex.Status) == 6)
                     {
                         // Add name in case it's an absolute name, not in a directory
                         totalEntries.Add(name);
                     }
                     else
                     {
-                        Console.Error.WriteLine("Error querying {0} - {1}", name, ex.Message);
+                        //Console.Error.WriteLine("Error querying {0} - {1}", name, ex.Message);
                     }
                 }
             }
@@ -92,18 +123,28 @@ namespace CheckDeviceAccess
             p.WriteOptionDescriptions(Console.Out);
         }
 
-        static void PrintError(string name, Win32Exception ex)
+        static bool IgnoreError(NtStatus status)
         {
-            if (_show_errors && (ex.NativeErrorCode != 5) && (ex.NativeErrorCode != 1))
+            switch (NtRtl.RtlNtStatusToDosError(status))
+            {
+                case 1:
+                case 5:
+                    return true;
+            }
+            return false;
+        }
+
+        static void PrintError(string name, NtException ex)
+        {
+            if (_show_errors && !IgnoreError(ex.Status))
             {
                 Console.Error.WriteLine("Error checking {0} - {1}", name, ex.Message);
             }
         }
 
-        static bool CheckDevice(string name, bool writable)
+        static CheckResult CheckDevice(string name, bool writable, EaBuffer ea_buffer)
         {
-            bool success = false;
-
+            CheckResult result = new CheckResult(name, NtStatus.STATUS_INVALID_PARAMETER);
             try
             {
                 using (var imp = NtToken.Impersonate(_pid,
@@ -116,23 +157,19 @@ namespace CheckDeviceAccess
                     }
 
                     FileOpenOptions opts = _open_as_dir ? FileOpenOptions.DirectoryFile : FileOpenOptions.NonDirectoryFile;
-                    using (NtFile file = NtFile.Open(name, null, access_mask, FileShareMode.All, opts))
+                    using (NtFile file = NtFile.Create(name, null, access_mask, NtApiDotNet.FileAttributes.Normal, 
+                        FileShareMode.All, opts, FileDisposition.Open, ea_buffer))
                     {
-                        success = true;
+                        result = new CheckResult(name, NtStatus.STATUS_SUCCESS);
                     }
                 }
             }
-            catch (Win32Exception ex)
-            {
-                // Ignore access denied and invalid function (indicates there's no IRP_MJ_CREATE handler)
-                PrintError(name, ex);
-            }
             catch (NtException ex)
             {
-                PrintError(name, ex.AsWin32Exception());
+                result = new CheckResult(name, ex.Status);
             }
 
-            return success;
+            return result;
         }
         
         static string GetSymlinkTarget(ObjectDirectoryEntry entry)
@@ -184,27 +221,33 @@ namespace CheckDeviceAccess
                         }
                     }
                 }
-                catch (Win32Exception)
+                catch (NtException)
                 {
                 }
             }
 
             return symlinks;
-        }        
+        }
 
-        static void DumpList(IEnumerable<string> names, bool map_to_symlink, Dictionary<string, string> symlinks)
+        static void DumpList(IEnumerable<CheckResult> results, bool map_to_symlink, Dictionary<string, string> symlinks)
         {
             int count = 0;
-            foreach (string name in names)
+            foreach (CheckResult result in results)
             {
-                count++;
-                if (map_to_symlink && symlinks.ContainsKey(name))
+                if (!_show_errors || (!result.Status.IsSuccess() && IgnoreError(result.Status)))
                 {
-                    Console.WriteLine("{0} -> {1}", symlinks[name], name);
+                    continue;
+                }
+
+                count++;
+
+                if (map_to_symlink && symlinks.ContainsKey(result.Path))
+                {
+                    Console.WriteLine("{0} -> {1} - {2}", symlinks[result.Path], result.Path, result.Status);
                 }
                 else
                 {
-                    Console.WriteLine(name);
+                    Console.WriteLine("{0} - {1}", result.Path, result.Status);
                 }
             }
             Console.WriteLine("Total Count: {0}", count);
@@ -215,6 +258,7 @@ namespace CheckDeviceAccess
             bool show_help = false;
             bool map_to_symlink = false;
             bool readable = false;
+            bool ea_buffer = false;
             string suffix = "XYZ";
             string namelist = null;
 
@@ -229,8 +273,9 @@ namespace CheckDeviceAccess
                         { "p|pid=", "Specify a PID of a process to impersonate when checking", v => _pid = int.Parse(v.Trim()) },
                         { "suffix=", "Specify the suffix for the namespace search", v => suffix = v },
                         { "namelist=", "Specify a text file with a list of names", v => namelist = v },
+                        { "ea", "Try and show only devices with accept an EA buffer", v => ea_buffer = v != null },
                         { "e", "Display errors when trying devices, ignores Access Denied", v => _show_errors = v != null },
-                        { "i", "Use an indentify level token when impersonating", v => _identify_only = v != null },
+                        { "i", "Use an identify level token when impersonating", v => _identify_only = v != null },
                         { "d", "Try opening devices as directories rather than files", v => _open_as_dir = v != null },
                         { "f", "Filter out devices which could be opened direct and via namespace", v => _filter_direct = v != null },
                         { "readonly", "Show devices which can be opened for read access instead of write", v => readable = v != null },
@@ -255,17 +300,29 @@ namespace CheckDeviceAccess
 
                     if (device_objs.Count > 0)
                     {
-                        List<string> write_normal = new List<string>(device_objs.Where(n => CheckDevice(n, !readable)));
-                        List<string> write_namespace = new List<string>(device_objs.Where(n => CheckDevice(n + "\\" + suffix, !readable)));
-                        
-                        Dictionary<string, string> symlinks = FindSymlinks();                        
+                        EaBuffer ea = null;
+                        if (ea_buffer)
+                        {
+                            ea = new EaBuffer();
+                            ea.AddEntry("GARBAGE", new byte[16], EaBufferEntryFlags.NeedEa);
+                        }
+
+                        IEnumerable<CheckResult> write_normal = device_objs.Select(n => CheckDevice(n, !readable, ea));
+                        IEnumerable<CheckResult> write_namespace = device_objs.Select(n => CheckDevice(n + "\\" + suffix, !readable, ea));                        
+                        Dictionary<string, string> symlinks = FindSymlinks();
+
+                        if (ea_buffer)
+                        {
+                            _show_errors = true;
+                            write_normal = write_normal.Where(e => e.Status == NtStatus.STATUS_INVALID_PARAMETER);
+                            write_namespace = write_namespace.Where(e => e.Status == NtStatus.STATUS_INVALID_PARAMETER);
+                        }
 
                         if (_filter_direct)
                         {
                             Console.WriteLine("Namespace Only");
-                            HashSet<string> normal = new HashSet<string>(write_normal, StringComparer.OrdinalIgnoreCase);
-                                                        
-                            DumpList(write_namespace.Where(s => !normal.Contains(s)), map_to_symlink, symlinks);
+                            HashSet<string> normal = new HashSet<string>(write_normal.Where(r => r.Status.IsSuccess()).Select(r => r.Path), StringComparer.OrdinalIgnoreCase);
+                            DumpList(write_namespace.Where(r => !normal.Contains(r.Path)), map_to_symlink, symlinks);
                         }
                         else
                         {

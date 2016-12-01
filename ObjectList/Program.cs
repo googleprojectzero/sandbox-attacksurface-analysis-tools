@@ -14,6 +14,7 @@
 
 using HandleUtils;
 using NDesk.Options;
+using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -76,7 +77,7 @@ namespace ObjectList
             {
                 return ObjectNamespace.ReadSymlink(entry.FullPath);
             }
-            catch (System.ComponentModel.Win32Exception)
+            catch (NtException)
             {
                 return "";
             }
@@ -172,7 +173,7 @@ namespace ObjectList
                         }
                     }
                 }
-                catch (Win32Exception ex)
+                catch (NtException ex)
                 {
                     Console.Error.WriteLine("Error querying {0} - {1}", name.Item2, ex.Message);
                 }

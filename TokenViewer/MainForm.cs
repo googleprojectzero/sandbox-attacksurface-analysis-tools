@@ -299,7 +299,7 @@ namespace TokenViewer
             {
                 TokenForm.OpenForm(TokenUtils.GetAnonymousToken(), false);
             }
-            catch (Win32Exception ex)
+            catch (NtException ex)
             {
                 MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -311,7 +311,7 @@ namespace TokenViewer
             {
                 TokenForm.OpenForm(TokenUtils.GetLogonUserToken(name, "NT AUTHORITY", null, SecurityLogonType.Service), false);
             }
-            catch (Win32Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -419,7 +419,7 @@ namespace TokenViewer
             {
                 TokenForm.OpenForm(TokenUtils.GetTokenFromClipboard(), false);
             }
-            catch (Win32Exception ex)
+            catch (NtException ex)
             {
                 MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }

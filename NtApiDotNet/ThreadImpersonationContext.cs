@@ -33,14 +33,20 @@ namespace NtApiDotNet
         /// </summary>
         public void Revert()
         {
-            try
+            if (_thread != null)
             {
-                _thread.SetImpersonationToken(null);
-                _thread.Dispose();
-                _thread = null;
-            }
-            catch
-            {
+                try
+                {
+                    _thread.SetImpersonationToken(null);
+                }
+                catch
+                {
+                }
+                finally
+                {
+                    _thread.Dispose();
+                    _thread = null;
+                }
             }
         }
 

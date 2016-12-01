@@ -88,15 +88,6 @@ namespace NtApiDotNet
                 return String.Format("(0x{0:X08}) - {1}", (uint)_status, message);
             }
         }
-
-        /// <summary>
-        /// Convert this exception to a corresponding Win32Exception
-        /// </summary>
-        /// <returns></returns>
-        public Win32Exception AsWin32Exception()
-        {
-            return new Win32Exception(NtRtl.RtlNtStatusToDosError(_status));
-        }
     }
 
 }
