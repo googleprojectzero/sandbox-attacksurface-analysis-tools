@@ -106,6 +106,7 @@
             this.btnDuplicate = new System.Windows.Forms.Button();
             this.comboBoxImpLevel = new System.Windows.Forms.ComboBox();
             this.comboBoxTokenType = new System.Windows.Forms.ComboBox();
+            this.checkBoxUseWmi = new System.Windows.Forms.CheckBox();
             this.checkBoxMakeInteractive = new System.Windows.Forms.CheckBox();
             this.btnCreateProcess = new System.Windows.Forms.Button();
             this.txtCommandLine = new System.Windows.Forms.TextBox();
@@ -141,7 +142,7 @@
             this.tabPageMisc = new System.Windows.Forms.TabPage();
             this.tabPageOperations = new System.Windows.Forms.TabPage();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.checkBoxUseWmi = new System.Windows.Forms.CheckBox();
+            this.removePrivilegeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
@@ -811,6 +812,16 @@
             groupBox1.TabStop = false;
             groupBox1.Text = "Create Process";
             // 
+            // checkBoxUseWmi
+            // 
+            this.checkBoxUseWmi.AutoSize = true;
+            this.checkBoxUseWmi.Location = new System.Drawing.Point(202, 59);
+            this.checkBoxUseWmi.Name = "checkBoxUseWmi";
+            this.checkBoxUseWmi.Size = new System.Drawing.Size(71, 17);
+            this.checkBoxUseWmi.TabIndex = 4;
+            this.checkBoxUseWmi.Text = "Use WMI";
+            this.checkBoxUseWmi.UseVisualStyleBackColor = true;
+            // 
             // checkBoxMakeInteractive
             // 
             this.checkBoxMakeInteractive.AutoSize = true;
@@ -1141,15 +1152,16 @@
             // 
             this.contextMenuStripPrivileges.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.enablePrivilegeToolStripMenuItem,
+            this.removePrivilegeToolStripMenuItem,
             this.selectAllPrivsToolStripMenuItem});
             this.contextMenuStripPrivileges.Name = "contextMenuStripPrivileges";
-            this.contextMenuStripPrivileges.Size = new System.Drawing.Size(165, 48);
+            this.contextMenuStripPrivileges.Size = new System.Drawing.Size(166, 92);
             this.contextMenuStripPrivileges.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStripPrivileges_Opening);
             // 
             // enablePrivilegeToolStripMenuItem
             // 
             this.enablePrivilegeToolStripMenuItem.Name = "enablePrivilegeToolStripMenuItem";
-            this.enablePrivilegeToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
+            this.enablePrivilegeToolStripMenuItem.Size = new System.Drawing.Size(165, 22);
             this.enablePrivilegeToolStripMenuItem.Text = "Enable Privilege";
             this.enablePrivilegeToolStripMenuItem.Click += new System.EventHandler(this.enablePrivilegeToolStripMenuItem_Click);
             // 
@@ -1157,7 +1169,7 @@
             // 
             this.selectAllPrivsToolStripMenuItem.Name = "selectAllPrivsToolStripMenuItem";
             this.selectAllPrivsToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.A)));
-            this.selectAllPrivsToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
+            this.selectAllPrivsToolStripMenuItem.Size = new System.Drawing.Size(165, 22);
             this.selectAllPrivsToolStripMenuItem.Text = "Select All";
             this.selectAllPrivsToolStripMenuItem.Click += new System.EventHandler(this.selectAllToolStripMenuItem_Click);
             // 
@@ -1278,15 +1290,12 @@
             this.tabPageOperations.Text = "Operations";
             this.tabPageOperations.UseVisualStyleBackColor = true;
             // 
-            // checkBoxUseWmi
+            // removePrivilegeToolStripMenuItem
             // 
-            this.checkBoxUseWmi.AutoSize = true;
-            this.checkBoxUseWmi.Location = new System.Drawing.Point(202, 59);
-            this.checkBoxUseWmi.Name = "checkBoxUseWmi";
-            this.checkBoxUseWmi.Size = new System.Drawing.Size(71, 17);
-            this.checkBoxUseWmi.TabIndex = 4;
-            this.checkBoxUseWmi.Text = "Use WMI";
-            this.checkBoxUseWmi.UseVisualStyleBackColor = true;
+            this.removePrivilegeToolStripMenuItem.Name = "removePrivilegeToolStripMenuItem";
+            this.removePrivilegeToolStripMenuItem.Size = new System.Drawing.Size(165, 22);
+            this.removePrivilegeToolStripMenuItem.Text = "Remove Privilege";
+            this.removePrivilegeToolStripMenuItem.Click += new System.EventHandler(this.removePrivilegeToolStripMenuItem_Click);
             // 
             // TokenForm
             // 
@@ -1399,5 +1408,6 @@
         private System.Windows.Forms.Button btnImpersonate;
         private System.Windows.Forms.ToolTip toolTip;
         private System.Windows.Forms.CheckBox checkBoxUseWmi;
+        private System.Windows.Forms.ToolStripMenuItem removePrivilegeToolStripMenuItem;
     }
 }

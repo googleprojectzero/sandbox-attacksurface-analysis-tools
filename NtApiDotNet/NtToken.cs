@@ -1053,12 +1053,12 @@ namespace NtApiDotNet
         /// Set a privilege state
         /// </summary>
         /// <param name="luid">The luid of the privilege</param>
-        /// <param name="enable">True to enable the privilege, false to disable</param>
+        /// <param name="attributes">The privilege attributes to set.</param>
         /// <returns>True if successfully changed the state of the privilege</returns>
-        public bool SetPrivilege(Luid luid, bool enable)
+        public bool SetPrivilege(Luid luid, PrivilegeAttributes attributes)
         {
             TokenPrivilegesBuilder tp = new TokenPrivilegesBuilder();
-            tp.AddPrivilege(luid, enable ? PrivilegeAttributes.Enabled : PrivilegeAttributes.Disabled);
+            tp.AddPrivilege(luid, attributes);
             return SetPrivileges(tp);
         }
 
@@ -1073,6 +1073,26 @@ namespace NtApiDotNet
             TokenPrivilegesBuilder tp = new TokenPrivilegesBuilder();
             tp.AddPrivilege(privilege, attributes);
             return SetPrivileges(tp);
+        }
+
+        /// <summary>
+        /// Remove a privilege.
+        /// </summary>
+        /// <param name="privilege">The value of the privilege to remove.</param>
+        /// <returns>True if successfully removed the privilege.</returns>
+        public bool RemovePrivilege(TokenPrivilegeValue privilege)
+        {
+            return SetPrivilege(privilege, PrivilegeAttributes.Removed);
+        }
+
+        /// <summary>
+        /// Remove a privilege.
+        /// </summary>
+        /// <param name="luid">The LUID of the privilege to remove.</param>
+        /// <returns>True if successfully removed the privilege.</returns>
+        public bool RemovePrivilege(Luid luid)
+        {
+            return SetPrivilege(luid, PrivilegeAttributes.Removed);
         }
 
         /// <summary>

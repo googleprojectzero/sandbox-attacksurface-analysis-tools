@@ -495,11 +495,11 @@ namespace TokenViewer
             }
         }
 
-        static bool AllPrivsEnabled(IEnumerable<ListViewItem> privs)
+        static bool AllPrivsEnabled(IEnumerable<TokenPrivilege> privs)
         {            
-            foreach (TokenPrivilege priv in privs.Select(i => i.Tag))
+            foreach (TokenPrivilege priv in privs)
             {
-                if (priv != null && !priv.Enabled)
+                if (!priv.Enabled)
                 {
                     return false;
                 }
@@ -511,7 +511,7 @@ namespace TokenViewer
         {
             if (listViewPrivs.SelectedItems.Count > 0)
             {
-                if (AllPrivsEnabled(listViewPrivs.SelectedItems.OfType<ListViewItem>()))
+                if (AllPrivsEnabled(GetSelectedItemTags(listViewPrivs).OfType<TokenPrivilege>()))
                 {
                     enablePrivilegeToolStripMenuItem.Text = "Disable Privilege";
                 }
@@ -527,32 +527,34 @@ namespace TokenViewer
             }
         }
 
+        private void ModifyPrivileges(IEnumerable<TokenPrivilege> privs, PrivilegeAttributes attributes)
+        {
+            bool multi = privs.Count() > 1;
+            foreach (TokenPrivilege priv in privs)
+            {
+                try
+                {
+                    _token.SetPrivilege(priv.Luid, attributes);
+                }
+                catch (Exception ex)
+                {
+                    if (!multi)
+                    {
+                        MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+            UpdatePrivileges();
+        }
+
         private void enablePrivilegeToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (listViewPrivs.SelectedItems.Count > 0)
             {
-                bool multi_enable = listViewPrivs.SelectedItems.Count > 1;
-                bool all_enabled = AllPrivsEnabled(listViewPrivs.SelectedItems.OfType<ListViewItem>());
-
-                foreach (TokenPrivilege priv in
-                    listViewPrivs.SelectedItems.OfType<ListViewItem>().Select(i => i.Tag))
-                {
-                    try
-                    {
-                        if (priv != null)
-                        {
-                            _token.SetPrivilege(priv.Luid, !all_enabled);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        if (!multi_enable)
-                        {
-                            MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                    }
-                }
-                UpdatePrivileges();
+                IEnumerable<TokenPrivilege> privs = GetSelectedItemTags(listViewPrivs).OfType<TokenPrivilege>();
+                bool all_enabled = AllPrivsEnabled(privs);
+                PrivilegeAttributes attributes = all_enabled ? PrivilegeAttributes.Disabled : PrivilegeAttributes.Enabled;
+                ModifyPrivileges(privs, attributes);
             }
         }
 
@@ -707,6 +709,17 @@ namespace TokenViewer
         private void comboBoxIL_TextUpdate(object sender, EventArgs e)
         {
             comboBoxIL_SelectedIndexChanged(sender, e);
+        }
+
+        private IEnumerable<object> GetSelectedItemTags(ListView listView)
+        {
+            return listView.SelectedItems.OfType<ListViewItem>().Select(i => i.Tag);
+        }
+
+        private void removePrivilegeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ModifyPrivileges(GetSelectedItemTags(listViewPrivs).OfType<TokenPrivilege>(), 
+                PrivilegeAttributes.Removed);
         }
     }
 }
