@@ -230,6 +230,7 @@ namespace HandleUtils
                         {
                             tokens.Add(NtToken.FromHandle(handle));
                         }
+                        current += Marshal.SizeOf(typeof(WTS_SESSION_INFO));
                     }
                 }
             }
