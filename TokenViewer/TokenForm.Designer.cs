@@ -128,6 +128,7 @@
             this.listViewPrivs = new System.Windows.Forms.ListView();
             this.contextMenuStripPrivileges = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.enablePrivilegeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.removePrivilegeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.selectAllPrivsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tabPageRestricted = new System.Windows.Forms.TabPage();
             this.listViewRestrictedSids = new System.Windows.Forms.ListView();
@@ -142,7 +143,8 @@
             this.tabPageMisc = new System.Windows.Forms.TabPage();
             this.tabPageOperations = new System.Windows.Forms.TabPage();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.removePrivilegeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.llbSecurityAttributes = new System.Windows.Forms.Label();
+            this.treeViewSecurityAttributes = new System.Windows.Forms.TreeView();
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
@@ -861,6 +863,11 @@
             // 
             // groupBox2
             // 
+            groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            groupBox2.Controls.Add(this.treeViewSecurityAttributes);
+            groupBox2.Controls.Add(this.llbSecurityAttributes);
             groupBox2.Controls.Add(label22);
             groupBox2.Controls.Add(this.txtMandatoryILPolicy);
             groupBox2.Controls.Add(label20);
@@ -873,7 +880,7 @@
             groupBox2.Controls.Add(this.txtUIAccess);
             groupBox2.Location = new System.Drawing.Point(8, 6);
             groupBox2.Name = "groupBox2";
-            groupBox2.Size = new System.Drawing.Size(451, 157);
+            groupBox2.Size = new System.Drawing.Size(451, 280);
             groupBox2.TabIndex = 0;
             groupBox2.TabStop = false;
             groupBox2.Text = "Additional Properties";
@@ -1155,7 +1162,7 @@
             this.removePrivilegeToolStripMenuItem,
             this.selectAllPrivsToolStripMenuItem});
             this.contextMenuStripPrivileges.Name = "contextMenuStripPrivileges";
-            this.contextMenuStripPrivileges.Size = new System.Drawing.Size(166, 92);
+            this.contextMenuStripPrivileges.Size = new System.Drawing.Size(166, 70);
             this.contextMenuStripPrivileges.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStripPrivileges_Opening);
             // 
             // enablePrivilegeToolStripMenuItem
@@ -1164,6 +1171,13 @@
             this.enablePrivilegeToolStripMenuItem.Size = new System.Drawing.Size(165, 22);
             this.enablePrivilegeToolStripMenuItem.Text = "Enable Privilege";
             this.enablePrivilegeToolStripMenuItem.Click += new System.EventHandler(this.enablePrivilegeToolStripMenuItem_Click);
+            // 
+            // removePrivilegeToolStripMenuItem
+            // 
+            this.removePrivilegeToolStripMenuItem.Name = "removePrivilegeToolStripMenuItem";
+            this.removePrivilegeToolStripMenuItem.Size = new System.Drawing.Size(165, 22);
+            this.removePrivilegeToolStripMenuItem.Text = "Remove Privilege";
+            this.removePrivilegeToolStripMenuItem.Click += new System.EventHandler(this.removePrivilegeToolStripMenuItem_Click);
             // 
             // selectAllPrivsToolStripMenuItem
             // 
@@ -1290,12 +1304,24 @@
             this.tabPageOperations.Text = "Operations";
             this.tabPageOperations.UseVisualStyleBackColor = true;
             // 
-            // removePrivilegeToolStripMenuItem
+            // llbSecurityAttributes
             // 
-            this.removePrivilegeToolStripMenuItem.Name = "removePrivilegeToolStripMenuItem";
-            this.removePrivilegeToolStripMenuItem.Size = new System.Drawing.Size(165, 22);
-            this.removePrivilegeToolStripMenuItem.Text = "Remove Privilege";
-            this.removePrivilegeToolStripMenuItem.Click += new System.EventHandler(this.removePrivilegeToolStripMenuItem_Click);
+            this.llbSecurityAttributes.AutoSize = true;
+            this.llbSecurityAttributes.Location = new System.Drawing.Point(6, 148);
+            this.llbSecurityAttributes.Name = "llbSecurityAttributes";
+            this.llbSecurityAttributes.Size = new System.Drawing.Size(95, 13);
+            this.llbSecurityAttributes.TabIndex = 16;
+            this.llbSecurityAttributes.Text = "Security Attributes:";
+            // 
+            // treeViewSecurityAttributes
+            // 
+            this.treeViewSecurityAttributes.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.treeViewSecurityAttributes.Location = new System.Drawing.Point(9, 164);
+            this.treeViewSecurityAttributes.Name = "treeViewSecurityAttributes";
+            this.treeViewSecurityAttributes.Size = new System.Drawing.Size(396, 97);
+            this.treeViewSecurityAttributes.TabIndex = 17;
             // 
             // TokenForm
             // 
@@ -1409,5 +1435,7 @@
         private System.Windows.Forms.ToolTip toolTip;
         private System.Windows.Forms.CheckBox checkBoxUseWmi;
         private System.Windows.Forms.ToolStripMenuItem removePrivilegeToolStripMenuItem;
+        private System.Windows.Forms.Label llbSecurityAttributes;
+        private System.Windows.Forms.TreeView treeViewSecurityAttributes;
     }
 }

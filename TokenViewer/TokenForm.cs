@@ -101,6 +101,28 @@ namespace TokenViewer
             }
         }
 
+        private void UpdateSecurityAttributes()
+        {
+            try
+            {
+                ClaimSecurityAttribute[] attrs = _token.SecurityAttributes;
+                foreach (ClaimSecurityAttribute attr in attrs)
+                {
+                    TreeNode node = new TreeNode(attr.Name);
+                    node.Nodes.Add(String.Format("Flags: {0}", attr.Flags));
+                    int value_index = 0;
+                    foreach (object value in attr.Values)
+                    {
+                        node.Nodes.Add(String.Format("Value {0}: {1}", value_index++, value));
+                    }
+                    treeViewSecurityAttributes.Nodes.Add(node);
+                }
+            }
+            catch (NtException)
+            {
+            }
+        }
+
         private void UpdateTokenData()
         {
             UserGroup user = _token.User;
@@ -221,7 +243,8 @@ namespace TokenViewer
             }
 
             txtMandatoryILPolicy.Text = _token.MandatoryPolicy.ToString();
-            UpdatePrivileges();            
+            UpdatePrivileges();
+            UpdateSecurityAttributes();
         }
 
         public TokenForm(NtToken token)

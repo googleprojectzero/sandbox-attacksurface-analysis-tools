@@ -299,6 +299,7 @@ namespace NtApiDotNet
         OctetString = 0x0010,
     }
 
+    [Flags]
     public enum ClaimSecurityFlags
     {
         NonInheritable = 0x0001,
@@ -363,7 +364,7 @@ namespace NtApiDotNet
         //union {
         //PLONG64 pInt64;
         //PDWORD64 pUint64;
-        //PWSTR* ppString;
+        //UNICODE_STRING* ppString;
         //PCLAIM_SECURITY_ATTRIBUTE_FQBN_VALUE pFqbn;
         //PCLAIM_SECURITY_ATTRIBUTE_OCTET_STRING_VALUE pOctetString;
     }
@@ -707,7 +708,7 @@ namespace NtApiDotNet
                 case ClaimSecurityValueType.Boolean:
                     return ReadTyped<long>(buffer, count).Select(v => v != 0).Cast<object>();
                 case ClaimSecurityValueType.String:
-                    return ReadTyped<IntPtr>(buffer, count).Select(v => Marshal.PtrToStringUni(v)).Cast<object>();
+                    return ReadTyped<UnicodeStringOut>(buffer, count).Select(n => n.ToString());
                 case ClaimSecurityValueType.Fqbn:
                     return ReadTyped<ClaimSecurityAttributeFqbnValue>(buffer, count).Select(v => new ClaimSecurityAttributeFqbn(v)).Cast<object>();
                 default:
