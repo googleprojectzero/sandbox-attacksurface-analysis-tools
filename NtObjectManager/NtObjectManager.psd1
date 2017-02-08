@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.dll'
 
 # Version number of this module.
-ModuleVersion = '1.0.1'
+ModuleVersion = '1.0.2'
 
 # ID used to uniquely identify this module
 GUID = 'ac251c97-67a6-4bc4-bb8a-5ae300e93030'
