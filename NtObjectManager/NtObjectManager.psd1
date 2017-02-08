@@ -111,6 +111,14 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = @'
+1.0.2
+-----
+* Added support to disable dynamic code policy on a process.
+* Added cmdlets for reparse points.
+* Fixes for EA buffer.
+* Added service SIDs.
+* Added support for removing token privileges.
+* Fixed token security attribute parsing.
 1.0.1
 -----
 * Fixed bug in Get-NtThread with -ProcessId
