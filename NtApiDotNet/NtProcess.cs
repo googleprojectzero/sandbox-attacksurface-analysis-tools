@@ -467,6 +467,12 @@ namespace NtApiDotNet
           );
 
         [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSetInformationProcess(SafeKernelObjectHandle ProcessHandle,
+            ProcessInfoClass ProcessInformationClass,
+            SafeHGlobalBuffer ProcessInformation,
+            int ProcessInformationLength);
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus NtGetNextProcess(
           SafeKernelObjectHandle ProcessHandle,
           ProcessAccessRights DesiredAccess,
@@ -1088,6 +1094,25 @@ namespace NtApiDotNet
                     return 0;
                 }
                 return buffer.Result.Result;
+            }
+        }
+
+        /// <summary>
+        /// Disable dynamic code policy on another process.
+        /// </summary>
+        public void DisableDynamicCodePolicy()
+        {
+            if (!NtToken.EnableDebugPrivilege())
+            {
+                throw new InvalidOperationException("Must have Debug privilege to disable code policy");
+            }
+
+            MitigationPolicy p = new MitigationPolicy();
+            p.Policy = ProcessMitigationPolicy.ProcessDynamicCodePolicy;
+
+            using (var buffer = p.ToBuffer())
+            {
+                NtSystemCalls.NtSetInformationProcess(Handle, ProcessInfoClass.ProcessMitigationPolicy, buffer, buffer.Length).ToNtException();
             }
         }
 
