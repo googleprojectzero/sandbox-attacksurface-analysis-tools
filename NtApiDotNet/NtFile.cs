@@ -830,6 +830,27 @@ namespace NtApiDotNet
         public FileAttributes Attributes { get; private set; }
         public string FileName { get; private set; }
 
+        public bool HasAttributes(FileAttributes attributes)
+        {
+            return (Attributes & attributes) != 0;
+        }
+
+        public bool IsDirectory
+        {
+            get
+            {
+                return HasAttributes(FileAttributes.Directory);
+            }
+        }
+
+        public bool IsReparsePoint
+        {
+            get
+            {
+                return HasAttributes(FileAttributes.RepasePoint);
+            }
+        }
+
         internal FileDirectoryEntry(FileDirectoryInformation dir_info, string file_name)
         {
             FileIndex = dir_info.FileIndex;
@@ -1034,6 +1055,17 @@ namespace NtApiDotNet
                     NtSystemCalls.NtQueryInformationFile(Handle, iostatus, basic_info, basic_info.Length, FileInformationClass.FileBasicInformation).ToNtException();
                     return basic_info.Result.FileAttributes;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Get whether this file represents a directory.
+        /// </summary>
+        public bool IsDirectory
+        {
+            get
+            {
+                return (FileAttributes & FileAttributes.Directory) == FileAttributes.Directory;
             }
         }
 
@@ -1298,6 +1330,12 @@ namespace NtApiDotNet
                                 break;
                         }
 
+                        string file_name = dir_buffer.Data.ReadUnicodeString(dir_info.FileNameLength / 2);
+                        if (file_name == "." || file_name == "..")
+                        {
+                            valid_entry = false;
+                        }
+
                         if (valid_entry)
                         {
                             yield return new FileDirectoryEntry(dir_info, dir_buffer.Data.ReadUnicodeString(dir_info.FileNameLength / 2));
@@ -1383,7 +1421,7 @@ namespace NtApiDotNet
             {
                 try
                 {
-                    return GetPathNameInternal(FinalPathNameFlags.NameNone);
+                    return GetPathNameInternal(FinalPathNameFlags.None);
                 }
                 catch (Win32Exception)
                 {
@@ -1440,13 +1478,12 @@ namespace NtApiDotNet
         {
             get
             {
-                if (DeviceType!= FileDeviceType.NAMED_PIPE)
+                if (DeviceType != FileDeviceType.NAMED_PIPE)
                 {
                     return base.FullPath;
                 }
                 else
                 {
-                    Console.WriteLine("Granted Access: {0}", GetGrantedAccessString());
                     return base.FullPath;
                 }
             }
