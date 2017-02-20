@@ -482,6 +482,11 @@ namespace CheckServiceAccess
                 }
             }
         }
+
+        static bool Test(string s)
+        {
+            return s != null;
+        }
         
         static void Main(string[] args)
         {
@@ -500,10 +505,10 @@ namespace CheckServiceAccess
                         { "sddl", "Print full SDDL security descriptors", v => print_sddl = v != null },
                         { "p|pid=", "Specify a PID of a process to impersonate when checking", v => pid = int.Parse(v.Trim()) },
                         { "w", "Show only write permissions granted", v => show_write_only = v != null },
-                        { "a=", String.Format("Filter on a specific right [{0}]",
+                        { "k=", String.Format("Filter on a specific right [{0}]",
                             String.Join(",", Enum.GetNames(typeof(ServiceAccessRights)))),
                             v => service_rights |= ParseRight(v, typeof(ServiceAccessRights)) },
-                        { "t|triggers", "Dump trigger information for service", v => dump_triggers = v != null },
+                        { "t", "Dump trigger information for services", v => dump_triggers = v != null },
                         { "scm", "Dump SCM security information", v => dump_scm = v != null },
                         { "h|help",  "show this message and exit", v => show_help = v != null },
                     };
