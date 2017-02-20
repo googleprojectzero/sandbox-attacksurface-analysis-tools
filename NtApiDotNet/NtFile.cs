@@ -14,6 +14,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -46,7 +47,6 @@ namespace NtApiDotNet
             FileOpenOptions CreateOptions,
             byte[] EaBuffer,
             int EaLength);
-
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtDeviceIoControlFile(
@@ -100,6 +100,21 @@ namespace NtApiDotNet
           SafeBuffer FsInformation,
           int Length,
           FsInformationClass FsInformationClass);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQueryDirectoryFile(
+          SafeKernelObjectHandle FileHandle,
+          SafeKernelObjectHandle Event,
+          IntPtr ApcRoutine,
+          IntPtr ApcContext,
+          [Out] IoStatus IoStatusBlock,
+          SafeBuffer FileInformation,
+          int Length,
+          FileInformationClass FileInformationClass,
+          [MarshalAs(UnmanagedType.U1)] bool ReturnSingleEntry,
+          UnicodeString FileName,
+          [MarshalAs(UnmanagedType.U1)] bool RestartScan
+        );
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -205,6 +220,22 @@ namespace NtApiDotNet
     public struct FileInternalInformation
     {
         public LargeInteger IndexNumber;
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("FileName")]
+    struct FileDirectoryInformation
+    {
+        public int NextEntryOffset;
+        public int FileIndex;
+        public LargeIntegerStruct CreationTime;
+        public LargeIntegerStruct LastAccessTime;
+        public LargeIntegerStruct LastWriteTime;
+        public LargeIntegerStruct ChangeTime;
+        public LargeIntegerStruct EndOfFile;
+        public LargeIntegerStruct AllocationSize;
+        public FileAttributes FileAttributes;
+        public int FileNameLength;
+        public ushort FileName; // String
     }
 
     public enum FileInformationClass
@@ -780,6 +811,41 @@ namespace NtApiDotNet
         }
     }
 
+    public enum FileTypeMask
+    {
+        All = 0,
+        FilesOnly = 1,
+        DirectoriesOnly = 2,
+    }
+
+    public class FileDirectoryEntry
+    {
+        public int FileIndex { get; private set; }
+        public DateTime CreationTime { get; private set; }
+        public DateTime LastAccessTime { get; private set; }
+        public DateTime LastWriteTime { get; private set; }
+        public DateTime ChangeTime { get; private set; }
+        public long EndOfFile { get; private set; }
+        public long AllocationSize { get; private set; }
+        public FileAttributes Attributes { get; private set; }
+        public string FileName { get; private set; }
+
+        internal FileDirectoryEntry(FileDirectoryInformation dir_info, string file_name)
+        {
+            FileIndex = dir_info.FileIndex;
+            CreationTime = DateTime.FromFileTime(dir_info.CreationTime.QuadPart);
+            LastAccessTime = DateTime.FromFileTime(dir_info.LastAccessTime.QuadPart);
+            LastWriteTime = DateTime.FromFileTime(dir_info.LastWriteTime.QuadPart);
+            ChangeTime = DateTime.FromFileTime(dir_info.ChangeTime.QuadPart);
+            EndOfFile = dir_info.EndOfFile.QuadPart;
+            AllocationSize = dir_info.AllocationSize.QuadPart;
+            Attributes = dir_info.FileAttributes;
+            FileName = file_name;
+        }
+    }
+
+
+
 #pragma warning restore 1591
 
     /// <summary>
@@ -898,7 +964,7 @@ namespace NtApiDotNet
                 Wait().ToNtException();
             }
             return status.Information.ToInt32();
-        }
+        }        
 
         /// <summary>
         /// Open a file
@@ -1194,6 +1260,68 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Query a directory for files.
+        /// </summary>
+        /// <param name="file_mask">A file name mask (such as *.txt). Can be null.</param>
+        /// <param name="type_mask">Indicate what entries to return.</param>
+        /// <returns></returns>
+        public IEnumerable<FileDirectoryEntry> QueryDirectoryInfo(string file_mask, FileTypeMask type_mask)
+        {
+            UnicodeString mask = file_mask != null ? new UnicodeString(file_mask) : null;
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(128 * 1024))
+            {
+                IoStatus io_status = new IoStatus();
+                NtStatus status = NtSystemCalls.NtQueryDirectoryFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero, io_status, buffer, buffer.Length, FileInformationClass.FileDirectoryInformation, false, mask, true);
+                if (status == NtStatus.STATUS_PENDING)
+                {
+                    status = Wait().ToNtException();
+                }
+
+                while (status != NtStatus.STATUS_NO_MORE_FILES)
+                {
+                    SafeStructureInOutBuffer<FileDirectoryInformation> dir_buffer = buffer.GetStructAtOffset<FileDirectoryInformation>(0);
+                    do
+                    {
+                        FileDirectoryInformation dir_info = dir_buffer.Result;
+                        bool valid_entry = false;
+                        switch (type_mask)
+                        {
+                            case FileTypeMask.All:
+                                valid_entry = true;
+                                break;
+                            case FileTypeMask.FilesOnly:
+                                valid_entry = (dir_info.FileAttributes & FileAttributes.Directory) == 0;
+                                break;
+                            case FileTypeMask.DirectoriesOnly:
+                                valid_entry = (dir_info.FileAttributes & FileAttributes.Directory) == FileAttributes.Directory;
+                                break;
+                        }
+
+                        if (valid_entry)
+                        {
+                            yield return new FileDirectoryEntry(dir_info, dir_buffer.Data.ReadUnicodeString(dir_info.FileNameLength / 2));
+                        }
+
+                        if (dir_info.NextEntryOffset == 0)
+                        {
+                            break;
+                        }
+                        dir_buffer = dir_buffer.GetStructAtOffset<FileDirectoryInformation>(dir_info.NextEntryOffset);
+                    }
+                    while (true);
+
+                    io_status = new IoStatus();
+                    status = NtSystemCalls.NtQueryDirectoryFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero,
+                        io_status, buffer, buffer.Length, FileInformationClass.FileDirectoryInformation, false, mask, false);
+                    if (status == NtStatus.STATUS_PENDING)
+                    {
+                        status = Wait().ToNtException();
+                    }
+                }
+            }
+        }
+
         private static SafeFileHandle DuplicateAsFile(SafeHandle handle)
         {
             using (SafeKernelObjectHandle dup_handle = DuplicateHandle(NtProcess.Current, handle, NtProcess.Current))
@@ -1408,6 +1536,16 @@ namespace NtApiDotNet
         public static RtlPathType GetDosPathType(string filename)
         {
             return NtRtl.RtlDetermineDosPathNameType_U(filename);
+        }
+
+        /// <summary>
+        /// Map directory access rights to file access rights.
+        /// </summary>
+        /// <param name="access_rights">The directory access rights to map.</param>
+        /// <returns>The mapped access rights.</returns>
+        public static FileAccessRights MapToFileAccess(this FileDirectoryAccessRights access_rights)
+        {
+            return (FileAccessRights)(uint)access_rights;
         }
     }
 }
