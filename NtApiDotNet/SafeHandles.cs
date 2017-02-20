@@ -167,6 +167,18 @@ namespace NtApiDotNet
         {
             WriteBytes(0, data);
         }
+
+        public SafeStructureInOutBuffer<T> GetStructAtOffset<T>(int offset) where T : new()
+        {
+            int length_left = Length - offset;
+            int struct_size = Marshal.SizeOf(typeof(T));
+            if (length_left < struct_size)
+            {
+                throw new ArgumentException("Invalid length for structure");
+            }
+
+            return new SafeStructureInOutBuffer<T>(handle + offset, length_left, false);
+        }
     }
 
     /// <summary>
@@ -189,6 +201,11 @@ namespace NtApiDotNet
         /// </summary>        
         public SafeStructureInOutBuffer()
             : this(new T(), 0, true)
+        {
+        }
+
+        public SafeStructureInOutBuffer(IntPtr buffer, int length, bool owns_handle) 
+            : base(buffer, length, owns_handle)
         {
         }
 
