@@ -498,6 +498,7 @@ namespace CheckServiceAccess
             bool dump_triggers = false;
             bool dump_scm = false;
             uint service_rights = 0;
+            bool quiet = false;
 
             try
             {
@@ -510,6 +511,7 @@ namespace CheckServiceAccess
                             v => service_rights |= ParseRight(v, typeof(ServiceAccessRights)) },
                         { "t", "Dump trigger information for services", v => dump_triggers = v != null },
                         { "scm", "Dump SCM security information", v => dump_scm = v != null },
+                        { "q", "Don't print our errors", v => quiet = v != null },
                         { "h|help",  "show this message and exit", v => show_help = v != null },
                     };
 
@@ -548,7 +550,10 @@ namespace CheckServiceAccess
                                 }
                                 catch (Exception ex)
                                 {
-                                    Console.WriteLine("Error querying service: {0} - {1}", name, ex.Message);
+                                    if (!quiet)
+                                    {
+                                        Console.Error.WriteLine("Error querying service: {0} - {1}", name, ex.Message);
+                                    }
                                 }
                             }
                         }
@@ -557,7 +562,7 @@ namespace CheckServiceAccess
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                Console.Error.WriteLine(e.Message);
             }
         }
     }
