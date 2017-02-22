@@ -115,6 +115,32 @@ namespace NtApiDotNet
           UnicodeString FileName,
           [MarshalAs(UnmanagedType.U1)] bool RestartScan
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtReadFile(
+          SafeKernelObjectHandle FileHandle,
+          SafeKernelObjectHandle Event,
+          IntPtr ApcRoutine,
+          IntPtr ApcContext,
+          [Out] IoStatus IoStatusBlock,
+          SafeBuffer Buffer,
+          int Length,
+          [In] LargeInteger ByteOffset,
+          IntPtr Key
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtWriteFile(
+          SafeKernelObjectHandle FileHandle,
+          SafeKernelObjectHandle Event,
+          IntPtr ApcRoutine,
+          IntPtr ApcContext,
+          [Out] IoStatus IoStatusBlock,
+          SafeBuffer Buffer,
+          int Length,
+          [In] LargeInteger ByteOffset,
+          IntPtr Key
+        );
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -222,6 +248,16 @@ namespace NtApiDotNet
         public LargeInteger IndexNumber;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileStandardInformation
+    {
+        public LargeIntegerStruct AllocationSize;
+        public LargeIntegerStruct EndOfFile;
+        public int NumberOfLinks;
+        [MarshalAs(UnmanagedType.U1)] public bool DeletePending;
+        [MarshalAs(UnmanagedType.U1)] public bool Directory;
+    }
+
     [StructLayout(LayoutKind.Sequential), DataStart("FileName")]
     struct FileDirectoryInformation
     {
@@ -237,6 +273,12 @@ namespace NtApiDotNet
         public int FileNameLength;
         public ushort FileName; // String
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct FilePositionInformation
+    {
+        public LargeIntegerStruct CurrentByteOffset;
+    }    
 
     public enum FileInformationClass
     {
@@ -393,6 +435,7 @@ namespace NtApiDotNet
         public uint Characteristics;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     public class IoStatus
     {
         public IntPtr Pointer;
@@ -1295,6 +1338,15 @@ namespace NtApiDotNet
         /// <summary>
         /// Query a directory for files.
         /// </summary>
+        /// <returns></returns>
+        public IEnumerable<FileDirectoryEntry> QueryDirectoryInfo()
+        {
+            return QueryDirectoryInfo(null, FileTypeMask.All);
+        }
+
+        /// <summary>
+        /// Query a directory for files.
+        /// </summary>
         /// <param name="file_mask">A file name mask (such as *.txt). Can be null.</param>
         /// <param name="type_mask">Indicate what entries to return.</param>
         /// <returns></returns>
@@ -1356,6 +1408,128 @@ namespace NtApiDotNet
                     {
                         status = Wait().ToNtException();
                     }
+                }
+            }
+        }
+
+        private byte[] Read(int length, LargeInteger position)
+        {
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(length))
+            {
+                IoStatus io_status = new IoStatus();
+                NtStatus status = NtSystemCalls.NtReadFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, 
+                    IntPtr.Zero, io_status, buffer, buffer.Length, position, IntPtr.Zero).ToNtException();
+                if (status == NtStatus.STATUS_PENDING)
+                {
+                    Wait().ToNtException();
+                }
+
+                byte[] ret = buffer.ToArray();
+                if (io_status.Information.ToInt32() < length)
+                {
+                    Array.Resize(ref ret, io_status.Information.ToInt32());
+                }
+                return ret;
+            }
+        }
+
+        /// <summary>
+        /// Read data from a file with a length and position.
+        /// </summary>
+        /// <param name="length">The length of the read</param>
+        /// <param name="position">The position in the file to read</param>
+        /// <returns>The read bytes, this can be smaller than length.</returns>
+        public byte[] Read(int length, long position)
+        {
+            return Read(length, new LargeInteger(position));
+        }
+
+        /// <summary>
+        /// Read data from a file with a length.
+        /// </summary>
+        /// <param name="length">The length of the read</param>
+        /// <returns>The read bytes, this can be smaller than length.</returns>
+        public byte[] Read(int length)
+        {
+            return Read(length, null);
+        }
+
+        private int Write(byte[] data, LargeInteger position)
+        {
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(data))
+            {
+                IoStatus io_status = new IoStatus();
+                NtStatus status = NtSystemCalls.NtWriteFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, 
+                    IntPtr.Zero, io_status, buffer, buffer.Length, position, IntPtr.Zero);
+                if (status == NtStatus.STATUS_PENDING)
+                {
+                    Wait().ToNtException();
+                }
+
+                return io_status.Information.ToInt32();
+            }
+        }
+
+        /// <summary>
+        /// Write data to a file at a specific position.
+        /// </summary>
+        /// <param name="data">The data to write</param>
+        /// <param name="position">The position to write to</param>
+        /// <returns>The number of bytes written</returns>
+        public int Write(byte[] data, long position)
+        {
+            return Write(data, new LargeInteger(position));
+        }
+
+        /// <summary>
+        /// Write data to a file
+        /// </summary>
+        /// <param name="data">The data to write</param>
+        /// <returns>The number of bytes written</returns>
+        public int Write(byte[] data)
+        {
+            return Write(data, null);
+        }
+
+        /// <summary>
+        /// Get or set the current file position.
+        /// </summary>
+        public long Position
+        {
+            get
+            {
+                IoStatus io_status = new IoStatus();
+                using (var buffer = new SafeStructureInOutBuffer<FilePositionInformation>())
+                {
+                    NtSystemCalls.NtQueryInformationFile(Handle, io_status, buffer, buffer.Length, FileInformationClass.FilePositionInformation).ToNtException();
+                    return buffer.Result.CurrentByteOffset.QuadPart;
+                }
+            }
+
+            set
+            {
+                IoStatus io_status = new IoStatus();
+                FilePositionInformation position = new FilePositionInformation();
+                position.CurrentByteOffset.QuadPart = value;
+                using (var buffer = new SafeStructureInOutBuffer<FilePositionInformation>(position))
+                {
+                    NtSystemCalls.NtSetInformationFile(Handle, io_status, buffer, buffer.Length, FileInformationClass.FilePositionInformation).ToNtException();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get the file's length
+        /// </summary>
+        public long Length
+        {
+            get
+            {
+                IoStatus io_status = new IoStatus();
+                using (var buffer = new SafeStructureInOutBuffer<FileStandardInformation>())
+                {
+                    NtSystemCalls.NtQueryInformationFile(Handle, io_status, buffer, buffer.Length, FileInformationClass.FileStandardInformation).ToNtException();
+                    return buffer.Result.EndOfFile.QuadPart;
                 }
             }
         }
