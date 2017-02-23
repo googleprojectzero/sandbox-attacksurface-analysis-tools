@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.dll'
 
 # Version number of this module.
-ModuleVersion = '1.0.2'
+ModuleVersion = '1.0.3'
 
 # ID used to uniquely identify this module
 GUID = 'ac251c97-67a6-4bc4-bb8a-5ae300e93030'
@@ -30,7 +30,7 @@ Author = 'James Forshaw'
 CompanyName = 'Google Inc.'
 
 # Copyright statement for this module
-Copyright = '(c) 2016 Google Inc. All rights reserved.'
+Copyright = '(c) 2016, 2017 Google Inc. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = 'This module adds a provider and cmdlets to access the NT object manager namespace.'
@@ -111,6 +111,11 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = @'
+1.0.3
+-----
+* Fixed small bug in handling of IO_STATUS_BLOCK which could result in memory corruption.
+* Added support to list directory entries for a file directory.
+* Added support to do basic read and writes to a file.
 1.0.2
 -----
 * Added support to disable dynamic code policy on a process.
