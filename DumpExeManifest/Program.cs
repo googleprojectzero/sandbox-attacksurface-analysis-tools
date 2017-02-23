@@ -108,17 +108,22 @@ namespace DumpExeManifest
             {
                 return Marshal.PtrToStringUni(p);
             }
-        }       
- 
-        static XmlNode GetNode(XmlDocument doc, string path)
+        }
+
+        static XmlNamespaceManager CreateNSMgr(XmlNameTable nt)
         {
-            XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
+            XmlNamespaceManager nsmgr = new XmlNamespaceManager(nt);
 
             nsmgr.AddNamespace("asmv1", MANIFEST_ASMV1_NS);
             nsmgr.AddNamespace("asmv3", MANIFEST_ASMV3_NS);
             nsmgr.AddNamespace("ws", MANIFEST_WS_NS);
 
-            return doc.SelectSingleNode(path, nsmgr);
+            return nsmgr;
+        }
+
+        static XmlNode GetNode(XmlDocument doc, string path)
+        {
+            return doc.SelectSingleNode(path, CreateNSMgr(doc.NameTable));
         }
 
         static bool GetUiAccess(XmlDocument doc)
@@ -165,6 +170,16 @@ namespace DumpExeManifest
             return ret;
         }
 
+        static XmlDocument LoadDocument(MemoryStream stm)
+        {
+            XmlDocument doc = new XmlDocument();
+            XmlParserContext parse_context = 
+                new XmlParserContext(null, CreateNSMgr(new NameTable()), null, XmlSpace.Default);
+            XmlReader reader = XmlReader.Create(stm, null, parse_context);
+            doc.Load(reader);
+            return doc;
+        }
+
         static void DumpManifest(string fileName, IntPtr hModule, IntPtr hName)
         {
             IntPtr hResHandle = FindResource(hModule, hName, new IntPtr((int)ResType.MANIFEST));
@@ -181,13 +196,10 @@ namespace DumpExeManifest
                     byte[] manifest = new byte[size];
 
                     Marshal.Copy(buf, manifest, 0, size);
-
-                    XmlDocument doc = new XmlDocument();
                     MemoryStream stm = new MemoryStream(manifest);
-
                     try
                     {
-                        doc.Load(stm);
+                        XmlDocument doc = LoadDocument(stm);
 
                         bool uiAccess = GetUiAccess(doc);                        
 
@@ -300,7 +312,7 @@ namespace DumpExeManifest
 
                         foreach (IntPtr manifest in manifests)
                         {
-                            DumpManifest(path,exeFile, manifest);
+                            DumpManifest(path, exeFile, manifest);
                         }
                     }
                     catch (Exception ex)
