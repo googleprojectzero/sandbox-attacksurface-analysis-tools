@@ -82,6 +82,7 @@ namespace NtApiDotNet
         ThreadIdealProcessorEx = 33,
         ThreadCpuAccountingInformation = 34,
         ThreadSuspendCount = 35,
+        ThreadDescription = 38,
         ThreadActualGroupAffinity = 41,
         ThreadDynamicCodePolicy = 42,
     }
@@ -161,7 +162,7 @@ namespace NtApiDotNet
         internal NtThread(SafeKernelObjectHandle handle)
             : base(handle)
         {
-        }        
+        }
 
         /// <summary>
         /// Resume the thread.
@@ -207,14 +208,47 @@ namespace NtApiDotNet
             return new NtThread(handle) { _tid = thread_id };       
         }
 
-        private T Query<T>(ThreadInformationClass info_class) where T : new()
+        private SafeStructureInOutBuffer<T> QueryBuffer<T>(ThreadInformationClass info_class) where T : new()
         {
-            using (SafeStructureInOutBuffer<T> info = new SafeStructureInOutBuffer<T>())
+            SafeStructureInOutBuffer<T> info = new SafeStructureInOutBuffer<T>();
+            try
             {
                 int return_length = 0;
-                NtSystemCalls.NtQueryInformationThread(Handle, info_class,
-                  info, info.Length, out return_length).ToNtException();
+                NtStatus status = NtSystemCalls.NtQueryInformationThread(Handle, info_class,
+                  info, info.Length, out return_length);
+                if (status == NtStatus.STATUS_INFO_LENGTH_MISMATCH || status == NtStatus.STATUS_BUFFER_TOO_SMALL)
+                {
+                    using (SafeBuffer to_close = info)
+                    {
+                        info = new SafeStructureInOutBuffer<T>(return_length, false);
+                    }
+                    status = NtSystemCalls.NtQueryInformationThread(Handle, info_class,
+                                            info, info.Length, out return_length);
+                }
+
+                status.ToNtException();
+                return info;
+            }
+            catch
+            {
+                info.Close();
+                throw;
+            }
+        }
+
+        private T Query<T>(ThreadInformationClass info_class) where T : new()
+        {
+            using (SafeStructureInOutBuffer<T> info = QueryBuffer<T>(info_class))
+            {
                 return info.Result;
+            }
+        }
+
+        private void Set<T>(ThreadInformationClass info_class, T value) where T : new()
+        {
+            using (var buffer = value.ToBuffer())
+            {
+                NtSystemCalls.NtSetInformationThread(Handle, info_class, buffer, buffer.Length);
             }
         }
 
@@ -390,6 +424,25 @@ namespace NtApiDotNet
                 {
                     return "Unknown";
                 }
+            }
+        }
+
+        /// <summary>
+        /// Get or set a thread's description.
+        /// </summary>
+        public string Description
+        {
+            get
+            {
+                using (var buffer = QueryBuffer<UnicodeStringOut>(ThreadInformationClass.ThreadDescription))
+                {
+                    return buffer.Result.ToString();
+                }
+            }
+
+            set
+            {
+                Set(ThreadInformationClass.ThreadDescription, new UnicodeString(value));
             }
         }
 
