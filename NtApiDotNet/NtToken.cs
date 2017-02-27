@@ -987,20 +987,23 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error</exception>
         public NtToken DuplicateToken(TokenType type, SecurityImpersonationLevel level, TokenAccessRights desired_access)
         {
-            SafeKernelObjectHandle new_token;
-            SecurityQualityOfService sqos = null;
-            if (type == TokenType.Impersonation)
+            using (NtToken token = Duplicate(TokenAccessRights.Duplicate))
             {
-                sqos = new SecurityQualityOfService();
-                sqos.ImpersonationLevel = level;
-                sqos.ContextTrackingMode = SecurityContextTrackingMode.Static;
-            }
+                SafeKernelObjectHandle new_token;
+                SecurityQualityOfService sqos = null;
+                if (type == TokenType.Impersonation)
+                {
+                    sqos = new SecurityQualityOfService();
+                    sqos.ImpersonationLevel = level;
+                    sqos.ContextTrackingMode = SecurityContextTrackingMode.Static;
+                }
 
-            using (ObjectAttributes obja = new ObjectAttributes(null, AttributeFlags.None, SafeKernelObjectHandle.Null, sqos, null))
-            {
-                NtSystemCalls.NtDuplicateToken(Handle,
-                  desired_access, obja, false, type, out new_token).ToNtException();
-                return new NtToken(new_token);
+                using (ObjectAttributes obja = new ObjectAttributes(null, AttributeFlags.None, SafeKernelObjectHandle.Null, sqos, null))
+                {
+                    NtSystemCalls.NtDuplicateToken(token.Handle,
+                      desired_access, obja, false, type, out new_token).ToNtException();
+                    return new NtToken(new_token);
+                }
             }
         }
 
