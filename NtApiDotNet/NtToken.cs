@@ -652,7 +652,7 @@ namespace NtApiDotNet
                 TokenGroups groups = new TokenGroups();
                 groups.GroupCount = result.Length;
                 groups.Groups = result;
-                return new SafeTokenGroupsBuffer(groups, sids.DangerousTakeCopy());
+                return new SafeTokenGroupsBuffer(groups, sids.DangerousMove());
             }
         }
     }
