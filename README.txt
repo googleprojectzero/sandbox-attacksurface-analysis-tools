@@ -27,7 +27,26 @@ The tools can be built with Visual Studio 2015
 
 Release Notes:
 
-v1.0.1 - Replaced all unmanaged code with a managed library.
-         Added NtObjectManager Powershell Module
+1.0.3
+-----
+* Fixed small bug in handling of IO_STATUS_BLOCK which could result in memory corruption.
+* Added support to list directory entries for a file directory.
+* Added support to do basic read and writes to a file.
 
-v1.0.0 - Initial Release
+1.0.2
+-----
+* Added support to disable dynamic code policy on a process.
+* Added cmdlets for reparse points.
+* Fixes for EA buffer.
+* Added service SIDs.
+* Added support for removing token privileges.
+* Fixed token security attribute parsing.
+
+v1.0.1
+------
+* Replaced all unmanaged code with a managed library.
+* Added NtObjectManager Powershell Module
+
+v1.0.0
+------
+* Initial Release
