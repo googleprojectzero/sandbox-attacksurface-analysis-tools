@@ -1839,6 +1839,15 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Set UI Access flag.
+        /// </summary>
+        /// <param name="enable">True to enable UI Access.</param>
+        public void SetUiAccess(bool enable)
+        {
+            SetToken(TokenInformationClass.TokenUIAccess, enable ? 1 : 0);
+        }
+
+        /// <summary>
         /// Get whether token is stricted
         /// </summary>
         public bool Restricted
