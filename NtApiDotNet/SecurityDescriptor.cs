@@ -503,7 +503,7 @@ namespace NtApiDotNet
         /// <param name="sid">The SID in SDDL form</param>
         public void AddAccessDeniedAce(uint mask, AceFlags flags, string sid)
         {
-            AddAccessDeniedAce(mask, flags, sid);
+            AddAccessDeniedAceInternal(mask, flags, sid);
         }
 
         /// <summary>

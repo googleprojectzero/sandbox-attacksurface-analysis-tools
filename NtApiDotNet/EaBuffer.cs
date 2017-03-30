@@ -65,6 +65,7 @@ namespace NtApiDotNet
         {
             Name = name;
             Data = data;
+            Flags = flags;
         }
 
         /// <summary>
