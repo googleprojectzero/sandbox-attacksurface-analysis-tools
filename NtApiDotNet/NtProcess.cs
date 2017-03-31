@@ -744,33 +744,6 @@ namespace NtApiDotNet
         {
         }
         
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        struct PROCESSENTRY32
-        {
-            public int dwSize;
-            public int cntUsage;
-            public int th32ProcessID;
-            public IntPtr th32DefaultHeapID;
-            public int th32ModuleID;
-            public int cntThreads;
-            public int th32ParentProcessID;
-            public int pcPriClassBase;
-            public int dwFlags;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
-            public string szExeFile;
-        }
-
-        const int TH32CS_SNAPPROCESS = 0x2;
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern SafeKernelObjectHandle CreateToolhelp32Snapshot(int dwFlags, int th32ProcessID);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool Process32First(SafeKernelObjectHandle snapshot, ref PROCESSENTRY32 entry);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool Process32Next(SafeKernelObjectHandle snapshot, ref PROCESSENTRY32 entry);
-
         /// <summary>
         /// Gets all accessible processes on the system.
         /// </summary>
@@ -778,36 +751,14 @@ namespace NtApiDotNet
         /// <returns>The list of accessible processes.</returns>
         public static IEnumerable<NtProcess> GetProcesses(ProcessAccessRights desired_access)
         {
-            using (SafeKernelObjectHandle process_snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0))
+            List<NtProcess> processes = new List<NtProcess>();
+            NtProcess process = NtProcess.GetFirstProcess(desired_access);
+            while (process != null)
             {
-                if (process_snap.IsInvalid)
-                {
-                    return new NtProcess[0];
-                }
-
-                List<NtProcess> processes = new List<NtProcess>();
-                PROCESSENTRY32 process_entry = new PROCESSENTRY32();
-                process_entry.dwSize = Marshal.SizeOf(process_entry);
-
-                if (Process32First(process_snap, ref process_entry))
-                {
-                    do
-                    {
-                        try
-                        {
-                            NtProcess process = NtProcess.Open(process_entry.th32ProcessID, desired_access);
-                            process._ppid = process_entry.th32ParentProcessID;
-                            processes.Add(NtProcess.Open(process_entry.th32ProcessID, desired_access));
-                        }
-                        catch (NtException)
-                        {
-                        }
-
-                    } while (Process32Next(process_snap, ref process_entry));
-                }
-
-                return processes.AsReadOnly();
+                processes.Add(process);
+                process = process.GetNextProcess(desired_access);
             }
+            return processes.AsReadOnly();
         }
 
         /// <summary>
