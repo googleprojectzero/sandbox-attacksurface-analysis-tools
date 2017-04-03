@@ -180,6 +180,105 @@ namespace NtObjectManager
         }
     }
 
+
+    /// <summary>
+    /// <para type="synopsis">Create a new NT named pipe file object.</para>
+    /// <para type="description">This cmdlet creates a new NT named pipe file object. The absolute path to the object in the NT object manager name space can be specified. 
+    /// It's also possible to open the object relative to an existing object by specified the -Root parameter.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>$obj = New-NtNamedPipeFile \??\pipe\abc</code>
+    ///   <para>Creates a new file named pipe object with an absolute path.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = New-NtNamedPipeFile \\.\pipe\abc -Win32Path</code>
+    ///   <para>Creates a new file named pipe object with an absolute win32 path.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = New-NtNamedPipeFile \??\pipe\abc -Disposition CreateIf</code>
+    ///   <para>Creates a new file named pipe object with an absolute path. If the file already exists then open it rather than failing.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet(VerbsCommon.New, "NtNamedPipeFile")]
+    [OutputType(typeof(NtFile))]
+    public class NewNtNamedPipeFileCmdlet : GetNtFileCmdlet
+    {
+        /// <summary>
+        /// <para type="description">Specify the disposition for creating the file.</para>
+        /// </summary>
+        [Parameter]
+        public FileDisposition Disposition { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the default timeout for the pipe in MS</para>
+        /// </summary>
+        [Parameter]
+        public int DefaultTimeoutMs { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the pipe type.</para>
+        /// </summary>
+        [Parameter]
+        public NamedPipeType PipeType { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the pipe read mode.</para>
+        /// </summary>
+        [Parameter]
+        public NamedPipeReadMode ReadMode { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the pipe completion mode.</para>
+        /// </summary>
+        [Parameter]
+        public NamedPipeCompletionMode CompletionMode { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the maximum number of pipe instances (-1 is infinite).</para>
+        /// </summary>
+        [Parameter]
+        public int MaximumInstances { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the pipe input quota (0 is default).</para>
+        /// </summary>
+        [Parameter]
+        public int InputQuota { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the pipe output quota (0 is default).</para>
+        /// </summary>
+        [Parameter]
+        public int OutputQuota { get; set; }
+
+        /// <summary>
+        /// Method to create an object from a set of object attributes.
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes to create/open from.</param>
+        /// <returns>The newly created object.</returns>
+        protected override object CreateObject(ObjectAttributes obj_attributes)
+        {
+            return NtFile.CreateNamedPipe(obj_attributes, Access, ShareMode, Options, Disposition, PipeType, 
+                ReadMode, CompletionMode, MaximumInstances, InputQuota, OutputQuota, NtWaitTimeout.FromMilliseconds(DefaultTimeoutMs));
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public NewNtNamedPipeFileCmdlet()
+        {
+            Disposition = FileDisposition.Create;
+            ReadMode = NamedPipeReadMode.ByteStream;
+            CompletionMode = NamedPipeCompletionMode.QueueOperation;
+            PipeType = NamedPipeType.Bytestream;
+            MaximumInstances = 1;
+            DefaultTimeoutMs = 50;
+            ShareMode = FileShareMode.Read | FileShareMode.Write;
+            Options = FileOpenOptions.SynchronousIoNonAlert;
+            Access = FileAccessRights.GenericRead | FileAccessRights.GenericWrite | FileAccessRights.Synchronize;
+        }
+    }
+
     /// <summary>
     /// <para type="synopsis">Open and reads the reparse point buffer for file.</para>
     /// <para type="description">This cmdlet opens a existing NT file object and reads out the reparse point buffer data. 
