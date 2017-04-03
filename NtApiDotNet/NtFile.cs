@@ -552,6 +552,7 @@ namespace NtApiDotNet
         WriteOwner = GenericAccessRights.WriteOwner,
         Synchronize = GenericAccessRights.Synchronize,
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
+        AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 
     [Flags]
@@ -577,6 +578,7 @@ namespace NtApiDotNet
         WriteOwner = GenericAccessRights.WriteOwner,
         Synchronize = GenericAccessRights.Synchronize,
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
+        AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 
     [StructLayout(LayoutKind.Sequential), DataStart("Name")]

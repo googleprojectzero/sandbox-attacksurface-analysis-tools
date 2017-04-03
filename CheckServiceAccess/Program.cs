@@ -168,6 +168,7 @@ namespace CheckServiceAccess
             WriteOwner = GenericAccessRights.WriteOwner,
             Synchronize = GenericAccessRights.Synchronize,
             MaximumAllowed = GenericAccessRights.MaximumAllowed,
+            AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
         }
 
         [Flags]
@@ -195,6 +196,7 @@ namespace CheckServiceAccess
             WriteOwner = GenericAccessRights.WriteOwner,
             Synchronize = GenericAccessRights.Synchronize,
             MaximumAllowed = GenericAccessRights.MaximumAllowed,
+            AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
         }
 
         static GenericMapping GetSCMGenericMapping()

@@ -46,6 +46,7 @@ namespace NtApiDotNet
         WriteOwner = GenericAccessRights.WriteOwner,
         Synchronize = GenericAccessRights.Synchronize,
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
+        AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     };
 
     public enum ProcessCreateState

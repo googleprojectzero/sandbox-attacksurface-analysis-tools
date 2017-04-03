@@ -37,6 +37,7 @@ namespace NtApiDotNet
         WriteOwner = 0x00080000,
         Synchronize = 0x00100000,
         MaximumAllowed = 0x02000000,
+        AccessSystemSecurity = 0x01000000
     };
 
     /// <summary>

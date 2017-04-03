@@ -52,7 +52,8 @@ namespace NtApiDotNet
         WriteDac = GenericAccessRights.WriteDac,
         WriteOwner = GenericAccessRights.WriteOwner,
         Synchronize = GenericAccessRights.Synchronize,
-        MaximumAllowed = GenericAccessRights.MaximumAllowed
+        MaximumAllowed = GenericAccessRights.MaximumAllowed,
+        AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }    
 
     public enum RegistryValueType
