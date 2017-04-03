@@ -19,6 +19,7 @@ using System.Runtime.InteropServices;
 namespace NtApiDotNet
 {
 #pragma warning disable 1591
+    [Flags]
     public enum ThreadAccessRights : uint
     {        
         DirectImpersonation = 0x0200,

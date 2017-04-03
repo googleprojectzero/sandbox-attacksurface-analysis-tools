@@ -12,11 +12,13 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
 #pragma warning disable 1591
+    [Flags]
     public enum EventAccessRights : uint
     {
         QueryState = 1,
