@@ -280,6 +280,67 @@ namespace NtObjectManager
     }
 
     /// <summary>
+    /// <para type="synopsis">Create a new NT mailslot file object.</para>
+    /// <para type="description">This cmdlet creates a new NT mailslot file object. The absolute path to the object in the NT object manager name space can be specified. 
+    /// It's also possible to open the object relative to an existing object by specified the -Root parameter.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>$obj = New-NtMailslotFile \??\mailslot\abc</code>
+    ///   <para>Creates a new file mailslot object with an absolute path.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = New-NtMailslotFile \\.\mailslot\abc -Win32Path</code>
+    ///   <para>Creates a new file mailslot object with an absolute win32 path.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = New-NtMailslotFile \??\mailslot\abc -Disposition CreateIf</code>
+    ///   <para>Creates a new file mailslot object with an absolute path. If the file already exists then open it rather than failing.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet(VerbsCommon.New, "NtMailslotFile")]
+    [OutputType(typeof(NtFile))]
+    public class NewNtMailslotFileCmdlet : GetNtFileCmdlet
+    {
+        /// <summary>
+        /// <para type="description">Specify the default timeout for the mailslot in MS (-1 for no timeout)</para>
+        /// </summary>
+        [Parameter]
+        public int DefaultTimeoutMs { get; set; }
+        
+        /// <summary>
+        /// <para type="description">Specify the maximum message size (0 means any size)</para>
+        /// </summary>
+        [Parameter]
+        public int MaximumMessageSize { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the mailslot quota.</para>
+        /// </summary>
+        [Parameter]
+        public int MailslotQuota { get; set; }
+
+        /// <summary>
+        /// Method to create an object from a set of object attributes.
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes to create/open from.</param>
+        /// <returns>The newly created object.</returns>
+        protected override object CreateObject(ObjectAttributes obj_attributes)
+        {
+            return NtFile.CreateMailslot(obj_attributes, Access, Options, 
+                MaximumMessageSize, MailslotQuota, DefaultTimeoutMs);
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public NewNtMailslotFileCmdlet()
+        {
+            DefaultTimeoutMs = -1;
+            Access = FileAccessRights.GenericRead | FileAccessRights.ReadAttributes | FileAccessRights.WriteDac;
+        }
+    }
+
+    /// <summary>
     /// <para type="synopsis">Open and reads the reparse point buffer for file.</para>
     /// <para type="description">This cmdlet opens a existing NT file object and reads out the reparse point buffer data. 
     /// The absolute path to the object in the NT object manager name space can be specified. 
