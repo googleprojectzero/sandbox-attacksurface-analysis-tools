@@ -26,15 +26,15 @@ namespace NtObjectManager
     /// actually wait 2 seconds in total. Specifying -Infinite overrides the time parameters and will wait indefinitely.</para>
     /// </summary>
     /// <example>
-    ///   <code>$ev = Get-NtEvent \BaseNamedObjects&#x0A;Start-NtWait $ev -Seconds 10</code>
+    ///   <code>$ev = Get-NtEvent \BaseNamedObjects\ABC&#x0A;Start-NtWait $ev -Seconds 10</code>
     ///   <para>Get an event and wait for 10 seconds for it to be signalled.</para>
     /// </example>
     /// <example>
-    ///   <code>$ev = Get-NtEvent \BaseNamedObjects&#x0A;$ev | Start-NtWait -Infinite</code>
+    ///   <code>$ev = Get-NtEvent \BaseNamedObjects\ABC&#x0A;$ev | Start-NtWait -Infinite</code>
     ///   <para>Get an event and wait indefinitely for it to be signalled.</para>
     /// </example>
     /// <example>
-    ///   <code>$ev = Get-NtEvent \BaseNamedObjects&#x0A;$ev | Start-NtWait -Infinite -Alertable</code>
+    ///   <code>$ev = Get-NtEvent \BaseNamedObjects\ABC&#x0A;$ev | Start-NtWait -Infinite -Alertable</code>
     ///   <para>Get an event and wait indefinitely for it to be signalled or alerted.</para>
     /// </example>
     /// <example>
