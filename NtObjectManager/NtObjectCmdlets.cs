@@ -52,6 +52,12 @@ namespace NtObjectManager
         public SecurityDescriptor SecurityDescriptor { get; set; }
 
         /// <summary>
+        /// <para type="description">Set to provide an explicit security descriptor to a newly created object in SDDL format. Overriddes SecurityDescriptor.</para>
+        /// </summary>
+        [Parameter]
+        public string Sddl { get; set; }
+
+        /// <summary>
         /// <para type="description">Set to provide an explicit security quality of service when opening files/namedpipes.</para>
         /// </summary>
         [Parameter]
@@ -137,6 +143,15 @@ namespace NtObjectManager
             }
         }
 
+        private SecurityDescriptor GetSecurityDescriptor()
+        {
+            if (!String.IsNullOrEmpty(Sddl))
+            {
+                return new SecurityDescriptor(Sddl);
+            }
+            return SecurityDescriptor;
+        }
+
         private IEnumerable<NtObject> CreateDirectoriesAndObject()
         {
             DisposableList<NtObject> objects = new DisposableList<NtObject>();
@@ -168,7 +183,7 @@ namespace NtObjectManager
                     }
                     builder.Append(@"\");
                 }
-                objects.Add((NtObject)DoCreateObject(GetPath(), ObjectAttributes, Root, SecurityQualityOfService, SecurityDescriptor));
+                objects.Add((NtObject)DoCreateObject(GetPath(), ObjectAttributes, Root, SecurityQualityOfService, GetSecurityDescriptor()));
                 finished = true;
             }
             finally
@@ -190,7 +205,7 @@ namespace NtObjectManager
             VerifyParameters();
             try
             {
-                WriteObject(DoCreateObject(GetPath(), ObjectAttributes, Root, SecurityQualityOfService, SecurityDescriptor));
+                WriteObject(DoCreateObject(GetPath(), ObjectAttributes, Root, SecurityQualityOfService, GetSecurityDescriptor()));
             }
             catch (NtException ex)
             {
