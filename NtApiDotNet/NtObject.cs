@@ -473,10 +473,19 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the security descriptor as an SDDL string
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The security descriptor as an SDDL string</returns>
         public string GetSddl()
         {
             return SecurityDescriptor.ToSddl();
+        }
+
+        /// <summary>
+        /// Get the security descriptor as an SDDL string
+        /// </summary>
+        /// <returns>The security descriptor as an SDDL string</returns>
+        public string Sddl
+        {
+            get { return GetSddl(); }
         }
 
         /// <summary>
