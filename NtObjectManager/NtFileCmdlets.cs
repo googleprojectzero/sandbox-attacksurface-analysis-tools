@@ -126,7 +126,7 @@ namespace NtObjectManager
     ///   <para>Creates a new file object with an absolute win32 path.</para>
     /// </example>
     /// <example>
-    ///   <code>$obj = New-NtFile \??\C:\Windows\Temp\abc.txt -Disposition CreateIf</code>
+    ///   <code>$obj = New-NtFile \??\C:\Windows\Temp\abc.txt -Disposition OpenIf</code>
     ///   <para>Creates a new file object with an absolute path. If the file already exists then open it rather than failing.</para>
     /// </example>
     /// <example>
@@ -180,6 +180,50 @@ namespace NtObjectManager
         }
     }
 
+    /// <summary>
+    /// <para type="synopsis">Opens an existing NT named pipe file object.</para>
+    /// <para type="description">This cmdlet opens an existing NT named pipe file object. The absolute path to the object in the NT object manager name space can be specified. 
+    /// It's also possible to open the object relative to an existing object by specified the -Root parameter. This only works if the caller has permission to access the
+    /// pipe server object and the maximum number of instances is not exceeded.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>$obj = Get-NtNamedPipeFile \??\pipe\abc</code>
+    ///   <para>Opens an existing file named pipe object with an absolute path.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtNamedPipeFile \\.\pipe\abc -Win32Path</code>
+    ///   <para>Opens an existing file named pipe object with an absolute win32 path.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtNamedPipeFile \??\pipe\abc -Disposition OpenIf</code>
+    ///   <para>Opens an existing file named pipe object with an absolute path. If the file already exists then open it rather than failing.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet(VerbsCommon.Get, "NtNamedPipeFile")]
+    [OutputType(typeof(NtFile))]
+    public class GetNtNamedPipeFileCmdlet : GetNtFileCmdlet
+    {
+        /// <summary>
+        /// Method to create an object from a set of object attributes.
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes to create/open from.</param>
+        /// <returns>The newly created object.</returns>
+        protected override object CreateObject(ObjectAttributes obj_attributes)
+        {
+            return NtFile.CreateNamedPipe(obj_attributes, Access, ShareMode, Options, FileDisposition.Open, NamedPipeType.Bytestream,
+                NamedPipeReadMode.ByteStream, NamedPipeCompletionMode.CompleteOperation, 0, 0, 0, NtWaitTimeout.FromMilliseconds(0));
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public GetNtNamedPipeFileCmdlet()
+        {
+            ShareMode = FileShareMode.Read | FileShareMode.Write;
+            Options = FileOpenOptions.SynchronousIoNonAlert;
+            Access = FileAccessRights.GenericRead | FileAccessRights.GenericWrite | FileAccessRights.Synchronize;
+        }
+    }
 
     /// <summary>
     /// <para type="synopsis">Create a new NT named pipe file object.</para>
@@ -191,11 +235,19 @@ namespace NtObjectManager
     ///   <para>Creates a new file named pipe object with an absolute path.</para>
     /// </example>
     /// <example>
+    ///   <code>$obj = New-NtNamedPipeFile \??\pipe\abc -MaximumInstances 100</code>
+    ///   <para>Creates a new file named pipe object with an absolute path and with a maximum of 100 instances.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = New-NtNamedPipeFile \??\pipe\abc -UnlimitedInstances</code>
+    ///   <para>Creates a new file named pipe object with an absolute path and with a unlimited maximum number of instances.</para>
+    /// </example>
+    /// <example>
     ///   <code>$obj = New-NtNamedPipeFile \\.\pipe\abc -Win32Path</code>
     ///   <para>Creates a new file named pipe object with an absolute win32 path.</para>
     /// </example>
     /// <example>
-    ///   <code>$obj = New-NtNamedPipeFile \??\pipe\abc -Disposition CreateIf</code>
+    ///   <code>$obj = New-NtNamedPipeFile \??\pipe\abc -Disposition OpenIf</code>
     ///   <para>Creates a new file named pipe object with an absolute path. If the file already exists then open it rather than failing.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
@@ -240,6 +292,12 @@ namespace NtObjectManager
         public int MaximumInstances { get; set; }
 
         /// <summary>
+        /// <para type="description">If specified an unlimited number of instances of this pipe can be created.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter UnlimitedInstances { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify the pipe input quota (0 is default).</para>
         /// </summary>
         [Parameter]
@@ -259,7 +317,7 @@ namespace NtObjectManager
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
             return NtFile.CreateNamedPipe(obj_attributes, Access, ShareMode, Options, Disposition, PipeType, 
-                ReadMode, CompletionMode, MaximumInstances, InputQuota, OutputQuota, NtWaitTimeout.FromMilliseconds(DefaultTimeoutMs));
+                ReadMode, CompletionMode, UnlimitedInstances ? -1 : MaximumInstances, InputQuota, OutputQuota, NtWaitTimeout.FromMilliseconds(DefaultTimeoutMs));
         }
 
         /// <summary>
@@ -267,7 +325,7 @@ namespace NtObjectManager
         /// </summary>
         public NewNtNamedPipeFileCmdlet()
         {
-            Disposition = FileDisposition.Create;
+            Disposition = FileDisposition.OpenIf;
             ReadMode = NamedPipeReadMode.ByteStream;
             CompletionMode = NamedPipeCompletionMode.QueueOperation;
             PipeType = NamedPipeType.Bytestream;
@@ -291,10 +349,6 @@ namespace NtObjectManager
     /// <example>
     ///   <code>$obj = New-NtMailslotFile \\.\mailslot\abc -Win32Path</code>
     ///   <para>Creates a new file mailslot object with an absolute win32 path.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = New-NtMailslotFile \??\mailslot\abc -Disposition CreateIf</code>
-    ///   <para>Creates a new file mailslot object with an absolute path. If the file already exists then open it rather than failing.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.New, "NtMailslotFile")]
