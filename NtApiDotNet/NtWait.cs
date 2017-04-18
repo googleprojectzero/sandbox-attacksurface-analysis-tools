@@ -116,7 +116,7 @@ namespace NtApiDotNet
         /// <param name="obj">The object to wait on</param>
         /// <param name="alertable">Whether the thread should be alerable</param>
         /// <param name="timeout">The timeout to wait for</param>
-        /// <returns>The success status of the wait, such as STATUS_WAIT_OBJECT_0 or STATUS_TIMEOUT</returns>
+        /// <returns>The success status of the wait, such as STATUS_SUCCESS or STATUS_TIMEOUT</returns>
         public static NtStatus Wait(NtObject obj, bool alertable, NtWaitTimeout timeout)
         {
             return NtSystemCalls.NtWaitForSingleObject(obj.Handle, alertable, timeout.Timeout).ToNtException();

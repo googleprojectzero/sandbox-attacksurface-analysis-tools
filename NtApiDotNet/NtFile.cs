@@ -945,6 +945,7 @@ namespace NtApiDotNet
         private NtFile _file;
         private NtEvent _event;
         private SafeIoStatusBuffer _io_status;
+        private IoStatus _result;
 
         internal NtFileResult(NtFile file)
         {
@@ -955,6 +956,7 @@ namespace NtApiDotNet
                     EventType.SynchronizationEvent, false);
             }
             _io_status = new SafeIoStatusBuffer();
+            _result = null;
         }
 
         public SafeKernelObjectHandle EventHandle
@@ -965,34 +967,104 @@ namespace NtApiDotNet
         /// <summary>
         /// Wait for the result to complete. This could be waiting on an event
         /// or the file handle.
-        /// </summary>        
-        public void Wait()
+        /// </summary>
+        /// <returns>Returns the completed NT status code.</returns>
+        public NtStatus WaitForComplete()
         {
+            // If we can't complete with an infinite timeout then thrown an exception.
+            if (!WaitForComplete(NtWaitTimeout.Infinite))
+            {
+                throw new NtException(NtStatus.STATUS_PENDING);
+            }
+
+            return _result.Status;
+        }
+
+        /// <summary>
+        /// Wait for the result to complete. This could be waiting on an event
+        /// or the file handle.
+        /// </summary>
+        /// <returns>Returns true if the wait completed successfully.</returns>
+        /// <remarks>If true is returned then status and information can be read out.</remarks>
+        public bool WaitForComplete(NtWaitTimeout timeout)
+        {
+            if (_result != null)
+            {
+                return true;
+            }
+
+            NtStatus status;
             if (_event != null)
             {
-                _event.Wait().ToNtException();
+                status = _event.Wait(timeout).ToNtException();
             }
             else
             {
-                _file.Wait().ToNtException();
+                status = _file.Wait(timeout).ToNtException();
+            }
+
+            if (status == NtStatus.STATUS_SUCCESS)
+            {
+                _result = _io_status.Result;
+                return true;
+            }
+
+            return false;
+        }
+
+        private IoStatus GetIoStatus()
+        {
+            if (_result == null)
+            {
+                throw new NtException(NtStatus.STATUS_PENDING);
+            }
+            return _result;
+        }
+
+        /// <summary>
+        /// Return the status information field.
+        /// </summary>
+        /// <exception cref="NtException">Thrown if not complete.</exception>
+        public long Information
+        {
+            get
+            {
+                return GetIoStatus().Information.ToInt64();
             }
         }
 
+        /// <summary>
+        /// Return the status information field. (32 bit)
+        /// </summary>
+        /// <exception cref="NtException">Thrown if not complete.</exception>
+        public int Information32
+        {
+            get
+            {
+                return GetIoStatus().Information.ToInt32();
+            }
+        }
+        
+        /// <summary>
+        /// Get completion status code.
+        /// </summary>
+        /// <exception cref="NtException">Thrown if not complete.</exception>
         public NtStatus Status
         {
-            get { return IoStatus.Status; }
+            get
+            {
+                return GetIoStatus().Status;
+            }
         }
 
-        public SafeIoStatusBuffer IoStatusBuffer
+        internal SafeIoStatusBuffer IoStatusBuffer
         {
             get { return _io_status; }
         }
 
-        public IoStatus IoStatus
-        {
-            get { return _io_status.Result; }
-        }
-
+        /// <summary>
+        /// Dispose object.
+        /// </summary>
         public void Dispose()
         {
             if (_event != null)
@@ -1006,6 +1078,21 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Reset the file result so it can be reused.
+        /// </summary>
+        internal void Reset()
+        {
+            _result = null;
+            if (_event != null)
+            {
+                _event.Clear();
+            }
+        }
+
+        /// <summary>
+        /// Cancel the pending IO operation.
+        /// </summary>
         public void Cancel()
         {
             IoStatus io_status = new IoStatus();
@@ -1111,9 +1198,9 @@ namespace NtApiDotNet
                     control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)).ToNtException();
                 if (status == NtStatus.STATUS_PENDING)
                 {
-                    result.Wait();
+                    result.WaitForComplete();
                 }
-                return result.IoStatus.Information.ToInt32();
+                return (int)result.Information;
             }
         }
 
@@ -1133,9 +1220,9 @@ namespace NtApiDotNet
                     control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)).ToNtException();
                 if (status == NtStatus.STATUS_PENDING)
                 {
-                    result.Wait();
+                    result.WaitForComplete();
                 }
-                return result.IoStatus.Information.ToInt32();
+                return result.Information32;
             }
         }
 
@@ -1507,8 +1594,7 @@ namespace NtApiDotNet
                         IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, FileInformationClass.FileDirectoryInformation, false, mask, true);
                     if (status == NtStatus.STATUS_PENDING)
                     {
-                        result.Wait();
-                        status = result.Status;
+                        status = result.WaitForComplete();
                     }
 
                     while (status != NtStatus.STATUS_NO_MORE_FILES)
@@ -1550,12 +1636,12 @@ namespace NtApiDotNet
                         }
                         while (true);
 
+                        result.Reset();
                         status = NtSystemCalls.NtQueryDirectoryFile(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero,
                             result.IoStatusBuffer, buffer, buffer.Length, FileInformationClass.FileDirectoryInformation, false, mask, false);
                         if (status == NtStatus.STATUS_PENDING)
                         {
-                            result.Wait();
-                            status = result.Status;
+                            status = result.WaitForComplete();
                         }
                     }
                 }
@@ -1572,12 +1658,12 @@ namespace NtApiDotNet
                         IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero).ToNtException();
                     if (status == NtStatus.STATUS_PENDING)
                     {
-                        result.Wait();
+                        result.WaitForComplete();
                         result.Status.ToNtException();
                     }
 
                     byte[] ret = buffer.ToArray();
-                    int read_length = result.IoStatus.Information.ToInt32();
+                    int read_length = result.Information32;
                     if (read_length < length)
                     {
                         Array.Resize(ref ret, read_length);
@@ -1618,11 +1704,11 @@ namespace NtApiDotNet
                         IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero);
                     if (status == NtStatus.STATUS_PENDING)
                     {
-                        result.Wait();
+                        result.WaitForComplete();
                         result.Status.ToNtException();
                     }
 
-                    return result.IoStatus.Information.ToInt32();
+                    return result.Information32;
                 }
             }
         }
