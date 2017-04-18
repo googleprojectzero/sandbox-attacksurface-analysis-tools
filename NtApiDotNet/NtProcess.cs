@@ -36,6 +36,7 @@ namespace NtApiDotNet
         VmOperation = 0x0008,
         VmRead = 0x0010,
         VmWrite = 0x0020,
+        All = 0x1FFFFF,
         GenericRead = GenericAccessRights.GenericRead,
         GenericWrite = GenericAccessRights.GenericWrite,
         GenericExecute = GenericAccessRights.GenericExecute,
@@ -500,11 +501,11 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtTerminateProcess(SafeKernelObjectHandle ProcessHandle, NtStatus ExitCode);
 
-
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtCreateProcess(out SafeKernelObjectHandle ProcessHandle, ProcessAccessRights DesiredAccess, 
             ObjectAttributes ObjectAttributes, IntPtr InheritFromProcessHandle, [MarshalAs(UnmanagedType.U1)] bool InheritHandles, 
             IntPtr SectionHandle, IntPtr DebugPort, IntPtr ExceptionPort);
+
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtCreateProcessEx(out SafeKernelObjectHandle ProcessHandle, ProcessAccessRights DesiredAccess, 
             ObjectAttributes ObjectAttributes, SafeHandle InheritFromProcessHandle, ProcessCreateFlags Flags, SafeHandle SectionHandle,
@@ -523,6 +524,14 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtResumeProcess(SafeKernelObjectHandle ProcessHandle);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtReadVirtualMemory(SafeKernelObjectHandle ProcessHandle,
+            IntPtr BaseAddress, SafeBuffer Buffer, int BufferLength, out int ReturnLength);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtWriteVirtualMemory(SafeKernelObjectHandle ProcessHandle,
+            IntPtr BaseAddress, SafeBuffer Buffer, int BufferLength, out int ReturnLength);
     }
 
     public static partial class NtRtl
@@ -1171,5 +1180,48 @@ namespace NtApiDotNet
         /// </summary>
         /// <remarks>This only uses the pseudo handle, for the process. If you need a proper handle use OpenCurrent.</remarks>
         public static NtProcess Current { get { return new NtProcess(new SafeKernelObjectHandle(new IntPtr(-1), false)); } }
+
+        /// <summary>
+        /// Read memory from a process.
+        /// </summary>
+        /// <param name="base_address">The base address in the process.</param>
+        /// <param name="length">The length to read.</param>
+        /// <returns>The array of bytes read from the location. 
+        /// If a read is short then returns fewer bytes than requested.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public byte[] ReadMemory(IntPtr base_address, int length)
+        {
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(length))
+            {
+                int return_length;
+                NtStatus status = NtSystemCalls.NtReadVirtualMemory(Handle, base_address, buffer, buffer.Length, out return_length);
+                if (status != NtStatus.STATUS_PARTIAL_COPY)
+                {
+                    status.ToNtException();
+                }
+                return buffer.ReadBytes(return_length);
+            }
+        }
+
+        /// <summary>
+        /// Write memory to a process.
+        /// </summary>
+        /// <param name="base_address">The base address in the process.</param>
+        /// <param name="data">The data to write.</param>
+        /// <returns>The number of bytes written to the location</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public int WriteMemory(IntPtr base_address, byte[] data)
+        {
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(data))
+            {
+                int return_length;
+                NtStatus status = NtSystemCalls.NtWriteVirtualMemory(Handle, base_address, buffer, buffer.Length, out return_length);
+                if (status != NtStatus.STATUS_PARTIAL_COPY)
+                {
+                    status.ToNtException();
+                }
+                return return_length;
+            }
+        }
     }
 }

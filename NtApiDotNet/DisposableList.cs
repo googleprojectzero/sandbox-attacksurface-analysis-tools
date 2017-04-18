@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -98,18 +99,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Take a copy of the safe handle list so the the original can be disposed.
+        /// Move the handle list to a new disposable list.
         /// </summary>
-        /// <returns>The copy of the handle list.</returns>
-        public SafeHandleList DangerousTakeCopy()
+        /// <returns>The list of handles which have been moved.</returns>
+        /// <remarks>After doing this the current list will be cleared.</remarks>
+        [ReliabilityContract(Consistency.MayCorruptProcess, Cer.MayFail)]
+        public SafeHandleList DangerousMove()
         {
-            SafeHandleList ret = new SafeHandleList(this);
-            foreach (SafeHandle handle in ret)
-            {
-                bool success = false;
-                handle.DangerousAddRef(ref success);
-            }
-            return ret;
+            SafeHandle[] handles = this.ToArray();
+            this.Clear();
+            return new SafeHandleList(handles);
         }
     }
 }

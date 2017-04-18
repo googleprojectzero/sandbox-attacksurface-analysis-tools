@@ -636,5 +636,10 @@ namespace NtApiDotNet
             return NtRtl.RtlDeleteSecurityObject(ref handle).IsSuccess();
         }
     }
+
+    public class SafeIoStatusBuffer : SafeStructureInOutBuffer<IoStatus>
+    {
+    }
+
 #pragma warning restore 1591
 }

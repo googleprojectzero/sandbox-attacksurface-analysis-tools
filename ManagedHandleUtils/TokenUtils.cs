@@ -76,7 +76,9 @@ namespace HandleUtils
         private static SafeKernelObjectHandle OpenClipboardToken()
         {
             SafeKernelObjectHandle handle;
-            if (!GetClipboardAccessToken(out handle, TokenAccessRights.Query | TokenAccessRights.QuerySource | TokenAccessRights.ReadControl))
+            if (!GetClipboardAccessToken(out handle, TokenAccessRights.MaximumAllowed
+                | TokenAccessRights.Query | TokenAccessRights.QuerySource 
+                | TokenAccessRights.ReadControl))
             {
                 throw new NtException(NtStatus.STATUS_NO_TOKEN);
             }

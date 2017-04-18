@@ -54,7 +54,7 @@ namespace NtApiDotNet
           SafeKernelObjectHandle Event,
           IntPtr ApcRoutine,
           IntPtr ApcContext,
-          [Out] IoStatus IoStatusBlock,
+          SafeIoStatusBuffer IoStatusBlock,
           int IoControlCode,
           IntPtr InputBuffer,
           int InputBufferLength,
@@ -68,7 +68,7 @@ namespace NtApiDotNet
           SafeKernelObjectHandle Event,
           IntPtr ApcRoutine,
           IntPtr ApcContext,
-          [Out] IoStatus IoStatusBlock,
+          SafeIoStatusBuffer IoStatusBlock,
           int FSControlCode,
           IntPtr InputBuffer,
           int InputBufferLength,
@@ -88,7 +88,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtQueryInformationFile(
             SafeKernelObjectHandle FileHandle,
-            IoStatus IoStatusBlock,
+            [Out] IoStatus IoStatusBlock,
             SafeBuffer FileInformation,
             int Length,
             FileInformationClass FileInformationClass);
@@ -96,7 +96,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtQueryVolumeInformationFile(
           SafeKernelObjectHandle FileHandle,
-          IoStatus IoStatusBlock,
+          [Out] IoStatus IoStatusBlock,
           SafeBuffer FsInformation,
           int Length,
           FsInformationClass FsInformationClass);
@@ -107,7 +107,7 @@ namespace NtApiDotNet
           SafeKernelObjectHandle Event,
           IntPtr ApcRoutine,
           IntPtr ApcContext,
-          [Out] IoStatus IoStatusBlock,
+          SafeIoStatusBuffer IoStatusBlock,
           SafeBuffer FileInformation,
           int Length,
           FileInformationClass FileInformationClass,
@@ -122,7 +122,7 @@ namespace NtApiDotNet
           SafeKernelObjectHandle Event,
           IntPtr ApcRoutine,
           IntPtr ApcContext,
-          [Out] IoStatus IoStatusBlock,
+          SafeIoStatusBuffer IoStatusBlock,
           SafeBuffer Buffer,
           int Length,
           [In] LargeInteger ByteOffset,
@@ -135,7 +135,7 @@ namespace NtApiDotNet
           SafeKernelObjectHandle Event,
           IntPtr ApcRoutine,
           IntPtr ApcContext,
-          [Out] IoStatus IoStatusBlock,
+          SafeIoStatusBuffer IoStatusBlock,
           SafeBuffer Buffer,
           int Length,
           [In] LargeInteger ByteOffset,
@@ -171,6 +171,13 @@ namespace NtApiDotNet
             int MaximumMessageSize,
             LargeInteger ReadTimeout
             );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtCancelIoFileEx(
+            SafeKernelObjectHandle FileHandle,
+            [In] IoStatus IoRequestToCancel,
+            [Out] IoStatus IoStatusBlock
+        );
     }
 
     [Flags]
@@ -488,8 +495,16 @@ namespace NtApiDotNet
     [StructLayout(LayoutKind.Sequential)]
     public class IoStatus
     {
-        public IntPtr Pointer;
+        public UIntPtr Pointer;
         public IntPtr Information;
+
+        public NtStatus Status
+        {
+            get
+            {
+                return (NtStatus)Pointer.ToUInt32();
+            }
+        }
     }
 
     [Flags]
@@ -670,6 +685,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Static method to create an NtIoControlCode 
+        /// </summary>
+        /// <param name="code">The conde as an integer.</param>
+        /// <returns>The io control code.</returns>
+        public static NtIoControlCode ToControlCode(int code)
+        {
+            return new NtIoControlCode(code);
+        }
+
+        /// <summary>
         /// Convert the io control code to an Int32
         /// </summary>
         /// <returns>The int32 version of the code</returns>
@@ -677,6 +702,13 @@ namespace NtApiDotNet
         {
             return (((int)DeviceType) << 16) | (((int)Access) << 14) | (((int)Function) << 2) | ((int)Method);
         }
+    }
+
+    public static class NtWellKnownIoControlCodes
+    {
+        public static readonly NtIoControlCode FSCTL_SET_REPARSE_POINT = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 41, FileControlMethod.Buffered, FileControlAccess.Any);
+        public static readonly NtIoControlCode FSCTL_GET_REPARSE_POINT = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 42, FileControlMethod.Buffered, FileControlAccess.Any);
+        public static readonly NtIoControlCode FSCTL_DELETE_REPARSE_POINT = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 43, FileControlMethod.Buffered, FileControlAccess.Any);
     }
 
     public enum ReparseTag : uint
@@ -960,8 +992,167 @@ namespace NtApiDotNet
         }
     }
 
+    public sealed class NtFileResult : IDisposable
+    {
+        private NtFile _file;
+        private NtEvent _event;
+        private SafeIoStatusBuffer _io_status;
+        private IoStatus _result;
 
+        internal NtFileResult(NtFile file)
+        {
+            _file = file;
+            if (!_file.CanSynchronize)
+            {
+                _event = NtEvent.Create(null, 
+                    EventType.SynchronizationEvent, false);
+            }
+            _io_status = new SafeIoStatusBuffer();
+            _result = null;
+        }
 
+        public SafeKernelObjectHandle EventHandle
+        {
+            get { return _event != null ? _event.Handle : SafeKernelObjectHandle.Null; }
+        }
+
+        /// <summary>
+        /// Wait for the result to complete. This could be waiting on an event
+        /// or the file handle.
+        /// </summary>
+        /// <returns>Returns the completed NT status code.</returns>
+        public NtStatus WaitForComplete()
+        {
+            // If we can't complete with an infinite timeout then thrown an exception.
+            if (!WaitForComplete(NtWaitTimeout.Infinite))
+            {
+                throw new NtException(NtStatus.STATUS_PENDING);
+            }
+
+            return _result.Status;
+        }
+
+        /// <summary>
+        /// Wait for the result to complete. This could be waiting on an event
+        /// or the file handle.
+        /// </summary>
+        /// <returns>Returns true if the wait completed successfully.</returns>
+        /// <remarks>If true is returned then status and information can be read out.</remarks>
+        public bool WaitForComplete(NtWaitTimeout timeout)
+        {
+            if (_result != null)
+            {
+                return true;
+            }
+
+            NtStatus status;
+            if (_event != null)
+            {
+                status = _event.Wait(timeout).ToNtException();
+            }
+            else
+            {
+                status = _file.Wait(timeout).ToNtException();
+            }
+
+            if (status == NtStatus.STATUS_SUCCESS)
+            {
+                _result = _io_status.Result;
+                return true;
+            }
+
+            return false;
+        }
+
+        private IoStatus GetIoStatus()
+        {
+            if (_result == null)
+            {
+                throw new NtException(NtStatus.STATUS_PENDING);
+            }
+            return _result;
+        }
+
+        /// <summary>
+        /// Return the status information field.
+        /// </summary>
+        /// <exception cref="NtException">Thrown if not complete.</exception>
+        public long Information
+        {
+            get
+            {
+                return GetIoStatus().Information.ToInt64();
+            }
+        }
+
+        /// <summary>
+        /// Return the status information field. (32 bit)
+        /// </summary>
+        /// <exception cref="NtException">Thrown if not complete.</exception>
+        public int Information32
+        {
+            get
+            {
+                return GetIoStatus().Information.ToInt32();
+            }
+        }
+        
+        /// <summary>
+        /// Get completion status code.
+        /// </summary>
+        /// <exception cref="NtException">Thrown if not complete.</exception>
+        public NtStatus Status
+        {
+            get
+            {
+                return GetIoStatus().Status;
+            }
+        }
+
+        internal SafeIoStatusBuffer IoStatusBuffer
+        {
+            get { return _io_status; }
+        }
+
+        /// <summary>
+        /// Dispose object.
+        /// </summary>
+        public void Dispose()
+        {
+            if (_event != null)
+            {
+                _event.Close();
+            }
+
+            if (_io_status != null)
+            {
+                _io_status.Close();
+            }
+        }
+
+        /// <summary>
+        /// Reset the file result so it can be reused.
+        /// </summary>
+        internal void Reset()
+        {
+            _result = null;
+            if (_event != null)
+            {
+                _event.Clear();
+            }
+        }
+
+        /// <summary>
+        /// Cancel the pending IO operation.
+        /// </summary>
+        public void Cancel()
+        {
+            IoStatus io_status = new IoStatus();
+            NtSystemCalls.NtCancelIoFileEx(_file.Handle, 
+                _io_status.Result, io_status).ToNtException();
+        }
+    }
+    
 #pragma warning restore 1591
 
     /// <summary>
@@ -971,6 +1162,7 @@ namespace NtApiDotNet
     {
         internal NtFile(SafeKernelObjectHandle handle) : base(handle)
         {
+            CanSynchronize = IsAccessGranted(FileAccessRights.Synchronize);
         }
 
         /// <summary>
@@ -1153,16 +1345,18 @@ namespace NtApiDotNet
         /// <param name="output_buffer">Output buffer can be null</param>
         /// <exception cref="NtException">Thrown on error.</exception>
         /// <returns>The length of output bytes returned.</returns>
-        public int DeviceIoControl(int control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
+        public int DeviceIoControl(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
         {
-            IoStatus status = new IoStatus();
-            NtStatus result = NtSystemCalls.NtDeviceIoControlFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero, status,
-                control_code, GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)).ToNtException();
-            if (result == NtStatus.STATUS_PENDING)
+            using (NtFileResult result = new NtFileResult(this))
             {
-                Wait().ToNtException();
+                NtStatus status = NtSystemCalls.NtDeviceIoControlFile(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
+                    control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)).ToNtException();
+                if (status == NtStatus.STATUS_PENDING)
+                {
+                    result.WaitForComplete().ToNtException();
+                }
+                return result.Information32;
             }
-            return status.Information.ToInt32();
         }
 
         /// <summary>
@@ -1173,17 +1367,19 @@ namespace NtApiDotNet
         /// <param name="output_buffer">Output buffer can be null</param>
         /// <returns>The length of output bytes returned.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public int FsControl(int control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
+        public int FsControl(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
         {
-            IoStatus status = new IoStatus();
-            NtStatus result = NtSystemCalls.NtFsControlFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero, status,
-                control_code, GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)).ToNtException();
-            if (result == NtStatus.STATUS_PENDING)
+            using (NtFileResult result = new NtFileResult(this))
             {
-                Wait().ToNtException();
+                NtStatus status = NtSystemCalls.NtFsControlFile(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
+                    control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)).ToNtException();
+                if (status == NtStatus.STATUS_PENDING)
+                {
+                    result.WaitForComplete().ToNtException();
+                }
+                return result.Information32;
             }
-            return status.Information.ToInt32();
-        }        
+        }
 
         /// <summary>
         /// Open a file
@@ -1319,13 +1515,7 @@ namespace NtApiDotNet
             }
         }
 
-        /// <summary>
-        /// Create a new hardlink to this file.
-        /// </summary>
-        /// <param name="linkname">The target NT path.</param>
-        /// <param name="root">The root directory if linkname is relative</param>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public void CreateHardlink(string linkname, NtFile root)
+        private void DoLinkRename(FileInformationClass file_info, string linkname, NtFile root)
         {
             FileLinkRenameInformation link = new FileLinkRenameInformation();
             link.ReplaceIfExists = true;
@@ -1337,8 +1527,19 @@ namespace NtApiDotNet
                 IoStatus iostatus = new IoStatus();
                 buffer.Data.WriteArray(0, chars, 0, chars.Length);
                 NtSystemCalls.NtSetInformationFile(Handle, iostatus, buffer,
-                        buffer.Length, FileInformationClass.FileLinkInformation).ToNtException();
+                        buffer.Length, file_info).ToNtException();
             }
+        }
+
+        /// <summary>
+        /// Create a new hardlink to this file.
+        /// </summary>
+        /// <param name="linkname">The target NT path.</param>
+        /// <param name="root">The root directory if linkname is relative</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void CreateHardlink(string linkname, NtFile root)
+        {
+            DoLinkRename(FileInformationClass.FileLinkInformation, linkname, root);
         }
 
         /// <summary>
@@ -1348,7 +1549,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public void CreateHardlink(string linkname)
         {
-            CreateHardlink(linkname, (NtFile)null);
+            DoLinkRename(FileInformationClass.FileLinkInformation, linkname, null);
         }
 
         /// <summary>
@@ -1365,16 +1566,48 @@ namespace NtApiDotNet
                 file.CreateHardlink(linkname);
             }
         }
-        
-        static NtIoControlCode FSCTL_SET_REPARSE_POINT = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 41, FileControlMethod.Buffered, FileControlAccess.Any);
-        static NtIoControlCode FSCTL_GET_REPARSE_POINT = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 42, FileControlMethod.Buffered, FileControlAccess.Any);
-        static NtIoControlCode FSCTL_DELETE_REPARSE_POINT = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 43, FileControlMethod.Buffered, FileControlAccess.Any);
+
+        /// <summary>
+        /// Rename file.
+        /// </summary>
+        /// <param name="new_name">The target NT path.</param>
+        /// <param name="root">The root directory if new_name is relative</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void Rename(string new_name, NtFile root)
+        {
+            DoLinkRename(FileInformationClass.FileRenameInformation, new_name, root);
+        }
+
+        /// <summary>
+        /// Rename this file with an absolute path.
+        /// </summary>
+        /// <param name="new_name">The target absolute NT path.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void Rename(string new_name)
+        {
+            DoLinkRename(FileInformationClass.FileRenameInformation, new_name, null);
+        }
+
+        /// <summary>
+        /// Rename file.
+        /// </summary>
+        /// <param name="path">The file to rename.</param>
+        /// <param name="new_name">The target NT path.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static void Rename(string path, string new_name)
+        {
+            using (NtFile file = Open(path, null, FileAccessRights.Delete,
+                FileShareMode.Read | FileShareMode.Delete, FileOpenOptions.None))
+            {
+                file.Rename(new_name);
+            }
+        }
 
         private void SetReparsePoint(ReparseBuffer reparse)
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(reparse.ToByteArray()))
             {
-                FsControl(FSCTL_SET_REPARSE_POINT.ToInt32(), buffer, null);
+                FsControl(NtWellKnownIoControlCodes.FSCTL_SET_REPARSE_POINT, buffer, null);
             }
         }
         
@@ -1442,7 +1675,7 @@ namespace NtApiDotNet
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(16 * 1024))
             {
-                FsControl(FSCTL_GET_REPARSE_POINT.ToInt32(), null, buffer);
+                FsControl(NtWellKnownIoControlCodes.FSCTL_GET_REPARSE_POINT, null, buffer);
                 
                 return ReparseBuffer.FromByteArray(buffer.ToArray());
             }
@@ -1471,7 +1704,7 @@ namespace NtApiDotNet
             ReparseBuffer reparse = GetReparsePoint();
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(new GenericReparseBuffer(reparse.Tag, new byte[0]).ToByteArray()))
             {
-                FsControl(FSCTL_DELETE_REPARSE_POINT.ToInt32(), buffer, null);
+                FsControl(NtWellKnownIoControlCodes.FSCTL_DELETE_REPARSE_POINT, buffer, null);
             }
             return reparse;
         }
@@ -1510,58 +1743,61 @@ namespace NtApiDotNet
             UnicodeString mask = file_mask != null ? new UnicodeString(file_mask) : null;
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(128 * 1024))
             {
-                IoStatus io_status = new IoStatus();
-                NtStatus status = NtSystemCalls.NtQueryDirectoryFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero, io_status, buffer, buffer.Length, FileInformationClass.FileDirectoryInformation, false, mask, true);
-                if (status == NtStatus.STATUS_PENDING)
+                using (NtFileResult result = new NtFileResult(this))
                 {
-                    status = Wait().ToNtException();
-                }
-
-                while (status != NtStatus.STATUS_NO_MORE_FILES)
-                {
-                    SafeStructureInOutBuffer<FileDirectoryInformation> dir_buffer = buffer.GetStructAtOffset<FileDirectoryInformation>(0);
-                    do
-                    {
-                        FileDirectoryInformation dir_info = dir_buffer.Result;
-                        bool valid_entry = false;
-                        switch (type_mask)
-                        {
-                            case FileTypeMask.All:
-                                valid_entry = true;
-                                break;
-                            case FileTypeMask.FilesOnly:
-                                valid_entry = (dir_info.FileAttributes & FileAttributes.Directory) == 0;
-                                break;
-                            case FileTypeMask.DirectoriesOnly:
-                                valid_entry = (dir_info.FileAttributes & FileAttributes.Directory) == FileAttributes.Directory;
-                                break;
-                        }
-
-                        string file_name = dir_buffer.Data.ReadUnicodeString(dir_info.FileNameLength / 2);
-                        if (file_name == "." || file_name == "..")
-                        {
-                            valid_entry = false;
-                        }
-
-                        if (valid_entry)
-                        {
-                            yield return new FileDirectoryEntry(dir_info, dir_buffer.Data.ReadUnicodeString(dir_info.FileNameLength / 2));
-                        }
-
-                        if (dir_info.NextEntryOffset == 0)
-                        {
-                            break;
-                        }
-                        dir_buffer = dir_buffer.GetStructAtOffset<FileDirectoryInformation>(dir_info.NextEntryOffset);
-                    }
-                    while (true);
-
-                    io_status = new IoStatus();
-                    status = NtSystemCalls.NtQueryDirectoryFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero,
-                        io_status, buffer, buffer.Length, FileInformationClass.FileDirectoryInformation, false, mask, false);
+                    NtStatus status = NtSystemCalls.NtQueryDirectoryFile(Handle, result.EventHandle, 
+                        IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, FileInformationClass.FileDirectoryInformation, false, mask, true);
                     if (status == NtStatus.STATUS_PENDING)
                     {
-                        status = Wait().ToNtException();
+                        status = result.WaitForComplete();
+                    }
+
+                    while (status != NtStatus.STATUS_NO_MORE_FILES)
+                    {
+                        SafeStructureInOutBuffer<FileDirectoryInformation> dir_buffer = buffer.GetStructAtOffset<FileDirectoryInformation>(0);
+                        do
+                        {
+                            FileDirectoryInformation dir_info = dir_buffer.Result;
+                            bool valid_entry = false;
+                            switch (type_mask)
+                            {
+                                case FileTypeMask.All:
+                                    valid_entry = true;
+                                    break;
+                                case FileTypeMask.FilesOnly:
+                                    valid_entry = (dir_info.FileAttributes & FileAttributes.Directory) == 0;
+                                    break;
+                                case FileTypeMask.DirectoriesOnly:
+                                    valid_entry = (dir_info.FileAttributes & FileAttributes.Directory) == FileAttributes.Directory;
+                                    break;
+                            }
+
+                            string file_name = dir_buffer.Data.ReadUnicodeString(dir_info.FileNameLength / 2);
+                            if (file_name == "." || file_name == "..")
+                            {
+                                valid_entry = false;
+                            }
+
+                            if (valid_entry)
+                            {
+                                yield return new FileDirectoryEntry(dir_info, dir_buffer.Data.ReadUnicodeString(dir_info.FileNameLength / 2));
+                            }
+
+                            if (dir_info.NextEntryOffset == 0)
+                            {
+                                break;
+                            }
+                            dir_buffer = dir_buffer.GetStructAtOffset<FileDirectoryInformation>(dir_info.NextEntryOffset);
+                        }
+                        while (true);
+
+                        result.Reset();
+                        status = NtSystemCalls.NtQueryDirectoryFile(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero,
+                            result.IoStatusBuffer, buffer, buffer.Length, FileInformationClass.FileDirectoryInformation, false, mask, false);
+                        if (status == NtStatus.STATUS_PENDING)
+                        {
+                            status = result.WaitForComplete();
+                        }
                     }
                 }
             }
@@ -1571,20 +1807,23 @@ namespace NtApiDotNet
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(length))
             {
-                IoStatus io_status = new IoStatus();
-                NtStatus status = NtSystemCalls.NtReadFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, 
-                    IntPtr.Zero, io_status, buffer, buffer.Length, position, IntPtr.Zero).ToNtException();
-                if (status == NtStatus.STATUS_PENDING)
+                using (NtFileResult result = new NtFileResult(this))
                 {
-                    Wait().ToNtException();
-                }
+                    NtStatus status = NtSystemCalls.NtReadFile(Handle, result.EventHandle, IntPtr.Zero,
+                        IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero).ToNtException();
+                    if (status == NtStatus.STATUS_PENDING)
+                    {
+                        result.WaitForComplete().ToNtException();                        
+                    }
 
-                byte[] ret = buffer.ToArray();
-                if (io_status.Information.ToInt32() < length)
-                {
-                    Array.Resize(ref ret, io_status.Information.ToInt32());
+                    byte[] ret = buffer.ToArray();
+                    int read_length = result.Information32;
+                    if (read_length < length)
+                    {
+                        Array.Resize(ref ret, read_length);
+                    }
+                    return ret;
                 }
-                return ret;
             }
         }
 
@@ -1613,15 +1852,17 @@ namespace NtApiDotNet
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(data))
             {
-                IoStatus io_status = new IoStatus();
-                NtStatus status = NtSystemCalls.NtWriteFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, 
-                    IntPtr.Zero, io_status, buffer, buffer.Length, position, IntPtr.Zero);
-                if (status == NtStatus.STATUS_PENDING)
+                using (NtFileResult result = new NtFileResult(this))
                 {
-                    Wait().ToNtException();
-                }
+                    NtStatus status = NtSystemCalls.NtWriteFile(Handle, result.EventHandle, IntPtr.Zero,
+                        IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero);
+                    if (status == NtStatus.STATUS_PENDING)
+                    {
+                        result.WaitForComplete().ToNtException();
+                    }
 
-                return io_status.Information.ToInt32();
+                    return result.Information32;
+                }
             }
         }
 
@@ -1817,6 +2058,11 @@ namespace NtApiDotNet
                 }
             }
         }
+
+        /// <summary>
+        /// Indicates if the file handle can be used for synchronization
+        /// </summary>
+        public bool CanSynchronize { get; private set; }
     }
 
     /// <summary>
