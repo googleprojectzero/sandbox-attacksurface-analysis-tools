@@ -243,6 +243,7 @@ namespace TokenViewer
             }
 
             txtMandatoryILPolicy.Text = _token.MandatoryPolicy.ToString();
+            txtHandleAccess.Text = _token.GrantedAccess.ToString();
             UpdatePrivileges();
             UpdateSecurityAttributes();
         }
