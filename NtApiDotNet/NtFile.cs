@@ -1164,13 +1164,7 @@ namespace NtApiDotNet
             }
         }
 
-        /// <summary>
-        /// Create a new hardlink to this file.
-        /// </summary>
-        /// <param name="linkname">The target NT path.</param>
-        /// <param name="root">The root directory if linkname is relative</param>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public void CreateHardlink(string linkname, NtFile root)
+        private void DoLinkRename(FileInformationClass file_info, string linkname, NtFile root)
         {
             FileLinkRenameInformation link = new FileLinkRenameInformation();
             link.ReplaceIfExists = true;
@@ -1182,8 +1176,19 @@ namespace NtApiDotNet
                 IoStatus iostatus = new IoStatus();
                 buffer.Data.WriteArray(0, chars, 0, chars.Length);
                 NtSystemCalls.NtSetInformationFile(Handle, iostatus, buffer,
-                        buffer.Length, FileInformationClass.FileLinkInformation).ToNtException();
+                        buffer.Length, file_info).ToNtException();
             }
+        }
+
+        /// <summary>
+        /// Create a new hardlink to this file.
+        /// </summary>
+        /// <param name="linkname">The target NT path.</param>
+        /// <param name="root">The root directory if linkname is relative</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void CreateHardlink(string linkname, NtFile root)
+        {
+            DoLinkRename(FileInformationClass.FileLinkInformation, linkname, root);
         }
 
         /// <summary>
@@ -1193,7 +1198,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public void CreateHardlink(string linkname)
         {
-            CreateHardlink(linkname, (NtFile)null);
+            DoLinkRename(FileInformationClass.FileLinkInformation, linkname, null);
         }
 
         /// <summary>
@@ -1210,7 +1215,43 @@ namespace NtApiDotNet
                 file.CreateHardlink(linkname);
             }
         }
-        
+
+        /// <summary>
+        /// Rename file.
+        /// </summary>
+        /// <param name="new_name">The target NT path.</param>
+        /// <param name="root">The root directory if new_name is relative</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void Rename(string new_name, NtFile root)
+        {
+            DoLinkRename(FileInformationClass.FileRenameInformation, new_name, root);
+        }
+
+        /// <summary>
+        /// Rename this file with an absolute path.
+        /// </summary>
+        /// <param name="new_name">The target absolute NT path.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void Rename(string new_name)
+        {
+            DoLinkRename(FileInformationClass.FileRenameInformation, new_name, null);
+        }
+
+        /// <summary>
+        /// Rename file.
+        /// </summary>
+        /// <param name="path">The file to rename.</param>
+        /// <param name="new_name">The target NT path.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static void Rename(string path, string new_name)
+        {
+            using (NtFile file = Open(path, null, FileAccessRights.Delete,
+                FileShareMode.Read | FileShareMode.Delete, FileOpenOptions.None))
+            {
+                file.Rename(new_name);
+            }
+        }
+
         static NtIoControlCode FSCTL_SET_REPARSE_POINT = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 41, FileControlMethod.Buffered, FileControlAccess.Any);
         static NtIoControlCode FSCTL_GET_REPARSE_POINT = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 42, FileControlMethod.Buffered, FileControlAccess.Any);
         static NtIoControlCode FSCTL_DELETE_REPARSE_POINT = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 43, FileControlMethod.Buffered, FileControlAccess.Any);
