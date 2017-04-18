@@ -1198,9 +1198,9 @@ namespace NtApiDotNet
                     control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)).ToNtException();
                 if (status == NtStatus.STATUS_PENDING)
                 {
-                    result.WaitForComplete();
+                    result.WaitForComplete().ToNtException();
                 }
-                return (int)result.Information;
+                return result.Information32;
             }
         }
 
@@ -1220,7 +1220,7 @@ namespace NtApiDotNet
                     control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)).ToNtException();
                 if (status == NtStatus.STATUS_PENDING)
                 {
-                    result.WaitForComplete();
+                    result.WaitForComplete().ToNtException();
                 }
                 return result.Information32;
             }
@@ -1658,8 +1658,7 @@ namespace NtApiDotNet
                         IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero).ToNtException();
                     if (status == NtStatus.STATUS_PENDING)
                     {
-                        result.WaitForComplete();
-                        result.Status.ToNtException();
+                        result.WaitForComplete().ToNtException();                        
                     }
 
                     byte[] ret = buffer.ToArray();
@@ -1704,8 +1703,7 @@ namespace NtApiDotNet
                         IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero);
                     if (status == NtStatus.STATUS_PENDING)
                     {
-                        result.WaitForComplete();
-                        result.Status.ToNtException();
+                        result.WaitForComplete().ToNtException();
                     }
 
                     return result.Information32;
