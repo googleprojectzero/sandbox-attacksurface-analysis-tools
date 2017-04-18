@@ -1,6 +1,6 @@
 ﻿NtObjectManager - Managed .NET Powershell Module
 
-(c) Google Inc. 2015, 2016
+(c) Google Inc. 2015, 2016, 2017
 Developed by James Forshaw
 
 You can load the using the Import-Module Cmdlet. You'll need to disable signing 

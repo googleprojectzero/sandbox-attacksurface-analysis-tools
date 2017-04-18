@@ -110,6 +110,8 @@
             this.checkBoxMakeInteractive = new System.Windows.Forms.CheckBox();
             this.btnCreateProcess = new System.Windows.Forms.Button();
             this.txtCommandLine = new System.Windows.Forms.TextBox();
+            this.treeViewSecurityAttributes = new System.Windows.Forms.TreeView();
+            this.llbSecurityAttributes = new System.Windows.Forms.Label();
             this.txtMandatoryILPolicy = new System.Windows.Forms.TextBox();
             this.txtVirtualizationEnabled = new System.Windows.Forms.TextBox();
             this.txtVirtualizationAllowed = new System.Windows.Forms.TextBox();
@@ -143,8 +145,7 @@
             this.tabPageMisc = new System.Windows.Forms.TabPage();
             this.tabPageOperations = new System.Windows.Forms.TabPage();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.llbSecurityAttributes = new System.Windows.Forms.Label();
-            this.treeViewSecurityAttributes = new System.Windows.Forms.TreeView();
+            this.btnToggleUIAccess = new System.Windows.Forms.Button();
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
@@ -866,6 +867,7 @@
             groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            groupBox2.Controls.Add(this.btnToggleUIAccess);
             groupBox2.Controls.Add(this.treeViewSecurityAttributes);
             groupBox2.Controls.Add(this.llbSecurityAttributes);
             groupBox2.Controls.Add(label22);
@@ -884,6 +886,25 @@
             groupBox2.TabIndex = 0;
             groupBox2.TabStop = false;
             groupBox2.Text = "Additional Properties";
+            // 
+            // treeViewSecurityAttributes
+            // 
+            this.treeViewSecurityAttributes.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.treeViewSecurityAttributes.Location = new System.Drawing.Point(9, 164);
+            this.treeViewSecurityAttributes.Name = "treeViewSecurityAttributes";
+            this.treeViewSecurityAttributes.Size = new System.Drawing.Size(396, 97);
+            this.treeViewSecurityAttributes.TabIndex = 17;
+            // 
+            // llbSecurityAttributes
+            // 
+            this.llbSecurityAttributes.AutoSize = true;
+            this.llbSecurityAttributes.Location = new System.Drawing.Point(6, 148);
+            this.llbSecurityAttributes.Name = "llbSecurityAttributes";
+            this.llbSecurityAttributes.Size = new System.Drawing.Size(95, 13);
+            this.llbSecurityAttributes.TabIndex = 16;
+            this.llbSecurityAttributes.Text = "Security Attributes:";
             // 
             // label22
             // 
@@ -1304,24 +1325,15 @@
             this.tabPageOperations.Text = "Operations";
             this.tabPageOperations.UseVisualStyleBackColor = true;
             // 
-            // llbSecurityAttributes
+            // btnToggleUIAccess
             // 
-            this.llbSecurityAttributes.AutoSize = true;
-            this.llbSecurityAttributes.Location = new System.Drawing.Point(6, 148);
-            this.llbSecurityAttributes.Name = "llbSecurityAttributes";
-            this.llbSecurityAttributes.Size = new System.Drawing.Size(95, 13);
-            this.llbSecurityAttributes.TabIndex = 16;
-            this.llbSecurityAttributes.Text = "Security Attributes:";
-            // 
-            // treeViewSecurityAttributes
-            // 
-            this.treeViewSecurityAttributes.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.treeViewSecurityAttributes.Location = new System.Drawing.Point(9, 164);
-            this.treeViewSecurityAttributes.Name = "treeViewSecurityAttributes";
-            this.treeViewSecurityAttributes.Size = new System.Drawing.Size(396, 97);
-            this.treeViewSecurityAttributes.TabIndex = 17;
+            this.btnToggleUIAccess.Location = new System.Drawing.Point(235, 11);
+            this.btnToggleUIAccess.Name = "btnToggleUIAccess";
+            this.btnToggleUIAccess.Size = new System.Drawing.Size(75, 23);
+            this.btnToggleUIAccess.TabIndex = 18;
+            this.btnToggleUIAccess.Text = "Toggle";
+            this.btnToggleUIAccess.UseVisualStyleBackColor = true;
+            this.btnToggleUIAccess.Click += new System.EventHandler(this.btnToggleUIAccess_Click);
             // 
             // TokenForm
             // 
@@ -1437,5 +1449,6 @@
         private System.Windows.Forms.ToolStripMenuItem removePrivilegeToolStripMenuItem;
         private System.Windows.Forms.Label llbSecurityAttributes;
         private System.Windows.Forms.TreeView treeViewSecurityAttributes;
+        private System.Windows.Forms.Button btnToggleUIAccess;
     }
 }

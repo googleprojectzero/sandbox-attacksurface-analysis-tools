@@ -744,5 +744,19 @@ namespace TokenViewer
             ModifyPrivileges(GetSelectedItemTags(listViewPrivs).OfType<TokenPrivilege>(), 
                 PrivilegeAttributes.Removed);
         }
+
+        private void btnToggleUIAccess_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                _token.SetUiAccess(!_token.UiAccess);
+                txtUIAccess.Text = _token.UiAccess.ToString();
+            }
+            catch (NtException ex)
+            {
+                MessageBox.Show(this, ex.Message, 
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
     }
 }
