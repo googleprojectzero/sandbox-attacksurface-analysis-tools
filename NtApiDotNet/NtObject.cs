@@ -334,6 +334,15 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Duplicate the object handle as a WaitHandle.
+        /// </summary>
+        /// <returns>The wait handle.</returns>
+        public NtWaitHandle DuplicateAsWaitHandle()
+        {
+            return new NtWaitHandle(this);
+        }
+
+        /// <summary>
         /// Get full path to the object
         /// </summary>
         public virtual string FullPath

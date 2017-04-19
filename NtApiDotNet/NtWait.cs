@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace NtApiDotNet
 {
@@ -116,13 +117,64 @@ namespace NtApiDotNet
         /// Create a .NET wait handle from an object.
         /// </summary>
         /// <param name="obj">The object to create the wait handle on</param>
-        public NtWaitHandle(NtObject obj)
+        internal NtWaitHandle(NtObject obj)
         {
             using (SafeKernelObjectHandle handle = obj.DuplicateHandle())
             {
                 SafeWaitHandle = new SafeWaitHandle(handle.DangerousGetHandle(), true);
                 handle.SetHandleAsInvalid();
             }
+        }
+
+        /// <summary>
+        /// Wait asynchronously for the handle to be signaled.
+        /// </summary>
+        /// <param name="timeout_ms">Timeout in milliseconds.</param>
+        /// <param name="cancellation_token">Cancellation token for wait.</param>
+        /// <returns>A task to wait on. If result is true then event was signaled.</returns>
+        public Task<bool> WaitAsync(int timeout_ms, CancellationToken cancellation_token)
+        {
+            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
+            if (cancellation_token.IsCancellationRequested)
+            {
+                tcs.SetCanceled();
+                return tcs.Task;
+            }
+
+            RegisteredWaitHandle rwh = ThreadPool.RegisterWaitForSingleObject(this,
+                (o, b) => tcs.TrySetResult(!b), null, timeout_ms, true);
+
+            Task<bool> task = tcs.Task;
+            // Unregister event wait.
+            task.ContinueWith((a) => rwh.Unregister(null));
+            if (cancellation_token.CanBeCanceled)
+            {
+                CancellationTokenRegistration reg = 
+                    cancellation_token.Register(() => tcs.TrySetCanceled());
+                task.ContinueWith((a) => reg.Dispose());
+            }
+
+            return task;
+        }
+
+        /// <summary>
+        /// Wait asynchronously for the handle to be signaled.
+        /// </summary>
+        /// <param name="timeout_ms">Timeout in milliseconds.</param>
+        /// <returns>A task to wait on. If result is true then event was signaled.</returns>
+        public Task<bool> WaitAsync(int timeout_ms)
+        {
+            return WaitAsync(timeout_ms, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Wait asynchronously for the handle to be signaled.
+        /// Will wait an infinite time.
+        /// </summary>
+        /// <returns>A task to wait on.</returns>
+        public Task WaitAsync()
+        {
+            return WaitAsync(-1);
         }
     }
 
