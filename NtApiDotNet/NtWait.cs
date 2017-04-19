@@ -12,10 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace NtApiDotNet
 {
@@ -106,9 +108,28 @@ namespace NtApiDotNet
     }
 
     /// <summary>
-    /// Wait methods
+    /// A .NET wait handle to use for interop.
     /// </summary>
-    public class NtWait
+    public sealed class NtWaitHandle : WaitHandle
+    {
+        /// <summary>
+        /// Create a .NET wait handle from an object.
+        /// </summary>
+        /// <param name="obj">The object to create the wait handle on</param>
+        public NtWaitHandle(NtObject obj)
+        {
+            using (SafeKernelObjectHandle handle = obj.DuplicateHandle())
+            {
+                SafeWaitHandle = new SafeWaitHandle(handle.DangerousGetHandle(), true);
+                handle.SetHandleAsInvalid();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Native Wait methods.
+    /// </summary>
+    public static class NtWait
     {
         /// <summary>
         /// Wait on a single object to become signalled

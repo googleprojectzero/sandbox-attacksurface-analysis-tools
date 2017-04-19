@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -316,20 +315,6 @@ namespace NtApiDotNet
         public static SafeKernelObjectHandle DuplicateHandle(SafeHandle handle)
         {
             return DuplicateHandle(NtProcess.Current, handle, NtProcess.Current);
-        }
-
-        /// <summary>
-        /// Duplicate the internal handle as a SafeWaitHandle.
-        /// </summary>
-        /// <returns>The safe wait handle.</returns>
-        public SafeWaitHandle DuplicateAsWaitHandle()
-        {
-            using (SafeKernelObjectHandle dup_handle = DuplicateHandle(Handle))
-            {
-                SafeWaitHandle ret = new SafeWaitHandle(dup_handle.DangerousGetHandle(), true);
-                dup_handle.SetHandleAsInvalid();
-                return ret;
-            }
         }
 
         private static string GetName(SafeKernelObjectHandle handle)
