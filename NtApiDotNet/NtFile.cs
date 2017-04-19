@@ -1824,14 +1824,8 @@ namespace NtApiDotNet
                 {
                     NtStatus status = result.CompleteCall(NtSystemCalls.NtReadFile(Handle, result.EventHandle, IntPtr.Zero,
                         IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero)).ToNtException();
-                    
-                    byte[] ret = buffer.ToArray();
-                    int read_length = result.Information32;
-                    if (read_length < length)
-                    {
-                        Array.Resize(ref ret, read_length);
-                    }
-                    return ret;
+
+                    return buffer.ReadBytes(result.Information32);
                 }
             }
         }
