@@ -175,7 +175,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtCancelIoFileEx(
             SafeKernelObjectHandle FileHandle,
-            [In] IoStatus IoRequestToCancel,
+            SafeIoStatusBuffer IoRequestToCancel,
             [Out] IoStatus IoStatusBlock
         );
     }
@@ -1178,7 +1178,7 @@ namespace NtApiDotNet
         {
             IoStatus io_status = new IoStatus();
             NtSystemCalls.NtCancelIoFileEx(_file.Handle, 
-                _io_status.Result, io_status).ToNtException();
+                _io_status, io_status).ToNtException();
         }
     }
     
