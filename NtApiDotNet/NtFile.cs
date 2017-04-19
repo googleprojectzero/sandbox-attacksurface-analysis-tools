@@ -1367,7 +1367,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Send an Device IO Control code to the file driver
+        /// Send a Device IO Control code to the file driver
         /// </summary>
         /// <param name="control_code">The control code</param>
         /// <param name="input_buffer">Input buffer can be null</param>
@@ -1381,6 +1381,29 @@ namespace NtApiDotNet
                 NtStatus status = result.CompleteCall(NtSystemCalls.NtDeviceIoControlFile(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
                     control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer))).ToNtException();
                 return result.Information32;
+            }
+        }
+
+        /// <summary>
+        /// Send a Device IO Control code to the file driver.
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="max_output">Maximum output buffer size</param>
+        /// <returns>The output buffer returned by the kernel.</returns>
+        public byte[] DeviceIoControl(NtIoControlCode control_code, byte[] input_buffer, int max_output)
+        {
+            using (SafeHGlobalBuffer input = input_buffer != null ? new SafeHGlobalBuffer(input_buffer) : null)
+            {
+                using (SafeHGlobalBuffer output = max_output > 0 ? new SafeHGlobalBuffer(max_output) : null)
+                {
+                    int output_length = DeviceIoControl(control_code, input, output);
+                    if (output != null)
+                    {
+                        return output.ReadBytes(output_length);
+                    }
+                    return new byte[0];
+                }
             }
         }
 
@@ -1399,6 +1422,29 @@ namespace NtApiDotNet
                 NtStatus status = result.CompleteCall(NtSystemCalls.NtFsControlFile(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
                     control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer))).ToNtException();
                 return result.Information32;
+            }
+        }
+
+        /// <summary>
+        /// Send a File System Control code to the file driver.
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="max_output">Maximum output buffer size</param>
+        /// <returns>The output buffer returned by the kernel.</returns>
+        public byte[] FsControl(NtIoControlCode control_code, byte[] input_buffer, int max_output)
+        {
+            using (SafeHGlobalBuffer input = input_buffer != null ? new SafeHGlobalBuffer(input_buffer) : null)
+            {
+                using (SafeHGlobalBuffer output = max_output > 0 ? new SafeHGlobalBuffer(max_output) : null)
+                {
+                    int output_length = FsControl(control_code, input, output);
+                    if (output != null)
+                    {
+                        return output.ReadBytes(output_length);
+                    }
+                    return new byte[0];
+                }
             }
         }
 
