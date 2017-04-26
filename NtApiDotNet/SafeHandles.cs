@@ -104,6 +104,14 @@ namespace NtApiDotNet
             get; private set;
         }
 
+        /// <summary>
+        /// Get the length as an IntPtr
+        /// </summary>
+        public IntPtr LengthIntPtr
+        {
+            get { return new IntPtr(Length); }
+        }
+
         protected override bool ReleaseHandle()
         {
             if (!IsInvalid)

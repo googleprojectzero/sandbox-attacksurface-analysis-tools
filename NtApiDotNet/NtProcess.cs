@@ -524,14 +524,6 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtResumeProcess(SafeKernelObjectHandle ProcessHandle);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtReadVirtualMemory(SafeKernelObjectHandle ProcessHandle,
-            IntPtr BaseAddress, SafeBuffer Buffer, int BufferLength, out int ReturnLength);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtWriteVirtualMemory(SafeKernelObjectHandle ProcessHandle,
-            IntPtr BaseAddress, SafeBuffer Buffer, int BufferLength, out int ReturnLength);
     }
 
     public static partial class NtRtl
@@ -753,7 +745,7 @@ namespace NtApiDotNet
         internal NtProcess(SafeKernelObjectHandle handle) : base(handle)
         {
         }
-        
+
         /// <summary>
         /// Gets all accessible processes on the system.
         /// </summary>
@@ -779,7 +771,7 @@ namespace NtApiDotNet
         public static NtProcess GetFirstProcess(ProcessAccessRights desired_access)
         {
             SafeKernelObjectHandle new_handle;
-            NtStatus status = NtSystemCalls.NtGetNextProcess(SafeKernelObjectHandle.Null, desired_access, 
+            NtStatus status = NtSystemCalls.NtGetNextProcess(SafeKernelObjectHandle.Null, desired_access,
                 AttributeFlags.None, 0, out new_handle);
             if (status == NtStatus.STATUS_SUCCESS)
             {
@@ -945,7 +937,7 @@ namespace NtApiDotNet
             SafeKernelObjectHandle process;
             SafeHandle parent_process = ParentProcess != null ? ParentProcess.Handle : Current.Handle;
             SafeHandle section = SectionHandle != null ? SectionHandle.Handle : null;
-            NtSystemCalls.NtCreateProcessEx(out process, ProcessAccessRights.MaximumAllowed, 
+            NtSystemCalls.NtCreateProcessEx(out process, ProcessAccessRights.MaximumAllowed,
                 new ObjectAttributes(), parent_process, Flags, section, null, null, 0).ToNtException();
             return new NtProcess(process);
         }
@@ -970,7 +962,7 @@ namespace NtApiDotNet
         {
             return CreateProcessEx(null, ProcessCreateFlags.None, SectionHandle);
         }
-        
+
         /// <summary>
         /// Terminate the process
         /// </summary>
@@ -991,7 +983,7 @@ namespace NtApiDotNet
             int return_length = 0;
             NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, info_class, SafeHGlobalBuffer.Null, 0, out return_length);
             if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
-                status.ToNtException(); 
+                status.ToNtException();
             using (SafeStructureInOutBuffer<UnicodeStringOut> buf = new SafeStructureInOutBuffer<UnicodeStringOut>(return_length, false))
             {
                 NtSystemCalls.NtQueryInformationProcess(Handle, info_class, buf, buf.Length, out return_length).ToNtException();
@@ -1032,10 +1024,10 @@ namespace NtApiDotNet
         public int GetProcessMitigationPolicy(ProcessMitigationPolicy policy)
         {
             switch (policy)
-            {                
+            {
                 case ProcessMitigationPolicy.ProcessDEPPolicy:
                 case ProcessMitigationPolicy.ProcessReserved1Policy:
-                case ProcessMitigationPolicy.ProcessMitigationOptionsMask:             
+                case ProcessMitigationPolicy.ProcessMitigationOptionsMask:
                     throw new ArgumentException("Invalid mitigation policy");
             }
 
@@ -1189,18 +1181,9 @@ namespace NtApiDotNet
         /// <returns>The array of bytes read from the location. 
         /// If a read is short then returns fewer bytes than requested.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public byte[] ReadMemory(IntPtr base_address, int length)
+        public byte[] ReadMemory(long base_address, int length)
         {
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(length))
-            {
-                int return_length;
-                NtStatus status = NtSystemCalls.NtReadVirtualMemory(Handle, base_address, buffer, buffer.Length, out return_length);
-                if (status != NtStatus.STATUS_PARTIAL_COPY)
-                {
-                    status.ToNtException();
-                }
-                return buffer.ReadBytes(return_length);
-            }
+            return NtVirtualMemory.ReadMemory(Handle, base_address, length);
         }
 
         /// <summary>
@@ -1210,18 +1193,83 @@ namespace NtApiDotNet
         /// <param name="data">The data to write.</param>
         /// <returns>The number of bytes written to the location</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public int WriteMemory(IntPtr base_address, byte[] data)
+        public int WriteMemory(long base_address, byte[] data)
         {
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(data))
+            return NtVirtualMemory.WriteMemory(Handle, base_address, data);
+        }
+
+        /// <summary>
+        /// Query memory information for a process.
+        /// </summary>
+        /// <param name="base_address">The base address.</param>
+        /// <returns>The queries memory information.</returns>
+        public MemoryInformation QueryMemoryInformation(long base_address)
+        {
+            return NtVirtualMemory.QueryMemoryInformation(Handle, base_address);
+        }
+
+        /// <summary>
+        /// Query all memory information regions in process memory.
+        /// </summary>
+        /// <returns>The list of memory regions.</returns>
+        public IEnumerable<MemoryInformation> QueryMemoryInformation()
+        {
+            List<MemoryInformation> ret = new List<MemoryInformation>();
+            try
             {
-                int return_length;
-                NtStatus status = NtSystemCalls.NtWriteVirtualMemory(Handle, base_address, buffer, buffer.Length, out return_length);
-                if (status != NtStatus.STATUS_PARTIAL_COPY)
+                long base_address = 0;
+
+                do
                 {
-                    status.ToNtException();
+                    MemoryInformation mem_info = QueryMemoryInformation(base_address);
+                    ret.Add(mem_info);
+                    base_address = mem_info.BaseAddress + mem_info.RegionSize;
                 }
-                return return_length;
+                while (base_address < long.MaxValue);
             }
+            catch (NtException)
+            {
+            }
+            return ret;
+        }
+
+        /// <summary>
+        /// Allocate virtual memory in a process.
+        /// </summary>
+        /// <param name="base_address">Optional base address, if 0 will automatically select a base.</param>
+        /// <param name="region_size">The region size to allocate.</param>
+        /// <param name="allocation_type">The type of allocation.</param>
+        /// <param name="protect">The allocation protection.</param>
+        /// <returns>The address of the allocated region.</returns>
+        public long AllocateMemory(long base_address,
+            long region_size, MemoryAllocationType allocation_type, MemoryAllocationProtect protect)
+        {
+            return NtVirtualMemory.AllocateMemory(Handle, base_address, region_size, allocation_type, protect);
+        }
+
+        /// <summary>
+        /// Free virtual emmory in a process.
+        /// </summary>
+        /// <param name="base_address">Base address of region to free</param>
+        /// <param name="region_size">The size of the region.</param>
+        /// <param name="free_type">The type to free.</param>
+        public void FreeMemory(long base_address, long region_size, MemoryFreeType free_type)
+        {
+            NtVirtualMemory.FreeMemory(Handle, base_address, region_size, free_type);
+        }
+
+        /// <summary>
+        /// Change protection on a region of memory.
+        /// </summary>
+        /// <param name="base_address">The base address</param>
+        /// <param name="region_size">The size of the memory region.</param>
+        /// <param name="new_protect">The new protection type.</param>
+        /// <returns>The old protection for the region.</returns>
+        public MemoryAllocationProtect ProtectMemory(long base_address,
+            long region_size, MemoryAllocationProtect new_protect)
+        {
+            return NtVirtualMemory.ProtectMemory(Handle, base_address, 
+                region_size, new_protect);
         }
     }
 }
