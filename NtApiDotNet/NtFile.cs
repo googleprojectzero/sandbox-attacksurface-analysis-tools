@@ -708,9 +708,13 @@ namespace NtApiDotNet
 
     public static class NtWellKnownIoControlCodes
     {
+        public static readonly NtIoControlCode FSCTL_REQUEST_OPLOCK_LEVEL_1 = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 0, FileControlMethod.Buffered, FileControlAccess.Any);
+        public static readonly NtIoControlCode FSCTL_REQUEST_OPLOCK_LEVEL_2 = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 1, FileControlMethod.Buffered, FileControlAccess.Any);
+        public static readonly NtIoControlCode FSCTL_REQUEST_BATCH_OPLOCK = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 2, FileControlMethod.Buffered, FileControlAccess.Any);
         public static readonly NtIoControlCode FSCTL_SET_REPARSE_POINT = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 41, FileControlMethod.Buffered, FileControlAccess.Any);
         public static readonly NtIoControlCode FSCTL_GET_REPARSE_POINT = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 42, FileControlMethod.Buffered, FileControlAccess.Any);
         public static readonly NtIoControlCode FSCTL_DELETE_REPARSE_POINT = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 43, FileControlMethod.Buffered, FileControlAccess.Any);
+        public static readonly NtIoControlCode FSCTL_REQUEST_OPLOCK = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 144, FileControlMethod.Buffered, FileControlAccess.Any);
     }
 
     public enum ReparseTag : uint
@@ -2371,6 +2375,32 @@ namespace NtApiDotNet
                     return base.FullPath;
                 }
             }
+        }
+
+        /// <summary>
+        /// Oplock the file exclusively (no other users can access the file).
+        /// </summary>
+        public void OplockExclusive()
+        {
+            FsControl(NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK_LEVEL_1, null, null);
+        }
+
+        /// <summary>
+        /// Oplock the file exclusively (no other users can access the file).
+        /// </summary>
+        /// <param name="timeout_ms">Timeout in milliseconds. Timeout.Infinite for infinite.</param>
+        /// <param name="token">Cancellation token.</param>
+        public Task OplockExclusiveAsync(int timeout_ms, CancellationToken token)
+        {
+            return FsControlAsync(NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK_LEVEL_1, null, null, timeout_ms, token);
+        }
+
+        /// <summary>
+        /// Oplock the file exclusively (no other users can access the file).
+        /// </summary>
+        public Task OplockExclusiveAsync()
+        {
+            return OplockExclusiveAsync(Timeout.Infinite, CancellationToken.None);
         }
 
         /// <summary>
