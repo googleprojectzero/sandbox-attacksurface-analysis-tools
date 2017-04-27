@@ -1203,6 +1203,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="base_address">The base address.</param>
         /// <returns>The queries memory information.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public MemoryInformation QueryMemoryInformation(long base_address)
         {
             return NtVirtualMemory.QueryMemoryInformation(Handle, base_address);
@@ -1212,25 +1213,56 @@ namespace NtApiDotNet
         /// Query all memory information regions in process memory.
         /// </summary>
         /// <returns>The list of memory regions.</returns>
-        public IEnumerable<MemoryInformation> QueryMemoryInformation()
+        /// <param name="include_free_regions">True to include free regions of memory.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public IEnumerable<MemoryInformation> QueryAllMemoryInformation(bool include_free_regions)
         {
-            List<MemoryInformation> ret = new List<MemoryInformation>();
-            try
+            IEnumerable<MemoryInformation> mem_infos = NtVirtualMemory.QueryMemoryInformation(Handle);
+            if (!include_free_regions)
             {
-                long base_address = 0;
+                return mem_infos.Where(m => m.State != MemoryState.Free);
+            }
+            return mem_infos;
+        }
 
-                do
-                {
-                    MemoryInformation mem_info = QueryMemoryInformation(base_address);
-                    ret.Add(mem_info);
-                    base_address = mem_info.BaseAddress + mem_info.RegionSize;
-                }
-                while (base_address < long.MaxValue);
-            }
-            catch (NtException)
-            {
-            }
-            return ret;
+        /// <summary>
+        /// Query all memory information regions in process memory excluding free regions.
+        /// </summary>
+        /// <returns>The list of memory regions.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public IEnumerable<MemoryInformation> QueryAllMemoryInformation()
+        {
+            return QueryAllMemoryInformation(false);
+        }
+
+        /// <summary>
+        /// Query a list of mapped images in a process.
+        /// </summary>
+        /// <returns>The list of mapped images</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public IEnumerable<MappedFile> QueryMappedImages()
+        {
+            return QueryAllMappedFiles().Where(m => m.IsImage);
+        }
+
+        /// <summary>
+        /// Query a list of mapped files in a process.
+        /// </summary>
+        /// <returns>The list of mapped images</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public IEnumerable<MappedFile> QueryMappedFiles()
+        {
+            return QueryAllMappedFiles().Where(m => !m.IsImage);
+        }
+
+        /// <summary>
+        /// Query a list of all mapped files and images in a process.
+        /// </summary>
+        /// <returns>The list of mapped images</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public IEnumerable<MappedFile> QueryAllMappedFiles()
+        {
+            return NtVirtualMemory.QueryMappedFiles(Handle);
         }
 
         /// <summary>
@@ -1241,6 +1273,7 @@ namespace NtApiDotNet
         /// <param name="allocation_type">The type of allocation.</param>
         /// <param name="protect">The allocation protection.</param>
         /// <returns>The address of the allocated region.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public long AllocateMemory(long base_address,
             long region_size, MemoryAllocationType allocation_type, MemoryAllocationProtect protect)
         {
@@ -1253,6 +1286,7 @@ namespace NtApiDotNet
         /// <param name="base_address">Base address of region to free</param>
         /// <param name="region_size">The size of the region.</param>
         /// <param name="free_type">The type to free.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public void FreeMemory(long base_address, long region_size, MemoryFreeType free_type)
         {
             NtVirtualMemory.FreeMemory(Handle, base_address, region_size, free_type);
@@ -1265,6 +1299,7 @@ namespace NtApiDotNet
         /// <param name="region_size">The size of the memory region.</param>
         /// <param name="new_protect">The new protection type.</param>
         /// <returns>The old protection for the region.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public MemoryAllocationProtect ProtectMemory(long base_address,
             long region_size, MemoryAllocationProtect new_protect)
         {

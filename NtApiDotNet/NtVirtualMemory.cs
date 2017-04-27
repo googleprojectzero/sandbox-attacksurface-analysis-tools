@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -208,6 +210,56 @@ namespace NtApiDotNet
     }
 
     /// <summary>
+    /// Class which represents a mapped file.
+    /// </summary>
+    public class MappedFile
+    {
+        /// <summary>
+        /// Native path to file.
+        /// </summary>
+        public string Path { get; private set; }
+        /// <summary>
+        /// List of mapped sections.
+        /// </summary>
+        public IEnumerable<MemoryInformation> Sections { get; private set; }
+        /// <summary>
+        /// Mapped base address of file.
+        /// </summary>
+        public long BaseAddress { get; private set; }
+        /// <summary>
+        /// Mapped size of file.
+        /// </summary>
+        public long Size { get; private set; }
+
+        /// <summary>
+        /// True if the mapped file is an image section.
+        /// </summary>
+        public bool IsImage { get; private set; }
+
+        internal MappedFile(IEnumerable<MemoryInformation> sections)
+        {
+            MemoryInformation first = sections.First();
+            BaseAddress = first.AllocationBase;
+            MemoryInformation last = sections.Last();
+            Size = (last.BaseAddress - BaseAddress) + last.RegionSize;
+            Sections = sections;
+            Path = first.MappedImagePath;
+            IsImage = first.Type == MemoryType.Image;
+        }
+
+        static IEnumerable<MemoryInformation> ToEnumerable(MemoryInformation mem_info)
+        {
+            List<MemoryInformation> ret = new List<MemoryInformation>();
+            ret.Add(mem_info);
+            return ret.AsReadOnly();
+        }
+
+        internal MappedFile(MemoryInformation mem_info) : this(ToEnumerable(mem_info))
+        {
+        }
+    }
+
+    /// <summary>
     /// Static class to access virtual memory functions of NT.
     /// </summary>
     public static class NtVirtualMemory
@@ -217,7 +269,8 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="process">The process to query.</param>
         /// <param name="base_address">The base address.</param>
-        /// <returns></returns>
+        /// <returns>The memory information for the region.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static MemoryInformation QueryMemoryInformation(SafeKernelObjectHandle process, long base_address)
         {
             MemoryBasicInformation basic_info = new MemoryBasicInformation();
@@ -231,7 +284,7 @@ namespace NtApiDotNet
                 basic_info = buffer.Result;
             }
 
-            if (basic_info.Type == MemoryType.Image)
+            if (basic_info.Type == MemoryType.Image || basic_info.Type == MemoryType.Mapped)
             {
                 using (var buffer = new SafeStructureInOutBuffer<UnicodeStringOut>(0x1000, true))
                 {
@@ -246,6 +299,50 @@ namespace NtApiDotNet
             }
 
             return new MemoryInformation(basic_info, mapped_image_path);
+        }
+
+        /// <summary>
+        /// Query all memory information regions in process memory.
+        /// </summary>
+        /// <returns>The list of memory regions.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static IEnumerable<MemoryInformation> QueryMemoryInformation(SafeKernelObjectHandle process)
+        {
+            List<MemoryInformation> ret = new List<MemoryInformation>();
+            try
+            {
+                long base_address = 0;
+
+                do
+                {
+                    MemoryInformation mem_info = QueryMemoryInformation(process, base_address);
+                    ret.Add(mem_info);
+                    base_address = mem_info.BaseAddress + mem_info.RegionSize;
+                }
+                while (base_address < long.MaxValue);
+            }
+            catch (NtException)
+            {
+            }
+            return ret;
+        }
+
+        /// <summary>
+        /// Query a list of mapped files in a process.
+        /// </summary>
+        /// <param name="process">The process to query.</param>
+        /// <returns>The list of mapped images</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static IEnumerable<MappedFile> QueryMappedFiles(SafeKernelObjectHandle process)
+        {
+            IEnumerable<MemoryInformation> mapped_files = QueryMemoryInformation(process).Where(m => m.Type == MemoryType.Image || m.Type == MemoryType.Mapped);
+
+            // Assume image files tend to be mapped once.
+            return mapped_files.Where(m => m.Type == MemoryType.Image)
+                               .GroupBy(m => m.MappedImagePath)
+                               .Select(g => new MappedFile(g.ToList().AsReadOnly()))
+                               .Concat(mapped_files.Where(m => m.Type == MemoryType.Mapped).Select(m => new MappedFile(m)))
+                               .OrderBy(f => f.BaseAddress);
         }
 
         /// <summary>
@@ -304,6 +401,7 @@ namespace NtApiDotNet
         /// <param name="allocation_type">The type of allocation.</param>
         /// <param name="protect">The allocation protection.</param>
         /// <returns>The address of the allocated region.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static long AllocateMemory(SafeKernelObjectHandle process, long base_address, 
             long region_size, MemoryAllocationType allocation_type, MemoryAllocationProtect protect)
         {
@@ -321,6 +419,7 @@ namespace NtApiDotNet
         /// <param name="base_address">Base address of region to free</param>
         /// <param name="region_size">The size of the region.</param>
         /// <param name="free_type">The type to free.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static void FreeMemory(SafeKernelObjectHandle process, long base_address, long region_size, MemoryFreeType free_type)
         {
             IntPtr base_address_ptr = new IntPtr(base_address);
@@ -337,6 +436,7 @@ namespace NtApiDotNet
         /// <param name="region_size">The size of the memory region.</param>
         /// <param name="new_protect">The new protection type.</param>
         /// <returns>The old protection for the region.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static MemoryAllocationProtect ProtectMemory(SafeKernelObjectHandle process, 
             long base_address, long region_size, MemoryAllocationProtect new_protect)
         {
