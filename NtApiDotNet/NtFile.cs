@@ -1040,18 +1040,27 @@ namespace NtApiDotNet
 
         internal async Task<NtStatus> CompleteCallAsync(NtStatus status, CancellationToken token)
         {
-            if (status == NtStatus.STATUS_PENDING)
+            try
             {
-                if (await WaitForCompleteAsync(token))
+                if (status == NtStatus.STATUS_PENDING)
                 {
-                    return _result.Status;
+                    if (await WaitForCompleteAsync(token))
+                    {
+                        return _result.Status;
+                    }
                 }
+                else if (status == NtStatus.STATUS_SUCCESS)
+                {
+                    _result = _io_status.Result;
+                }
+                return status;
             }
-            else if (status == NtStatus.STATUS_SUCCESS)
+            catch (TaskCanceledException)
             {
-                _result = _io_status.Result;
+                // Cancel and then rethrow.
+                Cancel();
+                throw;
             }
-            return status;
         }
 
         /// <summary>
@@ -1223,9 +1232,13 @@ namespace NtApiDotNet
     /// </summary>
     public class NtFile : NtObjectWithDuplicate<NtFile, FileAccessRights>
     {
+        // Cancellation source for stopping pending IO on close.
+        private CancellationTokenSource _cts;
+
         internal NtFile(SafeKernelObjectHandle handle) : base(handle)
         {
             CanSynchronize = IsAccessGranted(FileAccessRights.Synchronize);
+            _cts = new CancellationTokenSource();
         }
 
         /// <summary>
@@ -1399,24 +1412,7 @@ namespace NtApiDotNet
         {
             return buffer != null ? (int)buffer.ByteLength : 0;
         }
-
-        private async Task<int> DeviceIoControlAsync(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, CancellationToken token)
-        {
-            // 
-            using (NtFileResult result = new NtFileResult(this))
-            {
-                NtStatus status = await result.CompleteCallAsync(NtSystemCalls.NtDeviceIoControlFile(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
-                    control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)), token);
-                if (status == NtStatus.STATUS_PENDING)
-                {
-                    result.Cancel();
-                    throw new NtException(NtStatus.STATUS_CANCELLED);
-                }
-                status.ToNtException();
-                return result.Information32;
-            }
-        }
-
+        
         private delegate NtStatus IoControlFunction(SafeKernelObjectHandle FileHandle,
                                                     SafeKernelObjectHandle Event,
                                                     IntPtr ApcRoutine,
@@ -1431,35 +1427,31 @@ namespace NtApiDotNet
         private async Task<int> IoControlGenericAsync(IoControlFunction func, 
                         NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, CancellationToken token)
         {
-            using (NtFileResult result = new NtFileResult(this))
+            using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
             {
-                NtStatus status = await result.CompleteCallAsync(func(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
-                    control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)), token);
-                if (status == NtStatus.STATUS_PENDING)
+                using (NtFileResult result = new NtFileResult(this))
                 {
-                    result.Cancel();
-                    throw new NtException(NtStatus.STATUS_CANCELLED);
+                    NtStatus status = await result.CompleteCallAsync(func(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
+                        control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), 
+                        GetSafePointer(output_buffer), GetSafeLength(output_buffer)), linked_cts.Token);
+                    if (status == NtStatus.STATUS_PENDING)
+                    {
+                        result.Cancel();
+                        throw new NtException(NtStatus.STATUS_CANCELLED);
+                    }
+                    status.ToNtException();
+                    return result.Information32;
                 }
-                status.ToNtException();
-                return result.Information32;
             }
         }
 
-        private Task<int> IoControlGenericAsync(IoControlFunction func, NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
-        {
-            using (CancellationTokenSource cts = new CancellationTokenSource())
-            {
-                return IoControlGenericAsync(func, control_code, input_buffer, output_buffer, cts.Token).OnCancel(cts);
-            }
-        }
-
-        private async Task<byte[]> IoControlGenericAsync(IoControlFunction func, NtIoControlCode control_code, byte[] input_buffer, int max_output)
+        private async Task<byte[]> IoControlGenericAsync(IoControlFunction func, NtIoControlCode control_code, byte[] input_buffer, int max_output, CancellationToken token)
         {
             using (SafeHGlobalBuffer input = input_buffer != null ? new SafeHGlobalBuffer(input_buffer) : null)
             {
                 using (SafeHGlobalBuffer output = max_output > 0 ? new SafeHGlobalBuffer(max_output) : null)
                 {
-                    int output_length = await IoControlGenericAsync(func, control_code, input, output);
+                    int output_length = await IoControlGenericAsync(func, control_code, input, output, token);
                     if (output != null)
                     {
                         return output.ReadBytes(output_length);
@@ -1475,11 +1467,65 @@ namespace NtApiDotNet
         /// <param name="control_code">The control code</param>
         /// <param name="input_buffer">Input buffer can be null</param>
         /// <param name="output_buffer">Output buffer can be null</param>
+        /// <param name="token">Cancellation token to cancel the async operation.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <returns>The length of output bytes returned.</returns>
+        public Task<int> DeviceIoControlAsync(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, CancellationToken token)
+        {
+            return IoControlGenericAsync(NtSystemCalls.NtDeviceIoControlFile, control_code, input_buffer, output_buffer, token);
+        }
+
+        /// <summary>
+        /// Send a Device IO Control code to the file driver.
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="max_output">Maximum output buffer size</param>
+        /// <param name="token">Cancellation token to cancel the async operation.</param>
+        /// <returns>The output buffer returned by the kernel.</returns>
+        public Task<byte[]> DeviceIoControlAsync(NtIoControlCode control_code, byte[] input_buffer, int max_output, CancellationToken token)
+        {
+            return IoControlGenericAsync(NtSystemCalls.NtDeviceIoControlFile, control_code, input_buffer, max_output, token);
+        }
+
+        /// <summary>
+        /// Send a File System Control code to the file driver
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="output_buffer">Output buffer can be null</param>
+        /// <param name="token">Cancellation token to cancel the async operation.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <returns>The length of output bytes returned.</returns>
+        public Task<int> FsControlAsync(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, CancellationToken token)
+        {
+            return IoControlGenericAsync(NtSystemCalls.NtFsControlFile, control_code, input_buffer, output_buffer, token);
+        }
+
+        /// <summary>
+        /// Send a File System Control code to the file driver.
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="max_output">Maximum output buffer size</param>
+        /// <param name="token">Cancellation token to cancel the async operation.</param>
+        /// <returns>The output buffer returned by the kernel.</returns>
+        public Task<byte[]> FsControlAsync(NtIoControlCode control_code, byte[] input_buffer, int max_output, CancellationToken token)
+        {
+            return IoControlGenericAsync(NtSystemCalls.NtFsControlFile, control_code, input_buffer, max_output, token);
+        }
+
+        /// <summary>
+        /// Send a Device IO Control code to the file driver
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="output_buffer">Output buffer can be null</param>
         /// <exception cref="NtException">Thrown on error.</exception>
         /// <returns>The length of output bytes returned.</returns>
         public Task<int> DeviceIoControlAsync(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
         {
-            return IoControlGenericAsync(NtSystemCalls.NtDeviceIoControlFile, control_code, input_buffer, output_buffer);
+            return DeviceIoControlAsync(control_code, input_buffer, output_buffer, CancellationToken.None);
         }
 
         /// <summary>
@@ -1491,7 +1537,7 @@ namespace NtApiDotNet
         /// <returns>The output buffer returned by the kernel.</returns>
         public Task<byte[]> DeviceIoControlAsync(NtIoControlCode control_code, byte[] input_buffer, int max_output)
         {
-            return IoControlGenericAsync(NtSystemCalls.NtDeviceIoControlFile, control_code, input_buffer, max_output);
+            return DeviceIoControlAsync(control_code, input_buffer, max_output, CancellationToken.None);
         }
 
         /// <summary>
@@ -1504,7 +1550,7 @@ namespace NtApiDotNet
         /// <returns>The length of output bytes returned.</returns>
         public Task<int> FsControlAsync(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
         {
-            return IoControlGenericAsync(NtSystemCalls.NtFsControlFile, control_code, input_buffer, output_buffer);
+            return FsControlAsync(control_code, input_buffer, output_buffer, CancellationToken.None);
         }
 
         /// <summary>
@@ -1516,7 +1562,7 @@ namespace NtApiDotNet
         /// <returns>The output buffer returned by the kernel.</returns>
         public Task<byte[]> FsControlAsync(NtIoControlCode control_code, byte[] input_buffer, int max_output)
         {
-            return IoControlGenericAsync(NtSystemCalls.NtFsControlFile, control_code, input_buffer, max_output);
+            return FsControlAsync(control_code, input_buffer, max_output, CancellationToken.None);
         }
 
         private int IoControlGeneric(IoControlFunction func, NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
@@ -1524,7 +1570,8 @@ namespace NtApiDotNet
             using (NtFileResult result = new NtFileResult(this))
             {
                 NtStatus status = result.CompleteCall(func(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
-                    control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer))).ToNtException();
+                    control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), 
+                    GetSafeLength(output_buffer))).ToNtException();
                 return result.Information32;
             }
         }
@@ -2044,32 +2091,39 @@ namespace NtApiDotNet
             return Read(length, null);
         }
 
-        private async Task<byte[]> ReadAsync(int length, LargeInteger position, CancellationTokenSource cts)
+        private async Task<byte[]> ReadAsync(int length, LargeInteger position, CancellationToken token)
         {
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(length))
+            using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
             {
-                using (NtFileResult result = new NtFileResult(this))
+                using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(length))
                 {
-                    NtStatus status = await result.CompleteCallAsync(NtSystemCalls.NtReadFile(Handle, result.EventHandle, IntPtr.Zero,
-                        IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero),
-                        cts.Token);
-                    if (status == NtStatus.STATUS_PENDING)
+                    using (NtFileResult result = new NtFileResult(this))
                     {
-                        result.Cancel();
-                        throw new NtException(NtStatus.STATUS_CANCELLED);
+                        NtStatus status = await result.CompleteCallAsync(NtSystemCalls.NtReadFile(Handle, result.EventHandle, IntPtr.Zero,
+                            IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero),
+                            linked_cts.Token);
+                        if (status == NtStatus.STATUS_PENDING)
+                        {
+                            result.Cancel();
+                            throw new NtException(NtStatus.STATUS_CANCELLED);
+                        }
+                        status.ToNtException();
+                        return buffer.ReadBytes(result.Information32);
                     }
-                    status.ToNtException();
-                    return buffer.ReadBytes(result.Information32);
                 }
             }
         }
 
-        private Task<byte[]> ReadAsync(int length, LargeInteger position)
+        /// <summary>
+        /// Read data from a file with a length and position.
+        /// </summary>
+        /// <param name="length">The length of the read</param>
+        /// <param name="position">The position in the file to read</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <returns>The read bytes, this can be smaller than length.</returns>
+        public Task<byte[]> ReadAsync(int length, long position, CancellationToken token)
         {
-            using (CancellationTokenSource cts = new CancellationTokenSource())
-            {
-                return ReadAsync(length, position, cts).OnCancel(cts);
-            }
+            return ReadAsync(length, new LargeInteger(position), token);
         }
 
         /// <summary>
@@ -2080,7 +2134,7 @@ namespace NtApiDotNet
         /// <returns>The read bytes, this can be smaller than length.</returns>
         public Task<byte[]> ReadAsync(int length, long position)
         {
-            return ReadAsync(length, new LargeInteger(position));
+            return ReadAsync(length, position, CancellationToken.None);
         }
 
         private int Write(byte[] data, LargeInteger position)
@@ -2097,30 +2151,25 @@ namespace NtApiDotNet
             }
         }
 
-        private async Task<int> WriteAsync(byte[] data, LargeInteger position, CancellationTokenSource cts)
+        private async Task<int> WriteAsync(byte[] data, LargeInteger position, CancellationToken token)
         {
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(data))
+            using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
             {
-                using (NtFileResult result = new NtFileResult(this))
+                using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(data))
                 {
-                    NtStatus status = await result.CompleteCallAsync(NtSystemCalls.NtWriteFile(Handle, result.EventHandle, IntPtr.Zero,
-                        IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero), cts.Token);
-                    if (status == NtStatus.STATUS_PENDING)
+                    using (NtFileResult result = new NtFileResult(this))
                     {
-                        result.Cancel();
-                        throw new NtException(NtStatus.STATUS_CANCELLED);
+                        NtStatus status = await result.CompleteCallAsync(NtSystemCalls.NtWriteFile(Handle, result.EventHandle, IntPtr.Zero,
+                            IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero), linked_cts.Token);
+                        if (status == NtStatus.STATUS_PENDING)
+                        {
+                            result.Cancel();
+                            throw new NtException(NtStatus.STATUS_CANCELLED);
+                        }
+                        status.ToNtException();
+                        return result.Information32;
                     }
-                    status.ToNtException();
-                    return result.Information32;
                 }
-            }
-        }
-
-        private Task<int> WriteAsync(byte[] data, LargeInteger position)
-        {
-            using (CancellationTokenSource cts = new CancellationTokenSource())
-            {
-                return WriteAsync(data, position, cts).OnCancel(cts);
             }
         }
 
@@ -2153,9 +2202,21 @@ namespace NtApiDotNet
         /// <returns>The number of bytes written</returns>
         public Task<int> WriteAsync(byte[] data, long position)
         {
-            return WriteAsync(data, new LargeInteger(position));
+            return WriteAsync(data, position, CancellationToken.None);
         }
-        
+
+        /// <summary>
+        /// Write data to a file at a specific position asynchronously.
+        /// </summary>
+        /// <param name="data">The data to write.</param>
+        /// <param name="position">The position to write to.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <returns>The number of bytes written</returns>
+        public Task<int> WriteAsync(byte[] data, long position, CancellationToken token)
+        {
+            return WriteAsync(data, new LargeInteger(position), token);
+        }
+
         /// <summary>
         /// Get or set the current file position.
         /// </summary>
@@ -2339,15 +2400,51 @@ namespace NtApiDotNet
         /// <summary>
         /// Oplock the file exclusively (no other users can access the file).
         /// </summary>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        public Task OplockExclusiveAsync(CancellationToken token)
+        {
+            return FsControlAsync(NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK_LEVEL_1, null, null, token);
+        }
+
+        /// <summary>
+        /// Oplock the file exclusively (no other users can access the file).
+        /// </summary>
         public Task OplockExclusiveAsync()
         {
-            return FsControlAsync(NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK_LEVEL_1, null, null);
+            return OplockExclusiveAsync(CancellationToken.None);
         }
 
         /// <summary>
         /// Indicates if the file handle can be used for synchronization
         /// </summary>
         public bool CanSynchronize { get; private set; }
+
+        /// <summary>
+        /// Dispose.
+        /// </summary>
+        /// <param name="disposing">True is disposing.</param>
+        protected override void Dispose(bool disposing)
+        {
+            // Cancel any potential ongoing IO calls.
+            using (_cts)
+            {
+                _cts.Cancel();
+            }
+            base.Dispose(disposing);
+        }
+
+        /// <summary>
+        /// Try and cancel any pending asynchronous IO.
+        /// </summary>
+        public void CancelIo()
+        {
+            // Cancel token source then recreate a new one.
+            using (_cts)
+            {
+                _cts.Cancel();
+            }
+            _cts = new CancellationTokenSource();
+        }
     }
 
     /// <summary>
@@ -2443,17 +2540,6 @@ namespace NtApiDotNet
         public static FileAccessRights MapToFileAccess(this FileDirectoryAccessRights access_rights)
         {
             return (FileAccessRights)(uint)access_rights;
-        }
-
-        private static T CancelIo<T>(Task<T> task, CancellationTokenSource cts)
-        {
-            cts.Cancel();
-            return default(T);
-        }
-
-        internal static Task<T> OnCancel<T>(this Task<T> task, CancellationTokenSource cts)
-        {
-            return task.ContinueWith(t => CancelIo(t, cts), TaskContinuationOptions.OnlyOnCanceled);
         }
     }
 }
