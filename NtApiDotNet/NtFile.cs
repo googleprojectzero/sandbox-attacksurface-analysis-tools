@@ -2426,10 +2426,17 @@ namespace NtApiDotNet
         protected override void Dispose(bool disposing)
         {
             // Cancel any potential ongoing IO calls.
-            using (_cts)
+            try
             {
-                _cts.Cancel();
+                using (_cts)
+                {
+                    _cts.Cancel();
+                }
             }
+            catch
+            {
+            }
+
             base.Dispose(disposing);
         }
 
