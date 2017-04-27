@@ -19,6 +19,8 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace NtApiDotNet
 {
@@ -992,7 +994,7 @@ namespace NtApiDotNet
         }
     }
 
-    public sealed class NtFileResult : IDisposable
+    internal sealed class NtFileResult : IDisposable
     {
         private NtFile _file;
         private NtEvent _event;
@@ -1016,11 +1018,14 @@ namespace NtApiDotNet
             get { return _event != null ? _event.Handle : SafeKernelObjectHandle.Null; }
         }
 
-        internal NtStatus CompleteCall(NtStatus status, bool wait_for_completion)
+        internal NtStatus CompleteCall(NtStatus status)
         {
-            if (wait_for_completion && status == NtStatus.STATUS_PENDING)
+            if (status == NtStatus.STATUS_PENDING)
             {
-                status = WaitForComplete();
+                if (WaitForComplete())
+                {
+                    status = _io_status.Result.Status;
+                }
             }
             else if (status == NtStatus.STATUS_SUCCESS)
             {
@@ -1029,25 +1034,20 @@ namespace NtApiDotNet
             return status;
         }
 
-        internal NtStatus CompleteCall(NtStatus status)
+        internal async Task<NtStatus> CompleteCallAsync(NtStatus status, int timeout_ms, CancellationToken token)
         {
-            return CompleteCall(status, true);
-        }
-
-        /// <summary>
-        /// Wait for the result to complete. This could be waiting on an event
-        /// or the file handle.
-        /// </summary>
-        /// <returns>Returns the completed NT status code.</returns>
-        public NtStatus WaitForComplete()
-        {
-            // If we can't complete with an infinite timeout then thrown an exception.
-            if (!WaitForComplete(NtWaitTimeout.Infinite))
+            if (status == NtStatus.STATUS_PENDING)
             {
-                throw new NtException(NtStatus.STATUS_PENDING);
+                if (await WaitForCompleteAsync(timeout_ms, token))
+                {
+                    return _result.Status;
+                }
             }
-
-            return _result.Status;
+            else if (status == NtStatus.STATUS_SUCCESS)
+            {
+                _result = _io_status.Result;
+            }
+            return status;
         }
 
         /// <summary>
@@ -1056,24 +1056,55 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>Returns true if the wait completed successfully.</returns>
         /// <remarks>If true is returned then status and information can be read out.</remarks>
-        public bool WaitForComplete(NtWaitTimeout timeout)
+        internal bool WaitForComplete()
+        {
+            if (_result != null)
+            {
+                return true;
+            }
+            
+            NtStatus status;
+            if (_event != null)
+            {
+                status = _event.Wait(NtWaitTimeout.Infinite).ToNtException();
+            }
+            else
+            {
+                status = _file.Wait(NtWaitTimeout.Infinite).ToNtException();
+            }
+
+            if (status == NtStatus.STATUS_SUCCESS)
+            {
+                _result = _io_status.Result;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Wait for the result to complete asynchronously. This could be waiting on an event
+        /// or the file handle.
+        /// </summary>
+        /// <param name="timeout_ms">Timeout in milliseconds. Timeout.Infinite for infinite.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>Returns true if the wait completed successfully.</returns>
+        /// <remarks>If true is returned then status and information can be read out.</remarks>
+        internal async Task<bool> WaitForCompleteAsync(int timeout_ms, CancellationToken token)
         {
             if (_result != null)
             {
                 return true;
             }
 
-            NtStatus status;
-            if (_event != null)
+            bool success;
+
+            using (NtWaitHandle wait_handle = _event != null ? _event.DuplicateAsWaitHandle() : _file.DuplicateAsWaitHandle())
             {
-                status = _event.Wait(timeout).ToNtException();
-            }
-            else
-            {
-                status = _file.Wait(timeout).ToNtException();
+                success = await wait_handle.WaitAsync(timeout_ms, token);
             }
 
-            if (status == NtStatus.STATUS_SUCCESS)
+            if (success)
             {
                 _result = _io_status.Result;
                 return true;
@@ -1095,7 +1126,7 @@ namespace NtApiDotNet
         /// Return the status information field.
         /// </summary>
         /// <exception cref="NtException">Thrown if not complete.</exception>
-        public long Information
+        internal long Information
         {
             get
             {
@@ -1107,19 +1138,19 @@ namespace NtApiDotNet
         /// Return the status information field. (32 bit)
         /// </summary>
         /// <exception cref="NtException">Thrown if not complete.</exception>
-        public int Information32
+        internal int Information32
         {
             get
             {
                 return GetIoStatus().Information.ToInt32();
             }
         }
-        
+
         /// <summary>
         /// Get completion status code.
         /// </summary>
         /// <exception cref="NtException">Thrown if not complete.</exception>
-        public NtStatus Status
+        internal NtStatus Status
         {
             get
             {
@@ -1130,7 +1161,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Returns true if the call is pending.
         /// </summary>
-        public bool IsPending
+        internal bool IsPending
         {
             get
             {
@@ -1174,7 +1205,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Cancel the pending IO operation.
         /// </summary>
-        public void Cancel()
+        internal void Cancel()
         {
             IoStatus io_status = new IoStatus();
             NtSystemCalls.NtCancelIoFileEx(_file.Handle, 
@@ -1364,6 +1395,108 @@ namespace NtApiDotNet
         static int GetSafeLength(SafeBuffer buffer)
         {
             return buffer != null ? (int)buffer.ByteLength : 0;
+        }
+
+        /// <summary>
+        /// Send a Device IO Control code to the file driver
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="output_buffer">Output buffer can be null</param>
+        /// <param name="timeout_ms">Timeout in milliseconds. Timeout.Infinite for infinite.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <returns>The length of output bytes returned.</returns>
+        public async Task<int> DeviceIoControlAsync(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, int timeout_ms, CancellationToken token)
+        {
+            using (NtFileResult result = new NtFileResult(this))
+            {
+                NtStatus status = await result.CompleteCallAsync(NtSystemCalls.NtDeviceIoControlFile(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
+                    control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)), timeout_ms, token);
+                if (status == NtStatus.STATUS_PENDING)
+                {
+                    result.Cancel();
+                    throw new NtException(NtStatus.STATUS_CANCELLED);
+                }
+                status.ToNtException();
+                return result.Information32;
+            }
+        }
+
+        /// <summary>
+        /// Send a Device IO Control code to the file driver.
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="max_output">Maximum output buffer size</param>
+        /// <param name="timeout_ms">Timeout in milliseconds. Timeout.Infinite for infinite.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>The output buffer returned by the kernel.</returns>
+        public async Task<byte[]> DeviceIoControlAsync(NtIoControlCode control_code, byte[] input_buffer, int max_output, int timeout_ms, CancellationToken token)
+        {
+            using (SafeHGlobalBuffer input = input_buffer != null ? new SafeHGlobalBuffer(input_buffer) : null)
+            {
+                using (SafeHGlobalBuffer output = max_output > 0 ? new SafeHGlobalBuffer(max_output) : null)
+                {
+                    int output_length = await DeviceIoControlAsync(control_code, input, output, timeout_ms, token);
+                    if (output != null)
+                    {
+                        return output.ReadBytes(output_length);
+                    }
+                    return new byte[0];
+                }
+            }
+        }
+
+        /// <summary>
+        /// Send a File System Control code to the file driver
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="output_buffer">Output buffer can be null</param>
+        /// <param name="timeout_ms">Timeout in milliseconds. Timeout.Infinite for infinite.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <returns>The length of output bytes returned.</returns>
+        public async Task<int> FsControlAsync(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, int timeout_ms, CancellationToken token)
+        {
+            using (NtFileResult result = new NtFileResult(this))
+            {
+                NtStatus status = await result.CompleteCallAsync(NtSystemCalls.NtFsControlFile(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
+                    control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), GetSafeLength(output_buffer)), timeout_ms, token);
+                if (status == NtStatus.STATUS_PENDING)
+                {
+                    result.Cancel();
+                    throw new NtException(NtStatus.STATUS_CANCELLED);
+                }
+                status.ToNtException();
+                return result.Information32;
+            }
+        }
+
+        /// <summary>
+        /// Send a File System Control code to the file driver.
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="max_output">Maximum output buffer size</param>
+        /// <param name="timeout_ms">Timeout in milliseconds. Timeout.Infinite for infinite.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>The output buffer returned by the kernel.</returns>
+        public async Task<byte[]> FsControlAsync(NtIoControlCode control_code, byte[] input_buffer, int max_output, int timeout_ms, CancellationToken token)
+        {
+            using (SafeHGlobalBuffer input = input_buffer != null ? new SafeHGlobalBuffer(input_buffer) : null)
+            {
+                using (SafeHGlobalBuffer output = max_output > 0 ? new SafeHGlobalBuffer(max_output) : null)
+                {
+                    int output_length = await FsControlAsync(control_code, input, output, timeout_ms, token);
+                    if (output != null)
+                    {
+                        return output.ReadBytes(output_length);
+                    }
+                    return new byte[0];
+                }
+            }
         }
 
         /// <summary>
@@ -1897,6 +2030,75 @@ namespace NtApiDotNet
             return Read(length, null);
         }
 
+        private async Task<byte[]> ReadAsync(int length, LargeInteger position, int timeout_ms, CancellationToken token)
+        {
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(length))
+            {
+                using (NtFileResult result = new NtFileResult(this))
+                {
+                    NtStatus status = await result.CompleteCallAsync(NtSystemCalls.NtReadFile(Handle, result.EventHandle, IntPtr.Zero,
+                        IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero),
+                        timeout_ms, token);
+                    if (status == NtStatus.STATUS_PENDING)
+                    {
+                        result.Cancel();
+                        throw new NtException(NtStatus.STATUS_CANCELLED);
+                    }
+                    status.ToNtException();
+                    return buffer.ReadBytes(result.Information32);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Read data from a file with a length and position.
+        /// </summary>
+        /// <param name="length">The length of the read</param>
+        /// <param name="position">The position in the file to read</param>
+        /// <param name="timeout_ms">Timeout in milliseconds. Timeout.Infinite for infinite.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>The read bytes, this can be smaller than length.</returns>
+        public Task<byte[]> ReadAsync(int length, long position, int timeout_ms, CancellationToken token)
+        {
+            return ReadAsync(length, new LargeInteger(position), timeout_ms, token);
+        }
+
+        /// <summary>
+        /// Read data from a file with a length and position asynchronously.
+        /// </summary>
+        /// <param name="length">The length of the read</param>
+        /// <param name="position">The position in the file to read</param>
+        /// <param name="timeout_ms">Timeout in milliseconds. Timeout.Infinite for infinite.</param>
+        /// <returns>The read bytes, this can be smaller than length.</returns>
+        public Task<byte[]> ReadAsync(int length, long position, int timeout_ms)
+        {
+            return ReadAsync(length, new LargeInteger(position), timeout_ms, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Read data from a file with a length and position asynchronously.
+        /// </summary>
+        /// <param name="length">The length of the read</param>
+        /// <param name="position">The position in the file to read</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>The read bytes, this can be smaller than length.</returns>
+        public Task<byte[]> ReadAsync(int length, long position, CancellationToken token)
+        {
+            return ReadAsync(length, new LargeInteger(position), Timeout.Infinite, token);
+        }
+
+        /// <summary>
+        /// Read data from a file with a length and position asynchronously.
+        /// Will wait for ever to complete the read.
+        /// </summary>
+        /// <param name="length">The length of the read</param>
+        /// <param name="position">The position in the file to read</param>
+        /// <returns>The read bytes, this can be smaller than length.</returns>
+        public Task<byte[]> ReadAsync(int length, long position)
+        {
+            return ReadAsync(length, new LargeInteger(position), Timeout.Infinite, CancellationToken.None);
+        }
+
         private int Write(byte[] data, LargeInteger position)
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(data))
@@ -1906,6 +2108,25 @@ namespace NtApiDotNet
                     NtStatus status = result.CompleteCall(NtSystemCalls.NtWriteFile(Handle, result.EventHandle, IntPtr.Zero,
                         IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero)).ToNtException();
 
+                    return result.Information32;
+                }
+            }
+        }
+
+        private async Task<int> WriteAsync(byte[] data, LargeInteger position, int timeout_ms, CancellationToken token)
+        {
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(data))
+            {
+                using (NtFileResult result = new NtFileResult(this))
+                {
+                    NtStatus status = await result.CompleteCallAsync(NtSystemCalls.NtWriteFile(Handle, result.EventHandle, IntPtr.Zero,
+                        IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero), timeout_ms, token);
+                    if (status == NtStatus.STATUS_PENDING)
+                    {
+                        result.Cancel();
+                        throw new NtException(NtStatus.STATUS_CANCELLED);
+                    }
+                    status.ToNtException();
                     return result.Information32;
                 }
             }
@@ -1930,6 +2151,54 @@ namespace NtApiDotNet
         public int Write(byte[] data)
         {
             return Write(data, null);
+        }
+
+        /// <summary>
+        /// Write data to a file at a specific position asynchronously.
+        /// </summary>
+        /// <param name="data">The data to write</param>
+        /// <param name="position">The position to write to</param>
+        /// <param name="timeout_ms">Timeout in milliseconds. Timeout.Infinite for infinite.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>The number of bytes written</returns>
+        public Task<int> WriteAsync(byte[] data, long position, int timeout_ms, CancellationToken token)
+        {
+            return WriteAsync(data, new LargeInteger(position), timeout_ms, token);
+        }
+
+        /// <summary>
+        /// Write data to a file at a specific position asynchronously.
+        /// </summary>
+        /// <param name="data">The data to write</param>
+        /// <param name="position">The position to write to</param>
+        /// <param name="timeout_ms">Timeout in milliseconds. Timeout.Infinite for infinite.</param>
+        /// <returns>The number of bytes written</returns>
+        public Task<int> WriteAsync(byte[] data, long position, int timeout_ms)
+        {
+            return WriteAsync(data, new LargeInteger(position), timeout_ms, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Write data to a file at a specific position asynchronously.
+        /// </summary>
+        /// <param name="data">The data to write</param>
+        /// <param name="position">The position to write to</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>The number of bytes written</returns>
+        public Task<int> WriteAsync(byte[] data, long position, CancellationToken token)
+        {
+            return WriteAsync(data, new LargeInteger(position), Timeout.Infinite, token);
+        }
+
+        /// <summary>
+        /// Write data to a file at a specific position asynchronously.
+        /// </summary>
+        /// <param name="data">The data to write</param>
+        /// <param name="position">The position to write to</param>
+        /// <returns>The number of bytes written</returns>
+        public Task<int> WriteAsync(byte[] data, long position)
+        {
+            return WriteAsync(data, new LargeInteger(position), Timeout.Infinite, CancellationToken.None);
         }
 
         /// <summary>
