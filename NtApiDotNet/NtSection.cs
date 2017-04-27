@@ -19,21 +19,7 @@ using System.Runtime.InteropServices;
 namespace NtApiDotNet
 {
 #pragma warning disable 1591
-    [Flags]
-    public enum ProtectionType
-    {
-        None = 0,
-        NoAccess = 0x01,
-        ReadOnly = 0x02,
-        ReadWrite = 0x04,
-        WriteCopy = 0x08,
-        Execute = 0x10,
-        ExecuteRead = 0x20,
-        ExecuteWriteCopy = 0x80,
-        Guard = 0x100,
-        NoCache = 0x200,
-        WriteCombine = 0x400,
-    }
+
 
     [Flags]
     public enum SectionAttributes
@@ -46,7 +32,6 @@ namespace NtApiDotNet
         Commit = 0x08000000,
         NoCache = 0x10000000,
     }
-
 
     [Flags]
     public enum SectionAccessRights : uint
@@ -131,7 +116,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtCreateSection(out SafeKernelObjectHandle SectionHandle, 
             SectionAccessRights DesiredAccess,
             [In] ObjectAttributes ObjectAttributes, [In] LargeInteger SectionSize,
-            ProtectionType Protect, SectionAttributes Attributes,
+            MemoryAllocationProtect Protect, SectionAttributes Attributes,
             SafeHandle FileHandle);
 
         [DllImport("ntdll.dll")]
@@ -157,7 +142,7 @@ namespace NtApiDotNet
             ref IntPtr ViewSize,
             SectionInherit InheritDisposition,
             AllocationType AllocationType,
-            ProtectionType Win32Protect
+            MemoryAllocationProtect Win32Protect
         );
 
         [DllImport("ntdll.dll")]
@@ -230,7 +215,7 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class NtSection : NtObjectWithDuplicate<NtSection, SectionAccessRights>
     {
-        internal NtSection(SafeKernelObjectHandle handle, SectionAttributes attributes, ProtectionType protection, LargeInteger size) : base(handle)
+        internal NtSection(SafeKernelObjectHandle handle, SectionAttributes attributes, MemoryAllocationProtect protection, LargeInteger size) : base(handle)
         {
         }
 
@@ -246,7 +231,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtSection CreateImageSection(NtFile file)
         {
-            return Create(null, SectionAccessRights.MaximumAllowed, null, ProtectionType.Execute, SectionAttributes.Image, file);
+            return Create(null, SectionAccessRights.MaximumAllowed, null, MemoryAllocationProtect.Execute, SectionAttributes.Image, file);
         }
 
         /// <summary>
@@ -260,7 +245,7 @@ namespace NtApiDotNet
         /// <param name="file">Optional backing file</param>
         /// <returns>The opened section</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtSection Create(ObjectAttributes object_attributes, SectionAccessRights desired_access, long? size, ProtectionType protection, SectionAttributes attributes, NtFile file)
+        public static NtSection Create(ObjectAttributes object_attributes, SectionAccessRights desired_access, long? size, MemoryAllocationProtect protection, SectionAttributes attributes, NtFile file)
         {
             SafeKernelObjectHandle section_handle;
             NtSystemCalls.NtCreateSection(out section_handle, desired_access, object_attributes,
@@ -280,7 +265,7 @@ namespace NtApiDotNet
         /// <param name="file">Optional backing file</param>
         /// <returns>The opened section</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtSection Create(string path, NtObject root, SectionAccessRights desired_access, long? size, ProtectionType protection, SectionAttributes attributes, NtFile file)
+        public static NtSection Create(string path, NtObject root, SectionAccessRights desired_access, long? size, MemoryAllocationProtect protection, SectionAttributes attributes, NtFile file)
         {
             using (ObjectAttributes obj_attr = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
@@ -297,7 +282,7 @@ namespace NtApiDotNet
         public static NtSection Create(long size)
         {
             return Create(null, SectionAccessRights.MaximumAllowed, size, 
-                ProtectionType.ReadWrite, SectionAttributes.Commit, null);
+                MemoryAllocationProtect.ReadWrite, SectionAttributes.Commit, null);
         }
 
         /// <summary>
@@ -307,7 +292,7 @@ namespace NtApiDotNet
         /// <returns>The mapped section</returns>
         public NtMappedSection MapReadWrite(NtProcess process)
         {
-            return Map(process, ProtectionType.ReadWrite);
+            return Map(process, MemoryAllocationProtect.ReadWrite);
         }
 
         /// <summary>
@@ -317,7 +302,7 @@ namespace NtApiDotNet
         /// <returns>The mapped section</returns>
         public NtMappedSection MapRead(NtProcess process)
         {
-            return Map(process, ProtectionType.ReadOnly);
+            return Map(process, MemoryAllocationProtect.ReadOnly);
         }
 
         /// <summary>
@@ -326,7 +311,7 @@ namespace NtApiDotNet
         /// <returns>The mapped section</returns>
         public NtMappedSection MapRead()
         {
-            return Map(NtProcess.Current, ProtectionType.ReadOnly);
+            return Map(NtProcess.Current, MemoryAllocationProtect.ReadOnly);
         }
 
         /// <summary>
@@ -335,7 +320,7 @@ namespace NtApiDotNet
         /// <returns>The mapped section</returns>
         public NtMappedSection MapReadWrite()
         {
-            return Map(NtProcess.Current, ProtectionType.ReadWrite);
+            return Map(NtProcess.Current, MemoryAllocationProtect.ReadWrite);
         }
 
         /// <summary>
@@ -344,7 +329,7 @@ namespace NtApiDotNet
         /// <param name="process">The process to map into</param>
         /// <param name="type">The protection of the mapping</param>
         /// <returns>The mapped section</returns>
-        public NtMappedSection Map(NtProcess process, ProtectionType type)
+        public NtMappedSection Map(NtProcess process, MemoryAllocationProtect type)
         {
             IntPtr base_address = IntPtr.Zero;
             IntPtr view_size = new IntPtr(0);
@@ -359,7 +344,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="type">The protection of the mapping</param>
         /// <returns>The mapped section</returns>
-        public NtMappedSection Map(ProtectionType type)
+        public NtMappedSection Map(MemoryAllocationProtect type)
         {
             return Map(NtProcess.Current, type);
         }

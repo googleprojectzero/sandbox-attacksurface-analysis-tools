@@ -107,6 +107,12 @@ namespace NtObjectManager
         public ProcessAccessRights Access { get; set; }
 
         /// <summary>
+        /// <para type="description">Open current process.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter Current { get; set; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public GetNtProcessCmdlet()
@@ -189,13 +195,13 @@ namespace NtObjectManager
         /// </summary>
         protected override void ProcessRecord()
         {
-            if (ProcessId == -1)
+            if (ProcessId == -1 && !Current)
             {
                 WriteObject(GetProcesses(), true);
             }
             else
             {
-                WriteObject(NtProcess.Open(ProcessId, Access));
+                WriteObject(Current ? NtProcess.Current : NtProcess.Open(ProcessId, Access));
             }
         }
     }

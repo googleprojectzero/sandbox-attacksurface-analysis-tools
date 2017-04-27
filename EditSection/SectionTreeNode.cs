@@ -71,7 +71,7 @@ namespace EditSection
 
             using (NtSection section = NtSection.DuplicateFrom(_ent.ProcessId, new IntPtr(_ent.Handle), accessRights))
             {
-                return section.Map(writable ? ProtectionType.ReadWrite : ProtectionType.ReadOnly);
+                return section.Map(writable ? MemoryAllocationProtect.ReadWrite : MemoryAllocationProtect.ReadOnly);
             }
         }
 

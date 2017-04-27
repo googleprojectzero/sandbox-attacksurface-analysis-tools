@@ -54,7 +54,7 @@ namespace EditSection
                 {
                     using (NtSection handle = (NtSection)frm.ObjectHandle)
                     {
-                        NtMappedSection mapped_file = handle.Map(frm.ReadOnly ? ProtectionType.ReadOnly : ProtectionType.ReadWrite);
+                        NtMappedSection mapped_file = handle.Map(frm.ReadOnly ? MemoryAllocationProtect.ReadOnly : MemoryAllocationProtect.ReadWrite);
                         SectionEditorForm c = new SectionEditorForm(mapped_file, frm.ObjectName, frm.ReadOnly);
 
                         c.Show(dockPanel, DockState.Document);
