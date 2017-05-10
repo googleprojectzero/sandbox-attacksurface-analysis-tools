@@ -31,6 +31,10 @@ namespace NtObjectManager
     ///   <para>Get all NT processes accessible by the current user.</para>
     /// </example>
     /// <example>
+    ///   <code>$p = Get-NtProcess -Current</code>
+    ///   <para>Get reference to current process.</para>
+    /// </example>
+    /// <example>
     ///   <code>$ps = Get-NtProcess -Access DupHandle</code>
     ///   <para>Get all NT processes accessible by the current user for duplicate handle access.</para>
     /// </example>
@@ -190,6 +194,18 @@ namespace NtObjectManager
             }
         }
 
+        private static NtProcess GetCurrentProcess(ProcessAccessRights access)
+        {
+            if ((access & ProcessAccessRights.MaximumAllowed) == ProcessAccessRights.MaximumAllowed)
+            {
+                return NtProcess.Current;
+            }
+            else
+            {
+                return NtProcess.Current.Duplicate(access);
+            }
+        }
+
         /// <summary>
         /// Overridden ProcessRecord method.
         /// </summary>
@@ -201,7 +217,7 @@ namespace NtObjectManager
             }
             else
             {
-                WriteObject(Current ? NtProcess.Current : NtProcess.Open(ProcessId, Access));
+                WriteObject(Current ? GetCurrentProcess(Access) : NtProcess.Open(ProcessId, Access));
             }
         }
     }
