@@ -16,7 +16,6 @@ using HandleUtils;
 using NtApiDotNet;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO.Pipes;
 using System.Linq;
 using System.Threading.Tasks;
@@ -164,7 +163,7 @@ namespace TokenViewer
         {
             using (var processes = new DisposableList<NtProcess>(NtProcess.GetProcesses(ProcessAccessRights.QueryInformation)))
             {
-                processes.Sort((a, b) => a.ProcessId- b.ProcessId);
+                processes.Sort((a, b) => a.ProcessId - b.ProcessId);
 
                 IEnumerable<NtProcess> filtered = processes.Where(p => GetToken(p) != null);
 
