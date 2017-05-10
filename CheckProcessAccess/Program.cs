@@ -16,7 +16,6 @@ using NDesk.Options;
 using NtApiDotNet;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -76,6 +75,7 @@ namespace CheckProcessAccess
                 Threads = threads.Select(h => new ThreadEntry(h)).ToArray();
                 Array.Sort(Threads, (a, b) => a.Tid - b.Tid);
                 ImagePath = String.Empty;
+                Name = String.Empty;
                 if (Pid == 0)
                 {
                     Name = "Idle";
@@ -278,15 +278,16 @@ namespace CheckProcessAccess
                         {
                             try
                             {
+                                HashSet<string> names = new HashSet<string>(pids, StringComparer.OrdinalIgnoreCase);
                                 using (var imp = NtToken.Impersonate(_pid,
                                     _identify_only ? SecurityImpersonationLevel.Identification : SecurityImpersonationLevel.Impersonation))
                                 {
                                     processes = NtProcess.GetProcesses(ProcessAccessRights.MaximumAllowed).Select(h => new ProcessEntry(h));
                                 }
 
-                                if (_named_process && pids.Count > 0)
+                                if (_named_process && names.Count > 0)
                                 {
-                                    processes = processes.Where(p => pids.Contains(p.Name.ToLower()));
+                                    processes = processes.Where(p => names.Contains(p.Name));
                                 }
                             }
                             catch (NtException ex)
