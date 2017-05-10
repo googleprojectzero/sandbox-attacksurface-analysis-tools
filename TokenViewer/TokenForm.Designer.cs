@@ -62,6 +62,7 @@
             System.Windows.Forms.GroupBox groupBox1;
             System.Windows.Forms.Label label16;
             System.Windows.Forms.GroupBox groupBox2;
+            System.Windows.Forms.Label label26;
             System.Windows.Forms.Label label22;
             System.Windows.Forms.Label label20;
             System.Windows.Forms.Label label19;
@@ -74,7 +75,6 @@
             System.Windows.Forms.Label label23;
             System.Windows.Forms.ColumnHeader columnHeader5;
             System.Windows.Forms.ColumnHeader columnHeader6;
-            System.Windows.Forms.Label label26;
             this.groupBoxSource = new System.Windows.Forms.GroupBox();
             this.txtSourceId = new System.Windows.Forms.TextBox();
             this.txtSourceName = new System.Windows.Forms.TextBox();
@@ -111,6 +111,7 @@
             this.checkBoxMakeInteractive = new System.Windows.Forms.CheckBox();
             this.btnCreateProcess = new System.Windows.Forms.Button();
             this.txtCommandLine = new System.Windows.Forms.TextBox();
+            this.txtHandleAccess = new System.Windows.Forms.TextBox();
             this.btnToggleUIAccess = new System.Windows.Forms.Button();
             this.treeViewSecurityAttributes = new System.Windows.Forms.TreeView();
             this.llbSecurityAttributes = new System.Windows.Forms.Label();
@@ -147,7 +148,7 @@
             this.tabPageMisc = new System.Windows.Forms.TabPage();
             this.tabPageOperations = new System.Windows.Forms.TabPage();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.txtHandleAccess = new System.Windows.Forms.TextBox();
+            this.btnToggleVirtualizationEnabled = new System.Windows.Forms.Button();
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
@@ -181,6 +182,7 @@
             groupBox1 = new System.Windows.Forms.GroupBox();
             label16 = new System.Windows.Forms.Label();
             groupBox2 = new System.Windows.Forms.GroupBox();
+            label26 = new System.Windows.Forms.Label();
             label22 = new System.Windows.Forms.Label();
             label20 = new System.Windows.Forms.Label();
             label19 = new System.Windows.Forms.Label();
@@ -193,7 +195,6 @@
             label23 = new System.Windows.Forms.Label();
             columnHeader5 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            label26 = new System.Windows.Forms.Label();
             tabPageMain.SuspendLayout();
             this.groupBoxSource.SuspendLayout();
             groupBoxToken.SuspendLayout();
@@ -870,6 +871,7 @@
             groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            groupBox2.Controls.Add(this.btnToggleVirtualizationEnabled);
             groupBox2.Controls.Add(label26);
             groupBox2.Controls.Add(this.txtHandleAccess);
             groupBox2.Controls.Add(this.btnToggleUIAccess);
@@ -891,6 +893,23 @@
             groupBox2.TabIndex = 0;
             groupBox2.TabStop = false;
             groupBox2.Text = "Additional Properties";
+            // 
+            // label26
+            // 
+            label26.AutoSize = true;
+            label26.Location = new System.Drawing.Point(6, 150);
+            label26.Name = "label26";
+            label26.Size = new System.Drawing.Size(82, 13);
+            label26.TabIndex = 19;
+            label26.Text = "Handle Access:";
+            // 
+            // txtHandleAccess
+            // 
+            this.txtHandleAccess.Location = new System.Drawing.Point(121, 147);
+            this.txtHandleAccess.Name = "txtHandleAccess";
+            this.txtHandleAccess.ReadOnly = true;
+            this.txtHandleAccess.Size = new System.Drawing.Size(217, 20);
+            this.txtHandleAccess.TabIndex = 20;
             // 
             // btnToggleUIAccess
             // 
@@ -1340,22 +1359,15 @@
             this.tabPageOperations.Text = "Operations";
             this.tabPageOperations.UseVisualStyleBackColor = true;
             // 
-            // label26
+            // btnToggleVirtualizationEnabled
             // 
-            label26.AutoSize = true;
-            label26.Location = new System.Drawing.Point(6, 150);
-            label26.Name = "label26";
-            label26.Size = new System.Drawing.Size(82, 13);
-            label26.TabIndex = 19;
-            label26.Text = "Handle Access:";
-            // 
-            // txtHandleAccess
-            // 
-            this.txtHandleAccess.Location = new System.Drawing.Point(121, 147);
-            this.txtHandleAccess.Name = "txtHandleAccess";
-            this.txtHandleAccess.ReadOnly = true;
-            this.txtHandleAccess.Size = new System.Drawing.Size(217, 20);
-            this.txtHandleAccess.TabIndex = 20;
+            this.btnToggleVirtualizationEnabled.Location = new System.Drawing.Point(235, 90);
+            this.btnToggleVirtualizationEnabled.Name = "btnToggleVirtualizationEnabled";
+            this.btnToggleVirtualizationEnabled.Size = new System.Drawing.Size(75, 23);
+            this.btnToggleVirtualizationEnabled.TabIndex = 21;
+            this.btnToggleVirtualizationEnabled.Text = "Toggle";
+            this.btnToggleVirtualizationEnabled.UseVisualStyleBackColor = true;
+            this.btnToggleVirtualizationEnabled.Click += new System.EventHandler(this.btnToggleVirtualizationEnabled_Click);
             // 
             // TokenForm
             // 
@@ -1473,5 +1485,6 @@
         private System.Windows.Forms.TreeView treeViewSecurityAttributes;
         private System.Windows.Forms.Button btnToggleUIAccess;
         private System.Windows.Forms.TextBox txtHandleAccess;
+        private System.Windows.Forms.Button btnToggleVirtualizationEnabled;
     }
 }

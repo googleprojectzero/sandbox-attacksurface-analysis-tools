@@ -233,6 +233,7 @@ namespace TokenViewer
             txtSandboxInert.Text = _token.SandboxInert.ToString();
             bool virtAllowed = _token.VirtualizationAllowed;
             txtVirtualizationAllowed.Text = virtAllowed.ToString();
+            btnToggleVirtualizationEnabled.Enabled = virtAllowed;
             if (virtAllowed)
             {
                 txtVirtualizationEnabled.Text = _token.VirtualizationEnabled.ToString();
@@ -756,6 +757,20 @@ namespace TokenViewer
             catch (NtException ex)
             {
                 MessageBox.Show(this, ex.Message, 
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnToggleVirtualizationEnabled_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                _token.SetVirtualizationEnabled(!_token.VirtualizationEnabled);
+                txtVirtualizationEnabled.Text = _token.VirtualizationEnabled.ToString();
+            }
+            catch (NtException ex)
+            {
+                MessageBox.Show(this, ex.Message,
                     "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
