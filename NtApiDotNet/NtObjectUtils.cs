@@ -89,6 +89,59 @@ namespace NtApiDotNet
             return (int)status >= 0;
         }
 
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr GetModuleHandle(string modulename);
+
+        [Flags]
+        enum FormatFlags
+        {
+            AllocateBuffer = 0x00000100,
+            FromHModule = 0x00000800,
+            FromSystem = 0x00001000,
+            IgnoreInserts = 0x00000200
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern int FormatMessage(
+          FormatFlags dwFlags,
+          IntPtr lpSource,
+          NtStatus dwMessageId,
+          int dwLanguageId,
+          out SafeLocalAllocHandle lpBuffer,
+          int nSize,
+          IntPtr Arguments
+        );
+
+        /// <summary>
+        /// Convert an NTSTATUS to a message description.
+        /// </summary>
+        /// <param name="status">The status to convert.</param>
+        /// <returns>The message description, or an empty string if not found.</returns>
+        public static string GetNtStatusMessage(NtStatus status)
+        {
+            SafeLocalAllocHandle buffer = null;
+            if (FormatMessage(FormatFlags.AllocateBuffer | FormatFlags.FromHModule 
+                | FormatFlags.FromSystem | FormatFlags.IgnoreInserts,
+                GetModuleHandle("ntdll.dll"), status, 0, out buffer, 0, IntPtr.Zero) > 0)
+            {
+                using (buffer)
+                {
+                    return Marshal.PtrToStringUni(buffer.DangerousGetHandle()).Trim();
+                }
+            }
+            return String.Empty;
+        }
+
+        /// <summary>
+        /// Convert an integer to an NtStatus code.
+        /// </summary>
+        /// <param name="status">The integer status.</param>
+        /// <returns>The converted code.</returns>
+        public static NtStatus ConvertIntToNtStatus(int status)
+        {
+            return (NtStatus)(uint)status;
+        }
+
         internal static bool GetBit(this int result, int bit)
         {
             return (result & (1 << bit)) != 0;

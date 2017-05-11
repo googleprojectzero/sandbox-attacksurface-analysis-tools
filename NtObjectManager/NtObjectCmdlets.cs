@@ -479,4 +479,79 @@ namespace NtObjectManager
             }            
         }
     }
+
+    /// <summary>
+    /// The result of an NTSTATUS code lookup.
+    /// </summary>
+    public class NtStatusResult
+    {
+        /// <summary>
+        /// The numeric value of the status code.
+        /// </summary>
+        public uint Status { get; private set; }
+        /// <summary>
+        /// The name of the status code if known.
+        /// </summary>
+        public string StatusName { get; private set; }
+        /// <summary>
+        /// Corresponding message text.
+        /// </summary>
+        public string Message { get; private set; }
+        /// <summary>
+        /// Win32 error code.
+        /// </summary>
+        public int Win32Error { get; private set; }
+
+        internal NtStatusResult(NtStatus status)
+        {
+            Status = (uint)status;
+            Message = NtObjectUtils.GetNtStatusMessage(status);
+            Win32Error = NtRtl.RtlNtStatusToDosError(status);
+            StatusName = status.ToString();
+        }
+
+        internal NtStatusResult(int status) 
+            : this(NtObjectUtils.ConvertIntToNtStatus(status))
+        {
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Get known information about an NTSTATUS code.</para>
+    /// <para type="description">This cmdlet looks up an NTSTATUS code and if possible prints the
+    /// enumeration name, the message description and the corresponding win32 error.
+    /// </para>
+    /// </summary>
+    /// <example>
+    ///   <code>Get-NtStatus</code>
+    ///   <para>Gets all known NTSTATUS codes defined in this library.</para>
+    /// </example>
+    /// /// <example>
+    ///   <code>Get-NtStatus -Status 0xc0000022</code>
+    ///   <para>Gets information about a specific status code.</para>
+    /// </example>
+    [Cmdlet("Get", "NtStatus")]
+    public class GetNtStatusCmdlet : Cmdlet
+    {
+        /// <summary>
+        /// <para type="description">Specify a NTSTATUS code to retrieve.</para>
+        /// </summary>
+        [Parameter(Position = 0)]
+        public int? Status { get; set; }
+
+        /// <summary>
+        /// Process record.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            if (!Status.HasValue)
+            {
+                WriteObject(Enum.GetValues(typeof(NtStatus)).Cast<NtStatus>().Select(s => new NtStatusResult(s)), false);
+            }
+            else
+            {
+                WriteObject(new NtStatusResult(Status.Value));
+            }
+        }
+    }
 }
