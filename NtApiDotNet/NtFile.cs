@@ -180,6 +180,27 @@ namespace NtApiDotNet
             SafeIoStatusBuffer IoRequestToCancel,
             [Out] IoStatus IoStatusBlock
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQueryEaFile(
+          SafeKernelObjectHandle FileHandle,
+          [Out] IoStatus IoStatusBlock,
+          [Out] byte[] Buffer,
+          int Length,
+          bool ReturnSingleEntry,
+          SafeBuffer EaList,
+          int EaListLength,
+          [In] OptionalInt32 EaIndex,
+          bool RestartScan
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSetEaFile(
+          SafeKernelObjectHandle FileHandle,
+          [Out] IoStatus IoStatusBlock,
+          byte[] Buffer,
+          int Length
+        );
     }
 
     [Flags]
@@ -328,7 +349,7 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential), DataStart("FileName")]
-    struct FileDirectoryInformation
+    public struct FileDirectoryInformation
     {
         public int NextEntryOffset;
         public int FileIndex;
@@ -344,9 +365,15 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    struct FilePositionInformation
+    public struct FilePositionInformation
     {
         public LargeIntegerStruct CurrentByteOffset;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileEaInformation
+    {
+        public int EaSize;
     }    
 
     public enum FileInformationClass
@@ -2475,6 +2502,49 @@ namespace NtApiDotNet
                 _cts.Cancel();
             }
             _cts = new CancellationTokenSource();
+        }
+
+        /// <summary>
+        /// Get the extended attributes of a file.
+        /// </summary>
+        /// <returns>The extended attributes, empty if no extended attributes.</returns>
+        public EaBuffer GetEa()
+        {
+            int ea_size = 1024;
+            while(true)
+            {
+                IoStatus io_status = new IoStatus();
+                byte[] buffer = new byte[ea_size];
+                NtStatus status = NtSystemCalls.NtQueryEaFile(Handle, io_status, buffer, buffer.Length, false, SafeHGlobalBuffer.Null, 0, null, true);
+                if (status == NtStatus.STATUS_BUFFER_OVERFLOW || status == NtStatus.STATUS_BUFFER_TOO_SMALL)
+                {
+                    ea_size *= 2;
+                    continue;
+                }
+                else if (status.IsSuccess())
+                {
+                    return new EaBuffer(buffer);
+                }
+                else if (status == NtStatus.STATUS_NO_EAS_ON_FILE)
+                {
+                    return new EaBuffer();
+                }
+                else
+                {
+                    throw new NtException(status);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Set the extended attributes for a file.
+        /// </summary>
+        /// <param name="ea">The EA buffer to set.</param>
+        public void SetEa(EaBuffer ea)
+        {
+            byte[] ea_buffer = ea.ToByteArray();
+            IoStatus io_status = new IoStatus();
+            NtSystemCalls.NtSetEaFile(Handle, io_status, ea_buffer, ea_buffer.Length).ToNtException();
         }
     }
 
