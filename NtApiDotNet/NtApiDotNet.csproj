@@ -77,7 +77,7 @@
     <Compile Include="NtWnf.cs" />
     <Compile Include="ObjectAttributes.cs" />
     <Compile Include="NtType.cs" />
-    <Compile Include="OptionalLength.cs" />
+    <Compile Include="OptionalValues.cs" />
     <Compile Include="NtProcessMitigations.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AnnontationAttributes.cs" />

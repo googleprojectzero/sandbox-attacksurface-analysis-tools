@@ -21,29 +21,29 @@ namespace NtApiDotNet
     /// This class allows a function to specify an optional length.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public class OptionalLength
+    public class OptionalInt32
     {
         /// <summary>
         /// Optional length
         /// </summary>
-        public int Length;
+        public int Value;
 
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="length">The length value</param>
-        public OptionalLength(int length)
+        /// <param name="value">The value</param>
+        public OptionalInt32(int value)
         {
-            Length = length;
+            Value = value;
         }
 
         /// <summary>
         /// Implicit conversion
         /// </summary>
-        /// <param name="length">The length value</param>
-        public static implicit operator OptionalLength(int length)
+        /// <param name="length">The value</param>
+        public static implicit operator OptionalInt32(int length)
         {
-            return new OptionalLength(length);
+            return new OptionalInt32(length);
         }
     }
 
@@ -51,7 +51,7 @@ namespace NtApiDotNet
     /// This class allows a function to specify an optional length as a SizeT
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public class OptionalLengthSizeT
+    public class OptionalLength
     {
         /// <summary>
         /// Optional length
@@ -62,7 +62,7 @@ namespace NtApiDotNet
         /// Constructor
         /// </summary>
         /// <param name="length">The length value</param>
-        public OptionalLengthSizeT(IntPtr length)
+        public OptionalLength(IntPtr length)
         {
             Length = length;
         }
@@ -71,7 +71,7 @@ namespace NtApiDotNet
         /// Constructor
         /// </summary>
         /// <param name="length">The length value</param>
-        public OptionalLengthSizeT(int length)
+        public OptionalLength(int length)
         {
             Length = new IntPtr(length);
         }
@@ -80,7 +80,7 @@ namespace NtApiDotNet
         /// Constructor
         /// </summary>
         /// <param name="length">The length value</param>
-        public OptionalLengthSizeT(long length)
+        public OptionalLength(long length)
         {
             Length = new IntPtr(length);
         }
@@ -89,9 +89,9 @@ namespace NtApiDotNet
         /// Implicit conversion
         /// </summary>
         /// <param name="length">The length value</param>
-        public static implicit operator OptionalLengthSizeT(int length)
+        public static implicit operator OptionalLength(int length)
         {
-            return new OptionalLengthSizeT(length);
+            return new OptionalLength(length);
         }
     }
 }

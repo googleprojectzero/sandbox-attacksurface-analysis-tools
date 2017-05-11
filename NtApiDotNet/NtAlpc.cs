@@ -169,7 +169,7 @@ namespace NtApiDotNet
             uint Flags,
             [Optional] IntPtr RequiredServerSid,
             [Optional, In, Out] AlpcPortMessage ConnectionMessage,
-            [Optional, In, Out] OptionalLength BufferLength,
+            [Optional, In, Out] OptionalInt32 BufferLength,
             [Optional, In, Out] AlpcMessageAtributes OutMessageAttributes,
             [Optional, In, Out] AlpcMessageAtributes InMessageAttributes,
             [Optional, In] LargeInteger Timeout
@@ -185,7 +185,7 @@ namespace NtApiDotNet
             uint Flags,
             [Optional] IntPtr ServerSecurityRequirements, // SECURITY_DESCRIPTOR
             [Optional, In, Out] AlpcPortMessage ConnectionMessage,
-            [Optional, In, Out] OptionalLengthSizeT BufferLength,
+            [Optional, In, Out] OptionalLength BufferLength,
             [Optional, In, Out] AlpcMessageAtributes OutMessageAttributes,
             [Optional, In, Out] AlpcMessageAtributes InMessageAttributes,
             [Optional, In] LargeInteger Timeout);
@@ -197,7 +197,7 @@ namespace NtApiDotNet
             [Optional, In] AlpcPortMessage SendMessage,
             [Optional, In, Out] AlpcMessageAtributes SendMessageAttributes,
             [Optional, Out] AlpcPortMessage ReceiveMessage,
-            [Optional, In, Out] OptionalLengthSizeT BufferLength,
+            [Optional, In, Out] OptionalLength BufferLength,
             [Optional, In, Out] AlpcMessageAtributes ReceiveMessageAttributes,
             [Optional, In] LargeInteger Timeout);
 
