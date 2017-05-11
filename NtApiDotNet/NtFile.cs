@@ -252,6 +252,16 @@ namespace NtApiDotNet
         OverwriteIf = 0x00000005,
     }
 
+    public enum FileOpenResult
+    {
+        Superseded = 0x00000000,
+        Opened = 0x00000001,
+        Created = 0x00000002,
+        Overwritten = 0x00000003,
+        Exists = 0x00000004,
+        DoesNotExist = 0x00000005
+    }
+
     [Flags]
     public enum FileAttributes : uint
     {
@@ -1235,10 +1245,16 @@ namespace NtApiDotNet
         // Cancellation source for stopping pending IO on close.
         private CancellationTokenSource _cts;
 
-        internal NtFile(SafeKernelObjectHandle handle) : base(handle)
+        internal NtFile(SafeKernelObjectHandle handle, IoStatus io_status) : base(handle)
         {
             CanSynchronize = IsAccessGranted(FileAccessRights.Synchronize);
             _cts = new CancellationTokenSource();
+            OpenResult = io_status != null ? (FileOpenResult)io_status.Information.ToInt32() : FileOpenResult.Opened;
+        }
+
+        internal NtFile(SafeKernelObjectHandle handle) 
+            : this(handle, null)
+        {
         }
 
         /// <summary>
@@ -1260,7 +1276,7 @@ namespace NtApiDotNet
             byte[] buffer = ea_buffer != null ? ea_buffer.ToByteArray() : null;
             NtSystemCalls.NtCreateFile(out handle, desired_access, obj_attributes, iostatus, null, FileAttributes.Normal,
                 share_access, disposition, open_options, buffer, buffer != null ? buffer.Length : 0).ToNtException();
-            return new NtFile(handle);
+            return new NtFile(handle, iostatus);
         }
 
         /// <summary>
@@ -1326,7 +1342,7 @@ namespace NtApiDotNet
             IoStatus io_status = new IoStatus();
             NtSystemCalls.NtCreateNamedPipeFile(out handle, desired_access, obj_attributes, io_status, share_access, disposition, open_options,
                 pipe_type, read_mode, completion_mode, maximum_instances, input_quota, output_quota, default_timeout.Timeout).ToNtException();
-            return new NtFile(handle);
+            return new NtFile(handle, io_status);
         }
 
         /// <summary>
@@ -1378,7 +1394,7 @@ namespace NtApiDotNet
             IoStatus io_status = new IoStatus();
             LargeInteger timeout = default_timeout < 0 ? new LargeInteger(-1) : NtWaitTimeout.FromMilliseconds(default_timeout).Timeout;
             NtSystemCalls.NtCreateMailslotFile(out handle, desired_access, obj_attributes, io_status, open_options, mailslot_quota, maximum_message_size, timeout);
-            return new NtFile(handle);
+            return new NtFile(handle, io_status);
         }
 
         /// <summary>
@@ -1656,7 +1672,7 @@ namespace NtApiDotNet
             SafeKernelObjectHandle handle;
             IoStatus iostatus = new IoStatus();
             NtSystemCalls.NtOpenFile(out handle, DesiredAccess, obj_attributes, iostatus, ShareAccess, OpenOptions).ToNtException();
-            return new NtFile(handle);
+            return new NtFile(handle, iostatus);
         }
 
         /// <summary>
@@ -1725,6 +1741,14 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// The result of opening the file, whether it was created, overwritten etc.
+        /// </summary>
+        public FileOpenResult OpenResult
+        {
+            get; private set;
+        }
+
+        /// <summary>
         /// Get the object ID of a file as a string
         /// </summary>
         /// <param name="path">The path to the file</param>
@@ -1758,7 +1782,7 @@ namespace NtApiDotNet
                 IoStatus iostatus = new IoStatus();
                 NtSystemCalls.NtOpenFile(out handle, DesiredAccess, obja,
                     iostatus, ShareAccess, OpenOptions | FileOpenOptions.OpenByFileId).ToNtException();
-                return new NtFile(handle);
+                return new NtFile(handle, iostatus);
             }
         }
 
