@@ -33,3 +33,4 @@ bin/
 
 *.opendb
 *.db
+*.nupkg

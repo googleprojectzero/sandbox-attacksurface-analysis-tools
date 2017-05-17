@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.dll'
 
 # Version number of this module.
-ModuleVersion = '1.0.3'
+ModuleVersion = '1.0.4'
 
 # ID used to uniquely identify this module
 GUID = 'ac251c97-67a6-4bc4-bb8a-5ae300e93030'
@@ -111,6 +111,16 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = @'
+1.0.4
+-----
+* Support getting and setting file EA buffe
+* Added cmdlet to get NTSTATUS code information
+* Support to toggle UIAccess and Virtualization flags on tokens
+* Added asynchronous support for file operations using Task APIs
+* Added support for virtual memory functions
+* Added cmdlet to create named pipes and mailslots.
+* Added support for specifying SD as SDDL directly to cmdlets.
+* Added thread descriptions for Anniversary edition and above.
 1.0.3
 -----
 * Fixed small bug in handling of IO_STATUS_BLOCK which could result in memory corruption.

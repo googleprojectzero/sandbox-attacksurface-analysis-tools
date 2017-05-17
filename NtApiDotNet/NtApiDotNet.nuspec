@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>$id$</id>
+    <version>$version$</version>
+    <title>NtApiDotNet</title>
+    <authors>James Forshaw</authors>
+    <owners>James Forshaw</owners>
+    <licenseUrl>https://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+    <projectUrl>https://github.com/google/sandbox-attacksurface-analysis-tools</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>A .NET class library to access native NT API system calls</description>
+    <releaseNotes>
+1.0.4
+-----
+* First NUGET release.
+</releaseNotes>
+    <copyright>Copyright Google Inc. 2017</copyright>
+    <tags>syscalls</tags>
+  </metadata>
+</package>
