@@ -458,6 +458,34 @@ namespace NtApiDotNet
         public IntPtr UniqueThread;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ProcessDeviceMapInformationSet
+    {
+        public IntPtr DirectoryHandle;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ProcessDeviceMapInformationQuery
+    {
+        public uint DriveMap;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
+        public byte[] DriveType;
+    }
+
+    public enum ProcessDeviceMapQueryFlags
+    {
+        LuidDosDevicesOnly = 0x00000001
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ProcessDeviceMapInformationQueryEx
+    {
+        public uint DriveMap;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
+        public byte[] DriveType;
+        public ProcessDeviceMapQueryFlags Flags;
+    }
+    
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
@@ -1305,6 +1333,20 @@ namespace NtApiDotNet
         {
             return NtVirtualMemory.ProtectMemory(Handle, base_address, 
                 region_size, new_protect);
+        }
+
+        /// <summary>
+        /// Set the process device map.
+        /// </summary>
+        /// <param name="device_map">The device map directory to set.</param>
+        public void SetProcessDeviceMap(NtDirectory device_map)
+        {
+            ProcessDeviceMapInformationSet device_map_set = new ProcessDeviceMapInformationSet();
+            device_map_set.DirectoryHandle = device_map.Handle.DangerousGetHandle();
+            using (var buffer = device_map_set.ToBuffer())
+            {
+                NtSystemCalls.NtSetInformationProcess(Handle, ProcessInfoClass.ProcessDeviceMap, buffer, buffer.Length);
+            }
         }
     }
 }
