@@ -65,7 +65,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Convert an NtStatus to an exception if the status is an erro
+        /// Convert an NtStatus to an exception if the status is an error
         /// </summary>
         /// <param name="status">The NtStatus</param>
         /// <returns>The original NtStatus if not an error</returns>
