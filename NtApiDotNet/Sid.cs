@@ -445,5 +445,30 @@ namespace NtApiDotNet
         /// NETWORK SERVICE SID
         /// </summary>
         public static Sid NetworkService { get { return new Sid(SecurityAuthority.Nt, 20); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES SID
+        /// </summary>
+        public static Sid AllApplicationPackages { get { return new Sid(SecurityAuthority.Package, 2, 1); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES
+        /// </summary>
+        public static Sid AllRestrictedApplicationPackages { get { return new Sid(SecurityAuthority.Package, 2, 2); } }
+
+        /// <summary>
+        /// NT SERVICE\TrustedInstaller
+        /// </summary>
+        public static Sid TrustedInstaller { get { return NtSecurity.GetServiceSid("TrustedInstaller"); } }
+
+        /// <summary>
+        /// BUILTIN\Users
+        /// </summary>
+        public static Sid BuiltinUsers { get { return new Sid(SecurityAuthority.Nt, 32, 545); } }
+
+        /// <summary>
+        /// BUILTIN\Administrators
+        /// </summary>
+        public static Sid BuiltinAdministrators { get { return new Sid(SecurityAuthority.Nt, 32, 544); } }
     }
 }
