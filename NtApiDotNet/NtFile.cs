@@ -374,7 +374,13 @@ namespace NtApiDotNet
     public struct FileEaInformation
     {
         public int EaSize;
-    }    
+    }
+
+    public struct FileCompletionInformation
+    {
+        public IntPtr CompletionPort;
+        public IntPtr Key;
+    }
 
     public enum FileInformationClass
     {
@@ -541,9 +547,16 @@ namespace NtApiDotNet
         {
             get
             {
-                return (NtStatus)Pointer.ToUInt32();
+                return (NtStatus)(uint)Pointer.ToUInt64();
             }
         }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct IoStatusStruct
+    {
+        public UIntPtr Pointer;
+        public IntPtr Information;
     }
 
     [Flags]
@@ -2545,6 +2558,24 @@ namespace NtApiDotNet
             byte[] ea_buffer = ea.ToByteArray();
             IoStatus io_status = new IoStatus();
             NtSystemCalls.NtSetEaFile(Handle, io_status, ea_buffer, ea_buffer.Length).ToNtException();
+        }
+
+        /// <summary>
+        /// Assign completion port to file.
+        /// </summary>
+        /// <param name="completion_port">The completion port.</param>
+        /// <param name="key">A key to associate with this completion.</param>
+        public void SetCompletionPort(NtIoCompletion completion_port, IntPtr key)
+        {
+            FileCompletionInformation info = new FileCompletionInformation();
+            info.CompletionPort = completion_port.Handle.DangerousGetHandle();
+            info.Key = key;
+            using (var buffer = info.ToBuffer())
+            {
+                IoStatus io_status = new IoStatus();
+                NtSystemCalls.NtSetInformationFile(Handle, io_status,
+                    buffer, buffer.Length, FileInformationClass.FileCompletionInformation).ToNtException();
+            }
         }
     }
 
