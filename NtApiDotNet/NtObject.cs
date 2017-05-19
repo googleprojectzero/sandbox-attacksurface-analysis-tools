@@ -814,6 +814,17 @@ namespace NtApiDotNet
         /// </summary>
         public bool CanSynchronize { get; private set; }
 
+        /// <summary>
+        /// Get object creation time.
+        /// </summary>
+        public DateTime CreationTime
+        {
+            get
+            {
+                return DateTime.FromFileTime(QueryBasicInformation().CreationTime.QuadPart);
+            }
+        }
+
         #region IDisposable Support
         private bool disposedValue = false;
 
