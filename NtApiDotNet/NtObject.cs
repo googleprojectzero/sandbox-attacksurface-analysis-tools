@@ -178,12 +178,15 @@ namespace NtApiDotNet
         /// <param name="handle">Handle to the object</param>
         protected NtObject(SafeKernelObjectHandle handle)
         {
-            SetHandle(handle);          
-        }
-
-        internal void SetHandle(SafeKernelObjectHandle handle)
-        {
             Handle = handle;
+            try
+            {
+                CanSynchronize = IsAccessGrantedRaw<GenericAccessRights>(GenericAccessRights.Synchronize);
+            }
+            catch (NtException)
+            {
+                // Shouldn't fail but just in case.
+            }
         }
 
         private static SafeStructureInOutBuffer<T> QueryObject<T>(SafeKernelObjectHandle handle, ObjectInformationClass object_info) where T : new()
@@ -804,6 +807,12 @@ namespace NtApiDotNet
         {
             return Name;
         }
+
+
+        /// <summary>
+        /// Indicates if the handle can be used for synchronization.
+        /// </summary>
+        public bool CanSynchronize { get; private set; }
 
         #region IDisposable Support
         private bool disposedValue = false;

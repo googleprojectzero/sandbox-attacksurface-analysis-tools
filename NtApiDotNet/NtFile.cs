@@ -1287,7 +1287,6 @@ namespace NtApiDotNet
 
         internal NtFile(SafeKernelObjectHandle handle, IoStatus io_status) : base(handle)
         {
-            CanSynchronize = IsAccessGranted(FileAccessRights.Synchronize);
             _cts = new CancellationTokenSource();
             OpenResult = io_status != null ? (FileOpenResult)io_status.Information.ToInt32() : FileOpenResult.Opened;
         }
@@ -2477,11 +2476,6 @@ namespace NtApiDotNet
         {
             return OplockExclusiveAsync(CancellationToken.None);
         }
-
-        /// <summary>
-        /// Indicates if the file handle can be used for synchronization
-        /// </summary>
-        public bool CanSynchronize { get; private set; }
 
         /// <summary>
         /// Dispose.
