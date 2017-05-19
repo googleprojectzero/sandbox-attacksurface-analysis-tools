@@ -164,6 +164,8 @@ namespace NtApiDotNet
         /// <param name="object_attributes">The object attributes</param>
         /// <param name="desired_access">The desired access for the event</param>
         /// <param name="concurrent_threads">Number of concurrent threads to process I/O packets. 0 for CPU count.</param>
+        /// <returns>The IO Completion Port object.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static NtIoCompletion Create(ObjectAttributes object_attributes, IoCompletionAccessRights desired_access, int concurrent_threads)
         {
             SafeKernelObjectHandle handle;
@@ -178,6 +180,8 @@ namespace NtApiDotNet
         /// <param name="root">The root object for relative path names</param>
         /// <param name="desired_access">The desired access for the event</param>
         /// <param name="concurrent_threads">Number of concurrent threads to process I/O packets. 0 for CPU count.</param>
+        /// <returns>The IO Completion Port object.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static NtIoCompletion Create(string name, NtObject root, IoCompletionAccessRights desired_access, int concurrent_threads)
         {
             using (ObjectAttributes obj_attr = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
@@ -187,10 +191,22 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create an unnamed IO Completion Port object.
+        /// </summary>
+        /// <returns>The IO Completion Port object.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtIoCompletion Create()
+        {
+            return Create(null, IoCompletionAccessRights.MaximumAllowed, 0);
+        }
+
+        /// <summary>
         /// Open an IO Completion Port object
         /// </summary>
         /// <param name="object_attributes">The object attributes</param>
         /// <param name="desired_access">The desired access for the event</param>
+        /// <returns>The IO Completion Port object.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static NtIoCompletion Open(ObjectAttributes object_attributes, IoCompletionAccessRights desired_access)
         {
             SafeKernelObjectHandle handle;
@@ -204,12 +220,25 @@ namespace NtApiDotNet
         /// <param name="name">The path to the IO Completion Port</param>
         /// <param name="root">The root object for relative path names</param>
         /// <param name="desired_access">The desired access for the event</param>
+        /// <returns>The IO Completion Port object.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static NtIoCompletion Open(string name, NtObject root, IoCompletionAccessRights desired_access)
         {
             using (ObjectAttributes obj_attr = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
                 return Open(obj_attr, desired_access);
             }
+        }
+
+        /// <summary>
+        /// Open an IO Completion Port object
+        /// </summary>
+        /// <param name="name">The path to the IO Completion Port</param>
+        /// <returns>The IO Completion Port object.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtIoCompletion Open(string name)
+        {
+            return Open(name, null, IoCompletionAccessRights.MaximumAllowed);
         }
 
         /// <summary>
