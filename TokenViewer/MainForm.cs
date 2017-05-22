@@ -31,11 +31,13 @@ namespace TokenViewer
             {
                 using (NtToken token = entry.OpenToken())
                 {
-                    TreeNode node = new TreeNode(String.Format("Pid: {0} - Name: {1} (User:{2}, IL: {3}, R: {4}, AC: {5})",
-                       entry.ProcessId, entry.Name, token.User, token.IntegrityLevel,
-                       token.Restricted, token.AppContainer));
-                    node.Tag = entry.Duplicate();
-                    treeViewProcesses.Nodes.Add(node);
+                    ListViewItem item = listViewProcesses.Items.Add(entry.ProcessId.ToString());
+                    item.SubItems.Add(entry.Name);
+                    item.SubItems.Add(token.User.ToString());
+                    item.SubItems.Add(token.IntegrityLevel.ToString());
+                    item.SubItems.Add(token.Restricted.ToString());
+                    item.SubItems.Add(token.AppContainer.ToString());
+                    item.Tag = entry.Duplicate();
                 }
             }
             catch
@@ -118,7 +120,7 @@ namespace TokenViewer
                 {
                     return false;
                 }
-                return token.Restricted|| token.AppContainer|| token.IntegrityLevel< TokenIntegrityLevel.Medium;
+                return token.Restricted|| token.AppContainer|| token.IntegrityLevel < TokenIntegrityLevel.Medium;
             }
             catch (NtException)
             {
@@ -146,19 +148,6 @@ namespace TokenViewer
             view.Items.Clear();
         }
 
-        private void ClearTree(TreeView view)
-        {
-            foreach (TreeNode node in view.Nodes)
-            {
-                IDisposable disp = node.Tag as IDisposable;
-                if (disp != null)
-                {
-                    disp.Dispose();
-                }
-            }
-            view.Nodes.Clear();
-        }
-
         private void RefreshProcessList(string filter, bool hideUnrestricted)
         {
             using (var processes = new DisposableList<NtProcess>(NtProcess.GetProcesses(ProcessAccessRights.QueryInformation)))
@@ -178,13 +167,15 @@ namespace TokenViewer
                     filtered = filtered.Where(p => IsRestrictedToken(p));
                 }
 
-                ClearTree(treeViewProcesses);
+                ClearList(listViewProcesses);
                 ClearList(listViewThreads);
                 foreach (NtProcess entry in filtered)
                 {
                     AddProcessNode(entry);
                     AddThreads(entry);
                 }
+                listViewProcesses.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+                listViewProcesses.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
                 listViewThreads.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
                 listViewThreads.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
             }
@@ -209,6 +200,9 @@ namespace TokenViewer
         {
             InitializeComponent();
 
+            listViewProcesses.ListViewItemSorter = new ListItemComparer(0);
+            listViewThreads.ListViewItemSorter = new ListItemComparer(0);
+            listViewSessions.ListViewItemSorter = new ListItemComparer(0);
             RefreshProcessList(null, false);
             RefreshSessionList();
             comboBoxS4ULogonType.Items.Add(SecurityLogonType.Batch);
@@ -256,39 +250,20 @@ namespace TokenViewer
 
         private void openTokenToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            TreeNode selectedNode = treeViewProcesses.SelectedNode;
-
-            if (selectedNode != null)
+            if (listViewProcesses.SelectedItems.Count > 0)
             {
-                NtProcess process = selectedNode.Tag as NtProcess;
-                NtHandle handle = selectedNode.Tag as NtHandle;
-                if (process != null)
+                foreach (ListViewItem item in listViewProcesses.SelectedItems)
                 {
-                    NtToken token = GetToken(process);
-                    if (token != null)
+                    NtProcess process = item.Tag as NtProcess;
+                    if (process != null)
                     {
-                        TokenForm.OpenForm(token, true);
+                        NtToken token = GetToken(process);
+                        if (token != null)
+                        {
+                            TokenForm.OpenForm(token, true);
+                        }
                     }
                 }
-                else if (handle != null)
-                {
-                    try
-                    {
-                        TokenForm.OpenForm(NtToken.DuplicateFrom(handle.ProcessId, new IntPtr(handle.Handle), TokenAccessRights.Query | TokenAccessRights.QuerySource), false);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-            }
-        }
-
-        private void treeViewProcesses_MouseDown(object sender, MouseEventArgs e)
-        {
-            if (e.Button == System.Windows.Forms.MouseButtons.Right)
-            {
-                treeViewProcesses.SelectedNode = treeViewProcesses.GetNodeAt(e.Location);
             }
         }
 
@@ -433,28 +408,7 @@ namespace TokenViewer
         {
             RefreshProcessList(txtFilter.Text, checkBoxUnrestricted.Checked);
         }
-
-        private void refreshTokenHandlesToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            TreeNode node = treeViewProcesses.SelectedNode;
-            if (node != null && node.Tag is NtProcess)
-            {
-                NtProcess entry = (NtProcess)node.Tag;
-                IEnumerable<NtHandle> handles = NtSystemInfo.GetHandles(entry.ProcessId, false);
-                node.Nodes.Clear();
-                foreach (NtHandle handle in handles)
-                {
-                    if (handle.ObjectType.Equals("Token", StringComparison.OrdinalIgnoreCase))
-                    {
-                        TreeNode token_node = new TreeNode(String.Format("Handle: 0x{0:X}", handle.Handle));
-                        token_node.Tag = handle;
-                        node.Nodes.Add(token_node);
-                    }
-                }
-                node.ExpandAll();
-            }
-        }
-
+        
         private void toolStripMenuItemOpenThreadToken_Click(object sender, EventArgs e)
         {
             if (listViewThreads.SelectedItems.Count > 0)
@@ -498,6 +452,11 @@ namespace TokenViewer
                     TokenForm.OpenForm(token, true);
                 }
             }
+        }
+
+        private void listView_ColumnClick(object sender, ColumnClickEventArgs e)
+        {
+            ListItemComparer.UpdateListComparer(sender as ListView, e.Column);
         }
     }
 }

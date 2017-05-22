@@ -58,6 +58,7 @@
     <Compile Include="CreateRestrictedTokenForm.Designer.cs">
       <DependentUpon>CreateRestrictedTokenForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="ListItemComparer.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

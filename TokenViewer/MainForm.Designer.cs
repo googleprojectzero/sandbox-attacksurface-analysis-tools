@@ -43,6 +43,12 @@
             System.Windows.Forms.ColumnHeader columnHeaderProcess;
             System.Windows.Forms.ColumnHeader columnHeaderSessionId;
             System.Windows.Forms.ColumnHeader columnHeaderUserName;
+            System.Windows.Forms.ColumnHeader columnHeaderProcessId;
+            System.Windows.Forms.ColumnHeader columnHeaderProcessName;
+            System.Windows.Forms.ColumnHeader columnHeaderProcessUser;
+            System.Windows.Forms.ColumnHeader columnHeaderProcessIL;
+            System.Windows.Forms.ColumnHeader columnHeaderProcessRestricted;
+            System.Windows.Forms.ColumnHeader columnHeaderProcessAC;
             this.groupBoxServiceAccounts = new System.Windows.Forms.GroupBox();
             this.btnCreateSystem = new System.Windows.Forms.Button();
             this.btnCreateNetworkService = new System.Windows.Forms.Button();
@@ -64,15 +70,14 @@
             this.btnCreateFromBits = new System.Windows.Forms.Button();
             this.tabControlTests = new System.Windows.Forms.TabControl();
             this.tabPageProcesses = new System.Windows.Forms.TabPage();
+            this.listViewProcesses = new System.Windows.Forms.ListView();
+            this.contextMenuStripProcesses = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.openTokenToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.refreshToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.btnFilter = new System.Windows.Forms.Button();
             this.txtFilter = new System.Windows.Forms.TextBox();
             this.checkBoxUnrestricted = new System.Windows.Forms.CheckBox();
             this.btnCurrentProcess = new System.Windows.Forms.Button();
-            this.treeViewProcesses = new System.Windows.Forms.TreeView();
-            this.contextMenuStripProcesses = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.openTokenToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.refreshToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.refreshTokenHandlesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tabPageThreads = new System.Windows.Forms.TabPage();
             this.listViewThreads = new System.Windows.Forms.ListView();
             this.columnHeaderTID = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -101,6 +106,12 @@
             columnHeaderProcess = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeaderSessionId = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeaderUserName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            columnHeaderProcessId = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            columnHeaderProcessName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            columnHeaderProcessUser = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            columnHeaderProcessIL = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            columnHeaderProcessRestricted = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            columnHeaderProcessAC = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             tabPageGeneral.SuspendLayout();
             this.groupBoxServiceAccounts.SuspendLayout();
             groupBoxLogonUser.SuspendLayout();
@@ -441,6 +452,30 @@
             columnHeaderUserName.Text = "User Name";
             columnHeaderUserName.Width = 248;
             // 
+            // columnHeaderProcessId
+            // 
+            columnHeaderProcessId.Text = "Process ID";
+            // 
+            // columnHeaderProcessName
+            // 
+            columnHeaderProcessName.Text = "Name";
+            // 
+            // columnHeaderProcessUser
+            // 
+            columnHeaderProcessUser.Text = "User";
+            // 
+            // columnHeaderProcessIL
+            // 
+            columnHeaderProcessIL.Text = "Integrity Level";
+            // 
+            // columnHeaderProcessRestricted
+            // 
+            columnHeaderProcessRestricted.Text = "Restricted";
+            // 
+            // columnHeaderProcessAC
+            // 
+            columnHeaderProcessAC.Text = "App Container";
+            // 
             // tabControlTests
             // 
             this.tabControlTests.Controls.Add(this.tabPageProcesses);
@@ -457,12 +492,12 @@
             // 
             // tabPageProcesses
             // 
+            this.tabPageProcesses.Controls.Add(this.listViewProcesses);
             this.tabPageProcesses.Controls.Add(this.btnFilter);
             this.tabPageProcesses.Controls.Add(this.txtFilter);
             this.tabPageProcesses.Controls.Add(label4);
             this.tabPageProcesses.Controls.Add(this.checkBoxUnrestricted);
             this.tabPageProcesses.Controls.Add(this.btnCurrentProcess);
-            this.tabPageProcesses.Controls.Add(this.treeViewProcesses);
             this.tabPageProcesses.Location = new System.Drawing.Point(4, 22);
             this.tabPageProcesses.Name = "tabPageProcesses";
             this.tabPageProcesses.Padding = new System.Windows.Forms.Padding(3);
@@ -470,6 +505,53 @@
             this.tabPageProcesses.TabIndex = 2;
             this.tabPageProcesses.Text = "Processes";
             this.tabPageProcesses.UseVisualStyleBackColor = true;
+            // 
+            // listViewProcesses
+            // 
+            this.listViewProcesses.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.listViewProcesses.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            columnHeaderProcessId,
+            columnHeaderProcessName,
+            columnHeaderProcessUser,
+            columnHeaderProcessIL,
+            columnHeaderProcessRestricted,
+            columnHeaderProcessAC});
+            this.listViewProcesses.ContextMenuStrip = this.contextMenuStripProcesses;
+            this.listViewProcesses.FullRowSelect = true;
+            this.listViewProcesses.Location = new System.Drawing.Point(3, 35);
+            this.listViewProcesses.MultiSelect = false;
+            this.listViewProcesses.Name = "listViewProcesses";
+            this.listViewProcesses.Size = new System.Drawing.Size(597, 362);
+            this.listViewProcesses.TabIndex = 6;
+            this.listViewProcesses.UseCompatibleStateImageBehavior = false;
+            this.listViewProcesses.View = System.Windows.Forms.View.Details;
+            this.listViewProcesses.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.listView_ColumnClick);
+            this.listViewProcesses.DoubleClick += new System.EventHandler(this.openTokenToolStripMenuItem_Click);
+            // 
+            // contextMenuStripProcesses
+            // 
+            this.contextMenuStripProcesses.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.openTokenToolStripMenuItem,
+            this.refreshToolStripMenuItem});
+            this.contextMenuStripProcesses.Name = "contextMenuStripProcesses";
+            this.contextMenuStripProcesses.Size = new System.Drawing.Size(139, 48);
+            // 
+            // openTokenToolStripMenuItem
+            // 
+            this.openTokenToolStripMenuItem.Name = "openTokenToolStripMenuItem";
+            this.openTokenToolStripMenuItem.Size = new System.Drawing.Size(138, 22);
+            this.openTokenToolStripMenuItem.Text = "Open Token";
+            this.openTokenToolStripMenuItem.Click += new System.EventHandler(this.openTokenToolStripMenuItem_Click);
+            // 
+            // refreshToolStripMenuItem
+            // 
+            this.refreshToolStripMenuItem.Name = "refreshToolStripMenuItem";
+            this.refreshToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F5;
+            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(138, 22);
+            this.refreshToolStripMenuItem.Text = "Refresh";
+            this.refreshToolStripMenuItem.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
             // 
             // btnFilter
             // 
@@ -508,49 +590,6 @@
             this.btnCurrentProcess.UseVisualStyleBackColor = true;
             this.btnCurrentProcess.Click += new System.EventHandler(this.btnCurrentProcess_Click);
             // 
-            // treeViewProcesses
-            // 
-            this.treeViewProcesses.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.treeViewProcesses.ContextMenuStrip = this.contextMenuStripProcesses;
-            this.treeViewProcesses.Location = new System.Drawing.Point(3, 31);
-            this.treeViewProcesses.Name = "treeViewProcesses";
-            this.treeViewProcesses.Size = new System.Drawing.Size(594, 363);
-            this.treeViewProcesses.TabIndex = 0;
-            this.treeViewProcesses.MouseDown += new System.Windows.Forms.MouseEventHandler(this.treeViewProcesses_MouseDown);
-            // 
-            // contextMenuStripProcesses
-            // 
-            this.contextMenuStripProcesses.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.openTokenToolStripMenuItem,
-            this.refreshToolStripMenuItem,
-            this.refreshTokenHandlesToolStripMenuItem});
-            this.contextMenuStripProcesses.Name = "contextMenuStripProcesses";
-            this.contextMenuStripProcesses.Size = new System.Drawing.Size(195, 70);
-            // 
-            // openTokenToolStripMenuItem
-            // 
-            this.openTokenToolStripMenuItem.Name = "openTokenToolStripMenuItem";
-            this.openTokenToolStripMenuItem.Size = new System.Drawing.Size(194, 22);
-            this.openTokenToolStripMenuItem.Text = "Open Token";
-            this.openTokenToolStripMenuItem.Click += new System.EventHandler(this.openTokenToolStripMenuItem_Click);
-            // 
-            // refreshToolStripMenuItem
-            // 
-            this.refreshToolStripMenuItem.Name = "refreshToolStripMenuItem";
-            this.refreshToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F5;
-            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(194, 22);
-            this.refreshToolStripMenuItem.Text = "Refresh";
-            this.refreshToolStripMenuItem.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
-            // 
-            // refreshTokenHandlesToolStripMenuItem
-            // 
-            this.refreshTokenHandlesToolStripMenuItem.Name = "refreshTokenHandlesToolStripMenuItem";
-            this.refreshTokenHandlesToolStripMenuItem.Size = new System.Drawing.Size(194, 22);
-            this.refreshTokenHandlesToolStripMenuItem.Text = "Refresh Token Handles";
-            this.refreshTokenHandlesToolStripMenuItem.Click += new System.EventHandler(this.refreshTokenHandlesToolStripMenuItem_Click);
-            // 
             // tabPageThreads
             // 
             this.tabPageThreads.Controls.Add(this.listViewThreads);
@@ -578,6 +617,7 @@
             this.listViewThreads.TabIndex = 0;
             this.listViewThreads.UseCompatibleStateImageBehavior = false;
             this.listViewThreads.View = System.Windows.Forms.View.Details;
+            this.listViewThreads.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.listView_ColumnClick);
             this.listViewThreads.DoubleClick += new System.EventHandler(this.toolStripMenuItemOpenThreadToken_Click);
             // 
             // columnHeaderTID
@@ -652,6 +692,7 @@
             this.listViewSessions.TabIndex = 0;
             this.listViewSessions.UseCompatibleStateImageBehavior = false;
             this.listViewSessions.View = System.Windows.Forms.View.Details;
+            this.listViewSessions.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.listView_ColumnClick);
             // 
             // contextMenuStripSessions
             // 
@@ -711,7 +752,6 @@
 
         private System.Windows.Forms.TabControl tabControlTests;
         private System.Windows.Forms.TabPage tabPageProcesses;
-        private System.Windows.Forms.TreeView treeViewProcesses;
         private System.Windows.Forms.ContextMenuStrip contextMenuStripProcesses;
         private System.Windows.Forms.ToolStripMenuItem openTokenToolStripMenuItem;
         private System.Windows.Forms.Button btnCreteS4U;
@@ -738,7 +778,6 @@
         private System.Windows.Forms.CheckBox checkBoxUnrestricted;
         private System.Windows.Forms.Button btnFilter;
         private System.Windows.Forms.TextBox txtFilter;
-        private System.Windows.Forms.ToolStripMenuItem refreshTokenHandlesToolStripMenuItem;
         private System.Windows.Forms.TabPage tabPageThreads;
         private System.Windows.Forms.ListView listViewThreads;
         private System.Windows.Forms.ColumnHeader columnHeaderTID;
@@ -753,6 +792,7 @@
         private System.Windows.Forms.ContextMenuStrip contextMenuStripSessions;
         private System.Windows.Forms.ToolStripMenuItem refreshSessionsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem openSessionTokenToolStripMenuItem;
+        private System.Windows.Forms.ListView listViewProcesses;
     }
 }
 
