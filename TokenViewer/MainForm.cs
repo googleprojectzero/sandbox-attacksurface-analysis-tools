@@ -196,6 +196,19 @@ namespace TokenViewer
             }
         }
 
+        private void OpenHandle(NtHandle handle)
+        {
+            try
+            {
+                TokenForm.OpenForm(NtToken.DuplicateFrom(handle.ProcessId, 
+                    new IntPtr(handle.Handle), TokenAccessRights.Query | TokenAccessRights.QuerySource), false);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         public MainForm()
         {
             InitializeComponent();
@@ -204,7 +217,19 @@ namespace TokenViewer
             listViewThreads.ListViewItemSorter = new ListItemComparer(0);
             listViewSessions.ListViewItemSorter = new ListItemComparer(0);
             RefreshProcessList(null, false);
-            RefreshSessionList();
+
+            using (NtToken token = NtProcess.Current.OpenToken())
+            {
+                if (token.SetPrivilege(TokenPrivilegeValue.SeTcbPrivilege, PrivilegeAttributes.Enabled))
+                {
+                    RefreshSessionList();
+                }
+                else
+                {
+                    tabControlTests.TabPages.Remove(tabPageSessions);
+                }
+            }
+            
             comboBoxS4ULogonType.Items.Add(SecurityLogonType.Batch);
             comboBoxS4ULogonType.Items.Add(SecurityLogonType.Interactive);
             comboBoxS4ULogonType.Items.Add(SecurityLogonType.Network);
@@ -457,6 +482,11 @@ namespace TokenViewer
         private void listView_ColumnClick(object sender, ColumnClickEventArgs e)
         {
             ListItemComparer.UpdateListComparer(sender as ListView, e.Column);
+        }
+
+        private void btnRefreshSessions_Click(object sender, EventArgs e)
+        {
+            RefreshSessionList();
         }
     }
 }
