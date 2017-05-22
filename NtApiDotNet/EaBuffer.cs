@@ -218,13 +218,15 @@ namespace NtApiDotNet
         /// <returns>The byte array</returns>
         public byte[] ToByteArray()
         {
-            MemoryStream stm = new MemoryStream();
-            for (int i = 0; i < _buffers.Count; ++i)
+            using (MemoryStream stm = new MemoryStream())
             {
-                byte[] entry = SerializeEntry(_buffers[i], i == _buffers.Count - 1);
-                stm.Write(entry, 0, entry.Length);
+                for (int i = 0; i < _buffers.Count; ++i)
+                {
+                    byte[] entry = SerializeEntry(_buffers[i], i == _buffers.Count - 1);
+                    stm.Write(entry, 0, entry.Length);
+                }
+                return stm.ToArray();
             }
-            return stm.ToArray();         
         }
         
         /// <summary>
