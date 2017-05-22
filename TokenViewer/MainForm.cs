@@ -16,6 +16,7 @@ using HandleUtils;
 using NtApiDotNet;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO.Pipes;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,6 +26,12 @@ namespace TokenViewer
 {
     public partial class MainForm : Form
     {
+        private static void ResizeColumns(ListView view)
+        {
+            view.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+            view.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
+        }
+
         private void AddProcessNode(NtProcess entry)
         {
             try
@@ -174,10 +181,8 @@ namespace TokenViewer
                     AddProcessNode(entry);
                     AddThreads(entry);
                 }
-                listViewProcesses.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
-                listViewProcesses.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
-                listViewThreads.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
-                listViewThreads.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
+                ResizeColumns(listViewProcesses);
+                ResizeColumns(listViewThreads);
             }
         }
 
@@ -193,19 +198,7 @@ namespace TokenViewer
                     item.Tag = token.Duplicate();
                     listViewSessions.Items.Add(item);
                 }
-            }
-        }
-
-        private void OpenHandle(NtHandle handle)
-        {
-            try
-            {
-                TokenForm.OpenForm(NtToken.DuplicateFrom(handle.ProcessId, 
-                    new IntPtr(handle.Handle), TokenAccessRights.Query | TokenAccessRights.QuerySource), false);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ResizeColumns(listViewSessions);
             }
         }
 
@@ -216,6 +209,7 @@ namespace TokenViewer
             listViewProcesses.ListViewItemSorter = new ListItemComparer(0);
             listViewThreads.ListViewItemSorter = new ListItemComparer(0);
             listViewSessions.ListViewItemSorter = new ListItemComparer(0);
+            listViewHandles.ListViewItemSorter = new ListItemComparer(0);
             RefreshProcessList(null, false);
 
             using (NtToken token = NtProcess.Current.OpenToken())
@@ -487,6 +481,78 @@ namespace TokenViewer
         private void btnRefreshSessions_Click(object sender, EventArgs e)
         {
             RefreshSessionList();
+        }
+
+        private void btnRefreshHandles_Click(object sender, EventArgs e)
+        {
+            ClearList(listViewHandles);
+            int current_pid = Process.GetCurrentProcess().Id;
+            NtToken.EnableDebugPrivilege();
+            List<ListViewItem> items = new List<ListViewItem>();
+
+            foreach (var group in NtSystemInfo.GetHandles()
+                                                    .Where(h => h.ProcessId != current_pid && h.ObjectType.Equals("token", StringComparison.OrdinalIgnoreCase))
+                                                    .GroupBy(h => h.ProcessId))
+            {
+                try
+                {
+                    using (NtProcess proc = NtProcess.Open(group.Key, ProcessAccessRights.DupHandle | ProcessAccessRights.QueryLimitedInformation))
+                    {
+                        foreach (NtHandle handle in group)
+                        {
+                            try
+                            {
+                                using (NtToken token = NtToken.DuplicateFrom(proc, new IntPtr(handle.Handle),
+                                            TokenAccessRights.Query | TokenAccessRights.QuerySource))
+                                {
+                                    ListViewItem item = new ListViewItem(handle.ProcessId.ToString());
+                                    item.SubItems.Add(proc.Name);
+                                    item.SubItems.Add(String.Format("0x{0:X}", handle.Handle));
+                                    item.SubItems.Add(token.User.ToString());
+                                    item.SubItems.Add(token.IntegrityLevel.ToString());
+                                    item.SubItems.Add(token.Restricted.ToString());
+                                    item.SubItems.Add(token.AppContainer.ToString());
+                                    item.SubItems.Add(token.TokenType.ToString());
+                                    item.SubItems.Add(token.ImpersonationLevel.ToString());
+                                    item.Tag = token.Duplicate();
+                                    items.Add(item);
+                                }
+                            }
+                            catch (NtException)
+                            {
+                            }
+                        }
+                    }
+                }
+                catch (NtException)
+                {
+                }
+            }
+            listViewHandles.Items.AddRange(items.ToArray());
+            ResizeColumns(listViewHandles);
+        }
+        
+        private void listViewHandles_DoubleClick(object sender, EventArgs e)
+        {
+            if (listViewHandles.SelectedItems.Count > 0)
+            {
+                NtToken token = listViewHandles.SelectedItems[0].Tag as NtToken;
+                if (token != null)
+                {
+                    try
+                    {
+                        TokenForm.OpenForm(token, true);
+                    }
+                    catch (NtException)
+                    {
+                    }
+                }
+            }
+        }
+
+        private void toolStripMenuItemHandlesOpenToken_Click(object sender, EventArgs e)
+        {
+            listViewHandles_DoubleClick(sender, e);
         }
     }
 }
