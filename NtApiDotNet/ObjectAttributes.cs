@@ -203,10 +203,10 @@ namespace NtApiDotNet
         /// </summary>
         public void Dispose()
         {
-            ObjectName.Close();
-            SecurityQualityOfService.Close();
-            SecurityDescriptor.Close();
-            RootDirectory.Close();
+            ObjectName?.Close();
+            SecurityQualityOfService?.Close();
+            SecurityDescriptor?.Close();
+            RootDirectory?.Close();
             GC.SuppressFinalize(this);
         }
 

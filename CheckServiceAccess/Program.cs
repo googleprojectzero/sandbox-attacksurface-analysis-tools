@@ -285,9 +285,10 @@ namespace CheckServiceAccess
         static void ReadArray<T>(IntPtr ptr, int count, out T[] ret) where T : struct
         {
             ret = new T[count];
-            SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(ptr,
-                count * Marshal.SizeOf(typeof(T)), false);
-            buffer.ReadArray(0, ret, 0, count);
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(ptr, count * Marshal.SizeOf(typeof(T)), false))
+            {
+                buffer.ReadArray(0, ret, 0, count);
+            }
         }
 
         static void DumpCustomData(SERVICE_TRIGGER trigger)
@@ -361,10 +362,12 @@ namespace CheckServiceAccess
                     return;
                 }
 
-                SafeHGlobalBuffer triggers = new SafeHGlobalBuffer(trigger_info.pTriggers, 
-                    trigger_info.cTriggers * Marshal.SizeOf(typeof(SERVICE_TRIGGER)), false);
-                SERVICE_TRIGGER[] trigger_arr = new SERVICE_TRIGGER[trigger_info.cTriggers];
-                triggers.ReadArray(0, trigger_arr, 0, trigger_arr.Length);
+                SERVICE_TRIGGER[] trigger_arr;
+                using (SafeHGlobalBuffer triggers = new SafeHGlobalBuffer(trigger_info.pTriggers, trigger_info.cTriggers * Marshal.SizeOf(typeof(SERVICE_TRIGGER)), false))
+                {
+                    trigger_arr = new SERVICE_TRIGGER[trigger_info.cTriggers];
+                    triggers.ReadArray(0, trigger_arr, 0, trigger_arr.Length);
+                }
                 for(int i = 0; i < trigger_arr.Length; ++i)
                 {
                     SERVICE_TRIGGER trigger = trigger_arr[i];

@@ -74,6 +74,7 @@ namespace HandleUtils
         public SiAccessFlags dwFlags;
     }
 
+    [Flags]
     public enum SiAccessFlags
     {
         SI_ACCESS_SPECIFIC = 0x00010000,
