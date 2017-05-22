@@ -32,29 +32,32 @@ namespace TokenViewer
             view.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
-        private void AddProcessNode(NtProcess entry)
+        private ListViewItem CreateProcessNode(NtProcess entry)
         {
             try
             {
                 using (NtToken token = entry.OpenToken())
                 {
-                    ListViewItem item = listViewProcesses.Items.Add(entry.ProcessId.ToString());
+                    ListViewItem item = new ListViewItem(entry.ProcessId.ToString());
                     item.SubItems.Add(entry.Name);
                     item.SubItems.Add(token.User.ToString());
                     item.SubItems.Add(token.IntegrityLevel.ToString());
                     item.SubItems.Add(token.Restricted.ToString());
                     item.SubItems.Add(token.AppContainer.ToString());
                     item.Tag = entry.Duplicate();
+                    return item;
                 }
             }
             catch
             {
                 // Do nothing
             }
+            return null;
         }
 
-        private void AddThreads(NtProcess entry)
+        private IEnumerable<ListViewItem> CreateThreads(NtProcess entry)
         {
+            List<ListViewItem> ret = new List<ListViewItem>();
             using (DisposableList<NtThread> threads = new DisposableList<NtThread>(entry.GetThreads(ThreadAccessRights.QueryInformation)))
             {
                 foreach (NtThread thread in threads)
@@ -70,7 +73,7 @@ namespace TokenViewer
                                 item.SubItems.Add(token.User.ToString());
                                 item.SubItems.Add(token.ImpersonationLevel.ToString());
                                 item.Tag = thread.Duplicate();
-                                listViewThreads.Items.Add(item);
+                                ret.Add(item);
                             }
                         }
                     }
@@ -79,6 +82,7 @@ namespace TokenViewer
                     }
                 }
             }
+            return ret;
         }
 
         private static NtToken GetToken(NtProcess process)
@@ -176,11 +180,19 @@ namespace TokenViewer
 
                 ClearList(listViewProcesses);
                 ClearList(listViewThreads);
+                List<ListViewItem> procs = new List<ListViewItem>();
+                List<ListViewItem> threads = new List<ListViewItem>();
                 foreach (NtProcess entry in filtered)
                 {
-                    AddProcessNode(entry);
-                    AddThreads(entry);
+                    ListViewItem proc = CreateProcessNode(entry);
+                    if (proc != null)
+                    {
+                        procs.Add(proc);
+                    }
+                    threads.AddRange(CreateThreads(entry));
                 }
+                listViewProcesses.Items.AddRange(procs.ToArray());
+                listViewThreads.Items.AddRange(threads.ToArray());
                 ResizeColumns(listViewProcesses);
                 ResizeColumns(listViewThreads);
             }
