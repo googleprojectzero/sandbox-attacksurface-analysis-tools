@@ -18,6 +18,7 @@ using System.Runtime.InteropServices;
 
 namespace HandleUtils
 {
+    [Flags]
     public enum CreateProcessFlags
     {
         None = 0,
