@@ -27,6 +27,17 @@ The tools can be built with Visual Studio 2015
 
 Release Notes:
 
+1.0.4
+-----
+* Support getting and setting file EA buffe
+* Added cmdlet to get NTSTATUS code information
+* Support to toggle UIAccess and Virtualization flags on tokens
+* Added asynchronous support for file operations using Task APIs
+* Added support for virtual memory functions
+* Added cmdlet to create named pipes and mailslots.
+* Added support for specifying SD as SDDL directly to cmdlets.
+* Added thread descriptions for Anniversary edition and above.
+
 1.0.3
 -----
 * Fixed small bug in handling of IO_STATUS_BLOCK which could result in memory corruption.
