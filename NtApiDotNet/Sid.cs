@@ -102,9 +102,9 @@ namespace NtApiDotNet
             if (auth == null)
                 return false;
 
-            if (!base.Equals(obj))
+            if (base.Equals(obj))
             {
-                return false;
+                return true;
             }
 
             for (int i = 0; i < 6; i++)
@@ -130,6 +130,16 @@ namespace NtApiDotNet
                 result += b;
             }
             return result;
+        }
+
+        /// <summary>
+        /// Determines if this is a specific security authority.
+        /// </summary>
+        /// <param name="authority">The security authority.</param>
+        /// <returns>True if the security authority.</returns>
+        public bool IsAuthority(SecurityAuthority authority)
+        {
+            return this.Equals(new SidIdentifierAuthority(authority));
         }
     }
 

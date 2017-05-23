@@ -282,7 +282,7 @@ namespace CheckProcessAccess
                                 using (var imp = NtToken.Impersonate(_pid,
                                     _identify_only ? SecurityImpersonationLevel.Identification : SecurityImpersonationLevel.Impersonation))
                                 {
-                                    processes = NtProcess.GetProcesses(ProcessAccessRights.MaximumAllowed).Select(h => new ProcessEntry(h));
+                                    processes = NtProcess.GetProcesses(ProcessAccessRights.MaximumAllowed).Select(h => new ProcessEntry(h)).ToArray();
                                 }
 
                                 if (_named_process && names.Count > 0)
@@ -318,6 +318,7 @@ namespace CheckProcessAccess
                             {
                                 Console.WriteLine("Token SDDL: {0}", process.Token.GetSddl());
                             }
+                            Console.WriteLine("Token Granted Access: {0}", process.Token.GrantedAccess);
                         }
 
                         if (_dump_threads)

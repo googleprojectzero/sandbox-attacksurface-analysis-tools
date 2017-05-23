@@ -245,18 +245,9 @@ namespace NtApiDotNet
             }
             finally
             {
-                if (parent_sd_buffer != null)
-                {
-                    parent_sd_buffer.Close();
-                }
-                if (creator_sd_buffer != null)
-                {
-                    creator_sd_buffer.Close();
-                }
-                if (security_obj != null)
-                {
-                    security_obj.Close();
-                }
+                parent_sd_buffer?.Close();
+                creator_sd_buffer?.Close();
+                security_obj?.Close();
             }
         }
 
@@ -340,26 +331,11 @@ namespace NtApiDotNet
             }
             finally
             {
-                if (sd_buffer != null)
-                {
-                    sd_buffer.Close();
-                }
-                if (dacl_buffer != null)
-                {
-                    dacl_buffer.Close();
-                }
-                if (sacl_buffer != null)
-                {
-                    sacl_buffer.Close();
-                }
-                if (owner_buffer != null)
-                {
-                    owner_buffer.Close();
-                }
-                if (group_buffer != null)
-                {
-                    group_buffer.Close();
-                }
+                sd_buffer?.Close();
+                dacl_buffer?.Close();
+                sacl_buffer?.Close();
+                owner_buffer?.Close();
+                group_buffer?.Close();
             }
         }
 
@@ -472,7 +448,7 @@ namespace NtApiDotNet
         /// <param name="sid">The SID</param>
         public void AddAccessAllowedAce(uint mask, Sid sid)
         {
-            AddAccessAllowedAceInternal((uint)mask, AceFlags.None, sid);
+            AddAccessAllowedAceInternal(mask, AceFlags.None, sid);
         }
 
         /// <summary>

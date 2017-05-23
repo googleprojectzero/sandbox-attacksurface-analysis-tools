@@ -13,6 +13,9 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Management.Automation;
 
 namespace NtObjectManager
@@ -55,6 +58,12 @@ namespace NtObjectManager
         /// </summary>
         [Parameter]
         public SwitchParameter NoQuery { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify list of object types to filter handles.</para>
+        /// </summary>
+        [Parameter]
+        public string[] ObjectTypes { get; set; }
         
         /// <summary>
         /// Constructor.
@@ -69,7 +78,13 @@ namespace NtObjectManager
         /// </summary>
         protected override void ProcessRecord()
         {
-            WriteObject(NtSystemInfo.GetHandles(ProcessId, !NoQuery), true);
+            IEnumerable<NtHandle> handles = NtSystemInfo.GetHandles(ProcessId, !NoQuery);
+            if (ObjectTypes != null && ObjectTypes.Length > 0)
+            {
+                HashSet<string> object_types = new HashSet<string>(ObjectTypes, StringComparer.OrdinalIgnoreCase);
+                handles = handles.Where(h => object_types.Contains(h.ObjectType));
+            }
+            WriteObject(handles, true);
         }
     }
 }

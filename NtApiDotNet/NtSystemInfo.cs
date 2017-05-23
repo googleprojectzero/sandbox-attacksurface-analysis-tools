@@ -322,7 +322,7 @@ namespace NtApiDotNet
             get
             {
                 QueryValues();
-                return _name;
+                return _name ?? String.Empty;
             }
         }
 
@@ -345,6 +345,7 @@ namespace NtApiDotNet
                 _allow_query = false;
                 try
                 {
+                    NtToken.EnableDebugPrivilege();
                     using (NtGeneric obj = NtGeneric.DuplicateFrom(ProcessId, new IntPtr(Handle)))
                     {
                         // Ensure we get the real type, in case it changed _or_ it was wrong to begin with.

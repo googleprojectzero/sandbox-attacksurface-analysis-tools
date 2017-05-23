@@ -1064,6 +1064,8 @@ namespace NtApiDotNet
                     return new NtJob(DuplicateHandle());
                 case "key":
                     return new NtKey(DuplicateHandle());
+                case "token":
+                    return new NtToken(DuplicateHandle());
                 default:
                     return Duplicate();
             }
