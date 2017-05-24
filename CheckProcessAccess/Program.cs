@@ -100,7 +100,7 @@ namespace CheckProcessAccess
                 }
 
                 CommandLine = String.Empty;
-                if (Handle.IsAccessGranted(ProcessAccessRights.QueryInformation))
+                if (Handle.IsAccessGranted(ProcessAccessRights.QueryInformation) || Handle.IsAccessGranted(ProcessAccessRights.QueryLimitedInformation))
                 {
                     try
                     {
