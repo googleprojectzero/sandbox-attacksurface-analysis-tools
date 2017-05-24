@@ -44,12 +44,17 @@ namespace HandleUtils
             return LogonUtils.LogonS4U(user, realm, logon_type);
         }
 
-        public static NtToken GetAnonymousToken()
+        public static NtToken GetAnonymousToken(TokenAccessRights desired_access)
         {
             using (var imp = NtThread.Current.ImpersonateAnonymousToken())
             {
-                return NtToken.OpenThreadToken();
+                return NtToken.OpenThreadToken(NtThread.Current, true, false, desired_access);
             }
+        }
+
+        public static NtToken GetAnonymousToken()
+        {
+            return GetAnonymousToken(TokenAccessRights.MaximumAllowed);
         }
 
         public static NtToken GetLogonUserToken(string username, string domain, string password, SecurityLogonType logon_type)
@@ -67,7 +72,7 @@ namespace HandleUtils
                     throw new ArgumentException("Invalid logon type for Logon");
             }
 
-            return HandleUtils.LogonUtils.Logon(username, domain, password, logon_type);
+            return LogonUtils.Logon(username, domain, password, logon_type);
         }
 
         [DllImport("user32.dll", SetLastError=true)]
