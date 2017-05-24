@@ -86,7 +86,8 @@ CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile',
                'New-NtDirectory', 'New-NtEvent', 'New-NtFile', 'New-NtKey', 
                'New-NtMailslotFile', 'New-NtMutant', 'New-NtNamedPipeFile', 
                'New-NtSecurityDescriptor', 'New-NtSemaphore', 'New-NtSymbolicLink', 
-               'Remove-NtFileReparsePoint', 'Start-NtWait', 'Use-NtObject'
+               'Remove-NtFileReparsePoint', 'Start-NtWait', 'Use-NtObject',
+			   'Get-NtFilteredToken'
 
 # Variables to export from this module
 # VariablesToExport = @()

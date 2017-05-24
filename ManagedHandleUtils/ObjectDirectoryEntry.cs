@@ -15,7 +15,7 @@
 using NtApiDotNet;
 using System;
 
-namespace HandleUtils
+namespace SandboxAnalysisUtils
 {
     public class ObjectDirectoryEntry : IComparable<ObjectDirectoryEntry>
     {

@@ -18,7 +18,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
-namespace HandleUtils
+namespace SandboxAnalysisUtils
 {
     public static class NativeBridge
     {

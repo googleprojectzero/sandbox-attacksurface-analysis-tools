@@ -523,15 +523,6 @@ namespace NtApiDotNet
             _privs = new List<LuidAndAttributes>();
         }
 
-        // Don't think there's a direct NT equivalent as this talks to LSASS.
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool LookupPrivilegeValue(
-          string lpSystemName,
-          string lpName,
-          out Luid lpLuid
-        );
-
         public void AddPrivilege(Luid luid, PrivilegeAttributes attributes)
         {
             LuidAndAttributes priv = new LuidAndAttributes();
@@ -549,12 +540,7 @@ namespace NtApiDotNet
 
         public void AddPrivilege(string name, bool enable)
         {
-            Luid luid;
-            if (!LookupPrivilegeValue(null, name, out luid))
-            {
-                throw new NtException(NtStatus.STATUS_NO_SUCH_PRIVILEGE);
-            }
-            AddPrivilege(luid, enable ? PrivilegeAttributes.Enabled : PrivilegeAttributes.Disabled);
+            AddPrivilege(new TokenPrivilege(name, enable ? PrivilegeAttributes.Enabled : PrivilegeAttributes.Disabled));
         }
 
         public void AddPrivilege(TokenPrivilege privilege)
@@ -759,6 +745,25 @@ namespace NtApiDotNet
           out int lpLanguageId
         );
 
+        // Don't think there's a direct NT equivalent as this talks to LSASS.
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool LookupPrivilegeValue(
+          string lpSystemName,
+          string lpName,
+          out Luid lpLuid
+        );
+
+        private static Luid LookupPrivilegeLuid(string name)
+        {
+            Luid luid;
+            if (!LookupPrivilegeValue(".", name, out luid))
+            {
+                throw new NtException(NtStatus.STATUS_NO_SUCH_PRIVILEGE);
+            }
+            return luid;
+        }
+
         /// <summary>
         /// Privilege attributes
         /// </summary>
@@ -852,6 +857,24 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="name">The privilege name.</param>
+        /// <param name="attribute">The privilege attributes</param>
+        public TokenPrivilege(string name, PrivilegeAttributes attribute) 
+            : this(LookupPrivilegeLuid(name), attribute)
+        {
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="name">The privilege name.</param>
+        public TokenPrivilege(string name) : this(name, PrivilegeAttributes.Enabled)
+        {
+        }
+
+        /// <summary>
         /// Conver to a string
         /// </summary>
         /// <returns>The privilege name.</returns>
@@ -919,6 +942,36 @@ namespace NtApiDotNet
         {
             Sid = sid;
             Attributes = attributes;
+        }
+
+        /// <summary>
+        /// Constructor from a SID.
+        /// </summary>
+        /// <param name="sid">The SID</param>
+        public UserGroup(Sid sid) 
+            : this(sid, GroupAttributes.None)
+        {
+        }
+
+        private static Sid LookupAccountSid(string name)
+        {
+            try
+            {
+                return new Sid(name);
+            }
+            catch (NtException)
+            {
+                return NtSecurity.LookupAccountName(name);
+            }
+        }
+
+        /// <summary>
+        /// Constructor from a SID or account name.
+        /// </summary>
+        /// <param name="name">The SID or account name.</param>
+        public UserGroup(string name) 
+            : this(LookupAccountSid(name))
+        {
         }
 
         /// <summary>
@@ -1462,6 +1515,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Filter a token to remove privileges and groups.
+        /// </summary>
+        /// <param name="flags">Filter token flags</param>
+        /// <returns>The new filtered token.</returns>
+        public NtToken Filter(FilterTokenFlags flags)
+        {
+            return Filter(flags, null, (IEnumerable<Luid>)null, null);
+        }
+
+        /// <summary>
         /// Set the state of a group
         /// </summary>
         /// <param name="group">The group SID to set</param>
@@ -1522,7 +1585,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get list of enabled groups.
         /// </summary>
-        IEnumerable<UserGroup> EnabledGroups
+        public IEnumerable<UserGroup> EnabledGroups
         {
             get
             {
@@ -1533,7 +1596,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get list of deny only groups.
         /// </summary>
-        IEnumerable<UserGroup> DenyOnlyGroups
+        public IEnumerable<UserGroup> DenyOnlyGroups
         {
             get
             {

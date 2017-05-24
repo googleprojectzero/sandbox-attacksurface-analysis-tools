@@ -17,7 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace HandleUtils
+namespace SandboxAnalysisUtils
 {
     public enum SaferLevel : uint
     {

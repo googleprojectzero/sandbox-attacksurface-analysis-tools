@@ -17,7 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace HandleUtils
+namespace SandboxAnalysisUtils
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct SiObjectInfo

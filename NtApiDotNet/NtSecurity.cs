@@ -1057,14 +1057,14 @@ namespace NtApiDotNet
         /// Lookup a SID from a username.
         /// </summary>
         /// <param name="username">The username, can be in the form domain\account.</param>
-        /// <returns>The Security Identifier.</returns>
+        /// <returns>The Security Identifier</returns>
         /// <exception cref="NtException">Thrown if account cannot be found.</exception>
         public static Sid LookupAccountName(string username)
         {
             int sid_length = 0;
             int domain_length = 0;
             SidNameUse name;
-            if (!LookupAccountName(null, username, SafeHGlobalBuffer.Null, ref sid_length, 
+            if (!LookupAccountName(null, username, SafeHGlobalBuffer.Null, ref sid_length,
                 SafeHGlobalBuffer.Null, ref domain_length, out name))
             {
                 if (sid_length <= 0)

@@ -17,7 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace HandleUtils
+namespace SandboxAnalysisUtils
 {
     public sealed class ObjectDirectory : IDisposable
     {

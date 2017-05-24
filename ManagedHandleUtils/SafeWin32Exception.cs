@@ -16,7 +16,7 @@ using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 
-namespace HandleUtils
+namespace SandboxAnalysisUtils
 {
     [Serializable]
     public class SafeWin32Exception : ApplicationException

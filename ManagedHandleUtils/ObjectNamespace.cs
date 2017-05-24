@@ -15,7 +15,7 @@
 using NtApiDotNet;
 using System;
 
-namespace HandleUtils
+namespace SandboxAnalysisUtils
 {
     public static class ObjectNamespace
     {

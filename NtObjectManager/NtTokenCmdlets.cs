@@ -12,10 +12,13 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using HandleUtils;
+using SandboxAnalysisUtils;
 using NtApiDotNet;
 using System;
 using System.Management.Automation;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace NtObjectManager
 {
@@ -303,7 +306,7 @@ namespace NtObjectManager
 
         private NtToken GetS4UToken(TokenAccessRights desired_access)
         {
-            using (NtToken token = HandleUtils.LogonUtils.LogonS4U(User, Domain, LogonType))
+            using (NtToken token = SandboxAnalysisUtils.LogonUtils.LogonS4U(User, Domain, LogonType))
             {
                 if (desired_access == TokenAccessRights.MaximumAllowed)
                 {
@@ -377,6 +380,102 @@ namespace NtObjectManager
                 token = GetToken(Access);
             }
             WriteObject(token);
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Filter an existing NT token.</para>
+    /// <para type="description">This cmdlet takes a token and filters (also referred to as restricting) it.</para>
+    /// <para>Note that tokens objects need to be disposed of after use, therefore capture them in Use-NtObject or manually Close them once used.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>$token = Use-NtObject($tmp = Get-NtToken -Primary) { Get-NtFilteredToken $tmp -Flags DisableMaxPrivileges }</code>
+    ///   <para>Get current process' primary token and disable the maximum privileges.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$token = Use-NtObject($tmp = Get-NtToken -Primary) { Get-NtFilteredToken $tmp -SidsToDisable "Everyone","BA" }</code>
+    ///   <para>Get current process' primary token and set Everyone and Built Administrators groups to deny only.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$token = Use-NtObject($tmp = Get-NtToken -Primary) { Get-NtFilteredToken $tmp -SidsToDisable "Everyone","BA" }</code>
+    ///   <para>Get current process' primary token and set Everyone and Built Administrators groups to deny only.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$token = Use-NtObject($tmp = Get-NtToken -Primary) { Get-NtFilteredToken $tmp -RestrictedSids $tmp.Groups }</code>
+    ///   <para>Get current process' primary token and add all groups as restricted SIDs.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$token = Use-NtObject($tmp = Get-NtToken -Primary) { Get-NtFilteredToken $tmp -Flags LuaToken }</code>
+    ///   <para>Get current process' primary token and convert it to a LUA token.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet(VerbsCommon.Get, "NtFilteredToken")]
+    [OutputType(typeof(NtToken))]
+    public sealed class GetNtFilteredTokenCmdlet : Cmdlet
+    {
+        /// <summary>
+        /// <para type="description">Specify access rights for the token.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 0)]
+        public NtToken Token { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify list of privileges to delete.</para>
+        /// </summary>
+        [Parameter]
+        public TokenPrivilege[] PrivilegesToDelete { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify list group SIDS to disable.</para>
+        /// </summary>
+        [Parameter]
+        public UserGroup[] SidsToDisable { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify list restricted SIDS to add to token.</para>
+        /// </summary>
+        [Parameter]
+        public UserGroup[] RestrictedSids { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify filter flags.</para>
+        /// </summary>
+        [Parameter]
+        public FilterTokenFlags Flags { get; set; }
+
+        private static void AddLuids(HashSet<Luid> set, IEnumerable<Luid> luids)
+        {
+            foreach (Luid l in luids)
+            {
+                set.Add(l);
+            }
+        }
+
+        private IEnumerable<Luid> GetPrivileges(IEnumerable<TokenPrivilege> privs)
+        {
+            if (privs == null)
+            {
+                return null;
+            }
+            return privs.Select(p => p.Luid);
+        }
+
+        private static IEnumerable<Sid> GroupsToSids(IEnumerable<UserGroup> groups)
+        {
+            if (groups == null)
+            {
+                return null;
+            }
+            return groups.Select(g => g.Sid);
+        }
+
+        /// <summary>
+        /// Overridden ProcessRecord method.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            WriteObject(Token.Filter(Flags, GroupsToSids(SidsToDisable), 
+                GetPrivileges(PrivilegesToDelete), GroupsToSids(RestrictedSids)));
         }
     }
 }

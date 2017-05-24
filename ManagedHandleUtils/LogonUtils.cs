@@ -16,10 +16,9 @@ using Microsoft.Win32.SafeHandles;
 using NtApiDotNet;
 using System;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Text;
 
-namespace HandleUtils
+namespace SandboxAnalysisUtils
 {
     enum KERB_LOGON_SUBMIT_TYPE
     {

@@ -16,7 +16,7 @@ using NtApiDotNet;
 using System;
 using System.Runtime.InteropServices;
 
-namespace HandleUtils
+namespace SandboxAnalysisUtils
 {
     [Flags]
     public enum CreateProcessFlags
