@@ -1602,11 +1602,22 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the token's expiration time.
         /// </summary>
-        public DateTime ExpirationTime
+        public long ExpirationTime
         {
             get
             {
-                return DateTime.FromFileTime(GetTokenStats().ExpirationTime.QuadPart);
+                return GetTokenStats().ExpirationTime.QuadPart;
+            }
+        }
+
+        /// <summary>
+        /// Get the token's expiration time as a DateTime structure.
+        /// </summary>
+        public DateTime ExpirationTimeAsDateTime
+        {
+            get
+            {
+                return DateTime.FromFileTime(ExpirationTime);
             }
         }
 
