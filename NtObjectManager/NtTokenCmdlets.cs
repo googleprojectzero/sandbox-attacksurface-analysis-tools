@@ -13,14 +13,67 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using System;
 using System.Management.Automation;
 
 namespace NtObjectManager
 {
     /// <summary>
-    /// Get token base cmdlet.
+    /// <para type="synopsis">Open an NT token from different sources.</para>
+    /// <para type="description">This cmdlet gets a token from from on of multiple possible sources. You can specify either a Primary process token, a Thread impersonation token, an Effective token, a Clipboard token or a Logon token.</para>
+    /// <para>Note that tokens objects need to be disposed of after use, therefore capture them in Use-NtObject or manually Close them once used.</para>
     /// </summary>
-    public abstract class GetNtTokenCmdlet : Cmdlet
+    /// <example>
+    ///   <code>$obj = Get-NtToken -Primary</code>
+    ///   <para>Get current process' primary token.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtToken -Primary -Access Duplicate</code>
+    ///   <para>Get current process' primary token for Duplicate access.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtToken -Primary -Duplicate -TokenType Impersonation -ImpersonationLevel Impersonation</code>
+    ///   <para>Get current process' primary token and convert to an impersonation token.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtTokenPrimary -Access AdjustPrivileges&#x0A;$obj.SetPrivilege("SeDebugPrivilege", $true)</code>
+    ///   <para>Enable debug privilege on current token.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$process = Get-NtProcess -ProcessId 1234&#x0A;$obj = Get-NtToken -Primary -Process $process</code>
+    ///   <para>Get process token for a specific process.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtToken -Primary -ProcessId 1234</code>
+    ///   <para>Get process token for a specific process by process ID.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtToken -Primary&#x0A;$obj.GetPrivileges()</code>
+    ///   <para>Query the privileges of a token.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtToken -Primary&#x0A;$obj.GetGroups()</code>
+    ///   <para>Query the groups of a token.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$thread = Get-NtThread -ThreadId 1234&#x0A;$obj = Get-NtToken -Impersonation -Thread $thread</code>
+    ///   <para>Get the impersonation token for a specific thread.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtToken -Impersonation -ThreadId 1234</code>
+    ///   <para>Get impersonation token for a specific thread by ID.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtToken -Effective -ThreadId 1234</code>
+    ///   <para>Get the effective token for a specific thread by ID.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtToken -Clipboard</code>
+    ///   <para>Get the current clipboard token.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet(VerbsCommon.Get, "NtToken")]
+    public sealed class GetNtTokenCmdlet : Cmdlet
     {
         /// <summary>
         /// <para type="description">Specify access rights for the token.</para>
@@ -47,6 +100,60 @@ namespace NtObjectManager
         public SecurityImpersonationLevel ImpersonationLevel { get; set; }
 
         /// <summary>
+        /// <para type="description">Get the primary token for a process.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "Primary")]
+        public SwitchParameter Primary { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the process to open the token from. If not set will use the current process.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Primary")]
+        public NtProcess Process { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the process to open the token from as a PID. Overridden by the Process parameter.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Primary"), Alias("pid")]
+        public int? ProcessId { get; set; }
+
+        /// <summary>
+        /// <para type="description">Get an impersonation token for a thread.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "Impersonation")]
+        public SwitchParameter Impersonation { get; set; }
+
+        /// <summary>
+        /// <para type="description">If thread impersonation token doesn't exist then get the primary token for the associated process. This is getting the "effective" token for the thread.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "Effective")]
+        public SwitchParameter Effective { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the thread to open the token from. If not set will use the current thread.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Impersonation"), Parameter(ParameterSetName = "Effective")]
+        public NtThread Thread { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the thread to open the token from by ID.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Impersonation"), Parameter(ParameterSetName = "Effective"), Alias("tid")]
+        public int? ThreadId { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the token should be open with the process identity rather than the impersonated identity.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Impersonation"), Parameter(ParameterSetName = "Effective")]
+        public bool OpenAsSelf { get; set; }
+
+        /// <summary>
+        /// <para type="description">Get the current clipboard token.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "Clipboard")]
+        public SwitchParameter Clipboard { get; set; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public GetNtTokenCmdlet()
@@ -56,12 +163,81 @@ namespace NtObjectManager
             ImpersonationLevel = SecurityImpersonationLevel.Impersonation;
         }
 
-        /// <summary>
-        /// Get token for this cmdlet.
-        /// </summary>
-        /// <param name="desired_access">The token access required.</param>
-        /// <returns>The token object.</returns>
-        protected abstract NtToken GetToken(TokenAccessRights desired_access);
+        private NtToken GetPrimaryToken(TokenAccessRights desired_access)
+        {
+            if (ProcessId.HasValue)
+            {
+                return NtToken.OpenProcessToken(ProcessId.Value, false, desired_access);
+            }
+
+            return NtToken.OpenProcessToken(Process ?? NtProcess.Current, false, desired_access);
+        }
+
+        private NtToken GetClipboardToken(TokenAccessRights desired_access)
+        {
+            return HandleUtils.TokenUtils.GetTokenFromClipboard(desired_access);
+        }
+
+        private NtToken GetImpersonationToken(TokenAccessRights desired_access)
+        {
+            if (ThreadId.HasValue)
+            {
+                return NtToken.OpenThreadToken(ThreadId.Value, OpenAsSelf, false, desired_access);
+            }
+
+            return NtToken.OpenThreadToken(Thread ?? NtThread.Current, OpenAsSelf, false, desired_access);
+        }
+
+        private NtToken GetEffectiveToken(TokenAccessRights desired_access)
+        {
+            NtToken token = GetImpersonationToken(desired_access);
+            if (token != null)
+            {
+                return token;
+            }
+
+            if (Thread == null && !ThreadId.HasValue)
+            {
+                return NtToken.OpenProcessToken(NtProcess.Current, false, desired_access);
+            }
+
+            int pid;
+            if (Thread != null)
+            {
+                pid = Thread.ProcessId;
+            }
+            else
+            {
+                using (NtThread thread = NtThread.Open(ThreadId.Value, ThreadAccessRights.QueryLimitedInformation))
+                {
+                    pid = thread.ProcessId;
+                }
+            }
+
+            return NtToken.OpenProcessToken(pid, false, desired_access);
+        }
+
+        private NtToken GetToken(TokenAccessRights desired_access)
+        {
+            if (Primary)
+            {
+                return GetPrimaryToken(desired_access);
+            }
+            else if (Impersonation)
+            {
+                return GetImpersonationToken(desired_access);
+            }
+            else if (Effective)
+            {
+                return GetEffectiveToken(desired_access);
+            }
+            else if (Clipboard)
+            {
+                return GetClipboardToken(desired_access);
+            }
+            
+            throw new ArgumentException("Unknown token type");
+        }
 
         /// <summary>
         /// Overridden ProcessRecord method.
@@ -81,253 +257,6 @@ namespace NtObjectManager
                 token = GetToken(Access);
             }
             WriteObject(token);
-        }
-    }
-
-    /// <summary>
-    /// <para type="synopsis">Open primary NT token from a process.</para>
-    /// <para type="description">This cmdlet gets a primary token from a process. You can specify a specific process with the -Process or -ProcessId parameter otherwise the current process is used.</para>
-    /// <para>Note that tokens objects need to be disposed of after use, therefore capture them in Use-NtObject or manually Close them once used.</para>
-    /// </summary>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenPrimary</code>
-    ///   <para>Get current process' primary token.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenPrimary -Access Duplicate</code>
-    ///   <para>Get current process' primary token for Duplicate access.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenPrimary -Duplicate -TokenType Impersonation -ImpersonationLevel Impersonation</code>
-    ///   <para>Get current process' primary token and convert to an impersonation token.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenPrimary -Access AdjustPrivileges&#x0A;$obj.SetPrivilege("SeDebugPrivilege", $true)</code>
-    ///   <para>Enable debug privilege on current token.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$process = Get-NtProcess -ProcessId 1234&#x0A;$obj = Get-NtTokenPrimary -Process $process</code>
-    ///   <para>Get process token for a specific process.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenPrimary -ProcessId 1234</code>
-    ///   <para>Get process token for a specific process by process ID.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenPrimary&#x0A;$obj.GetPrivileges()</code>
-    ///   <para>Query the privileges of a token.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenPrimary&#x0A;$obj.GetGroups()</code>
-    ///   <para>Query the groups of a token.</para>
-    /// </example>
-    /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.Get, "NtTokenPrimary")]
-    public sealed class GetNtTokenPrimaryCmdlet : GetNtTokenCmdlet
-    {
-        /// <summary>
-        /// <para type="description">Specify the process to open the token from. If not set will use the current process.</para>
-        /// </summary>
-        [Parameter]
-        public NtProcess Process { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the process to open the token from as a PID. Overridden by the Process parameter.</para>
-        /// </summary>
-        [Parameter, Alias("pid")]
-        public int? ProcessId { get; set; }
-
-        /// <summary>
-        /// Get token for this cmdlet.
-        /// </summary>
-        /// <param name="desired_access">The token access required.</param>
-        /// <returns>The token object.</returns>
-        protected override NtToken GetToken(TokenAccessRights desired_access)
-        {
-            if (ProcessId.HasValue)
-            {
-                return NtToken.OpenProcessToken(ProcessId.Value, false, desired_access);
-            }
-            
-            return NtToken.OpenProcessToken(Process ?? NtProcess.Current, false, desired_access);
-        }
-    }
-
-    /// <summary>
-    /// <para type="synopsis">Open impersonation NT token from a thread.</para>
-    /// <para type="description">This cmdlet gets an impersonation token from a thread. You can specify a specific thread with the -Thread or -ThreadId parameter
-    /// otherwise the current thread is used.</para>
-    /// <para>Note that tokens objects need to be disposed of after use, therefore capture them in Use-NtObject or manually Close them once used.</para>
-    /// </summary>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenThread</code>
-    ///   <para>Get current threads token.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenThread -Access Duplicate</code>
-    ///   <para>Get current threads token for Duplicate access.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenThread -Duplicate -TokenType Primary</code>
-    ///   <para>Get current threads token and convert to an primary token.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenThread -Access AdjustPrivileges&#x0A;$obj.SetPrivilege("SeDebugPrivilege", $true)</code>
-    ///   <para>Enable debug privilege on current token.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenThread&#x0A;$obj.GetPrivileges()</code>
-    ///   <para>Query the privileges of a token.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenThread&#x0A;$obj.GetGroups()</code>
-    ///   <para>Query the groups of a token.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$thread = Get-NtThread -ThreadId 1234&#x0A;$obj = Get-NtTokenThread -Thread $thread</code>
-    ///   <para>Get thread token for a specific thread.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenThread -ThreadId 1234</code>
-    ///   <para>Get thread token for a specific thread by ID.</para>
-    /// </example>
-    /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.Get, "NtTokenThread")]
-    public class GetNtTokenThreadCmdlet : GetNtTokenCmdlet
-    {
-        /// <summary>
-        /// <para type="description">Specify the thread to open the token from. If not set will use the current thread.</para>
-        /// </summary>
-        [Parameter]
-        public NtThread Thread { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the thread to open the token from by ID.</para>
-        /// </summary>
-        [Parameter, Alias("tid")]
-        public int? ThreadId { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the token should be open with the process identity rather than the impersonated identity.</para>
-        /// </summary>
-        [Parameter]
-        public bool OpenAsSelf { get; set; }
-
-        /// <summary>
-        /// Get token for this cmdlet.
-        /// </summary>
-        /// <param name="desired_access">The token access required.</param>
-        /// <returns>The token object.</returns>
-        protected override NtToken GetToken(TokenAccessRights desired_access)
-        {
-            if (ThreadId.HasValue)
-            {
-                return NtToken.OpenThreadToken(ThreadId.Value, OpenAsSelf, false, desired_access);
-            }
-            
-            return NtToken.OpenThreadToken(Thread ?? NtThread.Current, OpenAsSelf, false, desired_access);
-        }
-    }
-
-    /// <summary>
-    /// <para type="synopsis">Open the effective NT token from a thread.</para>
-    /// <para type="description">This cmdlet gets a the effective token from a thread. If the thread is not currently impersonating the associated process primary token will be opened instead.
-    /// You can specify a specific thread with the -Thread or -ThreadId parameter otherwise the current thread is used.</para>
-    /// <para>Note that tokens objects need to be disposed of after use, therefore capture them in Use-NtObject or manually Close them once used.</para>
-    /// </summary>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenEffective</code>
-    ///   <para>Get current threads token.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenEffective -Access Duplicate</code>
-    ///   <para>Get current threads token for Duplicate access.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenEffective -Duplicate -TokenType Primary</code>
-    ///   <para>Get current threads token and convert to an primary token.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenEffective -Access AdjustPrivileges&#x0A;$obj.SetPrivilege("SeDebugPrivilege", $true)</code>
-    ///   <para>Enable debug privilege on current token.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenEffective&#x0A;$obj.GetPrivileges()</code>
-    ///   <para>Query the privileges of a token.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenEffective&#x0A;$obj.GetGroups()</code>
-    ///   <para>Query the groups of a token.</para>
-    /// </example>
-    /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.Get, "NtTokenEffective")]
-    public sealed class GetNtTokenEffectiveCmdlet : GetNtTokenThreadCmdlet
-    {
-        /// <summary>
-        /// Get token for this cmdlet.
-        /// </summary>
-        /// <param name="desired_access">The token access required.</param>
-        /// <returns>The token object.</returns>
-        protected override NtToken GetToken(TokenAccessRights desired_access)
-        {
-            NtToken token = base.GetToken(desired_access);
-            if (token != null)
-            {
-                return token;
-            }
-
-            if (Thread == null && !ThreadId.HasValue)
-            {
-                return NtToken.OpenProcessToken(NtProcess.Current, false, desired_access);
-            }
-            
-            int pid;
-            if (Thread != null)
-            {
-                pid = Thread.ProcessId;
-            }
-            else
-            {
-                using (NtThread thread = NtThread.Open(ThreadId.Value, ThreadAccessRights.QueryLimitedInformation))
-                {
-                    pid = thread.ProcessId;
-                }
-            }
-
-            return NtToken.OpenProcessToken(pid, false, desired_access);
-        }
-    }
-
-    /// <summary>
-    /// <para type="synopsis">Open clipboard NT token (on Windows 8+).</para>
-    /// <para type="description">This cmdlet gets the current clipboard token, which represents the token which was last effective when writing to the clipboard.
-    /// This was a feature introduced in Windows 8 and above.</para>
-    /// <para>Note that tokens objects need to be disposed of after use, therefore capture them in Use-NtObject or manually Close them once used.</para>
-    /// </summary>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenClipboard</code>
-    ///   <para>Get current clipboard token.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenClipboard -Access Duplicate</code>
-    ///   <para>Get current clipboard token for Duplicate access.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$obj = Get-NtTokenThread -Duplicate -TokenType Primary</code>
-    ///   <para>Get current clipboard token and convert to an primary token.</para>
-    /// </example>
-    /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.Get, "NtTokenClipboard")]
-    public class GetNtTokenClipboardCmdlet : GetNtTokenCmdlet
-    {
-        /// <summary>
-        /// Get token for this cmdlet.
-        /// </summary>
-        /// <param name="desired_access">The token access required.</param>
-        /// <returns>The token object.</returns>
-        protected override NtToken GetToken(TokenAccessRights desired_access)
-        {
-            return HandleUtils.TokenUtils.GetTokenFromClipboard(desired_access);
         }
     }
 }
