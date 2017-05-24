@@ -27,6 +27,11 @@ The tools can be built with Visual Studio 2015
 
 Release Notes:
 
+1.0.6
+-----
+* Added cmdlet to filter a Token object.
+* Cleanups to various components to make them easier to use from PS
+
 1.0.5
 -----
 * Added additional Known SIDs

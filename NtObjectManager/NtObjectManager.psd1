@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.5'
+ModuleVersion = '1.0.6'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -122,7 +122,11 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.0.5
+        ReleaseNotes = '1.0.6
+-----
+* Added cmdlet to filter a Token object.
+* Cleanups to various components to make them easier to use from PS
+1.0.5
 -----
 * Added additional Known SIDs
 * Unified the variant Get-NtToken* cmdlets into one.
