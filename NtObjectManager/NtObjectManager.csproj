@@ -77,6 +77,9 @@
     <None Include="Formatters.ps1xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="NtObjectManager.psm1">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
     <None Include="NtObjectManager.psd1">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

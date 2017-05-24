@@ -15,10 +15,10 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = 'NtObjectManager.dll'
+RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.4'
+ModuleVersion = '1.0.5'
 
 # ID used to uniquely identify this module
 GUID = 'ac251c97-67a6-4bc4-bb8a-5ae300e93030'
@@ -72,7 +72,7 @@ FormatsToProcess = @("Formatters.ps1xml")
 # NestedModules = @()
 
 # Functions to export from this module
-FunctionsToExport = '*'
+FunctionsToExport = 'Get-NtTokenPrimary', 'Get-NtTokenThread', 'Get-NtTokenEffective'
 
 # Cmdlets to export from this module
 CmdletsToExport = '*'

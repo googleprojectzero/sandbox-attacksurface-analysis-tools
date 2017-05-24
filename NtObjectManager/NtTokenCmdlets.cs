@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using HandleUtils;
 using NtApiDotNet;
 using System;
 using System.Management.Automation;
@@ -20,7 +21,7 @@ namespace NtObjectManager
 {
     /// <summary>
     /// <para type="synopsis">Open an NT token from different sources.</para>
-    /// <para type="description">This cmdlet gets a token from from on of multiple possible sources. You can specify either a Primary process token, a Thread impersonation token, an Effective token, a Clipboard token or a Logon token.</para>
+    /// <para type="description">This cmdlet gets a token from one of multiple possible sources. You can specify either a Primary process token, a Thread impersonation token, an Effective token, a Clipboard token a Logon/S4U token or the anonymous token.</para>
     /// <para>Note that tokens objects need to be disposed of after use, therefore capture them in Use-NtObject or manually Close them once used.</para>
     /// </summary>
     /// <example>
@@ -34,6 +35,10 @@ namespace NtObjectManager
     /// <example>
     ///   <code>$obj = Get-NtToken -Primary -Duplicate -TokenType Impersonation -ImpersonationLevel Impersonation</code>
     ///   <para>Get current process' primary token and convert to an impersonation token.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtToken -Primary -Duplicate -TokenType Primary -IntegrityLevel Low</code>
+    ///   <para>Get current process token, duplicate as primary and set integrity level to Low.</para>
     /// </example>
     /// <example>
     ///   <code>$obj = Get-NtTokenPrimary -Access AdjustPrivileges&#x0A;$obj.SetPrivilege("SeDebugPrivilege", $true)</code>
@@ -71,8 +76,25 @@ namespace NtObjectManager
     ///   <code>$obj = Get-NtToken -Clipboard</code>
     ///   <para>Get the current clipboard token.</para>
     /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtToken -Logon -User Bob -Password BobP@ssword</code>
+    ///   <para>Get network logon token for user Bob in the current domain with password BobP@ssword.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtToken -Logon -User Bob -Password BobP@ssword -Domain BADGERS -LogonType Interactive</code>
+    ///   <para>Get interactive logon token for BADGERS\\Bob with password BobP@ssword.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtToken -S4U -User Bob -Domain BADGERS</code>
+    ///   <para>Get S4U network logon token for BADGERS\\Bob with no password.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtToken -Anonymous</code>
+    ///   <para>Get the anonymous logon token.</para>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtToken")]
+    [OutputType(typeof(NtToken))]
     public sealed class GetNtTokenCmdlet : Cmdlet
     {
         /// <summary>
@@ -98,6 +120,12 @@ namespace NtObjectManager
         /// </summary>
         [Parameter]
         public SecurityImpersonationLevel ImpersonationLevel { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the integrity level of the token to if -Duplicate is specified.</para>
+        /// </summary>
+        [Parameter]
+        public TokenIntegrityLevel? IntegrityLevel { get; set; }
 
         /// <summary>
         /// <para type="description">Get the primary token for a process.</para>
@@ -145,13 +173,55 @@ namespace NtObjectManager
         /// <para type="description">Specify the token should be open with the process identity rather than the impersonated identity.</para>
         /// </summary>
         [Parameter(ParameterSetName = "Impersonation"), Parameter(ParameterSetName = "Effective")]
-        public bool OpenAsSelf { get; set; }
+        public SwitchParameter OpenAsSelf { get; set; }
 
         /// <summary>
         /// <para type="description">Get the current clipboard token.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "Clipboard")]
         public SwitchParameter Clipboard { get; set; }
+
+        /// <summary>
+        /// <para type="description">Get a logon token.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "Logon")]
+        public SwitchParameter Logon { get; set; }
+
+        /// <summary>
+        /// <para type="description">Get an Services for User (S4U) logon token.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "S4U")]
+        public SwitchParameter S4U { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify username for logon token.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "Logon"), Parameter(Mandatory = true, ParameterSetName = "S4U")]
+        public string User { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify password for logon token.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Logon")]
+        public string Password { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify domain for logon token.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Logon"), Parameter(ParameterSetName = "S4U")]
+        public string Domain { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify logon type for logon token.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Logon"), Parameter(ParameterSetName = "S4U")]
+        public SecurityLogonType LogonType { get; set; }
+
+        /// <summary>
+        /// <para type="description">Get anonymous token.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "Anonymous")]
+        public SwitchParameter Anonymous { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -161,6 +231,8 @@ namespace NtObjectManager
             Access = TokenAccessRights.MaximumAllowed;
             TokenType = TokenType.Impersonation;
             ImpersonationLevel = SecurityImpersonationLevel.Impersonation;
+            Domain = Environment.UserDomainName;
+            LogonType = SecurityLogonType.Network;
         }
 
         private NtToken GetPrimaryToken(TokenAccessRights desired_access)
@@ -175,7 +247,7 @@ namespace NtObjectManager
 
         private NtToken GetClipboardToken(TokenAccessRights desired_access)
         {
-            return HandleUtils.TokenUtils.GetTokenFromClipboard(desired_access);
+            return TokenUtils.GetTokenFromClipboard(desired_access);
         }
 
         private NtToken GetImpersonationToken(TokenAccessRights desired_access)
@@ -217,6 +289,35 @@ namespace NtObjectManager
             return NtToken.OpenProcessToken(pid, false, desired_access);
         }
 
+        private NtToken GetLogonToken(TokenAccessRights desired_access)
+        {
+            using (NtToken token = TokenUtils.GetLogonUserToken(User, Domain, Password, LogonType))
+            {
+                if (desired_access == TokenAccessRights.MaximumAllowed)
+                {
+                    return token.Duplicate();
+                }
+                return token.Duplicate(desired_access);
+            }
+        }
+
+        private NtToken GetS4UToken(TokenAccessRights desired_access)
+        {
+            using (NtToken token = HandleUtils.LogonUtils.LogonS4U(User, Domain, LogonType))
+            {
+                if (desired_access == TokenAccessRights.MaximumAllowed)
+                {
+                    return token.Duplicate();
+                }
+                return token.Duplicate(desired_access);
+            }
+        }
+
+        private NtToken GetAnonymousToken(TokenAccessRights desired_access)
+        {
+            return TokenUtils.GetAnonymousToken(desired_access);
+        }
+
         private NtToken GetToken(TokenAccessRights desired_access)
         {
             if (Primary)
@@ -235,7 +336,19 @@ namespace NtObjectManager
             {
                 return GetClipboardToken(desired_access);
             }
-            
+            else if (Logon)
+            {
+                return GetLogonToken(desired_access);
+            }
+            else if (S4U)
+            {
+                return GetS4UToken(desired_access);
+            }
+            else if (Anonymous)
+            {
+                return GetAnonymousToken(desired_access);
+            }
+
             throw new ArgumentException("Unknown token type");
         }
 
@@ -250,6 +363,13 @@ namespace NtObjectManager
                 using (NtToken base_token = GetToken(TokenAccessRights.Duplicate))
                 {
                     token = base_token.DuplicateToken(TokenType, ImpersonationLevel, Access);
+                    if (IntegrityLevel.HasValue)
+                    {
+                        using (NtToken set_token = token.Duplicate(TokenAccessRights.AdjustDefault))
+                        {
+                            set_token.SetIntegrityLevel(IntegrityLevel.Value);
+                        }
+                    }
                 }
             }
             else
