@@ -73,23 +73,22 @@ namespace HandleUtils
         [DllImport("user32.dll", SetLastError=true)]
         private static extern bool GetClipboardAccessToken(out SafeKernelObjectHandle handle, TokenAccessRights desired_access);
 
-        private static SafeKernelObjectHandle OpenClipboardToken()
+        private static SafeKernelObjectHandle OpenClipboardToken(TokenAccessRights desired_access)
         {
             SafeKernelObjectHandle handle;
-            if (!GetClipboardAccessToken(out handle, TokenAccessRights.MaximumAllowed
-                | TokenAccessRights.Query | TokenAccessRights.QuerySource 
-                | TokenAccessRights.ReadControl))
+            if (!GetClipboardAccessToken(out handle, desired_access
+                ))
             {
                 throw new NtException(NtStatus.STATUS_NO_TOKEN);
             }
             return handle;
         }
 
-        public static NtToken GetTokenFromClipboard()
+        public static NtToken GetTokenFromClipboard(TokenAccessRights desired_access)
         {
             try
             {
-                return NtToken.FromHandle(OpenClipboardToken());
+                return NtToken.FromHandle(OpenClipboardToken(desired_access));
             }
             catch (NtException)
             {
@@ -99,6 +98,12 @@ namespace HandleUtils
             {
                 throw new InvalidOperationException("GetClipboardAccessToken doesn't exist");
             }
+        }
+
+        public static NtToken GetTokenFromClipboard()
+        {
+            return GetTokenFromClipboard(TokenAccessRights.MaximumAllowed | TokenAccessRights.Query | TokenAccessRights.QuerySource
+                | TokenAccessRights.ReadControl);
         }
 
         const int SAFER_LEVEL_OPEN = 1;
