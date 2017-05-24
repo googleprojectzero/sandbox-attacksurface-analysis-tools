@@ -111,6 +111,7 @@
             this.checkBoxMakeInteractive = new System.Windows.Forms.CheckBox();
             this.btnCreateProcess = new System.Windows.Forms.Button();
             this.txtCommandLine = new System.Windows.Forms.TextBox();
+            this.btnToggleVirtualizationEnabled = new System.Windows.Forms.Button();
             this.txtHandleAccess = new System.Windows.Forms.TextBox();
             this.btnToggleUIAccess = new System.Windows.Forms.Button();
             this.treeViewSecurityAttributes = new System.Windows.Forms.TreeView();
@@ -148,7 +149,7 @@
             this.tabPageMisc = new System.Windows.Forms.TabPage();
             this.tabPageOperations = new System.Windows.Forms.TabPage();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.btnToggleVirtualizationEnabled = new System.Windows.Forms.Button();
+            this.checkBoxUseNetLogon = new System.Windows.Forms.CheckBox();
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
@@ -807,6 +808,7 @@
             // 
             // groupBox1
             // 
+            groupBox1.Controls.Add(this.checkBoxUseNetLogon);
             groupBox1.Controls.Add(this.checkBoxUseWmi);
             groupBox1.Controls.Add(this.checkBoxMakeInteractive);
             groupBox1.Controls.Add(this.btnCreateProcess);
@@ -893,6 +895,16 @@
             groupBox2.TabIndex = 0;
             groupBox2.TabStop = false;
             groupBox2.Text = "Additional Properties";
+            // 
+            // btnToggleVirtualizationEnabled
+            // 
+            this.btnToggleVirtualizationEnabled.Location = new System.Drawing.Point(235, 90);
+            this.btnToggleVirtualizationEnabled.Name = "btnToggleVirtualizationEnabled";
+            this.btnToggleVirtualizationEnabled.Size = new System.Drawing.Size(75, 23);
+            this.btnToggleVirtualizationEnabled.TabIndex = 21;
+            this.btnToggleVirtualizationEnabled.Text = "Toggle";
+            this.btnToggleVirtualizationEnabled.UseVisualStyleBackColor = true;
+            this.btnToggleVirtualizationEnabled.Click += new System.EventHandler(this.btnToggleVirtualizationEnabled_Click);
             // 
             // label26
             // 
@@ -1359,15 +1371,15 @@
             this.tabPageOperations.Text = "Operations";
             this.tabPageOperations.UseVisualStyleBackColor = true;
             // 
-            // btnToggleVirtualizationEnabled
+            // checkBoxUseNetLogon
             // 
-            this.btnToggleVirtualizationEnabled.Location = new System.Drawing.Point(235, 90);
-            this.btnToggleVirtualizationEnabled.Name = "btnToggleVirtualizationEnabled";
-            this.btnToggleVirtualizationEnabled.Size = new System.Drawing.Size(75, 23);
-            this.btnToggleVirtualizationEnabled.TabIndex = 21;
-            this.btnToggleVirtualizationEnabled.Text = "Toggle";
-            this.btnToggleVirtualizationEnabled.UseVisualStyleBackColor = true;
-            this.btnToggleVirtualizationEnabled.Click += new System.EventHandler(this.btnToggleVirtualizationEnabled_Click);
+            this.checkBoxUseNetLogon.AutoSize = true;
+            this.checkBoxUseNetLogon.Location = new System.Drawing.Point(279, 59);
+            this.checkBoxUseNetLogon.Name = "checkBoxUseNetLogon";
+            this.checkBoxUseNetLogon.Size = new System.Drawing.Size(98, 17);
+            this.checkBoxUseNetLogon.TabIndex = 5;
+            this.checkBoxUseNetLogon.Text = "Use Net Logon";
+            this.checkBoxUseNetLogon.UseVisualStyleBackColor = true;
             // 
             // TokenForm
             // 
@@ -1486,5 +1498,6 @@
         private System.Windows.Forms.Button btnToggleUIAccess;
         private System.Windows.Forms.TextBox txtHandleAccess;
         private System.Windows.Forms.Button btnToggleVirtualizationEnabled;
+        private System.Windows.Forms.CheckBox checkBoxUseNetLogon;
     }
 }

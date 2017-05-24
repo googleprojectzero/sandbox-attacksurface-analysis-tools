@@ -40,6 +40,14 @@ namespace HandleUtils
         INHERIT_PARENT_AFFINITY = 0x00010000
     }
 
+    [Flags]
+    public enum CreateProcessLogonFlags
+    {
+        None = 0,
+        WithProfile = 1,
+        NetCredentialsOnly = 2,
+    }
+
     public sealed class Win32Process : IDisposable
     {
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -158,19 +166,19 @@ namespace HandleUtils
           CreateProcessFlags dwCreationFlags,
           IntPtr lpEnvironment,
           string lpCurrentDirectory,
-          ref STARTUPINFOEX lpStartupInfo,
+          ref STARTUPINFO lpStartupInfo,
           out PROCESS_INFORMATION lpProcessInformation);
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         static extern bool CreateProcessWithTokenW(
           SafeKernelObjectHandle hToken,
-          int dwLogonFlags,
+          CreateProcessLogonFlags dwLogonFlags,
           string lpApplicationName,
           string lpCommandLine,
           CreateProcessFlags dwCreationFlags,
           IntPtr lpEnvironment,
           string lpCurrentDirectory,
-          ref STARTUPINFOEX lpStartupInfo,
+          ref STARTUPINFO lpStartupInfo,
           out PROCESS_INFORMATION lpProcessInformation);
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
@@ -186,10 +194,25 @@ namespace HandleUtils
           [In] STARTUPINFOEX lpStartupInfo,
           out PROCESS_INFORMATION lpProcessInformation);
 
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        static extern bool CreateProcessWithLogonW(
+          string lpUsername,
+          string lpDomain,
+          string lpPassword,
+          CreateProcessLogonFlags dwLogonFlags,
+          string lpApplicationName,
+          string lpCommandLine,
+          CreateProcessFlags dwCreationFlags,
+          IntPtr lpEnvironment,
+          string lpCurrentDirectory,
+          ref STARTUPINFO lpStartupInfo,
+          out PROCESS_INFORMATION lpProcessInformation);
+
         public static Win32Process CreateProcessAsUser(NtToken token, string application_name, string command_line, CreateProcessFlags flags, string desktop)
         {
-            STARTUPINFOEX start_info = new STARTUPINFOEX();
-            start_info.StartupInfo.lpDesktop = desktop;
+            STARTUPINFO start_info = new STARTUPINFO();
+            start_info.cb = Marshal.SizeOf(start_info);
+            start_info.lpDesktop = desktop;
             PROCESS_INFORMATION proc_info = new PROCESS_INFORMATION();
 
             if (!CreateProcessAsUser(token.Handle, application_name, command_line, 
@@ -200,6 +223,23 @@ namespace HandleUtils
                 {
                     throw new SafeWin32Exception();
                 }
+            }
+
+            return new Win32Process(proc_info);
+        }
+
+        public static Win32Process CreateProcessWithLogin(string username, string domain, string password, CreateProcessLogonFlags logon_flags,
+            string application_name, string command_line, CreateProcessFlags flags, string desktop)
+        {
+            STARTUPINFO start_info = new STARTUPINFO();
+            start_info.cb = Marshal.SizeOf(start_info);
+            start_info.lpDesktop = desktop;
+            PROCESS_INFORMATION proc_info = new PROCESS_INFORMATION();
+
+            if (!CreateProcessWithLogonW(username, domain, password, logon_flags, application_name, command_line,
+                flags, IntPtr.Zero, null, ref start_info, out proc_info))
+            {
+                throw new SafeWin32Exception();
             }
 
             return new Win32Process(proc_info);

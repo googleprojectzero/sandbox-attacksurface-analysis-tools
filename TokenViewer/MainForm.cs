@@ -161,7 +161,7 @@ namespace TokenViewer
 
         private void RefreshProcessList(string filter, bool hideUnrestricted)
         {
-            using (var processes = new DisposableList<NtProcess>(NtProcess.GetProcesses(ProcessAccessRights.QueryInformation)))
+            using (var processes = new DisposableList<NtProcess>(NtProcess.GetProcesses(ProcessAccessRights.QueryLimitedInformation)))
             {
                 processes.Sort((a, b) => a.ProcessId - b.ProcessId);
 

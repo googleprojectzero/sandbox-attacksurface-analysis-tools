@@ -378,28 +378,40 @@ namespace TokenViewer
         {
             try
             {
-                if (checkBoxUseWmi.Checked)
+                if (checkBoxUseWmi.Checked || checkBoxUseNetLogon.Checked)
                 {
-                    _token.SetDefaultDacl(new Acl(IntPtr.Zero, false));
-                    using (var imp = _token.Impersonate())
+                    using (var token = _token.DuplicateToken(TokenType.Impersonation, SecurityImpersonationLevel.Impersonation, TokenAccessRights.MaximumAllowed))
                     {
-                        using (var managementClass = new ManagementClass(@"\\.\root\cimv2", 
-                                                        "Win32_Process",
-                                                         new ObjectGetOptions()))
+                        token.SetDefaultDacl(new Acl(IntPtr.Zero, false));
+                        using (var imp = token.Impersonate())
                         {
-                            var inputParams = managementClass.GetMethodParameters("Create");
+                            if (checkBoxUseWmi.Checked)
+                            {
+                                using (var managementClass = new ManagementClass(@"\\.\root\cimv2",
+                                                                "Win32_Process",
+                                                                 new ObjectGetOptions()))
+                                {
+                                    var inputParams = managementClass.GetMethodParameters("Create");
 
-                            inputParams["CommandLine"] = txtCommandLine.Text;
-                            var outParams = managementClass.InvokeMethod("Create",
-                                                                         inputParams,
-                                                                         new InvokeMethodOptions());
-                            System.Diagnostics.Trace.WriteLine(outParams["ReturnValue"].ToString());
+                                    inputParams["CommandLine"] = txtCommandLine.Text;
+                                    var outParams = managementClass.InvokeMethod("Create",
+                                                                                 inputParams,
+                                                                                 new InvokeMethodOptions());
+                                }
+                            }
+                            else
+                            {
+                                using (Win32Process.CreateProcessWithLogin("abc", "abc", "abc", CreateProcessLogonFlags.NetCredentialsOnly | CreateProcessLogonFlags.WithProfile,
+                                    null, txtCommandLine.Text, CreateProcessFlags.None, @"WinSta0\Default"))
+                                {
+                                }
+                            }
                         }
                     }
                 }
                 else
                 {
-                    using (var token = TokenUtils.CreateProcessForToken(txtCommandLine.Text, _token, checkBoxMakeInteractive.Checked))
+                    using (TokenUtils.CreateProcessForToken(txtCommandLine.Text, _token, checkBoxMakeInteractive.Checked))
                     {
                     }
                 }
