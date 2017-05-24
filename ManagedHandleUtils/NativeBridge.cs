@@ -44,38 +44,23 @@ namespace HandleUtils
         [DllImport("aclui.dll")]
         static extern bool EditSecurity(IntPtr hwndOwner, ISecurityInformation psi);
 
-        static Type TypeNameToEnum(string name)
+        static Type TypeNameToEnum(NtObject handle)
         {
-            switch(name.ToLower())
+            Type type = handle.GrantedAccessObject.GetType();
+            if (!type.IsEnum)
             {
-                case "directory": return typeof(DirectoryAccessRights);
-                case "event": return typeof(EventAccessRights);
-                case "section": return typeof(SectionAccessRights);
-                case "mutant": return typeof(MutantAccessRights);
-                case "semaphore": return typeof(SemaphoreAccessRights);
-                case "job": return typeof(JobAccessRights);
-                case "symboliclink": return typeof(SymbolicLinkAccessRights);
-                case "file":
-                case "device":
-                    return typeof(FileAccessRights);
-                case "process":
-                    return typeof(ProcessAccessRights);
-                case "token":
-                    return typeof(TokenAccessRights);
-                case "thread":
-                    return typeof(ThreadAccessRights);
-                default:
-                    throw new ArgumentException("Can't get type for access rights");
+                throw new ArgumentException("Can't get type for access rights");
             }
+
+            return type;
         }
 
-        public static void EditSecurity(IntPtr hwnd, NtObject handle, string object_name, string typeName, bool writeable)
+        public static void EditSecurity(IntPtr hwnd, NtObject handle, string object_name)
         {
-            NtType typeInfo = NtType.GetTypeByName(typeName);
-            Dictionary<uint, String> access = GetMaskDictionary(TypeNameToEnum(typeName));
+            Dictionary<uint, String> access = GetMaskDictionary(TypeNameToEnum(handle));
 
             using (SecurityInformationImpl impl = new SecurityInformationImpl(object_name, handle, access,
-               typeInfo.GenericMapping))
+               handle.NtType.GenericMapping))
             {
                 EditSecurity(hwnd, impl);
             }
