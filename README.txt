@@ -27,6 +27,17 @@ The tools can be built with Visual Studio 2015
 
 Release Notes:
 
+1.0.5
+-----
+* Added additional Known SIDs
+* Unified the variant Get-NtToken* cmdlets into one.
+* Added additional token cmdlets such as Logon and Clipboard.
+* Added initial support for IO Completion Ports
+* Added object creation time property
+* Added support to set a process device map
+* Added top level CanSynchronize property to NtObject
+* Bugs fixes from Rustam Agametov
+* Made process list in token viewer a list rather than a tree and made a separate handle tab.
 1.0.4
 -----
 * Support getting and setting file EA buffe

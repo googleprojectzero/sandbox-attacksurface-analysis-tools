@@ -20,6 +20,9 @@ RootModule = 'NtObjectManager.psm1'
 # Version number of this module.
 ModuleVersion = '1.0.5'
 
+# Supported PSEditions
+# CompatiblePSEditions = @()
+
 # ID used to uniquely identify this module
 GUID = 'ac251c97-67a6-4bc4-bb8a-5ae300e93030'
 
@@ -44,14 +47,14 @@ PowerShellVersion = '3.0'
 # Minimum version of the Windows PowerShell host required by this module
 # PowerShellHostVersion = ''
 
-# Minimum version of Microsoft .NET Framework required by this module
+# Minimum version of Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
 DotNetFrameworkVersion = '4.5'
 
-# Minimum version of the common language runtime (CLR) required by this module
+# Minimum version of the common language runtime (CLR) required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
 CLRVersion = '4.0'
 
 # Processor architecture (None, X86, Amd64) required by this module
-# ProcessorArchitecture = 'None'
+# ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
 # RequiredModules = @()
@@ -66,28 +69,36 @@ CLRVersion = '4.0'
 # TypesToProcess = @()
 
 # Format files (.ps1xml) to be loaded when importing this module
-FormatsToProcess = @("Formatters.ps1xml")
+FormatsToProcess = 'Formatters.ps1xml'
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
 # NestedModules = @()
 
-# Functions to export from this module
+# Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = 'Get-NtTokenPrimary', 'Get-NtTokenThread', 'Get-NtTokenEffective'
 
-# Cmdlets to export from this module
-CmdletsToExport = '*'
+# Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
+CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
+               'Get-NtFileReparsePoint', 'Get-NtHandle', 'Get-NtKey', 'Get-NtMutant', 
+               'Get-NtNamedPipeFile', 'Get-NtObject', 'Get-NtProcess', 
+               'Get-NtSemaphore', 'Get-NtStatus', 'Get-NtSymbolicLink', 
+               'Get-NtSymbolicLinkTarget', 'Get-NtThread', 'Get-NtToken', 'Get-NtType', 
+               'New-NtDirectory', 'New-NtEvent', 'New-NtFile', 'New-NtKey', 
+               'New-NtMailslotFile', 'New-NtMutant', 'New-NtNamedPipeFile', 
+               'New-NtSecurityDescriptor', 'New-NtSemaphore', 'New-NtSymbolicLink', 
+               'Remove-NtFileReparsePoint', 'Start-NtWait', 'Use-NtObject'
 
 # Variables to export from this module
-VariablesToExport = '*'
+# VariablesToExport = @()
 
-# Aliases to export from this module
-AliasesToExport = '*'
+# Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
+AliasesToExport = @()
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()
 
 # List of all modules packaged with this module
-# ModuleList = @("NtObjectManager.psm1")
+# ModuleList = @()
 
 # List of all files packaged with this module
 # FileList = @()
@@ -98,7 +109,7 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = @('security', 'defence', 'offence', 'sandbox')
+        Tags = 'security','defence','offence','sandbox'
 
         # A URL to the license for this module.
         LicenseUri = 'http://www.apache.org/licenses/LICENSE-2.0.html'
@@ -110,7 +121,16 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = @'
+        ReleaseNotes = '1.0.5
+-----
+* Added additional Known SIDs
+* Unified the variant Get-NtToken* cmdlets into one.
+* Added additional token cmdlets such as Logon and Clipboard.
+* Added initial support for IO Completion Ports
+* Added object creation time property
+* Added support to set a process device map
+* Added top level CanSynchronize property to NtObject
+* Bugs fixes from Rustam Agametov
 1.0.4
 -----
 * Support getting and setting file EA buffe
@@ -144,11 +164,14 @@ PrivateData = @{
 -----
 Initial release:
 * NT Object Manager drive provider
-* Cmdlets to directory work with Directorys, Files, Symbolic Links, Events, Semaphores, Processes, Threads, Tokens etc.
-'@
-    } # End of PSData hashtable
+* Cmdlets to directory work with Directorys, Files, Symbolic Links, Events, Semaphores, Processes, Threads, Tokens etc.'
 
-} # End of PrivateData hashtable
+        # External dependent modules of this module
+        # ExternalModuleDependencies = ''
+
+    } # End of PSData hashtable
+    
+ } # End of PrivateData hashtable
 
 # HelpInfo URI of this module
 # HelpInfoURI = ''
