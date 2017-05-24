@@ -222,6 +222,11 @@ namespace NtApiDotNet
         public Luid SourceIdentifier { get { return _sourceidentifier; } }
 
         public string SourceName { get { return Encoding.ASCII.GetString(_sourcename).TrimEnd('\0'); } }
+
+        public override string ToString()
+        {
+            return String.Format("Identifier = {0} - Name = {1}", SourceIdentifier, SourceName);
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -1511,6 +1516,28 @@ namespace NtApiDotNet
             get
             {
                 return QueryGroups(TokenInformationClass.TokenGroups);
+            }
+        }
+
+        /// <summary>
+        /// Get list of enabled groups.
+        /// </summary>
+        IEnumerable<UserGroup> EnabledGroups
+        {
+            get
+            {
+                return Groups.Where(g => g.Enabled);
+            }
+        }
+
+        /// <summary>
+        /// Get list of deny only groups.
+        /// </summary>
+        IEnumerable<UserGroup> DenyOnlyGroups
+        {
+            get
+            {
+                return Groups.Where(g => g.DenyOnly);
             }
         }
 

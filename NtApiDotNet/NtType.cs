@@ -317,7 +317,15 @@ namespace NtApiDotNet
                     }
                 }
             }
+        }
 
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>Returns the type as a string.</returns>
+        public override string ToString()
+        {
+            return String.Format("Name = {0} - Index = {1}", Name, Index);
         }
 
         /// <summary>

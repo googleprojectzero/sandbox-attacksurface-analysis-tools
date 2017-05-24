@@ -359,6 +359,15 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The security descriptor as an SDDL string.</returns>
+        public override string ToString()
+        {
+            return ToSddl();
+        }
+
+        /// <summary>
         /// Convert security descriptor to a safe buffer.
         /// </summary>
         /// <returns></returns>
