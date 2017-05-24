@@ -254,8 +254,25 @@ namespace NtApiDotNet
         public SafeSidBufferHandle ToSafeBuffer()
         {
             SafeSidBufferHandle sid;
-            NtRtl.RtlAllocateAndInitializeSidEx(Authority,
-                (byte)SubAuthorities.Count, SubAuthorities.ToArray(), out sid).ToNtException();
+            try
+            {
+                NtRtl.RtlAllocateAndInitializeSidEx(Authority,
+                    (byte)SubAuthorities.Count, SubAuthorities.ToArray(), out sid).ToNtException();
+            }
+            catch (EntryPointNotFoundException)
+            {
+                // If not found then we're on a downlevel platform, try and use the old version 
+                // which is limited to 8 subauthorities.
+                uint[] sub_authories = SubAuthorities.ToArray();
+                if (sub_authories.Length != 8)
+                {
+                    Array.Resize(ref sub_authories, 8);
+                }
+                NtRtl.RtlAllocateAndInitializeSid(Authority, (byte)SubAuthorities.Count,
+                    sub_authories[0], sub_authories[1], sub_authories[2], sub_authories[3],
+                    sub_authories[4], sub_authories[5], sub_authories[6], sub_authories[7],
+                    out sid).ToNtException();            
+            }
             return sid;
         }
 

@@ -127,6 +127,11 @@ namespace NtApiDotNet
         public static extern NtStatus RtlInitializeSid(IntPtr Sid, SidIdentifierAuthority IdentifierAuthority, byte SubAuthorityCount);
 
         [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlAllocateAndInitializeSid(SidIdentifierAuthority IdentifierAuthority,
+            byte SubAuthorityCount, uint SubAuthority0, uint SubAuthority1, uint SubAuthority2, uint SubAuthority3,
+            uint SubAuthority4, uint SubAuthority5, uint SubAuthority6, uint SubAuthority7, out SafeSidBufferHandle Sid);
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus RtlAllocateAndInitializeSidEx(SidIdentifierAuthority IdentifierAuthority,
             byte SubAuthorityCount, [Out] uint[] SubAuthorities, out SafeSidBufferHandle Sid);
 
