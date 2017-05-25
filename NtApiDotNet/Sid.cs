@@ -497,5 +497,84 @@ namespace NtApiDotNet
         /// BUILTIN\Administrators
         /// </summary>
         public static Sid BuiltinAdministrators { get { return new Sid(SecurityAuthority.Nt, 32, 544); } }
+
+        private static Sid GetCapabilitySid(params uint[] rids)
+        {
+            List<uint> capability = new List<uint>();
+            capability.Add(3);
+            capability.AddRange(rids);
+            return new Sid(SecurityAuthority.Package, capability.ToArray());
+        }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your Internet connection
+        /// </summary>
+        public static Sid CapabilityInternetClient { get { return GetCapabilitySid(1); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your Internet connection, including incoming connections from the Internet
+        /// </summary>
+        public static Sid CapabilityInternetClientServer { get { return GetCapabilitySid(2); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your home or work networks
+        /// </summary>
+        public static Sid CapabilityPrivateNetworkClientServer { get { return GetCapabilitySid(3); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your pictures library
+        /// </summary>
+        public static Sid CapabilityPicturesLibrary { get { return GetCapabilitySid(4); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your videos library
+        /// </summary>
+        public static Sid CapabilityVideosLibrary { get { return GetCapabilitySid(5); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your music library
+        /// </summary>
+        public static Sid CapabilityMusicLibrary { get { return GetCapabilitySid(6); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your documents library
+        /// </summary>
+        public static Sid CapabilityDocumentsLibrary { get { return GetCapabilitySid(7); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your Windows credentials
+        /// </summary>
+        public static Sid CapabilityEnterpriseAuthentication { get { return GetCapabilitySid(8); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Software and hardware certificates or a smart card
+        /// </summary>
+        public static Sid CapabilitySharedUserCertificates { get { return GetCapabilitySid(9); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Removable storage
+        /// </summary>
+        public static Sid CapabilityRemovableStorage { get { return GetCapabilitySid(10); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your Appointments
+        /// </summary>
+        public static Sid CapabilityAppointments { get { return GetCapabilitySid(11); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your Contacts
+        /// </summary>
+        public static Sid CapabilityContacts { get { return GetCapabilitySid(12); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Internet Explorer
+        /// </summary>
+        public static Sid CapabilityInternetExplorer { get { return GetCapabilitySid(4096); } }
+
+        /// <summary>
+        /// Constrained Impersonation Capability
+        /// </summary>
+        public static Sid CapabilityConstrainedImpersonation {
+            get { return GetCapabilitySid(1024, 1604681682, 535129537, 3273749797, 3666938095, 336295784, 2177615760, 2743807136, 2867270584); } }
     }
 }
