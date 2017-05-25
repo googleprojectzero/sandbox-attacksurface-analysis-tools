@@ -342,19 +342,6 @@ namespace TokenViewer
             txtLUPassword.Enabled = !radioLUS4U.Checked;
         }
 
-        private void btnCreateFromBits_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                // TODO: Fix
-                //TokenForm.OpenForm(TokenUtils3.GetTokenFromBits(), false);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
         private async void btnStartServer_Click(object sender, EventArgs e)
         {
             try

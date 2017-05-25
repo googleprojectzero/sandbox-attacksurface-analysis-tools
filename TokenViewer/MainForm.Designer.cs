@@ -34,7 +34,6 @@
             System.Windows.Forms.GroupBox groupBox2;
             System.Windows.Forms.GroupBox groupBox1;
             System.Windows.Forms.Label label3;
-            System.Windows.Forms.GroupBox groupBoxFromBits;
             System.Windows.Forms.TabPage tabPageGeneral;
             System.Windows.Forms.GroupBox groupBoxLogonUser;
             System.Windows.Forms.Label label6;
@@ -63,7 +62,6 @@
             this.btnPipeConnect = new System.Windows.Forms.Button();
             this.btnStartServer = new System.Windows.Forms.Button();
             this.txtPipeName = new System.Windows.Forms.TextBox();
-            this.btnCreateFromBits = new System.Windows.Forms.Button();
             this.groupBoxServiceAccounts = new System.Windows.Forms.GroupBox();
             this.btnCreateSystem = new System.Windows.Forms.Button();
             this.btnCreateNetworkService = new System.Windows.Forms.Button();
@@ -113,7 +111,6 @@
             groupBox2 = new System.Windows.Forms.GroupBox();
             groupBox1 = new System.Windows.Forms.GroupBox();
             label3 = new System.Windows.Forms.Label();
-            groupBoxFromBits = new System.Windows.Forms.GroupBox();
             tabPageGeneral = new System.Windows.Forms.TabPage();
             groupBoxLogonUser = new System.Windows.Forms.GroupBox();
             label6 = new System.Windows.Forms.Label();
@@ -141,7 +138,6 @@
             groupBoxAnonymous.SuspendLayout();
             groupBox2.SuspendLayout();
             groupBox1.SuspendLayout();
-            groupBoxFromBits.SuspendLayout();
             tabPageGeneral.SuspendLayout();
             this.groupBoxServiceAccounts.SuspendLayout();
             groupBoxLogonUser.SuspendLayout();
@@ -161,7 +157,6 @@
             tabPageServices.Controls.Add(groupBoxAnonymous);
             tabPageServices.Controls.Add(groupBox2);
             tabPageServices.Controls.Add(groupBox1);
-            tabPageServices.Controls.Add(groupBoxFromBits);
             tabPageServices.Location = new System.Drawing.Point(4, 22);
             tabPageServices.Name = "tabPageServices";
             tabPageServices.Padding = new System.Windows.Forms.Padding(3);
@@ -173,7 +168,7 @@
             // groupBoxAnonymous
             // 
             groupBoxAnonymous.Controls.Add(this.btnCreateAnonymous);
-            groupBoxAnonymous.Location = new System.Drawing.Point(8, 229);
+            groupBoxAnonymous.Location = new System.Drawing.Point(6, 168);
             groupBoxAnonymous.Name = "groupBoxAnonymous";
             groupBoxAnonymous.Size = new System.Drawing.Size(296, 53);
             groupBoxAnonymous.TabIndex = 3;
@@ -193,7 +188,7 @@
             // groupBox2
             // 
             groupBox2.Controls.Add(this.btnClipboardToken);
-            groupBox2.Location = new System.Drawing.Point(8, 170);
+            groupBox2.Location = new System.Drawing.Point(6, 109);
             groupBox2.Name = "groupBox2";
             groupBox2.Size = new System.Drawing.Size(296, 53);
             groupBox2.TabIndex = 2;
@@ -216,7 +211,7 @@
             groupBox1.Controls.Add(this.btnStartServer);
             groupBox1.Controls.Add(this.txtPipeName);
             groupBox1.Controls.Add(label3);
-            groupBox1.Location = new System.Drawing.Point(8, 67);
+            groupBox1.Location = new System.Drawing.Point(6, 6);
             groupBox1.Name = "groupBox1";
             groupBox1.Size = new System.Drawing.Size(296, 97);
             groupBox1.TabIndex = 1;
@@ -259,27 +254,6 @@
             label3.Size = new System.Drawing.Size(62, 13);
             label3.TabIndex = 7;
             label3.Text = "Pipe Name:";
-            // 
-            // groupBoxFromBits
-            // 
-            groupBoxFromBits.Controls.Add(this.btnCreateFromBits);
-            groupBoxFromBits.Location = new System.Drawing.Point(8, 6);
-            groupBoxFromBits.Name = "groupBoxFromBits";
-            groupBoxFromBits.Size = new System.Drawing.Size(296, 55);
-            groupBoxFromBits.TabIndex = 0;
-            groupBoxFromBits.TabStop = false;
-            groupBoxFromBits.Text = "Token from BITS";
-            // 
-            // btnCreateFromBits
-            // 
-            this.btnCreateFromBits.Enabled = false;
-            this.btnCreateFromBits.Location = new System.Drawing.Point(6, 19);
-            this.btnCreateFromBits.Name = "btnCreateFromBits";
-            this.btnCreateFromBits.Size = new System.Drawing.Size(75, 23);
-            this.btnCreateFromBits.TabIndex = 1;
-            this.btnCreateFromBits.Text = "Create";
-            this.btnCreateFromBits.UseVisualStyleBackColor = true;
-            this.btnCreateFromBits.Click += new System.EventHandler(this.btnCreateFromBits_Click);
             // 
             // tabPageGeneral
             // 
@@ -513,23 +487,31 @@
             // 
             // columnHeaderHandleUser
             // 
-            columnHeaderHandleUser.DisplayIndex = 2;
             columnHeaderHandleUser.Text = "User";
             // 
             // columnHeaderHandleIL
             // 
-            columnHeaderHandleIL.DisplayIndex = 3;
             columnHeaderHandleIL.Text = "Integrity Level";
             // 
             // columnHeaderHandleRestricted
             // 
-            columnHeaderHandleRestricted.DisplayIndex = 4;
             columnHeaderHandleRestricted.Text = "Restricted";
             // 
             // columnHeaderHandleAC
             // 
-            columnHeaderHandleAC.DisplayIndex = 5;
             columnHeaderHandleAC.Text = "App Container";
+            // 
+            // columnHeaderHandleHandle
+            // 
+            columnHeaderHandleHandle.Text = "Handle";
+            // 
+            // columnHeaderHandleTokenType
+            // 
+            columnHeaderHandleTokenType.Text = "Token Type";
+            // 
+            // columnHeaderHandleImpLevel
+            // 
+            columnHeaderHandleImpLevel.Text = "Impersonation Level";
             // 
             // contextMenuStripProcesses
             // 
@@ -858,18 +840,6 @@
             this.toolStripMenuItemHandlesRefresh.Text = "Refresh";
             this.toolStripMenuItemHandlesRefresh.Click += new System.EventHandler(this.btnRefreshHandles_Click);
             // 
-            // columnHeaderHandleHandle
-            // 
-            columnHeaderHandleHandle.Text = "Handle";
-            // 
-            // columnHeaderHandleTokenType
-            // 
-            columnHeaderHandleTokenType.Text = "Token Type";
-            // 
-            // columnHeaderHandleImpLevel
-            // 
-            columnHeaderHandleImpLevel.Text = "Impersonation Level";
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -885,7 +855,6 @@
             groupBox2.ResumeLayout(false);
             groupBox1.ResumeLayout(false);
             groupBox1.PerformLayout();
-            groupBoxFromBits.ResumeLayout(false);
             tabPageGeneral.ResumeLayout(false);
             this.groupBoxServiceAccounts.ResumeLayout(false);
             groupBoxLogonUser.ResumeLayout(false);
@@ -920,7 +889,6 @@
         private System.Windows.Forms.Button btnPipeConnect;
         private System.Windows.Forms.Button btnStartServer;
         private System.Windows.Forms.TextBox txtPipeName;
-        private System.Windows.Forms.Button btnCreateFromBits;
         private System.Windows.Forms.GroupBox groupBoxServiceAccounts;
         private System.Windows.Forms.Button btnCreateSystem;
         private System.Windows.Forms.Button btnCreateNetworkService;

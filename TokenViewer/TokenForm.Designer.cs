@@ -107,6 +107,7 @@
             this.btnDuplicate = new System.Windows.Forms.Button();
             this.comboBoxImpLevel = new System.Windows.Forms.ComboBox();
             this.comboBoxTokenType = new System.Windows.Forms.ComboBox();
+            this.checkBoxUseNetLogon = new System.Windows.Forms.CheckBox();
             this.checkBoxUseWmi = new System.Windows.Forms.CheckBox();
             this.checkBoxMakeInteractive = new System.Windows.Forms.CheckBox();
             this.btnCreateProcess = new System.Windows.Forms.Button();
@@ -121,7 +122,7 @@
             this.txtVirtualizationAllowed = new System.Windows.Forms.TextBox();
             this.txtSandboxInert = new System.Windows.Forms.TextBox();
             this.txtUIAccess = new System.Windows.Forms.TextBox();
-            this.btnCreateRestricted = new System.Windows.Forms.Button();
+            this.btnCreateSandbox = new System.Windows.Forms.Button();
             this.comboBoxSaferLevel = new System.Windows.Forms.ComboBox();
             this.checkBoxSaferMakeInert = new System.Windows.Forms.CheckBox();
             this.btnComputeSafer = new System.Windows.Forms.Button();
@@ -149,7 +150,6 @@
             this.tabPageMisc = new System.Windows.Forms.TabPage();
             this.tabPageOperations = new System.Windows.Forms.TabPage();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.checkBoxUseNetLogon = new System.Windows.Forms.CheckBox();
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
@@ -821,6 +821,16 @@
             groupBox1.TabStop = false;
             groupBox1.Text = "Create Process";
             // 
+            // checkBoxUseNetLogon
+            // 
+            this.checkBoxUseNetLogon.AutoSize = true;
+            this.checkBoxUseNetLogon.Location = new System.Drawing.Point(279, 59);
+            this.checkBoxUseNetLogon.Name = "checkBoxUseNetLogon";
+            this.checkBoxUseNetLogon.Size = new System.Drawing.Size(98, 17);
+            this.checkBoxUseNetLogon.TabIndex = 5;
+            this.checkBoxUseNetLogon.Text = "Use Net Logon";
+            this.checkBoxUseNetLogon.UseVisualStyleBackColor = true;
+            // 
             // checkBoxUseWmi
             // 
             this.checkBoxUseWmi.AutoSize = true;
@@ -1039,7 +1049,7 @@
             // 
             // groupBoxSafer
             // 
-            groupBoxSafer.Controls.Add(this.btnCreateRestricted);
+            groupBoxSafer.Controls.Add(this.btnCreateSandbox);
             groupBoxSafer.Controls.Add(label21);
             groupBoxSafer.Controls.Add(this.comboBoxSaferLevel);
             groupBoxSafer.Controls.Add(this.checkBoxSaferMakeInert);
@@ -1051,15 +1061,15 @@
             groupBoxSafer.TabStop = false;
             groupBoxSafer.Text = "Restricted Tokens";
             // 
-            // btnCreateRestricted
+            // btnCreateSandbox
             // 
-            this.btnCreateRestricted.Location = new System.Drawing.Point(338, 56);
-            this.btnCreateRestricted.Name = "btnCreateRestricted";
-            this.btnCreateRestricted.Size = new System.Drawing.Size(100, 23);
-            this.btnCreateRestricted.TabIndex = 8;
-            this.btnCreateRestricted.Text = "Create Restricted";
-            this.btnCreateRestricted.UseVisualStyleBackColor = true;
-            this.btnCreateRestricted.Click += new System.EventHandler(this.btnCreateRestricted_Click);
+            this.btnCreateSandbox.Location = new System.Drawing.Point(352, 56);
+            this.btnCreateSandbox.Name = "btnCreateSandbox";
+            this.btnCreateSandbox.Size = new System.Drawing.Size(100, 23);
+            this.btnCreateSandbox.TabIndex = 8;
+            this.btnCreateSandbox.Text = "Create Sandbox";
+            this.btnCreateSandbox.UseVisualStyleBackColor = true;
+            this.btnCreateSandbox.Click += new System.EventHandler(this.btnCreateSandbox_Click);
             // 
             // label21
             // 
@@ -1371,16 +1381,6 @@
             this.tabPageOperations.Text = "Operations";
             this.tabPageOperations.UseVisualStyleBackColor = true;
             // 
-            // checkBoxUseNetLogon
-            // 
-            this.checkBoxUseNetLogon.AutoSize = true;
-            this.checkBoxUseNetLogon.Location = new System.Drawing.Point(279, 59);
-            this.checkBoxUseNetLogon.Name = "checkBoxUseNetLogon";
-            this.checkBoxUseNetLogon.Size = new System.Drawing.Size(98, 17);
-            this.checkBoxUseNetLogon.TabIndex = 5;
-            this.checkBoxUseNetLogon.Text = "Use Net Logon";
-            this.checkBoxUseNetLogon.UseVisualStyleBackColor = true;
-            // 
             // TokenForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1488,7 +1488,7 @@
         private System.Windows.Forms.ContextMenuStrip contextMenuStripGroups;
         private System.Windows.Forms.ToolStripMenuItem enableGroupToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem selectAllGroupsToolStripMenuItem;
-        private System.Windows.Forms.Button btnCreateRestricted;
+        private System.Windows.Forms.Button btnCreateSandbox;
         private System.Windows.Forms.Button btnImpersonate;
         private System.Windows.Forms.ToolTip toolTip;
         private System.Windows.Forms.CheckBox checkBoxUseWmi;

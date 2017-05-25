@@ -693,13 +693,13 @@ namespace TokenViewer
             }
         }
 
-        private void btnCreateRestricted_Click(object sender, EventArgs e)
+        private void btnCreateSandbox_Click(object sender, EventArgs e)
         {
-            using (CreateRestrictedTokenForm form = new CreateRestrictedTokenForm(_token))
+            using (CreateSandboxTokenForm form = new CreateSandboxTokenForm(_token))
             {
                 if (form.ShowDialog(this) == DialogResult.OK)
                 {
-                    OpenForm(form.RestrictedToken, false);
+                    OpenForm(form.Token, false);
                 }
             }
         }

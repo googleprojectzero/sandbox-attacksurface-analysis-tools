@@ -52,11 +52,11 @@
     <Compile Include="AddSidForm.Designer.cs">
       <DependentUpon>AddSidForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="CreateRestrictedTokenForm.cs">
+    <Compile Include="CreateSandboxTokenForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="CreateRestrictedTokenForm.Designer.cs">
-      <DependentUpon>CreateRestrictedTokenForm.cs</DependentUpon>
+    <Compile Include="CreateSandboxTokenForm.Designer.cs">
+      <DependentUpon>CreateSandboxTokenForm.cs</DependentUpon>
     </Compile>
     <Compile Include="ListItemComparer.cs" />
     <Compile Include="MainForm.cs">
@@ -76,8 +76,8 @@
     <EmbeddedResource Include="AddSidForm.resx">
       <DependentUpon>AddSidForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="CreateRestrictedTokenForm.resx">
-      <DependentUpon>CreateRestrictedTokenForm.cs</DependentUpon>
+    <EmbeddedResource Include="CreateSandboxTokenForm.resx">
+      <DependentUpon>CreateSandboxTokenForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
