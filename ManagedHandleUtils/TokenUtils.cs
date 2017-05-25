@@ -139,6 +139,37 @@ namespace SandboxAnalysisUtils
         static extern bool SaferComputeTokenFromLevel(IntPtr LevelHandle, SafeHandle InAccessToken, 
             out SafeKernelObjectHandle OutAccessToken, SaferFlags dwFlags, IntPtr lpReserved);
 
+        [DllImport("advapi32.dll", SetLastError = true)]
+        static extern IntPtr FreeSid(IntPtr sid);
+
+        [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
+        static extern int DeriveAppContainerSidFromAppContainerName(
+            string pszAppContainerName,
+            out IntPtr ppsidAppContainerSid
+        );
+
+        public static Sid DerivePackageSidFromName(string name)
+        {
+            IntPtr sid = IntPtr.Zero;
+            try
+            {
+                int hr = DeriveAppContainerSidFromAppContainerName(name, out sid);
+                if (hr != 0)
+                {
+                    Marshal.ThrowExceptionForHR(hr);
+                }
+
+                return new Sid(sid);
+            }
+            finally
+            {
+                if (sid != IntPtr.Zero)
+                {
+                    FreeSid(sid);
+                }
+            }
+        }
+
         public static NtToken GetTokenFromSaferLevel(NtToken token, SaferLevel level, bool make_inert)
         {
             IntPtr level_handle;
