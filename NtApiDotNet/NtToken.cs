@@ -440,7 +440,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtCreateLowBoxToken(
           out SafeKernelObjectHandle token,
           SafeHandle original_token,
-          GenericAccessRights access,
+          TokenAccessRights access,
           ObjectAttributes object_attribute,
           byte[] appcontainer_sid,
           int capabilityCount,
@@ -1421,27 +1421,56 @@ namespace NtApiDotNet
         /// Create a LowBox token from the current token.
         /// </summary>
         /// <param name="package_sid">The package SID</param>
+        /// <returns>The created LowBox token.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtToken CreateLowBoxToken(Sid package_sid)
+        {
+            return CreateLowBoxToken(package_sid, new NtObject[0]);
+        }
+
+        /// <summary>
+        /// Create a LowBox token from the current token.
+        /// </summary>
+        /// <param name="package_sid">The package SID</param>
         /// <param name="handles">List of handles to capture with the token</param>
-        /// <returns></returns>
+        /// <returns>The created LowBox token.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public NtToken CreateLowBoxToken(Sid package_sid, params NtObject[] handles)
+        {
+            return CreateLowBoxToken(package_sid, new Sid[0], handles, TokenAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Create a LowBox token from the current token.
+        /// </summary>
+        /// <param name="package_sid">The package SID</param>
+        /// <param name="handles">List of handles to capture with the token</param>
+        /// <param name="capability_sids">List of capability sids to add.</param>
+        /// <param name="desired_access">Desired token access.</param>
+        /// <returns>The created LowBox token.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtToken CreateLowBoxToken(Sid package_sid, IEnumerable<Sid> capability_sids,
+            IEnumerable<NtObject> handles, TokenAccessRights desired_access)
         {
             SafeKernelObjectHandle token;
 
-            IntPtr[] handle_array = null;
-            int handle_count = handles != null ? handles.Length : 0;
-            if (handle_count > 0)
+            IntPtr[] handle_array = handles.Select(h => h.Handle.DangerousGetHandle()).ToArray();
+
+            using (var sids = new DisposableList<SafeSidBufferHandle>())
             {
-                handle_array = new IntPtr[handle_count];
-                for (int i = 0; i < handle_count; ++i)
-                {
-                    handle_array[i] = handles[i].Handle.DangerousGetHandle();
-                }
+                SidAndAttributes[] capabilities = capability_sids.Select(s =>
+                    {
+                        SafeSidBufferHandle sid = s.ToSafeBuffer();
+                        sids.Add(sid);
+                        return new SidAndAttributes() { Sid = sid.DangerousGetHandle() };
+                    }
+                    ).ToArray();
+                NtSystemCalls.NtCreateLowBoxToken(out token,
+                    Handle, TokenAccessRights.MaximumAllowed,
+                  new ObjectAttributes(), package_sid.ToArray(), capabilities.Length,
+                  capabilities.Length == 0 ? null : capabilities, 
+                  handle_array.Length, handle_array.Length == 0 ? null : handle_array).ToNtException();
             }
-
-            NtSystemCalls.NtCreateLowBoxToken(out token, 
-                Handle, GenericAccessRights.MaximumAllowed,
-              new ObjectAttributes(), package_sid.ToArray(), 0, null, handle_count, handle_array).ToNtException();
-
             return new NtToken(token);
         }
 
