@@ -318,6 +318,13 @@ namespace NtApiDotNet
         public ushort Sbz2;
     }
 
+    public enum PackageSidType
+    {
+        Unknown,
+        Parent,
+        Child
+    }
+
 #pragma warning restore 1591
 
     /// <summary>
@@ -1324,6 +1331,54 @@ namespace NtApiDotNet
                 NtRtl.RtlCreateServiceSid(new UnicodeString(service_name), buffer, ref sid_length).ToNtException();
                 return new Sid(buffer);
             }
+        }
+
+        /// <summary>
+        /// Checks if a SID is a service SID.
+        /// </summary>
+        /// <param name="sid">The sid to check.</param>
+        /// <returns>True if a service sid.</returns>
+        public static bool IsServiceSid(Sid sid)
+        {
+            return sid.Authority.IsAuthority(SecurityAuthority.Nt) && sid.SubAuthorities.Count > 0 && sid.SubAuthorities[0] == 80;
+        }
+
+        /// <summary>
+        /// Checks if a SID is a capability SID.
+        /// </summary>
+        /// <param name="sid">The sid to check.</param>
+        /// <returns>True if a capability sid.</returns>
+        public static bool IsCapabilitySid(Sid sid)
+        {
+            return sid.Authority.IsAuthority(SecurityAuthority.Package) &&
+                sid.SubAuthorities.Count > 0 &&
+                (sid.SubAuthorities[0] == 3);
+        }
+
+        /// <summary>
+        /// Get the type of package sid.
+        /// </summary>
+        /// <param name="sid">The sid to get type.</param>
+        /// <returns>The package sid type, Unknown if invalid.</returns>
+        public static PackageSidType GetPackageSidType(Sid sid)
+        {
+            if (IsPackageSid(sid))
+            {
+                return sid.SubAuthorities.Count == 8 ? PackageSidType.Parent : PackageSidType.Child;
+            }
+            return PackageSidType.Unknown;
+        }
+
+        /// <summary>
+        /// Checks if a SID is a valid package SID.
+        /// </summary>
+        /// <param name="sid">The sid to check.</param>
+        /// <returns>True if a capability sid.</returns>
+        public static bool IsPackageSid(Sid sid)
+        {
+            return sid.Authority.IsAuthority(SecurityAuthority.Package) &&
+                (sid.SubAuthorities.Count == 8 || sid.SubAuthorities.Count == 12) &&
+                (sid.SubAuthorities[0] == 2);
         }
     }
 }

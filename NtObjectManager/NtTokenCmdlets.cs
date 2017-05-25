@@ -478,4 +478,61 @@ namespace NtObjectManager
                 GetPrivileges(PrivilegesToDelete), GroupsToSids(RestrictedSids)));
         }
     }
+
+    /// <summary>
+    /// <para type="synopsis">Get a LowBox version of an existing NT token.</para>
+    /// <para type="description">This cmdlet takes a token and creates a new lowbox token from it.</para>
+    /// <para>Note that tokens objects need to be disposed of after use, therefore capture them in Use-NtObject or manually Close them once used.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>$token = Use-NtObject($tmp = Get-NtToken -Primary) { Get-NtLowBoxToken $tmp -PackageSid "Application.Name" }</code>
+    ///   <para>Get current process' primary token create a lowbox token with a named package.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$token = Use-NtObject($tmp = Get-NtToken -Primary) { Get-NtLowBoxToken $tmp -PackageSid "S-1-15-2-1-2-3-4-5-6-7" }</code>
+    ///   <para>Get current process' primary token create a lowbox token with a package Sid.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet(VerbsCommon.Get, "NtLowBoxToken")]
+    [OutputType(typeof(NtToken))]
+    public sealed class GetNtLowBoxTokenCmdlet : Cmdlet
+    {
+        /// <summary>
+        /// <para type="description">Specify access rights for the token.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 0)]
+        public NtToken Token { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify package SID or a name.</para>
+        /// </summary>
+        [Parameter(Mandatory = true)]
+        public string PackageSid { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify list of capability SIDS to add to token.</para>
+        /// </summary>
+        [Parameter]
+        public Sid[] CapabilitySids { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify list of handles to capture with lowbox token..</para>
+        /// </summary>
+        [Parameter]
+        public NtObject[] Handles { get; set; }
+        
+        /// <summary>
+        /// Overridden ProcessRecord method.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            Sid package_sid = SandboxAnalysisUtils.TokenUtils.GetPackageSidFromName(PackageSid);
+            if (!NtSecurity.IsPackageSid(package_sid))
+            {
+                throw new ArgumentException(String.Format("Invalid Package Sid {0}", package_sid));
+            }
+
+            WriteObject(Token.CreateLowBoxToken(package_sid, CapabilitySids ?? new Sid[0], Handles ?? new NtObject[0], TokenAccessRights.MaximumAllowed));
+        }
+    }
 }

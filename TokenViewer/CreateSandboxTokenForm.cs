@@ -115,41 +115,18 @@ namespace TokenViewer
                 GetPrivileges(), GetGroupFromList(listViewRestrictedSids.Items.OfType<ListViewItem>()));
         }
 
-        private static bool IsValidCapabilitySid(Sid sid)
-        {
-            return sid.Authority.IsAuthority(SecurityAuthority.Package) &&
-                sid.SubAuthorities.Count > 0 &&
-                (sid.SubAuthorities[0] == 3);
-        }
-
-        private static bool IsValidPackageSid(Sid sid)
-        {
-            return sid.Authority.IsAuthority(SecurityAuthority.Package) &&
-                (sid.SubAuthorities.Count == 8 || sid.SubAuthorities.Count == 12) &&
-                (sid.SubAuthorities[0] == 2);
-        }
-
         private NtToken CreateLowBoxToken(NtToken token)
         {
-            Sid package_sid;
-            string package_sid_str = textBoxPackageSid.Text;
-            if (package_sid_str.StartsWith("S-1-"))
+            Sid package_sid = SandboxAnalysisUtils.TokenUtils.GetPackageSidFromName(textBoxPackageSid.Text);
+            if (!NtSecurity.IsPackageSid(package_sid))
             {
-                package_sid = new Sid(package_sid_str);
-                if (!IsValidPackageSid(package_sid))
-                {
-                    throw new ArgumentException(String.Format("Invalid Package Sid {0}", package_sid_str));
-                }
+                throw new ArgumentException(String.Format("Invalid Package Sid {0}", package_sid));
             }
-            else
-            {
-                package_sid = SandboxAnalysisUtils.TokenUtils.DerivePackageSidFromName(textBoxPackageSid.Text);
-            }
-
+            
             Sid[] capabilities = GetGroupFromList(listViewCapabilities.Items.OfType<ListViewItem>());
             foreach (Sid cap in capabilities)
             {
-                if (!IsValidCapabilitySid(cap))
+                if (!NtSecurity.IsCapabilitySid(cap))
                 {
                     throw new ArgumentException(String.Format("Invalid Capability Sid {0}", cap));
                 }

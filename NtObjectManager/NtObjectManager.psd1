@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.6'
+ModuleVersion = '1.0.7'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -87,7 +87,7 @@ CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile',
                'New-NtMailslotFile', 'New-NtMutant', 'New-NtNamedPipeFile', 
                'New-NtSecurityDescriptor', 'New-NtSemaphore', 'New-NtSymbolicLink', 
                'Remove-NtFileReparsePoint', 'Start-NtWait', 'Use-NtObject',
-			   'Get-NtFilteredToken'
+			   'Get-NtFilteredToken', 'Get-NtLowBoxToken'
 
 # Variables to export from this module
 # VariablesToExport = @()

@@ -170,6 +170,19 @@ namespace SandboxAnalysisUtils
             }
         }
 
+        public static Sid GetPackageSidFromName(string name)
+        {
+            string package_sid_str = name;
+            if (package_sid_str.StartsWith("S-1-"))
+            {
+                return new Sid(package_sid_str);
+            }
+            else
+            {
+                return SandboxAnalysisUtils.TokenUtils.DerivePackageSidFromName(name);
+            }
+        }
+
         public static NtToken GetTokenFromSaferLevel(NtToken token, SaferLevel level, bool make_inert)
         {
             IntPtr level_handle;
