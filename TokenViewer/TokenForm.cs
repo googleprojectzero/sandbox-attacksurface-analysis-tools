@@ -173,7 +173,7 @@ namespace TokenViewer
             txtPrimaryGroup.Text = _token.PrimaryGroup.Name;
             txtOwner.Text = _token.Owner.Name;
 
-            Acl defdacl = _token.DefaultDalc;
+            Acl defdacl = _token.DefaultDacl;
             if (!defdacl.NullAcl)
             {
                 foreach (Ace ace in defdacl)

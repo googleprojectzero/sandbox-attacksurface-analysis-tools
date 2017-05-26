@@ -186,7 +186,7 @@ namespace NtApiDotNet
         {
             Owner = new SecurityDescriptorSid(token.Owner, true);
             Group = new SecurityDescriptorSid(token.PrimaryGroup, true);
-            Dacl = token.DefaultDalc;
+            Dacl = token.DefaultDacl;
             if (token.IntegrityLevel< TokenIntegrityLevel.Medium)
             {
                 Sacl = new Acl();
@@ -219,7 +219,7 @@ namespace NtApiDotNet
                 creator_sd = new SecurityDescriptor();
                 creator_sd.Owner = new SecurityDescriptorSid(token.Owner, false);
                 creator_sd.Group = new SecurityDescriptorSid(token.PrimaryGroup, false);
-                creator_sd.Dacl = token.DefaultDalc;
+                creator_sd.Dacl = token.DefaultDacl;
             }
 
             NtType type = NtType.GetTypeByName(base_object.NtTypeName);

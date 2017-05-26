@@ -1766,7 +1766,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the token's default DACL
         /// </summary>
-        public Acl DefaultDalc
+        public Acl DefaultDacl
         {
             get
             {
