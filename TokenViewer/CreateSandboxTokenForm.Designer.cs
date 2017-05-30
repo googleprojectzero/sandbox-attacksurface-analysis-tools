@@ -61,14 +61,14 @@
             this.addSidToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.deleteSidToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.selectAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.tabPageAppContainer = new System.Windows.Forms.TabPage();
+            this.listViewCapabilities = new System.Windows.Forms.ListView();
+            this.lblCapabilities = new System.Windows.Forms.Label();
+            this.textBoxPackageSid = new System.Windows.Forms.TextBox();
             this.btnCreate = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
             this.btnCreateNew = new System.Windows.Forms.Button();
             this.comboBoxSandboxType = new System.Windows.Forms.ComboBox();
-            this.tabPageAppContainer = new System.Windows.Forms.TabPage();
-            this.textBoxPackageSid = new System.Windows.Forms.TextBox();
-            this.lblCapabilities = new System.Windows.Forms.Label();
-            this.listViewCapabilities = new System.Windows.Forms.ListView();
             columnHeaderName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeaderSid = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeaderPrivilege = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -127,6 +127,25 @@
             lblSandboxType.Size = new System.Drawing.Size(79, 13);
             lblSandboxType.TabIndex = 5;
             lblSandboxType.Text = "Sandbox Type:";
+            // 
+            // lblPackageSid
+            // 
+            lblPackageSid.AutoSize = true;
+            lblPackageSid.Location = new System.Drawing.Point(7, 9);
+            lblPackageSid.Name = "lblPackageSid";
+            lblPackageSid.Size = new System.Drawing.Size(104, 13);
+            lblPackageSid.TabIndex = 0;
+            lblPackageSid.Text = "Package Sid/Name:";
+            // 
+            // columnHeader3
+            // 
+            columnHeader3.Text = "Name";
+            columnHeader3.Width = 131;
+            // 
+            // columnHeader4
+            // 
+            columnHeader4.Text = "Sid";
+            columnHeader4.Width = 235;
             // 
             // tabPageDisableSids
             // 
@@ -235,7 +254,7 @@
             this.tabPageDeletePrivs.Location = new System.Drawing.Point(4, 22);
             this.tabPageDeletePrivs.Name = "tabPageDeletePrivs";
             this.tabPageDeletePrivs.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageDeletePrivs.Size = new System.Drawing.Size(661, 442);
+            this.tabPageDeletePrivs.Size = new System.Drawing.Size(686, 442);
             this.tabPageDeletePrivs.TabIndex = 1;
             this.tabPageDeletePrivs.Text = "Delete Privileges";
             this.tabPageDeletePrivs.UseVisualStyleBackColor = true;
@@ -298,7 +317,7 @@
             this.tabPageRestrictedSids.Location = new System.Drawing.Point(4, 22);
             this.tabPageRestrictedSids.Name = "tabPageRestrictedSids";
             this.tabPageRestrictedSids.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageRestrictedSids.Size = new System.Drawing.Size(661, 442);
+            this.tabPageRestrictedSids.Size = new System.Drawing.Size(686, 442);
             this.tabPageRestrictedSids.TabIndex = 2;
             this.tabPageRestrictedSids.Text = "Restricted SIDs";
             this.tabPageRestrictedSids.UseVisualStyleBackColor = true;
@@ -363,6 +382,55 @@
             this.selectAllToolStripMenuItem.Text = "Select All";
             this.selectAllToolStripMenuItem.Click += new System.EventHandler(this.selectAllToolStripMenuItem_Click);
             // 
+            // tabPageAppContainer
+            // 
+            this.tabPageAppContainer.Controls.Add(this.listViewCapabilities);
+            this.tabPageAppContainer.Controls.Add(this.lblCapabilities);
+            this.tabPageAppContainer.Controls.Add(this.textBoxPackageSid);
+            this.tabPageAppContainer.Controls.Add(lblPackageSid);
+            this.tabPageAppContainer.Location = new System.Drawing.Point(4, 22);
+            this.tabPageAppContainer.Name = "tabPageAppContainer";
+            this.tabPageAppContainer.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPageAppContainer.Size = new System.Drawing.Size(686, 442);
+            this.tabPageAppContainer.TabIndex = 3;
+            this.tabPageAppContainer.Text = "AppContainer";
+            this.tabPageAppContainer.UseVisualStyleBackColor = true;
+            // 
+            // listViewCapabilities
+            // 
+            this.listViewCapabilities.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.listViewCapabilities.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            columnHeader3,
+            columnHeader4});
+            this.listViewCapabilities.ContextMenuStrip = this.contextMenuStripRestrictedSids;
+            this.listViewCapabilities.FullRowSelect = true;
+            this.listViewCapabilities.Location = new System.Drawing.Point(3, 55);
+            this.listViewCapabilities.Name = "listViewCapabilities";
+            this.listViewCapabilities.Size = new System.Drawing.Size(680, 379);
+            this.listViewCapabilities.TabIndex = 4;
+            this.listViewCapabilities.UseCompatibleStateImageBehavior = false;
+            this.listViewCapabilities.View = System.Windows.Forms.View.Details;
+            // 
+            // lblCapabilities
+            // 
+            this.lblCapabilities.AutoSize = true;
+            this.lblCapabilities.Location = new System.Drawing.Point(7, 37);
+            this.lblCapabilities.Name = "lblCapabilities";
+            this.lblCapabilities.Size = new System.Drawing.Size(63, 13);
+            this.lblCapabilities.TabIndex = 3;
+            this.lblCapabilities.Text = "Capabilities:";
+            // 
+            // textBoxPackageSid
+            // 
+            this.textBoxPackageSid.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.textBoxPackageSid.Location = new System.Drawing.Point(117, 6);
+            this.textBoxPackageSid.Name = "textBoxPackageSid";
+            this.textBoxPackageSid.Size = new System.Drawing.Size(563, 20);
+            this.textBoxPackageSid.TabIndex = 1;
+            // 
             // btnCreate
             // 
             this.btnCreate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
@@ -387,6 +455,7 @@
             // 
             // btnCreateNew
             // 
+            this.btnCreateNew.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.btnCreateNew.Location = new System.Drawing.Point(290, 506);
             this.btnCreateNew.Name = "btnCreateNew";
             this.btnCreateNew.Size = new System.Drawing.Size(75, 23);
@@ -404,74 +473,6 @@
             this.comboBoxSandboxType.Size = new System.Drawing.Size(223, 21);
             this.comboBoxSandboxType.TabIndex = 4;
             this.comboBoxSandboxType.SelectedIndexChanged += new System.EventHandler(this.comboBoxSandboxType_SelectedIndexChanged);
-            // 
-            // tabPageAppContainer
-            // 
-            this.tabPageAppContainer.Controls.Add(this.listViewCapabilities);
-            this.tabPageAppContainer.Controls.Add(this.lblCapabilities);
-            this.tabPageAppContainer.Controls.Add(this.textBoxPackageSid);
-            this.tabPageAppContainer.Controls.Add(lblPackageSid);
-            this.tabPageAppContainer.Location = new System.Drawing.Point(4, 22);
-            this.tabPageAppContainer.Name = "tabPageAppContainer";
-            this.tabPageAppContainer.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageAppContainer.Size = new System.Drawing.Size(686, 442);
-            this.tabPageAppContainer.TabIndex = 3;
-            this.tabPageAppContainer.Text = "AppContainer";
-            this.tabPageAppContainer.UseVisualStyleBackColor = true;
-            // 
-            // lblPackageSid
-            // 
-            lblPackageSid.AutoSize = true;
-            lblPackageSid.Location = new System.Drawing.Point(7, 9);
-            lblPackageSid.Name = "lblPackageSid";
-            lblPackageSid.Size = new System.Drawing.Size(104, 13);
-            lblPackageSid.TabIndex = 0;
-            lblPackageSid.Text = "Package Sid/Name:";
-            // 
-            // textBoxPackageSid
-            // 
-            this.textBoxPackageSid.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.textBoxPackageSid.Location = new System.Drawing.Point(117, 6);
-            this.textBoxPackageSid.Name = "textBoxPackageSid";
-            this.textBoxPackageSid.Size = new System.Drawing.Size(563, 20);
-            this.textBoxPackageSid.TabIndex = 1;
-            // 
-            // lblCapabilities
-            // 
-            this.lblCapabilities.AutoSize = true;
-            this.lblCapabilities.Location = new System.Drawing.Point(7, 37);
-            this.lblCapabilities.Name = "lblCapabilities";
-            this.lblCapabilities.Size = new System.Drawing.Size(63, 13);
-            this.lblCapabilities.TabIndex = 3;
-            this.lblCapabilities.Text = "Capabilities:";
-            // 
-            // listViewCapabilities
-            // 
-            this.listViewCapabilities.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.listViewCapabilities.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            columnHeader3,
-            columnHeader4});
-            this.listViewCapabilities.ContextMenuStrip = this.contextMenuStripRestrictedSids;
-            this.listViewCapabilities.FullRowSelect = true;
-            this.listViewCapabilities.Location = new System.Drawing.Point(3, 55);
-            this.listViewCapabilities.Name = "listViewCapabilities";
-            this.listViewCapabilities.Size = new System.Drawing.Size(705, 379);
-            this.listViewCapabilities.TabIndex = 4;
-            this.listViewCapabilities.UseCompatibleStateImageBehavior = false;
-            this.listViewCapabilities.View = System.Windows.Forms.View.Details;
-            // 
-            // columnHeader3
-            // 
-            columnHeader3.Text = "Name";
-            columnHeader3.Width = 131;
-            // 
-            // columnHeader4
-            // 
-            columnHeader4.Text = "Sid";
-            columnHeader4.Width = 235;
             // 
             // CreateSandboxTokenForm
             // 
