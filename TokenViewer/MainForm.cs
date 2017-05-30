@@ -32,56 +32,56 @@ namespace TokenViewer
             view.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
-        private ListViewItem CreateProcessNode(NtProcess entry)
+        private ListViewItem CreateProcessNode(NtProcess entry, NtToken token)
         {
-            try
-            {
-                using (NtToken token = entry.OpenToken())
-                {
-                    ListViewItem item = new ListViewItem(entry.ProcessId.ToString());
-                    item.SubItems.Add(entry.Name);
-                    item.SubItems.Add(token.User.ToString());
-                    item.SubItems.Add(token.IntegrityLevel.ToString());
-                    item.SubItems.Add(token.Restricted.ToString());
-                    item.SubItems.Add(token.AppContainer.ToString());
-                    item.Tag = entry.Duplicate();
-                    return item;
-                }
-            }
-            catch
-            {
-                // Do nothing
-            }
-            return null;
+            System.Diagnostics.Trace.WriteLine(token.GrantedAccess.ToString());
+            ListViewItem item = new ListViewItem(entry.ProcessId.ToString());
+            item.SubItems.Add(entry.Name);
+            item.SubItems.Add(token.User.ToString());
+            item.SubItems.Add(token.IntegrityLevel.ToString());
+            item.SubItems.Add(token.Restricted.ToString());
+            item.SubItems.Add(token.AppContainer.ToString());
+            item.Tag = token.Duplicate();
+            return item;
         }
 
         private IEnumerable<ListViewItem> CreateThreads(NtProcess entry)
         {
             List<ListViewItem> ret = new List<ListViewItem>();
-            using (DisposableList<NtThread> threads = new DisposableList<NtThread>(entry.GetThreads(ThreadAccessRights.QueryInformation)))
+            try
             {
-                foreach (NtThread thread in threads)
+                using (NtProcess query_process = entry.Duplicate(ProcessAccessRights.QueryInformation))
                 {
-                    try
+                    using (var threads = new DisposableList<NtThread>(query_process.GetThreads(ThreadAccessRights.QueryLimitedInformation)))
                     {
-                        using (NtToken token = thread.OpenToken())
+                        foreach (NtThread thread in threads)
                         {
-                            if (token != null)
+                            try
                             {
-                                ListViewItem item = new ListViewItem(String.Format("{0} - {1}", entry.ProcessId, entry.Name));
-                                item.SubItems.Add(thread.ThreadId.ToString());
-                                item.SubItems.Add(token.User.ToString());
-                                item.SubItems.Add(token.ImpersonationLevel.ToString());
-                                item.Tag = thread.Duplicate();
-                                ret.Add(item);
+                                using (NtToken token = thread.OpenToken())
+                                {
+                                    if (token != null)
+                                    {
+                                        ListViewItem item = new ListViewItem(String.Format("{0} - {1}", entry.ProcessId, entry.Name));
+                                        item.SubItems.Add(thread.ThreadId.ToString());
+                                        item.SubItems.Add(token.User.ToString());
+                                        item.SubItems.Add(token.ImpersonationLevel.ToString());
+                                        item.Tag = thread.Duplicate();
+                                        ret.Add(item);
+                                    }
+                                }
+                            }
+                            catch (NtException)
+                            {
                             }
                         }
                     }
-                    catch (NtException)
-                    {
-                    }
                 }
             }
+            catch (NtException)
+            {
+            }
+
             return ret;
         }
 
@@ -121,29 +121,9 @@ namespace TokenViewer
             }
         }
 
-        private static bool IsRestrictedToken(NtProcess process)
+        private static bool IsRestrictedToken(NtToken token)
         {
-            NtToken token = null;
-            try
-            {
-                token = GetToken(process);
-                if (token == null)
-                {
-                    return false;
-                }
-                return token.Restricted|| token.AppContainer|| token.IntegrityLevel < TokenIntegrityLevel.Medium;
-            }
-            catch (NtException)
-            {
-                return false;
-            }
-            finally
-            {
-                if (token != null)
-                {
-                    token.Close();
-                }
-            }
+            return token.Restricted || token.AppContainer || token.IntegrityLevel < TokenIntegrityLevel.Medium;
         }
 
         private void ClearList(ListView view)
@@ -161,40 +141,55 @@ namespace TokenViewer
 
         private void RefreshProcessList(string filter, bool hideUnrestricted)
         {
+            bool filter_name = !String.IsNullOrWhiteSpace(filter);
+
             using (var processes = new DisposableList<NtProcess>(NtProcess.GetProcesses(ProcessAccessRights.QueryLimitedInformation)))
             {
                 processes.Sort((a, b) => a.ProcessId - b.ProcessId);
 
-                IEnumerable<NtProcess> filtered = processes.Where(p => GetToken(p) != null);
-
-                if (!String.IsNullOrWhiteSpace(filter))
+                using (var tokens = new DisposableList<NtToken>(processes.Select(p => GetToken(p))))
                 {
-                    filter = filter.ToLower();
-                    filtered = filtered.Where(p => p.FullPath.ToLower().Contains(filter));
-                }
+                    List<ListViewItem> procs = new List<ListViewItem>();
+                    List<ListViewItem> threads = new List<ListViewItem>();
 
-                if (hideUnrestricted)
-                {
-                    filtered = filtered.Where(p => IsRestrictedToken(p));
-                }
-
-                ClearList(listViewProcesses);
-                ClearList(listViewThreads);
-                List<ListViewItem> procs = new List<ListViewItem>();
-                List<ListViewItem> threads = new List<ListViewItem>();
-                foreach (NtProcess entry in filtered)
-                {
-                    ListViewItem proc = CreateProcessNode(entry);
-                    if (proc != null)
+                    Debug.Assert(processes.Count == tokens.Count);
+                    for (int i = 0; i < processes.Count; ++i)
                     {
-                        procs.Add(proc);
+                        NtProcess p = processes[i];
+                        NtToken t = tokens[i];
+
+                        if (t == null || !t.IsAccessGranted(TokenAccessRights.QuerySource | TokenAccessRights.QuerySource))
+                        {
+                            continue;
+                        }
+
+                        if (filter_name)
+                        {
+                            if (!p.FullPath.ToLower().Contains(filter.ToLower()))
+                            {
+                                continue;
+                            }
+                        }
+
+                        if (hideUnrestricted)
+                        {
+                            if (!IsRestrictedToken(t))
+                            {
+                                continue;
+                            }
+                        }
+
+                        procs.Add(CreateProcessNode(p, t));
+                        threads.AddRange(CreateThreads(p));
                     }
-                    threads.AddRange(CreateThreads(entry));
+
+                    ClearList(listViewProcesses);
+                    ClearList(listViewThreads);
+                    listViewProcesses.Items.AddRange(procs.ToArray());
+                    listViewThreads.Items.AddRange(threads.ToArray());
+                    ResizeColumns(listViewProcesses);
+                    ResizeColumns(listViewThreads);
                 }
-                listViewProcesses.Items.AddRange(procs.ToArray());
-                listViewThreads.Items.AddRange(threads.ToArray());
-                ResizeColumns(listViewProcesses);
-                ResizeColumns(listViewThreads);
             }
         }
 
@@ -233,6 +228,7 @@ namespace TokenViewer
                 else
                 {
                     tabControlTests.TabPages.Remove(tabPageSessions);
+                    groupBoxServiceAccounts.Visible = false;
                 }
             }
             
@@ -285,14 +281,10 @@ namespace TokenViewer
             {
                 foreach (ListViewItem item in listViewProcesses.SelectedItems)
                 {
-                    NtProcess process = item.Tag as NtProcess;
-                    if (process != null)
+                    NtToken token = item.Tag as NtToken;
+                    if (token != null)
                     {
-                        NtToken token = GetToken(process);
-                        if (token != null)
-                        {
-                            TokenForm.OpenForm(token, true);
-                        }
+                        TokenForm.OpenForm(token, true);
                     }
                 }
             }
