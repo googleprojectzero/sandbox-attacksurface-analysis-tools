@@ -767,19 +767,13 @@ namespace NtApiDotNet
                 {
                     try
                     {
-                        using (var buf = QueryFixed<ProcessExtendedBasicInformation>(ProcessInfoClass.ProcessBasicInformation))
-                        {
-                            _extended_info = buf.Result;
-                        }
+                        _extended_info = QueryFixed<ProcessExtendedBasicInformation>(ProcessInfoClass.ProcessBasicInformation);
                     }
                     catch (NtException)
                     {
-                        using (var buf = QueryFixed<ProcessBasicInformation>(ProcessInfoClass.ProcessBasicInformation))
-                        {
-                            ProcessExtendedBasicInformation result = new ProcessExtendedBasicInformation();
-                            result.BasicInfo = buf.Result;
-                            _extended_info = result;
-                        }
+                        ProcessExtendedBasicInformation result = new ProcessExtendedBasicInformation();
+                        result.BasicInfo = QueryFixed<ProcessBasicInformation>(ProcessInfoClass.ProcessBasicInformation);
+                        _extended_info = result;
                     }
                 }
             }
@@ -815,20 +809,13 @@ namespace NtApiDotNet
             }
         }
 
-        private SafeStructureInOutBuffer<T> QueryFixed<T>(ProcessInfoClass info_class) where T : new()
+        private T QueryFixed<T>(ProcessInfoClass info_class) where T : new()
         {
-            var buffer = new SafeStructureInOutBuffer<T>();
-            int return_length = 0;
-
-            try
+            using (var buffer = new SafeStructureInOutBuffer<T>())
             {
+                int return_length = 0;
                 NtSystemCalls.NtQueryInformationProcess(Handle, info_class, buffer, buffer.Length, out return_length).ToNtException();
-                return buffer;
-            }
-            catch
-            {
-                buffer.Close();
-                throw;
+                return buffer.Result;
             }
         }
 
@@ -975,10 +962,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var basic_info = QueryFixed<ProcessBasicInformation>(ProcessInfoClass.ProcessBasicInformation))
-                {
-                    return basic_info.Result.ExitStatus;
-                }
+                return QueryFixed<ProcessBasicInformation>(ProcessInfoClass.ProcessBasicInformation).ExitStatus;
             }
         }
 
@@ -1426,10 +1410,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buf = QueryFixed<IntPtr>(ProcessInfoClass.ProcessDebugPort))
-                {
-                    return buf.Result != IntPtr.Zero;
-                }
+                return QueryFixed<IntPtr>(ProcessInfoClass.ProcessDebugPort) != IntPtr.Zero;
             }
         }
 
@@ -1439,10 +1420,7 @@ namespace NtApiDotNet
         /// <returns>The process' debug object.</returns>
         public NtDebug OpenDebugObject()
         {
-            using (var buf = QueryFixed<IntPtr>(ProcessInfoClass.ProcessDebugObjectHandle))
-            {
-                return new NtDebug(new SafeKernelObjectHandle(buf.Result, true));
-            }
+            return new NtDebug(new SafeKernelObjectHandle(QueryFixed<IntPtr>(ProcessInfoClass.ProcessDebugObjectHandle), true));
         }
 
         /// <summary>
@@ -1453,10 +1431,18 @@ namespace NtApiDotNet
             get
             {
                 // Weirdly if you query for 8 bytes it just returns count in upper and lower bits.
-                using (var buf = QueryFixed<int>(ProcessInfoClass.ProcessHandleCount))
-                {
-                    return buf.Result;
-                }
+                return QueryFixed<int>(ProcessInfoClass.ProcessHandleCount);
+            }
+        }
+
+        /// <summary>
+        /// Get break on termination flag.
+        /// </summary>
+        public bool BreakOnTermination
+        {
+            get
+            {
+                return QueryFixed<int>(ProcessInfoClass.ProcessBreakOnTermination) != 0;
             }
         }
     }
