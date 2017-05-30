@@ -60,7 +60,10 @@ namespace NtApiDotNet
             {
                 foreach (IDisposable entry in this)
                 {
-                    entry.Dispose();
+                    if (entry != null)
+                    {
+                        entry.Dispose();
+                    }
                 }
 
                 disposedValue = true;
