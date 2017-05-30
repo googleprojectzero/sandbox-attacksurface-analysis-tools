@@ -1444,5 +1444,20 @@ namespace NtApiDotNet
                 return new NtDebug(new SafeKernelObjectHandle(buf.Result, true));
             }
         }
+
+        /// <summary>
+        /// Get handle count.
+        /// </summary>
+        public int HandleCount
+        {
+            get
+            {
+                // Weirdly if you query for 8 bytes it just returns count in upper and lower bits.
+                using (var buf = QueryFixed<int>(ProcessInfoClass.ProcessHandleCount))
+                {
+                    return buf.Result;
+                }
+            }
+        }
     }
 }
