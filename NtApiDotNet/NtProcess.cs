@@ -1419,6 +1419,21 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get whether process has a debug point.
+        /// </summary>
+        /// <returns></returns>
+        public bool HasDebugPort
+        {
+            get
+            {
+                using (var buf = QueryFixed<IntPtr>(ProcessInfoClass.ProcessDebugPort))
+                {
+                    return buf.Result != IntPtr.Zero;
+                }
+            }
+        }
+
+        /// <summary>
         /// Open a process' debug object.
         /// </summary>
         /// <returns>The process' debug object.</returns>
