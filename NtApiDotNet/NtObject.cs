@@ -1058,7 +1058,7 @@ namespace NtApiDotNet
         /// <returns>The typed object. Can be NtGeneric if no better type is known.</returns>
         public NtObject ToTypedObject()
         {
-            switch (NtTypeName)
+            switch (NtTypeName.ToLower())
             {
                 case "device":
                     return new NtFile(DuplicateHandle());

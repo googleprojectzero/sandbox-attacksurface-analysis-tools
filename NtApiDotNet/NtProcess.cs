@@ -177,7 +177,6 @@ namespace NtApiDotNet
         public RtlDriveLetterCurDir[] DLCurrentDirectory;
     }
 
-
     [Flags]
     public enum SectionImageFlags : byte
     {
@@ -362,7 +361,15 @@ namespace NtApiDotNet
         public int SessionId;
     }
 
-    public enum ProcessInfoClass
+    [StructLayout(LayoutKind.Sequential), DataStart("WindowTitle")]
+    public class ProcessWindowInformation
+    {
+        public uint WindowFlags;
+        public ushort WindowTitleLength;
+        public char WindowTitle;
+    }
+
+    public enum ProcessInformationClass
     {
         ProcessBasicInformation, // 0, q: PROCESS_BASIC_INFORMATION, PROCESS_EXTENDED_BASIC_INFORMATION
         ProcessQuotaLimits, // qs: QUOTA_LIMITS, QUOTA_LIMITS_EX
@@ -513,7 +520,7 @@ namespace NtApiDotNet
     {
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtQueryInformationProcess(SafeKernelObjectHandle ProcessHandle,
-          ProcessInfoClass ProcessInformationClass,
+          ProcessInformationClass ProcessInformationClass,
           SafeHGlobalBuffer ProcessInformation,
           int ProcessInformationLength,
           [Out] out int ReturnLength
@@ -521,7 +528,7 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtSetInformationProcess(SafeKernelObjectHandle ProcessHandle,
-            ProcessInfoClass ProcessInformationClass,
+            ProcessInformationClass ProcessInformationClass,
             SafeHGlobalBuffer ProcessInformation,
             int ProcessInformationLength);
 
@@ -767,12 +774,12 @@ namespace NtApiDotNet
                 {
                     try
                     {
-                        _extended_info = QueryFixed<ProcessExtendedBasicInformation>(ProcessInfoClass.ProcessBasicInformation);
+                        _extended_info = QueryFixed<ProcessExtendedBasicInformation>(ProcessInformationClass.ProcessBasicInformation);
                     }
                     catch (NtException)
                     {
                         ProcessExtendedBasicInformation result = new ProcessExtendedBasicInformation();
-                        result.BasicInfo = QueryFixed<ProcessBasicInformation>(ProcessInfoClass.ProcessBasicInformation);
+                        result.BasicInfo = QueryFixed<ProcessBasicInformation>(ProcessInformationClass.ProcessBasicInformation);
                         _extended_info = result;
                     }
                 }
@@ -786,7 +793,7 @@ namespace NtApiDotNet
             return GetExtendedBasicInfo().BasicInfo;
         }
 
-        private SafeStructureInOutBuffer<T> Query<T>(ProcessInfoClass info_class) where T : new()
+        private SafeStructureInOutBuffer<T> Query<T>(ProcessInformationClass info_class) where T : new()
         {
             int return_length = 0;
 
@@ -809,7 +816,7 @@ namespace NtApiDotNet
             }
         }
 
-        private T QueryFixed<T>(ProcessInfoClass info_class) where T : new()
+        private T QueryFixed<T>(ProcessInformationClass info_class) where T : new()
         {
             using (var buffer = new SafeStructureInOutBuffer<T>())
             {
@@ -911,7 +918,7 @@ namespace NtApiDotNet
                 using (SafeStructureInOutBuffer<ProcessSessionInformation> session_info = new SafeStructureInOutBuffer<ProcessSessionInformation>())
                 {
                     int return_length = 0;
-                    NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInfoClass.ProcessSessionInformation,
+                    NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInformationClass.ProcessSessionInformation,
                       session_info, session_info.Length, out return_length).ToNtException();
                     return session_info.Result.SessionId;
                 }
@@ -962,7 +969,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFixed<ProcessBasicInformation>(ProcessInfoClass.ProcessBasicInformation).ExitStatus;
+                return QueryFixed<ProcessBasicInformation>(ProcessInformationClass.ProcessBasicInformation).ExitStatus;
             }
         }
 
@@ -973,7 +980,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buffer = Query<UnicodeStringOut>(ProcessInfoClass.ProcessCommandLineInformation))
+                using (var buffer = Query<UnicodeStringOut>(ProcessInformationClass.ProcessCommandLineInformation))
                 {
                     return buffer.Result.ToString();
                 }
@@ -1049,7 +1056,7 @@ namespace NtApiDotNet
         /// <returns>The process image file path</returns>
         public string GetImageFilePath(bool native)
         {
-            ProcessInfoClass info_class = native ? ProcessInfoClass.ProcessImageFileName : ProcessInfoClass.ProcessImageFileNameWin32;
+            ProcessInformationClass info_class = native ? ProcessInformationClass.ProcessImageFileName : ProcessInformationClass.ProcessImageFileNameWin32;
             int return_length = 0;
             NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, info_class, SafeHGlobalBuffer.Null, 0, out return_length);
             if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
@@ -1107,7 +1114,7 @@ namespace NtApiDotNet
             using (var buffer = p.ToBuffer())
             {
                 int return_length;
-                NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInfoClass.ProcessMitigationPolicy, buffer, buffer.Length, out return_length);
+                NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInformationClass.ProcessMitigationPolicy, buffer, buffer.Length, out return_length);
                 if (!status.IsSuccess())
                 {
                     if (status != NtStatus.STATUS_INVALID_PARAMETER && status != NtStatus.STATUS_NOT_SUPPORTED)
@@ -1135,7 +1142,7 @@ namespace NtApiDotNet
 
             using (var buffer = p.ToBuffer())
             {
-                NtSystemCalls.NtSetInformationProcess(Handle, ProcessInfoClass.ProcessMitigationPolicy, buffer, buffer.Length).ToNtException();
+                NtSystemCalls.NtSetInformationProcess(Handle, ProcessInformationClass.ProcessMitigationPolicy, buffer, buffer.Length).ToNtException();
             }
         }
 
@@ -1166,7 +1173,7 @@ namespace NtApiDotNet
                 {
                     int return_length;
                     ProcessDepStatus ret = new ProcessDepStatus();
-                    NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInfoClass.ProcessExecuteFlags, buffer, buffer.Length, out return_length);
+                    NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInformationClass.ProcessExecuteFlags, buffer, buffer.Length, out return_length);
                     if (!status.IsSuccess())
                     {
                         if (status != NtStatus.STATUS_INVALID_PARAMETER)
@@ -1398,7 +1405,7 @@ namespace NtApiDotNet
             device_map_set.DirectoryHandle = device_map.Handle.DangerousGetHandle();
             using (var buffer = device_map_set.ToBuffer())
             {
-                NtSystemCalls.NtSetInformationProcess(Handle, ProcessInfoClass.ProcessDeviceMap, buffer, buffer.Length);
+                NtSystemCalls.NtSetInformationProcess(Handle, ProcessInformationClass.ProcessDeviceMap, buffer, buffer.Length);
             }
         }
 
@@ -1410,7 +1417,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFixed<IntPtr>(ProcessInfoClass.ProcessDebugPort) != IntPtr.Zero;
+                return QueryFixed<IntPtr>(ProcessInformationClass.ProcessDebugPort) != IntPtr.Zero;
             }
         }
 
@@ -1420,7 +1427,7 @@ namespace NtApiDotNet
         /// <returns>The process' debug object.</returns>
         public NtDebug OpenDebugObject()
         {
-            return new NtDebug(new SafeKernelObjectHandle(QueryFixed<IntPtr>(ProcessInfoClass.ProcessDebugObjectHandle), true));
+            return new NtDebug(new SafeKernelObjectHandle(QueryFixed<IntPtr>(ProcessInformationClass.ProcessDebugObjectHandle), true));
         }
 
         /// <summary>
@@ -1431,7 +1438,7 @@ namespace NtApiDotNet
             get
             {
                 // Weirdly if you query for 8 bytes it just returns count in upper and lower bits.
-                return QueryFixed<int>(ProcessInfoClass.ProcessHandleCount);
+                return QueryFixed<int>(ProcessInformationClass.ProcessHandleCount);
             }
         }
 
@@ -1442,8 +1449,220 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFixed<int>(ProcessInfoClass.ProcessBreakOnTermination) != 0;
+                return QueryFixed<int>(ProcessInformationClass.ProcessBreakOnTermination) != 0;
             }
+        }
+
+        /// <summary>
+        /// Get debug flags.
+        /// </summary>
+        public int DebugFlags
+        {
+            get
+            {
+                return QueryFixed<int>(ProcessInformationClass.ProcessDebugFlags);
+            }
+        }
+
+        /// <summary>
+        /// Get execute flags.
+        /// </summary>
+        public int ExecuteFlags
+        {
+            get
+            {
+                return QueryFixed<int>(ProcessInformationClass.ProcessExecuteFlags);
+            }
+        }
+
+        /// <summary>
+        /// Get IO priority.
+        /// </summary>
+        public int IoPriority
+        {
+            get
+            {
+                return QueryFixed<int>(ProcessInformationClass.ProcessIoPriority);
+            }
+        }
+
+        /// <summary>
+        /// Get secure cookie.
+        /// </summary>
+        public int Cookie
+        {
+            get
+            {
+                return QueryFixed<int>(ProcessInformationClass.ProcessCookie);
+            }
+        }
+
+        /// <summary>
+        /// Queries whether process is backed by a specific file.
+        /// </summary>
+        /// <param name="file">File object opened with Synchronize and Execute access to test against.</param>
+        /// <returns>True if the process is created from the image file.</returns>
+        public bool IsImageFile(NtFile file)
+        {
+            using (var buf = file.Handle.DangerousGetHandle().ToBuffer())
+            {
+                int return_length;
+                return NtSystemCalls.NtQueryInformationProcess(Handle,
+                    ProcessInformationClass.ProcessImageFileMapping, buf, buf.Length, out return_length).IsSuccess();
+            }
+        }
+
+        /// <summary>
+        /// Get owner process ID
+        /// </summary>
+        public int OwnerProcessId
+        {
+            get
+            {
+                return QueryFixed<IntPtr>(ProcessInformationClass.ProcessConsoleHostProcess).ToInt32();
+            }
+        }
+
+        /// <summary>
+        /// Open parent process by ID.
+        /// </summary>
+        /// <param name="desired_access">The desired process access rights.</param>
+        /// <returns>The opened process.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtProcess OpenParent(ProcessAccessRights desired_access)
+        {
+            return Open(ParentProcessId, desired_access);
+        }
+
+        /// <summary>
+        /// Open parent process by ID.
+        /// </summary>
+        /// <returns>The opened process.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtProcess OpenParent()
+        {
+            return OpenParent(ProcessAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Open owner process by ID.
+        /// </summary>
+        /// <param name="desired_access">The desired process access rights.</param>
+        /// <returns>The opened process.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtProcess OpenOwner(ProcessAccessRights desired_access)
+        {
+            return Open(OwnerProcessId, desired_access);
+        }
+
+        /// <summary>
+        /// Open owner process by ID.
+        /// </summary>
+        /// <returns>The opened process.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtProcess OpenOwner()
+        {
+            return OpenOwner(ProcessAccessRights.MaximumAllowed);
+        }
+        
+        /// <summary>
+        /// Get process window title (from Process Parameters).
+        /// </summary>
+        public string WindowTitle
+        {
+            get
+            {
+                using (var buf = Query<ProcessWindowInformation>(ProcessInformationClass.ProcessWindowInformation))
+                {
+                    ProcessWindowInformation window_info = buf.Result;
+                    return buf.Data.ReadUnicodeString(window_info.WindowTitleLength / 2);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get process window flags (from Process Parameters).
+        /// </summary>
+        public uint WindowFlags
+        {
+            get
+            {
+                using (var buf = Query<ProcessWindowInformation>(ProcessInformationClass.ProcessWindowInformation))
+                {
+                    return buf.Result.WindowFlags;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get process handle table.
+        /// </summary>
+        /// <returns>The list of process handles.</returns>
+        public IEnumerable<int> GetHandleTable()
+        {
+            // Try handle count + 1000 (just to give a bit of space)
+            // If you want this to be reliable you probably need to suspend the process.
+            using (var buf = new SafeHGlobalBuffer((HandleCount + 1000) * 4))
+            {
+                int return_length;
+                NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInformationClass.ProcessHandleTable,
+                    buf, buf.Length, out return_length).ToNtException();
+                int[] ret = new int[return_length / 4];
+                buf.ReadArray(0, ret, 0, ret.Length);
+                return ret;
+            }
+        }
+
+        /// <summary>
+        /// Get the process handle table and try and get them as objects.
+        /// </summary>
+        /// <param name="named_only">True to only return named objects</param>
+        /// <param name="type_names">A list of typenames to filter on (if empty then return all)</param>
+        /// <returns>The list of handles as objects.</returns>
+        /// <remarks>This function will drop handles it can't duplicate.</remarks>
+        public IEnumerable<NtObject> GetHandleTableAsObjects(bool named_only, IEnumerable<string> type_names)
+        {
+            if (!IsAccessGranted(ProcessAccessRights.DupHandle))
+            {
+                return new NtObject[0];
+            }
+
+            List<NtObject> objs = new List<NtObject>();
+            HashSet<string> types = new HashSet<string>(type_names, StringComparer.OrdinalIgnoreCase);
+            foreach (int handle in GetHandleTable())
+            {
+                try
+                {
+                    using (NtGeneric generic = NtGeneric.DuplicateFrom(this, new IntPtr(handle)))
+                    {
+                        if (named_only && generic.FullPath == String.Empty)
+                        {
+                            continue;
+                        }
+
+                        if (types.Count > 0 && !types.Contains(generic.NtTypeName))
+                        {
+                            continue;
+                        }
+
+                        objs.Add(generic.ToTypedObject());
+                    }
+                }
+                catch (NtException)
+                {
+                }
+            }
+            return objs;
+        }
+
+        /// <summary>
+        /// Get the process handle table and try and get them as objects.
+        /// </summary>
+        /// <returns>The list of handles as objects.</returns>
+        /// <remarks>This function will drop handles it can't duplicate.</remarks>
+        public IEnumerable<NtObject> GetHandleTableAsObjects()
+        {
+            return GetHandleTableAsObjects(false, new string[0]);
         }
     }
 }
