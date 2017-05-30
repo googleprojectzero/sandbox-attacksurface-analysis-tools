@@ -323,7 +323,7 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public class ProcessBasicInformation
+    public struct ProcessBasicInformation
     {
         public int ExitStatus;
         public IntPtr PebBaseAddress;
@@ -331,6 +331,29 @@ namespace NtApiDotNet
         public int BasePriority;
         public IntPtr UniqueProcessId;
         public IntPtr InheritedFromUniqueProcessId;
+    }
+
+    [Flags]
+    public enum ProcessExtendedBasicInformationFlags
+    {
+        None = 0,
+        IsProtectedProcess = 0x00000001,
+        IsWow64Process = 0x00000002,
+        IsProcessDeleting = 0x00000004,
+        IsCrossSessionCreate = 0x00000008,
+        IsFrozen = 0x00000010,
+        IsBackground = 0x00000020,
+        IsStronglyNamed = 0x00000040,
+        IsSecureProcess = 0x00000080,
+        IsSubsystemProcess = 0x00000100,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ProcessExtendedBasicInformation
+    {
+        public IntPtr Size;
+        public ProcessBasicInformation BasicInfo;
+        public ProcessExtendedBasicInformationFlags Flags;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -730,21 +753,43 @@ namespace NtApiDotNet
     public class NtProcess : NtObjectWithDuplicate<NtProcess, ProcessAccessRights>
     {
         private int? _pid;
-        private int? _ppid;
-        private IntPtr? _peb;
-
-        private void PopulateBasicInformation()
+        private ProcessExtendedBasicInformation? _extended_info;
+        
+        private ProcessExtendedBasicInformation GetExtendedBasicInfo()
         {
-            using (SafeStructureInOutBuffer<ProcessBasicInformation> basic_info = new SafeStructureInOutBuffer<ProcessBasicInformation>())
+            if (!_extended_info.HasValue)
             {
-                int return_length = 0;
-                NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInfoClass.ProcessBasicInformation,
-                  basic_info, basic_info.Length, out return_length).ToNtException();
-                ProcessBasicInformation result = basic_info.Result;
-                _pid = result.UniqueProcessId.ToInt32();
-                _ppid = result.InheritedFromUniqueProcessId.ToInt32();
-                _peb = result.PebBaseAddress;
+                if (!IsAccessGranted(ProcessAccessRights.QueryLimitedInformation))
+                {
+                    _extended_info = new ProcessExtendedBasicInformation();
+                }
+                else
+                {
+                    try
+                    {
+                        using (var buf = QueryFixed<ProcessExtendedBasicInformation>(ProcessInfoClass.ProcessBasicInformation))
+                        {
+                            _extended_info = buf.Result;
+                        }
+                    }
+                    catch (NtException)
+                    {
+                        using (var buf = QueryFixed<ProcessBasicInformation>(ProcessInfoClass.ProcessBasicInformation))
+                        {
+                            ProcessExtendedBasicInformation result = new ProcessExtendedBasicInformation();
+                            result.BasicInfo = buf.Result;
+                            _extended_info = result;
+                        }
+                    }
+                }
             }
+
+            return _extended_info.Value;
+        }
+
+        private ProcessBasicInformation GetBasicInfo()
+        {
+            return GetExtendedBasicInfo().BasicInfo;
         }
 
         private SafeStructureInOutBuffer<T> Query<T>(ProcessInfoClass info_class) where T : new()
@@ -893,9 +938,11 @@ namespace NtApiDotNet
         {
             get
             {
-                if (!_pid.HasValue)
-                    PopulateBasicInformation();
-                return _pid.Value;
+                if (_pid.HasValue)
+                {
+                    return _pid.Value;
+                }
+                return GetBasicInfo().UniqueProcessId.ToInt32();
             }
         }
 
@@ -906,9 +953,7 @@ namespace NtApiDotNet
         {
             get
             {
-                if (!_ppid.HasValue)
-                    PopulateBasicInformation();
-                return _ppid.Value;
+                return GetBasicInfo().InheritedFromUniqueProcessId.ToInt32();
             }
         }
 
@@ -919,9 +964,7 @@ namespace NtApiDotNet
         {
             get
             {
-                if (!_peb.HasValue)
-                    PopulateBasicInformation();
-                return _peb.Value;
+                return GetBasicInfo().PebBaseAddress;
             }
         }
 
@@ -932,11 +975,8 @@ namespace NtApiDotNet
         {
             get
             {
-                using (SafeStructureInOutBuffer<ProcessBasicInformation> basic_info = new SafeStructureInOutBuffer<ProcessBasicInformation>())
+                using (var basic_info = QueryFixed<ProcessBasicInformation>(ProcessInfoClass.ProcessBasicInformation))
                 {
-                    int return_length = 0;
-                    NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInfoClass.ProcessBasicInformation,
-                      basic_info, basic_info.Length, out return_length).ToNtException();
                     return basic_info.Result.ExitStatus;
                 }
             }
@@ -1201,6 +1241,17 @@ namespace NtApiDotNet
             get
             {
                 return new NtProcessMitigations(this);
+            }
+        }
+
+        /// <summary>
+        /// Get extended process flags.
+        /// </summary>
+        public ProcessExtendedBasicInformationFlags ExtendedFlags
+        {
+            get
+            {
+                return GetExtendedBasicInfo().Flags;
             }
         }
 
