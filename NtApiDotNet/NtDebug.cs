@@ -51,7 +51,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class representing a NT Debug object
     /// </summary>
-    public class NtDebug : NtObjectWithDuplicate<NtDebug, GenericAccessRights>
+    public class NtDebug : NtObjectWithDuplicate<NtDebug, DebugAccessRights>
     {
         internal NtDebug(SafeKernelObjectHandle handle) : base(handle)
         {

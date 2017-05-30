@@ -750,13 +750,31 @@ namespace NtApiDotNet
         private SafeStructureInOutBuffer<T> Query<T>(ProcessInfoClass info_class) where T : new()
         {
             int return_length = 0;
+
             NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, info_class, SafeHGlobalBuffer.Null, 0, out return_length);
             if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH && status != NtStatus.STATUS_BUFFER_TOO_SMALL)
             {
                 throw new NtException(status);
             }
 
-            SafeStructureInOutBuffer<T> buffer = new SafeStructureInOutBuffer<T>(return_length, false);
+            var buffer = new SafeStructureInOutBuffer<T>(return_length, false);
+            try
+            {
+                NtSystemCalls.NtQueryInformationProcess(Handle, info_class, buffer, buffer.Length, out return_length).ToNtException();
+                return buffer;
+            }
+            catch
+            {
+                buffer.Close();
+                throw;
+            }
+        }
+
+        private SafeStructureInOutBuffer<T> QueryFixed<T>(ProcessInfoClass info_class) where T : new()
+        {
+            var buffer = new SafeStructureInOutBuffer<T>();
+            int return_length = 0;
+
             try
             {
                 NtSystemCalls.NtQueryInformationProcess(Handle, info_class, buffer, buffer.Length, out return_length).ToNtException();
@@ -1346,6 +1364,18 @@ namespace NtApiDotNet
             using (var buffer = device_map_set.ToBuffer())
             {
                 NtSystemCalls.NtSetInformationProcess(Handle, ProcessInfoClass.ProcessDeviceMap, buffer, buffer.Length);
+            }
+        }
+
+        /// <summary>
+        /// Open a process' debug object.
+        /// </summary>
+        /// <returns>The process' debug object.</returns>
+        public NtDebug OpenDebugObject()
+        {
+            using (var buf = QueryFixed<IntPtr>(ProcessInfoClass.ProcessDebugObjectHandle))
+            {
+                return new NtDebug(new SafeKernelObjectHandle(buf.Result, true));
             }
         }
     }
