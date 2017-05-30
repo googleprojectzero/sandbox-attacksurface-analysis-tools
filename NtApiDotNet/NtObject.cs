@@ -27,17 +27,33 @@ namespace NtApiDotNet
     public enum GenericAccessRights : uint
     {
         None = 0,
-        GenericRead = 0x80000000,
-        GenericWrite = 0x40000000,
-        GenericExecute = 0x20000000,
-        GenericAll = 0x10000000,
+        Access0 = 0x00000001,
+        Access1 = 0x00000002,
+        Access2 = 0x00000004,
+        Access3 = 0x00000008,
+        Access4 = 0x00000010,
+        Access5 = 0x00000020,
+        Access6 = 0x00000040,
+        Access7 = 0x00000080,
+        Access8 = 0x00000100,
+        Access9 = 0x00000200,
+        Access10 = 0x00000400,
+        Access11 = 0x00000800,
+        Access12 = 0x00001000,
+        Access13 = 0x00002000,
+        Access14 = 0x00004000,
+        Access15 = 0x00008000,
         Delete = 0x00010000,
         ReadControl = 0x00020000,
         WriteDac = 0x00040000,
         WriteOwner = 0x00080000,
         Synchronize = 0x00100000,
+        AccessSystemSecurity = 0x01000000,
         MaximumAllowed = 0x02000000,
-        AccessSystemSecurity = 0x01000000
+        GenericAll = 0x10000000,
+        GenericExecute = 0x20000000,
+        GenericWrite = 0x40000000,
+        GenericRead = 0x80000000,
     };
 
     /// <summary>

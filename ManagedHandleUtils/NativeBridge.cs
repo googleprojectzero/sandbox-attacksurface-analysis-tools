@@ -55,12 +55,12 @@ namespace SandboxAnalysisUtils
             return type;
         }
 
-        public static void EditSecurity(IntPtr hwnd, NtObject handle, string object_name)
+        public static void EditSecurity(IntPtr hwnd, NtObject handle, string object_name, bool read_only)
         {
             Dictionary<uint, String> access = GetMaskDictionary(TypeNameToEnum(handle));
 
             using (SecurityInformationImpl impl = new SecurityInformationImpl(object_name, handle, access,
-               handle.NtType.GenericMapping))
+               handle.NtType.GenericMapping, read_only))
             {
                 EditSecurity(hwnd, impl);
             }

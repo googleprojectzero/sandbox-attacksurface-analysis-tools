@@ -289,7 +289,9 @@ namespace TokenViewer
         {
             try
             {
-                NativeBridge.EditSecurity(Handle, _token.Duplicate(TokenAccessRights.ReadControl), "Token");
+                NativeBridge.EditSecurity(Handle, 
+                    _token.Duplicate(TokenAccessRights.ReadControl), 
+                    "Token", true);
             }
             catch (NtException ex)
             {

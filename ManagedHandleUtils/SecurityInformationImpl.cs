@@ -118,9 +118,11 @@ namespace SandboxAnalysisUtils
         private SafeHGlobalBuffer _access_map; // SI_ACCESS
         private SafeStringBuffer _obj_name;
         private NtObject _handle;
+        private bool _read_only;
 
         public SecurityInformationImpl(string obj_name, NtObject handle,
-            Dictionary<uint, string> names, GenericMapping generic_mapping)
+            Dictionary<uint, string> names, GenericMapping generic_mapping,
+            bool read_only)
         {
             _mapping = generic_mapping;
             _handle = handle;
@@ -141,6 +143,7 @@ namespace SandboxAnalysisUtils
                 i++;
             }
             _access_map.WriteArray(0, sis, 0, names.Count);
+            _read_only = read_only;
         }
 
         public void GetAccessRights(ref Guid pguidObjectType, SiObjectInfoFlags dwFlags, out IntPtr ppAccess, out uint pcAccesses, out uint piDefaultAccess)
@@ -159,7 +162,13 @@ namespace SandboxAnalysisUtils
         public void GetObjectInformation(IntPtr pObjectInfo)
         {
             SiObjectInfo object_info = new SiObjectInfo();
-            object_info.dwFlags = SiObjectInfoFlags.SI_READONLY | SiObjectInfoFlags.SI_ADVANCED;
+            SiObjectInfoFlags flags = SiObjectInfoFlags.SI_ADVANCED;
+            if (_read_only || _handle.IsAccessGrantedRaw<GenericAccessRights>(GenericAccessRights.WriteDac))
+            {
+                flags |= SiObjectInfoFlags.SI_READONLY;
+            }
+
+            object_info.dwFlags = flags;
             object_info.pszObjectName = _obj_name.DangerousGetHandle();
             Marshal.StructureToPtr(object_info, pObjectInfo, false);
         }
@@ -167,7 +176,8 @@ namespace SandboxAnalysisUtils
         [DllImport("kernel32.dll")]
         private static extern IntPtr LocalAlloc(int flags, IntPtr size);        
 
-        public void GetSecurity(SecurityInformation RequestedInformation, out IntPtr ppSecurityDescriptor, [MarshalAs(UnmanagedType.Bool)] bool fDefault)
+        public void GetSecurity(SecurityInformation RequestedInformation, 
+            out IntPtr ppSecurityDescriptor, [MarshalAs(UnmanagedType.Bool)] bool fDefault)
         {
             byte[] raw_sd = _handle.GetSecurityDescriptorBytes(RequestedInformation);
             IntPtr ret = LocalAlloc(0, new IntPtr(raw_sd.Length));
