@@ -369,6 +369,13 @@ namespace NtApiDotNet
         public char WindowTitle;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public class ProcessChildProcessRestricted
+    {
+        public byte IsNoChildProcessRestricted;
+        public byte SomethingElseFlags3_8000;
+    }
+
     public enum ProcessInformationClass
     {
         ProcessBasicInformation, // 0, q: PROCESS_BASIC_INFORMATION, PROCESS_EXTENDED_BASIC_INFORMATION
@@ -443,6 +450,9 @@ namespace NtApiDotNet
         ProcessReserved2Information,
         ProcessSubsystemProcess, // 70
         ProcessJobMemoryInformation, // PROCESS_JOB_MEMORY_INFO
+        Process72, // Unknown, set only?
+        ProcessChildProcessRestricted, // BYTE[2] 
+        ProcessFlags3_100000, // BYTE
     }
 
     public enum ProcessMitigationPolicy
@@ -1663,6 +1673,20 @@ namespace NtApiDotNet
         public IEnumerable<NtObject> GetHandleTableAsObjects()
         {
             return GetHandleTableAsObjects(false, new string[0]);
+        }
+
+        /// <summary>
+        /// Get the process handle table and try and get them as objects.
+        /// </summary>
+        /// <returns>The list of handles as objects.</returns>
+        /// <remarks>This function will drop handles it can't duplicate.</remarks>
+        public bool IsChildProcessRestricted
+        {
+            get
+            {
+                var result = QueryFixed<ProcessChildProcessRestricted>(ProcessInformationClass.ProcessChildProcessRestricted);
+                return result.IsNoChildProcessRestricted != 0;
+            }
         }
     }
 }
