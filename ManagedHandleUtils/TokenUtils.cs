@@ -145,29 +145,52 @@ namespace SandboxAnalysisUtils
         [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
         static extern int DeriveAppContainerSidFromAppContainerName(
             string pszAppContainerName,
-            out IntPtr ppsidAppContainerSid
+            out SafeSidBufferHandle ppsidAppContainerSid
+        );
+
+        [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
+        static extern int DeriveRestrictedAppContainerSidFromAppContainerSidAndRestrictedName(
+            SafeSidBufferHandle psidAppContainerSid,
+            string pszRestrictedAppContainerName,
+            out SafeSidBufferHandle ppsidRestrictedAppContainerSid
         );
 
         public static Sid DerivePackageSidFromName(string name)
         {
-            IntPtr sid = IntPtr.Zero;
-            try
+            SafeSidBufferHandle sid;
+            int hr = DeriveAppContainerSidFromAppContainerName(name, out sid);
+            if (hr != 0)
             {
-                int hr = DeriveAppContainerSidFromAppContainerName(name, out sid);
+                Marshal.ThrowExceptionForHR(hr);
+            }
+
+            using (sid)
+            {
+                return new Sid(sid);
+            }
+        }
+
+        public static Sid DeriveRestrictedPackageSidFromSid(Sid package_sid, string restricted_name)
+        {
+            using (var sid_buf = package_sid.ToSafeBuffer())
+            {
+                SafeSidBufferHandle sid;
+                int hr = DeriveRestrictedAppContainerSidFromAppContainerSidAndRestrictedName(sid_buf, restricted_name, out sid);                
                 if (hr != 0)
                 {
                     Marshal.ThrowExceptionForHR(hr);
                 }
 
-                return new Sid(sid);
-            }
-            finally
-            {
-                if (sid != IntPtr.Zero)
+                using (sid)
                 {
-                    FreeSid(sid);
+                    return new Sid(sid);
                 }
             }
+        }
+
+        public static Sid DeriveRestrictedPackageSidFromName(string base_name, string restricted_name)
+        {
+            return DeriveRestrictedPackageSidFromSid(DerivePackageSidFromName(base_name), restricted_name);
         }
 
         public static Sid GetPackageSidFromName(string name)

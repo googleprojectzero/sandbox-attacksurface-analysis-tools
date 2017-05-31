@@ -209,7 +209,18 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="sid">A safe buffer containing a valid SID.</param>
         /// <exception cref="NtException">Thrown if the buffer is not valid.</exception>
-        public Sid(SafeBuffer sid) : this(sid.DangerousGetHandle())
+        public Sid(SafeBuffer sid) 
+            : this(sid.DangerousGetHandle())
+        {
+        }
+
+        /// <summary>
+        /// Constructor from a safe SID handle.
+        /// </summary>
+        /// <param name="sid">A safe SID handle containing a valid SID.</param>
+        /// <exception cref="NtException">Thrown if the buffer is not valid.</exception>
+        public Sid(SafeSidBufferHandle sid) 
+            : this(sid.DangerousGetHandle())
         {
         }
 

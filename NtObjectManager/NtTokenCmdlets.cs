@@ -510,6 +510,12 @@ namespace NtObjectManager
         public string PackageSid { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify an additional restricted name for the package SID.</para>
+        /// </summary>
+        [Parameter]
+        public string RestrictedPackageName { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify list of capability SIDS to add to token.</para>
         /// </summary>
         [Parameter]
@@ -530,6 +536,11 @@ namespace NtObjectManager
             if (!NtSecurity.IsPackageSid(package_sid))
             {
                 throw new ArgumentException(String.Format("Invalid Package Sid {0}", package_sid));
+            }
+
+            if (!String.IsNullOrEmpty(RestrictedPackageName))
+            {
+                package_sid = SandboxAnalysisUtils.TokenUtils.DeriveRestrictedPackageSidFromSid(package_sid, RestrictedPackageName);
             }
 
             WriteObject(Token.CreateLowBoxToken(package_sid, CapabilitySids ?? new Sid[0], Handles ?? new NtObject[0], TokenAccessRights.MaximumAllowed));
