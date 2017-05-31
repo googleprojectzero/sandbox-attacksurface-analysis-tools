@@ -296,10 +296,31 @@ namespace NtApiDotNet
         /// The ID of the process holding the handle
         /// </summary>
         public int ProcessId { get; private set; }
+
+        /// <summary>
+        /// The object type index
+        /// </summary>
+        public int ObjectTypeIndex { get; private set; }
+
         /// <summary>
         /// The object type name
         /// </summary>
-        public string ObjectType { get; private set; }
+        public string ObjectType
+        {
+            get
+            {
+                if (NtType == null)
+                {
+                    return String.Format("Unknown Type: {0}", ObjectTypeIndex);
+                }
+                return NtType.Name;
+            }
+        }
+
+        /// <summary>
+        /// The object type
+        /// </summary>
+        public NtType NtType { get; private set; }
 
         /// <summary>
         /// The handle attribute flags.
@@ -356,7 +377,7 @@ namespace NtApiDotNet
                     using (NtGeneric obj = NtGeneric.DuplicateFrom(ProcessId, new IntPtr(Handle)))
                     {
                         // Ensure we get the real type, in case it changed _or_ it was wrong to begin with.
-                        ObjectType = obj.NtTypeName;
+                        NtType = obj.NtType;
                         _name = GetName(obj);
                         _sd = GetSecurityDescriptor(obj);
                     }
@@ -373,12 +394,9 @@ namespace NtApiDotNet
             NtType info = NtType.GetTypeByIndex(entry.ObjectTypeIndex);
             if (info != null)
             {
-                ObjectType = info.Name;
+                NtType = info;
             }
-            else
-            {
-                ObjectType = String.Format("Unknown {0}", entry.ObjectTypeIndex);
-            }
+            
             Attributes = (AttributeFlags)entry.HandleAttributes;
             Handle = entry.HandleValue;
             Object = (ulong)entry.Object.ToInt64();
@@ -398,7 +416,7 @@ namespace NtApiDotNet
                 using (NtGeneric generic = NtGeneric.DuplicateFrom(ProcessId, new IntPtr(Handle)))
                 {
                     // Ensure that we get the actual type from the handle.
-                    ObjectType = generic.NtTypeName;
+                    NtType = generic.NtType;
                     return generic.ToTypedObject();
                 }
             }
