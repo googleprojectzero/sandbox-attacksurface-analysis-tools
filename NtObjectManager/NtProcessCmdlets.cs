@@ -21,7 +21,7 @@ namespace NtObjectManager
 {
     /// <summary>
     /// <para type="synopsis">Get NT processes.</para>
-    /// <para type="description">This cmdlet gets all accessible processes on the system. You can specify a specific process by setting the -ProcessId parameter.</para>
+    /// <para type="description">This cmdlet gets all accessible processes on the system. You can specify a specific process by setting the -ProcessId or -Current parameters.</para>
     /// <para>Note that process objects need to be disposed of after use, therefore capture them in a Dispose List or manually Close them once used. You can specify
     /// some specific filters for the list of processes returned. The advantage of filtering here is the created NtProcess objects will be automatically disposed of
     /// when not needed.</para>
@@ -52,7 +52,11 @@ namespace NtObjectManager
     /// </example>
     /// <example>
     ///   <code>$p = Get-NtProcess $pid</code>
-    ///   <para>Get the current process.</para>
+    ///   <para>Get the current process by process ID.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$p = Get-NtProcess 1234 -OpenParent</code>
+    ///   <para>Get the parent of a specific process.</para>
     /// </example>
     /// <example>
     ///   <code>$ps = Get-NtProcess -Name notepad.exe</code>
@@ -75,33 +79,46 @@ namespace NtObjectManager
     ///   <para>Get all processes with the Disallow Win32k System Calls mitigation policy.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.Get, "NtProcess")]
+    [Cmdlet(VerbsCommon.Get, "NtProcess", DefaultParameterSetName = "all")]
     [OutputType(typeof(NtProcess))]
     public class GetNtProcessCmdlet : Cmdlet
     {
         /// <summary>
         /// <para type="description">Specify a process ID to open.</para>
         /// </summary>
-        [Parameter(Position = 0)]
+        [Parameter(Position = 0, ParameterSetName = "pid")]
         [Alias(new string[] { "pid" })]
         public int ProcessId { get; set; }
 
         /// <summary>
+        /// <para type="description">When opening a specific process choose whether to open its parent instead.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "pid"), Parameter(ParameterSetName = "current")]
+        public SwitchParameter OpenParent { get; set; }
+
+        /// <summary>
+        /// <para type="description">When opening a specific process choose whether to open its 
+        /// owner process (which is typically a console host) instead.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "pid"), Parameter(ParameterSetName = "current")]
+        public SwitchParameter OpenOwner { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify a executable name to filter the list on.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "all")]
         public string Name { get; set; }
 
         /// <summary>
         /// <para type="description">Specify sub-string in the command line to filter the list on. If Name is also specified this will just select processes with that name with this sub-string.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "all")]
         public string CommandLine { get; set; }
 
         /// <summary>
         /// <para type="description">Specify an arbitrary filter script.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "all")]
         public ScriptBlock FilterScript { get; set; }
 
         /// <summary>
@@ -113,14 +130,14 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Open current process.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(Position = 0, ParameterSetName = "current")]
         public SwitchParameter Current { get; set; }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         public GetNtProcessCmdlet()
-        {
+        {                        
             Access = ProcessAccessRights.MaximumAllowed;
             ProcessId = -1;
         }
@@ -206,6 +223,11 @@ namespace NtObjectManager
             }
         }
 
+        private NtProcess OpenSpecificProcess(ProcessAccessRights desired_access)
+        {
+            return Current ? GetCurrentProcess(desired_access) : NtProcess.Open(ProcessId, desired_access);
+        }
+
         /// <summary>
         /// Overridden ProcessRecord method.
         /// </summary>
@@ -217,7 +239,17 @@ namespace NtObjectManager
             }
             else
             {
-                WriteObject(Current ? GetCurrentProcess(Access) : NtProcess.Open(ProcessId, Access));
+                if (OpenParent || OpenOwner)
+                {
+                    using (NtProcess process = OpenSpecificProcess(ProcessAccessRights.QueryLimitedInformation))
+                    {
+                        WriteObject(OpenParent ? process.OpenParent(Access) : process.OpenOwner(Access));
+                    }
+                }
+                else
+                {
+                    WriteObject(OpenSpecificProcess(Access));
+                }
             }
         }
     }
