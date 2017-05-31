@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using SandboxAnalysisUtils;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -530,7 +531,7 @@ namespace NtObjectManager
     ///   <code>Get-NtStatus -Status 0xc0000022</code>
     ///   <para>Gets information about a specific status code.</para>
     /// </example>
-    [Cmdlet("Get", "NtStatus")]
+    [Cmdlet(VerbsCommon.Get, "NtStatus")]
     public class GetNtStatusCmdlet : Cmdlet
     {
         /// <summary>
@@ -552,6 +553,226 @@ namespace NtObjectManager
             {
                 WriteObject(new NtStatusResult(Status.Value));
             }
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Get a SID using various different mechanisms.</para>
+    /// <para type="description">This cmdlet will create a SID object based on one
+    /// of many mechanisms. For example it can parse the SDDL representation of the
+    /// SID, or it can look up the account name. It can also create a SID based on
+    /// a service name or integerity level.
+    /// </para>
+    /// </summary>
+    /// <example>
+    ///   <code>Get-NtSid BA</code>
+    ///   <para>Gets the Sid for the builtin administrators group based on the SDDL form.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtSid S-1-2-3-4-5</code>
+    ///   <para>Gets the Sid S-1-2-3-4-5 from its SDDL form.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtSid -Name domain\user</code>
+    ///   <para>Gets the Sid for the username 'user' in domain 'domain'.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtSid -Name BUILTIN\Administrators</code>
+    ///   <para>Gets the Sid for the the builtin administrators group.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtSid -ServiceName service</code>
+    ///   <para>Gets the Sid for service name 'service'.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtSid -IntegrityLevel Low</code>
+    ///   <para>Gets the Sid Low integrity level.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtSid -IntegrityLevelRaw 1234</code>
+    ///   <para>Gets the Sid for the arbitrary integrity level 1234.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtSid -PackageName some.package.name</code>
+    ///   <para>Gets the Sid for App Container package name 'some.package.name'.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtSid -PackageName some.package.name -RestrictedPackageName restricted</code>
+    ///   <para>Gets the Sid for App Container package name 'some.package.name' with the restricted name 'restricted'</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtSid -KnownSid BuiltinAdministrators</code>
+    ///   <para>Gets the Sid for the builtin administrators group.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtSid -Token</code>
+    ///   <para>Gets the Sid for the current user.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtSid -Token -LogonGroup</code>
+    ///   <para>Gets the Sid for the current default logon group.</para>
+    /// </example>
+    [Cmdlet(VerbsCommon.Get, "NtSid")]
+    public class GetNtSidCmdlet : Cmdlet
+    {
+        /// <summary>
+        /// <para type="description">Specify a SID using an SDDL string.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "sddl")]
+        public string Sddl { get; set; }
+
+        /// <summary>
+        /// <para type="description">Lookup a SID using an NT account name.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "name")]
+        public string Name { get; set; }
+
+        /// <summary>
+        /// <para type="description">Create a SID based on a service name.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "service")]
+        public string ServiceName { get; set; }
+
+        /// <summary>
+        /// <para type="description">Create a SID based on the standard set of integrity levels.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "il")]
+        public TokenIntegrityLevel? IntegrityLevel { get; set; }
+
+        /// <summary>
+        /// <para type="description">Create a SID based on a raw integerity level.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "il_raw")]
+        public int? IntegrityLevelRaw { get; set; }
+
+        /// <summary>
+        /// <para type="description">Create a SID from App Container package name.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "package")]
+        public string PackageName { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify an additional restricted name for the package SID.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "package")]
+        public string RestrictedPackageName { get; set; }
+
+        /// <summary>
+        /// <para type="description">Get a known SID.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "known")]
+        public KnownSidValue? KnownSid { get; set; }
+
+        /// <summary>
+        /// <para type="description">Get the SID from the current user token. Defaults to the user SID.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "token")]
+        public SwitchParameter Token { get; set; }
+
+        /// <summary>
+        /// <para type="description">Get the SID for the current default owner.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "token")]
+        public SwitchParameter Owner { get; set; }
+
+        /// <summary>
+        /// <para type="description">Get the SID for the current default group.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "token")]
+        public SwitchParameter PrimaryGroup { get; set; }
+
+        /// <summary>
+        /// <para type="description">Get the SID for the current login group.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "token")]
+        public SwitchParameter LogonGroup { get; set; }
+
+        /// <summary>
+        /// <para type="description">Get the SID for the current package (if an App Container token).</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "token")]
+        public SwitchParameter AppContainer { get; set; }
+
+        /// <summary>
+        /// <para type="description">Get the SID for the current integrity level.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "token")]
+        public SwitchParameter Label { get; set; }
+
+        /// <summary>
+        /// Process record.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            Sid sid;
+            if (Sddl != null)
+            {
+                sid = new Sid(Sddl);
+            }
+            else if (Name != null)
+            {
+                sid = NtSecurity.LookupAccountName(Name);
+            }
+            else if (ServiceName != null)
+            {
+                sid = NtSecurity.GetServiceSid(ServiceName);
+            }
+            else if (IntegrityLevel.HasValue)
+            {
+                sid = NtSecurity.GetIntegritySid(IntegrityLevel.Value);
+            }
+            else if (IntegrityLevelRaw.HasValue)
+            {
+                sid = NtSecurity.GetIntegritySid(IntegrityLevelRaw.Value);
+            }
+            else if (PackageName != null)
+            {
+                sid = TokenUtils.DerivePackageSidFromName(PackageName);
+                if (RestrictedPackageName != null)
+                {
+                    sid = TokenUtils.DeriveRestrictedPackageSidFromSid(sid, RestrictedPackageName);
+                }
+            }
+            else if (KnownSid.HasValue)
+            {
+                sid = KnownSids.GetKnownSid(KnownSid.Value);
+            }
+            else if (Token)
+            {
+                using (NtToken token = NtToken.OpenProcessToken())
+                {
+                    if (PrimaryGroup)
+                    {
+                        sid = token.PrimaryGroup;
+                    }
+                    else if (Owner)
+                    {
+                        sid = token.Owner;
+                    }
+                    else if (LogonGroup)
+                    {
+                        sid = token.LogonSid.Sid;
+                    }
+                    else if (AppContainer)
+                    {
+                        sid = token.AppContainerSid;
+                    }
+                    else if (Label)
+                    {
+                        sid = token.IntegrityLevelSid.Sid;
+                    }
+                    else
+                    {
+                        sid = token.User.Sid;
+                    }
+                }
+            }
+            else
+            {
+                throw new ArgumentException("No SID type specified");
+            }
+
+            WriteObject(sid);
         }
     }
 }
