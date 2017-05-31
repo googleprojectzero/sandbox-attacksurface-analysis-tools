@@ -28,6 +28,13 @@ namespace NtApiDotNet
           int SystemInformationLength,
           out int ReturnLength
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSetSystemInformation(
+          SystemInformationClass SystemInformationClass,
+          IntPtr SystemInformation,
+          int SystemInformationLength
+        );
     }
 
     [StructLayout(LayoutKind.Sequential)]
