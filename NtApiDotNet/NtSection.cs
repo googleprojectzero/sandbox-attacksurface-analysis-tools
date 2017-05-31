@@ -150,6 +150,12 @@ namespace NtApiDotNet
             SafeKernelObjectHandle ProcessHandle,
             IntPtr BaseAddress
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtExtendSection(
+            SafeKernelObjectHandle SectionHandle,
+            [In, Out] LargeInteger SectionSize
+        );
     }
 #pragma warning restore 1591
 
@@ -245,11 +251,11 @@ namespace NtApiDotNet
         /// <param name="file">Optional backing file</param>
         /// <returns>The opened section</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtSection Create(ObjectAttributes object_attributes, SectionAccessRights desired_access, long? size, MemoryAllocationProtect protection, SectionAttributes attributes, NtFile file)
+        public static NtSection Create(ObjectAttributes object_attributes, SectionAccessRights desired_access, LargeInteger size, MemoryAllocationProtect protection, SectionAttributes attributes, NtFile file)
         {
             SafeKernelObjectHandle section_handle;
             NtSystemCalls.NtCreateSection(out section_handle, desired_access, object_attributes,
-                size.HasValue ? new LargeInteger(size.Value) : null, protection, attributes, file == null ? SafeKernelObjectHandle.Null : file.Handle).ToNtException();
+                size, protection, attributes, file == null ? SafeKernelObjectHandle.Null : file.Handle).ToNtException();
             return new NtSection(section_handle);
         }
 
@@ -269,7 +275,7 @@ namespace NtApiDotNet
         {
             using (ObjectAttributes obj_attr = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
-                return Create(obj_attr, desired_access, size, protection, attributes, file);
+                return Create(obj_attr, desired_access, size.HasValue ? new LargeInteger(size.Value) : null, protection, attributes, file);
             }            
         }
 
@@ -281,7 +287,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtSection Create(long size)
         {
-            return Create(null, SectionAccessRights.MaximumAllowed, size, 
+            return Create(null, SectionAccessRights.MaximumAllowed, new LargeInteger(size), 
                 MemoryAllocationProtect.ReadWrite, SectionAttributes.Commit, null);
         }
 
@@ -398,6 +404,19 @@ namespace NtApiDotNet
                 SectionBasicInformation info = Query<SectionBasicInformation>(SectionInformationClass.SectionBasicInformation);
                 return info.Size.QuadPart;
             }
+        }
+
+        /// <summary>
+        /// Extend the section to a new size.
+        /// </summary>
+        /// <param name="new_size">The new size to extend to.</param>
+        /// <returns>The new size.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public long Extend(long new_size)
+        {
+            LargeInteger size = new LargeInteger(new_size);
+            NtSystemCalls.NtExtendSection(Handle, size).ToNtException();
+            return size.QuadPart;
         }
 
         /// <summary>

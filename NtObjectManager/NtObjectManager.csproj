@@ -53,6 +53,7 @@
     <Compile Include="GenericObjectSecurity.cs" />
     <Compile Include="NtEventCmdlets.cs" />
     <Compile Include="NtProcessCmdlets.cs" />
+    <Compile Include="NtSectionCmdlets.cs" />
     <Compile Include="NtSemaphoreCmdlets.cs" />
     <Compile Include="NtThreadCmdlets.cs" />
     <Compile Include="NtTokenCmdlets.cs" />
