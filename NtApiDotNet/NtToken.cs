@@ -1275,7 +1275,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenProcessToken(int pid, bool duplicate, TokenAccessRights desired_access)
         {
-            using (NtProcess process = NtProcess.Open(pid, ProcessAccessRights.QueryInformation))
+            using (NtProcess process = NtProcess.Open(pid, ProcessAccessRights.QueryLimitedInformation))
             {
                 return OpenProcessToken(process, duplicate, desired_access);
             }
