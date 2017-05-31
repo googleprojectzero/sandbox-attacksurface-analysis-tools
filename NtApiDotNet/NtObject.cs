@@ -893,6 +893,8 @@ namespace NtApiDotNet
     {
         internal NtObjectWithDuplicate(SafeKernelObjectHandle handle) : base(handle)
         {
+            if (!typeof(A).IsEnum)
+                throw new ArgumentException("Type of access must be an enum");
         }
 
         private static O Create(params object[] ps)
@@ -932,6 +934,11 @@ namespace NtApiDotNet
             return Create(DuplicateHandle());
         }
 
+        private A UIntToAccess(uint access)
+        {
+            return (A)Enum.ToObject(typeof(A), access);
+        }
+
         /// <summary>
         /// Get granted access for handle.
         /// </summary>
@@ -940,9 +947,38 @@ namespace NtApiDotNet
         {
             get
             {
-                if (!typeof(A).IsEnum)
-                    throw new ArgumentException("Type of access must be an enum");
-                return (A)Enum.ToObject(typeof(A), GrantedAccessRaw);
+                return UIntToAccess(GrantedAccessRaw);
+            }
+        }
+
+        /// <summary>
+        /// Get the maximum permission access for this object based on a token
+        /// and it's security descriptor.
+        /// </summary>
+        /// <param name="token">The token to check against.</param>
+        /// <returns>Returns 0 if can't read the security descriptor.</returns>
+        public A GetMaximumAccess(NtToken token)
+        {
+            if (!IsAccessGrantedRaw<GenericAccessRights>(GenericAccessRights.ReadControl))
+            {
+                return UIntToAccess(0);
+            }
+
+            uint ret = NtSecurity.GetMaximumAccess(SecurityDescriptor,
+                                                token, NtType.GenericMapping);
+            return UIntToAccess(ret);
+        }
+
+        /// <summary>
+        /// Get the maximum permission access for this object based on the current token
+        /// and it's security descriptor.
+        /// </summary>
+        /// <returns>Returns 0 if can't read the security descriptor.</returns>
+        public A GetMaximumAccess()
+        {
+            using (NtToken token = NtToken.OpenProcessToken())
+            {
+                return GetMaximumAccess(token);
             }
         }
 
