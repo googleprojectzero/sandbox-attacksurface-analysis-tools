@@ -41,6 +41,12 @@ namespace NtObjectManager
         public NtObject Root { get; set; }
 
         /// <summary>
+        /// <para type="description">Use a Win32 path for lookups. For NT objects this means relative to BNO, for files means a DOS style path.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter Win32Path { get; set; }
+
+        /// <summary>
         /// <para type="description">Object Attribute flags used during Open/Create calls.</para>
         /// </summary>
         [Parameter]
@@ -126,6 +132,27 @@ namespace NtObjectManager
         /// <returns>The object path.</returns>
         protected virtual string GetPath()
         {
+            if (Win32Path)
+            {
+                if (Path.StartsWith(@"\"))
+                {
+                    throw new ArgumentException("Win32 paths can't start with a path separator");
+                }
+
+                List<string> ret = new List<string>();
+                int session_id = NtProcess.Current.SessionId;
+                if (session_id != 0)
+                {
+                    ret.Add("Sessions");
+                    ret.Add(session_id.ToString());
+                }
+                ret.Add("BaseNamedObjects");
+                if (!String.IsNullOrEmpty(Path))
+                {
+                    ret.AddRange(Path.Split('\\'));
+                }
+                return String.Format(@"\{0}", String.Join(@"\", ret));
+            }
             return Path;
         }
 

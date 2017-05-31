@@ -72,12 +72,6 @@ namespace NtObjectManager
         public FileOpenOptions Options { get; set; }
 
         /// <summary>
-        /// <para type="description">If specified the path is considered a Win32 style path and converted automatically before being used.</para>
-        /// </summary>
-        [Parameter]
-        public SwitchParameter Win32Path { get; set; }
-
-        /// <summary>
         /// Virtual method to return the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
