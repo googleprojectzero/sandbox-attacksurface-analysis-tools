@@ -431,6 +431,167 @@ namespace NtApiDotNet
     }
 
     /// <summary>
+    /// An enumeration to reference a known SID.
+    /// </summary>
+    public enum KnownSidValue
+    {
+        /// <summary>
+        /// NULL SID
+        /// </summary>
+        Null,
+
+        /// <summary>
+        /// Everyone SID
+        /// </summary>
+        World,
+
+        /// <summary>
+        /// Local user SID
+        /// </summary>
+        Local,
+
+        /// <summary>
+        /// CREATOR OWNER SID
+        /// </summary>
+        CreatorOwner,
+
+        /// <summary>
+        /// CREATOR GROUP SID
+        /// </summary>
+        CreatorGroup,
+
+        /// <summary>
+        /// Service SID
+        /// </summary>
+        Service,
+
+        /// <summary>
+        /// ANONYMOUS LOGON SID
+        /// </summary>
+        Anonymous,
+
+        /// <summary>
+        /// Authenticated Users SID
+        /// </summary>
+        AuthenticatedUsers,
+
+        /// <summary>
+        /// RESTRICTED SID
+        /// </summary>
+        Restricted,
+
+        /// <summary>
+        /// LOCAL SYSTEM SID
+        /// </summary>
+        LocalSystem,
+
+        /// <summary>
+        /// LOCAL SERVICE SID
+        /// </summary>
+        LocalService,
+
+        /// <summary>
+        /// NETWORK SERVICE SID
+        /// </summary>
+        NetworkService,
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES SID
+        /// </summary>
+        AllApplicationPackages,
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES
+        /// </summary>
+        AllRestrictedApplicationPackages,
+
+        /// <summary>
+        /// NT SERVICE\TrustedInstaller
+        /// </summary>
+        TrustedInstaller,
+
+        /// <summary>
+        /// BUILTIN\Users
+        /// </summary>
+        BuiltinUsers,
+
+        /// <summary>
+        /// BUILTIN\Administrators
+        /// </summary>
+        BuiltinAdministrators,
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your Internet connection
+        /// </summary>
+        CapabilityInternetClient,
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your Internet connection, including incoming connections from the Internet
+        /// </summary>
+        CapabilityInternetClientServer,
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your home or work networks
+        /// </summary>
+        CapabilityPrivateNetworkClientServer,
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your pictures library
+        /// </summary>
+        CapabilityPicturesLibrary,
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your videos library
+        /// </summary>
+        CapabilityVideosLibrary,
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your music library
+        /// </summary>
+        CapabilityMusicLibrary,
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your documents library
+        /// </summary>
+        CapabilityDocumentsLibrary,
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your Windows credentials
+        /// </summary>
+        CapabilityEnterpriseAuthentication,
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Software and hardware certificates or a smart card
+        /// </summary>
+        CapabilitySharedUserCertificates,
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Removable storage
+        /// </summary>
+        CapabilityRemovableStorage,
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your Appointments
+        /// </summary>
+        CapabilityAppointments,
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your Contacts
+        /// </summary>
+        CapabilityContacts,
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Internet Explorer
+        /// </summary>
+        CapabilityInternetExplorer,
+
+        /// <summary>
+        /// Constrained Impersonation Capability
+        /// </summary>
+        CapabilityConstrainedImpersonation,
+    }
+
+    /// <summary>
     /// Static methods to get some known SIDs.
     /// </summary>
     public static class KnownSids
@@ -438,76 +599,150 @@ namespace NtApiDotNet
         /// <summary>
         /// NULL SID
         /// </summary>
-        public static Sid Null { get { return new Sid(SecurityAuthority.Null, 0); } }
+        public static Sid Null { get { return GetKnownSid(KnownSidValue.Null); } }
         /// <summary>
         /// Everyone SID
         /// </summary>
-        public static Sid World { get { return new Sid(SecurityAuthority.World, 0); } }
+        public static Sid World { get { return GetKnownSid(KnownSidValue.World); } }
         /// <summary>
         /// Local user SID
         /// </summary>
-        public static Sid Local { get { return new Sid(SecurityAuthority.Local, 0); } }
+        public static Sid Local { get { return GetKnownSid(KnownSidValue.Local); } }
         /// <summary>
         /// CREATOR OWNER SID
         /// </summary>
-        public static Sid CreatorOwner { get { return new Sid(SecurityAuthority.Creator, 0); } }
+        public static Sid CreatorOwner { get { return GetKnownSid(KnownSidValue.CreatorOwner); } }
         /// <summary>
         /// CREATOR GROUP SID
         /// </summary>
-        public static Sid CreatorGroup { get { return new Sid(SecurityAuthority.Creator, 1); } }
+        public static Sid CreatorGroup { get { return GetKnownSid(KnownSidValue.CreatorGroup); } }
         /// <summary>
         /// Service SID
         /// </summary>
-        public static Sid Service { get { return new Sid(SecurityAuthority.Nt, 6); } }
+        public static Sid Service { get { return GetKnownSid(KnownSidValue.Service); } }
         /// <summary>
         /// ANONYMOUS LOGON SID
         /// </summary>
-        public static Sid Anonymous { get { return new Sid(SecurityAuthority.Nt, 7); } }
+        public static Sid Anonymous { get { return GetKnownSid(KnownSidValue.Anonymous); } }
         /// <summary>
         /// Authenticated Users SID
         /// </summary>
-        public static Sid AuthenticatedUsers { get { return new Sid(SecurityAuthority.Nt, 11); } }
+        public static Sid AuthenticatedUsers { get { return GetKnownSid(KnownSidValue.AuthenticatedUsers); } }
         /// <summary>
         /// RESTRICTED SID
         /// </summary>
-        public static Sid Restricted { get { return new Sid(SecurityAuthority.Nt, 12); } }
+        public static Sid Restricted { get { return GetKnownSid(KnownSidValue.Restricted); } }
         /// <summary>
         /// LOCAL SYSTEM SID
         /// </summary>
-        public static Sid LocalSystem { get { return new Sid(SecurityAuthority.Nt, 18); } }
+        public static Sid LocalSystem { get { return GetKnownSid(KnownSidValue.LocalSystem); } }
         /// <summary>
         /// LOCAL SERVICE SID
         /// </summary>
-        public static Sid LocalService { get { return new Sid(SecurityAuthority.Nt, 19); } }
+        public static Sid LocalService { get { return GetKnownSid(KnownSidValue.LocalService); } }
         /// <summary>
         /// NETWORK SERVICE SID
         /// </summary>
-        public static Sid NetworkService { get { return new Sid(SecurityAuthority.Nt, 20); } }
+        public static Sid NetworkService { get { return GetKnownSid(KnownSidValue.NetworkService); } }
 
         /// <summary>
         /// APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES SID
         /// </summary>
-        public static Sid AllApplicationPackages { get { return new Sid(SecurityAuthority.Package, 2, 1); } }
+        public static Sid AllApplicationPackages { get { return GetKnownSid(KnownSidValue.AllApplicationPackages); } }
 
         /// <summary>
         /// APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES
         /// </summary>
-        public static Sid AllRestrictedApplicationPackages { get { return new Sid(SecurityAuthority.Package, 2, 2); } }
+        public static Sid AllRestrictedApplicationPackages { get { return GetKnownSid(KnownSidValue.AllRestrictedApplicationPackages); } }
 
         /// <summary>
         /// NT SERVICE\TrustedInstaller
         /// </summary>
-        public static Sid TrustedInstaller { get { return NtSecurity.GetServiceSid("TrustedInstaller"); } }
+        public static Sid TrustedInstaller { get { return GetKnownSid(KnownSidValue.TrustedInstaller); } }
 
         /// <summary>
         /// BUILTIN\Users
         /// </summary>
-        public static Sid BuiltinUsers { get { return new Sid(SecurityAuthority.Nt, 32, 545); } }
+        public static Sid BuiltinUsers { get { return GetKnownSid(KnownSidValue.BuiltinUsers); } }
 
         /// <summary>
         /// BUILTIN\Administrators
         /// </summary>
-        public static Sid BuiltinAdministrators { get { return new Sid(SecurityAuthority.Nt, 32, 544); } }
+        public static Sid BuiltinAdministrators { get { return GetKnownSid(KnownSidValue.BuiltinAdministrators); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your Internet connection
+        /// </summary>
+        public static Sid CapabilityInternetClient { get { return GetKnownSid(KnownSidValue.CapabilityInternetClient); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your Internet connection, including incoming connections from the Internet
+        /// </summary>
+        public static Sid CapabilityInternetClientServer { get { return GetKnownSid(KnownSidValue.CapabilityInternetClientServer); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your home or work networks
+        /// </summary>
+        public static Sid CapabilityPrivateNetworkClientServer { get {  return GetKnownSid(KnownSidValue.CapabilityPrivateNetworkClientServer); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your pictures library
+        /// </summary>
+        public static Sid CapabilityPicturesLibrary { get { return GetKnownSid(KnownSidValue.CapabilityPicturesLibrary); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your videos library
+        /// </summary>
+        public static Sid CapabilityVideosLibrary { get { return GetKnownSid(KnownSidValue.CapabilityVideosLibrary); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your music library
+        /// </summary>
+        public static Sid CapabilityMusicLibrary { get { return GetKnownSid(KnownSidValue.CapabilityMusicLibrary); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your documents library
+        /// </summary>
+        public static Sid CapabilityDocumentsLibrary { get { return GetKnownSid(KnownSidValue.CapabilityDocumentsLibrary); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your Windows credentials
+        /// </summary>
+        public static Sid CapabilityEnterpriseAuthentication { get { return GetKnownSid(KnownSidValue.CapabilityEnterpriseAuthentication); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Software and hardware certificates or a smart card
+        /// </summary>
+        public static Sid CapabilitySharedUserCertificates { get { return GetKnownSid(KnownSidValue.CapabilitySharedUserCertificates); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Removable storage
+        /// </summary>
+        public static Sid CapabilityRemovableStorage { get { return GetKnownSid(KnownSidValue.CapabilityRemovableStorage); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your Appointments
+        /// </summary>
+        public static Sid CapabilityAppointments { get { return GetKnownSid(KnownSidValue.CapabilityAppointments); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Your Contacts
+        /// </summary>
+        public static Sid CapabilityContacts { get { return GetKnownSid(KnownSidValue.CapabilityContacts); } }
+
+        /// <summary>
+        /// APPLICATION PACKAGE AUTHORITY\Internet Explorer
+        /// </summary>
+        public static Sid CapabilityInternetExplorer {
+            get { return GetKnownSid(KnownSidValue.CapabilityInternetExplorer); } }
+
+        /// <summary>
+        /// Constrained Impersonation Capability
+        /// </summary>
+        public static Sid CapabilityConstrainedImpersonation
+        {
+            get { return GetKnownSid(KnownSidValue.CapabilityConstrainedImpersonation); }
+        }
 
         private static Sid GetCapabilitySid(params uint[] rids)
         {
@@ -518,74 +753,49 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// APPLICATION PACKAGE AUTHORITY\Your Internet connection
+        /// Get a known SID based on a specific enumeration.
         /// </summary>
-        public static Sid CapabilityInternetClient { get { return GetCapabilitySid(1); } }
-
-        /// <summary>
-        /// APPLICATION PACKAGE AUTHORITY\Your Internet connection, including incoming connections from the Internet
-        /// </summary>
-        public static Sid CapabilityInternetClientServer { get { return GetCapabilitySid(2); } }
-
-        /// <summary>
-        /// APPLICATION PACKAGE AUTHORITY\Your home or work networks
-        /// </summary>
-        public static Sid CapabilityPrivateNetworkClientServer { get { return GetCapabilitySid(3); } }
-
-        /// <summary>
-        /// APPLICATION PACKAGE AUTHORITY\Your pictures library
-        /// </summary>
-        public static Sid CapabilityPicturesLibrary { get { return GetCapabilitySid(4); } }
-
-        /// <summary>
-        /// APPLICATION PACKAGE AUTHORITY\Your videos library
-        /// </summary>
-        public static Sid CapabilityVideosLibrary { get { return GetCapabilitySid(5); } }
-
-        /// <summary>
-        /// APPLICATION PACKAGE AUTHORITY\Your music library
-        /// </summary>
-        public static Sid CapabilityMusicLibrary { get { return GetCapabilitySid(6); } }
-
-        /// <summary>
-        /// APPLICATION PACKAGE AUTHORITY\Your documents library
-        /// </summary>
-        public static Sid CapabilityDocumentsLibrary { get { return GetCapabilitySid(7); } }
-
-        /// <summary>
-        /// APPLICATION PACKAGE AUTHORITY\Your Windows credentials
-        /// </summary>
-        public static Sid CapabilityEnterpriseAuthentication { get { return GetCapabilitySid(8); } }
-
-        /// <summary>
-        /// APPLICATION PACKAGE AUTHORITY\Software and hardware certificates or a smart card
-        /// </summary>
-        public static Sid CapabilitySharedUserCertificates { get { return GetCapabilitySid(9); } }
-
-        /// <summary>
-        /// APPLICATION PACKAGE AUTHORITY\Removable storage
-        /// </summary>
-        public static Sid CapabilityRemovableStorage { get { return GetCapabilitySid(10); } }
-
-        /// <summary>
-        /// APPLICATION PACKAGE AUTHORITY\Your Appointments
-        /// </summary>
-        public static Sid CapabilityAppointments { get { return GetCapabilitySid(11); } }
-
-        /// <summary>
-        /// APPLICATION PACKAGE AUTHORITY\Your Contacts
-        /// </summary>
-        public static Sid CapabilityContacts { get { return GetCapabilitySid(12); } }
-
-        /// <summary>
-        /// APPLICATION PACKAGE AUTHORITY\Internet Explorer
-        /// </summary>
-        public static Sid CapabilityInternetExplorer { get { return GetCapabilitySid(4096); } }
-
-        /// <summary>
-        /// Constrained Impersonation Capability
-        /// </summary>
-        public static Sid CapabilityConstrainedImpersonation {
-            get { return GetCapabilitySid(1024, 1604681682, 535129537, 3273749797, 3666938095, 336295784, 2177615760, 2743807136, 2867270584); } }
+        /// <param name="sid">The enumerated sid value.</param>
+        /// <returns></returns>
+        public static Sid GetKnownSid(KnownSidValue sid)
+        {
+            switch (sid)
+            {
+                case KnownSidValue.Null: return new Sid(SecurityAuthority.Null, 0);
+                case KnownSidValue.World: return new Sid(SecurityAuthority.World, 0);
+                case KnownSidValue.Local: return new Sid(SecurityAuthority.Local, 0);
+                case KnownSidValue.CreatorOwner: return new Sid(SecurityAuthority.Creator, 0);
+                case KnownSidValue.CreatorGroup: return new Sid(SecurityAuthority.Creator, 1);
+                case KnownSidValue.Service: return new Sid(SecurityAuthority.Nt, 6);
+                case KnownSidValue.Anonymous: return new Sid(SecurityAuthority.Nt, 7);
+                case KnownSidValue.AuthenticatedUsers: return new Sid(SecurityAuthority.Nt, 11);
+                case KnownSidValue.Restricted: return new Sid(SecurityAuthority.Nt, 12);
+                case KnownSidValue.LocalSystem: return new Sid(SecurityAuthority.Nt, 18);
+                case KnownSidValue.LocalService: return new Sid(SecurityAuthority.Nt, 19);
+                case KnownSidValue.NetworkService: return new Sid(SecurityAuthority.Nt, 20);
+                case KnownSidValue.AllApplicationPackages: return new Sid(SecurityAuthority.Package, 2, 1);
+                case KnownSidValue.AllRestrictedApplicationPackages: return new Sid(SecurityAuthority.Package, 2, 2);
+                case KnownSidValue.TrustedInstaller: return NtSecurity.GetServiceSid("TrustedInstaller");
+                case KnownSidValue.BuiltinUsers: return new Sid(SecurityAuthority.Nt, 32, 545);
+                case KnownSidValue.BuiltinAdministrators: return new Sid(SecurityAuthority.Nt, 32, 544);
+                case KnownSidValue.CapabilityInternetClient: return GetCapabilitySid(1);
+                case KnownSidValue.CapabilityInternetClientServer: return GetCapabilitySid(2);
+                case KnownSidValue.CapabilityPrivateNetworkClientServer: return GetCapabilitySid(3);
+                case KnownSidValue.CapabilityPicturesLibrary: return GetCapabilitySid(4);
+                case KnownSidValue.CapabilityVideosLibrary: return GetCapabilitySid(5);
+                case KnownSidValue.CapabilityMusicLibrary: return GetCapabilitySid(6);
+                case KnownSidValue.CapabilityDocumentsLibrary: return GetCapabilitySid(7);
+                case KnownSidValue.CapabilityEnterpriseAuthentication: return GetCapabilitySid(8);
+                case KnownSidValue.CapabilitySharedUserCertificates: return GetCapabilitySid(9);
+                case KnownSidValue.CapabilityRemovableStorage: return GetCapabilitySid(10);
+                case KnownSidValue.CapabilityAppointments: return GetCapabilitySid(11);
+                case KnownSidValue.CapabilityContacts: return GetCapabilitySid(12);
+                case KnownSidValue.CapabilityInternetExplorer: return GetCapabilitySid(4096);
+                case KnownSidValue.CapabilityConstrainedImpersonation:
+                    return GetCapabilitySid(1024, 1604681682, 535129537, 3273749797, 3666938095, 336295784, 2177615760, 2743807136, 2867270584);
+                default:
+                    throw new ArgumentException("Unknown SID type");
+            }
+        }
     }
 }
