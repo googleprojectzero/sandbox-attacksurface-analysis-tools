@@ -348,6 +348,24 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Implicit conversion from Int32.
+        /// </summary>
+        /// <param name="access">The access enumeration.</param>
+        public static implicit operator AccessMask(int access)
+        {
+            return new AccessMask((uint)access);
+        }
+
+        /// <summary>
+        /// Implicit conversion from UInt32.
+        /// </summary>
+        /// <param name="access">The access enumeration.</param>
+        public static implicit operator AccessMask(uint access)
+        {
+            return new AccessMask(access);
+        }
+
+        /// <summary>
         /// Implicit conversion from enumerations.
         /// </summary>
         /// <param name="access">The access enumeration.</param>
@@ -380,7 +398,7 @@ namespace NtApiDotNet
         /// </summary>
         public bool IsEmpty
         {
-            get { return Access != 0; }
+            get { return Access == 0; }
         }
 
         /// <summary>
