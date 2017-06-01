@@ -18,13 +18,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CheckHandleAccess
+namespace CheckAlpcPortAccess
 {
     class Program
     {
         static void ShowHelp(OptionSet p)
         {
-            Console.WriteLine("Usage: CheckHandleAccess [options] [pid1... pidN]");
+            Console.WriteLine("Usage: CheckAlpcPortAccess [options] [pid1... pidN]");
+            Console.WriteLine("This application tries to check access to ALPC ports based on their handles.");
             Console.WriteLine();
             Console.WriteLine("Options:");
             p.WriteOptionDescriptions(Console.Out);
@@ -36,17 +37,12 @@ namespace CheckHandleAccess
             {
                 int pid = NtProcess.Current.ProcessId;
                 bool show_help = false;
-                bool show_write_only = false;
-                bool show_named = false;
-                bool map_to_generic = false;
+                bool print_sddl = false;
                 HashSet<string> type_filter = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 OptionSet opts = new OptionSet() {
-                        { "t|type=", "Add a type filter to the handles", v => type_filter.Add(v.Trim()) },
                         { "p|pid=", "Specify a PID of a process for access check.", v => pid = int.Parse(v.Trim()) },
-                        { "w", "Show only write permissions granted", v => show_write_only = v != null },
-                        { "n", "Show only named handles", v => show_named = v != null },
-                        { "g", "Map access mask to generic rights.", v => map_to_generic = v != null },
+                        { "sddl", "Print SDDL security descriptor.", v => print_sddl = v != null },
                         { "h|help",  "show this message and exit",
                            v => show_help = v != null },
                     };
@@ -58,10 +54,12 @@ namespace CheckHandleAccess
                     return;
                 }
 
+                Dictionary<string, string> ports = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
                 NtToken.EnableDebugPrivilege();
                 using (NtToken token = NtToken.OpenProcessToken(pid))
                 {
-                    IEnumerable<NtHandle> handles = NtSystemInfo.GetHandles();
+                    IEnumerable<NtHandle> handles = NtSystemInfo.GetHandles(-1, false);
                     HashSet<ulong> checked_objects = new HashSet<ulong>();
 
                     if (pids.Count > 0)
@@ -69,42 +67,65 @@ namespace CheckHandleAccess
                         handles = handles.Where(h => pids.Contains(h.ProcessId));
                     }
 
-                    if (type_filter.Count > 0)
-                    {
-                        handles = handles.Where(h => type_filter.Contains(h.ObjectType));
-                    }
-
-                    if (show_named)
-                    {
-                        handles = handles.Where(h => !String.IsNullOrEmpty(h.Name));
-                    }
-
+                    handles = handles.Where(h => h.ObjectType.Equals("ALPC Port", StringComparison.OrdinalIgnoreCase));
+                    Dictionary<int, NtProcess> pid_to_process = new Dictionary<int, NtProcess>();
                     foreach (NtHandle handle in handles.Where(h => h.GrantedAccess.IsAccessGranted(GenericAccessRights.ReadControl)))
                     {
-                        //SecurityDescriptor sd = handle.SecurityDescriptor;
-                        //if (sd == null)
-                        //{
-                        //    continue;
-                        //}
+                        if (!pid_to_process.ContainsKey(handle.ProcessId))
+                        {
+                            try
+                            {
+                                pid_to_process[handle.ProcessId] = NtProcess.Open(handle.ProcessId, 
+                                    ProcessAccessRights.QueryLimitedInformation | ProcessAccessRights.DupHandle);
+                            }
+                            catch (NtException)
+                            {
+                                pid_to_process[handle.ProcessId] = null;
+                            }
+                        }
 
-                        //NtType type = handle.NtType;
-                        //if (type == null)
-                        //{
-                        //    continue;
-                        //}
+                        NtProcess proc = pid_to_process[handle.ProcessId];
+                        if (proc == null)
+                        {
+                            continue;
+                        }                        
 
-                        checked_objects.Add(handle.Object);
+                        try
+                        {
+                            using (NtAlpc obj = NtAlpc.DuplicateFrom(proc, new IntPtr(handle.Handle)))
+                            {
+                                string name = obj.FullPath;
+                                // We only care about named ALPC ports.
+                                if (String.IsNullOrEmpty(name))
+                                {
+                                    continue;
+                                }
 
-                        //AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token, type.GenericMapping);
-                        //if (granted_access.IsEmpty)
-                        //{
-                        //    continue;
-                        //}
+                                if (ports.ContainsKey(name))
+                                {
+                                    continue;
+                                }
 
-                        //Console.WriteLine("{0:016X} {1} {2}", NtObjectUtils.GrantedAccessAsString(granted_access, type.GenericMapping, typeof(GenericAccessRights), map_to_generic));
-                        Console.WriteLine("{0} {1:X016} {2}", handle.ProcessId, handle.Object, 
-                            NtObjectUtils.GrantedAccessAsString(handle.GrantedAccess,
-                            handle.NtType.GenericMapping, typeof(GenericAccessRights), map_to_generic));
+                                SecurityDescriptor sd = obj.SecurityDescriptor;
+                                AccessMask granted_access = NtSecurity.GetAllowedAccess(sd, token, AlpcAccessRights.Connect, obj.NtType.GenericMapping);
+                                if (granted_access.IsEmpty)
+                                {
+                                    continue;
+                                }
+                                ports.Add(name, sd.ToSddl());
+                            }
+                        }
+                        catch (NtException)
+                        {
+                        }
+                    }
+                }
+                foreach (var pair in ports.OrderBy(p => p.Key))
+                {
+                    Console.WriteLine(pair.Key);
+                    if (print_sddl)
+                    {
+                        Console.WriteLine("SDDL: {0}", pair.Value);
                     }
                 }
             }

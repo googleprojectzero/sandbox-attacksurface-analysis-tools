@@ -41,7 +41,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NtObjectManager", "NtObject
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckServiceAccess", "CheckServiceAccess\CheckServiceAccess.csproj", "{6B5C500D-42B3-429C-8264-83453F2D0517}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckHandleAccess", "CheckHandleAccess\CheckHandleAccess.csproj", "{C35417B5-10C9-4CC9-921F-3A185400AAB1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckAlpcPortAccess", "CheckHandleAccess\CheckAlpcPortAccess.csproj", "{C35417B5-10C9-4CC9-921F-3A185400AAB1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
