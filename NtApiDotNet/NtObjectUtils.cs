@@ -171,6 +171,17 @@ namespace NtApiDotNet
         /// <summary>
         /// Convert a generic access to a specific access type.
         /// </summary>
+        /// <param name="access">The generic access rights</param>
+        /// <param name="enum_type">The specific access rights type</param>
+        /// <returns>The specific access rights.</returns>
+        public static object ToSpecificAccess(this GenericAccessRights access, Type enum_type)
+        {
+            return Enum.ToObject(enum_type, (uint)access);
+        }
+
+        /// <summary>
+        /// Convert a generic access to a specific access type.
+        /// </summary>
         /// <typeparam name="A">The specific access rights type</typeparam>
         /// <param name="access">The generic access rights</param>
         /// <returns>The specific access rights.</returns>

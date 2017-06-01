@@ -49,8 +49,7 @@ namespace NtObjectManager
                                 _symlink_target = link.Target;
                             }
 
-                            // TODO: Fix
-                            _maximum_granted_access = obj.GrantedAccessRaw;
+                            _maximum_granted_access = obj.GrantedAccessRaw.ToSpecificAccess(obj.GetAccessEnumType());
                         }
                     }
                     catch
@@ -150,7 +149,7 @@ namespace NtObjectManager
                     break;
             }
 
-            _maximum_granted_access = 0;
+            _maximum_granted_access = null;
         }
     }
 }

@@ -400,6 +400,12 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Get the .NET type for the object's access enumeration.
+        /// </summary>
+        /// <returns>The .NET type for enum access.</returns>
+        public abstract Type GetAccessEnumType();
+
         private ObjectBasicInformation? _basic_info;
 
         /// <summary>
@@ -939,6 +945,15 @@ namespace NtApiDotNet
         private A UIntToAccess(GenericAccessRights access)
         {
             return (A)Enum.ToObject(typeof(A), (uint)access);
+        }
+
+        /// <summary>
+        /// Get .NET type for access.
+        /// </summary>
+        /// <returns>The .NET type for enum access.</returns>
+        public sealed override Type GetAccessEnumType()
+        {
+            return typeof(A);
         }
 
         /// <summary>

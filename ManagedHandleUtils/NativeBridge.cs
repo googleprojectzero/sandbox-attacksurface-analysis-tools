@@ -43,23 +43,10 @@ namespace SandboxAnalysisUtils
         
         [DllImport("aclui.dll")]
         static extern bool EditSecurity(IntPtr hwndOwner, ISecurityInformation psi);
-
-        static Type TypeNameToEnum(NtObject handle)
-        {
-            // TODO: Fix
-            throw new NotImplementedException();
-            //Type type = handle.GrantedAccessObject.GetType();
-            //if (!type.IsEnum)
-            //{
-            //    throw new ArgumentException("Can't get type for access rights");
-            //}
-
-            //return type;
-        }
-
+        
         public static void EditSecurity(IntPtr hwnd, NtObject handle, string object_name, bool read_only)
         {
-            Dictionary<uint, String> access = GetMaskDictionary(TypeNameToEnum(handle));
+            Dictionary<uint, String> access = GetMaskDictionary(handle.GetAccessEnumType());
 
             using (SecurityInformationImpl impl = new SecurityInformationImpl(object_name, handle, access,
                handle.NtType.GenericMapping, read_only))
