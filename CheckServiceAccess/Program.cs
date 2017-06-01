@@ -227,13 +227,13 @@ namespace CheckServiceAccess
             p.WriteOptionDescriptions(Console.Out);
         }
 
-        static GenericAccessRights GetGrantedAccess(SecurityDescriptor sd, NtToken token, 
-            GenericAccessRights specific_rights, GenericMapping generic_mapping)
+        static AccessMask GetGrantedAccess(SecurityDescriptor sd, NtToken token, 
+            AccessMask specific_rights, GenericMapping generic_mapping)
         {
-            GenericAccessRights granted_access = 0;
+            AccessMask granted_access;
             specific_rights = generic_mapping.MapMask(specific_rights);
 
-            if (specific_rights != 0)
+            if (specific_rights.HasAccess)
             {
                 granted_access = NtSecurity.GetAllowedAccess(sd, token, specific_rights, generic_mapping);
             }
@@ -242,10 +242,10 @@ namespace CheckServiceAccess
                 granted_access = NtSecurity.GetMaximumAccess(sd, token, generic_mapping);
             }
 
-            if (granted_access != 0)
+            if (granted_access.HasAccess)
             {
                 // As we can get all the rights for the key get maximum
-                if (specific_rights != 0)
+                if (specific_rights.HasAccess)
                 {
                     granted_access = NtSecurity.GetMaximumAccess(sd, token, generic_mapping);
                 }
@@ -271,16 +271,16 @@ namespace CheckServiceAccess
             return (T)Enum.Parse(typeof(T), name, true);
         }
 
-        static bool HasWriteAccess(GenericAccessRights granted_access)
+        static bool HasWriteAccess(AccessMask granted_access)
         {
             GenericMapping generic_mapping = GetServiceGenericMapping();
-            if ((granted_access & (GenericAccessRights.WriteDac | GenericAccessRights.WriteOwner)) != 0)
+            if ((granted_access & (GenericAccessRights.WriteDac | GenericAccessRights.WriteOwner)).HasAccess)
             {
                 return true;
             }
 
-            granted_access &= NtObjectUtils.ToGenericAccess(0xFFFF);
-            return (granted_access & generic_mapping.GenericWrite) != 0;
+            granted_access &= new AccessMask(0xFFFF);
+            return (granted_access & generic_mapping.GenericWrite).HasAccess;
         }
 
         static void ReadArray<T>(IntPtr ptr, int count, out T[] ret) where T : struct
@@ -467,9 +467,9 @@ namespace CheckServiceAccess
                 {
                     GenericMapping generic_mapping = GetServiceGenericMapping();
                     SecurityDescriptor sd = GetServiceSecurityDescriptor(service);
-                    GenericAccessRights granted_access = GetGrantedAccess(sd, token, service_rights.ToGenericAccess(), generic_mapping);
+                    AccessMask granted_access = GetGrantedAccess(sd, token, service_rights, generic_mapping);
 
-                    if (granted_access != 0 && !show_write_only || HasWriteAccess(granted_access))
+                    if (granted_access.HasAccess && !show_write_only || HasWriteAccess(granted_access))
                     {
                         Console.WriteLine("{0} Granted Access: {1}", name, granted_access);
                         if (print_sddl)
@@ -541,7 +541,8 @@ namespace CheckServiceAccess
                             if (dump_scm)
                             {
                                 SecurityDescriptor sd = GetServiceSecurityDescriptor(scm);
-                                Console.WriteLine("SCM Granted Access: {0}", (ServiceControlManagerAccessRights)GetGrantedAccess(sd, token, 0, GetSCMGenericMapping()));
+                                Console.WriteLine("SCM Granted Access: {0}", GetGrantedAccess(sd, token, AccessMask.Empty,
+                                    GetSCMGenericMapping()).ToSpecificAccess<ServiceControlManagerAccessRights>());
                                 if (print_sddl)
                                 {
                                     Console.WriteLine("SCM SDDL: {0}", sd.ToSddl());

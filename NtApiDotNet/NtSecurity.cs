@@ -208,7 +208,7 @@ namespace NtApiDotNet
         public static extern NtStatus RtlAbsoluteToSelfRelativeSD(SafeBuffer AbsoluteSecurityDescriptor, SafeBuffer SelfRelativeSecurityDescriptor, ref int BufferLength);
 
         [DllImport("ntdll.dll")]
-        public static extern void RtlMapGenericMask(ref GenericAccessRights AccessMask, ref GenericMapping mapping);
+        public static extern void RtlMapGenericMask(ref AccessMask AccessMask, ref GenericMapping mapping);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus RtlDeleteSecurityObject(ref IntPtr ObjectDescriptor);
@@ -232,7 +232,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtAccessCheck(
             SafeBuffer SecurityDescriptor,
             SafeHandle ClientToken,
-            GenericAccessRights DesiredAccess,
+            AccessMask DesiredAccess,
             ref GenericMapping GenericMapping,
             SafePrivilegeSetBuffer RequiredPrivilegesBuffer,
             ref int BufferLength,
@@ -328,6 +328,191 @@ namespace NtApiDotNet
 #pragma warning restore 1591
 
     /// <summary>
+    /// Structure for an NT access mask.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct AccessMask : IFormattable, IEquatable<AccessMask>, IComparable<AccessMask>
+    {
+        /// <summary>
+        /// The access mask's access bits.
+        /// </summary>
+        public uint Access;
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="access">Access bits to use</param>
+        public AccessMask(uint access)
+        {
+            Access = access;
+        }
+
+        /// <summary>
+        /// Implicit conversion from enumerations.
+        /// </summary>
+        /// <param name="access">The access enumeration.</param>
+        public static implicit operator AccessMask(Enum access)
+        {
+            return new AccessMask(((IConvertible)access).ToUInt32(null));
+        }
+
+        /// <summary>
+        /// Convert access mask to a generic access object.
+        /// </summary>
+        /// <returns></returns>
+        public GenericAccessRights ToGenericAccess()
+        {
+            return (GenericAccessRights)Access;
+        }
+
+        /// <summary>
+        /// Convert to a specific access right.
+        /// </summary>
+        /// <typeparam name="A">The specific access right.</typeparam>
+        /// <returns>The converted value.</returns>
+        public A ToSpecificAccess<A>()
+        {
+            return (A)(object)Access;
+        }
+
+        /// <summary>
+        /// Get whether this access mask is empty (i.e. it's 0)
+        /// </summary>
+        public bool IsEmpty
+        {
+            get { return Access != 0; }
+        }
+
+        /// <summary>
+        /// Get whether this access mask has not access rights, i.e. not empty.
+        /// </summary>
+        public bool HasAccess
+        {
+            get { return !IsEmpty; }
+        }
+
+        /// <summary>
+        /// Bitwise AND operator.
+        /// </summary>
+        /// <param name="mask1">Access mask 1</param>
+        /// <param name="mask2">Access mask 2</param>
+        /// <returns>The new access mask.</returns>
+        public static AccessMask operator&(AccessMask mask1, AccessMask mask2)
+        {
+            return new AccessMask(mask1.Access & mask2.Access);
+        }
+
+        /// <summary>
+        /// Bitwise OR operator.
+        /// </summary>
+        /// <param name="mask1">Access mask 1</param>
+        /// <param name="mask2">Access mask 2</param>
+        /// <returns>The new access mask.</returns>
+        public static AccessMask operator |(AccessMask mask1, AccessMask mask2)
+        {
+            return new AccessMask(mask1.Access | mask2.Access);
+        }
+
+        /// <summary>
+        /// Bitwise AND operator.
+        /// </summary>
+        /// <param name="mask1">Access mask 1</param>
+        /// <param name="mask2">Access mask 2</param>
+        /// <returns>The new access mask.</returns>
+        public static AccessMask operator &(AccessMask mask1, uint mask2)
+        {
+            return new AccessMask(mask1.Access & mask2);
+        }
+
+        /// <summary>
+        /// Bitwise OR operator.
+        /// </summary>
+        /// <param name="mask1">Access mask 1</param>
+        /// <param name="mask2">Access mask 2</param>
+        /// <returns>The new access mask.</returns>
+        public static AccessMask operator |(AccessMask mask1, uint mask2)
+        {
+            return new AccessMask(mask1.Access | mask2);
+        }
+
+        /// <summary>
+        /// Equality operator.
+        /// </summary>
+        /// <param name="mask1">Access mask 1</param>
+        /// <param name="mask2">Access mask 2</param>
+        /// <returns>True if equal.</returns>
+        public static bool operator ==(AccessMask mask1, AccessMask mask2)
+        {
+            return mask1.Access == mask2.Access;
+        }
+
+        /// <summary>
+        /// Inequality operator.
+        /// </summary>
+        /// <param name="mask1">Access mask 1</param>
+        /// <param name="mask2">Access mask 2</param>
+        /// <returns>True if equal.</returns>
+        public static bool operator !=(AccessMask mask1, AccessMask mask2)
+        {
+            return mask1.Access != mask2.Access;
+        }
+
+        /// <summary>
+        /// Bitwise NOT operator.
+        /// </summary>
+        /// <param name="mask1">Access mask 1</param>
+        /// <returns>The new access mask.</returns>
+        public static AccessMask operator ~(AccessMask mask1)
+        {
+            return new AccessMask(~mask1.Access);
+        }
+
+        /// <summary>
+        /// Overridden GetHashCode.
+        /// </summary>
+        /// <returns>The hash code.</returns>
+        public override int GetHashCode()
+        {
+            return Access.GetHashCode();
+        }
+
+        /// <summary>
+        /// Overridden Equals.
+        /// </summary>
+        /// <param name="obj">The object to compare against.</param>
+        /// <returns>True if equal.</returns>
+        public override bool Equals(object obj)
+        {
+            if (!(obj is AccessMask))
+            {
+                return false;
+            }
+            AccessMask mask = (AccessMask)obj;
+            return Access == mask.Access;
+        }
+
+        /// <summary>
+        /// Get an empty access mask.
+        /// </summary>
+        public static AccessMask Empty { get { return new AccessMask(); } }
+
+        string IFormattable.ToString(string format, IFormatProvider formatProvider)
+        {
+            return Access.ToString(format, formatProvider);
+        }
+
+        bool IEquatable<AccessMask>.Equals(AccessMask other)
+        {
+            return Access == other.Access;
+        }
+
+        int IComparable<AccessMask>.CompareTo(AccessMask other)
+        {
+            return Access.CompareTo(other.Access);
+        }
+    }
+
+    /// <summary>
     /// Access rights generic mapping.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
@@ -336,26 +521,26 @@ namespace NtApiDotNet
         /// <summary>
         /// Mapping for Generic Read
         /// </summary>
-        public GenericAccessRights GenericRead;
+        public AccessMask GenericRead;
         /// <summary>
         /// Mapping for Generic Write
         /// </summary>
-        public GenericAccessRights GenericWrite;
+        public AccessMask GenericWrite;
         /// <summary>
         /// Mapping for Generic Execute
         /// </summary>
-        public GenericAccessRights GenericExecute;
+        public AccessMask GenericExecute;
         /// <summary>
         /// Mapping for Generic All
         /// </summary>
-        public GenericAccessRights GenericAll;
+        public AccessMask GenericAll;
 
         /// <summary>
         /// Map a generic access mask to a specific one.
         /// </summary>
         /// <param name="mask">The generic mask to map.</param>
         /// <returns>The mapped mask.</returns>
-        public GenericAccessRights MapMask(GenericAccessRights mask)
+        public AccessMask MapMask(AccessMask mask)
         {
             NtRtl.RtlMapGenericMask(ref mask, ref this);
             return mask;
@@ -368,7 +553,8 @@ namespace NtApiDotNet
         public override string ToString()
         {
             return String.Format("R:{0:X08} W:{1:X08} E:{2:X08} A:{3:X08}",
-                (uint)GenericRead, (uint)GenericWrite, (uint)GenericExecute, (uint)GenericAll);
+                GenericRead.Access, GenericWrite.Access, 
+                GenericExecute.Access, GenericAll.Access);
         }
     }
 
@@ -1185,7 +1371,7 @@ namespace NtApiDotNet
         /// <returns>The allowed access mask as a unsigned integer.</returns>
         /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
         public static GenericAccessRights GetAllowedAccess(SecurityDescriptor sd, NtToken token, 
-            GenericAccessRights access_rights, GenericMapping generic_mapping)
+            AccessMask access_rights, GenericMapping generic_mapping)
         {
             if (sd == null)
             {
@@ -1227,7 +1413,7 @@ namespace NtApiDotNet
         /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
         /// <returns>The maximum allowed access mask as a unsigned integer.</returns>
         /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
-        public static GenericAccessRights GetMaximumAccess(SecurityDescriptor sd, NtToken token, GenericMapping generic_mapping)
+        public static AccessMask GetMaximumAccess(SecurityDescriptor sd, NtToken token, GenericMapping generic_mapping)
         {
             return GetAllowedAccess(sd, token, GenericAccessRights.MaximumAllowed, generic_mapping);
         }
@@ -1241,11 +1427,11 @@ namespace NtApiDotNet
         /// <param name="type">The type used to determine generic access mapping..</param>
         /// <returns>The allowed access mask as a unsigned integer.</returns>
         /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
-        public static GenericAccessRights GetAllowedAccess(NtToken token, NtType type, GenericAccessRights access_rights, byte[] sd)
+        public static AccessMask GetAllowedAccess(NtToken token, NtType type, AccessMask access_rights, byte[] sd)
         {
             if (sd == null || sd.Length == 0)
             {
-                return 0;
+                return new AccessMask(0);
             }
 
             return GetAllowedAccess(new SecurityDescriptor(sd), token, access_rights, type.GenericMapping);
@@ -1259,7 +1445,7 @@ namespace NtApiDotNet
         /// <param name="type">The type used to determine generic access mapping..</param>
         /// <returns>The allowed access mask as a unsigned integer.</returns>
         /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
-        public static GenericAccessRights GetMaximumAccess(NtToken token, NtType type, byte[] sd)
+        public static AccessMask GetMaximumAccess(NtToken token, NtType type, byte[] sd)
         {
             return GetAllowedAccess(token, type, GenericAccessRights.MaximumAllowed, sd);
         }

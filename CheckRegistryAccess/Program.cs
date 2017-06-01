@@ -39,7 +39,7 @@ namespace CheckRegistryAccess
             Console.WriteLine(@"Key names can be in win32 form (hkey_local_machine\blah) or native (\Registry\Machine\blah");
         }
 
-        static string AccessMaskToString(GenericAccessRights granted_access)
+        static string AccessMaskToString(AccessMask granted_access)
         {
             if (_type.HasFullPermission(granted_access))
             {
@@ -57,7 +57,7 @@ namespace CheckRegistryAccess
             }
 
             SecurityDescriptor sd = key.SecurityDescriptor;
-            GenericAccessRights granted_access = 0;
+            AccessMask granted_access;
 
             if (_key_rights != 0)
             {
@@ -69,7 +69,7 @@ namespace CheckRegistryAccess
                 granted_access = NtSecurity.GetMaximumAccess(_token, _type, sd.ToByteArray());
             }
 
-            if (granted_access != 0)
+            if (!granted_access.IsEmpty)
             {
                 // As we can get all the rights for the key get maximum
                 if (_key_rights != 0)

@@ -160,10 +160,10 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="access_mask">The access mask to check</param>
         /// <returns>True if it has read permissions</returns>
-        public bool HasReadPermission(GenericAccessRights access_mask)
+        public bool HasReadPermission(AccessMask access_mask)
         {
             access_mask = GenericMapping.MapMask(access_mask);
-            return (access_mask & GenericMapping.GenericRead) != 0;
+            return (access_mask & GenericMapping.GenericRead).HasAccess;
         }
 
         /// <summary>
@@ -171,10 +171,11 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="access_mask">The access mask to check</param>
         /// <returns>True if it has write permissions</returns>
-        public bool HasWritePermission(GenericAccessRights access_mask)
+        public bool HasWritePermission(AccessMask access_mask)
         {
             access_mask = GenericMapping.MapMask(access_mask);
-            return (access_mask & GenericMapping.GenericWrite & ~GenericMapping.GenericRead & ~GenericMapping.GenericExecute) != 0;
+            return (access_mask & GenericMapping.GenericWrite
+                & ~GenericMapping.GenericRead & ~GenericMapping.GenericExecute).HasAccess;
         }
 
         /// <summary>
@@ -182,10 +183,11 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="access_mask">The access mask to check</param>
         /// <returns>True if it has execute permissions</returns>
-        public bool HasExecutePermission(GenericAccessRights access_mask)
+        public bool HasExecutePermission(AccessMask access_mask)
         {
             access_mask = GenericMapping.MapMask(access_mask);
-            return (access_mask & GenericMapping.GenericExecute & ~GenericMapping.GenericRead) != 0;
+            return (access_mask & GenericMapping.GenericExecute 
+                & ~GenericMapping.GenericRead).HasAccess;
         }
 
         /// <summary>
@@ -193,7 +195,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="access_mask">The access mask to check</param>
         /// <returns>True if it has full permissions</returns>
-        public bool HasFullPermission(GenericAccessRights access_mask)
+        public bool HasFullPermission(AccessMask access_mask)
         {
             access_mask = GenericMapping.MapMask(access_mask);
             return (access_mask & GenericMapping.GenericAll) == GenericMapping.GenericAll;
@@ -204,7 +206,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="access_mask">The access mask to map</param>
         /// <returns>The mapped access mask</returns>
-        public GenericAccessRights MapGenericRights(GenericAccessRights access_mask)
+        public AccessMask MapGenericRights(AccessMask access_mask)
         {
             return GenericMapping.MapMask(access_mask);
         }

@@ -96,8 +96,8 @@ namespace CheckHandleAccess
                             continue;
                         }
 
-                        GenericAccessRights max_access = NtSecurity.GetMaximumAccess(sd, token, type.GenericMapping);
-                        if (max_access == GenericAccessRights.None)
+                        AccessMask max_access = NtSecurity.GetMaximumAccess(sd, token, type.GenericMapping);
+                        if (max_access.IsEmpty)
                         {
                             continue;
                         }

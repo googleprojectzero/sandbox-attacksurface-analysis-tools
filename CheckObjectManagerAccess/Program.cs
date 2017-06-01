@@ -62,7 +62,7 @@ namespace CheckObjectManagerAccess
             }
         }
 
-        static string AccessMaskToString(NtType type, GenericAccessRights granted_access)
+        static string AccessMaskToString(NtType type, AccessMask granted_access)
         {
             if (type.HasFullPermission(granted_access))
             {
@@ -86,7 +86,7 @@ namespace CheckObjectManagerAccess
 
                 if (sd.Length > 0)
                 {
-                    GenericAccessRights granted_access = 0;
+                    AccessMask granted_access;
 
                     if (_dir_rights != 0)
                     {
@@ -98,7 +98,7 @@ namespace CheckObjectManagerAccess
                         granted_access = NtSecurity.GetMaximumAccess(_token, type, sd);
                     }
 
-                    if (granted_access != 0)
+                    if (!granted_access.IsEmpty)
                     {
                         // As we can get all the rights for the directory get maximum
                         if (_dir_rights != 0)

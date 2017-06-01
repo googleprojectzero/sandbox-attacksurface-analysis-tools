@@ -148,7 +148,7 @@ namespace CheckProcessAccess
             {
                 if (Handle != null)
                 {
-                    return Handle.GetGrantedAccessString();
+                    return Handle.GrantedAccess.ToString();
                 }
                 else
                 {
@@ -325,7 +325,7 @@ namespace CheckProcessAccess
                         {
                             foreach (ThreadEntry thread in process.Threads)
                             {
-                                Console.WriteLine("-- Thread {0}: {1}", thread.Tid, thread.Handle.GetGrantedAccessString());
+                                Console.WriteLine("-- Thread {0}: {1}", thread.Tid, thread.Handle.GrantedAccess);
                                 if (_print_sddl && thread.Handle.IsAccessGranted(ThreadAccessRights.ReadControl))
                                 {
                                     Console.WriteLine("---- SDDL: {0}", thread.Handle.GetSddl());

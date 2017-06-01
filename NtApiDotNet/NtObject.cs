@@ -723,10 +723,10 @@ namespace NtApiDotNet
         /// <param name="t">The enumeration type for the string conversion</param>
         /// <param name="access">The access mask to convert</param>
         /// <returns>The string version of the access</returns>
-        public static string AccessRightsToString(Type t, GenericAccessRights access)
+        public static string AccessRightsToString(Type t, AccessMask access)
         {
             List<string> names = new List<string>();
-            uint remaining = (uint)access;
+            uint remaining = access.Access;
 
             // If the valid is explicitly defined return it.
             if (Enum.IsDefined(t, remaining))
@@ -787,31 +787,27 @@ namespace NtApiDotNet
         /// <summary>
         /// Convert an enumerable access rights to a string
         /// </summary>
-        /// <typeparam name="T">The enum type for the access rights</typeparam>
         /// <param name="access">The access rights</param>
         /// <returns>The string format of the access rights</returns>
-        public static string AccessRightsToString<T>(T access) where T : struct, IConvertible
+        public static string AccessRightsToString(Enum access)
         {
-            CheckEnumType(typeof(T));
-            return AccessRightsToString(typeof(T), access.ToGenericAccess());
+            return AccessRightsToString(access.GetType(), access);
         }
 
         /// <summary>
         /// Convert an enumerable access rights to a string
         /// </summary>
-        /// <typeparam name="T">The enum type for the access rights</typeparam>
         /// <param name="access">The access rights</param>
         /// <param name="typeinfo">NtType to map generic access masks to specific access masks</param>
         /// <returns>The string format of the access rights</returns>
-        public static string AccessRightsToString<T>(T access, NtType typeinfo) where T : struct, IConvertible
+        public static string AccessRightsToString(Enum access, NtType typeinfo)
         {
-            CheckEnumType(typeof(T));
-            GenericAccessRights mapped_access = typeinfo.MapGenericRights(access.ToGenericAccess());
+            AccessMask mapped_access = typeinfo.MapGenericRights(access);
             if ((mapped_access & typeinfo.GenericMapping.GenericAll) == typeinfo.GenericMapping.GenericAll)
             {
                 return "Full Access";
             }
-            return AccessRightsToString(typeof(T), mapped_access);
+            return AccessRightsToString(access.GetType(), mapped_access);
         }
 
         /// <summary>
@@ -982,7 +978,7 @@ namespace NtApiDotNet
             }
 
             GenericAccessRights ret = NtSecurity.GetMaximumAccess(SecurityDescriptor,
-                                                token, NtType.GenericMapping);
+                                                token, NtType.GenericMapping).ToGenericAccess();
             return UIntToAccess(ret);
         }
 
@@ -1007,17 +1003,6 @@ namespace NtApiDotNet
         public bool IsAccessGranted(A access)
         {
             return IsAccessGrantedRaw(access.ToGenericAccess());
-        }
-
-        /// <summary>
-        /// Get the granted access as a string
-        /// </summary>
-        /// <returns>The string form of the granted access</returns>
-        public string GetGrantedAccessString()
-        {
-            NtType type = NtType.GetTypeByName(NtTypeName);
-
-            return AccessRightsToString(GrantedAccess, type);
         }
 
         /// <summary>
