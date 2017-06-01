@@ -65,7 +65,14 @@ namespace NtObjectManager
         /// <returns>The object path.</returns>
         protected override string GetPath()
         {
-            return Path;
+            if (Win32Path)
+            {
+                return NtKeyUtils.Win32KeyNameToNt(Path);
+            }
+            else
+            {
+                return Path;
+            }
         }
 
         /// <summary>

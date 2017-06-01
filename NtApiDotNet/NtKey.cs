@@ -54,7 +54,7 @@ namespace NtApiDotNet
         Synchronize = GenericAccessRights.Synchronize,
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
-    }    
+    }
 
     public enum RegistryValueType
     {
@@ -223,7 +223,7 @@ namespace NtApiDotNet
             int Length,
             out int ResultLength
         );
-        
+
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtOpenKeyTransacted(out SafeKernelObjectHandle KeyHandle, KeyAccessRights DesiredAccess, [In] ObjectAttributes ObjectAttributes, [In] SafeKernelObjectHandle TransactionHandle);
 
@@ -259,11 +259,11 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtEnumerateValueKey(
           SafeKernelObjectHandle KeyHandle,
-          int      Index,
+          int Index,
           KeyValueInformationClass KeyValueInformationClass,
           SafeBuffer KeyValueInformation,
-          int      Length,
-          out int  ResultLength
+          int Length,
+          out int ResultLength
         );
 
         [DllImport("ntdll.dll")]
@@ -273,6 +273,12 @@ namespace NtApiDotNet
                 SafeBuffer KeyInformation,
                 int Length,
                 out int ResultLength
+            );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtRenameKey(
+                SafeKernelObjectHandle KeyHandle,
+                [In] UnicodeString NewName
             );
     }
 #pragma warning restore 1591
@@ -397,7 +403,7 @@ namespace NtApiDotNet
         public static NtKey LoadKey(ObjectAttributes key, ObjectAttributes file, LoadKeyFlags flags, KeyAccessRights desired_access)
         {
             SafeKernelObjectHandle key_handle;
-            NtSystemCalls.NtLoadKeyEx(key, file, flags, 
+            NtSystemCalls.NtLoadKeyEx(key, file, flags,
                 IntPtr.Zero, IntPtr.Zero, desired_access, out key_handle, 0).ToNtException();
             return new NtKey(key_handle);
         }
@@ -488,13 +494,13 @@ namespace NtApiDotNet
                 return Open(obja, desired_access);
             }
         }
-        
+
         /// <summary>
         /// Delete the key
         /// </summary>
         public void Delete()
         {
-           NtSystemCalls.NtDeleteKey(Handle).ToNtException();
+            NtSystemCalls.NtDeleteKey(Handle).ToNtException();
         }
 
         /// <summary>
@@ -505,7 +511,7 @@ namespace NtApiDotNet
         /// <param name="data">The raw value data</param>
         /// <exception cref="NtException">Thrown on error.</exception>
         public void SetValue(string value_name, RegistryValueType type, byte[] data)
-        {            
+        {
             NtSystemCalls.NtSetValueKey(Handle, new UnicodeString(value_name), 0, type, data, data.Length).ToNtException();
         }
 
@@ -550,7 +556,7 @@ namespace NtApiDotNet
         /// <returns>The value information</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public NtKeyValue QueryValue(string value_name)
-        {            
+        {
             UnicodeString name = new UnicodeString(value_name);
             int return_len = 0;
             int query_count = 0;
@@ -563,7 +569,7 @@ namespace NtApiDotNet
                         info, info.Length, out return_len);
                     if (status.IsSuccess())
                     {
-                        KeyValuePartialInformation result = info.Result;                        
+                        KeyValuePartialInformation result = info.Result;
                         return new NtKeyValue(value_name, info.Result.Type, info.Data.ReadBytes(result.DataLength), result.TitleIndex);
                     }
                     if (status != NtStatus.STATUS_BUFFER_OVERFLOW && status != NtStatus.STATUS_BUFFER_TOO_SMALL)
@@ -587,7 +593,7 @@ namespace NtApiDotNet
                 while (true)
                 {
                     int result_length;
-                    NtStatus status = NtSystemCalls.NtEnumerateValueKey(Handle, index, KeyValueInformationClass.KeyValueFullInformation, 
+                    NtStatus status = NtSystemCalls.NtEnumerateValueKey(Handle, index, KeyValueInformationClass.KeyValueFullInformation,
                         value_info, value_info.Length, out result_length);
                     if (status == NtStatus.STATUS_BUFFER_OVERFLOW || status == NtStatus.STATUS_BUFFER_TOO_SMALL)
                     {
@@ -788,6 +794,15 @@ namespace NtApiDotNet
             return RegistryKey.FromHandle(DuplicateAsRegistry(Handle));
         }
 
+        /// <summary>
+        /// Rename key.
+        /// </summary>
+        /// <param name="new_name">The new name for the key.</param>
+        public void Rename(string new_name)
+        {
+            NtSystemCalls.NtRenameKey(Handle, new UnicodeString(new_name)).ToNtException();
+        }
+
         private SafeStructureInOutBuffer<T> QueryKey<T>(KeyInformationClass info_class) where T : new()
         {
             int return_length;
@@ -937,6 +952,52 @@ namespace NtApiDotNet
             {
                 return GetFullInfo().Item1.MaxClassLen;
             }
+        }
+    }
+
+    /// <summary>
+    /// Utilities for registry keys.
+    /// </summary>
+    public static class NtKeyUtils
+    {
+        private static Dictionary<string, string> CreateWin32BaseKeys()
+        {
+            Dictionary<string, string> dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            dict.Add("HKLM", @"\Registry\Machine");
+            dict.Add("HKEY_LOCAL_MACHINE", @"\Registry\Machine");
+            dict.Add("HKU", @"\Registry\User");
+            dict.Add("HKEY_USERS", @"\Registry\User");
+            using (NtToken token = NtToken.OpenProcessToken())
+            {
+                string current_user = String.Format(@"\Registry\User\{0}", token.User.Sid);
+                dict.Add("HKCU", current_user);
+                dict.Add("HKEY_CURRENT_USER", current_user);
+            }
+            return dict;
+        }
+
+        private static Dictionary<string, string> _win32_base_keys = CreateWin32BaseKeys();
+
+        /// <summary>
+        /// Convert a Win32 style keyname such as HKEY_LOCAL_MACHINE\Path into a native key path.
+        /// </summary>
+        /// <param name="path">The win32 style keyname to convert.</param>
+        /// <returns>The converted keyname.</returns>
+        /// <exception cref="NtException">Thrown if invalid name.</exception>
+        public static string Win32KeyNameToNt(string path)
+        {
+            foreach (var pair in _win32_base_keys)
+            {
+                if (path.Equals(pair.Key, StringComparison.OrdinalIgnoreCase))
+                {
+                    return pair.Value;
+                }
+                else if (path.StartsWith(pair.Key + @"\", StringComparison.OrdinalIgnoreCase))
+                {
+                    return pair.Value + path.Substring(pair.Key.Length);
+                }
+            }
+            throw new NtException(NtStatus.STATUS_OBJECT_NAME_INVALID);
         }
     }
 }
