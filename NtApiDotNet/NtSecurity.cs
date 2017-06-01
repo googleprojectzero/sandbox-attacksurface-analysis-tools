@@ -236,7 +236,7 @@ namespace NtApiDotNet
             ref GenericMapping GenericMapping,
             SafePrivilegeSetBuffer RequiredPrivilegesBuffer,
             ref int BufferLength,
-            out GenericAccessRights GrantedAccess,
+            out AccessMask GrantedAccess,
             out NtStatus AccessStatus);
     }
 
@@ -653,7 +653,7 @@ namespace NtApiDotNet
             writer.Write((byte)AceType);
             writer.Write((byte)AceFlags);
             writer.Write((ushort)total_length);
-            writer.Write(Mask);
+            writer.Write(Mask.Access);
             if (IsObjectAce())
             {
                 writer.Write((uint)flags);
@@ -682,7 +682,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get ACE access mask
         /// </summary>
-        public uint Mask { get; set; }
+        public AccessMask Mask { get; set; }
 
         /// <summary>
         /// Get ACE Security Identifier
@@ -802,24 +802,12 @@ namespace NtApiDotNet
         /// <param name="flags">ACE flags</param>
         /// <param name="mask">ACE access mask</param>
         /// <param name="sid">ACE sid</param>
-        public Ace(AceType type, AceFlags flags, uint mask, Sid sid)
+        public Ace(AceType type, AceFlags flags, AccessMask mask, Sid sid)
         {
             AceType = type;
             AceFlags = flags;
             Mask = mask;
             Sid = sid;
-        }
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="type">ACE type</param>
-        /// <param name="flags">ACE flags</param>
-        /// <param name="mask">ACE access mask</param>
-        /// <param name="sid">ACE sid</param>
-        public Ace(AceType type, AceFlags flags, GenericAccessRights mask, Sid sid)
-            : this(type, flags, (uint)mask, sid)
-        {
         }
     }
 
@@ -975,18 +963,7 @@ namespace NtApiDotNet
         /// <param name="mask">The ACE access mask</param>
         /// <param name="flags">The ACE flags</param>
         /// <param name="sid">The ACE SID</param>
-        public void AddAccessAllowedAce(GenericAccessRights mask, AceFlags flags, string sid)
-        {
-            AddAccessAllowedAce((uint)mask, flags, sid);
-        }
-
-        /// <summary>
-        /// Add an access allowed ace to the ACL
-        /// </summary>
-        /// <param name="mask">The ACE access mask</param>
-        /// <param name="flags">The ACE flags</param>
-        /// <param name="sid">The ACE SID</param>
-        public void AddAccessAllowedAce(uint mask, AceFlags flags, string sid)
+        public void AddAccessAllowedAce(AccessMask mask, AceFlags flags, string sid)
         {
             Add(new Ace(AceType.Allowed, flags, mask, new Sid(sid)));
         }
@@ -996,17 +973,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="mask">The ACE access mask</param>
         /// <param name="sid">The ACE SID</param>
-        public void AddAccessAllowedAce(uint mask, string sid)
-        {
-            AddAccessAllowedAce(mask, AceFlags.None, sid);
-        }
-
-        /// <summary>
-        /// Add an access allowed ace to the ACL
-        /// </summary>
-        /// <param name="mask">The ACE access mask</param>
-        /// <param name="sid">The ACE SID</param>
-        public void AddAccessAllowedAce(GenericAccessRights mask, string sid)
+        public void AddAccessAllowedAce(AccessMask mask, string sid)
         {
             AddAccessAllowedAce(mask, AceFlags.None, sid);
         }
@@ -1017,18 +984,7 @@ namespace NtApiDotNet
         /// <param name="mask">The ACE access mask</param>
         /// <param name="flags">The ACE flags</param>
         /// <param name="sid">The ACE SID</param>
-        public void AddAccessAllowedAce(GenericAccessRights mask, AceFlags flags, Sid sid)
-        {
-            AddAccessAllowedAce((uint)mask, flags, sid);
-        }
-
-        /// <summary>
-        /// Add an access allowed ace to the ACL
-        /// </summary>
-        /// <param name="mask">The ACE access mask</param>
-        /// <param name="flags">The ACE flags</param>
-        /// <param name="sid">The ACE SID</param>
-        public void AddAccessAllowedAce(uint mask, AceFlags flags, Sid sid)
+        public void AddAccessAllowedAce(AccessMask mask, AceFlags flags, Sid sid)
         {
             Add(new Ace(AceType.Allowed, flags, mask, sid));
         }
@@ -1038,17 +994,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="mask">The ACE access mask</param>
         /// <param name="sid">The ACE SID</param>
-        public void AddAccessAllowedAce(uint mask, Sid sid)
-        {
-            AddAccessAllowedAce(mask, AceFlags.None, sid);
-        }
-
-        /// <summary>
-        /// Add an access allowed ace to the ACL
-        /// </summary>
-        /// <param name="mask">The ACE access mask</param>
-        /// <param name="sid">The ACE SID</param>
-        public void AddAccessAllowedAce(GenericAccessRights mask, Sid sid)
+        public void AddAccessAllowedAce(AccessMask mask, Sid sid)
         {
             AddAccessAllowedAce(mask, AceFlags.None, sid);
         }
@@ -1059,7 +1005,7 @@ namespace NtApiDotNet
         /// <param name="mask">The ACE access mask</param>
         /// <param name="flags">The ACE flags</param>
         /// <param name="sid">The ACE SID</param>
-        public void AddAccessDeniedAce(uint mask, AceFlags flags, string sid)
+        public void AddAccessDeniedAce(AccessMask mask, AceFlags flags, string sid)
         {
             Add(new Ace(AceType.Denied, flags, mask, new Sid(sid)));
         }
@@ -1068,29 +1014,8 @@ namespace NtApiDotNet
         /// Add an access denied ace to the ACL
         /// </summary>
         /// <param name="mask">The ACE access mask</param>
-        /// <param name="flags">The ACE flags</param>
         /// <param name="sid">The ACE SID</param>
-        public void AddAccessDeniedAce(GenericAccessRights mask, AceFlags flags, string sid)
-        {
-            AddAccessDeniedAce((uint)mask, flags, sid);
-        }
-
-        /// <summary>
-        /// Add an access denied ace to the ACL
-        /// </summary>
-        /// <param name="mask">The ACE access mask</param>
-        /// <param name="sid">The ACE SID</param>
-        public void AddAccessDeniedAce(uint mask, string sid)
-        {
-            AddAccessDeniedAce(mask, AceFlags.None, sid);
-        }
-
-        /// <summary>
-        /// Add an access denied ace to the ACL
-        /// </summary>
-        /// <param name="mask">The ACE access mask</param>
-        /// <param name="sid">The ACE SID</param>
-        public void AddAccessDeniedAce(GenericAccessRights mask, string sid)
+        public void AddAccessDeniedAce(AccessMask mask, string sid)
         {
             AddAccessDeniedAce(mask, AceFlags.None, sid);
         }
@@ -1101,7 +1026,7 @@ namespace NtApiDotNet
         /// <param name="mask">The ACE access mask</param>
         /// <param name="flags">The ACE flags</param>
         /// <param name="sid">The ACE SID</param>
-        public void AddAccessDeniedAce(uint mask, AceFlags flags, Sid sid)
+        public void AddAccessDeniedAce(AccessMask mask, AceFlags flags, Sid sid)
         {
             Add(new Ace(AceType.Denied, flags, mask, sid));
         }
@@ -1110,29 +1035,8 @@ namespace NtApiDotNet
         /// Add an access denied ace to the ACL
         /// </summary>
         /// <param name="mask">The ACE access mask</param>
-        /// <param name="flags">The ACE flags</param>
         /// <param name="sid">The ACE SID</param>
-        public void AddAccessDeniedAce(GenericAccessRights mask, AceFlags flags, Sid sid)
-        {
-            AddAccessDeniedAce((uint)mask, flags, sid);
-        }
-
-        /// <summary>
-        /// Add an access denied ace to the ACL
-        /// </summary>
-        /// <param name="mask">The ACE access mask</param>
-        /// <param name="sid">The ACE SID</param>
-        public void AddAccessDeniedAce(uint mask, Sid sid)
-        {
-            AddAccessDeniedAce(mask, AceFlags.None, sid);
-        }
-
-        /// <summary>
-        /// Add an access denied ace to the ACL
-        /// </summary>
-        /// <param name="mask">The ACE access mask</param>
-        /// <param name="sid">The ACE SID</param>
-        public void AddAccessDeniedAce(GenericAccessRights mask, Sid sid)
+        public void AddAccessDeniedAce(AccessMask mask, Sid sid)
         {
             AddAccessDeniedAce(mask, AceFlags.None, sid);
         }
@@ -1388,7 +1292,7 @@ namespace NtApiDotNet
         /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
         /// <returns>The allowed access mask as a unsigned integer.</returns>
         /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
-        public static GenericAccessRights GetAllowedAccess(SecurityDescriptor sd, NtToken token, 
+        public static AccessMask GetAllowedAccess(SecurityDescriptor sd, NtToken token, 
             AccessMask access_rights, GenericMapping generic_mapping)
         {
             if (sd == null)
@@ -1405,7 +1309,7 @@ namespace NtApiDotNet
             {
                 using (NtToken imp_token = token.DuplicateToken(SecurityImpersonationLevel.Identification))
                 {
-                    GenericAccessRights granted_access;
+                    AccessMask granted_access;
                     NtStatus result_status;
                     using (var privs = new SafePrivilegeSetBuffer())
                     {
@@ -1417,7 +1321,7 @@ namespace NtApiDotNet
                         {
                             return granted_access;
                         }
-                        return 0;
+                        return AccessMask.Empty;
                     }
                 }
             }

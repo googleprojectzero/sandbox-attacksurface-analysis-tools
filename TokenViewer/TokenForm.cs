@@ -191,7 +191,7 @@ namespace TokenViewer
                     }
                     else
                     {
-                        GenericAccessRights generic = (GenericAccessRights)ace.Mask;
+                        GenericAccessRights generic = ace.Mask.ToGenericAccess();
                         maskstr = generic.ToString();
                     }
 
