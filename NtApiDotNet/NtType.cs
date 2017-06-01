@@ -172,6 +172,14 @@ namespace NtApiDotNet
         /// <returns>True if it has write permissions</returns>
         public bool HasWritePermission(AccessMask access_mask)
         {
+            // We consider here that Delete, WriteDac and WriteOwner are also write permissions.
+            if ((access_mask & (GenericAccessRights.WriteDac 
+                                | GenericAccessRights.WriteOwner 
+                                | GenericAccessRights.Delete)).HasAccess)
+            {
+                return true;
+            }
+
             return GenericMapping.HasWrite(access_mask);
         }
 
