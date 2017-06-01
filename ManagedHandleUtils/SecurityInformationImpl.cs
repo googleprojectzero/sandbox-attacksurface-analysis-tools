@@ -163,7 +163,7 @@ namespace SandboxAnalysisUtils
         {
             SiObjectInfo object_info = new SiObjectInfo();
             SiObjectInfoFlags flags = SiObjectInfoFlags.SI_ADVANCED;
-            if (_read_only || _handle.IsAccessGrantedRaw(GenericAccessRights.WriteDac))
+            if (_read_only || _handle.IsAccessMaskGranted(GenericAccessRights.WriteDac))
             {
                 flags |= SiObjectInfoFlags.SI_READONLY;
             }

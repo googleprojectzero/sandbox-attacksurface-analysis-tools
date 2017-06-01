@@ -2343,7 +2343,7 @@ namespace NtApiDotNet
         {
             FileAccess access = FileAccess.Read;
 
-            if (NtType.HasWritePermission(GrantedAccessRaw))
+            if (NtType.HasWritePermission(GrantedAccessMask))
             {
                 access = FileAccess.ReadWrite;
             }

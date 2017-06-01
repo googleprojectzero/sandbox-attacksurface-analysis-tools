@@ -74,12 +74,12 @@ namespace CheckFileAccess
                     if (is_dir && _dir_filter != 0)
                     {
                         granted_access = NtSecurity.GetAllowedAccess(_token, _type, 
-                            _dir_filter.ToGenericAccess(), sd.ToByteArray());
+                            _dir_filter, sd.ToByteArray());
                     }
                     else if (!is_dir && _file_filter != 0)
                     {
                         granted_access = NtSecurity.GetAllowedAccess(_token, _type, 
-                            _file_filter.ToGenericAccess(), sd.ToByteArray());
+                            _file_filter, sd.ToByteArray());
                     }
                     else
                     {

@@ -202,20 +202,20 @@ namespace CheckServiceAccess
         static GenericMapping GetSCMGenericMapping()
         {
             GenericMapping mapping = new GenericMapping();
-            mapping.GenericRead = (ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.EnumerateService | ServiceControlManagerAccessRights.QueryLockStatus).ToGenericAccess();
-            mapping.GenericWrite = (ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.CreateService | ServiceControlManagerAccessRights.ModifyBootConfig).ToGenericAccess();
-            mapping.GenericExecute = (ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.Lock).ToGenericAccess();
-            mapping.GenericAll = ServiceControlManagerAccessRights.All.ToGenericAccess();
+            mapping.GenericRead = ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.EnumerateService | ServiceControlManagerAccessRights.QueryLockStatus;
+            mapping.GenericWrite = ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.CreateService | ServiceControlManagerAccessRights.ModifyBootConfig;
+            mapping.GenericExecute = ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.Lock;
+            mapping.GenericAll = ServiceControlManagerAccessRights.All;
             return mapping;
         }
 
         static GenericMapping GetServiceGenericMapping()
         {
             GenericMapping mapping = new GenericMapping();
-            mapping.GenericRead = (ServiceAccessRights.ReadControl | ServiceAccessRights.QueryConfig | ServiceAccessRights.QueryStatus | ServiceAccessRights.Interrogate | ServiceAccessRights.EnumerateDependents).ToGenericAccess();
-            mapping.GenericWrite = (ServiceAccessRights.ReadControl | ServiceAccessRights.ChangeConfig).ToGenericAccess();
-            mapping.GenericExecute = (ServiceAccessRights.ReadControl | ServiceAccessRights.Start | ServiceAccessRights.Stop | ServiceAccessRights.PauseContinue | ServiceAccessRights.UserDefinedControl).ToGenericAccess();
-            mapping.GenericAll = ServiceAccessRights.All.ToGenericAccess();
+            mapping.GenericRead = ServiceAccessRights.ReadControl | ServiceAccessRights.QueryConfig | ServiceAccessRights.QueryStatus | ServiceAccessRights.Interrogate | ServiceAccessRights.EnumerateDependents;
+            mapping.GenericWrite = ServiceAccessRights.ReadControl | ServiceAccessRights.ChangeConfig;
+            mapping.GenericExecute = ServiceAccessRights.ReadControl | ServiceAccessRights.Start | ServiceAccessRights.Stop | ServiceAccessRights.PauseContinue | ServiceAccessRights.UserDefinedControl;
+            mapping.GenericAll = ServiceAccessRights.All;
             return mapping;
         }
 

@@ -62,7 +62,7 @@ namespace CheckRegistryAccess
             if (_key_rights != 0)
             {
                 granted_access = NtSecurity.GetAllowedAccess(_token, _type, 
-                    _key_rights.ToGenericAccess(), sd.ToByteArray());
+                    _key_rights, sd.ToByteArray());
             }
             else
             {

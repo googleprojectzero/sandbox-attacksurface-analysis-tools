@@ -91,7 +91,7 @@ namespace CheckObjectManagerAccess
                     if (_dir_rights != 0)
                     {
                         granted_access = NtSecurity.GetAllowedAccess(_token, type, 
-                            _dir_rights.ToGenericAccess(), sd);
+                            _dir_rights, sd);
                     }
                     else
                     {

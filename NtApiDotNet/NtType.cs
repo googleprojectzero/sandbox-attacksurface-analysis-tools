@@ -73,7 +73,7 @@ namespace NtApiDotNet
         /// <summary>
         /// The valid access mask
         /// </summary>
-        public uint ValidAccess { get; private set; }
+        public AccessMask ValidAccess { get; private set; }
         /// <summary>
         /// True if the object needs security even if unnamed
         /// </summary>
@@ -156,49 +156,43 @@ namespace NtApiDotNet
         public int Index { get; private set; }
 
         /// <summary>
-        /// Checks if a access mask represents a read permission on this type
+        /// Checks if an access mask represents a read permission on this type
         /// </summary>
         /// <param name="access_mask">The access mask to check</param>
         /// <returns>True if it has read permissions</returns>
         public bool HasReadPermission(AccessMask access_mask)
         {
-            access_mask = GenericMapping.MapMask(access_mask);
-            return (access_mask & GenericMapping.GenericRead).HasAccess;
+            return GenericMapping.HasRead(access_mask);
         }
 
         /// <summary>
-        /// Checks if a access mask represents a write permission on this type
+        /// Checks if an access mask represents a write permission on this type
         /// </summary>
         /// <param name="access_mask">The access mask to check</param>
         /// <returns>True if it has write permissions</returns>
         public bool HasWritePermission(AccessMask access_mask)
         {
-            access_mask = GenericMapping.MapMask(access_mask);
-            return (access_mask & GenericMapping.GenericWrite
-                & ~GenericMapping.GenericRead & ~GenericMapping.GenericExecute).HasAccess;
+            return GenericMapping.HasWrite(access_mask);
         }
 
         /// <summary>
-        /// Checks if a access mask represents a execute permission on this type
+        /// Checks if an access mask represents a execute permission on this type
         /// </summary>
         /// <param name="access_mask">The access mask to check</param>
         /// <returns>True if it has execute permissions</returns>
         public bool HasExecutePermission(AccessMask access_mask)
         {
-            access_mask = GenericMapping.MapMask(access_mask);
-            return (access_mask & GenericMapping.GenericExecute 
-                & ~GenericMapping.GenericRead).HasAccess;
+            return GenericMapping.HasExecute(access_mask);
         }
 
         /// <summary>
-        /// Checks if a access mask represents a full permission on this type
+        /// Checks if an access mask represents a full permission on this type
         /// </summary>
         /// <param name="access_mask">The access mask to check</param>
         /// <returns>True if it has full permissions</returns>
         public bool HasFullPermission(AccessMask access_mask)
         {
-            access_mask = GenericMapping.MapMask(access_mask);
-            return (access_mask & GenericMapping.GenericAll) == GenericMapping.GenericAll;
+            return GenericMapping.HasAll(access_mask);
         }
 
         /// <summary>
@@ -209,6 +203,16 @@ namespace NtApiDotNet
         public AccessMask MapGenericRights(AccessMask access_mask)
         {
             return GenericMapping.MapMask(access_mask);
+        }
+
+        /// <summary>
+        /// Checks if an access mask is valid for access of this object type.
+        /// </summary>
+        /// <param name="access_mask">The access mask to check</param>
+        /// <returns>True if it valid access</returns>
+        public bool IsValidAccess(AccessMask access_mask)
+        {
+            return (GenericMapping.MapMask(access_mask) & ~ValidAccess).IsEmpty;
         }
 
         internal NtType(int id, ObjectTypeInformation info)

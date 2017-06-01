@@ -197,7 +197,7 @@ namespace NtApiDotNet
             Handle = handle;
             try
             {
-                CanSynchronize = IsAccessGrantedRaw(GenericAccessRights.Synchronize);
+                CanSynchronize = IsAccessMaskGranted(GenericAccessRights.Synchronize);
             }
             catch (NtException)
             {
@@ -434,11 +434,11 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the granted access as an unsigned integer
         /// </summary>
-        public GenericAccessRights GrantedAccessRaw
+        public AccessMask GrantedAccessMask
         {
             get
             {
-                return NtObjectUtils.ToGenericAccess(QueryBasicInformation().DesiredAccess);
+                return QueryBasicInformation().DesiredAccess;
             }
         }
 
@@ -447,10 +447,9 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="access">The access rights to check</param>
         /// <returns>True if all the access rights are granted</returns>
-        public bool IsAccessGrantedRaw(GenericAccessRights access)
+        public bool IsAccessMaskGranted(AccessMask access)
         {
-            GenericAccessRights granted = GrantedAccessRaw;
-            return (granted & access) == access;
+            return GrantedAccessMask.AllAccessGranted(access);
         }
 
         /// <summary>
@@ -919,6 +918,11 @@ namespace NtApiDotNet
             return (O)Activator.CreateInstance(typeof(O), BindingFlags.NonPublic | BindingFlags.Instance, null, ps, null);
         }
 
+        private static GenericAccessRights ToGenericAccess(IConvertible conv)
+        {
+            return (GenericAccessRights)conv.ToUInt32(null);
+        }
+
         /// <summary>
         /// Duplicate the object with specific access rights
         /// </summary>
@@ -926,7 +930,7 @@ namespace NtApiDotNet
         /// <returns>The duplicated object</returns>
         public O Duplicate(A access)
         {
-            return Create(DuplicateHandle(access.ToGenericAccess()));
+            return Create(DuplicateHandle(ToGenericAccess(access)));
         }
 
         /// <summary>
@@ -960,7 +964,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return UIntToAccess(GrantedAccessRaw);
+                return GrantedAccessMask.ToSpecificAccess<A>();
             }
         }
 
@@ -972,14 +976,13 @@ namespace NtApiDotNet
         /// <returns>Returns 0 if can't read the security descriptor.</returns>
         public A GetMaximumAccess(NtToken token)
         {
-            if (!IsAccessGrantedRaw(GenericAccessRights.ReadControl))
+            if (!IsAccessMaskGranted(GenericAccessRights.ReadControl))
             {
-                return UIntToAccess(0);
+                return default(A);
             }
 
-            GenericAccessRights ret = NtSecurity.GetMaximumAccess(SecurityDescriptor,
-                                                token, NtType.GenericMapping).ToGenericAccess();
-            return UIntToAccess(ret);
+            return NtSecurity.GetMaximumAccess(SecurityDescriptor,
+                                    token, NtType.GenericMapping).ToSpecificAccess<A>();
         }
 
         /// <summary>
@@ -1002,7 +1005,7 @@ namespace NtApiDotNet
         /// <returns>True if all access rights are granted</returns>
         public bool IsAccessGranted(A access)
         {
-            return IsAccessGrantedRaw(access.ToGenericAccess());
+            return IsAccessMaskGranted(ToGenericAccess(access));
         }
 
         /// <summary>
@@ -1042,7 +1045,7 @@ namespace NtApiDotNet
         public static NtStatus DuplicateFrom(NtProcess process, IntPtr handle, 
             A access, DuplicateObjectOptions options, out O obj)
         {
-            return DuplicateFrom(process, handle, access.ToGenericAccess(), options, out obj);
+            return DuplicateFrom(process, handle, ToGenericAccess(access), options, out obj);
         }
 
         /// <summary>

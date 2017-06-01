@@ -394,6 +394,18 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Convert to a specific access right.
+        /// </summary>
+        /// <param name="enum_type">The type of enumeration to convert to.</param>
+        /// <returns>The converted value.</returns>
+        public object ToSpecificAccess(Type enum_type)
+        {
+            if(!enum_type.IsEnum)
+                throw new ArgumentException("Type must be an Enum", "enum_type");
+            return Enum.ToObject(enum_type, Access);
+        }
+
+        /// <summary>
         /// Get whether this access mask is empty (i.e. it's 0)
         /// </summary>
         public bool IsEmpty
@@ -407,6 +419,26 @@ namespace NtApiDotNet
         public bool HasAccess
         {
             get { return !IsEmpty; }
+        }
+
+        /// <summary>
+        /// Get whether the current access mask is granted specific permissions.
+        /// </summary>
+        /// <param name="mask">The access mask to check</param>
+        /// <returns>True one or more access granted.</returns>
+        public bool AccessGranted(AccessMask mask)
+        {
+            return (Access & mask.Access) != 0;
+        }
+
+        /// <summary>
+        /// Get whether the current access mask is granted all specific permissions.
+        /// </summary>
+        /// <param name="mask">The access mask to check</param>
+        /// <returns>True access all is granted.</returns>
+        public bool AllAccessGranted(AccessMask mask)
+        {
+            return (Access & mask.Access) == mask;
         }
 
         /// <summary>
@@ -565,14 +597,55 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get whether this generic mapping gives read access.
+        /// </summary>
+        /// <param name="mask">The mask to check against.</param>
+        /// <returns>True if we have read access.</returns>
+        public bool HasRead(AccessMask mask)
+        {
+            return (MapMask(mask) & GenericRead).HasAccess;
+        }
+
+        /// <summary>
+        /// Get whether this generic mapping gives write access.
+        /// </summary>
+        /// <param name="mask">The mask to check against.</param>
+        /// <returns>True if we have write access.</returns>
+        public bool HasWrite(AccessMask mask)
+        {
+            return (MapMask(mask) & ~GenericRead & 
+                ~GenericExecute & GenericWrite).HasAccess;
+        }
+
+        /// <summary>
+        /// Get whether this generic mapping gives execute access.
+        /// </summary>
+        /// <param name="mask">The mask to check against.</param>
+        /// <returns>True if we have execute access.</returns>
+        public bool HasExecute(AccessMask mask)
+        {
+            return (MapMask(mask) & ~GenericRead & GenericExecute).HasAccess;
+        }
+
+        /// <summary>
+        /// Get whether this generic mapping gives all access.
+        /// </summary>
+        /// <param name="mask">The mask to check against.</param>
+        /// <returns>True if we have all access.</returns>
+        public bool HasAll(AccessMask mask)
+        {
+            return MapMask(mask) == GenericAll;
+        }
+
+        /// <summary>
         /// Convert generic mapping to a string.
         /// </summary>
         /// <returns>The generic mapping as a string.</returns>
         public override string ToString()
         {
             return String.Format("R:{0:X08} W:{1:X08} E:{2:X08} A:{3:X08}",
-                GenericRead.Access, GenericWrite.Access, 
-                GenericExecute.Access, GenericAll.Access);
+                GenericRead, GenericWrite, 
+                GenericExecute, GenericAll);
         }
     }
 
