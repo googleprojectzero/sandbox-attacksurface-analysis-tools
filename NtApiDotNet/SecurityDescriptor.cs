@@ -376,7 +376,7 @@ namespace NtApiDotNet
             return new SafeHGlobalBuffer(ToByteArray());
         }
 
-        private void AddAce(AceType type, uint mask, AceFlags flags, Sid sid)
+        private void AddAce(AceType type, AccessMask mask, AceFlags flags, Sid sid)
         {
             if (Dacl == null)
             {
@@ -386,15 +386,24 @@ namespace NtApiDotNet
             Dacl.Add(new Ace(type, flags, mask, sid));
         }
 
-        /// <summary>
-        /// Add an access allowed ACE to the DACL
-        /// </summary>
-        /// <param name="mask">The access mask</param>
-        /// <param name="flags">The ACE flags</param>
-        /// <param name="sid">The SID in SDDL form</param>
-        public void AddAccessAllowedAce(GenericAccessRights mask, AceFlags flags, string sid)
+        private void AddAccessDeniedAceInternal(AccessMask mask, AceFlags flags, Sid sid)
         {
-            AddAccessAllowedAce((uint)mask, flags, sid);
+            AddAce(AceType.Denied, mask, flags, sid);
+        }
+
+        private void AddAccessDeniedAceInternal(AccessMask mask, AceFlags flags, string sid)
+        {
+            AddAce(AceType.Denied, mask, flags, NtSecurity.SidFromSddl(sid));
+        }
+
+        private void AddAccessAllowedAceInternal(AccessMask mask, AceFlags flags, Sid sid)
+        {
+            AddAce(AceType.Allowed, mask, flags, sid);
+        }
+
+        private void AddAccessAllowedAceInternal(AccessMask mask, AceFlags flags, string sid)
+        {
+            AddAce(AceType.Allowed, mask, flags, NtSecurity.SidFromSddl(sid));
         }
 
         /// <summary>
@@ -403,7 +412,7 @@ namespace NtApiDotNet
         /// <param name="mask">The access mask</param>
         /// <param name="flags">The ACE flags</param>
         /// <param name="sid">The SID in SDDL form</param>
-        public void AddAccessAllowedAce(uint mask, AceFlags flags, string sid)
+        public void AddAccessAllowedAce(AccessMask mask, AceFlags flags, string sid)
         {
             AddAccessAllowedAceInternal(mask, flags, sid);
         }
@@ -413,19 +422,9 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="mask">The access mask</param>
         /// <param name="sid">The SID in SDDL form</param>
-        public void AddAccessAllowedAce(uint mask, string sid)
+        public void AddAccessAllowedAce(AccessMask mask, string sid)
         {
             AddAccessAllowedAceInternal(mask, AceFlags.None, sid);
-        }
-
-        /// <summary>
-        /// Add an access allowed ACE to the DACL
-        /// </summary>
-        /// <param name="mask">The access mask</param>
-        /// <param name="sid">The SID in SDDL form</param>
-        public void AddAccessAllowedAce(GenericAccessRights mask, string sid)
-        {
-            AddAccessAllowedAceInternal((uint)mask, AceFlags.None, sid);
         }
 
         /// <summary>
@@ -434,18 +433,7 @@ namespace NtApiDotNet
         /// <param name="mask">The access mask</param>
         /// <param name="flags">The ACE flags</param>
         /// <param name="sid">The SID</param>
-        public void AddAccessAllowedAce(GenericAccessRights mask, AceFlags flags, Sid sid)
-        {
-            AddAccessAllowedAceInternal((uint)mask, flags, sid);
-        }
-
-        /// <summary>
-        /// Add an access allowed ACE to the DACL
-        /// </summary>
-        /// <param name="mask">The access mask</param>
-        /// <param name="flags">The ACE flags</param>
-        /// <param name="sid">The SID</param>
-        public void AddAccessAllowedAce(uint mask, AceFlags flags, Sid sid)
+        public void AddAccessAllowedAce(AccessMask mask, AceFlags flags, Sid sid)
         {
             AddAccessAllowedAceInternal(mask, AceFlags.None, sid);
         }
@@ -455,29 +443,9 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="mask">The access mask</param>
         /// <param name="sid">The SID</param>
-        public void AddAccessAllowedAce(uint mask, Sid sid)
+        public void AddAccessAllowedAce(AccessMask mask, Sid sid)
         {
             AddAccessAllowedAceInternal(mask, AceFlags.None, sid);
-        }
-
-        /// <summary>
-        /// Add an access allowed ACE to the DACL
-        /// </summary>
-        /// <param name="mask">The access mask</param>
-        /// <param name="sid">The SID</param>
-        public void AddAccessAllowedAce(GenericAccessRights mask, Sid sid)
-        {
-            AddAccessAllowedAceInternal((uint)mask, AceFlags.None, sid);
-        }
-
-        private void AddAccessAllowedAceInternal(uint mask, AceFlags flags, Sid sid)
-        {
-            AddAce(AceType.Allowed, mask, flags, sid);
-        }
-
-        private void AddAccessAllowedAceInternal(uint mask, AceFlags flags, string sid)
-        {
-            AddAce(AceType.Allowed, mask, flags, NtSecurity.SidFromSddl(sid));
         }
 
         /// <summary>
@@ -486,7 +454,7 @@ namespace NtApiDotNet
         /// <param name="mask">The access mask</param>
         /// <param name="flags">The ACE flags</param>
         /// <param name="sid">The SID in SDDL form</param>
-        public void AddAccessDeniedAce(uint mask, AceFlags flags, string sid)
+        public void AddAccessDeniedAce(AccessMask mask, AceFlags flags, string sid)
         {
             AddAccessDeniedAceInternal(mask, flags, sid);
         }
@@ -495,50 +463,8 @@ namespace NtApiDotNet
         /// Add an access denied ACE to the DACL
         /// </summary>
         /// <param name="mask">The access mask</param>
-        /// <param name="flags">The ACE flags</param>
         /// <param name="sid">The SID in SDDL form</param>
-        public void AddAccessDeniedAce(GenericAccessRights mask, AceFlags flags, string sid)
-        {
-            AddAccessDeniedAceInternal((uint)mask, flags, sid);
-        }
-
-        /// <summary>
-        /// Add an access denied ACE to the DACL
-        /// </summary>
-        /// <param name="mask">The access mask</param>
-        /// <param name="sid">The SID in SDDL form</param>
-        public void AddAccessDeniedAce(uint mask, string sid)
-        {
-            AddAccessDeniedAceInternal(mask, AceFlags.None, sid);
-        }
-
-        /// <summary>
-        /// Add an access denied ACE to the DACL
-        /// </summary>
-        /// <param name="mask">The access mask</param>
-        /// <param name="sid">The SID in SDDL form</param>
-        public void AddAccessDeniedAce(GenericAccessRights mask, string sid)
-        {
-            AddAccessDeniedAceInternal((uint)mask, AceFlags.None, sid);
-        }
-
-        /// <summary>
-        /// Add an access denied ACE to the DACL
-        /// </summary>
-        /// <param name="mask">The access mask</param>
-        /// <param name="flags">The ACE flags</param>
-        /// <param name="sid">The SID</param>
-        public void AddAccessDeniedAce(GenericAccessRights mask, AceFlags flags, Sid sid)
-        {
-            AddAccessDeniedAceInternal((uint)mask, flags, sid);
-        }
-
-        /// <summary>
-        /// Add an access denied ACE to the DACL
-        /// </summary>
-        /// <param name="mask">The access mask</param>
-        /// <param name="sid">The SID</param>
-        public void AddAccessDeniedAce(uint mask, Sid sid)
+        public void AddAccessDeniedAce(AccessMask mask, string sid)
         {
             AddAccessDeniedAceInternal(mask, AceFlags.None, sid);
         }
@@ -548,9 +474,9 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="mask">The access mask</param>
         /// <param name="sid">The SID</param>
-        public void AddAccessDeniedAce(GenericAccessRights mask, Sid sid)
+        public void AddAccessDeniedAce(AccessMask mask, Sid sid)
         {
-            AddAccessDeniedAceInternal((uint)mask, AceFlags.None, sid);
+            AddAccessDeniedAceInternal(mask, AceFlags.None, sid);
         }
 
         /// <summary>
@@ -559,20 +485,9 @@ namespace NtApiDotNet
         /// <param name="mask">The access mask</param>
         /// <param name="flags">The ACE flags</param>
         /// <param name="sid">The SID</param>
-        public void AddAccessDeniedAce(uint mask, AceFlags flags, Sid sid)
+        public void AddAccessDeniedAce(AccessMask mask, AceFlags flags, Sid sid)
         {
             AddAccessDeniedAceInternal(mask, flags, sid);
-        }
-
-
-        private void AddAccessDeniedAceInternal(uint mask, AceFlags flags, Sid sid)
-        {
-            AddAce(AceType.Denied, mask, flags, sid);
-        }
-
-        private void AddAccessDeniedAceInternal(uint mask, AceFlags flags, string sid)
-        {
-            AddAce(AceType.Denied, mask, flags, NtSecurity.SidFromSddl(sid));
         }
 
         /// <summary>
