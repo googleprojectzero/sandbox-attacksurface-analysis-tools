@@ -25,10 +25,9 @@ namespace CheckRegistryAccess
         static bool _recursive = false;
         static bool _print_sddl = false;
         static bool _show_write_only = false;
-        static HashSet<string> _walked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);        
-        static NtType _type;
-        static NtToken _token;
+        static HashSet<string> _walked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         static uint _key_rights = 0;
+        static bool _map_to_generic = false;
 
         static void ShowHelp(OptionSet p)
         {
@@ -39,18 +38,9 @@ namespace CheckRegistryAccess
             Console.WriteLine(@"Key names can be in win32 form (hkey_local_machine\blah) or native (\Registry\Machine\blah");
         }
 
-        static string AccessMaskToString(AccessMask granted_access)
+        static void CheckAccess(NtToken token, NtKey key)
         {
-            if (_type.HasFullPermission(granted_access))
-            {
-                return "Full Permission";
-            }
-
-            return granted_access.ToSpecificAccess<KeyAccessRights>().ToString();
-        }
-
-        static void CheckAccess(NtKey key)
-        {
+            NtType type = key.NtType;
             if (!key.IsAccessGranted(KeyAccessRights.ReadControl))
             {
                 return;
@@ -61,12 +51,12 @@ namespace CheckRegistryAccess
 
             if (_key_rights != 0)
             {
-                granted_access = NtSecurity.GetAllowedAccess(_token, _type, 
-                    _key_rights, sd.ToByteArray());
+                granted_access = NtSecurity.GetAllowedAccess(token, type, 
+                            _key_rights, sd.ToByteArray());
             }
             else
             {
-                granted_access = NtSecurity.GetMaximumAccess(_token, _type, sd.ToByteArray());
+                granted_access = NtSecurity.GetMaximumAccess(token, type, sd.ToByteArray());
             }
 
             if (!granted_access.IsEmpty)
@@ -74,12 +64,12 @@ namespace CheckRegistryAccess
                 // As we can get all the rights for the key get maximum
                 if (_key_rights != 0)
                 {
-                    granted_access = NtSecurity.GetMaximumAccess(_token, _type, sd.ToByteArray());
+                    granted_access = NtSecurity.GetMaximumAccess(token, type, sd.ToByteArray());
                 }
 
-                if (!_show_write_only || _type.HasWritePermission(granted_access))
+                if (!_show_write_only || type.HasWritePermission(granted_access))
                 {
-                    Console.WriteLine("{0} : {1:X08} {2}", key.FullPath, granted_access, AccessMaskToString(granted_access));
+                    Console.WriteLine("{0} : {1:X08} {2}", key.FullPath, granted_access, AccessMaskToString(granted_access, type));
                     if (_print_sddl)
                     {
                         Console.WriteLine("{0}", sd.ToSddl());
@@ -88,7 +78,12 @@ namespace CheckRegistryAccess
             }
         }
 
-        static void DumpKey(NtKey key)
+        private static string AccessMaskToString(AccessMask granted_access, NtType type)
+        {
+            return NtObjectUtils.GrantedAccessAsString(granted_access, type.GenericMapping, typeof(KeyAccessRights), _map_to_generic);
+        }
+
+        static void DumpKey(NtToken token, NtKey key)
         {
             string key_name = key.FullPath;
             if (_walked.Contains(key_name))
@@ -100,7 +95,7 @@ namespace CheckRegistryAccess
 
             try
             {
-                CheckAccess(key);
+                CheckAccess(token, key);
 
                 if (_recursive && key.IsAccessGranted(KeyAccessRights.EnumerateSubKeys))
                 {
@@ -108,7 +103,7 @@ namespace CheckRegistryAccess
                     {
                         foreach (NtKey subkey in keys)
                         {
-                            DumpKey(subkey);
+                            DumpKey(token, subkey);
                         }
                     }
                 }
@@ -119,49 +114,11 @@ namespace CheckRegistryAccess
             }
         }
 
-        static string MapKeyName(string fullpath)
-        {
-            string mapped = "";
-            string[] nameparts = fullpath.Split(new char[] { '\\' }, 2);
-
-            if (nameparts.Length == 0)
-            {
-                throw new ArgumentException("Invalid key name");
-            }
-
-            switch (nameparts[0].ToLower())
-            {
-                case "hkey_local_machine":
-                    mapped = @"\Registry\MACHINE";
-                    break;
-                case "hkey_current_user":
-                    mapped = @"\Registry\User\" + NtToken.CurrentUser.Sid.ToString();
-                    break;
-                case "hkey_users":
-                    mapped = @"\Registry\User";
-                    break;
-                case "hkey_classes_root":
-                    mapped = @"\Registry\MACHINE\Software\Classes";
-                    break;
-                default:
-                    throw new ArgumentException(String.Format("Invalid root keyname {0}", nameparts[0]));
-            }
-
-            if(nameparts.Length > 1)
-            {
-                return mapped + "\\" + nameparts[1];
-            }
-            else
-            {
-                return mapped + "\\";
-            }
-        }
-
         static NtKey OpenKey(string name)
         {
             if (!name.StartsWith(@"\"))
             {
-                name = MapKeyName(name);
+                name = NtKeyUtils.Win32KeyNameToNt(name);
             }
 
             return NtKey.Open(name, null, KeyAccessRights.MaximumAllowed);
@@ -189,6 +146,7 @@ namespace CheckRegistryAccess
                         { "k=", String.Format("Filter on a specific right [{0}]", 
                             String.Join(",", Enum.GetNames(typeof(KeyAccessRights)))), v => _key_rights |= ParseRight(v, typeof(KeyAccessRights)) },  
                         { "x=", "Specify a base path to exclude from recursive search", v => _walked.Add(v.ToLower()) },
+                        { "g", "Map access mask to generic rights.", v => _map_to_generic = v != null },
                         { "h|help",  "show this message and exit", v => show_help = v != null },
                     };
 
@@ -200,28 +158,28 @@ namespace CheckRegistryAccess
                 }
                 else
                 {
-                    _type = NtType.GetTypeByName("key");
-                    _token = NtToken.OpenProcessToken(pid);
-
-                    foreach (string path in paths)
+                    using (NtToken token = NtToken.OpenProcessToken(pid))
                     {
-                        try
+                        foreach (string path in paths)
                         {
-                            using (NtKey key = OpenKey(path))
+                            try
                             {
-                                DumpKey(key);
+                                using (NtKey key = OpenKey(path))
+                                {
+                                    DumpKey(token, key);
+                                }
                             }
-                        }
-                        catch (NtException ex)
-                        {
-                            Console.WriteLine("Error opening key: {0} - {1}", path, ex.Message);
+                            catch (NtException ex)
+                            {
+                                Console.Error.WriteLine("Error opening key: {0} - {1}", path, ex.Message);
+                            }
                         }
                     }
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                Console.Error.WriteLine(e.Message);
             }
         }
     }

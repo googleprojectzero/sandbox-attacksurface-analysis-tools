@@ -32,6 +32,7 @@ namespace CheckFileAccess
         static uint _file_filter;
         static uint _dir_filter;
         static bool _quiet;
+        static bool _map_to_generic;
         
         static void ShowHelp(OptionSet p)
         {
@@ -44,25 +45,12 @@ namespace CheckFileAccess
 
         static string AccessMaskToString(AccessMask granted_access, bool directory)
         {
-            if (_type.HasFullPermission(granted_access))
-            {
-                return "Full Permission";
-            }
-            
-            if (directory)
-            {
-                FileDirectoryAccessRights rights = (FileDirectoryAccessRights)granted_access.Access;
-                return rights.ToString();
-            }
-            else
-            {
-                FileAccessRights rights = (FileAccessRights)granted_access.Access;
-                return rights.ToString();
-            }
+            return NtObjectUtils.GrantedAccessAsString(granted_access,
+                _type.GenericMapping, directory ? typeof(FileDirectoryAccessRights) : typeof(FileAccessRights), _map_to_generic);
         }
 
         static void CheckAccess(string full_path, NtFile entry)
-        {
+        {   
             try
             {
                 SecurityDescriptor sd = entry.GetSecurityDescriptor(SecurityInformation.AllBasic);
@@ -195,6 +183,7 @@ namespace CheckFileAccess
                                 String.Join(",", Enum.GetNames(typeof(FileDirectoryAccessRights)))), v => _dir_filter |= ParseRight(v, typeof(FileDirectoryAccessRights)) },
                             { "x=", "Specify a base path to exclude from recursive search", v => _walked.Add(ConvertPath(v)) },
                             { "q", "Don't print errors", v => _quiet = v != null },
+                            { "g", "Map access mask to generic rights.", v => _map_to_generic = v != null },
                             { "nofiles", "Don't show permission of files.", v => no_files = v != null },
                             { "depth", "Specify a recursive depth", v => recursive_depth = int.Parse(v) },
                             { "h|help",  "show this message and exit", v => show_help = v != null },

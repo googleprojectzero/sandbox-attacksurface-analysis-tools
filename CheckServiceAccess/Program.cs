@@ -212,9 +212,11 @@ namespace CheckServiceAccess
         static GenericMapping GetServiceGenericMapping()
         {
             GenericMapping mapping = new GenericMapping();
-            mapping.GenericRead = ServiceAccessRights.ReadControl | ServiceAccessRights.QueryConfig | ServiceAccessRights.QueryStatus | ServiceAccessRights.Interrogate | ServiceAccessRights.EnumerateDependents;
+            mapping.GenericRead = ServiceAccessRights.ReadControl | ServiceAccessRights.QueryConfig 
+                | ServiceAccessRights.QueryStatus | ServiceAccessRights.Interrogate | ServiceAccessRights.EnumerateDependents;
             mapping.GenericWrite = ServiceAccessRights.ReadControl | ServiceAccessRights.ChangeConfig;
-            mapping.GenericExecute = ServiceAccessRights.ReadControl | ServiceAccessRights.Start | ServiceAccessRights.Stop | ServiceAccessRights.PauseContinue | ServiceAccessRights.UserDefinedControl;
+            mapping.GenericExecute = ServiceAccessRights.ReadControl | ServiceAccessRights.Start 
+                | ServiceAccessRights.Stop | ServiceAccessRights.PauseContinue | ServiceAccessRights.UserDefinedControl;
             mapping.GenericAll = ServiceAccessRights.All;
             return mapping;
         }
@@ -236,22 +238,25 @@ namespace CheckServiceAccess
             if (specific_rights.HasAccess)
             {
                 granted_access = NtSecurity.GetAllowedAccess(sd, token, specific_rights, generic_mapping);
+                // As we can get all the rights for the key get maximum
+                if (granted_access.HasAccess)
+                {
+                    granted_access = NtSecurity.GetMaximumAccess(sd, token, generic_mapping);
+                }
             }
             else
             {
                 granted_access = NtSecurity.GetMaximumAccess(sd, token, generic_mapping);
             }
 
-            if (granted_access.HasAccess)
-            {
-                // As we can get all the rights for the key get maximum
-                if (specific_rights.HasAccess)
-                {
-                    granted_access = NtSecurity.GetMaximumAccess(sd, token, generic_mapping);
-                }
-            }
-
             return granted_access;
+        }
+
+        static string GrantedAccessToString(AccessMask granted_access, bool scm, bool map_to_generic)
+        {
+            GenericMapping generic_mapping = scm ? GetSCMGenericMapping() : GetServiceGenericMapping();
+            Type enum_type = scm ? typeof(ServiceControlManagerAccessRights) : typeof(ServiceAccessRights);
+            return NtObjectUtils.GrantedAccessAsString(granted_access, generic_mapping, enum_type, map_to_generic);
         }
 
         static SecurityDescriptor GetServiceSecurityDescriptor(SafeServiceHandle handle)
@@ -274,13 +279,12 @@ namespace CheckServiceAccess
         static bool HasWriteAccess(AccessMask granted_access)
         {
             GenericMapping generic_mapping = GetServiceGenericMapping();
-            if ((granted_access & (GenericAccessRights.WriteDac | GenericAccessRights.WriteOwner)).HasAccess)
+            if ((granted_access & (GenericAccessRights.WriteDac | GenericAccessRights.WriteOwner | GenericAccessRights.Delete)).HasAccess)
             {
                 return true;
             }
 
-            granted_access &= new AccessMask(0xFFFF);
-            return (granted_access & generic_mapping.GenericWrite).HasAccess;
+            return generic_mapping.HasWrite(granted_access);
         }
 
         static void ReadArray<T>(IntPtr ptr, int count, out T[] ret) where T : struct
@@ -459,7 +463,7 @@ namespace CheckServiceAccess
             }
         }
 
-        static void DumpService(SafeServiceHandle scm, string name, NtToken token, ServiceAccessRights service_rights, bool show_write_only, bool print_sddl, bool dump_triggers)
+        static void DumpService(SafeServiceHandle scm, string name, NtToken token, ServiceAccessRights service_rights, bool show_write_only, bool print_sddl, bool dump_triggers, bool map_to_generic)
         {
             using (SafeServiceHandle service = OpenService(scm, name, ServiceAccessRights.QueryConfig | ServiceAccessRights.ReadControl))
             {
@@ -471,7 +475,8 @@ namespace CheckServiceAccess
 
                     if (granted_access.HasAccess && !show_write_only || HasWriteAccess(granted_access))
                     {
-                        Console.WriteLine("{0} Granted Access: {1}", name, granted_access);
+                        Console.WriteLine("{0} Granted Access: {1:X08} {2}", name, granted_access, 
+                            GrantedAccessToString(granted_access, false, map_to_generic));
                         if (print_sddl)
                         {
                             Console.WriteLine("{0} SDDL: {1}", name, sd.ToSddl());
@@ -505,6 +510,7 @@ namespace CheckServiceAccess
             bool dump_scm = false;
             ServiceAccessRights service_rights = 0;
             bool quiet = false;
+            bool map_to_generic = false;
 
             try
             {
@@ -517,6 +523,7 @@ namespace CheckServiceAccess
                             v => service_rights |= ParseRight<ServiceAccessRights>(v) },
                         { "t", "Dump trigger information for services", v => dump_triggers = v != null },
                         { "scm", "Dump SCM security information", v => dump_scm = v != null },
+                        { "g", "Map access mask to generic rights.", v => map_to_generic = v != null },
                         { "q", "Don't print our errors", v => quiet = v != null },
                         { "h|help",  "show this message and exit", v => show_help = v != null },
                     };
@@ -536,13 +543,17 @@ namespace CheckServiceAccess
 
                     using (NtToken token = NtToken.OpenProcessToken(pid))
                     {
-                        using (SafeServiceHandle scm = OpenSCManager(null, null, ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.ReadControl))
+                        using (SafeServiceHandle scm = OpenSCManager(null, null, 
+                            ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.ReadControl))
                         {
                             if (dump_scm)
                             {
                                 SecurityDescriptor sd = GetServiceSecurityDescriptor(scm);
-                                Console.WriteLine("SCM Granted Access: {0}", GetGrantedAccess(sd, token, AccessMask.Empty,
-                                    GetSCMGenericMapping()).ToSpecificAccess<ServiceControlManagerAccessRights>());
+                                AccessMask granted_access = GetGrantedAccess(sd, token, AccessMask.Empty,
+                                    GetSCMGenericMapping());
+
+                                Console.WriteLine("SCM Granted Access: {0:X08} {1}",
+                                    granted_access, GrantedAccessToString(granted_access, true, map_to_generic));
                                 if (print_sddl)
                                 {
                                     Console.WriteLine("SCM SDDL: {0}", sd.ToSddl());
@@ -553,7 +564,9 @@ namespace CheckServiceAccess
                             {
                                 try
                                 {
-                                    DumpService(scm, name, token, service_rights, show_write_only, print_sddl, dump_triggers);
+                                    DumpService(scm, name, token, service_rights, 
+                                        show_write_only, print_sddl, dump_triggers, 
+                                        map_to_generic);
                                 }
                                 catch (Exception ex)
                                 {
