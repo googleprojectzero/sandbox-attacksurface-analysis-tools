@@ -913,7 +913,7 @@ namespace NtApiDotNet
 
         /// <summary>
         /// Get the maximum permission access for this object based on the current token
-        /// and it's security descriptor.
+        /// and its security descriptor.
         /// </summary>
         /// <returns>Returns 0 if can't read the security descriptor.</returns>
         public A GetMaximumAccess()
