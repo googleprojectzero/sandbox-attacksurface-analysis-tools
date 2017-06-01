@@ -30,7 +30,8 @@ namespace CheckProcessAccess
         static bool _dump_token;
         static bool _print_sddl;
         static bool _named_process;
-        static bool _all_threads;        
+        static bool _all_threads;
+        static bool _map_to_generic;
 
         class ThreadEntry
         {
@@ -144,11 +145,11 @@ namespace CheckProcessAccess
                 }
             }
 
-            public string GetGrantedAccessString()
+            public string GetGrantedAccessString(bool map_to_generic)
             {
                 if (Handle != null)
                 {
-                    return Handle.GrantedAccess.ToString();
+                    return Handle.GrantedAccessAsString(map_to_generic);
                 }
                 else
                 {
@@ -188,6 +189,7 @@ namespace CheckProcessAccess
                         { "t", "Dump accessible threads for process", v => _dump_threads = v != null },                        
                         { "k", "Dump tokens for accessible objects", v => _dump_token = v != null },
                         { "a", "Start with all accessible threads instead of processes", v => _dump_threads = _all_threads = v != null },
+                        { "g", "Map access mask to generic rights.", v => _map_to_generic = v != null },
                         { "sddl", "Dump SDDL strings for objects", v => _print_sddl = v != null },
                         { "h|help",  "show this message and exit", 
                            v => show_help = v != null },
@@ -305,7 +307,7 @@ namespace CheckProcessAccess
 
                     foreach (ProcessEntry process in processes)
                     {
-                        Console.WriteLine("{0}: {1} {2}", process.Pid, process.Name, process.GetGrantedAccessString());
+                        Console.WriteLine("{0}: {1} {2}", process.Pid, process.Name, process.GetGrantedAccessString(_map_to_generic));
                         if (_print_sddl && process.Handle.IsAccessGranted(ProcessAccessRights.ReadControl))
                         {
                             Console.WriteLine("SDDL: {0}", process.Handle.GetSddl());
@@ -318,14 +320,14 @@ namespace CheckProcessAccess
                             {
                                 Console.WriteLine("Token SDDL: {0}", process.Token.GetSddl());
                             }
-                            Console.WriteLine("Token Granted Access: {0}", process.Token.GrantedAccess);
+                            Console.WriteLine("Token Granted Access: {0}", process.Token.GrantedAccessAsString(_map_to_generic));
                         }
 
                         if (_dump_threads)
                         {
                             foreach (ThreadEntry thread in process.Threads)
                             {
-                                Console.WriteLine("-- Thread {0}: {1}", thread.Tid, thread.Handle.GrantedAccess);
+                                Console.WriteLine("-- Thread {0}: {1}", thread.Tid, thread.Handle.GrantedAccessAsString(_map_to_generic));
                                 if (_print_sddl && thread.Handle.IsAccessGranted(ThreadAccessRights.ReadControl))
                                 {
                                     Console.WriteLine("---- SDDL: {0}", thread.Handle.GetSddl());

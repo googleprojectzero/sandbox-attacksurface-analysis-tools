@@ -206,6 +206,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Unmap specific access rights to generic access rights for this type
+        /// </summary>
+        /// <param name="access_mask">The access mask to unmap</param>
+        /// <returns>The unmapped access mask</returns>
+        public AccessMask UnmapGenericRights(AccessMask access_mask)
+        {
+            return GenericMapping.UnmapMask(access_mask);
+        }
+
+        /// <summary>
         /// Checks if an access mask is valid for access of this object type.
         /// </summary>
         /// <param name="access_mask">The access mask to check</param>

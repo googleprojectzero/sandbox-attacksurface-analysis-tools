@@ -717,96 +717,22 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Convert an access rights type to a string.
+        /// Convert an enumerable access rights to a string
         /// </summary>
-        /// <param name="t">The enumeration type for the string conversion</param>
-        /// <param name="access">The access mask to convert</param>
-        /// <returns>The string version of the access</returns>
-        public static string AccessRightsToString(Type t, AccessMask access)
+        /// <param name="map_to_generic">True to try and convert to generic rights where possible.</param>
+        /// <returns>The string format of the access rights</returns>
+        public string GrantedAccessAsString(bool map_to_generic)
         {
-            List<string> names = new List<string>();
-            uint remaining = access.Access;
-
-            // If the valid is explicitly defined return it.
-            if (Enum.IsDefined(t, remaining))
-            {
-                return Enum.GetName(t, remaining);
-            }
-
-            for (int i = 0; i < 32; ++i)
-            {
-                uint mask = 1U << i;
-
-                if (mask > remaining)
-                {
-                    break;
-                }
-
-                if (mask == (uint)GenericAccessRights.MaximumAllowed)
-                {
-                    continue;
-                }
-
-                if ((remaining & mask) == 0)
-                {
-                    continue;
-                }
-
-                if (!Enum.IsDefined(t, mask))
-                {
-                    continue;
-                }
-
-                names.Add(Enum.GetName(t, mask));
-
-                remaining = remaining & ~mask;
-            }
-
-            if (remaining != 0)
-            {
-                names.Add(String.Format("0x{0:X}", remaining));
-            }
-
-            if (names.Count == 0)
-            {
-                names.Add("None");
-            }
-
-            return string.Join("|", names);
-        }
-
-        private static void CheckEnumType(Type t)
-        {            
-            if (!t.IsEnum || t.GetEnumUnderlyingType() != typeof(uint))
-            {
-                throw new ArgumentException("Type must be an enumeration of unsigned int.");
-            }
+            return NtObjectUtils.GrantedAccessAsString(GrantedAccessMask, NtType.GenericMapping, GetAccessEnumType(), map_to_generic);
         }
 
         /// <summary>
         /// Convert an enumerable access rights to a string
         /// </summary>
-        /// <param name="access">The access rights</param>
         /// <returns>The string format of the access rights</returns>
-        public static string AccessRightsToString(Enum access)
+        public string GrantedAccessAsString()
         {
-            return AccessRightsToString(access.GetType(), access);
-        }
-
-        /// <summary>
-        /// Convert an enumerable access rights to a string
-        /// </summary>
-        /// <param name="access">The access rights</param>
-        /// <param name="typeinfo">NtType to map generic access masks to specific access masks</param>
-        /// <returns>The string format of the access rights</returns>
-        public static string AccessRightsToString(Enum access, NtType typeinfo)
-        {
-            AccessMask mapped_access = typeinfo.MapGenericRights(access);
-            if ((mapped_access & typeinfo.GenericMapping.GenericAll) == typeinfo.GenericMapping.GenericAll)
-            {
-                return "Full Access";
-            }
-            return AccessRightsToString(access.GetType(), mapped_access);
+            return GrantedAccessAsString(false);
         }
 
         /// <summary>

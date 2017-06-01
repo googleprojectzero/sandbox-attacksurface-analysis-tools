@@ -30,6 +30,7 @@ namespace CheckObjectManagerAccess
         static NtToken _token;
         static uint _dir_rights = 0;
         static HashSet<string> _type_filter = new HashSet<string>();
+        static bool _map_to_generic = false;
        
         static void ShowHelp(OptionSet p)
         {
@@ -62,14 +63,9 @@ namespace CheckObjectManagerAccess
             }
         }
 
-        static string AccessMaskToString(NtType type, AccessMask granted_access)
+        static string AccessMaskToString(NtType type, AccessMask granted_access, bool map_to_generic)
         {
-            if (type.HasFullPermission(granted_access))
-            {
-                return "Full Permission";
-            }
-
-            return NtObject.AccessRightsToString(GetTypeAccessRights(type), type.MapGenericRights(granted_access));
+            return NtObjectUtils.GrantedAccessAsString(granted_access, type.GenericMapping, GetTypeAccessRights(type), map_to_generic);
         }
 
         static void CheckAccess(string path, byte[] sd, NtType type)
@@ -108,7 +104,8 @@ namespace CheckObjectManagerAccess
 
                         if (!_show_write_only || type.HasWritePermission(granted_access))
                         {
-                            Console.WriteLine("<{0}> {1} : {2:X08} {3}", type.Name, path, granted_access, AccessMaskToString(type, granted_access));
+                            Console.WriteLine("<{0}> {1} : {2:X08} {3}", type.Name, path, granted_access, 
+                                AccessMaskToString(type, granted_access, _map_to_generic));
                             if (_print_sddl)
                             {
                                 Console.WriteLine("{0}", NtSecurity.SecurityDescriptorToSddl(sd, SecurityInformation.AllBasic));
@@ -188,6 +185,7 @@ namespace CheckObjectManagerAccess
                                 String.Join(",", Enum.GetNames(typeof(DirectoryAccessRights)))), v => _dir_rights |= ParseRight(v, typeof(DirectoryAccessRights)) },  
                             { "x=", "Specify a base path to exclude from recursive search", v => _walked.Add(v.ToLower()) },
                             { "t=", "Specify a type of object to include", v => _type_filter.Add(v.ToLower()) },
+                            { "g", "Map access mask to generic rights.", v => _map_to_generic = v != null },
                             { "h|help",  "show this message and exit", v => show_help = v != null },
                         };
 

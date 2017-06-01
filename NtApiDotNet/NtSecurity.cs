@@ -638,6 +638,38 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Try and unmap access mask to generic rights.
+        /// </summary>
+        /// <param name="mask">The mask to unmap.</param>
+        /// <returns>The unmapped mask. Any access which can be generic mapped is left in the mask as specific rights.</returns>
+        public AccessMask UnmapMask(AccessMask mask)
+        {
+            AccessMask remaining = mask;
+            AccessMask result = 0;
+            if (mask == GenericAll)
+            {
+                return GenericAccessRights.GenericAll;
+            }
+            if ((mask & GenericRead) == GenericRead)
+            {
+                result |= GenericAccessRights.GenericRead;
+                remaining &= ~GenericRead;
+            }
+            if ((mask & GenericWrite) == GenericWrite)
+            {
+                result |= GenericAccessRights.GenericWrite;
+                remaining &= ~GenericWrite;
+            }
+            if ((mask & GenericExecute) == GenericExecute)
+            {
+                result |= GenericAccessRights.GenericExecute;
+                remaining &= ~GenericExecute;
+            }
+
+            return result | remaining;
+        }
+
+        /// <summary>
         /// Convert generic mapping to a string.
         /// </summary>
         /// <returns>The generic mapping as a string.</returns>
