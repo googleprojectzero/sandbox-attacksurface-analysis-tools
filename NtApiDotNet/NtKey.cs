@@ -988,6 +988,8 @@ namespace NtApiDotNet
                 dict.Add("HKCU", current_user);
                 dict.Add("HKEY_CURRENT_USER", current_user);
             }
+            dict.Add("HKEY_CLASSES_ROOT", @"\Registry\Machine\Software\Classes");
+            dict.Add("HKCR", @"\Registry\Machine\Software\Classes");
             return dict;
         }
 
@@ -1015,6 +1017,14 @@ namespace NtApiDotNet
             throw new NtException(NtStatus.STATUS_OBJECT_NAME_INVALID);
         }
 
+        class StringLengthComparer : IComparer<string>
+        {
+            public int Compare(string x, string y)
+            {
+                return y.Length - x.Length;
+            }
+        }
+
         /// <summary>
         /// Attempt to convert an NT style registry key name to Win32 form.
         /// If it's not possible to convert the function will return the 
@@ -1024,7 +1034,7 @@ namespace NtApiDotNet
         /// <returns>The converted path, or original if it can't be converted.</returns>
         public static string NtKeyNameToWin32(string nt_path)
         {
-            foreach (var pair in _win32_base_keys)
+            foreach (var pair in _win32_base_keys.OrderBy(p => p.Value, new StringLengthComparer()))
             {
                 if (nt_path.Equals(pair.Value, StringComparison.OrdinalIgnoreCase))
                 {
