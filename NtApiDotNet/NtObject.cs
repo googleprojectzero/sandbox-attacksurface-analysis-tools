@@ -252,6 +252,22 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Duplicate a handle to a new handle.
+        /// </summary>
+        /// <param name="dest_process">The desination process for the handle</param>
+        /// <param name="options">Duplicate handle options</param>
+        /// <param name="access_rights">The access rights for the new handle</param>
+        /// <param name="new_handle">The new duplicated handle.</param>
+        /// <returns>The NT Status code for the duplication attempt</returns>
+        public NtStatus DuplicateHandle(out SafeKernelObjectHandle new_handle,
+            NtProcess dest_process, GenericAccessRights access_rights,
+            DuplicateObjectOptions options)
+        {
+            return DuplicateHandle(out new_handle, NtProcess.Current, 
+                Handle, dest_process, access_rights, options);
+        }
+
+        /// <summary>
         /// Duplicate the internal handle to a new handle with the same access rights.
         /// </summary>
         /// <returns>The new duplicated handle.</returns>
@@ -281,6 +297,26 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Try and duplicate a handle to a new handle.
+        /// </summary>
+        /// <param name="source_process">The source process for the handle</param>
+        /// <param name="dest_process">The desination process for the handle</param>
+        /// <param name="handle">The handle in the source process to duplicate</param>
+        /// <param name="options">Duplicate handle options</param>
+        /// <param name="access_rights">The access rights for the new handle</param>
+        /// <param name="new_handle">The new duplicated handle.</param>
+        /// <returns>The NT Status code for the duplication attempt</returns>
+        public static NtStatus DuplicateHandle(out SafeKernelObjectHandle new_handle, NtProcess source_process, SafeHandle handle, 
+            NtProcess dest_process, GenericAccessRights access_rights, 
+            DuplicateObjectOptions options)
+        {
+            return NtSystemCalls.NtDuplicateObject(source_process.Handle, handle,
+              dest_process.Handle, out new_handle,
+              GenericAccessRights.None, AttributeFlags.None,
+              DuplicateObjectOptions.SameAccess);
+        }
+
+        /// <summary>
         /// Duplicate the internal handle to a new handle.
         /// </summary>
         /// <param name="source_process">The source process for the handle</param>
@@ -289,17 +325,16 @@ namespace NtApiDotNet
         /// <param name="options">Duplicate handle options</param>
         /// <param name="access_rights">The access rights for the new handle</param>
         /// <returns>The new duplicated handle.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static SafeKernelObjectHandle DuplicateHandle(NtProcess source_process, SafeHandle handle, NtProcess dest_process, GenericAccessRights access_rights, DuplicateObjectOptions options)
         {
             SafeKernelObjectHandle new_handle;
 
-            NtSystemCalls.NtDuplicateObject(source_process.Handle, handle,
-              dest_process.Handle, out new_handle,
-              GenericAccessRights.None, AttributeFlags.None, 
-              DuplicateObjectOptions.SameAccess).ToNtException();
+            DuplicateHandle(out new_handle, source_process, handle, 
+                dest_process, access_rights, options).ToNtException();
 
             return new_handle;
-        }
+        }        
 
         /// <summary>
         /// Duplicate the internal handle to a new handle.
@@ -1035,7 +1070,8 @@ namespace NtApiDotNet
         /// <returns>The duplicated handle</returns>
         public static O DuplicateFrom(NtProcess process, IntPtr handle, A access)
         {
-            return FromHandle(NtObject.DuplicateHandle(process, new SafeKernelObjectHandle(handle, false), NtProcess.Current, (GenericAccessRights)access.ToUInt32(null)));
+            return FromHandle(NtObject.DuplicateHandle(process, new SafeKernelObjectHandle(handle, false), 
+                NtProcess.Current, (GenericAccessRights)access.ToUInt32(null)));
         }
 
         /// <summary>
