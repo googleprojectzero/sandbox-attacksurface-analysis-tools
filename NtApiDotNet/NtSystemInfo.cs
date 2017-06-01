@@ -45,7 +45,7 @@ namespace NtApiDotNet
         public byte ObjectTypeIndex;
         public byte HandleAttributes;
         public ushort HandleValue;
-        public IntPtr Object;
+        public UIntPtr Object;
         public uint GrantedAccess;
     }
 
@@ -340,7 +340,7 @@ namespace NtApiDotNet
         /// <summary>
         /// The granted access mask
         /// </summary>
-        public GenericAccessRights GrantedAccess { get; private set; }
+        public AccessMask GrantedAccess { get; private set; }
 
         /// <summary>
         /// The name of the object (needs to have set query access in constructor)
@@ -399,7 +399,7 @@ namespace NtApiDotNet
             
             Attributes = (AttributeFlags)entry.HandleAttributes;
             Handle = entry.HandleValue;
-            Object = (ulong)entry.Object.ToInt64();
+            Object = entry.Object.ToUInt64();
             GrantedAccess = (GenericAccessRights)entry.GrantedAccess;
             _allow_query = allow_query;
         }

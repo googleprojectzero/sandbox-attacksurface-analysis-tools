@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -449,7 +448,7 @@ namespace NtApiDotNet
         /// <returns>True if all the access rights are granted</returns>
         public bool IsAccessMaskGranted(AccessMask access)
         {
-            return GrantedAccessMask.AllAccessGranted(access);
+            return GrantedAccessMask.IsAllAccessGranted(access);
         }
 
         /// <summary>
@@ -973,7 +972,7 @@ namespace NtApiDotNet
         {
             return DuplicateFrom(process, handle, ToGenericAccess(access), options, out obj);
         }
-
+        
         /// <summary>
         /// Duplicate an instance from a process
         /// </summary>

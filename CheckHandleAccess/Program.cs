@@ -38,6 +38,7 @@ namespace CheckHandleAccess
                 bool show_help = false;
                 bool show_write_only = false;
                 bool show_named = false;
+                bool map_to_generic = false;
                 HashSet<string> type_filter = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 OptionSet opts = new OptionSet() {
@@ -45,6 +46,7 @@ namespace CheckHandleAccess
                         { "p|pid=", "Specify a PID of a process for access check.", v => pid = int.Parse(v.Trim()) },
                         { "w", "Show only write permissions granted", v => show_write_only = v != null },
                         { "n", "Show only named handles", v => show_named = v != null },
+                        { "g", "Map access mask to generic rights.", v => map_to_generic = v != null },
                         { "h|help",  "show this message and exit",
                            v => show_help = v != null },
                     };
@@ -77,36 +79,38 @@ namespace CheckHandleAccess
                         handles = handles.Where(h => !String.IsNullOrEmpty(h.Name));
                     }
 
-                    foreach (NtHandle handle in handles)
+                    foreach (NtHandle handle in handles.Where(h => h.GrantedAccess.IsAccessGranted(GenericAccessRights.ReadControl)))
                     {
-                        if (checked_objects.Contains(handle.Object))
-                        {
-                            continue;
-                        }
+                        //SecurityDescriptor sd = handle.SecurityDescriptor;
+                        //if (sd == null)
+                        //{
+                        //    continue;
+                        //}
 
-                        SecurityDescriptor sd = handle.SecurityDescriptor;
-                        if (sd == null)
-                        {
-                            continue;
-                        }
+                        //NtType type = handle.NtType;
+                        //if (type == null)
+                        //{
+                        //    continue;
+                        //}
 
-                        NtType type = handle.NtType;
-                        if (type == null)
-                        {
-                            continue;
-                        }
+                        checked_objects.Add(handle.Object);
 
-                        AccessMask max_access = NtSecurity.GetMaximumAccess(sd, token, type.GenericMapping);
-                        if (max_access.IsEmpty)
-                        {
-                            continue;
-                        }
+                        //AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token, type.GenericMapping);
+                        //if (granted_access.IsEmpty)
+                        //{
+                        //    continue;
+                        //}
+
+                        //Console.WriteLine("{0:016X} {1} {2}", NtObjectUtils.GrantedAccessAsString(granted_access, type.GenericMapping, typeof(GenericAccessRights), map_to_generic));
+                        Console.WriteLine("{0} {1:X016} {2}", handle.ProcessId, handle.Object, 
+                            NtObjectUtils.GrantedAccessAsString(handle.GrantedAccess,
+                            handle.NtType.GenericMapping, typeof(GenericAccessRights), map_to_generic));
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.Error.WriteLine(ex.Message);
             }
         }
     }

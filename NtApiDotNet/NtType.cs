@@ -233,6 +233,12 @@ namespace NtApiDotNet
             return (GenericMapping.MapMask(access_mask) & ~ValidAccess).IsEmpty;
         }
 
+        internal NtType(int id)
+        {
+            Index = id;
+            Name = String.Format("Unknown {0}", id);
+        }
+
         internal NtType(int id, ObjectTypeInformation info)
         {
             Index = id;
@@ -276,7 +282,7 @@ namespace NtApiDotNet
                     return info;
             }
 
-            return null;
+            return new NtType(index);
         }
 
         /// <summary>

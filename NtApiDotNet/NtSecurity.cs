@@ -426,7 +426,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="mask">The access mask to check</param>
         /// <returns>True one or more access granted.</returns>
-        public bool AccessGranted(AccessMask mask)
+        public bool IsAccessGranted(AccessMask mask)
         {
             return (Access & mask.Access) != 0;
         }
@@ -436,7 +436,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="mask">The access mask to check</param>
         /// <returns>True access all is granted.</returns>
-        public bool AllAccessGranted(AccessMask mask)
+        public bool IsAllAccessGranted(AccessMask mask)
         {
             return (Access & mask.Access) == mask;
         }
