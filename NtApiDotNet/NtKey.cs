@@ -871,9 +871,12 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>The key value count</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public int GetValueCount()
+        public int ValueCount
         {
-            return GetFullInfo().Item1.Values;
+            get
+            {
+                return GetFullInfo().Item1.Values;
+            }
         }
 
         /// <summary>
@@ -953,6 +956,18 @@ namespace NtApiDotNet
                 return GetFullInfo().Item1.MaxClassLen;
             }
         }
+
+        /// <summary>
+        /// Get the key path as a Win32 style one. If not possible returns
+        /// the original path.
+        /// </summary>
+        public string Win32Path
+        {
+            get
+            {
+                return NtKeyUtils.NtKeyNameToWin32(FullPath);
+            }
+        }
     }
 
     /// <summary>
@@ -998,6 +1013,29 @@ namespace NtApiDotNet
                 }
             }
             throw new NtException(NtStatus.STATUS_OBJECT_NAME_INVALID);
+        }
+
+        /// <summary>
+        /// Attempt to convert an NT style registry key name to Win32 form.
+        /// If it's not possible to convert the function will return the 
+        /// original form.
+        /// </summary>
+        /// <param name="nt_path">The NT path to convert.</param>
+        /// <returns>The converted path, or original if it can't be converted.</returns>
+        public static string NtKeyNameToWin32(string nt_path)
+        {
+            foreach (var pair in _win32_base_keys)
+            {
+                if (nt_path.Equals(pair.Value, StringComparison.OrdinalIgnoreCase))
+                {
+                    return pair.Key;
+                }
+                else if (nt_path.StartsWith(pair.Value + @"\", StringComparison.OrdinalIgnoreCase))
+                {
+                    return pair.Key + nt_path.Substring(pair.Value.Length);
+                }
+            }
+            return nt_path;
         }
     }
 }

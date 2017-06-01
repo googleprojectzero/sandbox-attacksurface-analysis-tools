@@ -437,54 +437,6 @@
       </TableControl>
     </View>
     <View>
-      <Name>KeyList</Name>
-      <ViewSelectedBy>
-        <TypeName>NtApiDotNet.NtKey</TypeName>
-      </ViewSelectedBy>
-      <ListControl>
-        <ListEntries>
-          <ListEntry>
-            <ListItems>
-              <ListItem>
-                <PropertyName>Name</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>LastWriteTime</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>SubKeyCount</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>ValueCount</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>MaxValueNameLength</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>MaxValueDataLength</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>MaxNameLength</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>MaxClassength</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>ClassName</PropertyName>
-              </ListItem>
-              <ListItem>
-                <PropertyName>GrantedAccess</PropertyName>
-              </ListItem>
-              <ListItem>
-                <ScriptBlock>$_.GetSddl()</ScriptBlock>
-                <Label>SecurityDescriptor</Label>
-              </ListItem>
-            </ListItems>
-          </ListEntry>
-        </ListEntries>
-      </ListControl>
-    </View>    
-    <View>
       <Name>TokenTable</Name>
       <ViewSelectedBy>
         <TypeName>NtApiDotNet.NtToken</TypeName>
