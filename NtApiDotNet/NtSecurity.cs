@@ -1474,7 +1474,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="level">The mandatory integrity level.</param>
         /// <returns>The integrity SID</returns>
-        public static Sid GetIntegritySid(int level)
+        public static Sid GetIntegritySidRaw(int level)
         {
             return new Sid(SecurityAuthority.Label, (uint)level);
         }
@@ -1486,7 +1486,7 @@ namespace NtApiDotNet
         /// <returns>The integrity SID</returns>
         public static Sid GetIntegritySid(TokenIntegrityLevel level)
         {
-            return GetIntegritySid((int)level);
+            return GetIntegritySidRaw((int)level);
         }
 
         /// <summary>

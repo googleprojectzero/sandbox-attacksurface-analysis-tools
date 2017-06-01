@@ -2132,7 +2132,7 @@ namespace NtApiDotNet
             }
         }
 
-        private void SetIntegrityLevel(Sid sid)
+        private void SetIntegrityLevelSid(Sid sid)
         {
             using (SafeSidBufferHandle sid_buffer = sid.ToSafeBuffer())
             {                
@@ -2146,9 +2146,9 @@ namespace NtApiDotNet
         /// Set the token's integrity level.
         /// </summary>
         /// <param name="level">The level to set.</param>
-        public void SetIntegrityLevel(int level)
+        public void SetIntegrityLevelRaw(int level)
         {            
-            SetIntegrityLevel(NtSecurity.GetIntegritySid(level));
+            SetIntegrityLevelSid(NtSecurity.GetIntegritySidRaw(level));
         }
 
         /// <summary>
@@ -2157,7 +2157,7 @@ namespace NtApiDotNet
         /// <param name="level">The level to set.</param>
         public void SetIntegrityLevel(TokenIntegrityLevel level)
         {
-            SetIntegrityLevel(NtSecurity.GetIntegritySid(level));
+            SetIntegrityLevelSid(NtSecurity.GetIntegritySid(level));
         }
 
         /// <summary>

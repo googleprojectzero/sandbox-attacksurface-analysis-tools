@@ -750,7 +750,7 @@ namespace NtObjectManager
             }
             else if (IntegrityLevelRaw.HasValue)
             {
-                sid = NtSecurity.GetIntegritySid(IntegrityLevelRaw.Value);
+                sid = NtSecurity.GetIntegritySidRaw(IntegrityLevelRaw.Value);
             }
             else if (PackageName != null)
             {
