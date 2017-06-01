@@ -42,7 +42,7 @@ namespace CheckFileAccess
             Console.WriteLine("File paths starting with @\\ will map to native NT paths");
         }
 
-        static string AccessMaskToString(uint granted_access, bool directory)
+        static string AccessMaskToString(GenericAccessRights granted_access, bool directory)
         {
             if (_type.HasFullPermission(granted_access))
             {
@@ -69,15 +69,17 @@ namespace CheckFileAccess
                 if (sd != null)
                 {
                     bool is_dir = entry.IsDirectory;
-                    uint granted_access;
+                    GenericAccessRights granted_access;
 
                     if (is_dir && _dir_filter != 0)
                     {
-                        granted_access = NtSecurity.GetAllowedAccess(_token, _type, _dir_filter, sd.ToByteArray());
+                        granted_access = NtSecurity.GetAllowedAccess(_token, _type, 
+                            _dir_filter.ToGenericAccess(), sd.ToByteArray());
                     }
                     else if (!is_dir && _file_filter != 0)
                     {
-                        granted_access = NtSecurity.GetAllowedAccess(_token, _type, _file_filter, sd.ToByteArray());
+                        granted_access = NtSecurity.GetAllowedAccess(_token, _type, 
+                            _file_filter.ToGenericAccess(), sd.ToByteArray());
                     }
                     else
                     {

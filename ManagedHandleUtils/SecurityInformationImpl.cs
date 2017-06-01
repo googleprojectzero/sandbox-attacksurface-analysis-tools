@@ -103,7 +103,7 @@ namespace SandboxAnalysisUtils
 
         void MapGeneric(ref Guid pguidObjectType,
                         IntPtr pAceFlags,
-                        ref uint pMask);
+                        ref GenericAccessRights pMask);
 
         void GetInheritTypes(out IntPtr ppInheritTypes,
                             out uint pcInheritTypes);
@@ -163,7 +163,7 @@ namespace SandboxAnalysisUtils
         {
             SiObjectInfo object_info = new SiObjectInfo();
             SiObjectInfoFlags flags = SiObjectInfoFlags.SI_ADVANCED;
-            if (_read_only || _handle.IsAccessGrantedRaw<GenericAccessRights>(GenericAccessRights.WriteDac))
+            if (_read_only || _handle.IsAccessGrantedRaw(GenericAccessRights.WriteDac))
             {
                 flags |= SiObjectInfoFlags.SI_READONLY;
             }
@@ -185,7 +185,7 @@ namespace SandboxAnalysisUtils
             ppSecurityDescriptor = ret;
         }
 
-        public void MapGeneric(ref Guid pguidObjectType, IntPtr pAceFlags, ref uint pMask)
+        public void MapGeneric(ref Guid pguidObjectType, IntPtr pAceFlags, ref GenericAccessRights pMask)
         {
             pMask = _mapping.MapMask(pMask);
         }

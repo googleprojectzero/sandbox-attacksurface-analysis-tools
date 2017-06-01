@@ -49,7 +49,8 @@ namespace NtObjectManager
                                 _symlink_target = link.Target;
                             }
 
-                            _maximum_granted_access = obj.GrantedAccessObject;
+                            // TODO: Fix
+                            _maximum_granted_access = obj.GrantedAccessRaw;
                         }
                     }
                     catch

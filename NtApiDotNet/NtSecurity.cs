@@ -208,7 +208,7 @@ namespace NtApiDotNet
         public static extern NtStatus RtlAbsoluteToSelfRelativeSD(SafeBuffer AbsoluteSecurityDescriptor, SafeBuffer SelfRelativeSecurityDescriptor, ref int BufferLength);
 
         [DllImport("ntdll.dll")]
-        public static extern void RtlMapGenericMask(ref uint AccessMask, ref GenericMapping mapping);
+        public static extern void RtlMapGenericMask(ref GenericAccessRights AccessMask, ref GenericMapping mapping);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus RtlDeleteSecurityObject(ref IntPtr ObjectDescriptor);
@@ -232,11 +232,11 @@ namespace NtApiDotNet
         public static extern NtStatus NtAccessCheck(
             SafeBuffer SecurityDescriptor,
             SafeHandle ClientToken,
-            uint DesiredAccess,
+            GenericAccessRights DesiredAccess,
             ref GenericMapping GenericMapping,
             SafePrivilegeSetBuffer RequiredPrivilegesBuffer,
             ref int BufferLength,
-            out uint GrantedAccess,
+            out GenericAccessRights GrantedAccess,
             out NtStatus AccessStatus);
     }
 
@@ -336,26 +336,26 @@ namespace NtApiDotNet
         /// <summary>
         /// Mapping for Generic Read
         /// </summary>
-        public uint GenericRead;
+        public GenericAccessRights GenericRead;
         /// <summary>
         /// Mapping for Generic Write
         /// </summary>
-        public uint GenericWrite;
+        public GenericAccessRights GenericWrite;
         /// <summary>
         /// Mapping for Generic Execute
         /// </summary>
-        public uint GenericExecute;
+        public GenericAccessRights GenericExecute;
         /// <summary>
         /// Mapping for Generic All
         /// </summary>
-        public uint GenericAll;
+        public GenericAccessRights GenericAll;
 
         /// <summary>
         /// Map a generic access mask to a specific one.
         /// </summary>
         /// <param name="mask">The generic mask to map.</param>
         /// <returns>The mapped mask.</returns>
-        public uint MapMask(uint mask)
+        public GenericAccessRights MapMask(GenericAccessRights mask)
         {
             NtRtl.RtlMapGenericMask(ref mask, ref this);
             return mask;
@@ -368,7 +368,7 @@ namespace NtApiDotNet
         public override string ToString()
         {
             return String.Format("R:{0:X08} W:{1:X08} E:{2:X08} A:{3:X08}",
-                GenericRead, GenericWrite, GenericExecute, GenericAll);
+                (uint)GenericRead, (uint)GenericWrite, (uint)GenericExecute, (uint)GenericAll);
         }
     }
 
@@ -1184,7 +1184,8 @@ namespace NtApiDotNet
         /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
         /// <returns>The allowed access mask as a unsigned integer.</returns>
         /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
-        public static uint GetAllowedAccess(SecurityDescriptor sd, NtToken token, GenericAccessRights access_rights, GenericMapping generic_mapping)
+        public static GenericAccessRights GetAllowedAccess(SecurityDescriptor sd, NtToken token, 
+            GenericAccessRights access_rights, GenericMapping generic_mapping)
         {
             if (sd == null)
             {
@@ -1200,13 +1201,13 @@ namespace NtApiDotNet
             {
                 using (NtToken imp_token = token.DuplicateToken(SecurityImpersonationLevel.Identification))
                 {
-                    uint granted_access;
+                    GenericAccessRights granted_access;
                     NtStatus result_status;
                     using (var privs = new SafePrivilegeSetBuffer())
                     {
                         int buffer_length = privs.Length;
 
-                        NtSystemCalls.NtAccessCheck(sd_buffer, imp_token.Handle, (uint)access_rights,
+                        NtSystemCalls.NtAccessCheck(sd_buffer, imp_token.Handle, access_rights,
                             ref generic_mapping, privs, ref buffer_length, out granted_access, out result_status).ToNtException();
                         if (result_status.IsSuccess())
                         {
@@ -1226,7 +1227,7 @@ namespace NtApiDotNet
         /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
         /// <returns>The maximum allowed access mask as a unsigned integer.</returns>
         /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
-        public static uint GetMaximumAccess(SecurityDescriptor sd, NtToken token, GenericMapping generic_mapping)
+        public static GenericAccessRights GetMaximumAccess(SecurityDescriptor sd, NtToken token, GenericMapping generic_mapping)
         {
             return GetAllowedAccess(sd, token, GenericAccessRights.MaximumAllowed, generic_mapping);
         }
@@ -1240,14 +1241,14 @@ namespace NtApiDotNet
         /// <param name="type">The type used to determine generic access mapping..</param>
         /// <returns>The allowed access mask as a unsigned integer.</returns>
         /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
-        public static uint GetAllowedAccess(NtToken token, NtType type, uint access_rights, byte[] sd)
+        public static GenericAccessRights GetAllowedAccess(NtToken token, NtType type, GenericAccessRights access_rights, byte[] sd)
         {
             if (sd == null || sd.Length == 0)
             {
                 return 0;
             }
 
-            return GetAllowedAccess(new SecurityDescriptor(sd), token, (GenericAccessRights)access_rights, type.GenericMapping);
+            return GetAllowedAccess(new SecurityDescriptor(sd), token, access_rights, type.GenericMapping);
         }
 
         /// <summary>
@@ -1258,9 +1259,9 @@ namespace NtApiDotNet
         /// <param name="type">The type used to determine generic access mapping..</param>
         /// <returns>The allowed access mask as a unsigned integer.</returns>
         /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
-        public static uint GetMaximumAccess(NtToken token, NtType type, byte[] sd)
+        public static GenericAccessRights GetMaximumAccess(NtToken token, NtType type, byte[] sd)
         {
-            return GetAllowedAccess(token, type, (uint)GenericAccessRights.MaximumAllowed, sd);
+            return GetAllowedAccess(token, type, GenericAccessRights.MaximumAllowed, sd);
         }
 
         /// <summary>

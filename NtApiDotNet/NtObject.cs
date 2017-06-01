@@ -197,7 +197,7 @@ namespace NtApiDotNet
             Handle = handle;
             try
             {
-                CanSynchronize = IsAccessGrantedRaw<GenericAccessRights>(GenericAccessRights.Synchronize);
+                CanSynchronize = IsAccessGrantedRaw(GenericAccessRights.Synchronize);
             }
             catch (NtException)
             {
@@ -240,12 +240,13 @@ namespace NtApiDotNet
         /// <param name="options">Duplicate handle options</param>
         /// <param name="access_rights">The access rights for the new handle</param>
         /// <returns>The new duplicated handle.</returns>
-        public SafeKernelObjectHandle DuplicateHandle(NtProcess dest_process, uint access_rights, DuplicateObjectOptions options)
+        public SafeKernelObjectHandle DuplicateHandle(NtProcess dest_process, 
+            GenericAccessRights access_rights, DuplicateObjectOptions options)
         {
             SafeKernelObjectHandle new_handle;
 
             NtSystemCalls.NtDuplicateObject(NtProcess.Current.Handle, Handle,
-              dest_process.Handle, out new_handle, (GenericAccessRights)access_rights, AttributeFlags.None, 
+              dest_process.Handle, out new_handle, access_rights, AttributeFlags.None,
               options).ToNtException();
 
             return new_handle;
@@ -273,17 +274,8 @@ namespace NtApiDotNet
         /// <returns>The new duplicated handle.</returns>
         public SafeKernelObjectHandle DuplicateHandle()
         {
-            return DuplicateHandle(NtProcess.Current, 0, DuplicateObjectOptions.SameAccess);
-        }
-
-        /// <summary>
-        /// Duplicate the internal handle to a new handle.
-        /// </summary>
-        /// <param name="access_rights">The access rights for the new handle</param>
-        /// <returns>The new duplicated handle.</returns>
-        public SafeKernelObjectHandle DuplicateHandle(uint access_rights)
-        {
-            return DuplicateHandle(NtProcess.Current, access_rights, DuplicateObjectOptions.None);
+            return DuplicateHandle(NtProcess.Current, 
+                GenericAccessRights.None, DuplicateObjectOptions.SameAccess);
         }
 
         /// <summary>
@@ -293,7 +285,7 @@ namespace NtApiDotNet
         /// <returns>The new duplicated handle.</returns>
         public SafeKernelObjectHandle DuplicateHandle(GenericAccessRights access_rights)
         {
-            return DuplicateHandle((uint)access_rights);
+            return DuplicateHandle(NtProcess.Current, access_rights, DuplicateObjectOptions.None);
         }
 
         /// <summary>
@@ -306,7 +298,8 @@ namespace NtApiDotNet
         /// <param name="access_rights">The access rights for the new handle</param>
         /// <param name="new_handle">The new duplicated handle.</param>
         /// <returns>The NT Status code for the duplication attempt</returns>
-        public static NtStatus DuplicateHandle(out SafeKernelObjectHandle new_handle, NtProcess source_process, SafeHandle handle, 
+        public static NtStatus DuplicateHandle(out SafeKernelObjectHandle new_handle, 
+            NtProcess source_process, SafeHandle handle, 
             NtProcess dest_process, GenericAccessRights access_rights, 
             DuplicateObjectOptions options)
         {
@@ -435,36 +428,23 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the granted access as an unsigned integer
         /// </summary>
-        public uint GrantedAccessRaw
+        public GenericAccessRights GrantedAccessRaw
         {
             get
             {
-                return QueryBasicInformation().DesiredAccess;
-            }
-        }
-
-        /// <summary>
-        /// Get the granted access as an object
-        /// </summary>
-        public virtual object GrantedAccessObject
-        {
-            get
-            {
-                return GrantedAccessRaw;
+                return NtObjectUtils.ToGenericAccess(QueryBasicInformation().DesiredAccess);
             }
         }
 
         /// <summary>
         /// Check if access is granted to a set of rights
         /// </summary>
-        /// <typeparam name="T">The type of enumeration for the access rights</typeparam>
         /// <param name="access">The access rights to check</param>
         /// <returns>True if all the access rights are granted</returns>
-        public bool IsAccessGrantedRaw<T>(T access) where T : IConvertible
+        public bool IsAccessGrantedRaw(GenericAccessRights access)
         {
-            uint granted = GrantedAccessRaw;
-            uint required = access.ToUInt32(null);
-            return (granted & required) == required;
+            GenericAccessRights granted = GrantedAccessRaw;
+            return (granted & access) == access;
         }
 
         /// <summary>
@@ -737,10 +717,10 @@ namespace NtApiDotNet
         /// <param name="t">The enumeration type for the string conversion</param>
         /// <param name="access">The access mask to convert</param>
         /// <returns>The string version of the access</returns>
-        public static string AccessRightsToString(Type t, uint access)
+        public static string AccessRightsToString(Type t, GenericAccessRights access)
         {
             List<string> names = new List<string>();
-            uint remaining = access;
+            uint remaining = (uint)access;
 
             // If the valid is explicitly defined return it.
             if (Enum.IsDefined(t, remaining))
@@ -807,7 +787,7 @@ namespace NtApiDotNet
         public static string AccessRightsToString<T>(T access) where T : struct, IConvertible
         {
             CheckEnumType(typeof(T));
-            return AccessRightsToString(typeof(T), access.ToUInt32(null));
+            return AccessRightsToString(typeof(T), access.ToGenericAccess());
         }
 
         /// <summary>
@@ -820,7 +800,7 @@ namespace NtApiDotNet
         public static string AccessRightsToString<T>(T access, NtType typeinfo) where T : struct, IConvertible
         {
             CheckEnumType(typeof(T));
-            uint mapped_access = typeinfo.MapGenericRights(access.ToUInt32(null));
+            GenericAccessRights mapped_access = typeinfo.MapGenericRights(access.ToGenericAccess());
             if ((mapped_access & typeinfo.GenericMapping.GenericAll) == typeinfo.GenericMapping.GenericAll)
             {
                 return "Full Access";
@@ -944,20 +924,7 @@ namespace NtApiDotNet
         /// <returns>The duplicated object</returns>
         public O Duplicate(A access)
         {
-            IConvertible a = access;
-            return Duplicate(a.ToUInt32(null));            
-        }
-
-        /// <summary>
-        /// Duplicate the object with specific access rights
-        /// </summary>
-        /// <param name="access">The access rights for the new handle</param>
-        /// <returns>The duplicated object</returns>
-        public O Duplicate(uint access)
-        {
-            IConvertible a = access;
-
-            return Create(DuplicateHandle(access));
+            return Create(DuplicateHandle(access.ToGenericAccess()));
         }
 
         /// <summary>
@@ -969,9 +936,9 @@ namespace NtApiDotNet
             return Create(DuplicateHandle());
         }
 
-        private A UIntToAccess(uint access)
+        private A UIntToAccess(GenericAccessRights access)
         {
-            return (A)Enum.ToObject(typeof(A), access);
+            return (A)Enum.ToObject(typeof(A), (uint)access);
         }
 
         /// <summary>
@@ -994,12 +961,12 @@ namespace NtApiDotNet
         /// <returns>Returns 0 if can't read the security descriptor.</returns>
         public A GetMaximumAccess(NtToken token)
         {
-            if (!IsAccessGrantedRaw<GenericAccessRights>(GenericAccessRights.ReadControl))
+            if (!IsAccessGrantedRaw(GenericAccessRights.ReadControl))
             {
                 return UIntToAccess(0);
             }
 
-            uint ret = NtSecurity.GetMaximumAccess(SecurityDescriptor,
+            GenericAccessRights ret = NtSecurity.GetMaximumAccess(SecurityDescriptor,
                                                 token, NtType.GenericMapping);
             return UIntToAccess(ret);
         }
@@ -1018,26 +985,13 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get granted access as an object
-        /// </summary>
-        /// <returns>The granted access</returns>
-        public override object GrantedAccessObject
-        {
-            get
-            {
-                return GrantedAccess;
-            }
-        }
-
-        /// <summary>
         /// Check if a specific set of access rights is granted
         /// </summary>
         /// <param name="access">The access rights to check</param>
         /// <returns>True if all access rights are granted</returns>
         public bool IsAccessGranted(A access)
         {
-            uint access_raw = access.ToUInt32(null);
-            return (GrantedAccessRaw & access_raw) == access_raw;
+            return IsAccessGrantedRaw(access.ToGenericAccess());
         }
 
         /// <summary>
@@ -1061,6 +1015,36 @@ namespace NtApiDotNet
             return Create(handle);
         }
 
+        private static NtStatus DuplicateFrom(NtProcess process, IntPtr handle,
+            GenericAccessRights access, DuplicateObjectOptions options, out O obj)
+        {
+            SafeKernelObjectHandle dup;
+            obj = null;
+            NtStatus status = NtObject.DuplicateHandle(out dup, 
+                process, new SafeKernelObjectHandle(handle, false), 
+                NtProcess.Current, access, options);
+            if (status.IsSuccess())
+            {
+                obj = FromHandle(dup);
+            }
+            return status;
+        }
+
+        /// <summary>
+        /// Duplicate an instance from a process
+        /// </summary>
+        /// <param name="process">The process (with DupHandle access)</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <param name="access">The access rights to duplicate with</param>
+        /// <param name="options">The options for duplication.</param>
+        /// <param name="obj">The duplicated object (if successful).</param>
+        /// <returns>The duplicate NT status code.</returns>
+        public static NtStatus DuplicateFrom(NtProcess process, IntPtr handle, 
+            A access, DuplicateObjectOptions options, out O obj)
+        {
+            return DuplicateFrom(process, handle, access.ToGenericAccess(), options, out obj);
+        }
+
         /// <summary>
         /// Duplicate an instance from a process
         /// </summary>
@@ -1070,8 +1054,10 @@ namespace NtApiDotNet
         /// <returns>The duplicated handle</returns>
         public static O DuplicateFrom(NtProcess process, IntPtr handle, A access)
         {
-            return FromHandle(NtObject.DuplicateHandle(process, new SafeKernelObjectHandle(handle, false), 
-                NtProcess.Current, (GenericAccessRights)access.ToUInt32(null)));
+            O obj;
+            DuplicateFrom(process, handle, access, 
+                DuplicateObjectOptions.None, out obj).ToNtException();
+            return obj;
         }
 
         /// <summary>
@@ -1097,7 +1083,22 @@ namespace NtApiDotNet
         /// <returns>The duplicated handle</returns>
         public static O DuplicateFrom(NtProcess process, IntPtr handle)
         {
-            return FromHandle(NtObject.DuplicateHandle(process, new SafeKernelObjectHandle(handle, false), NtProcess.Current));
+            O obj;
+            DuplicateFrom(process, handle, GenericAccessRights.None,
+                DuplicateObjectOptions.SameAccess, out obj).ToNtException();
+            return obj;
+        }
+
+        /// <summary>
+        /// Duplicate an instance from a process with same access rights.
+        /// </summary>
+        /// <param name="process">The process (with DupHandle access)</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <param name="obj">The duplicated handle.</param>
+        /// <returns>The status code from the duplication process.</returns>
+        public static NtStatus DuplicateFrom(NtProcess process, IntPtr handle, out O obj)
+        {
+            return DuplicateFrom(process, handle, GenericAccessRights.None, DuplicateObjectOptions.SameAccess, out obj);
         }
 
         /// <summary>

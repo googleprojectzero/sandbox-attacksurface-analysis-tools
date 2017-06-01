@@ -185,7 +185,7 @@ namespace TokenViewer
                     uint mask = (uint)(GenericAccessRights.GenericAll | GenericAccessRights.GenericExecute | GenericAccessRights.GenericRead | GenericAccessRights.GenericWrite);
                     string maskstr;
 
-                    if (((uint)ace.Mask & ~mask) != 0)
+                    if ((ace.Mask & ~mask) != 0)
                     {
                         maskstr = String.Format("0x{0:X08}", ace.Mask);
                     }

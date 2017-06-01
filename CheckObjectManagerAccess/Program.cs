@@ -62,7 +62,7 @@ namespace CheckObjectManagerAccess
             }
         }
 
-        static string AccessMaskToString(NtType type, uint granted_access)
+        static string AccessMaskToString(NtType type, GenericAccessRights granted_access)
         {
             if (type.HasFullPermission(granted_access))
             {
@@ -86,11 +86,12 @@ namespace CheckObjectManagerAccess
 
                 if (sd.Length > 0)
                 {
-                    uint granted_access = 0;
+                    GenericAccessRights granted_access = 0;
 
                     if (_dir_rights != 0)
                     {
-                        granted_access = NtSecurity.GetAllowedAccess(_token, type, (uint)_dir_rights, sd);
+                        granted_access = NtSecurity.GetAllowedAccess(_token, type, 
+                            _dir_rights.ToGenericAccess(), sd);
                     }
                     else
                     {

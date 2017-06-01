@@ -46,13 +46,15 @@ namespace SandboxAnalysisUtils
 
         static Type TypeNameToEnum(NtObject handle)
         {
-            Type type = handle.GrantedAccessObject.GetType();
-            if (!type.IsEnum)
-            {
-                throw new ArgumentException("Can't get type for access rights");
-            }
+            // TODO: Fix
+            throw new NotImplementedException();
+            //Type type = handle.GrantedAccessObject.GetType();
+            //if (!type.IsEnum)
+            //{
+            //    throw new ArgumentException("Can't get type for access rights");
+            //}
 
-            return type;
+            //return type;
         }
 
         public static void EditSecurity(IntPtr hwnd, NtObject handle, string object_name, bool read_only)

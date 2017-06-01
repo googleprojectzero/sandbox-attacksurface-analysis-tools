@@ -39,14 +39,14 @@ namespace CheckRegistryAccess
             Console.WriteLine(@"Key names can be in win32 form (hkey_local_machine\blah) or native (\Registry\Machine\blah");
         }
 
-        static string AccessMaskToString(uint granted_access)
+        static string AccessMaskToString(GenericAccessRights granted_access)
         {
             if (_type.HasFullPermission(granted_access))
             {
                 return "Full Permission";
             }
 
-            return ((KeyAccessRights)granted_access).ToString();
+            return granted_access.ToSpecificAccess<KeyAccessRights>().ToString();
         }
 
         static void CheckAccess(NtKey key)
@@ -57,11 +57,12 @@ namespace CheckRegistryAccess
             }
 
             SecurityDescriptor sd = key.SecurityDescriptor;
-            uint granted_access = 0;
+            GenericAccessRights granted_access = 0;
 
             if (_key_rights != 0)
             {
-                granted_access = NtSecurity.GetAllowedAccess(_token, _type, _key_rights, sd.ToByteArray());
+                granted_access = NtSecurity.GetAllowedAccess(_token, _type, 
+                    _key_rights.ToGenericAccess(), sd.ToByteArray());
             }
             else
             {

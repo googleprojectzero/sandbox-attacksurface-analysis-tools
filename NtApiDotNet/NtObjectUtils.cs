@@ -146,5 +146,37 @@ namespace NtApiDotNet
         {
             return (result & (1 << bit)) != 0;
         }
+
+        /// <summary>
+        /// Convert an value to generic access if it's convertable to a UInt32
+        /// </summary>
+        /// <typeparam name="A">The convertable type.</typeparam>
+        /// <param name="access">The access to convert.</param>
+        /// <returns>The converted access rights.</returns>
+        public static GenericAccessRights ToGenericAccess<A>(this A access) where A : struct, IConvertible
+        {
+            return ToGenericAccess(access.ToUInt32(null));
+        }
+
+        /// <summary>
+        /// Convert an value to generic access if it's convertable to a UInt32
+        /// </summary>
+        /// <param name="access">The access to convert.</param>
+        /// <returns>The converted access rights.</returns>
+        public static GenericAccessRights ToGenericAccess(uint access)
+        {
+            return (GenericAccessRights)access;
+        }
+
+        /// <summary>
+        /// Convert a generic access to a specific access type.
+        /// </summary>
+        /// <typeparam name="A">The specific access rights type</typeparam>
+        /// <param name="access">The generic access rights</param>
+        /// <returns>The specific access rights.</returns>
+        public static A ToSpecificAccess<A>(this GenericAccessRights access) where A : struct, IConvertible
+        {
+            return (A)(object)(uint)access;
+        }
     }
 }

@@ -340,7 +340,7 @@ namespace NtApiDotNet
         /// <summary>
         /// The granted access mask
         /// </summary>
-        public uint GrantedAccess { get; private set; }
+        public GenericAccessRights GrantedAccess { get; private set; }
 
         /// <summary>
         /// The name of the object (needs to have set query access in constructor)
@@ -400,7 +400,7 @@ namespace NtApiDotNet
             Attributes = (AttributeFlags)entry.HandleAttributes;
             Handle = entry.HandleValue;
             Object = (ulong)entry.Object.ToInt64();
-            GrantedAccess = entry.GrantedAccess;
+            GrantedAccess = (GenericAccessRights)entry.GrantedAccess;
             _allow_query = allow_query;
         }
 

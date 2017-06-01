@@ -202,20 +202,20 @@ namespace CheckServiceAccess
         static GenericMapping GetSCMGenericMapping()
         {
             GenericMapping mapping = new GenericMapping();
-            mapping.GenericRead = (uint)(ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.EnumerateService | ServiceControlManagerAccessRights.QueryLockStatus);
-            mapping.GenericWrite = (uint)(ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.CreateService | ServiceControlManagerAccessRights.ModifyBootConfig);
-            mapping.GenericExecute = (uint)(ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.Lock);
-            mapping.GenericAll = (uint)ServiceControlManagerAccessRights.All;
+            mapping.GenericRead = (ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.EnumerateService | ServiceControlManagerAccessRights.QueryLockStatus).ToGenericAccess();
+            mapping.GenericWrite = (ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.CreateService | ServiceControlManagerAccessRights.ModifyBootConfig).ToGenericAccess();
+            mapping.GenericExecute = (ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.Lock).ToGenericAccess();
+            mapping.GenericAll = ServiceControlManagerAccessRights.All.ToGenericAccess();
             return mapping;
         }
 
         static GenericMapping GetServiceGenericMapping()
         {
             GenericMapping mapping = new GenericMapping();
-            mapping.GenericRead = (uint)(ServiceAccessRights.ReadControl | ServiceAccessRights.QueryConfig | ServiceAccessRights.QueryStatus | ServiceAccessRights.Interrogate | ServiceAccessRights.EnumerateDependents);
-            mapping.GenericWrite = (uint)(ServiceAccessRights.ReadControl | ServiceAccessRights.ChangeConfig);
-            mapping.GenericExecute = (uint)(ServiceAccessRights.ReadControl | ServiceAccessRights.Start | ServiceAccessRights.Stop | ServiceAccessRights.PauseContinue | ServiceAccessRights.UserDefinedControl);
-            mapping.GenericAll = (uint)ServiceAccessRights.All;
+            mapping.GenericRead = (ServiceAccessRights.ReadControl | ServiceAccessRights.QueryConfig | ServiceAccessRights.QueryStatus | ServiceAccessRights.Interrogate | ServiceAccessRights.EnumerateDependents).ToGenericAccess();
+            mapping.GenericWrite = (ServiceAccessRights.ReadControl | ServiceAccessRights.ChangeConfig).ToGenericAccess();
+            mapping.GenericExecute = (ServiceAccessRights.ReadControl | ServiceAccessRights.Start | ServiceAccessRights.Stop | ServiceAccessRights.PauseContinue | ServiceAccessRights.UserDefinedControl).ToGenericAccess();
+            mapping.GenericAll = ServiceAccessRights.All.ToGenericAccess();
             return mapping;
         }
 
@@ -227,14 +227,15 @@ namespace CheckServiceAccess
             p.WriteOptionDescriptions(Console.Out);
         }
 
-        static uint GetGrantedAccess(SecurityDescriptor sd, NtToken token, uint specific_rights, GenericMapping generic_mapping)
+        static GenericAccessRights GetGrantedAccess(SecurityDescriptor sd, NtToken token, 
+            GenericAccessRights specific_rights, GenericMapping generic_mapping)
         {
-            uint granted_access = 0;
+            GenericAccessRights granted_access = 0;
             specific_rights = generic_mapping.MapMask(specific_rights);
 
             if (specific_rights != 0)
             {
-                granted_access = NtSecurity.GetAllowedAccess(sd, token, (GenericAccessRights)(specific_rights), generic_mapping);
+                granted_access = NtSecurity.GetAllowedAccess(sd, token, specific_rights, generic_mapping);
             }
             else
             {
@@ -265,20 +266,20 @@ namespace CheckServiceAccess
             return new SecurityDescriptor(sd);
         }
 
-        static uint ParseRight(string name, Type enumtype)
+        static T ParseRight<T>(string name) where T : struct, IConvertible
         {
-            return (uint)Enum.Parse(enumtype, name, true);
+            return (T)Enum.Parse(typeof(T), name, true);
         }
 
-        static bool HasWriteAccess(uint granted_access)
+        static bool HasWriteAccess(GenericAccessRights granted_access)
         {
             GenericMapping generic_mapping = GetServiceGenericMapping();
-            if ((granted_access & (uint)(SectionAccessRights.WriteDac | SectionAccessRights.WriteOwner)) != 0)
+            if ((granted_access & (GenericAccessRights.WriteDac | GenericAccessRights.WriteOwner)) != 0)
             {
                 return true;
             }
 
-            granted_access &= 0xFFFF;
+            granted_access &= NtObjectUtils.ToGenericAccess(0xFFFF);
             return (granted_access & generic_mapping.GenericWrite) != 0;
         }
 
@@ -458,7 +459,7 @@ namespace CheckServiceAccess
             }
         }
 
-        static void DumpService(SafeServiceHandle scm, string name, NtToken token, uint service_rights, bool show_write_only, bool print_sddl, bool dump_triggers)
+        static void DumpService(SafeServiceHandle scm, string name, NtToken token, ServiceAccessRights service_rights, bool show_write_only, bool print_sddl, bool dump_triggers)
         {
             using (SafeServiceHandle service = OpenService(scm, name, ServiceAccessRights.QueryConfig | ServiceAccessRights.ReadControl))
             {
@@ -466,11 +467,11 @@ namespace CheckServiceAccess
                 {
                     GenericMapping generic_mapping = GetServiceGenericMapping();
                     SecurityDescriptor sd = GetServiceSecurityDescriptor(service);
-                    uint granted_access = GetGrantedAccess(sd, token, service_rights, generic_mapping);
+                    GenericAccessRights granted_access = GetGrantedAccess(sd, token, service_rights.ToGenericAccess(), generic_mapping);
 
                     if (granted_access != 0 && !show_write_only || HasWriteAccess(granted_access))
                     {
-                        Console.WriteLine("{0} Granted Access: {1}", name, (ServiceAccessRights)granted_access);
+                        Console.WriteLine("{0} Granted Access: {1}", name, granted_access);
                         if (print_sddl)
                         {
                             Console.WriteLine("{0} SDDL: {1}", name, sd.ToSddl());
@@ -502,7 +503,7 @@ namespace CheckServiceAccess
             bool print_sddl = false;
             bool dump_triggers = false;
             bool dump_scm = false;
-            uint service_rights = 0;
+            ServiceAccessRights service_rights = 0;
             bool quiet = false;
 
             try
@@ -513,7 +514,7 @@ namespace CheckServiceAccess
                         { "w", "Show only write permissions granted", v => show_write_only = v != null },
                         { "k=", String.Format("Filter on a specific right [{0}]",
                             String.Join(",", Enum.GetNames(typeof(ServiceAccessRights)))),
-                            v => service_rights |= ParseRight(v, typeof(ServiceAccessRights)) },
+                            v => service_rights |= ParseRight<ServiceAccessRights>(v) },
                         { "t", "Dump trigger information for services", v => dump_triggers = v != null },
                         { "scm", "Dump SCM security information", v => dump_scm = v != null },
                         { "q", "Don't print our errors", v => quiet = v != null },
