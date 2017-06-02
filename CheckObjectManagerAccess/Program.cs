@@ -24,7 +24,6 @@ namespace CheckObjectManagerAccess
     {
         static bool _print_sddl = false;
         static bool _show_write_only = false;
-        static HashSet<string> _walked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         static uint _dir_rights = 0;
         static HashSet<string> _type_filter = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         static bool _map_to_generic = false;
@@ -95,15 +94,13 @@ namespace CheckObjectManagerAccess
             }
         }
 
-        static void DumpDirectory(NtDirectory dir, NtToken token, bool recursive)
+        static void DumpDirectory(NtDirectory dir, NtToken token, bool recursive, HashSet<string> walked)
         {
-            if (_walked.Contains(dir.FullPath.ToLower()))
+            if (!walked.Add(dir.FullPath.ToLower()))
             {
                 return;
             }
-
-            _walked.Add(dir.FullPath.ToLower());
-
+            
             CheckAccess(token, dir);
 
             if (recursive && dir.IsAccessGranted(DirectoryAccessRights.Query))
@@ -117,14 +114,17 @@ namespace CheckObjectManagerAccess
                             using (NtDirectory newdir = NtDirectory.Open(entry.Name, 
                                 dir, DirectoryAccessRights.MaximumAllowed))
                             {
-                                DumpDirectory(newdir, token, recursive);
+                                DumpDirectory(newdir, token, recursive, walked);
                             }
                         }
                         else if (entry.NtType.CanOpen)
                         {
-                            using (NtObject obj = entry.Open(GenericAccessRights.ReadControl))
+                            if (_type_filter.Count == 0 || _type_filter.Contains(entry.NtTypeName))
                             {
-                                CheckAccess(token, obj);
+                                using (NtObject obj = entry.Open(GenericAccessRights.ReadControl))
+                                {
+                                    CheckAccess(token, obj);
+                                }
                             }
                         }
                     }
@@ -144,10 +144,23 @@ namespace CheckObjectManagerAccess
             return (uint)Enum.Parse(enumtype, name, true);
         }
 
+        static NtDirectory OpenDirectory(string name)
+        {
+            if (name.StartsWith(@"\"))
+            {
+                return NtDirectory.Open(name);
+            }
+            else
+            {
+                return NtDirectory.OpenPrivateNamespace(BoundaryDescriptor.CreateFromString(name));
+            }
+        }
+
         static void Main(string[] args)
         {
             bool show_help = false;
             bool recursive = false;
+            HashSet<string> exclude_dirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             int pid = Process.GetCurrentProcess().Id;
             try
@@ -160,8 +173,8 @@ namespace CheckObjectManagerAccess
                             { "w", "Show only write permissions granted", v => _show_write_only = v != null },
                             { "k=", String.Format("Filter on a specific directory right [{0}]", 
                                 String.Join(",", Enum.GetNames(typeof(DirectoryAccessRights)))), v => _dir_rights |= ParseRight(v, typeof(DirectoryAccessRights)) },  
-                            { "x=", "Specify a base path to exclude from recursive search", v => _walked.Add(v.ToLower()) },
-                            { "t=", "Specify a type of object to include", v => _type_filter.Add(v.ToLower()) },
+                            { "x=", "Specify a base path to exclude from recursive search", v => exclude_dirs.Add(v) },
+                            { "t=", "Specify a type of object to include", v => _type_filter.Add(v) },
                             { "g", "Map access mask to generic rights.", v => _map_to_generic = v != null },
                             { "e", "Display errors when opening objects, ignores access denied.", v => _show_errors = v != null },
                             { "h|help",  "show this message and exit", v => show_help = v != null },
@@ -181,9 +194,11 @@ namespace CheckObjectManagerAccess
                         {
                             try
                             {
-                                using (NtDirectory dir = NtDirectory.Open(path, null, DirectoryAccessRights.MaximumAllowed))
+                                using (NtDirectory dir = OpenDirectory(path))
                                 {
-                                    DumpDirectory(dir, token, recursive);
+                                    HashSet<string> walked = new HashSet<string>(exclude_dirs, StringComparer.OrdinalIgnoreCase);
+                                    Console.WriteLine("Dumping Directory: {0}", path);
+                                    DumpDirectory(dir, token, recursive, walked);
                                 }
                             }
                             catch (NtException ex)
