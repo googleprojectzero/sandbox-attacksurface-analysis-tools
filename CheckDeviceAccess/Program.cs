@@ -104,7 +104,7 @@ namespace CheckDeviceAccess
                         {
                             if (dumped_dirs.Add(directory.FullPath))
                             {
-                                var objs = directory.Query().OrderBy(e => Tuple.Create(e.Name, e.TypeName));
+                                var objs = directory.Query().OrderBy(e => Tuple.Create(e.Name, e.NtTypeName));
 
                                 if (_recursive)
                                 {
@@ -114,7 +114,7 @@ namespace CheckDeviceAccess
                                     }
                                 }
                                 
-                                total_entries.AddRange(objs.Where(e => e.TypeName.Equals("device", 
+                                total_entries.AddRange(objs.Where(e => e.NtTypeName.Equals("device", 
                                     StringComparison.OrdinalIgnoreCase)).Select(e => e.FullPath));
                             }
                         }
@@ -207,7 +207,7 @@ namespace CheckDeviceAccess
                         {
                             if (dumped_dirs.Add(directory.FullPath))
                             {
-                                var objs = directory.Query().OrderBy(e => Tuple.Create(e.Name, e.TypeName));
+                                var objs = directory.Query().OrderBy(e => Tuple.Create(e.Name, e.NtTypeName));
                                 foreach (var dir in objs.Where(d => d.IsDirectory))
                                 {
                                     dump_list.Enqueue(new DirectoryQueueEntry(directory.Duplicate(), dir.Name));

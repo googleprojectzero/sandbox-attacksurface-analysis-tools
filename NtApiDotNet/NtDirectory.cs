@@ -33,7 +33,14 @@ namespace NtApiDotNet
         private string _symlink_target;
 
         public string Name { get; private set; }
-        public string TypeName { get; private set; }
+        public string NtTypeName { get; private set; }
+        public NtType NtType
+        {
+            get
+            {
+                return NtType.GetTypeByName(NtTypeName);
+            }
+        }
         public string FullPath { get; private set; }         
         public string SymbolicLinkTarget
         {
@@ -79,23 +86,23 @@ namespace NtApiDotNet
         {
             _root = root;
             Name = name;
-            TypeName = typename;
+            NtTypeName = typename;
             FullPath = String.Format(@"{0}\{1}", base_path, Name);
         }
 
         public NtObject Open(AccessMask access)
         {
-            return NtObject.OpenWithType(TypeName, Name, _root, access);
+            return NtObject.OpenWithType(NtTypeName, Name, _root, access);
         }
 
         public bool IsDirectory
         {
-            get { return TypeName.Equals("directory", StringComparison.OrdinalIgnoreCase); }
+            get { return NtTypeName.Equals("directory", StringComparison.OrdinalIgnoreCase); }
         }
 
         public bool IsSymbolicLink
         {
-            get { return TypeName.Equals("symboliclink", StringComparison.OrdinalIgnoreCase); }
+            get { return NtTypeName.Equals("symboliclink", StringComparison.OrdinalIgnoreCase); }
         }
     }
 
@@ -768,7 +775,7 @@ namespace NtApiDotNet
                     ObjectDirectoryInformation dir_info = dir.GetDirectoryEntry(GetFileName(path));
                     if (dir_info != null)
                     {
-                        return dir_info.TypeName;
+                        return dir_info.NtTypeName;
                     }
                 }
             }

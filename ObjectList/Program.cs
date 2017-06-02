@@ -91,14 +91,14 @@ namespace ObjectList
                 }
                 else
                 {
-                    Console.WriteLine("      {0} ({1})", entry.FullPath, entry.TypeName);
+                    Console.WriteLine("      {0} ({1})", entry.FullPath, entry.NtTypeName);
                 }
             }
         }
 
         static void OutputTypeGroup(IEnumerable<ObjectDirectoryInformation> entries)
         {
-            var groups = entries.GroupBy(e => e.TypeName, StringComparer.OrdinalIgnoreCase);
+            var groups = entries.GroupBy(e => e.NtTypeName, StringComparer.OrdinalIgnoreCase);
             foreach (var group in groups)
             {
                 Console.WriteLine("Type: {0} (Total: {1})", group.Key, group.Count());
@@ -141,7 +141,7 @@ namespace ObjectList
 
                             if (dumped_dirs.Add(directory.FullPath))
                             {
-                                IEnumerable<ObjectDirectoryInformation> objs = directory.Query().OrderBy(e => Tuple.Create(e.Name, e.TypeName));
+                                IEnumerable<ObjectDirectoryInformation> objs = directory.Query().OrderBy(e => Tuple.Create(e.Name, e.NtTypeName));
 
                                 if (recursive)
                                 {
@@ -153,7 +153,7 @@ namespace ObjectList
 
                                 if (type_filter.Count > 0)
                                 {
-                                    objs = objs.Where(e => type_filter.Contains(e.TypeName));
+                                    objs = objs.Where(e => type_filter.Contains(e.NtTypeName));
                                 }
 
                                 switch (format)

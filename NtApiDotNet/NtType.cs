@@ -407,10 +407,15 @@ namespace NtApiDotNet
             return (GenericMapping.MapMask(access_mask) & ~ValidAccess).IsEmpty;
         }
 
-        internal NtType(int id)
+        internal NtType(int id, string name)
         {
             Index = id;
-            Name = String.Format("Unknown {0}", id);
+            Name = name;
+            if (Name == null)
+            {
+                Name = String.Format("Unknown {0}", id);
+            }
+            System.Diagnostics.Debug.WriteLine(String.Format("Generating Fake Type for {0}", Name));
             _type_factory = _generic_factory;
         }
 
@@ -458,7 +463,7 @@ namespace NtApiDotNet
                     return info;
             }
 
-            return new NtType(index);
+            return new NtType(index, null);
         }
 
         /// <summary>
@@ -473,10 +478,8 @@ namespace NtApiDotNet
             {
                 return _types[name];
             }
-            else
-            {
-                return null;
-            }
+            
+            return new NtType(-1, name);
         }
 
         private static void LoadTypes()

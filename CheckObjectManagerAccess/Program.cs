@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using SandboxAnalysisUtils;
 using NDesk.Options;
 using NtApiDotNet;
 using System;
@@ -23,14 +22,13 @@ namespace CheckObjectManagerAccess
 {
     class Program
     {
-        static bool _recursive = false;
         static bool _print_sddl = false;
         static bool _show_write_only = false;
-        static HashSet<string> _walked = new HashSet<string>();        
-        static NtToken _token;
+        static HashSet<string> _walked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         static uint _dir_rights = 0;
-        static HashSet<string> _type_filter = new HashSet<string>();
+        static HashSet<string> _type_filter = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         static bool _map_to_generic = false;
+        static bool _show_errors = false;
        
         static void ShowHelp(OptionSet p)
         {
@@ -50,58 +48,54 @@ namespace CheckObjectManagerAccess
             return NtObjectUtils.GrantedAccessAsString(granted_access, type.GenericMapping, GetTypeAccessRights(type), map_to_generic);
         }
 
-        static void CheckAccess(string path, SecurityDescriptor sd, NtType type)
+        static void CheckAccess(NtToken token, NtObject obj)
         {
+            if (!obj.IsAccessMaskGranted(GenericAccessRights.ReadControl))
+            {
+                return;
+            }
+
             try
             {
-                if (_type_filter.Count > 0)
+                SecurityDescriptor sd = obj.SecurityDescriptor;
+                AccessMask granted_access;
+                NtType type = obj.NtType;
+
+                if (_dir_rights != 0)
                 {
-                    if (!_type_filter.Contains(type.Name.ToLower()))
-                    {
-                        return;
-                    }
+                    granted_access = NtSecurity.GetAllowedAccess(sd, token, 
+                        _dir_rights, type.GenericMapping);
+                }
+                else
+                {
+                    granted_access = NtSecurity.GetMaximumAccess(sd, token, type.GenericMapping);
                 }
 
-                if (sd != null)
+                if (!granted_access.IsEmpty)
                 {
-                    AccessMask granted_access;
-
+                    // As we can get all the rights for the directory get maximum
                     if (_dir_rights != 0)
                     {
-                        granted_access = NtSecurity.GetAllowedAccess(sd, _token, 
-                            _dir_rights, type.GenericMapping);
-                    }
-                    else
-                    {
-                        granted_access = NtSecurity.GetMaximumAccess(sd, _token, type.GenericMapping);
+                        granted_access = NtSecurity.GetMaximumAccess(sd, token, type.GenericMapping);
                     }
 
-                    if (!granted_access.IsEmpty)
+                    if (!_show_write_only || type.HasWritePermission(granted_access))
                     {
-                        // As we can get all the rights for the directory get maximum
-                        if (_dir_rights != 0)
+                        Console.WriteLine("<{0}> {1} : {2:X08} {3}", type.Name, obj.FullPath, 
+                            granted_access, type.AccessMaskToString(granted_access, _map_to_generic));
+                        if (_print_sddl)
                         {
-                            granted_access = NtSecurity.GetMaximumAccess(sd, _token, type.GenericMapping);
-                        }
-
-                        if (!_show_write_only || type.HasWritePermission(granted_access))
-                        {
-                            Console.WriteLine("<{0}> {1} : {2:X08} {3}", type.Name, path, granted_access, 
-                                type.AccessMaskToString(granted_access, _map_to_generic));
-                            if (_print_sddl)
-                            {
-                                Console.WriteLine("{0}", sd.ToSddl());
-                            }
+                            Console.WriteLine("{0}", sd.ToSddl());
                         }
                     }
                 }
             }
-            catch (Exception)
+            catch (NtException)
             {
             }
         }
 
-        static void DumpDirectory(ObjectDirectory dir)
+        static void DumpDirectory(NtDirectory dir, NtToken token, bool recursive)
         {
             if (_walked.Contains(dir.FullPath.ToLower()))
             {
@@ -110,38 +104,38 @@ namespace CheckObjectManagerAccess
 
             _walked.Add(dir.FullPath.ToLower());
 
-            try
-            {
-                CheckAccess(dir.FullPath, dir.SecurityDescriptor, NtType.GetTypeByName("Directory"));
+            CheckAccess(token, dir);
 
-                if (_recursive)
+            if (recursive && dir.IsAccessGranted(DirectoryAccessRights.Query))
+            {
+                foreach (ObjectDirectoryInformation entry in dir.Query())
                 {
-                    foreach (ObjectDirectoryEntry entry in dir.Entries)
-                    {
-                        try
-                        {                            
-                            if (entry.IsDirectory)
+                    try
+                    {                            
+                        if (entry.IsDirectory)
+                        {
+                            using (NtDirectory newdir = NtDirectory.Open(entry.Name, 
+                                dir, DirectoryAccessRights.MaximumAllowed))
                             {
-                                using (ObjectDirectory newdir = ObjectNamespace.OpenDirectory(dir, entry.ObjectName))
-                                {
-                                    DumpDirectory(newdir);
-                                }
-                            }
-                            else
-                            {                                
-                                CheckAccess(entry.FullPath, entry.SecurityDescriptor, NtType.GetTypeByName(entry.TypeName));
+                                DumpDirectory(newdir, token, recursive);
                             }
                         }
-                        catch (Exception ex)
+                        else if (entry.NtType.CanOpen)
+                        {
+                            using (NtObject obj = entry.Open(GenericAccessRights.ReadControl))
+                            {
+                                CheckAccess(token, obj);
+                            }
+                        }
+                    }
+                    catch (NtException ex)
+                    {
+                        if (_show_errors && ex.Status != NtStatus.STATUS_ACCESS_DENIED)
                         {
                             Console.Error.WriteLine("Error opening {0} {1}", entry.FullPath, ex.Message);
                         }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine("Error dumping directory {0} {1}", dir.FullPath, ex.Message);
             }
         }
 
@@ -153,13 +147,14 @@ namespace CheckObjectManagerAccess
         static void Main(string[] args)
         {
             bool show_help = false;
+            bool recursive = false;
 
             int pid = Process.GetCurrentProcess().Id;
             try
             {
                 OptionSet opts = new OptionSet() {
                             { "r", "Recursive tree directory listing",  
-                                v => _recursive = v != null },                                  
+                                v => recursive = v != null },                                  
                             { "sddl", "Print full SDDL security descriptors", v => _print_sddl = v != null },
                             { "p|pid=", "Specify a PID of a process to impersonate when checking", v => pid = int.Parse(v.Trim()) },
                             { "w", "Show only write permissions granted", v => _show_write_only = v != null },
@@ -168,6 +163,7 @@ namespace CheckObjectManagerAccess
                             { "x=", "Specify a base path to exclude from recursive search", v => _walked.Add(v.ToLower()) },
                             { "t=", "Specify a type of object to include", v => _type_filter.Add(v.ToLower()) },
                             { "g", "Map access mask to generic rights.", v => _map_to_generic = v != null },
+                            { "e", "Display errors when opening objects, ignores access denied.", v => _show_errors = v != null },
                             { "h|help",  "show this message and exit", v => show_help = v != null },
                         };
 
@@ -179,13 +175,21 @@ namespace CheckObjectManagerAccess
                 }
                 else
                 {
-                    _token = NtToken.OpenProcessToken(pid);
-
-                    foreach (string path in paths)
+                    using (NtToken token = NtToken.OpenProcessToken(pid))
                     {
-                        using (ObjectDirectory dir = ObjectNamespace.OpenDirectory(null, path))
+                        foreach (string path in paths)
                         {
-                            DumpDirectory(dir);
+                            try
+                            {
+                                using (NtDirectory dir = NtDirectory.Open(path, null, DirectoryAccessRights.MaximumAllowed))
+                                {
+                                    DumpDirectory(dir, token, recursive);
+                                }
+                            }
+                            catch (NtException ex)
+                            {
+                                Console.WriteLine("Couldn't open {0} - {1}", path, ex.Message);
+                            }
                         }
                     }
                 }

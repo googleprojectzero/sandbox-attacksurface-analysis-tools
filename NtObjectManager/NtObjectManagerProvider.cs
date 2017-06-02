@@ -326,7 +326,7 @@ namespace NtObjectManager
                 {
                     ObjectDirectoryInformation dir_info = GetEntry(dir, path);
                     is_container = dir_info != null
-                        && dir_info.TypeName.Equals("directory", StringComparison.OrdinalIgnoreCase);
+                        && dir_info.NtTypeName.Equals("directory", StringComparison.OrdinalIgnoreCase);
                 }
             }
             catch (NtException)
@@ -372,7 +372,7 @@ namespace NtObjectManager
                     {
                         string new_path = BuildRelativePath(relative_path, dir_info.Name);
                         WriteItemObject(new NtDirectoryEntry(GetDrive().DirectoryRoot, new_path,
-                            recurse ? new_path : dir_info.Name, dir_info.TypeName), NTPathToPS(BuildDrivePath(new_path)), dir_info.IsDirectory);
+                            recurse ? new_path : dir_info.Name, dir_info.NtTypeName), NTPathToPS(BuildDrivePath(new_path)), dir_info.IsDirectory);
                         if (recurse && dir_info.IsDirectory)
                         {
                             dirs.Enqueue(new_path);
@@ -461,7 +461,7 @@ namespace NtObjectManager
                     ObjectDirectoryInformation dir_info = GetEntry(dir, relative_path);
                     if (dir_info != null)
                     {
-                        WriteItemObject(new NtDirectoryEntry(GetDrive().DirectoryRoot, relative_path, dir_info.Name, dir_info.TypeName),
+                        WriteItemObject(new NtDirectoryEntry(GetDrive().DirectoryRoot, relative_path, dir_info.Name, dir_info.NtTypeName),
                             NTPathToPS(BuildDrivePath(relative_path)), dir_info.IsDirectory);
                     }
                 }
@@ -524,7 +524,7 @@ namespace NtObjectManager
                 foreach (ObjectDirectoryInformation dir_info in matching_entries)
                 {
                     string full_path = base_path + dir_info.Name;
-                    _item_cache[full_path] = new NtDirectoryEntry(GetDrive().DirectoryRoot, PSPathToNT(full_path), dir_info.Name, dir_info.TypeName);
+                    _item_cache[full_path] = new NtDirectoryEntry(GetDrive().DirectoryRoot, PSPathToNT(full_path), dir_info.Name, dir_info.NtTypeName);
                     matches.Add(full_path);
                 }
             }

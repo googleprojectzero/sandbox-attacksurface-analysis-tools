@@ -53,7 +53,7 @@ namespace SandboxAnalysisUtils
             }
             else
             {
-                _entries = new List<ObjectDirectoryEntry>(_directory.Query().Select(e => new ObjectDirectoryEntry(e.Name, e.TypeName, this)));
+                _entries = new List<ObjectDirectoryEntry>(_directory.Query().Select(e => new ObjectDirectoryEntry(e.Name, e.NtTypeName, this)));
             }
         }
 

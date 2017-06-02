@@ -33,7 +33,7 @@ namespace EditSection
 
             foreach (var entry in dir.Query())
             {
-                if(entry.TypeName.Equals(typename, StringComparison.OrdinalIgnoreCase))
+                if(entry.NtTypeName.Equals(typename, StringComparison.OrdinalIgnoreCase))
                 {
                     names.Add(entry.FullPath);
                 }
