@@ -43,9 +43,6 @@
   <ItemGroup>
     <Compile Include="LogonUtils.cs" />
     <Compile Include="NativeBridge.cs" />
-    <Compile Include="ObjectDirectoryEntry.cs" />
-    <Compile Include="ObjectDirectory.cs" />
-    <Compile Include="ObjectNamespace.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SafeWin32Exception.cs" />
     <Compile Include="SecurityInformationImpl.cs" />
