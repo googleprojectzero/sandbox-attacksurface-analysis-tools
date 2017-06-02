@@ -13,8 +13,10 @@
 //  limitations under the License.
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Reflection;
 
 namespace NtApiDotNet
 {
@@ -55,13 +57,84 @@ namespace NtApiDotNet
         public int NumberOfTypes;
         //ObjectTypeInformation TypeInformation; // Type Info list
     }
+
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+    internal sealed class NtTypeAttribute : Attribute
+    {
+        public string TypeName { get; private set; }
+        public NtTypeAttribute(string type_name)
+        {
+            TypeName = type_name;
+        }
+    }
+
+    internal sealed class NtTypeFactory
+    {
+        private MethodInfo _open_from_name_method;
+        public Type ObjectType { get; private set; }
+        public Type AccessRightsType { get; private set; }
+        public bool CanOpen { get { return _open_from_name_method != null; } }
+        public Func<SafeKernelObjectHandle, NtObject> FromHandle { get; private set; }
+
+        public NtObject Open(string name, NtObject root, AccessMask desired_access)
+        {
+            try
+            {
+                return (NtObject)_open_from_name_method.Invoke(null, 
+                    new object[] { name, root,
+                        Enum.ToObject(AccessRightsType, desired_access.Access) });
+            }
+            catch (TargetInvocationException ex)
+            {
+                throw ex.InnerException;
+            }
+        }
+
+        public NtTypeFactory(Type object_type)
+        {
+            Type base_type = object_type.BaseType;
+            System.Diagnostics.Debug.Assert(base_type.GetGenericTypeDefinition() == typeof(NtObjectWithDuplicate<,>));
+            ObjectType = object_type;
+            MethodInfo from_handle_method = base_type.GetMethod("FromHandle", 
+                BindingFlags.Public | BindingFlags.Static, 
+                null, new Type[] { typeof(SafeKernelObjectHandle) }, null);
+            FromHandle = (Func<SafeKernelObjectHandle, NtObject>)Delegate.CreateDelegate(typeof(Func<SafeKernelObjectHandle, NtObject>), from_handle_method);
+            AccessRightsType = base_type.GetGenericArguments()[1];
+            _open_from_name_method = object_type.GetMethod("Open", 
+                BindingFlags.Public | BindingFlags.Static, null, 
+                new Type[] { typeof(string), typeof(NtObject), AccessRightsType }, null);
+            if (_open_from_name_method == null)
+            {
+                System.Diagnostics.Debug.WriteLine(String.Format("Type {0} doesn't have an open method", object_type));
+            }
+        }
+
+        public static Dictionary<string, NtTypeFactory> GetAssemblyNtTypeFactories(Assembly assembly)
+        {
+            Dictionary<string, NtTypeFactory> _factories = new Dictionary<string, NtTypeFactory>(StringComparer.OrdinalIgnoreCase);
+            foreach (Type type in assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && typeof(NtObject).IsAssignableFrom(t)))
+            {
+                IEnumerable<NtTypeAttribute> attrs = type.GetCustomAttributes<NtTypeAttribute>();
+                foreach (NtTypeAttribute attr in attrs)
+                {
+                    System.Diagnostics.Debug.Assert(!_factories.ContainsKey(attr.TypeName));
+                    _factories.Add(attr.TypeName, new NtTypeFactory(type));
+                }
+            }
+            return _factories;
+        }
+    }
+
 #pragma warning restore 1591
 
     /// <summary>
     /// Class representing an NT object type
     /// </summary>
-    public class NtType
+    public sealed class NtType
     {
+        private static NtTypeFactory _generic_factory = new NtTypeFactory(typeof(NtGeneric));
+        private NtTypeFactory _type_factory;
+
         /// <summary>
         /// The name of the type
         /// </summary>
@@ -156,6 +229,107 @@ namespace NtApiDotNet
         public int Index { get; private set; }
 
         /// <summary>
+        /// Get implemented object type for this NT type.
+        /// </summary>
+        public Type ObjectType
+        {
+            get
+            {
+                return _type_factory.ObjectType;
+            }
+        }
+
+        /// <summary>
+        /// Get the access rights enumerated type for this NT type.
+        /// </summary>
+        public Type AccessRightsType
+        {
+            get
+            {
+                return _type_factory.AccessRightsType;
+            }
+        }
+        /// <summary>
+        /// Can this type of open be opened by name
+        /// </summary>
+        public bool CanOpen
+        {
+            get { return _type_factory.CanOpen; }
+        }
+
+        /// <summary>
+        /// Open this NT type by name (if CanOpen is true)
+        /// </summary>
+        /// <param name="name">The name of the object to open.</param>
+        /// <param name="root">The root object for opening, if name is relative</param>
+        /// <param name="desired_access">Desired access when opening.</param>
+        /// <returns>The created object.</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public NtObject Open(string name, NtObject root, AccessMask desired_access)
+        {
+            if (!CanOpen)
+            {
+                throw new ArgumentException(String.Format("Can't open type {0} by name", Name));
+            }           
+
+            return _type_factory.Open(name, root, desired_access);
+        }
+
+        /// <summary>
+        /// Open this NT type by name (if CanOpen is true)
+        /// </summary>
+        /// <param name="name">The name of the object to open.</param>
+        /// <param name="root">The root object for opening, if name is relative</param>
+        /// <returns>The created object.</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public NtObject Open(string name, NtObject root)
+        {
+            return Open(name, root, GenericAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Open this NT type by name (if CanOpen is true)
+        /// </summary>
+        /// <param name="name">The name of the object to open.</param>
+        /// <returns>The created object.</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public NtObject Open(string name)
+        {
+            return Open(name, null);
+        }
+
+        /// <summary>
+        /// Get open from an existing handle.
+        /// </summary>
+        /// <param name="handle">The existing handle.</param>
+        /// <returns>The new object.</returns>
+        public NtObject FromHandle(SafeKernelObjectHandle handle)
+        {
+            return _type_factory.FromHandle(handle);
+        }
+
+        /// <summary>
+        /// Convert an enumerable access rights to a string
+        /// </summary>
+        /// <param name="granted_access">The granted access mask.</param>
+        /// <param name="map_to_generic">True to try and convert to generic rights where possible.</param>
+        /// <returns>The string format of the access rights</returns>
+        public string AccessMaskToString(AccessMask granted_access, bool map_to_generic)
+        {
+            return NtObjectUtils.GrantedAccessAsString(granted_access, GenericMapping, AccessRightsType, map_to_generic);
+        }
+
+        /// <summary>
+        /// Convert an enumerable access rights to a string
+        /// </summary>
+        /// <param name="granted_access">The granted access mask.</param>
+        /// <returns>The string format of the access rights</returns>
+        public string GrantedAccessAsString(AccessMask granted_access)
+        {
+            return AccessMaskToString(granted_access, false);
+        }
+
+        /// <summary>
         /// Checks if an access mask represents a read permission on this type
         /// </summary>
         /// <param name="access_mask">The access mask to check</param>
@@ -237,9 +411,10 @@ namespace NtApiDotNet
         {
             Index = id;
             Name = String.Format("Unknown {0}", id);
+            _type_factory = _generic_factory;
         }
 
-        internal NtType(int id, ObjectTypeInformation info)
+        internal NtType(int id, ObjectTypeInformation info, NtTypeFactory type_factory)
         {
             Index = id;
             Name = info.Name.ToString();
@@ -265,6 +440,7 @@ namespace NtApiDotNet
             PoolType = info.PoolType;
             PagedPoolUsage = info.PagedPoolUsage;
             NonPagedPoolUsage = info.NonPagedPoolUsage;
+            _type_factory = type_factory;
         }
 
         private static Dictionary<string, NtType> _types;
@@ -307,6 +483,7 @@ namespace NtApiDotNet
         {
             if (_types == null)
             {
+                var type_factories = NtTypeFactory.GetAssemblyNtTypeFactories(Assembly.GetExecutingAssembly());
                 SafeStructureInOutBuffer<ObjectAllTypesInformation> type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>();
 
                 try
@@ -330,7 +507,9 @@ namespace NtApiDotNet
                     for (int count = 0; count < result.NumberOfTypes; ++count)
                     {
                         ObjectTypeInformation info = (ObjectTypeInformation)Marshal.PtrToStructure(curr_typeinfo, typeof(ObjectTypeInformation));
-                        NtType ti = new NtType(count + 2, info);
+                        string name = info.Name.ToString();
+                        NtTypeFactory factory = type_factories.ContainsKey(name) ? type_factories[name] : _generic_factory;
+                        NtType ti = new NtType(count + 2, info, factory);
                         ret[ti.Name] = ti;
 
                         int offset = (info.Name.MaximumLength + alignment) & ~alignment;

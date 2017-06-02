@@ -301,6 +301,7 @@ namespace NtApiDotNet
     /// <summary>
     /// NT Directory Object class
     /// </summary>
+    [NtType("Directory")]
     public class NtDirectory : NtObjectWithDuplicate<NtDirectory, DirectoryAccessRights>
     {
         internal NtDirectory(SafeKernelObjectHandle handle) : base(handle)

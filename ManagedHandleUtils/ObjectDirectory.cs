@@ -25,7 +25,7 @@ namespace SandboxAnalysisUtils
         private string _full_path;
         private List<ObjectDirectoryEntry> _entries;
         private string _sddl;
-        private byte[] _sd;
+        private SecurityDescriptor _sd;
         private NtDirectory _directory;
 
         private void PopulateEntries()
@@ -33,15 +33,13 @@ namespace SandboxAnalysisUtils
             DirectoryAccessRights granted_access = _directory.GrantedAccess;
             if ((granted_access & DirectoryAccessRights.ReadControl) == DirectoryAccessRights.ReadControl)
             {
-                _sd = _directory.GetSecurityDescriptorBytes(SecurityInformation.Dacl | SecurityInformation.Label | SecurityInformation.Group | SecurityInformation.Owner);
-                _sddl = NtSecurity.SecurityDescriptorToSddl(_sd, SecurityInformation.Dacl | SecurityInformation.Label | SecurityInformation.Group | SecurityInformation.Owner);
+                _sd = _directory.SecurityDescriptor;
+                _sddl = _sd.ToSddl();
             }
             else
             {
-                _sd = new byte[0];
                 _sddl = String.Empty;
             }
-
 
             _full_path = _directory.FullPath;
             if (String.IsNullOrWhiteSpace(_full_path))
@@ -63,7 +61,7 @@ namespace SandboxAnalysisUtils
         {
             ObjectDirectory ret = new ObjectDirectory();
             ret._sddl = _sddl;
-            ret._sd = (byte[])_sd.Clone();
+            ret._sd = _sd;
             ret._orig_path = _orig_path;
             ret._full_path = _full_path;
             ret._entries = new List<ObjectDirectoryEntry>(_entries.Select(e => new ObjectDirectoryEntry(e.ObjectName, e.TypeName, ret)));
@@ -92,11 +90,11 @@ namespace SandboxAnalysisUtils
             }
         }
 
-        public byte[] SecurityDescriptor
+        public SecurityDescriptor SecurityDescriptor
         {
             get
             {
-                return (byte[])_sd.Clone();
+                return _sd;
             }
         }
 

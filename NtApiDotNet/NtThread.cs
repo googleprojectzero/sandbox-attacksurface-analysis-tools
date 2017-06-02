@@ -156,6 +156,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class to represent a NT Thread object
     /// </summary>
+    [NtType("Thread")]
     public class NtThread : NtObjectWithDuplicate<NtThread, ThreadAccessRights>
     {
         private int? _tid;

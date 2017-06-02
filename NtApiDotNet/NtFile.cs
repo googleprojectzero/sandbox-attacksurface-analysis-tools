@@ -1280,6 +1280,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class representing a NT File object
     /// </summary>
+    [NtType("File"), NtType("Device")]
     public class NtFile : NtObjectWithDuplicate<NtFile, FileAccessRights>
     {
         // Cancellation source for stopping pending IO on close.
@@ -1719,17 +1720,32 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="path">The path to the file</param>
         /// <param name="root">The root directory if path is relative.</param>
-        /// <param name="DesiredAccess">The desired access for the file handle</param>
-        /// <param name="ShareAccess">The file share access</param>
-        /// <param name="OpenOptions">File open options</param>
+        /// <param name="desired_access">The desired access for the file handle</param>
+        /// <param name="shared_access">The file share access</param>
+        /// <param name="open_options">File open options</param>
         /// <returns>The opened file</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtFile Open(string path, NtObject root, FileAccessRights DesiredAccess, FileShareMode ShareAccess, FileOpenOptions OpenOptions)
+        public static NtFile Open(string path, NtObject root, FileAccessRights desired_access, 
+            FileShareMode shared_access, FileOpenOptions open_options)
         {
             using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
-                return Open(obja, DesiredAccess, ShareAccess, OpenOptions);
+                return Open(obja, desired_access, shared_access, open_options);
             }
+        }
+
+        /// <summary>
+        /// Open a file
+        /// </summary>
+        /// <param name="path">The path to the file</param>
+        /// <param name="root">The root directory if path is relative.</param>
+        /// <param name="desired_access">The desired access for the file handle</param>
+        /// <returns>The opened file</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtFile Open(string path, NtObject root, FileAccessRights desired_access)
+        {
+            return Open(path, root, desired_access, 
+                FileShareMode.Read | FileShareMode.Delete, FileOpenOptions.None);
         }
 
         /// <summary>

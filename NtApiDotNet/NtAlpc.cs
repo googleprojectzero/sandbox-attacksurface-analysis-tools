@@ -246,6 +246,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class to represent an ALPC port.
     /// </summary>
+    [NtType("ALPC Port")]
     public class NtAlpc : NtObjectWithDuplicate<NtAlpc, AlpcAccessRights>
     {
         internal NtAlpc(SafeKernelObjectHandle handle) : base(handle)

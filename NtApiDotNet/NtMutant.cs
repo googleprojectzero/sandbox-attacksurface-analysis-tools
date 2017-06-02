@@ -54,6 +54,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class representing a NT Mutant object
     /// </summary>
+    [NtType("Mutant")]
     public class NtMutant : NtObjectWithDuplicate<NtMutant, MutantAccessRights>
     {
         internal NtMutant(SafeKernelObjectHandle handle) : base(handle)
@@ -105,6 +106,18 @@ namespace NtApiDotNet
             {
                 return Open(obja, desired_access);
             }
+        }
+
+        /// <summary>
+        /// Open a mutant
+        /// </summary>
+        /// <param name="path">The path to the mutant</param>
+        /// <param name="root">The root object if path is relative</param>
+        /// <returns>The opened mutant</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public static NtMutant Open(string path, NtObject root)
+        {
+            return Open(path, root, MutantAccessRights.MaximumAllowed);
         }
 
         /// <summary>

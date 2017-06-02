@@ -76,7 +76,8 @@ namespace NtApiDotNet
     /// <summary>
     /// Class representing a NT Event object
     /// </summary>
-    public class NtEvent : NtObjectWithDuplicate<NtEvent, EventAccessRights>
+    [NtType("Event")]
+    public sealed class NtEvent : NtObjectWithDuplicate<NtEvent, EventAccessRights>
     {
         internal NtEvent(SafeKernelObjectHandle handle) 
             : base(handle)

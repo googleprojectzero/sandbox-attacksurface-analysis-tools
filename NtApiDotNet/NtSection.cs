@@ -219,6 +219,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class to represent a NT Section object
     /// </summary>
+    [NtType("Section")]
     public sealed class NtSection : NtObjectWithDuplicate<NtSection, SectionAccessRights>
     {
         internal NtSection(SafeKernelObjectHandle handle, SectionAttributes attributes, MemoryAllocationProtect protection, LargeInteger size) : base(handle)

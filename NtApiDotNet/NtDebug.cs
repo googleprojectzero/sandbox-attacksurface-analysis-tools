@@ -38,19 +38,28 @@ namespace NtApiDotNet
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 
+    [Flags]
+    public enum DebugObjectFlags
+    {
+        None = 0,
+        Unknown1 = 1,
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtDebugActiveProcess(SafeKernelObjectHandle ProcessHandle, SafeKernelObjectHandle DebugHandle);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCreateDebugObject(out SafeKernelObjectHandle DebugHandle, DebugAccessRights DesiredAccess, [In] ObjectAttributes ObjectAttributes, int Flags);
+        public static extern NtStatus NtCreateDebugObject(out SafeKernelObjectHandle DebugHandle, 
+            DebugAccessRights DesiredAccess, [In] ObjectAttributes ObjectAttributes, DebugObjectFlags Flags);
     }
 #pragma warning restore 1591
 
     /// <summary>
     /// Class representing a NT Debug object
     /// </summary>
+    [NtType("DebugObject")]
     public class NtDebug : NtObjectWithDuplicate<NtDebug, DebugAccessRights>
     {
         internal NtDebug(SafeKernelObjectHandle handle) : base(handle)
@@ -62,12 +71,13 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="name">The debug object name (can be null)</param>
         /// <param name="root">The root directory for relative names</param>
+        /// <param name="flags">Debug object flags.</param>
         /// <returns>The debug object</returns>
-        public static NtDebug Create(string name, NtObject root)
+        public static NtDebug Create(string name, NtObject root, DebugObjectFlags flags)
         {
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
-                return Create(obja, DebugAccessRights.MaximumAllowed);
+                return Create(obja, DebugAccessRights.MaximumAllowed, DebugObjectFlags.None);
             }
         }
 
@@ -76,11 +86,12 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="desired_access">Desired access for the debug object</param>
         /// <param name="object_attributes">Object attributes for debug object</param>
+        /// <param name="flags">Debug object flags.</param>
         /// <returns>The debug object</returns>
-        public static NtDebug Create(ObjectAttributes object_attributes, DebugAccessRights desired_access)
+        public static NtDebug Create(ObjectAttributes object_attributes, DebugAccessRights desired_access, DebugObjectFlags flags)
         {
             SafeKernelObjectHandle handle;
-            NtSystemCalls.NtCreateDebugObject(out handle, desired_access, object_attributes, 0).ToNtException();
+            NtSystemCalls.NtCreateDebugObject(out handle, desired_access, object_attributes, flags).ToNtException();
             return new NtDebug(handle);
         }
 
@@ -90,7 +101,22 @@ namespace NtApiDotNet
         /// <returns>The debug object</returns>
         public static NtDebug Create()
         {
-            return Create(null, null);
+            return Create(null, null, DebugObjectFlags.None);
+        }
+
+        /// <summary>
+        /// Open a named debug object
+        /// </summary>
+        /// <param name="name">The debug object name </param>
+        /// <param name="root">The root directory for relative names</param>
+        /// <param name="desired_access">Desired access for the debug object</param>
+        /// <returns>The debug object</returns>
+        public static NtDebug Open(string name, NtObject root, DebugAccessRights desired_access)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive | AttributeFlags.OpenIf, root))
+            {
+                return Create(obja, DebugAccessRights.MaximumAllowed, DebugObjectFlags.None);
+            }
         }
     }
 }

@@ -151,6 +151,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class representing an NT IO Completion Port object
     /// </summary>
+    [NtType("IoCompletion")]
     public class NtIoCompletion : NtObjectWithDuplicate<NtIoCompletion, IoCompletionAccessRights>
     {
         internal NtIoCompletion(SafeKernelObjectHandle handle) 

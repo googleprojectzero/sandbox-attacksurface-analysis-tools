@@ -42,25 +42,7 @@ namespace CheckObjectManagerAccess
 
         static Type GetTypeAccessRights(NtType type)
         {
-            switch (type.Name.ToLower())
-            {
-                case "directory":
-                    return typeof(DirectoryAccessRights);
-                case "event":
-                    return typeof(EventAccessRights);
-                case "section":
-                    return typeof(SectionAccessRights);
-                case "mutant":
-                    return typeof(MutantAccessRights);
-                case "semaphore":
-                    return typeof(SemaphoreAccessRights);
-                case "job":
-                    return typeof(JobAccessRights);
-                case "symboliclink":
-                    return typeof(SymbolicLinkAccessRights);
-                default:
-                    throw new ArgumentException("Can't get type for access rights");
-            }
+            return type.AccessRightsType;
         }
 
         static string AccessMaskToString(NtType type, AccessMask granted_access, bool map_to_generic)
@@ -68,7 +50,7 @@ namespace CheckObjectManagerAccess
             return NtObjectUtils.GrantedAccessAsString(granted_access, type.GenericMapping, GetTypeAccessRights(type), map_to_generic);
         }
 
-        static void CheckAccess(string path, byte[] sd, NtType type)
+        static void CheckAccess(string path, SecurityDescriptor sd, NtType type)
         {
             try
             {
@@ -80,18 +62,18 @@ namespace CheckObjectManagerAccess
                     }
                 }
 
-                if (sd.Length > 0)
+                if (sd != null)
                 {
                     AccessMask granted_access;
 
                     if (_dir_rights != 0)
                     {
-                        granted_access = NtSecurity.GetAllowedAccess(_token, type, 
-                            _dir_rights, sd);
+                        granted_access = NtSecurity.GetAllowedAccess(sd, _token, 
+                            _dir_rights, type.GenericMapping);
                     }
                     else
                     {
-                        granted_access = NtSecurity.GetMaximumAccess(_token, type, sd);
+                        granted_access = NtSecurity.GetMaximumAccess(sd, _token, type.GenericMapping);
                     }
 
                     if (!granted_access.IsEmpty)
@@ -99,16 +81,16 @@ namespace CheckObjectManagerAccess
                         // As we can get all the rights for the directory get maximum
                         if (_dir_rights != 0)
                         {
-                            granted_access = NtSecurity.GetMaximumAccess(_token, type, sd);
+                            granted_access = NtSecurity.GetMaximumAccess(sd, _token, type.GenericMapping);
                         }
 
                         if (!_show_write_only || type.HasWritePermission(granted_access))
                         {
                             Console.WriteLine("<{0}> {1} : {2:X08} {3}", type.Name, path, granted_access, 
-                                AccessMaskToString(type, granted_access, _map_to_generic));
+                                type.AccessMaskToString(granted_access, _map_to_generic));
                             if (_print_sddl)
                             {
-                                Console.WriteLine("{0}", NtSecurity.SecurityDescriptorToSddl(sd, SecurityInformation.AllBasic));
+                                Console.WriteLine("{0}", sd.ToSddl());
                             }
                         }
                     }

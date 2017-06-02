@@ -366,6 +366,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class to represent an NT Key object
     /// </summary>
+    [NtType("Key")]
     public class NtKey : NtObjectWithDuplicate<NtKey, KeyAccessRights>
     {
         internal NtKey(SafeKernelObjectHandle handle) : base(handle)

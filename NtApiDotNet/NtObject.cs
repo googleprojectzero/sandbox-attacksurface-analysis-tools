@@ -1059,33 +1059,7 @@ namespace NtApiDotNet
         /// <returns>The typed object. Can be NtGeneric if no better type is known.</returns>
         public NtObject ToTypedObject()
         {
-            switch (NtTypeName.ToLower())
-            {
-                case "device":
-                    return new NtFile(DuplicateHandle());
-                case "file":
-                    return new NtFile(DuplicateHandle());
-                case "event":
-                    return new NtEvent(DuplicateHandle());
-                case "directory":
-                    return new NtDirectory(DuplicateHandle());
-                case "symboliclink":
-                    return new NtSymbolicLink(DuplicateHandle());
-                case "mutant":
-                    return new NtMutant(DuplicateHandle());
-                case "semaphore":
-                    return new NtSemaphore(DuplicateHandle());
-                case "section":
-                    return new NtSection(DuplicateHandle());
-                case "job":
-                    return new NtJob(DuplicateHandle());
-                case "key":
-                    return new NtKey(DuplicateHandle());
-                case "token":
-                    return new NtToken(DuplicateHandle());
-                default:
-                    return Duplicate();
-            }
+            return NtType.FromHandle(DuplicateHandle());
         }
     }
 }

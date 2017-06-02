@@ -65,7 +65,8 @@ namespace NtApiDotNet
     /// <summary>
     /// Class representing a NT Job object
     /// </summary>
-    public class NtJob : NtObjectWithDuplicate<NtJob, GenericAccessRights>
+    [NtType("Job")]
+    public class NtJob : NtObjectWithDuplicate<NtJob, JobAccessRights>
     {
         internal NtJob(SafeKernelObjectHandle handle) : base(handle)
         {
@@ -110,6 +111,17 @@ namespace NtApiDotNet
                 NtSystemCalls.NtOpenJobObject(out handle, desired_access, obja).ToNtException();
                 return new NtJob(handle);
             }
+        }
+
+        /// <summary>
+        /// Open a job object
+        /// </summary>
+        /// <param name="path">The path to the job object</param>
+        /// <param name="root">The root object when path is relative</param>
+        /// <returns>The Job object</returns>
+        public static NtJob Open(string path, NtObject root)
+        {
+            return Open(path, root, JobAccessRights.MaximumAllowed);
         }
     }
 }

@@ -996,6 +996,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class representing a Token object
     /// </summary>
+    [NtType("Token")]
     public sealed class NtToken : NtObjectWithDuplicate<NtToken, TokenAccessRights>
     {
         internal NtToken(SafeKernelObjectHandle handle) : base(handle)

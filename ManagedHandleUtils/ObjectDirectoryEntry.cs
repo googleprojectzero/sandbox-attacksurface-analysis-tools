@@ -19,46 +19,41 @@ namespace SandboxAnalysisUtils
 {
     public class ObjectDirectoryEntry : IComparable<ObjectDirectoryEntry>
     {
-        string _name;
-        string _type_name;
-        ObjectDirectory _directory;
-        string _sddl;
-        byte[] _sd;
+        private string _name;
+        private string _type_name;
+        private ObjectDirectory _directory;
+        private bool _read_sd;
+        private string _sddl;
+        private SecurityDescriptor _sd;
 
         void ReadSecurityDescriptor()
         {
+            if (_read_sd)
+            {
+                return;
+            }
+
             try
             {
-                if (NtObject.CanOpenType(_type_name))
+                _read_sd = true;
+                NtType type = NtType.GetTypeByName(_type_name);
+                if (type.CanOpen)
                 {
-                    using (NtObject obj = NtObject.OpenWithType(_type_name, _name, _directory.Directory, GenericAccessRights.ReadControl))
+                    using (NtObject obj = type.Open(_name, _directory.Directory, GenericAccessRights.ReadControl))
                     {
-                        _sd = obj.GetSecurityDescriptorBytes(SecurityInformation.Owner | SecurityInformation.Group | SecurityInformation.Dacl | SecurityInformation.Label);
+                        _sd = obj.SecurityDescriptor;
                     }
                 }
             }
             catch
             {
-                _sd = new byte[0];
-            }
+            }            
         }
 
         void ReadStringSecurityDescriptor()
         {
-            if (_sd == null)
-            {
-                ReadSecurityDescriptor();
-            }
-
-            if (_sd.Length > 0)
-            {
-                _sddl = NtSecurity.SecurityDescriptorToSddl(_sd, SecurityInformation.Owner | SecurityInformation.Group | SecurityInformation.Dacl | SecurityInformation.Label);
-            }
-            else
-            {
-                _sddl = string.Empty;
-            }
-
+            ReadSecurityDescriptor();
+            _sddl = _sd != null ? _sd.ToSddl() : String.Empty;
         }
 
         internal ObjectDirectoryEntry(string name, string type_name, ObjectDirectory directory)
@@ -118,15 +113,11 @@ namespace SandboxAnalysisUtils
             }
         }
 
-        public byte[] SecurityDescriptor
+        public SecurityDescriptor SecurityDescriptor
         {
             get
             {
-                if (_sd == null)
-                {
-                    ReadSecurityDescriptor();
-                }
-
+                ReadSecurityDescriptor();
                 return _sd;
             }
         }

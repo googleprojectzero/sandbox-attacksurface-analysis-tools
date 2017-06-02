@@ -63,6 +63,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class representing a NT SymbolicLink object
     /// </summary>
+    [NtType("SymbolicLink")]
     public class NtSymbolicLink : NtObjectWithDuplicate<NtSymbolicLink, SymbolicLinkAccessRights>
     {
         internal NtSymbolicLink(SafeKernelObjectHandle handle) : base(handle)
