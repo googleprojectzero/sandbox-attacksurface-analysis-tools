@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using SandboxAnalysisUtils;
 using NtApiDotNet;
 using System;
 using System.Collections.Generic;
@@ -25,38 +24,33 @@ namespace EditSection
     {
         string _typename;
 
-        private void UpdateObjectList(string typename, HashSet<string> walked, ObjectDirectory dir, HashSet<string> names)
+        private void UpdateObjectList(string typename, HashSet<string> walked, NtDirectory dir, HashSet<string> names)
         {            
-            if (walked.Contains(dir.FullPath.ToLower()))
+            if (!walked.Add(dir.FullPath))
             {
                 return;
             }
 
-            walked.Add(dir.FullPath.ToLower());
-
-            try
+            foreach (var entry in dir.Query())
             {
-                foreach (ObjectDirectoryEntry entry in dir.Entries)
+                if(entry.TypeName.Equals(typename, StringComparison.OrdinalIgnoreCase))
+                {
+                    names.Add(entry.FullPath);
+                }
+                else if (entry.IsDirectory)
                 {
                     try
-                    {  
-                        if(entry.TypeName.Equals(typename, StringComparison.OrdinalIgnoreCase))
+                    {
+                        using (NtDirectory subdir = NtDirectory.Open(entry.Name, dir, DirectoryAccessRights.Query))
                         {
-                            names.Add(entry.FullPath);
-                        }
-                        else if (entry.IsDirectory)
-                        {
-                            UpdateObjectList(typename, walked, ObjectNamespace.OpenDirectory(null, entry.FullPath), names);
+                            UpdateObjectList(typename, walked, subdir, names);
                         }
                     }
-                    catch
-                    {                        
+                    catch (NtException)
+                    {
                     }
-                }             
+                }
             }
-            catch
-            {                
-            }        
         }
 
         private IEnumerable<string> GetObjectList(string typename)
@@ -66,8 +60,10 @@ namespace EditSection
 
             try
             {
-                ObjectDirectory basedir = ObjectNamespace.OpenDirectory(null, "\\");
-                UpdateObjectList(typename, walked, basedir, names);
+                using (NtDirectory dir = NtDirectory.Open(@"\", null, DirectoryAccessRights.Query))
+                {
+                    UpdateObjectList(typename, walked, dir, names);
+                }
             }
             catch (NtException)
             {
@@ -75,8 +71,10 @@ namespace EditSection
 
             try
             {
-                ObjectDirectory sessiondir = ObjectNamespace.OpenSessionDirectory();
-                UpdateObjectList(typename, walked, sessiondir, names);
+                using (NtDirectory dir = NtDirectory.OpenSessionDirectory("BaseNamedObjects"))
+                {
+                    UpdateObjectList(typename, walked, dir, names);
+                }
             }
             catch (NtException)
             {

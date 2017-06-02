@@ -38,14 +38,9 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Deployment" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
     <Reference Include="WeifenLuo.WinFormsUI.Docking">
       <HintPath>..\packages\DockPanelSuite.2.9.0.0\lib\net40\WeifenLuo.WinFormsUI.Docking.dll</HintPath>
     </Reference>
@@ -127,10 +122,6 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ManagedHandleUtils\ManagedHandleUtils.csproj">
-      <Project>{4146b337-25d5-4ceb-a1a0-c6b9cca19a3f}</Project>
-      <Name>ManagedHandleUtils</Name>
-    </ProjectReference>
     <ProjectReference Include="..\NtApiDotNet\NtApiDotNet.csproj">
       <Project>{6aeb5004-6093-4c23-aeae-911d64cacc58}</Project>
       <Name>NtApiDotNet</Name>

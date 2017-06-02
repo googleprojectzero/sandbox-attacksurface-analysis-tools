@@ -44,6 +44,16 @@
             columnHeaderName.Text = "Name";
             columnHeaderName.Width = 422;
             // 
+            // label1
+            // 
+            label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            label1.AutoSize = true;
+            label1.Location = new System.Drawing.Point(12, 283);
+            label1.Name = "label1";
+            label1.Size = new System.Drawing.Size(38, 13);
+            label1.TabIndex = 5;
+            label1.Text = "Name:";
+            // 
             // btnOpen
             // 
             this.btnOpen.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
@@ -86,7 +96,7 @@
             this.listViewSections.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             columnHeaderName});
             this.listViewSections.FullRowSelect = true;
-            this.listViewSections.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
+            this.listViewSections.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
             this.listViewSections.Location = new System.Drawing.Point(12, 12);
             this.listViewSections.MultiSelect = false;
             this.listViewSections.Name = "listViewSections";
@@ -99,21 +109,14 @@
             // 
             // txtObjectName
             // 
+            this.txtObjectName.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.txtObjectName.Location = new System.Drawing.Point(56, 280);
             this.txtObjectName.Name = "txtObjectName";
             this.txtObjectName.Size = new System.Drawing.Size(582, 20);
             this.txtObjectName.TabIndex = 4;
             // 
-            // label1
-            // 
-            label1.AutoSize = true;
-            label1.Location = new System.Drawing.Point(12, 283);
-            label1.Name = "label1";
-            label1.Size = new System.Drawing.Size(38, 13);
-            label1.TabIndex = 5;
-            label1.Text = "Name:";
-            // 
-            // NamedSectionForm
+            // NamedObjectForm
             // 
             this.AcceptButton = this.btnOpen;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -126,7 +129,7 @@
             this.Controls.Add(this.checkReadOnly);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnOpen);
-            this.Name = "NamedSectionForm";
+            this.Name = "NamedObjectForm";
             this.Text = "Open Named Section";
             this.ResumeLayout(false);
             this.PerformLayout();

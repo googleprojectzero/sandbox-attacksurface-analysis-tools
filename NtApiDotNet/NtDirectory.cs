@@ -465,11 +465,28 @@ namespace NtApiDotNet
         /// Open a session directory.
         /// </summary>
         /// <param name="sessionid">The session ID to open</param>
+        /// <param name="sub_directory">Sub directory to open.</param>
+        /// <param name="desired_access">Desired access to open directory.</param>
         /// <returns>The directory object</returns>
         /// <exception cref="NtException">Thrown on error</exception>
-        public static NtDirectory OpenSessionDirectory(int sessionid)
+        public static NtDirectory OpenSessionDirectory(int sessionid, string sub_directory, DirectoryAccessRights desired_access)
         {
-            return Open(String.Format(@"\Sessions\{0}", sessionid));
+            string directory = String.Format(@"\Sessions\{0}", sessionid);
+            if (!String.IsNullOrEmpty(sub_directory))
+            {
+                directory = String.Format(@"{0}\{1}", directory, sub_directory);
+            }
+            return Open(directory, null, desired_access);
+        }
+
+        /// <summary>
+        /// Open the current session directory.
+        /// </summary>
+        /// <returns>The directory object</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public static NtDirectory OpenSessionDirectory(string sub_directory)
+        {
+            return OpenSessionDirectory(NtProcess.Current.SessionId, sub_directory, DirectoryAccessRights.MaximumAllowed);
         }
 
         /// <summary>
@@ -479,7 +496,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error</exception>
         public static NtDirectory OpenSessionDirectory()
         {
-            return OpenSessionDirectory(NtProcess.Current.SessionId);
+            return OpenSessionDirectory(null);
         }
 
         /// <summary>
