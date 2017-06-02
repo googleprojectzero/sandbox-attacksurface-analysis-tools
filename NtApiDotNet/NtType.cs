@@ -448,7 +448,7 @@ namespace NtApiDotNet
             _type_factory = type_factory;
         }
 
-        private static Dictionary<string, NtType> _types;
+        private static Dictionary<string, NtType> _types = LoadTypes();
 
         /// <summary>
         /// Get a type object by index
@@ -473,7 +473,6 @@ namespace NtApiDotNet
         /// <returns>The object type, null if not found</returns>
         public static NtType GetTypeByName(string name)
         {
-            LoadTypes();
             if (_types.ContainsKey(name))
             {
                 return _types[name];
@@ -482,51 +481,65 @@ namespace NtApiDotNet
             return new NtType(-1, name);
         }
 
-        private static void LoadTypes()
+        /// <summary>
+        /// Get an NT type based on the implemented .NET type.
+        /// </summary>
+        /// <typeparam name="T">A type derived from NtObject</typeparam>
+        /// <returns>The NtType represented by this .NET type. Note if a type is represented with multiple
+        /// names only return the first one we find.</returns>
+        /// <exception cref="ArgumentException">Thrown if there exists no .NET type which maps to this type.</exception>
+        public static NtType GetTypeByType<T>() where T : NtObject
         {
-            if (_types == null)
+            IEnumerable<NtTypeAttribute> attrs = typeof(T).GetCustomAttributes<NtTypeAttribute>();
+            if (attrs.Count() == 0)
             {
-                var type_factories = NtTypeFactory.GetAssemblyNtTypeFactories(Assembly.GetExecutingAssembly());
-                SafeStructureInOutBuffer<ObjectAllTypesInformation> type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>();
+                throw new ArgumentException("Type has no mapping to an NT Type");
+            }
+            return GetTypeByName(attrs.First().TypeName);
+        }
 
-                try
+        private static Dictionary<string, NtType> LoadTypes()
+        {
+            var type_factories = NtTypeFactory.GetAssemblyNtTypeFactories(Assembly.GetExecutingAssembly());
+            SafeStructureInOutBuffer<ObjectAllTypesInformation> type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>();
+
+            try
+            {
+                Dictionary<string, NtType> ret = new Dictionary<string, NtType>(StringComparer.OrdinalIgnoreCase);
+                int return_length;
+                NtStatus status = NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectAllInformation,
+                    type_info.DangerousGetHandle(), type_info.Length, out return_length);
+                if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
+                    status.ToNtException();
+
+                type_info.Close();
+                type_info = null;
+                type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>(return_length, false);
+
+                int alignment = IntPtr.Size - 1;
+                NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectAllInformation,
+                    type_info.DangerousGetHandle(), type_info.Length, out return_length).ToNtException();
+                ObjectAllTypesInformation result = type_info.Result;
+                IntPtr curr_typeinfo = type_info.DangerousGetHandle() + IntPtr.Size;
+                for (int count = 0; count < result.NumberOfTypes; ++count)
                 {
-                    Dictionary<string, NtType> ret = new Dictionary<string, NtType>(StringComparer.OrdinalIgnoreCase);
-                    int return_length;
-                    NtStatus status = NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectAllInformation,
-                        type_info.DangerousGetHandle(), type_info.Length, out return_length);
-                    if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
-                        status.ToNtException();
+                    ObjectTypeInformation info = (ObjectTypeInformation)Marshal.PtrToStructure(curr_typeinfo, typeof(ObjectTypeInformation));
+                    string name = info.Name.ToString();
+                    NtTypeFactory factory = type_factories.ContainsKey(name) ? type_factories[name] : _generic_factory;
+                    NtType ti = new NtType(count + 2, info, factory);
+                    ret[ti.Name] = ti;
 
-                    type_info.Close();
-                    type_info = null;
-                    type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>(return_length, false);
-
-                    int alignment = IntPtr.Size - 1;
-                    NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectAllInformation,
-                        type_info.DangerousGetHandle(), type_info.Length, out return_length).ToNtException();
-                    ObjectAllTypesInformation result = type_info.Result;
-                    IntPtr curr_typeinfo = type_info.DangerousGetHandle() + IntPtr.Size;
-                    for (int count = 0; count < result.NumberOfTypes; ++count)
-                    {
-                        ObjectTypeInformation info = (ObjectTypeInformation)Marshal.PtrToStructure(curr_typeinfo, typeof(ObjectTypeInformation));
-                        string name = info.Name.ToString();
-                        NtTypeFactory factory = type_factories.ContainsKey(name) ? type_factories[name] : _generic_factory;
-                        NtType ti = new NtType(count + 2, info, factory);
-                        ret[ti.Name] = ti;
-
-                        int offset = (info.Name.MaximumLength + alignment) & ~alignment;
-                        curr_typeinfo = info.Name.Buffer + offset;
-                    }
-
-                    _types = ret;
+                    int offset = (info.Name.MaximumLength + alignment) & ~alignment;
+                    curr_typeinfo = info.Name.Buffer + offset;
                 }
-                finally
+
+                return ret;
+            }
+            finally
+            {
+                if (type_info != null)
                 {
-                    if (type_info != null)
-                    {
-                        type_info.Close();
-                    }
+                    type_info.Close();
                 }
             }
         }
