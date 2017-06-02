@@ -559,7 +559,6 @@ namespace NtApiDotNet
         /// <returns>The list of types.</returns>
         public static IEnumerable<NtType> GetTypes()
         {
-            LoadTypes();
             return _types.Values;
         }
     }
