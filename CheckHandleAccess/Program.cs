@@ -38,7 +38,6 @@ namespace CheckAlpcPortAccess
                 int pid = NtProcess.Current.ProcessId;
                 bool show_help = false;
                 bool print_sddl = false;
-                HashSet<string> type_filter = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 OptionSet opts = new OptionSet() {
                         { "p|pid=", "Specify a PID of a process for access check.", v => pid = int.Parse(v.Trim()) },
