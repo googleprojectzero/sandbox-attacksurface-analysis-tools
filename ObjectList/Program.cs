@@ -39,6 +39,18 @@ namespace ObjectList
                 Name = name;
             }
 
+            public NtDirectory OpenDirectory()
+            {
+                if (Name.StartsWith(@"\") || Directory != null)
+                {
+                    return NtDirectory.Open(Name, Directory, DirectoryAccessRights.MaximumAllowed);
+                }
+                else
+                {
+                    return NtDirectory.OpenPrivateNamespace(BoundaryDescriptor.CreateFromString(Name));
+                }
+            }
+
             void IDisposable.Dispose()
             {
                 if (Directory != null)
@@ -132,7 +144,7 @@ namespace ObjectList
                 {
                     try
                     {
-                        using (NtDirectory directory = NtDirectory.Open(entry.Name, entry.Directory, DirectoryAccessRights.MaximumAllowed))
+                        using (NtDirectory directory = entry.OpenDirectory())
                         {
                             if (!directory.IsAccessGranted(DirectoryAccessRights.Query))
                             {
