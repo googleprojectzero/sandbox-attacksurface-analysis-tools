@@ -244,7 +244,7 @@ namespace NtApiDotNet
 #pragma warning restore 1591
 
     /// <summary>
-    /// Unused.
+    /// Class to represent an ALPC port.
     /// </summary>
     public class NtAlpc : NtObjectWithDuplicate<NtAlpc, AlpcAccessRights>
     {
