@@ -30,16 +30,52 @@ namespace NtApiDotNet
     public class ObjectDirectoryInformation
     {
         private NtDirectory _root;
+        private string _symlink_target;
 
         public string Name { get; private set; }
         public string TypeName { get; private set; }
-        public string FullPath { get; private set; }        
+        public string FullPath { get; private set; }         
+        public string SymbolicLinkTarget
+        {
+            get
+            {
+                if (_symlink_target == null)
+                {
+                    if (!IsSymbolicLink)
+                    {
+                        _symlink_target = String.Empty;
+                    }
+
+                    try
+                    {
+                        using (NtSymbolicLink symlink = NtSymbolicLink.Open(Name, _root, SymbolicLinkAccessRights.Query))
+                        {
+                            _symlink_target = symlink.Target;
+                        }
+                    }
+                    catch (NtException)
+                    {
+                        _symlink_target = String.Empty;
+                    }
+                }
+                return _symlink_target;
+            }
+        }
+
+        /// <summary>
+        /// Children of entry if IsDirectory is try (and 
+        /// </summary>
+        public IEnumerable<ObjectDirectoryInformation> Children
+        {
+            get { return null; }
+        }
+
         internal ObjectDirectoryInformation(NtDirectory root, string base_path, OBJECT_DIRECTORY_INFORMATION info) 
             : this(root, base_path, info.Name.ToString(), info.TypeName.ToString())
         {
         }
 
-        public ObjectDirectoryInformation(NtDirectory root, string base_path, string name, string typename)
+        internal ObjectDirectoryInformation(NtDirectory root, string base_path, string name, string typename)
         {
             _root = root;
             Name = name;
@@ -85,7 +121,6 @@ namespace NtApiDotNet
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
-
 
     public static partial class NtSystemCalls
     {
@@ -417,7 +452,7 @@ namespace NtApiDotNet
         public static NtDirectory Create(string name)
         {
             return Create(name, null, DirectoryAccessRights.MaximumAllowed);
-        }
+        }        
 
         /// <summary>
         /// Query the directory for a list of entries.

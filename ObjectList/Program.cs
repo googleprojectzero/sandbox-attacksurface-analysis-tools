@@ -87,27 +87,12 @@ namespace ObjectList
             {
                 if (entry.IsSymbolicLink && print_link)
                 {
-                    Console.WriteLine("      {0} -> {1}", entry.FullPath, GetSymlinkTarget(entry));
+                    Console.WriteLine("      {0} -> {1}", entry.FullPath, entry.SymbolicLinkTarget);
                 }
                 else
                 {
                     Console.WriteLine("      {0} ({1})", entry.FullPath, entry.TypeName);
                 }
-            }
-        }
-
-        static string GetSymlinkTarget(ObjectDirectoryInformation entry)
-        {
-            try
-            {
-                using (NtSymbolicLink symlink = (NtSymbolicLink)entry.Open(SymbolicLinkAccessRights.Query))
-                {
-                    return symlink.Target;
-                }
-            }
-            catch (NtException)
-            {
-                return "";
             }
         }
 
@@ -156,7 +141,7 @@ namespace ObjectList
 
                             if (dumped_dirs.Add(directory.FullPath))
                             {
-                                IEnumerable<ObjectDirectoryInformation> objs = directory.Query().OrderBy(e => new Tuple<string, string>(e.Name, e.TypeName));
+                                IEnumerable<ObjectDirectoryInformation> objs = directory.Query().OrderBy(e => Tuple.Create(e.Name, e.TypeName));
 
                                 if (recursive)
                                 {

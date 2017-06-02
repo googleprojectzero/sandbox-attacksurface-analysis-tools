@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using SandboxAnalysisUtils;
 using NDesk.Options;
 using NtApiDotNet;
 using System;
@@ -31,6 +30,25 @@ namespace CheckDeviceAccess
         static bool _identify_only;
         static bool _open_as_dir;
         static bool _filter_direct;
+
+        sealed class DirectoryQueueEntry : IDisposable
+        {
+            public NtDirectory Directory { get; private set; }
+            public string Name { get; private set; }
+            public DirectoryQueueEntry(NtDirectory directory, string name)
+            {
+                Directory = directory;
+                Name = name;
+            }
+
+            void IDisposable.Dispose()
+            {
+                if (Directory != null)
+                {
+                    Directory.Close();
+                }
+            }
+        }
 
         class CheckResult
         {
@@ -67,53 +85,52 @@ namespace CheckDeviceAccess
 
         static List<string> FindDeviceObjects(IEnumerable<string> names)
         {
-            Queue<string> dumpList = new Queue<string>(names);
-            HashSet<string> dumpedDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            List<string> totalEntries = new List<string>();
-
-            while (dumpList.Count > 0)
+            var dump_list = new Queue<DirectoryQueueEntry>();
+            foreach (string name in names)
             {
-                string name = dumpList.Dequeue();
-                try
+                dump_list.Enqueue(new DirectoryQueueEntry(null, name));
+            }
+
+            HashSet<string> dumped_dirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            List<string> total_entries = new List<string>();
+
+            while (dump_list.Count > 0)
+            {
+                using (var entry = dump_list.Dequeue())
                 {
-                    ObjectDirectory directory = ObjectNamespace.OpenDirectory(null, name);
-
-                    if (!dumpedDirs.Contains(directory.FullPath))
+                    try
                     {
-                        dumpedDirs.Add(directory.FullPath);
-                        List<ObjectDirectoryEntry> sortedEntries = new List<ObjectDirectoryEntry>(directory.Entries);
-                        sortedEntries.Sort();
-
-                        string base_name = name.TrimEnd('\\');
-
-                        IEnumerable<ObjectDirectoryEntry> objs = sortedEntries;
-
-                        if (_recursive)
+                        using (NtDirectory directory = NtDirectory.Open(entry.Name, entry.Directory, DirectoryAccessRights.Query))
                         {
-                            foreach (ObjectDirectoryEntry entry in sortedEntries.Where(d => d.IsDirectory))
+                            if (dumped_dirs.Add(directory.FullPath))
                             {
-                                dumpList.Enqueue(entry.FullPath);
+                                var objs = directory.Query().OrderBy(e => Tuple.Create(e.Name, e.TypeName));
+
+                                if (_recursive)
+                                {
+                                    foreach (var dir in objs.Where(d => d.IsDirectory))
+                                    {
+                                        dump_list.Enqueue(new DirectoryQueueEntry(directory.Duplicate(), dir.Name));
+                                    }
+                                }
+                                
+                                total_entries.AddRange(objs.Where(e => e.TypeName.Equals("device", 
+                                    StringComparison.OrdinalIgnoreCase)).Select(e => e.FullPath));
                             }
                         }
-
-                        totalEntries.AddRange(objs.Where(e => e.TypeName.Equals("device", StringComparison.OrdinalIgnoreCase)).Select(e => e.FullPath));    
                     }
-                }
-                catch (NtException ex)
-                {
-                    int error = NtRtl.RtlNtStatusToDosError(ex.Status);
-                    if (NtRtl.RtlNtStatusToDosError(ex.Status) == 6)
+                    catch (NtException ex)
                     {
-                        // Add name in case it's an absolute name, not in a directory
-                        totalEntries.Add(name);
-                    }
-                    else
-                    {
+                        if (entry.Directory == null && ex.Status == NtStatus.STATUS_OBJECT_TYPE_MISMATCH)
+                        {
+                            // Add name in case it's an absolute name, not in a directory
+                            total_entries.Add(entry.Name);
+                        }
                     }
                 }
             }
 
-            return totalEntries;
+            return total_entries;
         }
 
         static void ShowHelp(OptionSet p)
@@ -172,58 +189,40 @@ namespace CheckDeviceAccess
 
             return result;
         }
-        
-        static string GetSymlinkTarget(ObjectDirectoryEntry entry)
-        {
-            try
-            {
-                using (NtSymbolicLink link = NtSymbolicLink.Open(entry.FullPath, null))
-                {
-                    return link.Target;
-                }
-            }
-            catch (NtException)
-            {
-                return "";
-            }
-        }
 
         static Dictionary<string, string> FindSymlinks()
         {
-            Queue<string> dumpList = new Queue<string>(new string[] {"\\"});
-            HashSet<string> dumpedDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var dump_list = new Queue<DirectoryQueueEntry>();
+            dump_list.Enqueue(new DirectoryQueueEntry(null, @"\"));
+            HashSet<string> dumped_dirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             Dictionary<string, string> symlinks = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            while (dumpList.Count > 0)
+            while (dump_list.Count > 0)
             {
-                string name = dumpList.Dequeue();
-                try
+                using (var entry = dump_list.Dequeue())
                 {
-                    ObjectDirectory directory = ObjectNamespace.OpenDirectory(null, name);
-
-                    if (!dumpedDirs.Contains(directory.FullPath))
+                    try
                     {
-                        dumpedDirs.Add(directory.FullPath);
-                        List<ObjectDirectoryEntry> sortedEntries = new List<ObjectDirectoryEntry>(directory.Entries);
-                        sortedEntries.Sort();
-
-                        string base_name = name.TrimEnd('\\');
-
-                        IEnumerable<ObjectDirectoryEntry> objs = sortedEntries;
-                        
-                        foreach (ObjectDirectoryEntry entry in sortedEntries.Where(d => d.IsDirectory))
+                        using (NtDirectory directory = NtDirectory.Open(entry.Name, entry.Directory, DirectoryAccessRights.Query))
                         {
-                            dumpList.Enqueue(entry.FullPath);
-                        }
+                            if (dumped_dirs.Add(directory.FullPath))
+                            {
+                                var objs = directory.Query().OrderBy(e => Tuple.Create(e.Name, e.TypeName));
+                                foreach (var dir in objs.Where(d => d.IsDirectory))
+                                {
+                                    dump_list.Enqueue(new DirectoryQueueEntry(directory.Duplicate(), dir.Name));
+                                }
 
-                        foreach (ObjectDirectoryEntry entry in sortedEntries.Where(d => d.IsSymlink))
-                        {
-                            symlinks[GetSymlinkTarget(entry)] = entry.FullPath;
+                                foreach (var symlink in objs.Where(d => d.IsSymbolicLink))
+                                {
+                                    symlinks[symlink.SymbolicLinkTarget] = symlink.FullPath;
+                                }
+                            }
                         }
                     }
-                }
-                catch (NtException)
-                {
+                    catch (NtException)
+                    {
+                    }
                 }
             }
 
@@ -319,7 +318,12 @@ namespace CheckDeviceAccess
 
                         IEnumerable<CheckResult> write_normal = device_objs.Select(n => CheckDevice(n, !readable, ea));
                         IEnumerable<CheckResult> write_namespace = device_objs.Select(n => CheckDevice(n + "\\" + suffix, !readable, ea));
-                        Dictionary<string, string> symlinks = FindSymlinks();
+                        Dictionary<string, string> symlinks = new Dictionary<string, string>();
+
+                        if (map_to_symlink)
+                        {
+                            symlinks = FindSymlinks();
+                        }
 
                         if (ea_buffer)
                         {
