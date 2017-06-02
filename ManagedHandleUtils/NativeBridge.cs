@@ -46,7 +46,7 @@ namespace SandboxAnalysisUtils
         
         public static void EditSecurity(IntPtr hwnd, NtObject handle, string object_name, bool read_only)
         {
-            Dictionary<uint, String> access = GetMaskDictionary(handle.GetAccessEnumType());
+            Dictionary<uint, String> access = GetMaskDictionary(handle.NtType.AccessRightsType);
 
             using (SecurityInformationImpl impl = new SecurityInformationImpl(object_name, handle, access,
                handle.NtType.GenericMapping, read_only))

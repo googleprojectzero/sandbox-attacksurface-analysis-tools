@@ -33,20 +33,21 @@ namespace NtApiDotNet
 
         public string Name { get; private set; }
         public string TypeName { get; private set; }
-
-        internal ObjectDirectoryInformation(NtDirectory root, OBJECT_DIRECTORY_INFORMATION info) 
-            : this(root, info.Name.ToString(), info.TypeName.ToString())
+        public string FullPath { get; private set; }        
+        internal ObjectDirectoryInformation(NtDirectory root, string base_path, OBJECT_DIRECTORY_INFORMATION info) 
+            : this(root, base_path, info.Name.ToString(), info.TypeName.ToString())
         {
         }
 
-        public ObjectDirectoryInformation(NtDirectory root, string name, string typename)
+        public ObjectDirectoryInformation(NtDirectory root, string base_path, string name, string typename)
         {
             _root = root;
             Name = name;
             TypeName = typename;
+            FullPath = String.Format(@"{0}\{1}", base_path, Name);
         }
 
-        public NtObject Open(GenericAccessRights access)
+        public NtObject Open(AccessMask access)
         {
             return NtObject.OpenWithType(TypeName, Name, _root, access);
         }
@@ -54,6 +55,11 @@ namespace NtApiDotNet
         public bool IsDirectory
         {
             get { return TypeName.Equals("directory", StringComparison.OrdinalIgnoreCase); }
+        }
+
+        public bool IsSymbolicLink
+        {
+            get { return TypeName.Equals("symboliclink", StringComparison.OrdinalIgnoreCase); }
         }
     }
 
@@ -420,6 +426,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error</exception>
         public IEnumerable<ObjectDirectoryInformation> Query()
         {
+            string base_path = FullPath.TrimEnd('\\');
             using (SafeStructureInOutBuffer<OBJECT_DIRECTORY_INFORMATION> buffer
                 = new SafeStructureInOutBuffer<OBJECT_DIRECTORY_INFORMATION>(2048, true))
             {
@@ -448,7 +455,7 @@ namespace NtApiDotNet
                     {
                         break;
                     }
-                    yield return new ObjectDirectoryInformation(this, dir_info);
+                    yield return new ObjectDirectoryInformation(this, base_path, dir_info);
                     current += Marshal.SizeOf(dir_info);
                 }
             }

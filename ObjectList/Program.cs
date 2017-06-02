@@ -12,12 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using SandboxAnalysisUtils;
 using NDesk.Options;
 using NtApiDotNet;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 
 namespace ObjectList
@@ -26,17 +24,29 @@ namespace ObjectList
     {
         enum OutputFormat
         {
-            None,
+            Default,
             NameOnly,
             TypeGroup,
         }
 
-        static bool show_help = false;
-        static bool recursive = false;
-        static bool print_link = false;
-        static bool print_sddl = false;
-        static OutputFormat format;
-        static HashSet<string> typeFilter = new HashSet<string>();
+        sealed class DirectoryQueueEntry : IDisposable
+        {
+            public NtDirectory Directory { get; private set; }
+            public string Name { get; private set; }
+            public DirectoryQueueEntry(NtDirectory directory, string name)
+            {
+                Directory = directory;
+                Name = name;
+            }
+
+            void IDisposable.Dispose()
+            {
+                if (Directory != null)
+                {
+                    Directory.Close();
+                }
+            }
+        }
 
         static void ShowHelp(OptionSet p)
         {
@@ -46,36 +56,54 @@ namespace ObjectList
             p.WriteOptionDescriptions(Console.Out);
         }
 
-        static void OutputNone(ObjectDirectory base_dir, IEnumerable<ObjectDirectoryEntry> objs)
+        static string ReadSecurityDescriptor(NtObject obj)
+        {
+            try
+            {
+                if (obj.IsAccessMaskGranted(GenericAccessRights.ReadControl))
+                {
+                    return obj.Sddl;
+                }
+            }
+            catch (NtException)
+            {
+            }
+            return String.Empty;
+        }
+
+        static void OutputDefault(NtDirectory base_dir, IEnumerable<ObjectDirectoryInformation> entries, bool print_sddl, bool print_link)
         {
             if (print_sddl)
             {
-                Console.WriteLine("SDDL: {0} -> {1}", base_dir.FullPath, base_dir.StringSecurityDescriptor);
+                Console.WriteLine("SDDL: {0} -> {1}", base_dir.FullPath, ReadSecurityDescriptor(base_dir));
             }
 
-            foreach (ObjectDirectoryEntry ent in objs.Where(e => e.IsDirectory))
+            foreach (var entry in entries.Where(e => e.IsDirectory))
             {
-                Console.WriteLine("<DIR> {0}", ent.FullPath);
+                Console.WriteLine(@"<DIR> {0}", entry.FullPath);
             }
 
-            foreach (ObjectDirectoryEntry ent in objs.Where(e => !e.IsDirectory))
+            foreach (var entry in entries.Where(e => !e.IsDirectory))
             {
-                if (ent.IsSymlink && print_link)
+                if (entry.IsSymbolicLink && print_link)
                 {
-                    Console.WriteLine("      {0} -> {1}", ent.FullPath, GetSymlinkTarget(ent));
+                    Console.WriteLine("      {0} -> {1}", entry.FullPath, GetSymlinkTarget(entry));
                 }
                 else
                 {
-                    Console.WriteLine("      {0} ({1})", ent.FullPath, ent.TypeName);
+                    Console.WriteLine("      {0} ({1})", entry.FullPath, entry.TypeName);
                 }
             }
         }
 
-        static string GetSymlinkTarget(ObjectDirectoryEntry entry)
+        static string GetSymlinkTarget(ObjectDirectoryInformation entry)
         {
             try
             {
-                return ObjectNamespace.ReadSymlink(entry.FullPath);
+                using (NtSymbolicLink symlink = (NtSymbolicLink)entry.Open(SymbolicLinkAccessRights.Query))
+                {
+                    return symlink.Target;
+                }
             }
             catch (NtException)
             {
@@ -83,108 +111,94 @@ namespace ObjectList
             }
         }
 
-        static void OutputTypeGroup(IEnumerable<ObjectDirectoryEntry> entries)
+        static void OutputTypeGroup(IEnumerable<ObjectDirectoryInformation> entries)
         {
-            IEnumerable<IGrouping<string, ObjectDirectoryEntry>> groups = entries.GroupBy(e => e.TypeName, StringComparer.OrdinalIgnoreCase);
-
-            foreach (IGrouping<string, ObjectDirectoryEntry> group in groups)
+            var groups = entries.GroupBy(e => e.TypeName, StringComparer.OrdinalIgnoreCase);
+            foreach (var group in groups)
             {
                 Console.WriteLine("Type: {0} (Total: {1})", group.Key, group.Count());
-                foreach (ObjectDirectoryEntry entry in group)
+                foreach (var entry in group)
                 {
-                    if (entry.IsSymlink && print_link)
-                    {
-                        Console.WriteLine("{0} -> {1}", entry.FullPath, GetSymlinkTarget(entry));
-                    }
-                    else
-                    {
-                        Console.WriteLine(entry.FullPath);
-                    }
+                    Console.WriteLine(entry.FullPath);
                 }
                 Console.WriteLine();
             }
         }
 
-        static void OutputNameOnly(ObjectDirectory base_dir, IEnumerable<ObjectDirectoryEntry> entries)
+        static void OutputNameOnly(IEnumerable<ObjectDirectoryInformation> entries)
         {
-            foreach (ObjectDirectoryEntry entry in entries)
+            foreach (ObjectDirectoryInformation entry in entries)
             {
-                if (entry.IsSymlink && print_link)
-                {
-                    Console.WriteLine("{0} -> {1}", entry.FullPath, GetSymlinkTarget(entry));
-                }
-                else
-                {
-                    Console.WriteLine(entry.FullPath);
-                }
+                Console.WriteLine(entry.FullPath);
             }
         }
 
-        static void DumpDirectories(IEnumerable<string> names)
+        private static void DumpDirectories(IEnumerable<string> names, bool recursive, bool print_link, 
+            bool print_sddl, OutputFormat format, HashSet<string> type_filter)
         {
-            Queue<Tuple<ObjectDirectory, string>> dumpList
-                = new Queue<Tuple<ObjectDirectory, string>>(names.Select(s => new Tuple<ObjectDirectory, string>(null, s)));
-            HashSet<string> dumpedDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            List<ObjectDirectoryEntry> totalEntries = new List<ObjectDirectoryEntry>();            
+            Queue<DirectoryQueueEntry> dump_queue
+                = new Queue<DirectoryQueueEntry>(names.Select(s => new DirectoryQueueEntry(null, s)));
+            HashSet<string> dumped_dirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            List<ObjectDirectoryInformation> total_entries = new List<ObjectDirectoryInformation>();
 
-            while (dumpList.Count > 0)
+            while (dump_queue.Count > 0)
             {
-                Tuple<ObjectDirectory, string> name = dumpList.Dequeue();
-                try
-                {                    
-                    using (ObjectDirectory directory = ObjectNamespace.OpenDirectory(name.Item1, name.Item2))
+                using (DirectoryQueueEntry entry = dump_queue.Dequeue())
+                {
+                    try
                     {
-                        if (!dumpedDirs.Contains(directory.FullPath))
+                        using (NtDirectory directory = NtDirectory.Open(entry.Name, entry.Directory, DirectoryAccessRights.MaximumAllowed))
                         {
-                            dumpedDirs.Add(directory.FullPath);
-                            List<ObjectDirectoryEntry> sortedEntries = new List<ObjectDirectoryEntry>(directory.Entries);
-                            sortedEntries.Sort();
-
-                            string base_name = name.Item2.TrimEnd('\\');
-
-                            IEnumerable<ObjectDirectoryEntry> objs = sortedEntries;
-
-                            if (recursive)
+                            if (!directory.IsAccessGranted(DirectoryAccessRights.Query))
                             {
-                                foreach (ObjectDirectoryEntry entry in sortedEntries.Where(d => d.IsDirectory))
+                                continue;
+                            }
+
+                            if (dumped_dirs.Add(directory.FullPath))
+                            {
+                                IEnumerable<ObjectDirectoryInformation> objs = directory.Query().OrderBy(e => new Tuple<string, string>(e.Name, e.TypeName));
+
+                                if (recursive)
                                 {
-                                    dumpList.Enqueue(new Tuple<ObjectDirectory, string>(directory.Duplicate(), entry.ObjectName));
+                                    foreach (var next_entry in objs.Where(d => d.IsDirectory))
+                                    {
+                                        dump_queue.Enqueue(new DirectoryQueueEntry(directory.Duplicate(), next_entry.Name));
+                                    }
                                 }
-                            }
 
-                            if (typeFilter.Count > 0)
-                            {
-                                objs = objs.Where(e => typeFilter.Contains(e.TypeName.ToLower()));
-                            }
+                                if (type_filter.Count > 0)
+                                {
+                                    objs = objs.Where(e => type_filter.Contains(e.TypeName));
+                                }
 
-                            switch (format)
-                            {
-                                case OutputFormat.NameOnly:
-                                    OutputNameOnly(directory, objs);
-                                    break;
-                                case OutputFormat.TypeGroup:
-                                    totalEntries.AddRange(objs);
-                                    break;
-                                case OutputFormat.None:
-                                default:
-                                    OutputNone(directory, objs);
-                                    break;
+                                switch (format)
+                                {
+                                    case OutputFormat.NameOnly:
+                                        OutputNameOnly(objs);
+                                        break;
+                                    case OutputFormat.TypeGroup:
+                                        total_entries.AddRange(objs);
+                                        break;
+                                    case OutputFormat.Default:
+                                    default:
+                                        OutputDefault(directory, objs, print_sddl, print_link);
+                                        break;
+                                }
                             }
                         }
                     }
-                }
-                catch (NtException ex)
-                {
-                    Console.Error.WriteLine("Error querying {0} - {1}", name.Item2, ex.Message);
+                    catch (NtException ex)
+                    {
+                        Console.Error.WriteLine("Error querying {0} - {1}", entry.Name, ex.Message);
+                    }
                 }
             }
 
             switch (format)
             {
                 case OutputFormat.TypeGroup:
-                    OutputTypeGroup(totalEntries);
+                    OutputTypeGroup(total_entries);
                     break;
-
             }
         }
 
@@ -197,13 +211,20 @@ namespace ObjectList
         {
             try
             {
+                bool show_help = false;
+                bool recursive = false;
+                bool print_link = false;
+                bool print_sddl = false;
+                OutputFormat format = OutputFormat.Default;
+                HashSet<string> type_filter = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
                 OptionSet opts = new OptionSet() {
                         { "r", "Recursive tree directory listing",
                             v => recursive = v != null },
                         { "f|format=", "Specify output format [" + GetNamesForEnum(typeof(OutputFormat)) + "]",
                             v => format = (OutputFormat)Enum.Parse(typeof(OutputFormat), v, true) },
                         { "t|type=", "An object type to filter on, can be repeated",
-                            v => typeFilter.Add(v.Trim().ToLower()) },
+                            v => type_filter.Add(v.Trim()) },
                         { "l", "Print symlink target", v => print_link = v != null },
                         { "sddl", "Print SDDL security descriptors for directories", v => print_sddl = v != null },
                         { "h|help",  "show this message and exit",
@@ -212,13 +233,19 @@ namespace ObjectList
 
                 List<string> names = opts.Parse(args);
 
+                if ((print_link || print_sddl) && format != OutputFormat.Default)
+                {
+                    Console.WriteLine("Printing symbolic link targets or SDDL only works in default output mode");
+                    show_help = true;
+                }
+
                 if (names.Count == 0 || show_help)
                 {
                     ShowHelp(opts);
                 }
                 else
                 {
-                    DumpDirectories(names);
+                    DumpDirectories(names, recursive, print_link, print_sddl, format, type_filter);
                 }
             }
             catch (Exception ex)

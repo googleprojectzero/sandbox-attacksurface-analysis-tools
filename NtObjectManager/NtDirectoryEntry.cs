@@ -49,7 +49,7 @@ namespace NtObjectManager
                                 _symlink_target = link.Target;
                             }
 
-                            _maximum_granted_access = obj.GrantedAccessMask.ToSpecificAccess(obj.GetAccessEnumType());
+                            _maximum_granted_access = obj.GrantedAccessMask.ToSpecificAccess(obj.NtType.AccessRightsType);
                         }
                     }
                     catch

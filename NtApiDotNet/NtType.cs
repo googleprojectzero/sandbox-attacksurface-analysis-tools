@@ -324,7 +324,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="granted_access">The granted access mask.</param>
         /// <returns>The string format of the access rights</returns>
-        public string GrantedAccessAsString(AccessMask granted_access)
+        public string AccessMaskToString(AccessMask granted_access)
         {
             return AccessMaskToString(granted_access, false);
         }

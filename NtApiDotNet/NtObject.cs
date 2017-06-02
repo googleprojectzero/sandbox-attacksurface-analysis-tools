@@ -187,6 +187,8 @@ namespace NtApiDotNet
     /// </summary>
     public abstract class NtObject : IDisposable
     {
+        private string _type_name;
+
         /// <summary>
         /// Base constructor
         /// </summary>
@@ -399,12 +401,6 @@ namespace NtApiDotNet
             }
         }
 
-        /// <summary>
-        /// Get the .NET type for the object's access enumeration.
-        /// </summary>
-        /// <returns>The .NET type for enum access.</returns>
-        public abstract Type GetAccessEnumType();
-
         private ObjectBasicInformation? _basic_info;
 
         /// <summary>
@@ -616,25 +612,15 @@ namespace NtApiDotNet
         /// Indicates whether a specific type of kernel object can be opened.
         /// </summary>
         /// <param name="typename">The kernel typename to check.</param>
-        /// <returns>True if this type of object can be opened.</returns>
-        /// <see cref="OpenWithType(string, string, NtObject, GenericAccessRights)"/>
+        /// <returns>True if this type of object can be opened.</returns>        
         public static bool CanOpenType(string typename)
         {
-            switch (typename.ToLower())
+            NtType type = NtType.GetTypeByName(typename);
+            if (type == null)
             {
-                case "device":
-                case "file":
-                case "event":
-                case "directory":
-                case "symboliclink":
-                case "mutant":
-                case "semaphore":
-                case "section":
-                case "job":
-                case "key":
-                    return true;
+                return false;
             }
-            return false;
+            return type.CanOpen;
         }
 
         /// <summary>
@@ -647,7 +633,7 @@ namespace NtApiDotNet
         /// <returns>The opened object.</returns>
         /// <exception cref="NtException">Thrown if an error occurred opening the object.</exception>
         /// <exception cref="ArgumentException">Thrown if type of resource couldn't be found.</exception>
-        public static NtObject OpenWithType(string typename, string path, NtObject root, GenericAccessRights access)
+        public static NtObject OpenWithType(string typename, string path, NtObject root, AccessMask access)
         {
             if (typename == null)
             {
@@ -658,30 +644,14 @@ namespace NtApiDotNet
                 }
             }
 
-            switch (typename.ToLower())
+            NtType type = NtType.GetTypeByName(typename);
+            if (type != null && type.CanOpen)
             {
-                case "device":
-                    return NtFile.Open(path, root, (FileAccessRights)access, FileShareMode.None, FileOpenOptions.None);
-                case "file":
-                    return NtFile.Open(path, root, (FileAccessRights)access, FileShareMode.Read | FileShareMode.Write | FileShareMode.Delete, FileOpenOptions.None);
-                case "event":
-                    return NtEvent.Open(path, root, (EventAccessRights)access);
-                case "directory":
-                    return NtDirectory.Open(path, root, (DirectoryAccessRights)access);
-                case "symboliclink":
-                    return NtSymbolicLink.Open(path, root, (SymbolicLinkAccessRights)access);
-                case "mutant":
-                    return NtMutant.Open(path, root, (MutantAccessRights)access);
-                case "semaphore":
-                    return NtSemaphore.Open(path, root, (SemaphoreAccessRights)access);
-                case "section":
-                    return NtSection.Open(path, root, (SectionAccessRights)access);
-                case "job":
-                    return NtJob.Open(path, root, (JobAccessRights)access);
-                case "key":
-                    return NtKey.Open(path, root, (KeyAccessRights)access);
-                default:
-                    throw new ArgumentException(String.Format("Can't open type {0}", typename));
+                return type.Open(path, root, access);
+            }
+            else
+            {
+                throw new ArgumentException(String.Format("Can't open type {0}", typename));
             }
         }
 
@@ -693,13 +663,17 @@ namespace NtApiDotNet
         {
             get
             {
-                using (SafeStructureInOutBuffer<ObjectTypeInformation> type_info = new SafeStructureInOutBuffer<ObjectTypeInformation>(1024, true))
+                if (_type_name == null)
                 {
-                    int return_length;
-                    NtSystemCalls.NtQueryObject(Handle,
-                        ObjectInformationClass.ObjectTypeInformation, type_info.DangerousGetHandle(), type_info.Length, out return_length).ToNtException();
-                    return type_info.Result.Name.ToString();
+                    using (SafeStructureInOutBuffer<ObjectTypeInformation> type_info = new SafeStructureInOutBuffer<ObjectTypeInformation>(1024, true))
+                    {
+                        int return_length;
+                        NtSystemCalls.NtQueryObject(Handle,
+                            ObjectInformationClass.ObjectTypeInformation, type_info.DangerousGetHandle(), type_info.Length, out return_length).ToNtException();
+                        _type_name = type_info.Result.Name.ToString();
+                    }
                 }
+                return _type_name;
             }
         }
 
@@ -722,7 +696,7 @@ namespace NtApiDotNet
         /// <returns>The string format of the access rights</returns>
         public string GrantedAccessAsString(bool map_to_generic)
         {
-            return NtObjectUtils.GrantedAccessAsString(GrantedAccessMask, NtType.GenericMapping, GetAccessEnumType(), map_to_generic);
+            return NtType.AccessMaskToString(GrantedAccessMask, map_to_generic);
         }
 
         /// <summary>
@@ -870,15 +844,6 @@ namespace NtApiDotNet
         private A UIntToAccess(GenericAccessRights access)
         {
             return (A)Enum.ToObject(typeof(A), (uint)access);
-        }
-
-        /// <summary>
-        /// Get .NET type for access.
-        /// </summary>
-        /// <returns>The .NET type for enum access.</returns>
-        public sealed override Type GetAccessEnumType()
-        {
-            return typeof(A);
         }
 
         /// <summary>
