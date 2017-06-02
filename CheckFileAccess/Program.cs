@@ -50,51 +50,55 @@ namespace CheckFileAccess
         }
 
         static void CheckAccess(string full_path, NtFile entry)
-        {   
+        {
             try
             {
-                SecurityDescriptor sd = entry.GetSecurityDescriptor(SecurityInformation.AllBasic);
-                if (sd != null)
+                if (!entry.IsAccessGranted(FileAccessRights.ReadControl))
                 {
-                    bool is_dir = entry.IsDirectory;
-                    AccessMask granted_access;
+                    return;
+                }
 
-                    if (is_dir && _dir_filter != 0)
-                    {
-                        granted_access = NtSecurity.GetAllowedAccess(_token, _type, 
-                            _dir_filter, sd.ToByteArray());
-                    }
-                    else if (!is_dir && _file_filter != 0)
-                    {
-                        granted_access = NtSecurity.GetAllowedAccess(_token, _type, 
-                            _file_filter, sd.ToByteArray());
-                    }
-                    else
+                SecurityDescriptor sd = entry.SecurityDescriptor;
+                bool is_dir = entry.IsDirectory;
+                AccessMask granted_access;
+
+                if (is_dir && _dir_filter != 0)
+                {
+                    granted_access = NtSecurity.GetAllowedAccess(_token, _type,
+                        _dir_filter, sd.ToByteArray());
+                }
+                else if (!is_dir && _file_filter != 0)
+                {
+                    granted_access = NtSecurity.GetAllowedAccess(_token, _type,
+                        _file_filter, sd.ToByteArray());
+                }
+                else
+                {
+                    granted_access = NtSecurity.GetMaximumAccess(_token, _type, sd.ToByteArray());
+                }
+
+                if (granted_access.HasAccess)
+                {
+                    // Now reget maximum access rights
+                    if (_dir_filter != 0 || _file_filter != 0)
                     {
                         granted_access = NtSecurity.GetMaximumAccess(_token, _type, sd.ToByteArray());
                     }
 
-                    if (granted_access.HasAccess)
+                    if (!_show_write_only || _type.HasWritePermission(granted_access))
                     {
-                        // Now reget maximum access rights
-                        if (_dir_filter != 0 || _file_filter != 0)
+                        Console.WriteLine("{0}{1} : {2:X08} {3}", full_path.TrimEnd('\\'),
+                            is_dir ? "\\" : "", granted_access, AccessMaskToString(granted_access, is_dir));
+                        if (_print_sddl)
                         {
-                            granted_access = NtSecurity.GetMaximumAccess(_token, _type, sd.ToByteArray());
-                        }
-
-                        if (!_show_write_only || _type.HasWritePermission(granted_access))
-                        {
-                            Console.WriteLine("{0}{1} : {2:X08} {3}", full_path.TrimEnd('\\'),
-                                is_dir ? "\\" : "", granted_access, AccessMaskToString(granted_access, is_dir));
-                            if (_print_sddl)
-                            {
-                                Console.WriteLine("{0}", sd.ToSddl());
-                            }
+                            Console.WriteLine("{0}", sd.ToSddl());
                         }
                     }
                 }
             }
-            catch { }
+            catch (NtException)
+            {
+            }
         }
 
         static void DumpFile(string full_path, NtFile root, int recusive_depth, bool no_files)
@@ -110,7 +114,7 @@ namespace CheckFileAccess
                 {
                     CheckAccess(full_path, file);
 
-                    if (file.IsDirectory && recusive_depth > 0)
+                    if (file.IsDirectory && !file.IsReparsePoint && file.IsAccessMaskGranted(FileDirectoryAccessRights.ListDirectory) && recusive_depth > 0)
                     {
                         IEnumerable<FileDirectoryEntry> dir_entries = file.QueryDirectoryInfo(null, FileTypeMask.All).OrderBy(d => d.FileName);
 
@@ -143,7 +147,7 @@ namespace CheckFileAccess
             bool is_pipe = root != null && root.DeviceType == FileDeviceType.NAMED_PIPE;
             name = is_pipe || root == null ? name : Path.GetFileName(name);
 
-            return NtFile.Open(name, is_pipe ? null : root, FileAccessRights.GenericRead | FileAccessRights.Synchronize, FileShareMode.Read,
+            return NtFile.Open(name, is_pipe ? null : root, FileAccessRights.MaximumAllowed | FileAccessRights.Synchronize, FileShareMode.Read,
                                 FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint);
         }
         
@@ -197,7 +201,7 @@ namespace CheckFileAccess
                 }
                 else
                 {
-                    _type = NtType.GetTypeByName("file");
+                    _type = NtType.GetTypeByType<NtFile>();
                     _token = NtToken.OpenProcessToken(pid);
 
                     foreach (string path in paths)
