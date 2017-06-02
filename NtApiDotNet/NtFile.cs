@@ -1796,6 +1796,17 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get whether this file repsents a reparse point.
+        /// </summary>
+        public bool IsReparsePoint
+        {
+            get
+            {
+                return (FileAttributes & FileAttributes.RepasePoint) == FileAttributes.RepasePoint;
+            }
+        }
+
+        /// <summary>
         /// The result of opening the file, whether it was created, overwritten etc.
         /// </summary>
         public FileOpenResult OpenResult
