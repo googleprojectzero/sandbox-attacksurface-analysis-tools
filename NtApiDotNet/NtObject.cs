@@ -216,22 +216,25 @@ namespace NtApiDotNet
         /// <param name="handle">Handle to the object</param>
         protected NtObject(SafeKernelObjectHandle handle)
         {
-            SetHandle(handle);
-            try
-            {
-                // Query basic information which shouldn't change.
-                _basic_information = QueryBasicInformation(handle);
-                CanSynchronize = IsAccessMaskGranted(GenericAccessRights.Synchronize);
-            }
-            catch (NtException)
-            {
-                // Shouldn't fail here but just in case.
-            }
+            SetHandle(handle, true);
         }
 
-        internal void SetHandle(SafeKernelObjectHandle handle)
+        internal void SetHandle(SafeKernelObjectHandle handle, bool query_basic_info)
         {
             Handle = handle;
+            if (query_basic_info)
+            {
+                try
+                {
+                    // Query basic information which shouldn't change.
+                    _basic_information = QueryBasicInformation(handle);
+                    CanSynchronize = IsAccessMaskGranted(GenericAccessRights.Synchronize);
+                }
+                catch (NtException)
+                {
+                    // Shouldn't fail here but just in case.
+                }
+            }
         }
 
         private static SafeStructureInOutBuffer<T> QueryObject<T>(SafeKernelObjectHandle handle, ObjectInformationClass object_info) where T : new()
@@ -832,7 +835,7 @@ namespace NtApiDotNet
         /// <returns>The duplicated object</returns>
         public O Duplicate(A access)
         {
-            return Create(DuplicateHandle(ToGenericAccess(access)));
+            return ShallowClone(DuplicateHandle(ToGenericAccess(access)), true);
         }
 
         /// <summary>
@@ -841,15 +844,20 @@ namespace NtApiDotNet
         /// <returns>The duplicated object</returns>
         public O Duplicate()
         {
-            return Create(DuplicateHandle());
+            return ShallowClone(DuplicateHandle(), false);
+        }
+
+        private O ShallowClone(SafeKernelObjectHandle handle, bool query_basic_info)
+        {
+            O ret = (O)MemberwiseClone();
+            ret.SetHandle(handle, query_basic_info);
+            return ret;
         }
 
         // Get a shallow clone where the handle isn't owned.
         internal O ShallowClone()
         {
-            O ret = (O)MemberwiseClone();
-            ret.SetHandle(new SafeKernelObjectHandle(ret.Handle.DangerousGetHandle(), false));
-            return ret;
+            return ShallowClone(new SafeKernelObjectHandle(Handle.DangerousGetHandle(), false), false);
         }
 
         private A UIntToAccess(GenericAccessRights access)
