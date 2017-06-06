@@ -29,7 +29,7 @@ namespace NtObjectManager
     [Cmdlet(VerbsCommon.Get, "AccessibleAlpcPort")]
     public class GetAccessibleAlpcPortCmdlet : CommonAccessBaseCmdlet
     {
-        internal override void RunAccessCheck(IList<ProcessInformation> processes)
+        internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
             IEnumerable<NtHandle> handles = NtSystemInfo.GetHandles(-1, false);
             HashSet<ulong> checked_objects = new HashSet<ulong>();
@@ -80,18 +80,18 @@ namespace NtObjectManager
 
                             SecurityDescriptor sd = obj.SecurityDescriptor;
                             string sddl = sd.ToSddl();
-                            foreach (ProcessInformation proc_info in processes)
+                            foreach (TokenEntry token in tokens)
                             {
-                                AccessMask granted_access = NtSecurity.GetAllowedAccess(sd, proc_info.Token,
+                                AccessMask granted_access = NtSecurity.GetAllowedAccess(sd, token.Token,
                                     AlpcAccessRights.Connect, alpc_type.GenericMapping);
                                 if (granted_access.IsEmpty)
                                 {
                                     continue;
                                 }
-                                AccessMask maximum_access = NtSecurity.GetMaximumAccess(sd, 
-                                    proc_info.Token, alpc_type.GenericMapping);
+                                AccessMask maximum_access = NtSecurity.GetMaximumAccess(sd,
+                                    token.Token, alpc_type.GenericMapping);
                                 WriteAccessCheckResult(name, alpc_type.Name, maximum_access, 
-                                    alpc_type.GenericMapping, sddl, typeof(AlpcAccessRights), proc_info);
+                                    alpc_type.GenericMapping, sddl, typeof(AlpcAccessRights), token.Information);
                             }
                         }
                     }

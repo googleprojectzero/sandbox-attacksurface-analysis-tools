@@ -679,7 +679,7 @@
       <TableControl>
         <TableHeaders>
           <TableColumnHeader>
-            <Label>PID</Label>
+            <Label>Key</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
@@ -695,7 +695,8 @@
           <TableRowEntry>
             <TableColumnItems>
               <TableColumnItem>
-                <PropertyName>ProcessID</PropertyName>
+                <PropertyName>Key</PropertyName>
+                <FormatString>X</FormatString>
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>GrantedGenericAccessString</PropertyName>

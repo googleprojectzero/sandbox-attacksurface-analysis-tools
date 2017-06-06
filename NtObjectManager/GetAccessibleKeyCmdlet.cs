@@ -65,7 +65,7 @@ namespace NtObjectManager
             }
         }
 
-        private void CheckAccess(ProcessInformation proc_info, NtKey key, AccessMask access_rights, SecurityDescriptor sd)
+        private void CheckAccess(TokenEntry token, NtKey key, AccessMask access_rights, SecurityDescriptor sd)
         {
             NtType type = key.NtType;
             if (!key.IsAccessGranted(KeyAccessRights.ReadControl))
@@ -73,14 +73,15 @@ namespace NtObjectManager
                 return;
             }
 
-            AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, proc_info.Token, type.GenericMapping);
+            AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
             if (!granted_access.IsEmpty && granted_access.IsAllAccessGranted(access_rights))
             {
-                WriteAccessCheckResult(key.FullPath, type.Name, granted_access, type.GenericMapping, sd.ToSddl(), typeof(KeyAccessRights), proc_info);
+                WriteAccessCheckResult(key.FullPath, type.Name, granted_access, type.GenericMapping, 
+                    sd.ToSddl(), typeof(KeyAccessRights), token.Information);
             }
         }
 
-        private void DumpKey(IList<ProcessInformation> processes, AccessMask access_rights, NtKey key)
+        private void DumpKey(IEnumerable<TokenEntry> tokens, AccessMask access_rights, NtKey key)
         {
             if (Stopping)
             {
@@ -90,9 +91,9 @@ namespace NtObjectManager
             if (key.IsAccessGranted(KeyAccessRights.ReadControl))
             {
                 SecurityDescriptor sd = key.SecurityDescriptor;
-                foreach (var proc_info in processes)
+                foreach (var token in tokens)
                 {
-                    CheckAccess(proc_info, key, access_rights, sd);
+                    CheckAccess(token, key, access_rights, sd);
                 }
             }
 
@@ -102,17 +103,17 @@ namespace NtObjectManager
                 {
                     foreach (NtKey subkey in keys)
                     {
-                        DumpKey(processes, access_rights, subkey);
+                        DumpKey(tokens, access_rights, subkey);
                     }
                 }
             }
         }
 
-        internal override void RunAccessCheck(IList<ProcessInformation> processes)
+        internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
             using (NtKey key = OpenKey(Path, false))
             {
-                DumpKey(processes, key.NtType.MapGenericRights(AccessRights), key);
+                DumpKey(tokens, key.NtType.MapGenericRights(AccessRights), key);
             }
         }
     }
