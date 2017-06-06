@@ -25,7 +25,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtQuerySystemInformation(
           SystemInformationClass SystemInformationClass,
-          IntPtr SystemInformation,
+          SafeBuffer SystemInformation,
           int SystemInformationLength,
           out int ReturnLength
         );
@@ -33,13 +33,13 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtSetSystemInformation(
           SystemInformationClass SystemInformationClass,
-          IntPtr SystemInformation,
+          SafeBuffer SystemInformation,
           int SystemInformationLength
         );
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public class SystemHandleTableInfoEntry
+    public struct SystemHandleTableInfoEntry
     {
         public ushort UniqueProcessId;
         public ushort CreatorBackTraceIndex;
@@ -510,41 +510,25 @@ namespace NtApiDotNet
         /// <returns>The list of handles</returns>
         public static IEnumerable<NtHandle> GetHandles(int pid, bool allow_query)
         {
-            SafeHGlobalBuffer handleInfo = new SafeHGlobalBuffer(0x10000);
-            try
+            using (SafeHGlobalBuffer handle_info = new SafeHGlobalBuffer(0x10000))
             {
                 NtStatus status = 0;
                 int return_length = 0;
                 while ((status = NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemHandleInformation,
-                                                         handleInfo.DangerousGetHandle(),
-                                                         handleInfo.Length,
+                                                         handle_info,
+                                                         handle_info.Length,
                                                          out return_length)) == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
                 {
-                    int length = handleInfo.Length * 2;
-                    handleInfo.Close();
-                    handleInfo = new SafeHGlobalBuffer(length);
+                    int length = handle_info.Length * 2;
+                    handle_info.Resize(length);
                 }
                 status.ToNtException();
 
-                IntPtr handleInfoBuf = handleInfo.DangerousGetHandle();
-                int handle_count = Marshal.ReadInt32(handleInfoBuf);
-                List<NtHandle> ret = new List<NtHandle>();
-                handleInfoBuf += IntPtr.Size;
-                for (int i = 0; i < handle_count; ++i)
-                {
-                    SystemHandleTableInfoEntry entry = (SystemHandleTableInfoEntry)Marshal.PtrToStructure(handleInfoBuf, typeof(SystemHandleTableInfoEntry));
-
-                    if (pid == -1 || entry.UniqueProcessId == pid)
-                    {
-                        ret.Add(new NtHandle(entry, allow_query));
-                    }
-                    handleInfoBuf += Marshal.SizeOf(typeof(SystemHandleTableInfoEntry));
-                }
-                return ret;
-            }
-            finally
-            {
-                handleInfo.Close();
+                int handle_count = handle_info.Read<Int32>(0);
+                SystemHandleTableInfoEntry[] handles = new SystemHandleTableInfoEntry[handle_count];
+                handle_info.ReadArray((ulong)IntPtr.Size, handles, 0, handle_count);
+                
+                return handles.Where(h => pid == -1 || h.UniqueProcessId == pid).Select(h => new NtHandle(h, allow_query));
             }
         }
 
@@ -568,7 +552,7 @@ namespace NtApiDotNet
                 NtStatus status = 0;
                 int return_length = 0;
                 while ((status = NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemProcessInformation,
-                                                        process_info.DangerousGetHandle(),
+                                                        process_info,
                                                         process_info.Length,
                                                         out return_length)) == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
                 {
