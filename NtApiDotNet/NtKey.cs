@@ -653,23 +653,43 @@ namespace NtApiDotNet
         /// Return a list of subkeys which can be accessed.
         /// </summary>
         /// <param name="desired_access">The required access rights for the subkeys</param>
+        /// <param name="open_link">True to open link keys rather than following the link.</param>
         /// <returns>The disposable list of subkeys.</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public DisposableList<NtKey> QueryAccessibleKeys(KeyAccessRights desired_access)
+        public IEnumerable<NtKey> QueryAccessibleKeys(KeyAccessRights desired_access, bool open_link)
         {
-            DisposableList<NtKey> ret = new DisposableList<NtKey>();
-
-            foreach (string name in QueryKeys())
+            List<NtKey> ret = new List<NtKey>();
+            AttributeFlags flags = AttributeFlags.CaseInsensitive;
+            if (open_link)
             {
-                try
+                flags |= AttributeFlags.OpenLink;
+            }
+
+            if (IsAccessGranted(KeyAccessRights.EnumerateSubKeys))
+            {
+                foreach (string name in QueryKeys())
                 {
-                    ret.Add(Open(name, desired_access));
-                }
-                catch (NtException)
-                {
+                    using (ObjectAttributes obja = new ObjectAttributes(name, flags, this))
+                    {
+                        SafeKernelObjectHandle handle;
+                        if (NtSystemCalls.NtOpenKey(out handle, desired_access, obja).IsSuccess())
+                        {
+                            ret.Add(new NtKey(handle));
+                        }
+                    }
                 }
             }
             return ret;
+        }
+
+        /// <summary>
+        /// Return a list of subkeys which can be accessed.
+        /// </summary>
+        /// <param name="desired_access">The required access rights for the subkeys</param>
+        /// <returns>The disposable list of subkeys.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public IEnumerable<NtKey> QueryAccessibleKeys(KeyAccessRights desired_access)
+        {
+            return QueryAccessibleKeys(desired_access, false);
         }
 
         /// <summary>

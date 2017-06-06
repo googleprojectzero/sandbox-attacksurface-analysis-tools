@@ -247,5 +247,16 @@ namespace NtApiDotNet
 
             return NtObjectUtils.AccessRightsToString(enum_type, mapped_access);
         }
+
+        /// <summary>
+        /// Convert an IEnumerable to a Disposable List.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="list"></param>
+        /// <returns></returns>
+        public static DisposableList<T> ToDisposableList<T>(this IEnumerable<T> list) where T : IDisposable
+        {
+            return new DisposableList<T>(list);
+        }
     }
 }

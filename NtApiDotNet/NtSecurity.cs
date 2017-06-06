@@ -551,6 +551,15 @@ namespace NtApiDotNet
             return Access.ToString(format, formatProvider);
         }
 
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The access mask.</returns>
+        public override string ToString()
+        {
+            return String.Format("{0:X08}", Access);
+        }
+
         bool IEquatable<AccessMask>.Equals(AccessMask other)
         {
             return Access == other.Access;
