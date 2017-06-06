@@ -767,6 +767,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class representing a NT Process object.
     /// </summary>
+    [NtType("Process")]
     public class NtProcess : NtObjectWithDuplicate<NtProcess, ProcessAccessRights>
     {
         private int? _pid;
