@@ -89,7 +89,7 @@ CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile',
                'Remove-NtFileReparsePoint', 'Start-NtWait', 'Use-NtObject',
 			   'Get-NtFilteredToken', 'Get-NtLowBoxToken', 'Get-NtSid',
 			   'Get-NtSection', 'New-NtSection', 'Get-AccessibleAlpcPort',
-			   'Get-AccessibleKey'
+			   'Get-AccessibleKey', 'Get-AccessibleProcess'
 
 # Variables to export from this module
 # VariablesToExport = @()

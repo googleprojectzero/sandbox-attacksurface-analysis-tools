@@ -242,7 +242,13 @@ namespace NtObjectManager
         [Parameter]
         public string[] ProcessCommandLines { get; set; }
 
-        internal abstract void RunAccessCheck(IEnumerable<TokenEntry> processes);
+        /// <summary>
+        /// <para type="description">Specify a list token objects.</para>
+        /// </summary>
+        [Parameter]
+        public NtToken[] Tokens { get; set; }
+
+        internal abstract void RunAccessCheck(IEnumerable<TokenEntry> tokens);
 
         internal void WriteAccessCheckResult(string name, string type_name, AccessMask granted_access,
             GenericMapping generic_mapping, string sddl, Type enum_type, TokenInformation proc_info)
@@ -250,18 +256,22 @@ namespace NtObjectManager
             WriteObject(new AccessCheckResult(name, type_name, granted_access, generic_mapping, sddl, enum_type, proc_info));
         }
 
-        private void AddTokenEntryFromProcess(HashSet<TokenEntry> tokens, NtProcess process)
+        private static void AddTokenEntry(HashSet<TokenEntry> tokens, TokenEntry token)
+        {
+            if (!tokens.Add(token))
+            {
+                token.Dispose();
+            }
+        }
+
+        private static void AddTokenEntryFromProcess(HashSet<TokenEntry> tokens, NtProcess process)
         {
             using (NtToken token = NtToken.OpenProcessToken(process, false,
                                             TokenAccessRights.Duplicate |
                                             TokenAccessRights.Impersonate |
                                             TokenAccessRights.Query))
             {
-                TokenEntry entry = new TokenEntry(token, process);
-                if (!tokens.Add(new TokenEntry(token, process)))
-                {
-                    entry.Dispose();
-                }
+                AddTokenEntry(tokens, new TokenEntry(token, process));
             }
         }
 
@@ -336,6 +346,14 @@ namespace NtObjectManager
             try
             {
                 NtToken.EnableDebugPrivilege();
+
+                if (Tokens != null)
+                {
+                    foreach (NtToken token in Tokens)
+                    {
+                        AddTokenEntry(tokens, new TokenEntry(token));
+                    }
+                }
                 if (ProcessIds != null)
                 {
                     GetTokensFromPids(tokens, ProcessIds);

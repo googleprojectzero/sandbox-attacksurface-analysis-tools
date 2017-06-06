@@ -20,11 +20,31 @@ using System.Management.Automation;
 namespace NtObjectManager
 {
     /// <summary>
-    /// <para type="synopsis">Get a list of Registry Keys that can be opened by a specificed process..</para>
-    /// <para type="description">This cmdlet checks a registry key and optionally ittries to determine
-    /// if one or more specified processes can open them to them. If no processes are specified using the
-    /// -ProcessIds parameter then the current process token is used.</para>
+    /// <para type="synopsis">Get a list of Registry Keys that can be opened by a specificed token.</para>
+    /// <para type="description">This cmdlet checks a registry key and optionally tries to determine
+    /// if one or more specified tokens can open them to them. If no tokens are specified the current process
+    /// token is used.</para>
     /// </summary>
+    /// <example>
+    ///   <code>Get-AccessibleKey HKLM\Software</code>
+    ///   <para>Check accessible keys HKEY_LOCAL_MACHINE\Software for the current process token.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-AccessibleKey HKLM\Software -ProcessIds 1234,5678</code>
+    ///   <para>Check accessible keys HKEY_LOCAL_MACHINE\Software for the process tokens of PIDs 1234 and 5678</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-AccessibleKey HKLM\Software -Recurse</code>
+    ///   <para>Check recursively for accessible keys HKEY_LOCAL_MACHINE\Software for the current process token.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-AccessibleKey \Registry\Machine\Software -Recurse</code>
+    ///   <para>Check recursively for accessible keys NT path \Registry\Machine\Software for the current process token.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$token = Get-NtToken -Primary -Duplicate -IntegrityLevel Low&#x0A;Get-AccessibleKey HKCU -Recurse -Tokens $token -AccessRights GenericWrite</code>
+    ///   <para>Get all keys with can be written to in HKEY_CURRENT_USER by a low integrity copy of current token.</para>
+    /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleKey")]
     public class GetAccessibleKeyCmdlet : CommonAccessBaseCmdlet
     {

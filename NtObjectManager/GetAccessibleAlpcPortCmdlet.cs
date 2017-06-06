@@ -21,11 +21,19 @@ using System.Management.Automation;
 namespace NtObjectManager
 {
     /// <summary>
-    /// <para type="synopsis">Get a list of ALPC Ports that can be opened by a specificed process..</para>
+    /// <para type="synopsis">Get a list of ALPC Ports that can be opened by a specificed token.</para>
     /// <para type="description">This cmdlet checks for all ALPC ports on the system and tries to determine
-    /// if one or more specified processes can connect to them. If no processes are specified using the
-    /// -ProcessIds parameter then the current process token is used.</para>
+    /// if one or more specified tokens can connect to them. If no token are specified then the current 
+    /// process token is used.</para>
     /// </summary>
+    /// <example>
+    ///   <code>Get-AccessibleAlpcPort</code>
+    ///   <para>Get all accessible ALPC ports for the current process token.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-AccessibleAlpcPort -ProcessIds 1234,5678</code>
+    ///   <para>Get all accessible ALPC ports for the process tokens of PIDs 1234 and 5678</para>
+    /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleAlpcPort")]
     public class GetAccessibleAlpcPortCmdlet : CommonAccessBaseCmdlet
     {
