@@ -1307,16 +1307,41 @@ namespace NtApiDotNet
         /// <param name="open_options">Open options for file</param>
         /// <param name="disposition">Disposition when opening the file</param>
         /// <param name="ea_buffer">Extended Attributes buffer</param>
+        /// <param name="file">The created/opened file object.</param>
+        /// <returns>The NT status code</returns>
+        public static NtStatus Create(ObjectAttributes obj_attributes, FileAccessRights desired_access, FileAttributes file_attributes, FileShareMode share_access,
+            FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer, out NtFile file)
+        {
+            file = null;
+            SafeKernelObjectHandle handle;
+            IoStatus iostatus = new IoStatus();
+            byte[] buffer = ea_buffer != null ? ea_buffer.ToByteArray() : null;
+            NtStatus status = NtSystemCalls.NtCreateFile(out handle, desired_access, obj_attributes, iostatus, null, FileAttributes.Normal,
+                share_access, disposition, open_options, buffer, buffer != null ? buffer.Length : 0);
+            if (status.IsSuccess())
+            {
+                file = new NtFile(handle, iostatus);
+            }
+            return status;
+        }
+
+        /// <summary>
+        /// Create a new file
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes</param>
+        /// <param name="desired_access">Desired access for the file</param>
+        /// <param name="file_attributes">Attributes for the file</param>
+        /// <param name="share_access">Share access for the file</param>
+        /// <param name="open_options">Open options for file</param>
+        /// <param name="disposition">Disposition when opening the file</param>
+        /// <param name="ea_buffer">Extended Attributes buffer</param>
         /// <returns>The created/opened file object.</returns>
         public static NtFile Create(ObjectAttributes obj_attributes, FileAccessRights desired_access, FileAttributes file_attributes, FileShareMode share_access,
             FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer)
         {
-            SafeKernelObjectHandle handle;
-            IoStatus iostatus = new IoStatus();
-            byte[] buffer = ea_buffer != null ? ea_buffer.ToByteArray() : null;
-            NtSystemCalls.NtCreateFile(out handle, desired_access, obj_attributes, iostatus, null, FileAttributes.Normal,
-                share_access, disposition, open_options, buffer, buffer != null ? buffer.Length : 0).ToNtException();
-            return new NtFile(handle, iostatus);
+            NtFile file;
+            Create(obj_attributes, desired_access, file_attributes, share_access, open_options, disposition, ea_buffer, out file).ToNtException();
+            return file;
         }
 
         /// <summary>
@@ -1371,6 +1396,41 @@ namespace NtApiDotNet
         /// <param name="output_quota">Output quota</param>
         /// <param name="pipe_type">Type of pipe to create</param>
         /// <param name="read_mode">Pipe read mode</param>
+        /// <param name="file">The created/opened file object.</param>
+        /// <returns>The NT status code</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtStatus CreateNamedPipe(ObjectAttributes obj_attributes, FileAccessRights desired_access,
+            FileShareMode share_access, FileOpenOptions open_options, FileDisposition disposition, NamedPipeType pipe_type,
+            NamedPipeReadMode read_mode, NamedPipeCompletionMode completion_mode, int maximum_instances, int input_quota,
+            int output_quota, NtWaitTimeout default_timeout, out NtFile file)
+        {
+            file = null;
+            SafeKernelObjectHandle handle;
+            IoStatus io_status = new IoStatus();
+            NtStatus status = NtSystemCalls.NtCreateNamedPipeFile(out handle, desired_access, obj_attributes, io_status, share_access, disposition, open_options,
+                pipe_type, read_mode, completion_mode, maximum_instances, input_quota, output_quota, default_timeout.Timeout);
+            if (status.IsSuccess())
+            {
+                file = new NtFile(handle, io_status);
+            }
+            return status;
+        }
+
+        /// <summary>
+        /// Create a new named pipe file
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes</param>
+        /// <param name="desired_access">Desired access for the file</param>
+        /// <param name="share_access">Share access for the file</param>
+        /// <param name="open_options">Open options for file</param>
+        /// <param name="disposition">Disposition when opening the file</param>
+        /// <param name="completion_mode">Pipe completion mode</param>
+        /// <param name="default_timeout">Default timeout</param>
+        /// <param name="input_quota">Input quota</param>
+        /// <param name="maximum_instances">Maximum number of instances (-1 for infinite)</param>
+        /// <param name="output_quota">Output quota</param>
+        /// <param name="pipe_type">Type of pipe to create</param>
+        /// <param name="read_mode">Pipe read mode</param>
         /// <returns>The file instance for the pipe.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtFile CreateNamedPipe(ObjectAttributes obj_attributes, FileAccessRights desired_access,
@@ -1378,11 +1438,10 @@ namespace NtApiDotNet
             NamedPipeReadMode read_mode, NamedPipeCompletionMode completion_mode, int maximum_instances, int input_quota,
             int output_quota, NtWaitTimeout default_timeout)
         {
-            SafeKernelObjectHandle handle;
-            IoStatus io_status = new IoStatus();
-            NtSystemCalls.NtCreateNamedPipeFile(out handle, desired_access, obj_attributes, io_status, share_access, disposition, open_options,
-                pipe_type, read_mode, completion_mode, maximum_instances, input_quota, output_quota, default_timeout.Timeout).ToNtException();
-            return new NtFile(handle, io_status);
+            NtFile file;
+            CreateNamedPipe(obj_attributes, desired_access, share_access, open_options, disposition, pipe_type,
+                read_mode, completion_mode, maximum_instances, input_quota, output_quota, default_timeout, out file).ToNtException();
+            return file;
         }
 
         /// <summary>
@@ -1698,21 +1757,44 @@ namespace NtApiDotNet
             return IoControlGeneric(NtSystemCalls.NtFsControlFile, control_code, input_buffer, max_output);
         }
 
+
         /// <summary>
         /// Open a file
         /// </summary>
         /// <param name="obj_attributes">The object attributes</param>
-        /// <param name="DesiredAccess">The desired access for the file handle</param>
-        /// <param name="ShareAccess">The file share access</param>
-        /// <param name="OpenOptions">File open options</param>
-        /// <returns>The opened file</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtFile Open(ObjectAttributes obj_attributes, FileAccessRights DesiredAccess, FileShareMode ShareAccess, FileOpenOptions OpenOptions)
+        /// <param name="desired_access">The desired access for the file handle</param>
+        /// <param name="share_access">The file share access</param>
+        /// <param name="open_options">File open options</param>
+        /// <param name="file">The opened file.</param>
+        /// <returns>The NT status code</returns>
+        public static NtStatus Open(ObjectAttributes obj_attributes, FileAccessRights desired_access, 
+            FileShareMode share_access, FileOpenOptions open_options, out NtFile file)
         {
+            file = null;
             SafeKernelObjectHandle handle;
             IoStatus iostatus = new IoStatus();
-            NtSystemCalls.NtOpenFile(out handle, DesiredAccess, obj_attributes, iostatus, ShareAccess, OpenOptions).ToNtException();
-            return new NtFile(handle, iostatus);
+            NtStatus status = NtSystemCalls.NtOpenFile(out handle, desired_access, obj_attributes, iostatus, share_access, open_options);
+            if (status.IsSuccess())
+            {
+                file = new NtFile(handle, iostatus);
+            }
+            return status;
+        }
+
+        /// <summary>
+        /// Open a file
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes</param>
+        /// <param name="desired_access">The desired access for the file handle</param>
+        /// <param name="share_access">The file share access</param>
+        /// <param name="open_options">File open options</param>
+        /// <returns>The opened file</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtFile Open(ObjectAttributes obj_attributes, FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options)
+        {
+            NtFile file;
+            Open(obj_attributes, desired_access, share_access, open_options, out file).ToNtException();
+            return file;
         }
 
         /// <summary>
@@ -2597,6 +2679,16 @@ namespace NtApiDotNet
                 NtSystemCalls.NtSetInformationFile(Handle, io_status,
                     buffer, buffer.Length, FileInformationClass.FileCompletionInformation).ToNtException();
             }
+        }
+
+        /// <summary>
+        /// Check if a specific set of file directory access rights is granted
+        /// </summary>
+        /// <param name="access">The file directory access rights to check</param>
+        /// <returns>True if all access rights are granted</returns>
+        public bool IsAccessGranted(FileDirectoryAccessRights access)
+        {
+            return IsAccessMaskGranted(access);
         }
     }
 
