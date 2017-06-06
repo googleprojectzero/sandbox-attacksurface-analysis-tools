@@ -228,7 +228,7 @@ namespace TokenViewer
                 tabControlMain.TabPages.Remove(tabPageAppContainer);
             }
 
-            txtUIAccess.Text = _token.UiAccess.ToString();
+            txtUIAccess.Text = _token.UIAccess.ToString();
             txtSandboxInert.Text = _token.SandboxInert.ToString();
             bool virtAllowed = _token.VirtualizationAllowed;
             txtVirtualizationAllowed.Text = virtAllowed.ToString();
@@ -764,8 +764,8 @@ namespace TokenViewer
         {
             try
             {
-                _token.SetUiAccess(!_token.UiAccess);
-                txtUIAccess.Text = _token.UiAccess.ToString();
+                _token.SetUIAccess(!_token.UIAccess);
+                txtUIAccess.Text = _token.UIAccess.ToString();
             }
             catch (NtException ex)
             {

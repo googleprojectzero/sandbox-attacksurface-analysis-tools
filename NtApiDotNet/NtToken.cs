@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 
 namespace NtApiDotNet
 {
@@ -1576,6 +1577,8 @@ namespace NtApiDotNet
             SetToken(TokenInformationClass.TokenSessionId, session_id);
         }
 
+        private UserGroup _user;
+
         /// <summary>
         /// Get token user
         /// </summary>
@@ -1583,10 +1586,14 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var user = QueryToken<TokenUser>(TokenInformationClass.TokenUser))
+                if (_user == null)
                 {
-                    return user.Result.User.ToUserGroup();
+                    using (var user = QueryToken<TokenUser>(TokenInformationClass.TokenUser))
+                    {
+                        Interlocked.CompareExchange(ref _user, user.Result.User.ToUserGroup(), null);
+                    }
                 }
+                return _user;
             }
         }
 
@@ -1664,7 +1671,7 @@ namespace NtApiDotNet
             {
                 using (var stats = QueryToken<TokenStatistics>(TokenInformationClass.TokenStatistics))
                 {
-                    _token_stats = stats.Result;
+                    Interlocked.CompareExchange(ref _token_stats, stats.Result, null);
                 }
             }
             return _token_stats;
@@ -1700,17 +1707,6 @@ namespace NtApiDotNet
             get
             {
                 return GetTokenStats().ExpirationTime.QuadPart;
-            }
-        }
-
-        /// <summary>
-        /// Get the token's expiration time as a DateTime structure.
-        /// </summary>
-        public DateTime ExpirationTimeAsDateTime
-        {
-            get
-            {
-                return DateTime.FromFileTime(ExpirationTime);
             }
         }
 
@@ -1792,6 +1788,8 @@ namespace NtApiDotNet
             }
         }
 
+        private TokenSource _source;
+
         /// <summary>
         /// Get the token's source
         /// </summary>
@@ -1799,10 +1797,14 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var source_buf = QueryToken<TokenSource>(TokenInformationClass.TokenSource))
+                if (_source == null)
                 {
-                    return source_buf.Result;
+                    using (var source_buf = QueryToken<TokenSource>(TokenInformationClass.TokenSource))
+                    {
+                        Interlocked.CompareExchange(ref _source, source_buf.Result, null);
+                    }
                 }
+                return _source;
             }
         }
 
@@ -1923,7 +1925,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get whether token has UI access flag set
         /// </summary>
-        public bool UiAccess
+        public bool UIAccess
         {
             get
             {
@@ -1975,7 +1977,7 @@ namespace NtApiDotNet
         /// Set UI Access flag.
         /// </summary>
         /// <param name="enable">True to enable UI Access.</param>
-        public void SetUiAccess(bool enable)
+        public void SetUIAccess(bool enable)
         {
             SetToken(TokenInformationClass.TokenUIAccess, enable ? 1 : 0);
         }
