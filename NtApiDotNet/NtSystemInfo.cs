@@ -106,6 +106,15 @@ namespace NtApiDotNet
         public SystemThreadInformation Threads;
     }
 
+    public struct SystemPageFileInformation
+    {
+        public int NextEntryOffset;
+        public int TotalSize;
+        public int TotalInUse;
+        public int PeekUsage;
+        public UnicodeStringOut PageFileName;
+    }
+
     public enum SystemInformationClass
     {
         SystemBasicInformation, // q: SYSTEM_BASIC_INFORMATION
@@ -502,6 +511,21 @@ namespace NtApiDotNet
     /// </summary>
     public class NtSystemInfo
     {
+        private static void AllocateSafeBuffer(SafeHGlobalBuffer buffer, SystemInformationClass info_class)
+        {
+            NtStatus status = 0;
+            int return_length = 0;
+            while ((status = NtSystemCalls.NtQuerySystemInformation(info_class,
+                                                     buffer,
+                                                     buffer.Length,
+                                                     out return_length)) == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
+            {
+                int length = buffer.Length * 2;
+                buffer.Resize(length);
+            }
+            status.ToNtException();
+        }
+
         /// <summary>
         /// Get a list of handles
         /// </summary>
@@ -512,18 +536,7 @@ namespace NtApiDotNet
         {
             using (SafeHGlobalBuffer handle_info = new SafeHGlobalBuffer(0x10000))
             {
-                NtStatus status = 0;
-                int return_length = 0;
-                while ((status = NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemHandleInformation,
-                                                         handle_info,
-                                                         handle_info.Length,
-                                                         out return_length)) == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
-                {
-                    int length = handle_info.Length * 2;
-                    handle_info.Resize(length);
-                }
-                status.ToNtException();
-
+                AllocateSafeBuffer(handle_info, SystemInformationClass.SystemHandleInformation);
                 int handle_count = handle_info.Read<Int32>(0);
                 SystemHandleTableInfoEntry[] handles = new SystemHandleTableInfoEntry[handle_count];
                 handle_info.ReadArray((ulong)IntPtr.Size, handles, 0, handle_count);
@@ -549,18 +562,7 @@ namespace NtApiDotNet
         {
             using (SafeHGlobalBuffer process_info = new SafeHGlobalBuffer(0x10000))
             {
-                NtStatus status = 0;
-                int return_length = 0;
-                while ((status = NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemProcessInformation,
-                                                        process_info,
-                                                        process_info.Length,
-                                                        out return_length)) == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
-                {
-                    int length = process_info.Length * 2;
-                    process_info.Resize(length);
-                }
-                status.ToNtException();
-
+                AllocateSafeBuffer(process_info, SystemInformationClass.SystemProcessInformation);
                 int offset = 0;
                 while (true)
                 {
@@ -578,6 +580,29 @@ namespace NtApiDotNet
 
                     offset += process_entry.NextEntryOffset;
                 }                
+            }
+        }
+
+        /// <summary>
+        /// Get list of page filenames.
+        /// </summary>
+        /// <returns>The list of page file names.</returns>
+        public static IEnumerable<string> GetPageFileNames()
+        {
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(0x10000))
+            {
+                AllocateSafeBuffer(buffer, SystemInformationClass.SystemPageFileInformation);
+                int offset = 0;
+                while (true)
+                {
+                    var pagefile_info = buffer.GetStructAtOffset<SystemPageFileInformation>(offset).Result;
+                    yield return pagefile_info.PageFileName.ToString();
+                    if (pagefile_info.NextEntryOffset == 0)
+                    {
+                        break;
+                    }
+                    offset += pagefile_info.NextEntryOffset;
+                }
             }
         }
     }
