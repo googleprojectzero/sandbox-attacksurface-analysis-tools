@@ -803,27 +803,36 @@ namespace NtApiDotNet
             return GetExtendedBasicInfo().BasicInfo;
         }
 
-        private SafeStructureInOutBuffer<T> Query<T>(ProcessInformationClass info_class) where T : new()
+        private NtStatus Query<T>(ProcessInformationClass info_class, out SafeStructureInOutBuffer<T> buffer) where T : new()
         {
             int return_length = 0;
+            buffer = null;
 
             NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, info_class, SafeHGlobalBuffer.Null, 0, out return_length);
             if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH && status != NtStatus.STATUS_BUFFER_TOO_SMALL)
             {
-                throw new NtException(status);
+                return status;
             }
 
-            var buffer = new SafeStructureInOutBuffer<T>(return_length, false);
-            try
+            SafeStructureInOutBuffer<T> temp_buffer = new SafeStructureInOutBuffer<T>(return_length, false);
+            status = NtSystemCalls.NtQueryInformationProcess(Handle, info_class, temp_buffer, temp_buffer.Length, out return_length);
+            if (status.IsSuccess())
             {
-                NtSystemCalls.NtQueryInformationProcess(Handle, info_class, buffer, buffer.Length, out return_length).ToNtException();
-                return buffer;
+                buffer = temp_buffer;
             }
-            catch
+            else
             {
-                buffer.Close();
-                throw;
+                temp_buffer.Close();
             }
+
+            return status;
+        }
+
+        private SafeStructureInOutBuffer<T> Query<T>(ProcessInformationClass info_class) where T : new()
+        {
+            SafeStructureInOutBuffer<T> buffer;
+            Query(info_class, out buffer).ToNtException();
+            return buffer;
         }
 
         private T QueryFixed<T>(ProcessInformationClass info_class) where T : new()
@@ -835,7 +844,6 @@ namespace NtApiDotNet
                 return buffer.Result;
             }
         }
-
 
         internal NtProcess(SafeKernelObjectHandle handle) : base(handle)
         {
@@ -990,8 +998,19 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buffer = Query<UnicodeStringOut>(ProcessInformationClass.ProcessCommandLineInformation))
+                SafeStructureInOutBuffer<UnicodeStringOut> buffer;
+                NtStatus status = Query(ProcessInformationClass.ProcessCommandLineInformation, out buffer);
+                using (buffer)
                 {
+                    // This will fail if process is being torn down, just return an empty string.
+                    if (status == NtStatus.STATUS_PROCESS_IS_TERMINATING)
+                    {
+                        return String.Empty;
+                    }
+                    else if (!status.IsSuccess())
+                    {
+                        throw new NtException(status);
+                    }
                     return buffer.Result.ToString();
                 }
             }
