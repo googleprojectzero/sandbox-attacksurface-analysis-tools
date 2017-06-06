@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -66,10 +67,10 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential), DataStart("Threads")]
-    public class SystemProcessInformation
+    public struct SystemProcessInformation
     {
-        public uint NextEntryOffset;
-        public uint NumberOfThreads;
+        public int NextEntryOffset;
+        public int NumberOfThreads;
         public LargeIntegerStruct WorkingSetPrivateSize; // since VISTA
         public uint HardFaultCount; // since WIN7
         public uint NumberOfThreadsHighWatermark; // since WIN7
@@ -104,7 +105,6 @@ namespace NtApiDotNet
         public LargeIntegerStruct OtherTransferCount;
         public SystemThreadInformation Threads;
     }
-
 
     public enum SystemInformationClass
     {
@@ -285,6 +285,44 @@ namespace NtApiDotNet
         SystemRootSiloInformation, // q: SYSTEM_ROOT_SILO_INFORMATION
         MaxSystemInfoClass
     }
+
+    public class NtThreadInformation
+    {
+        public int ThreadId { get; private set; }
+        public IntPtr StartAddress { get; private set; }
+        public uint ThreadState { get; private set; }
+        public int WaitReason { get; private set; }
+
+        internal NtThreadInformation(SystemThreadInformation thread_info)
+        {
+            ThreadId = thread_info.ClientId.UniqueThread.ToInt32();
+            StartAddress = thread_info.StartAddress;
+            ThreadState = thread_info.ThreadState;
+            WaitReason = thread_info.WaitReason;
+        }
+
+        public override string ToString()
+        {
+            return ThreadId.ToString();
+        }
+    }
+
+    public class NtProcessInformation
+    {
+        public int ProcessId { get; private set; }
+        public int ParentProcessId { get; private set; }
+        public IEnumerable<NtThreadInformation> Threads { get; private set; }
+        public string ImageName { get; private set; }
+
+        internal NtProcessInformation(SystemProcessInformation process_info, IEnumerable<NtThreadInformation> threads)
+        {
+            ImageName = process_info.ImageName.ToString();
+            ProcessId = process_info.UniqueProcessId.ToInt32();
+            ParentProcessId = process_info.InheritedFromUniqueProcessId.ToInt32();
+            Threads = threads.ToArray();
+        }
+    }
+
 #pragma warning restore 1591
 
     /// <summary>
@@ -517,6 +555,46 @@ namespace NtApiDotNet
         public static IEnumerable<NtHandle> GetHandles()
         {
             return GetHandles(-1, true);
+        }
+
+        /// <summary>
+        /// Get all process information for the system.
+        /// </summary>
+        /// <returns>The list of process information.</returns>
+        public static IEnumerable<NtProcessInformation> GetProcessInformation()
+        {
+            using (SafeHGlobalBuffer process_info = new SafeHGlobalBuffer(0x10000))
+            {
+                NtStatus status = 0;
+                int return_length = 0;
+                while ((status = NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemProcessInformation,
+                                                        process_info.DangerousGetHandle(),
+                                                        process_info.Length,
+                                                        out return_length)) == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
+                {
+                    int length = process_info.Length * 2;
+                    process_info.Resize(length);
+                }
+                status.ToNtException();
+
+                int offset = 0;
+                while (true)
+                {
+                    var process_buffer = process_info.GetStructAtOffset<SystemProcessInformation>(offset);
+                    var process_entry = process_buffer.Result;
+                    SystemThreadInformation[] thread_info = new SystemThreadInformation[process_entry.NumberOfThreads];
+                    process_buffer.Data.ReadArray(0, thread_info, 0, thread_info.Length);
+
+                    yield return new NtProcessInformation(process_entry, thread_info.Select(t => new NtThreadInformation(t)));
+
+                    if (process_entry.NextEntryOffset == 0)
+                    {
+                        break;
+                    }
+
+                    offset += process_entry.NextEntryOffset;
+                }                
+            }
         }
     }
 }
