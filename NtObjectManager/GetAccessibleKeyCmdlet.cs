@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using System;
 using System.Collections.Generic;
 using System.Management.Automation;
 
@@ -68,16 +69,40 @@ namespace NtObjectManager
         private void CheckAccess(TokenEntry token, NtKey key, AccessMask access_rights, SecurityDescriptor sd)
         {
             NtType type = key.NtType;
-            if (!key.IsAccessGranted(KeyAccessRights.ReadControl))
-            {
-                return;
-            }
-
             AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
             if (!granted_access.IsEmpty && granted_access.IsAllAccessGranted(access_rights))
             {
                 WriteAccessCheckResult(key.FullPath, type.Name, granted_access, type.GenericMapping, 
                     sd.ToSddl(), typeof(KeyAccessRights), token.Information);
+            }
+        }
+
+        private void CheckAccessUnderImpersonation(TokenEntry token, NtKey key)
+        {
+            NtKey new_key = null;
+            try
+            {
+                using (ObjectAttributes obj_attributes = new ObjectAttributes(string.Empty,
+                    AttributeFlags.CaseInsensitive | AttributeFlags.OpenLink, key))
+                {
+
+                    bool success;
+
+                    using (token.Token.Impersonate())
+                    {
+                        success = NtKey.Open(obj_attributes, KeyAccessRights.MaximumAllowed, out new_key).IsSuccess();
+                    }
+
+                    if (success)
+                    {
+                        WriteAccessCheckResult(key.FullPath, key.NtType.Name, new_key.GrantedAccessMask, key.NtType.GenericMapping,
+                            String.Empty, typeof(KeyAccessRights), token.Information);
+                    }
+                }
+            }
+            finally
+            {
+                new_key?.Dispose();
             }
         }
 
@@ -94,6 +119,14 @@ namespace NtObjectManager
                 foreach (var token in tokens)
                 {
                     CheckAccess(token, key, access_rights, sd);
+                }
+            }
+            else
+            {
+                // If we can't read security descriptor then try opening the key.
+                foreach (var token in tokens)
+                {
+                    CheckAccessUnderImpersonation(token, key);
                 }
             }
 
