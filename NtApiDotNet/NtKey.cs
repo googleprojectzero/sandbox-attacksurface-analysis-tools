@@ -395,18 +395,61 @@ namespace NtApiDotNet
         /// <summary>
         /// Load a new hive
         /// </summary>
-        /// <param name="key">Object attributes for the key name</param>
-        /// <param name="file">Object attributes for the path to the hive file</param>
+        /// <param name="key_obj_attr">Object attributes for the key name</param>
+        /// <param name="file_obj_attr">Object attributes for the path to the hive file</param>
         /// <param name="flags">Load flags</param>
         /// <param name="desired_access">Desired access for the root key</param>
         /// <returns>The opened root key</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtKey LoadKey(ObjectAttributes key, ObjectAttributes file, LoadKeyFlags flags, KeyAccessRights desired_access)
+        public static NtKey LoadKey(ObjectAttributes key_obj_attr, ObjectAttributes file_obj_attr, LoadKeyFlags flags, KeyAccessRights desired_access)
         {
+            NtKey key;
+            LoadKey(key_obj_attr, file_obj_attr, flags, desired_access, out key).ToNtException();
+            return key;
+        }
+
+        /// <summary>
+        /// Load a new hive
+        /// </summary>
+        /// <param name="key_obj_attr">Object attributes for the key name</param>
+        /// <param name="file_obj_attr">Object attributes for the path to the hive file</param>
+        /// <param name="flags">Load flags</param>
+        /// <param name="desired_access">Desired access for the root key</param>
+        /// <param name="key">The opened root key</param>
+        /// <returns>NT status code.</returns>
+        public static NtStatus LoadKey(ObjectAttributes key_obj_attr, ObjectAttributes file_obj_attr, 
+            LoadKeyFlags flags, KeyAccessRights desired_access, out NtKey key)
+        {
+            key = null;
             SafeKernelObjectHandle key_handle;
-            NtSystemCalls.NtLoadKeyEx(key, file, flags,
-                IntPtr.Zero, IntPtr.Zero, desired_access, out key_handle, 0).ToNtException();
-            return new NtKey(key_handle);
+            NtStatus status = NtSystemCalls.NtLoadKeyEx(key_obj_attr, file_obj_attr, flags,
+                IntPtr.Zero, IntPtr.Zero, desired_access, out key_handle, 0);
+            if (status.IsSuccess())
+            {
+                key = new NtKey(key_handle);
+            }
+            return status;
+        }
+
+        /// <summary>
+        /// Create a new Key
+        /// </summary>
+        /// <param name="obj_attributes">Object attributes for the key name</param>
+        /// <param name="desired_access">Desired access for the root key</param>
+        /// <param name="options">Create options</param>
+        /// <param name="key">The opened key</param>
+        /// <returns>The create status.</returns>
+        public static NtStatus Create(ObjectAttributes obj_attributes, KeyAccessRights desired_access, KeyCreateOptions options, out NtKey key)
+        {
+            key = null;
+            SafeKernelObjectHandle handle;
+            KeyDisposition disposition;
+            NtStatus status = NtSystemCalls.NtCreateKey(out handle, desired_access, obj_attributes, 0, null, options, out disposition);
+            if (status.IsSuccess())
+            {
+                key = new NtKey(handle);
+            }
+            return status;
         }
 
         /// <summary>
@@ -419,10 +462,9 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey Create(ObjectAttributes obj_attributes, KeyAccessRights desired_access, KeyCreateOptions options)
         {
-            SafeKernelObjectHandle key;
-            KeyDisposition disposition;
-            NtSystemCalls.NtCreateKey(out key, desired_access, obj_attributes, 0, null, options, out disposition).ToNtException();
-            return new NtKey(key);
+            NtKey key;
+            Create(obj_attributes, desired_access, options, out key).ToNtException();
+            return key;
         }
 
         /// <summary>
@@ -467,6 +509,25 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Try and open a Key
+        /// </summary>
+        /// <param name="obj_attributes">Object attributes for the key name</param>
+        /// <param name="desired_access">Desired access for the root key</param>
+        /// <param name="key">The key object if successfully opened.</param>
+        /// <returns>The status code for the open.</returns>
+        public static NtStatus Open(ObjectAttributes obj_attributes, KeyAccessRights desired_access, out NtKey key)
+        {
+            key = null;
+            SafeKernelObjectHandle handle;
+            NtStatus status = NtSystemCalls.NtOpenKey(out handle, desired_access, obj_attributes);
+            if (status.IsSuccess())
+            {
+                key = new NtKey(handle);
+            }
+            return status;
+        }
+
+        /// <summary>
         /// Open a Key
         /// </summary>
         /// <param name="obj_attributes">Object attributes for the key name</param>
@@ -475,9 +536,9 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey Open(ObjectAttributes obj_attributes, KeyAccessRights desired_access)
         {
-            SafeKernelObjectHandle key;
-            NtSystemCalls.NtOpenKey(out key, desired_access, obj_attributes).ToNtException();
-            return new NtKey(key);
+            NtKey key;
+            Open(obj_attributes, desired_access, out key).ToNtException();
+            return key;
         }
 
         /// <summary>
@@ -670,10 +731,10 @@ namespace NtApiDotNet
                 {
                     using (ObjectAttributes obja = new ObjectAttributes(name, flags, this))
                     {
-                        SafeKernelObjectHandle handle;
-                        if (NtSystemCalls.NtOpenKey(out handle, desired_access, obja).IsSuccess())
+                        NtKey key;
+                        if (Open(obja, desired_access, out key).IsSuccess())
                         {
-                            ret.Add(new NtKey(handle));
+                            ret.Add(key);
                         }
                     }
                 }
