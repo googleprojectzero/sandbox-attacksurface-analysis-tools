@@ -203,6 +203,14 @@ namespace NtApiDotNet
         );
 
         [DllImport("ntdll.dll")]
+        public static extern NtStatus NtOpenKeyEx(
+            out SafeKernelObjectHandle KeyHandle,
+            KeyAccessRights DesiredAccess,
+            [In] ObjectAttributes ObjectAttributes,
+            KeyCreateOptions OpenOptions
+        );
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus NtDeleteKey(SafeKernelObjectHandle KeyHandle);
 
         [DllImport("ntdll.dll")]
@@ -513,13 +521,14 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="obj_attributes">Object attributes for the key name</param>
         /// <param name="desired_access">Desired access for the root key</param>
+        /// <param name="open_options">Open options.</param>
         /// <param name="key">The key object if successfully opened.</param>
         /// <returns>The status code for the open.</returns>
-        public static NtStatus Open(ObjectAttributes obj_attributes, KeyAccessRights desired_access, out NtKey key)
+        public static NtStatus Open(ObjectAttributes obj_attributes, KeyAccessRights desired_access, KeyCreateOptions open_options, out NtKey key)
         {
             key = null;
             SafeKernelObjectHandle handle;
-            NtStatus status = NtSystemCalls.NtOpenKey(out handle, desired_access, obj_attributes);
+            NtStatus status = NtSystemCalls.NtOpenKeyEx(out handle, desired_access, obj_attributes, open_options);
             if (status.IsSuccess())
             {
                 key = new NtKey(handle);
@@ -532,12 +541,13 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="obj_attributes">Object attributes for the key name</param>
         /// <param name="desired_access">Desired access for the root key</param>
+        /// <param name="open_options">Open options.</param>
         /// <returns>The opened key</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtKey Open(ObjectAttributes obj_attributes, KeyAccessRights desired_access)
+        public static NtKey Open(ObjectAttributes obj_attributes, KeyAccessRights desired_access, KeyCreateOptions open_options)
         {
             NtKey key;
-            Open(obj_attributes, desired_access, out key).ToNtException();
+            Open(obj_attributes, desired_access, open_options, out key).ToNtException();
             return key;
         }
 
@@ -553,7 +563,7 @@ namespace NtApiDotNet
         {
             using (ObjectAttributes obja = new ObjectAttributes(key_name, AttributeFlags.CaseInsensitive, root))
             {
-                return Open(obja, desired_access);
+                return Open(obja, desired_access, 0);
             }
         }
 
@@ -715,8 +725,9 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="desired_access">The required access rights for the subkeys</param>
         /// <param name="open_link">True to open link keys rather than following the link.</param>
+        /// <param name="open_for_backup">True to open keys with backup flag set.</param>
         /// <returns>The disposable list of subkeys.</returns>
-        public IEnumerable<NtKey> QueryAccessibleKeys(KeyAccessRights desired_access, bool open_link)
+        public IEnumerable<NtKey> QueryAccessibleKeys(KeyAccessRights desired_access, bool open_link, bool open_for_backup)
         {
             List<NtKey> ret = new List<NtKey>();
             AttributeFlags flags = AttributeFlags.CaseInsensitive;
@@ -732,7 +743,7 @@ namespace NtApiDotNet
                     using (ObjectAttributes obja = new ObjectAttributes(name, flags, this))
                     {
                         NtKey key;
-                        if (Open(obja, desired_access, out key).IsSuccess())
+                        if (Open(obja, desired_access, open_for_backup ? KeyCreateOptions.BackupRestore : 0, out key).IsSuccess())
                         {
                             ret.Add(key);
                         }
@@ -750,7 +761,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public IEnumerable<NtKey> QueryAccessibleKeys(KeyAccessRights desired_access)
         {
-            return QueryAccessibleKeys(desired_access, false);
+            return QueryAccessibleKeys(desired_access, false, false);
         }
 
         /// <summary>
