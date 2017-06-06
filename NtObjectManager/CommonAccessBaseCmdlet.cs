@@ -188,16 +188,29 @@ namespace NtObjectManager
         public readonly NtToken Token;
         public readonly TokenInformation Information;
 
+        private static NtToken DuplicateToken(NtToken token)
+        {
+            if (token.TokenType == TokenType.Primary)
+            {
+                return token.DuplicateToken(TokenType.Impersonation, SecurityImpersonationLevel.Impersonation,
+                    TokenAccessRights.Query | TokenAccessRights.Impersonate | TokenAccessRights.Duplicate);
+            }
+            else
+            {
+                return token.Duplicate(TokenAccessRights.Query | TokenAccessRights.Impersonate | TokenAccessRights.Duplicate);
+            }
+        }
+
         public TokenEntry(NtToken token)
         {
-            Token = token;
             Information = new TokenInformation(token);
+            Token = DuplicateToken(token);
         }
 
         public TokenEntry(NtToken token, NtProcess process)
         {
-            Token = token;
             Information = new TokenInformation(token, process);
+            Token = DuplicateToken(token);
         }
 
         public void Dispose()
@@ -239,21 +252,16 @@ namespace NtObjectManager
 
         private void AddTokenEntryFromProcess(HashSet<TokenEntry> tokens, NtProcess process)
         {
-            NtToken token = NtToken.OpenProcessToken(process, false,
+            using (NtToken token = NtToken.OpenProcessToken(process, false,
                                             TokenAccessRights.Duplicate |
                                             TokenAccessRights.Impersonate |
-                                            TokenAccessRights.Query);
-            try
+                                            TokenAccessRights.Query))
             {
-                if (tokens.Add(new TokenEntry(token, process)))
+                TokenEntry entry = new TokenEntry(token, process);
+                if (!tokens.Add(new TokenEntry(token, process)))
                 {
-                    // Clear token so it isn't disposed.
-                    token = null;
+                    entry.Dispose();
                 }
-            }
-            finally
-            {
-                token?.Dispose();
             }
         }
 
