@@ -99,7 +99,7 @@ namespace CheckRegistryAccess
 
                 if (_recursive && key.IsAccessGranted(KeyAccessRights.EnumerateSubKeys))
                 {
-                    using (var keys = key.QueryAccessibleKeys(KeyAccessRights.MaximumAllowed))
+                    using (var keys = key.QueryAccessibleKeys(KeyAccessRights.MaximumAllowed).ToDisposableList())
                     {
                         foreach (NtKey subkey in keys)
                         {
@@ -121,7 +121,11 @@ namespace CheckRegistryAccess
                 name = NtKeyUtils.Win32KeyNameToNt(name);
             }
 
-            return NtKey.Open(name, null, KeyAccessRights.MaximumAllowed);
+            using (ObjectAttributes obja = new ObjectAttributes(name, 
+                AttributeFlags.CaseInsensitive | AttributeFlags.OpenLink, null))
+            {
+                return NtKey.Open(obja, KeyAccessRights.MaximumAllowed);
+            }
         }
 
         static uint ParseRight(string name, Type enumtype)
