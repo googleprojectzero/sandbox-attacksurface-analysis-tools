@@ -54,6 +54,11 @@ namespace NtObjectManager
         }
 
         /// <summary>
+        /// <para type="description">Options to use when opening/creating the key.</para>
+        /// </summary>
+        public KeyCreateOptions Options { get; set; }
+
+        /// <summary>
         /// <para type="description">The NT object manager path to the object to use.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
@@ -82,7 +87,7 @@ namespace NtObjectManager
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            return NtKey.Open(obj_attributes, Access);
+            return NtKey.Open(obj_attributes, Access, Options);
         }
     }
 
@@ -104,11 +109,6 @@ namespace NtObjectManager
     [OutputType(typeof(NtKey))]
     public sealed class NewNtKeyCmdlet : GetNtKeyCmdlet
     {
-        /// <summary>
-        /// <para type="description">Options to use when creating the key.</para>
-        /// </summary>
-        public KeyCreateOptions Options { get; set; }
-
         /// <summary>
         /// Method to create an object from a set of object attributes.
         /// </summary>

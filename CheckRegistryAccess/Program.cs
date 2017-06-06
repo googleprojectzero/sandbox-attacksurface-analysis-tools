@@ -124,7 +124,7 @@ namespace CheckRegistryAccess
             using (ObjectAttributes obja = new ObjectAttributes(name, 
                 AttributeFlags.CaseInsensitive | AttributeFlags.OpenLink, null))
             {
-                return NtKey.Open(obja, KeyAccessRights.MaximumAllowed);
+                return NtKey.Open(obja, KeyAccessRights.MaximumAllowed, 0);
             }
         }
 
