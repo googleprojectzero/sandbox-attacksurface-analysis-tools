@@ -2164,6 +2164,8 @@ namespace NtApiDotNet
             SetIntegrityLevelSid(NtSecurity.GetIntegritySid(level));
         }
 
+        private bool? _app_container;
+
         /// <summary>
         /// Get whether a token is an AppContainer token
         /// </summary>
@@ -2171,10 +2173,14 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var appcontainer = QueryToken<uint>(TokenInformationClass.TokenIsAppContainer))
+                if (!_app_container.HasValue)
                 {
-                    return appcontainer.Result != 0;
+                    using (var appcontainer = QueryToken<uint>(TokenInformationClass.TokenIsAppContainer))
+                    {
+                        _app_container = appcontainer.Result != 0;
+                    }
                 }
+                return _app_container.Value;
             }
         }
 
@@ -2190,6 +2196,7 @@ namespace NtApiDotNet
                     return false;
                 }
 
+                // In theory with right privileges this can be disabled so always check.
                 foreach (ClaimSecurityAttribute attribute in SecurityAttributes)
                 {
                     if (attribute.Name == "WIN://NOALLAPPPKG"
@@ -2204,6 +2211,8 @@ namespace NtApiDotNet
             }
         }
 
+        private Sid _app_container_sid;
+
         /// <summary>
         /// Get token's AppContainer sid
         /// </summary>
@@ -2216,10 +2225,15 @@ namespace NtApiDotNet
                     return null;
                 }
 
-                using (var acsid = QueryToken<TokenAppContainerInformation>(TokenInformationClass.TokenAppContainerSid))
+                if (_app_container_sid == null)
                 {
-                    return new Sid(acsid.Result.TokenAppContainer);
+                    using (var acsid = QueryToken<TokenAppContainerInformation>(TokenInformationClass.TokenAppContainerSid))
+                    {
+                        Interlocked.CompareExchange(ref _app_container_sid, new Sid(acsid.Result.TokenAppContainer), null);
+                    }
                 }
+
+                return _app_container_sid;
             }
         }
 
