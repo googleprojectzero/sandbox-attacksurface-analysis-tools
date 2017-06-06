@@ -295,7 +295,7 @@ namespace NtApiDotNet
     public enum ClaimSecurityValueType : ushort
     {
         Int64 = 0x0001,
-        Uint64 = 0x0002,
+        UInt64 = 0x0002,
         String = 0x0003,
         Fqbn = 0x0004,
         Sid = 0x0005, // CLAIM_SECURITY_ATTRIBUTE_OCTET_STRING_VALUE 
@@ -689,7 +689,7 @@ namespace NtApiDotNet
             {
                 case ClaimSecurityValueType.Int64:
                     return ReadTyped<long>(buffer, count).Cast<object>();
-                case ClaimSecurityValueType.Uint64:
+                case ClaimSecurityValueType.UInt64:
                     return ReadTyped<ulong>(buffer, count).Cast<object>();
                 case ClaimSecurityValueType.OctetString:
                     return ReadTyped<ClaimSecurityAttributeOctetStringValue>(buffer, count).Select(v => v.ToArray()).Cast<object>();
@@ -2176,12 +2176,43 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get whether the token is configured for low privilege.
+        /// </summary>
+        public bool LowPrivilegeAppContainer
+        {
+            get
+            {
+                if (!AppContainer)
+                {
+                    return false;
+                }
+
+                foreach (ClaimSecurityAttribute attribute in SecurityAttributes)
+                {
+                    if (attribute.Name == "WIN://NOALLAPPPKG"
+                        && attribute.ValueType == ClaimSecurityValueType.UInt64
+                        && attribute.Values.Count() > 0)
+                    {
+                        return (ulong)attribute.Values.First() != 0;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Get token's AppContainer sid
         /// </summary>
         public Sid AppContainerSid
         {
             get
             {
+                if (!AppContainer)
+                {
+                    return null;
+                }
+
                 using (var acsid = QueryToken<TokenAppContainerInformation>(TokenInformationClass.TokenAppContainerSid))
                 {
                     return new Sid(acsid.Result.TokenAppContainer);
