@@ -1397,6 +1397,23 @@ namespace NtApiDotNet
             }
         }
 
+        private static NtToken DuplicateForAccessCheck(NtToken token)
+        {
+            if (token.TokenType == TokenType.Primary)
+            {
+                return token.DuplicateToken(TokenType.Impersonation, SecurityImpersonationLevel.Identification, TokenAccessRights.Query);
+            }
+            else if (!token.IsAccessGranted(TokenAccessRights.Query))
+            {
+                return token.Duplicate(TokenAccessRights.Query);
+            }
+            else
+            {
+                // If we've got query access rights already just create a shallow clone.
+                return token.ShallowClone();
+            }
+        }
+
         /// <summary>
         /// Do an access check between a security descriptor and a token to determine the allowed access.
         /// </summary>
@@ -1421,7 +1438,7 @@ namespace NtApiDotNet
 
             using (var sd_buffer = sd.ToSafeBuffer())
             {
-                using (NtToken imp_token = token.DuplicateToken(SecurityImpersonationLevel.Identification))
+                using (NtToken imp_token = DuplicateForAccessCheck(token))
                 {
                     AccessMask granted_access;
                     NtStatus result_status;

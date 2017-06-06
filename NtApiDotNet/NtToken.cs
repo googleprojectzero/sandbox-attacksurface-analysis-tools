@@ -2065,6 +2065,7 @@ namespace NtApiDotNet
             }
         }
 
+
         /// <summary>
         /// Get token's integrity level sid
         /// </summary>

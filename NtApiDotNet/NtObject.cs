@@ -188,6 +188,27 @@ namespace NtApiDotNet
     public abstract class NtObject : IDisposable
     {
         private string _type_name;
+        private ObjectBasicInformation _basic_information;
+
+        /// <summary>
+        /// Get the basic information for the object.
+        /// </summary>
+        /// <returns>The basic information</returns>
+        private static ObjectBasicInformation QueryBasicInformation(SafeKernelObjectHandle handle)
+        {
+
+            try
+            {
+                using (var basic_info = QueryObject<ObjectBasicInformation>(handle, ObjectInformationClass.ObjectBasicInformation))
+                {
+                    return basic_info.Result;
+                }
+            }
+            catch
+            {
+                return new ObjectBasicInformation();
+            }
+        }
 
         /// <summary>
         /// Base constructor
@@ -195,15 +216,22 @@ namespace NtApiDotNet
         /// <param name="handle">Handle to the object</param>
         protected NtObject(SafeKernelObjectHandle handle)
         {
-            Handle = handle;
+            SetHandle(handle);
             try
             {
+                // Query basic information which shouldn't change.
+                _basic_information = QueryBasicInformation(handle);
                 CanSynchronize = IsAccessMaskGranted(GenericAccessRights.Synchronize);
             }
             catch (NtException)
             {
-                // Shouldn't fail but just in case.
+                // Shouldn't fail here but just in case.
             }
+        }
+
+        internal void SetHandle(SafeKernelObjectHandle handle)
+        {
+            Handle = handle;
         }
 
         private static SafeStructureInOutBuffer<T> QueryObject<T>(SafeKernelObjectHandle handle, ObjectInformationClass object_info) where T : new()
@@ -400,32 +428,7 @@ namespace NtApiDotNet
                 return GetName(Handle);
             }
         }
-
-        private ObjectBasicInformation? _basic_info;
-
-        /// <summary>
-        /// Get the basic information for the object.
-        /// </summary>
-        /// <returns>The basic information</returns>
-        private ObjectBasicInformation QueryBasicInformation()
-        {
-            if (!_basic_info.HasValue)
-            {
-                try
-                {
-                    using (var basic_info = QueryObject<ObjectBasicInformation>(Handle, ObjectInformationClass.ObjectBasicInformation))
-                    {
-                        _basic_info = basic_info.Result;
-                    }
-                }
-                catch
-                {
-                    _basic_info = new ObjectBasicInformation();
-                }
-            }
-            return _basic_info.Value;
-        }
-
+        
         /// <summary>
         /// Get the granted access as an unsigned integer
         /// </summary>
@@ -433,7 +436,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryBasicInformation().DesiredAccess;
+                return _basic_information.DesiredAccess;
             }
         }
 
@@ -752,7 +755,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return DateTime.FromFileTime(QueryBasicInformation().CreationTime.QuadPart);
+                return DateTime.FromFileTime(_basic_information.CreationTime.QuadPart);
             }
         }
 
@@ -839,6 +842,14 @@ namespace NtApiDotNet
         public O Duplicate()
         {
             return Create(DuplicateHandle());
+        }
+
+        // Get a shallow clone where the handle isn't owned.
+        internal O ShallowClone()
+        {
+            O ret = (O)MemberwiseClone();
+            ret.SetHandle(new SafeKernelObjectHandle(ret.Handle.DangerousGetHandle(), false));
+            return ret;
         }
 
         private A UIntToAccess(GenericAccessRights access)
