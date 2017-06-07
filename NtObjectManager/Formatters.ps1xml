@@ -679,7 +679,7 @@
       <TableControl>
         <TableHeaders>
           <TableColumnHeader>
-            <Label>Key</Label>
+            <Label>TokenId</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
@@ -695,7 +695,7 @@
           <TableRowEntry>
             <TableColumnItems>
               <TableColumnItem>
-                <PropertyName>Key</PropertyName>
+                <PropertyName>TokenId</PropertyName>
                 <FormatString>X</FormatString>
               </TableColumnItem>
               <TableColumnItem>

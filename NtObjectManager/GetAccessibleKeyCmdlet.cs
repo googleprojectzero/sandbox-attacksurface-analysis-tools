@@ -26,20 +26,20 @@ namespace NtObjectManager
     /// token is used.</para>
     /// </summary>
     /// <example>
-    ///   <code>Get-AccessibleKey HKLM\Software</code>
-    ///   <para>Check accessible keys HKEY_LOCAL_MACHINE\Software for the current process token.</para>
+    ///   <code>Get-AccessibleKey \Registry\Machine\Software</code>
+    ///   <para>Check accessible keys \Registry\Machine\Software for the current process token.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-AccessibleKey HKLM\Software -ProcessIds 1234,5678</code>
-    ///   <para>Check accessible keys HKEY_LOCAL_MACHINE\Software for the process tokens of PIDs 1234 and 5678</para>
-    /// </example>
-    /// <example>
-    ///   <code>Get-AccessibleKey HKLM\Software -Recurse</code>
-    ///   <para>Check recursively for accessible keys HKEY_LOCAL_MACHINE\Software for the current process token.</para>
+    ///   <code>Get-AccessibleKey \Registry\Machine\Software -ProcessIds 1234,5678</code>
+    ///   <para>Check accessible keys \Registry\Machine\Software for the process tokens of PIDs 1234 and 5678</para>
     /// </example>
     /// <example>
     ///   <code>Get-AccessibleKey \Registry\Machine\Software -Recurse</code>
-    ///   <para>Check recursively for accessible keys NT path \Registry\Machine\Software for the current process token.</para>
+    ///   <para>Check recursively for accessible keys \Registry\Machine\Software for the current process token.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-AccessibleKey HKLM\Software -Win32Path -Recurse</code>
+    ///   <para>Check recursively for accessible keys NT path HKEY_LOCAL_MACHINE for the current process token using a Win32 path.</para>
     /// </example>
     /// <example>
     ///   <code>$token = Get-NtToken -Primary -Duplicate -IntegrityLevel Low&#x0A;Get-AccessibleKey HKCU -Recurse -Tokens $token -AccessRights GenericWrite</code>
@@ -49,10 +49,16 @@ namespace NtObjectManager
     public class GetAccessibleKeyCmdlet : CommonAccessBaseCmdlet
     {
         /// <summary>
-        /// <para type="description">Specify the key path to check. Can be in win32 form (such as HKLM\Blah) or native (such as \Registry\Machine\Blah)</para>
+        /// <para type="description">Specify the key path to check. Must be a native (such as \Registry\Machine\Blah) unless -Win32Path is set.</para>
         /// </summary>
         [Parameter(Mandatory = true, Position = 0)]
         public string Path { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the key path is in a Win32 format, such as HKLM\Blah.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter Win32Path { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a set of access rights which the key must at least be accessible for to count as an access.</para>
@@ -66,9 +72,9 @@ namespace NtObjectManager
         [Parameter]
         public SwitchParameter Recurse { get; set; }
 
-        private static NtKey OpenKey(string name, bool open_link)
+        private static NtKey OpenKey(string name, bool win32_path, bool open_link, bool open_for_backup)
         {
-            if (!name.StartsWith(@"\"))
+            if (win32_path)
             {
                 name = NtKeyUtils.Win32KeyNameToNt(name);
             }
@@ -82,7 +88,7 @@ namespace NtObjectManager
             using (ObjectAttributes obja = new ObjectAttributes(name,
                 flags, null))
             {
-                return NtKey.Open(obja, KeyAccessRights.MaximumAllowed);
+                return NtKey.Open(obja, KeyAccessRights.MaximumAllowed, 0);
             }
         }
 
@@ -92,7 +98,7 @@ namespace NtObjectManager
             AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
             if (!granted_access.IsEmpty && granted_access.IsAllAccessGranted(access_rights))
             {
-                WriteAccessCheckResult(key.FullPath, type.Name, granted_access, type.GenericMapping, 
+                WriteAccessCheckResult(Win32Path ? key.Win32Path : key.FullPath, type.Name, granted_access, type.GenericMapping, 
                     sd.ToSddl(), typeof(KeyAccessRights), token.Information);
             }
         }
@@ -110,7 +116,7 @@ namespace NtObjectManager
 
                     using (token.Token.Impersonate())
                     {
-                        success = NtKey.Open(obj_attributes, KeyAccessRights.MaximumAllowed, out new_key).IsSuccess();
+                        success = NtKey.Open(obj_attributes, KeyAccessRights.MaximumAllowed, 0, out new_key).IsSuccess();
                     }
 
                     if (success)
@@ -126,7 +132,7 @@ namespace NtObjectManager
             }
         }
 
-        private void DumpKey(IEnumerable<TokenEntry> tokens, AccessMask access_rights, NtKey key)
+        private void DumpKey(IEnumerable<TokenEntry> tokens, AccessMask access_rights, bool open_for_backup, NtKey key)
         {
             if (Stopping)
             {
@@ -152,11 +158,11 @@ namespace NtObjectManager
 
             if (Recurse && key.IsAccessGranted(KeyAccessRights.EnumerateSubKeys))
             {
-                using (var keys = key.QueryAccessibleKeys(KeyAccessRights.MaximumAllowed, true).ToDisposableList())
+                using (var keys = key.QueryAccessibleKeys(KeyAccessRights.MaximumAllowed, true, open_for_backup).ToDisposableList())
                 {
                     foreach (NtKey subkey in keys)
                     {
-                        DumpKey(tokens, access_rights, subkey);
+                        DumpKey(tokens, access_rights, open_for_backup, subkey);
                     }
                 }
             }
@@ -164,9 +170,19 @@ namespace NtObjectManager
 
         internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
-            using (NtKey key = OpenKey(Path, false))
+            bool open_for_backup = false;
+            using (NtToken process_token = NtToken.OpenProcessToken())
             {
-                DumpKey(tokens, key.NtType.MapGenericRights(AccessRights), key);
+                open_for_backup = process_token.SetPrivilege(TokenPrivilegeValue.SeBackupPrivilege, PrivilegeAttributes.Enabled);
+                if (!open_for_backup)
+                {
+                    WriteWarning("Current process doesn't have SeBackupPrivilege, results may be inaccurate");
+                }
+            }
+
+            using (NtKey key = OpenKey(Path, Win32Path, false, open_for_backup))
+            {
+                DumpKey(tokens, key.NtType.MapGenericRights(AccessRights), open_for_backup, key);
             }
         }
     }

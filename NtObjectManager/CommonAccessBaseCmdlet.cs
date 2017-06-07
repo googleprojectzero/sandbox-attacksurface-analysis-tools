@@ -87,7 +87,7 @@ namespace NtObjectManager
         /// <summary>
         /// Unique key for access check result (based on TokenId)
         /// </summary>
-        public long Key { get; private set; }
+        public long TokenId { get; private set; }
 
         internal AccessCheckResult(string name, string type_name, AccessMask granted_access, 
             GenericMapping generic_mapping, string sddl, Type enum_type, TokenInformation token_info)
@@ -104,7 +104,7 @@ namespace NtObjectManager
             IsAll = generic_mapping.HasAll(granted_access);
             GrantedAccessString = NtObjectUtils.GrantedAccessAsString(granted_access, generic_mapping, enum_type, false);
             GrantedGenericAccessString = NtObjectUtils.GrantedAccessAsString(granted_access, generic_mapping, enum_type, true);
-            Key = token_info.TokenId.ToInt64();
+            TokenId = token_info.TokenId.ToInt64();
         }
     }    
 

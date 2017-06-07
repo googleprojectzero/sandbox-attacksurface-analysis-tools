@@ -48,6 +48,19 @@ namespace NtApiDotNet
         {
         }
 
+        /// <summary>
+        /// Convert this list to an array then clear it to the disposal no longer happens.
+        /// </summary>
+        /// <returns>The elements as an array.</returns>
+        /// <remarks>After doing this the current list will be cleared.</remarks>
+        [ReliabilityContract(Consistency.MayCorruptProcess, Cer.MayFail)]
+        public T[] ToArrayAndClear()
+        {
+            T[] ret = ToArray();
+            Clear();
+            return ret;
+        }
+
         #region IDisposable Support
         private bool disposedValue = false;
 
@@ -109,9 +122,7 @@ namespace NtApiDotNet
         [ReliabilityContract(Consistency.MayCorruptProcess, Cer.MayFail)]
         public SafeHandleList DangerousMove()
         {
-            SafeHandle[] handles = this.ToArray();
-            this.Clear();
-            return new SafeHandleList(handles);
+            return new SafeHandleList(ToArrayAndClear());
         }
     }
 }

@@ -1046,4 +1046,27 @@ namespace NtApiDotNet
             return NtType.FromHandle(DuplicateHandle());
         }
     }
+
+    /// <summary>
+    /// A structure to return the result of an open/create call with status.
+    /// </summary>
+    /// <typeparam name="T">The object type.</typeparam>
+    public struct NtResult<T> : IDisposable where T : NtObject
+    {
+        /// <summary>
+        /// The NT status code.
+        /// </summary>
+        public NtStatus Status { get; private set; }
+        /// <summary>
+        /// The NT object, null if status is not a success.
+        /// </summary>
+        public T Result { get; private set; }
+        /// <summary>
+        /// Dispose result.
+        /// </summary>
+        public void Dispose()
+        {
+            Result?.Dispose();
+        }
+    }
 }

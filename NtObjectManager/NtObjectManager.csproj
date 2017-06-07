@@ -52,6 +52,7 @@
     <Compile Include="CommonAccessBaseCmdlet.cs" />
     <Compile Include="GenericObjectSecurity.cs" />
     <Compile Include="GetAccessibleAlpcPortCmdlet.cs" />
+    <Compile Include="GetAccessibleFileCmdlet.cs" />
     <Compile Include="GetAccessibleKeyCmdlet.cs" />
     <Compile Include="GetAccessibleProcessThreadCmdlet.cs" />
     <Compile Include="NtEventCmdlets.cs" />
