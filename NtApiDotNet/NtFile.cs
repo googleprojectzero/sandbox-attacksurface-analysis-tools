@@ -1831,6 +1831,38 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Re-open an existing file for different access.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the file handle</param>
+        /// <param name="share_access">The file share access</param>
+        /// <param name="open_options">File open options</param>
+        /// <param name="file">The opened file</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus ReOpen(FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options, out NtFile file)
+        {
+            using (ObjectAttributes obj_attributes = new ObjectAttributes(String.Empty, AttributeFlags.CaseInsensitive, this))
+            {
+                return Open(obj_attributes, desired_access, share_access, open_options, out file);
+            }
+        }
+
+        /// <summary>
+        /// Re-open an exsiting file for different access.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the file handle</param>
+        /// <param name="share_access">The file share access</param>
+        /// <param name="open_options">File open options</param>
+        /// <returns>The opened file</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtFile ReOpen(FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options)
+        {
+            NtFile file;
+            ReOpen(desired_access, share_access, open_options, out file).ToNtException();
+            return file;
+        }
+
+        /// <summary>
         /// Get object ID for current file
         /// </summary>
         /// <returns>The object ID as a string</returns>
@@ -2153,6 +2185,32 @@ namespace NtApiDotNet
                 FileShareMode.None, FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint))
             {
                 return file.DeleteReparsePoint();
+            }
+        }
+
+        /// <summary>
+        /// Get list of accessible files underneath a directory.
+        /// </summary>
+        /// <param name="share_access">Share access for file open</param>
+        /// <param name="open_options">Options for open call.</param>
+        /// <param name="desired_access">The desired access for each file.</param>
+        /// <returns>The list of files which can be access.</returns>
+        public IEnumerable<NtFile> QueryAccessibleFiles(FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options)
+        {
+            using (var list = new DisposableList<NtFile>())
+            {
+                foreach (var entry in QueryDirectoryInfo())
+                {
+                    using (ObjectAttributes obja = new ObjectAttributes(entry.FileName, AttributeFlags.CaseInsensitive, this))
+                    {
+                        NtFile file;
+                        if (Open(obja, desired_access, share_access, open_options, out file).IsSuccess())
+                        {
+                            list.Add(file);
+                        }
+                    }
+                }
+                return new List<NtFile>(list.ToArrayAndClear());
             }
         }
 
