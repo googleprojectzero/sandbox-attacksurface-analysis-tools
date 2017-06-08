@@ -2537,13 +2537,13 @@ namespace NtApiDotNet
                     string ret = GetPathNameInternal(FinalPathNameFlags.None);
                     if (ret.StartsWith(@"\\?\"))
                     {
-                        if (ret.StartsWith(@"\\?\GLOBALROOT", StringComparison.OrdinalIgnoreCase))
+                        if (ret.StartsWith(@"\\?\GLOBALROOT\", StringComparison.OrdinalIgnoreCase))
                         {
                             return ret;
                         }
-                        else if (ret.StartsWith(@"\\?\UNC"))
+                        else if (ret.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase))
                         {
-                            return @"\\" + ret.Substring(7);
+                            return @"\\" + ret.Substring(8);
                         }
                         else
                         {
