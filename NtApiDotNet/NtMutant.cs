@@ -93,6 +93,20 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create a new mutant
+        /// </summary>
+        /// <param name="object_attributes">Object attributes</param>
+        /// <param name="initial_owner">True to set current thread as initial owner</param>
+        /// <param name="desired_access">Desired access for mutant</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtMutant> Create(ObjectAttributes object_attributes, bool initial_owner, MutantAccessRights desired_access, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle;
+            return NtSystemCalls.NtCreateMutant(out handle, desired_access, object_attributes, initial_owner).CreateResult(throw_on_error, () => new NtMutant(handle));
+        }
+
+        /// <summary>
         /// Open a mutant
         /// </summary>
         /// <param name="path">The path to the mutant</param>
@@ -132,6 +146,24 @@ namespace NtApiDotNet
             SafeKernelObjectHandle handle;
             NtSystemCalls.NtOpenMutant(out handle, desired_access, object_attributes).ToNtException();
             return new NtMutant(handle);
+        }
+
+        /// <summary>
+        /// Open a mutant
+        /// </summary>
+        /// <param name="object_attributes">Object attributes</param>
+        /// <param name="desired_access">Desired access for mutant</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtMutant> Open(ObjectAttributes object_attributes, MutantAccessRights desired_access, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle;
+            return NtSystemCalls.NtOpenMutant(out handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtMutant(handle));
+        }
+
+        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
+        {
+            return Open(object_attributes, desired_access.ToSpecificAccess<MutantAccessRights>(), throw_on_error).Cast<NtObject>();
         }
 
         /// <summary>

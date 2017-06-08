@@ -140,9 +140,23 @@ namespace NtApiDotNet
         /// <returns>The event object</returns>
         public static NtEvent Create(ObjectAttributes object_attributes, EventType type, bool initial_state, EventAccessRights desired_access)
         {
+            return Create(object_attributes, type, initial_state, desired_access, true).Result;      
+        }
+
+
+        /// <summary>
+        /// Create an event object
+        /// </summary>
+        /// <param name="object_attributes">The event object attributes</param>
+        /// <param name="type">The type of the event</param>
+        /// <param name="initial_state">The initial state of the event</param>
+        /// <param name="desired_access">The desired access for the event</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtEvent> Create(ObjectAttributes object_attributes, EventType type, bool initial_state, EventAccessRights desired_access, bool throw_on_error)
+        {
             SafeKernelObjectHandle handle;
-            NtSystemCalls.NtCreateEvent(out handle, desired_access, object_attributes, type, initial_state).ToNtException();
-            return new NtEvent(handle);        
+            return NtSystemCalls.NtCreateEvent(out handle, desired_access, object_attributes, type, initial_state).CreateResult(throw_on_error, () => new NtEvent(handle));
         }
 
         /// <summary>
@@ -167,9 +181,7 @@ namespace NtApiDotNet
         {            
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle;
-                NtSystemCalls.NtOpenEvent(out handle, desired_access, obja).ToNtException();
-                return new NtEvent(handle);
+                return Open(obja, desired_access);
             }
         }
 
@@ -178,12 +190,28 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="object_attributes">The event object attributes</param>
         /// <param name="desired_access">The desired access for the event</param>
-        /// <returns></returns>
+        /// <returns>The event object.</returns>
         public static NtEvent Open(ObjectAttributes object_attributes, EventAccessRights desired_access)
         {
+            return Open(object_attributes, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open an event object
+        /// </summary>
+        /// <param name="object_attributes">The event object attributes</param>
+        /// <param name="desired_access">The desired access for the event</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtEvent> Open(ObjectAttributes object_attributes, EventAccessRights desired_access, bool throw_on_error)
+        {
             SafeKernelObjectHandle handle;
-            NtSystemCalls.NtOpenEvent(out handle, desired_access, object_attributes).ToNtException();
-            return new NtEvent(handle);        
+            return NtSystemCalls.NtOpenEvent(out handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtEvent(handle));
+        }
+
+        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
+        {
+            return Open(object_attributes, desired_access.ToSpecificAccess<EventAccessRights>(), throw_on_error).Cast<NtObject>();
         }
 
         /// <summary>

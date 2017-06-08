@@ -165,13 +165,26 @@ namespace NtApiDotNet
         /// <param name="object_attributes">The object attributes</param>
         /// <param name="desired_access">The desired access for the event</param>
         /// <param name="concurrent_threads">Number of concurrent threads to process I/O packets. 0 for CPU count.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<NtIoCompletion> Create(ObjectAttributes object_attributes, IoCompletionAccessRights desired_access, int concurrent_threads, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle;
+            return NtSystemCalls.NtCreateIoCompletion(out handle, desired_access, object_attributes, concurrent_threads).CreateResult(throw_on_error, () => new NtIoCompletion(handle));
+        }
+
+        /// <summary>
+        /// Create an IO Completion Port object
+        /// </summary>
+        /// <param name="object_attributes">The object attributes</param>
+        /// <param name="desired_access">The desired access for the event</param>
+        /// <param name="concurrent_threads">Number of concurrent threads to process I/O packets. 0 for CPU count.</param>
         /// <returns>The IO Completion Port object.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtIoCompletion Create(ObjectAttributes object_attributes, IoCompletionAccessRights desired_access, int concurrent_threads)
         {
-            SafeKernelObjectHandle handle;
-            NtSystemCalls.NtCreateIoCompletion(out handle, desired_access, object_attributes, concurrent_threads).ToNtException();
-            return new NtIoCompletion(handle);
+            return Create(object_attributes, desired_access, concurrent_threads, true).Result;
         }
 
         /// <summary>
@@ -210,9 +223,26 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtIoCompletion Open(ObjectAttributes object_attributes, IoCompletionAccessRights desired_access)
         {
+            return Open(object_attributes, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open an IO Completion Port object
+        /// </summary>
+        /// <param name="object_attributes">The object attributes</param>
+        /// <param name="desired_access">The desired access for the event</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<NtIoCompletion> Open(ObjectAttributes object_attributes, IoCompletionAccessRights desired_access, bool throw_on_error)
+        {
             SafeKernelObjectHandle handle;
-            NtSystemCalls.NtOpenIoCompletion(out handle, desired_access, object_attributes).ToNtException();
-            return new NtIoCompletion(handle);
+            return NtSystemCalls.NtOpenIoCompletion(out handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtIoCompletion(handle));
+        }
+
+        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
+        {
+            return Open(object_attributes, desired_access.ToSpecificAccess<IoCompletionAccessRights>(), throw_on_error).Cast<NtObject>();
         }
 
         /// <summary>

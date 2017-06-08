@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -203,12 +204,24 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="thread_id">The thread ID to open</param>
         /// <param name="desired_access">The desired access for the handle</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtThread> Open(int thread_id, ThreadAccessRights desired_access, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle;
+            return NtSystemCalls.NtOpenThread(out handle, desired_access, new ObjectAttributes(), 
+                new ClientId() { UniqueThread = new IntPtr(thread_id) }).CreateResult(throw_on_error, () => new NtThread(handle) { _tid = thread_id });
+        }
+
+        /// <summary>
+        /// Open a thread
+        /// </summary>
+        /// <param name="thread_id">The thread ID to open</param>
+        /// <param name="desired_access">The desired access for the handle</param>
         /// <returns>The opened object</returns>
         public static NtThread Open(int thread_id, ThreadAccessRights desired_access)
         {
-            SafeKernelObjectHandle handle;
-            NtSystemCalls.NtOpenThread(out handle, desired_access, new ObjectAttributes(), new ClientId() { UniqueThread = new IntPtr(thread_id) }).ToNtException();
-            return new NtThread(handle) { _tid = thread_id };       
+            return Open(thread_id, desired_access, true).Result;
         }
 
         private SafeStructureInOutBuffer<T> QueryBuffer<T>(ThreadInformationClass info_class) where T : new()

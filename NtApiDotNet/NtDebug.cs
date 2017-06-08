@@ -90,9 +90,21 @@ namespace NtApiDotNet
         /// <returns>The debug object</returns>
         public static NtDebug Create(ObjectAttributes object_attributes, DebugAccessRights desired_access, DebugObjectFlags flags)
         {
+            return Create(object_attributes, desired_access, flags, true).Result;
+        }
+
+        /// <summary>
+        /// Create a debug object
+        /// </summary>
+        /// <param name="desired_access">Desired access for the debug object</param>
+        /// <param name="object_attributes">Object attributes for debug object</param>
+        /// <param name="flags">Debug object flags.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtDebug> Create(ObjectAttributes object_attributes, DebugAccessRights desired_access, DebugObjectFlags flags, bool throw_on_error)
+        {
             SafeKernelObjectHandle handle;
-            NtSystemCalls.NtCreateDebugObject(out handle, desired_access, object_attributes, flags).ToNtException();
-            return new NtDebug(handle);
+            return NtSystemCalls.NtCreateDebugObject(out handle, desired_access, object_attributes, flags).CreateResult(throw_on_error, () => new NtDebug(handle));
         }
 
         /// <summary>
@@ -117,6 +129,34 @@ namespace NtApiDotNet
             {
                 return Create(obja, DebugAccessRights.MaximumAllowed, DebugObjectFlags.None);
             }
+        }
+
+        /// <summary>
+        /// Open a named debug object
+        /// </summary>
+        /// <param name="object_attributes">The object attributes to open.</param>
+        /// <param name="desired_access">Desired access for the debug object</param>
+        /// <returns>The debug object</returns>
+        public static NtDebug Open(ObjectAttributes object_attributes, DebugAccessRights desired_access)
+        {
+            return Create(object_attributes, DebugAccessRights.MaximumAllowed, DebugObjectFlags.None, true).Result;
+        }
+
+        /// <summary>
+        /// Open a named debug object
+        /// </summary>
+        /// <param name="object_attributes">The object attributes to open.</param>
+        /// <param name="desired_access">Desired access for the debug object</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtDebug> Open(ObjectAttributes object_attributes, DebugAccessRights desired_access, bool throw_on_error)
+        {
+            return Create(object_attributes, DebugAccessRights.MaximumAllowed, DebugObjectFlags.None, throw_on_error);
+        }
+
+        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
+        {
+            return Open(object_attributes, desired_access.ToSpecificAccess<DebugAccessRights>(), throw_on_error).Cast<NtObject>();
         }
     }
 }

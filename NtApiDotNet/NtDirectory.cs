@@ -38,7 +38,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return NtType.GetTypeByName(NtTypeName);
+                return NtType.GetTypeByName(NtTypeName, true);
             }
         }
         public string FullPath { get; private set; }         
@@ -94,7 +94,7 @@ namespace NtApiDotNet
         {
             return NtObject.OpenWithType(NtTypeName, Name, _root, access);
         }
-
+        
         public bool IsDirectory
         {
             get { return NtTypeName.Equals("directory", StringComparison.OrdinalIgnoreCase); }
@@ -361,13 +361,25 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="obj_attributes">The object attributes to use for the open call.</param>
         /// <param name="desired_access">Access rights for directory object</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        /// <exception cref="NtException">Thrown on error and throw_on_error is true.</exception>
+        public static NtResult<NtDirectory> Open(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle;
+            return NtSystemCalls.NtOpenDirectoryObject(out handle, desired_access, obj_attributes).CreateResult(throw_on_error, () => new NtDirectory(handle));
+        }
+
+        /// <summary>
+        /// Open a directory object
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes to use for the open call.</param>
+        /// <param name="desired_access">Access rights for directory object</param>
         /// <returns>The directory object</returns>
         /// <exception cref="NtException">Throw on error</exception>
         public static NtDirectory Open(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access)
         {
-            SafeKernelObjectHandle handle;
-            NtSystemCalls.NtOpenDirectoryObject(out handle, desired_access, obj_attributes).ToNtException();
-            return new NtDirectory(handle);
+            return Open(obj_attributes, desired_access, true).Result;
         }
 
         /// <summary>
@@ -395,6 +407,36 @@ namespace NtApiDotNet
         public static NtDirectory Open(string name)
         {
             return Open(name, null, DirectoryAccessRights.MaximumAllowed);
+        }
+
+        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
+        {
+            return Open(object_attributes, desired_access.ToSpecificAccess<DirectoryAccessRights>(), throw_on_error).Cast<NtObject>();
+        }
+
+        /// <summary>
+        /// Create a directory object with a shadow
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes to create the directory with</param>
+        /// <param name="desired_access">The desired access to the directory</param>
+        /// <param name="shadow_dir">The shadow directory</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        /// <exception cref="NtException">Thrown on error and throw_on_error is true.</exception>
+        public static NtResult<NtDirectory> Create(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access, NtDirectory shadow_dir, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle;
+            NtStatus status;
+            if (shadow_dir == null)
+            {
+                status = NtSystemCalls.NtCreateDirectoryObject(out handle, desired_access, obj_attributes);
+            }
+            else
+            {
+                status = NtSystemCalls.NtCreateDirectoryObjectEx(out handle, desired_access, obj_attributes,
+                    shadow_dir.Handle, 0);
+            }
+            return status.CreateResult(throw_on_error, () => new NtDirectory(handle));
         }
 
         /// <summary>
@@ -549,14 +591,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error</exception>
         public static NtDirectory OpenBaseNamedObjects(int sessionid)
         {
-            if (sessionid == 0)
-            {
-                return Open(@"\BaseNamedObjects");
-            }
-            else
-            {
-                return Open(String.Format(@"\Sessions\{0}\BaseNamedObjects", sessionid));
-            }
+            return Open(GetBasedNamedObjects(sessionid));
         }
 
         /// <summary>
@@ -567,6 +602,32 @@ namespace NtApiDotNet
         public static NtDirectory OpenBaseNamedObjects()
         {
             return OpenBaseNamedObjects(NtProcess.Current.SessionId);
+        }
+
+        /// <summary>
+        /// Get the based named object's directory for a session.
+        /// </summary>
+        /// <param name="session_id">The session ID</param>
+        /// <returns>The based named object's directory.</returns>
+        public static string GetBasedNamedObjects(int session_id)
+        {
+            if (session_id == 0)
+            {
+                return @"\BaseNamedObjects";
+            }
+            else
+            {
+                return String.Format(@"\Sessions\{0}\BaseNamedObjects", session_id);
+            }
+        }
+
+        /// <summary>
+        /// Get the based named object's directory for the current session.
+        /// </summary>
+        /// <returns>The based named object's directory.</returns>
+        public static string GetBasedNamedObjects()
+        {
+            return GetBasedNamedObjects(NtProcess.Current.SessionId);
         }
 
         /// <summary>

@@ -665,7 +665,7 @@ namespace NtApiDotNet
         /// <returns>True if this type of object can be opened.</returns>        
         public static bool CanOpenType(string typename)
         {
-            NtType type = NtType.GetTypeByName(typename);
+            NtType type = NtType.GetTypeByName(typename, false);
             if (type == null)
             {
                 return false;
@@ -694,7 +694,7 @@ namespace NtApiDotNet
                 }
             }
 
-            NtType type = NtType.GetTypeByName(typename);
+            NtType type = NtType.GetTypeByName(typename, false);
             if (type != null && type.CanOpen)
             {
                 return type.Open(path, root, access);
@@ -735,7 +735,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return NtType.GetTypeByName(NtTypeName);
+                return NtType.GetTypeByName(NtTypeName, true);
             }
         }
 
@@ -1099,14 +1099,23 @@ namespace NtApiDotNet
     /// <typeparam name="T">The result type.</typeparam>
     public struct NtResult<T> : IDisposable
     {
+        private T _result;
+
         /// <summary>
         /// The NT status code.
         /// </summary>
         public NtStatus Status { get; private set; }
         /// <summary>
-        /// The NT object, null if status is not a success.
+        /// The result of the NT call.
         /// </summary>
-        public T Result { get; private set; }
+        public T Result
+        {
+            get
+            {
+                System.Diagnostics.Debug.Assert(Status.IsSuccess());
+                return _result;
+            }
+        }
         /// <summary>
         /// Get the result object or throw an exception if status code is an error.
         /// </summary>
@@ -1144,17 +1153,27 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Cast result to a different type.
+        /// </summary>
+        /// <typeparam name="S">The different type to cast to.</typeparam>
+        /// <returns>The mapped result.</returns>
+        public NtResult<S> Cast<S>()
+        {
+            return Map<S>(d => (S)(object)d);
+        }
+
+        /// <summary>
         /// Dispose result.
         /// </summary>
         public void Dispose()
         {
-            using (Result as IDisposable) { }
+            using (_result as IDisposable) { }
         }
 
         internal NtResult(NtStatus status, T result)
         {
             Status = status;
-            Result = result;
+            _result = result;
         }
     }
 }

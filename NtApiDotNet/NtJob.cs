@@ -75,17 +75,51 @@ namespace NtApiDotNet
         /// <summary>
         /// Create a job object
         /// </summary>
+        /// <param name="object_attributes">The object attributes</param>
+        /// <param name="desired_access">Desired access for job.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtJob> Create(ObjectAttributes object_attributes, JobAccessRights desired_access, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle;
+            return NtSystemCalls.NtCreateJobObject(out handle, JobAccessRights.MaximumAllowed, object_attributes).CreateResult(throw_on_error, () => new NtJob(handle));
+        }
+
+        /// <summary>
+        /// Create a job object
+        /// </summary>
+        /// <param name="object_attributes">The object attributes</param>
+        /// <param name="desired_access">Desired access for job.</param>
+        /// <returns>The Job object.</returns>
+        public static NtJob Create(ObjectAttributes object_attributes, JobAccessRights desired_access)
+        {
+            return Create(object_attributes, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Create a job object
+        /// </summary>
+        /// <param name="path">The path to the job object (can be null)</param>
+        /// <param name="root">The root object when path is relative</param>
+        /// <param name="desired_access">Desired access for job.</param>
+        /// <returns>The Job object</returns>
+        public static NtJob Create(string path, NtObject root, JobAccessRights desired_access)
+        {
+            using (ObjectAttributes obj_attr = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
+            {
+                return Create(obj_attr, desired_access);
+            }
+        }
+
+        /// <summary>
+        /// Create a job object
+        /// </summary>
         /// <param name="path">The path to the job object (can be null)</param>
         /// <param name="root">The root object when path is relative</param>
         /// <returns>The Job object</returns>
         public static NtJob Create(string path, NtObject root)
         {
-            using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
-            {
-                SafeKernelObjectHandle handle;
-                NtSystemCalls.NtCreateJobObject(out handle, JobAccessRights.MaximumAllowed, obja).ToNtException();
-                return new NtJob(handle);
-            }
+            return Create(path, root, JobAccessRights.MaximumAllowed);
         }
 
         /// <summary>
@@ -99,6 +133,35 @@ namespace NtApiDotNet
         /// <summary>
         /// Open a job object
         /// </summary>
+        /// <param name="object_attributes">The object attributes</param>
+        /// <param name="desired_access">Desired access for job.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtJob> Open(ObjectAttributes object_attributes, JobAccessRights desired_access, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle;
+            return NtSystemCalls.NtOpenJobObject(out handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtJob(handle));
+        }
+
+        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
+        {
+            return Open(object_attributes, desired_access.ToSpecificAccess<JobAccessRights>(), throw_on_error).Cast<NtObject>();
+        }
+
+        /// <summary>
+        /// Open a job object
+        /// </summary>
+        /// <param name="object_attributes">The object attributes</param>
+        /// <param name="desired_access">Desired access for job.</param>
+        /// <returns>The Job object</returns>
+        public static NtJob Open(ObjectAttributes object_attributes, JobAccessRights desired_access)
+        {
+            return Open(object_attributes, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open a job object
+        /// </summary>
         /// <param name="path">The path to the job object</param>
         /// <param name="root">The root object when path is relative</param>
         /// <param name="desired_access">Desired access for the job object</param>
@@ -107,9 +170,7 @@ namespace NtApiDotNet
         {
             using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle;
-                NtSystemCalls.NtOpenJobObject(out handle, desired_access, obja).ToNtException();
-                return new NtJob(handle);
+                return Open(obja, desired_access);
             }
         }
 

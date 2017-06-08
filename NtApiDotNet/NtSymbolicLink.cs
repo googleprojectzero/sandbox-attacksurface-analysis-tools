@@ -92,13 +92,25 @@ namespace NtApiDotNet
         /// <param name="object_attributes">The object attributes for the object</param>
         /// <param name="desired_access">The desired access for the object</param>
         /// <param name="target">The target path</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtSymbolicLink> Create(ObjectAttributes object_attributes, SymbolicLinkAccessRights desired_access, string target, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle;
+            return NtSystemCalls.NtCreateSymbolicLinkObject(out handle,
+                desired_access, object_attributes, new UnicodeString(target)).CreateResult(throw_on_error, () => new NtSymbolicLink(handle));
+        }
+
+        /// <summary>
+        /// Create a symbolic link object.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the object</param>
+        /// <param name="desired_access">The desired access for the object</param>
+        /// <param name="target">The target path</param>
         /// <returns>The opened object</returns>
         public static NtSymbolicLink Create(ObjectAttributes object_attributes, SymbolicLinkAccessRights desired_access, string target)
         {
-            SafeKernelObjectHandle handle;
-            NtSystemCalls.NtCreateSymbolicLinkObject(out handle,
-                desired_access, object_attributes, new UnicodeString(target)).ToNtException();
-            return new NtSymbolicLink(handle);
+            return Create(object_attributes, desired_access, target, true).Result;
         }
 
         /// <summary>
@@ -135,11 +147,27 @@ namespace NtApiDotNet
         {
             using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle;
-                NtSystemCalls.NtOpenSymbolicLinkObject(out handle,
-                    desired_access, obja).ToNtException();
-                return new NtSymbolicLink(handle);
+                return Open(obja, desired_access);
             }
+        }
+
+        /// <summary>
+        /// Open a symbolic link object.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the object</param>
+        /// <param name="desired_access">The desired access for the object</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtSymbolicLink> Open(ObjectAttributes object_attributes, SymbolicLinkAccessRights desired_access, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle;
+            return NtSystemCalls.NtOpenSymbolicLinkObject(out handle,
+                desired_access, object_attributes).CreateResult(throw_on_error, () => new NtSymbolicLink(handle));
+        }
+
+        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
+        {
+            return Open(object_attributes, desired_access.ToSpecificAccess<SymbolicLinkAccessRights>(), throw_on_error).Cast<NtObject>();
         }
 
         /// <summary>
@@ -150,10 +178,7 @@ namespace NtApiDotNet
         /// <returns>The opened object</returns>
         public static NtSymbolicLink Open(ObjectAttributes object_attributes, SymbolicLinkAccessRights desired_access)
         {
-            SafeKernelObjectHandle handle;
-            NtSystemCalls.NtOpenSymbolicLinkObject(out handle,
-                desired_access, object_attributes).ToNtException();
-            return new NtSymbolicLink(handle);
+            return Open(object_attributes, desired_access, true).Result;
         }
 
         /// <summary>

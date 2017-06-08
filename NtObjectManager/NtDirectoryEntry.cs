@@ -119,7 +119,7 @@ namespace NtObjectManager
                 return _maximum_granted_access;
             }
         }
-
+        
         /// <summary>
         /// Try and open the directory entry and return an actual NtObject handle.
         /// </summary>

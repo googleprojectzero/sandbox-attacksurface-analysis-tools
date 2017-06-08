@@ -70,19 +70,23 @@ namespace NtApiDotNet
 
     internal sealed class NtTypeFactory
     {
-        private MethodInfo _open_from_name_method;
+        private Func<SafeKernelObjectHandle, NtObject> _from_handle_method;
+        private Func<ObjectAttributes, AccessMask, bool, NtResult<NtObject>> _from_name_method;
         public Type ObjectType { get; private set; }
         public Type AccessRightsType { get; private set; }
-        public bool CanOpen { get { return _open_from_name_method != null; } }
-        public Func<SafeKernelObjectHandle, NtObject> FromHandle { get; private set; }
+        public bool CanOpen { get { return _from_name_method != null; } }
 
-        public NtObject Open(string name, NtObject root, AccessMask desired_access)
+        public NtObject FromHandle(SafeKernelObjectHandle handle)
+        {
+            return _from_handle_method(handle);
+        }
+
+        public NtResult<NtObject> Open(ObjectAttributes obj_attributes, AccessMask desired_access, bool throw_on_error)
         {
             try
             {
-                return (NtObject)_open_from_name_method.Invoke(null, 
-                    new object[] { name, root,
-                        Enum.ToObject(AccessRightsType, desired_access.Access) });
+                System.Diagnostics.Debug.Assert(_from_name_method != null);
+                return _from_name_method(obj_attributes, desired_access, throw_on_error);
             }
             catch (TargetInvocationException ex)
             {
@@ -95,17 +99,25 @@ namespace NtApiDotNet
             Type base_type = object_type.BaseType;
             System.Diagnostics.Debug.Assert(base_type.GetGenericTypeDefinition() == typeof(NtObjectWithDuplicate<,>));
             ObjectType = object_type;
+
             MethodInfo from_handle_method = base_type.GetMethod("FromHandle", 
                 BindingFlags.Public | BindingFlags.Static, 
                 null, new Type[] { typeof(SafeKernelObjectHandle) }, null);
-            FromHandle = (Func<SafeKernelObjectHandle, NtObject>)Delegate.CreateDelegate(typeof(Func<SafeKernelObjectHandle, NtObject>), from_handle_method);
+            _from_handle_method = (Func<SafeKernelObjectHandle, NtObject>)Delegate.CreateDelegate(typeof(Func<SafeKernelObjectHandle, NtObject>), from_handle_method);
+
             AccessRightsType = base_type.GetGenericArguments()[1];
-            _open_from_name_method = object_type.GetMethod("Open", 
-                BindingFlags.Public | BindingFlags.Static, null, 
-                new Type[] { typeof(string), typeof(NtObject), AccessRightsType }, null);
-            if (_open_from_name_method == null)
+
+            MethodInfo from_name_method = object_type.GetMethod("FromName", 
+                BindingFlags.NonPublic | BindingFlags.Static, null, 
+                new Type[] { typeof(ObjectAttributes), typeof(AccessMask), typeof(bool) }, null);
+            if (from_name_method == null)
             {
-                System.Diagnostics.Debug.WriteLine(String.Format("Type {0} doesn't have an open method", object_type));
+                System.Diagnostics.Debug.WriteLine(String.Format("Type {0} doesn't have a FromName method", object_type));
+            }
+            else
+            {
+                _from_name_method = (Func<ObjectAttributes, AccessMask, bool, NtResult<NtObject>>)
+                    Delegate.CreateDelegate(typeof(Func<ObjectAttributes, AccessMask, bool, NtResult<NtObject>>), from_name_method);
             }
         }
 
@@ -260,6 +272,27 @@ namespace NtApiDotNet
         /// <summary>
         /// Open this NT type by name (if CanOpen is true)
         /// </summary>
+        /// <param name="object_attributes">The object attributes to open.</param>
+        /// <param name="desired_access">Desired access when opening.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public NtResult<NtObject> Open(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
+        {
+            if (!CanOpen)
+            {
+                if (throw_on_error)
+                {
+                    throw new ArgumentException(String.Format("Can't open type {0} by name", Name));
+                }
+                return NtStatus.STATUS_OBJECT_PATH_INVALID.CreateResultFromError<NtObject>(false);
+            }
+
+            return _type_factory.Open(object_attributes, desired_access, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open this NT type by name (if CanOpen is true)
+        /// </summary>
         /// <param name="name">The name of the object to open.</param>
         /// <param name="root">The root object for opening, if name is relative</param>
         /// <param name="desired_access">Desired access when opening.</param>
@@ -267,12 +300,10 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error</exception>
         public NtObject Open(string name, NtObject root, AccessMask desired_access)
         {
-            if (!CanOpen)
+            using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
-                throw new ArgumentException(String.Format("Can't open type {0} by name", Name));
-            }           
-
-            return _type_factory.Open(name, root, desired_access);
+                return Open(obja, desired_access, true).Result;
+            }
         }
 
         /// <summary>
@@ -470,15 +501,20 @@ namespace NtApiDotNet
         /// Get a type object by name
         /// </summary>
         /// <param name="name">The name of the type</param>
+        /// <param name="create_fake_type">True to create a fake type if needed.</param>
         /// <returns>The object type, null if not found</returns>
-        public static NtType GetTypeByName(string name)
+        public static NtType GetTypeByName(string name, bool create_fake_type)
         {
             if (_types.ContainsKey(name))
             {
                 return _types[name];
             }
-            
-            return new NtType(-1, name);
+
+            if (create_fake_type)
+            {
+                return new NtType(-1, name);
+            }
+            return null;
         }
 
         /// <summary>
@@ -495,7 +531,7 @@ namespace NtApiDotNet
             {
                 throw new ArgumentException("Type has no mapping to an NT Type");
             }
-            return GetTypeByName(attrs.First().TypeName);
+            return GetTypeByName(attrs.First().TypeName, false);
         }
 
         private static Dictionary<string, NtType> LoadTypes()

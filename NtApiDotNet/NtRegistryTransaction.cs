@@ -71,13 +71,24 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="object_attributes">The object attributes</param>
         /// <param name="desired_access">Desired access for the handle</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtRegistryTransaction> Create(ObjectAttributes object_attributes, RegistryTransactionAccessRights desired_access, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle;
+            return NtSystemCalls.NtCreateRegistryTransaction(out handle,
+                desired_access, object_attributes, 0).CreateResult(throw_on_error, () => new NtRegistryTransaction(handle));
+        }
+
+        /// <summary>
+        /// Create a transaction
+        /// </summary>
+        /// <param name="object_attributes">The object attributes</param>
+        /// <param name="desired_access">Desired access for the handle</param>
         /// <returns>The opened transaction</returns>
         public static NtRegistryTransaction Create(ObjectAttributes object_attributes, RegistryTransactionAccessRights desired_access)
         {
-            SafeKernelObjectHandle handle;
-            NtSystemCalls.NtCreateRegistryTransaction(out handle,
-                desired_access, object_attributes, 0).ToNtException();
-            return new NtRegistryTransaction(handle);
+            return Create(object_attributes, desired_access, true).Result;
         }
 
         /// <summary>
@@ -133,12 +144,28 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="object_attributes">The object attributes for the object</param>
         /// <param name="desired_access">The desired access for the object</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtRegistryTransaction> Open(ObjectAttributes object_attributes, RegistryTransactionAccessRights desired_access, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle;
+            return NtSystemCalls.NtOpenRegistryTransaction(out handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtRegistryTransaction(handle));
+        }
+
+        /// <summary>
+        /// Open a transaction object.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the object</param>
+        /// <param name="desired_access">The desired access for the object</param>
         /// <returns>The opened object</returns>
         public static NtRegistryTransaction Open(ObjectAttributes object_attributes, RegistryTransactionAccessRights desired_access)
         {
-            SafeKernelObjectHandle handle;
-            NtSystemCalls.NtOpenRegistryTransaction(out handle, desired_access, object_attributes).ToNtException();
-            return new NtRegistryTransaction(handle);
+            return Open(object_attributes, desired_access, true).Result;
+        }
+
+        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
+        {
+            return Open(object_attributes, desired_access.ToSpecificAccess<RegistryTransactionAccessRights>(), throw_on_error).Cast<NtObject>();
         }
 
         /// <summary>

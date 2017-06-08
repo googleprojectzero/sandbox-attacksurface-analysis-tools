@@ -1762,6 +1762,12 @@ namespace NtApiDotNet
                 .CreateResult(throw_on_error, () => new NtFile(handle, iostatus));
         }
 
+        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
+        {
+            return Open(object_attributes, desired_access.ToSpecificAccess<FileAccessRights>(), FileShareMode.Read | FileShareMode.Delete, 
+                FileOpenOptions.None, throw_on_error).Cast<NtObject>();
+        }
+
         /// <summary>
         /// Open a file
         /// </summary>

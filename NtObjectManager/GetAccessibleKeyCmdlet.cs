@@ -21,8 +21,8 @@ namespace NtObjectManager
 {
     /// <summary>
     /// <para type="synopsis">Get a list of Registry Keys that can be opened by a specificed token.</para>
-    /// <para type="description">This cmdlet checks a registry key and optionally tries to determine
-    /// if one or more specified tokens can open them to them. If no tokens are specified the current process
+    /// <para type="description">This cmdlet checks a registry key and tries to determine
+    /// if one or more specified tokens can open them. If no tokens are specified the current process
     /// token is used.</para>
     /// </summary>
     /// <example>
@@ -36,6 +36,10 @@ namespace NtObjectManager
     /// <example>
     ///   <code>Get-AccessibleKey \Registry\Machine\Software -Recurse</code>
     ///   <para>Check recursively for accessible keys \Registry\Machine\Software for the current process token.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-AccessibleKey \Registry\Machine\Software -Recurse -MaxDepth 5</code>
+    ///   <para>Check recursively for accessible keys \Registry\Machine\Software for the current process token to a maximum depth of 5.</para>
     /// </example>
     /// <example>
     ///   <code>Get-AccessibleKey HKLM\Software -Win32Path -Recurse</code>
@@ -85,16 +89,18 @@ namespace NtObjectManager
             }
         }
 
-        private void CheckAccessUnderImpersonation(TokenEntry token, NtKey key)
+        private void CheckAccessUnderImpersonation(TokenEntry token, AccessMask access_rights, NtKey key)
         {
             using (ObjectAttributes obj_attributes = new ObjectAttributes(string.Empty,
                 AttributeFlags.CaseInsensitive | AttributeFlags.OpenLink, key))
             {
-                var result = token.Token.RunUnderImpersonate(() => NtKey.Open(obj_attributes, KeyAccessRights.MaximumAllowed, 0, false));
-                if (result.IsSuccess)
+                using (var result = token.Token.RunUnderImpersonate(() => NtKey.Open(obj_attributes, KeyAccessRights.MaximumAllowed, 0, false)))
                 {
-                    WriteAccessCheckResult(key.FullPath, key.NtType.Name, result.Result.GrantedAccessMask, key.NtType.GenericMapping,
-                        String.Empty, typeof(KeyAccessRights), token.Information);
+                    if (result.IsSuccess && result.Result.GrantedAccessMask.IsAllAccessGranted(access_rights))
+                    {
+                        WriteAccessCheckResult(key.FullPath, key.NtType.Name, result.Result.GrantedAccessMask, key.NtType.GenericMapping,
+                            String.Empty, typeof(KeyAccessRights), token.Information);
+                    }
                 }
             }
         }
@@ -114,7 +120,7 @@ namespace NtObjectManager
                 // If we can't read security descriptor then try opening the key.
                 foreach (var token in tokens)
                 {
-                    CheckAccessUnderImpersonation(token, key);
+                    CheckAccessUnderImpersonation(token, access_rights, key);
                 }
             }
 

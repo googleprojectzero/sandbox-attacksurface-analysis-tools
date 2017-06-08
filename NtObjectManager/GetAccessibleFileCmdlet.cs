@@ -20,7 +20,7 @@ using System.Management.Automation;
 namespace NtObjectManager
 {
     /// <summary>
-    /// Enumeration to determine what to check.
+    /// <para type="description">Limit access check to specific types of files.</para>
     /// </summary>
     public enum FileCheckMode
     {
@@ -39,42 +39,46 @@ namespace NtObjectManager
     }
 
     /// <summary>
-    /// <para type="synopsis">Get a list of Registry Keys that can be opened by a specificed token.</para>
-    /// <para type="description">This cmdlet checks a registry key and optionally tries to determine
-    /// if one or more specified tokens can open them to them. If no tokens are specified the current process
+    /// <para type="synopsis">Get a list of files that can be opened by a specificed token.</para>
+    /// <para type="description">This cmdlet checks a file or directory and tries to determine
+    /// if one or more specified tokens can open them. If no tokens are specified the current process
     /// token is used.</para>
     /// </summary>
     /// <example>
-    ///   <code>Get-AccessibleKey \Registry\Machine\Software</code>
-    ///   <para>Check accessible keys HKEY_LOCAL_MACHINE\Software for the current process token.</para>
+    ///   <code>Get-AccessibleFile \??\C:\Windows</code>
+    ///   <para>Check accessible file c:\Windows for the current process token.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-AccessibleKey \Registry\Machine\Software -ProcessIds 1234,5678</code>
-    ///   <para>Check accessible keys HKEY_LOCAL_MACHINE\Software for the process tokens of PIDs 1234 and 5678</para>
+    ///   <code>Get-AccessibleFile \??\C:\Windows -ProcessIds 1234,5678</code>
+    ///   <para>Check accessible file c:\Windows for the process tokens of PIDs 1234 and 5678</para>
     /// </example>
     /// <example>
-    ///   <code>Get-AccessibleKey \Registry\Machine\Software -Recurse</code>
-    ///   <para>Check recursively for accessible keys HKEY_LOCAL_MACHINE\Software for the current process token.</para>
+    ///   <code>Get-AccessibleFile \??\C:\Windows -Recurse</code>
+    ///   <para>Check recursively for check accessible files under c:\Windows for the current process token.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-AccessibleKey HKLM\Software -Win32Path -Recurse</code>
-    ///   <para>Check recursively for accessible keys NT path HKEY_LOCAL_MACHINE for the current process token using a Win32 path.</para>
+    ///   <code>Get-AccessibleFile C:\Windows -Win32Path -Recurse</code>
+    ///   <para>Check recursively for check accessible files under c:\Windows for the current process token using a Win32 path.</para>
     /// </example>
     /// <example>
-    ///   <code>$token = Get-NtToken -Primary -Duplicate -IntegrityLevel Low&#x0A;Get-AccessibleKey HKCU -Recurse -Tokens $token -AccessRights GenericWrite</code>
-    ///   <para>Get all keys with can be written to in HKEY_CURRENT_USER by a low integrity copy of current token.</para>
+    ///   <code>Get-AccessibleFile C:\Windows -Win32Path -Recurse -MaxDepth 2</code>
+    ///   <para>Check recursively for check accessible files under c:\Windows for the current process token using a Win32 path with a max depth of 2.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$token = Get-NtToken -Primary -Duplicate -IntegrityLevel Low&#x0A;Get-AccessibleFile \??\C:\Windows -Recurse -Tokens $token -AccessRights GenericWrite</code>
+    ///   <para>Get all files with can be written to \??\C:\Windows by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleFile")]
     public class GetAccessibleFileCmdlet : GetAccessiblePathCmdlet
     {
         /// <summary>
-        /// <para type="description">Specify a set of access rights which the file must at least be accessible for to count as an access.</para>
+        /// <para type="description">Specify a set of access rights which a file must at least be accessible for to count as an access.</para>
         /// </summary>
         [Parameter]
         public FileAccessRights AccessRights { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify a set of directory access rights which the file must at least be accessible for to count as an access.</para>
+        /// <para type="description">Specify a set of directory access rights which a directory must at least be accessible for to count as an access.</para>
         /// </summary>
         [Parameter]
         public FileDirectoryAccessRights DirectoryAccessRights { get; set; }
@@ -131,14 +135,14 @@ namespace NtObjectManager
             }
         }
 
-        private void CheckAccessUnderImpersonation(TokenEntry token, NtFile file)
+        private void CheckAccessUnderImpersonation(TokenEntry token, AccessMask access_rights, NtFile file)
         {
             using (var result = token.Token.RunUnderImpersonate(() =>
                  file.ReOpen(FileAccessRights.MaximumAllowed,
                  FileShareMode.Read | FileShareMode.Delete,
                  FileOpenOptions.None, false)))
             {
-                if (result.Status.IsSuccess())
+                if ( result.Status.IsSuccess() && result.Result.GrantedAccessMask.IsAllAccessGranted(access_rights))
                 {
                     WriteAccessCheckResult(file.FullPath, file.NtType.Name, result.Result.GrantedAccessMask,
                         file.NtType.GenericMapping, String.Empty, IsDirectoryNoThrow(file) ?
@@ -147,7 +151,7 @@ namespace NtObjectManager
             }
         }
 
-        private void DumpFile(IEnumerable<TokenEntry> tokens, AccessMask access_rights, NtFile file)
+        private void DumpFile(IEnumerable<TokenEntry> tokens, AccessMask access_rights, AccessMask dir_access_rights, NtFile file)
         {
             bool directory = IsDirectoryNoThrow(file);
             if (CheckMode != FileCheckMode.All)
@@ -158,13 +162,14 @@ namespace NtObjectManager
                     return;
                 }
             }
+            AccessMask desired_access = directory ? dir_access_rights : access_rights;
 
             var result = file.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
             if (result.IsSuccess)
             {
                 foreach (var token in tokens)
                 {
-                    CheckAccess(token, file, access_rights, result.Result);
+                    CheckAccess(token, file, desired_access, result.Result);
                 }
             }
             else
@@ -172,12 +177,12 @@ namespace NtObjectManager
                 // If we can't read security descriptor then try opening the key.
                 foreach (var token in tokens)
                 {
-                    CheckAccessUnderImpersonation(token, file);
+                    CheckAccessUnderImpersonation(token, desired_access, file);
                 }
             }
         }
 
-        private void DumpDirectory(IEnumerable<TokenEntry> tokens, AccessMask access_rights, NtFile file, FileOpenOptions options, int current_depth)
+        private void DumpDirectory(IEnumerable<TokenEntry> tokens, AccessMask access_rights, AccessMask dir_access_rights, NtFile file, FileOpenOptions options, int current_depth)
         {
             if (Stopping || current_depth <= 0)
             {
@@ -210,10 +215,10 @@ namespace NtObjectManager
                             {
                                 if (new_file.IsSuccess)
                                 {
-                                    DumpFile(tokens, access_rights, new_file.Result);
+                                    DumpFile(tokens, access_rights, dir_access_rights, new_file.Result);
                                     if (IsDirectoryNoThrow(new_file.Result))
                                     {
-                                        DumpDirectory(tokens, access_rights, new_file.Result, options, current_depth - 1);
+                                        DumpDirectory(tokens, access_rights, dir_access_rights, new_file.Result, options, current_depth - 1);
                                     }
                                 }
                             }
@@ -244,17 +249,19 @@ namespace NtObjectManager
 
             FileOpenOptions options = FileOpenOptions.OpenReparsePoint | (open_for_backup ? FileOpenOptions.OpenForBackupIntent : FileOpenOptions.None);
             NtType type = NtType.GetTypeByType<NtFile>();
-            AccessMask access_rights = type.MapGenericRights(AccessRights) | type.MapGenericRights(DirectoryAccessRights);
+            AccessMask access_rights = type.MapGenericRights(AccessRights);
+            AccessMask dir_access_rights = type.MapGenericRights(DirectoryAccessRights);
             using (var result = OpenFile(Path, null, Win32Path, options))
             {
                 if (result.IsSuccess)
                 {
                     DumpFile(tokens,
                         access_rights,
+                        dir_access_rights,
                         result.Result);
                     if (IsDirectoryNoThrow(result.Result))
                     {
-                        DumpDirectory(tokens, access_rights, result.Result, options, GetMaxDepth());
+                        DumpDirectory(tokens, access_rights, dir_access_rights, result.Result, options, GetMaxDepth());
                     }
                 }
             }

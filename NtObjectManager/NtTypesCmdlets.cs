@@ -52,7 +52,7 @@ namespace NtObjectManager
         {
             if (!string.IsNullOrWhiteSpace(TypeName))
             {
-                NtType type_info = NtType.GetTypeByName(TypeName);
+                NtType type_info = NtType.GetTypeByName(TypeName, false);
                 if (type_info != null)
                 {
                     WriteObject(type_info);

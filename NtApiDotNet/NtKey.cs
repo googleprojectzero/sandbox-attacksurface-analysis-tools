@@ -518,6 +518,11 @@ namespace NtApiDotNet
                 .CreateResult(throw_on_error, () => new NtKey(handle, KeyDisposition.OpenedExistingKey));
         }
 
+        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
+        {
+            return Open(object_attributes, desired_access.ToSpecificAccess<KeyAccessRights>(), 0, throw_on_error).Cast<NtObject>();
+        }
+
         /// <summary>
         /// Open a Key
         /// </summary>

@@ -222,7 +222,7 @@ namespace NtApiDotNet
                 creator_sd.Dacl = token.DefaultDacl;
             }
 
-            NtType type = NtType.GetTypeByName(base_object.NtTypeName);
+            NtType type = base_object.NtType;
 
             SafeBuffer parent_sd_buffer = SafeHGlobalBuffer.Null;
             SafeBuffer creator_sd_buffer = SafeHGlobalBuffer.Null;

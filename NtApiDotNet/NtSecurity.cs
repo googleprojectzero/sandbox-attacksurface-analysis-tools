@@ -663,7 +663,7 @@ namespace NtApiDotNet
             {
                 result |= GenericAccessRights.GenericRead;
                 remaining &= ~GenericRead;
-            }
+            }            
             if ((mask & GenericWrite) == GenericWrite)
             {
                 result |= GenericAccessRights.GenericWrite;

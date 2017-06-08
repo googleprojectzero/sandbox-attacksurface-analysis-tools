@@ -77,12 +77,25 @@ namespace NtApiDotNet
         /// <param name="desired_access">The desired access for the object</param>
         /// <param name="initial_count">Initial count for semaphore</param>
         /// <param name="maximum_count">Maximum count for semaphore</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtSemaphore> Create(ObjectAttributes object_attributes, SemaphoreAccessRights desired_access, int initial_count, int maximum_count, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle;
+            return NtSystemCalls.NtCreateSemaphore(out handle, desired_access, object_attributes, initial_count, maximum_count).CreateResult(throw_on_error, () => new NtSemaphore(handle));
+        }
+
+        /// <summary>
+        /// Create a semaphore object.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the object</param>
+        /// <param name="desired_access">The desired access for the object</param>
+        /// <param name="initial_count">Initial count for semaphore</param>
+        /// <param name="maximum_count">Maximum count for semaphore</param>
         /// <returns>The opened object</returns>
         public static NtSemaphore Create(ObjectAttributes object_attributes, SemaphoreAccessRights desired_access, int initial_count, int maximum_count)
         {
-            SafeKernelObjectHandle handle;
-            NtSystemCalls.NtCreateSemaphore(out handle, desired_access, object_attributes, initial_count, maximum_count).ToNtException();
-            return new NtSemaphore(handle);
+            return Create(object_attributes, desired_access, initial_count, maximum_count, true).Result;
         }
 
         /// <summary>
@@ -106,12 +119,28 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="object_attributes">The object attributes for the object</param>
         /// <param name="desired_access">The desired access for the object</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtSemaphore> Open(ObjectAttributes object_attributes, SemaphoreAccessRights desired_access, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle;
+            return NtSystemCalls.NtOpenSemaphore(out handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtSemaphore(handle));
+        }
+
+        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
+        {
+            return Open(object_attributes, desired_access.ToSpecificAccess<SemaphoreAccessRights>(), throw_on_error).Cast<NtObject>();
+        }
+
+        /// <summary>
+        /// Open a semaphore object.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the object</param>
+        /// <param name="desired_access">The desired access for the object</param>
         /// <returns>The opened object</returns>
         public static NtSemaphore Open(ObjectAttributes object_attributes, SemaphoreAccessRights desired_access)
         {
-            SafeKernelObjectHandle handle;
-            NtSystemCalls.NtOpenSemaphore(out handle, desired_access, object_attributes).ToNtException();
-            return new NtSemaphore(handle);
+            return Open(object_attributes, desired_access, true).Result;
         }
 
         /// <summary>

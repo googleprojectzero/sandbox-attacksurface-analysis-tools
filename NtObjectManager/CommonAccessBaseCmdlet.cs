@@ -158,6 +158,15 @@ namespace NtObjectManager
         /// </summary>
         public Dictionary<string, object> SourceData { get; private set; }
 
+        /// <summary>
+        /// Overridden ToString.
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return String.Format("User: {0}", UserName);
+        }
+
         internal TokenInformation(NtToken token)
         {
             SourceData = new Dictionary<string, object>();
@@ -331,7 +340,7 @@ namespace NtObjectManager
 
         internal void WriteAccessWarning(NtObject root, string path, NtStatus status)
         {
-            WriteAccessWarning(String.Format(@"{0}\{1}", root.FullPath, path), status);
+            WriteAccessWarning(String.Format(@"{0}\{1}", root.FullPath.TrimEnd('\\'), path), status);
         }
 
         private class TokenEntryComparer : IEqualityComparer<TokenEntry>
