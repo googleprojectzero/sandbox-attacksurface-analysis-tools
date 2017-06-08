@@ -460,14 +460,35 @@ namespace NtApiDotNet
         /// <returns>The security descriptor</returns>
         public byte[] GetSecurityDescriptorBytes(SecurityInformation security_information)
         {
+            return GetSecurityDescriptorBytes(security_information, true).Result;
+        }
+
+
+        /// <summary>
+        /// Get security descriptor as a byte array
+        /// </summary>
+        /// <param name="security_information">What parts of the security descriptor to retrieve</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <return>The NT status result and security descriptor.</return>
+        public NtResult<byte[]> GetSecurityDescriptorBytes(SecurityInformation security_information, bool throw_on_error)
+        {
+            // Just do a check here, no point checking if ReadControl not available.
+            if (!IsAccessMaskGranted(GenericAccessRights.ReadControl))
+            {
+                return NtStatus.STATUS_ACCESS_DENIED.CreateResultFromError<byte[]>(throw_on_error);
+            }
+
             int return_length;
             NtStatus status = NtSystemCalls.NtQuerySecurityObject(Handle, security_information, null, 0, out return_length);
             if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
-                status.ToNtException();
+            {
+                return status.CreateResult(throw_on_error, () => new byte[0]);
+            }
             byte[] buffer = new byte[return_length];
-            NtSystemCalls.NtQuerySecurityObject(Handle, security_information, buffer, buffer.Length, out return_length).ToNtException();
-            return buffer;
+            return NtSystemCalls.NtQuerySecurityObject(Handle, security_information, buffer, 
+                buffer.Length, out return_length).CreateResult(throw_on_error, () => buffer);
         }
+
 
         /// <summary>
         /// Get security descriptor as a byte array
@@ -485,7 +506,19 @@ namespace NtApiDotNet
         /// <param name="security_information">What parts of the security descriptor to set</param>
         public void SetSecurityDescriptor(byte[] security_desc, SecurityInformation security_information)
         {
-            NtSystemCalls.NtSetSecurityObject(Handle, security_information, security_desc).ToNtException();
+            SetSecurityDescriptor(security_desc, security_information, true);
+        }
+
+        /// <summary>
+        /// Set the object's security descriptor
+        /// </summary>
+        /// <param name="security_desc">The security descriptor to set.</param>
+        /// <param name="security_information">What parts of the security descriptor to set</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <return>The NT status result.</return>
+        public NtStatus SetSecurityDescriptor(byte[] security_desc, SecurityInformation security_information, bool throw_on_error)
+        {
+            return NtSystemCalls.NtSetSecurityObject(Handle, security_information, security_desc).ToNtException(throw_on_error);
         }
 
         /// <summary>
@@ -506,6 +539,17 @@ namespace NtApiDotNet
         public SecurityDescriptor GetSecurityDescriptor(SecurityInformation security_information)
         {
             return new SecurityDescriptor(GetSecurityDescriptorBytes(security_information));
+        }
+
+        /// <summary>
+        /// Get the security descriptor specifying which parts to retrieve
+        /// </summary>
+        /// <param name="security_information">What parts of the security descriptor to retrieve</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The security descriptor</returns>
+        public NtResult<SecurityDescriptor> GetSecurityDescriptor(SecurityInformation security_information, bool throw_on_error)
+        {
+            return GetSecurityDescriptorBytes(security_information, throw_on_error).Map(sd => new SecurityDescriptor(sd));
         }
 
         /// <summary>
@@ -1048,10 +1092,12 @@ namespace NtApiDotNet
     }
 
     /// <summary>
-    /// A structure to return the result of an open/create call with status.
+    /// A structure to return the result of an NT system call with status.
+    /// This allows a function to return both a status code and a result
+    /// without having to resort to out parameters.
     /// </summary>
-    /// <typeparam name="T">The object type.</typeparam>
-    public struct NtResult<T> : IDisposable where T : NtObject
+    /// <typeparam name="T">The result type.</typeparam>
+    public struct NtResult<T> : IDisposable
     {
         /// <summary>
         /// The NT status code.
@@ -1062,11 +1108,53 @@ namespace NtApiDotNet
         /// </summary>
         public T Result { get; private set; }
         /// <summary>
+        /// Get the result object or throw an exception if status code is an error.
+        /// </summary>
+        /// <returns>The result NT result.</returns>
+        /// <exception cref="NtException">Thrown if status code is an error.</exception>
+        public T GetResultOrThrow()
+        {
+            Status.ToNtException();
+            return Result;
+        }
+        /// <summary>
+        /// Is the result successful.
+        /// </summary>
+        public bool IsSuccess
+        {
+            get
+            {
+                return Status.IsSuccess();
+            }
+        }
+
+        /// <summary>
+        /// Map result to a different type.
+        /// </summary>
+        /// <typeparam name="S">The different type to map to.</typeparam>
+        /// <param name="map_func">A function to map the result.</param>
+        /// <returns>The mapped result.</returns>
+        public NtResult<S> Map<S>(Func<T, S> map_func)
+        {
+            if (IsSuccess)
+            {
+                return new NtResult<S>(Status, map_func(Result));
+            }
+            return new NtResult<S>(Status, default(S));
+        }
+
+        /// <summary>
         /// Dispose result.
         /// </summary>
         public void Dispose()
         {
-            Result?.Dispose();
+            using (Result as IDisposable) { }
+        }
+
+        internal NtResult(NtStatus status, T result)
+        {
+            Status = status;
+            Result = result;
         }
     }
 }

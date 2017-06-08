@@ -78,7 +78,7 @@ namespace NtObjectManager
         [Parameter]
         public SwitchParameter Recurse { get; set; }
 
-        private static NtStatus OpenFile(string name, NtFile root, bool win32_path, FileOpenOptions options, out NtFile file)
+        private static NtResult<NtFile> OpenFile(string name, NtFile root, bool win32_path, FileOpenOptions options)
         {
             if (win32_path)
             {
@@ -88,16 +88,28 @@ namespace NtObjectManager
             using (ObjectAttributes obja = new ObjectAttributes(name,
                 AttributeFlags.CaseInsensitive, root))
             {
-                NtStatus status = NtFile.Open(obja, FileAccessRights.ReadAttributes | FileAccessRights.ReadControl, 
-                    FileShareMode.Read | FileShareMode.Delete, options, out file);
-                if (status.IsSuccess() || status != NtStatus.STATUS_ACCESS_DENIED)
+                var result = NtFile.Open(obja, FileAccessRights.ReadAttributes | FileAccessRights.ReadControl,
+                    FileShareMode.Read | FileShareMode.Delete, options, false);
+                if (result.IsSuccess || result.Status != NtStatus.STATUS_ACCESS_DENIED)
                 {
-                    return status;
+                    return result;
                 }
 
                 // Try again with just ReadAttributes, if we can't even do this we give up.
                 return NtFile.Open(obja, FileAccessRights.ReadAttributes,
-                    FileShareMode.Read | FileShareMode.Delete, options, out file);
+                    FileShareMode.Read | FileShareMode.Delete, options, false);
+            }
+        }
+
+        private static bool IsDirectoryNoThrow(NtFile file)
+        {
+            try
+            {
+                return file.IsDirectory;
+            }
+            catch (NtException)
+            {
+                return false;
             }
         }
 
@@ -107,42 +119,35 @@ namespace NtObjectManager
             AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
             if (!granted_access.IsEmpty && granted_access.IsAllAccessGranted(access_rights))
             {
-                WriteAccessCheckResult(file.FullPath, type.Name, granted_access, type.GenericMapping,
-                    sd.ToSddl(), file.IsDirectory ? typeof(FileDirectoryAccessRights) : typeof(FileAccessRights), token.Information);
+                WriteAccessCheckResult(Win32Path ? file.Win32PathName : file.FullPath, type.Name, granted_access, type.GenericMapping,
+                    sd.ToSddl(), IsDirectoryNoThrow(file) ? typeof(FileDirectoryAccessRights) : typeof(FileAccessRights), token.Information);
             }
         }
 
         private void CheckAccessUnderImpersonation(TokenEntry token, NtFile file)
         {
-            NtFile new_file = null;
-            try
+            using (var result = token.Token.RunUnderImpersonate(() =>
+                 file.ReOpen(FileAccessRights.MaximumAllowed,
+                 FileShareMode.Read | FileShareMode.Delete,
+                 FileOpenOptions.None, false)))
             {
-                NtStatus status = token.Token.RunUnderImpersonate(() => 
-                    file.ReOpen(FileAccessRights.MaximumAllowed, 
-                    FileShareMode.Read | FileShareMode.Delete, 
-                    FileOpenOptions.None, out new_file));
-
-                if (status.IsSuccess())
+                if (result.Status.IsSuccess())
                 {
-                    WriteAccessCheckResult(file.FullPath, file.NtType.Name, new_file.GrantedAccessMask, 
-                        file.NtType.GenericMapping, String.Empty, file.IsDirectory ? 
+                    WriteAccessCheckResult(file.FullPath, file.NtType.Name, result.Result.GrantedAccessMask,
+                        file.NtType.GenericMapping, String.Empty, IsDirectoryNoThrow(file) ?
                         typeof(FileDirectoryAccessRights) : typeof(FileAccessRights), token.Information);
                 }
-            }
-            finally
-            {
-                new_file?.Dispose();
             }
         }
 
         private void DumpFile(IEnumerable<TokenEntry> tokens, AccessMask access_rights, NtFile file)
         {
-            if (file.IsAccessGranted(FileAccessRights.ReadControl))
+            var result = file.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
+            if (result.IsSuccess)
             {
-                SecurityDescriptor sd = file.SecurityDescriptor;
                 foreach (var token in tokens)
                 {
-                    CheckAccess(token, file, access_rights, sd);
+                    CheckAccess(token, file, access_rights, result.Result);
                 }
             }
             else
@@ -164,27 +169,33 @@ namespace NtObjectManager
 
             if (Recurse)
             {
-                NtFile dir = null;
-
-                try
+                using (var result = file.ReOpen(FileAccessRights.ReadData, FileShareMode.Read | FileShareMode.Delete, options | FileOpenOptions.DirectoryFile, false))
                 {
-                    if (file.ReOpen(FileAccessRights.ReadData, FileShareMode.Read | FileShareMode.Delete, options | FileOpenOptions.DirectoryFile, out dir).IsSuccess())
+                    if (result.Status.IsSuccess())
                     {
-                        foreach (var entry in dir.QueryDirectoryInfo())
+                        foreach (var entry in result.Result.QueryDirectoryInfo())
                         {
-                            NtFile new_file;
-                            if (OpenFile(String.Empty, dir, false, options, out new_file).IsSuccess())
-                            DumpFile(tokens, access_rights, new_file);
-                            if (file.IsDirectory)
+                            NtFile base_file = result.Result;
+                            string filename = entry.FileName;
+                            if (filename.Contains(@"\"))
                             {
-                                DumpDirectory(tokens, access_rights, new_file, options);
+                                filename = base_file.FullPath + filename;
+                                base_file = null;
+                            }
+
+                            using (var new_file = OpenFile(filename, base_file, false, options))
+                            {
+                                if (new_file.IsSuccess)
+                                {
+                                    DumpFile(tokens, access_rights, new_file.Result);
+                                    if (IsDirectoryNoThrow(new_file.Result))
+                                    {
+                                        DumpDirectory(tokens, access_rights, new_file.Result, options);
+                                    }
+                                }
                             }
                         }
                     }
-                }
-                finally
-                {
-                    dir?.Dispose();
                 }
             }
         }
@@ -206,23 +217,18 @@ namespace NtObjectManager
             FileOpenOptions options = FileOpenOptions.OpenReparsePoint | (open_for_backup ? FileOpenOptions.OpenForBackupIntent : FileOpenOptions.None);
             NtType type = NtType.GetTypeByType<NtFile>();
             AccessMask access_rights = type.MapGenericRights(AccessRights) | type.MapGenericRights(DirectoryAccessRights);
-            NtFile file = null;
-            try
+            using (var result = OpenFile(Path, null, Win32Path, options))
             {
-                if (OpenFile(Path, null, Win32Path, options, out file).IsSuccess())
+                if (result.IsSuccess)
                 {
                     DumpFile(tokens,
                         access_rights,
-                        file);
-                    if (file.IsDirectory)
+                        result.Result);
+                    if (IsDirectoryNoThrow(result.Result))
                     {
-                        DumpDirectory(tokens, access_rights, file, options);
+                        DumpDirectory(tokens, access_rights, result.Result, options);
                     }
                 }
-            }
-            finally
-            {
-                file?.Dispose();
             }
         }
     }

@@ -73,7 +73,19 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown if status is an error.</exception>
         public static NtStatus ToNtException(this NtStatus status)
         {
-            if (!IsSuccess(status))
+            return status.ToNtException(true);
+        }
+
+        /// <summary>
+        /// Convert an NtStatus to an exception if the status is an error and throw_on_error is true.
+        /// </summary>
+        /// <param name="status">The NtStatus</param>
+        /// <param name="throw_on_error">True to throw an exception onerror.</param>
+        /// <returns>The original NtStatus if not thrown</returns>
+        /// <exception cref="NtException">Thrown if status is an error and throw_on_error is true.</exception>
+        public static NtStatus ToNtException(this NtStatus status, bool throw_on_error)
+        {
+            if (throw_on_error && !status.IsSuccess())
             {
                 throw new NtException(status);
             }
@@ -257,6 +269,39 @@ namespace NtApiDotNet
         public static DisposableList<T> ToDisposableList<T>(this IEnumerable<T> list) where T : IDisposable
         {
             return new DisposableList<T>(list);
+        }
+
+        /// <summary>
+        /// Create an NT result object. If status is successful then call function otherwise use default value.
+        /// </summary>
+        /// <typeparam name="T">The result type.</typeparam>
+        /// <param name="status">The associated status case.</param>
+        /// <param name="throw_on_error">Throw an exception on error.</param>
+        /// <param name="create_func">Function to call to create an instance of the result</param>
+        /// <returns>The created result.</returns>
+        internal static NtResult<T> CreateResult<T>(this NtStatus status, bool throw_on_error, Func<T> create_func)
+        {
+            if (status.IsSuccess())
+            {
+                return new NtResult<T>(status, create_func());
+            }
+
+            if (throw_on_error)
+            {
+                throw new NtException(status);
+            }
+
+            return new NtResult<T>(status, default(T));
+        }
+
+        internal static NtResult<T> CreateResultFromError<T>(this NtStatus status, bool throw_on_error)
+        {
+            if (throw_on_error)
+            {
+                throw new NtException(status);
+            }
+
+            return new NtResult<T>(status, default(T));
         }
     }
 }

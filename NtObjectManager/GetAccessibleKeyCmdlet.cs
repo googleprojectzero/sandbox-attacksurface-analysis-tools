@@ -105,30 +105,15 @@ namespace NtObjectManager
 
         private void CheckAccessUnderImpersonation(TokenEntry token, NtKey key)
         {
-            NtKey new_key = null;
-            try
+            using (ObjectAttributes obj_attributes = new ObjectAttributes(string.Empty,
+                AttributeFlags.CaseInsensitive | AttributeFlags.OpenLink, key))
             {
-                using (ObjectAttributes obj_attributes = new ObjectAttributes(string.Empty,
-                    AttributeFlags.CaseInsensitive | AttributeFlags.OpenLink, key))
+                var result = token.Token.RunUnderImpersonate(() => NtKey.Open(obj_attributes, KeyAccessRights.MaximumAllowed, 0, false));
+                if (result.IsSuccess)
                 {
-
-                    bool success;
-
-                    using (token.Token.Impersonate())
-                    {
-                        success = NtKey.Open(obj_attributes, KeyAccessRights.MaximumAllowed, 0, out new_key).IsSuccess();
-                    }
-
-                    if (success)
-                    {
-                        WriteAccessCheckResult(key.FullPath, key.NtType.Name, new_key.GrantedAccessMask, key.NtType.GenericMapping,
-                            String.Empty, typeof(KeyAccessRights), token.Information);
-                    }
+                    WriteAccessCheckResult(key.FullPath, key.NtType.Name, result.Result.GrantedAccessMask, key.NtType.GenericMapping,
+                        String.Empty, typeof(KeyAccessRights), token.Information);
                 }
-            }
-            finally
-            {
-                new_key?.Dispose();
             }
         }
 
@@ -178,6 +163,11 @@ namespace NtObjectManager
                 {
                     WriteWarning("Current process doesn't have SeBackupPrivilege, results may be inaccurate");
                 }
+            }
+
+            if (!Path.StartsWith(@"\") && !Win32Path)
+            {
+                WriteWarning("Path doesn't start with \\. You should specify -Win32Path to use a non-NT path for the key.");
             }
 
             using (NtKey key = OpenKey(Path, Win32Path, false, open_for_backup))

@@ -72,15 +72,9 @@ namespace CheckAlpcPortAccess
                     {
                         if (!pid_to_process.ContainsKey(handle.ProcessId))
                         {
-                            try
-                            {
-                                pid_to_process[handle.ProcessId] = NtProcess.Open(handle.ProcessId, 
-                                    ProcessAccessRights.QueryLimitedInformation | ProcessAccessRights.DupHandle);
-                            }
-                            catch (NtException)
-                            {
-                                pid_to_process[handle.ProcessId] = null;
-                            }
+                            var result = NtProcess.Open(handle.ProcessId,
+                                    ProcessAccessRights.QueryLimitedInformation | ProcessAccessRights.DupHandle, false);
+                            pid_to_process[handle.ProcessId] = result.IsSuccess ? result.Result : null;
                         }
 
                         NtProcess proc = pid_to_process[handle.ProcessId];

@@ -1022,14 +1022,26 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="pid">The process ID to open</param>
         /// <param name="desired_access">The desired access for the handle</param>
-        /// <returns>The opened process</returns>
-        public static NtProcess Open(int pid, ProcessAccessRights desired_access)
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtProcess> Open(int pid, ProcessAccessRights desired_access, bool throw_on_error)
         {
             SafeKernelObjectHandle process;
             ClientId client_id = new ClientId();
             client_id.UniqueProcess = new IntPtr(pid);
-            NtSystemCalls.NtOpenProcess(out process, desired_access, new ObjectAttributes(), client_id).ToNtException();
-            return new NtProcess(process) { _pid = pid };
+            return NtSystemCalls.NtOpenProcess(out process, desired_access, new ObjectAttributes(), client_id)
+                .CreateResult(throw_on_error, () => new NtProcess(process) { _pid = pid });
+        }
+
+        /// <summary>
+        /// Open a process
+        /// </summary>
+        /// <param name="pid">The process ID to open</param>
+        /// <param name="desired_access">The desired access for the handle</param>
+        /// <returns>The opened process</returns>
+        public static NtProcess Open(int pid, ProcessAccessRights desired_access)
+        {
+            return Open(pid, desired_access, true).Result;
         }
 
         /// <summary>
