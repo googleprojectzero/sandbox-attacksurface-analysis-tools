@@ -247,6 +247,11 @@ namespace NtApiDotNet
         /// <returns>The string format of the access rights</returns>
         public static string GrantedAccessAsString(AccessMask granted_access, GenericMapping generic_mapping, Type enum_type, bool map_to_generic)
         {
+            if (granted_access == 0)
+            {
+                return "None";
+            }
+
             AccessMask mapped_access = generic_mapping.MapMask(granted_access);
             if (map_to_generic)
             {
