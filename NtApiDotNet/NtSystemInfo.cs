@@ -298,6 +298,7 @@ namespace NtApiDotNet
     public class NtThreadInformation
     {
         public int ThreadId { get; private set; }
+        public int ProcessId { get; private set; }
         public IntPtr StartAddress { get; private set; }
         public uint ThreadState { get; private set; }
         public int WaitReason { get; private set; }
@@ -305,6 +306,7 @@ namespace NtApiDotNet
         internal NtThreadInformation(SystemThreadInformation thread_info)
         {
             ThreadId = thread_info.ClientId.UniqueThread.ToInt32();
+            ProcessId = thread_info.ClientId.UniqueProcess.ToInt32();
             StartAddress = thread_info.StartAddress;
             ThreadState = thread_info.ThreadState;
             WaitReason = thread_info.WaitReason;
