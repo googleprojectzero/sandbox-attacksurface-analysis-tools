@@ -113,13 +113,13 @@ namespace NtObjectManager
                 IEnumerable<NtThread> threads = NtThread.GetThreads(Access);
                 if (FilterScript == null)
                 {
-                    WriteObject(threads);
+                    WriteObject(threads, true);
                 }
                 else
                 {
                     using (var ths = new DisposableList<NtThread>(threads))
                     {
-                        WriteObject(ths.Where(t => ArbitraryFilter(t, FilterScript)).Select(t => t.Duplicate()).ToArray());
+                        WriteObject(ths.Where(t => ArbitraryFilter(t, FilterScript)).Select(t => t.Duplicate()).ToArray(), true);
                     }
                 }
             }
@@ -127,7 +127,7 @@ namespace NtObjectManager
             {
                 using (NtProcess process = NtProcess.Open(ProcessId, ProcessAccessRights.MaximumAllowed))
                 {
-                    WriteObject(process.GetThreads());
+                    WriteObject(process.GetThreads(), true);
                 }
             }
             else

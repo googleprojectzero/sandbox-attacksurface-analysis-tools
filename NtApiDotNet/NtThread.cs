@@ -461,29 +461,6 @@ namespace NtApiDotNet
                 Set(ThreadInformationClass.ThreadDescription, new UnicodeString(value));
             }
         }
-
-        [StructLayout(LayoutKind.Sequential)]
-        struct THREADENTRY32
-        {
-            public int dwSize;
-            public int cntUsage;
-            public int th32ThreadID;
-            public int th32OwnerProcessID;
-            public int tpBasePri;
-            public int tpDeltaPri;
-            public int dwFlags;
-        }
-        
-        const int TH32CS_SNAPTHREAD = 0x4;
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern SafeKernelObjectHandle CreateToolhelp32Snapshot(int dwFlags, int th32ProcessID);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool Thread32First(SafeKernelObjectHandle snapshot, ref THREADENTRY32 entry);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool Thread32Next(SafeKernelObjectHandle snapshot, ref THREADENTRY32 entry);
         
         /// <summary>
         /// Gets all accessible threads on the system.
@@ -492,35 +469,8 @@ namespace NtApiDotNet
         /// <returns>The list of accessible threads.</returns>
         public static IEnumerable<NtThread> GetThreads(ThreadAccessRights desired_access)
         {
-            using (SafeKernelObjectHandle thread_snap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0))
-            {
-                if (thread_snap.IsInvalid)
-                {
-                    return new NtThread[0];
-                }
-
-                List<NtThread> threads = new List<NtThread>();
-                THREADENTRY32 thread_entry = new THREADENTRY32();
-                thread_entry.dwSize = Marshal.SizeOf(thread_entry);
-
-                if (Thread32First(thread_snap, ref thread_entry))
-                {
-                    do
-                    {
-                        try
-                        {
-                            NtThread thread = NtThread.Open(thread_entry.th32ThreadID, desired_access);
-                            thread._pid = thread_entry.th32OwnerProcessID;
-                            threads.Add(thread);
-                        }
-                        catch (NtException)
-                        {
-                        }
-                    } while (Thread32Next(thread_snap, ref thread_entry));
-                }
-
-                return threads.ToArray();
-            }
+            return NtSystemInfo.GetProcessInformation().SelectMany(p => p.Threads)
+                .Select(t => Open(t.ThreadId, desired_access, false)).Where(t => t.IsSuccess).Select(t => t.Result);
         }
 
         /// <summary>
