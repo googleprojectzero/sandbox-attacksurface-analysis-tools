@@ -134,6 +134,12 @@ namespace NtObjectManager
         public SwitchParameter Current { get; set; }
 
         /// <summary>
+        /// <para type="description">When getting all processes only get the system information process list.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "all")]
+        public SwitchParameter FromSystem { get; set; } 
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public GetNtProcessCmdlet()
@@ -189,10 +195,10 @@ namespace NtObjectManager
         {
             if (string.IsNullOrWhiteSpace(Name) && string.IsNullOrWhiteSpace(CommandLine) && FilterScript == null)
             {
-                return NtProcess.GetProcesses(Access);
+                return NtProcess.GetProcesses(Access, FromSystem);
             }
 
-            using (DisposableList<NtProcess> procs = new DisposableList<NtProcess>(NtProcess.GetProcesses(Access)))
+            using (var procs = new DisposableList<NtProcess>(NtProcess.GetProcesses(Access, FromSystem)))
             {
                 IEnumerable<NtProcess> filtered_procs = procs;
                 if (!string.IsNullOrWhiteSpace(Name))

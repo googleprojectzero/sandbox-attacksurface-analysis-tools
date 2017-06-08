@@ -857,14 +857,34 @@ namespace NtApiDotNet
         /// <returns>The list of accessible processes.</returns>
         public static IEnumerable<NtProcess> GetProcesses(ProcessAccessRights desired_access)
         {
-            List<NtProcess> processes = new List<NtProcess>();
-            NtProcess process = NtProcess.GetFirstProcess(desired_access);
-            while (process != null)
+            return GetProcesses(desired_access, false);
+        }
+
+        /// <summary>
+        /// Gets all accessible processes on the system.
+        /// </summary>
+        /// <param name="desired_access">The access desired for each process.</param>
+        /// <param name="from_system_info">True to get processes from system information rather than NtGetNextProcess</param>
+        /// <returns>The list of accessible processes.</returns>
+        public static IEnumerable<NtProcess> GetProcesses(ProcessAccessRights desired_access, bool from_system_info)
+        {
+            using (var processes = new DisposableList<NtProcess>())
             {
-                processes.Add(process);
-                process = process.GetNextProcess(desired_access);
+                if (from_system_info)
+                {
+                    processes.AddRange(NtSystemInfo.GetProcessInformation().Select(p => Open(p.ProcessId, desired_access, false)).SelectValidResults());
+                }
+                else
+                {
+                    NtProcess process = NtProcess.GetFirstProcess(desired_access);
+                    while (process != null)
+                    {
+                        processes.Add(process);
+                        process = process.GetNextProcess(desired_access);
+                    }
+                }
+                return processes.ToArrayAndClear();
             }
-            return processes.AsReadOnly();
         }
 
         /// <summary>
@@ -1123,9 +1143,17 @@ namespace NtApiDotNet
                 }
                 catch (NtException)
                 {
-                    if (IsAccessGranted(ProcessAccessRights.QueryLimitedInformation))
+                    if (_pid.HasValue || IsAccessGranted(ProcessAccessRights.QueryLimitedInformation))
                     {
-                        return String.Format("process:{0}", ProcessId);
+                        switch (ProcessId)
+                        {
+                            case 0:
+                                return "Idle";
+                            case 4:
+                                return "System";
+                            default:
+                                return String.Format("process:{0}", ProcessId);
+                        }
                     }
                     else
                     {

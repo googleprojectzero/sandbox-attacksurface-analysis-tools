@@ -466,11 +466,40 @@ namespace NtApiDotNet
         /// Gets all accessible threads on the system.
         /// </summary>
         /// <param name="desired_access">The desired access for each thread.</param>
+        /// <param name="from_system_info">Get the thread list from system information.</param>
+        /// <returns>The list of accessible threads.</returns>
+        public static IEnumerable<NtThread> GetThreads(ThreadAccessRights desired_access, bool from_system_info)
+        {
+            if (from_system_info)
+            {
+                return NtSystemInfo.GetProcessInformation().SelectMany(p => p.Threads)
+                    .Select(t => Open(t.ThreadId, desired_access, false)).SelectValidResults();
+            }
+            else
+            {
+                using (var threads = new DisposableList<NtThread>())
+                {
+                    using (var procs = NtProcess.GetProcesses(ProcessAccessRights.QueryInformation).ToDisposableList())
+                    {
+                        foreach (var proc in procs)
+                        {
+                            threads.AddRange(proc.GetThreads(desired_access));
+                        }
+                    }
+                    return threads.ToArrayAndClear();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets all accessible threads on the system.
+        /// </summary>
+        /// <param name="desired_access">The desired access for each thread.</param>
+        /// <param name="from_system_info">Get the thread list from system information.</param>
         /// <returns>The list of accessible threads.</returns>
         public static IEnumerable<NtThread> GetThreads(ThreadAccessRights desired_access)
         {
-            return NtSystemInfo.GetProcessInformation().SelectMany(p => p.Threads)
-                .Select(t => Open(t.ThreadId, desired_access, false)).Where(t => t.IsSuccess).Select(t => t.Result);
+            return GetThreads(desired_access, false);
         }
 
         /// <summary>

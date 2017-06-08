@@ -46,21 +46,21 @@ namespace NtObjectManager
     ///   <para>Get threads which have impersonation tokens set.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.Get, "NtThread")]
+    [Cmdlet(VerbsCommon.Get, "NtThread", DefaultParameterSetName = "all")]
     [OutputType(typeof(NtThread))]
     public class GetNtThreadCmdlet : Cmdlet
     {
         /// <summary>
         /// <para type="description">Specify a thread ID to open.</para>
         /// </summary>
-        [Parameter(Position = 0)]
+        [Parameter(Position = 0, ParameterSetName = "tid", Mandatory = true)]
         [Alias(new string[] { "tid" })]
         public int ThreadId { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a process ID to enumerate only its threads.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "pid", Mandatory = true)]
         [Alias(new string[] { "pid" })]
         public int ProcessId { get; set; }
 
@@ -75,6 +75,12 @@ namespace NtObjectManager
         /// </summary>
         [Parameter]
         public ThreadAccessRights Access { get; set; }
+
+        /// <summary>
+        /// <para type="description">When getting all threads only get the system information thread list.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "all")]
+        public SwitchParameter FromSystem { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -110,7 +116,7 @@ namespace NtObjectManager
         {
             if (ThreadId == -1 && ProcessId == -1)
             {
-                IEnumerable<NtThread> threads = NtThread.GetThreads(Access);
+                IEnumerable<NtThread> threads = NtThread.GetThreads(Access, FromSystem);
                 if (FilterScript == null)
                 {
                     WriteObject(threads, true);

@@ -16,6 +16,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Linq;
 
 namespace NtApiDotNet
 {
@@ -307,6 +308,11 @@ namespace NtApiDotNet
             }
 
             return new NtResult<T>(status, default(T));
+        }
+
+        internal static IEnumerable<T> SelectValidResults<T>(this IEnumerable<NtResult<T>> iterator)
+        {
+            return iterator.Where(r => r.IsSuccess).Select(r => r.Result);
         }
     }
 }
