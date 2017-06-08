@@ -20,57 +20,46 @@ using System.Management.Automation;
 namespace NtObjectManager
 {
     /// <summary>
-    /// Access check result for a process.
+    /// Access check result for a thread.
     /// </summary>
-    public class ProcessAccessCheckResult : AccessCheckResult
+    public class ThreadAccessCheckResult : ProcessAccessCheckResult
     {
         /// <summary>
-        /// Process image path.
+        /// Thread ID of the thread.
         /// </summary>
-        public string ProcessImagePath { get; private set; }
-        /// <summary>
-        /// Process ID of the process.
-        /// </summary>
-        public int ProcessId { get; private set; }
-        /// <summary>
-        /// Command line of the process.
-        /// </summary>
-        public string ProcessCommandLine { get; private set; }
-
-        internal ProcessAccessCheckResult(string name, string image_path, int process_id, string command_line, AccessMask granted_access,
-            NtType type, string sddl, TokenInformation token_info) : base(name, type.Name, granted_access, 
-                type.GenericMapping, sddl, typeof(ProcessAccessRights), token_info)
+        public int ThreadId { get; private set; }
+        
+        internal ThreadAccessCheckResult(string name, string image_path, int process_id, string command_line, AccessMask granted_access,
+            NtType type, string sddl, TokenInformation token_info) : base(name, image_path, process_id, command_line, granted_access,
+                type, sddl, token_info)
         {
-            ProcessImagePath = image_path;
-            ProcessId = process_id;
-            ProcessCommandLine = command_line;
         }
     }
 
     /// <summary>
-    /// <para type="synopsis">Get a list of processes that can be opened by a specificed token.</para>
-    /// <para type="description">This cmdlet checks all processes and tries to determine
+    /// <para type="synopsis">Get a list of threads that can be opened by a specificed token.</para>
+    /// <para type="description">This cmdlet checks all threads and tries to determine
     /// if one or more specified tokens can open them to them. If no tokens are specified then the 
     /// current process token is used.</para>
     /// </summary>
     /// <remarks>For best results this command should be run as an administrator with SeDebugPrivilege.</remarks>
     /// <example>
-    ///   <code>Get-AccessibleProcess</code>
+    ///   <code>Get-AccessibleThread</code>
     ///   <para>Check all accessible processes for the current process token.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-AccessibleProcess -ProcessIds 1234,5678</code>
+    ///   <code>Get-AccessibleThread -ProcessIds 1234,5678</code>
     ///   <para>>Check all accessible processes for the process tokens of PIDs 1234 and 5678</para>
     /// </example>
     /// <example>
-    ///   <code>$token = Get-NtToken -Primary -Duplicate -IntegrityLevel Low&#x0A;Get-AccessibleProcess -Tokens $token -AccessRights GenericWrite</code>
+    ///   <code>$token = Get-NtToken -Primary -Duplicate -IntegrityLevel Low&#x0A;Get-AccessibleThread -Tokens $token -AccessRights GenericWrite</code>
     ///   <para>Get all processes with can be written by a low integrity copy of current token.</para>
     /// </example>
-    [Cmdlet(VerbsCommon.Get, "AccessibleProcess")]
-    public class GetAccessibleProcessCmdlet : CommonAccessBaseCmdlet
+    [Cmdlet(VerbsCommon.Get, "AccessibleThread")]
+    public class GetAccessibleThreadCmdlet : CommonAccessBaseCmdlet
     {
         /// <summary>
-        /// <para type="description">When getting all processes only get the system information process list.</para>
+        /// <para type="description">When getting all threads only get the system information thread list.</para>
         /// </summary>
         [Parameter]
         public SwitchParameter FromSystem { get; set; }
@@ -103,7 +92,7 @@ namespace NtObjectManager
                 }
             }
 
-            WriteObject(new ProcessAccessCheckResult(name, image_path, process_id, command_line, 
+            WriteObject(new ProcessAccessCheckResult(name, image_path, process_id, command_line,
                 granted_access, process.NtType, sddl, token));
         }
 
@@ -161,7 +150,7 @@ namespace NtObjectManager
                         }
                         foreach (NtProcess process in processes)
                         {
-                            WriteAccessCheckResult(process, process.GrantedAccessMask, 
+                            WriteAccessCheckResult(process, process.GrantedAccessMask,
                                 process.NtType.GenericMapping, String.Empty, token.Information);
                         }
                     }

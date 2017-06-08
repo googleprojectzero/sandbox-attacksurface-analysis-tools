@@ -1,4 +1,18 @@
-﻿using NtApiDotNet;
+﻿//  Copyright 2017 Google Inc. All Rights Reserved.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
+using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.Management.Automation;
@@ -28,7 +42,7 @@ namespace NtObjectManager
     ///   <para>Check recursively for accessible objects under \BaseNamedObjects for the current process token to a maximum depth of 5.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-AccessibleObject \ -Win32Path -Recurse</code>
+    ///   <code>Get-AccessibleObject -Win32Path \ -Recurse</code>
     ///   <para>Check recursively for accessible objects under the user's based named objects for the current process token.</para>
     /// </example>
     /// <example>
@@ -55,7 +69,7 @@ namespace NtObjectManager
         private string ConvertPath(NtObject obj)
         {
             string path = obj.FullPath;
-            if (Win32Path)
+            if (FormatWin32Path)
             {
                 if (path.Equals(_base_named_objects, StringComparison.OrdinalIgnoreCase))
                 {
@@ -147,7 +161,7 @@ namespace NtObjectManager
                 {
                     if (entry.IsDirectory)
                     {
-                        using (var new_dir = OpenDirectory(entry.Name, dir, false))
+                        using (var new_dir = OpenDirectory(entry.Name, dir))
                         {
                             if (new_dir.IsSuccess)
                             {
@@ -197,21 +211,8 @@ namespace NtObjectManager
             }
         }
 
-        private NtResult<NtDirectory> OpenDirectory(string path, NtObject root, bool win32_path)
+        private NtResult<NtDirectory> OpenDirectory(string path, NtObject root)
         {
-            if (win32_path)
-            {
-                path = path.TrimStart('\\');
-                if (String.IsNullOrEmpty(path))
-                {
-                    path = _base_named_objects;
-                }
-                else
-                {
-                    path = String.Format(@"{0}\{1}", _base_named_objects, path);
-                }
-            }
-
             using (ObjectAttributes obja = new ObjectAttributes(path,
                 AttributeFlags.CaseInsensitive, root))
             {
@@ -228,14 +229,27 @@ namespace NtObjectManager
 
         internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
-            if (!Path.StartsWith(@"\") && !Win32Path)
+            string base_path = Path;
+            if (base_path == null)
             {
-                WriteWarning("Path doesn't start with \\. You should specify -Win32Path to use a non-NT path for the file.");
+                base_path = Win32Path.TrimStart('\\');
+                if (String.IsNullOrEmpty(base_path))
+                {
+                    base_path = _base_named_objects;
+                }
+                else
+                {
+                    base_path = String.Format(@"{0}\{1}", _base_named_objects, base_path);
+                }
+            }
+            if (!base_path.StartsWith(@"\"))
+            {
+                WriteWarning("Path doesn't start with \\. Perhaps you want to specify -Win32Path instead?");
             }
 
             HashSet<string> type_filter = new HashSet<string>(TypeFilter ?? new string[0], StringComparer.OrdinalIgnoreCase);
 
-            using (var result = OpenDirectory(Path, null, Win32Path))
+            using (var result = OpenDirectory(base_path, null))
             {
                 if (result.IsSuccess)
                 {

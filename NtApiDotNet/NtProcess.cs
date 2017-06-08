@@ -1744,8 +1744,15 @@ namespace NtApiDotNet
         {
             get
             {
-                var result = QueryFixed<ProcessChildProcessRestricted>(ProcessInformationClass.ProcessChildProcessRestricted);
-                return result.IsNoChildProcessRestricted != 0;
+                try
+                {
+                    var result = QueryFixed<ProcessChildProcessRestricted>(ProcessInformationClass.ProcessChildProcessRestricted);
+                    return result.IsNoChildProcessRestricted != 0;
+                }
+                catch (NtException)
+                {
+                    return false;
+                }
             }
         }
     }

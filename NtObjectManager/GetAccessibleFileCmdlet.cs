@@ -57,11 +57,11 @@ namespace NtObjectManager
     ///   <para>Check recursively for check accessible files under c:\Windows for the current process token.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-AccessibleFile C:\Windows -Win32Path -Recurse</code>
+    ///   <code>Get-AccessibleFile -Win32Path C:\Windows -Recurse</code>
     ///   <para>Check recursively for check accessible files under c:\Windows for the current process token using a Win32 path.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-AccessibleFile C:\Windows -Win32Path -Recurse -MaxDepth 2</code>
+    ///   <code>Get-AccessibleFile -Win32Path C:\Windows -Recurse -MaxDepth 2</code>
     ///   <para>Check recursively for check accessible files under c:\Windows for the current process token using a Win32 path with a max depth of 2.</para>
     /// </example>
     /// <example>
@@ -89,13 +89,8 @@ namespace NtObjectManager
         [Parameter]
         public FileCheckMode CheckMode { get; set; }
 
-        private static NtResult<NtFile> OpenFile(string name, NtFile root, bool win32_path, FileOpenOptions options)
+        private static NtResult<NtFile> OpenFile(string name, NtFile root, FileOpenOptions options)
         {
-            if (win32_path)
-            {
-                name = NtFileUtils.DosFileNameToNt(name);
-            }
-
             using (ObjectAttributes obja = new ObjectAttributes(name,
                 AttributeFlags.CaseInsensitive, root))
             {
@@ -130,7 +125,7 @@ namespace NtObjectManager
             AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
             if (!granted_access.IsEmpty && granted_access.IsAllAccessGranted(access_rights))
             {
-                WriteAccessCheckResult(Win32Path ? file.Win32PathName : file.FullPath, type.Name, granted_access, type.GenericMapping,
+                WriteAccessCheckResult(FormatWin32Path ? file.Win32PathName : file.FullPath, type.Name, granted_access, type.GenericMapping,
                     sd.ToSddl(), IsDirectoryNoThrow(file) ? typeof(FileDirectoryAccessRights) : typeof(FileAccessRights), token.Information);
             }
         }
@@ -211,7 +206,7 @@ namespace NtObjectManager
                                 base_file = null;
                             }
                             
-                            using (var new_file = OpenFile(filename, base_file, false, options))
+                            using (var new_file = OpenFile(filename, base_file, options))
                             {
                                 if (new_file.IsSuccess)
                                 {
@@ -242,16 +237,17 @@ namespace NtObjectManager
                 }
             }
 
-            if (!Path.StartsWith(@"\") && !Win32Path)
+            string base_path = Path ?? NtFileUtils.DosFileNameToNt(Win32Path);
+            if (!base_path.StartsWith(@"\"))
             {
-                WriteWarning("Path doesn't start with \\. You should specify -Win32Path to use a non-NT path for the file.");
+                WriteWarning("Path doesn't start with \\. Perhaps you want to specify -Win32Path instead?");
             }
 
             FileOpenOptions options = FileOpenOptions.OpenReparsePoint | (open_for_backup ? FileOpenOptions.OpenForBackupIntent : FileOpenOptions.None);
             NtType type = NtType.GetTypeByType<NtFile>();
             AccessMask access_rights = type.MapGenericRights(AccessRights);
             AccessMask dir_access_rights = type.MapGenericRights(DirectoryAccessRights);
-            using (var result = OpenFile(Path, null, Win32Path, options))
+            using (var result = OpenFile(base_path, null, options))
             {
                 if (result.IsSuccess)
                 {

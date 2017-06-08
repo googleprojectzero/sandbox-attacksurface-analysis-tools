@@ -59,6 +59,7 @@ namespace NtApiDotNet
             result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessReturnFlowGuardPolicy);
             EnabledReturnFlowGuard = result.GetBit(0);
             ReturnFlowGuardStrictMode = result.GetBit(1);
+            IsChildProcessRestricted = process.IsChildProcessRestricted;
         }
 
         public bool DisallowWin32kSystemCalls { get; private set; }
@@ -84,6 +85,7 @@ namespace NtApiDotNet
         public bool AllowThreadOptOut { get; private set; }
         public bool EnabledReturnFlowGuard { get; private set; }
         public bool ReturnFlowGuardStrictMode { get; private set; }
+        public bool IsChildProcessRestricted { get; private set; }
     }
 #pragma warning restore 1591
 }

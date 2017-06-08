@@ -401,16 +401,22 @@ namespace NtObjectManager
     public abstract class GetAccessiblePathCmdlet : CommonAccessBaseCmdlet
     {
         /// <summary>
-        /// <para type="description">Specify the path to check. Must be a native path unless -Win32Path is set.</para>
+        /// <para type="description">Specify the native path to check.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 0)]
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "path")]
         public string Path { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify the key path is in a Win32 format.</para>
+        /// <para type="description">Specify the path in a Win32 format.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "win32")]
+        public string Win32Path { get; set; }
+
+        /// <summary>
+        /// <para type="description">When generating the results format path in Win32 format.</para>
         /// </summary>
         [Parameter]
-        public SwitchParameter Win32Path { get; set; }
+        public SwitchParameter FormatWin32Path { get; set; }
 
         /// <summary>
         /// <para type="description">Specify whether to recursively check the path for access.</para>
