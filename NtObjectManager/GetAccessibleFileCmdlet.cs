@@ -20,6 +20,25 @@ using System.Management.Automation;
 namespace NtObjectManager
 {
     /// <summary>
+    /// Enumeration to determine what to check.
+    /// </summary>
+    public enum FileCheckMode
+    {
+        /// <summary>
+        /// Check files and directories for access.
+        /// </summary>
+        All,
+        /// <summary>
+        /// Check files only.
+        /// </summary>
+        FilesOnly,
+        /// <summary>
+        /// Check directories only.
+        /// </summary>
+        DirectoriesOnly        
+    }
+
+    /// <summary>
     /// <para type="synopsis">Get a list of Registry Keys that can be opened by a specificed token.</para>
     /// <para type="description">This cmdlet checks a registry key and optionally tries to determine
     /// if one or more specified tokens can open them to them. If no tokens are specified the current process
@@ -46,20 +65,8 @@ namespace NtObjectManager
     ///   <para>Get all keys with can be written to in HKEY_CURRENT_USER by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleFile")]
-    public class GetAccessibleFileCmdlet : CommonAccessBaseCmdlet
+    public class GetAccessibleFileCmdlet : GetAccessiblePathCmdlet
     {
-        /// <summary>
-        /// <para type="description">Specify the file path to check. Must be native form (such as \??\C:\Blah) unless -Win32Path is set.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 0)]
-        public string Path { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the file path is in a Win32 format (such as C:\Blah).</para>
-        /// </summary>
-        [Parameter]
-        public SwitchParameter Win32Path { get; set; }
-
         /// <summary>
         /// <para type="description">Specify a set of access rights which the file must at least be accessible for to count as an access.</para>
         /// </summary>
@@ -73,10 +80,10 @@ namespace NtObjectManager
         public FileDirectoryAccessRights DirectoryAccessRights { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify whether to recursively check the file for subdirectories to access.</para>
+        /// <para type="description">Limit access check to specific types of files.</para>
         /// </summary>
         [Parameter]
-        public SwitchParameter Recurse { get; set; }
+        public FileCheckMode CheckMode { get; set; }
 
         private static NtResult<NtFile> OpenFile(string name, NtFile root, bool win32_path, FileOpenOptions options)
         {
@@ -88,16 +95,16 @@ namespace NtObjectManager
             using (ObjectAttributes obja = new ObjectAttributes(name,
                 AttributeFlags.CaseInsensitive, root))
             {
-                var result = NtFile.Open(obja, FileAccessRights.ReadAttributes | FileAccessRights.ReadControl,
-                    FileShareMode.Read | FileShareMode.Delete, options, false);
+                var result = NtFile.Open(obja, FileAccessRights.Synchronize | FileAccessRights.ReadAttributes | FileAccessRights.ReadControl,
+                    FileShareMode.Read | FileShareMode.Delete, options | FileOpenOptions.SynchronousIoNonAlert, false);
                 if (result.IsSuccess || result.Status != NtStatus.STATUS_ACCESS_DENIED)
                 {
                     return result;
                 }
 
                 // Try again with just ReadAttributes, if we can't even do this we give up.
-                return NtFile.Open(obja, FileAccessRights.ReadAttributes,
-                    FileShareMode.Read | FileShareMode.Delete, options, false);
+                return NtFile.Open(obja, FileAccessRights.Synchronize | FileAccessRights.ReadAttributes,
+                    FileShareMode.Read | FileShareMode.Delete, options | FileOpenOptions.SynchronousIoNonAlert, false);
             }
         }
 
@@ -142,6 +149,16 @@ namespace NtObjectManager
 
         private void DumpFile(IEnumerable<TokenEntry> tokens, AccessMask access_rights, NtFile file)
         {
+            bool directory = IsDirectoryNoThrow(file);
+            if (CheckMode != FileCheckMode.All)
+            {
+                if ((CheckMode == FileCheckMode.FilesOnly && directory) ||
+                    (CheckMode == FileCheckMode.DirectoriesOnly && !directory))
+                {
+                    return;
+                }
+            }
+
             var result = file.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
             if (result.IsSuccess)
             {
@@ -160,21 +177,27 @@ namespace NtObjectManager
             }
         }
 
-        private void DumpDirectory(IEnumerable<TokenEntry> tokens, AccessMask access_rights, NtFile file, FileOpenOptions options)
+        private void DumpDirectory(IEnumerable<TokenEntry> tokens, AccessMask access_rights, NtFile file, FileOpenOptions options, int current_depth)
         {
-            if (Stopping)
+            if (Stopping || current_depth <= 0)
             {
                 return;
             }
 
             if (Recurse)
             {
-                using (var result = file.ReOpen(FileAccessRights.ReadData, FileShareMode.Read | FileShareMode.Delete, options | FileOpenOptions.DirectoryFile, false))
+                using (var result = file.ReOpen(FileAccessRights.Synchronize | FileAccessRights.ReadData | FileAccessRights.ReadAttributes, 
+                    FileShareMode.Read | FileShareMode.Delete, options | FileOpenOptions.DirectoryFile | FileOpenOptions.SynchronousIoNonAlert, false))
                 {
                     if (result.Status.IsSuccess())
                     {
                         foreach (var entry in result.Result.QueryDirectoryInfo())
                         {
+                            if (CheckMode == FileCheckMode.DirectoriesOnly && !entry.IsDirectory)
+                            {
+                                continue;
+                            }
+
                             NtFile base_file = result.Result;
                             string filename = entry.FileName;
                             if (filename.Contains(@"\"))
@@ -182,7 +205,7 @@ namespace NtObjectManager
                                 filename = base_file.FullPath + filename;
                                 base_file = null;
                             }
-
+                            
                             using (var new_file = OpenFile(filename, base_file, false, options))
                             {
                                 if (new_file.IsSuccess)
@@ -190,7 +213,7 @@ namespace NtObjectManager
                                     DumpFile(tokens, access_rights, new_file.Result);
                                     if (IsDirectoryNoThrow(new_file.Result))
                                     {
-                                        DumpDirectory(tokens, access_rights, new_file.Result, options);
+                                        DumpDirectory(tokens, access_rights, new_file.Result, options, current_depth - 1);
                                     }
                                 }
                             }
@@ -214,6 +237,11 @@ namespace NtObjectManager
                 }
             }
 
+            if (!Path.StartsWith(@"\") && !Win32Path)
+            {
+                WriteWarning("Path doesn't start with \\. You should specify -Win32Path to use a non-NT path for the file.");
+            }
+
             FileOpenOptions options = FileOpenOptions.OpenReparsePoint | (open_for_backup ? FileOpenOptions.OpenForBackupIntent : FileOpenOptions.None);
             NtType type = NtType.GetTypeByType<NtFile>();
             AccessMask access_rights = type.MapGenericRights(AccessRights) | type.MapGenericRights(DirectoryAccessRights);
@@ -226,7 +254,7 @@ namespace NtObjectManager
                         result.Result);
                     if (IsDirectoryNoThrow(result.Result))
                     {
-                        DumpDirectory(tokens, access_rights, result.Result, options);
+                        DumpDirectory(tokens, access_rights, result.Result, options, GetMaxDepth());
                     }
                 }
             }

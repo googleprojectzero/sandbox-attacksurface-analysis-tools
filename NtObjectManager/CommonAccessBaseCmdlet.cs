@@ -33,7 +33,7 @@ namespace NtObjectManager
         /// Name of the type accessed.
         /// </summary>
         public string TypeName { get; private set; }
-        
+
         /// <summary>
         /// Granted access.
         /// </summary>
@@ -89,7 +89,7 @@ namespace NtObjectManager
         /// </summary>
         public long TokenId { get; private set; }
 
-        internal AccessCheckResult(string name, string type_name, AccessMask granted_access, 
+        internal AccessCheckResult(string name, string type_name, AccessMask granted_access,
             GenericMapping generic_mapping, string sddl, Type enum_type, TokenInformation token_info)
         {
             Name = name;
@@ -106,7 +106,7 @@ namespace NtObjectManager
             GrantedGenericAccessString = NtObjectUtils.GrantedAccessAsString(granted_access, generic_mapping, enum_type, true);
             TokenId = token_info.TokenId.ToInt64();
         }
-    }    
+    }
 
     /// <summary>
     /// Information about a token.
@@ -173,7 +173,7 @@ namespace NtObjectManager
             LowPrivilegeAppContainer = token.LowPrivilegeAppContainer;
         }
 
-        internal TokenInformation(NtToken token, NtProcess process) 
+        internal TokenInformation(NtToken token, NtProcess process)
             : this(token)
         {
             SourceData["ProcessId"] = process.ProcessId;
@@ -324,6 +324,16 @@ namespace NtObjectManager
             }
         }
 
+        internal void WriteAccessWarning(string path, NtStatus status)
+        {
+            WriteWarning(String.Format("Couldn't access {0} - Status: {1}", path, status));
+        }
+
+        internal void WriteAccessWarning(NtObject root, string path, NtStatus status)
+        {
+            WriteAccessWarning(String.Format(@"{0}\{1}", root.FullPath, path), status);
+        }
+
         private class TokenEntryComparer : IEqualityComparer<TokenEntry>
         {
             public bool Equals(TokenEntry x, TokenEntry y)
@@ -373,6 +383,41 @@ namespace NtObjectManager
                     token.Dispose();
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Base class for path based accessible checks.
+    /// </summary>
+    public abstract class GetAccessiblePathCmdlet : CommonAccessBaseCmdlet
+    {
+        /// <summary>
+        /// <para type="description">Specify the path to check. Must be a native path unless -Win32Path is set.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 0)]
+        public string Path { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the key path is in a Win32 format.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter Win32Path { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify whether to recursively check the path for access.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter Recurse { get; set; }
+
+        /// <summary>
+        /// <para type="description">When recursing specify maximum depth.</para>
+        /// </summary>
+        [Parameter]
+        public int? MaxDepth { get; set; }
+
+        internal int GetMaxDepth()
+        {
+            return MaxDepth.HasValue ? MaxDepth.Value : int.MaxValue;
         }
     }
 }

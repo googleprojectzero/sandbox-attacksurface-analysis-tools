@@ -46,33 +46,15 @@ namespace NtObjectManager
     ///   <para>Get all keys with can be written to in HKEY_CURRENT_USER by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleKey")]
-    public class GetAccessibleKeyCmdlet : CommonAccessBaseCmdlet
+    public class GetAccessibleKeyCmdlet : GetAccessiblePathCmdlet
     {
-        /// <summary>
-        /// <para type="description">Specify the key path to check. Must be a native (such as \Registry\Machine\Blah) unless -Win32Path is set.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 0)]
-        public string Path { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the key path is in a Win32 format, such as HKLM\Blah.</para>
-        /// </summary>
-        [Parameter]
-        public SwitchParameter Win32Path { get; set; }
-
         /// <summary>
         /// <para type="description">Specify a set of access rights which the key must at least be accessible for to count as an access.</para>
         /// </summary>
         [Parameter]
         public KeyAccessRights AccessRights { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify whether to recursively check the key for subkeys to access.</para>
-        /// </summary>
-        [Parameter]
-        public SwitchParameter Recurse { get; set; }
-
-        private static NtKey OpenKey(string name, bool win32_path, bool open_link, bool open_for_backup)
+        
+        private static NtResult<NtKey> OpenKey(string name, NtObject root, bool win32_path, bool open_link, bool open_for_backup)
         {
             if (win32_path)
             {
@@ -86,9 +68,9 @@ namespace NtObjectManager
             }
 
             using (ObjectAttributes obja = new ObjectAttributes(name,
-                flags, null))
+                flags, root))
             {
-                return NtKey.Open(obja, KeyAccessRights.MaximumAllowed, 0);
+                return NtKey.Open(obja, KeyAccessRights.MaximumAllowed, 0, false);
             }
         }
 
@@ -117,13 +99,8 @@ namespace NtObjectManager
             }
         }
 
-        private void DumpKey(IEnumerable<TokenEntry> tokens, AccessMask access_rights, bool open_for_backup, NtKey key)
+        private void DumpKey(IEnumerable<TokenEntry> tokens, AccessMask access_rights, bool open_for_backup, NtKey key, int current_depth)
         {
-            if (Stopping)
-            {
-                return;
-            }
-
             if (key.IsAccessGranted(KeyAccessRights.ReadControl))
             {
                 SecurityDescriptor sd = key.SecurityDescriptor;
@@ -141,13 +118,25 @@ namespace NtObjectManager
                 }
             }
 
+            if (Stopping || current_depth <= 0)
+            {
+                return;
+            }
+
             if (Recurse && key.IsAccessGranted(KeyAccessRights.EnumerateSubKeys))
             {
-                using (var keys = key.QueryAccessibleKeys(KeyAccessRights.MaximumAllowed, true, open_for_backup).ToDisposableList())
+                foreach (string subkey in key.QueryKeys())
                 {
-                    foreach (NtKey subkey in keys)
+                    using (var result = OpenKey(subkey, key, false, true, open_for_backup))
                     {
-                        DumpKey(tokens, access_rights, open_for_backup, subkey);
+                        if (result.IsSuccess)
+                        {
+                            DumpKey(tokens, access_rights, open_for_backup, result.Result, current_depth - 1);
+                        }
+                        else
+                        {
+                            WriteAccessWarning(String.Format(@"{0}\{1}", key.FullPath, subkey), result.Status);
+                        }
                     }
                 }
             }
@@ -161,7 +150,7 @@ namespace NtObjectManager
                 open_for_backup = process_token.SetPrivilege(TokenPrivilegeValue.SeBackupPrivilege, PrivilegeAttributes.Enabled);
                 if (!open_for_backup)
                 {
-                    WriteWarning("Current process doesn't have SeBackupPrivilege, results may be inaccurate");
+                    WriteWarning("Current process doesn't have SeBackupPrivilege, results may be inaccurate.");
                 }
             }
 
@@ -170,9 +159,10 @@ namespace NtObjectManager
                 WriteWarning("Path doesn't start with \\. You should specify -Win32Path to use a non-NT path for the key.");
             }
 
-            using (NtKey key = OpenKey(Path, Win32Path, false, open_for_backup))
+            using (var result = OpenKey(Path, null, Win32Path, false, open_for_backup))
             {
-                DumpKey(tokens, key.NtType.MapGenericRights(AccessRights), open_for_backup, key);
+                result.Status.ToNtException();
+                DumpKey(tokens, result.Result.NtType.MapGenericRights(AccessRights), open_for_backup, result.Result, GetMaxDepth());
             }
         }
     }

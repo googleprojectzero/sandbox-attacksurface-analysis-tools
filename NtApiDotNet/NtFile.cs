@@ -2209,7 +2209,8 @@ namespace NtApiDotNet
         public IEnumerable<FileDirectoryEntry> QueryDirectoryInfo(string file_mask, FileTypeMask type_mask)
         {
             UnicodeString mask = file_mask != null ? new UnicodeString(file_mask) : null;
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(128 * 1024))
+            // 32k seems to be a reasonable size, too big and some volumes will fail with STATUS_INVALID_PARAMETER.
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(32 * 1024))
             {
                 using (NtFileResult result = new NtFileResult(this))
                 {
@@ -2533,7 +2534,23 @@ namespace NtApiDotNet
             {
                 try
                 {
-                    return GetPathNameInternal(FinalPathNameFlags.None);
+                    string ret = GetPathNameInternal(FinalPathNameFlags.None);
+                    if (ret.StartsWith(@"\\?\"))
+                    {
+                        if (ret.StartsWith(@"\\?\GLOBALROOT", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return ret;
+                        }
+                        else if (ret.StartsWith(@"\\?\UNC"))
+                        {
+                            return @"\\" + ret.Substring(7);
+                        }
+                        else
+                        {
+                            return ret.Substring(4);
+                        }
+                    }
+                    return ret;
                 }
                 catch (Win32Exception)
                 {
