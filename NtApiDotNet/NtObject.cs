@@ -340,6 +340,35 @@ namespace NtApiDotNet
             return DuplicateHandle(src_handle, NtProcess.Current, access_rights, DuplicateObjectOptions.None);
         }
 
+        /// <summary>
+        /// Duplicate object.
+        /// </summary>
+        /// <param name="access_rights">Access rights to duplicate with.</param>
+        /// <param name="flags">Attribute flags.</param>
+        /// <param name="options">Duplicate options</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The duplicated object.</returns>
+        public abstract NtResult<NtObject> DuplicateObject(AccessMask access_rights, AttributeFlags flags, DuplicateObjectOptions options, bool throw_on_error);
+
+        /// <summary>
+        /// Duplicate object with specific access rights.
+        /// </summary>
+        /// <param name="access_rights">Access rights to duplicate with.</param>
+        /// <returns>The duplicated object.</returns>
+        public NtObject DuplicateObject(AccessMask access_rights)
+        {
+            return DuplicateObject(access_rights, AttributeFlags.None, DuplicateObjectOptions.None, true).Result;
+        }
+
+        /// <summary>
+        /// Duplicate object with sane access rights.
+        /// </summary>
+        /// <returns>The duplicated object.</returns>
+        public NtObject DuplicateObject()
+        {
+            return DuplicateObject(0, AttributeFlags.None, DuplicateObjectOptions.SameAccess, true).Result;
+        }
+
         private static string GetName(SafeKernelObjectHandle handle)
         {
             try
@@ -817,13 +846,39 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Duplicate object.
+        /// </summary>
+        /// <param name="access_rights">Access rights to duplicate with.</param>
+        /// <param name="flags">Attribute flags.</param>
+        /// <param name="options">Duplicate options</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The duplicated object.</returns>
+        public sealed override NtResult<NtObject> DuplicateObject(AccessMask access_rights, AttributeFlags flags, DuplicateObjectOptions options, bool throw_on_error)
+        {
+            return Duplicate(access_rights.ToSpecificAccess<A>(), flags, options, throw_on_error).Cast<NtObject>();
+        }
+
+        /// <summary>
+        /// Duplicate object.
+        /// </summary>
+        /// <param name="access_rights">Access rights to duplicate with.</param>
+        /// <param name="flags">Attribute flags.</param>
+        /// <param name="options">Duplicate options</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The duplicated object.</returns>
+        public NtResult<O> Duplicate(A access_rights, AttributeFlags flags, DuplicateObjectOptions options, bool throw_on_error)
+        {
+            return DuplicateHandle(NtProcess.Current, Handle, NtProcess.Current, ToGenericAccess(access_rights), flags, options, throw_on_error).Map(h => ShallowClone(h, true));
+        }
+
+        /// <summary>
         /// Duplicate the object with specific access rights
         /// </summary>
         /// <param name="access">The access rights for the new handle</param>
         /// <returns>The duplicated object</returns>
         public O Duplicate(A access)
         {
-            return ShallowClone(DuplicateHandle(Handle, ToGenericAccess(access)), true);
+            return Duplicate(access, AttributeFlags.None, DuplicateObjectOptions.None, true).Result;
         }
 
         /// <summary>
@@ -832,7 +887,7 @@ namespace NtApiDotNet
         /// <returns>The duplicated object</returns>
         public O Duplicate()
         {
-            return ShallowClone(DuplicateHandle(Handle), false);
+            return Duplicate(default(A), AttributeFlags.None, DuplicateObjectOptions.SameAccess, true).Result;
         }
 
         private O ShallowClone(SafeKernelObjectHandle handle, bool query_basic_info)
