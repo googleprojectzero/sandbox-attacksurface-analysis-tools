@@ -51,22 +51,9 @@ namespace NtObjectManager
     ///   <para>Get all object which can be written to in \BaseNamedObjects by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleObject")]
-    public class GetAccessibleObjectCmdlet : GetAccessiblePathCmdlet
+    public class GetAccessibleObjectCmdlet : GetAccessiblePathCmdlet<GenericAccessRights>
     {
         private static string _base_named_objects = NtDirectory.GetBasedNamedObjects();
-
-        /// <summary>
-        /// <para type="description">Generic access rights to check for in an object's access.</para>
-        /// </summary>
-        [Parameter]
-        public GenericAccessRights AccessRights { get; private set; }
-
-        /// <summary>
-        /// <para type="description">If AccessRights specified require that the all must be present to
-        /// be considered a match.</para>
-        /// </summary>
-        [Parameter]
-        public bool RequireAllAccess { get; private set; }
 
         /// <summary>
         /// <para type="description">Specify list of NT object types to filter on.</para>
@@ -101,26 +88,6 @@ namespace NtObjectManager
                 }
             }
             return path;
-        }
-
-        private bool IsAccessGranted(AccessMask granted_access, AccessMask access_rights)
-        {
-            if (granted_access.IsEmpty)
-            {
-                return false;
-            }
-
-            if (access_rights.IsEmpty)
-            {
-                return true;
-            }
-
-            if (RequireAllAccess && granted_access.IsAllAccessGranted(access_rights))
-            {
-                return true;
-            }
-
-            return granted_access.IsAccessGranted(access_rights);
         }
 
         private void CheckAccess(TokenEntry token, NtObject obj, NtType type, AccessMask access_rights, SecurityDescriptor sd)

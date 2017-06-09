@@ -69,14 +69,8 @@ namespace NtObjectManager
     ///   <para>Get all files with can be written to \??\C:\Windows by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleFile")]
-    public class GetAccessibleFileCmdlet : GetAccessiblePathCmdlet
+    public class GetAccessibleFileCmdlet : GetAccessiblePathCmdlet<FileAccessRights>
     {
-        /// <summary>
-        /// <para type="description">Specify a set of access rights which a file must at least be accessible for to count as an access.</para>
-        /// </summary>
-        [Parameter]
-        public FileAccessRights AccessRights { get; set; }
-
         /// <summary>
         /// <para type="description">Specify a set of directory access rights which a directory must at least be accessible for to count as an access.</para>
         /// </summary>
@@ -123,7 +117,7 @@ namespace NtObjectManager
         {
             NtType type = file.NtType;
             AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
-            if (!granted_access.IsEmpty && granted_access.IsAllAccessGranted(access_rights))
+            if (IsAccessGranted(granted_access, access_rights))
             {
                 WriteAccessCheckResult(FormatWin32Path ? file.Win32PathName : file.FullPath, type.Name, granted_access, type.GenericMapping,
                     sd.ToSddl(), IsDirectoryNoThrow(file) ? typeof(FileDirectoryAccessRights) : typeof(FileAccessRights), token.Information);
@@ -137,7 +131,7 @@ namespace NtObjectManager
                  FileShareMode.Read | FileShareMode.Delete,
                  FileOpenOptions.None, false)))
             {
-                if ( result.Status.IsSuccess() && result.Result.GrantedAccessMask.IsAllAccessGranted(access_rights))
+                if ( result.Status.IsSuccess() && IsAccessGranted(result.Result.GrantedAccessMask, access_rights))
                 {
                     WriteAccessCheckResult(file.FullPath, file.NtType.Name, result.Result.GrantedAccessMask,
                         file.NtType.GenericMapping, String.Empty, IsDirectoryNoThrow(file) ?

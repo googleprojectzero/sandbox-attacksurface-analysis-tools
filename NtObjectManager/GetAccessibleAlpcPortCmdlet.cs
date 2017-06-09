@@ -35,7 +35,7 @@ namespace NtObjectManager
     ///   <para>Get all accessible ALPC ports for the process tokens of PIDs 1234 and 5678</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleAlpcPort")]
-    public class GetAccessibleAlpcPortCmdlet : CommonAccessBaseCmdlet
+    public class GetAccessibleAlpcPortCmdlet : CommonAccessBaseCmdlet<AlpcAccessRights>
     {
         internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {

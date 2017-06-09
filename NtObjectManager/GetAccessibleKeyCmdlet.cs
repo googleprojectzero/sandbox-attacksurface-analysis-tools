@@ -50,14 +50,8 @@ namespace NtObjectManager
     ///   <para>Get all keys with can be written to in HKEY_CURRENT_USER by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleKey")]
-    public class GetAccessibleKeyCmdlet : GetAccessiblePathCmdlet
+    public class GetAccessibleKeyCmdlet : GetAccessiblePathCmdlet<KeyAccessRights>
     {
-        /// <summary>
-        /// <para type="description">Specify a set of access rights which the key must at least be accessible for to count as an access.</para>
-        /// </summary>
-        [Parameter]
-        public KeyAccessRights AccessRights { get; set; }
-        
         private static NtResult<NtKey> OpenKey(string name, NtObject root, bool open_link, bool open_for_backup)
         {
         
@@ -78,7 +72,7 @@ namespace NtObjectManager
         {
             NtType type = key.NtType;
             AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
-            if (!granted_access.IsEmpty && granted_access.IsAllAccessGranted(access_rights))
+            if (IsAccessGranted(granted_access, access_rights))
             {
                 WriteAccessCheckResult(FormatWin32Path ? key.Win32Path : key.FullPath, type.Name, granted_access, type.GenericMapping, 
                     sd.ToSddl(), typeof(KeyAccessRights), token.Information);
@@ -92,7 +86,7 @@ namespace NtObjectManager
             {
                 using (var result = token.Token.RunUnderImpersonate(() => NtKey.Open(obj_attributes, KeyAccessRights.MaximumAllowed, 0, false)))
                 {
-                    if (result.IsSuccess && result.Result.GrantedAccessMask.IsAllAccessGranted(access_rights))
+                    if (result.IsSuccess && IsAccessGranted(result.Result.GrantedAccessMask, access_rights))
                     {
                         WriteAccessCheckResult(key.FullPath, key.NtType.Name, result.Result.GrantedAccessMask, key.NtType.GenericMapping,
                             String.Empty, typeof(KeyAccessRights), token.Information);

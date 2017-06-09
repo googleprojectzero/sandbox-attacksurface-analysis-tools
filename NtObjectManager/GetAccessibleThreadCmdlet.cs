@@ -56,7 +56,7 @@ namespace NtObjectManager
     ///   <para>Get all processes with can be written by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleThread")]
-    public class GetAccessibleThreadCmdlet : CommonAccessBaseCmdlet
+    public class GetAccessibleThreadCmdlet : CommonAccessBaseCmdlet<ThreadAccessRights>
     {
         /// <summary>
         /// <para type="description">When getting all threads only get the system information thread list.</para>
@@ -96,12 +96,6 @@ namespace NtObjectManager
                 granted_access, process.NtType, sddl, token));
         }
 
-        /// <summary>
-        /// <para type="description">Specify a set of access rights which the process must at least be accessible for to count as an access.</para>
-        /// </summary>
-        [Parameter]
-        public ProcessAccessRights AccessRights { get; set; }
-
         private void CheckAccess(TokenEntry token, NtProcess process, AccessMask access_rights, SecurityDescriptor sd)
         {
             NtType type = process.NtType;
@@ -126,36 +120,36 @@ namespace NtObjectManager
 
         internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
-            AccessMask access_rights = NtType.GetTypeByType<NtProcess>().MapGenericRights(AccessRights);
-            // If we've got debug privilege we can open all processes and get their security descriptors.
-            // So we can just do a standard access check against each token. 
-            if (NtToken.EnableDebugPrivilege())
-            {
-                using (var procs = NtProcess.GetProcesses(ProcessAccessRights.ReadControl | ProcessAccessRights.QueryInformation, FromSystem).ToDisposableList())
-                {
-                    CheckAccessWithReadControl(tokens, procs, access_rights);
-                }
-            }
-            else
-            {
-                WriteWarning("Current process doesn't have SeDebugPrivilege, results may be inaccurate");
-                // We'll have to open each process in turn to see what we can access.
-                foreach (var token in tokens)
-                {
-                    using (var processes = new DisposableList<NtProcess>())
-                    {
-                        using (token.Token.Impersonate())
-                        {
-                            processes.AddRange(NtProcess.GetProcesses(ProcessAccessRights.MaximumAllowed | AccessRights, FromSystem));
-                        }
-                        foreach (NtProcess process in processes)
-                        {
-                            WriteAccessCheckResult(process, process.GrantedAccessMask,
-                                process.NtType.GenericMapping, String.Empty, token.Information);
-                        }
-                    }
-                }
-            }
+            //AccessMask access_rights = NtType.GetTypeByType<NtProcess>().MapGenericRights(AccessRights);
+            //// If we've got debug privilege we can open all processes and get their security descriptors.
+            //// So we can just do a standard access check against each token. 
+            //if (NtToken.EnableDebugPrivilege())
+            //{
+            //    using (var procs = NtProcess.GetProcesses(ProcessAccessRights.ReadControl | ProcessAccessRights.QueryInformation, FromSystem).ToDisposableList())
+            //    {
+            //        CheckAccessWithReadControl(tokens, procs, access_rights);
+            //    }
+            //}
+            //else
+            //{
+            //    WriteWarning("Current process doesn't have SeDebugPrivilege, results may be inaccurate");
+            //    // We'll have to open each process in turn to see what we can access.
+            //    foreach (var token in tokens)
+            //    {
+            //        using (var processes = new DisposableList<NtProcess>())
+            //        {
+            //            using (token.Token.Impersonate())
+            //            {
+            //                processes.AddRange(NtProcess.GetProcesses(ProcessAccessRights.MaximumAllowed | AccessRights, FromSystem));
+            //            }
+            //            foreach (NtProcess process in processes)
+            //            {
+            //                WriteAccessCheckResult(process, process.GrantedAccessMask,
+            //                    process.NtType.GenericMapping, String.Empty, token.Information);
+            //            }
+            //        }
+            //    }
+            //}
         }
     }
 }

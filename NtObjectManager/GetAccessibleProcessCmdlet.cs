@@ -67,7 +67,7 @@ namespace NtObjectManager
     ///   <para>Get all processes with can be written by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleProcess")]
-    public class GetAccessibleProcessCmdlet : CommonAccessBaseCmdlet
+    public class GetAccessibleProcessCmdlet : CommonAccessBaseCmdlet<ProcessAccessRights>
     {
         /// <summary>
         /// <para type="description">When getting all processes only get the system information process list.</para>
@@ -107,17 +107,11 @@ namespace NtObjectManager
                 granted_access, process.NtType, sddl, token));
         }
 
-        /// <summary>
-        /// <para type="description">Specify a set of access rights which the process must at least be accessible for to count as an access.</para>
-        /// </summary>
-        [Parameter]
-        public ProcessAccessRights AccessRights { get; set; }
-
         private void CheckAccess(TokenEntry token, NtProcess process, AccessMask access_rights, SecurityDescriptor sd)
         {
             NtType type = process.NtType;
             AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
-            if (!granted_access.IsEmpty && granted_access.IsAllAccessGranted(access_rights))
+            if (IsAccessGranted(granted_access, access_rights))
             {
                 WriteAccessCheckResult(process, granted_access, type.GenericMapping, sd.ToSddl(), token.Information);
             }
@@ -157,12 +151,15 @@ namespace NtObjectManager
                     {
                         using (token.Token.Impersonate())
                         {
-                            processes.AddRange(NtProcess.GetProcesses(ProcessAccessRights.MaximumAllowed | AccessRights, FromSystem));
+                            processes.AddRange(NtProcess.GetProcesses(ProcessAccessRights.MaximumAllowed, FromSystem));
                         }
                         foreach (NtProcess process in processes)
                         {
-                            WriteAccessCheckResult(process, process.GrantedAccessMask, 
-                                process.NtType.GenericMapping, String.Empty, token.Information);
+                            if (IsAccessGranted(process.GrantedAccess, access_rights))
+                            {
+                                WriteAccessCheckResult(process, process.GrantedAccessMask,
+                                    process.NtType.GenericMapping, String.Empty, token.Information);
+                            }
                         }
                     }
                 }

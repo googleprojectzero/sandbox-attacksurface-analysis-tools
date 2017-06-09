@@ -231,7 +231,7 @@ namespace NtObjectManager
     /// <summary>
     /// Common base cmdlet for commands which look at accessible resources.
     /// </summary>
-    public abstract class CommonAccessBaseCmdlet : Cmdlet
+    public abstract class CommonAccessBaseCmdlet<A> : Cmdlet
     {
         /// <summary>
         /// <para type="description">Specify a list of process IDs to open for their tokens.</para>
@@ -256,6 +256,39 @@ namespace NtObjectManager
         /// </summary>
         [Parameter]
         public NtToken[] Tokens { get; set; }
+
+        /// <summary>
+        /// <para type="description">Access rights to check for in an object's access.</para>
+        /// </summary>
+        [Parameter]
+        public A AccessRights { get; set; }
+
+        /// <summary>
+        /// <para type="description">If AccessRights specified require that the all must be present to
+        /// be considered a match.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter RequireAllAccess { get; set; }
+
+        internal bool IsAccessGranted(AccessMask granted_access, AccessMask access_rights)
+        {
+            if (granted_access.IsEmpty)
+            {
+                return false;
+            }
+
+            if (access_rights.IsEmpty)
+            {
+                return true;
+            }
+
+            if (RequireAllAccess)
+            {
+                return granted_access.IsAllAccessGranted(access_rights);
+            }
+
+            return granted_access.IsAccessGranted(access_rights);
+        }
 
         internal abstract void RunAccessCheck(IEnumerable<TokenEntry> tokens);
 
@@ -398,7 +431,7 @@ namespace NtObjectManager
     /// <summary>
     /// Base class for path based accessible checks.
     /// </summary>
-    public abstract class GetAccessiblePathCmdlet : CommonAccessBaseCmdlet
+    public abstract class GetAccessiblePathCmdlet<A> : CommonAccessBaseCmdlet<A>
     {
         /// <summary>
         /// <para type="description">Specify the native path to check.</para>
