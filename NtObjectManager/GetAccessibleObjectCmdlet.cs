@@ -15,6 +15,7 @@
 using NtApiDotNet;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Management.Automation;
 
 namespace NtObjectManager
@@ -77,7 +78,7 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Specify when enumerating handles to also check unnamed objects.</para>
         /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "handles")]
+        [Parameter(ParameterSetName = "handles")]
         public SwitchParameter CheckUnnamed { get; set; }
 
         private string ConvertPath(NtObject obj)
@@ -107,18 +108,23 @@ namespace NtObjectManager
             }
         }
 
-        private void CheckAccessUnderImpersonation(TokenEntry token, NtType type, AccessMask access_rights, NtObject obj)
+        private NtResult<NtObject> ReopenUnderImpersonation(TokenEntry token, NtType type, NtObject obj)
         {
             using (ObjectAttributes obj_attributes = new ObjectAttributes(string.Empty,
-                AttributeFlags.CaseInsensitive, obj))
+               AttributeFlags.CaseInsensitive, obj))
             {
-                using (var result = token.Token.RunUnderImpersonate(() => type.Open(obj_attributes, GenericAccessRights.MaximumAllowed, false)))
+                return token.Token.RunUnderImpersonate(() => type.Open(obj_attributes, GenericAccessRights.MaximumAllowed, false));
+            }
+        }
+
+        private void CheckAccessUnderImpersonation(TokenEntry token, NtType type, AccessMask access_rights, NtObject obj)
+        {
+            using (var result = ReopenUnderImpersonation(token, type, obj))
+            {
+                if (result.IsSuccess && IsAccessGranted(result.Result.GrantedAccessMask, access_rights))
                 {
-                    if (result.IsSuccess && IsAccessGranted(result.Result.GrantedAccessMask, access_rights))
-                    {
-                        WriteAccessCheckResult(ConvertPath(obj), type.Name, result.Result.GrantedAccessMask, type.GenericMapping,
-                            String.Empty, type.AccessRightsType, token.Information);
-                    }
+                    WriteAccessCheckResult(ConvertPath(obj), type.Name, result.Result.GrantedAccessMask, type.GenericMapping,
+                        String.Empty, type.AccessRightsType, token.Information);
                 }
             }
         }
@@ -142,6 +148,18 @@ namespace NtObjectManager
 
             AccessMask desired_access = type.MapGenericRights(access_rights);
             var result = obj.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
+            if (!result.IsSuccess && !obj.IsAccessMaskGranted(GenericAccessRights.ReadControl))
+            {
+                // Try and duplicate handle to see if we can just ask for ReadControl.
+                using (var dup_obj = obj.DuplicateObject(GenericAccessRights.ReadControl, AttributeFlags.None, DuplicateObjectOptions.None, false))
+                {
+                    if (dup_obj.IsSuccess)
+                    {
+                        result = dup_obj.Result.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
+                    }
+                }
+            }
+
             if (result.IsSuccess)
             {
                 foreach (var token in tokens)
@@ -149,7 +167,7 @@ namespace NtObjectManager
                     CheckAccess(token, obj, type, desired_access, result.Result);
                 }
             }
-            else
+            else if (type.CanOpen)
             {
                 // If we can't read security descriptor then try opening the object.
                 foreach (var token in tokens)
@@ -157,6 +175,8 @@ namespace NtObjectManager
                     CheckAccessUnderImpersonation(token, type, desired_access, obj);
                 }
             }
+
+            // TODO: Do we need a warning here?
         }
 
         private void DumpDirectory(IEnumerable<TokenEntry> tokens, HashSet<string> type_filter, 
@@ -270,79 +290,67 @@ namespace NtObjectManager
             }
         }
 
+        private void CheckHandles(IEnumerable<TokenEntry> tokens, HashSet<string> type_filter, HashSet<ulong> checked_objects, NtProcess process, IEnumerable<NtHandle> handles)
+        {
+            foreach (NtHandle handle in handles)
+            {
+                if (Stopping)
+                {
+                    return;
+                }
+
+                using (var obj = NtGeneric.DuplicateFrom(process, new IntPtr(handle.Handle), 0, DuplicateObjectOptions.SameAccess, false))
+                {
+                    // We double check type here to ensure we've duplicated a similar handle.
+                    if (!obj.IsSuccess)
+                    {
+                        continue;
+                    }
+
+                    if (checked_objects.Add(handle.Object))
+                    {
+                        if (CheckUnnamed || !String.IsNullOrEmpty(obj.Result.FullPath))
+                        {
+                            DumpObject(tokens, type_filter, AccessRights, obj.Result);
+                        }
+                    }
+                }
+            }
+        }
+
         private void RunAccessCheckHandles(IEnumerable<TokenEntry> tokens, HashSet<string> type_filter)
         {
-            //using (NtToken process_token = NtToken.OpenProcessToken())
-            //{
-            //    if (!process_token.SetPrivilege(TokenPrivilegeValue.SeDebugPrivilege, PrivilegeAttributes.Enabled))
-            //    {
-            //        WriteWarning("Current process doesn't have SeDebugPrivilege, results may be inaccurate");
-            //    }
-            //}
+            using (NtToken process_token = NtToken.OpenProcessToken())
+            {
+                if (!process_token.SetPrivilege(TokenPrivilegeValue.SeDebugPrivilege, PrivilegeAttributes.Enabled))
+                {
+                    WriteWarning("Current process doesn't have SeDebugPrivilege, results may be inaccurate");
+                }
+            }
 
-            //if (type_filter.Count == 0)
-            //{
-            //    WriteWarning("Checking handle access without any type filtering can hang. Perhaps specifying the types using -TypeFilter.");
-            //}
+            if (type_filter.Count == 0)
+            {
+                WriteWarning("Checking handle access without any type filtering can hang. Perhaps specifying the types using -TypeFilter.");
+            }
 
-            //var handles = NtSystemInfo.GetHandles(-1, false).Where(h => IsTypeFiltered(h.ObjectType, type_filter)).GroupBy(h => h.ProcessId);
-            //HashSet<ulong> checked_objects = new HashSet<ulong>();
+            HashSet<ulong> checked_objects = new HashSet<ulong>();
+            var handles = NtSystemInfo.GetHandles(-1, false).Where(h => IsTypeFiltered(h.ObjectType, type_filter)).GroupBy(h => h.ProcessId);
+            
+            foreach (var group in handles)
+            {
+                if (Stopping)
+                {
+                    return;
+                }
 
-            //try
-            //{
-            //    foreach (var group in handles)
-            //    {
-            //        using (var proc = NtProcess.Open(group.Key, ProcessAccessRights.DupHandle, false))
-            //        {
-            //        }
-
-
-            //            try
-            //            {
-
-            //                using (NtAlpc obj = NtAlpc.DuplicateFrom(proc, new IntPtr(handle.Handle)))
-            //                {
-            //                    string name = obj.FullPath;
-            //                    // We only care about named ALPC ports.
-            //                    if (String.IsNullOrEmpty(name))
-            //                    {
-            //                        continue;
-            //                    }
-
-            //                    if (!ports.Add(name))
-            //                    {
-            //                        continue;
-            //                    }
-
-            //                    SecurityDescriptor sd = obj.SecurityDescriptor;
-            //                    string sddl = sd.ToSddl();
-            //                    foreach (TokenEntry token in tokens)
-            //                    {
-            //                        AccessMask granted_access = NtSecurity.GetAllowedAccess(sd, token.Token,
-            //                            AlpcAccessRights.Connect, alpc_type.GenericMapping);
-            //                        if (granted_access.IsEmpty)
-            //                        {
-            //                            continue;
-            //                        }
-            //                        AccessMask maximum_access = NtSecurity.GetMaximumAccess(sd,
-            //                            token.Token, alpc_type.GenericMapping);
-            //                        WriteAccessCheckResult(name, alpc_type.Name, maximum_access,
-            //                            alpc_type.GenericMapping, sddl, typeof(AlpcAccessRights), token.Information);
-            //                    }
-            //                }
-            //            }
-            //            catch (NtException)
-            //            {
-            //            }
-            //    }
-            //}
-            //finally
-            //{
-            //    foreach (NtProcess proc in pid_to_process.Values)
-            //    {
-            //        proc?.Close();
-            //    }
-            //}
+                using (var proc = NtProcess.Open(group.Key, ProcessAccessRights.DupHandle, false))
+                {
+                    if (proc.IsSuccess)
+                    {
+                        CheckHandles(tokens, type_filter, checked_objects, proc.Result, group);
+                    }
+                }
+            }
         }
 
         internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
