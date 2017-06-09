@@ -413,7 +413,7 @@ namespace NtApiDotNet
         /// <returns>The thread object</returns>
         public static NtThread OpenCurrent()
         {
-            return new NtThread(Current.DuplicateHandle());
+            return NtThread.Current.Duplicate();
         }
 
         /// <summary>
@@ -495,7 +495,6 @@ namespace NtApiDotNet
         /// Gets all accessible threads on the system.
         /// </summary>
         /// <param name="desired_access">The desired access for each thread.</param>
-        /// <param name="from_system_info">Get the thread list from system information.</param>
         /// <returns>The list of accessible threads.</returns>
         public static IEnumerable<NtThread> GetThreads(ThreadAccessRights desired_access)
         {

@@ -119,7 +119,7 @@ namespace NtApiDotNet
         /// <param name="obj">The object to create the wait handle on</param>
         internal NtWaitHandle(NtObject obj)
         {
-            using (SafeKernelObjectHandle handle = obj.DuplicateHandle())
+            using (SafeKernelObjectHandle handle = NtObject.DuplicateHandle(obj.Handle))
             {
                 SafeWaitHandle = new SafeWaitHandle(handle.DangerousGetHandle(), true);
                 handle.SetHandleAsInvalid();

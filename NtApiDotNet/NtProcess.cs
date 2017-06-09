@@ -712,7 +712,7 @@ namespace NtApiDotNet
         public static ProcessAttribute HandleList(IEnumerable<SafeHandle> handles)
         {
             return new ProcessAttribute(ProcessAttributeNum.HandleList, false, true, false,
-              new SafeHandleListHandle(handles.Select(h => NtObject.DuplicateHandle(h))));
+              new SafeHandleListHandle(handles.Select(h => NtObject.DuplicateHandle(h.ToSafeKernelHandle()))));
         }
 
         #region IDisposable Support
@@ -1322,7 +1322,7 @@ namespace NtApiDotNet
         /// <returns>The process object</returns>
         public static NtProcess OpenCurrent()
         {
-            return new NtProcess(Current.DuplicateHandle());
+            return Current.Duplicate();
         }
 
         /// <summary>

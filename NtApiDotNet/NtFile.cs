@@ -2479,9 +2479,9 @@ namespace NtApiDotNet
             }
         }
 
-        private static SafeFileHandle DuplicateAsFile(SafeHandle handle)
+        private static SafeFileHandle DuplicateAsFile(SafeKernelObjectHandle handle)
         {
-            using (SafeKernelObjectHandle dup_handle = DuplicateHandle(NtProcess.Current, handle, NtProcess.Current))
+            using (SafeKernelObjectHandle dup_handle = DuplicateHandle(handle))
             {
                 SafeFileHandle ret = new SafeFileHandle(dup_handle.DangerousGetHandle(), true);
                 dup_handle.SetHandleAsInvalid();

@@ -420,19 +420,18 @@ namespace NtApiDotNet
             if (_allow_query)
             {
                 _allow_query = false;
-                try
+                NtToken.EnableDebugPrivilege();
+                using (var obj = NtGeneric.DuplicateFrom(ProcessId, 
+                    new IntPtr(Handle), 0, DuplicateObjectOptions.SameAccess, false))
                 {
-                    NtToken.EnableDebugPrivilege();
-                    using (NtGeneric obj = NtGeneric.DuplicateFrom(ProcessId, new IntPtr(Handle)))
+                    if (!obj.IsSuccess)
                     {
-                        // Ensure we get the real type, in case it changed _or_ it was wrong to begin with.
-                        NtType = obj.NtType;
-                        _name = GetName(obj);
-                        _sd = GetSecurityDescriptor(obj);
+                        return;
                     }
-                }
-                catch (NtException)
-                {
+
+                    NtType = obj.Result.NtType;
+                    _name = GetName(obj.Result);
+                    _sd = GetSecurityDescriptor(obj.Result);
                 }
             }
         }

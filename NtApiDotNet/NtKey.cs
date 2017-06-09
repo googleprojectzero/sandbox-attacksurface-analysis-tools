@@ -853,9 +853,9 @@ namespace NtApiDotNet
             return Open(@"\Registry", null, KeyAccessRights.MaximumAllowed);
         }
 
-        private static SafeRegistryHandle DuplicateAsRegistry(SafeHandle handle)
+        private static SafeRegistryHandle DuplicateAsRegistry(SafeKernelObjectHandle handle)
         {
-            using (SafeKernelObjectHandle dup_handle = DuplicateHandle(NtProcess.Current, handle, NtProcess.Current))
+            using (var dup_handle = DuplicateHandle(handle))
             {
                 SafeRegistryHandle ret = new SafeRegistryHandle(dup_handle.DangerousGetHandle(), true);
                 dup_handle.SetHandleAsInvalid();
