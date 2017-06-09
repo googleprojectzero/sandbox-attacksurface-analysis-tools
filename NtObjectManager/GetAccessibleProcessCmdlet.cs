@@ -15,6 +15,7 @@
 using NtApiDotNet;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Management.Automation;
 
 namespace NtObjectManager
@@ -48,8 +49,51 @@ namespace NtObjectManager
     }
 
     /// <summary>
-    /// <para type="synopsis">Get a list of processes that can be opened by a specificed token.</para>
-    /// <para type="description">This cmdlet checks all processes and tries to determine
+    /// Access check result for a thread.
+    /// </summary>
+    public class ThreadAccessCheckResult : ProcessAccessCheckResult
+    {
+        /// <summary>
+        /// Thread ID of the thread.
+        /// </summary>
+        public int ThreadId { get; private set; }
+
+        /// <summary>
+        /// Thread description if available.
+        /// </summary>
+        public string ThreadDescription { get; private set; }
+
+        internal ThreadAccessCheckResult(string name, string image_path, int thread_id, string thread_description, int process_id, string command_line, AccessMask granted_access,
+            NtType type, string sddl, TokenInformation token_info) : base(String.Format("{0}/{1}.{2}", name, process_id, thread_id), image_path, process_id, command_line, granted_access,
+                type, sddl, token_info)
+        {
+            ThreadId = thread_id;
+            ThreadDescription = thread_description;
+        }
+    }
+
+    /// <summary>
+    /// <para type="description">Specify what objects to query for.</para>
+    /// </summary>
+    public enum ProcessCheckMode
+    {
+        /// <summary>
+        /// Only check processes
+        /// </summary>
+        ProcessOnly,
+        /// <summary>
+        /// Only check threads.
+        /// </summary>
+        ThreadOnly,
+        /// <summary>
+        /// Check both processes and threads.
+        /// </summary>
+        ProcessAndThread
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Get a list of processes and/or threads that can be opened by a specificed token.</para>
+    /// <para type="description">This cmdlet checks all processes and threads and tries to determine
     /// if one or more specified tokens can open them to them. If no tokens are specified then the 
     /// current process token is used.</para>
     /// </summary>
@@ -70,98 +114,245 @@ namespace NtObjectManager
     [OutputType(typeof(ProcessAccessCheckResult))]
     public class GetAccessibleProcessCmdlet : CommonAccessBaseCmdlet<ProcessAccessRights>
     {
+        private static NtType _process_type = NtType.GetTypeByType<NtProcess>();
+        private static NtType _thread_type = NtType.GetTypeByType<NtThread>();
+
         /// <summary>
-        /// <para type="description">When getting all processes only get the system information process list.</para>
+        /// <para type="description">Specify what objects to check for.</para>
         /// </summary>
         [Parameter]
-        public SwitchParameter FromSystem { get; set; }
+        public ProcessCheckMode CheckMode { get; set; }
 
-        internal void WriteAccessCheckResult(NtProcess process, AccessMask granted_access,
+        /// <summary>
+        /// <para type="description">Specify specific access rights for threads.</para>
+        /// </summary>
+        [Parameter]
+        public ThreadAccessRights ThreadAccessRights { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify that dead processes should be shown.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter ShowDeadProcesses { get; set; }
+
+        class ProcessDetails
+        {
+            public string Name { get; set; }
+            public string ImagePath { get; set; }
+            public string CommandLine { get; set; }
+            public int ProcessId { get; set; }
+
+            private ProcessDetails()
+            {
+            }
+
+            public static ProcessDetails FromProcess(NtProcess process)
+            {
+                string name = process.Name;
+                string image_path = process.FullPath;
+                string command_line = "Unknown";
+                int process_id = -1;
+
+                if (process.IsAccessGranted(ProcessAccessRights.QueryLimitedInformation))
+                {
+                    command_line = process.CommandLine;
+                    process_id = process.ProcessId;
+                }
+                else
+                {
+                    using (var dup_process = process.Duplicate(ProcessAccessRights.QueryLimitedInformation, AttributeFlags.None, DuplicateObjectOptions.None, false))
+                    {
+                        if (dup_process.IsSuccess)
+                        {
+                            command_line = dup_process.Result.CommandLine;
+                            process_id = dup_process.Result.ProcessId;
+                        }
+                    }
+                }
+                return new ProcessDetails() { Name = name, ImagePath = image_path,
+                    CommandLine = command_line, ProcessId = process_id };
+            }
+
+            public static ProcessDetails FromThread(NtThread thread)
+            {
+                return new ProcessDetails()
+                {
+                    Name = thread.ProcessName,
+                    ImagePath = String.Empty,
+                    CommandLine = String.Empty,
+                    ProcessId = thread.ProcessId
+                };
+            }
+        }
+
+        class ThreadDetails
+        {
+            public string Description { get; set; }
+            public int ThreadId { get; set; }
+
+            public static ThreadDetails FromThread(NtThread thread)
+            {
+                string description = String.Empty;
+                int thread_id = -1;
+
+                if (thread.IsAccessGranted(ThreadAccessRights.QueryLimitedInformation))
+                {
+                    description = thread.Description;
+                    thread_id = thread.ThreadId;
+                }
+                else
+                {
+                    using (var dup_thread = thread.Duplicate(ThreadAccessRights.QueryLimitedInformation, 
+                        AttributeFlags.None, DuplicateObjectOptions.None, false))
+                    {
+                        if (dup_thread.IsSuccess)
+                        {
+                            description = dup_thread.Result.Description;
+                            thread_id = dup_thread.Result.ThreadId;
+                        }
+                    }
+                }
+                return new ThreadDetails()
+                {
+                    Description = description,
+                    ThreadId = thread_id
+                };
+            }
+        }
+
+        private void WriteAccessCheckResult(ProcessDetails process, ThreadDetails thread, AccessMask granted_access,
            GenericMapping generic_mapping, string sddl, TokenInformation token)
         {
-            string name = process.Name;
-            string image_path = process.FullPath;
-            string command_line = "Unknown";
-            int process_id = -1;
-
-            if (process.IsAccessGranted(ProcessAccessRights.QueryLimitedInformation))
+            if (thread == null)
             {
-                command_line = process.CommandLine;
-                process_id = process.ProcessId;
+                WriteObject(new ProcessAccessCheckResult(process.Name, process.ImagePath, process.ProcessId, process.CommandLine,
+                    granted_access, _process_type, sddl, token));
             }
             else
             {
-                try
-                {
-                    using (NtProcess dup_process = process.Duplicate(ProcessAccessRights.QueryLimitedInformation))
-                    {
-                        command_line = dup_process.CommandLine;
-                        process_id = dup_process.ProcessId;
-                    }
-                }
-                catch (NtException)
-                {
-                }
+                WriteObject(new ThreadAccessCheckResult(process.Name, process.ImagePath, thread.ThreadId, 
+                    thread.Description, process.ProcessId, process.CommandLine, granted_access, _process_type, sddl, token));
             }
-
-            WriteObject(new ProcessAccessCheckResult(name, image_path, process_id, command_line, 
-                granted_access, process.NtType, sddl, token));
         }
 
-        private void CheckAccess(TokenEntry token, NtProcess process, AccessMask access_rights, SecurityDescriptor sd)
+        private void CheckAccess(TokenEntry token, ProcessDetails process, ThreadDetails thread, NtType type, AccessMask access_rights, SecurityDescriptor sd)
         {
-            NtType type = process.NtType;
             AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
             if (IsAccessGranted(granted_access, access_rights))
             {
-                WriteAccessCheckResult(process, granted_access, type.GenericMapping, sd.ToSddl(), token.Information);
+                WriteAccessCheckResult(process, thread, granted_access, type.GenericMapping, sd.ToSddl(), token.Information);
             }
         }
 
-        private void CheckAccessWithReadControl(IEnumerable<TokenEntry> tokens, IEnumerable<NtProcess> processes, AccessMask access_rights)
+        private bool CheckProcess()
+        {
+            return CheckMode == ProcessCheckMode.ProcessOnly || CheckMode == ProcessCheckMode.ProcessAndThread;
+        }
+
+        private bool CheckThread()
+        {
+            return CheckMode == ProcessCheckMode.ThreadOnly || CheckMode == ProcessCheckMode.ProcessAndThread;
+        }
+
+        private void DoAccessCheck(IEnumerable<TokenEntry> tokens,
+            ProcessDetails proc_details, NtThread thread, AccessMask access_rights)
+        {
+            var sd = thread.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
+            if (sd.IsSuccess)
+            {
+                foreach (TokenEntry token in tokens)
+                {
+                    CheckAccess(token, proc_details, ThreadDetails.FromThread(thread), _thread_type, access_rights, sd.Result);
+                }
+            }
+            else
+            {
+                // Try and open process when under impersonation.
+                foreach (TokenEntry token in tokens)
+                {
+                    using (var new_thread = token.Token.RunUnderImpersonate(() => NtThread.Open(thread.ThreadId, ThreadAccessRights.MaximumAllowed, false)))
+                    {
+                        if (new_thread.IsSuccess && IsAccessGranted(new_thread.Result.GrantedAccessMask, access_rights))
+                        {
+                            WriteAccessCheckResult(proc_details, ThreadDetails.FromThread(thread), new_thread.Result.GrantedAccessMask,
+                                _thread_type.GenericMapping, String.Empty, token.Information);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void DoAccessCheck(IEnumerable<TokenEntry> tokens, 
+            IEnumerable<NtProcess> processes, AccessMask access_rights, AccessMask thread_access_rights)
         {
             foreach (NtProcess process in processes)
             {
-                SecurityDescriptor sd = process.SecurityDescriptor;
-                foreach (TokenEntry token in tokens)
+                ProcessDetails proc_details = ProcessDetails.FromProcess(process);
+
+                if (CheckProcess())
                 {
-                    CheckAccess(token, process, access_rights, sd);
+                    var sd = process.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
+                    if (sd.IsSuccess)
+                    {
+                        foreach (TokenEntry token in tokens)
+                        {
+                            CheckAccess(token, proc_details, null, _process_type, access_rights, sd.Result);
+                        }
+                    }
+                    else
+                    {
+                        // Try and open process when under impersonation.
+                        foreach (TokenEntry token in tokens)
+                        {
+                            using (var new_process = token.Token.RunUnderImpersonate(() => NtProcess.Open(process.ProcessId, ProcessAccessRights.MaximumAllowed, false)))
+                            {
+                                if (new_process.IsSuccess && IsAccessGranted(new_process.Result.GrantedAccessMask, access_rights))
+                                {
+                                    WriteAccessCheckResult(proc_details, null, new_process.Result.GrantedAccessMask,
+                                        _process_type.GenericMapping, String.Empty, token.Information);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (CheckThread())
+                {
+                    using (var threads = process.GetThreads(ThreadAccessRights.MaximumAllowed).ToDisposableList())
+                    {
+                        foreach (var thread in threads)
+                        {
+                            DoAccessCheck(tokens, proc_details, thread, thread_access_rights);
+                        }
+                    }
                 }
             }
         }
 
         internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
-            AccessMask access_rights = NtType.GetTypeByType<NtProcess>().MapGenericRights(AccessRights);
-            // If we've got debug privilege we can open all processes and get their security descriptors.
-            // So we can just do a standard access check against each token. 
-            if (NtToken.EnableDebugPrivilege())
+            AccessMask access_rights = _process_type.MapGenericRights(AccessRights);
+            AccessMask thread_access_rights = _thread_type.MapGenericRights(ThreadAccessRights);
+            
+            if (!NtToken.EnableDebugPrivilege())
             {
-                using (var procs = NtProcess.GetProcesses(ProcessAccessRights.ReadControl | ProcessAccessRights.QueryInformation, FromSystem).ToDisposableList())
+                WriteWarning("Current process doesn't have SeDebugPrivilege, results may be inaccurate");
+            }
+
+            if (CheckProcess())
+            {
+                using (var procs = NtProcess.GetProcesses(ProcessAccessRights.MaximumAllowed, false).ToDisposableList())
                 {
-                    CheckAccessWithReadControl(tokens, procs, access_rights);
+                    DoAccessCheck(tokens, procs.Where(p => ShowDeadProcesses || !p.IsDeleting), access_rights, thread_access_rights);
                 }
             }
             else
             {
-                WriteWarning("Current process doesn't have SeDebugPrivilege, results may be inaccurate");
-                // We'll have to open each process in turn to see what we can access.
-                foreach (var token in tokens)
+                using (var threads = NtThread.GetThreads(ThreadAccessRights.MaximumAllowed, true).ToDisposableList())
                 {
-                    using (var processes = new DisposableList<NtProcess>())
+                    foreach (var thread in threads)
                     {
-                        using (token.Token.Impersonate())
-                        {
-                            processes.AddRange(NtProcess.GetProcesses(ProcessAccessRights.MaximumAllowed, FromSystem));
-                        }
-                        foreach (NtProcess process in processes)
-                        {
-                            if (IsAccessGranted(process.GrantedAccess, access_rights))
-                            {
-                                WriteAccessCheckResult(process, process.GrantedAccessMask,
-                                    process.NtType.GenericMapping, String.Empty, token.Information);
-                            }
-                        }
+                        DoAccessCheck(tokens, ProcessDetails.FromThread(thread), thread, thread_access_rights);
                     }
                 }
             }

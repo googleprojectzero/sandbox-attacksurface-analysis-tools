@@ -928,12 +928,20 @@ namespace NtApiDotNet
         public IEnumerable<NtThread> GetThreads(ThreadAccessRights desired_access)
         {
             List<NtThread> handles = new List<NtThread>();
-            SafeKernelObjectHandle current_handle = new SafeKernelObjectHandle(IntPtr.Zero, false);
-            NtStatus status = NtSystemCalls.NtGetNextThread(Handle, current_handle, desired_access, AttributeFlags.None, 0, out current_handle);
-            while (status == NtStatus.STATUS_SUCCESS)
+            if (IsAccessGranted(ProcessAccessRights.QueryInformation))
             {
-                handles.Add(new NtThread(current_handle));
-                status = NtSystemCalls.NtGetNextThread(Handle, current_handle, desired_access, AttributeFlags.None, 0, out current_handle);
+                SafeKernelObjectHandle current_handle = new SafeKernelObjectHandle(IntPtr.Zero, false);
+                NtStatus status = NtSystemCalls.NtGetNextThread(Handle, current_handle, desired_access, AttributeFlags.None, 0, out current_handle);
+                while (status == NtStatus.STATUS_SUCCESS)
+                {
+                    handles.Add(new NtThread(current_handle));
+                    status = NtSystemCalls.NtGetNextThread(Handle, current_handle, desired_access, AttributeFlags.None, 0, out current_handle);
+                }
+            }
+            else
+            {
+                handles.AddRange(NtSystemInfo.GetThreadInformation(ProcessId).Select(t => 
+                            NtThread.Open(t.ThreadId, desired_access, false)).SelectValidResults());
             }
             return handles;
         }
@@ -1754,6 +1762,14 @@ namespace NtApiDotNet
                     return false;
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets whether the process is currently deleting.
+        /// </summary>
+        public bool IsDeleting
+        {
+            get { return (ExtendedFlags & ProcessExtendedBasicInformationFlags.IsProcessDeleting) == ProcessExtendedBasicInformationFlags.IsProcessDeleting; }
         }
     }
 }

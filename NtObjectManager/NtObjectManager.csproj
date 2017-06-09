@@ -55,7 +55,6 @@
     <Compile Include="GetAccessibleKeyCmdlet.cs" />
     <Compile Include="GetAccessibleObjectCmdlet.cs" />
     <Compile Include="GetAccessibleProcessCmdlet.cs" />
-    <Compile Include="GetAccessibleThreadCmdlet.cs" />
     <Compile Include="GetNtAccessMask.cs" />
     <Compile Include="NtEventCmdlets.cs" />
     <Compile Include="NtProcessCmdlets.cs" />

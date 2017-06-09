@@ -162,6 +162,7 @@ namespace NtApiDotNet
     {
         private int? _tid;
         private int? _pid;
+        private string _process_name;
 
         internal NtThread(SafeKernelObjectHandle handle)
             : base(handle)
@@ -211,6 +212,16 @@ namespace NtApiDotNet
             SafeKernelObjectHandle handle;
             return NtSystemCalls.NtOpenThread(out handle, desired_access, new ObjectAttributes(), 
                 new ClientId() { UniqueThread = new IntPtr(thread_id) }).CreateResult(throw_on_error, () => new NtThread(handle) { _tid = thread_id });
+        }
+
+        private static NtResult<NtThread> Open(NtThreadInformation thread_info, ThreadAccessRights desired_access, bool throw_on_error)
+        {
+            var result = Open(thread_info.ThreadId, desired_access, throw_on_error);
+            if (result.IsSuccess)
+            {
+                result.Result._process_name = thread_info.ProcessName;
+            }
+            return result;
         }
 
         /// <summary>
@@ -300,6 +311,31 @@ namespace NtApiDotNet
                     _pid = QueryBasicInformation().ClientId.UniqueProcess.ToInt32();
                 }
                 return _pid.Value;
+            }
+        }
+
+        /// <summary>
+        /// Get name of process.
+        /// </summary>
+        public string ProcessName
+        {
+            get
+            {
+                if (_process_name == null)
+                {
+                    using (var proc = NtProcess.Open(ProcessId, ProcessAccessRights.QueryLimitedInformation, false))
+                    {
+                        if (proc.IsSuccess)
+                        {
+                            _process_name = proc.Result.Name;
+                        }
+                        else
+                        {
+                            _process_name = String.Empty;
+                        }
+                    }
+                }
+                return _process_name;
             }
         }
 
@@ -450,9 +486,16 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buffer = QueryBuffer<UnicodeStringOut>(ThreadInformationClass.ThreadDescription))
+                try
                 {
-                    return buffer.Result.ToString();
+                    using (var buffer = QueryBuffer<UnicodeStringOut>(ThreadInformationClass.ThreadDescription))
+                    {
+                        return buffer.Result.ToString();
+                    }
+                }
+                catch
+                {
+                    return String.Empty;
                 }
             }
 
@@ -473,7 +516,7 @@ namespace NtApiDotNet
             if (from_system_info)
             {
                 return NtSystemInfo.GetProcessInformation().SelectMany(p => p.Threads)
-                    .Select(t => Open(t.ThreadId, desired_access, false)).SelectValidResults();
+                    .Select(t => Open(t, desired_access, false)).SelectValidResults();
             }
             else
             {

@@ -299,12 +299,14 @@ namespace NtApiDotNet
     {
         public int ThreadId { get; private set; }
         public int ProcessId { get; private set; }
+        public string ProcessName { get; private set; }
         public IntPtr StartAddress { get; private set; }
         public uint ThreadState { get; private set; }
         public int WaitReason { get; private set; }
 
-        internal NtThreadInformation(SystemThreadInformation thread_info)
+        internal NtThreadInformation(string name, SystemThreadInformation thread_info)
         {
+            ProcessName = name;
             ThreadId = thread_info.ClientId.UniqueThread.ToInt32();
             ProcessId = thread_info.ClientId.UniqueProcess.ToInt32();
             StartAddress = thread_info.StartAddress;
@@ -556,6 +558,25 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get a list of threads for a specific process.
+        /// </summary>
+        /// <returns>The list of thread information.</returns>
+        public static IEnumerable<NtThreadInformation> GetThreadInformation(int process_id)
+        {
+            foreach (NtProcessInformation process in GetProcessInformation())
+            {
+                if (process.ProcessId == process_id)
+                {
+                    foreach (NtThreadInformation thread in process.Threads)
+                    {
+                        yield return thread;
+                    }
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
         /// Get all process information for the system.
         /// </summary>
         /// <returns>The list of process information.</returns>
@@ -572,7 +593,7 @@ namespace NtApiDotNet
                     SystemThreadInformation[] thread_info = new SystemThreadInformation[process_entry.NumberOfThreads];
                     process_buffer.Data.ReadArray(0, thread_info, 0, thread_info.Length);
 
-                    yield return new NtProcessInformation(process_entry, thread_info.Select(t => new NtThreadInformation(t)));
+                    yield return new NtProcessInformation(process_entry, thread_info.Select(t => new NtThreadInformation(process_entry.ImageName.ToString(), t)));
 
                     if (process_entry.NextEntryOffset == 0)
                     {
