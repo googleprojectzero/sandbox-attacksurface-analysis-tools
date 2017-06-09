@@ -348,7 +348,7 @@ namespace NtObjectManager
                             else
                             {
                                 string curr_cmdline = process.CommandLine.ToLower();
-                                foreach (string cmdline in cmdlines)
+                                foreach (string cmdline in cmdline_set)
                                 {
                                     if (curr_cmdline.Contains(cmdline.ToLower()))
                                     {
