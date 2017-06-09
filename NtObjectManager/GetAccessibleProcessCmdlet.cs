@@ -39,7 +39,7 @@ namespace NtObjectManager
 
         internal ProcessAccessCheckResult(string name, string image_path, int process_id, string command_line, AccessMask granted_access,
             NtType type, string sddl, TokenInformation token_info) : base(name, type.Name, granted_access, 
-                type.GenericMapping, sddl, typeof(ProcessAccessRights), token_info)
+                type.GenericMapping, sddl, type.AccessRightsType, token_info)
         {
             ProcessImagePath = image_path;
             ProcessId = process_id;

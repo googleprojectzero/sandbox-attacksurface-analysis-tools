@@ -218,42 +218,52 @@ namespace NtObjectManager
             }
         }
 
-        internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
+        /// <summary>
+        /// Convert a Win32 Path to a Native NT path.
+        /// </summary>
+        /// <param name="win32_path">The win32 path to convert.</param>
+        /// <returns>The native path.</returns>
+        protected override string ConvertWin32Path(string win32_path)
         {
-            bool open_for_backup = false;
+            return NtFileUtils.DosFileNameToNt(win32_path);
+        }
 
+        private bool _open_for_backup;
+
+        /// <summary>
+        /// Override for begin processing.
+        /// </summary>
+        protected override void BeginProcessing()
+        {
             using (NtToken process_token = NtToken.OpenProcessToken())
             {
-                open_for_backup = process_token.SetPrivilege(TokenPrivilegeValue.SeBackupPrivilege, PrivilegeAttributes.Enabled);
+                _open_for_backup = process_token.SetPrivilege(TokenPrivilegeValue.SeBackupPrivilege, PrivilegeAttributes.Enabled);
 
-                if (!open_for_backup)
+                if (!_open_for_backup)
                 {
                     WriteWarning("Current process doesn't have SeBackupPrivilege, results may be inaccurate");
                 }
             }
 
-            string base_path = Path ?? NtFileUtils.DosFileNameToNt(Win32Path);
-            if (!base_path.StartsWith(@"\"))
-            {
-                WriteWarning("Path doesn't start with \\. Perhaps you want to specify -Win32Path instead?");
-            }
+            base.BeginProcessing();
+        }
 
-            FileOpenOptions options = FileOpenOptions.OpenReparsePoint | (open_for_backup ? FileOpenOptions.OpenForBackupIntent : FileOpenOptions.None);
+        internal override void RunAccessCheckPath(IEnumerable<TokenEntry> tokens, string path)
+        {
+            FileOpenOptions options = FileOpenOptions.OpenReparsePoint | (_open_for_backup ? FileOpenOptions.OpenForBackupIntent : FileOpenOptions.None);
             NtType type = NtType.GetTypeByType<NtFile>();
             AccessMask access_rights = type.MapGenericRights(AccessRights);
             AccessMask dir_access_rights = type.MapGenericRights(DirectoryAccessRights);
-            using (var result = OpenFile(base_path, null, options))
+            using (var result = OpenFile(path, null, options))
             {
-                if (result.IsSuccess)
+                NtFile file = result.GetResultOrThrow();
+                DumpFile(tokens,
+                    access_rights,
+                    dir_access_rights,
+                    result.Result);
+                if (IsDirectoryNoThrow(result.Result))
                 {
-                    DumpFile(tokens,
-                        access_rights,
-                        dir_access_rights,
-                        result.Result);
-                    if (IsDirectoryNoThrow(result.Result))
-                    {
-                        DumpDirectory(tokens, access_rights, dir_access_rights, result.Result, options, GetMaxDepth());
-                    }
+                    DumpDirectory(tokens, access_rights, dir_access_rights, file, options, GetMaxDepth());
                 }
             }
         }

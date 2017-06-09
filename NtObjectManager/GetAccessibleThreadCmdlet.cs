@@ -28,10 +28,11 @@ namespace NtObjectManager
         /// </summary>
         public int ThreadId { get; private set; }
         
-        internal ThreadAccessCheckResult(string name, string image_path, int process_id, string command_line, AccessMask granted_access,
+        internal ThreadAccessCheckResult(string name, string image_path, int thread_id, int process_id, string command_line, AccessMask granted_access,
             NtType type, string sddl, TokenInformation token_info) : base(name, image_path, process_id, command_line, granted_access,
                 type, sddl, token_info)
         {
+            ThreadId = thread_id;
         }
     }
 
@@ -119,36 +120,36 @@ namespace NtObjectManager
 
         internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
-            //AccessMask access_rights = NtType.GetTypeByType<NtProcess>().MapGenericRights(AccessRights);
-            //// If we've got debug privilege we can open all processes and get their security descriptors.
-            //// So we can just do a standard access check against each token. 
-            //if (NtToken.EnableDebugPrivilege())
-            //{
-            //    using (var procs = NtProcess.GetProcesses(ProcessAccessRights.ReadControl | ProcessAccessRights.QueryInformation, FromSystem).ToDisposableList())
-            //    {
-            //        CheckAccessWithReadControl(tokens, procs, access_rights);
-            //    }
-            //}
-            //else
-            //{
-            //    WriteWarning("Current process doesn't have SeDebugPrivilege, results may be inaccurate");
-            //    // We'll have to open each process in turn to see what we can access.
-            //    foreach (var token in tokens)
-            //    {
-            //        using (var processes = new DisposableList<NtProcess>())
-            //        {
-            //            using (token.Token.Impersonate())
-            //            {
-            //                processes.AddRange(NtProcess.GetProcesses(ProcessAccessRights.MaximumAllowed | AccessRights, FromSystem));
-            //            }
-            //            foreach (NtProcess process in processes)
-            //            {
-            //                WriteAccessCheckResult(process, process.GrantedAccessMask,
-            //                    process.NtType.GenericMapping, String.Empty, token.Information);
-            //            }
-            //        }
-            //    }
-            //}
+            AccessMask access_rights = NtType.GetTypeByType<NtThread>().MapGenericRights(AccessRights);
+            // If we've got debug privilege we can open all processes and get their security descriptors.
+            // So we can just do a standard access check against each token. 
+            if (NtToken.EnableDebugPrivilege())
+            {
+                using (var procs = NtProcess.GetProcesses(ProcessAccessRights.ReadControl | ProcessAccessRights.QueryInformation, FromSystem).ToDisposableList())
+                {
+                    CheckAccessWithReadControl(tokens, procs, access_rights);
+                }
+            }
+            else
+            {
+                //WriteWarning("Current process doesn't have SeDebugPrivilege, results may be inaccurate");
+                //// We'll have to open each process in turn to see what we can access.
+                //foreach (var token in tokens)
+                //{
+                //    using (var processes = new DisposableList<NtProcess>())
+                //    {
+                //        using (token.Token.Impersonate())
+                //        {
+                //            processes.AddRange(NtProcess.GetProcesses(ProcessAccessRights.MaximumAllowed | AccessRights, FromSystem));
+                //        }
+                //        foreach (NtProcess process in processes)
+                //        {
+                //            WriteAccessCheckResult(process, process.GrantedAccessMask,
+                //                process.NtType.GenericMapping, String.Empty, token.Information);
+                //        }
+                //    }
+                //}
+            }
         }
     }
 }

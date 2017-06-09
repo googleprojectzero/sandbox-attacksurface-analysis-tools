@@ -262,31 +262,32 @@ namespace NtObjectManager
             }
         }
 
-        private void RunAccessCheckPath(IEnumerable<TokenEntry> tokens, HashSet<string> type_filter)
+        /// <summary>
+        /// Convert a Win32 Path to a Native NT path.
+        /// </summary>
+        /// <param name="win32_path">The win32 path to convert.</param>
+        /// <returns>The native path.</returns>
+        protected override string ConvertWin32Path(string win32_path)
         {
-            string base_path = Path;
-            if (base_path == null)
+            string base_path = win32_path.TrimStart('\\');
+            if (String.IsNullOrEmpty(base_path))
             {
-                base_path = Win32Path.TrimStart('\\');
-                if (String.IsNullOrEmpty(base_path))
-                {
-                    base_path = _base_named_objects;
-                }
-                else
-                {
-                    base_path = String.Format(@"{0}\{1}", _base_named_objects, base_path);
-                }
+                base_path = _base_named_objects;
             }
-            if (!base_path.StartsWith(@"\"))
+            else
             {
-                WriteWarning("Path doesn't start with \\. Perhaps you want to specify -Win32Path instead?");
+                base_path = String.Format(@"{0}\{1}", _base_named_objects, base_path);
             }
+            return base_path;
+        }
 
-            using (var result = OpenDirectory(base_path, null))
+        internal override void RunAccessCheckPath(IEnumerable<TokenEntry> tokens, string path)
+        {
+            using (var result = OpenDirectory(path, null))
             {
                 if (result.IsSuccess)
                 {
-                    DumpDirectory(tokens, type_filter, AccessRights, result.Result, GetMaxDepth());
+                    DumpDirectory(tokens, GetTypeFilter(), AccessRights, result.Result, GetMaxDepth());
                 }
             }
         }
@@ -319,8 +320,14 @@ namespace NtObjectManager
             }
         }
 
-        private void RunAccessCheckHandles(IEnumerable<TokenEntry> tokens, HashSet<string> type_filter)
+        private HashSet<string> GetTypeFilter()
         {
+            return new HashSet<string>(TypeFilter ?? new string[0], StringComparer.OrdinalIgnoreCase);
+        }
+
+        private void RunAccessCheckHandles(IEnumerable<TokenEntry> tokens)
+        {
+            var type_filter = GetTypeFilter();
             using (NtToken process_token = NtToken.OpenProcessToken())
             {
                 if (!process_token.SetPrivilege(TokenPrivilegeValue.SeDebugPrivilege, PrivilegeAttributes.Enabled))
@@ -356,15 +363,13 @@ namespace NtObjectManager
 
         internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
-            HashSet<string> type_filter = new HashSet<string>(TypeFilter ?? new string[0], StringComparer.OrdinalIgnoreCase);
-
             if (FromHandles)
             {
-                RunAccessCheckHandles(tokens, type_filter);
+                RunAccessCheckHandles(tokens);
             }
             else
             {
-                RunAccessCheckPath(tokens, type_filter);
+                base.RunAccessCheck(tokens);
             }
         }
     }

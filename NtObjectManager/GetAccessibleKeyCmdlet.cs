@@ -139,28 +139,42 @@ namespace NtObjectManager
             }
         }
 
-        internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
+        private bool _open_for_backup;
+
+        /// <summary>
+        /// Override for begin processing.
+        /// </summary>
+        protected override void BeginProcessing()
         {
-            bool open_for_backup = false;
             using (NtToken process_token = NtToken.OpenProcessToken())
             {
-                open_for_backup = process_token.SetPrivilege(TokenPrivilegeValue.SeBackupPrivilege, PrivilegeAttributes.Enabled);
-                if (!open_for_backup)
+                _open_for_backup = process_token.SetPrivilege(TokenPrivilegeValue.SeBackupPrivilege, PrivilegeAttributes.Enabled);
+
+                if (!_open_for_backup)
                 {
-                    WriteWarning("Current process doesn't have SeBackupPrivilege, results may be inaccurate.");
+                    WriteWarning("Current process doesn't have SeBackupPrivilege, results may be inaccurate");
                 }
             }
 
-            string base_path = Path ?? NtKeyUtils.Win32KeyNameToNt(Win32Path);
-            if (!base_path.StartsWith(@"\"))
-            {
-                WriteWarning("Path doesn't start with \\. Perhaps you want to specify -Win32Path instead?");
-            }
+            base.BeginProcessing();
+        }
 
-            using (var result = OpenKey(base_path, null, false, open_for_backup))
+        /// <summary>
+        /// Convert a Win32 Path to a Native NT path.
+        /// </summary>
+        /// <param name="win32_path">The win32 path to convert.</param>
+        /// <returns>The native path.</returns>
+        protected override string ConvertWin32Path(string win32_path)
+        {
+            return NtKeyUtils.Win32KeyNameToNt(win32_path);
+        }
+
+        internal override void RunAccessCheckPath(IEnumerable<TokenEntry> tokens, string path)
+        {
+            using (var result = OpenKey(path, null, false, _open_for_backup))
             {
-                result.Status.ToNtException();
-                DumpKey(tokens, result.Result.NtType.MapGenericRights(AccessRights), open_for_backup, result.Result, GetMaxDepth());
+                NtKey key = result.GetResultOrThrow();
+                DumpKey(tokens, result.Result.NtType.MapGenericRights(AccessRights), _open_for_backup, key, GetMaxDepth());
             }
         }
     }
