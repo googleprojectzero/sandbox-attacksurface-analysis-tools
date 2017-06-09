@@ -82,21 +82,6 @@ namespace NtApiDotNet
         SafeBuffer SecurityDescriptor;
         SafeBuffer SecurityQualityOfService;
 
-        private static IntPtr AllocStruct(object s)
-        {
-            int size = Marshal.SizeOf(s);
-            IntPtr ret = Marshal.AllocHGlobal(size);
-            Marshal.StructureToPtr(s, ret, false);
-            return ret;
-        }
-
-        private static void FreeStruct(ref IntPtr p, Type struct_type)
-        {
-            Marshal.DestroyStructure(p, struct_type);
-            Marshal.FreeHGlobal(p);
-            p = IntPtr.Zero;
-        }
-
         /// <summary>
         /// Constructor. Sets flags to None
         /// </summary>
@@ -207,15 +192,6 @@ namespace NtApiDotNet
             SecurityQualityOfService?.Close();
             SecurityDescriptor?.Close();
             RootDirectory?.Close();
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// Finalizer
-        /// </summary>
-        ~ObjectAttributes()
-        {
-            Dispose();
         }
     }
 }
