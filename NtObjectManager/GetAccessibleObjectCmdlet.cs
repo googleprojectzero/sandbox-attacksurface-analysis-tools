@@ -46,6 +46,14 @@ namespace NtObjectManager
     ///   <para>Check recursively for accessible objects under the user's based named objects for the current process token.</para>
     /// </example>
     /// <example>
+    ///   <code>Get-AccessibleObject \ -Recurse -RequiredAccess GenericWrite</code>
+    ///   <para>Check recursively for accessible objects under with write access.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-AccessibleObject \ -Recurse -RequiredAccess GenericWrite -AllowPartialAccess</code>
+    ///   <para>Check recursively for accessible objects under with partial write access.</para>
+    /// </example>
+    /// <example>
     ///   <code>$token = Get-NtToken -Primary -Duplicate -IntegrityLevel Low&#x0A;Get-AccessibleObject \BaseNamedObjects -Recurse -Tokens $token -AccessRights GenericWrite</code>
     ///   <para>Get all object which can be written to in \BaseNamedObjects by a low integrity copy of current token.</para>
     /// </example>
