@@ -314,5 +314,14 @@ namespace NtApiDotNet
         {
             return iterator.Where(r => r.IsSuccess).Select(r => r.Result);
         }
+
+        internal static SafeKernelObjectHandle ToSafeKernelHandle(this SafeHandle handle)
+        {
+            if (handle is SafeKernelObjectHandle)
+            {
+                return (SafeKernelObjectHandle)handle;
+            }
+            return new SafeKernelObjectHandle(handle.DangerousGetHandle(), false);
+        }
     }
 }
