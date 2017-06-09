@@ -15,6 +15,7 @@
 using NtApiDotNet;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Management.Automation;
 
 namespace NtObjectManager
@@ -55,16 +56,35 @@ namespace NtObjectManager
         private static string _base_named_objects = NtDirectory.GetBasedNamedObjects();
 
         /// <summary>
-        /// <para type="description">Generic access rights to apply to an object.</para>
+        /// <para type="description">Generic access rights to check for in an object's access.</para>
         /// </summary>
         [Parameter]
         public GenericAccessRights AccessRights { get; private set; }
+
+        /// <summary>
+        /// <para type="description">If AccessRights specified require that the all must be present to
+        /// be considered a match.</para>
+        /// </summary>
+        [Parameter]
+        public bool RequireAllAccess { get; private set; }
 
         /// <summary>
         /// <para type="description">Specify list of NT object types to filter on.</para>
         /// </summary>
         [Parameter]
         public string[] TypeFilter { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to find objects based on handles rather than enumerating named paths.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "handles")]
+        public SwitchParameter FromHandles { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify when enumerating handles to also check unnamed objects.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "handles")]
+        public SwitchParameter CheckUnnamed { get; set; }
 
         private string ConvertPath(NtObject obj)
         {
@@ -83,10 +103,30 @@ namespace NtObjectManager
             return path;
         }
 
+        private bool IsAccessGranted(AccessMask granted_access, AccessMask access_rights)
+        {
+            if (granted_access.IsEmpty)
+            {
+                return false;
+            }
+
+            if (access_rights.IsEmpty)
+            {
+                return true;
+            }
+
+            if (RequireAllAccess && granted_access.IsAllAccessGranted(access_rights))
+            {
+                return true;
+            }
+
+            return granted_access.IsAccessGranted(access_rights);
+        }
+
         private void CheckAccess(TokenEntry token, NtObject obj, NtType type, AccessMask access_rights, SecurityDescriptor sd)
         {
             AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
-            if (!granted_access.IsEmpty && granted_access.IsAllAccessGranted(access_rights))
+            if (IsAccessGranted(granted_access, access_rights))
             {
                 WriteAccessCheckResult(ConvertPath(obj), type.Name, granted_access, type.GenericMapping,
                     sd.ToSddl(), type.AccessRightsType, token.Information);
@@ -100,7 +140,7 @@ namespace NtObjectManager
             {
                 using (var result = token.Token.RunUnderImpersonate(() => type.Open(obj_attributes, GenericAccessRights.MaximumAllowed, false)))
                 {
-                    if (result.IsSuccess && result.Result.GrantedAccessMask.IsAllAccessGranted(access_rights))
+                    if (result.IsSuccess && IsAccessGranted(result.Result.GrantedAccessMask, access_rights))
                     {
                         WriteAccessCheckResult(ConvertPath(obj), type.Name, result.Result.GrantedAccessMask, type.GenericMapping,
                             String.Empty, type.AccessRightsType, token.Information);
@@ -227,7 +267,7 @@ namespace NtObjectManager
             }
         }
 
-        internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
+        private void RunAccessCheckPath(IEnumerable<TokenEntry> tokens, HashSet<string> type_filter)
         {
             string base_path = Path;
             if (base_path == null)
@@ -247,14 +287,101 @@ namespace NtObjectManager
                 WriteWarning("Path doesn't start with \\. Perhaps you want to specify -Win32Path instead?");
             }
 
-            HashSet<string> type_filter = new HashSet<string>(TypeFilter ?? new string[0], StringComparer.OrdinalIgnoreCase);
-
             using (var result = OpenDirectory(base_path, null))
             {
                 if (result.IsSuccess)
                 {
                     DumpDirectory(tokens, type_filter, AccessRights, result.Result, GetMaxDepth());
                 }
+            }
+        }
+
+        private void RunAccessCheckHandles(IEnumerable<TokenEntry> tokens, HashSet<string> type_filter)
+        {
+            //using (NtToken process_token = NtToken.OpenProcessToken())
+            //{
+            //    if (!process_token.SetPrivilege(TokenPrivilegeValue.SeDebugPrivilege, PrivilegeAttributes.Enabled))
+            //    {
+            //        WriteWarning("Current process doesn't have SeDebugPrivilege, results may be inaccurate");
+            //    }
+            //}
+
+            //if (type_filter.Count == 0)
+            //{
+            //    WriteWarning("Checking handle access without any type filtering can hang. Perhaps specifying the types using -TypeFilter.");
+            //}
+
+            //var handles = NtSystemInfo.GetHandles(-1, false).Where(h => IsTypeFiltered(h.ObjectType, type_filter)).GroupBy(h => h.ProcessId);
+            //HashSet<ulong> checked_objects = new HashSet<ulong>();
+
+            //try
+            //{
+            //    foreach (var group in handles)
+            //    {
+            //        using (var proc = NtProcess.Open(group.Key, ProcessAccessRights.DupHandle, false))
+            //        {
+            //        }
+
+
+            //            try
+            //            {
+
+            //                using (NtAlpc obj = NtAlpc.DuplicateFrom(proc, new IntPtr(handle.Handle)))
+            //                {
+            //                    string name = obj.FullPath;
+            //                    // We only care about named ALPC ports.
+            //                    if (String.IsNullOrEmpty(name))
+            //                    {
+            //                        continue;
+            //                    }
+
+            //                    if (!ports.Add(name))
+            //                    {
+            //                        continue;
+            //                    }
+
+            //                    SecurityDescriptor sd = obj.SecurityDescriptor;
+            //                    string sddl = sd.ToSddl();
+            //                    foreach (TokenEntry token in tokens)
+            //                    {
+            //                        AccessMask granted_access = NtSecurity.GetAllowedAccess(sd, token.Token,
+            //                            AlpcAccessRights.Connect, alpc_type.GenericMapping);
+            //                        if (granted_access.IsEmpty)
+            //                        {
+            //                            continue;
+            //                        }
+            //                        AccessMask maximum_access = NtSecurity.GetMaximumAccess(sd,
+            //                            token.Token, alpc_type.GenericMapping);
+            //                        WriteAccessCheckResult(name, alpc_type.Name, maximum_access,
+            //                            alpc_type.GenericMapping, sddl, typeof(AlpcAccessRights), token.Information);
+            //                    }
+            //                }
+            //            }
+            //            catch (NtException)
+            //            {
+            //            }
+            //    }
+            //}
+            //finally
+            //{
+            //    foreach (NtProcess proc in pid_to_process.Values)
+            //    {
+            //        proc?.Close();
+            //    }
+            //}
+        }
+
+        internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
+        {
+            HashSet<string> type_filter = new HashSet<string>(TypeFilter ?? new string[0], StringComparer.OrdinalIgnoreCase);
+
+            if (FromHandles)
+            {
+                RunAccessCheckHandles(tokens, type_filter);
+            }
+            else
+            {
+                RunAccessCheckPath(tokens, type_filter);
             }
         }
     }
