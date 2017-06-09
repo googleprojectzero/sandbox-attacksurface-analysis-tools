@@ -421,13 +421,13 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Specify whether to recursively check the path for access.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "path"), Parameter(ParameterSetName = "win32")]
         public SwitchParameter Recurse { get; set; }
 
         /// <summary>
         /// <para type="description">When recursing specify maximum depth.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "path"), Parameter(ParameterSetName = "win32")]
         public int? MaxDepth { get; set; }
 
         internal int GetMaxDepth()
