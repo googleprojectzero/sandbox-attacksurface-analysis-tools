@@ -264,11 +264,11 @@ namespace NtObjectManager
         public A AccessRights { get; set; }
 
         /// <summary>
-        /// <para type="description">If AccessRights specified require that the all must be present to
-        /// be considered a match.</para>
+        /// <para type="description">If AccessRights specified require that only part of the access rights
+        /// are required to match an access check.</para>
         /// </summary>
         [Parameter]
-        public SwitchParameter RequireAllAccess { get; set; }
+        public SwitchParameter AllowPartialAccess { get; set; }
 
         internal bool IsAccessGranted(AccessMask granted_access, AccessMask access_rights)
         {
@@ -282,12 +282,12 @@ namespace NtObjectManager
                 return true;
             }
 
-            if (RequireAllAccess)
+            if (AllowPartialAccess)
             {
-                return granted_access.IsAllAccessGranted(access_rights);
+                return granted_access.IsAccessGranted(access_rights);
             }
 
-            return granted_access.IsAccessGranted(access_rights);
+            return granted_access.IsAllAccessGranted(access_rights);
         }
 
         internal abstract void RunAccessCheck(IEnumerable<TokenEntry> tokens);
