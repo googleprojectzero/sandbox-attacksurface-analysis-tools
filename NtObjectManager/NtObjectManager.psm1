@@ -47,9 +47,9 @@ function Get-AccessibleAlpcPort
 		[string[]]$ProcessCommandLines,
 		[NtApiDotNet.NtToken[]]$Tokens
 		)
-	# Access0 is Connect for ALPC Ports.
+	$access = Get-NtAccessMask -AlpcPort Connect -ToGenericAccess
 	Get-AccessibleObject -FromHandles -ProcessIds $ProcessIds -ProcessNames $ProcessNames `
-		-ProcessCommandLines $ProcessCommandLines -Tokens $Tokens -TypeFilter "ALPC Port" -AccessRights Access0 
+		-ProcessCommandLines $ProcessCommandLines -Tokens $Tokens -TypeFilter "ALPC Port" -AccessRights $access 
 }
 
 <#
