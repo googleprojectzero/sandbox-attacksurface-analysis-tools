@@ -59,6 +59,7 @@ namespace NtObjectManager
     ///   <para>Get all object which can be written to in \BaseNamedObjects by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleObject")]
+    [OutputType(typeof(AccessCheckResult))]
     public class GetAccessibleObjectCmdlet : GetAccessiblePathCmdlet<GenericAccessRights>
     {
         private static string _base_named_objects = NtDirectory.GetBasedNamedObjects();

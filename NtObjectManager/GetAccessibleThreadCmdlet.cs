@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using NtApiDotNet;
-using System;
 using System.Collections.Generic;
 using System.Management.Automation;
 

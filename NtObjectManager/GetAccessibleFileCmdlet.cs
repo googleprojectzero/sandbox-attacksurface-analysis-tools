@@ -69,6 +69,7 @@ namespace NtObjectManager
     ///   <para>Get all files with can be written to \??\C:\Windows by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleFile")]
+    [OutputType(typeof(AccessCheckResult))]
     public class GetAccessibleFileCmdlet : GetAccessiblePathCmdlet<FileAccessRights>
     {
         /// <summary>

@@ -20,7 +20,7 @@ using System.Management.Automation;
 namespace NtObjectManager
 {
     /// <summary>
-    /// Class to represent an access check result.
+    ///<para type="description">General Access check result.</para>
     /// </summary>
     public class AccessCheckResult
     {

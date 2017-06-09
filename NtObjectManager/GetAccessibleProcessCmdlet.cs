@@ -20,7 +20,7 @@ using System.Management.Automation;
 namespace NtObjectManager
 {
     /// <summary>
-    /// Access check result for a process.
+    /// <para type="description">Access check result for a process.</para>
     /// </summary>
     public class ProcessAccessCheckResult : AccessCheckResult
     {
@@ -67,6 +67,7 @@ namespace NtObjectManager
     ///   <para>Get all processes with can be written by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleProcess")]
+    [OutputType(typeof(ProcessAccessCheckResult))]
     public class GetAccessibleProcessCmdlet : CommonAccessBaseCmdlet<ProcessAccessRights>
     {
         /// <summary>

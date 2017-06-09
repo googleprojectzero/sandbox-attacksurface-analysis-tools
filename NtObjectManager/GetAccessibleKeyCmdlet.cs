@@ -50,6 +50,7 @@ namespace NtObjectManager
     ///   <para>Get all keys with can be written to in HKEY_CURRENT_USER by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleKey")]
+    [OutputType(typeof(AccessCheckResult))]
     public class GetAccessibleKeyCmdlet : GetAccessiblePathCmdlet<KeyAccessRights>
     {
         private static NtResult<NtKey> OpenKey(string name, NtObject root, bool open_link, bool open_for_backup)
