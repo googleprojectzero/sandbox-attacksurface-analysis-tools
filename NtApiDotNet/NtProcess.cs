@@ -888,6 +888,29 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Gets all accessible processes on the system in a particular session.
+        /// </summary>
+        /// <param name="session_id">The session ID.</param>
+        /// <param name="desired_access">The access desired for each process.</param>
+        /// <returns>The list of accessible processes.</returns>
+        public static IEnumerable<NtProcess> GetSessionProcesses(int session_id, ProcessAccessRights desired_access)
+        {
+            return NtSystemInfo.GetProcessInformation().Where(p => p.SessionId == session_id)
+                .Select(p => Open(p.ProcessId, desired_access, false))
+                .SelectValidResults().ToArray();
+        }
+
+        /// <summary>
+        /// Gets all accessible processes on the system in the current session session.
+        /// </summary>
+        /// <param name="desired_access">The access desired for each process.</param>
+        /// <returns>The list of accessible processes.</returns>
+        public static IEnumerable<NtProcess> GetSessionProcesses(ProcessAccessRights desired_access)
+        {
+            return GetSessionProcesses(Current.SessionId, desired_access);
+        }
+
+        /// <summary>
         /// Get first accessible process (used in combination with GetNextProcess)
         /// </summary>
         /// <param name="desired_access">The access required for the process.</param>

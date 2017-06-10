@@ -79,11 +79,11 @@ namespace NtApiDotNet
         public LargeIntegerStruct UserTime;
         public LargeIntegerStruct KernelTime;
         public UnicodeStringOut ImageName;
-        public uint BasePriority;
+        public int BasePriority;
         public IntPtr UniqueProcessId;
         public IntPtr InheritedFromUniqueProcessId;
-        public uint HandleCount;
-        public uint SessionId;
+        public int HandleCount;
+        public int SessionId;
         public IntPtr UniqueProcessKey; // since VISTA (requires SystemExtendedProcessInformation)
         public IntPtr PeakVirtualSize;
         public IntPtr VirtualSize;
@@ -326,12 +326,14 @@ namespace NtApiDotNet
         public int ParentProcessId { get; private set; }
         public IEnumerable<NtThreadInformation> Threads { get; private set; }
         public string ImageName { get; private set; }
+        public int SessionId { get; private set; }
 
         internal NtProcessInformation(SystemProcessInformation process_info, IEnumerable<NtThreadInformation> threads)
         {
             ImageName = process_info.ImageName.ToString();
             ProcessId = process_info.UniqueProcessId.ToInt32();
             ParentProcessId = process_info.InheritedFromUniqueProcessId.ToInt32();
+            SessionId = process_info.SessionId;
             Threads = threads.ToArray();
         }
     }
