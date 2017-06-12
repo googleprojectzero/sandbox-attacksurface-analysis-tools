@@ -155,6 +155,10 @@ namespace NtObjectManager
         /// </summary>
         public bool LowPrivilegeAppContainer { get; private set; }
         /// <summary>
+        /// The session ID of the token.
+        /// </summary>
+        public int SessionId { get; private set; }
+        /// <summary>
         /// Additonal information of where the token was sourced from
         /// </summary>
         public Dictionary<string, object> SourceData { get; private set; }
@@ -181,6 +185,7 @@ namespace NtObjectManager
             Elevated = token.Elevated;
             Restricted = token.Restricted;
             LowPrivilegeAppContainer = token.LowPrivilegeAppContainer;
+            SessionId = token.SessionId;
         }
 
         internal TokenInformation(NtToken token, NtProcess process)
@@ -257,6 +262,12 @@ namespace NtObjectManager
         /// </summary>
         [Parameter]
         public NtToken[] Tokens { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a list of process objects to get tokens from.</para>
+        /// </summary>
+        [Parameter]
+        public NtProcess[] Processes { get; set; }
 
         /// <summary>
         /// <para type="description">Access rights to check for in an object's access.</para>
@@ -412,6 +423,13 @@ namespace NtObjectManager
                     GetTokensFromPids(tokens, ProcessIds);
                 }
                 GetTokensFromArguments(tokens, ProcessNames, ProcessCommandLines);
+                if (Processes != null)
+                {
+                    foreach (NtProcess process in Processes)
+                    {
+                        AddTokenEntryFromProcess(tokens, process);
+                    }
+                }
                 if (tokens.Count == 0)
                 {
                     AddTokenEntryFromProcess(tokens, NtProcess.Current);

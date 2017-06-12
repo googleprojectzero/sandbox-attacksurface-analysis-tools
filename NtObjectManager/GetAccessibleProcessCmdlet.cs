@@ -37,8 +37,13 @@ namespace NtObjectManager
         /// Command line of the process.
         /// </summary>
         public string ProcessCommandLine { get; private set; }
+        /// <summary>
+        /// Session ID of the process.
+        /// </summary>
+        public int SessionId { get; private set; }
 
-        internal ProcessAccessCheckResult(string name, string image_path, int process_id, string command_line, AccessMask granted_access,
+        internal ProcessAccessCheckResult(string name, string image_path, int process_id, int session_id,
+            string command_line, AccessMask granted_access,
             NtType type, string sddl, TokenInformation token_info) : base(name, type.Name, granted_access, 
                 type.GenericMapping, sddl, type.AccessRightsType, token_info)
         {
@@ -63,8 +68,8 @@ namespace NtObjectManager
         /// </summary>
         public string ThreadDescription { get; private set; }
 
-        internal ThreadAccessCheckResult(string name, string image_path, int thread_id, string thread_description, int process_id, string command_line, AccessMask granted_access,
-            NtType type, string sddl, TokenInformation token_info) : base(String.Format("{0}/{1}.{2}", name, process_id, thread_id), image_path, process_id, command_line, granted_access,
+        internal ThreadAccessCheckResult(string name, string image_path, int thread_id, string thread_description, int process_id, int session_id, string command_line, AccessMask granted_access,
+            NtType type, string sddl, TokenInformation token_info) : base(String.Format("{0}/{1}.{2}", name, process_id, thread_id), image_path, process_id, session_id, command_line, granted_access,
                 type, sddl, token_info)
         {
             ThreadId = thread_id;
@@ -141,6 +146,7 @@ namespace NtObjectManager
             public string ImagePath { get; set; }
             public string CommandLine { get; set; }
             public int ProcessId { get; set; }
+            public int SessionId { get; set; }
 
             private ProcessDetails()
             {
@@ -152,11 +158,13 @@ namespace NtObjectManager
                 string image_path = process.FullPath;
                 string command_line = "Unknown";
                 int process_id = -1;
+                int session_id = 0;
 
                 if (process.IsAccessGranted(ProcessAccessRights.QueryLimitedInformation))
                 {
                     command_line = process.CommandLine;
                     process_id = process.ProcessId;
+                    session_id = process.SessionId;
                 }
                 else
                 {
@@ -166,11 +174,12 @@ namespace NtObjectManager
                         {
                             command_line = dup_process.Result.CommandLine;
                             process_id = dup_process.Result.ProcessId;
+                            session_id = dup_process.Result.SessionId;
                         }
                     }
                 }
                 return new ProcessDetails() { Name = name, ImagePath = image_path,
-                    CommandLine = command_line, ProcessId = process_id };
+                    CommandLine = command_line, ProcessId = process_id, SessionId = session_id };
             }
 
             public static ProcessDetails FromThread(NtThread thread)
@@ -225,13 +234,13 @@ namespace NtObjectManager
         {
             if (thread == null)
             {
-                WriteObject(new ProcessAccessCheckResult(process.Name, process.ImagePath, process.ProcessId, process.CommandLine,
-                    granted_access, _process_type, sddl, token));
+                WriteObject(new ProcessAccessCheckResult(process.Name, process.ImagePath, process.ProcessId, process.SessionId, 
+                    process.CommandLine, granted_access, _process_type, sddl, token));
             }
             else
             {
                 WriteObject(new ThreadAccessCheckResult(process.Name, process.ImagePath, thread.ThreadId, 
-                    thread.Description, process.ProcessId, process.CommandLine, granted_access, _process_type, sddl, token));
+                    thread.Description, process.ProcessId, process.SessionId, process.CommandLine, granted_access, _process_type, sddl, token));
             }
         }
 
