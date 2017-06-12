@@ -19,7 +19,7 @@ Import-Module "$PSScriptRoot\NtObjectManager.dll"
 Get a list of ALPC Ports that can be opened by a specificed token.
 .DESCRIPTION
 This cmdlet checks for all ALPC ports on the system and tries to determine if one or more specified tokens can connect to them. 
-If no token are specified then the current process token is used. This function searches handles for existing ALPC Port servers as you can't directly open the server object and just connecting might show inconsistent results.
+If no tokens are specified then the current process token is used. This function searches handles for existing ALPC Port servers as you can't directly open the server object and just connecting might show inconsistent results.
 .PARAMETER ProcessIds
 Specify a list of process IDs to open for their tokens.
 .PARAMETER ProcessNames
@@ -50,6 +50,96 @@ function Get-AccessibleAlpcPort
 	$access = Get-NtAccessMask -AlpcPort Connect -ToGenericAccess
 	Get-AccessibleObject -FromHandles -ProcessIds $ProcessIds -ProcessNames $ProcessNames `
 		-ProcessCommandLines $ProcessCommandLines -Tokens $Tokens -TypeFilter "ALPC Port" -AccessRights $access 
+}
+
+<#
+.SYNOPSIS
+Set the state of a token's privileges.
+.DESCRIPTION
+This cmdlet will set the state of a token's privileges. This is commonly used to enable debug/backup privileges to perform privileged actions. 
+If no token is specified then the current process token is used.
+.PARAMETER Privileges
+A list of privileges to set their state.
+.PARAMETER Token
+Optional token object to use to set privileges. Must be accesible for AdjustPrivileges right.
+.PARAMETER Attributes
+Specify the actual attributes to set. Defaults to Enabled.
+.OUTPUTS
+List of TokenPrivilege values indicating the new state of all privileges successfully modified.
+.EXAMPLE
+Set-NtTokenPrivilege SeDebugPrivilege
+Enable SeDebugPrivilege on the current process token
+.EXAMPLE
+Set-NtTokenPrivilege SeDebugPrivilege -Attributes Disabled
+Disable SeDebugPrivilege on the current process token
+.EXAMPLE
+Set-NtTokenPrivilege SeBackupPrivilege, SeRestorePrivilege -Token $token
+Enable SeBackupPrivilege and SeRestorePrivilege on an explicit token object.
+#>
+function Set-NtTokenPrivilege
+{
+	Param(
+		[Parameter(Mandatory=$true, Position=0)]
+		[NtApiDotNet.TokenPrivilegeValue[]]$Privileges,
+		[NtApiDotNet.NtToken]$Token,
+		[NtApiDotNet.PrivilegeAttributes]$Attributes = "Enabled"
+		)
+	if ($Token -eq $null) {
+		$Token = Get-NtToken -Primary
+	} else {
+		$Token = $Token.Duplicate()
+	}
+
+	Use-NtObject($Token) {
+		$result = @()
+		foreach($priv in $Privileges) {
+			if ($Token.SetPrivilege($priv, $Attributes)) {
+				$result += @($Token.GetPrivilege($priv))
+			}
+		}
+		return $result
+	}
+}
+
+<#
+.SYNOPSIS
+Set the integrity level of a token.
+.DESCRIPTION
+This cmdlet will set the integrity level of a token. If you want to raise the level you must have SeTcbPrivilege otherwise you can only lower it. If no token is specified then the current process token is used.
+.PARAMETER IntegrityLevel
+A list of privileges to set their state.
+.PARAMETER Token
+Optional token object to use to set privileges. Must be accesible for AdjustDefault right.
+.PARAMETER Adjustment
+Increment or decrement the IL level from the base specified in -IntegrityLevel.
+.EXAMPLE
+Set-NtTokenPrivilege SeDebugPrivilege
+Enable SeDebugPrivilege on the current process token
+.EXAMPLE
+Set-NtTokenPrivilege SeDebugPrivilege -Attributes Disabled
+Disable SeDebugPrivilege on the current process token
+.EXAMPLE
+Set-NtTokenPrivilege SeBackupPrivilege, SeRestorePrivilege -Token $token
+Enable SeBackupPrivilege and SeRestorePrivilege on an explicit token object.
+#>
+function Set-NtTokenIntegrityLevel
+{
+	Param(
+		[Parameter(Mandatory=$true, Position=0)]
+		[NtApiDotNet.TokenIntegrityLevel[]]$IntegrityLevel,
+		[NtApiDotNet.NtToken]$Token,
+		[Int32]$Adjustment = 0
+		)
+	if ($Token -eq $null) {
+		$Token = Get-NtToken -Primary
+	} else {
+		$Token = $Token.Duplicate()
+	}
+
+	$il_raw = $IntegrityLevel.ToInt32($null) + $Adjustment
+	Use-NtObject($Token) {
+		$Token.SetIntegrityLevelRaw($il_raw) | Out-Null
+	}
 }
 
 <#
