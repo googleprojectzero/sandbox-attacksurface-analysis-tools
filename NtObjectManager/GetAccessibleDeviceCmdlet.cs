@@ -133,7 +133,7 @@ namespace NtObjectManager
         public DeviceCheckMode CheckMode { get; set; }
 
         /// <summary>
-        /// <para type="description">If CheckNamespacePath enabled specify a list of namespace paths to check for access to the device namespace instead of a default.</para>
+        /// <para type="description">If check mode allows namespace paths specify a list of namespace paths to check for access to the device namespace instead of a default.</para>
         /// </summary>
         [Parameter]
         public string[] NamespacePath { get; set; }
