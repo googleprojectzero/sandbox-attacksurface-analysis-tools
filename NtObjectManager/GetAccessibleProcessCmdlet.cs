@@ -42,14 +42,20 @@ namespace NtObjectManager
         /// </summary>
         public int SessionId { get; private set; }
 
+        /// <summary>
+        /// Gets whether this is a thread access check result.
+        /// </summary>
+        public bool IsThread { get; private set; }
+
         internal ProcessAccessCheckResult(string name, string image_path, int process_id, int session_id,
-            string command_line, AccessMask granted_access,
+            string command_line, AccessMask granted_access, bool is_thread,
             NtType type, string sddl, TokenInformation token_info) : base(name, type.Name, granted_access, 
-                type.GenericMapping, sddl, type.AccessRightsType, token_info)
+                type.GenericMapping, sddl, type.AccessRightsType, false, token_info)
         {
             ProcessImagePath = image_path;
             ProcessId = process_id;
             ProcessCommandLine = command_line;
+            IsThread = is_thread;
         }
     }
 
@@ -68,9 +74,11 @@ namespace NtObjectManager
         /// </summary>
         public string ThreadDescription { get; private set; }
 
-        internal ThreadAccessCheckResult(string name, string image_path, int thread_id, string thread_description, int process_id, int session_id, string command_line, AccessMask granted_access,
-            NtType type, string sddl, TokenInformation token_info) : base(String.Format("{0}/{1}.{2}", name, process_id, thread_id), image_path, process_id, session_id, command_line, granted_access,
-                type, sddl, token_info)
+        internal ThreadAccessCheckResult(string name, string image_path, int thread_id, string thread_description, int process_id, 
+            int session_id, string command_line, AccessMask granted_access,
+            NtType type, string sddl, TokenInformation token_info) : base(String.Format("{0}/{1}.{2}", name, process_id, thread_id), 
+                image_path, process_id, session_id, command_line, granted_access,
+                true, type, sddl, token_info)
         {
             ThreadId = thread_id;
             ThreadDescription = thread_description;
@@ -235,7 +243,7 @@ namespace NtObjectManager
             if (thread == null)
             {
                 WriteObject(new ProcessAccessCheckResult(process.Name, process.ImagePath, process.ProcessId, process.SessionId, 
-                    process.CommandLine, granted_access, _process_type, sddl, token));
+                    process.CommandLine, granted_access, false, _process_type, sddl, token));
             }
             else
             {

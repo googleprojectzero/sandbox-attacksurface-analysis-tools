@@ -31,7 +31,7 @@ namespace NtObjectManager
 
         internal DeviceAccessCheckResult(string name, bool namespace_path, AccessMask granted_access,
             string sddl, TokenInformation token_info) : base(name, "Device",
-                granted_access, NtType.GetTypeByType<NtFile>().GenericMapping, sddl, typeof(FileAccessRights), token_info)
+                granted_access, NtType.GetTypeByType<NtFile>().GenericMapping, sddl, typeof(FileAccessRights), false, token_info)
         {
             NamespacePath = namespace_path;
         }

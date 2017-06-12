@@ -56,6 +56,7 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Options to use when opening/creating the key.</para>
         /// </summary>
+        [Parameter]
         public KeyCreateOptions Options { get; set; }
 
         /// <summary>

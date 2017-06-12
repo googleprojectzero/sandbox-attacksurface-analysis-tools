@@ -135,8 +135,9 @@ namespace NtObjectManager
 
             if (IsAccessGranted(granted_access, access_rights))
             {
+                bool is_directory = IsDirectoryNoThrow(file);
                 WriteAccessCheckResult(FormatWin32Path ? file.Win32PathName : file.FullPath, type.Name, granted_access, type.GenericMapping,
-                    sd.ToSddl(), IsDirectoryNoThrow(file) ? typeof(FileDirectoryAccessRights) : typeof(FileAccessRights), token.Information);
+                    sd.ToSddl(), is_directory ? typeof(FileDirectoryAccessRights) : typeof(FileAccessRights), is_directory, token.Information);
             }
         }
 
@@ -149,9 +150,10 @@ namespace NtObjectManager
             {
                 if ( result.Status.IsSuccess() && IsAccessGranted(result.Result.GrantedAccessMask, access_rights))
                 {
+                    bool is_directory = IsDirectoryNoThrow(result.Result);
                     WriteAccessCheckResult(file.FullPath, file.NtType.Name, result.Result.GrantedAccessMask,
-                        file.NtType.GenericMapping, String.Empty, IsDirectoryNoThrow(file) ?
-                        typeof(FileDirectoryAccessRights) : typeof(FileAccessRights), token.Information);
+                        file.NtType.GenericMapping, String.Empty, is_directory ?
+                        typeof(FileDirectoryAccessRights) : typeof(FileAccessRights), is_directory, token.Information);
                 }
             }
         }

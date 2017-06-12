@@ -86,12 +86,17 @@ namespace NtObjectManager
         public bool IsAll { get; private set; }
 
         /// <summary>
+        /// Is the resource being access a directory.
+        /// </summary>
+        public bool IsDirectory { get; private set; }
+
+        /// <summary>
         /// Unique key for access check result (based on TokenId)
         /// </summary>
         public long TokenId { get; private set; }
 
         internal AccessCheckResult(string name, string type_name, AccessMask granted_access,
-            GenericMapping generic_mapping, string sddl, Type enum_type, TokenInformation token_info)
+            GenericMapping generic_mapping, string sddl, Type enum_type, bool is_directory, TokenInformation token_info)
         {
             Name = name;
             TypeName = type_name;
@@ -106,6 +111,7 @@ namespace NtObjectManager
             GrantedAccessString = NtObjectUtils.GrantedAccessAsString(granted_access, generic_mapping, enum_type, false);
             GrantedGenericAccessString = NtObjectUtils.GrantedAccessAsString(granted_access, generic_mapping, enum_type, true);
             TokenId = token_info.TokenId.ToInt64();
+            IsDirectory = is_directory;
         }
     }
 
@@ -272,9 +278,9 @@ namespace NtObjectManager
         internal abstract void RunAccessCheck(IEnumerable<TokenEntry> tokens);
 
         internal void WriteAccessCheckResult(string name, string type_name, AccessMask granted_access,
-            GenericMapping generic_mapping, string sddl, Type enum_type, TokenInformation token_info)
+            GenericMapping generic_mapping, string sddl, Type enum_type, bool is_directory, TokenInformation token_info)
         {
-            WriteObject(new AccessCheckResult(name, type_name, granted_access, generic_mapping, sddl, enum_type, token_info));
+            WriteObject(new AccessCheckResult(name, type_name, granted_access, generic_mapping, sddl, enum_type, is_directory, token_info));
         }
 
         private static void AddTokenEntry(HashSet<TokenEntry> tokens, TokenEntry token)

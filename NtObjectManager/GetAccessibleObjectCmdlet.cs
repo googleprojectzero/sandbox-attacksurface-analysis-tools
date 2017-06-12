@@ -99,13 +99,13 @@ namespace NtObjectManager
             return path;
         }
 
-        private void CheckAccess(TokenEntry token, NtObject obj, NtType type, AccessMask access_rights, SecurityDescriptor sd)
+        private void CheckAccess(TokenEntry token, NtObject obj, NtType type, bool is_directory, AccessMask access_rights, SecurityDescriptor sd)
         {
             AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
             if (IsAccessGranted(granted_access, access_rights))
             {
                 WriteAccessCheckResult(ConvertPath(obj), type.Name, granted_access, type.GenericMapping,
-                    sd.ToSddl(), type.AccessRightsType, token.Information);
+                    sd.ToSddl(), type.AccessRightsType, is_directory, token.Information);
             }
         }
 
@@ -118,14 +118,14 @@ namespace NtObjectManager
             }
         }
 
-        private void CheckAccessUnderImpersonation(TokenEntry token, NtType type, AccessMask access_rights, NtObject obj)
+        private void CheckAccessUnderImpersonation(TokenEntry token, NtType type, bool is_directory, AccessMask access_rights, NtObject obj)
         {
             using (var result = ReopenUnderImpersonation(token, type, obj))
             {
                 if (result.IsSuccess && IsAccessGranted(result.Result.GrantedAccessMask, access_rights))
                 {
                     WriteAccessCheckResult(ConvertPath(obj), type.Name, result.Result.GrantedAccessMask, type.GenericMapping,
-                        String.Empty, type.AccessRightsType, token.Information);
+                        String.Empty, type.AccessRightsType, is_directory, token.Information);
                 }
             }
         }
@@ -139,7 +139,7 @@ namespace NtObjectManager
             return true;
         }
 
-        private void DumpObject(IEnumerable<TokenEntry> tokens, HashSet<string> type_filter, AccessMask access_rights, NtObject obj)
+        private void DumpObject(IEnumerable<TokenEntry> tokens, HashSet<string> type_filter, AccessMask access_rights, NtObject obj, bool is_directory)
         {
             NtType type = obj.NtType;
             if (!IsTypeFiltered(type.Name, type_filter))
@@ -165,7 +165,7 @@ namespace NtObjectManager
             {
                 foreach (var token in tokens)
                 {
-                    CheckAccess(token, obj, type, desired_access, result.Result);
+                    CheckAccess(token, obj, type, is_directory, desired_access, result.Result);
                 }
             }
             else if (type.CanOpen)
@@ -173,7 +173,7 @@ namespace NtObjectManager
                 // If we can't read security descriptor then try opening the object.
                 foreach (var token in tokens)
                 {
-                    CheckAccessUnderImpersonation(token, type, desired_access, obj);
+                    CheckAccessUnderImpersonation(token, type, is_directory, desired_access, obj);
                 }
             }
 
@@ -183,7 +183,7 @@ namespace NtObjectManager
         private void DumpDirectory(IEnumerable<TokenEntry> tokens, HashSet<string> type_filter, 
             AccessMask access_rights, NtDirectory dir, int current_depth)
         {
-            DumpObject(tokens, type_filter, access_rights, dir);
+            DumpObject(tokens, type_filter, access_rights, dir, true);
 
             if (Stopping || current_depth <= 0)
             {
@@ -219,7 +219,7 @@ namespace NtObjectManager
                                 {
                                     if (result.IsSuccess)
                                     {
-                                        DumpObject(tokens, type_filter, access_rights, result.Result);
+                                        DumpObject(tokens, type_filter, access_rights, result.Result, false);
                                     }
                                     else
                                     {
@@ -313,7 +313,8 @@ namespace NtObjectManager
                     {
                         if (CheckUnnamed || !String.IsNullOrEmpty(obj.Result.FullPath))
                         {
-                            DumpObject(tokens, type_filter, AccessRights, obj.Result);
+                            DumpObject(tokens, type_filter, AccessRights, obj.Result, 
+                                obj.Result.NtTypeName.Equals("Directory", StringComparison.OrdinalIgnoreCase));
                         }
                     }
                 }

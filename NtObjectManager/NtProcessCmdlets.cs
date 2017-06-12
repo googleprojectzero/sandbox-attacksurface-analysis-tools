@@ -71,7 +71,7 @@ namespace NtObjectManager
     ///   <para>Get all processes with the name notepad.exe where the command line contains the string "hello".</para>
     /// </example>
     /// <example>
-    ///   <code>$ps = Get-NtProcess -FilterScript { param($p); p.SessionId -eq 1 }</code>
+    ///   <code>$ps = Get-NtProcess -FilterScript { param($p); $p.SessionId -eq 1 }</code>
     ///   <para>Get all processes in session 1.</para>
     /// </example>
     /// <example>
