@@ -54,6 +54,7 @@
     <Compile Include="GetAccessibleDeviceCmdlet.cs" />
     <Compile Include="GetAccessibleFileCmdlet.cs" />
     <Compile Include="GetAccessibleKeyCmdlet.cs" />
+    <Compile Include="GetAccessibleNamedPipeCmdlet.cs" />
     <Compile Include="GetAccessibleObjectCmdlet.cs" />
     <Compile Include="GetAccessibleProcessCmdlet.cs" />
     <Compile Include="NtAccessMaskCmdlets.cs" />

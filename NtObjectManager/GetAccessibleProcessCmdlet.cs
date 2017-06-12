@@ -105,7 +105,7 @@ namespace NtObjectManager
     }
 
     /// <summary>
-    /// <para type="synopsis">Get a list of processes and/or threads that can be opened by a specificed token.</para>
+    /// <para type="synopsis">Get a list of processes and/or threads that can be opened by a specified token.</para>
     /// <para type="description">This cmdlet checks all processes and threads and tries to determine
     /// if one or more specified tokens can open them to them. If no tokens are specified then the 
     /// current process token is used.</para>

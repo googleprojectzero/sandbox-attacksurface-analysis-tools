@@ -16,7 +16,7 @@ Import-Module "$PSScriptRoot\NtObjectManager.dll"
 
 <#
 .SYNOPSIS
-Get a list of ALPC Ports that can be opened by a specificed token.
+Get a list of ALPC Ports that can be opened by a specified token.
 .DESCRIPTION
 This cmdlet checks for all ALPC ports on the system and tries to determine if one or more specified tokens can connect to them. 
 If no tokens are specified then the current process token is used. This function searches handles for existing ALPC Port servers as you can't directly open the server object and just connecting might show inconsistent results.

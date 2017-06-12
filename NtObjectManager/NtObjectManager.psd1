@@ -91,7 +91,8 @@ CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile',
 			   'Get-NtFilteredToken', 'Get-NtLowBoxToken', 'Get-NtSid',
 			   'Get-NtSection', 'New-NtSection', 'Get-AccessibleAlpcPort',
 			   'Get-AccessibleKey', 'Get-AccessibleProcess', 'Get-AccessibleFile',
-			   'Get-AccessibleObject', 'Get-NtAccessMask', 'Get-AccessibleDevice'
+			   'Get-AccessibleObject', 'Get-NtAccessMask', 'Get-AccessibleDevice',
+			   'Get-AccessibleNamedPipe'
 
 # Variables to export from this module
 # VariablesToExport = @()

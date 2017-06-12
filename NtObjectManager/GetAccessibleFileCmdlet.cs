@@ -39,7 +39,7 @@ namespace NtObjectManager
     }
 
     /// <summary>
-    /// <para type="synopsis">Get a list of files that can be opened by a specificed token.</para>
+    /// <para type="synopsis">Get a list of files that can be opened by a specified token.</para>
     /// <para type="description">This cmdlet checks a file or directory and tries to determine
     /// if one or more specified tokens can open them. If no tokens are specified the current process
     /// token is used.</para>
