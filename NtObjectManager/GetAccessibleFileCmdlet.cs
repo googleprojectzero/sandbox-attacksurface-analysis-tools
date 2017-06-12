@@ -114,10 +114,25 @@ namespace NtObjectManager
             }
         }
 
-        private void CheckAccess(TokenEntry token, NtFile file, AccessMask access_rights, SecurityDescriptor sd)
+        private void CheckAccess(TokenEntry token, NtFile file, AccessMask access_rights, SecurityDescriptor sd, SecurityDescriptor parent_sd)
         {
             NtType type = file.NtType;
             AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
+
+            // Determine if the parent gives additonal rights to this file.
+            if (!granted_access.IsAllAccessGranted(FileDirectoryAccessRights.ListDirectory | FileDirectoryAccessRights.Delete) && parent_sd != null)
+            {
+                AccessMask parent_granted_access = NtSecurity.GetMaximumAccess(parent_sd, token.Token, type.GenericMapping);
+                if (parent_granted_access.IsAccessGranted(FileDirectoryAccessRights.DeleteChild))
+                {
+                    granted_access |= FileAccessRights.Delete;
+                }
+                if (parent_granted_access.IsAccessGranted(FileDirectoryAccessRights.ListDirectory))
+                {
+                    granted_access |= FileAccessRights.ReadAttributes;
+                }
+            }
+
             if (IsAccessGranted(granted_access, access_rights))
             {
                 WriteAccessCheckResult(FormatWin32Path ? file.Win32PathName : file.FullPath, type.Name, granted_access, type.GenericMapping,
@@ -141,7 +156,7 @@ namespace NtObjectManager
             }
         }
 
-        private void DumpFile(IEnumerable<TokenEntry> tokens, AccessMask access_rights, AccessMask dir_access_rights, NtFile file)
+        private void DumpFile(IEnumerable<TokenEntry> tokens, AccessMask access_rights, AccessMask dir_access_rights, SecurityDescriptor parent_sd, NtFile file)
         {
             bool directory = IsDirectoryNoThrow(file);
             if (CheckMode != FileCheckMode.All)
@@ -159,7 +174,7 @@ namespace NtObjectManager
             {
                 foreach (var token in tokens)
                 {
-                    CheckAccess(token, file, desired_access, result.Result);
+                    CheckAccess(token, file, desired_access, result.Result, parent_sd);
                 }
             }
             else
@@ -172,12 +187,15 @@ namespace NtObjectManager
             }
         }
 
-        private void DumpDirectory(IEnumerable<TokenEntry> tokens, AccessMask access_rights, AccessMask dir_access_rights, NtFile file, FileOpenOptions options, int current_depth)
+        private void DumpDirectory(IEnumerable<TokenEntry> tokens, AccessMask access_rights, 
+            AccessMask dir_access_rights, NtFile file, FileOpenOptions options, int current_depth)
         {
             if (Stopping || current_depth <= 0)
             {
                 return;
             }
+
+            var parent_sd = file.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
 
             if (Recurse)
             {
@@ -205,10 +223,12 @@ namespace NtObjectManager
                             {
                                 if (new_file.IsSuccess)
                                 {
-                                    DumpFile(tokens, access_rights, dir_access_rights, new_file.Result);
+                                    DumpFile(tokens, access_rights, dir_access_rights, 
+                                        parent_sd.IsSuccess ? parent_sd.Result : null, new_file.Result);
                                     if (IsDirectoryNoThrow(new_file.Result))
                                     {
-                                        DumpDirectory(tokens, access_rights, dir_access_rights, new_file.Result, options, current_depth - 1);
+                                        DumpDirectory(tokens, access_rights, dir_access_rights, 
+                                            new_file.Result, options, current_depth - 1);
                                     }
                                 }
                             }
@@ -260,6 +280,7 @@ namespace NtObjectManager
                 DumpFile(tokens,
                     access_rights,
                     dir_access_rights,
+                    null,
                     result.Result);
                 if (IsDirectoryNoThrow(result.Result))
                 {
