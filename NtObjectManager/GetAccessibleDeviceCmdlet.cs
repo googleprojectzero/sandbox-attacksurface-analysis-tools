@@ -29,11 +29,17 @@ namespace NtObjectManager
         /// </summary>
         public bool NamespacePath { get; private set; }
 
-        internal DeviceAccessCheckResult(string name, bool namespace_path, AccessMask granted_access,
-            string sddl, TokenInformation token_info) : base(name, "Device",
+        /// <summary>
+        /// Indicates the type of device.
+        /// </summary>
+        public FileDeviceType DeviceType { get; private set; }
+
+        internal DeviceAccessCheckResult(string name, bool namespace_path, FileDeviceType device_type,
+            AccessMask granted_access, string sddl, TokenInformation token_info) : base(name, "Device",
                 granted_access, NtType.GetTypeByType<NtFile>().GenericMapping, sddl, typeof(FileAccessRights), false, token_info)
         {
             NamespacePath = namespace_path;
+            DeviceType = device_type;
         }
     }
 
@@ -165,6 +171,18 @@ namespace NtObjectManager
             }
         }
 
+        private static FileDeviceType GetDeviceType(NtFile file)
+        {
+            try
+            {
+                return file.DeviceType;
+            }
+            catch (NtException)
+            {
+                return FileDeviceType.UNKNOWN;
+            }
+        }
+
         private void CheckAccessUnderImpersonation(TokenEntry token, string path, bool namespace_path, 
             AccessMask access_rights, FileOpenOptions open_options, EaBuffer ea_buffer)
         {
@@ -176,7 +194,7 @@ namespace NtObjectManager
                     {
                         var sd = result.Result.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
 
-                        WriteObject(new DeviceAccessCheckResult(path, namespace_path, result.Result.GrantedAccess, 
+                        WriteObject(new DeviceAccessCheckResult(path, namespace_path, GetDeviceType(result.Result), result.Result.GrantedAccess, 
                             sd.IsSuccess ? sd.Result.ToSddl() : String.Empty, token.Information));
                     }
                 }
