@@ -51,11 +51,12 @@
   <ItemGroup>
     <Compile Include="CommonAccessBaseCmdlet.cs" />
     <Compile Include="GenericObjectSecurity.cs" />
+    <Compile Include="GetAccessibleDeviceCmdlet.cs" />
     <Compile Include="GetAccessibleFileCmdlet.cs" />
     <Compile Include="GetAccessibleKeyCmdlet.cs" />
     <Compile Include="GetAccessibleObjectCmdlet.cs" />
     <Compile Include="GetAccessibleProcessCmdlet.cs" />
-    <Compile Include="GetNtAccessMask.cs" />
+    <Compile Include="NtAccessMaskCmdlets.cs" />
     <Compile Include="NtEventCmdlets.cs" />
     <Compile Include="NtProcessCmdlets.cs" />
     <Compile Include="NtSectionCmdlets.cs" />

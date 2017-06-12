@@ -117,7 +117,7 @@ namespace NtObjectManager
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleProcess")]
     [OutputType(typeof(ProcessAccessCheckResult))]
-    public class GetAccessibleProcessCmdlet : CommonAccessBaseCmdlet<ProcessAccessRights>
+    public class GetAccessibleProcessCmdlet : CommonAccessBaseWithAccessCmdlet<ProcessAccessRights>
     {
         private static NtType _process_type = NtType.GetTypeByType<NtProcess>();
         private static NtType _thread_type = NtType.GetTypeByType<NtThread>();

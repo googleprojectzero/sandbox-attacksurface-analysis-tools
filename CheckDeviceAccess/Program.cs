@@ -273,7 +273,7 @@ namespace CheckDeviceAccess
                         { "p|pid=", "Specify a PID of a process to impersonate when checking", v => _pid = int.Parse(v.Trim()) },
                         { "suffix=", "Specify the suffix for the namespace search", v => suffix = v },
                         { "namelist=", "Specify a text file with a list of names", v => namelist = v },
-                        { "ea", "Try and show only devices with accept an EA buffer", v => ea_buffer = v != null },
+                        { "ea", "Try and show only devices which accept an EA buffer", v => ea_buffer = v != null },
                         { "e", "Display errors when trying devices, ignores Access Denied", v => _show_errors = v != null },
                         { "i", "Use an identify level token when impersonating", v => _identify_only = v != null },
                         { "d", "Try opening devices as directories rather than files", v => _open_as_dir = v != null },

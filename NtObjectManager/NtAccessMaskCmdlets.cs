@@ -46,6 +46,11 @@ namespace NtObjectManager
         }
 
         /// <summary>
+        /// <para type="description">Specify a raw access mask.</para>
+        /// </summary>
+        [Parameter]
+        public AccessMask AccessMask { get; set; }
+        /// <summary>
         /// <para type="description">Return access as GenericAccess.</para>
         /// </summary>
         [Parameter]
@@ -156,7 +161,7 @@ namespace NtObjectManager
         /// </summary>
         protected override void ProcessRecord()
         {
-            AccessMask mask = 0;
+            AccessMask mask = AccessMask;
 
             mask |= MapGeneric("File", File);
             mask |= MapGeneric("File", FileDirectory);

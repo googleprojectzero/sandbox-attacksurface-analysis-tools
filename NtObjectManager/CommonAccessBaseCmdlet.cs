@@ -237,7 +237,7 @@ namespace NtObjectManager
     /// <summary>
     /// Common base cmdlet for commands which look at accessible resources.
     /// </summary>
-    public abstract class CommonAccessBaseCmdlet<A> : Cmdlet
+    public abstract class CommonAccessBaseCmdlet : Cmdlet
     {
         /// <summary>
         /// <para type="description">Specify a list of process IDs to open for their tokens.</para>
@@ -268,39 +268,6 @@ namespace NtObjectManager
         /// </summary>
         [Parameter]
         public NtProcess[] Processes { get; set; }
-
-        /// <summary>
-        /// <para type="description">Access rights to check for in an object's access.</para>
-        /// </summary>
-        [Parameter]
-        public A AccessRights { get; set; }
-
-        /// <summary>
-        /// <para type="description">If AccessRights specified require that only part of the access rights
-        /// are required to match an access check.</para>
-        /// </summary>
-        [Parameter]
-        public SwitchParameter AllowPartialAccess { get; set; }
-
-        internal bool IsAccessGranted(AccessMask granted_access, AccessMask access_rights)
-        {
-            if (granted_access.IsEmpty)
-            {
-                return false;
-            }
-
-            if (access_rights.IsEmpty)
-            {
-                return true;
-            }
-
-            if (AllowPartialAccess)
-            {
-                return granted_access.IsAccessGranted(access_rights);
-            }
-
-            return granted_access.IsAllAccessGranted(access_rights);
-        }
 
         internal abstract void RunAccessCheck(IEnumerable<TokenEntry> tokens);
 
@@ -448,14 +415,55 @@ namespace NtObjectManager
     }
 
     /// <summary>
+    /// Base class for accessible checks with an access parameter.
+    /// </summary>
+    /// <typeparam name="A">The type of access rights to check against.</typeparam>
+    public abstract class CommonAccessBaseWithAccessCmdlet<A> : CommonAccessBaseCmdlet
+    {
+
+        /// <summary>
+        /// <para type="description">Access rights to check for in an object's access.</para>
+        /// </summary>
+        [Parameter]
+        public A AccessRights { get; set; }
+
+        /// <summary>
+        /// <para type="description">If AccessRights specified require that only part of the access rights
+        /// are required to match an access check.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter AllowPartialAccess { get; set; }
+
+        internal bool IsAccessGranted(AccessMask granted_access, AccessMask access_rights)
+        {
+            if (granted_access.IsEmpty)
+            {
+                return false;
+            }
+
+            if (access_rights.IsEmpty)
+            {
+                return true;
+            }
+
+            if (AllowPartialAccess)
+            {
+                return granted_access.IsAccessGranted(access_rights);
+            }
+
+            return granted_access.IsAllAccessGranted(access_rights);
+        }
+    }
+
+    /// <summary>
     /// Base class for path based accessible checks.
     /// </summary>
-    public abstract class GetAccessiblePathCmdlet<A> : CommonAccessBaseCmdlet<A>
+    public abstract class GetAccessiblePathCmdlet<A> : CommonAccessBaseWithAccessCmdlet<A>
     {
         /// <summary>
         /// <para type="description">Specify a list of native paths to check.</para>
         /// </summary>
-        [Parameter(Position = 0, ParameterSetName = "path")]
+        [Parameter(Position = 0, ParameterSetName = "path", ValueFromPipeline = true)]
         public string[] Path { get; set; }
 
         /// <summary>
