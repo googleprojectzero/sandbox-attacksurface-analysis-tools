@@ -272,9 +272,9 @@ namespace NtObjectManager
         internal abstract void RunAccessCheck(IEnumerable<TokenEntry> tokens);
 
         internal void WriteAccessCheckResult(string name, string type_name, AccessMask granted_access,
-            GenericMapping generic_mapping, string sddl, Type enum_type, TokenInformation proc_info)
+            GenericMapping generic_mapping, string sddl, Type enum_type, TokenInformation token_info)
         {
-            WriteObject(new AccessCheckResult(name, type_name, granted_access, generic_mapping, sddl, enum_type, proc_info));
+            WriteObject(new AccessCheckResult(name, type_name, granted_access, generic_mapping, sddl, enum_type, token_info));
         }
 
         private static void AddTokenEntry(HashSet<TokenEntry> tokens, TokenEntry token)

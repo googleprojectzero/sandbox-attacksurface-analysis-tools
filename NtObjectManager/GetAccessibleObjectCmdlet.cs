@@ -47,11 +47,11 @@ namespace NtObjectManager
     ///   <para>Check recursively for accessible objects under the user's based named objects for the current process token.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-AccessibleObject \ -Recurse -RequiredAccess GenericWrite</code>
+    ///   <code>Get-AccessibleObject \ -Recurse -AccessRights GenericWrite</code>
     ///   <para>Check recursively for accessible objects under with write access.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-AccessibleObject \ -Recurse -RequiredAccess GenericWrite -AllowPartialAccess</code>
+    ///   <code>Get-AccessibleObject \ -Recurse -AccessRights GenericWrite -AllowPartialAccess</code>
     ///   <para>Check recursively for accessible objects under with partial write access.</para>
     /// </example>
     /// <example>

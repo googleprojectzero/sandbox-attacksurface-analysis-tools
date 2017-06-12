@@ -1,50 +1,106 @@
-﻿using NtApiDotNet;
+﻿//  Copyright 2017 Google Inc. All Rights Reserved.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
+using NtApiDotNet;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Management.Automation;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NtObjectManager
 {
     /// <summary>
-    /// <para type="synopsis">Get a list of NT objects that can be opened by a specificed token.</para>
-    /// <para type="description">This cmdlet checks a NT object key and optionally tries to determine
-    /// if one or more specified tokens can open them. If no tokens are specified the current process
+    /// <para type="description">Access check result for a device.</para>
+    /// </summary>
+    public class DeviceAccessCheckResult : AccessCheckResult
+    {
+        /// <summary>
+        /// Indicates this was a namespace open
+        /// </summary>
+        public bool NamespacePath { get; private set; }
+
+        internal DeviceAccessCheckResult(string name, bool namespace_path, AccessMask granted_access,
+            string sddl, TokenInformation token_info) : base(name, "Device",
+                granted_access, NtType.GetTypeByType<NtFile>().GenericMapping, sddl, typeof(FileAccessRights), token_info)
+        {
+            NamespacePath = namespace_path;
+        }
+    }
+
+    /// <summary>
+    /// <para type="description">Mode for checking device object.</para>
+    /// </summary>
+    public enum DeviceCheckMode
+    {
+        /// <summary>
+        /// Only check root device.
+        /// </summary>
+        DeviceOnly,
+        /// <summary>
+        /// Only check device namespace.
+        /// </summary>
+        NamespaceOnly,
+        /// <summary>
+        /// Check device and namespace.
+        /// </summary>
+        DeviceAndNamespace,
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Get a list of devices that can be opened by a specificed token.</para>
+    /// <para type="description">This cmdlet checks a device and optionally tries to determine
+    /// if one or more specified tokens can open it. If no tokens are specified the current process
     /// token is used.</para>
     /// </summary>
     /// <example>
-    ///   <code>Get-AccessibleObject \BaseNamedObjects</code>
-    ///   <para>Check accessible objects under \ for the current process token.</para>
+    ///   <code>Get-AccessibleDevice \Device</code>
+    ///   <para>Check accessible devices under \Device for the current process token.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-AccessibleObject \BaseNamedObjects -ProcessIds 1234,5678</code>
-    ///   <para>Check accessible objects under \BaseNamedObjects for the process tokens of PIDs 1234 and 5678</para>
+    ///   <code>Get-AccessibleDevice \Device -AccessRights GenericWrite</code>
+    ///   <para>Check write accessible devices under \Device for the current process token.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-AccessibleObject \BaseNamedObjects -Recurse</code>
-    ///   <para>Check recursively for accessible objects under \BaseNamedObjects for the current process token.</para>
+    ///   <code>Get-AccessibleDevice \Device -ProcessIds 1234,5678</code>
+    ///   <para>Check accessible devices under \Device for the process tokens of PIDs 1234 and 5678</para>
     /// </example>
     /// <example>
-    ///   <code>Get-AccessibleObject \BaseNamedObjects -Recurse -MaxDepth 5</code>
+    ///   <code>Get-AccessibleDevice \Device -CheckMode DeviceAndNamespace</code>
+    ///   <para>Check accessible devices under \Device for the current process token including ones under a namespace.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-AccessibleDevice \ -Recurse</code>
+    ///   <para>Check recursively for accessible devices under \ for the current process token.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-AccessibleDevice \ -Recurse -MaxDepth 5</code>
     ///   <para>Check recursively for accessible objects under \BaseNamedObjects for the current process token to a maximum depth of 5.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-AccessibleObject -Win32Path \ -Recurse</code>
-    ///   <para>Check recursively for accessible objects under the user's based named objects for the current process token.</para>
+    ///   <code>Get-AccessibleDevice \Device\Afd,\Device\Blah</code>
+    ///   <para>Check two devices for the current process token.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-AccessibleObject \ -Recurse -RequiredAccess GenericWrite</code>
-    ///   <para>Check recursively for accessible objects under with write access.</para>
+    ///   <code>Get-AccessibleDevice \ -Recurse -AccessRights GenericWrite</code>
+    ///   <para>Check recursively for accessible devices under with write access.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-AccessibleObject \ -Recurse -RequiredAccess GenericWrite -AllowPartialAccess</code>
-    ///   <para>Check recursively for accessible objects under with partial write access.</para>
+    ///   <code>Get-AccessibleDevice \ -Recurse -AccessRights GenericWrite -AllowPartialAccess</code>
+    ///   <para>Check recursively for accessible devices with partial write access.</para>
     /// </example>
     /// <example>
-    ///   <code>$token = Get-NtToken -Primary -Duplicate -IntegrityLevel Low&#x0A;Get-AccessibleObject \BaseNamedObjects -Recurse -Tokens $token -AccessRights GenericWrite</code>
-    ///   <para>Get all object which can be written to in \BaseNamedObjects by a low integrity copy of current token.</para>
+    ///   <code>$token = Get-NtToken -Primary -Duplicate -IntegrityLevel Low&#x0A;Get-AccessibleDevice \Device -Recurse -Tokens $token -AccessRights GenericWrite</code>
+    ///   <para>Get all devices which can be written to in \Device by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleDevice")]
     [OutputType(typeof(AccessCheckResult))]
@@ -71,10 +127,10 @@ namespace NtObjectManager
         public int? MaxDepth { get; set; }
 
         /// <summary>
-        /// <para type="description">Check whether the device can be accessed with namespace path.</para>
+        /// <para type="description">Check mode for device and/or namespace.</para>
         /// </summary>
         [Parameter]
-        public SwitchParameter CheckNamespacePath { get; set; }
+        public DeviceCheckMode CheckMode { get; set; }
 
         /// <summary>
         /// <para type="description">If CheckNamespacePath enabled specify a list of namespace paths to check for access to the device namespace instead of a default.</para>
@@ -109,7 +165,8 @@ namespace NtObjectManager
             }
         }
 
-        private void CheckAccessUnderImpersonation(TokenEntry token, string path, AccessMask access_rights, FileOpenOptions open_options, EaBuffer ea_buffer)
+        private void CheckAccessUnderImpersonation(TokenEntry token, string path, bool namespace_path, 
+            AccessMask access_rights, FileOpenOptions open_options, EaBuffer ea_buffer)
         {
             using (var result = OpenUnderImpersonation(token, path, open_options, ea_buffer))
             {
@@ -117,8 +174,10 @@ namespace NtObjectManager
                 {
                     if (IsAccessGranted(result.Result.GrantedAccessMask, access_rights))
                     {
-                        WriteAccessCheckResult(path, "Device", result.Result.GrantedAccess, _file_type.GenericMapping,
-                            String.Empty, _file_type.AccessRightsType, token.Information);
+                        var sd = result.Result.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
+
+                        WriteObject(new DeviceAccessCheckResult(path, namespace_path, result.Result.GrantedAccess, 
+                            sd.IsSuccess ? sd.Result.ToSddl() : String.Empty, token.Information));
                     }
                 }
                 else
@@ -177,6 +236,16 @@ namespace NtObjectManager
             return ea;
         }
 
+        private bool CheckDevice()
+        {
+            return CheckMode == DeviceCheckMode.DeviceOnly || CheckMode == DeviceCheckMode.DeviceAndNamespace;
+        }
+
+        private bool CheckNamespace()
+        {
+            return CheckMode == DeviceCheckMode.NamespaceOnly || CheckMode == DeviceCheckMode.DeviceAndNamespace;
+        }
+
         internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
             HashSet<string> devices = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -207,13 +276,17 @@ namespace NtObjectManager
                 {
                     foreach (string path in devices)
                     {
-                        CheckAccessUnderImpersonation(entry, path, access_rights, OpenOptions, ea_buffer);
-                        if (CheckNamespacePath)
+                        if (CheckDevice())
+                        {
+                            CheckAccessUnderImpersonation(entry, path, false, access_rights, OpenOptions, ea_buffer);
+                        }
+
+                        if (CheckNamespace())
                         {
                             foreach (string namespace_path in namespace_paths)
                             {
                                 CheckAccessUnderImpersonation(entry, path + @"\" + namespace_path, 
-                                    access_rights, OpenOptions, ea_buffer);
+                                    true, access_rights, OpenOptions, ea_buffer);
                             }
                         }
                     }
