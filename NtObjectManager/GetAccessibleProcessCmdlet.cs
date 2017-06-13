@@ -248,7 +248,7 @@ namespace NtObjectManager
             else
             {
                 WriteObject(new ThreadAccessCheckResult(process.Name, process.ImagePath, thread.ThreadId, 
-                    thread.Description, process.ProcessId, process.SessionId, process.CommandLine, granted_access, _process_type, sddl, token));
+                    thread.Description, process.ProcessId, process.SessionId, process.CommandLine, granted_access, _thread_type, sddl, token));
             }
         }
 
