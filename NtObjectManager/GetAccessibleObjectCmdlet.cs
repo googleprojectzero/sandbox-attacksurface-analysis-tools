@@ -84,19 +84,26 @@ namespace NtObjectManager
 
         private string ConvertPath(NtObject obj)
         {
-            string path = obj.FullPath;
-            if (FormatWin32Path)
+            try
             {
-                if (path.Equals(_base_named_objects, StringComparison.OrdinalIgnoreCase))
+                string path = obj.FullPath;
+                if (FormatWin32Path)
                 {
-                    return @"\";
+                    if (path.Equals(_base_named_objects, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return @"\";
+                    }
+                    else if (path.StartsWith(_base_named_objects, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return path.Substring(_base_named_objects.Length);
+                    }
                 }
-                else if (path.StartsWith(_base_named_objects, StringComparison.OrdinalIgnoreCase))
-                {
-                    return path.Substring(_base_named_objects.Length);
-                }
+                return path;
             }
-            return path;
+            catch
+            {
+                return String.Empty;
+            }
         }
 
         private void CheckAccess(TokenEntry token, NtObject obj, NtType type, bool is_directory, AccessMask access_rights, SecurityDescriptor sd)
@@ -211,7 +218,8 @@ namespace NtObjectManager
                     else
                     {
                         NtType type = entry.NtType;
-                        if (IsTypeFiltered(type.Name, type_filter))
+                        if (IsTypeFiltered(type.Name, type_filter) && !type.Name.Equals("Device", StringComparison.OrdinalIgnoreCase) 
+                                                                   && !type.Name.Equals("Key", StringComparison.OrdinalIgnoreCase))
                         {
                             if (type.CanOpen)
                             {
@@ -292,7 +300,8 @@ namespace NtObjectManager
             }
         }
 
-        private void CheckHandles(IEnumerable<TokenEntry> tokens, HashSet<string> type_filter, HashSet<ulong> checked_objects, NtProcess process, IEnumerable<NtHandle> handles)
+        private void CheckHandles(IEnumerable<TokenEntry> tokens, HashSet<string> type_filter, 
+            HashSet<ulong> checked_objects, NtProcess process, IEnumerable<NtHandle> handles)
         {
             foreach (NtHandle handle in handles)
             {
