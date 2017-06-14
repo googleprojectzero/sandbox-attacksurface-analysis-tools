@@ -107,7 +107,7 @@ namespace NtApiDotNet
                 return true;
             }
 
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < _value.Length; i++)
             {
                 if (_value[i] != auth._value[i])
                 {
@@ -319,13 +319,14 @@ namespace NtApiDotNet
         /// <returns>True if the Sids are equal.</returns>
         public override bool Equals(object obj)
         {
-            Sid sid = obj as Sid;
-            if (sid == null)
+            if (!(obj is Sid))
             {
                 return false;
             }
 
-            if (Authority.Equals(sid.Authority))
+            Sid sid = obj as Sid;
+
+            if (!Authority.Equals(sid.Authority))
             {
                 return false;
             }
@@ -354,7 +355,7 @@ namespace NtApiDotNet
         /// <returns>True if the Sids are equal.</returns>
         public static bool operator ==(Sid a, Sid b)
         {
-            if (System.Object.ReferenceEquals(a, b))
+            if (Object.ReferenceEquals(a, b))
             {
                 return true;
             }
@@ -425,7 +426,18 @@ namespace NtApiDotNet
         {
             get
             {
-                return NtSecurity.LookupAccountSid(this) ?? ToString();
+                string name = NtSecurity.LookupAccountSid(this);
+                if (name == null && NtSecurity.IsCapabilitySid(this))
+                {
+                    // See if there's a known SID with this name.
+                    name = NtSecurity.LookupKnownCapabilityName(this);
+                    if (name != null)
+                    {
+                        name = String.Format(@"KNOWN CAPABILITIES\{0}", name);
+                    }
+                }
+
+                return name ?? ToString();
             }
         }
     }
