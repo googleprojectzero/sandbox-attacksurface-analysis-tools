@@ -224,6 +224,11 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus RtlCreateServiceSid([In] UnicodeString pServiceName, 
             SafeBuffer pServiceSid, [In, Out] ref int cbServiceSid);
+
+        // Capability SID needs 9 RIDS (0x2C bytes), Group SID needs 10 (0x30 bytes)
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlDeriveCapabilitySidsFromName(
+            UnicodeString CapabilityName, SafeBuffer CapabilitySid, SafeBuffer CapabilityGroupSid);
     }
 
     public static partial class NtSystemCalls
@@ -1593,6 +1598,45 @@ namespace NtApiDotNet
             return sid.Authority.IsAuthority(SecurityAuthority.Package) &&
                 sid.SubAuthorities.Count > 0 &&
                 (sid.SubAuthorities[0] == 3);
+        }
+
+        private static int GetSidSize(int rids)
+        {
+            return 8 + rids * 4;
+        }
+
+        /// <summary>
+        /// Get a capability sid by name.
+        /// </summary>
+        /// <param name="capability_name">The name of the capability.</param>
+        /// <returns>The capability SID.</returns>
+        public static Sid GetCapabilitySid(string capability_name)
+        {
+            using (SafeHGlobalBuffer cap_sid = new SafeHGlobalBuffer(GetSidSize(9)), 
+                cap_group_sid = new SafeHGlobalBuffer(GetSidSize(10)))
+            {
+                NtRtl.RtlDeriveCapabilitySidsFromName(
+                    new UnicodeString(capability_name),
+                    cap_sid, cap_group_sid).ToNtException();
+                return new Sid(cap_sid);
+            }
+        }
+
+        /// <summary>
+        /// Get a capability group sid by name.
+        /// </summary>
+        /// <param name="capability_name">The name of the capability.</param>
+        /// <returns>The capability SID.</returns>
+        public static Sid GetCapabilityGroupSid(string capability_name)
+        {
+            using (SafeHGlobalBuffer cap_sid = new SafeHGlobalBuffer(GetSidSize(9)),
+                cap_group_sid = new SafeHGlobalBuffer(GetSidSize(10)))
+            {
+                NtRtl.RtlDeriveCapabilitySidsFromName(
+                    new UnicodeString(capability_name),
+                    cap_sid, cap_group_sid).ToNtException();
+                return new Sid(cap_group_sid);
+            }
         }
 
         /// <summary>
