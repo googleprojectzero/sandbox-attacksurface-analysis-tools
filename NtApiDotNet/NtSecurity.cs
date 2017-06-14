@@ -228,7 +228,7 @@ namespace NtApiDotNet
         // Capability SID needs 9 RIDS (0x2C bytes), Group SID needs 10 (0x30 bytes)
         [DllImport("ntdll.dll")]
         public static extern NtStatus RtlDeriveCapabilitySidsFromName(
-            UnicodeString CapabilityName, SafeBuffer CapabilitySid, SafeBuffer CapabilityGroupSid);
+            UnicodeString CapabilityName, SafeBuffer CapabilityGroupSid, SafeBuffer CapabilitySid);
     }
 
     public static partial class NtSystemCalls
@@ -1294,166 +1294,93 @@ namespace NtApiDotNet
             if (_known_capabilities == null)
             {
                 Dictionary<Sid, string> known_capabilities = new Dictionary<Sid, string>();
-                known_capabilities[GetCapabilitySid("internetClient")] = "internetClient";
-                known_capabilities[GetCapabilityGroupSid("internetClient")] = "internetClient";
-                known_capabilities[GetCapabilitySid("internetClientServer")] = "internetClientServer";
-                known_capabilities[GetCapabilityGroupSid("internetClientServer")] = "internetClientServer";
-                known_capabilities[GetCapabilitySid("privateNetworkClientServer")] = "privateNetworkClientServer";
-                known_capabilities[GetCapabilityGroupSid("privateNetworkClientServer")] = "privateNetworkClientServer";
-                known_capabilities[GetCapabilitySid("screenDuplication")] = "screenDuplication";
-                known_capabilities[GetCapabilityGroupSid("screenDuplication")] = "screenDuplication";
-                known_capabilities[GetCapabilitySid("extendedExecutionUnconstrained")] = "extendedExecutionUnconstrained";
-                known_capabilities[GetCapabilityGroupSid("extendedExecutionUnconstrained")] = "extendedExecutionUnconstrained";
-                known_capabilities[GetCapabilitySid("cellularDeviceIdentity")] = "cellularDeviceIdentity";
-                known_capabilities[GetCapabilityGroupSid("cellularDeviceIdentity")] = "cellularDeviceIdentity";
-                known_capabilities[GetCapabilitySid("inputInjectionBrokered")] = "inputInjectionBrokered";
-                known_capabilities[GetCapabilityGroupSid("inputInjectionBrokered")] = "inputInjectionBrokered";
-                known_capabilities[GetCapabilitySid("previewHfx")] = "previewHfx";
-                known_capabilities[GetCapabilityGroupSid("previewHfx")] = "previewHfx";
-                known_capabilities[GetCapabilitySid("cortanaSettings")] = "cortanaSettings";
-                known_capabilities[GetCapabilityGroupSid("cortanaSettings")] = "cortanaSettings";
-                known_capabilities[GetCapabilitySid("holographicCompositor")] = "holographicCompositor";
-                known_capabilities[GetCapabilityGroupSid("holographicCompositor")] = "holographicCompositor";
-                known_capabilities[GetCapabilitySid("perceptionSystem")] = "perceptionSystem";
-                known_capabilities[GetCapabilityGroupSid("perceptionSystem")] = "perceptionSystem";
-                known_capabilities[GetCapabilitySid("shellExperience")] = "shellExperience";
-                known_capabilities[GetCapabilityGroupSid("shellExperience")] = "shellExperience";
-                known_capabilities[GetCapabilitySid("userAccountInformation")] = "userAccountInformation";
-                known_capabilities[GetCapabilityGroupSid("userAccountInformation")] = "userAccountInformation";
-                known_capabilities[GetCapabilitySid("spatialPerception")] = "spatialPerception";
-                known_capabilities[GetCapabilityGroupSid("spatialPerception")] = "spatialPerception";
-                known_capabilities[GetCapabilitySid("uiAutomationSystem")] = "uiAutomationSystem";
-                known_capabilities[GetCapabilityGroupSid("uiAutomationSystem")] = "uiAutomationSystem";
-                known_capabilities[GetCapabilitySid("picturesLibrary")] = "picturesLibrary";
-                known_capabilities[GetCapabilityGroupSid("picturesLibrary")] = "picturesLibrary";
-                known_capabilities[GetCapabilitySid("enterpriseAuthentication")] = "enterpriseAuthentication";
-                known_capabilities[GetCapabilityGroupSid("enterpriseAuthentication")] = "enterpriseAuthentication";
-                known_capabilities[GetCapabilitySid("sharedUserCertificates")] = "sharedUserCertificates";
-                known_capabilities[GetCapabilityGroupSid("sharedUserCertificates")] = "sharedUserCertificates";
-                known_capabilities[GetCapabilitySid("deviceManagementAdministrator")] = "deviceManagementAdministrator";
-                known_capabilities[GetCapabilityGroupSid("deviceManagementAdministrator")] = "deviceManagementAdministrator";
-                known_capabilities[GetCapabilitySid("remotePassportAuthentication")] = "remotePassportAuthentication";
-                known_capabilities[GetCapabilityGroupSid("remotePassportAuthentication")] = "remotePassportAuthentication";
-                known_capabilities[GetCapabilitySid("userPrincipalName")] = "userPrincipalName";
-                known_capabilities[GetCapabilityGroupSid("userPrincipalName")] = "userPrincipalName";
-                known_capabilities[GetCapabilitySid("windowsHelloCredentialAccess")] = "windowsHelloCredentialAccess";
-                known_capabilities[GetCapabilityGroupSid("windowsHelloCredentialAccess")] = "windowsHelloCredentialAccess";
-                known_capabilities[GetCapabilitySid("userDataAccountSetup")] = "userDataAccountSetup";
-                known_capabilities[GetCapabilityGroupSid("userDataAccountSetup")] = "userDataAccountSetup";
-                known_capabilities[GetCapabilitySid("userWebAccounts")] = "userWebAccounts";
-                known_capabilities[GetCapabilityGroupSid("userWebAccounts")] = "userWebAccounts";
-                known_capabilities[GetCapabilitySid("contacts")] = "contacts";
-                known_capabilities[GetCapabilityGroupSid("contacts")] = "contacts";
-                known_capabilities[GetCapabilitySid("userSigninSupport")] = "userSigninSupport";
-                known_capabilities[GetCapabilityGroupSid("userSigninSupport")] = "userSigninSupport";
-                known_capabilities[GetCapabilitySid("biometricSystem")] = "biometricSystem";
-                known_capabilities[GetCapabilityGroupSid("biometricSystem")] = "biometricSystem";
-                known_capabilities[GetCapabilitySid("targetedContent")] = "targetedContent";
-                known_capabilities[GetCapabilityGroupSid("targetedContent")] = "targetedContent";
-                known_capabilities[GetCapabilitySid("lockScreenCreatives")] = "lockScreenCreatives";
-                known_capabilities[GetCapabilityGroupSid("lockScreenCreatives")] = "lockScreenCreatives";
-                known_capabilities[GetCapabilitySid("packageContents")] = "packageContents";
-                known_capabilities[GetCapabilityGroupSid("packageContents")] = "packageContents";
-                known_capabilities[GetCapabilitySid("childWebContent")] = "childWebContent";
-                known_capabilities[GetCapabilityGroupSid("childWebContent")] = "childWebContent";
-                known_capabilities[GetCapabilitySid("confirmAppClose")] = "confirmAppClose";
-                known_capabilities[GetCapabilityGroupSid("confirmAppClose")] = "confirmAppClose";
-                known_capabilities[GetCapabilitySid("enterpriseDataPolicy")] = "enterpriseDataPolicy";
-                known_capabilities[GetCapabilityGroupSid("enterpriseDataPolicy")] = "enterpriseDataPolicy";
-                known_capabilities[GetCapabilitySid("extendedExecutionBackgroundAudio")] = "extendedExecutionBackgroundAudio";
-                known_capabilities[GetCapabilityGroupSid("extendedExecutionBackgroundAudio")] = "extendedExecutionBackgroundAudio";
-                known_capabilities[GetCapabilitySid("packageQuery")] = "packageQuery";
-                known_capabilities[GetCapabilityGroupSid("packageQuery")] = "packageQuery";
-                known_capabilities[GetCapabilitySid("slapiQueryLicenseValue")] = "slapiQueryLicenseValue";
-                known_capabilities[GetCapabilityGroupSid("slapiQueryLicenseValue")] = "slapiQueryLicenseValue";
-                known_capabilities[GetCapabilitySid("registryRead")] = "registryRead";
-                known_capabilities[GetCapabilityGroupSid("registryRead")] = "registryRead";
-                known_capabilities[GetCapabilitySid("lpacWebPlatform")] = "lpacWebPlatform";
-                known_capabilities[GetCapabilityGroupSid("lpacWebPlatform")] = "lpacWebPlatform";
-                known_capabilities[GetCapabilitySid("lpacAppExperience")] = "lpacAppExperience";
-                known_capabilities[GetCapabilityGroupSid("lpacAppExperience")] = "lpacAppExperience";
-                known_capabilities[GetCapabilitySid("lpacCryptoServices")] = "lpacCryptoServices";
-                known_capabilities[GetCapabilityGroupSid("lpacCryptoServices")] = "lpacCryptoServices";
-                known_capabilities[GetCapabilitySid("lpacIdentityServices")] = "lpacIdentityServices";
-                known_capabilities[GetCapabilityGroupSid("lpacIdentityServices")] = "lpacIdentityServices";
-                known_capabilities[GetCapabilitySid("lpacEnterprisePolicyChangeNotifications")] = "lpacEnterprisePolicyChangeNotifications";
-                known_capabilities[GetCapabilityGroupSid("lpacEnterprisePolicyChangeNotifications")] = "lpacEnterprisePolicyChangeNotifications";
-                known_capabilities[GetCapabilitySid("lpacMedia")] = "lpacMedia";
-                known_capabilities[GetCapabilityGroupSid("lpacMedia")] = "lpacMedia";
-                known_capabilities[GetCapabilitySid("lpacPnPNotifications")] = "lpacPnPNotifications";
-                known_capabilities[GetCapabilityGroupSid("lpacPnPNotifications")] = "lpacPnPNotifications";
-                known_capabilities[GetCapabilitySid("lpacServicesManagement")] = "lpacServicesManagement";
-                known_capabilities[GetCapabilityGroupSid("lpacServicesManagement")] = "lpacServicesManagement";
-                known_capabilities[GetCapabilitySid("lpacSessionManagement")] = "lpacSessionManagement";
-                known_capabilities[GetCapabilityGroupSid("lpacSessionManagement")] = "lpacSessionManagement";
-                known_capabilities[GetCapabilitySid("lpacInstrumentation")] = "lpacInstrumentation";
-                known_capabilities[GetCapabilityGroupSid("lpacInstrumentation")] = "lpacInstrumentation";
-                known_capabilities[GetCapabilitySid("lpacPrinting")] = "lpacPrinting";
-                known_capabilities[GetCapabilityGroupSid("lpacPrinting")] = "lpacPrinting";
-                known_capabilities[GetCapabilitySid("lpacPayments")] = "lpacPayments";
-                known_capabilities[GetCapabilityGroupSid("lpacPayments")] = "lpacPayments";
-                known_capabilities[GetCapabilitySid("lpacCom")] = "lpacCom";
-                known_capabilities[GetCapabilityGroupSid("lpacCom")] = "lpacCom";
-                known_capabilities[GetCapabilitySid("microsoftEdgeRemoteDebugging")] = "microsoftEdgeRemoteDebugging";
-                known_capabilities[GetCapabilityGroupSid("microsoftEdgeRemoteDebugging")] = "microsoftEdgeRemoteDebugging";
-                known_capabilities[GetCapabilitySid("liveIdService")] = "liveIdService";
-                known_capabilities[GetCapabilityGroupSid("liveIdService")] = "liveIdService";
-                known_capabilities[GetCapabilitySid("settingSyncConfiguration")] = "settingSyncConfiguration";
-                known_capabilities[GetCapabilityGroupSid("settingSyncConfiguration")] = "settingSyncConfiguration";
-                known_capabilities[GetCapabilitySid("storeAppInstall")] = "storeAppInstall";
-                known_capabilities[GetCapabilityGroupSid("storeAppInstall")] = "storeAppInstall";
-                known_capabilities[GetCapabilitySid("teamEditionExperience")] = "teamEditionExperience";
-                known_capabilities[GetCapabilityGroupSid("teamEditionExperience")] = "teamEditionExperience";
-                known_capabilities[GetCapabilitySid("inputForegroundObservation")] = "inputForegroundObservation";
-                known_capabilities[GetCapabilityGroupSid("inputForegroundObservation")] = "inputForegroundObservation";
-                known_capabilities[GetCapabilitySid("applicationDefaults")] = "applicationDefaults";
-                known_capabilities[GetCapabilityGroupSid("applicationDefaults")] = "applicationDefaults";
-                known_capabilities[GetCapabilitySid("cloudExperienceHost")] = "cloudExperienceHost";
-                known_capabilities[GetCapabilityGroupSid("cloudExperienceHost")] = "cloudExperienceHost";
-                known_capabilities[GetCapabilitySid("cloudStore")] = "cloudStore";
-                known_capabilities[GetCapabilityGroupSid("cloudStore")] = "cloudStore";
-                known_capabilities[GetCapabilitySid("curatedTileCollections")] = "curatedTileCollections";
-                known_capabilities[GetCapabilityGroupSid("curatedTileCollections")] = "curatedTileCollections";
-                known_capabilities[GetCapabilitySid("visualElementsSystem")] = "visualElementsSystem";
-                known_capabilities[GetCapabilityGroupSid("visualElementsSystem")] = "visualElementsSystem";
-                known_capabilities[GetCapabilitySid("featureStagingInfo")] = "featureStagingInfo";
-                known_capabilities[GetCapabilityGroupSid("featureStagingInfo")] = "featureStagingInfo";
-                known_capabilities[GetCapabilitySid("musicLibrary")] = "musicLibrary";
-                known_capabilities[GetCapabilityGroupSid("musicLibrary")] = "musicLibrary";
-                known_capabilities[GetCapabilitySid("phoneCall")] = "phoneCall";
-                known_capabilities[GetCapabilityGroupSid("phoneCall")] = "phoneCall";
-                known_capabilities[GetCapabilitySid("locationHistory")] = "locationHistory";
-                known_capabilities[GetCapabilityGroupSid("locationHistory")] = "locationHistory";
-                known_capabilities[GetCapabilitySid("userDataSystem")] = "userDataSystem";
-                known_capabilities[GetCapabilityGroupSid("userDataSystem")] = "userDataSystem";
-                known_capabilities[GetCapabilitySid("contactsSystem")] = "contactsSystem";
-                known_capabilities[GetCapabilityGroupSid("contactsSystem")] = "contactsSystem";
-                known_capabilities[GetCapabilitySid("phoneCallHistorySystem")] = "phoneCallHistorySystem";
-                known_capabilities[GetCapabilityGroupSid("phoneCallHistorySystem")] = "phoneCallHistorySystem";
-                known_capabilities[GetCapabilitySid("appointmentsSystem")] = "appointmentsSystem";
-                known_capabilities[GetCapabilityGroupSid("appointmentsSystem")] = "appointmentsSystem";
-                known_capabilities[GetCapabilitySid("chatSystem")] = "chatSystem";
-                known_capabilities[GetCapabilityGroupSid("chatSystem")] = "chatSystem";
-                known_capabilities[GetCapabilitySid("smsSend")] = "smsSend";
-                known_capabilities[GetCapabilityGroupSid("smsSend")] = "smsSend";
-                known_capabilities[GetCapabilitySid("emailSystem")] = "emailSystem";
-                known_capabilities[GetCapabilityGroupSid("emailSystem")] = "emailSystem";
-                known_capabilities[GetCapabilitySid("secondaryAuthenticationFactor")] = "secondaryAuthenticationFactor";
-                known_capabilities[GetCapabilityGroupSid("secondaryAuthenticationFactor")] = "secondaryAuthenticationFactor";
-                known_capabilities[GetCapabilitySid("activitySystem")] = "activitySystem";
-                known_capabilities[GetCapabilityGroupSid("activitySystem")] = "activitySystem";
-                known_capabilities[GetCapabilitySid("storeAppInstallation")] = "storeAppInstallation";
-                known_capabilities[GetCapabilityGroupSid("storeAppInstallation")] = "storeAppInstallation";
-                known_capabilities[GetCapabilitySid("remoteSystem")] = "remoteSystem";
-                known_capabilities[GetCapabilityGroupSid("remoteSystem")] = "remoteSystem";
-                known_capabilities[GetCapabilitySid("documentsLibrary")] = "documentsLibrary";
-                known_capabilities[GetCapabilityGroupSid("documentsLibrary")] = "documentsLibrary";
-                known_capabilities[GetCapabilitySid("secureAssessment")] = "secureAssessment";
-                known_capabilities[GetCapabilityGroupSid("secureAssessment")] = "secureAssessment";
-                known_capabilities[GetCapabilitySid("appointments")] = "appointments";
-                known_capabilities[GetCapabilityGroupSid("appointments")] = "appointments";
-                known_capabilities[GetCapabilitySid("inputInjection")] = "inputInjection";
-                known_capabilities[GetCapabilityGroupSid("inputInjection")] = "inputInjection";
+                try
+                {
+                    known_capabilities[GetCapabilitySid("internetClient")] = "internetClient";
+                    known_capabilities[GetCapabilitySid("internetClientServer")] = "internetClientServer";
+                    known_capabilities[GetCapabilitySid("privateNetworkClientServer")] = "privateNetworkClientServer";
+                    known_capabilities[GetCapabilitySid("screenDuplication")] = "screenDuplication";
+                    known_capabilities[GetCapabilitySid("extendedExecutionUnconstrained")] = "extendedExecutionUnconstrained";
+                    known_capabilities[GetCapabilitySid("cellularDeviceIdentity")] = "cellularDeviceIdentity";
+                    known_capabilities[GetCapabilitySid("inputInjectionBrokered")] = "inputInjectionBrokered";
+                    known_capabilities[GetCapabilitySid("previewHfx")] = "previewHfx";
+                    known_capabilities[GetCapabilitySid("cortanaSettings")] = "cortanaSettings";
+                    known_capabilities[GetCapabilitySid("holographicCompositor")] = "holographicCompositor";
+                    known_capabilities[GetCapabilitySid("perceptionSystem")] = "perceptionSystem";
+                    known_capabilities[GetCapabilitySid("shellExperience")] = "shellExperience";
+                    known_capabilities[GetCapabilitySid("userAccountInformation")] = "userAccountInformation";
+                    known_capabilities[GetCapabilitySid("spatialPerception")] = "spatialPerception";
+                    known_capabilities[GetCapabilitySid("uiAutomationSystem")] = "uiAutomationSystem";
+                    known_capabilities[GetCapabilitySid("picturesLibrary")] = "picturesLibrary";
+                    known_capabilities[GetCapabilitySid("enterpriseAuthentication")] = "enterpriseAuthentication";
+                    known_capabilities[GetCapabilitySid("sharedUserCertificates")] = "sharedUserCertificates";;
+                    known_capabilities[GetCapabilitySid("deviceManagementAdministrator")] = "deviceManagementAdministrator";
+                    known_capabilities[GetCapabilitySid("remotePassportAuthentication")] = "remotePassportAuthentication";
+                    known_capabilities[GetCapabilitySid("userPrincipalName")] = "userPrincipalName";
+                    known_capabilities[GetCapabilitySid("windowsHelloCredentialAccess")] = "windowsHelloCredentialAccess";
+                    known_capabilities[GetCapabilitySid("userDataAccountSetup")] = "userDataAccountSetup";
+                    known_capabilities[GetCapabilitySid("userWebAccounts")] = "userWebAccounts";
+                    known_capabilities[GetCapabilitySid("contacts")] = "contacts";
+                    known_capabilities[GetCapabilitySid("userSigninSupport")] = "userSigninSupport";
+                    known_capabilities[GetCapabilitySid("biometricSystem")] = "biometricSystem";
+                    known_capabilities[GetCapabilitySid("targetedContent")] = "targetedContent";
+                    known_capabilities[GetCapabilitySid("lockScreenCreatives")] = "lockScreenCreatives";
+                    known_capabilities[GetCapabilitySid("packageContents")] = "packageContents";
+                    known_capabilities[GetCapabilitySid("childWebContent")] = "childWebContent";
+                    known_capabilities[GetCapabilitySid("confirmAppClose")] = "confirmAppClose";
+                    known_capabilities[GetCapabilitySid("enterpriseDataPolicy")] = "enterpriseDataPolicy";
+                    known_capabilities[GetCapabilitySid("extendedExecutionBackgroundAudio")] = "extendedExecutionBackgroundAudio";
+                    known_capabilities[GetCapabilitySid("packageQuery")] = "packageQuery";
+                    known_capabilities[GetCapabilitySid("slapiQueryLicenseValue")] = "slapiQueryLicenseValue";
+                    known_capabilities[GetCapabilitySid("registryRead")] = "registryRead";
+                    known_capabilities[GetCapabilitySid("lpacWebPlatform")] = "lpacWebPlatform";
+                    known_capabilities[GetCapabilitySid("lpacAppExperience")] = "lpacAppExperience";
+                    known_capabilities[GetCapabilitySid("lpacCryptoServices")] = "lpacCryptoServices";
+                    known_capabilities[GetCapabilitySid("lpacIdentityServices")] = "lpacIdentityServices";
+                    known_capabilities[GetCapabilitySid("lpacEnterprisePolicyChangeNotifications")] = "lpacEnterprisePolicyChangeNotifications";
+                    known_capabilities[GetCapabilitySid("lpacMedia")] = "lpacMedia";
+                    known_capabilities[GetCapabilitySid("lpacPnPNotifications")] = "lpacPnPNotifications";
+                    known_capabilities[GetCapabilitySid("lpacServicesManagement")] = "lpacServicesManagement";
+                    known_capabilities[GetCapabilitySid("lpacSessionManagement")] = "lpacSessionManagement";
+                    known_capabilities[GetCapabilitySid("lpacInstrumentation")] = "lpacInstrumentation";
+                    known_capabilities[GetCapabilitySid("lpacPrinting")] = "lpacPrinting";
+                    known_capabilities[GetCapabilitySid("lpacPayments")] = "lpacPayments";
+                    known_capabilities[GetCapabilitySid("lpacCom")] = "lpacCom";
+                    known_capabilities[GetCapabilitySid("microsoftEdgeRemoteDebugging")] = "microsoftEdgeRemoteDebugging";
+                    known_capabilities[GetCapabilitySid("liveIdService")] = "liveIdService";
+                    known_capabilities[GetCapabilitySid("settingSyncConfiguration")] = "settingSyncConfiguration";
+                    known_capabilities[GetCapabilitySid("storeAppInstall")] = "storeAppInstall";
+                    known_capabilities[GetCapabilitySid("teamEditionExperience")] = "teamEditionExperience";
+                    known_capabilities[GetCapabilitySid("inputForegroundObservation")] = "inputForegroundObservation";
+                    known_capabilities[GetCapabilitySid("applicationDefaults")] = "applicationDefaults";
+                    known_capabilities[GetCapabilitySid("cloudExperienceHost")] = "cloudExperienceHost";
+                    known_capabilities[GetCapabilitySid("cloudStore")] = "cloudStore";
+                    known_capabilities[GetCapabilitySid("curatedTileCollections")] = "curatedTileCollections";
+                    known_capabilities[GetCapabilitySid("visualElementsSystem")] = "visualElementsSystem";
+                    known_capabilities[GetCapabilitySid("featureStagingInfo")] = "featureStagingInfo";
+                    known_capabilities[GetCapabilitySid("musicLibrary")] = "musicLibrary";
+                    known_capabilities[GetCapabilitySid("phoneCall")] = "phoneCall";
+                    known_capabilities[GetCapabilitySid("locationHistory")] = "locationHistory";
+                    known_capabilities[GetCapabilitySid("userDataSystem")] = "userDataSystem";
+                    known_capabilities[GetCapabilitySid("contactsSystem")] = "contactsSystem";
+                    known_capabilities[GetCapabilitySid("phoneCallHistorySystem")] = "phoneCallHistorySystem";
+                    known_capabilities[GetCapabilitySid("appointmentsSystem")] = "appointmentsSystem";
+                    known_capabilities[GetCapabilitySid("chatSystem")] = "chatSystem";
+                    known_capabilities[GetCapabilitySid("smsSend")] = "smsSend";
+                    known_capabilities[GetCapabilitySid("emailSystem")] = "emailSystem";
+                    known_capabilities[GetCapabilitySid("secondaryAuthenticationFactor")] = "secondaryAuthenticationFactor";
+                    known_capabilities[GetCapabilitySid("activitySystem")] = "activitySystem";
+                    known_capabilities[GetCapabilitySid("storeAppInstallation")] = "storeAppInstallation";
+                    known_capabilities[GetCapabilitySid("remoteSystem")] = "remoteSystem";
+                    known_capabilities[GetCapabilitySid("documentsLibrary")] = "documentsLibrary";
+                    known_capabilities[GetCapabilitySid("secureAssessment")] = "secureAssessment";
+                    known_capabilities[GetCapabilitySid("appointments")] = "appointments";
+                    known_capabilities[GetCapabilitySid("inputInjection")] = "inputInjection";
+                }
+                catch
+                {
+                    // Catch here in case the RtlDeriveCapabilitySid function isn't supported.
+                }
                 _known_capabilities = known_capabilities;
             }
             return _known_capabilities;
@@ -1804,7 +1731,7 @@ namespace NtApiDotNet
             {
                 NtRtl.RtlDeriveCapabilitySidsFromName(
                     new UnicodeString(capability_name),
-                    cap_sid, cap_group_sid).ToNtException();
+                    cap_group_sid, cap_sid).ToNtException();
                 return new Sid(cap_sid);
             }
         }
@@ -1821,7 +1748,7 @@ namespace NtApiDotNet
             {
                 NtRtl.RtlDeriveCapabilitySidsFromName(
                     new UnicodeString(capability_name),
-                    cap_sid, cap_group_sid).ToNtException();
+                    cap_group_sid, cap_sid).ToNtException();
                 return new Sid(cap_group_sid);
             }
         }
