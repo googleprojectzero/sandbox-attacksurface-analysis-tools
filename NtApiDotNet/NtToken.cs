@@ -295,6 +295,7 @@ namespace NtApiDotNet
 
     public enum ClaimSecurityValueType : ushort
     {
+        None = 0,
         Int64 = 0x0001,
         UInt64 = 0x0002,
         String = 0x0003,
@@ -2165,6 +2166,22 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Get a security attribute by name.
+        /// </summary>
+        /// <param name="name">The name of the security attribute, such as WIN://PKG</param>
+        /// <param name="type">The expected type of the security attribute. If None return ignore type check.</param>
+        /// <returns>The security attribute or null if not found.</returns>
+        public ClaimSecurityAttribute GetSecurityAttributeByName(string name, ClaimSecurityValueType type)
+        {
+            IEnumerable<ClaimSecurityAttribute> ret = SecurityAttributes.Where(a => a.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (type != ClaimSecurityValueType.None)
+            {
+                ret = ret.Where(a => a.ValueType == type);
+            }
+            return ret.FirstOrDefault();
+        }
+
         private void SetIntegrityLevelSid(Sid sid)
         {
             using (SafeSidBufferHandle sid_buffer = sid.ToSafeBuffer())
@@ -2204,7 +2221,8 @@ namespace NtApiDotNet
             {
                 if (!_app_container.HasValue)
                 {
-                    using (var appcontainer = QueryToken<uint>(TokenInformationClass.TokenIsAppContainer))
+                    using (var appcontainer 
+                        = QueryToken<uint>(TokenInformationClass.TokenIsAppContainer))
                     {
                         _app_container = appcontainer.Result != 0;
                     }
@@ -2225,15 +2243,10 @@ namespace NtApiDotNet
                     return false;
                 }
 
-                // In theory with right privileges this can be disabled so always check.
-                foreach (ClaimSecurityAttribute attribute in SecurityAttributes)
+                ClaimSecurityAttribute attribute = GetSecurityAttributeByName("WIN://NOALLAPPPKG", ClaimSecurityValueType.UInt64);
+                if (attribute != null)
                 {
-                    if (attribute.Name == "WIN://NOALLAPPPKG"
-                        && attribute.ValueType == ClaimSecurityValueType.UInt64
-                        && attribute.Values.Count() > 0)
-                    {
-                        return (ulong)attribute.Values.First() != 0;
-                    }
+                    return (ulong)attribute.Values.First() != 0;
                 }
 
                 return false;
@@ -2263,6 +2276,29 @@ namespace NtApiDotNet
                 }
 
                 return _app_container_sid;
+            }
+        }
+
+        /// <summary>
+        /// Get token's AppContainer package name (if available). 
+        /// Returns an empty string if not an AppContainer.
+        /// </summary>
+        public string PackageName
+        {
+            get
+            {
+                if (!AppContainer)
+                {
+                    return String.Empty;
+                }
+
+                ClaimSecurityAttribute attribute = GetSecurityAttributeByName("WIN://SYSAPPID", ClaimSecurityValueType.String);
+                if (attribute == null)
+                {
+                    return String.Empty;
+                }
+
+                return (string)attribute.Values.First();
             }
         }
 
