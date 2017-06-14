@@ -28,8 +28,8 @@ namespace NtApiDotNet
             DepPermanent = dep_status.Permanent;
                     
             int result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessASLRPolicy);
-            EnableForceRelocateImages = result.GetBit(0);
-            EnableBottomUpRandomization = result.GetBit(1);
+            EnableBottomUpRandomization = result.GetBit(0);
+            EnableForceRelocateImages = result.GetBit(1);
             EnableHighEntropy = result.GetBit(2);
             DisallowStrippedImages = result.GetBit(3);
 
