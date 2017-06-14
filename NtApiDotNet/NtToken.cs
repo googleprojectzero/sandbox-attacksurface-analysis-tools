@@ -985,7 +985,7 @@ namespace NtApiDotNet
             string ret = null;
             try
             {
-                ret = NtSecurity.LookupAccountSid(Sid);
+                ret = Sid.Name;
             }
             catch
             {
