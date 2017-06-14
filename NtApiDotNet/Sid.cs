@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -55,7 +56,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return _value;
+                return (byte[])_value.Clone();
             }
         }
 
@@ -140,6 +141,34 @@ namespace NtApiDotNet
         public bool IsAuthority(SecurityAuthority authority)
         {
             return this.Equals(new SidIdentifierAuthority(authority));
+        }
+
+        private static bool IsSystemAuthority(byte[] value)
+        {
+            for (int i = 0; i < 5; ++i)
+            {
+                if (value[i] != 0)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The security authority as a string.</returns>
+        public override string ToString()
+        {
+            if (IsSystemAuthority(_value))
+            {
+                return ((SecurityAuthority)_value[5]).ToString();
+            }
+
+            byte[] temp = _value;
+            Array.Resize(ref temp, 8);
+            return String.Format("Authority {0}", BitConverter.ToInt64(temp, 0));
         }
     }
 
