@@ -1,6 +1,6 @@
 ﻿NtApiDotNet - Managed .NET library for accessing NT API
 
-(c) Google Inc. 2015, 2016
+(c) Google Inc. 2015, 2016, 2017
 Developed by James Forshaw
 
 This library is written entirely in C# to allow managed applications easy access to

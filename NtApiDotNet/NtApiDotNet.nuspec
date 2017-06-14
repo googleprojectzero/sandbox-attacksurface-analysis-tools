@@ -11,6 +11,37 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A .NET class library to access native NT API system calls</description>
     <releaseNotes>
+1.0.7
+-----
+* Added new cmdlets to do access checking. Many of the old standalone utilities are now deprecated.
+* Added cmdlets to create lowbox tokens
+* Added list of known capability SIDs and resolve them during name lookup
+* Added cmdlet to get a SID
+* Added cmdlet to do a standalone access checking
+* Reworked the APIs to include non-throwing versions of many of the core Open/Create methods.
+* Made NtType more inspectable, includes access enumeration and rationalizes the opening methods.
+* Various additional properties such as extended process flags, checking for LPAC
+* Rework of access mask handling. Now all low-level APIs use an AccessMask structure which has
+  conversion operators to and from other enumerations.
+* Various other bug fixes.
+
+1.0.6
+-----
+* Added cmdlet to filter a Token object.
+* Cleanups to various components to make them easier to use from PS
+
+1.0.5
+-----
+* Added additional Known SIDs
+* Unified the variant Get-NtToken* cmdlets into one.
+* Added additional token cmdlets such as Logon and Clipboard.
+* Added initial support for IO Completion Ports
+* Added object creation time property
+* Added support to set a process device map
+* Added top level CanSynchronize property to NtObject
+* Bugs fixes from Rustam Agametov
+* Made process list in token viewer a list rather than a tree and made a separate handle tab.
+
 1.0.4
 -----
 * First NUGET release.

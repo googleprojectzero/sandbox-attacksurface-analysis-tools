@@ -127,7 +127,20 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.0.6
+        ReleaseNotes = '1.0.7
+-----
+* Added new cmdlets to do access checking. Many of the old standalone utilities are now deprecated.
+* Added cmdlets to create lowbox tokens
+* Added list of known capability SIDs and resolve them during name lookup
+* Added cmdlet to get a SID
+* Added cmdlet to do a standalone access checking
+* Reworked the APIs to include non-throwing versions of many of the core Open/Create methods.
+* Made NtType more inspectable, includes access enumeration and rationalizes the opening methods.
+* Various additional properties such as extended process flags, checking for LPAC
+* Rework of access mask handling. Now all low-level APIs use an AccessMask structure which has
+  conversion operators to and from other enumerations.
+* Various other bug fixes.
+1.0.6
 -----
 * Added cmdlet to filter a Token object.
 * Cleanups to various components to make them easier to use from PS
