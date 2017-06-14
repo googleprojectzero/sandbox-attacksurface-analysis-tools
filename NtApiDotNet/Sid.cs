@@ -419,6 +419,27 @@ namespace NtApiDotNet
             }
         }
 
+        private static string MakeFakeCapabilityName(string name)
+        {
+            List<string> parts = new List<string>();
+            int start = 0;
+            int index = 0;
+            while (index < name.Length)
+            {
+                if (Char.IsUpper(name[index]))
+                {
+                    parts.Add(name.Substring(start, index - start));
+                    start = index;
+                }
+                index++;
+            }
+
+            parts.Add(name.Substring(start));
+            parts[0] = Char.ToUpper(parts[0][0]) + parts[0].Substring(1);
+
+            return String.Format(@"NAMED CAPABILITIES\{0}", String.Join(" ", parts));
+        }
+
         /// <summary>
         /// Get the account name of the SID or the SDDL form is no corresponding name.
         /// </summary>
@@ -433,7 +454,7 @@ namespace NtApiDotNet
                     name = NtSecurity.LookupKnownCapabilityName(this);
                     if (name != null)
                     {
-                        name = String.Format(@"KNOWN CAPABILITIES\{0}", name);
+                        name = MakeFakeCapabilityName(name);
                     }
                 }
 

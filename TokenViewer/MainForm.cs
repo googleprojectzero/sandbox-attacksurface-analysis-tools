@@ -34,7 +34,6 @@ namespace TokenViewer
 
         private ListViewItem CreateProcessNode(NtProcess entry, NtToken token)
         {
-            System.Diagnostics.Trace.WriteLine(token.GrantedAccess.ToString());
             ListViewItem item = new ListViewItem(entry.ProcessId.ToString());
             item.SubItems.Add(entry.Name);
             item.SubItems.Add(token.User.ToString());
