@@ -225,7 +225,7 @@ namespace NtApiDotNet
         public static extern NtStatus RtlCreateServiceSid([In] UnicodeString pServiceName, 
             SafeBuffer pServiceSid, [In, Out] ref int cbServiceSid);
 
-        // Capability SID needs 9 RIDS (0x2C bytes), Group SID needs 10 (0x30 bytes)
+        // Group SID needs 9 RIDS (0x2C bytes), Capability SID needs 10 (0x30 bytes)
         [DllImport("ntdll.dll")]
         public static extern NtStatus RtlDeriveCapabilitySidsFromName(
             UnicodeString CapabilityName, SafeBuffer CapabilityGroupSid, SafeBuffer CapabilitySid);
@@ -1430,7 +1430,7 @@ namespace NtApiDotNet
                         known_capabilities.Add(sid, name);
                     }
                 }
-                catch
+                catch(EntryPointNotFoundException)
                 {
                     // Catch here in case the RtlDeriveCapabilitySid function isn't supported.
                 }
