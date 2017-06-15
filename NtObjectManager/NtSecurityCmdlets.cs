@@ -528,6 +528,12 @@ namespace NtApiDotNet
         public SwitchParameter ConvertToString { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify a principal SID to user when checking security descriptors with SELF SID.</para>
+        /// </summary>
+        [Parameter]
+        public Sid Principal { get; set; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public GetNtGrantedAccessCmdlet()
@@ -589,7 +595,7 @@ namespace NtApiDotNet
             {
                 NtType type = GetNtType();
                 AccessMask mask = NtSecurity.GetAllowedAccess(GetSecurityDescriptor(), 
-                    token, AccessMask, type.GenericMapping);
+                    token, AccessMask, Principal, type.GenericMapping);
 
                 if (MapToGeneric)
                 {
