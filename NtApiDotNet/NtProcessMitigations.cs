@@ -60,8 +60,23 @@ namespace NtApiDotNet
             EnabledReturnFlowGuard = result.GetBit(0);
             ReturnFlowGuardStrictMode = result.GetBit(1);
             IsChildProcessRestricted = process.IsChildProcessRestricted;
+            using (var token = NtToken.OpenProcessToken(process, TokenAccessRights.Query, false))
+            {
+                IsRestricted = token.Result.Restricted;
+                IsAppContainer = token.Result.AppContainer;
+                IsLowPrivilegeAppContainer = token.Result.LowPrivilegeAppContainer;
+                IntegrityLevel = token.Result.IntegrityLevel;
+            }
+            ProcessId = process.ProcessId;
+            Name = process.Name;
+            ImagePath = process.FullPath;
+            CommandLine = process.CommandLine;
         }
 
+        public int ProcessId { get; private set; }
+        public string Name { get; private set; }
+        public string ImagePath { get; private set; }
+        public string CommandLine { get; private set; }
         public bool DisallowWin32kSystemCalls { get; private set; }
         public bool DepEnabled { get; private set; }
         public bool DisableAtlThunkEmulation { get; private set; }
@@ -86,6 +101,10 @@ namespace NtApiDotNet
         public bool EnabledReturnFlowGuard { get; private set; }
         public bool ReturnFlowGuardStrictMode { get; private set; }
         public bool IsChildProcessRestricted { get; private set; }
+        public bool IsRestricted { get; private set; }
+        public bool IsAppContainer { get; private set; }
+        public bool IsLowPrivilegeAppContainer { get; private set; }
+        public TokenIntegrityLevel IntegrityLevel { get; private set; }
     }
 #pragma warning restore 1591
 }
