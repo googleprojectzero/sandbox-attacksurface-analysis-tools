@@ -600,9 +600,7 @@ namespace NtApiDotNet
         private static Dictionary<string, NtType> LoadTypes()
         {
             var type_factories = NtTypeFactory.GetAssemblyNtTypeFactories(Assembly.GetExecutingAssembly());
-            SafeStructureInOutBuffer<ObjectAllTypesInformation> type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>();
-
-            try
+            using (var type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>())
             {
                 Dictionary<string, NtType> ret = new Dictionary<string, NtType>(StringComparer.OrdinalIgnoreCase);
                 int return_length;
@@ -610,11 +608,8 @@ namespace NtApiDotNet
                     type_info.DangerousGetHandle(), type_info.Length, out return_length);
                 if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
                     status.ToNtException();
-
-                type_info.Close();
-                type_info = null;
-                type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>(return_length, false);
-
+                type_info.Resize(return_length);
+                
                 int alignment = IntPtr.Size - 1;
                 NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectAllInformation,
                     type_info.DangerousGetHandle(), type_info.Length, out return_length).ToNtException();
@@ -633,13 +628,6 @@ namespace NtApiDotNet
                 }
 
                 return ret;
-            }
-            finally
-            {
-                if (type_info != null)
-                {
-                    type_info.Close();
-                }
             }
         }
 
