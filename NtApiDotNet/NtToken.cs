@@ -1175,6 +1175,22 @@ namespace NtApiDotNet
         /// Open the process token of another process
         /// </summary>
         /// <param name="process">The process to open the token for</param>
+        /// <param name="desired_access">The desired access for the token</param>
+        /// <param name="throw_on_error">If true then throw an exception on error.</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
+        public static NtResult<NtToken> OpenProcessToken(NtProcess process, TokenAccessRights desired_access, bool throw_on_error)
+        {
+            SafeKernelObjectHandle new_token;
+            return NtSystemCalls.NtOpenProcessTokenEx(process.Handle,
+              desired_access, AttributeFlags.None, out new_token)
+              .CreateResult(throw_on_error, () => new NtToken(new_token));
+        }
+
+        /// <summary>
+        /// Open the process token of another process
+        /// </summary>
+        /// <param name="process">The process to open the token for</param>
         /// <param name="duplicate">True to duplicate the token before returning</param>
         /// <returns>The opened token</returns>
         /// <exception cref="NtException">Thrown if cannot open token</exception>
@@ -1193,19 +1209,12 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenProcessToken(NtProcess process, bool duplicate, TokenAccessRights desired_access)
         {
-            SafeKernelObjectHandle new_token;
-            NtSystemCalls.NtOpenProcessTokenEx(process.Handle,
-              desired_access, AttributeFlags.None, out new_token).ToNtException();
-            NtToken ret = new NtToken(new_token);
+            var ret = OpenProcessToken(process, desired_access, true).Result;
             if (duplicate)
             {
-                try
+                using (ret)
                 {
                     return ret.DuplicateToken();
-                }
-                finally
-                {
-                    ret.Close();
                 }
             }
             return ret;
@@ -1300,28 +1309,37 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="thread">The thread to open the token for</param>
         /// <param name="open_as_self">Open the token as the current identify rather than the impersonated one</param>
+        /// <param name="desired_access">The desired access for the token</param>
+        /// <param name="throw_on_error">If true then throw an exception on error.</param>
+        /// <returns>The opened token result</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
+        public static NtResult<NtToken> OpenThreadToken(NtThread thread, bool open_as_self, TokenAccessRights desired_access, bool throw_on_error)
+        {
+            SafeKernelObjectHandle new_token;
+            return NtSystemCalls.NtOpenThreadTokenEx(thread.Handle,
+              desired_access, open_as_self, AttributeFlags.None, out new_token).CreateResult(throw_on_error, () => new NtToken(new_token));
+        }
+
+        /// <summary>
+        /// Open the thread token
+        /// </summary>
+        /// <param name="thread">The thread to open the token for</param>
+        /// <param name="open_as_self">Open the token as the current identify rather than the impersonated one</param>
         /// <param name="duplicate">True to duplicate the token before returning</param>
         /// <param name="desired_access">The desired access for the token</param>
         /// <returns>The opened token, if no token return null</returns>
         /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenThreadToken(NtThread thread, bool open_as_self, bool duplicate, TokenAccessRights desired_access)
         {
-            SafeKernelObjectHandle new_token;
-            NtStatus status = NtSystemCalls.NtOpenThreadTokenEx(thread.Handle,
-              desired_access, open_as_self, AttributeFlags.None, out new_token);
-            if (status == NtStatus.STATUS_NO_TOKEN)
+            var result = OpenThreadToken(thread, open_as_self, desired_access, false);
+            if (result.Status == NtStatus.STATUS_NO_TOKEN)
                 return null;
-            status.ToNtException();
-            NtToken ret = new NtToken(new_token);
+            NtToken ret = result.GetResultOrThrow();
             if (duplicate)
             {
-                try
+                using (ret)
                 {
                     return ret.DuplicateToken();
-                }
-                finally
-                {
-                    ret.Close();
                 }
             }
             return ret;
