@@ -21,7 +21,9 @@ namespace NtObjectManager
     /// <summary>
     /// <para type="synopsis">Get NT type information.</para>
     /// <para type="description">This cmdlet gets NT type information from the operating system. If run without parameters it'll retrieve all types. 
-    /// You can limit it to only one type using the -TypeName parameter.</para>
+    /// You can limit it to only one type using the -TypeName parameter. By default it will used cached versions of the type information as
+    /// most of the time you don't need information such as how many objects are created, however if you want that current information specify the
+    /// -CurrentStatus parameter.</para>
     /// </summary>
     /// <example>
     ///   <code>Get-NtType</code>
@@ -35,6 +37,10 @@ namespace NtObjectManager
     ///   <code>Get-NtType Directory</code>
     ///   <para>Get the Directory NT type.</para>
     /// </example>
+    /// <example>
+    ///   <code>Get-NtType Directory -CurrentStatus</code>
+    ///   <para>Get the Directory NT type with the current status of all information.</para>
+    /// </example>
     [Cmdlet(VerbsCommon.Get, "NtType")]
     [OutputType(typeof(NtType))]
     public sealed class GetNtTypesCmdlet : Cmdlet
@@ -46,13 +52,20 @@ namespace NtObjectManager
         public string TypeName { get; set; }
 
         /// <summary>
+        /// <para type="description">If set then will pull the latest information 
+        /// for the types rather than using cached data.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter CurrentStatus { get; set; }
+
+        /// <summary>
         /// Overridden ProcessRecord method.
         /// </summary>
         protected override void ProcessRecord()
         {
             if (!string.IsNullOrWhiteSpace(TypeName))
             {
-                NtType type_info = NtType.GetTypeByName(TypeName, false);
+                NtType type_info = NtType.GetTypeByName(TypeName, false, !CurrentStatus);
                 if (type_info != null)
                 {
                     WriteObject(type_info);
@@ -64,7 +77,7 @@ namespace NtObjectManager
             }
             else
             {
-                WriteObject(NtType.GetTypes(), true);
+                WriteObject(NtType.GetTypes(!CurrentStatus), true);
             }
         }
     }
