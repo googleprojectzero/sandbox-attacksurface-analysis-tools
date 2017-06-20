@@ -145,6 +145,25 @@ function Set-NtTokenIntegrityLevel
 
 <#
 .SYNOPSIS
+Get security mitigations and token security information for processes.
+.DESCRIPTION
+This cmdlet will get the mitigation policies for all processes it can access for QueryInformation rights. 
+#>
+function Get-NtProcessMitigations
+{
+	Set-NtTokenPrivilege SeDebugPrivilege | Out-Null
+	Use-NtObject($ps = Get-NtProcess -Access QueryInformation) {
+		foreach($p in $ps) {
+			try {
+				Write-Output $p.Mitigations
+			} catch {
+			}
+		}
+	}
+}
+
+<#
+.SYNOPSIS
 Get process primary token. Here for legacy reasons, use Get-NtToken -Primary.
 #>
 function Get-NtTokenPrimary

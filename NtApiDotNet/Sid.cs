@@ -14,7 +14,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -651,6 +650,16 @@ namespace NtApiDotNet
         /// Constrained Impersonation Capability
         /// </summary>
         CapabilityConstrainedImpersonation,
+
+        /// <summary>
+        /// OWNER RIGHTS
+        /// </summary>
+        OwnerRights,
+
+        /// <summary>
+        /// NT AUTHORITY\SELF
+        /// </summary>
+        Self,
     }
 
     /// <summary>
@@ -828,6 +837,7 @@ namespace NtApiDotNet
                 case KnownSidValue.Local: return new Sid(SecurityAuthority.Local, 0);
                 case KnownSidValue.CreatorOwner: return new Sid(SecurityAuthority.Creator, 0);
                 case KnownSidValue.CreatorGroup: return new Sid(SecurityAuthority.Creator, 1);
+                case KnownSidValue.OwnerRights: return new Sid(SecurityAuthority.Creator, 4);
                 case KnownSidValue.Service: return new Sid(SecurityAuthority.Nt, 6);
                 case KnownSidValue.Anonymous: return new Sid(SecurityAuthority.Nt, 7);
                 case KnownSidValue.AuthenticatedUsers: return new Sid(SecurityAuthority.Nt, 11);
@@ -855,6 +865,7 @@ namespace NtApiDotNet
                 case KnownSidValue.CapabilityInternetExplorer: return GetCapabilitySid(4096);
                 case KnownSidValue.CapabilityConstrainedImpersonation:
                     return GetCapabilitySid(1024, 1604681682, 535129537, 3273749797, 3666938095, 336295784, 2177615760, 2743807136, 2867270584);
+                case KnownSidValue.Self: return new Sid(SecurityAuthority.Nt, 10);
                 default:
                     throw new ArgumentException("Unknown SID type");
             }

@@ -239,6 +239,22 @@ namespace NtApiDotNet
         /// Type Index
         /// </summary>
         public int Index { get; private set; }
+        /// <summary>
+        /// Generic Read Access rights
+        /// </summary>
+        public string GenericRead { get; private set; }
+        /// <summary>
+        /// Generic Read Access rights
+        /// </summary>
+        public string GenericWrite { get; private set; }
+        /// <summary>
+        /// Generic Read Access rights
+        /// </summary>
+        public string GenericExecute { get; private set; }
+        /// <summary>
+        /// Generic Read Access rights
+        /// </summary>
+        public string GenericAll { get; private set; }
 
         /// <summary>
         /// Get implemented object type for this NT type.
@@ -448,6 +464,10 @@ namespace NtApiDotNet
             }
             System.Diagnostics.Debug.WriteLine(String.Format("Generating Fake Type for {0}", Name));
             _type_factory = _generic_factory;
+            GenericRead = String.Empty;
+            GenericWrite = String.Empty;
+            GenericExecute = String.Empty;
+            GenericAll = String.Empty;
         }
 
         internal NtType(int id, ObjectTypeInformation info, NtTypeFactory type_factory)
@@ -477,6 +497,11 @@ namespace NtApiDotNet
             PagedPoolUsage = info.PagedPoolUsage;
             NonPagedPoolUsage = info.NonPagedPoolUsage;
             _type_factory = type_factory;
+
+            GenericRead = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericRead, GenericMapping, _type_factory.AccessRightsType, false);
+            GenericWrite = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericWrite, GenericMapping, _type_factory.AccessRightsType, false);
+            GenericExecute = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericExecute, GenericMapping, _type_factory.AccessRightsType, false);
+            GenericAll = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericAll, GenericMapping, _type_factory.AccessRightsType, false);
         }
 
         private static Dictionary<string, NtType> _types = LoadTypes();
@@ -488,7 +513,18 @@ namespace NtApiDotNet
         /// <returns>The object type, null if not found</returns>
         public static NtType GetTypeByIndex(int index)
         {
-            foreach (NtType info in GetTypes())
+            return GetTypeByIndex(index, true);
+        }
+
+        /// <summary>
+        /// Get a type object by index
+        /// </summary>
+        /// <param name="index">The index</param>
+        /// <param name="cached">True to get a cached type, false to return a live types.</param>
+        /// <returns>The object type, null if not found</returns>
+        public static NtType GetTypeByIndex(int index, bool cached)
+        {
+            foreach (NtType info in GetTypes(cached))
             {
                 if (info.Index == index)
                     return info;
@@ -502,12 +538,15 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="name">The name of the type</param>
         /// <param name="create_fake_type">True to create a fake type if needed.</param>
+        /// <param name="cached">True to get a cached type, false to return a live types.</param>
         /// <returns>The object type, null if not found</returns>
-        public static NtType GetTypeByName(string name, bool create_fake_type)
+        public static NtType GetTypeByName(string name, bool create_fake_type, bool cached)
         {
-            if (_types.ContainsKey(name))
+            var types = cached ? _types : LoadTypes();
+
+            if (types.ContainsKey(name))
             {
-                return _types[name];
+                return types[name];
             }
 
             if (create_fake_type)
@@ -515,6 +554,35 @@ namespace NtApiDotNet
                 return new NtType(-1, name);
             }
             return null;
+        }
+
+        /// <summary>
+        /// Get a type object by name
+        /// </summary>
+        /// <param name="name">The name of the type</param>
+        /// <param name="create_fake_type">True to create a fake type if needed.</param>
+        /// <returns>The object type, null if not found</returns>
+        public static NtType GetTypeByName(string name, bool create_fake_type)
+        {
+            return GetTypeByName(name, create_fake_type, true);
+        }
+
+        /// <summary>
+        /// Get an NT type based on the implemented .NET type.
+        /// </summary>
+        /// <typeparam name="T">A type derived from NtObject</typeparam>
+        /// <param name="cached">True to get a cached type, false to return a live types.</param>
+        /// <returns>The NtType represented by this .NET type. Note if a type is represented with multiple
+        /// names only return the first one we find.</returns>
+        /// <exception cref="ArgumentException">Thrown if there exists no .NET type which maps to this type.</exception>
+        public static NtType GetTypeByType<T>(bool cached) where T : NtObject
+        {
+            IEnumerable<NtTypeAttribute> attrs = typeof(T).GetCustomAttributes<NtTypeAttribute>();
+            if (attrs.Count() == 0)
+            {
+                throw new ArgumentException("Type has no mapping to an NT Type");
+            }
+            return GetTypeByName(attrs.First().TypeName, false, cached);
         }
 
         /// <summary>
@@ -526,20 +594,13 @@ namespace NtApiDotNet
         /// <exception cref="ArgumentException">Thrown if there exists no .NET type which maps to this type.</exception>
         public static NtType GetTypeByType<T>() where T : NtObject
         {
-            IEnumerable<NtTypeAttribute> attrs = typeof(T).GetCustomAttributes<NtTypeAttribute>();
-            if (attrs.Count() == 0)
-            {
-                throw new ArgumentException("Type has no mapping to an NT Type");
-            }
-            return GetTypeByName(attrs.First().TypeName, false);
+            return GetTypeByType<T>(true);
         }
 
         private static Dictionary<string, NtType> LoadTypes()
         {
             var type_factories = NtTypeFactory.GetAssemblyNtTypeFactories(Assembly.GetExecutingAssembly());
-            SafeStructureInOutBuffer<ObjectAllTypesInformation> type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>();
-
-            try
+            using (var type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>())
             {
                 Dictionary<string, NtType> ret = new Dictionary<string, NtType>(StringComparer.OrdinalIgnoreCase);
                 int return_length;
@@ -547,11 +608,8 @@ namespace NtApiDotNet
                     type_info.DangerousGetHandle(), type_info.Length, out return_length);
                 if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
                     status.ToNtException();
-
-                type_info.Close();
-                type_info = null;
-                type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>(return_length, false);
-
+                type_info.Resize(return_length);
+                
                 int alignment = IntPtr.Size - 1;
                 NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectAllInformation,
                     type_info.DangerousGetHandle(), type_info.Length, out return_length).ToNtException();
@@ -571,13 +629,6 @@ namespace NtApiDotNet
 
                 return ret;
             }
-            finally
-            {
-                if (type_info != null)
-                {
-                    type_info.Close();
-                }
-            }
         }
 
         /// <summary>
@@ -595,7 +646,25 @@ namespace NtApiDotNet
         /// <returns>The list of types.</returns>
         public static IEnumerable<NtType> GetTypes()
         {
-            return _types.Values;
+            return GetTypes(true);
+        }
+
+
+        /// <summary>
+        /// Get a list of all types.
+        /// </summary>
+        /// <param name="cached">True to get the cached list of types, false to return a live list of all types.</param>
+        /// <returns>The list of types.</returns>
+        public static IEnumerable<NtType> GetTypes(bool cached)
+        {
+            if (cached)
+            {
+                return _types.Values;
+            }
+            else
+            {
+                return LoadTypes().Values;
+            }
         }
     }
 }

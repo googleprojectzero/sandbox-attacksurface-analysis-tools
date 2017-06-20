@@ -225,7 +225,7 @@ namespace NtApiDotNet
         public static extern NtStatus RtlCreateServiceSid([In] UnicodeString pServiceName, 
             SafeBuffer pServiceSid, [In, Out] ref int cbServiceSid);
 
-        // Capability SID needs 9 RIDS (0x2C bytes), Group SID needs 10 (0x30 bytes)
+        // Group SID needs 9 RIDS (0x2C bytes), Capability SID needs 10 (0x30 bytes)
         [DllImport("ntdll.dll")]
         public static extern NtStatus RtlDeriveCapabilitySidsFromName(
             UnicodeString CapabilityName, SafeBuffer CapabilityGroupSid, SafeBuffer CapabilitySid);
@@ -236,8 +236,22 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAccessCheck(
             SafeBuffer SecurityDescriptor,
-            SafeHandle ClientToken,
+            SafeKernelObjectHandle ClientToken,
             AccessMask DesiredAccess,
+            ref GenericMapping GenericMapping,
+            SafePrivilegeSetBuffer RequiredPrivilegesBuffer,
+            ref int BufferLength,
+            out AccessMask GrantedAccess,
+            out NtStatus AccessStatus);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAccessCheckByType(
+            SafeBuffer SecurityDescriptor,
+            SafeHandle PrincipalSelfSid,
+            SafeKernelObjectHandle ClientToken,
+            AccessMask DesiredAccess,
+            SafeBuffer ObjectTypeList,
+            int ObjectTypeListLength,
             ref GenericMapping GenericMapping,
             SafePrivilegeSetBuffer RequiredPrivilegesBuffer,
             ref int BufferLength,
@@ -1430,7 +1444,7 @@ namespace NtApiDotNet
                         known_capabilities.Add(sid, name);
                     }
                 }
-                catch
+                catch (EntryPointNotFoundException)
                 {
                     // Catch here in case the RtlDeriveCapabilitySid function isn't supported.
                 }
@@ -1592,11 +1606,12 @@ namespace NtApiDotNet
         /// <param name="sd">The security descriptor</param>
         /// <param name="token">The access token.</param>
         /// <param name="access_rights">The set of access rights to check against</param>
+        /// <param name="principal">An optional principal SID used to replace the SELF SID in a security descriptor.</param>
         /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
         /// <returns>The allowed access mask as a unsigned integer.</returns>
         /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
-        public static AccessMask GetAllowedAccess(SecurityDescriptor sd, NtToken token, 
-            AccessMask access_rights, GenericMapping generic_mapping)
+        public static AccessMask GetAllowedAccess(SecurityDescriptor sd, NtToken token,
+            AccessMask access_rights, Sid principal, GenericMapping generic_mapping)
         {
             if (sd == null)
             {
@@ -1608,7 +1623,12 @@ namespace NtApiDotNet
                 throw new ArgumentNullException("token");
             }
 
-            using (var sd_buffer = sd.ToSafeBuffer())
+            if (access_rights.IsEmpty)
+            {
+                return AccessMask.Empty;
+            }
+
+            using (SafeBuffer sd_buffer = sd.ToSafeBuffer())
             {
                 using (NtToken imp_token = DuplicateForAccessCheck(token))
                 {
@@ -1618,16 +1638,35 @@ namespace NtApiDotNet
                     {
                         int buffer_length = privs.Length;
 
-                        NtSystemCalls.NtAccessCheck(sd_buffer, imp_token.Handle, access_rights,
-                            ref generic_mapping, privs, ref buffer_length, out granted_access, out result_status).ToNtException();
-                        if (result_status.IsSuccess())
+                        using (var self_sid = principal != null ? principal.ToSafeBuffer() : SafeSidBufferHandle.Null)
                         {
-                            return granted_access;
+                            NtSystemCalls.NtAccessCheckByType(sd_buffer, self_sid, imp_token.Handle, access_rights,
+                                SafeHGlobalBuffer.Null, 0, ref generic_mapping, privs, 
+                                ref buffer_length, out granted_access, out result_status).ToNtException();
+                            if (result_status.IsSuccess())
+                            {
+                                return granted_access;
+                            }
+                            return AccessMask.Empty;
                         }
-                        return AccessMask.Empty;
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Do an access check between a security descriptor and a token to determine the allowed access.
+        /// </summary>
+        /// <param name="sd">The security descriptor</param>
+        /// <param name="token">The access token.</param>
+        /// <param name="access_rights">The set of access rights to check against</param>
+        /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
+        /// <returns>The allowed access mask as a unsigned integer.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
+        public static AccessMask GetAllowedAccess(SecurityDescriptor sd, NtToken token,
+            AccessMask access_rights, GenericMapping generic_mapping)
+        {
+            return GetAllowedAccess(sd, token, access_rights, null, generic_mapping);
         }
 
         /// <summary>
@@ -1644,6 +1683,20 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Do an access check between a security descriptor and a token to determine the maximum allowed access.
+        /// </summary>
+        /// <param name="sd">The security descriptor</param>
+        /// <param name="token">The access token.</param>
+        /// <param name="principal">An optional principal SID used to replace the SELF SID in a security descriptor.</param>
+        /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
+        /// <returns>The maximum allowed access mask as a unsigned integer.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
+        public static AccessMask GetMaximumAccess(SecurityDescriptor sd, NtToken token, Sid principal, GenericMapping generic_mapping)
+        {
+            return GetAllowedAccess(sd, token, GenericAccessRights.MaximumAllowed, principal, generic_mapping);
+        }
+
+        /// <summary>
         /// Do an access check between a security descriptor and a token to determine the allowed access.
         /// </summary>
         /// <param name="sd">The security descriptor</param>
@@ -1656,7 +1709,7 @@ namespace NtApiDotNet
         {
             if (sd == null || sd.Length == 0)
             {
-                return new AccessMask(0);
+                return AccessMask.Empty;
             }
 
             return GetAllowedAccess(new SecurityDescriptor(sd), token, access_rights, type.GenericMapping);

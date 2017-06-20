@@ -182,6 +182,18 @@ namespace NtApiDotNet
         public SwitchParameter CapabilityGroup { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify a SIDs security authority.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "sid")]
+        public SecurityAuthority SecurityAuthority { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the relative identifiers.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "sid")]
+        public uint[] RelativeIdentifiers { get; set; }
+
+        /// <summary>
         /// Process record.
         /// </summary>
         protected override void ProcessRecord()
@@ -251,8 +263,12 @@ namespace NtApiDotNet
             }
             else if (CapabilityName != null)
             {
-                sid = CapabilityGroup ? NtSecurity.GetCapabilityGroupSid(CapabilityName) 
+                sid = CapabilityGroup ? NtSecurity.GetCapabilityGroupSid(CapabilityName)
                     : NtSecurity.GetCapabilitySid(CapabilityName);
+            }
+            else if (RelativeIdentifiers != null)
+            {
+                sid = new Sid(SecurityAuthority, RelativeIdentifiers);
             }
             else
             {
@@ -512,6 +528,12 @@ namespace NtApiDotNet
         public SwitchParameter ConvertToString { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify a principal SID to user when checking security descriptors with SELF SID.</para>
+        /// </summary>
+        [Parameter]
+        public Sid Principal { get; set; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public GetNtGrantedAccessCmdlet()
@@ -573,7 +595,7 @@ namespace NtApiDotNet
             {
                 NtType type = GetNtType();
                 AccessMask mask = NtSecurity.GetAllowedAccess(GetSecurityDescriptor(), 
-                    token, AccessMask, type.GenericMapping);
+                    token, AccessMask, Principal, type.GenericMapping);
 
                 if (MapToGeneric)
                 {

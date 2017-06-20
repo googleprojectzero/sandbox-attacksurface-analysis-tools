@@ -615,6 +615,10 @@ namespace NtApiDotNet
         {
         }
 
+        public static SafeSidBufferHandle Null { get
+            { return new SafeSidBufferHandle(IntPtr.Zero, false); }
+        }
+
         public int Length
         {
             get { return NtRtl.RtlLengthSid(handle); }
