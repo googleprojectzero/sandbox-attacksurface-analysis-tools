@@ -106,6 +106,7 @@ namespace NtApiDotNet
         public SystemThreadInformation Threads;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     public struct SystemPageFileInformation
     {
         public int NextEntryOffset;
@@ -113,6 +114,26 @@ namespace NtApiDotNet
         public int TotalInUse;
         public int PeekUsage;
         public UnicodeStringOut PageFileName;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemKernelDebuggerInformation
+    {
+        [MarshalAs(UnmanagedType.U1)]
+        public bool KernelDebuggerEnabled;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool KernelDebuggerNotPresent;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemKernelDebuggerInformationEx
+    {
+        [MarshalAs(UnmanagedType.U1)]
+        public bool KernelDebuggerAllowed;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool KernelDebuggerEnabled;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool KernelDebuggerNotPresent;
     }
 
     public enum SystemInformationClass
@@ -627,6 +648,39 @@ namespace NtApiDotNet
                     }
                     offset += pagefile_info.NextEntryOffset;
                 }
+            }
+        }
+
+        private static SystemKernelDebuggerInformation GetKernelDebuggerInformation()
+        {
+            using (var info = new SafeStructureInOutBuffer<SystemKernelDebuggerInformation>())
+            {
+                int return_length;
+                NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemKernelDebuggerInformation, 
+                    info, info.Length, out return_length).ToNtException();
+                return info.Result;
+            }
+        }
+
+        /// <summary>
+        /// Get whether the kernel debugger is enabled.
+        /// </summary>
+        public static bool KernelDebuggerEnabled
+        {
+            get
+            {
+                return GetKernelDebuggerInformation().KernelDebuggerEnabled;
+            }
+        }
+
+        /// <summary>
+        /// Get whether the kernel debugger is not present.
+        /// </summary>
+        public static bool KernelDebuggerNotPresent
+        {
+            get
+            {
+                return GetKernelDebuggerInformation().KernelDebuggerNotPresent;
             }
         }
     }
