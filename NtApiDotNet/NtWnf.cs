@@ -89,7 +89,7 @@ namespace NtApiDotNet
             bool PersistData,
             ref WnfTypeId TypeId,
             uint MaximumStateSize,
-            IntPtr SecurityDescriptor
+            SafeBuffer SecurityDescriptor
         );
 
         [DllImport("ntdll.dll")]
@@ -101,6 +101,11 @@ namespace NtApiDotNet
              IntPtr Buffer,
              out int BufferSize
          );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtDeleteWnfStateName(
+            ref WnfStateName StateName
+        );
     }
 #pragma warning restore 1591
 
