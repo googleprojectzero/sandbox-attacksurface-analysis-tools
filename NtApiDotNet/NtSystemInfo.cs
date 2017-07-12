@@ -208,6 +208,23 @@ namespace NtApiDotNet
         public byte Policy;
     }
 
+    public class SecureBootPolicy
+    {
+        public Guid PolicyPublisher { get; private set; }
+        public int PolicyVersion { get; private set; }
+        public int PolicyOptions { get; private set; }
+        public byte[] Policy { get; private set; }
+
+        internal SecureBootPolicy(SafeStructureInOutBuffer<SystemSecurebootPolicyFullInformation> policy)
+        {
+            SystemSecurebootPolicyFullInformation policy_struct = policy.Result;
+            PolicyPublisher = policy_struct.PolicyInformation.PolicyPublisher;
+            PolicyVersion = policy_struct.PolicyInformation.PolicyVersion;
+            PolicyOptions = policy_struct.PolicyInformation.PolicyOptions;
+            Policy = policy.Data.ReadBytes(policy_struct.PolicySize);
+        }
+    }
+
     [Flags]
     public enum CodeIntegrityOptions
     {
@@ -231,15 +248,10 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public class SystemCodeIntegrityInformation
+    public struct SystemCodeIntegrityInformation
     {
         public int Length;
         public CodeIntegrityOptions CodeIntegrityOptions;
-
-        public SystemCodeIntegrityInformation()
-        {
-            Length = Marshal.SizeOf(this);
-        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -799,6 +811,22 @@ namespace NtApiDotNet
             }
         }
 
+        private static T QuerySystemInfo<T>(T data, SystemInformationClass info_class) where T : struct
+        {
+            using (var buffer = data.ToBuffer())
+            {
+                int ret_length;
+                NtSystemCalls.NtQuerySystemInformation(info_class, buffer,
+                    buffer.Length, out ret_length).ToNtException();
+                return buffer.Result;
+            }
+        }
+
+        private static T QuerySystemInfo<T>(SystemInformationClass info_class) where T : struct
+        {
+            return QuerySystemInfo<T>(new T(), info_class);
+        }
+
         /// <summary>
         /// Get current code integrity option settings.
         /// </summary>
@@ -806,12 +834,8 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buffer = new SystemCodeIntegrityInformation().ToBuffer())
-                {
-                    int ret_length;
-                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityInformation, buffer, buffer.Length, out ret_length).ToNtException();
-                    return buffer.Result.CodeIntegrityOptions;
-                }
+                return QuerySystemInfo(new SystemCodeIntegrityInformation() { Length = Marshal.SizeOf(typeof(SystemCodeIntegrityInformation)) },
+                    SystemInformationClass.SystemCodeIntegrityInformation).CodeIntegrityOptions;
             }
         }
 
@@ -878,6 +902,52 @@ namespace NtApiDotNet
                     int ret_length;
                     NtSystemCalls.NtSystemDebugControl(SystemDebugControlCode.KernelCrashDump, buffer, buffer.Length, 
                         SafeHGlobalBuffer.Null, 0, out ret_length).ToNtException();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get whether secure boot is enabled.
+        /// </summary>
+        public static bool SecureBootEnabled
+        {
+            get
+            {
+                return QuerySystemInfo<SystemSecurebootInformation>(SystemInformationClass.SystemSecureBootInformation).SecureBootEnabled;
+            }
+        }
+
+        /// <summary>
+        /// Get whether system supports secure boot.
+        /// </summary>
+        public static bool SecureBootCapable
+        {
+            get
+            {
+                return QuerySystemInfo<SystemSecurebootInformation>(SystemInformationClass.SystemSecureBootInformation).SecureBootCapable;
+            }
+        }
+
+        /// <summary>
+        /// Extract the secure boot policy.
+        /// </summary>
+        public static SecureBootPolicy SecureBootPolicy
+        {
+            get
+            {
+                int ret_length;
+                NtStatus status = NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemSecureBootPolicyFullInformation, 
+                    SafeHGlobalBuffer.Null, 0, out ret_length);
+                if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
+                {
+                    throw new NtException(status);
+                }
+
+                using (var buffer = new SafeStructureInOutBuffer<SystemSecurebootPolicyFullInformation>(ret_length, true))
+                {
+                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemSecureBootPolicyFullInformation, 
+                        buffer, buffer.Length, out ret_length).ToNtException();
+                    return new SecureBootPolicy(buffer);
                 }
             }
         }
