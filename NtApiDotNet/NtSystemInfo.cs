@@ -36,8 +36,55 @@ namespace NtApiDotNet
           SafeBuffer SystemInformation,
           int SystemInformationLength
         );
+
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSystemDebugControl(
+            SystemDebugControlCode ControlCode,
+            SafeBuffer InputBuffer,
+            int InputBufferLength,
+            SafeBuffer OutputBuffer,
+            int OutputBufferLength,
+            out int ReturnLength
+        );
     }
 
+    public enum SystemDebugControlCode
+    {
+        KernelCrashDump = 37,
+    }
+
+    [Flags]
+    public enum SystemDebugKernelDumpControlFlags
+    {
+        None = 0,
+        UseDumpStorageStack = 1,
+        CompressMemoryPagesData = 2,
+        IncludeUserSpaceMemoryPages = 4,
+    }
+
+    [Flags]
+    public enum SystemDebugKernelDumpPageControlFlags
+    {
+        None = 0,
+        HypervisorPages = 1,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemDebugKernelDumpConfig
+    {
+        public int Version;
+        public int BugCheckCode;
+        public IntPtr BugCheckParam1;
+        public IntPtr BugCheckParam2;
+        public IntPtr BugCheckParam3;
+        public IntPtr BugCheckParam4;
+        public IntPtr FileHandle;
+        public IntPtr EventHandle;
+        public SystemDebugKernelDumpControlFlags Flags;
+        public SystemDebugKernelDumpPageControlFlags PageFlags;
+    }
+    
     [StructLayout(LayoutKind.Sequential)]
     public struct SystemHandleTableInfoEntry
     {
@@ -136,6 +183,74 @@ namespace NtApiDotNet
         public bool KernelDebuggerNotPresent;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemSecurebootInformation
+    {
+        [MarshalAs(UnmanagedType.U1)]
+        public bool SecureBootEnabled;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool SecureBootCapable;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemSecurebootPolicyInformation
+    {
+        public Guid PolicyPublisher;
+        public int PolicyVersion;
+        public int PolicyOptions;
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("Policy")]
+    public struct SystemSecurebootPolicyFullInformation
+    {
+        public SystemSecurebootPolicyInformation PolicyInformation;
+        public int PolicySize;
+        public byte Policy;
+    }
+
+    [Flags]
+    public enum CodeIntegrityOptions
+    {
+        None = 0,
+        Enabled = 0x01,
+        TestSign = 0x02,
+        UmciEnabled = 0x04,
+        UmciAuditModeEnabled = 0x08,
+        UmciExclusionPathsEnabled = 0x10,
+        TestBuild = 0x20,
+        PreProductionBuild = 0x40,
+        DebugModeEnabled = 0x80,
+        FlightBuild = 0x100,
+        FlightingEnabled = 0x200,
+        HvciKmciEnabled = 0x400,
+        HvciKmciAuditModeEnabled = 0x800,
+        HvciKmciStrictModeEnabled = 0x1000,
+        HvciIumEnabled = 0x2000,
+        WhqlEnforcementEnabled = 0x4000,
+        WhqlAuditModeEnabled = 0x8000,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class SystemCodeIntegrityInformation
+    {
+        public int Length;
+        public CodeIntegrityOptions CodeIntegrityOptions;
+
+        public SystemCodeIntegrityInformation()
+        {
+            Length = Marshal.SizeOf(this);
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemCodeIntegrityPolicy
+    {
+        public int Options;
+        public int HVCIOptions;
+        public ulong Version;
+        public Guid PolicyGuid;
+    }
+    
     public enum SystemInformationClass
     {
         SystemBasicInformation, // q: SYSTEM_BASIC_INFORMATION
@@ -535,7 +650,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class to access some NT system information
     /// </summary>
-    public class NtSystemInfo
+    public static class NtSystemInfo
     {
         private static void AllocateSafeBuffer(SafeHGlobalBuffer buffer, SystemInformationClass info_class)
         {
@@ -681,6 +796,89 @@ namespace NtApiDotNet
             get
             {
                 return GetKernelDebuggerInformation().KernelDebuggerNotPresent;
+            }
+        }
+
+        /// <summary>
+        /// Get current code integrity option settings.
+        /// </summary>
+        public static CodeIntegrityOptions CodeIntegrityOptions
+        {
+            get
+            {
+                using (var buffer = new SystemCodeIntegrityInformation().ToBuffer())
+                {
+                    int ret_length;
+                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityInformation, buffer, buffer.Length, out ret_length).ToNtException();
+                    return buffer.Result.CodeIntegrityOptions;
+                }
+            }
+        }
+
+        private static byte[] QueryBlob(SystemInformationClass info_class)
+        {
+            int ret_length;
+            NtStatus status = NtSystemCalls.NtQuerySystemInformation(info_class, SafeHGlobalBuffer.Null, 0, out ret_length);
+            if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
+            {
+                if (status.IsSuccess())
+                {
+                    return new byte[0];
+                }
+                throw new NtException(status);
+            }
+            using (var buffer = new SafeHGlobalBuffer(ret_length))
+            {
+                NtSystemCalls.NtQuerySystemInformation(info_class, buffer, buffer.Length, out ret_length).ToNtException();
+                return buffer.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Get code integrity policy.
+        /// </summary>
+        public static SystemCodeIntegrityPolicy CodeIntegrityPolicy
+        {
+            get
+            {
+                using (var buffer = new SafeStructureInOutBuffer<SystemCodeIntegrityPolicy>())
+                {
+                    int ret_length;
+                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityPolicyInformation, buffer, buffer.Length, out ret_length).ToNtException();
+                    return buffer.Result;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get full code integrity policy.
+        /// </summary>
+        public static byte[] CodeIntegrityFullPolicy
+        {
+            get { return QueryBlob(SystemInformationClass.SystemCodeIntegrityPolicyFullInformation); }
+        }
+
+        /// <summary>
+        /// Create a kernel dump for current system.
+        /// </summary>
+        /// <param name="path">The path to the output file.</param>
+        /// <param name="flags">Flags</param>
+        /// <param name="page_flags">Page flags</param>
+        public static void CreateKernelDump(string path, SystemDebugKernelDumpControlFlags flags, SystemDebugKernelDumpPageControlFlags page_flags)
+        {
+            NtToken.EnableDebugPrivilege();
+            using (NtFile file = NtFile.Create(path, FileAccessRights.Synchronize | FileAccessRights.GenericWrite | FileAccessRights.GenericRead,
+                    FileShareMode.Read, FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.WriteThrough | FileOpenOptions.NoIntermediateBuffering, FileDisposition.OverwriteIf,
+                    null))
+            {
+                using (var buffer = new SystemDebugKernelDumpConfig()
+                        { FileHandle = file.Handle.DangerousGetHandle(),
+                            Flags = flags, PageFlags = page_flags }.ToBuffer())
+                {
+                    int ret_length;
+                    NtSystemCalls.NtSystemDebugControl(SystemDebugControlCode.KernelCrashDump, buffer, buffer.Length, 
+                        SafeHGlobalBuffer.Null, 0, out ret_length).ToNtException();
+                }
             }
         }
     }

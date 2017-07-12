@@ -145,6 +145,35 @@ function Set-NtTokenIntegrityLevel
 
 <#
 .SYNOPSIS
+Create a kernel crash dump.
+.DESCRIPTION
+This cmdlet will use the NtSystemDebugControl API to create a system kernel crash dump with specified options.
+.PARAMETER Path
+The NT native path to the crash dump file to create
+.PARAMETER Flags
+Optional flags to control what to dump
+.PARAMETER PageFlags
+Optional flags to control what additional pages to dump
+.EXAMPLE
+New-NtKernelCrashDump \??\C:\memory.dmp
+Create a new crash dump at c:\memory.dmp
+.EXAMPLE
+New-NtKernelCrashDump \??\C:\memory.dmp -Flags IncludeUserSpaceMemoryPages
+Create a new crash dump at c:\memory.dmp including user memory pages.
+#>
+function New-NtKernelCrashDump
+{
+	Param(
+		[Parameter(Mandatory=$true, Position=0)]
+		[string]$Path,
+		[NtApiDotNet.SystemDebugKernelDumpControlFlags]$Flags = 0,
+		[NtApiDotNet.SystemDebugKernelDumpPageControlFlags]$PageFlags = 0
+	)
+	[NtApiDotNet.NtSystemInfo]::CreateKernelDump($Path, $Flags, $PageFlags)
+}
+
+<#
+.SYNOPSIS
 Get security mitigations and token security information for processes.
 .DESCRIPTION
 This cmdlet will get the mitigation policies for all processes it can access for QueryInformation rights. 
