@@ -911,7 +911,7 @@ namespace NtApiDotNet
                 BinaryReader reader = new BinaryReader(stm);
                 int header_size = reader.ReadInt32();
                 int total_policies = reader.ReadInt32();
-                stm.Position = header_size - 8;
+                reader.ReadBytes(8 - header_size);
                 for(int i = 0; i < total_policies; ++i)
                 {
                     policies.Add(new CodeIntegrityPolicy(reader));
