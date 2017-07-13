@@ -268,6 +268,11 @@ namespace NtApiDotNet
             reader.ReadBytes(header_length - 12);
             Policy = reader.ReadBytes(policy_length);
         }
+
+        internal CodeIntegrityPolicy(byte[] policy)
+        {
+            Policy = policy;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -885,36 +890,40 @@ namespace NtApiDotNet
                 using (var buffer = new SafeStructureInOutBuffer<SystemCodeIntegrityPolicy>())
                 {
                     int ret_length;
-                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityPolicyInformation, buffer, buffer.Length, out ret_length).ToNtException();
+                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityPolicyInformation, 
+                        buffer, buffer.Length, out ret_length).ToNtException();
                     return buffer.Result;
                 }
             }
         }
 
         /// <summary>
-        /// Get full code integrity policy.
-        /// </summary>
-        public static byte[] CodeIntegrityFullPolicy
-        {
-            get { return QueryBlob(SystemInformationClass.SystemCodeIntegrityPolicyFullInformation); }
-        }
-
-        /// <summary>
         /// Get all code integrity policies.
         /// </summary>
-        public static IEnumerable<CodeIntegrityPolicy> CodeIntegrityAllPolicies
+        public static IEnumerable<CodeIntegrityPolicy> CodeIntegrityFullPolicy
         {
             get
             {
                 List<CodeIntegrityPolicy> policies = new List<CodeIntegrityPolicy>();
-                MemoryStream stm = new MemoryStream(QueryBlob(SystemInformationClass.SystemCodeIntegrityAllPoliciesInformation));
-                BinaryReader reader = new BinaryReader(stm);
-                int header_size = reader.ReadInt32();
-                int total_policies = reader.ReadInt32();
-                reader.ReadBytes(8 - header_size);
-                for(int i = 0; i < total_policies; ++i)
+                try
                 {
-                    policies.Add(new CodeIntegrityPolicy(reader));
+                    MemoryStream stm = new MemoryStream(QueryBlob(SystemInformationClass.SystemCodeIntegrityAllPoliciesInformation));
+                    BinaryReader reader = new BinaryReader(stm);
+                    int header_size = reader.ReadInt32();
+                    int total_policies = reader.ReadInt32();
+                    reader.ReadBytes(8 - header_size);
+                    for (int i = 0; i < total_policies; ++i)
+                    {
+                        policies.Add(new CodeIntegrityPolicy(reader));
+                    }
+                }
+                catch (NtException)
+                {
+                    byte[] policy = QueryBlob(SystemInformationClass.SystemCodeIntegrityPolicyFullInformation);
+                    if (policy.Length > 0)
+                    {
+                        policies.Add(new CodeIntegrityPolicy(policy));
+                    }
                 }
 
                 return policies.AsReadOnly();
