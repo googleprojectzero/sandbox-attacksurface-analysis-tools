@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 
@@ -254,6 +255,21 @@ namespace NtApiDotNet
         public CodeIntegrityOptions CodeIntegrityOptions;
     }
 
+    public class CodeIntegrityPolicy
+    {
+        public int PolicyType { get; private set; }
+        public byte[] Policy { get; private set; }
+
+        internal CodeIntegrityPolicy(BinaryReader reader)
+        {
+            int header_length = reader.ReadInt32();
+            int policy_length = reader.ReadInt32();
+            PolicyType = reader.ReadInt32();
+            reader.ReadBytes(header_length - 12);
+            Policy = reader.ReadBytes(policy_length);
+        }
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct SystemCodeIntegrityPolicy
     {
@@ -440,6 +456,7 @@ namespace NtApiDotNet
         SystemCodeIntegrityPolicyFullInformation,
         SystemAffinitizedInterruptProcessorInformation,
         SystemRootSiloInformation, // q: SYSTEM_ROOT_SILO_INFORMATION
+        SystemCodeIntegrityAllPoliciesInformation = 189,
         MaxSystemInfoClass
     }
 
@@ -880,6 +897,28 @@ namespace NtApiDotNet
         public static byte[] CodeIntegrityFullPolicy
         {
             get { return QueryBlob(SystemInformationClass.SystemCodeIntegrityPolicyFullInformation); }
+        }
+
+        /// <summary>
+        /// Get all code integrity policies.
+        /// </summary>
+        public static IEnumerable<CodeIntegrityPolicy> CodeIntegrityAllPolicies
+        {
+            get
+            {
+                List<CodeIntegrityPolicy> policies = new List<CodeIntegrityPolicy>();
+                MemoryStream stm = new MemoryStream(QueryBlob(SystemInformationClass.SystemCodeIntegrityAllPoliciesInformation));
+                BinaryReader reader = new BinaryReader(stm);
+                int header_size = reader.ReadInt32();
+                int total_policies = reader.ReadInt32();
+                stm.Position = header_size - 8;
+                for(int i = 0; i < total_policies; ++i)
+                {
+                    policies.Add(new CodeIntegrityPolicy(reader));
+                }
+
+                return policies.AsReadOnly();
+            }
         }
 
         /// <summary>
