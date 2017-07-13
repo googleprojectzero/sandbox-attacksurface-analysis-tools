@@ -181,6 +181,23 @@ namespace NtApiDotNet
         public ushort Class; // Variable length string
     }
 
+    [Flags]
+    public enum SaveKeyFlags
+    {
+        None = 0,
+        StandardFormat = 1,
+        LatestFormat = 2,
+        NoCompression = 4,
+    }
+
+    [Flags]
+    public enum RestoreKeyFlags
+    {
+        None = 0,
+        WholeHiveVolatile = 1,
+        RefreshHive = 2,
+        ForceRestore = 8,
+    }
 
     public static partial class NtSystemCalls
     {
@@ -288,6 +305,20 @@ namespace NtApiDotNet
                 SafeKernelObjectHandle KeyHandle,
                 [In] UnicodeString NewName
             );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSaveKeyEx(
+                SafeKernelObjectHandle KeyHandle,
+                SafeKernelObjectHandle FileHandle,
+                SaveKeyFlags Flags
+            );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtRestoreKey(
+                SafeKernelObjectHandle KeyHandle,
+                SafeKernelObjectHandle FileHandle,
+                RestoreKeyFlags Flags
+        );
     }
 #pragma warning restore 1591
 
@@ -879,6 +910,73 @@ namespace NtApiDotNet
         public void Rename(string new_name)
         {
             NtSystemCalls.NtRenameKey(Handle, new UnicodeString(new_name)).ToNtException();
+        }
+
+        /// <summary>
+        /// Save the opened key into a file.
+        /// </summary>
+        /// <param name="file">The file to save to.</param>
+        /// <param name="flags">Save key flags</param>
+        public void Save(NtFile file, SaveKeyFlags flags)
+        {
+            NtSystemCalls.NtSaveKeyEx(Handle, file.Handle,
+                flags).ToNtException();
+        }
+
+        /// <summary>
+        /// Save the opened key into a file.
+        /// </summary>
+        /// <param name="path">The file path to save to.</param>
+        /// <param name="flags">Save key flags</param>
+        public void Save(string path, SaveKeyFlags flags)
+        {
+            using (NtFile file = NtFile.Create(path, null, FileAccessRights.GenericWrite | FileAccessRights.Synchronize,
+                FileAttributes.Normal, FileShareMode.None, FileOpenOptions.SynchronousIoNonAlert, FileDisposition.Create, null))
+            {
+                Save(file, flags);
+            }
+        }
+
+        /// <summary>
+        /// Save the opened key into a file.
+        /// </summary>
+        /// <param name="path">The file path to save to.</param>
+        public void Save(string path)
+        {
+            Save(path, SaveKeyFlags.StandardFormat);
+        }
+
+        /// <summary>
+        /// Restore key from a file.
+        /// </summary>
+        /// <param name="file">The file to restore from</param>
+        /// <param name="flags">Restore key flags</param>
+        public void Restore(NtFile file, RestoreKeyFlags flags)
+        {
+            NtSystemCalls.NtRestoreKey(Handle, file.Handle, flags).ToNtException();
+        }
+
+        /// <summary>
+        /// Restore key from a file.
+        /// </summary>
+        /// <param name="path">The file path to restore from</param>
+        /// <param name="flags">Restore key flags</param>
+        public void Restore(string path, RestoreKeyFlags flags)
+        {
+            using (NtFile file = NtFile.Open(path, null, FileAccessRights.GenericRead | FileAccessRights.Synchronize,
+                    FileShareMode.Read, FileOpenOptions.SynchronousIoNonAlert))
+            {
+                Restore(file, flags);
+            }
+        }
+
+        /// <summary>
+        /// Restore key from a file.
+        /// </summary>
+        /// <param name="path">The file path to restore from</param>
+        public void Restore(string path)
+        {
+            Restore(path, RestoreKeyFlags.None);
         }
 
         private SafeStructureInOutBuffer<T> QueryKey<T>(KeyInformationClass info_class) where T : new()
