@@ -319,6 +319,14 @@ namespace NtApiDotNet
                 SafeKernelObjectHandle FileHandle,
                 RestoreKeyFlags Flags
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQueryLicenseValue(
+            [In] UnicodeString Name,
+            out RegistryValueType Type,
+            SafeBuffer Buffer,
+            int Length,
+            out int DataLength);
     }
 #pragma warning restore 1591
 
@@ -702,6 +710,44 @@ namespace NtApiDotNet
                     yield return new NtKeyValue(name, res.Type, data_buffer, res.TitleIndex);
                 }
             }
+        }
+
+        /// <summary>
+        /// Query a license value. While technically not directly a registry key
+        /// it has many of the same properties such as using the same registry
+        /// value types.
+        /// </summary>
+        /// <param name="name">The name of the license value.</param>
+        /// <param name="throw_on_error">True to throw an exception on error</param>
+        /// <returns>The license value key</returns>
+        public static NtResult<NtKeyValue> QueryLicenseValue(string name, bool throw_on_error)
+        {
+            RegistryValueType type;
+            int ret_length;
+            UnicodeString name_string = new UnicodeString(name);
+            NtStatus status = NtSystemCalls.NtQueryLicenseValue(name_string, out type, SafeHGlobalBuffer.Null, 0, out ret_length);
+            if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+            {
+                return status.CreateResultFromError<NtKeyValue>(throw_on_error);
+            }
+
+            using (var buffer = new SafeHGlobalBuffer(ret_length))
+            {
+                return NtSystemCalls.NtQueryLicenseValue(name_string, out type, buffer, buffer.Length, out ret_length)
+                    .CreateResult(throw_on_error, () => new NtKeyValue(name, type, buffer.ToArray(), 0));
+            }
+        }
+
+        /// <summary>
+        /// Query a license value. While technically not directly a registry key
+        /// it has many of the same properties such as using the same registry
+        /// value types.
+        /// </summary>
+        /// <param name="name">The name of the license value.</param>
+        /// <returns>The license value key</returns>
+        public static NtKeyValue QueryLicenseValue(string name)
+        {
+            return QueryLicenseValue(name, true).Result;
         }
 
         /// <summary>
