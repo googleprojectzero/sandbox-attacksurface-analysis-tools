@@ -836,31 +836,39 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Set a symbolic link target for this key (must have been created with
+        /// appropriate create flags)
+        /// </summary>
+        /// <param name="target">The symbolic link target.</param>
+        public void SetSymbolicLinkTarget(string target)
+        {
+            SetValue("SymbolicLinkValue", RegistryValueType.Link, Encoding.Unicode.GetBytes(target));
+        }
+
+        /// <summary>
         /// Create a registry key symbolic link
         /// </summary>
         /// <param name="rootkey">Root key if path is relative</param>
         /// <param name="path">Path to the key to create</param>
         /// <param name="target">Target resistry path</param>
-        /// <returns>The create symbolic key</returns>
+        /// <returns>The created symbolic link key</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey CreateSymbolicLink(string path, NtKey rootkey, string target)
         {
             using (ObjectAttributes obja = new ObjectAttributes(path, 
                 AttributeFlags.CaseInsensitive | AttributeFlags.OpenIf | AttributeFlags.OpenLink, rootkey))
             {
-                NtKey key = Create(obja, KeyAccessRights.MaximumAllowed, KeyCreateOptions.CreateLink);
-                bool set_value = false;
-                try
+                using (NtKey key = Create(obja, KeyAccessRights.MaximumAllowed, KeyCreateOptions.CreateLink))
                 {
-                    key.SetValue("SymbolicLinkValue", RegistryValueType.Link, Encoding.Unicode.GetBytes(target));
-                    set_value = true;
-                    return key;
-                }
-                finally
-                {
-                    if (!set_value)
+                    try
+                    {
+                        key.SetSymbolicLinkTarget(target);
+                        return key.Duplicate();
+                    }
+                    catch
                     {
                         key.Delete();
+                        throw;
                     }
                 }
             }
