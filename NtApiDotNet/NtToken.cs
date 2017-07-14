@@ -1053,9 +1053,7 @@ namespace NtApiDotNet
                 SecurityQualityOfService sqos = null;
                 if (type == TokenType.Impersonation)
                 {
-                    sqos = new SecurityQualityOfService();
-                    sqos.ImpersonationLevel = level;
-                    sqos.ContextTrackingMode = SecurityContextTrackingMode.Static;
+                    sqos = new SecurityQualityOfService(level, SecurityContextTrackingMode.Static, false);
                 }
 
                 using (ObjectAttributes obja = new ObjectAttributes(null, AttributeFlags.None, SafeKernelObjectHandle.Null, sqos, null))

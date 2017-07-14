@@ -34,15 +34,28 @@ namespace NtApiDotNet
     [StructLayout(LayoutKind.Sequential)]
     public sealed class SecurityQualityOfService
     {
-        int Length;
-        public SecurityImpersonationLevel ImpersonationLevel;
-        public SecurityContextTrackingMode ContextTrackingMode;
+        private int _length;
+        private SecurityImpersonationLevel _imp_level;
+        private SecurityContextTrackingMode _tracking_mode;
         [MarshalAs(UnmanagedType.U1)]
-        public bool EffectiveOnly;
+        private bool _effective_only;
+
+        public SecurityImpersonationLevel ImpersonationLevel { get { return _imp_level; } set { _imp_level = value; } }
+        public SecurityContextTrackingMode ContextTrackingMode { get { return _tracking_mode; } set { _tracking_mode = value; } }
+        public bool EffectiveOnly { get { return _effective_only; } set { _effective_only = value; } }
 
         public SecurityQualityOfService()
         {
-            Length = Marshal.SizeOf(this);
+            _length = Marshal.SizeOf(this);
+        }
+
+        public SecurityQualityOfService(SecurityImpersonationLevel imp_level, 
+            SecurityContextTrackingMode tracking_mode, 
+            bool effective_only) : this()
+        {
+            _imp_level = imp_level;
+            _tracking_mode = tracking_mode;
+            _effective_only = effective_only;
         }
     }
 

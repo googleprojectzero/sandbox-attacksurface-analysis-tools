@@ -193,6 +193,73 @@ function Get-NtProcessMitigations
 
 <#
 .SYNOPSIS
+Create a new object attributes structure.
+.DESCRIPTION
+This cmdlet creates a new object attributes structure based on its parameters. Note you should dispose of the object
+attributes afterwards.
+.PARAMETER Name
+Optional NT native name for the object
+.PARAMETER Root
+Optional NT object root for relative paths
+.PARAMETER Attributes
+Optional object attributes flags
+.PARAMETER SecurityQualityOfService
+Optional security quality of service flags
+.PARAMETER SecurityDescriptor
+Optional security descriptor
+.PARAMETER Sddl
+Optional security descriptor in SDDL format
+.EXAMPLE
+New-NtObjectAttributes \??\c:\windows
+Create a new object attributes for \??\C:\windows
+#>
+function New-NtObjectAttributes
+{
+	Param(
+		[Parameter(Position=0)]
+		[string]$Name,
+		[NtApiDotNet.NtObject]$Root,
+		[NtApiDotNet.AttributeFlags]$Attributes = "None",
+		[NtApiDotNet.SecurityQualityOfService]$SecurityQualityOfService,
+		[NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+		[string]$Sddl
+	)
+
+	$sd = $SecurityDescriptor
+	if ($Sddl -ne $null)
+	{
+		$sd = New-NtSecurityDescriptor -Sddl $Sddl
+	}
+
+	[NtApiDotNet.ObjectAttributes]::new($Name, $Attributes, [NtApiDotNet.NtObject]$Root, $SecurityQualityOfService, $sd)
+}
+
+<#
+.SYNOPSIS
+Create a new security quality of service structure.
+.DESCRIPTION
+This cmdlet creates a new security quality of service structure structure based on its parameters
+.PARAMETER ImpersonationLevel
+The impersonation level, must be specified.
+.PARAMETER ContextTrackingMode
+Optional tracking mode, defaults to static tracking
+.PARAMETER EffectiveOnly
+Optional flag to specify if only the effective rights should be impersonated
+#>
+function New-NtSecurityQualityOfService
+{
+  Param(
+      [Parameter(Mandatory=$true, Position=0)]
+	  [NtApiDotNet.SecurityImpersonationLevel]$ImpersonationLevel,
+      [NtApiDotNet.SecurityContextTrackingMode]$ContextTrackingMode = "Static",
+      [switch]$EffectiveOnly
+  )
+
+  [NtApiDotNet.SecurityQualityOfService]::new($ImpersonationLevel, $ContextTrackingMode, $EffectiveOnly)
+}
+
+<#
+.SYNOPSIS
 Get process primary token. Here for legacy reasons, use Get-NtToken -Primary.
 #>
 function Get-NtTokenPrimary
