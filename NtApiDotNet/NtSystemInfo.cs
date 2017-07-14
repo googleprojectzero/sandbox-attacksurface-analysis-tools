@@ -17,10 +17,18 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NtApiDotNet
 {
 #pragma warning disable 1591
+
+    public enum SystemEnvironmentValueInformationClass
+    {
+        NamesOnly = 1,
+        NamesAndValues = 2,
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
@@ -38,7 +46,6 @@ namespace NtApiDotNet
           int SystemInformationLength
         );
 
-
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtSystemDebugControl(
             SystemDebugControlCode ControlCode,
@@ -48,8 +55,66 @@ namespace NtApiDotNet
             int OutputBufferLength,
             out int ReturnLength
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtEnumerateSystemEnvironmentValuesEx(
+            SystemEnvironmentValueInformationClass SystemEnvironmentValueInformationClass, 
+            SafeBuffer Buffer, ref int BufferLength);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQuerySystemEnvironmentValueEx([In] UnicodeString ValueName, 
+            ref Guid VendorGuid, [Out] byte[] Value, ref int ValueLength, OptionalInt32 Attributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSetSystemEnvironmentValueEx([In] UnicodeString VariableName,
+            ref Guid VendorGuid, [In] byte[] Value, int ValueLength, int Attributes);
     }
 
+    public class SystemEnvironmentVariable
+    {
+        public string Name { get; private set; }
+        public Guid VendorGuid { get; private set; }
+        public byte[] Value { get; private set; }
+        public int Attributes { get; private set; }
+
+        internal SystemEnvironmentVariable(SafeStructureInOutBuffer<SystemEnvironmentValueNameAndValue> buffer)
+        {
+            SystemEnvironmentValueNameAndValue value = buffer.Result;
+            Name = buffer.Data.ReadNulTerminatedUnicodeString();
+            Value = buffer.ReadBytes((ulong)value.ValueOffset, value.ValueLength);
+            Attributes = value.Attributes;
+            VendorGuid = value.VendorGuid;
+        }
+
+        internal SystemEnvironmentVariable(string name, byte[] value, OptionalInt32 attributes, OptionalGuid vendor_guid)
+        {
+            Name = name;
+            Value = value;
+            Attributes = attributes.Value;
+            VendorGuid = vendor_guid.Value;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("Name")]
+    public struct SystemEnvironmentValueName
+    {
+        public int NextEntryOffset;
+        public Guid VendorGuid;
+        public char Name;
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("Name")]
+    public struct SystemEnvironmentValueNameAndValue
+    {
+        public int NextEntryOffset;
+        public int ValueOffset;
+        public int ValueLength;
+        public int Attributes;
+        public Guid VendorGuid;
+        public char Name;
+        //UCHAR Value[ANYSIZE_ARRAY];
+    }
+   
     public enum SystemDebugControlCode
     {
         KernelCrashDump = 37,
@@ -278,9 +343,13 @@ namespace NtApiDotNet
     [StructLayout(LayoutKind.Sequential)]
     public struct SystemCodeIntegrityPolicy
     {
+        // 2 enabled auditing (at least in WLDP). 0x10 enables UMCI
         public int Options;
         public int HVCIOptions;
-        public ulong Version;
+        public ushort VersionRevision;
+        public ushort VersionBuild;
+        public ushort VersionMinor;
+        public ushort VersionMajor;
         public Guid PolicyGuid;
     }
     
@@ -715,7 +784,7 @@ namespace NtApiDotNet
                 int handle_count = handle_info.Read<Int32>(0);
                 SystemHandleTableInfoEntry[] handles = new SystemHandleTableInfoEntry[handle_count];
                 handle_info.ReadArray((ulong)IntPtr.Size, handles, 0, handle_count);
-                
+
                 return handles.Where(h => pid == -1 || h.UniqueProcessId == pid).Select(h => new NtHandle(h, allow_query));
             }
         }
@@ -773,7 +842,7 @@ namespace NtApiDotNet
                     }
 
                     offset += process_entry.NextEntryOffset;
-                }                
+                }
             }
         }
 
@@ -805,7 +874,7 @@ namespace NtApiDotNet
             using (var info = new SafeStructureInOutBuffer<SystemKernelDebuggerInformation>())
             {
                 int return_length;
-                NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemKernelDebuggerInformation, 
+                NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemKernelDebuggerInformation,
                     info, info.Length, out return_length).ToNtException();
                 return info.Result;
             }
@@ -890,7 +959,7 @@ namespace NtApiDotNet
                 using (var buffer = new SafeStructureInOutBuffer<SystemCodeIntegrityPolicy>())
                 {
                     int ret_length;
-                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityPolicyInformation, 
+                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityPolicyInformation,
                         buffer, buffer.Length, out ret_length).ToNtException();
                     return buffer.Result;
                 }
@@ -944,11 +1013,14 @@ namespace NtApiDotNet
                     null))
             {
                 using (var buffer = new SystemDebugKernelDumpConfig()
-                        { FileHandle = file.Handle.DangerousGetHandle(),
-                            Flags = flags, PageFlags = page_flags }.ToBuffer())
+                {
+                    FileHandle = file.Handle.DangerousGetHandle(),
+                    Flags = flags,
+                    PageFlags = page_flags
+                }.ToBuffer())
                 {
                     int ret_length;
-                    NtSystemCalls.NtSystemDebugControl(SystemDebugControlCode.KernelCrashDump, buffer, buffer.Length, 
+                    NtSystemCalls.NtSystemDebugControl(SystemDebugControlCode.KernelCrashDump, buffer, buffer.Length,
                         SafeHGlobalBuffer.Null, 0, out ret_length).ToNtException();
                 }
             }
@@ -984,7 +1056,7 @@ namespace NtApiDotNet
             get
             {
                 int ret_length;
-                NtStatus status = NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemSecureBootPolicyFullInformation, 
+                NtStatus status = NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemSecureBootPolicyFullInformation,
                     SafeHGlobalBuffer.Null, 0, out ret_length);
                 if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
                 {
@@ -993,11 +1065,140 @@ namespace NtApiDotNet
 
                 using (var buffer = new SafeStructureInOutBuffer<SystemSecurebootPolicyFullInformation>(ret_length, true))
                 {
-                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemSecureBootPolicyFullInformation, 
+                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemSecureBootPolicyFullInformation,
                         buffer, buffer.Length, out ret_length).ToNtException();
                     return new SecureBootPolicy(buffer);
                 }
             }
+        }
+
+        private static SafeHGlobalBuffer EnumEnvironmentValues(SystemEnvironmentValueInformationClass info_class)
+        {
+            int ret_length = 0;
+            NtStatus status = NtSystemCalls.NtEnumerateSystemEnvironmentValuesEx(info_class, SafeHGlobalBuffer.Null, ref ret_length);
+            if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+            {
+                throw new NtException(status);
+            }
+            var buffer = new SafeHGlobalBuffer(ret_length);
+            try
+            {
+                ret_length = buffer.Length;
+                NtSystemCalls.NtEnumerateSystemEnvironmentValuesEx(info_class,
+                    buffer, ref ret_length).ToNtException();
+                return buffer;
+            }
+            catch
+            {
+                buffer.Dispose();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Query all system environment value names.
+        /// </summary>
+        /// <returns>A list of names of environment values</returns>
+        public static IEnumerable<string> QuerySystemEnvironmentValueNames()
+        {
+            using (var buffer = EnumEnvironmentValues(SystemEnvironmentValueInformationClass.NamesOnly))
+            {
+                int offset = 0;
+                int size_struct = Marshal.SizeOf(typeof(SystemEnvironmentValueName));
+                while (offset <= buffer.Length - size_struct)
+                {
+                    var struct_buffer = buffer.GetStructAtOffset<SystemEnvironmentValueName>(offset);
+                    SystemEnvironmentValueName name = struct_buffer.Result;
+                    yield return struct_buffer.Data.ReadNulTerminatedUnicodeString();
+                    if (name.NextEntryOffset == 0)
+                    {
+                        break;
+                    }
+                    offset = offset + name.NextEntryOffset;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Query all system environment value names and values.
+        /// </summary>
+        /// <returns>A list of names of environment values</returns>
+        public static IEnumerable<SystemEnvironmentVariable> QuerySystemEnvironmentValueNamesAndValues()
+        {
+            using (var buffer = EnumEnvironmentValues(SystemEnvironmentValueInformationClass.NamesAndValues))
+            {
+                int offset = 0;
+                int size_struct = Marshal.SizeOf(typeof(SystemEnvironmentValueNameAndValue));
+                while (offset <= buffer.Length - size_struct)
+                {
+                    var struct_buffer = buffer.GetStructAtOffset<SystemEnvironmentValueNameAndValue>(offset);
+                    SystemEnvironmentValueNameAndValue name = struct_buffer.Result;
+                    yield return new SystemEnvironmentVariable(struct_buffer);
+                    if (name.NextEntryOffset == 0)
+                    {
+                        break;
+                    }
+                    offset = offset + name.NextEntryOffset;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Query a single system environment value.
+        /// </summary>
+        /// <param name="name">The name of the value.</param>
+        /// <param name="vendor_guid">The associated vendor guid</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The system environment value.</returns>
+        public static NtResult<SystemEnvironmentVariable> QuerySystemEnvironmentValue(string name, Guid vendor_guid, bool throw_on_error)
+        {
+            UnicodeString name_string = new UnicodeString(name);
+            int value_length = 0;
+            NtStatus status = NtSystemCalls.NtQuerySystemEnvironmentValueEx(name_string, ref vendor_guid, null, ref value_length, 0);
+            if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+            {
+                return status.CreateResultFromError<SystemEnvironmentVariable>(throw_on_error);
+            }
+
+            byte[] value = new byte[value_length];
+            OptionalInt32 attributes = new OptionalInt32();
+            return NtSystemCalls.NtQuerySystemEnvironmentValueEx(name_string, ref vendor_guid, value, ref value_length, attributes)
+                .CreateResult(throw_on_error, () => new SystemEnvironmentVariable(name, value, attributes, vendor_guid));
+        }
+
+        /// <summary>
+        /// Query a single system environment value.
+        /// </summary>
+        /// <param name="name">The name of the value.</param>
+        /// <param name="vendor_guid">The associated vendor guid</param>
+        /// <returns>The system environment value.</returns>
+        public static SystemEnvironmentVariable QuerySystemEnvironmentValue(string name, Guid vendor_guid)
+        {
+            return QuerySystemEnvironmentValue(name, vendor_guid, true).Result;
+        }
+
+        /// <summary>
+        /// Set a system environment variable.
+        /// </summary>
+        /// <param name="name">The name of the variable.</param>
+        /// <param name="vendor_guid">The vendor GUID</param>
+        /// <param name="value">The value to set</param>
+        /// <param name="attributes">Attributes of the value</param>
+        public static void SetSystemEnvironmentValue(string name, Guid vendor_guid, byte[] value, int attributes)
+        {
+            NtSystemCalls.NtSetSystemEnvironmentValueEx(new UnicodeString(name), ref vendor_guid, value, value.Length, attributes).ToNtException();
+        }
+
+        /// <summary>
+        /// Set a system environment variable.
+        /// </summary>
+        /// <param name="name">The name of the variable.</param>
+        /// <param name="vendor_guid">The vendor GUID</param>
+        /// <param name="value">The value to set</param>
+        /// <param name="attributes">Attributes of the value</param>
+        public static void SetSystemEnvironmentValue(string name, Guid vendor_guid, string value, int attributes)
+        {
+            SetSystemEnvironmentValue(name, vendor_guid, Encoding.Unicode.GetBytes(value), attributes);
         }
     }
 }
