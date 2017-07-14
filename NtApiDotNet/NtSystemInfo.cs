@@ -70,14 +70,14 @@ namespace NtApiDotNet
             ref Guid VendorGuid, [In] byte[] Value, int ValueLength, int Attributes);
     }
 
-    public class SystemEnvironmentVariable
+    public class SystemEnvironmentValue
     {
         public string Name { get; private set; }
         public Guid VendorGuid { get; private set; }
         public byte[] Value { get; private set; }
         public int Attributes { get; private set; }
 
-        internal SystemEnvironmentVariable(SafeStructureInOutBuffer<SystemEnvironmentValueNameAndValue> buffer)
+        internal SystemEnvironmentValue(SafeStructureInOutBuffer<SystemEnvironmentValueNameAndValue> buffer)
         {
             SystemEnvironmentValueNameAndValue value = buffer.Result;
             Name = buffer.Data.ReadNulTerminatedUnicodeString();
@@ -86,7 +86,7 @@ namespace NtApiDotNet
             VendorGuid = value.VendorGuid;
         }
 
-        internal SystemEnvironmentVariable(string name, byte[] value, OptionalInt32 attributes, OptionalGuid vendor_guid)
+        internal SystemEnvironmentValue(string name, byte[] value, OptionalInt32 attributes, OptionalGuid vendor_guid)
         {
             Name = name;
             Value = value;
@@ -1123,7 +1123,7 @@ namespace NtApiDotNet
         /// Query all system environment value names and values.
         /// </summary>
         /// <returns>A list of names of environment values</returns>
-        public static IEnumerable<SystemEnvironmentVariable> QuerySystemEnvironmentValueNamesAndValues()
+        public static IEnumerable<SystemEnvironmentValue> QuerySystemEnvironmentValueNamesAndValues()
         {
             using (var buffer = EnumEnvironmentValues(SystemEnvironmentValueInformationClass.NamesAndValues))
             {
@@ -1133,7 +1133,7 @@ namespace NtApiDotNet
                 {
                     var struct_buffer = buffer.GetStructAtOffset<SystemEnvironmentValueNameAndValue>(offset);
                     SystemEnvironmentValueNameAndValue name = struct_buffer.Result;
-                    yield return new SystemEnvironmentVariable(struct_buffer);
+                    yield return new SystemEnvironmentValue(struct_buffer);
                     if (name.NextEntryOffset == 0)
                     {
                         break;
@@ -1150,20 +1150,20 @@ namespace NtApiDotNet
         /// <param name="vendor_guid">The associated vendor guid</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The system environment value.</returns>
-        public static NtResult<SystemEnvironmentVariable> QuerySystemEnvironmentValue(string name, Guid vendor_guid, bool throw_on_error)
+        public static NtResult<SystemEnvironmentValue> QuerySystemEnvironmentValue(string name, Guid vendor_guid, bool throw_on_error)
         {
             UnicodeString name_string = new UnicodeString(name);
             int value_length = 0;
             NtStatus status = NtSystemCalls.NtQuerySystemEnvironmentValueEx(name_string, ref vendor_guid, null, ref value_length, 0);
             if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
             {
-                return status.CreateResultFromError<SystemEnvironmentVariable>(throw_on_error);
+                return status.CreateResultFromError<SystemEnvironmentValue>(throw_on_error);
             }
 
             byte[] value = new byte[value_length];
             OptionalInt32 attributes = new OptionalInt32();
             return NtSystemCalls.NtQuerySystemEnvironmentValueEx(name_string, ref vendor_guid, value, ref value_length, attributes)
-                .CreateResult(throw_on_error, () => new SystemEnvironmentVariable(name, value, attributes, vendor_guid));
+                .CreateResult(throw_on_error, () => new SystemEnvironmentValue(name, value, attributes, vendor_guid));
         }
 
         /// <summary>
@@ -1172,7 +1172,7 @@ namespace NtApiDotNet
         /// <param name="name">The name of the value.</param>
         /// <param name="vendor_guid">The associated vendor guid</param>
         /// <returns>The system environment value.</returns>
-        public static SystemEnvironmentVariable QuerySystemEnvironmentValue(string name, Guid vendor_guid)
+        public static SystemEnvironmentValue QuerySystemEnvironmentValue(string name, Guid vendor_guid)
         {
             return QuerySystemEnvironmentValue(name, vendor_guid, true).Result;
         }

@@ -260,6 +260,47 @@ function New-NtSecurityQualityOfService
 
 <#
 .SYNOPSIS
+Gets a list of system environment values
+.DESCRIPTION
+This cmdlet gets the list of system environment values. Note that this isn't the same as environment
+variables, these are kernel values which represent current system state.
+.PARAMETER Name
+The name of the system environment value to get.
+#>
+function Get-NtSystemEnvironmentValue
+{
+	Param(
+		[Parameter(Position=0)]
+		[string]$Name = [System.Management.Automation.Language.NullString]::Value
+		)
+	Set-NtTokenPrivilege SeSystemEnvironmentPrivilege | Out-Null
+	$values = [NtApiDotNet.NtSystemInfo]::QuerySystemEnvironmentValueNamesAndValues()
+	if ($Name -eq [string]::Empty) {
+		$values
+	} else {
+		$values | Where-Object Name -eq $Name
+	}
+}
+
+<#
+.SYNOPSIS
+Get a license value by name.
+.DESCRIPTION
+This cmdlet gets a license value by name
+.PARAMETER Name
+The name of the license value to get.
+#>
+function Get-NtLicenseValue
+{
+	Param(
+		[Parameter(Mandatory=$true, Position=0)]
+		[string]$Name
+		)
+	[NtApiDotNet.NtKey]::QueryLicenseValue($Name)
+}
+
+<#
+.SYNOPSIS
 Get process primary token. Here for legacy reasons, use Get-NtToken -Primary.
 #>
 function Get-NtTokenPrimary
