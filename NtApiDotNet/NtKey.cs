@@ -327,6 +327,15 @@ namespace NtApiDotNet
             SafeBuffer Buffer,
             int Length,
             out int DataLength);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtLockRegistryKey(
+                SafeKernelObjectHandle KeyHandle);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtLockProductActivationKeys(
+            OptionalInt32 pPrivateVer, OptionalInt32 pSafeMode);
+
     }
 #pragma warning restore 1591
 
@@ -836,7 +845,8 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey CreateSymbolicLink(string path, NtKey rootkey, string target)
         {
-            using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive | AttributeFlags.OpenIf | AttributeFlags.OpenLink, rootkey))
+            using (ObjectAttributes obja = new ObjectAttributes(path, 
+                AttributeFlags.CaseInsensitive | AttributeFlags.OpenIf | AttributeFlags.OpenLink, rootkey))
             {
                 NtKey key = Create(obja, KeyAccessRights.MaximumAllowed, KeyCreateOptions.CreateLink);
                 bool set_value = false;
@@ -1023,6 +1033,16 @@ namespace NtApiDotNet
         public void Restore(string path)
         {
             Restore(path, RestoreKeyFlags.None);
+        }
+
+        /// <summary>
+        /// Try and lock the registry key to prevent further modification.
+        /// </summary>
+        /// <remarks>Note that this almost certainly never works from usermode, there's an explicit
+        /// check to prevent it in the kernel.</remarks>
+        public void Lock()
+        {
+            NtSystemCalls.NtLockRegistryKey(Handle).ToNtException();
         }
 
         private SafeStructureInOutBuffer<T> QueryKey<T>(KeyInformationClass info_class) where T : new()
