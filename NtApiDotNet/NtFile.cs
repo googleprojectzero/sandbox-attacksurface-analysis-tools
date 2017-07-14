@@ -201,6 +201,11 @@ namespace NtApiDotNet
           byte[] Buffer,
           int Length
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtDeleteFile(
+          [In] ObjectAttributes ObjectAttributes
+        );
     }
 
     [Flags]
@@ -1960,6 +1965,38 @@ namespace NtApiDotNet
             {
                 NtSystemCalls.NtSetInformationFile(Handle, iostatus, deletefile,
                     deletefile.Length, FileInformationClass.FileDispositionInformation).ToNtException();
+            }
+        }
+
+        /// <summary>
+        /// Delete a file
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes for the file.</param>
+        /// <param name="throw_on_error">True to throw an exception on error</param>
+        /// <returns>The status result of the delete</returns>
+        public static NtStatus Delete(ObjectAttributes obj_attributes, bool throw_on_error)
+        {
+            return NtSystemCalls.NtDeleteFile(obj_attributes).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Delete a file
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes for the file.</param>
+        public static void Delete(ObjectAttributes obj_attributes)
+        {
+            Delete(obj_attributes, true);
+        }
+
+        /// <summary>
+        /// Delete a file
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        public static void Delete(string path)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(path))
+            {
+                Delete(obja);
             }
         }
 
