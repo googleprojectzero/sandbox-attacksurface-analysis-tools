@@ -243,6 +243,10 @@ namespace NtApiDotNet
         public PsProtection()
         {
         }
+
+        public PsProtectedType Type { get { return (PsProtectedType)(level & 0x7); } }
+        public bool Audit { get { return (level & 0x8) == 0x8; } }
+        public PsProtectedSigner Signer { get { return (PsProtectedSigner)(level >> 4); } }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -1793,6 +1797,17 @@ namespace NtApiDotNet
         public bool IsDeleting
         {
             get { return (ExtendedFlags & ProcessExtendedBasicInformationFlags.IsProcessDeleting) == ProcessExtendedBasicInformationFlags.IsProcessDeleting; }
+        }
+
+        /// <summary>
+        /// Get process protection information.
+        /// </summary>
+        public PsProtection Protection
+        {
+            get
+            {
+                return QueryFixed<PsProtection>(ProcessInformationClass.ProcessProtectionInformation);
+            }
         }
     }
 }
