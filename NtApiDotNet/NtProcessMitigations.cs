@@ -45,6 +45,7 @@ namespace NtApiDotNet
             result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessDynamicCodePolicy);
             ProhibitDynamicCode = result.GetBit(0);
             AllowThreadOptOut = result.GetBit(1);
+            AllowRemoteDowngrade = result.GetBit(2);
             DisableExtensionPoints = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessExtensionPointDisablePolicy).GetBit(0);
             result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessSignaturePolicy);
             MicrosoftSignedOnly = result.GetBit(0);
@@ -98,6 +99,7 @@ namespace NtApiDotNet
         public bool NoLowMandatoryLabelImages { get; private set; }
         public bool PreferSystem32Images { get; private set; }
         public bool AllowThreadOptOut { get; private set; }
+        public bool AllowRemoteDowngrade { get; private set; }
         public bool EnabledReturnFlowGuard { get; private set; }
         public bool ReturnFlowGuardStrictMode { get; private set; }
         public bool IsChildProcessRestricted { get; private set; }

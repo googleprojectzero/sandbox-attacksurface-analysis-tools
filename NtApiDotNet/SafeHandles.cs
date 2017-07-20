@@ -131,6 +131,36 @@ namespace NtApiDotNet
             return ReadBytes(Length);
         }
 
+        /// <summary>
+        /// Read a NUL terminated string for the byte offset.
+        /// </summary>
+        /// <param name="byte_offset">The byte offset to read from.</param>
+        /// <returns>The string read from the buffer without the NUL terminator</returns>
+        public string ReadNulTerminatedUnicodeString(ulong byte_offset)
+        {
+            List<char> chars = new List<char>();
+            while (byte_offset < ByteLength)
+            {
+                char c = Read<char>(byte_offset);
+                if (c == 0)
+                {
+                    break;
+                }
+                chars.Add(c);
+                byte_offset += 2;
+            }
+            return new string(chars.ToArray());
+        }
+
+        /// <summary>
+        /// Read a NUL terminated string
+        /// </summary>
+        /// <returns>The string read from the buffer without the NUL terminator</returns>
+        public string ReadNulTerminatedUnicodeString()
+        {
+            return ReadNulTerminatedUnicodeString(0);
+        }
+
         public string ReadUnicodeString(ulong byte_offset, int count)
         {
             char[] ret = new char[count];

@@ -18,7 +18,44 @@ using System.Runtime.InteropServices;
 namespace NtApiDotNet
 {
     /// <summary>
-    /// This class allows a function to specify an optional length.
+    /// This class allows a function to specify an optional Guid
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public class OptionalGuid
+    {
+        /// <summary>
+        /// Optional Guid
+        /// </summary>
+        public Guid Value;
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="guid">The GUID to initialize</param>
+        public OptionalGuid(Guid guid)
+        {
+            Value = guid;
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public OptionalGuid() : this(Guid.Empty)
+        {
+        }
+
+        /// <summary>
+        /// Implicit conversion
+        /// </summary>
+        /// <param name="guid">The value</param>
+        public static implicit operator OptionalGuid(Guid guid)
+        {
+            return new OptionalGuid(guid);
+        }
+    }
+
+    /// <summary>
+    /// This class allows a function to specify an optional int32.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public class OptionalInt32
@@ -35,6 +72,13 @@ namespace NtApiDotNet
         public OptionalInt32(int value)
         {
             Value = value;
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public OptionalInt32() : this(0)
+        {
         }
 
         /// <summary>

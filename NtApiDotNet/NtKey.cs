@@ -181,6 +181,23 @@ namespace NtApiDotNet
         public ushort Class; // Variable length string
     }
 
+    [Flags]
+    public enum SaveKeyFlags
+    {
+        None = 0,
+        StandardFormat = 1,
+        LatestFormat = 2,
+        NoCompression = 4,
+    }
+
+    [Flags]
+    public enum RestoreKeyFlags
+    {
+        None = 0,
+        WholeHiveVolatile = 1,
+        RefreshHive = 2,
+        ForceRestore = 8,
+    }
 
     public static partial class NtSystemCalls
     {
@@ -288,6 +305,37 @@ namespace NtApiDotNet
                 SafeKernelObjectHandle KeyHandle,
                 [In] UnicodeString NewName
             );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSaveKeyEx(
+                SafeKernelObjectHandle KeyHandle,
+                SafeKernelObjectHandle FileHandle,
+                SaveKeyFlags Flags
+            );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtRestoreKey(
+                SafeKernelObjectHandle KeyHandle,
+                SafeKernelObjectHandle FileHandle,
+                RestoreKeyFlags Flags
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQueryLicenseValue(
+            [In] UnicodeString Name,
+            out RegistryValueType Type,
+            SafeBuffer Buffer,
+            int Length,
+            out int DataLength);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtLockRegistryKey(
+                SafeKernelObjectHandle KeyHandle);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtLockProductActivationKeys(
+            OptionalInt32 pPrivateVer, OptionalInt32 pSafeMode);
+
     }
 #pragma warning restore 1591
 
@@ -674,6 +722,44 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Query a license value. While technically not directly a registry key
+        /// it has many of the same properties such as using the same registry
+        /// value types.
+        /// </summary>
+        /// <param name="name">The name of the license value.</param>
+        /// <param name="throw_on_error">True to throw an exception on error</param>
+        /// <returns>The license value key</returns>
+        public static NtResult<NtKeyValue> QueryLicenseValue(string name, bool throw_on_error)
+        {
+            RegistryValueType type;
+            int ret_length;
+            UnicodeString name_string = new UnicodeString(name);
+            NtStatus status = NtSystemCalls.NtQueryLicenseValue(name_string, out type, SafeHGlobalBuffer.Null, 0, out ret_length);
+            if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+            {
+                return status.CreateResultFromError<NtKeyValue>(throw_on_error);
+            }
+
+            using (var buffer = new SafeHGlobalBuffer(ret_length))
+            {
+                return NtSystemCalls.NtQueryLicenseValue(name_string, out type, buffer, buffer.Length, out ret_length)
+                    .CreateResult(throw_on_error, () => new NtKeyValue(name, type, buffer.ToArray(), 0));
+            }
+        }
+
+        /// <summary>
+        /// Query a license value. While technically not directly a registry key
+        /// it has many of the same properties such as using the same registry
+        /// value types.
+        /// </summary>
+        /// <param name="name">The name of the license value.</param>
+        /// <returns>The license value key</returns>
+        public static NtKeyValue QueryLicenseValue(string name)
+        {
+            return QueryLicenseValue(name, true).Result;
+        }
+
+        /// <summary>
         /// Query all subkey names
         /// </summary>
         /// <returns>The list of subkey names</returns>
@@ -750,30 +836,39 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Set a symbolic link target for this key (must have been created with
+        /// appropriate create flags)
+        /// </summary>
+        /// <param name="target">The symbolic link target.</param>
+        public void SetSymbolicLinkTarget(string target)
+        {
+            SetValue("SymbolicLinkValue", RegistryValueType.Link, Encoding.Unicode.GetBytes(target));
+        }
+
+        /// <summary>
         /// Create a registry key symbolic link
         /// </summary>
         /// <param name="rootkey">Root key if path is relative</param>
         /// <param name="path">Path to the key to create</param>
         /// <param name="target">Target resistry path</param>
-        /// <returns>The create symbolic key</returns>
+        /// <returns>The created symbolic link key</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey CreateSymbolicLink(string path, NtKey rootkey, string target)
         {
-            using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive | AttributeFlags.OpenIf | AttributeFlags.OpenLink, rootkey))
+            using (ObjectAttributes obja = new ObjectAttributes(path, 
+                AttributeFlags.CaseInsensitive | AttributeFlags.OpenIf | AttributeFlags.OpenLink, rootkey))
             {
-                NtKey key = Create(obja, KeyAccessRights.MaximumAllowed, KeyCreateOptions.CreateLink);
-                bool set_value = false;
-                try
+                using (NtKey key = Create(obja, KeyAccessRights.MaximumAllowed, KeyCreateOptions.CreateLink))
                 {
-                    key.SetValue("SymbolicLinkValue", RegistryValueType.Link, Encoding.Unicode.GetBytes(target));
-                    set_value = true;
-                    return key;
-                }
-                finally
-                {
-                    if (!set_value)
+                    try
+                    {
+                        key.SetSymbolicLinkTarget(target);
+                        return key.Duplicate();
+                    }
+                    catch
                     {
                         key.Delete();
+                        throw;
                     }
                 }
             }
@@ -879,6 +974,83 @@ namespace NtApiDotNet
         public void Rename(string new_name)
         {
             NtSystemCalls.NtRenameKey(Handle, new UnicodeString(new_name)).ToNtException();
+        }
+
+        /// <summary>
+        /// Save the opened key into a file.
+        /// </summary>
+        /// <param name="file">The file to save to.</param>
+        /// <param name="flags">Save key flags</param>
+        public void Save(NtFile file, SaveKeyFlags flags)
+        {
+            NtSystemCalls.NtSaveKeyEx(Handle, file.Handle,
+                flags).ToNtException();
+        }
+
+        /// <summary>
+        /// Save the opened key into a file.
+        /// </summary>
+        /// <param name="path">The file path to save to.</param>
+        /// <param name="flags">Save key flags</param>
+        public void Save(string path, SaveKeyFlags flags)
+        {
+            using (NtFile file = NtFile.Create(path, null, FileAccessRights.GenericWrite | FileAccessRights.Synchronize,
+                FileAttributes.Normal, FileShareMode.None, FileOpenOptions.SynchronousIoNonAlert, FileDisposition.Create, null))
+            {
+                Save(file, flags);
+            }
+        }
+
+        /// <summary>
+        /// Save the opened key into a file.
+        /// </summary>
+        /// <param name="path">The file path to save to.</param>
+        public void Save(string path)
+        {
+            Save(path, SaveKeyFlags.StandardFormat);
+        }
+
+        /// <summary>
+        /// Restore key from a file.
+        /// </summary>
+        /// <param name="file">The file to restore from</param>
+        /// <param name="flags">Restore key flags</param>
+        public void Restore(NtFile file, RestoreKeyFlags flags)
+        {
+            NtSystemCalls.NtRestoreKey(Handle, file.Handle, flags).ToNtException();
+        }
+
+        /// <summary>
+        /// Restore key from a file.
+        /// </summary>
+        /// <param name="path">The file path to restore from</param>
+        /// <param name="flags">Restore key flags</param>
+        public void Restore(string path, RestoreKeyFlags flags)
+        {
+            using (NtFile file = NtFile.Open(path, null, FileAccessRights.GenericRead | FileAccessRights.Synchronize,
+                    FileShareMode.Read, FileOpenOptions.SynchronousIoNonAlert))
+            {
+                Restore(file, flags);
+            }
+        }
+
+        /// <summary>
+        /// Restore key from a file.
+        /// </summary>
+        /// <param name="path">The file path to restore from</param>
+        public void Restore(string path)
+        {
+            Restore(path, RestoreKeyFlags.None);
+        }
+
+        /// <summary>
+        /// Try and lock the registry key to prevent further modification.
+        /// </summary>
+        /// <remarks>Note that this almost certainly never works from usermode, there's an explicit
+        /// check to prevent it in the kernel.</remarks>
+        public void Lock()
+        {
+            NtSystemCalls.NtLockRegistryKey(Handle).ToNtException();
         }
 
         private SafeStructureInOutBuffer<T> QueryKey<T>(KeyInformationClass info_class) where T : new()

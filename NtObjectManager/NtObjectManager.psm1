@@ -145,6 +145,35 @@ function Set-NtTokenIntegrityLevel
 
 <#
 .SYNOPSIS
+Create a kernel crash dump.
+.DESCRIPTION
+This cmdlet will use the NtSystemDebugControl API to create a system kernel crash dump with specified options.
+.PARAMETER Path
+The NT native path to the crash dump file to create
+.PARAMETER Flags
+Optional flags to control what to dump
+.PARAMETER PageFlags
+Optional flags to control what additional pages to dump
+.EXAMPLE
+New-NtKernelCrashDump \??\C:\memory.dmp
+Create a new crash dump at c:\memory.dmp
+.EXAMPLE
+New-NtKernelCrashDump \??\C:\memory.dmp -Flags IncludeUserSpaceMemoryPages
+Create a new crash dump at c:\memory.dmp including user memory pages.
+#>
+function New-NtKernelCrashDump
+{
+	Param(
+		[Parameter(Mandatory=$true, Position=0)]
+		[string]$Path,
+		[NtApiDotNet.SystemDebugKernelDumpControlFlags]$Flags = 0,
+		[NtApiDotNet.SystemDebugKernelDumpPageControlFlags]$PageFlags = 0
+	)
+	[NtApiDotNet.NtSystemInfo]::CreateKernelDump($Path, $Flags, $PageFlags)
+}
+
+<#
+.SYNOPSIS
 Get security mitigations and token security information for processes.
 .DESCRIPTION
 This cmdlet will get the mitigation policies for all processes it can access for QueryInformation rights. 
@@ -160,6 +189,114 @@ function Get-NtProcessMitigations
 			}
 		}
 	}
+}
+
+<#
+.SYNOPSIS
+Create a new object attributes structure.
+.DESCRIPTION
+This cmdlet creates a new object attributes structure based on its parameters. Note you should dispose of the object
+attributes afterwards.
+.PARAMETER Name
+Optional NT native name for the object
+.PARAMETER Root
+Optional NT object root for relative paths
+.PARAMETER Attributes
+Optional object attributes flags
+.PARAMETER SecurityQualityOfService
+Optional security quality of service flags
+.PARAMETER SecurityDescriptor
+Optional security descriptor
+.PARAMETER Sddl
+Optional security descriptor in SDDL format
+.EXAMPLE
+New-NtObjectAttributes \??\c:\windows
+Create a new object attributes for \??\C:\windows
+#>
+function New-NtObjectAttributes
+{
+	Param(
+		[Parameter(Position=0)]
+		[string]$Name,
+		[NtApiDotNet.NtObject]$Root,
+		[NtApiDotNet.AttributeFlags]$Attributes = "None",
+		[NtApiDotNet.SecurityQualityOfService]$SecurityQualityOfService,
+		[NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+		[string]$Sddl
+	)
+
+	$sd = $SecurityDescriptor
+	if ($Sddl -ne $null)
+	{
+		$sd = New-NtSecurityDescriptor -Sddl $Sddl
+	}
+
+	[NtApiDotNet.ObjectAttributes]::new($Name, $Attributes, [NtApiDotNet.NtObject]$Root, $SecurityQualityOfService, $sd)
+}
+
+<#
+.SYNOPSIS
+Create a new security quality of service structure.
+.DESCRIPTION
+This cmdlet creates a new security quality of service structure structure based on its parameters
+.PARAMETER ImpersonationLevel
+The impersonation level, must be specified.
+.PARAMETER ContextTrackingMode
+Optional tracking mode, defaults to static tracking
+.PARAMETER EffectiveOnly
+Optional flag to specify if only the effective rights should be impersonated
+#>
+function New-NtSecurityQualityOfService
+{
+  Param(
+      [Parameter(Mandatory=$true, Position=0)]
+	  [NtApiDotNet.SecurityImpersonationLevel]$ImpersonationLevel,
+      [NtApiDotNet.SecurityContextTrackingMode]$ContextTrackingMode = "Static",
+      [switch]$EffectiveOnly
+  )
+
+  [NtApiDotNet.SecurityQualityOfService]::new($ImpersonationLevel, $ContextTrackingMode, $EffectiveOnly)
+}
+
+<#
+.SYNOPSIS
+Gets a list of system environment values
+.DESCRIPTION
+This cmdlet gets the list of system environment values. Note that this isn't the same as environment
+variables, these are kernel values which represent current system state.
+.PARAMETER Name
+The name of the system environment value to get.
+#>
+function Get-NtSystemEnvironmentValue
+{
+	Param(
+		[Parameter(Position=0)]
+		[string]$Name = [System.Management.Automation.Language.NullString]::Value
+		)
+	Set-NtTokenPrivilege SeSystemEnvironmentPrivilege | Out-Null
+	$values = [NtApiDotNet.NtSystemInfo]::QuerySystemEnvironmentValueNamesAndValues()
+	if ($Name -eq [string]::Empty) {
+		$values
+	} else {
+		$values | Where-Object Name -eq $Name
+	}
+}
+
+<#
+.SYNOPSIS
+Get a license value by name.
+.DESCRIPTION
+This cmdlet gets a license value by name
+.PARAMETER Name
+The name of the license value to get.
+#>
+function Get-NtLicenseValue
+{
+	Param(
+		[Parameter(Mandatory=$true, Position=0)]
+		[string]$Name
+		)
+	[NtApiDotNet.NtKey]::QueryLicenseValue($Name)
 }
 
 <#

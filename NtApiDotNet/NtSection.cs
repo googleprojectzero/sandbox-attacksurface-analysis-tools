@@ -156,6 +156,12 @@ namespace NtApiDotNet
             SafeKernelObjectHandle SectionHandle,
             [In, Out] LargeInteger SectionSize
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAreMappedFilesTheSame(
+            IntPtr Mapped1,
+            IntPtr Mapped2
+        );
     }
 #pragma warning restore 1591
 

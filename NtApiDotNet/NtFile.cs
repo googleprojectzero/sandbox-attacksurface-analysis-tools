@@ -201,6 +201,11 @@ namespace NtApiDotNet
           byte[] Buffer,
           int Length
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtDeleteFile(
+          [In] ObjectAttributes ObjectAttributes
+        );
     }
 
     [Flags]
@@ -1963,6 +1968,38 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Delete a file
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes for the file.</param>
+        /// <param name="throw_on_error">True to throw an exception on error</param>
+        /// <returns>The status result of the delete</returns>
+        public static NtStatus Delete(ObjectAttributes obj_attributes, bool throw_on_error)
+        {
+            return NtSystemCalls.NtDeleteFile(obj_attributes).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Delete a file
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes for the file.</param>
+        public static void Delete(ObjectAttributes obj_attributes)
+        {
+            Delete(obj_attributes, true);
+        }
+
+        /// <summary>
+        /// Delete a file
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        public static void Delete(string path)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(path))
+            {
+                Delete(obja);
+            }
+        }
+
         private void DoLinkRename(FileInformationClass file_info, string linkname, NtFile root)
         {
             FileLinkRenameInformation link = new FileLinkRenameInformation();
@@ -2225,7 +2262,7 @@ namespace NtApiDotNet
 
                     while (status.IsSuccess())
                     {
-                        SafeStructureInOutBuffer<FileDirectoryInformation> dir_buffer = buffer.GetStructAtOffset<FileDirectoryInformation>(0);
+                        var dir_buffer = buffer.GetStructAtOffset<FileDirectoryInformation>(0);
                         do
                         {
                             FileDirectoryInformation dir_info = dir_buffer.Result;
@@ -2586,22 +2623,38 @@ namespace NtApiDotNet
         [DllImport("kernel32.dll")]
         private static extern int GetFileType(SafeKernelObjectHandle handle);
 
-        private string TryGetName()
+        private string TryGetName(FileInformationClass info_class)
         {
-            using (SafeStructureInOutBuffer<FileNameInformation> buffer = new SafeStructureInOutBuffer<FileNameInformation>(32 * 1024, true))
+            using (var buffer = new SafeStructureInOutBuffer<FileNameInformation>(32 * 1024, true))
             {
-                try
-                {
-                    IoStatus status = new IoStatus();
-                    NtSystemCalls.NtQueryInformationFile(Handle, status, buffer, buffer.Length, FileInformationClass.FileNameInformation).ToNtException();
-                    char[] result = new char[buffer.Result.NameLength / 2];
-                    buffer.Data.ReadArray(0, result, 0, result.Length);
-                    return new string(result);
-                }
-                catch (NtException)
-                {
-                    return String.Empty;
-                }
+                IoStatus status = new IoStatus();
+                NtSystemCalls.NtQueryInformationFile(Handle, 
+                    status, buffer, buffer.Length, info_class).ToNtException();
+                char[] result = new char[buffer.Result.NameLength / 2];
+                buffer.Data.ReadArray(0, result, 0, result.Length);
+                return new string(result);
+            }
+        }
+
+        /// <summary>
+        /// Get the filename with the volume path.
+        /// </summary>
+        public string FileName
+        {
+            get
+            {
+                return TryGetName(FileInformationClass.FileNameInformation);
+            }
+        }
+
+        /// <summary>
+        /// Get the associated short filename
+        /// </summary>
+        public string FileShortName
+        {
+            get
+            {
+                return TryGetName(FileInformationClass.FileShortNameInformation);
             }
         }
 

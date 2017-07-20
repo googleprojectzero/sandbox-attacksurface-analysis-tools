@@ -39,7 +39,6 @@ namespace NtObjectManager
     [Cmdlet(VerbsCommon.Get, "NtSymbolicLink")]
     public class GetNtSymbolicLinkCmdlet : NtObjectBaseCmdletWithAccess<SymbolicLinkAccessRights>
     {
-
         /// <summary>
         /// Determine if the cmdlet can create objects.
         /// </summary>
@@ -153,7 +152,6 @@ namespace NtObjectManager
     [Cmdlet(VerbsCommon.New, "NtSymbolicLink")]
     public class NewNtSymbolicLinkCmdlet : NtObjectBaseCmdletWithAccess<SymbolicLinkAccessRights>
     {
-
         /// <summary>
         /// Determine if the cmdlet can create objects.
         /// </summary>
