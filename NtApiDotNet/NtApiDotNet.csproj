@@ -58,6 +58,7 @@
     <Compile Include="NtMutant.cs" />
     <Compile Include="NtRegistryTransaction.cs" />
     <Compile Include="NtSemaphore.cs" />
+    <Compile Include="NtSession.cs" />
     <Compile Include="NtSymbolicLink.cs" />
     <Compile Include="NtSystemInfo.cs" />
     <Compile Include="NtObject.cs" />
