@@ -717,20 +717,66 @@ namespace NtApiDotNet
         /// <summary>
         /// Check if the ACE is an Object ACE
         /// </summary>
-        /// <returns>True if an object ACE</returns>
-        public bool IsObjectAce()
+        public bool IsObjectAce
         {
-            switch (AceType)
+            get
             {
-                case AceType.AlarmCallbackObject:
-                case AceType.AllowedCallbackObject:
-                case AceType.AllowedObject:
-                case AceType.AuditCallbackObject:
-                case AceType.AuditObject:
-                case AceType.DeniedCallbackObject:
-                    return true;
+                switch (AceType)
+                {
+                    case AceType.AlarmCallbackObject:
+                    case AceType.AllowedCallbackObject:
+                    case AceType.AllowedObject:
+                    case AceType.AuditCallbackObject:
+                    case AceType.AuditObject:
+                    case AceType.DeniedCallbackObject:
+                        return true;
+                }
+                return false;
             }
-            return false;
+        }
+
+        /// <summary>
+        /// Check if the ACE is a callback ACE
+        /// </summary>
+        public bool IsCallbackAce
+        {
+            get
+            {
+                switch (AceType)
+                {
+                    case AceType.AlarmCallbackObject:
+                    case AceType.AllowedCallbackObject:
+                    case AceType.AuditCallbackObject:
+                    case AceType.DeniedCallbackObject:
+                    case AceType.AlarmCallback:
+                    case AceType.AllowedCallback:
+                    case AceType.AuditCallback:
+                    case AceType.DeniedCallback:
+                        return true;
+                }
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Check if ACE is a conditional ACE
+        /// </summary>
+        public bool IsConditionalAce
+        {
+            get
+            {
+                if (!IsCallbackAce)
+                {
+                    return false;
+                }
+
+                if (ApplicationData.Length < 4)
+                {
+                    return false;
+                }
+
+                return BitConverter.ToUInt32(ApplicationData, 0) == 0x78747261;
+            }
         }
 
         internal Ace(BinaryReader reader)
@@ -740,7 +786,7 @@ namespace NtApiDotNet
             AceFlags = (AceFlags)reader.ReadByte();
             int ace_size = reader.ReadUInt16();
             Mask = reader.ReadUInt32();
-            if (IsObjectAce())
+            if (IsObjectAce)
             {
                 ObjectAceFlags flags = (ObjectAceFlags)reader.ReadUInt32();
                 if ((flags & ObjectAceFlags.ObjectTypePresent) != 0)
@@ -752,18 +798,19 @@ namespace NtApiDotNet
                     InheritedObjectType = new Guid(reader.ReadAllBytes(16));
                 }
             }
+            
+            Sid = new Sid(reader);
             int bytes_used = (int)(reader.BaseStream.Position - current_position);
-            Sid = new Sid(reader.ReadAllBytes(ace_size - bytes_used));
-            // Also RM additional data?
+            ApplicationData = reader.ReadAllBytes(ace_size - bytes_used);
         }
 
         internal void Serialize(BinaryWriter writer)
         {
             // Length = sizeof(AceHeader) + sizeof(Mask) + ObjectAceData + Sid
             byte[] sid_data = Sid.ToArray();
-            int total_length = 4 + 4 + sid_data.Length;
+            int total_length = 4 + 4 + sid_data.Length + ApplicationData.Length;
             ObjectAceFlags flags = ObjectAceFlags.None;
-            if (IsObjectAce())
+            if (IsObjectAce)
             {
                 // For Flags
                 total_length += 4;
@@ -787,7 +834,7 @@ namespace NtApiDotNet
             writer.Write((byte)AceFlags);
             writer.Write((ushort)total_length);
             writer.Write(Mask.Access);
-            if (IsObjectAce())
+            if (IsObjectAce)
             {
                 writer.Write((uint)flags);
                 if (ObjectType.HasValue)
@@ -800,6 +847,7 @@ namespace NtApiDotNet
                 }
             }
             writer.Write(sid_data);
+            writer.Write(ApplicationData);
         }
 
         /// <summary>
@@ -831,6 +879,11 @@ namespace NtApiDotNet
         /// Get optional Inherited Object Type
         /// </summary>
         public Guid? InheritedObjectType { get; set; }
+
+        /// <summary>
+        /// Optional application data.
+        /// </summary>
+        public byte[] ApplicationData { get; set; }
 
         /// <summary>
         /// Convert ACE to a string
@@ -1059,7 +1112,7 @@ namespace NtApiDotNet
             foreach (Ace ace in this)
             {
                 ace.Serialize(writer);
-                if (ace.IsObjectAce())
+                if (ace.IsObjectAce)
                 {
                     revision = AclRevision.RevisionDS;
                 }
@@ -1883,6 +1936,26 @@ namespace NtApiDotNet
             return sid.Authority.IsAuthority(SecurityAuthority.Package) &&
                 (sid.SubAuthorities.Count == 8 || sid.SubAuthorities.Count == 12) &&
                 (sid.SubAuthorities[0] == 2);
+        }
+
+        /// <summary>
+        /// Converts a conditional ACE to an SDDL string
+        /// </summary>
+        /// <param name="conditional_data">The conditional application data.</param>
+        /// <returns>The conditional ACE string.</returns>
+        public static string ConditionalAceToString(byte[] conditional_data)
+        {
+            SecurityDescriptor sd = new SecurityDescriptor();
+            sd.Dacl.NullAcl = false;
+            sd.Dacl.Add(new Ace(AceType.AllowedCallback, AceFlags.None, 0, KnownSids.World) { ApplicationData = conditional_data });
+            string sddl = sd.ToSddl();
+            int last_semi = sddl.LastIndexOf(";(");
+            if (last_semi < 0)
+            {
+                throw new ArgumentException("Invalid condition data");
+            }
+
+            return sddl.Substring(last_semi + 1);
         }
     }
 }

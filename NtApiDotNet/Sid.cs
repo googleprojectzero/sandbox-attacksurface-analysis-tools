@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -284,6 +285,29 @@ namespace NtApiDotNet
         /// <seealso cref="NtSecurity.LookupAccountName(string)"/>
         public Sid(string sid) : this(NtSecurity.SidFromSddl(sid))
         {
+        }
+
+        /// <summary>
+        /// Construct a SID from a binary reader.
+        /// </summary>
+        /// <param name="reader">The binary reader.</param>
+        internal Sid(BinaryReader reader)
+        {
+            int revision = reader.ReadByte();
+            if (revision != 1)
+            {
+                throw new NtException(NtStatus.STATUS_INVALID_SID);
+            }
+            int subauth_count = reader.ReadByte();
+            byte[] authority = reader.ReadAllBytes(6);
+            List<uint> subauth = new List<uint>();
+            for (int i = 0; i < subauth_count; ++i)
+            {
+                subauth.Add(reader.ReadUInt32());
+            }
+
+            SubAuthorities = subauth;
+            Authority = new SidIdentifierAuthority(authority);
         }
 
         /// <summary>
