@@ -49,6 +49,28 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Add a resource to the list and return a reference to it.
+        /// </summary>
+        /// <typeparam name="R">The type of resource to add.</typeparam>
+        /// <param name="resource">The resource object.</param>
+        /// <returns>The added resource.</returns>
+        public R AddResource<R>(R resource) where R : T
+        {
+            Add(resource);
+            return resource;
+        }
+
+        /// <summary>
+        /// Add a resource to the list and return a reference to it.
+        /// </summary>
+        /// <typeparam name="R">The type of resource to add.</typeparam>
+        /// <returns>The added resource.</returns>
+        public R AddResource<R>() where R : T, new()
+        {
+            return AddResource(new R());
+        }
+
+        /// <summary>
         /// Convert this list to an array then clear it to the disposal no longer happens.
         /// </summary>
         /// <returns>The elements as an array.</returns>

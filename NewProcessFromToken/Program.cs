@@ -87,9 +87,9 @@ namespace NewProcessFromToken
 
                 OptionSet opts = new OptionSet() {
                             { "p", "Use parent technique to create the new process",  v => parent_process = v != null },
-                            { "j", "Try and break away from the current process job", v => flags |= v != null ? CreateProcessFlags.CREATE_BREAKAWAY_FROM_JOB : 0 },
-                            { "c", "Create a new console for the process", v => flags |= v != null ? CreateProcessFlags.CREATE_NEW_CONSOLE : 0 },
-                            { "s", "Create the process suspended", v => flags |= v != null ? CreateProcessFlags.CREATE_SUSPENDED : 0 },
+                            { "j", "Try and break away from the current process job", v => flags |= v != null ? CreateProcessFlags.BreakawayFromJob : 0 },
+                            { "c", "Create a new console for the process", v => flags |= v != null ? CreateProcessFlags.NewConsole : 0 },
+                            { "s", "Create the process suspended", v => flags |= v != null ? CreateProcessFlags.Suspended : 0 },
                             { "i|il=", "Set the process IL level", v => {
                                 il = ParseIL(v); set_il = true;
                             } },
@@ -118,14 +118,14 @@ namespace NewProcessFromToken
                 {
                     if (parent_process)
                     {
-                        new_process = Win32Process.CreateProcess(process, null, commands[1], set_il ? flags | CreateProcessFlags.CREATE_SUSPENDED : flags, null);
+                        new_process = Win32Process.CreateProcess(process, null, commands[1], set_il ? flags | CreateProcessFlags.Suspended : flags, null);
                         if (set_il)
                         {
                             using (NtToken token = new_process.Process.OpenToken())
                             {
                                 token.SetIntegrityLevel(il);
                             }
-                            if ((flags & CreateProcessFlags.CREATE_SUSPENDED) == 0)
+                            if ((flags & CreateProcessFlags.Suspended) == 0)
                             {
                                 new_process.Thread.Resume();
                             }
