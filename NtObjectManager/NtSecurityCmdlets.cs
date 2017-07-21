@@ -317,6 +317,11 @@ namespace NtApiDotNet
         [Parameter]
         public SwitchParameter ToGenericAccess { get; set; }
         /// <summary>
+        /// <para type="description">Return access as ManadatoryLabelPolicy.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter ToMandatoryLabelPolicy { get; set; }
+        /// <summary>
         /// <para type="description">Return access as specific access type based on the NtType.</para>
         /// </summary>
         [Parameter]
@@ -416,6 +421,11 @@ namespace NtApiDotNet
         /// </summary>
         [Parameter]
         public ProcessAccessRights ProcessAccess { get; set; }
+        /// <summary>
+        /// <para type="description">Specify mandatory label policy.</para>
+        /// </summary>
+        [Parameter]
+        public MandatoryLabelPolicy ManadatoryLabelPolicy { get; set; }
 
         /// <summary>
         /// Overridden ProcessRecord
@@ -442,10 +452,15 @@ namespace NtApiDotNet
             mask |= MapGeneric("DebugObject", DebugObjectAccess);
             mask |= MapGeneric("Job", JobAccess);
             mask |= MapGeneric("Process", ProcessAccess);
+            mask |= (uint)ManadatoryLabelPolicy;
 
             if (ToGenericAccess)
             {
                 WriteObject(mask.ToGenericAccess());
+            }
+            else if (ToMandatoryLabelPolicy)
+            {
+                WriteObject(mask.ToMandatoryLabelPolicy());
             }
             else if (String.IsNullOrEmpty(ToSpecificAccess))
             {

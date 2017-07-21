@@ -396,10 +396,19 @@ namespace NtApiDotNet
         /// <summary>
         /// Convert access mask to a generic access object.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The generic access mask</returns>
         public GenericAccessRights ToGenericAccess()
         {
             return (GenericAccessRights)Access;
+        }
+
+        /// <summary>
+        /// Convert access mask to a mandatory label policy
+        /// </summary>
+        /// <returns>The mandatory label policy</returns>
+        public MandatoryLabelPolicy ToMandatoryLabelPolicy()
+        {
+            return (MandatoryLabelPolicy)Access;
         }
 
         /// <summary>
