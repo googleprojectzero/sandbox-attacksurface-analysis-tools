@@ -2088,7 +2088,11 @@ namespace NtApiDotNet
             }
         }
 
-        private void SetReparsePoint(ReparseBuffer reparse)
+        /// <summary>
+        /// Set an arbitrary reparse point.
+        /// </summary>
+        /// <param name="reparse">The reparse point data.</param>
+        public void SetReparsePoint(ReparseBuffer reparse)
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(reparse.ToByteArray()))
             {
