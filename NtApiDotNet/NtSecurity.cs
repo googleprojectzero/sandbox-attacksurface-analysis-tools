@@ -856,7 +856,7 @@ namespace NtApiDotNet
                 }
             }
             writer.Write(sid_data);
-            writer.Write(ApplicationData);
+            writer.Write(ApplicationData ?? new byte[0]);
         }
 
         /// <summary>
@@ -1003,6 +1003,7 @@ namespace NtApiDotNet
             AceFlags = flags;
             Mask = mask;
             Sid = sid;
+            ApplicationData = new byte[0];
         }
     }
 
