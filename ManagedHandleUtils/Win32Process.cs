@@ -175,6 +175,7 @@ namespace SandboxAnalysisUtils
         public string CurrentDirectory { get; set; }
         public string Desktop { get; set; }
         public string Title { get; set; }
+        public bool TerminateOnDispose { get; set; }
 
         private void PopulateStartupInfo(ref STARTUPINFO start_info)
         {
@@ -338,7 +339,7 @@ namespace SandboxAnalysisUtils
                     }
                 }
 
-                return new Win32Process(proc_info);
+                return new Win32Process(proc_info, config.TerminateOnDispose);
             }
         }
 
@@ -366,7 +367,7 @@ namespace SandboxAnalysisUtils
                 throw new SafeWin32Exception();
             }
 
-            return new Win32Process(proc_info);
+            return new Win32Process(proc_info, config.TerminateOnDispose);
         }
 
         public static Win32Process CreateProcessWithLogin(string username, string domain, string password, CreateProcessLogonFlags logon_flags,
@@ -396,7 +397,7 @@ namespace SandboxAnalysisUtils
                     throw new SafeWin32Exception();
                 }
 
-                return new Win32Process(proc_info);
+                return new Win32Process(proc_info, config.TerminateOnDispose);
             }
         }
 
@@ -413,27 +414,33 @@ namespace SandboxAnalysisUtils
 
         public void Dispose()
         {
-            if (Process != null)
+            if (TerminateOnDispose)
             {
-                Process.Dispose();
+                try
+                {
+                    Process?.Terminate(NtStatus.STATUS_PROCESS_IS_TERMINATING);
+                }
+                catch (NtException)
+                {
+                }
             }
-            if (Thread != null)
-            {
-                Thread.Dispose();
-            }
+            Process?.Dispose();
+            Thread?.Dispose();
         }
 
         public NtProcess Process { get; private set; }
         public NtThread Thread { get; private set; }
         public int Pid { get; private set; }
         public int Tid { get; private set; }
+        public bool TerminateOnDispose { get; set; }
 
-        internal Win32Process(PROCESS_INFORMATION proc_info)
+        internal Win32Process(PROCESS_INFORMATION proc_info, bool terminate_on_dispose)
         {
             Process = NtProcess.FromHandle(new SafeKernelObjectHandle(proc_info.hProcess, true));
             Thread = NtThread.FromHandle(new SafeKernelObjectHandle(proc_info.hThread, true));
             Pid = proc_info.dwProcessId;
             Tid = proc_info.dwThreadId;
+            TerminateOnDispose = terminate_on_dispose;
         }
     }
 }

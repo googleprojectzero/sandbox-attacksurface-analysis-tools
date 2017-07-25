@@ -28,6 +28,10 @@ Specify a list of process names to open for their tokens.
 Specify a list of command lines to filter on find for the process tokens.
 .PARAMETER Tokens
 Specify a list token objects.
+.PARAMETER Processes
+Specify a list process objects to use for their tokens.
+.INPUTS
+None
 .OUTPUTS
 NtObjectManager.AccessCheckResult
 .NOTES
@@ -65,6 +69,8 @@ A list of privileges to set their state.
 Optional token object to use to set privileges. Must be accesible for AdjustPrivileges right.
 .PARAMETER Attributes
 Specify the actual attributes to set. Defaults to Enabled.
+.INPUTS
+None
 .OUTPUTS
 List of TokenPrivilege values indicating the new state of all privileges successfully modified.
 .EXAMPLE
@@ -113,6 +119,8 @@ A list of privileges to set their state.
 Optional token object to use to set privileges. Must be accesible for AdjustDefault right.
 .PARAMETER Adjustment
 Increment or decrement the IL level from the base specified in -IntegrityLevel.
+.INPUTS
+None
 .EXAMPLE
 Set-NtTokenPrivilege SeDebugPrivilege
 Enable SeDebugPrivilege on the current process token
@@ -154,6 +162,8 @@ The NT native path to the crash dump file to create
 Optional flags to control what to dump
 .PARAMETER PageFlags
 Optional flags to control what additional pages to dump
+.INPUTS
+None
 .EXAMPLE
 New-NtKernelCrashDump \??\C:\memory.dmp
 Create a new crash dump at c:\memory.dmp
@@ -209,6 +219,8 @@ Optional security quality of service flags
 Optional security descriptor
 .PARAMETER Sddl
 Optional security descriptor in SDDL format
+.INPUTS
+None
 .EXAMPLE
 New-NtObjectAttributes \??\c:\windows
 Create a new object attributes for \??\C:\windows
@@ -245,6 +257,8 @@ The impersonation level, must be specified.
 Optional tracking mode, defaults to static tracking
 .PARAMETER EffectiveOnly
 Optional flag to specify if only the effective rights should be impersonated
+.INPUTS
+None
 #>
 function New-NtSecurityQualityOfService
 {
@@ -266,6 +280,8 @@ This cmdlet gets the list of system environment values. Note that this isn't the
 variables, these are kernel values which represent current system state.
 .PARAMETER Name
 The name of the system environment value to get.
+.INPUTS
+None
 #>
 function Get-NtSystemEnvironmentValue
 {
@@ -289,6 +305,10 @@ Get a license value by name.
 This cmdlet gets a license value by name
 .PARAMETER Name
 The name of the license value to get.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.NtKeyValue
 #>
 function Get-NtLicenseValue
 {
@@ -297,6 +317,124 @@ function Get-NtLicenseValue
 		[string]$Name
 		)
 	[NtApiDotNet.NtKey]::QueryLicenseValue($Name)
+}
+
+function New-ProcessCreateConfig
+{
+    Param(
+        [Parameter(Mandatory=$true, Position=0)]
+        [string]$CommandLine,
+		[string]$ApplicationName,
+        [NtApiDotNet.SecurityDescriptor]$ProcessSecurityDescriptor,
+		[NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
+		[NtApiDotNet.NtProcess]$ParentProcess,
+		[SandboxAnalysisUtils.CreateProcessFlags]$CreationFlags = 0,
+		[bool]$TerminateOnDispose,
+		[byte[]]$Environment,
+		[string]$CurrentDirectory,
+		[string]$Desktop,
+		[string]$Title,
+		[bool]$InheritHandles,
+		[bool]$InheritProcessHandle,
+		[bool]$InheritThreadHandle
+
+    )
+    $config = New-Object SandboxAnalysisUtils.ProcessCreateConfiguration
+    $config.CommandLine = $CommandLine
+	if (-not [string]::IsNullOrEmpty($ApplicationName))
+	{
+		$config.ApplicationName = $ApplicationName
+	}
+    $config.ProcessSecurityDescriptor = $ProcessSecurityDescriptor
+    $config.ThreadSecurityDescriptor = $ThreadSecurityDescriptor
+	$config.ParentProcess = $ParentProcess
+	$config.CreationFlags = $CreationFlags
+	$config.TerminateOnDispose = $TerminateOnDispose
+	$config.Environment = $Environment
+	if (-not [string]::IsNullOrEmpty($Desktop))
+	{
+		$config.Desktop = $Desktop
+	}
+	if (-not [string]::IsNullOrEmpty($CurrentDirectory))
+	{
+		$config.CurrentDirectory = $CurrentDirectory
+	}
+	if (-not [string]::IsNullOrEmpty($Title))
+	{
+		$config.Title = $Title
+	}
+	$config.InheritHandles = $InheritHandles
+	$config.InheritProcessHandle = $InheritProcessHandle
+	$config.InheritThreadHandle = $InheritThreadHandle
+    return $config
+}
+
+<#
+.SYNOPSIS
+Create a new Win32 process.
+.DESCRIPTION
+This cmdlet creates a new Win32 process with an optional security descriptor.
+.PARAMETER CommandLine
+The command line of the process to create.
+.PARAMETER ApplicationName
+Optional path to the application executable.
+.PARAMETER ProcessSecurityDescriptor
+Optional security descriptor for the process.
+.PARAMETER ThreadSecurityDescriptor
+Optional security descriptor for the initial thread.
+.PARAMETER ParentProess
+Optional process to act as the parent, needs CreateProcess access to succeed.
+.PARAMETER CreationFlags
+Flags to affect process creation.
+.PARAMETER TerminateOnDispose
+Specify switch to terminate the process when the Win32Process object is disposed.
+.PARAMETER Environment
+Optional environment block for the new process.
+.PARAMETER CurrentDirectory
+Optional current directory for the new process.
+.PARAMETER Desktop
+Optional desktop for the new process.
+.PARAMETER $Title
+Optional title for the new process.
+.PARAMETER InheritHandles
+Switch to specify whether to inherit handles into new process.
+.PARAMETER InheritProcessHandle
+Switch to specify whether the process handle is inheritable
+.PARAMETER InheritThreadHandle
+Switch to specify whether the thread handle is inheritable.
+.INPUTS
+None
+.OUTPUTS
+SandboxAnalysisUtils.Win32Process
+#>
+function New-Win32Process
+{
+    Param(
+        [Parameter(Mandatory=$true, Position=0)]
+        [string]$CommandLine,
+		[string]$ApplicationName,
+        [NtApiDotNet.SecurityDescriptor]$ProcessSecurityDescriptor,
+		[NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
+		[NtApiDotNet.NtProcess]$ParentProcess,
+		[SandboxAnalysisUtils.CreateProcessFlags]$CreationFlags = 0,
+		[switch]$TerminateOnDispose,
+		[byte[]]$Environment,
+		[string]$CurrentDirectory,
+		[string]$Desktop,
+		[string]$Title,
+		[switch]$InheritHandles,
+		[switch]$InheritProcessHandle,
+		[switch]$InheritThreadHandle
+
+    )
+
+	$config = New-ProcessCreateConfig $CommandLine -ApplicationName $ApplicationName `
+		-ProcessSecurityDescriptor $ProcessSecurityDescriptor -ThreadSecurityDescriptor $ThreadSecurityDescriptor `
+		-ParentProcess $ParentProcess -CreationFlags $CreationFlags -TerminateOnDispose $TerminateOnDispose `
+		-Environment $Environment -CurrentDirectory $CurrentDirectory -Desktop $Desktop -Title $Title `
+		-InheritHandles $InheritHandles -InheritProcessHandle $InheritProcessHandle -InheritThreadHandle $InheritThreadHandle
+
+    [SandboxAnalysisUtils.Win32Process]::CreateProcess($config)
 }
 
 <#
