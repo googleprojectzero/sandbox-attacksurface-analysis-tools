@@ -329,6 +329,7 @@ function New-ProcessCreateConfig
 		[NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
 		[NtApiDotNet.NtProcess]$ParentProcess,
 		[SandboxAnalysisUtils.CreateProcessFlags]$CreationFlags = 0,
+		[SandboxAnalysisUtils.ProcessMitigationOptions]$MitigationOptions = 0,
 		[bool]$TerminateOnDispose,
 		[byte[]]$Environment,
 		[string]$CurrentDirectory,
@@ -366,6 +367,7 @@ function New-ProcessCreateConfig
 	$config.InheritHandles = $InheritHandles
 	$config.InheritProcessHandle = $InheritProcessHandle
 	$config.InheritThreadHandle = $InheritThreadHandle
+	$config.MitigationOptions = $MitigationOptions
     return $config
 }
 
@@ -402,6 +404,8 @@ Switch to specify whether to inherit handles into new process.
 Switch to specify whether the process handle is inheritable
 .PARAMETER InheritThreadHandle
 Switch to specify whether the thread handle is inheritable.
+.PARAMETER MitigationOptions
+Specify optional mitigation options.
 .INPUTS
 None
 .OUTPUTS
@@ -417,6 +421,7 @@ function New-Win32Process
 		[NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
 		[NtApiDotNet.NtProcess]$ParentProcess,
 		[SandboxAnalysisUtils.CreateProcessFlags]$CreationFlags = 0,
+		[SandboxAnalysisUtils.ProcessMitigationOptions]$MitigationOptions = 0,
 		[switch]$TerminateOnDispose,
 		[byte[]]$Environment,
 		[string]$CurrentDirectory,
@@ -425,14 +430,14 @@ function New-Win32Process
 		[switch]$InheritHandles,
 		[switch]$InheritProcessHandle,
 		[switch]$InheritThreadHandle
-
     )
 
 	$config = New-ProcessCreateConfig $CommandLine -ApplicationName $ApplicationName `
 		-ProcessSecurityDescriptor $ProcessSecurityDescriptor -ThreadSecurityDescriptor $ThreadSecurityDescriptor `
 		-ParentProcess $ParentProcess -CreationFlags $CreationFlags -TerminateOnDispose $TerminateOnDispose `
 		-Environment $Environment -CurrentDirectory $CurrentDirectory -Desktop $Desktop -Title $Title `
-		-InheritHandles $InheritHandles -InheritProcessHandle $InheritProcessHandle -InheritThreadHandle $InheritThreadHandle
+		-InheritHandles $InheritHandles -InheritProcessHandle $InheritProcessHandle -InheritThreadHandle $InheritThreadHandle `
+		-MitigationOptions $MitigationOptions
 
     [SandboxAnalysisUtils.Win32Process]::CreateProcess($config)
 }

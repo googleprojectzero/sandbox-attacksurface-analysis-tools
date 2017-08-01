@@ -14,6 +14,7 @@
 
 using NtApiDotNet;
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace SandboxAnalysisUtils
@@ -99,8 +100,86 @@ namespace SandboxAnalysisUtils
         }
     }
 
+    class ProcessAttributes
+    {
+        const int PROC_THREAD_ATTRIBUTE_THREAD = 0x00010000;
+        const int PROC_THREAD_ATTRIBUTE_INPUT = 0x00020000;
+        const int PROC_THREAD_ATTRIBUTE_ADDITIVE = 0x00040000;
+
+        static IntPtr GetValue(PROC_THREAD_ATTRIBUTE_NUM Number, bool Thread, bool Input, bool Additive)
+        {
+            int ret = (int)Number;
+            if (Thread)
+            {
+                ret |= PROC_THREAD_ATTRIBUTE_THREAD;
+            }
+            if (Input)
+            {
+                ret |= PROC_THREAD_ATTRIBUTE_INPUT;
+            }
+            if (Additive)
+            {
+                ret |= PROC_THREAD_ATTRIBUTE_ADDITIVE;
+            }
+            return new IntPtr(ret);
+        }
+
+        enum PROC_THREAD_ATTRIBUTE_NUM
+        {
+            ProcThreadAttributeParentProcess = 0,
+            ProcThreadAttributeHandleList = 2,
+            ProcThreadAttributeGroupAffinity = 3,
+            ProcThreadAttributePreferredNode = 4,
+            ProcThreadAttributeIdealProcessor = 5,
+            ProcThreadAttributeUmsThread = 6,
+            ProcThreadAttributeMitigationPolicy = 7,
+            ProcThreadAttributeSecurityCapabilities = 9,
+            ProcThreadAttributeProtectionLevel = 11,
+            ProcThreadAttributeJobList = 13,
+            ProcThreadAttributeChildProcessPolicy = 14,
+            ProcThreadAttributeAllApplicationPackagesPolicy = 15,
+            ProcThreadAttributeWin32kFilter = 16,
+            ProcThreadAttributeSafeOpenPromptOriginClaim = 17,
+            ProcThreadAttributeDesktopAppPolicy = 18,
+        }
+
+        public static IntPtr ProcThreadAttributeParentProcess
+        {
+            get
+            {
+                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeParentProcess, false, true, false);
+            }
+        }
+
+        public static IntPtr ProcThreadAttributeHandleList
+        {
+            get
+            {
+                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeHandleList, false, true, false);
+            }
+        }
+
+        public static IntPtr ProcThreadAttributeMitigationPolicy
+        {
+            get
+            {
+                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeMitigationPolicy, false, true, false);
+            }
+        }
+
+        public static IntPtr ProcThreadAttributeChildProcessPolicy
+        {
+            get
+            {
+                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeChildProcessPolicy, false, true, false);
+            }
+        }
+    }
+
     class SafeProcThreadAttributeListBuffer : SafeHGlobalBuffer
     {
+        private DisposableList<IDisposable> _values = new DisposableList<IDisposable>();
+
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern bool InitializeProcThreadAttributeList(
             IntPtr lpAttributeList,
@@ -141,9 +220,20 @@ namespace SandboxAnalysisUtils
             }
         }
 
-        public void AddAttribute(IntPtr attribute, SafeHGlobalBuffer value)
+        public void AddAttribute<T>(IntPtr attribute, T value) where T : struct
         {
-            if (!UpdateProcThreadAttribute(handle, 0, attribute, value.DangerousGetHandle(), new IntPtr(value.Length), IntPtr.Zero, IntPtr.Zero))
+            AddAttributeBuffer(attribute, _values.AddResource(value.ToBuffer()));
+        }
+
+        public void AddAttribute(IntPtr attribute, byte[] value)
+        {
+            AddAttributeBuffer(attribute, _values.AddResource(new SafeHGlobalBuffer(value)));
+        }
+
+        public void AddAttributeBuffer(IntPtr attribute, SafeHGlobalBuffer value)
+        {
+            if (!UpdateProcThreadAttribute(handle, 0, attribute, value.DangerousGetHandle(), 
+                new IntPtr(value.Length), IntPtr.Zero, IntPtr.Zero))
             {
                 throw new SafeWin32Exception();
             }
@@ -151,13 +241,67 @@ namespace SandboxAnalysisUtils
 
         protected override bool ReleaseHandle()
         {
+            _values?.Dispose();
             if (!IsInvalid)
             {
                 bool ret = DeleteProcThreadAttributeList(handle);
                 return base.ReleaseHandle() && ret;
             }
+
             return false;
         }
+    }
+
+    [Flags]
+    public enum ProcessMitigationOptions : ulong
+    {
+        None = 0,
+        DepEnable = 0x01,
+        DepAtlThunkEnable = 0x02,
+        SehopEnable = 0x04,
+        ForceRelocateImagesAlwaysOn = (0x00000001 << 8),
+        ForceRelocateImagesAlwaysOff = (0x00000002 << 8),
+        ForceRelocateImagesAlwaysOnRequireRelocs = (0x00000003 << 8),
+        HeapTerminateAlwaysOn = (0x00000001 << 12),
+        HeapTerminateAlwaysOff = (0x00000002 << 12),
+        BottomUpAslrAlwaysOn = (0x00000001 << 16),
+        BottomUpAslrAlwaysOff = (0x00000002 << 16),
+        HighEntropyAslrAlwaysOn = (0x00000001 << 20),
+        HighEntropyAslrAlwaysOff = (0x00000002 << 20),
+        StrictHandleChecksAlwaysOn = (0x00000001 << 24),
+        StrictHandleChecksAlwaysOff = (0x00000002 << 24),
+        Win32kSystemCallDisableAlwaysOn = (0x00000001 << 28),
+        Win32kSystemCallDisableAlwaysOff = (0x00000002 << 28),
+        ExtensionPointDisableAlwaysOn = (0x00000001UL << 32),
+        ExtensionPointDisableAlwaysOff = (0x00000002UL << 32),
+        ProhibitDynamicCodeAlwaysOn = (0x00000001UL << 36),
+        ProhibitDynamicCodeAlwaysOff = (0x00000002UL << 36),
+        ProhibitDynamicCodeAlwaysOnAllowOptOut = (0x00000003UL << 36),
+        ControlFlowGuardAlwaysOn = (0x00000001UL << 40),
+        ControlFlowGuardAlwaysOff = (0x00000002UL << 40),
+        ControlFlowGuardExportSupression = (0x00000003UL << 40),
+        BlockNonMicrosoftBinariesAlwaysOn = (0x00000001UL << 44),
+        BlockNonMicrosoftBinariesAlwaysOff = (0x00000002UL << 44),
+        BlockNonMicrosoftBinariesAllowStore = (0x00000003UL << 44),
+        FontDisableAlwaysOn = (0x00000001UL << 48),
+        FontDisableAlwaysOff = (0x00000002UL << 48),
+        AuditNonSystemFonts = (0x00000003UL << 48),
+        ImageLoadNoRemoteAlwaysOn = (0x00000001UL << 52),
+        ImageLoadNoRemoteAlwaysOff = (0x00000002UL << 52),
+        ImageLoadNoLowLabelAlwaysOn = (0x00000001UL << 56),
+        ImageLoadNoLowLabelAlwaysOff = (0x00000002UL << 56),
+        ImageLoadPreferSystem32AlwaysOn = (0x00000001UL << 60),
+        ImageLoadPreferSystem32AlwaysOff = (0x00000002UL << 60),
+    }
+
+    public enum ProcessMitigationOptions2 : ulong
+    {
+        None = 0,
+        LoadIntegrityContinuityAlwaysOn = (0x00000001UL << 4),
+        LoadIntegrityContinuityAlwaysOff = (0x00000002UL << 4),
+        LoadIntegrityContinuityAudit = (0x00000003UL << 4),
+        StrictControlFlowGuardAlwaysOn = (0x00000001UL << 8),
+        StrictControlFlowGuardAlwaysOff = (0x00000002UL << 8)
     }
 
     public class ProcessCreateConfiguration
@@ -176,6 +320,8 @@ namespace SandboxAnalysisUtils
         public string Desktop { get; set; }
         public string Title { get; set; }
         public bool TerminateOnDispose { get; set; }
+        public ProcessMitigationOptions MitigationOptions { get; set; }
+        public ProcessMitigationOptions2 MitigationOptions2 { get; set; }
 
         private void PopulateStartupInfo(ref STARTUPINFO start_info)
         {
@@ -198,6 +344,11 @@ namespace SandboxAnalysisUtils
             {
                 count++;
             }
+            if ((MitigationOptions != ProcessMitigationOptions.None) 
+                || (MitigationOptions2 != ProcessMitigationOptions2.None))
+            {
+                count++;
+            }
             return count;
         }
 
@@ -212,8 +363,21 @@ namespace SandboxAnalysisUtils
             var attr_list = resources.AddResource(new SafeProcThreadAttributeListBuffer(count));
             if (ParentProcess != null)
             {
-                var handle_buffer = resources.AddResource(ParentProcess.Handle.DangerousGetHandle().ToBuffer());
-                attr_list.AddAttribute(new IntPtr(0x00020000), handle_buffer);
+                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeParentProcess, ParentProcess.Handle.DangerousGetHandle());
+            }
+
+            if (MitigationOptions2 != ProcessMitigationOptions2.None)
+            {
+                MemoryStream stm = new MemoryStream();
+                BinaryWriter writer = new BinaryWriter(stm);
+
+                writer.Write((ulong)MitigationOptions);
+                writer.Write((ulong)MitigationOptions2);
+                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeMitigationPolicy, stm.ToArray());
+            }
+            else if (MitigationOptions != ProcessMitigationOptions.None)
+            {
+                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeMitigationPolicy, (ulong)MitigationOptions);
             }
             return attr_list;
         }
@@ -236,7 +400,8 @@ namespace SandboxAnalysisUtils
             return CreateSecurityAttributes(ThreadSecurityDescriptor, InheritThreadHandle, resources);
         }
 
-        private static SECURITY_ATTRIBUTES CreateSecurityAttributes(SecurityDescriptor sd, bool inherit, DisposableList<IDisposable> resources)
+        private static SECURITY_ATTRIBUTES CreateSecurityAttributes(SecurityDescriptor sd, 
+            bool inherit, DisposableList<IDisposable> resources)
         {
             if (sd == null && !inherit)
             {
