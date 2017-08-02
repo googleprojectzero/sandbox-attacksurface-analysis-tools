@@ -1846,6 +1846,20 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the integrity level from an integrity SID
+        /// </summary>
+        /// <param name="sid">The integrity SID</param>
+        /// <returns>The token integrity level.</returns>
+        public static TokenIntegrityLevel GetIntegrityLevel(Sid sid)
+        {
+            if (!IsIntegritySid(sid))
+            {
+                throw new ArgumentException("Must specify an integrity SID", "sid");
+            }
+            return (TokenIntegrityLevel)sid.SubAuthorities[sid.SubAuthorities.Count - 1];
+        }
+
+        /// <summary>
         /// Gets the SID for a service name.
         /// </summary>
         /// <param name="service_name">The service name.</param>

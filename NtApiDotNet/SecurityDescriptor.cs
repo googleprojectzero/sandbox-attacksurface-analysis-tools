@@ -89,7 +89,7 @@ namespace NtApiDotNet
         /// </summary>
         public Acl Dacl { get; set; }
         /// <summary>
-        /// Systerm access control list (can be null)
+        /// System access control list (can be null)
         /// </summary>
         public Acl Sacl { get; set; }
         /// <summary>
@@ -108,6 +108,68 @@ namespace NtApiDotNet
         /// Revision value
         /// </summary>
         public uint Revision { get; set; }
+
+        private Ace FindMandatoryLabel()
+        {
+            if (Sacl != null && !Sacl.NullAcl)
+            {
+                foreach (var ace in Sacl)
+                {
+                    if (ace.AceType == AceType.MandatoryLabel)
+                    {
+                        return ace;
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Get or set mandatory label. Returns a medium label if the it doesn't exist.
+        /// </summary>
+        public Ace MandatoryLabel
+        {
+            get
+            {
+                return FindMandatoryLabel() 
+                    ?? new Ace(AceType.MandatoryLabel, 
+                    AceFlags.None, MandatoryLabelPolicy.NoWriteUp, 
+                    NtSecurity.GetIntegritySid(TokenIntegrityLevel.Medium));
+            }
+
+            set
+            {
+                Ace label = FindMandatoryLabel();
+                if (label != null)
+                {
+                    Sacl.Remove(label);
+                }
+
+                if (Sacl == null)
+                {
+                    Sacl = new Acl();
+                }
+                Sacl.NullAcl = false;
+                Sacl.Add(value);
+            }
+        }
+
+        /// <summary>
+        /// Get or set the integrity level
+        /// </summary>
+        public TokenIntegrityLevel IntegrityLevel
+        {
+            get
+            {
+                return NtSecurity.GetIntegrityLevel(MandatoryLabel.Sid);
+            }
+            set
+            {
+                Ace label = MandatoryLabel;
+                label.Sid = NtSecurity.GetIntegritySid(value);
+                MandatoryLabel = label;
+            }
+        }
 
         private delegate NtStatus QuerySidFunc(SafeBuffer SecurityDescriptor, out IntPtr sid, out bool defaulted);
 
@@ -528,12 +590,7 @@ namespace NtApiDotNet
         /// <param name="policy">The mandatory label policy</param>
         public void AddMandatoryLabel(Sid label, AceFlags flags, MandatoryLabelPolicy policy)
         {
-            if (Sacl == null)
-            {
-                Sacl = new Acl();
-            }
-            Sacl.NullAcl = false;
-            Sacl.Add(new Ace(AceType.MandatoryLabel, flags, (uint)policy, label));
+            MandatoryLabel = new Ace(AceType.MandatoryLabel, flags, policy, label);
         }
     }
 }
