@@ -377,7 +377,13 @@ namespace NtApiDotNet
     public class ProcessChildProcessRestricted
     {
         public byte IsNoChildProcessRestricted;
-        public byte SomethingElseFlags3_8000;
+        public byte EnableAutomaticOverride;
+    }
+
+    public enum ProcessSubsystemInformationType
+    {
+        Win32 = 0,
+        WSL = 1,
     }
 
     public enum ProcessInformationClass
@@ -457,6 +463,7 @@ namespace NtApiDotNet
         Process72, // Unknown, set only?
         ProcessChildProcessRestricted, // BYTE[2] 
         ProcessFlags3_100000, // BYTE
+        ProcessSubsystemInformation
     }
 
     public enum ProcessMitigationPolicy
@@ -1696,6 +1703,28 @@ namespace NtApiDotNet
                 {
                     return buf.Result.WindowFlags;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Get the process subsystem type.
+        /// </summary>
+        public ProcessSubsystemInformationType SubsystemType
+        {
+            get
+            {
+                return (ProcessSubsystemInformationType)QueryFixed<int>(ProcessInformationClass.ProcessSubsystemInformation);
+            }
+        }
+
+        /// <summary>
+        /// Get if the process is Wow64
+        /// </summary>
+        public bool Wow64
+        {
+            get
+            {
+                return QueryFixed<IntPtr>(ProcessInformationClass.ProcessWow64Information) != IntPtr.Zero;
             }
         }
 
