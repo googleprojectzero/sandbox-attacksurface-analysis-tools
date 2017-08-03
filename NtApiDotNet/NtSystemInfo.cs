@@ -531,6 +531,7 @@ namespace NtApiDotNet
         SystemAffinitizedInterruptProcessorInformation,
         SystemRootSiloInformation, // q: SYSTEM_ROOT_SILO_INFORMATION
         SystemCodeIntegrityAllPoliciesInformation = 189,
+        SystemCodeIntegrityUnlockInformation = 190,
         MaxSystemInfoClass
     }
 
@@ -960,6 +961,23 @@ namespace NtApiDotNet
                 {
                     int ret_length;
                     NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityPolicyInformation,
+                        buffer, buffer.Length, out ret_length).ToNtException();
+                    return buffer.Result;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get code integrity unlock information.
+        /// </summary>
+        public static int CodeIntegrityUnlock
+        {
+            get
+            {
+                using (var buffer = new SafeStructureInOutBuffer<int>())
+                {
+                    int ret_length;
+                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityUnlockInformation,
                         buffer, buffer.Length, out ret_length).ToNtException();
                     return buffer.Result;
                 }
