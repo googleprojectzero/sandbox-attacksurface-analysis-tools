@@ -75,6 +75,22 @@ namespace NtApiDotNet
         public int AclBytesFree;
     }
 
+    public class CachedSigningLevel
+    {
+        public int Flags { get; private set; }
+        public int SigningLevel { get; private set; }
+        public byte[] Thumbprint { get; private set; }
+        public int ThumbprintAlgorithm { get; private set; }
+
+        internal CachedSigningLevel(int flags, int signing_level, byte[] thumb_print, int thumb_print_algo)
+        {
+            Flags = flags;
+            SigningLevel = signing_level;
+            Thumbprint = thumb_print;
+            ThumbprintAlgorithm = thumb_print_algo;
+        }
+    }
+
     [StructLayout(LayoutKind.Sequential), DataStart("Privilege")]
     public struct PrivilegeSet
     {
@@ -82,6 +98,19 @@ namespace NtApiDotNet
         public int Control;
         [MarshalAs(UnmanagedType.ByValArray)]
         public LuidAndAttributes[] Privilege;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class CachedSigningLevelInformation
+    {
+        int Size;
+        UnicodeStringIn Name;
+
+        public CachedSigningLevelInformation(string name)
+        {
+            Size = Marshal.SizeOf(this);
+            Name.SetString(name);
+        }
     }
 
     public class SafePrivilegeSetBuffer : SafeStructureArrayBuffer<PrivilegeSet>
@@ -257,6 +286,35 @@ namespace NtApiDotNet
             ref int BufferLength,
             out AccessMask GrantedAccess,
             out NtStatus AccessStatus);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSetCachedSigningLevel(
+          int  Flags, 
+          int InputSigningLevel,
+          SafeKernelObjectHandle[] SourceFiles,
+          int SourceFileCount,
+          SafeKernelObjectHandle TargetFile
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSetCachedSigningLevel2(
+          int Flags,
+          int InputSigningLevel,
+          SafeKernelObjectHandle[] SourceFiles,
+          int SourceFileCount,
+          SafeKernelObjectHandle TargetFile,
+          CachedSigningLevelInformation Information
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtGetCachedSigningLevel(
+          SafeKernelObjectHandle File,
+          out int Flags,
+          out int SigningLevel,
+          [Out] byte[] Thumbprint,
+          ref int ThumbprintSize,
+          out int ThumbprintAlgorithm
+        );
     }
 
     [StructLayout(LayoutKind.Sequential)]
