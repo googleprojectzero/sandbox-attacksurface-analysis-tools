@@ -63,6 +63,28 @@ namespace NtApiDotNet
     }
 
     /// <summary>
+    /// Structure to use when passing in a unicode string as a sub-structure.
+    /// </summary>
+    public struct UnicodeStringIn
+    {
+        ushort Length;
+        ushort MaximumLength;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        string Buffer;
+
+        public void SetString(string str)
+        {
+            if (str.Length > ushort.MaxValue / 2)
+            {
+                throw new ArgumentException("String too long for UnicodeString");
+            }
+            Length = (ushort)(str.Length * 2);
+            MaximumLength = (ushort)((str.Length * 2) + 1);
+            Buffer = str;
+        }
+    }
+
+    /// <summary>
     /// This class is used when the UNICODE_STRING needs to be preallocated
     /// and then returned back from a caller.
     /// </summary>
