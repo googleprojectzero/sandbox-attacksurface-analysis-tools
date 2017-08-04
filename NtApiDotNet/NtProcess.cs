@@ -1522,7 +1522,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get whether process has a debug point.
+        /// Get whether process has a debug port.
         /// </summary>
         /// <returns></returns>
         public bool HasDebugPort
