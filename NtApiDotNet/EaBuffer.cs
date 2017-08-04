@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet
@@ -55,6 +56,11 @@ namespace NtApiDotNet
         /// </summary>
         public EaBufferEntryFlags Flags { get; private set; }
 
+        internal EaBufferEntry Clone()
+        {
+            return new EaBufferEntry(Name, (byte[])Data.Clone(), Flags);
+        }
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -66,6 +72,54 @@ namespace NtApiDotNet
             Name = name;
             Data = data;
             Flags = flags;
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="name">The name of the entry</param>
+        /// <param name="data">Data associated with the entry</param>
+        /// <param name="flags">Flags for entry.</param>
+        public EaBufferEntry(string name, int data, EaBufferEntryFlags flags) 
+            : this(name, BitConverter.GetBytes(data), flags)
+        {
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="name">The name of the entry</param>
+        /// <param name="data">Data associated with the entry</param>
+        /// <param name="flags">Flags for entry.</param>
+        public EaBufferEntry(string name, string data, EaBufferEntryFlags flags) 
+            : this(name, Encoding.Unicode.GetBytes(data), flags)
+        {
+        }
+
+        /// <summary>
+        /// Get the EA buffer data as a string.
+        /// </summary>
+        /// <returns>The data as a string.</returns>
+        public string DataAsString()
+        {
+            if ((Data.Length % 2) != 0)
+            {
+                throw new ArgumentException("Invalid data length for a Unicode string");
+            }
+            return Encoding.Unicode.GetString(Data);
+        }
+
+        /// <summary>
+        /// Get the EA buffer data as an Int32.
+        /// </summary>
+        /// <returns>The data as an Int32.</returns>
+        public int DataAsInt32()
+        {
+            if (Data.Length != 4)
+            {
+                throw new ArgumentException("Invalid data length for an Int32");
+            }
+            return BitConverter.ToInt32(Data, 0);
         }
 
         /// <summary>
@@ -86,9 +140,17 @@ namespace NtApiDotNet
         /// <summary>
         /// Constructor
         /// </summary>
-        public EaBuffer()
+        public EaBuffer() : this(new EaBufferEntry[0])
         {
-            _buffers = new List<EaBufferEntry>();
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="entries">List of entries to add.</param>
+        public EaBuffer(IEnumerable<EaBufferEntry> entries)
+        {
+            _buffers = new List<EaBufferEntry>(entries);
         }
 
         /// <summary>
@@ -107,6 +169,15 @@ namespace NtApiDotNet
                 finished = DeserializeEntry(reader, out entry);
                 _buffers.Add(entry);
             }
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="buffer">Existing buffer to copy.</param>
+        public EaBuffer(EaBuffer buffer) 
+            : this(buffer.Entries.Select(e => e.Clone()))
+        {
         }
 
         private List<EaBufferEntry> _buffers;
@@ -171,10 +242,19 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Add a new EA entry from an old entry. The data will be cloned.
+        /// </summary>
+        /// <param name="entry">The entry to add.</param>
+        public void AddEntry(EaBufferEntry entry)
+        {
+            AddEntry(entry.Name, entry.Data, entry.Flags);
+        }
+
+        /// <summary>
         /// Add a new EA entry
         /// </summary>
         /// <param name="name">The name of the entry</param>
-        /// <param name="data">The associated data</param>
+        /// <param name="data">The associated data, will be cloned</param>
         /// <param name="flags">The entry flags.</param>
         public void AddEntry(string name, byte[] data, EaBufferEntryFlags flags)
         {
@@ -201,6 +281,24 @@ namespace NtApiDotNet
         public void AddEntry(string name, string data, EaBufferEntryFlags flags)
         {
             AddEntry(name, Encoding.Unicode.GetBytes(data), flags, false);
+        }
+
+        /// <summary>
+        /// Get an entry by name.
+        /// </summary>
+        /// <param name="name">The name of the entry.</param>
+        /// <returns>The entry to return.</returns>
+        /// <exception cref="KeyNotFoundException">Thrown if no entry by that name.</exception>
+        public EaBufferEntry GetEntry(string name)
+        {
+            foreach (EaBufferEntry entry in _buffers)
+            {
+                if (entry.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return entry;
+                }
+            }
+            throw new KeyNotFoundException();
         }
 
         /// <summary>
