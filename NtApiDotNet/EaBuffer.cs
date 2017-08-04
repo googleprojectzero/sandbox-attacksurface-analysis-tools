@@ -238,6 +238,14 @@ namespace NtApiDotNet
         /// Get number of entries.
         /// </summary>
         public int Count { get { return _buffers.Count; } }
+
+        /// <summary>
+        /// Clear all entries.
+        /// </summary>
+        public void Clear()
+        {
+            _buffers.Clear();
+        }
     }
 
 }

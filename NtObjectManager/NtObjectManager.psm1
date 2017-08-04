@@ -444,6 +444,39 @@ function New-Win32Process
 
 <#
 .SYNOPSIS
+Create a new EA buffer object for use with files.
+.DESCRIPTION
+This cmdlet creates a new extended attributes buffer object to set on file objects with the SetEa method or with New-NtFile.
+.PARAMETER Entries
+Optional Hashtable containing entries to initialize into the EA buffer.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.EaBuffer
+.EXAMPLE
+New-NtEaBuffer
+Create a new empty EaBuffer object
+.EXAMPLE
+New-NtEaBuffer @{ INTENTRY = 1234; STRENTRY = "ABC"; BYTEENTRY = [byte[]]@(1,2,3) }
+Create a new EaBuffer object initialized with three separate entries.
+#>
+function New-NtEaBuffer
+{
+	Param(
+        [Parameter(Position=0)]
+        [Hashtable]$Entries = @{}
+	)
+
+	$ea_buffer = New-Object NtApiDotNet.EaBuffer
+	foreach($entry in $Entries.Keys) 
+	{
+		$ea_buffer.AddEntry($entry, $Entries.Item($entry), 0)
+	}
+	return $ea_buffer
+}
+
+<#
+.SYNOPSIS
 Get process primary token. Here for legacy reasons, use Get-NtToken -Primary.
 #>
 function Get-NtTokenPrimary
