@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -78,11 +79,11 @@ namespace NtApiDotNet
     public class CachedSigningLevel
     {
         public int Flags { get; private set; }
-        public int SigningLevel { get; private set; }
+        public SigningLevel SigningLevel { get; private set; }
         public byte[] Thumbprint { get; private set; }
         public int ThumbprintAlgorithm { get; private set; }
 
-        internal CachedSigningLevel(int flags, int signing_level, byte[] thumb_print, int thumb_print_algo)
+        internal CachedSigningLevel(int flags, SigningLevel signing_level, byte[] thumb_print, int thumb_print_algo)
         {
             Flags = flags;
             SigningLevel = signing_level;
@@ -111,6 +112,26 @@ namespace NtApiDotNet
             Size = Marshal.SizeOf(this);
             Name.SetString(name);
         }
+    }
+
+    public enum SigningLevel
+    {
+        Unchecked = 0,
+        Unsigned = 1,
+        DeviceGuard = 2,
+        Custom1 = 3,
+        Authenticode = 4,
+        Custom2 = 5,
+        Store = 6,
+        Antimalware = 7,
+        Microsoft = 8,
+        Custom4 = 9,
+        Custom5 = 10,
+        DynamicCodeGeneration = 12,
+        Windows = 13,
+        WindowsProtectedProcessLight = 14,
+        WindowsTCB = 15,
+        Custom6 = 16
     }
 
     public class SafePrivilegeSetBuffer : SafeStructureArrayBuffer<PrivilegeSet>
@@ -290,8 +311,8 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtSetCachedSigningLevel(
           int  Flags, 
-          int InputSigningLevel,
-          SafeKernelObjectHandle[] SourceFiles,
+          SigningLevel SigningLevel,
+          [In] IntPtr[] SourceFiles,
           int SourceFileCount,
           SafeKernelObjectHandle TargetFile
         );
@@ -299,8 +320,8 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtSetCachedSigningLevel2(
           int Flags,
-          int InputSigningLevel,
-          SafeKernelObjectHandle[] SourceFiles,
+          SigningLevel SigningLevel,
+          [In] IntPtr[] SourceFiles,
           int SourceFileCount,
           SafeKernelObjectHandle TargetFile,
           CachedSigningLevelInformation Information
@@ -310,7 +331,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtGetCachedSigningLevel(
           SafeKernelObjectHandle File,
           out int Flags,
-          out int SigningLevel,
+          out SigningLevel SigningLevel,
           [Out] byte[] Thumbprint,
           ref int ThumbprintSize,
           out int ThumbprintAlgorithm
@@ -2038,6 +2059,52 @@ namespace NtApiDotNet
             }
 
             return sddl.Substring(last_semi + 1);
+        }
+
+        /// <summary>
+        /// Get the cached signing level for a file.
+        /// </summary>
+        /// <param name="handle">The handle to the file to query.</param>
+        /// <returns>The cached signing level.</returns>
+        public static CachedSigningLevel GetCachedSigningLevel(SafeKernelObjectHandle handle)
+        {
+            int flags;
+            SigningLevel signing_level;
+            byte[] thumb_print = new byte[0x68];
+            int thumb_print_size = thumb_print.Length;
+            int thumb_print_algo = 0;
+
+            NtSystemCalls.NtGetCachedSigningLevel(handle, out flags,
+                out signing_level, thumb_print, ref thumb_print_size, out thumb_print_algo).ToNtException();
+            Array.Resize(ref thumb_print, thumb_print_size);
+            return new CachedSigningLevel(flags, signing_level, thumb_print, thumb_print_algo);
+        }
+
+        /// <summary>
+        /// Set the cached signing level for a file.
+        /// </summary>
+        /// <param name="handle">The handle to the file to set the cache on.</param>
+        /// <param name="flags">Flags to set for the cache.</param>
+        /// <param name="signing_level">The signing level to cache</param>
+        /// <param name="source_files">A list of source file for the cache.</param>
+        /// <param name="name">Optional name for the cache.</param>
+        public static void SetCachedSigningLevel(SafeKernelObjectHandle handle, 
+                                                 int flags, SigningLevel signing_level,
+                                                 IEnumerable<SafeKernelObjectHandle> source_files,
+                                                 string name)
+        {
+            IntPtr[] handles = source_files == null ? null 
+                : source_files.Select(f => f.DangerousGetHandle()).ToArray();
+            int handles_count = handles == null ? 0 : handles.Length;
+            if (name != null)
+            {
+                CachedSigningLevelInformation info = new CachedSigningLevelInformation(name);
+                NtSystemCalls.NtSetCachedSigningLevel2(flags, signing_level, handles, handles_count, handle, info).ToNtException();
+            }
+            else
+            {
+                NtSystemCalls.NtSetCachedSigningLevel(flags, signing_level, handles, handles_count, handle).ToNtException();
+            }
         }
     }
 }

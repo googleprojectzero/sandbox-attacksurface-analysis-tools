@@ -2922,11 +2922,59 @@ namespace NtApiDotNet
         /// Set the extended attributes for a file.
         /// </summary>
         /// <param name="ea">The EA buffer to set.</param>
+        /// <remarks>This will add entries if they no longer exist, 
+        /// remove entries if the data is empty or update existing entires.</remarks>
         public void SetEa(EaBuffer ea)
         {
             byte[] ea_buffer = ea.ToByteArray();
             IoStatus io_status = new IoStatus();
             NtSystemCalls.NtSetEaFile(Handle, io_status, ea_buffer, ea_buffer.Length).ToNtException();
+        }
+
+        /// <summary>
+        /// Set the extended attributes for a file.
+        /// </summary>
+        /// <param name="name">The name of the entry</param>
+        /// <param name="data">The associated data</param>
+        /// <param name="flags">The entry flags.</param>
+        public void SetEa(string name, byte[] data, EaBufferEntryFlags flags)
+        {
+            EaBuffer ea = new EaBuffer();
+            ea.AddEntry(name, data, flags);
+            SetEa(ea);
+        }
+
+        /// <summary>
+        /// Set the extended attributes for a file.
+        /// </summary>
+        /// <param name="name">The name of the entry</param>
+        /// <param name="data">The associated data</param>
+        /// <param name="flags">The entry flags.</param>
+        public void AddEntry(string name, int data, EaBufferEntryFlags flags)
+        {
+            SetEa(name, BitConverter.GetBytes(data), flags);
+        }
+
+        /// <summary>
+        /// Set the extended attributes for a file.
+        /// </summary>
+        /// <param name="name">The name of the entry</param>
+        /// <param name="data">The associated data</param>
+        /// <param name="flags">The entry flags.</param>
+        public void SetEa(string name, string data, EaBufferEntryFlags flags)
+        {
+            SetEa(name, Encoding.Unicode.GetBytes(data), flags);
+        }
+
+        /// <summary>
+        /// Remove an extended attributes entry for a file.
+        /// </summary>
+        /// <param name="name">The name of the entry</param>
+        public void RemoveEa(string name)
+        {
+            EaBuffer ea = new EaBuffer();
+            ea.AddEntry(name, new byte[0], EaBufferEntryFlags.None);
+            SetEa(ea);
         }
 
         /// <summary>
@@ -2963,16 +3011,18 @@ namespace NtApiDotNet
         /// <returns>The cached signing level.</returns>
         public CachedSigningLevel GetCachedSigningLevel()
         {
-            int flags;
-            int signing_level;
-            byte[] thumb_print = new byte[0x68];
-            int thumb_print_size = thumb_print.Length;
-            int thumb_print_algo = 0;
+            return NtSecurity.GetCachedSigningLevel(Handle);
+        }
 
-            NtSystemCalls.NtGetCachedSigningLevel(Handle, out flags, 
-                out signing_level, thumb_print, ref thumb_print_size, out thumb_print_algo).ToNtException();
-            Array.Resize(ref thumb_print, thumb_print_size);
-            return new CachedSigningLevel(flags, signing_level, thumb_print, thumb_print_algo);
+        /// <summary>
+        /// Set the cached signing level for a file.
+        /// </summary>
+        /// <param name="flags">Flags to set for the cache.</param>
+        /// <param name="signing_level">The signing level to cache</param>
+        /// <param name="name">Optional name for the cache.</param>
+        public void SetCachedSigningLevel(int flags, SigningLevel signing_level, string name)
+        {
+            NtSecurity.SetCachedSigningLevel(Handle, flags, signing_level, new SafeKernelObjectHandle[] { Handle }, name);
         }
     }
 

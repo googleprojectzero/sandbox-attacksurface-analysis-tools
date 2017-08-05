@@ -22,15 +22,20 @@ namespace NtApiDotNet
 
 
     [Flags]
-    public enum SectionAttributes
+    public enum SectionAttributes : uint
     {
         None = 0,
         Based = 0x00200000,
         NoChange = 0x00400000,
+        File = 0x00800000,
         Image = 0x01000000,
+        ProtectedImage = 0x02000000,
         Reserve = 0x04000000,
         Commit = 0x08000000,
         NoCache = 0x10000000,
+        WriteCombine = 0x40000000,
+        LargePages = 0x80000000,
+        ImageNoExecute = Image | NoCache
     }
 
     [Flags]

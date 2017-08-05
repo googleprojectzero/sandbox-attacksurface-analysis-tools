@@ -449,6 +449,8 @@ Create a new EA buffer object for use with files.
 This cmdlet creates a new extended attributes buffer object to set on file objects with the SetEa method or with New-NtFile.
 .PARAMETER Entries
 Optional Hashtable containing entries to initialize into the EA buffer.
+.PARAMETER $ExistingBuffer
+An existing buffer to initialize the new buffer from.
 .INPUTS
 None
 .OUTPUTS
@@ -462,17 +464,67 @@ Create a new EaBuffer object initialized with three separate entries.
 #>
 function New-NtEaBuffer
 {
+	[CmdletBinding(DefaultParameterSetName = "FromEntries")]
 	Param(
-        [Parameter(Position=0)]
-        [Hashtable]$Entries = @{}
+		[Parameter(ParameterSetName = "FromEntries", Position = 0)] 
+        [Hashtable]$Entries = @{},
+		[Parameter(ParameterSetName = "FromExisting", Position = 0)]
+		[NtApiDotnet.Eabuffer]$ExistingBuffer
 	)
 
-	$ea_buffer = New-Object NtApiDotNet.EaBuffer
-	foreach($entry in $Entries.Keys) 
+	if ($null -eq $ExistingBuffer)
 	{
-		$ea_buffer.AddEntry($entry, $Entries.Item($entry), 0)
+		$ea_buffer = New-Object NtApiDotNet.EaBuffer
+		foreach($entry in $Entries.Keys) 
+		{
+			$ea_buffer.AddEntry($entry, $Entries.Item($entry), 0)
+		}
+		return $ea_buffer
 	}
-	return $ea_buffer
+	else
+	{
+		return New-Object NtApiDotNet.EaBuffer -ArgumentList $ExistingBuffer
+	}
+}
+
+<#
+.SYNOPSIS
+Create a new image section based on an existing file.
+.DESCRIPTION
+This cmdlet creates an image section based on an existing file.
+.PARAMETER File
+A file object to an image file to create.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.NtSection
+.EXAMPLE
+New-NtEaBuffer
+Create a new empty EaBuffer object
+.EXAMPLE
+New-NtEaBuffer @{ INTENTRY = 1234; STRENTRY = "ABC"; BYTEENTRY = [byte[]]@(1,2,3) }
+Create a new EaBuffer object initialized with three separate entries.
+#>
+function New-NtSectionImage
+{
+	[CmdletBinding(DefaultParameterSetName = "FromFile")]
+	Param(
+		[Parameter(Position = 0, ParameterSetName = "FromFile", Mandatory = $true)] 
+        [NtApiDotNet.NtFile]$File,
+		[Parameter(Position = 0, ParameterSetName = "FromPath", Mandatory = $true)] 
+		[string]$Path
+	)
+
+	if ($null -eq $File)
+	{
+		Use-NtObject($new_file = Get-NtFile -Path $Path -Share Read,Delete -Access GenericExecute) {
+			return [NtApiDotNet.NtSection]::CreateImageSection($new_file)
+		}
+	}
+	else
+	{
+		return [NtApiDotNet.NtSection]::CreateImageSection($File)
+	}
 }
 
 <#
