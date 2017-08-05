@@ -676,6 +676,12 @@ namespace NtApiDotNet
         public FileAttributes FileAttributes;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public class FileEndOfFileInformation
+    {
+        public LargeIntegerStruct EndOfFile;
+    }
+
     public enum FileControlMethod
     {
         Buffered = 0,
@@ -3023,6 +3029,23 @@ namespace NtApiDotNet
         public void SetCachedSigningLevel(int flags, SigningLevel signing_level, string name)
         {
             NtSecurity.SetCachedSigningLevel(Handle, flags, signing_level, new SafeKernelObjectHandle[] { Handle }, name);
+        }
+
+        /// <summary>
+        /// Set the end of file.
+        /// </summary>
+        /// <param name="offset">The offset to the end of file.</param>
+        public void SetEndOfFile(long offset)
+        {
+            IoStatus status = new IoStatus();
+            FileEndOfFileInformation eof = new FileEndOfFileInformation();
+            eof.EndOfFile.QuadPart = offset;
+
+            using (var buffer = eof.ToBuffer())
+            {
+                NtSystemCalls.NtSetInformationFile(Handle, status, buffer,
+                    buffer.Length, FileInformationClass.FileEndOfFileInformation).ToNtException();
+            }
         }
     }
 
