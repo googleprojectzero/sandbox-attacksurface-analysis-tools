@@ -147,6 +147,12 @@ namespace NtApiDotNet
         public static extern NtStatus NtImpersonateAnonymousToken(SafeKernelObjectHandle ThreadHandle);
 
         [DllImport("ntdll.dll")]
+        public static extern NtStatus NtImpersonateThread(
+            SafeKernelObjectHandle ThreadHandle,
+            SafeKernelObjectHandle ThreadToImpersonate,
+            SecurityQualityOfService SecurityQualityOfService);
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus NtDelayExecution(bool Alertable, LargeInteger DelayInterval);
 
         [DllImport("ntdll.dll")]
@@ -441,6 +447,29 @@ namespace NtApiDotNet
         {
             SetImpersonationToken(token);
             return new ThreadImpersonationContext(Duplicate());
+        }
+
+        /// <summary>
+        /// Impersonate another thread.
+        /// </summary>
+        /// <param name="thread">The thread to impersonate.</param>
+        /// <param name="impersonation_level">The impersonation level</param>
+        /// <returns>The imperonsation context. Dispose to revert to self.</returns>
+        public ThreadImpersonationContext ImpersonateThread(NtThread thread, SecurityImpersonationLevel impersonation_level)
+        {
+            NtSystemCalls.NtImpersonateThread(Handle, thread.Handle, 
+                new SecurityQualityOfService(impersonation_level, SecurityContextTrackingMode.Static, false)).ToNtException();
+            return new ThreadImpersonationContext(Duplicate());
+        }
+
+        /// <summary>
+        /// Impersonate another thread.
+        /// </summary>
+        /// <param name="thread">The thread to impersonate.</param>
+        /// <returns>The imperonsation context. Dispose to revert to self.</returns>
+        public ThreadImpersonationContext ImpersonateThread(NtThread thread)
+        {
+            return ImpersonateThread(thread, SecurityImpersonationLevel.Impersonation);
         }
 
         /// <summary>
