@@ -617,7 +617,8 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public void SetValue(string value_name, RegistryValueType type, byte[] data)
         {
-            NtSystemCalls.NtSetValueKey(Handle, new UnicodeString(value_name), 0, type, data, data.Length).ToNtException();
+            NtSystemCalls.NtSetValueKey(Handle, new UnicodeString(value_name ?? String.Empty), 
+                0, type, data, data.Length).ToNtException();
         }
 
         /// <summary>
