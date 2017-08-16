@@ -441,7 +441,7 @@ namespace SandboxAnalysisUtils
           CreateProcessFlags dwCreationFlags,
           byte[] lpEnvironment,
           string lpCurrentDirectory,
-          ref STARTUPINFO lpStartupInfo,
+          [In] STARTUPINFOEX lpStartupInfo,
           out PROCESS_INFORMATION lpProcessInformation);
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
@@ -451,7 +451,7 @@ namespace SandboxAnalysisUtils
           string lpApplicationName,
           string lpCommandLine,
           CreateProcessFlags dwCreationFlags,
-          byte[] lpEnvironment,
+          [In] byte[] lpEnvironment,
           string lpCurrentDirectory,
           ref STARTUPINFO lpStartupInfo,
           out PROCESS_INFORMATION lpProcessInformation);
@@ -464,7 +464,7 @@ namespace SandboxAnalysisUtils
           [In] SECURITY_ATTRIBUTES lpThreadAttributes,
           bool bInheritHandles,
           CreateProcessFlags dwCreationFlags,
-          byte[] lpEnvironment,
+          [In] byte[] lpEnvironment,
           string lpCurrentDirectory,
           [In] STARTUPINFOEX lpStartupInfo,
           out PROCESS_INFORMATION lpProcessInformation);
@@ -478,27 +478,28 @@ namespace SandboxAnalysisUtils
           string lpApplicationName,
           string lpCommandLine,
           CreateProcessFlags dwCreationFlags,
-          byte[] lpEnvironment,
+          [In] byte[] lpEnvironment,
           string lpCurrentDirectory,
           ref STARTUPINFO lpStartupInfo,
           out PROCESS_INFORMATION lpProcessInformation);
 
         public static Win32Process CreateProcessAsUser(NtToken token, ProcessCreateConfiguration config)
         {
-            STARTUPINFO start_info = config.ToStartupInfo();
-            PROCESS_INFORMATION proc_info = new PROCESS_INFORMATION();
-
             using (var resources = new DisposableList<IDisposable>())
             {
+                PROCESS_INFORMATION proc_info = new PROCESS_INFORMATION();
+                STARTUPINFOEX start_info = config.ToStartupInfoEx(resources);
                 SECURITY_ATTRIBUTES proc_attr = config.ProcessSecurityAttributes(resources);
                 SECURITY_ATTRIBUTES thread_attr = config.ThreadSecurityAttributes(resources);
                 
                 if (!CreateProcessAsUser(token.Handle, config.ApplicationName, config.CommandLine,
-                        proc_attr, thread_attr, config.InheritHandles, config.CreationFlags, config.Environment, 
-                        config.CurrentDirectory, ref start_info, out proc_info))
+                        proc_attr, thread_attr, config.InheritHandles, config.CreationFlags 
+                        | CreateProcessFlags.ExtendedStartupInfoPresent, config.Environment, 
+                        config.CurrentDirectory, start_info, out proc_info))
                 {
                     if (!CreateProcessWithTokenW(token.Handle, 0, config.ApplicationName, config.CommandLine,
-                        config.CreationFlags, config.Environment, config.CurrentDirectory, ref start_info, out proc_info))
+                        config.CreationFlags, config.Environment, config.CurrentDirectory, 
+                        ref start_info.StartupInfo, out proc_info))
                     {
                         throw new SafeWin32Exception();
                     }
