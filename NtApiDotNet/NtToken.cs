@@ -513,6 +513,22 @@ namespace NtApiDotNet
         public static extern NtStatus NtFilterToken(SafeKernelObjectHandle ExistingTokenHandle,
             FilterTokenFlags Flags, SafeTokenGroupsBuffer SidsToDisable, SafeTokenPrivilegesBuffer PrivilegesToDelete,
             SafeTokenGroupsBuffer RestrictedSids, out SafeKernelObjectHandle NewTokenHandle);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtCreateToken(
+            out SafeKernelObjectHandle TokenHandle,
+            TokenAccessRights DesiredAccess,
+            [In] ObjectAttributes ObjectAttributes,
+            TokenType TokenType,
+            [In] ref Luid AuthenticationId,
+            [In] ref LargeIntegerStruct ExpirationTime,
+            [In] ref TokenUser TokenUser,
+            [In] TokenGroups TokenGroups,
+            [In] TokenPrivileges TokenPrivileges,
+            [In] ref TokenOwner TokenOwner,
+            [In] ref TokenPrimaryGroup TokenPrimaryGroup,
+            [In] ref TokenDefaultDacl TokenDefaultDacl,
+            [In] TokenSource TokenSource);
     }
 
 
