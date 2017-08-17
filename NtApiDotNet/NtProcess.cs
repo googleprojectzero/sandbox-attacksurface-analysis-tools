@@ -1838,5 +1838,16 @@ namespace NtApiDotNet
                 return QueryFixed<PsProtection>(ProcessInformationClass.ProcessProtectionInformation);
             }
         }
+
+        /// <summary>
+        /// Query process section image information.
+        /// </summary>
+        public SectionImageInformation ImageInformation
+        {
+            get
+            {
+                return QueryFixed<SectionImageInformation>(ProcessInformationClass.ProcessImageInformation);
+            }
+        }
     }
 }
