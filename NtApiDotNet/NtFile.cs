@@ -146,6 +146,28 @@ namespace NtApiDotNet
         );
 
         [DllImport("ntdll.dll")]
+        public static extern NtStatus NtLockFile(
+          SafeKernelObjectHandle FileHandle,
+          SafeKernelObjectHandle Event,
+          IntPtr ApcRoutine,
+          IntPtr ApcContext,
+          SafeIoStatusBuffer IoStatusBlock,
+          [In] LargeInteger ByteOffset,
+          [In] LargeInteger Length,
+          int Key,
+          bool FailImmediately,
+          bool ExclusiveLock
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtUnlockFile(
+          SafeKernelObjectHandle FileHandle,
+          IoStatus IoStatusBlock,
+          [In] LargeInteger ByteOffset,
+          [In] LargeInteger Length,
+          int Key);
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus NtCreateNamedPipeFile(
             out SafeKernelObjectHandle FileHandle,
             FileAccessRights DesiredAccess,
@@ -2724,6 +2746,94 @@ namespace NtApiDotNet
         public Task<int> WriteAsync(byte[] data, long position, CancellationToken token)
         {
             return WriteAsync(data, new LargeInteger(position), token);
+        }
+
+        /// <summary>
+        /// Lock part of a file.
+        /// </summary>
+        /// <param name="offset">The offset into the file to lock</param>
+        /// <param name="size">The number of bytes to lock</param>
+        /// <param name="fail_immediately">True to fail immediately if the lock can't be taken</param>
+        /// <param name="exclusive">True to do an exclusive lock</param>
+        public void Lock(long offset, long size, bool fail_immediately, bool exclusive)
+        {
+            using (NtFileResult result = new NtFileResult(this))
+            {
+                result.CompleteCall(NtSystemCalls.NtLockFile(Handle, result.EventHandle, IntPtr.Zero,
+                    IntPtr.Zero, result.IoStatusBuffer, new LargeInteger(offset), 
+                    new LargeInteger(size), 0, fail_immediately, exclusive)).ToNtException();
+            }
+        }
+
+        /// <summary>
+        /// Shared lock part of a file.
+        /// </summary>
+        /// <param name="offset">The offset into the file to lock</param>
+        /// <param name="size">The number of bytes to lock</param>
+        public void Lock(long offset, long size)
+        {
+            Lock(offset, size, false, false);
+        }
+
+        /// <summary>
+        /// Lock part of a file asynchronously.
+        /// </summary>
+        /// <param name="offset">The offset into the file to lock</param>
+        /// <param name="size">The number of bytes to lock</param>
+        /// <param name="fail_immediately">True to fail immediately if the lock can't be taken</param>
+        /// <param name="exclusive">True to do an exclusive lock</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        public async Task LockAsync(long offset, long size, bool fail_immediately, bool exclusive, CancellationToken token)
+        {
+            using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
+            {
+                using (NtFileResult result = new NtFileResult(this))
+                {
+                    NtStatus status = await result.CompleteCallAsync(NtSystemCalls.NtLockFile(Handle, result.EventHandle, IntPtr.Zero,
+                                                                     IntPtr.Zero, result.IoStatusBuffer, new LargeInteger(offset),
+                                                                     new LargeInteger(size), 0, fail_immediately, exclusive), linked_cts.Token);
+                    if (status == NtStatus.STATUS_PENDING)
+                    {
+                        result.Cancel();
+                        throw new NtException(NtStatus.STATUS_CANCELLED);
+                    }
+                    status.ToNtException();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Lock part of a file asynchronously.
+        /// </summary>
+        /// <param name="offset">The offset into the file to lock</param>
+        /// <param name="size">The number of bytes to lock</param>
+        /// <param name="fail_immediately">True to fail immediately if the lock can't be taken</param>
+        /// <param name="exclusive">True to do an exclusive lock</param>
+        public Task LockAsync(long offset, long size, bool fail_immediately, bool exclusive)
+        {
+            return LockAsync(offset, size, fail_immediately, exclusive, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Shared lock part of a file asynchronously.
+        /// </summary>
+        /// <param name="offset">The offset into the file to lock</param>
+        /// <param name="size">The number of bytes to lock</param>
+        public Task LockAsync(long offset, long size)
+        {
+            return LockAsync(offset, size, false, false);
+        }
+
+        /// <summary>
+        /// Unlock part of a file previously locked with Lock
+        /// </summary>
+        /// <param name="offset">The offset into the file to unlock</param>
+        /// <param name="size">The number of bytes to unlock</param>
+        public void Unlock(long offset, long size)
+        {
+            IoStatus io_status = new IoStatus();
+            NtSystemCalls.NtUnlockFile(Handle, io_status, 
+                new LargeInteger(offset), new LargeInteger(size), 0).ToNtException();
         }
 
         /// <summary>
