@@ -596,6 +596,8 @@ namespace NtApiDotNet
         OpenForBackupIntent = 0x00004000,
         NoCompression = 0x00008000,
         OpenRequiringOplock = 0x00010000,
+        DisallowExclusive = 0x00020000,
+        SessionAware = 0x00040000,
         ReserveOpfilter = 0x00100000,
         OpenReparsePoint = 0x00200000,
         OpenNoRecall = 0x00400000,
