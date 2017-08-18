@@ -47,6 +47,7 @@
     <Compile Include="NtAlpc.cs" />
     <Compile Include="NtAtom.cs" />
     <Compile Include="NtDebug.cs" />
+    <Compile Include="NtDesktop.cs" />
     <Compile Include="NtDirectory.cs" />
     <Compile Include="NtEvent.cs" />
     <Compile Include="NtException.cs" />
@@ -71,6 +72,7 @@
     <Compile Include="NtToken.cs" />
     <Compile Include="NtVirtualMemory.cs" />
     <Compile Include="NtWait.cs" />
+    <Compile Include="NtWindowStation.cs" />
     <Compile Include="NtWnf.cs" />
     <Compile Include="ObjectAttributes.cs" />
     <Compile Include="NtType.cs" />

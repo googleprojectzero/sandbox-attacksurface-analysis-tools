@@ -353,7 +353,7 @@ namespace NtApiDotNet
     public class NtDirectory : NtObjectWithDuplicate<NtDirectory, DirectoryAccessRights>
     {
         internal NtDirectory(SafeKernelObjectHandle handle) : base(handle)
-        {            
+        {
         }
 
         /// <summary>
@@ -501,7 +501,7 @@ namespace NtApiDotNet
         public static NtDirectory Create(string name)
         {
             return Create(name, null, DirectoryAccessRights.MaximumAllowed);
-        }        
+        }
 
         /// <summary>
         /// Query the directory for a list of entries.
@@ -531,7 +531,7 @@ namespace NtApiDotNet
                 status.ToNtException();
                 IntPtr current = buffer.DangerousGetHandle();
                 string name = String.Empty;
-                while(true)
+                while (true)
                 {
                     OBJECT_DIRECTORY_INFORMATION dir_info = (OBJECT_DIRECTORY_INFORMATION)Marshal.PtrToStructure(current, typeof(OBJECT_DIRECTORY_INFORMATION));
                     name = dir_info.Name.ToString();
@@ -617,7 +617,7 @@ namespace NtApiDotNet
             }
             else
             {
-                return String.Format(@"\Sessions\{0}\BaseNamedObjects", session_id);
+                return string.Format(@"\Sessions\{0}\BaseNamedObjects", session_id);
             }
         }
 
@@ -628,6 +628,51 @@ namespace NtApiDotNet
         public static string GetBasedNamedObjects()
         {
             return GetBasedNamedObjects(NtProcess.Current.SessionId);
+        }
+
+        /// <summary>
+        /// Get the a session's Windows object directory.
+        /// </summary>
+        /// <param name="session_id">The session id to use.</param>
+        /// <returns>The path to the windows object directory.</returns>
+        public static string GetWindows(int session_id)
+        {
+            if (session_id == 0)
+            {
+                return @"\Windows";
+            }
+            else
+            {
+                return string.Format(@"\Sessions\{0}\Windows", session_id);
+            }
+        }
+
+        /// <summary>
+        /// Get the current session's Windows object directory.
+        /// </summary>
+        /// <returns>The path to the windows object directory.</returns>
+        public static string GetWindows()
+        {
+            return GetWindows(NtProcess.Current.SessionId);
+        }
+
+        /// <summary>
+        /// Get the a session's Window Stations object directory.
+        /// </summary>
+        /// <param name="session_id">The session id to use.</param>
+        /// <returns>The path to the window stations object directory.</returns>
+        public static string GetWindowStations(int session_id)
+        {
+            return string.Format(@"{0}\WindowStations", GetWindows(session_id));
+        }
+
+        /// <summary>
+        /// Get the current session's Window Stations object directory.
+        /// </summary>
+        /// <returns>The path to the window stations object directory.</returns>
+        public static string GetWindowStations()
+        {
+            return GetWindowStations(NtProcess.Current.SessionId);
         }
 
         /// <summary>
