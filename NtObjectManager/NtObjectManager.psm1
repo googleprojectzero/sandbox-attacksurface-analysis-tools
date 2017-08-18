@@ -319,7 +319,51 @@ function Get-NtLicenseValue
 	[NtApiDotNet.NtKey]::QueryLicenseValue($Name)
 }
 
-function New-ProcessCreateConfig
+<#
+.SYNOPSIS
+Create a new Win32 process configuration.
+.DESCRIPTION
+This cmdlet creates a new Win32 process configuration which you can then pass to New-Win32Process.
+.PARAMETER CommandLine
+The command line of the process to create.
+.PARAMETER ApplicationName
+Optional path to the application executable.
+.PARAMETER ProcessSecurityDescriptor
+Optional security descriptor for the process.
+.PARAMETER ThreadSecurityDescriptor
+Optional security descriptor for the initial thread.
+.PARAMETER ParentProess
+Optional process to act as the parent, needs CreateProcess access to succeed.
+.PARAMETER CreationFlags
+Flags to affect process creation.
+.PARAMETER TerminateOnDispose
+Specify switch to terminate the process when the Win32Process object is disposed.
+.PARAMETER Environment
+Optional environment block for the new process.
+.PARAMETER CurrentDirectory
+Optional current directory for the new process.
+.PARAMETER Desktop
+Optional desktop for the new process.
+.PARAMETER $Title
+Optional title for the new process.
+.PARAMETER InheritHandles
+Switch to specify whether to inherit handles into new process.
+.PARAMETER InheritProcessHandle
+Switch to specify whether the process handle is inheritable
+.PARAMETER InheritThreadHandle
+Switch to specify whether the thread handle is inheritable.
+.PARAMETER MitigationOptions
+Specify optional mitigation options.
+.PARAMETER Win32kFilterFlags
+Specify filter flags for Win32k filter
+.PARAMETER Win32kFilterLevel
+Specify the filter level for the Win32k filter.
+.INPUTS
+None
+.OUTPUTS
+SandboxAnalysisUtils.Win32ProcessConfig
+#>
+function New-Win32ProcessConfig
 {
     Param(
         [Parameter(Mandatory=$true, Position=0)]
@@ -337,10 +381,11 @@ function New-ProcessCreateConfig
 		[string]$Title,
 		[bool]$InheritHandles,
 		[bool]$InheritProcessHandle,
-		[bool]$InheritThreadHandle
-
+		[bool]$InheritThreadHandle,
+		[SandboxAnalysisUtils.Win32kFilterFlags]$Win32kFilterFlags = 0,
+		[int]$Win32kFilterLevel = 0
     )
-    $config = New-Object SandboxAnalysisUtils.ProcessCreateConfiguration
+    $config = New-Object SandboxAnalysisUtils.Win32ProcessConfig
     $config.CommandLine = $CommandLine
 	if (-not [string]::IsNullOrEmpty($ApplicationName))
 	{
@@ -368,6 +413,8 @@ function New-ProcessCreateConfig
 	$config.InheritProcessHandle = $InheritProcessHandle
 	$config.InheritThreadHandle = $InheritThreadHandle
 	$config.MitigationOptions = $MitigationOptions
+	$config.Win32kFilterFlags = $Win32kFilterFlags
+	$config.Win32kFilterLevel = $Win32kFilterLevel
     return $config
 }
 
@@ -413,33 +460,52 @@ SandboxAnalysisUtils.Win32Process
 #>
 function New-Win32Process
 {
+	[CmdletBinding(DefaultParameterSetName = "FromArgs")]
     Param(
-        [Parameter(Mandatory=$true, Position=0)]
+        [Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromArgs")]
         [string]$CommandLine,
+		[Parameter(ParameterSetName = "FromArgs")]
 		[string]$ApplicationName,
+		[Parameter(ParameterSetName = "FromArgs")]
         [NtApiDotNet.SecurityDescriptor]$ProcessSecurityDescriptor,
+		[Parameter(ParameterSetName = "FromArgs")]
 		[NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
+		[Parameter(ParameterSetName = "FromArgs")]
 		[NtApiDotNet.NtProcess]$ParentProcess,
+		[Parameter(ParameterSetName = "FromArgs")]
 		[SandboxAnalysisUtils.CreateProcessFlags]$CreationFlags = 0,
+		[Parameter(ParameterSetName = "FromArgs")]
 		[SandboxAnalysisUtils.ProcessMitigationOptions]$MitigationOptions = 0,
+		[Parameter(ParameterSetName = "FromArgs")]
 		[switch]$TerminateOnDispose,
+		[Parameter(ParameterSetName = "FromArgs")]
 		[byte[]]$Environment,
+		[Parameter(ParameterSetName = "FromArgs")]
 		[string]$CurrentDirectory,
+		[Parameter(ParameterSetName = "FromArgs")]
 		[string]$Desktop,
+		[Parameter(ParameterSetName = "FromArgs")]
 		[string]$Title,
+		[Parameter(ParameterSetName = "FromArgs")]
 		[switch]$InheritHandles,
+		[Parameter(ParameterSetName = "FromArgs")]
 		[switch]$InheritProcessHandle,
-		[switch]$InheritThreadHandle
+		[Parameter(ParameterSetName = "FromArgs")]
+		[switch]$InheritThreadHandle,
+		[Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromConfig")]
+		[SandboxAnalysisUtils.Win32ProcessConfig]$Config
     )
 
-	$config = New-ProcessCreateConfig $CommandLine -ApplicationName $ApplicationName `
+	if ($null -eq $Config) {
+		$Config = New-Win32ProcessConfig $CommandLine -ApplicationName $ApplicationName `
 		-ProcessSecurityDescriptor $ProcessSecurityDescriptor -ThreadSecurityDescriptor $ThreadSecurityDescriptor `
 		-ParentProcess $ParentProcess -CreationFlags $CreationFlags -TerminateOnDispose $TerminateOnDispose `
 		-Environment $Environment -CurrentDirectory $CurrentDirectory -Desktop $Desktop -Title $Title `
 		-InheritHandles $InheritHandles -InheritProcessHandle $InheritProcessHandle -InheritThreadHandle $InheritThreadHandle `
 		-MitigationOptions $MitigationOptions
+	}
 
-    [SandboxAnalysisUtils.Win32Process]::CreateProcess($config)
+    [SandboxAnalysisUtils.Win32Process]::CreateProcess($Config)
 }
 
 <#
