@@ -22,18 +22,19 @@ namespace NtApiDotNet
 #pragma warning disable 1591
     [Flags]
     public enum ThreadAccessRights : uint
-    {        
-        DirectImpersonation = 0x0200,
+    {
+        Terminate = 0x0001,
+        SuspendResume = 0x0002,
+        Alert = 0x0004,
         GetContext = 0x0008,
-        Impersonate = 0x0100,
-        QueryInformation = 0x0040,
-        QueryLimitedInformation = 0x0800,        
         SetContext = 0x0010,
         SetInformation = 0x0020,
-        SetLimitedInformation = 0x0400,         
+        QueryInformation = 0x0040,
         SetThreadToken = 0x0080,
-        SuspendResume = 0x0002,
-        Terminate = 0x0001,
+        Impersonate = 0x0100,
+        DirectImpersonation = 0x0200,
+        SetLimitedInformation = 0x0400,
+        QueryLimitedInformation = 0x0800,        
         GenericRead = GenericAccessRights.GenericRead,
         GenericWrite = GenericAccessRights.GenericWrite,
         GenericExecute = GenericAccessRights.GenericExecute,
@@ -101,6 +102,298 @@ namespace NtApiDotNet
         public int BasePriority;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct M128A
+    {
+        public ulong Low;
+        public long  High;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct X86_FLOATING_SAVE_AREA
+    {
+        public uint ControlWord;
+        public uint StatusWord;
+        public uint TagWord;
+        public uint ErrorOffset;
+        public uint ErrorSelector;
+        public uint DataOffset;
+        public uint DataSelector;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 80)]
+        public byte[] RegisterArea;
+        public uint Spare0;
+    }
+
+    public interface IContext
+    {
+        ContextFlags ContextFlags
+        {
+            get; set;
+        }
+
+        ulong InstructionPointer { get; }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class ContextX86 : IContext
+    {
+        //
+        // The flags values within this flag control the contents of
+        // a CONTEXT record.
+        //
+        // If the context record is used as an input parameter, then
+        // for each portion of the context record controlled by a flag
+        // whose value is set, it is assumed that that portion of the
+        // context record contains valid context. If the context record
+        // is being used to modify a threads context, then only that
+        // portion of the threads context will be modified.
+        //
+        // If the context record is used as an IN OUT parameter to capture
+        // the context of a thread, then only those portions of the thread's
+        // context corresponding to set flags will be returned.
+        //
+        // The context record is never used as an OUT only parameter.
+        //
+        private ContextFlags _ContextFlags;
+
+        public ContextFlags ContextFlags
+        {
+            get
+            {
+                return _ContextFlags & ~ContextFlags.X86;
+            }
+            set
+            {
+                _ContextFlags = value | ContextFlags.X86;
+            }
+        }
+
+        public ulong InstructionPointer
+        {
+            get
+            {
+                return Eip;
+            }
+        }
+
+        //
+        // This section is specified/returned if CONTEXT_DEBUG_REGISTERS is
+        // set in ContextFlags.  Note that CONTEXT_DEBUG_REGISTERS is NOT
+        // included in CONTEXT_FULL.
+        //
+
+        public uint Dr0;
+        public uint Dr1;
+        public uint Dr2;
+        public uint Dr3;
+        public uint Dr6;
+        public uint Dr7;
+
+        //
+        // This section is specified/returned if the
+        // ContextFlags word contians the flag CONTEXT_FLOATING_POINT.
+        //
+
+        public X86_FLOATING_SAVE_AREA FloatSave;
+
+        //
+        // This section is specified/returned if the
+        // ContextFlags word contians the flag CONTEXT_SEGMENTS.
+        //
+
+        public uint SegGs;
+        public uint SegFs;
+        public uint SegEs;
+        public uint SegDs;
+
+        //
+        // This section is specified/returned if the
+        // ContextFlags word contians the flag CONTEXT_INTEGER.
+        //
+
+        public uint Edi;
+        public uint Esi;
+        public uint Ebx;
+        public uint Edx;
+        public uint Ecx;
+        public uint Eax;
+
+        //
+        // This section is specified/returned if the
+        // ContextFlags word contians the flag CONTEXT_CONTROL.
+        //
+
+        public uint Ebp;
+        public uint Eip;
+        public uint SegCs;              // MUST BE SANITIZED
+        public uint EFlags;             // MUST BE SANITIZED
+        public uint Esp;
+        public uint SegSs;
+
+        //
+        // This section is specified/returned if the ContextFlags word
+        // contains the flag CONTEXT_EXTENDED_REGISTERS.
+        // The format and contexts are processor specific
+        //
+
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 512)]
+        public byte[] ExtendedRegisters = new byte[512];
+
+        public ContextX86()
+        {
+            FloatSave.RegisterArea = new byte[80];
+        }
+    }
+
+    [Flags]
+    public enum ContextFlags : uint
+    {
+        X86 = 0x00010000,
+        Amd64 = 0x00100000,
+        Control = 0x00000001,
+        Integer =  0x00000002,
+        Segments = 0x00000004,
+        FloatingPoint = 0x00000008,
+        DebugRegisters = 0x00000010,
+        Full = Control | Integer | FloatingPoint,
+        All = Control | Integer | Segments | FloatingPoint | DebugRegisters,
+        XState = 0x00000040,
+        ExceptionActive = 0x08000000,
+        ServiceActive = 0x10000000,
+        ExceptionRequest = 0x40000000,
+        ExceptionReporting = 0x80000000,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class ContextAmd64 : IContext {
+        public ulong P1Home;
+        public ulong P2Home;
+        public ulong P3Home;
+        public ulong P4Home;
+        public ulong P5Home;
+        public ulong P6Home;
+
+        //
+        // Control flags.
+        //
+
+        private ContextFlags _ContextFlags;
+
+        public ContextFlags ContextFlags
+        {
+            get
+            {
+                return _ContextFlags & ~ContextFlags.Amd64;
+            }
+            set
+            {
+                _ContextFlags = value | ContextFlags.Amd64;
+            }
+        }
+
+        public ulong InstructionPointer
+        {
+            get
+            {
+                return Rip;
+            }
+        }
+
+        public uint MxCsr;
+
+        //
+        // Segment Registers and processor flags.
+        //
+
+        public ushort SegCs;
+        public ushort SegDs;
+        public ushort SegEs;
+        public ushort SegFs;
+        public ushort SegGs;
+        public ushort SegSs;
+        public uint EFlags;
+
+        //
+        // Debug registers
+        //
+
+        public ulong Dr0;
+        public ulong Dr1;
+        public ulong Dr2;
+        public ulong Dr3;
+        public ulong Dr6;
+        public ulong Dr7;
+
+        //
+        // Integer registers.
+        //
+
+        public ulong Rax;
+        public ulong Rcx;
+        public ulong Rdx;
+        public ulong Rbx;
+        public ulong Rsp;
+        public ulong Rbp;
+        public ulong Rsi;
+        public ulong Rdi;
+        public ulong R8;
+        public ulong R9;
+        public ulong R10;
+        public ulong R11;
+        public ulong R12;
+        public ulong R13;
+        public ulong R14;
+        public ulong R15;
+
+        //
+        // Program counter.
+        //
+
+        public ulong Rip;
+
+        //
+        // Floating point state.
+        //
+
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
+        public M128A[] Header = new M128A[2];
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
+        public M128A[] Legacy = new M128A[8];
+        public M128A Xmm0;
+        public M128A Xmm1;
+        public M128A Xmm2;
+        public M128A Xmm3;
+        public M128A Xmm4;
+        public M128A Xmm5;
+        public M128A Xmm6;
+        public M128A Xmm7;
+        public M128A Xmm8;
+        public M128A Xmm9;
+        public M128A Xmm10;
+        public M128A Xmm11;
+        public M128A Xmm12;
+        public M128A Xmm13;
+        public M128A Xmm14;
+        public M128A Xmm15;
+
+        //
+        // Vector registers.
+        //
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 26)]
+        public M128A[] VectorRegister = new M128A[26];
+        public ulong VectorControl;
+
+        //
+        // Special debug control registers.
+        //
+
+        public ulong DebugControl;
+        public ulong LastBranchToRip;
+        public ulong LastBranchFromRip;
+        public ulong LastExceptionToRip;
+        public ulong LastExceptionFromRip;
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
@@ -157,6 +450,41 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlertThread(SafeKernelObjectHandle ThreadHandle);
+
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAlertResumeThread(
+                SafeKernelObjectHandle ThreadHandle,
+                [Out] OptionalInt32 PreviousSuspendCount
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQueueApcThread(
+             SafeKernelObjectHandle ThreadHandle,
+             IntPtr ApcRoutine,
+             IntPtr ApcArgument1,
+             IntPtr ApcArgument2,
+             IntPtr ApcArgument3
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQueueApcThreadEx(
+            SafeKernelObjectHandle ThreadHandle,
+            SafeKernelObjectHandle UserApcReserveHandle,
+            IntPtr ApcRoutine,
+            IntPtr ApcArgument1,
+            IntPtr ApcArgument2,
+            IntPtr ApcArgument3);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtGetContextThread(
+            SafeKernelObjectHandle ThreadHandle,
+            SafeBuffer ThreadContext);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSetContextThread(
+            SafeKernelObjectHandle ThreadHandle,
+            SafeBuffer ThreadContext);
     }
 #pragma warning restore 1591
 
@@ -408,6 +736,17 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Wake the thread from an alertable state and resume the thread.
+        /// </summary>
+        /// <returns>The previous suspend count for the thread.</returns>
+        public int AlertResume()
+        {
+            OptionalInt32 suspend_count = new OptionalInt32();
+            NtSystemCalls.NtAlertResumeThread(Handle, suspend_count).ToNtException();
+            return suspend_count.Value;
+        }
+
+        /// <summary>
         /// Hide the thread from debug events.
         /// </summary>
         public void HideFromDebugger()
@@ -488,6 +827,18 @@ namespace NtApiDotNet
         public NtToken OpenToken()
         {
             return NtToken.OpenThreadToken(this);
+        }
+
+        /// <summary>
+        /// Queue a user APC to the thread.
+        /// </summary>
+        /// <param name="apc_routine">The APC callback pointer.</param>
+        /// <param name="arg1">Argument 0</param>
+        /// <param name="arg2">Argument 1</param>
+        /// <param name="arg3">Argument 2</param>
+        public void QueueUserApc(IntPtr apc_routine, IntPtr arg1, IntPtr arg2, IntPtr arg3)
+        {
+            NtSystemCalls.NtQueueApcThread(Handle, apc_routine, arg1, arg2, arg3).ToNtException();
         }
 
         /// <summary>
@@ -609,6 +960,59 @@ namespace NtApiDotNet
                 return new NtThread(new_handle);
             }
             return null;
+        }
+
+        private IContext GetX86Context(ContextFlags flags)
+        {
+            var context = new ContextX86();
+            context.ContextFlags = flags;
+
+            using (var buffer = context.ToBuffer())
+            {
+                NtSystemCalls.NtGetContextThread(Handle, buffer).ToNtException();
+                return buffer.Result;
+            }
+        }
+
+        private IContext GetAmd64Context(ContextFlags flags)
+        {
+            var context = new ContextAmd64();
+            context.ContextFlags = flags;
+
+            // Buffer needs to be 16 bytes aligned, so allocate some extract space in case.
+            using (var buffer = new SafeHGlobalBuffer(Marshal.SizeOf(context) + 16))
+            {
+                int write_ofs = 0;
+                long ptr = buffer.DangerousGetHandle().ToInt64();
+                // Almost certainly 8 byte aligned, but just in case.
+                if ((ptr & 0xF) != 0)
+                {
+                    write_ofs = (int)(0x10 - (ptr & 0xF));
+                }
+
+                Marshal.StructureToPtr(context, buffer.DangerousGetHandle() + write_ofs, false);
+                var sbuffer = buffer.GetStructAtOffset<ContextAmd64>(write_ofs);
+                NtSystemCalls.NtGetContextThread(Handle, sbuffer).ToNtException();
+                return sbuffer.Result;
+            }
+        }
+
+        /// <summary>
+        /// Get the thread context.
+        /// </summary>
+        /// <param name="flags">Flags for context parts to get.</param>
+        /// <returns>An instance of an IContext object. Needs to be cast to correct type to access.</returns>
+        public IContext GetContext(ContextFlags flags)
+        {
+            // Really needs to support ARM as well.
+            if (Environment.Is64BitProcess)
+            {
+                return GetAmd64Context(flags);
+            }
+            else
+            {
+                return GetX86Context(flags);
+            }
         }
 
         /// <summary>

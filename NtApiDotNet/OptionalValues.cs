@@ -138,4 +138,41 @@ namespace NtApiDotNet
             return new OptionalLength(length);
         }
     }
+
+    /// <summary>
+    /// This class allows a function to specify an optional int32.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public class OptionalPointer
+    {
+        /// <summary>
+        /// Optional length
+        /// </summary>
+        public IntPtr Value;
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="value">The value</param>
+        public OptionalPointer(IntPtr value)
+        {
+            Value = value;
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public OptionalPointer() : this(IntPtr.Zero)
+        {
+        }
+
+        /// <summary>
+        /// Implicit conversion
+        /// </summary>
+        /// <param name="value">The value</param>
+        public static implicit operator OptionalPointer(IntPtr value)
+        {
+            return new OptionalPointer(value);
+        }
+    }
 }

@@ -49,6 +49,21 @@ namespace SandboxAnalysisUtils
         NetCredentialsOnly = 2,
     }
 
+    [Flags]
+    public enum Win32kFilterFlags
+    {
+        None = 0,
+        Enable = 1,
+        Audit = 2,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Win32kFilterAttribute
+    {
+        public Win32kFilterFlags Flags;
+        public int FilterLevel;
+    }
+
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     struct STARTUPINFO
     {
@@ -172,6 +187,22 @@ namespace SandboxAnalysisUtils
             get
             {
                 return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeChildProcessPolicy, false, true, false);
+            }
+        }
+
+        public static IntPtr ProcThreadAttributeWin32kFilter
+        {
+            get
+            {
+                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeWin32kFilter, false, true, false);
+            }
+        }
+
+        public static IntPtr ProcThreadAttributeAllApplicationPackagesPolicy
+        {
+            get
+            {
+                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeAllApplicationPackagesPolicy, false, true, false);
             }
         }
     }
@@ -304,7 +335,7 @@ namespace SandboxAnalysisUtils
         StrictControlFlowGuardAlwaysOff = (0x00000002UL << 8)
     }
 
-    public class ProcessCreateConfiguration
+    public class Win32ProcessConfig
     {
         public SecurityDescriptor ProcessSecurityDescriptor { get; set; }
         public bool InheritProcessHandle { get; set; }
@@ -322,6 +353,8 @@ namespace SandboxAnalysisUtils
         public bool TerminateOnDispose { get; set; }
         public ProcessMitigationOptions MitigationOptions { get; set; }
         public ProcessMitigationOptions2 MitigationOptions2 { get; set; }
+        public Win32kFilterFlags Win32kFilterFlags { get; set; }
+        public int Win32kFilterLevel { get; set; }
 
         private void PopulateStartupInfo(ref STARTUPINFO start_info)
         {
@@ -349,6 +382,12 @@ namespace SandboxAnalysisUtils
             {
                 count++;
             }
+
+            if (Win32kFilterFlags != Win32kFilterFlags.None)
+            {
+                count++;
+            }
+
             return count;
         }
 
@@ -379,6 +418,15 @@ namespace SandboxAnalysisUtils
             {
                 attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeMitigationPolicy, (ulong)MitigationOptions);
             }
+
+            if (Win32kFilterFlags != Win32kFilterFlags.None)
+            {
+                Win32kFilterAttribute filter = new Win32kFilterAttribute();
+                filter.Flags = Win32kFilterFlags;
+                filter.FilterLevel = Win32kFilterLevel;
+                attr_list.AddAttributeBuffer(ProcessAttributes.ProcThreadAttributeWin32kFilter, resources.AddResource(filter.ToBuffer()));
+            }
+
             return attr_list;
         }
 
@@ -483,7 +531,7 @@ namespace SandboxAnalysisUtils
           ref STARTUPINFO lpStartupInfo,
           out PROCESS_INFORMATION lpProcessInformation);
 
-        public static Win32Process CreateProcessAsUser(NtToken token, ProcessCreateConfiguration config)
+        public static Win32Process CreateProcessAsUser(NtToken token, Win32ProcessConfig config)
         {
             using (var resources = new DisposableList<IDisposable>())
             {
@@ -511,7 +559,7 @@ namespace SandboxAnalysisUtils
 
         public static Win32Process CreateProcessAsUser(NtToken token, string application_name, string command_line, CreateProcessFlags flags, string desktop)
         {
-            ProcessCreateConfiguration config = new ProcessCreateConfiguration();
+            Win32ProcessConfig config = new Win32ProcessConfig();
             config.ApplicationName = application_name;
             config.CommandLine = command_line;
             config.CreationFlags = flags;
@@ -521,7 +569,7 @@ namespace SandboxAnalysisUtils
         }
 
         public static Win32Process CreateProcessWithLogin(string username, string domain, string password, 
-            CreateProcessLogonFlags logon_flags, ProcessCreateConfiguration config)
+            CreateProcessLogonFlags logon_flags, Win32ProcessConfig config)
         {
             STARTUPINFO start_info = config.ToStartupInfo();
             PROCESS_INFORMATION proc_info = new PROCESS_INFORMATION();
@@ -539,7 +587,7 @@ namespace SandboxAnalysisUtils
         public static Win32Process CreateProcessWithLogin(string username, string domain, string password, CreateProcessLogonFlags logon_flags,
             string application_name, string command_line, CreateProcessFlags flags, string desktop)
         {
-            ProcessCreateConfiguration config = new ProcessCreateConfiguration();
+            Win32ProcessConfig config = new Win32ProcessConfig();
             config.ApplicationName = application_name;
             config.CommandLine = command_line;
             config.CreationFlags = flags;
@@ -547,7 +595,7 @@ namespace SandboxAnalysisUtils
             return CreateProcessWithLogin(username, domain, password, logon_flags, config);
         }
 
-        public static Win32Process CreateProcess(ProcessCreateConfiguration config)
+        public static Win32Process CreateProcess(Win32ProcessConfig config)
         {
             PROCESS_INFORMATION proc_info = new PROCESS_INFORMATION();
 
@@ -569,7 +617,7 @@ namespace SandboxAnalysisUtils
 
         public static Win32Process CreateProcess(NtProcess parent, string application_name, string command_line, CreateProcessFlags flags, string desktop)
         {
-            ProcessCreateConfiguration config = new ProcessCreateConfiguration();
+            Win32ProcessConfig config = new Win32ProcessConfig();
             config.ParentProcess = parent;
             config.ApplicationName = application_name;
             config.CommandLine = command_line;

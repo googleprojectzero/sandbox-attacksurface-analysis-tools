@@ -78,7 +78,7 @@ namespace SandboxAnalysisUtils
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    struct QUOTA_LIMITS
+    class QUOTA_LIMITS
     {
         public IntPtr PagedPoolLimit;
         public IntPtr NonPagedPoolLimit;
@@ -90,7 +90,7 @@ namespace SandboxAnalysisUtils
 
     public enum SecurityLogonType
     {
-        UndefinedLogonType = 0, // This is used to specify an undefied logon type
+        UndefinedLogonType = 0, // This is used to specify an undefined logon type
         Interactive = 2,      // Interactively logged on (locally or remotely)
         Network,              // Accessing system via network
         Batch,                // Started via a batch queue
@@ -137,7 +137,7 @@ namespace SandboxAnalysisUtils
             out int ProfileBufferLength,
             out Luid LogonId,
             out SafeKernelObjectHandle Token,
-            out QUOTA_LIMITS Quotas,
+            QUOTA_LIMITS Quotas,
             out NtStatus SubStatus
         );
 
@@ -150,6 +150,21 @@ namespace SandboxAnalysisUtils
         [DllImport("Advapi32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
         static extern bool LogonUser(string lpszUsername, string lpszDomain, string lpszPassword, SecurityLogonType dwLogonType,
             int dwLogonProvider, out SafeKernelObjectHandle phToken);
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern bool LogonUserExExW(
+              string lpszUsername,
+              string lpszDomain,
+              string lpszPassword,
+              SecurityLogonType dwLogonType,
+              int dwLogonProvider,
+              TokenGroups pTokenGroups,
+              out SafeKernelObjectHandle phToken,
+              [Out] OptionalPointer ppLogonSid,
+              [Out] OptionalPointer ppProfileBuffer,
+              [Out] OptionalPointer pdwProfileLength,
+              [Out] QUOTA_LIMITS pQuotaLimits
+            );
 
         public static NtToken Logon(string user, string domain, string password, SecurityLogonType type)
         {
@@ -200,13 +215,13 @@ namespace SandboxAnalysisUtils
                     int cbProfile;
                     Luid logon_id;
                     NtStatus subStatus;
-                    QUOTA_LIMITS quota_limits;
+                    QUOTA_LIMITS quota_limits = new QUOTA_LIMITS();
                     SafeKernelObjectHandle token_handle;
 
                     LsaLogonUser(hlsa, originName, type, authnPkg,
                         buffer, buffer.Length, IntPtr.Zero,
                         tokenSource, out profile, out cbProfile, out logon_id, out token_handle,
-                        out quota_limits, out subStatus).ToNtException();
+                        quota_limits, out subStatus).ToNtException();
                     LsaFreeReturnBuffer(profile);
                     return NtToken.FromHandle(token_handle);
                 }
