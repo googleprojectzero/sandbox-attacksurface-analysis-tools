@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -680,6 +681,12 @@ namespace NtApiDotNet
     public class FileEndOfFileInformation
     {
         public LargeIntegerStruct EndOfFile;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class FileValidDataLengthInformation
+    {
+        public LargeIntegerStruct ValidDataLength;
     }
 
     public enum FileControlMethod
@@ -1487,6 +1494,38 @@ namespace NtApiDotNet
         }
     }
 
+    [StructLayout(LayoutKind.Sequential), DataStart("StreamName")]
+    public struct FileStreamInformation
+    {
+        public int NextEntryOffset;
+        public int StreamNameLength;
+        public LargeIntegerStruct StreamSize;
+        public LargeIntegerStruct StreamAllocationSize;
+        public char StreamName;
+    }
+
+    public class FileStreamEntry
+    {
+        public long Size { get; private set; }
+        public long AllocationSize { get; private set; }
+        public string Name { get; private set; }
+
+        internal FileStreamEntry(SafeStructureInOutBuffer<FileStreamInformation> stream)
+        {
+            var result = stream.Result;
+            Size = result.StreamSize.QuadPart;
+            AllocationSize = result.StreamAllocationSize.QuadPart;
+            Name = stream.Data.ReadUnicodeString(result.StreamNameLength / 2);
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("ProcessIdList")]
+    public struct FileProcessIdsUsingFileInformation
+    {
+        public int NumberOfProcessIdsInList;
+        public IntPtr ProcessIdList;
+    }
+
 #pragma warning restore 1591
 
     /// <summary>
@@ -2066,12 +2105,8 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var internal_info = new SafeStructureInOutBuffer<FileInternalInformation>())
-                {
-                    IoStatus iostatus = new IoStatus();
-                    NtSystemCalls.NtQueryInformationFile(Handle, iostatus, internal_info, internal_info.Length, FileInformationClass.FileInternalInformation).ToNtException();
-                    return Encoding.Unicode.GetString(BitConverter.GetBytes(internal_info.Result.IndexNumber.QuadPart));
-                }
+                var internal_info = QueryFileFixed<FileInternalInformation>(FileInformationClass.FileInternalInformation);
+                return NtFileUtils.FileIdToString(internal_info.IndexNumber.QuadPart);
             }
         }
         
@@ -2084,12 +2119,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var basic_info = new SafeStructureInOutBuffer<FileBasicInformation>())
-                {
-                    IoStatus iostatus = new IoStatus();
-                    NtSystemCalls.NtQueryInformationFile(Handle, iostatus, basic_info, basic_info.Length, FileInformationClass.FileBasicInformation).ToNtException();
-                    return basic_info.Result.FileAttributes;
-                }
+                return QueryFileFixed<FileBasicInformation>(FileInformationClass.FileBasicInformation).FileAttributes;
             }
         }
 
@@ -2182,12 +2212,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public void Delete()
         {
-            IoStatus iostatus = new IoStatus();
-            using (var deletefile = new FileDispositionInformation() { DeleteFile = true }.ToBuffer())
-            {
-                NtSystemCalls.NtSetInformationFile(Handle, iostatus, deletefile,
-                    deletefile.Length, FileInformationClass.FileDispositionInformation).ToNtException();
-            }
+            SetFileFixed(new FileDispositionInformation() { DeleteFile = true }, FileInformationClass.FileDispositionInformation);
         }
 
         /// <summary>
@@ -2706,39 +2731,31 @@ namespace NtApiDotNet
         {
             get
             {
-                IoStatus io_status = new IoStatus();
-                using (var buffer = new SafeStructureInOutBuffer<FilePositionInformation>())
-                {
-                    NtSystemCalls.NtQueryInformationFile(Handle, io_status, buffer, buffer.Length, FileInformationClass.FilePositionInformation).ToNtException();
-                    return buffer.Result.CurrentByteOffset.QuadPart;
-                }
+                return QueryFileFixed<FilePositionInformation>(FileInformationClass.FilePositionInformation).CurrentByteOffset.QuadPart;
             }
 
             set
             {
-                IoStatus io_status = new IoStatus();
-                FilePositionInformation position = new FilePositionInformation();
+                var position = new FilePositionInformation();
                 position.CurrentByteOffset.QuadPart = value;
-                using (var buffer = new SafeStructureInOutBuffer<FilePositionInformation>(position))
-                {
-                    NtSystemCalls.NtSetInformationFile(Handle, io_status, buffer, buffer.Length, FileInformationClass.FilePositionInformation).ToNtException();
-                }
+
+                SetFileFixed(position, FileInformationClass.FilePositionInformation);
             }
         }
 
         /// <summary>
-        /// Get the file's length
+        /// Get or sets the file's length
         /// </summary>
         public long Length
         {
             get
             {
-                IoStatus io_status = new IoStatus();
-                using (var buffer = new SafeStructureInOutBuffer<FileStandardInformation>())
-                {
-                    NtSystemCalls.NtQueryInformationFile(Handle, io_status, buffer, buffer.Length, FileInformationClass.FileStandardInformation).ToNtException();
-                    return buffer.Result.EndOfFile.QuadPart;
-                }
+                return QueryFileFixed<FileStandardInformation>(FileInformationClass.FileStandardInformation).EndOfFile.QuadPart;
+            }
+
+            set
+            {
+                SetEndOfFile(value);
             }
         }
 
@@ -2828,6 +2845,38 @@ namespace NtApiDotNet
             }
         }
 
+        private T QueryVolumeFixed<T>(FsInformationClass info_class) where T : new()
+        {
+            using (var buffer = new SafeStructureInOutBuffer<T>())
+            {
+                IoStatus status = new IoStatus();
+                NtSystemCalls.NtQueryVolumeInformationFile(Handle, status, buffer,
+                    buffer.Length, info_class).ToNtException();
+                return buffer.Result;
+            }
+        }
+
+        private T QueryFileFixed<T>(FileInformationClass info_class) where T : new()
+        {
+            using (var buffer = new SafeStructureInOutBuffer<T>())
+            {
+                IoStatus status = new IoStatus();
+                NtSystemCalls.NtQueryInformationFile(Handle, status, buffer,
+                    buffer.Length, info_class).ToNtException();
+                return buffer.Result;
+            }
+        }
+
+        private void SetFileFixed<T>(T value, FileInformationClass info_class) where T : new()
+        {
+            using (var buffer = value.ToBuffer())
+            {
+                IoStatus io_status = new IoStatus();
+                NtSystemCalls.NtSetInformationFile(Handle, io_status, 
+                    buffer, buffer.Length, info_class).ToNtException();
+            }
+        }
+
         /// <summary>
         /// Get the low-level device type of the file.
         /// </summary>
@@ -2836,13 +2885,20 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var file_info = new SafeStructureInOutBuffer<FileFsDeviceInformation>())
-                {
-                    IoStatus status = new IoStatus();
-                    NtSystemCalls.NtQueryVolumeInformationFile(Handle, status, file_info,
-                        file_info.Length, FsInformationClass.FileFsDeviceInformation).ToNtException();
-                    return file_info.Result.DeviceType;
-                }
+                return QueryVolumeFixed<FileFsDeviceInformation>(FsInformationClass.FileFsDeviceInformation).DeviceType;
+            }
+        }
+
+
+        /// <summary>
+        /// Get the low-level device characteristics of the file.
+        /// </summary>
+        /// <returns>The file device characteristics.</returns>
+        public uint Characteristics
+        {
+            get
+            {
+                return QueryVolumeFixed<FileFsDeviceInformation>(FsInformationClass.FileFsDeviceInformation).Characteristics;
             }
         }
 
@@ -3063,12 +3119,8 @@ namespace NtApiDotNet
             FileCompletionInformation info = new FileCompletionInformation();
             info.CompletionPort = completion_port.Handle.DangerousGetHandle();
             info.Key = key;
-            using (var buffer = info.ToBuffer())
-            {
-                IoStatus io_status = new IoStatus();
-                NtSystemCalls.NtSetInformationFile(Handle, io_status,
-                    buffer, buffer.Length, FileInformationClass.FileCompletionInformation).ToNtException();
-            }
+
+            SetFileFixed(info, FileInformationClass.FileCompletionInformation);
         }
 
         /// <summary>
@@ -3107,16 +3159,21 @@ namespace NtApiDotNet
         /// <param name="offset">The offset to the end of file.</param>
         public void SetEndOfFile(long offset)
         {
-            IoStatus status = new IoStatus();
             FileEndOfFileInformation eof = new FileEndOfFileInformation();
             eof.EndOfFile.QuadPart = offset;
+            SetFileFixed(eof, FileInformationClass.FileEndOfFileInformation);
+        }
 
-            using (var buffer = eof.ToBuffer())
-            {
-                NtSystemCalls.NtSetInformationFile(Handle, status, buffer,
-                    buffer.Length, FileInformationClass.FileEndOfFileInformation).ToNtException();
-            }
-        }        
+        /// <summary>
+        /// Set the valid data length of the file without zeroing. Needs SeManageVolumePrivilege.
+        /// </summary>
+        /// <param name="length">The length to set.</param>
+        public void SetValidDataLength(long length)
+        {
+            FileValidDataLengthInformation data_length = new FileValidDataLengthInformation();
+            data_length.ValidDataLength.QuadPart = length;
+            SetFileFixed(data_length, FileInformationClass.FileValidDataLengthInformation);
+        }
 
         /// <summary>
         /// Get list of hard link entries for a file.
@@ -3151,7 +3208,7 @@ namespace NtApiDotNet
                         var entry = entry_buffer.Result;
                         string parent_path = String.Empty;
 
-                        using (var parent = OpenFileById(this, Encoding.Unicode.GetString(BitConverter.GetBytes(entry.ParentFileId)),
+                        using (var parent = OpenFileById(this, NtFileUtils.FileIdToString(entry.ParentFileId),
                             FileAccessRights.ReadAttributes, FileShareMode.None, FileOpenOptions.None, false))
                         {
                             if (parent.IsSuccess)
@@ -3170,7 +3227,93 @@ namespace NtApiDotNet
                     }
                     break;
                 }
-            }            
+            }   
+        }
+
+        /// <summary>
+        /// Get a list of stream entries for the current file.
+        /// </summary>
+        /// <returns>The list of streams.</returns>
+        public IEnumerable<FileStreamEntry> GetStreams()
+        {
+            bool done = false;
+            int size = 16 * 1024;
+            while (!done)
+            {
+                using (var buffer = new SafeHGlobalBuffer(size))
+                {
+                    IoStatus io_status = new IoStatus();
+                    NtStatus status = NtSystemCalls.NtQueryInformationFile(Handle, io_status,
+                        buffer, buffer.Length, FileInformationClass.FileStreamInformation);
+                    if (status == NtStatus.STATUS_BUFFER_OVERFLOW)
+                    {
+                        size *= 2;
+                        continue;
+                    }
+                    status.ToNtException();
+
+                    int ofs = 0;                    
+                    while (!done)
+                    {
+                        var stream = buffer.GetStructAtOffset<FileStreamInformation>(ofs);
+                        yield return new FileStreamEntry(stream);
+                        var result = stream.Result;
+                        ofs += result.NextEntryOffset;
+                        done = result.NextEntryOffset == 0;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get the file mode.
+        /// </summary>
+        public FileOpenOptions Mode
+        {
+            get
+            {
+                return (FileOpenOptions)QueryFileFixed<int>(FileInformationClass.FileModeInformation);
+            }
+        }
+
+        /// <summary>
+        /// Get file access information.
+        /// </summary>
+        public AccessMask Access
+        {
+            get
+            {
+                return QueryFileFixed<AccessMask>(FileInformationClass.FileAccessInformation);
+            }
+        }
+
+        /// <summary>
+        /// Get list of process ids using this file.
+        /// </summary>
+        /// <returns>The list of process ids.</returns>
+        public IEnumerable<int> GetUsingProcessIds()
+        {
+            using (var buffer = new SafeStructureInOutBuffer<FileProcessIdsUsingFileInformation>(8 * 1024, true))
+            {
+                IoStatus io_status = new IoStatus();
+                NtSystemCalls.NtQueryInformationFile(Handle, io_status,
+                    buffer, buffer.Length, FileInformationClass.FileProcessIdsUsingFileInformation).ToNtException();
+                var result = buffer.Result;
+                IntPtr[] pids = new IntPtr[result.NumberOfProcessIdsInList];
+                buffer.Data.ReadArray(0, pids, 0, result.NumberOfProcessIdsInList);
+                return pids.Select(p => p.ToInt32());
+            }
+        }
+
+        /// <summary>
+        /// Gets whether the file is on a remote file system.
+        /// </summary>
+        public bool IsRemote
+        {
+            get
+            {
+                return QueryFileFixed<bool>(FileInformationClass.FileIsRemoteDeviceInformation);
+            }
         }
     }
 
@@ -3267,6 +3410,16 @@ namespace NtApiDotNet
         public static FileAccessRights MapToFileAccess(this FileDirectoryAccessRights access_rights)
         {
             return (FileAccessRights)(uint)access_rights;
+        }
+
+        /// <summary>
+        /// Convert a file ID long to a string.
+        /// </summary>
+        /// <param name="fileid">The file ID to convert</param>
+        /// <returns>The string format of the file id.</returns>
+        public static string FileIdToString(long fileid)
+        {
+            return Encoding.Unicode.GetString(BitConverter.GetBytes(fileid));
         }
     }
 }
