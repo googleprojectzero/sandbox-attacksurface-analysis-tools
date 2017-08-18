@@ -495,9 +495,7 @@ function New-Win32Process
 		[Parameter(ParameterSetName = "FromArgs")]
 		[switch]$InheritThreadHandle,
 		[Parameter(ParameterSetName = "FromArgs")]
-		[NtApiDotNet.NtToken]$Token
-		[Parameter(ParameterSetName = "FromArgs")]
-		[switch]$InheritThreadHandle,
+		[NtApiDotNet.NtToken]$Token,
 		[Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromConfig")]
 		[SandboxAnalysisUtils.Win32ProcessConfig]$Config
     )
