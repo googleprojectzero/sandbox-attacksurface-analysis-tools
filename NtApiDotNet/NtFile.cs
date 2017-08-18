@@ -578,6 +578,18 @@ namespace NtApiDotNet
                 return (NtStatus)(uint)Pointer.ToUInt64();
             }
         }
+
+        /// <summary>
+        /// Return the status information field. (32 bit)
+        /// </summary>
+        /// <exception cref="NtException">Thrown if not complete.</exception>
+        internal int Information32
+        {
+            get
+            {
+                return Information.ToInt32();
+            }
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -1428,6 +1440,14 @@ namespace NtApiDotNet
             get
             {
                 return GetIoStatus().Status;
+            }
+        }
+
+        internal IoStatus Result
+        {
+            get
+            {
+                return GetIoStatus();
             }
         }
 
@@ -2624,24 +2644,11 @@ namespace NtApiDotNet
 
         private async Task<byte[]> ReadAsync(int length, LargeInteger position, CancellationToken token)
         {
-            using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(length))
             {
-                using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(length))
-                {
-                    using (NtFileResult result = new NtFileResult(this))
-                    {
-                        NtStatus status = await result.CompleteCallAsync(NtSystemCalls.NtReadFile(Handle, result.EventHandle, IntPtr.Zero,
-                            IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero),
-                            linked_cts.Token);
-                        if (status == NtStatus.STATUS_PENDING)
-                        {
-                            result.Cancel();
-                            throw new NtException(NtStatus.STATUS_CANCELLED);
-                        }
-                        status.ToNtException();
-                        return buffer.ReadBytes(result.Information32);
-                    }
-                }
+                IoStatus io_status = await RunFileCallAsync(result => NtSystemCalls.NtReadFile(Handle, result.EventHandle, IntPtr.Zero,
+                            IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero), token);
+                return buffer.ReadBytes(io_status.Information32);
             }
         }
 
@@ -2682,25 +2689,31 @@ namespace NtApiDotNet
             }
         }
 
-        private async Task<int> WriteAsync(byte[] data, LargeInteger position, CancellationToken token)
+        private async Task<IoStatus> RunFileCallAsync(Func<NtFileResult, NtStatus> func, CancellationToken token)
         {
             using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
             {
-                using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(data))
+                using (NtFileResult result = new NtFileResult(this))
                 {
-                    using (NtFileResult result = new NtFileResult(this))
+                    NtStatus status = await result.CompleteCallAsync(func(result), linked_cts.Token);
+                    if (status == NtStatus.STATUS_PENDING)
                     {
-                        NtStatus status = await result.CompleteCallAsync(NtSystemCalls.NtWriteFile(Handle, result.EventHandle, IntPtr.Zero,
-                            IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero), linked_cts.Token);
-                        if (status == NtStatus.STATUS_PENDING)
-                        {
-                            result.Cancel();
-                            throw new NtException(NtStatus.STATUS_CANCELLED);
-                        }
-                        status.ToNtException();
-                        return result.Information32;
+                        result.Cancel();
+                        throw new NtException(NtStatus.STATUS_CANCELLED);
                     }
+                    status.ToNtException();
+                    return result.Result;
                 }
+            }
+        }
+
+        private async Task<int> WriteAsync(byte[] data, LargeInteger position, CancellationToken token)
+        {
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(data))
+            {
+                IoStatus io_status = await RunFileCallAsync(result => NtSystemCalls.NtWriteFile(Handle, result.EventHandle, IntPtr.Zero,
+                            IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero), token);
+                return io_status.Information32;
             }
         }
 
@@ -2785,21 +2798,9 @@ namespace NtApiDotNet
         /// <param name="token">Cancellation token to cancel async operation.</param>
         public async Task LockAsync(long offset, long size, bool fail_immediately, bool exclusive, CancellationToken token)
         {
-            using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
-            {
-                using (NtFileResult result = new NtFileResult(this))
-                {
-                    NtStatus status = await result.CompleteCallAsync(NtSystemCalls.NtLockFile(Handle, result.EventHandle, IntPtr.Zero,
+            await RunFileCallAsync(result => NtSystemCalls.NtLockFile(Handle, result.EventHandle, IntPtr.Zero,
                                                                      IntPtr.Zero, result.IoStatusBuffer, new LargeInteger(offset),
-                                                                     new LargeInteger(size), 0, fail_immediately, exclusive), linked_cts.Token);
-                    if (status == NtStatus.STATUS_PENDING)
-                    {
-                        result.Cancel();
-                        throw new NtException(NtStatus.STATUS_CANCELLED);
-                    }
-                    status.ToNtException();
-                }
-            }
+                                                                     new LargeInteger(size), 0, fail_immediately, exclusive), token);
         }
 
         /// <summary>
