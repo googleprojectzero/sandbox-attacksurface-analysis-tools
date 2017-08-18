@@ -699,26 +699,55 @@ namespace NtApiDotNet
     }
 
     /// <summary>
-    /// Represnt a NT file IO control code.
+    /// Represents a NT file IO control code.
     /// </summary>
-    public class NtIoControlCode
+    [StructLayout(LayoutKind.Sequential)]
+    public struct NtIoControlCode
     {
+        private int _control_code;
+
         /// <summary>
         /// Type of device
         /// </summary>
-        public FileDeviceType DeviceType { get; private set; }
+        public FileDeviceType DeviceType
+        {
+            get
+            {
+                return (FileDeviceType)(_control_code >> 16);
+            }
+        }
         /// <summary>
         /// Function number
         /// </summary>
-        public int Function { get; private set; }
+        public int Function
+        {
+            get
+            {
+                return (_control_code >> 2) & 0xFFF;
+            }
+        }
+
         /// <summary>
         /// Buffering method
         /// </summary>
-        public FileControlMethod Method { get; private set; }
+        public FileControlMethod Method
+        {
+            get
+            {
+                return (FileControlMethod)(_control_code & 3);
+            }
+        }
+
         /// <summary>
         /// Access of file handle
         /// </summary>
-        public FileControlAccess Access { get; private set; }
+        public FileControlAccess Access
+        {
+            get
+            {
+                return (FileControlAccess)((_control_code >> 14) & 3);
+            }
+        }
 
         /// <summary>
         /// Constructor
@@ -729,10 +758,7 @@ namespace NtApiDotNet
         /// <param name="access">Access of file handle</param>
         public NtIoControlCode(FileDeviceType device_type, int function, FileControlMethod method, FileControlAccess access)
         {
-            DeviceType = device_type;
-            Function = function;
-            Method = method;
-            Access = access;
+            _control_code = (((int)device_type) << 16) | (((int)access) << 14) | (function << 2) | ((int)method);
         }
 
         /// <summary>
@@ -741,10 +767,7 @@ namespace NtApiDotNet
         /// <param name="code">Raw IO control code to convert.</param>
         public NtIoControlCode(int code)
         {
-            DeviceType = (FileDeviceType)(code >> 16);
-            Access = (FileControlAccess)((code >> 14) & 3);
-            Function = (code >> 2) & 0xFFF;
-            Method = (FileControlMethod)(code & 3);
+            _control_code = code;
         }
 
         /// <summary>
@@ -763,7 +786,7 @@ namespace NtApiDotNet
         /// <returns>The int32 version of the code</returns>
         public int ToInt32()
         {
-            return (((int)DeviceType) << 16) | (((int)Access) << 14) | (((int)Function) << 2) | ((int)Method);
+            return _control_code;
         }
     }
 
@@ -1432,6 +1455,38 @@ namespace NtApiDotNet
         }
     }
 
+    [StructLayout(LayoutKind.Sequential), DataStart("FileName")]
+    public struct FileLinkEntryInformation
+    {
+        public int NextEntryOffset;
+        public long ParentFileId;
+        public int FileNameLength;
+        public char FileName;
+    }
+    
+    [StructLayout(LayoutKind.Sequential), DataStart("Entry")]
+    public struct FileLinksInformation
+    {
+        public int BytesNeeded;
+        public int EntriesReturned;
+        public FileLinkEntryInformation Entry;
+    }
+    
+    public class FileLinkEntry
+    {
+        public long ParentFileId { get; private set; }
+        public string FileName { get; private set; }
+        public string FullPath { get; private set; }
+
+        internal FileLinkEntry(SafeStructureInOutBuffer<FileLinkEntryInformation> buffer, string parent_path)
+        {
+            FileLinkEntryInformation entry = buffer.Result;
+            ParentFileId = entry.ParentFileId;
+            FileName = buffer.Data.ReadUnicodeString(entry.FileNameLength);
+            FullPath = Path.Combine(parent_path, FileName);
+        }
+    }
+
 #pragma warning restore 1591
 
     /// <summary>
@@ -2087,23 +2142,38 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="volume">A handle to the volume on which the file resides.</param>
         /// <param name="id">The object ID as a binary string</param>
-        /// <param name="DesiredAccess">The desired access for the file</param>
-        /// <param name="ShareAccess">File share access</param>
-        /// <param name="OpenOptions">Open options.</param>
+        /// <param name="desired_access">The desired access for the file</param>
+        /// <param name="share_access">File share access</param>
+        /// <param name="open_options">Open options.</param>
+        /// <param name="throw_on_error">True to throw on error</param>
         /// <returns>The opened file object</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtFile OpenFileById(NtFile volume, string id,
-            FileAccessRights DesiredAccess, FileShareMode ShareAccess, FileOpenOptions OpenOptions)
+        public static NtResult<NtFile> OpenFileById(NtFile volume, string id,
+            FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options, bool throw_on_error)
         {
-            StringBuilder name_builder = new StringBuilder();
             using (ObjectAttributes obja = new ObjectAttributes(id, AttributeFlags.CaseInsensitive, volume, null, null))
             {
                 SafeKernelObjectHandle handle;
                 IoStatus iostatus = new IoStatus();
-                NtSystemCalls.NtOpenFile(out handle, DesiredAccess, obja,
-                    iostatus, ShareAccess, OpenOptions | FileOpenOptions.OpenByFileId).ToNtException();
-                return new NtFile(handle, iostatus);
+                return NtSystemCalls.NtOpenFile(out handle, desired_access, obja,
+                    iostatus, share_access, open_options | FileOpenOptions.OpenByFileId)
+                    .CreateResult(throw_on_error, () => new NtFile(handle, iostatus));
             }
+        }
+
+        /// <summary>
+        /// Open a file by its object ID
+        /// </summary>
+        /// <param name="volume">A handle to the volume on which the file resides.</param>
+        /// <param name="id">The object ID as a binary string</param>
+        /// <param name="desired_access">The desired access for the file</param>
+        /// <param name="share_access">File share access</param>
+        /// <param name="open_options">Open options.</param>
+        /// <returns>The opened file object</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtFile OpenFileById(NtFile volume, string id,
+            FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options)
+        {
+            return OpenFileById(volume, id, desired_access, share_access, open_options, true).Result;
         }
 
         /// <summary>
@@ -3046,6 +3116,61 @@ namespace NtApiDotNet
                 NtSystemCalls.NtSetInformationFile(Handle, status, buffer,
                     buffer.Length, FileInformationClass.FileEndOfFileInformation).ToNtException();
             }
+        }        
+
+        /// <summary>
+        /// Get list of hard link entries for a file.
+        /// </summary>
+        /// <returns>The list of entries.</returns>
+        public IEnumerable<FileLinkEntry> GetHardLinks()
+        {
+            int size = 16 * 1024;
+            while (true)
+            {
+                FileLinksInformation info = new FileLinksInformation();
+                info.BytesNeeded = size;
+
+                using (var buffer = new SafeStructureInOutBuffer<FileLinksInformation>(info, size, true))
+                {
+                    IoStatus io_status = new IoStatus();
+                    NtStatus status = NtSystemCalls.NtQueryInformationFile(Handle, io_status,
+                        buffer, buffer.Length, FileInformationClass.FileHardLinkInformation);
+                    if (status == NtStatus.STATUS_BUFFER_OVERFLOW)
+                    {
+                        size *= 2;
+                        continue;
+                    }
+                    status.ToNtException();
+                    info = buffer.Result;
+
+                    int ofs = 0;
+
+                    for (int i = 0; i < info.EntriesReturned; ++i)
+                    {
+                        var entry_buffer = buffer.Data.GetStructAtOffset<FileLinkEntryInformation>(ofs);
+                        var entry = entry_buffer.Result;
+                        string parent_path = String.Empty;
+
+                        using (var parent = OpenFileById(this, Encoding.Unicode.GetString(BitConverter.GetBytes(entry.ParentFileId)),
+                            FileAccessRights.ReadAttributes, FileShareMode.None, FileOpenOptions.None, false))
+                        {
+                            if (parent.IsSuccess)
+                            {
+                                parent_path = parent.Result.FullPath;
+                            }
+                        }
+
+                        yield return new FileLinkEntry(entry_buffer, parent_path);
+
+                        if (entry.NextEntryOffset == 0)
+                        {
+                            break;
+                        }
+                        ofs = ofs + entry.NextEntryOffset;
+                    }
+                    break;
+                }
+            }            
         }
     }
 
