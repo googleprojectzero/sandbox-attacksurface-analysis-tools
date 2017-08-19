@@ -651,7 +651,7 @@ function Get-NtTokenFromProcess
 		if (-1 -ne $ProcessId)
 		{
 			$t = Use-NtObject($p = Get-NtProcess -ProcessId $ProcessId) {
-				[NtApiDotNet.NtThread]::GetFirstThread($p, "MaximumAllowed")
+				$p.GetFirstThread("DirectImpersonation")
 			}
 		}
 		else

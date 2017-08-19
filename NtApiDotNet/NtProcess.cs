@@ -955,6 +955,25 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get first accessible thread for process.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the thread.</param>
+        /// <returns>The first thread object, or null if not accessible threads.</returns>
+        public NtThread GetFirstThread(ThreadAccessRights desired_access)
+        {
+            return NtThread.GetFirstThread(this, desired_access);
+        }
+
+        /// <summary>
+        /// Get first accessible thread for process.
+        /// </summary>
+        /// <returns>The first thread object, or null if not accessible threads.</returns>
+        public NtThread GetFirstThread()
+        {
+            return GetFirstThread(ThreadAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
         /// Get accessible threads for a process.
         /// </summary>
         /// <param name="desired_access">The desired access for the threads</param>
