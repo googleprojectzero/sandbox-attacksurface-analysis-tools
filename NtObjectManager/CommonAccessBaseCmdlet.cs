@@ -306,9 +306,16 @@ namespace NtObjectManager
         {
             foreach (int pid in pids)
             {
-                using (NtProcess process = NtProcess.Open(pid, ProcessAccessRights.QueryLimitedInformation))
+                try
                 {
-                    AddTokenEntryFromProcess(tokens, process);
+                    using (NtProcess process = NtProcess.Open(pid, ProcessAccessRights.QueryLimitedInformation))
+                    {
+                        AddTokenEntryFromProcess(tokens, process);
+                    }
+                }
+                catch (NtException ex)
+                {
+                    WriteError(new ErrorRecord(ex, "OpenTokenError", ErrorCategory.OpenError, string.Format("pid:{0}", pid)));
                 }
             }
         }
@@ -343,8 +350,9 @@ namespace NtObjectManager
                                 }
                             }
                         }
-                        catch (NtException)
+                        catch (NtException ex)
                         {
+                            WriteError(new ErrorRecord(ex, "OpenTokenError", ErrorCategory.OpenError, process.Name));
                         }
                     }
                 }
