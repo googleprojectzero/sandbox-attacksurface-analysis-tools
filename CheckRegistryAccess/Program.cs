@@ -133,6 +133,14 @@ namespace CheckRegistryAccess
             return (uint)Enum.Parse(enumtype, name, true);
         }
 
+        static void PrintDeprecationWarning()
+        {
+            ConsoleColor color = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Error.WriteLine("This utility is deprecated. Please use the PowerShell Get-AccessibleKey cmdlet instead");
+            Console.ForegroundColor = color;
+        }
+
         static void Main(string[] args)
         {
             bool show_help = false;
@@ -141,6 +149,8 @@ namespace CheckRegistryAccess
 
             try
             {
+                PrintDeprecationWarning();
+
                 OptionSet opts = new OptionSet() {
                         { "r", "Recursive tree directory listing",  
                             v => _recursive = v != null },                                  

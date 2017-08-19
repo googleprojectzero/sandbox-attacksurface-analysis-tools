@@ -174,6 +174,14 @@ namespace CheckProcessAccess
             p.WriteOptionDescriptions(Console.Out);
         }
 
+        static void PrintDeprecationWarning()
+        {
+            ConsoleColor color = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Error.WriteLine("This utility is deprecated. Please use the PowerShell Get-AccessibleProcess cmdlet instead");
+            Console.ForegroundColor = color;
+        }
+
         static void Main(string[] args)
         {
             bool show_help = false;                        
@@ -182,6 +190,8 @@ namespace CheckProcessAccess
 
             try
             {
+                PrintDeprecationWarning();
+
                 OptionSet opts = new OptionSet() {                        
                         { "p|pid=", "Specify a PID of a process to impersonate when checking", v => _pid = int.Parse(v.Trim()) },    
                         { "n", "Specifes the list of arguments represents names instead of pids", v => _named_process = v != null },        

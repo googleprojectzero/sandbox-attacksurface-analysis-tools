@@ -71,6 +71,14 @@ namespace DumpTypeInfo
             }
         }
 
+        static void PrintDeprecationWarning()
+        {
+            ConsoleColor color = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Error.WriteLine("This utility is deprecated. Please use the PowerShell Get-NtType cmdlet instead");
+            Console.ForegroundColor = color;
+        }
+
         static void Main(string[] args)
         {
             bool require_security = false;
@@ -78,6 +86,8 @@ namespace DumpTypeInfo
             bool show_help = false;
             bool name_only = false;
             bool sorted = false;
+
+            PrintDeprecationWarning();
 
             OptionSet opts = new OptionSet() {                                                                                                                                            
                         { "v", "Display verbose information about type", v => verbose = v != null },

@@ -82,6 +82,14 @@ namespace GetHandles
             }
         }
 
+        static void PrintDeprecationWarning()
+        {
+            ConsoleColor color = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Error.WriteLine("This utility is deprecated. Please use the PowerShell Get-NtHandle cmdlet instead");
+            Console.ForegroundColor = color;
+        }
+
         static void Main(string[] args)
         {
             try
@@ -94,6 +102,8 @@ namespace GetHandles
                 GroupingMode mode = GroupingMode.Pid;
                 ShareMode shareMode = ShareMode.None;
                 bool showsd = false;
+
+                PrintDeprecationWarning();
 
                 OptionSet opts = new OptionSet() {
                         { "t|type=", "An object type to filter on, can be repeated",  v => typeFilter.Add(v.Trim().ToLower()) },

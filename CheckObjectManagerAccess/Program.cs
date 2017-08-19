@@ -155,6 +155,13 @@ namespace CheckObjectManagerAccess
                 return NtDirectory.OpenPrivateNamespace(BoundaryDescriptor.CreateFromString(name));
             }
         }
+        static void PrintDeprecationWarning()
+        {
+            ConsoleColor color = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Error.WriteLine("This utility is deprecated. Please use the PowerShell Get-AccessibleObject cmdlet instead");
+            Console.ForegroundColor = color;
+        }
 
         static void Main(string[] args)
         {
@@ -165,6 +172,8 @@ namespace CheckObjectManagerAccess
             int pid = Process.GetCurrentProcess().Id;
             try
             {
+                PrintDeprecationWarning();
+
                 OptionSet opts = new OptionSet() {
                             { "r", "Recursive tree directory listing",  
                                 v => recursive = v != null },                                  

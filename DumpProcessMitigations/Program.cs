@@ -108,6 +108,15 @@ namespace DumpProcessMitigations
             return false;
         }
 
+
+        static void PrintDeprecationWarning()
+        {
+            ConsoleColor color = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Error.WriteLine("This utility is deprecated. Please use the PowerShell Get-NtProcessMitigations cmdlet instead");
+            Console.ForegroundColor = color;
+        }
+
         static void Main(string[] args)
         {
             bool show_help = false;
@@ -117,6 +126,9 @@ namespace DumpProcessMitigations
             HashSet<string> cmdline_filter = new HashSet<string>();
             bool all_mitigations = false;
             bool print_command_line = false;
+
+            PrintDeprecationWarning();
+
             OptionSet p = new OptionSet() {
                         { "t|type=", "A filter for processes with a specific mitigation to display",  v => mitigation_filter.Add(v.Trim()) },
                         { "f|filter=", "A filter for the path of a process to display",  v => process_filter.Add(v.Trim()) },
