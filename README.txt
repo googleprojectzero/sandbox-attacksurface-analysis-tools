@@ -27,6 +27,14 @@ The tools can be built with Visual Studio 2015
 
 Release Notes:
 
+1.0.8
+-----
+* Added cmdlets to create a kernel memory dump, system environment and licensing.
+* Additional system calls implemented.
+* Added access to secure boot policies and code integrity policies.
+* Made Win32 Process creation more generic and added cmdlet.
+* Added access check by type including SELF SID.
+
 1.0.7
 -----
 * Added new cmdlets to do access checking. Many of the old standalone utilities are now deprecated.

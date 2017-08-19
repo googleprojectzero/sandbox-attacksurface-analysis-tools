@@ -130,7 +130,7 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Open current process.</para>
         /// </summary>
-        [Parameter(Position = 0, ParameterSetName = "current")]
+        [Parameter(ParameterSetName = "current")]
         public SwitchParameter Current { get; set; }
 
         /// <summary>

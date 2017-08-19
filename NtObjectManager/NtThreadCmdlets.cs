@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using NtApiDotNet;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
@@ -42,6 +41,10 @@ namespace NtObjectManager
     ///   <para>Get threads for a specific process.</para>
     /// </example>
     /// <example>
+    ///   <code>$ts = Get-NtThread -Current</code>
+    ///   <para>Get the current NT thread.</para>
+    /// </example>
+    /// <example>
     ///   <code>$ts = Get-NtThread -FilterScript { param($t); Use-NtObject($k = $t.OpenToken()) { $k -ne $null } }</code>
     ///   <para>Get threads which have impersonation tokens set.</para>
     /// </example>
@@ -65,9 +68,22 @@ namespace NtObjectManager
         public int ProcessId { get; set; }
 
         /// <summary>
+        /// <para type="description">Get the current thread.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "current")]
+        public SwitchParameter Current { get; set; }
+
+        /// <summary>
+        /// <para type="description">When getting the current thread return pseudo handle. 
+        /// This handle doesn't need to be closed but changes identity if used in a different thread.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "current")]
+        public SwitchParameter PseudoHandle { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify an arbitrary filter script.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "all")]
         public ScriptBlock FilterScript { get; set; }
 
         /// <summary>
@@ -109,12 +125,30 @@ namespace NtObjectManager
             return false;
         }
 
+        private static NtThread GetCurrentThread(ThreadAccessRights access, bool pseudo_handle)
+        {
+            if (pseudo_handle)
+            {
+                return NtThread.Current;
+            }
+            else if ((access & ThreadAccessRights.MaximumAllowed) == ThreadAccessRights.MaximumAllowed)
+            {
+                return NtThread.Current.Duplicate();
+            }
+
+            return NtThread.Current.Duplicate(access);
+        }
+
         /// <summary>
         /// Overridden ProcessRecord method.
         /// </summary>
         protected override void ProcessRecord()
         {
-            if (ThreadId == -1 && ProcessId == -1)
+            if (Current)
+            {
+                WriteObject(GetCurrentThread(Access, PseudoHandle));
+            }
+            else if (ThreadId == -1 && ProcessId == -1)
             {
                 IEnumerable<NtThread> threads = NtThread.GetThreads(Access, FromSystem);
                 if (FilterScript == null)

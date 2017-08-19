@@ -604,6 +604,74 @@ function New-NtSectionImage
 
 <#
 .SYNOPSIS
+Opens an impersonation token from a process or thread using NtImpersonateThread
+.DESCRIPTION
+This cmdlet opens an impersonation token from a process using NtImpersonateThread. While SeDebugPrivilege
+allows you to bypass the security of processes and threads it doesn't mean you can open the primary token.
+This cmdlet allows you to get past that by getting a handle to the first thread and then impersonating it,
+as long as the thread isn't impersonating something else you'll get back a copy of the primary token.
+.PARAMETER ProcessId
+A process to open to get the token from.
+.PARAMETER ThreadId
+A thread to open to get the token from.
+.PARAMETER Access
+Access rights for the opened token.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.NtToken
+.EXAMPLE
+Get-NtTokenFromProcess -ProcessId 1234
+Gets token from process ID 1234.
+.EXAMPLE
+Get-NtTokenFromProcess -ProcessId 1234 -Access Query
+Gets token from process ID 1234 with only Query access.
+.EXAMPLE
+Get-NtTokenFromProcess -ThreadId 1234
+Gets token from process ID 1234.
+#>
+function Get-NtTokenFromProcess
+{
+	[CmdletBinding(DefaultParameterSetName = "FromProcess")]
+    Param(
+		[Parameter(Position = 0, ParameterSetName = "FromProcess", Mandatory = $true)] 
+		[ValidateScript({$_ -ge 0})]
+        [int]$ProcessId = -1,
+		[Parameter(ParameterSetName = "FromThread", Mandatory = $true)] 
+		[ValidateScript({$_ -ge 0})]
+        [int]$ThreadId = -1,
+		[NtApiDotNet.TokenAccessRights]$Access = "MaximumAllowed"
+    )
+
+    Set-NtTokenPrivilege SeDebugPrivilege | Out-Null
+	$t = $null
+
+	try
+	{
+		if (-1 -ne $ProcessId)
+		{
+			$t = Use-NtObject($p = Get-NtProcess -ProcessId $ProcessId) {
+				[NtApiDotNet.NtThread]::GetFirstThread($p, "MaximumAllowed")
+			}
+		}
+		else
+		{
+			$t = Get-NtThread -ThreadId $ThreadId -Access DirectImpersonation
+		}
+
+		$current = Get-NtThread -Current -PseudoHandle
+		Use-NtObject($t, $current.ImpersonateThread($t)) {
+			Get-NtToken -Impersonation -Thread $current -Access $Access
+		}
+	}
+	catch
+	{
+		Write-Error $_
+	}
+}
+
+<#
+.SYNOPSIS
 Get process primary token. Here for legacy reasons, use Get-NtToken -Primary.
 #>
 function Get-NtTokenPrimary
