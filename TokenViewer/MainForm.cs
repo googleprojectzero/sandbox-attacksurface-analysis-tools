@@ -157,7 +157,7 @@ namespace TokenViewer
                         NtProcess p = processes[i];
                         NtToken t = tokens[i];
 
-                        if (t == null || !t.IsAccessGranted(TokenAccessRights.QuerySource | TokenAccessRights.QuerySource))
+                        if (t == null || !t.IsAccessGranted(TokenAccessRights.Query))
                         {
                             continue;
                         }

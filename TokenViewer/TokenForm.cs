@@ -159,8 +159,16 @@ namespace TokenViewer
             }
 
             txtSessionId.Text = _token.SessionId.ToString();
-            txtSourceName.Text = _token.Source.SourceName;
-            txtSourceId.Text = FormatLuid(_token.Source.SourceIdentifier);
+            if (_token.IsAccessGranted(TokenAccessRights.QuerySource))
+            {
+                txtSourceName.Text = _token.Source.SourceName;
+                txtSourceId.Text = FormatLuid(_token.Source.SourceIdentifier);
+            }
+            else
+            {
+                txtSourceName.Text = "N/A";
+                txtSourceId.Text = "N/A";
+            }
             TokenElevationType evtype = _token.ElevationType;
             txtElevationType.Text = evtype.ToString();
             txtIsElevated.Text = _token.Elevated.ToString();
