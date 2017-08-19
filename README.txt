@@ -31,6 +31,16 @@ The tools can be built with Visual Studio 2015
 
 Release Notes:
 
+1.0.9
+-----
+* Made New-Win32Process more generic and added support for Win32k filter enable.
+* Added function to capture token from a process using impersonation.
+* Added basic support for Desktop and WindowStation objects using Win32u.dll exports.
+* Added file locking implementation including async.
+* Added hardlink enumeration.
+* Added NTFS stream enumeration.
+* Deprecated most of the old standalone utilities in favour of PS cmdlets.
+
 1.0.8
 -----
 * Added cmdlets to create a kernel memory dump, system environment and licensing.
