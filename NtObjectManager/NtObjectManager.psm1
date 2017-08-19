@@ -514,7 +514,6 @@ function New-Win32Process
 	} else {
 		[SandboxAnalysisUtils.Win32Process]::CreateProcessAsUser($Token, $config)
 	}
-    [SandboxAnalysisUtils.Win32Process]::CreateProcess($Config)
 }
 
 <#
