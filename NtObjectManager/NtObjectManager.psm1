@@ -453,6 +453,8 @@ Switch to specify whether the process handle is inheritable
 Switch to specify whether the thread handle is inheritable.
 .PARAMETER MitigationOptions
 Specify optional mitigation options.
+.PARAMETER Token
+Specify an explicit token to create the new process with.
 .INPUTS
 None
 .OUTPUTS
@@ -492,6 +494,8 @@ function New-Win32Process
 		[switch]$InheritProcessHandle,
 		[Parameter(ParameterSetName = "FromArgs")]
 		[switch]$InheritThreadHandle,
+		[Parameter(ParameterSetName = "FromArgs")]
+		[NtApiDotNet.NtToken]$Token,
 		[Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromConfig")]
 		[SandboxAnalysisUtils.Win32ProcessConfig]$Config
     )
@@ -505,6 +509,11 @@ function New-Win32Process
 		-MitigationOptions $MitigationOptions
 	}
 
+	if ($null -eq $Token) {
+		[SandboxAnalysisUtils.Win32Process]::CreateProcess($config)
+	} else {
+		[SandboxAnalysisUtils.Win32Process]::CreateProcessAsUser($Token, $config)
+	}
     [SandboxAnalysisUtils.Win32Process]::CreateProcess($Config)
 }
 
