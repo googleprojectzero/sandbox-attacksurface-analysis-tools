@@ -11,8 +11,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EditSection", "EditSection\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObjectList", "ObjectList\ObjectList.csproj", "{1460C34B-26A1-4393-9DDD-A0233F22AC13}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DumpExeManifest", "DumpExeManifest\DumpExeManifest.csproj", "{7477C04B-E558-49BF-A9F2-C4A1DBBAC73D}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckNetworkAccess", "CheckNetworkAccess\CheckNetworkAccess.csproj", "{A6BA67F9-F91C-4F4F-B677-FE8BB78B1B9D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TokenViewer", "TokenViewer\TokenViewer.csproj", "{DB2E01DD-F102-49E4-9CFA-A6769073BE6D}"
@@ -49,10 +47,6 @@ Global
 		{1460C34B-26A1-4393-9DDD-A0233F22AC13}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1460C34B-26A1-4393-9DDD-A0233F22AC13}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1460C34B-26A1-4393-9DDD-A0233F22AC13}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7477C04B-E558-49BF-A9F2-C4A1DBBAC73D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7477C04B-E558-49BF-A9F2-C4A1DBBAC73D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7477C04B-E558-49BF-A9F2-C4A1DBBAC73D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7477C04B-E558-49BF-A9F2-C4A1DBBAC73D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A6BA67F9-F91C-4F4F-B677-FE8BB78B1B9D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A6BA67F9-F91C-4F4F-B677-FE8BB78B1B9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A6BA67F9-F91C-4F4F-B677-FE8BB78B1B9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
