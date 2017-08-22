@@ -1748,6 +1748,27 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get if process is in a job.
+        /// </summary>
+        /// <param name="job">A specific job to check</param>
+        /// <returns>True if in specific job.</returns>
+        public bool IsInJob(NtJob job)
+        {
+            return NtSystemCalls.NtIsProcessInJob(Handle, 
+                job == null ? SafeKernelObjectHandle.Null : job.Handle) 
+                        == NtStatus.STATUS_PROCESS_IN_JOB;
+        }
+
+        /// <summary>
+        /// Get if process is in a job.
+        /// </summary>
+        /// <returns>True if in a job.</returns>
+        public bool IsInJob()
+        {
+            return IsInJob(null);
+        }
+
+        /// <summary>
         /// Get process handle table.
         /// </summary>
         /// <returns>The list of process handles.</returns>
