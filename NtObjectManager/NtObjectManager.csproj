@@ -53,6 +53,7 @@
     <Compile Include="GetAccessibleObjectCmdlet.cs" />
     <Compile Include="GetAccessibleProcessCmdlet.cs" />
     <Compile Include="NtEventCmdlets.cs" />
+    <Compile Include="NtJobCmdlets.cs" />
     <Compile Include="NtProcessCmdlets.cs" />
     <Compile Include="NtSectionCmdlets.cs" />
     <Compile Include="NtSecurityCmdlets.cs" />

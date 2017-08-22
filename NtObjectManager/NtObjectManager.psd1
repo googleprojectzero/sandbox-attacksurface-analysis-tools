@@ -94,7 +94,7 @@ CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile',
 			   'Get-NtSection', 'New-NtSection', 'Get-AccessibleAlpcPort',
 			   'Get-AccessibleKey', 'Get-AccessibleProcess', 'Get-AccessibleFile',
 			   'Get-AccessibleObject', 'Get-NtAccessMask', 'Get-AccessibleDevice',
-			   'Get-AccessibleNamedPipe', 'Get-NtGrantedAccess'
+			   'Get-AccessibleNamedPipe', 'Get-NtGrantedAccess', 'Get-NtJob', 'New-NtJob'
 
 # Variables to export from this module
 # VariablesToExport = @()
