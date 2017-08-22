@@ -671,6 +671,45 @@ function Get-NtTokenFromProcess
 
 <#
 .SYNOPSIS
+Gets the executable manifest for a PE file.
+.DESCRIPTION
+This cmdlet extracts the manifes from a PE file and extracts basic information such as UIAccess
+setting or Auto Elevation.
+.PARAMETER Path
+One or more filenames to get the executable manifest from
+.INPUTS
+List of filenames
+.OUTPUTS
+SandboxAnalysisUtils.ExecutableManifest
+.EXAMPLE
+Get-ExecutableManifest abc.dll
+Gets manifest from file abc.dll.
+.EXAMPLE
+Get-ChildItem $env:windir\*.exe -Recurse | Get-ExecutableManifest
+Gets all manifests from EXE files, recursively under Windows.
+.EXAMPLE
+Get-ChildItem $env:windir\*.exe -Recurse | Get-ExecutableManifest | Where-Object AutoElevate | Select-Object FullPath
+Get the full path of all executables with Auto Elevate manifest configuration.
+#>
+function Get-ExecutableManifest 
+{
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
+        [string[]]$Path   
+    )
+    PROCESS {
+		foreach($p in $Path)
+		{
+			$fullpath = Resolve-Path $p
+			$manifest = [SandboxAnalysisUtils.ExecutableManifest]::GetManifests($fullpath)
+			Write-Output $manifest
+		}
+    }
+}
+
+<#
+.SYNOPSIS
 Get process primary token. Here for legacy reasons, use Get-NtToken -Primary.
 #>
 function Get-NtTokenPrimary
