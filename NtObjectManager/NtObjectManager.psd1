@@ -78,7 +78,7 @@ FormatsToProcess = 'Formatters.ps1xml'
 FunctionsToExport = 'Get-NtTokenPrimary', 'Get-NtTokenThread', 'Get-NtTokenEffective', 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
 					'Set-NtTokenIntegrityLevel', 'Get-NtProcessMitigations', 'New-NtKernelCrashDump', 'New-NtObjectAttributes',
 					'New-NtSecurityQualityOfService', 'Get-NtLicenseValue', 'Get-NtSystemEnvironmentValue', 'New-Win32Process',
-					'New-NtEaBuffer', 'New-NtSectionImage', 'New-Win32ProcessConfig', 'Get-NtTokenFromProcess'
+					'New-NtEaBuffer', 'New-NtSectionImage', 'New-Win32ProcessConfig', 'Get-NtTokenFromProcess', 'Get-ExecutableManifest'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
@@ -94,7 +94,7 @@ CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile',
 			   'Get-NtSection', 'New-NtSection', 'Get-AccessibleAlpcPort',
 			   'Get-AccessibleKey', 'Get-AccessibleProcess', 'Get-AccessibleFile',
 			   'Get-AccessibleObject', 'Get-NtAccessMask', 'Get-AccessibleDevice',
-			   'Get-AccessibleNamedPipe', 'Get-NtGrantedAccess'
+			   'Get-AccessibleNamedPipe', 'Get-NtGrantedAccess', 'Get-NtJob', 'New-NtJob'
 
 # Variables to export from this module
 # VariablesToExport = @()

@@ -265,6 +265,38 @@ namespace NtApiDotNet
     public static class NtVirtualMemory
     {
         /// <summary>
+        /// Query section name,
+        /// </summary>
+        /// <param name="process">The process to query from.</param>
+        /// <param name="base_address">The base address to query.</param>
+        /// <param name="throw_on_error">True to throw on error</param>
+        /// <returns>The result of the query.</returns>
+        public static NtResult<string> QuerySectionName(SafeKernelObjectHandle process, 
+            long base_address, bool throw_on_error)
+        {
+            using (var buffer = new SafeStructureInOutBuffer<UnicodeStringOut>(0x1000, true))
+            {
+                IntPtr ret_length;
+                return NtSystemCalls.NtQueryVirtualMemory(process,
+                    new IntPtr(base_address), MemoryInformationClass.MemorySectionName,
+                    buffer, buffer.LengthIntPtr, out ret_length)
+                    .CreateResult(throw_on_error, () => buffer.Result.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Query section name,
+        /// </summary>
+        /// <param name="process">The process to query from.</param>
+        /// <param name="base_address">The base address to query.</param>
+        /// <returns>The result of the query.</returns>
+        public static string QuerySectionName(SafeKernelObjectHandle process,
+            long base_address)
+        {
+            return QuerySectionName(process, base_address, true).Result;
+        }
+
+        /// <summary>
         /// Query memory information for a process.
         /// </summary>
         /// <param name="process">The process to query.</param>
@@ -286,15 +318,10 @@ namespace NtApiDotNet
 
             if (basic_info.Type == MemoryType.Image || basic_info.Type == MemoryType.Mapped)
             {
-                using (var buffer = new SafeStructureInOutBuffer<UnicodeStringOut>(0x1000, true))
+                var name = QuerySectionName(process, base_address, false);
+                if (name.IsSuccess)
                 {
-                    IntPtr ret_length;
-                    if (NtSystemCalls.NtQueryVirtualMemory(process,
-                        new IntPtr(base_address), MemoryInformationClass.MemorySectionName,
-                        buffer, buffer.LengthIntPtr, out ret_length).IsSuccess())
-                    {
-                        mapped_image_path = buffer.Result.ToString();
-                    }
+                    mapped_image_path = name.Result;
                 }
             }
 

@@ -185,6 +185,22 @@ namespace NtApiDotNet
         /// </summary>
         public long Length { get; private set; }
 
+        /// <summary>
+        /// Get full path for mapped section.
+        /// </summary>
+        public string FullPath
+        {
+            get
+            {
+                var name = NtVirtualMemory.QuerySectionName(Process.Handle, DangerousGetHandle().ToInt64(), false);
+                if (name.IsSuccess)
+                {
+                    return name.Result;
+                }
+                return String.Empty;
+            }
+        }
+
         internal NtMappedSection(IntPtr pointer, long size, NtProcess process, bool writable) : base(true)
         {
             SetHandle(pointer); 

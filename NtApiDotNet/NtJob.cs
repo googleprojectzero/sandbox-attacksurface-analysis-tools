@@ -27,6 +27,7 @@ namespace NtApiDotNet
         Query = 0x4,
         Terminate = 0x8,
         SetSecurityAttributes = 0x10,
+        Impersonate = 0x20,
         GenericRead = GenericAccessRights.GenericRead,
         GenericWrite = GenericAccessRights.GenericWrite,
         GenericExecute = GenericAccessRights.GenericExecute,
@@ -38,6 +39,103 @@ namespace NtApiDotNet
         Synchronize = GenericAccessRights.Synchronize,
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
+    }
+
+    public enum JOBOBJECTINFOCLASS
+    {
+        JobObjectBasicAccountingInformation = 1,
+        JobObjectBasicLimitInformation,
+        JobObjectBasicProcessIdList,
+        JobObjectBasicUIRestrictions,
+        JobObjectSecurityLimitInformation,  // deprecated
+        JobObjectEndOfJobTimeInformation,
+        JobObjectAssociateCompletionPortInformation,
+        JobObjectBasicAndIoAccountingInformation,
+        JobObjectExtendedLimitInformation,
+        JobObjectJobSetInformation,
+        JobObjectGroupInformation,
+        JobObjectNotificationLimitInformation,
+        JobObjectLimitViolationInformation,
+        JobObjectGroupInformationEx,
+        JobObjectCpuRateControlInformation,
+        JobObjectCompletionFilter,
+        JobObjectCompletionCounter,
+        JobObjectReserved1Information = 18,
+        JobObjectReserved2Information,
+        JobObjectReserved3Information,
+        JobObjectReserved4Information,
+        JobObjectReserved5Information,
+        JobObjectReserved6Information,
+        JobObjectReserved7Information,
+        JobObjectReserved8Information,
+        JobObjectReserved9Information,
+        JobObjectReserved10Information,
+        JobObjectReserved11Information,
+        JobObjectReserved12Information,
+        JobObjectReserved13Information,
+        JobObjectReserved14Information = 31,
+        JobObjectNetRateControlInformation,
+        JobObjectNotificationLimitInformation2,
+        JobObjectLimitViolationInformation2,
+        JobObjectCreateSilo,
+        JobObjectSiloBasicInformation,
+        JobObjectReserved15Information = 37,
+        JobObjectReserved16Information = 38,
+        JobObjectReserved17Information = 39,
+        JobObjectReserved18Information = 40,
+        JobObjectReserved19Information = 41,
+        JobObjectReserved20Information = 42,
+        JobObjectReserved21Information = 43,
+        JobObjectReserved22Information = 44,
+        JobObjectReserved23Information = 45,
+        JobObjectReserved24Information = 46,
+        JobObjectReserved25Information = 47,
+        MaxJobObjectInfoClass
+    }
+
+    public enum JobObjectCompletionPortMessages
+    {
+        EndOfJobTime         = 1,
+        EndOfProcessTime     = 2,
+        ActiveProcessLimit    = 3,
+        ActiveProcessZero     = 4,
+        Unknown5              = 5,
+        NewProcess             = 6,
+        ExitProcess            = 7,
+        AbnormalExitProcess   = 8,
+        ProcessMemoryLimit    = 9,
+        JobMemoryLimit        = 10,
+        NotificationLimit      = 11,
+        JobCycleTimeLimit    = 12,
+        SiloTerminated         = 13,
+        MaxMessage = 14,
+    }
+
+    [Flags]
+    public enum JobObjectCompletionPortMessageFilters
+    {
+        None = 0,
+        EndOfJobTime = 1 << JobObjectCompletionPortMessages.EndOfJobTime,
+        EndOfProcessTime = 1 << JobObjectCompletionPortMessages.EndOfProcessTime,
+        ActiveProcessLimit = 1 << JobObjectCompletionPortMessages.ActiveProcessLimit,
+        ActiveProcessZero = 1 << JobObjectCompletionPortMessages.ActiveProcessZero,
+        Unknown5 = 1 << JobObjectCompletionPortMessages.Unknown5,
+        NewProcess = 1 << JobObjectCompletionPortMessages.NewProcess,
+        ExitProcess = 1 << JobObjectCompletionPortMessages.ExitProcess,
+        AbnormalExitProcess = 1 << JobObjectCompletionPortMessages.AbnormalExitProcess,
+        ProcessMemoryLimit = 1 << JobObjectCompletionPortMessages.ProcessMemoryLimit,
+        JobMemoryLimit = 1 << JobObjectCompletionPortMessages.JobMemoryLimit,
+        NotificationLimit = 1 << JobObjectCompletionPortMessages.NotificationLimit,
+        JobCycleTimeLimit = 1 << JobObjectCompletionPortMessages.JobCycleTimeLimit,
+        SiloTerminated = 1 << JobObjectCompletionPortMessages.SiloTerminated,
+        MaxMessage = 1 << JobObjectCompletionPortMessages.MaxMessage
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct JobObjectAssociateCompletionPort
+    {
+        public IntPtr CompletionKey;
+        public IntPtr CompletionPort;
     }
 
     public static partial class NtSystemCalls
@@ -55,10 +153,18 @@ namespace NtApiDotNet
         public static extern NtStatus NtTerminateJobObject(SafeKernelObjectHandle JobHandle, NtStatus ExitStatus);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtQueryInformationJobObject(SafeKernelObjectHandle JobHandle, int JobInfoClass, IntPtr JobInformation, int JobInformationLength, out int ReturnLength);
+        public static extern NtStatus NtQueryInformationJobObject(SafeKernelObjectHandle JobHandle, JOBOBJECTINFOCLASS JobInfoClass, 
+            SafeBuffer JobInformation, int JobInformationLength, out int ReturnLength);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtSetInformationJobObject(SafeKernelObjectHandle JobHandle, int JobInfoClass, IntPtr JobInformation, int JobInformationLength);
+        public static extern NtStatus NtSetInformationJobObject(SafeKernelObjectHandle JobHandle, JOBOBJECTINFOCLASS JobInfoClass, 
+            SafeBuffer JobInformation, int JobInformationLength);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtIsProcessInJob(
+            SafeKernelObjectHandle ProcessHandle,
+            SafeKernelObjectHandle JobHandle
+        );
     }
 #pragma warning restore 1591
 
@@ -123,11 +229,21 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create an unnamed job object
+        /// </summary>
+        /// <returns>The Job object</returns>
+        public static NtJob Create()
+        {
+            return Create(null, null);
+        }
+
+        /// <summary>
         /// Convert Job object into a Silo
         /// </summary>
         public void CreateSilo()
         {
-            NtSystemCalls.NtSetInformationJobObject(Handle, 35, IntPtr.Zero, 0).ToNtException();
+            NtSystemCalls.NtSetInformationJobObject(Handle, JOBOBJECTINFOCLASS.JobObjectCreateSilo, 
+                SafeHGlobalBuffer.Null, 0).ToNtException();
         }
 
         /// <summary>
@@ -183,6 +299,75 @@ namespace NtApiDotNet
         public static NtJob Open(string path, NtObject root)
         {
             return Open(path, root, JobAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Assign a process to this job object.
+        /// </summary>
+        /// <param name="process">The process to assign.</param>
+        public void AssignProcess(NtProcess process)
+        {
+            NtSystemCalls.NtAssignProcessToJobObject(Handle, process.Handle).ToNtException();
+        }
+
+        private void SetInfo<T>(JOBOBJECTINFOCLASS info_class, T value) where T : new()
+        {
+            using (var buffer = value.ToBuffer())
+            {
+                NtSystemCalls.NtSetInformationJobObject(Handle, info_class, buffer, buffer.Length);
+            }
+        }
+
+        private T QueryInfoFixed<T>(JOBOBJECTINFOCLASS info_class) where T : new()
+        {
+            using (var buffer = new SafeStructureInOutBuffer<T>())
+            {
+                int ret_length;
+                NtSystemCalls.NtQueryInformationJobObject(Handle, info_class, buffer, buffer.Length, out ret_length).ToNtException();
+                return buffer.Result;
+            }
+        }
+
+        /// <summary>
+        /// Associate a completion port with the job.
+        /// </summary>
+        /// <param name="port">The completion port.</param>
+        /// <param name="key">The key associated with the port.</param>
+        public void AssociateCompletionPort(NtIoCompletion port, IntPtr key)
+        {
+            JobObjectAssociateCompletionPort info = new JobObjectAssociateCompletionPort();
+            info.CompletionKey = key;
+            info.CompletionPort = port.Handle.DangerousGetHandle();
+            SetInfo(JOBOBJECTINFOCLASS.JobObjectAssociateCompletionPortInformation, info);
+        }
+        
+        /// <summary>
+        /// Get or set completion filter for job object.
+        /// </summary>
+        public JobObjectCompletionPortMessageFilters CompletionFilter
+        {
+            get
+            {
+                int mask = ((int)JobObjectCompletionPortMessageFilters.MaxMessage - 1) - 1;
+                int result = QueryInfoFixed<int>(JOBOBJECTINFOCLASS.JobObjectCompletionFilter);
+
+                return (JobObjectCompletionPortMessageFilters)(~result & mask);
+            }
+
+            set
+            {
+                int filter = (int)value;
+                SetInfo(JOBOBJECTINFOCLASS.JobObjectCompletionFilter, filter);
+            }
+        }
+
+        /// <summary>
+        /// Terminate this job object.
+        /// </summary>
+        /// <param name="status">The termination status.</param>
+        public void Terminate(NtStatus status)
+        {
+            NtSystemCalls.NtTerminateJobObject(Handle, status).ToNtException();
         }
     }
 }
