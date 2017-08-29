@@ -115,6 +115,19 @@ namespace SandboxAnalysisUtils
         }
     }
 
+    public enum ProtectionLevel
+    {
+        Same = -1,
+        TcbPPL = 0,
+        WindowsPP = 1,
+        WindowsPPL = 2,
+        AntimalwarePPL = 3,
+        LsaPPL = 4,
+        TcbPP = 5,
+        CodeGenPPL = 6,
+        AuthenticodePP = 7
+    }
+
     class ProcessAttributes
     {
         const int PROC_THREAD_ATTRIBUTE_THREAD = 0x00010000;
@@ -203,6 +216,14 @@ namespace SandboxAnalysisUtils
             get
             {
                 return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeAllApplicationPackagesPolicy, false, true, false);
+            }
+        }
+
+        public static IntPtr ProcThreadAttributeProtectionLevel
+        {
+            get
+            {
+                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeProtectionLevel, false, true, false);
             }
         }
     }
@@ -355,6 +376,7 @@ namespace SandboxAnalysisUtils
         public ProcessMitigationOptions2 MitigationOptions2 { get; set; }
         public Win32kFilterFlags Win32kFilterFlags { get; set; }
         public int Win32kFilterLevel { get; set; }
+        public ProtectionLevel ProtectionLevel { get; set; }
 
         private void PopulateStartupInfo(ref STARTUPINFO start_info)
         {
@@ -384,6 +406,11 @@ namespace SandboxAnalysisUtils
             }
 
             if (Win32kFilterFlags != Win32kFilterFlags.None)
+            {
+                count++;
+            }
+
+            if ((CreationFlags & CreateProcessFlags.ProtectedProcess) != 0)
             {
                 count++;
             }
@@ -425,6 +452,11 @@ namespace SandboxAnalysisUtils
                 filter.Flags = Win32kFilterFlags;
                 filter.FilterLevel = Win32kFilterLevel;
                 attr_list.AddAttributeBuffer(ProcessAttributes.ProcThreadAttributeWin32kFilter, resources.AddResource(filter.ToBuffer()));
+            }
+
+            if ((CreationFlags & CreateProcessFlags.ProtectedProcess) != 0)
+            {
+                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeProtectionLevel, (int)ProtectionLevel);
             }
 
             return attr_list;
