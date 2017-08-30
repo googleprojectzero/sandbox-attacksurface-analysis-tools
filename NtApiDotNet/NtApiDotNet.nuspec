@@ -11,6 +11,10 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A .NET class library to access native NT API system calls</description>
     <releaseNotes>
+1.1.1
+-----
+* Fix to native protected process creation.
+* Added functions to create native NT processes.
 1.1.0
 -----
 * Removed check tools, excluding CheckNetworkAccess.

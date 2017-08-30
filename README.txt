@@ -31,6 +31,11 @@ The tools can be built with Visual Studio 2015
 
 Release Notes:
 
+1.1.1
+-----
+* Fix to native protected process creation.
+* Added functions to create native NT processes.
+
 1.1.0
 -----
 * Removed check tools, excluding CheckNetworkAccess.
