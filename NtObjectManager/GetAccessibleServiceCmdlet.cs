@@ -47,7 +47,7 @@ namespace NtObjectManager
     }
 
     /// <summary>
-    /// <para type="synopsis">Get a list of servicecs opened by a specified token.</para>
+    /// <para type="synopsis">Get a list of services opened by a specified token.</para>
     /// <para type="description">This cmdlet checks all services and tries to determine
     /// if one or more specified tokens can open them to them. If no tokens are specified then the 
     /// current process token is used.</para>

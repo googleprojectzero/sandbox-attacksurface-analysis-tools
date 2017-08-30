@@ -11,6 +11,14 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A .NET class library to access native NT API system calls</description>
     <releaseNotes>
+1.1.0
+-----
+* Removed check tools, excluding CheckNetworkAccess.
+* Added basic Job object cmdlets.
+* Added creation of protected processes in Win32Process.
+* Added service access checking cmdlet.
+* Added get executable manifest cmdlet.
+
 1.0.9
 -----
 * Made New-Win32Process more generic and added support for Win32k filter enable.

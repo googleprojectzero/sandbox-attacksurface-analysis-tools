@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.9'
+ModuleVersion = '1.1.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -130,7 +130,14 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.0.9
+        ReleaseNotes = '1.1.0
+-----
+* Removed check tools, excluding CheckNetworkAccess.
+* Added basic Job object cmdlets.
+* Added creation of protected processes in Win32Process.
+* Added service access checking cmdlet.
+* Added get executable manifest cmdlet.
+1.0.9
 -----
 * Made New-Win32Process more generic and added support for Win32k filter enable.
 * Added function to capture token from a process using impersonation.

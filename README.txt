@@ -31,6 +31,14 @@ The tools can be built with Visual Studio 2015
 
 Release Notes:
 
+1.1.0
+-----
+* Removed check tools, excluding CheckNetworkAccess.
+* Added basic Job object cmdlets.
+* Added creation of protected processes in Win32Process.
+* Added service access checking cmdlet.
+* Added get executable manifest cmdlet.
+
 1.0.9
 -----
 * Made New-Win32Process more generic and added support for Win32k filter enable.
