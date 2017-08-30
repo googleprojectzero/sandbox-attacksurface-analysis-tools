@@ -57,10 +57,12 @@ namespace NtApiDotNet
         /// Path to DLLs.
         /// </summary>
         public string DllPath { get; set; }
+
         /// <summary>
         /// Current directory for new process
         /// </summary>
         public string CurrentDirectory { get; set; }
+
         /// <summary>
         /// Desktop information value
         /// </summary>
@@ -123,6 +125,14 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Parent process.
+        /// </summary>
+        public NtProcess ParentProcess
+        {
+            get; set;
+        }
+
+        /// <summary>
         /// Restrict new child processes
         /// </summary>
         public bool RestrictChildProcess
@@ -147,9 +157,27 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Added protected process protection level.
+        /// </summary>
+        /// <param name="type">The type of protected process.</param>
+        /// <param name="signer">The signer level.</param>
+        public void AddProtectionLevel(PsProtectedType type, PsProtectedSigner signer)
+        {
+            AdditionalAttributes.Add(ProcessAttribute.ProtectionLevel(type, signer, false));
+        }
+
+        /// <summary>
         /// Return on error instead of throwing an exception.
         /// </summary>
         public bool ReturnOnError
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Whether to terminate the process on dispose.
+        /// </summary>
+        public bool TerminateOnDispose
         {
             get; set;
         }
@@ -191,7 +219,7 @@ namespace NtApiDotNet
                   ThreadCreateFlags.Suspended, IntPtr.Zero, create_info, attr_list).ToNtException();
 
                 return new CreateUserProcessResult(process_handle, thread_handle,
-                  create_info.Data, new SectionImageInformation(), client_id.Result);
+                  create_info.Data, new SectionImageInformation(), client_id.Result, false);
             }
             finally
             {
@@ -252,6 +280,10 @@ namespace NtApiDotNet
                 SafeStructureInOutBuffer<ClientId> client_id = new SafeStructureInOutBuffer<ClientId>();
                 attrs.Add(ProcessAttribute.ClientId(client_id));
                 attrs.AddRange(AdditionalAttributes);
+                if (ParentProcess != null)
+                {
+                    attrs.Add(ProcessAttribute.ParentProcess(ParentProcess.Handle));
+                }
 
                 if (RestrictChildProcess || OverrideRestrictChildProcess)
                 {
@@ -289,7 +321,7 @@ namespace NtApiDotNet
                 if (create_info.State == ProcessCreateState.Success)
                 {
                     return new CreateUserProcessResult(process_handle, thread_handle,
-                      create_info.Data, image_info.Result, client_id.Result);
+                      create_info.Data, image_info.Result, client_id.Result, TerminateOnDispose);
                 }
                 else
                 {

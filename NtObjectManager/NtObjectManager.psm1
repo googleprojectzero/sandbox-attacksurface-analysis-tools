@@ -332,7 +332,7 @@ Optional path to the application executable.
 Optional security descriptor for the process.
 .PARAMETER ThreadSecurityDescriptor
 Optional security descriptor for the initial thread.
-.PARAMETER ParentProess
+.PARAMETER ParentProcess
 Optional process to act as the parent, needs CreateProcess access to succeed.
 .PARAMETER CreationFlags
 Flags to affect process creation.
@@ -344,7 +344,7 @@ Optional environment block for the new process.
 Optional current directory for the new process.
 .PARAMETER Desktop
 Optional desktop for the new process.
-.PARAMETER $Title
+.PARAMETER Title
 Optional title for the new process.
 .PARAMETER InheritHandles
 Switch to specify whether to inherit handles into new process.
@@ -431,7 +431,7 @@ Optional path to the application executable.
 Optional security descriptor for the process.
 .PARAMETER ThreadSecurityDescriptor
 Optional security descriptor for the initial thread.
-.PARAMETER ParentProess
+.PARAMETER ParentProcess
 Optional process to act as the parent, needs CreateProcess access to succeed.
 .PARAMETER CreationFlags
 Flags to affect process creation.
@@ -443,7 +443,7 @@ Optional environment block for the new process.
 Optional current directory for the new process.
 .PARAMETER Desktop
 Optional desktop for the new process.
-.PARAMETER $Title
+.PARAMETER Title
 Optional title for the new process.
 .PARAMETER InheritHandles
 Switch to specify whether to inherit handles into new process.
@@ -455,6 +455,8 @@ Switch to specify whether the thread handle is inheritable.
 Specify optional mitigation options.
 .PARAMETER Token
 Specify an explicit token to create the new process with.
+.PARAMETER Config
+Specify the configuration for the new process.
 .INPUTS
 None
 .OUTPUTS
@@ -514,6 +516,92 @@ function New-Win32Process
 	} else {
 		[SandboxAnalysisUtils.Win32Process]::CreateProcessAsUser($Token, $config)
 	}
+}
+
+<#
+.SYNOPSIS
+Create a new native NT process configuration.
+.DESCRIPTION
+This cmdlet creates a new native process configuration which you can then pass to New-NtProcess.
+.PARAMETER CommandLine
+The command line of the process to create.
+.PARAMETER ProcessFlags
+Flags to affect process creation.
+.PARAMETER ThreadFlags
+Flags to affect thread creation.
+.PARAMETER ProtectedType
+Protected process type.
+.PARAMETER ProtectedSigner
+Protected process signer.
+.PARAMETER TerminateOnDispose
+Specify switch to terminate the process when the CreateUserProcessResult object is disposed.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.CreateUserProcess
+#>
+function New-NtProcessConfig
+{
+    Param(
+		[Parameter(Mandatory=$true, Position=0)]
+        [string]$CommandLine,
+		[NtApiDotNet.ProcessCreateFlags]$ProcessFlags = 0,
+		[NtApiDotNet.ThreadCreateFlags]$ThreadFlags = 0,
+		[NtApiDotNet.PsProtectedType]$ProtectedType = 0,
+		[NtApiDotNet.PsProtectedSigner]$ProtectedSigner = 0,
+		[switch]$TerminateOnDispose
+    )
+    $config = New-Object NtApiDotNet.CreateUserProcess
+	$config.ProcessFlags = $ProcessFlags
+	$config.ThreadFlags = $ThreadFlags
+	$config.CommandLine = $CommandLine
+	$config.TerminateOnDispose = $TerminateOnDispose
+
+	if ($ProtectedType -ne 0 -or $ProtectedSigner -ne 0)
+	{
+		$config.AddProtectionLevel($ProtectedType, $ProtectedSigner)
+		$config.ProcessFlags = $ProcessFlags -bor "ProtectedProcess"
+	}
+
+    return $config
+}
+
+<#
+.SYNOPSIS
+Create a new native NT process.
+.DESCRIPTION
+This cmdlet creates a new native NT process.
+.PARAMETER ImagePath
+NT path to executable.
+.PARAMETER Config
+The configuration for the new process from New-NtProcessConfig.
+.PARAMETER Win32Path
+Specified ImagePath is a Win32 path.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.CreateUserProcessResult
+#>
+function New-NtProcess
+{
+	[CmdletBinding(DefaultParameterSetName = "FromArgs")]
+    Param(
+        [Parameter(Mandatory=$true, Position=0)]
+        [string]$ImagePath,		
+		[NtApiDotNet.CreateUserProcess]$Config,
+		[switch]$Win32Path
+    )
+
+	if ($null -eq $Config) {
+		$Config = New-NtProcessConfig -CommandLine $ImagePath
+	}
+
+	if ($Win32Path) {
+		$path = Resolve-Path $ImagePath
+		$ImagePath = [NtApiDotNet.NtFileUtils]::DosFileNameToNt($path)
+	}
+
+	$Config.Start($ImagePath)
 }
 
 <#

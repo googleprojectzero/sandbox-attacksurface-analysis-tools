@@ -135,7 +135,7 @@ namespace NtApiDotNet
 
         internal CreateUserProcessResult(SafeKernelObjectHandle process_handle, SafeKernelObjectHandle thread_handle,
           ProcessCreateInfoData create_info,
-          SectionImageInformation image_info, ClientId client_id)
+          SectionImageInformation image_info, ClientId client_id, bool terminate_on_dispose)
         {
             Process = new NtProcess(process_handle);
             Thread = new NtThread(thread_handle);
@@ -145,6 +145,7 @@ namespace NtApiDotNet
             ClientId = client_id;
             CreateInfo = create_info;
             CreateState = ProcessCreateState.Success;
+            TerminateOnDispose = terminate_on_dispose;
         }
 
         internal CreateUserProcessResult(NtStatus status, ProcessCreateInfoData create_info, ProcessCreateState create_state)
