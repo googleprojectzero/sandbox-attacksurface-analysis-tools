@@ -455,7 +455,7 @@ namespace SandboxAnalysisUtils
                 return new ServiceSecurityInformation(name, GetServiceSecurityDescriptor(service), GetTriggersForService(service));
             }
         }
-
+        
         public static ServiceSecurityInformation GetServiceSecurityInformation(string name)
         {
             using (SafeServiceHandle scm = OpenSCManager(null, null,

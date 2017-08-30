@@ -42,6 +42,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.ServiceProcess" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommonAccessBaseCmdlet.cs" />
@@ -52,6 +53,7 @@
     <Compile Include="GetAccessibleNamedPipeCmdlet.cs" />
     <Compile Include="GetAccessibleObjectCmdlet.cs" />
     <Compile Include="GetAccessibleProcessCmdlet.cs" />
+    <Compile Include="GetAccessibleServiceCmdlet.cs" />
     <Compile Include="NtEventCmdlets.cs" />
     <Compile Include="NtJobCmdlets.cs" />
     <Compile Include="NtProcessCmdlets.cs" />
