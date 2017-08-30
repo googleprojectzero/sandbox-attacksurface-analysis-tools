@@ -44,6 +44,7 @@
     <Compile Include="SafeLoadLibraryHandle.cs" />
     <Compile Include="SafeWin32Exception.cs" />
     <Compile Include="SecurityInformationImpl.cs" />
+    <Compile Include="ServiceUtils.cs" />
     <Compile Include="TokenUtils.cs" />
     <Compile Include="Win32Process.cs" />
   </ItemGroup>
