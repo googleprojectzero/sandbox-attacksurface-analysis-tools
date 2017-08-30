@@ -212,22 +212,20 @@ namespace NtApiDotNet
 
     public enum PsProtectedType
     {
-        PsProtectedTypeNone,
-        PsProtectedTypeProtectedLight,
-        PsProtectedTypeProtected,
-        PsProtectedTypeMax
+        None,
+        ProtectedLight,
+        Protected,
     }
 
     public enum PsProtectedSigner
     {
-        PsProtectedSignerNone,
-        PsProtectedSignerAuthenticode,
-        PsProtectedSignerCodeGen,
-        PsProtectedSignerAntimalware,
-        PsProtectedSignerLsa,
-        PsProtectedSignerWindows,
-        PsProtectedSignerWinTcb,
-        PsProtectedSignerMax
+        None,
+        Authenticode,
+        CodeGen,
+        Antimalware,
+        Lsa,
+        Windows,
+        WinTcb,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -247,6 +245,7 @@ namespace NtApiDotNet
         public PsProtectedType Type { get { return (PsProtectedType)(level & 0x7); } }
         public bool Audit { get { return (level & 0x8) == 0x8; } }
         public PsProtectedSigner Signer { get { return (PsProtectedSigner)(level >> 4); } }
+        public byte Level { get { return level; } }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -717,7 +716,9 @@ namespace NtApiDotNet
 
         public static ProcessAttribute ProtectionLevel(PsProtectedType type, PsProtectedSigner signer, bool audit)
         {
-            return new ProcessAttribute(ProcessAttributeNum.ProtectionLevel, false, true, true, new PsProtection(type, signer, audit).ToBuffer());
+            PsProtection protection = new PsProtection(type, signer, audit);
+
+            return new ProcessAttribute(ProcessAttributeNum.ProtectionLevel, false, true, true, new IntPtr(protection.Level), 1, IntPtr.Zero);
         }
 
         public static ProcessAttribute HandleList(IEnumerable<SafeHandle> handles)
