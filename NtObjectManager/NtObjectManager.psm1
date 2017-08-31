@@ -520,6 +520,43 @@ function New-Win32Process
 
 <#
 .SYNOPSIS
+Get the NT path for a dos path.
+.DESCRIPTION
+This cmdlet gets the full NT path for a specified DOS path or multiple.
+.PARAMETER Path
+The DOS path to convert to NT.
+.PARAMETER Resolve
+Resolve relative paths to the current PS directory.
+.INPUTS
+string[] List of paths to convert.
+.OUTPUTS
+string[] Converted paths.
+#>
+function Get-NtFilePath {
+	[CmdletBinding()]
+	Param(
+		[parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
+        [string[]]$Path,
+		[switch]$Resolve
+	)
+
+	PROCESS {
+		foreach($path in $Path) {
+			$type = [NtApiDotNet.NtFileUtils]::GetDosPathType($path)
+			$p = $path
+			if ($Resolve) {
+				if ($type -eq "Relative" -or $type -eq "Rooted") {
+					$p = Resolve-Path -LiteralPath $p
+				}
+			}
+			$p = [NtApiDotNet.NtFileUtils]::DosFileNameToNt($p)
+			Write-Output $p
+		}
+	}
+}
+
+<#
+.SYNOPSIS
 Create a new native NT process configuration.
 .DESCRIPTION
 This cmdlet creates a new native process configuration which you can then pass to New-NtProcess.
@@ -597,8 +634,7 @@ function New-NtProcess
 	}
 
 	if ($Win32Path) {
-		$path = Resolve-Path $ImagePath
-		$ImagePath = [NtApiDotNet.NtFileUtils]::DosFileNameToNt($path)
+		$ImagePath = Get-NtFilePath $ImagePath -Resolve
 	}
 
 	$Config.Start($ImagePath)
@@ -656,16 +692,20 @@ Create a new image section based on an existing file.
 This cmdlet creates an image section based on an existing file.
 .PARAMETER File
 A file object to an image file to create.
+.PARAMETER Path
+A path to an image to create.
+.PARAMETER Win32Path
+Resolve path as a Win32 path
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.NtSection
 .EXAMPLE
-New-NtEaBuffer
-Create a new empty EaBuffer object
+New-NtSectionImage -Path \??\c:\windows\notepad.exe
+Creates a 
 .EXAMPLE
-New-NtEaBuffer @{ INTENTRY = 1234; STRENTRY = "ABC"; BYTEENTRY = [byte[]]@(1,2,3) }
-Create a new EaBuffer object initialized with three separate entries.
+New-NtSectionImage -File $file
+Creates a new image section from an open NtFile object.
 #>
 function New-NtSectionImage
 {
@@ -674,11 +714,16 @@ function New-NtSectionImage
 		[Parameter(Position = 0, ParameterSetName = "FromFile", Mandatory = $true)] 
         [NtApiDotNet.NtFile]$File,
 		[Parameter(Position = 0, ParameterSetName = "FromPath", Mandatory = $true)] 
-		[string]$Path
+		[string]$Path,
+		[switch]$Win32Path
 	)
 
 	if ($null -eq $File)
 	{
+		if ($Win32Path)
+		{
+			$Path = Get-NtFilePath $Path -Resolve
+		}
 		Use-NtObject($new_file = Get-NtFile -Path $Path -Share Read,Delete -Access GenericExecute) {
 			return [NtApiDotNet.NtSection]::CreateImageSection($new_file)
 		}
@@ -789,7 +834,7 @@ function Get-ExecutableManifest
     PROCESS {
 		foreach($p in $Path)
 		{
-			$fullpath = Resolve-Path $p
+			$fullpath = Resolve-Path -LiteralPath $p
 			$manifest = [SandboxAnalysisUtils.ExecutableManifest]::GetManifests($fullpath)
 			Write-Output $manifest
 		}
