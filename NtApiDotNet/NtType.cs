@@ -605,14 +605,14 @@ namespace NtApiDotNet
                 Dictionary<string, NtType> ret = new Dictionary<string, NtType>(StringComparer.OrdinalIgnoreCase);
                 int return_length;
                 NtStatus status = NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectAllInformation,
-                    type_info.DangerousGetHandle(), type_info.Length, out return_length);
+                    type_info, type_info.Length, out return_length);
                 if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
                     status.ToNtException();
                 type_info.Resize(return_length);
                 
                 int alignment = IntPtr.Size - 1;
                 NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectAllInformation,
-                    type_info.DangerousGetHandle(), type_info.Length, out return_length).ToNtException();
+                    type_info, type_info.Length, out return_length).ToNtException();
                 ObjectAllTypesInformation result = type_info.Result;
                 IntPtr curr_typeinfo = type_info.DangerousGetHandle() + IntPtr.Size;
                 for (int count = 0; count < result.NumberOfTypes; ++count)

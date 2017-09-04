@@ -462,6 +462,63 @@ namespace NtApiDotNet
         {
             get { return new SafeKernelObjectHandle(IntPtr.Zero, false); }
         }
+
+        private ObjectHandleInformation QueryHandleInformation()
+        {
+            using (var buffer = new SafeStructureInOutBuffer<ObjectHandleInformation>())
+            {
+                int return_length;
+                NtSystemCalls.NtQueryObject(this, ObjectInformationClass.ObjectHandleInformation,
+                    buffer, buffer.Length, out return_length).ToNtException();
+                return buffer.Result;
+            }
+        }
+
+        private void SetHandleInformation(ObjectHandleInformation handle_info)
+        {
+            using (var buffer = handle_info.ToBuffer())
+            {
+                NtSystemCalls.NtSetInformationObject(
+                    this, ObjectInformationClass.ObjectHandleInformation,
+                    buffer, buffer.Length).ToNtException();
+            }
+        }
+
+        /// <summary>
+        /// Get or set whether the handle is inheritable.
+        /// </summary>
+        public bool Inherit
+        {
+            get
+            {
+                return QueryHandleInformation().Inherit;
+            }
+
+            set
+            {
+                var handle_info = QueryHandleInformation();
+                handle_info.Inherit = value;
+                SetHandleInformation(handle_info);
+            }
+        }
+
+        /// <summary>
+        /// Get or set whether the handle is protected from closing.
+        /// </summary>
+        public bool ProtectFromClose
+        {
+            get
+            {
+                return QueryHandleInformation().ProtectFromClose;
+            }
+
+            set
+            {
+                var handle_info = QueryHandleInformation();
+                handle_info.ProtectFromClose = value;
+                SetHandleInformation(handle_info);
+            }
+        }
     }
 
     public sealed class SafeHandleListHandle : SafeHGlobalBuffer

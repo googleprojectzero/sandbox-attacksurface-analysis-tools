@@ -79,14 +79,14 @@ namespace NtApiDotNet
     /// <summary>
     /// Information class for NtQueryObject
     /// </summary>
-    /// <see cref="NtSystemCalls.NtQueryObject(SafeHandle, ObjectInformationClass, IntPtr, int, out int)"/>
+    /// <see cref="NtSystemCalls.NtQueryObject(SafeHandle, ObjectInformationClass, SafeBuffer, int, out int)"/>
     public enum ObjectInformationClass
     {
         ObjectBasicInformation,
         ObjectNameInformation,
         ObjectTypeInformation,
         ObjectAllInformation,
-        ObjectDataInformation
+        ObjectHandleInformation
     }
 
     /// <summary>
@@ -117,6 +117,15 @@ namespace NtApiDotNet
         public int TypeInformationLength;
         public int SecurityDescriptorLength;
         public LargeIntegerStruct CreationTime;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ObjectHandleInformation
+    {
+        [MarshalAs(UnmanagedType.U1)]
+        public bool Inherit;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool ProtectFromClose;
     }
 
     /// <summary>
@@ -153,10 +162,18 @@ namespace NtApiDotNet
         public static extern NtStatus NtQueryObject(
 		    SafeHandle ObjectHandle,
             ObjectInformationClass ObjectInformationClass,
-		    IntPtr ObjectInformation,
+		    SafeBuffer ObjectInformation,
             int ObjectInformationLength,
 		    out int ReturnLength
 		);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSetInformationObject(
+            SafeHandle ObjectHandle,
+            ObjectInformationClass ObjectInformationClass,
+            SafeBuffer ObjectInformation,
+            int ObjectInformationLength
+        );
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtQuerySecurityObject(
@@ -244,14 +261,14 @@ namespace NtApiDotNet
             try
             {
                 int return_length;
-                status = NtSystemCalls.NtQueryObject(handle, object_info, IntPtr.Zero, 0, out return_length);
+                status = NtSystemCalls.NtQueryObject(handle, object_info, SafeHGlobalBuffer.Null, 0, out return_length);
                 if ((status != NtStatus.STATUS_BUFFER_TOO_SMALL) && (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH))
                     status.ToNtException();
                 if (return_length == 0)
                     ret = new SafeStructureInOutBuffer<T>();
                 else
                     ret = new SafeStructureInOutBuffer<T>(return_length, false);
-                status = NtSystemCalls.NtQueryObject(handle, object_info, ret.DangerousGetHandle(), ret.Length, out return_length);
+                status = NtSystemCalls.NtQueryObject(handle, object_info, ret, ret.Length, out return_length);
                 status.ToNtException();
             }
             finally
@@ -278,7 +295,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         internal static NtResult<SafeKernelObjectHandle> DuplicateHandle(
             NtProcess src_process, SafeKernelObjectHandle src_handle,
-            NtProcess dest_process, AccessMask access_rights, 
+            NtProcess dest_process, AccessMask access_rights,
             AttributeFlags flags, DuplicateObjectOptions options,
             bool throw_on_error)
         {
@@ -301,7 +318,7 @@ namespace NtApiDotNet
             NtProcess dest_process, AccessMask access_rights,
             DuplicateObjectOptions options)
         {
-            return DuplicateHandle(NtProcess.Current, src_handle, dest_process, 
+            return DuplicateHandle(NtProcess.Current, src_handle, dest_process,
                 access_rights, AttributeFlags.None, options, true).Result;
         }
 
@@ -404,7 +421,7 @@ namespace NtApiDotNet
                 return GetName(Handle);
             }
         }
-        
+
         /// <summary>
         /// Get the granted access as an unsigned integer
         /// </summary>
@@ -458,7 +475,7 @@ namespace NtApiDotNet
                 return status.CreateResult(throw_on_error, () => new byte[0]);
             }
             byte[] buffer = new byte[return_length];
-            return NtSystemCalls.NtQuerySecurityObject(Handle, security_information, buffer, 
+            return NtSystemCalls.NtQuerySecurityObject(Handle, security_information, buffer,
                 buffer.Length, out return_length).CreateResult(throw_on_error, () => buffer);
         }
 
@@ -572,7 +589,7 @@ namespace NtApiDotNet
         /// </summary>
         public void MakePermanent()
         {
-           NtSystemCalls.NtMakePermanentObject(Handle).ToNtException();
+            NtSystemCalls.NtMakePermanentObject(Handle).ToNtException();
         }
 
         /// <summary>
@@ -688,11 +705,11 @@ namespace NtApiDotNet
             {
                 if (_type_name == null)
                 {
-                    using (SafeStructureInOutBuffer<ObjectTypeInformation> type_info = new SafeStructureInOutBuffer<ObjectTypeInformation>(1024, true))
+                    using (var type_info = new SafeStructureInOutBuffer<ObjectTypeInformation>(1024, true))
                     {
                         int return_length;
                         NtSystemCalls.NtQueryObject(Handle,
-                            ObjectInformationClass.ObjectTypeInformation, type_info.DangerousGetHandle(), type_info.Length, out return_length).ToNtException();
+                            ObjectInformationClass.ObjectTypeInformation, type_info, type_info.Length, out return_length).ToNtException();
                         _type_name = type_info.Result.Name.ToString();
                     }
                 }
@@ -776,6 +793,38 @@ namespace NtApiDotNet
             get
             {
                 return DateTime.FromFileTime(_basic_information.CreationTime.QuadPart);
+            }
+        }
+        
+        /// <summary>
+        /// Get or set whether the handle is inheritable.
+        /// </summary>
+        public bool Inherit
+        {
+            get
+            {
+                return Handle.Inherit;
+            }
+
+            set
+            {
+                Handle.Inherit = value;
+            }
+        }
+
+        /// <summary>
+        /// Get or set whether the handle is protected from closing.
+        /// </summary>
+        public bool ProtectFromClose
+        {
+            get
+            {
+                return Handle.ProtectFromClose;
+            }
+
+            set
+            {
+                Handle.ProtectFromClose = value;
             }
         }
 
