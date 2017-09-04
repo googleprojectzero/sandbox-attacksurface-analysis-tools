@@ -1472,6 +1472,7 @@ namespace NtApiDotNet
                 "contactsSystem",
                 "contentDeliveryManagerSettings",
                 "cortanaSettings",
+                "cortanaPermissions",
                 "curatedTileCollections",
                 "deviceManagementAdministrator",
                 "deviceManagementEmailAccount",
