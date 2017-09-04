@@ -578,7 +578,7 @@ namespace NtApiDotNet
         public static NtType GetTypeByType<T>(bool cached) where T : NtObject
         {
             IEnumerable<NtTypeAttribute> attrs = typeof(T).GetCustomAttributes<NtTypeAttribute>();
-            if (attrs.Count() == 0)
+            if (!attrs.Any())
             {
                 throw new ArgumentException("Type has no mapping to an NT Type");
             }
