@@ -1548,15 +1548,15 @@ namespace NtApiDotNet
 
             try
             {
-                if (sids_to_disable != null && sids_to_disable.Count() > 0)
+                if (sids_to_disable != null && sids_to_disable.Any())
                 {
                     sids_to_disable_buffer = BuildGroups(sids_to_disable, GroupAttributes.None);
                 }
-                if (restricted_sids != null && restricted_sids.Count() > 0)
+                if (restricted_sids != null && restricted_sids.Any())
                 {
                     restricted_sids_buffer = BuildGroups(restricted_sids, GroupAttributes.None);
                 }
-                if (privileges_to_delete != null && privileges_to_delete.Count() > 0)
+                if (privileges_to_delete != null && privileges_to_delete.Any())
                 {
                     TokenPrivilegesBuilder builder = new TokenPrivilegesBuilder();
                     foreach (Luid priv in privileges_to_delete)

@@ -56,6 +56,7 @@ namespace NtObjectManager
             ProcessId = process_id;
             ProcessCommandLine = command_line;
             IsThread = is_thread;
+            SessionId = session_id;
         }
     }
 

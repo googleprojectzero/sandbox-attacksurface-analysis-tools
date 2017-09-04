@@ -1191,22 +1191,28 @@ namespace NtApiDotNet
         /// <returns>The ACL as a byte array</returns>
         public byte[] ToByteArray()
         {
-            MemoryStream ace_stm = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(ace_stm);
-            AclRevision revision = Revision;
-            if (revision != AclRevision.Revision || revision != AclRevision.RevisionDS)
+            AclRevision revision;
+            byte[] aces;
+            using (MemoryStream ace_stm = new MemoryStream())
             {
-                revision = AclRevision.Revision;
-            }
-            foreach (Ace ace in this)
-            {
-                ace.Serialize(writer);
-                if (ace.IsObjectAce)
+                using (BinaryWriter writer = new BinaryWriter(ace_stm))
                 {
-                    revision = AclRevision.RevisionDS;
+                    revision = Revision;
+                    if (revision != AclRevision.Revision || revision != AclRevision.RevisionDS)
+                    {
+                        revision = AclRevision.Revision;
+                    }
+                    foreach (Ace ace in this)
+                    {
+                        ace.Serialize(writer);
+                        if (ace.IsObjectAce)
+                        {
+                            revision = AclRevision.RevisionDS;
+                        }
+                    }
                 }
+                aces = ace_stm.ToArray();
             }
-            byte[] aces = ace_stm.ToArray();
 
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(Marshal.SizeOf(typeof(AclStructure)) + aces.Length))
             {
