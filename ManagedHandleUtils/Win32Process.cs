@@ -14,6 +14,7 @@
 
 using NtApiDotNet;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -377,6 +378,12 @@ namespace SandboxAnalysisUtils
         public Win32kFilterFlags Win32kFilterFlags { get; set; }
         public int Win32kFilterLevel { get; set; }
         public ProtectionLevel ProtectionLevel { get; set; }
+        public List<IntPtr> InheritHandleList { get; private set; }
+
+        public Win32ProcessConfig()
+        {
+            InheritHandleList = new List<IntPtr>();
+        }
 
         private void PopulateStartupInfo(ref STARTUPINFO start_info)
         {
@@ -411,6 +418,11 @@ namespace SandboxAnalysisUtils
             }
 
             if ((CreationFlags & CreateProcessFlags.ProtectedProcess) != 0)
+            {
+                count++;
+            }
+
+            if (InheritHandleList.Count > 0)
             {
                 count++;
             }
@@ -457,6 +469,14 @@ namespace SandboxAnalysisUtils
             if ((CreationFlags & CreateProcessFlags.ProtectedProcess) != 0)
             {
                 attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeProtectionLevel, (int)ProtectionLevel);
+            }
+
+            if (InheritHandleList.Count > 0)
+            {
+                int total_size = IntPtr.Size * InheritHandleList.Count;
+                var handle_list = resources.AddResource(new SafeHGlobalBuffer(total_size));
+                handle_list.WriteArray(0, InheritHandleList.ToArray(), 0, InheritHandleList.Count);
+                attr_list.AddAttributeBuffer(ProcessAttributes.ProcThreadAttributeHandleList, handle_list);
             }
 
             return attr_list;
