@@ -1570,6 +1570,14 @@ namespace NtApiDotNet
         public IntPtr ProcessIdList;
     }
 
+    public enum OplockRequestLevel
+    {
+        Level1,
+        Level2,
+        Batch,
+        Filter
+    }
+
 #pragma warning restore 1591
 
     /// <summary>
@@ -3072,12 +3080,57 @@ namespace NtApiDotNet
             }
         }
 
+        private static NtIoControlCode GetOplockFsctl(OplockRequestLevel level)
+        {
+            switch (level)
+            {
+                case OplockRequestLevel.Level1:
+                    return NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK_LEVEL_1;
+                case OplockRequestLevel.Level2:
+                    return NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK_LEVEL_2;
+                case OplockRequestLevel.Batch:
+                    return NtWellKnownIoControlCodes.FSCTL_REQUEST_BATCH_OPLOCK;
+                case OplockRequestLevel.Filter:
+                    return NtWellKnownIoControlCodes.FSCTL_REQUEST_FILTER_OPLOCK;
+                default:
+                    throw new ArgumentException("Invalid oplock request level", "level");
+            }
+        }
+
+        /// <summary>
+        /// Oplock the file with a specific level.
+        /// </summary>
+        /// <param name="level">The level of oplock to set.</param>
+        public void RequestOplock(OplockRequestLevel level)
+        {
+            FsControl(GetOplockFsctl(level), null, null);
+        }
+
+        /// <summary>
+        /// Oplock the file with a specific level.
+        /// </summary>
+        /// <param name="level">The level of oplock to set.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        public Task RequestOplockAsync(OplockRequestLevel level, CancellationToken token)
+        {
+            return FsControlAsync(GetOplockFsctl(level), null, null, token);
+        }
+
+        /// <summary>
+        /// Oplock the file with a specific level.
+        /// </summary>
+        /// <param name="level">The level of oplock to set.</param>
+        public Task RequestOplockAsync(OplockRequestLevel level)
+        {
+            return RequestOplockAsync(level, CancellationToken.None);
+        }
+
         /// <summary>
         /// Oplock the file exclusively (no other users can access the file).
         /// </summary>
         public void OplockExclusive()
         {
-            FsControl(NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK_LEVEL_1, null, null);
+            RequestOplock(OplockRequestLevel.Level1);
         }
 
         /// <summary>
@@ -3086,7 +3139,7 @@ namespace NtApiDotNet
         /// <param name="token">Cancellation token to cancel async operation.</param>
         public Task OplockExclusiveAsync(CancellationToken token)
         {
-            return FsControlAsync(NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK_LEVEL_1, null, null, token);
+            return RequestOplockAsync(OplockRequestLevel.Level1, token);
         }
 
         /// <summary>
