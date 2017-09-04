@@ -12,9 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NDesk.Options;
 using NtApiDotNet;
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Forms;
 
 namespace TokenViewer
@@ -73,18 +76,95 @@ namespace TokenViewer
             IntPtr pReserved3
         );
 
+        static void ShowHelp(OptionSet p)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("Usage: ObjectList [options] path1 [path2..pathN]");
+            builder.AppendLine();
+            builder.AppendLine("Options:");
+            StringWriter writer = new StringWriter();
+            p.WriteOptionDescriptions(writer);
+            builder.Append(writer.ToString());
+            MessageBox.Show(builder.ToString(), "Options", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        static Form GetFormFromArgs(string[] args)
+        {
+            try
+            {
+                int pid = -1;
+                int handle = -1;
+                bool show_help = false;
+
+                OptionSet opts = new OptionSet() {
+                        { "p|pid=", "Specify a process ID to view the token.",
+                            v => pid = int.Parse(v) },
+                        { "handle=", "Specify an inherited handle to view.",
+                            v => handle = int.Parse(v) },
+                        { "h|help",  "Show this message and exit",
+                           v => show_help = v != null },
+                    };
+
+                opts.Parse(args);
+
+                if (show_help || (handle <= 0 && pid <= 0))
+                {
+                    ShowHelp(opts);
+                }
+                else if (handle > 0)
+                {
+                    using (NtToken token = NtToken.FromHandle(new SafeKernelObjectHandle(new IntPtr(handle), true)))
+                    {
+                        if (token.NtType != NtType.GetTypeByType<NtToken>())
+                        {
+                            throw new ArgumentException("Passed handle is not a token");
+                        }
+
+                        return new TokenForm(token.Duplicate());
+                    }
+                }
+                else if (pid > 0)
+                {
+                    using (NtProcess process = NtProcess.Open(pid, ProcessAccessRights.QueryLimitedInformation))
+                    {
+                        return new TokenForm(process.OpenToken());
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             CoInitializeSecurity(IntPtr.Zero, -1, IntPtr.Zero, IntPtr.Zero, AuthnLevel.RPC_C_AUTHN_LEVEL_DEFAULT, 
                 ImpLevel.RPC_C_IMP_LEVEL_IMPERSONATE, IntPtr.Zero, EOLE_AUTHENTICATION_CAPABILITIES.EOAC_DYNAMIC_CLOAKING, IntPtr.Zero);
             NtToken.EnableDebugPrivilege();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());
+            Form main_form;
+
+            if (args.Length > 0)
+            {
+                main_form = GetFormFromArgs(args);
+                if (main_form == null)
+                {
+                    Environment.Exit(1);
+                }
+            }
+            else
+            {
+                main_form = new MainForm();
+            }
+            Application.Run(main_form);
         }
     }
 }
