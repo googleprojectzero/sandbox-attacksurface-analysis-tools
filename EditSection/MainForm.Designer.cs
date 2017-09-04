@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            WeifenLuo.WinFormsUI.Docking.DockPanelSkin dockPanelSkin1 = new WeifenLuo.WinFormsUI.Docking.DockPanelSkin();
             WeifenLuo.WinFormsUI.Docking.AutoHideStripSkin autoHideStripSkin1 = new WeifenLuo.WinFormsUI.Docking.AutoHideStripSkin();
             WeifenLuo.WinFormsUI.Docking.DockPanelGradient dockPanelGradient1 = new WeifenLuo.WinFormsUI.Docking.DockPanelGradient();
             WeifenLuo.WinFormsUI.Docking.TabGradient tabGradient1 = new WeifenLuo.WinFormsUI.Docking.TabGradient();
@@ -67,7 +66,6 @@
             tabGradient1.TextColor = System.Drawing.SystemColors.ControlDarkDark;
             autoHideStripSkin1.TabGradient = tabGradient1;
             autoHideStripSkin1.TextFont = new System.Drawing.Font("Segoe UI", 9F);
-            dockPanelSkin1.AutoHideStripSkin = autoHideStripSkin1;
             tabGradient2.EndColor = System.Drawing.SystemColors.ControlLightLight;
             tabGradient2.StartColor = System.Drawing.SystemColors.ControlLightLight;
             tabGradient2.TextColor = System.Drawing.SystemColors.ControlText;
@@ -103,8 +101,8 @@
             tabGradient7.TextColor = System.Drawing.SystemColors.ControlDarkDark;
             dockPaneStripToolWindowGradient1.InactiveTabGradient = tabGradient7;
             dockPaneStripSkin1.ToolWindowGradient = dockPaneStripToolWindowGradient1;
-            dockPanelSkin1.DockPaneStripSkin = dockPaneStripSkin1;
-            this.dockPanel.Skin = dockPanelSkin1;
+            this.dockPanel.Theme.Skin.DockPaneStripSkin = dockPaneStripSkin1;
+            this.dockPanel.Theme.Skin.AutoHideStripSkin = autoHideStripSkin1;
             this.dockPanel.TabIndex = 0;
             // 
             // menuStrip1
