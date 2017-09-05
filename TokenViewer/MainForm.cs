@@ -251,14 +251,14 @@ namespace TokenViewer
                 {
                     using (NtToken token = TokenUtils.GetLogonUserToken(txtS4UUserName.Text, txtS4URealm.Text, txtLUPassword.Text, logonType))
                     {
-                        TokenForm.OpenForm(token, true);
+                        TokenForm.OpenForm(token, "LogonUser", true);
                     }
                 }
                 else
                 {
                     using (NtToken token = TokenUtils.GetLogonS4UToken(txtS4UUserName.Text, txtS4URealm.Text, logonType))
                     {
-                        TokenForm.OpenForm(token, true);
+                        TokenForm.OpenForm(token, "S4U", true);
                     }
                 }
             }
@@ -283,7 +283,7 @@ namespace TokenViewer
                     NtToken token = item.Tag as NtToken;
                     if (token != null)
                     {
-                        TokenForm.OpenForm(token, true);
+                        TokenForm.OpenForm(token, string.Format("{0}:{1}", item.SubItems[1].Text, item.SubItems[0].Text), true);
                     }
                 }
             }
@@ -293,7 +293,7 @@ namespace TokenViewer
         {
             try
             {
-                TokenForm.OpenForm(TokenUtils.GetAnonymousToken(), false);
+                TokenForm.OpenForm(TokenUtils.GetAnonymousToken(), "Anonymous", false);
             }
             catch (NtException ex)
             {
@@ -305,7 +305,7 @@ namespace TokenViewer
         {
             try
             {
-                TokenForm.OpenForm(TokenUtils.GetLogonUserToken(name, "NT AUTHORITY", null, SecurityLogonType.Service), false);
+                TokenForm.OpenForm(TokenUtils.GetLogonUserToken(name, "NT AUTHORITY", null, SecurityLogonType.Service), "Service", false);
             }
             catch (Exception ex)
             {
@@ -355,7 +355,7 @@ namespace TokenViewer
 
                     if (token != null)
                     {
-                        TokenForm.OpenForm(token, false);
+                        TokenForm.OpenForm(token, "NamedPipe", false);
                     }
                 }
             }
@@ -388,7 +388,7 @@ namespace TokenViewer
         {
             try
             {
-                TokenForm.OpenForm(NtToken.OpenProcessToken(), false);
+                TokenForm.OpenForm(NtToken.OpenProcessToken(), "Current", false);
             }
             catch (NtException ex)
             {
@@ -400,7 +400,7 @@ namespace TokenViewer
         {
             try
             {
-                TokenForm.OpenForm(TokenUtils.GetTokenFromClipboard(), false);
+                TokenForm.OpenForm(TokenUtils.GetTokenFromClipboard(), "Clipboard", false);
             }
             catch (NtException ex)
             {
@@ -428,7 +428,7 @@ namespace TokenViewer
                     NtToken token = GetToken(thread);
                     if (token != null)
                     {
-                        TokenForm.OpenForm(token, false);
+                        TokenForm.OpenForm(token, thread.ToString(), false);
                     }
                 }
             }
@@ -441,7 +441,7 @@ namespace TokenViewer
                 NtThread thread = listViewThreads.SelectedItems[0].Tag as NtThread;
                 if (thread != null)
                 {
-                    TokenForm.OpenForm(GetProcessToken(thread), false);
+                    TokenForm.OpenForm(GetProcessToken(thread), "Process", false);
                 }
             }
         }
@@ -458,7 +458,7 @@ namespace TokenViewer
                 NtToken token = listViewSessions.SelectedItems[0].Tag as NtToken;
                 if (token != null)
                 {
-                    TokenForm.OpenForm(token, true);
+                    TokenForm.OpenForm(token, "Session", true);
                 }
             }
         }
@@ -531,7 +531,7 @@ namespace TokenViewer
                 {
                     try
                     {
-                        TokenForm.OpenForm(token, true);
+                        TokenForm.OpenForm(token, "Handle", true);
                     }
                     catch (NtException)
                     {

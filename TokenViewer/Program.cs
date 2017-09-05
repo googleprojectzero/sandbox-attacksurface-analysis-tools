@@ -94,6 +94,7 @@ namespace TokenViewer
             {
                 int pid = -1;
                 int handle = -1;
+                string text = String.Empty;
                 bool show_help = false;
 
                 OptionSet opts = new OptionSet() {
@@ -101,6 +102,8 @@ namespace TokenViewer
                             v => pid = int.Parse(v) },
                         { "handle=", "Specify an inherited handle to view.",
                             v => handle = int.Parse(v) },
+                        { "text=", "Specify a text string for the token window.",
+                            v => text = v },
                         { "h|help",  "Show this message and exit",
                            v => show_help = v != null },
                     };
@@ -120,14 +123,15 @@ namespace TokenViewer
                             throw new ArgumentException("Passed handle is not a token");
                         }
 
-                        return new TokenForm(token.Duplicate());
+                        return new TokenForm(token.Duplicate(), text);
                     }
                 }
                 else if (pid > 0)
                 {
                     using (NtProcess process = NtProcess.Open(pid, ProcessAccessRights.QueryLimitedInformation))
                     {
-                        return new TokenForm(process.OpenToken());
+                        return new TokenForm(process.OpenToken(), 
+                            string.Format("{0}:{1}", process.Name, pid));
                     }
                 }
             }

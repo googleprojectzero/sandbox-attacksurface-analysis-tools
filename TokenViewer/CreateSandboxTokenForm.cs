@@ -269,7 +269,7 @@ namespace TokenViewer
         {
             try
             {
-                TokenForm.OpenForm(CreateToken(), false);
+                TokenForm.OpenForm(CreateToken(), null, false);
             }
             catch (Exception ex)
             {

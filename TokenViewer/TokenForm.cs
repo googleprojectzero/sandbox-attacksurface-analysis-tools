@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using System.Management;
 using System.Windows.Forms;
+using System.Text;
 
 namespace TokenViewer
 {
@@ -256,11 +257,28 @@ namespace TokenViewer
             UpdateSecurityAttributes();
         }
 
-        public TokenForm(NtToken token)
+        private static string GetFormText(NtToken token, string text)
+        {
+            StringBuilder builder = new StringBuilder();
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                builder.AppendFormat("{0} - ", text);
+            }
+            builder.AppendFormat("User {0} - TokenId {1}",
+                token.User.Sid.Name, token.Id);
+            return builder.ToString();
+        }
+
+        public TokenForm(NtToken token) : this(token, null)
+        {
+        }
+
+        public TokenForm(NtToken token, string text)
         {
             InitializeComponent();
             this.Disposed += TokenForm_Disposed;
             _token = token;
+            Text = GetFormText(token, text);
 
             foreach (object v in Enum.GetValues(typeof(TokenIntegrityLevel)))
             {
@@ -314,11 +332,11 @@ namespace TokenViewer
             _main_form = window;
         }
 
-        public static void OpenForm(NtToken token, bool copy)
+        public static void OpenForm(NtToken token, string text, bool copy)
         {
             if (token != null)
             {
-                TokenForm form = new TokenForm(copy ? token.Duplicate() : token);
+                TokenForm form = new TokenForm(copy ? token.Duplicate() : token, text);
 
                 _forms.Add(form);
                 form.FormClosed += form_FormClosed;
@@ -342,7 +360,7 @@ namespace TokenViewer
         {
             try
             {
-                OpenForm(_token.GetLinkedToken(), false);
+                OpenForm(_token.GetLinkedToken(), "Linked", false);
             }
             catch (Exception ex)
             {
@@ -374,7 +392,7 @@ namespace TokenViewer
                     {
                         token.SetIntegrityLevel(il);
                     }
-                    OpenForm(token, true);
+                    OpenForm(token, "Duplicate", true);
                 }
             }
             catch (Exception ex)
@@ -436,7 +454,7 @@ namespace TokenViewer
             try
             {
                 OpenForm(TokenUtils.GetTokenFromSaferLevel(_token,
-                    (SaferLevel)comboBoxSaferLevel.SelectedItem, checkBoxSaferMakeInert.Checked), false);                  
+                    (SaferLevel)comboBoxSaferLevel.SelectedItem, checkBoxSaferMakeInert.Checked), "Safer", false);                  
             }
             catch (Exception ex)
             {
@@ -708,7 +726,7 @@ namespace TokenViewer
             {
                 if (form.ShowDialog(this) == DialogResult.OK)
                 {
-                    OpenForm(form.Token, false);
+                    OpenForm(form.Token, "Sandbox", false);
                 }
             }
         }
@@ -738,7 +756,7 @@ namespace TokenViewer
                     }
                     if (imptoken != null)
                     {
-                        OpenForm(imptoken, false);
+                        OpenForm(imptoken, "Impersonation", false);
                     }
                     else
                     {
