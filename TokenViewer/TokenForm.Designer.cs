@@ -75,6 +75,7 @@
             System.Windows.Forms.Label label23;
             System.Windows.Forms.ColumnHeader columnHeader5;
             System.Windows.Forms.ColumnHeader columnHeader6;
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TokenForm));
             this.groupBoxSource = new System.Windows.Forms.GroupBox();
             this.txtSourceId = new System.Windows.Forms.TextBox();
             this.txtSourceName = new System.Windows.Forms.TextBox();
@@ -1501,6 +1502,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(633, 594);
             this.Controls.Add(this.tabControlMain);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Margin = new System.Windows.Forms.Padding(4);
             this.MinimumSize = new System.Drawing.Size(649, 624);
             this.Name = "TokenForm";
