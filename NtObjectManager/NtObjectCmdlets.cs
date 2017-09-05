@@ -460,6 +460,7 @@ namespace NtObjectManager
         /// <para type="description">Specify the input object to be disposed.</para>
         /// </summary>
         [Parameter(Mandatory = true, ValueFromPipeline = true, Position = 0)]
+        [AllowNull]
         public object InputObject { get; set; }
 
         /// <summary>
