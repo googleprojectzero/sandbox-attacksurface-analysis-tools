@@ -287,6 +287,11 @@ namespace TokenViewer
             }
 
             UpdateTokenData();
+            listViewGroups.ListViewItemSorter = new ListItemComparer(0);
+            listViewPrivs.ListViewItemSorter = new ListItemComparer(0);
+            listViewRestrictedSids.ListViewItemSorter = new ListItemComparer(0);
+            listViewCapabilities.ListViewItemSorter = new ListItemComparer(0);
+
             comboBoxImpLevel.Items.Add(SecurityImpersonationLevel.Anonymous);
             comboBoxImpLevel.Items.Add(SecurityImpersonationLevel.Identification);
             comboBoxImpLevel.Items.Add(SecurityImpersonationLevel.Impersonation);
@@ -812,6 +817,11 @@ namespace TokenViewer
                 MessageBox.Show(this, ex.Message,
                     "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void listView_ColumnClick(object sender, ColumnClickEventArgs e)
+        {
+            ListItemComparer.UpdateListComparer(sender as ListView, e.Column);
         }
     }
 }
