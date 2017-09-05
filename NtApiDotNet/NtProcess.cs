@@ -474,7 +474,7 @@ namespace NtApiDotNet
         ProcessSystemCallDisablePolicy,
         ProcessMitigationOptionsMask, // Unused
         ProcessExtensionPointDisablePolicy,
-        ProcessReserved1Policy, // Unused
+        ProcessControlFlowGuardPolicy,
         ProcessSignaturePolicy,
         ProcessFontDisablePolicy,
         ProcessImageLoadPolicy,
@@ -1235,7 +1235,6 @@ namespace NtApiDotNet
             switch (policy)
             {
                 case ProcessMitigationPolicy.ProcessDEPPolicy:
-                case ProcessMitigationPolicy.ProcessReserved1Policy:
                 case ProcessMitigationPolicy.ProcessMitigationOptionsMask:
                     throw new ArgumentException("Invalid mitigation policy");
             }

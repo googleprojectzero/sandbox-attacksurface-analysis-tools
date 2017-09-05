@@ -47,6 +47,12 @@ namespace NtApiDotNet
             AllowThreadOptOut = result.GetBit(1);
             AllowRemoteDowngrade = result.GetBit(2);
             DisableExtensionPoints = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessExtensionPointDisablePolicy).GetBit(0);
+
+            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessControlFlowGuardPolicy);
+            EnabledControlFlowGuard = result.GetBit(0);
+            EnableExportSuppression = result.GetBit(1);
+            ControlFlowGuardStrictMode = result.GetBit(2);
+
             result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessSignaturePolicy);
             MicrosoftSignedOnly = result.GetBit(0);
             StoreSignedOnly = result.GetBit(1);
@@ -92,6 +98,9 @@ namespace NtApiDotNet
         public bool AuditNonSystemFontLoading { get; private set; }
         public bool ProhibitDynamicCode { get; private set; }
         public bool DisableExtensionPoints { get; private set; }
+        public bool EnabledControlFlowGuard { get; private set; }
+        public bool EnableExportSuppression { get; private set; }
+        public bool ControlFlowGuardStrictMode { get; private set; }
         public bool MicrosoftSignedOnly { get; private set; }
         public bool StoreSignedOnly { get; private set; }
         public bool SignedMitigationOptIn { get; private set; }
