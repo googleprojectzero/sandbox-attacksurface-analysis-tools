@@ -116,6 +116,15 @@ namespace SandboxAnalysisUtils
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    struct SECURITY_CAPABILITIES
+    {
+        public IntPtr AppContainerSid;
+        public IntPtr Capabilities;
+        public int CapabilityCount;
+        public int Reserved;
+    }
+
     public enum ProtectionLevel
     {
         Same = -1,
@@ -225,6 +234,14 @@ namespace SandboxAnalysisUtils
             get
             {
                 return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeProtectionLevel, false, true, false);
+            }
+        }
+
+        public static IntPtr ProcThreadAttributeSecurityCapabilities
+        {
+            get
+            {
+                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeSecurityCapabilities, false, true, false);
             }
         }
     }
@@ -379,10 +396,13 @@ namespace SandboxAnalysisUtils
         public int Win32kFilterLevel { get; set; }
         public ProtectionLevel ProtectionLevel { get; set; }
         public List<IntPtr> InheritHandleList { get; private set; }
+        public Sid AppContainerSid { get; set; }
+        public List<Sid> Capabilities { get; private set; }
 
         public Win32ProcessConfig()
         {
             InheritHandleList = new List<IntPtr>();
+            Capabilities = new List<Sid>();
         }
 
         private void PopulateStartupInfo(ref STARTUPINFO start_info)
@@ -423,6 +443,11 @@ namespace SandboxAnalysisUtils
             }
 
             if (InheritHandleList.Count > 0)
+            {
+                count++;
+            }
+
+            if (AppContainerSid != null)
             {
                 count++;
             }
@@ -477,6 +502,30 @@ namespace SandboxAnalysisUtils
                 var handle_list = resources.AddResource(new SafeHGlobalBuffer(total_size));
                 handle_list.WriteArray(0, InheritHandleList.ToArray(), 0, InheritHandleList.Count);
                 attr_list.AddAttributeBuffer(ProcessAttributes.ProcThreadAttributeHandleList, handle_list);
+            }
+
+            if (AppContainerSid != null)
+            {
+                SECURITY_CAPABILITIES caps = new SECURITY_CAPABILITIES();
+                caps.AppContainerSid = resources.AddResource(AppContainerSid.ToSafeBuffer()).DangerousGetHandle();
+                
+                if (Capabilities.Count > 0)
+                {
+                    SidAndAttributes[] cap_sids = new SidAndAttributes[Capabilities.Count];
+                    for (int i = 0; i < Capabilities.Count; ++i)
+                    {
+                        cap_sids[i] = new SidAndAttributes()
+                        {
+                            Sid = resources.AddResource(Capabilities[i].ToSafeBuffer()).DangerousGetHandle(),
+                            Attributes = GroupAttributes.Enabled
+                        };
+                    }
+                    SafeHGlobalBuffer cap_buffer = resources.AddResource(new SafeHGlobalBuffer(Marshal.SizeOf(typeof(SidAndAttributes)) * Capabilities.Count));
+                    cap_buffer.WriteArray(0, cap_sids, 0, cap_sids.Length);
+                    caps.Capabilities = cap_buffer.DangerousGetHandle();
+                    caps.CapabilityCount = cap_sids.Length;
+                }
+                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeSecurityCapabilities, caps);
             }
 
             return attr_list;
