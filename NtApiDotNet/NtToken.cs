@@ -164,11 +164,11 @@ namespace NtApiDotNet
     public struct SidAndAttributes
     {
         public IntPtr Sid;
-        public uint Attributes;
+        public GroupAttributes Attributes;
 
         public UserGroup ToUserGroup()
         {
-            return new UserGroup(new Sid(Sid), (GroupAttributes)Attributes);
+            return new UserGroup(new Sid(Sid), Attributes);
         }
     };
 
@@ -655,7 +655,7 @@ namespace NtApiDotNet
                     sids.Add(_sid_and_attrs[i].sid.ToSafeBuffer());
                     result[i] = new SidAndAttributes();
                     result[i].Sid = sids[i].DangerousGetHandle();
-                    result[i].Attributes = _sid_and_attrs[i].attr;
+                    result[i].Attributes = (GroupAttributes)_sid_and_attrs[i].attr;
                 }
                 TokenGroups groups = new TokenGroups();
                 groups.GroupCount = result.Length;
@@ -1497,7 +1497,7 @@ namespace NtApiDotNet
                     {
                         SafeSidBufferHandle sid = s.ToSafeBuffer();
                         sids.Add(sid);
-                        return new SidAndAttributes() { Sid = sid.DangerousGetHandle() };
+                        return new SidAndAttributes() { Sid = sid.DangerousGetHandle(), Attributes = GroupAttributes.Enabled };
                     }
                     ).ToArray();
                 NtSystemCalls.NtCreateLowBoxToken(out token,
