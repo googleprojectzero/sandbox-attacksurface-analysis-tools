@@ -75,6 +75,7 @@
             System.Windows.Forms.Label label23;
             System.Windows.Forms.ColumnHeader columnHeader5;
             System.Windows.Forms.ColumnHeader columnHeader6;
+            System.Windows.Forms.Label label27;
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TokenForm));
             this.groupBoxSource = new System.Windows.Forms.GroupBox();
             this.txtSourceId = new System.Windows.Forms.TextBox();
@@ -147,10 +148,11 @@
             this.listViewCapabilities = new System.Windows.Forms.ListView();
             this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader4 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.txtPackageSid = new System.Windows.Forms.TextBox();
+            this.txtPackageName = new System.Windows.Forms.TextBox();
             this.tabPageMisc = new System.Windows.Forms.TabPage();
             this.tabPageOperations = new System.Windows.Forms.TabPage();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
+            this.txtPackageSid = new System.Windows.Forms.TextBox();
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
@@ -197,6 +199,7 @@
             label23 = new System.Windows.Forms.Label();
             columnHeader5 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            label27 = new System.Windows.Forms.Label();
             tabPageMain.SuspendLayout();
             this.groupBoxSource.SuspendLayout();
             groupBoxToken.SuspendLayout();
@@ -749,14 +752,14 @@
             label11.Location = new System.Drawing.Point(29, 17);
             label11.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label11.Name = "label11";
-            label11.Size = new System.Drawing.Size(93, 17);
+            label11.Size = new System.Drawing.Size(108, 17);
             label11.TabIndex = 8;
-            label11.Text = "Package SID:";
+            label11.Text = "Package Name:";
             // 
             // label12
             // 
             label12.AutoSize = true;
-            label12.Location = new System.Drawing.Point(29, 49);
+            label12.Location = new System.Drawing.Point(29, 82);
             label12.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label12.Name = "label12";
             label12.Size = new System.Drawing.Size(156, 17);
@@ -1409,11 +1412,13 @@
             // 
             // tabPageAppContainer
             // 
+            this.tabPageAppContainer.Controls.Add(label27);
+            this.tabPageAppContainer.Controls.Add(this.txtPackageSid);
             this.tabPageAppContainer.Controls.Add(label12);
             this.tabPageAppContainer.Controls.Add(this.txtACNumber);
             this.tabPageAppContainer.Controls.Add(this.listViewCapabilities);
             this.tabPageAppContainer.Controls.Add(label11);
-            this.tabPageAppContainer.Controls.Add(this.txtPackageSid);
+            this.tabPageAppContainer.Controls.Add(this.txtPackageName);
             this.tabPageAppContainer.Location = new System.Drawing.Point(4, 25);
             this.tabPageAppContainer.Margin = new System.Windows.Forms.Padding(4);
             this.tabPageAppContainer.Name = "tabPageAppContainer";
@@ -1425,7 +1430,7 @@
             // 
             // txtACNumber
             // 
-            this.txtACNumber.Location = new System.Drawing.Point(189, 49);
+            this.txtACNumber.Location = new System.Drawing.Point(189, 82);
             this.txtACNumber.Margin = new System.Windows.Forms.Padding(4);
             this.txtACNumber.Name = "txtACNumber";
             this.txtACNumber.ReadOnly = true;
@@ -1441,10 +1446,10 @@
             this.columnHeader3,
             this.columnHeader4});
             this.listViewCapabilities.FullRowSelect = true;
-            this.listViewCapabilities.Location = new System.Drawing.Point(4, 81);
+            this.listViewCapabilities.Location = new System.Drawing.Point(4, 112);
             this.listViewCapabilities.Margin = new System.Windows.Forms.Padding(4);
             this.listViewCapabilities.Name = "listViewCapabilities";
-            this.listViewCapabilities.Size = new System.Drawing.Size(613, 469);
+            this.listViewCapabilities.Size = new System.Drawing.Size(613, 438);
             this.listViewCapabilities.TabIndex = 10;
             this.listViewCapabilities.UseCompatibleStateImageBehavior = false;
             this.listViewCapabilities.View = System.Windows.Forms.View.Details;
@@ -1460,14 +1465,14 @@
             this.columnHeader4.Text = "Flags";
             this.columnHeader4.Width = 194;
             // 
-            // txtPackageSid
+            // txtPackageName
             // 
-            this.txtPackageSid.Location = new System.Drawing.Point(189, 17);
-            this.txtPackageSid.Margin = new System.Windows.Forms.Padding(4);
-            this.txtPackageSid.Name = "txtPackageSid";
-            this.txtPackageSid.ReadOnly = true;
-            this.txtPackageSid.Size = new System.Drawing.Size(340, 22);
-            this.txtPackageSid.TabIndex = 9;
+            this.txtPackageName.Location = new System.Drawing.Point(189, 17);
+            this.txtPackageName.Margin = new System.Windows.Forms.Padding(4);
+            this.txtPackageName.Name = "txtPackageName";
+            this.txtPackageName.ReadOnly = true;
+            this.txtPackageName.Size = new System.Drawing.Size(340, 22);
+            this.txtPackageName.TabIndex = 9;
             // 
             // tabPageMisc
             // 
@@ -1495,6 +1500,25 @@
             this.tabPageOperations.TabIndex = 5;
             this.tabPageOperations.Text = "Operations";
             this.tabPageOperations.UseVisualStyleBackColor = true;
+            // 
+            // label27
+            // 
+            label27.AutoSize = true;
+            label27.Location = new System.Drawing.Point(29, 52);
+            label27.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            label27.Name = "label27";
+            label27.Size = new System.Drawing.Size(93, 17);
+            label27.TabIndex = 13;
+            label27.Text = "Package SID:";
+            // 
+            // txtPackageSid
+            // 
+            this.txtPackageSid.Location = new System.Drawing.Point(189, 52);
+            this.txtPackageSid.Margin = new System.Windows.Forms.Padding(4);
+            this.txtPackageSid.Name = "txtPackageSid";
+            this.txtPackageSid.ReadOnly = true;
+            this.txtPackageSid.Size = new System.Drawing.Size(340, 22);
+            this.txtPackageSid.TabIndex = 14;
             // 
             // TokenForm
             // 
@@ -1567,7 +1591,7 @@
         private System.Windows.Forms.ColumnHeader columnHeader1;
         private System.Windows.Forms.ColumnHeader columnHeader2;
         private System.Windows.Forms.TabPage tabPageAppContainer;
-        private System.Windows.Forms.TextBox txtPackageSid;
+        private System.Windows.Forms.TextBox txtPackageName;
         private System.Windows.Forms.ListView listViewCapabilities;
         private System.Windows.Forms.ColumnHeader columnHeader3;
         private System.Windows.Forms.ColumnHeader columnHeader4;
@@ -1616,5 +1640,6 @@
         private System.Windows.Forms.TextBox txtHandleAccess;
         private System.Windows.Forms.Button btnToggleVirtualizationEnabled;
         private System.Windows.Forms.CheckBox checkBoxUseNetLogon;
+        private System.Windows.Forms.TextBox txtPackageSid;
     }
 }

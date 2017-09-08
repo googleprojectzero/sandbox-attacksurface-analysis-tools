@@ -230,7 +230,8 @@ namespace TokenViewer
             {
                 PopulateGroupList(listViewCapabilities, _token.Capabilities);
                 txtACNumber.Text = _token.AppContainerNumber.ToString();
-                txtPackageSid.Text = _token.AppContainerSid.Name;
+                txtPackageName.Text = _token.AppContainerSid.Name;
+                txtPackageSid.Text = _token.AppContainerSid.ToString();
             }
             else
             {
