@@ -509,6 +509,10 @@ namespace NtApiDotNet
                         name = MakeFakeCapabilityName(name);
                     }
                 }
+                else if (name == null && NtSecurity.IsPackageSid(this))
+                {
+                    name = NtSecurity.LookupPackageSid(this);
+                }
 
                 return name ?? ToString();
             }

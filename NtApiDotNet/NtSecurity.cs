@@ -1648,6 +1648,66 @@ namespace NtApiDotNet
             }
         }
 
+        private static string ReadMoniker(NtKey rootkey, Sid sid)
+        {
+            string path = string.Format(@"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppContainer\Mappings\{0}", sid);
+            using (ObjectAttributes obj_attr = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, rootkey))
+            {
+                using (var key = NtKey.Open(obj_attr, KeyAccessRights.QueryValue, KeyCreateOptions.NonVolatile, false))
+                {
+                    if (key.IsSuccess)
+                    {
+                        var value = key.Result.QueryValue("Moniker", false);
+                        if (value.IsSuccess)
+                            return value.Result.ToString();
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Try and lookup the moniker associated with a package sid.
+        /// </summary>
+        /// <param name="sid">The package sid.</param>
+        /// <returns>Returns the moniker name. If not found returns null.</returns>
+        /// <exception cref="ArgumentException">Thrown if SID is not a package sid.</exception>
+        public static string LookupPackageSid(Sid sid)
+        {
+            if (!IsPackageSid(sid))
+            {
+                throw new ArgumentException("Sid not a package sid", "sid");
+            }
+
+            string ret = null;
+            try
+            {
+                using (NtKey key = NtKey.GetCurrentUserKey())
+                {
+                    ret = ReadMoniker(key, sid);
+                }
+            }
+            catch (NtException)
+            {
+            }
+
+            if (ret == null)
+            {
+                try
+                {
+                    using (NtKey key = NtKey.GetMachineKey())
+                    {
+                        ret = ReadMoniker(key, sid);
+                    }
+                }
+                catch (NtException)
+                {
+                }
+            }
+
+            return ret;
+        }
+
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static extern bool ConvertSecurityDescriptorToStringSecurityDescriptor(
             byte[] SecurityDescriptor,
