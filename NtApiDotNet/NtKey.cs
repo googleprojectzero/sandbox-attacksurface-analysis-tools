@@ -659,31 +659,45 @@ namespace NtApiDotNet
         /// Query a value by name
         /// </summary>
         /// <param name="value_name">The name of the value</param>
+        /// <param name="throw_on_error">True to throw on error</param>
         /// <returns>The value information</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public NtKeyValue QueryValue(string value_name)
+        public NtResult<NtKeyValue> QueryValue(string value_name, bool throw_on_error)
         {
             UnicodeString name = new UnicodeString(value_name);
             int return_len = 0;
             int query_count = 0;
 
-            while (query_count < 64)
+            while (query_count++ < 64)
             {
                 using (var info = new SafeStructureInOutBuffer<KeyValuePartialInformation>(return_len, false))
                 {
                     NtStatus status = NtSystemCalls.NtQueryValueKey(Handle, name, KeyValueInformationClass.KeyValuePartialInformation,
                         info, info.Length, out return_len);
-                    if (status.IsSuccess())
+                    if (status == NtStatus.STATUS_BUFFER_OVERFLOW || status == NtStatus.STATUS_BUFFER_TOO_SMALL)
+                    {
+                        continue;
+                    }
+
+                    return status.CreateResult(throw_on_error, () =>
                     {
                         KeyValuePartialInformation result = info.Result;
-                        return new NtKeyValue(value_name, info.Result.Type, info.Data.ReadBytes(result.DataLength), result.TitleIndex);
-                    }
-                    if (status != NtStatus.STATUS_BUFFER_OVERFLOW && status != NtStatus.STATUS_BUFFER_TOO_SMALL)
-                        status.ToNtException(); ;
+                        return new NtKeyValue(value_name, info.Result.Type,
+                                    info.Data.ReadBytes(result.DataLength), result.TitleIndex);
+                    });
                 }
-                query_count++;
             }
-            throw new NtException(NtStatus.STATUS_BUFFER_TOO_SMALL);
+            return NtStatus.STATUS_BUFFER_TOO_SMALL.CreateResultFromError<NtKeyValue>(throw_on_error);
+        }
+
+        /// <summary>
+        /// Query a value by name
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <returns>The value information</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtKeyValue QueryValue(string value_name)
+        {
+            return QueryValue(value_name, true).Result;
         }
 
         /// <summary>
