@@ -37,6 +37,7 @@ namespace NtApiDotNet
         VmOperation = 0x0008,
         VmRead = 0x0010,
         VmWrite = 0x0020,
+        AllAccess = 0x1FFFFF,
         GenericRead = GenericAccessRights.GenericRead,
         GenericWrite = GenericAccessRights.GenericWrite,
         GenericExecute = GenericAccessRights.GenericExecute,
@@ -534,6 +535,13 @@ namespace NtApiDotNet
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
         public byte[] DriveType;
         public ProcessDeviceMapQueryFlags Flags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ProcessAccessToken
+    {
+        public IntPtr AccessToken;
+        public IntPtr InitialThread;
     }
     
     public static partial class NtSystemCalls
@@ -1339,6 +1347,20 @@ namespace NtApiDotNet
         public NtToken OpenToken()
         {
             return NtToken.OpenProcessToken(this, false);
+        }
+
+        /// <summary>
+        /// Set process access token. Process must be have not been started.
+        /// </summary>
+        /// <param name="token">The token to set.</param>
+        public void SetToken(NtToken token)
+        {
+            ProcessAccessToken proc_token = new ProcessAccessToken();
+            proc_token.AccessToken = token.Handle.DangerousGetHandle();
+            using (var buffer = proc_token.ToBuffer())
+            {
+                NtSystemCalls.NtSetInformationProcess(Handle, ProcessInformationClass.ProcessAccessToken, buffer, buffer.Length).ToNtException();
+            }
         }
 
         /// <summary>
