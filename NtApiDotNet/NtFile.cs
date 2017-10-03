@@ -1079,6 +1079,8 @@ namespace NtApiDotNet
         {
         }
 
+        public Guid Guid { get; private set; }
+
         public byte[] Data { get; private set; }
 
         protected override byte[] GetBuffer()
@@ -1088,6 +1090,7 @@ namespace NtApiDotNet
 
         protected override void ParseBuffer(int data_length, BinaryReader reader)
         {
+            Guid = new Guid(reader.ReadAllBytes(16));
             Data = reader.ReadAllBytes(data_length);
         }
     }
