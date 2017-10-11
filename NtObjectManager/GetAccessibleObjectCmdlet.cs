@@ -348,7 +348,7 @@ namespace NtObjectManager
 
             if (type_filter.Count == 0)
             {
-                WriteWarning("Checking handle access without any type filtering can hang. Perhaps specifying the types using -TypeFilter.");
+                WriteWarning("Checking handle access without any type filtering can hang. Perhaps specify the types using -TypeFilter.");
             }
 
             HashSet<ulong> checked_objects = new HashSet<ulong>();
