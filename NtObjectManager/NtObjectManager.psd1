@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.1'
+ModuleVersion = '1.1.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -131,7 +131,13 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.1
+        ReleaseNotes = '1.1.2
+-----
+* Added Get-AccessibleHandle cmdlet.
+* Support for oplock levels.
+* Added support to set inherit and protect on close flags to objects.
+* Added Get-NtFilePath function.
+1.1.1
 -----
 * Fix to native protected process creation.
 * Added functions to create native NT processes.

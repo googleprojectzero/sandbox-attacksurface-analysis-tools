@@ -31,6 +31,13 @@ The tools can be built with Visual Studio 2015
 
 Release Notes:
 
+1.1.2
+-----
+* Added Get-AccessibleHandle cmdlet.
+* Support for oplock levels.
+* Added support to set inherit and protect on close flags to objects.
+* Added Get-NtFilePath function.
+
 1.1.1
 -----
 * Fix to native protected process creation.
