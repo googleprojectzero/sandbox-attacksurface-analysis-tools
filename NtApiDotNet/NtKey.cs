@@ -430,6 +430,10 @@ namespace NtApiDotNet
             Disposition = disposition;
         }
 
+        internal NtKey(SafeKernelObjectHandle handle) : this(handle, KeyDisposition.OpenedExistingKey)
+        {
+        }
+
         /// <summary>
         /// Load a new hive
         /// </summary>
