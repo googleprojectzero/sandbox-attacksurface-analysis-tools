@@ -14,14 +14,11 @@
 
 using NtApiDotNet;
 using SandboxAnalysisUtils;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Management.Automation;
 using System.ServiceProcess;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NtObjectManager
 {
