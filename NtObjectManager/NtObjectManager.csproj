@@ -50,6 +50,7 @@
     <Compile Include="GenericObjectSecurity.cs" />
     <Compile Include="GetAccessibleDeviceCmdlet.cs" />
     <Compile Include="GetAccessibleFileCmdlet.cs" />
+    <Compile Include="GetAccessibleHandle.cs" />
     <Compile Include="GetAccessibleKeyCmdlet.cs" />
     <Compile Include="GetAccessibleNamedPipeCmdlet.cs" />
     <Compile Include="GetAccessibleObjectCmdlet.cs" />
