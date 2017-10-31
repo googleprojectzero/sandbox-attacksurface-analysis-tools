@@ -398,6 +398,7 @@ namespace SandboxAnalysisUtils
         public List<IntPtr> InheritHandleList { get; private set; }
         public Sid AppContainerSid { get; set; }
         public List<Sid> Capabilities { get; private set; }
+        public bool LowPrivilegeAppContainer { get; set; }
 
         public Win32ProcessConfig()
         {
@@ -448,6 +449,11 @@ namespace SandboxAnalysisUtils
             }
 
             if (AppContainerSid != null)
+            {
+                count++;
+            }
+
+            if (LowPrivilegeAppContainer)
             {
                 count++;
             }
@@ -526,6 +532,11 @@ namespace SandboxAnalysisUtils
                     caps.CapabilityCount = cap_sids.Length;
                 }
                 attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeSecurityCapabilities, caps);
+            }
+
+            if (LowPrivilegeAppContainer)
+            {
+                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeAllApplicationPackagesPolicy, 1);
             }
 
             return attr_list;
