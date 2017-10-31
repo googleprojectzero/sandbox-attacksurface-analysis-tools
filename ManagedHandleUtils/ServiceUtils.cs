@@ -243,11 +243,11 @@ namespace SandboxAnalysisUtils
                     {
                         if (SubType == MACHINE_POLICY_PRESENT_GUID)
                         {
-                            return String.Format("[Machine Policy Present]");
+                            return "[Machine Policy Present]";
                         }
                         else if (SubType == USER_POLICY_PRESENT_GUID)
                         {
-                            return String.Format("[User Policy Present]");
+                            return "[User Policy Present]";
                         }
                         return String.Format("[Unknown Group Policy] {0:B}", SubType);
                     }
@@ -255,11 +255,11 @@ namespace SandboxAnalysisUtils
                     {
                         if (SubType == RPC_INTERFACE_EVENT_GUID)
                         {
-                            return String.Format("[RPC Interface]");
+                            return "[RPC Interface]";
                         }
                         else if (SubType == NAMED_PIPE_EVENT_GUID)
                         {
-                            return String.Format("[Named Pipe]");
+                            return "[Named Pipe]";
                         }
                         return String.Format("[Unknown Network Endpoint] {0:B}", SubType);
                     }
@@ -267,11 +267,11 @@ namespace SandboxAnalysisUtils
                     {
                         if (SubType == DOMAIN_JOIN_GUID)
                         {
-                            return String.Format("[Domain Join]");
+                            return "[Domain Join]";
                         }
                         else if (SubType == DOMAIN_LEAVE_GUID)
                         {
-                            return String.Format("[Domain Leave]");
+                            return "[Domain Leave]";
                         }
                         return String.Format("[Unknown Domain Join] {0:B}", SubType);
                     }
@@ -279,11 +279,11 @@ namespace SandboxAnalysisUtils
                     {
                         if (SubType == NETWORK_MANAGER_FIRST_IP_ADDRESS_ARRIVAL_GUID)
                         {
-                            return String.Format("[First IP Address Available]");
+                            return "[First IP Address Available]";
                         }
                         else if (SubType == NETWORK_MANAGER_LAST_IP_ADDRESS_REMOVAL_GUID)
                         {
-                            return String.Format("[Last IP Address Available]");
+                            return "[Last IP Address Available]";
                         }
                         return String.Format("[Unknown IP Address Availability] {0:B}", SubType);
                     }
