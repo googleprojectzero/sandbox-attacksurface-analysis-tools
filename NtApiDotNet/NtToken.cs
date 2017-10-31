@@ -523,7 +523,7 @@ namespace NtApiDotNet
             [In] ref Luid AuthenticationId,
             [In] ref LargeIntegerStruct ExpirationTime,
             [In] ref TokenUser TokenUser,
-            [In] TokenGroups TokenGroups,
+            [In] SafeTokenGroupsBuffer TokenGroups,
             [In] TokenPrivileges TokenPrivileges,
             [In] ref TokenOwner TokenOwner,
             [In] ref TokenPrimaryGroup TokenPrimaryGroup,
@@ -597,19 +597,21 @@ namespace NtApiDotNet
     public class TokenGroups
     {
         public int GroupCount;
-        [MarshalAs(UnmanagedType.ByValArray)]
-        public SidAndAttributes[] Groups;
+        public SidAndAttributes Groups;
     }
 
-    public class SafeTokenGroupsBuffer : SafeStructureArrayBuffer<TokenGroups>
+    public class SafeTokenGroupsBuffer : SafeStructureInOutBuffer<TokenGroups>
     {
         SafeHandleList _sids;
-        public SafeTokenGroupsBuffer(TokenGroups groups, SafeHandleList sids) : base(groups)
+        public SafeTokenGroupsBuffer(SidAndAttributes[] sid_and_attr, SafeHandleList sids) 
+            : base(new TokenGroups() { GroupCount = sids.Count }, 
+                  Marshal.SizeOf(typeof(SidAndAttributes)) * sids.Count, true)
         {
             _sids = sids;
+            Data.WriteArray(0, sid_and_attr, 0, sid_and_attr.Length);
         }
 
-        private SafeTokenGroupsBuffer() : base(0)
+        private SafeTokenGroupsBuffer() : base(IntPtr.Zero, 0, false)
         {
         }
 
@@ -653,14 +655,14 @@ namespace NtApiDotNet
                 for (int i = 0; i < _sid_and_attrs.Count; ++i)
                 {
                     sids.Add(_sid_and_attrs[i].sid.ToSafeBuffer());
-                    result[i] = new SidAndAttributes();
-                    result[i].Sid = sids[i].DangerousGetHandle();
-                    result[i].Attributes = (GroupAttributes)_sid_and_attrs[i].attr;
+                    result[i] = new SidAndAttributes
+                    {
+                        Sid = sids[i].DangerousGetHandle(),
+                        Attributes = (GroupAttributes)_sid_and_attrs[i].attr
+                    };
                 }
-                TokenGroups groups = new TokenGroups();
-                groups.GroupCount = result.Length;
-                groups.Groups = result;
-                return new SafeTokenGroupsBuffer(groups, sids.DangerousMove());
+
+                return new SafeTokenGroupsBuffer(result, sids.DangerousMove());
             }
         }
     }
