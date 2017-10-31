@@ -35,3 +35,5 @@ bin/
 *.db
 *.nupkg
 *.ide
+
+.vs/
