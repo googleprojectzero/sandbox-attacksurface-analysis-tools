@@ -97,8 +97,7 @@ namespace NtApiDotNet
     {
         public int PrivilegeCount;
         public int Control;
-        [MarshalAs(UnmanagedType.ByValArray)]
-        public LuidAndAttributes[] Privilege;
+        public LuidAndAttributes Privilege;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -134,18 +133,16 @@ namespace NtApiDotNet
         Custom6 = 16
     }
 
-    public class SafePrivilegeSetBuffer : SafeStructureArrayBuffer<PrivilegeSet>
+    public class SafePrivilegeSetBuffer : SafeStructureInOutBuffer<PrivilegeSet>
     {
         public SafePrivilegeSetBuffer(int count)
-            : base(new PrivilegeSet() { Privilege = new LuidAndAttributes[1] })
+            : base(new PrivilegeSet(), 
+                  count * Marshal.SizeOf(typeof(LuidAndAttributes)),
+                  true)
         {
         }
 
         public SafePrivilegeSetBuffer() : this(1)
-        {
-        }
-
-        public SafePrivilegeSetBuffer(PrivilegeSet set) : base(set)
         {
         }
     }
@@ -1841,8 +1838,6 @@ namespace NtApiDotNet
             {
                 using (NtToken imp_token = DuplicateForAccessCheck(token))
                 {
-                    AccessMask granted_access;
-                    NtStatus result_status;
                     using (var privs = new SafePrivilegeSetBuffer())
                     {
                         int buffer_length = privs.Length;
@@ -1850,8 +1845,8 @@ namespace NtApiDotNet
                         using (var self_sid = principal != null ? principal.ToSafeBuffer() : SafeSidBufferHandle.Null)
                         {
                             NtSystemCalls.NtAccessCheckByType(sd_buffer, self_sid, imp_token.Handle, access_rights,
-                                SafeHGlobalBuffer.Null, 0, ref generic_mapping, privs, 
-                                ref buffer_length, out granted_access, out result_status).ToNtException();
+                                SafeHGlobalBuffer.Null, 0, ref generic_mapping, privs,
+                                ref buffer_length, out AccessMask granted_access, out NtStatus result_status).ToNtException();
                             if (result_status.IsSuccess())
                             {
                                 return granted_access;
