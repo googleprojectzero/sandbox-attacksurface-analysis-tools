@@ -382,13 +382,23 @@ namespace NtApiDotNet
         /// <returns>The mapped section</returns>
         public NtMappedSection Map(NtProcess process, MemoryAllocationProtect type)
         {
-            IntPtr base_address = IntPtr.Zero;
-            IntPtr view_size = new IntPtr(0);
+            return Map(process, type, IntPtr.Zero, IntPtr.Zero);
+        }
+
+        /// <summary>
+        /// Map section into a specific process
+        /// </summary>
+        /// <param name="process">The process to map into</param>
+        /// <param name="type">The protection of the mapping</param>
+        /// <param name="base_address">Optional base address</param>
+        /// <param name="view_size">Optional view size</param>
+        /// <returns>The mapped section</returns>
+        public NtMappedSection Map(NtProcess process, MemoryAllocationProtect type, IntPtr view_size, IntPtr base_address)
+        {
             NtSystemCalls.NtMapViewOfSection(Handle, process.Handle, ref base_address, IntPtr.Zero,
                 new IntPtr(0), null, ref view_size, SectionInherit.ViewUnmap, AllocationType.None, type).ToNtException();
             return new NtMappedSection(base_address, view_size.ToInt64(), process, true);
         }
-
 
         /// <summary>
         /// Map section into the current process
