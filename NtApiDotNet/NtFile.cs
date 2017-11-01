@@ -694,13 +694,7 @@ namespace NtApiDotNet
     public class FileNameInformation
     {
         public int NameLength;
-        [MarshalAs(UnmanagedType.ByValArray)]
-        public char[] Name;
-
-        public FileNameInformation()
-        {
-            Name = new char[1];
-        }
+        public char Name;
     }
 
     [StructLayout(LayoutKind.Sequential)]
