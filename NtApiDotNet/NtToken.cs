@@ -289,8 +289,7 @@ namespace NtApiDotNet
     public class TokenPrivileges
     {
         public int PrivilegeCount;
-        [MarshalAs(UnmanagedType.ByValArray)]
-        public LuidAndAttributes[] Privileges;
+        public LuidAndAttributes Privileges;
     }
 
     public enum ClaimSecurityValueType : ushort
@@ -384,12 +383,6 @@ namespace NtApiDotNet
         public ClaimSecurityFlags Flags;
         public int ValueCount;
         public IntPtr Values;
-        //union {
-        //PLONG64 pInt64;
-        //PDWORD64 pUint64;
-        //PWSTR* ppString;
-        //PCLAIM_SECURITY_ATTRIBUTE_FQBN_VALUE pFqbn;
-        //PCLAIM_SECURITY_ATTRIBUTE_OCTET_STRING_VALUE pOctetString;
     }    
 
     [StructLayout(LayoutKind.Sequential)]
@@ -524,7 +517,7 @@ namespace NtApiDotNet
             [In] ref LargeIntegerStruct ExpirationTime,
             [In] ref TokenUser TokenUser,
             [In] SafeTokenGroupsBuffer TokenGroups,
-            [In] TokenPrivileges TokenPrivileges,
+            [In] SafeTokenPrivilegesBuffer TokenPrivileges,
             [In] ref TokenOwner TokenOwner,
             [In] ref TokenPrimaryGroup TokenPrimaryGroup,
             [In] ref TokenDefaultDacl TokenDefaultDacl,
@@ -573,20 +566,20 @@ namespace NtApiDotNet
 
         public SafeTokenPrivilegesBuffer ToBuffer()
         {
-            TokenPrivileges privs = new TokenPrivileges();
-            privs.PrivilegeCount = _privs.Count;
-            privs.Privileges = _privs.ToArray();
-            return new SafeTokenPrivilegesBuffer(privs);
+            return new SafeTokenPrivilegesBuffer(_privs.ToArray());
         }
     }
 
-    public class SafeTokenPrivilegesBuffer : SafeStructureArrayBuffer<TokenPrivileges>
+    public class SafeTokenPrivilegesBuffer : SafeStructureInOutBuffer<TokenPrivileges>
     {
-        public SafeTokenPrivilegesBuffer(TokenPrivileges privs) : base(privs)
+        public SafeTokenPrivilegesBuffer(LuidAndAttributes[] privs) 
+            : base(new TokenPrivileges() { PrivilegeCount = privs.Length },
+                  Marshal.SizeOf(typeof(LuidAndAttributes)) * privs.Length, true)
         {
+            Data.WriteArray(0, privs, 0, privs.Length);
         }
 
-        private SafeTokenPrivilegesBuffer() : base(0)
+        private SafeTokenPrivilegesBuffer() : base(IntPtr.Zero, 0, false)
         {
         }
 
