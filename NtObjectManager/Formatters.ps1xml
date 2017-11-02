@@ -227,7 +227,7 @@
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>IsEnabled</Label>
+            <Label>Enabled</Label>
             <Width>10</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>

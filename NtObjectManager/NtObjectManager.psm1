@@ -843,6 +843,104 @@ function Get-ExecutableManifest
 
 <#
 .SYNOPSIS
+Prints the details of the current token.
+.DESCRIPTION
+This cmdlet opens the current token and prints basic details about it. This is similar to the Windows whois
+command but runs in process and will print information about the current thread token if you're impersonating.
+.PARAMETER All
+Show all information.
+.PARAMETER User
+Show user information.
+.PARAMETER Group
+Show group information. Also prints capability sids and restricted sids if a sandboxed token.
+.PARAMETER Privilege
+Show privilege information.
+.PARAMETER Integrity
+Show integrity information.
+.OUTPUTS
+Text data
+.EXAMPLE
+Show-NtToken
+Show only the user name of the current token.
+.EXAMPLE
+Show-NtToken -All
+Show the user, groups, privileges and integrity of the current token.
+.EXAMPLE
+Show-NtToken -User -Group
+Show the user and groups of the current token.
+#>
+function Show-NtToken {
+    Param(
+        [switch]$All,
+		[switch]$Group,
+		[switch]$Privilege,
+		[switch]$User,
+		[switch]$Integrity
+    )
+
+	if ($Primary) {
+		$token = Get-NtToken -Primary
+	} elseif($Thread) { 
+		$token = Get-NtToken -Thread
+	} else {
+		$token = Get-NtToken -Effective 
+	}
+
+	if ($token -eq $null) {
+		return
+	}
+
+	if ($All) {
+		$Group = $true
+		$User = $true
+		$Privilege = $true
+		$Integrity = $true
+	}
+
+	if (!$User -and !$Group -and !$Privilege -and !$Integrity) {
+		$token.User.ToString()
+		return
+	}
+
+	if ($User) {
+		"USER INFORMATION"
+		"----------------"
+		$token.User | Format-Table
+	}
+
+	if ($Group) {
+		"GROUP SID INFORMATION"
+		"-----------------"
+		$token.Groups | Format-Table
+
+		if ($token.AppContainer) {
+			"CAPABILITY SID INFORMATION"
+			"----------------------"
+			$token.Capabilities | Format-Table
+		}
+
+		if ($token.Restricted) {
+			"RESTRICTED SID INFORMATION"
+			"--------------------------"
+			$token.RestrictedSids | Format-Table
+		}
+	}
+
+	if ($Privilege) {
+		"PRIVILEGE INFORMATION"
+		"---------------------"
+		$token.Privileges | Format-Table
+	}
+
+	if ($Integrity) {
+		"INTEGRITY LEVEL"
+		"---------------"
+		$token.IntegrityLevel | Format-Table
+	}
+}
+
+<#
+.SYNOPSIS
 Get process primary token. Here for legacy reasons, use Get-NtToken -Primary.
 #>
 function Get-NtTokenPrimary
