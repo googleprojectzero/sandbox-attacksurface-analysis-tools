@@ -24,6 +24,7 @@ using System.Linq;
 using System.Management;
 using System.Windows.Forms;
 using System.Text;
+using System.Runtime.InteropServices;
 
 namespace TokenViewer
 {
@@ -823,6 +824,96 @@ namespace TokenViewer
         private void listView_ColumnClick(object sender, ColumnClickEventArgs e)
         {
             ListItemComparer.UpdateListComparer(sender as ListView, e.Column);
+        }
+
+        private static void CopyToClipboard(StringBuilder builder)
+        {
+            CopyToClipboard(builder.ToString());
+        }
+
+        private static void CopyToClipboard(string builder)
+        {
+            try
+            {
+                Clipboard.SetText(builder.ToString());
+            }
+            catch (ExternalException)
+            {
+            }
+        }
+
+        private static void CopyListViewItems(ListView list, Func<ListViewItem, string> formatter)
+        {
+            if (list.SelectedItems.Count > 0)
+            {
+                StringBuilder builder = new StringBuilder();
+                foreach (ListViewItem item in list.SelectedItems)
+                {
+                    string format = formatter(item);
+                    if (format != null)
+                    {
+                        builder.AppendLine(formatter(item));
+                    }
+                }
+
+                CopyToClipboard(builder);
+            }
+        }
+
+        private static Control GetParentControl(object sender)
+        {
+            if (sender is ToolStripMenuItem item)
+            {
+                if (item.Owner is ContextMenuStrip menu)
+                {
+                    return menu.SourceControl;
+                }
+            }
+            return null;
+        }
+
+        private void CopyListViewItems(object sender, EventArgs e)
+        {
+            if (GetParentControl(sender) is ListView list)
+            {
+                CopyListViewItems(list, item => string.Join(" - ", item.SubItems.Cast<ListViewItem.ListViewSubItem>().Select(i => i.Text)));
+            }
+        }
+        
+        private void CopySidListViewItems(object sender, EventArgs e)
+        {
+            if (GetParentControl(sender) is ListView list)
+            {
+                CopyListViewItems(list, item =>
+                {
+                    if (item.Tag is UserGroup group) {
+                        return group.Sid.ToString();
+                    }
+                    return null;
+                });
+            }
+        }
+
+        private void SelectAllListViewItems(object sender, EventArgs e)
+        {
+            if (GetParentControl(sender) is ListView list)
+            {
+                SelectAllItems(list);
+            }
+        }
+
+        private void copyAsSDDLToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SecurityDescriptor sd = new SecurityDescriptor();
+            sd.Owner = new SecurityDescriptorSid(_token.Owner, true);
+            sd.Group = new SecurityDescriptorSid(_token.PrimaryGroup, true);
+            sd.Dacl = _token.DefaultDacl;
+            CopyToClipboard(sd.ToSddl());
+        }
+
+        private void selectAllDaclToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SelectAllItems(listViewDefDacl);
         }
     }
 }

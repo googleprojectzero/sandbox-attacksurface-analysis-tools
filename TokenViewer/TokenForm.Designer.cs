@@ -101,6 +101,8 @@
             this.contextMenuStripGroups = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.enableGroupToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.selectAllGroupsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.copyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.copySidToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.listViewDefDacl = new System.Windows.Forms.ListView();
             this.txtPrimaryGroup = new System.Windows.Forms.TextBox();
             this.txtOwner = new System.Windows.Forms.TextBox();
@@ -139,11 +141,17 @@
             this.enablePrivilegeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.removePrivilegeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.selectAllPrivsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.copyToolStripMenuItemPrivs = new System.Windows.Forms.ToolStripMenuItem();
             this.tabPageRestricted = new System.Windows.Forms.TabPage();
             this.listViewRestrictedSids = new System.Windows.Forms.ListView();
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.contextMenuStripDefaultGroups = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.selectAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemCopyGroups = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemCopySidsGeneric = new System.Windows.Forms.ToolStripMenuItem();
             this.tabPageAppContainer = new System.Windows.Forms.TabPage();
+            this.txtPackageSid = new System.Windows.Forms.TextBox();
             this.txtACNumber = new System.Windows.Forms.TextBox();
             this.listViewCapabilities = new System.Windows.Forms.ListView();
             this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -152,7 +160,10 @@
             this.tabPageMisc = new System.Windows.Forms.TabPage();
             this.tabPageOperations = new System.Windows.Forms.TabPage();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.txtPackageSid = new System.Windows.Forms.TextBox();
+            this.contextMenuStripDefaultDacl = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.copyToolStripMenuItemDacl = new System.Windows.Forms.ToolStripMenuItem();
+            this.copyAsSDDLToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.selectAllDaclToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
@@ -215,9 +226,11 @@
             this.tabPagePrivs.SuspendLayout();
             this.contextMenuStripPrivileges.SuspendLayout();
             this.tabPageRestricted.SuspendLayout();
+            this.contextMenuStripDefaultGroups.SuspendLayout();
             this.tabPageAppContainer.SuspendLayout();
             this.tabPageMisc.SuspendLayout();
             this.tabPageOperations.SuspendLayout();
+            this.contextMenuStripDefaultDacl.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabPageMain
@@ -634,9 +647,11 @@
             this.contextMenuStripGroups.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.contextMenuStripGroups.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.enableGroupToolStripMenuItem,
-            this.selectAllGroupsToolStripMenuItem});
+            this.selectAllGroupsToolStripMenuItem,
+            this.copyToolStripMenuItem,
+            this.copySidToolStripMenuItem});
             this.contextMenuStripGroups.Name = "contextMenuStripGroups";
-            this.contextMenuStripGroups.Size = new System.Drawing.Size(193, 52);
+            this.contextMenuStripGroups.Size = new System.Drawing.Size(193, 100);
             this.contextMenuStripGroups.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStripGroups_Opening);
             // 
             // enableGroupToolStripMenuItem
@@ -653,6 +668,20 @@
             this.selectAllGroupsToolStripMenuItem.Size = new System.Drawing.Size(192, 24);
             this.selectAllGroupsToolStripMenuItem.Text = "Select All";
             this.selectAllGroupsToolStripMenuItem.Click += new System.EventHandler(this.selectAllGroupsToolStripMenuItem_Click);
+            // 
+            // copyToolStripMenuItem
+            // 
+            this.copyToolStripMenuItem.Name = "copyToolStripMenuItem";
+            this.copyToolStripMenuItem.Size = new System.Drawing.Size(192, 24);
+            this.copyToolStripMenuItem.Text = "Copy";
+            this.copyToolStripMenuItem.Click += new System.EventHandler(this.CopyListViewItems);
+            // 
+            // copySidToolStripMenuItem
+            // 
+            this.copySidToolStripMenuItem.Name = "copySidToolStripMenuItem";
+            this.copySidToolStripMenuItem.Size = new System.Drawing.Size(192, 24);
+            this.copySidToolStripMenuItem.Text = "Copy Sid";
+            this.copySidToolStripMenuItem.Click += new System.EventHandler(this.CopySidListViewItems);
             // 
             // tabPageDefaultDacl
             // 
@@ -680,6 +709,7 @@
             columnHeaderAccess,
             columnHeaderDaclFlags,
             columnHeaderDaclType});
+            this.listViewDefDacl.ContextMenuStrip = this.contextMenuStripDefaultDacl;
             this.listViewDefDacl.FullRowSelect = true;
             this.listViewDefDacl.Location = new System.Drawing.Point(4, 85);
             this.listViewDefDacl.Margin = new System.Windows.Forms.Padding(4);
@@ -1292,6 +1322,16 @@
             columnHeader6.Text = "Flags";
             columnHeader6.Width = 194;
             // 
+            // label27
+            // 
+            label27.AutoSize = true;
+            label27.Location = new System.Drawing.Point(29, 52);
+            label27.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            label27.Name = "label27";
+            label27.Size = new System.Drawing.Size(93, 17);
+            label27.TabIndex = 13;
+            label27.Text = "Package SID:";
+            // 
             // tabControlMain
             // 
             this.tabControlMain.Controls.Add(tabPageMain);
@@ -1345,9 +1385,10 @@
             this.contextMenuStripPrivileges.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.enablePrivilegeToolStripMenuItem,
             this.removePrivilegeToolStripMenuItem,
-            this.selectAllPrivsToolStripMenuItem});
+            this.selectAllPrivsToolStripMenuItem,
+            this.copyToolStripMenuItemPrivs});
             this.contextMenuStripPrivileges.Name = "contextMenuStripPrivileges";
-            this.contextMenuStripPrivileges.Size = new System.Drawing.Size(194, 76);
+            this.contextMenuStripPrivileges.Size = new System.Drawing.Size(194, 100);
             this.contextMenuStripPrivileges.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStripPrivileges_Opening);
             // 
             // enablePrivilegeToolStripMenuItem
@@ -1372,6 +1413,13 @@
             this.selectAllPrivsToolStripMenuItem.Text = "Select All";
             this.selectAllPrivsToolStripMenuItem.Click += new System.EventHandler(this.selectAllToolStripMenuItem_Click);
             // 
+            // copyToolStripMenuItemPrivs
+            // 
+            this.copyToolStripMenuItemPrivs.Name = "copyToolStripMenuItemPrivs";
+            this.copyToolStripMenuItemPrivs.Size = new System.Drawing.Size(193, 24);
+            this.copyToolStripMenuItemPrivs.Text = "Copy";
+            this.copyToolStripMenuItemPrivs.Click += new System.EventHandler(this.CopyListViewItems);
+            // 
             // tabPageRestricted
             // 
             this.tabPageRestricted.Controls.Add(this.listViewRestrictedSids);
@@ -1389,6 +1437,7 @@
             this.listViewRestrictedSids.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeader1,
             this.columnHeader2});
+            this.listViewRestrictedSids.ContextMenuStrip = this.contextMenuStripDefaultGroups;
             this.listViewRestrictedSids.Dock = System.Windows.Forms.DockStyle.Fill;
             this.listViewRestrictedSids.FullRowSelect = true;
             this.listViewRestrictedSids.Location = new System.Drawing.Point(4, 4);
@@ -1410,6 +1459,37 @@
             this.columnHeader2.Text = "Flags";
             this.columnHeader2.Width = 194;
             // 
+            // contextMenuStripDefaultGroups
+            // 
+            this.contextMenuStripDefaultGroups.ImageScalingSize = new System.Drawing.Size(20, 20);
+            this.contextMenuStripDefaultGroups.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.selectAllToolStripMenuItem,
+            this.toolStripMenuItemCopyGroups,
+            this.toolStripMenuItemCopySidsGeneric});
+            this.contextMenuStripDefaultGroups.Name = "contextMenuStripDefaultGroups";
+            this.contextMenuStripDefaultGroups.Size = new System.Drawing.Size(141, 76);
+            // 
+            // selectAllToolStripMenuItem
+            // 
+            this.selectAllToolStripMenuItem.Name = "selectAllToolStripMenuItem";
+            this.selectAllToolStripMenuItem.Size = new System.Drawing.Size(140, 24);
+            this.selectAllToolStripMenuItem.Text = "Select All";
+            this.selectAllToolStripMenuItem.Click += new System.EventHandler(this.SelectAllListViewItems);
+            // 
+            // toolStripMenuItemCopyGroups
+            // 
+            this.toolStripMenuItemCopyGroups.Name = "toolStripMenuItemCopyGroups";
+            this.toolStripMenuItemCopyGroups.Size = new System.Drawing.Size(140, 24);
+            this.toolStripMenuItemCopyGroups.Text = "Copy";
+            this.toolStripMenuItemCopyGroups.Click += new System.EventHandler(this.CopyListViewItems);
+            // 
+            // toolStripMenuItemCopySidsGeneric
+            // 
+            this.toolStripMenuItemCopySidsGeneric.Name = "toolStripMenuItemCopySidsGeneric";
+            this.toolStripMenuItemCopySidsGeneric.Size = new System.Drawing.Size(140, 24);
+            this.toolStripMenuItemCopySidsGeneric.Text = "Copy Sid";
+            this.toolStripMenuItemCopySidsGeneric.Click += new System.EventHandler(this.CopySidListViewItems);
+            // 
             // tabPageAppContainer
             // 
             this.tabPageAppContainer.Controls.Add(label27);
@@ -1428,6 +1508,15 @@
             this.tabPageAppContainer.Text = "App Container";
             this.tabPageAppContainer.UseVisualStyleBackColor = true;
             // 
+            // txtPackageSid
+            // 
+            this.txtPackageSid.Location = new System.Drawing.Point(189, 52);
+            this.txtPackageSid.Margin = new System.Windows.Forms.Padding(4);
+            this.txtPackageSid.Name = "txtPackageSid";
+            this.txtPackageSid.ReadOnly = true;
+            this.txtPackageSid.Size = new System.Drawing.Size(340, 22);
+            this.txtPackageSid.TabIndex = 14;
+            // 
             // txtACNumber
             // 
             this.txtACNumber.Location = new System.Drawing.Point(189, 82);
@@ -1445,6 +1534,7 @@
             this.listViewCapabilities.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeader3,
             this.columnHeader4});
+            this.listViewCapabilities.ContextMenuStrip = this.contextMenuStripDefaultGroups;
             this.listViewCapabilities.FullRowSelect = true;
             this.listViewCapabilities.Location = new System.Drawing.Point(4, 112);
             this.listViewCapabilities.Margin = new System.Windows.Forms.Padding(4);
@@ -1501,24 +1591,37 @@
             this.tabPageOperations.Text = "Operations";
             this.tabPageOperations.UseVisualStyleBackColor = true;
             // 
-            // label27
+            // contextMenuStripDefaultDacl
             // 
-            label27.AutoSize = true;
-            label27.Location = new System.Drawing.Point(29, 52);
-            label27.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            label27.Name = "label27";
-            label27.Size = new System.Drawing.Size(93, 17);
-            label27.TabIndex = 13;
-            label27.Text = "Package SID:";
+            this.contextMenuStripDefaultDacl.ImageScalingSize = new System.Drawing.Size(20, 20);
+            this.contextMenuStripDefaultDacl.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.selectAllDaclToolStripMenuItem,
+            this.copyToolStripMenuItemDacl,
+            this.copyAsSDDLToolStripMenuItem});
+            this.contextMenuStripDefaultDacl.Name = "contextMenuStripDefaultDacl";
+            this.contextMenuStripDefaultDacl.Size = new System.Drawing.Size(193, 104);
             // 
-            // txtPackageSid
+            // copyToolStripMenuItemDacl
             // 
-            this.txtPackageSid.Location = new System.Drawing.Point(189, 52);
-            this.txtPackageSid.Margin = new System.Windows.Forms.Padding(4);
-            this.txtPackageSid.Name = "txtPackageSid";
-            this.txtPackageSid.ReadOnly = true;
-            this.txtPackageSid.Size = new System.Drawing.Size(340, 22);
-            this.txtPackageSid.TabIndex = 14;
+            this.copyToolStripMenuItemDacl.Name = "copyToolStripMenuItemDacl";
+            this.copyToolStripMenuItemDacl.Size = new System.Drawing.Size(192, 24);
+            this.copyToolStripMenuItemDacl.Text = "Copy";
+            this.copyToolStripMenuItemDacl.Click += new System.EventHandler(this.CopyListViewItems);
+            // 
+            // copyAsSDDLToolStripMenuItem
+            // 
+            this.copyAsSDDLToolStripMenuItem.Name = "copyAsSDDLToolStripMenuItem";
+            this.copyAsSDDLToolStripMenuItem.Size = new System.Drawing.Size(192, 24);
+            this.copyAsSDDLToolStripMenuItem.Text = "Copy as SDDL";
+            this.copyAsSDDLToolStripMenuItem.Click += new System.EventHandler(this.copyAsSDDLToolStripMenuItem_Click);
+            // 
+            // selectAllDaclToolStripMenuItem
+            // 
+            this.selectAllDaclToolStripMenuItem.Name = "selectAllDaclToolStripMenuItem";
+            this.selectAllDaclToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.A)));
+            this.selectAllDaclToolStripMenuItem.Size = new System.Drawing.Size(192, 24);
+            this.selectAllDaclToolStripMenuItem.Text = "Select All";
+            this.selectAllDaclToolStripMenuItem.Click += new System.EventHandler(this.selectAllDaclToolStripMenuItem_Click);
             // 
             // TokenForm
             // 
@@ -1555,10 +1658,12 @@
             this.tabPagePrivs.ResumeLayout(false);
             this.contextMenuStripPrivileges.ResumeLayout(false);
             this.tabPageRestricted.ResumeLayout(false);
+            this.contextMenuStripDefaultGroups.ResumeLayout(false);
             this.tabPageAppContainer.ResumeLayout(false);
             this.tabPageAppContainer.PerformLayout();
             this.tabPageMisc.ResumeLayout(false);
             this.tabPageOperations.ResumeLayout(false);
+            this.contextMenuStripDefaultDacl.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -1641,5 +1746,16 @@
         private System.Windows.Forms.Button btnToggleVirtualizationEnabled;
         private System.Windows.Forms.CheckBox checkBoxUseNetLogon;
         private System.Windows.Forms.TextBox txtPackageSid;
+        private System.Windows.Forms.ToolStripMenuItem copySidToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem copyToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem copyToolStripMenuItemPrivs;
+        private System.Windows.Forms.ContextMenuStrip contextMenuStripDefaultGroups;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemCopyGroups;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemCopySidsGeneric;
+        private System.Windows.Forms.ToolStripMenuItem selectAllToolStripMenuItem;
+        private System.Windows.Forms.ContextMenuStrip contextMenuStripDefaultDacl;
+        private System.Windows.Forms.ToolStripMenuItem copyToolStripMenuItemDacl;
+        private System.Windows.Forms.ToolStripMenuItem copyAsSDDLToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem selectAllDaclToolStripMenuItem;
     }
 }
