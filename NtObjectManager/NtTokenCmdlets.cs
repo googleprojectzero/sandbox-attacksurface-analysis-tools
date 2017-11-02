@@ -234,7 +234,14 @@ namespace NtObjectManager
             Access = TokenAccessRights.MaximumAllowed;
             TokenType = TokenType.Impersonation;
             ImpersonationLevel = SecurityImpersonationLevel.Impersonation;
-            Domain = Environment.UserDomainName;
+            try
+            {
+                Domain = Environment.UserDomainName;
+            }
+            catch (InvalidOperationException)
+            {
+                Domain = "Unknown";
+            }
             LogonType = SecurityLogonType.Network;
         }
 
