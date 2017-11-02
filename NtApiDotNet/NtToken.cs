@@ -2246,6 +2246,11 @@ namespace NtApiDotNet
         {
             get
             {
+                if (NtObjectUtils.IsWindows7OrLess)
+                {
+                    return false;
+                }
+
                 if (!_app_container.HasValue)
                 {
                     using (var appcontainer 

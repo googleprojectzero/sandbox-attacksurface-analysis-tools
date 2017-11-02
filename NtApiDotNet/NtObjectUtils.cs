@@ -50,7 +50,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>The data contained in the allocaiton.</returns>
         internal static byte[] SafeHandleToArray(SafeHandle handle, int length)
-        {        
+        {
             byte[] ret = new byte[length];
             Marshal.Copy(handle.DangerousGetHandle(), ret, 0, ret.Length);
             return ret;
@@ -134,7 +134,7 @@ namespace NtApiDotNet
         public static string GetNtStatusMessage(NtStatus status)
         {
             SafeLocalAllocHandle buffer = null;
-            if (FormatMessage(FormatFlags.AllocateBuffer | FormatFlags.FromHModule 
+            if (FormatMessage(FormatFlags.AllocateBuffer | FormatFlags.FromHModule
                 | FormatFlags.FromSystem | FormatFlags.IgnoreInserts,
                 GetModuleHandle("ntdll.dll"), status, 0, out buffer, 0, IntPtr.Zero) > 0)
             {
@@ -322,6 +322,30 @@ namespace NtApiDotNet
                 return (SafeKernelObjectHandle)handle;
             }
             return new SafeKernelObjectHandle(handle.DangerousGetHandle(), false);
+        }
+
+        internal static bool IsWindows7OrLess
+        {
+            get
+            {
+                return Environment.OSVersion.Version < new Version(6, 2);
+            }
+        }
+
+        internal static bool IsWindows8OrLess
+        {
+            get
+            {
+                return Environment.OSVersion.Version < new Version(6, 3);
+            }
+        }
+
+        internal static bool IsWindows81OrLess
+        {
+            get
+            {
+                return Environment.OSVersion.Version < new Version(6, 4);
+            }
         }
     }
 }
