@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.2'
+ModuleVersion = '1.1.3'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -131,7 +131,14 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.2
+        ReleaseNotes = '1.1.3
+-----
+* Added Show-NtToken function.
+* Added basic version checking for certain functions which can''t be accessed on Windows 7.
+* Fixed referenced System.Management.Automation assembly version to run properly with no PS2.
+* Fixed some bugs in token structures which preventing being used with multiple values.
+* Added support to Win32Process for LPAC.
+1.1.2
 -----
 * Added Get-AccessibleHandle cmdlet.
 * Support for oplock levels.

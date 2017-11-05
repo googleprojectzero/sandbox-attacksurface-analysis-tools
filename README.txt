@@ -31,6 +31,14 @@ The tools can be built with Visual Studio 2015
 
 Release Notes:
 
+1.1.3
+-----
+* Added Show-NtToken function.
+* Added basic version checking for certain functions which can't be accessed on Windows 7.
+* Fixed referenced System.Management.Automation assembly version to run properly with no PS2.
+* Fixed some bugs in token structures which preventing being used with multiple values.
+* Added support to Win32Process for LPAC.
+
 1.1.2
 -----
 * Added Get-AccessibleHandle cmdlet.

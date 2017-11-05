@@ -11,16 +11,26 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A .NET class library to access native NT API system calls</description>
     <releaseNotes>
+1.1.3
+-----
+* Added Show-NtToken function.
+* Added basic version checking for certain functions which can't be accessed on Windows 7.
+* Fixed referenced System.Management.Automation assembly version to run properly with no PS2.
+* Fixed some bugs in token structures which preventing being used with multiple values.
+* Added support to Win32Process for LPAC.
+
 1.1.2
 -----
 * Added Get-AccessibleHandle cmdlet.
 * Support for oplock levels.
 * Added support to set inherit and protect on close flags to objects.
 * Added Get-NtFilePath function.
+
 1.1.1
 -----
 * Fix to native protected process creation.
 * Added functions to create native NT processes.
+
 1.1.0
 -----
 * Removed check tools, excluding CheckNetworkAccess.
