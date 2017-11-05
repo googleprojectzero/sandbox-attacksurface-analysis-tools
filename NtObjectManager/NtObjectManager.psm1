@@ -878,17 +878,7 @@ function Show-NtToken {
 		[switch]$Integrity
     )
 
-	if ($Primary) {
-		$token = Get-NtToken -Primary
-	} elseif($Thread) { 
-		$token = Get-NtToken -Thread
-	} else {
-		$token = Get-NtToken -Effective 
-	}
-
-	if ($token -eq $null) {
-		return
-	}
+	$token = Get-NtToken -Effective
 
 	if ($All) {
 		$Group = $true
