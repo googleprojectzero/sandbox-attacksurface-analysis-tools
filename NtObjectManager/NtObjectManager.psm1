@@ -374,14 +374,14 @@ function New-Win32ProcessConfig
 		[NtApiDotNet.NtProcess]$ParentProcess,
 		[SandboxAnalysisUtils.CreateProcessFlags]$CreationFlags = 0,
 		[SandboxAnalysisUtils.ProcessMitigationOptions]$MitigationOptions = 0,
-		[bool]$TerminateOnDispose,
+		[switch]$TerminateOnDispose,
 		[byte[]]$Environment,
 		[string]$CurrentDirectory,
 		[string]$Desktop,
 		[string]$Title,
-		[bool]$InheritHandles,
-		[bool]$InheritProcessHandle,
-		[bool]$InheritThreadHandle,
+		[switch]$InheritHandles,
+		[switch]$InheritProcessHandle,
+		[switch]$InheritThreadHandle,
 		[SandboxAnalysisUtils.Win32kFilterFlags]$Win32kFilterFlags = 0,
 		[int]$Win32kFilterLevel = 0
     )
@@ -505,9 +505,9 @@ function New-Win32Process
 	if ($null -eq $Config) {
 		$Config = New-Win32ProcessConfig $CommandLine -ApplicationName $ApplicationName `
 		-ProcessSecurityDescriptor $ProcessSecurityDescriptor -ThreadSecurityDescriptor $ThreadSecurityDescriptor `
-		-ParentProcess $ParentProcess -CreationFlags $CreationFlags -TerminateOnDispose $TerminateOnDispose `
+		-ParentProcess $ParentProcess -CreationFlags $CreationFlags -TerminateOnDispose:$TerminateOnDispose `
 		-Environment $Environment -CurrentDirectory $CurrentDirectory -Desktop $Desktop -Title $Title `
-		-InheritHandles $InheritHandles -InheritProcessHandle $InheritProcessHandle -InheritThreadHandle $InheritThreadHandle `
+		-InheritHandles:$InheritHandles -InheritProcessHandle:$InheritProcessHandle -InheritThreadHandle:$InheritThreadHandle `
 		-MitigationOptions $MitigationOptions
 	}
 
@@ -926,6 +926,76 @@ function Show-NtToken {
 		"INTEGRITY LEVEL"
 		"---------------"
 		$token.IntegrityLevel | Format-Table
+	}
+}
+
+<#
+.SYNOPSIS
+Shows an object's security descriptor in a UI.
+.DESCRIPTION
+This cmdlet displays the security descriptor for an object in the standard Windows UI. If an object is passed
+and the handle grants WriteDac access then the viewer will also allows you to modify the security descriptor.
+.PARAMETER Object
+Specify an object to use for the security descriptor.
+.PARAMETER SecurityDescriptor
+Specify a security descriptor.
+.PARAMETER Type
+Specify the NT object type for the security descriptor.
+.PARAMETER Name
+Optional name to display with the security descriptor.
+.PARAMETER Wait
+Optionally wait for the user to close the UI.
+.PARAMETER ReadOnly
+Optionally force the viewer to be read-only when passing an object with WriteDac access.
+.OUTPUTS
+None
+.EXAMPLE
+Show-NtSecurityDescriptor $obj
+Show the security descriptor of an object.
+.EXAMPLE
+Show-NtSecurityDescriptor $obj -ReadOnly
+Show the security descriptor of an object as read only.
+.EXAMPLE
+Show-NtSecurityDescriptor $obj.SecurityDescriptor -Type $obj.NtType
+Show the security descriptor for an object via it's properties.
+#>
+function Show-NtSecurityDescriptor {
+	[CmdletBinding(DefaultParameterSetName = "FromObject")]
+    Param(
+		[Parameter(Position = 0, ParameterSetName = "FromObject", Mandatory = $true)] 
+        [NtApiDotNet.NtObject]$Object,
+		[Parameter(ParameterSetName = "FromObject")] 
+        [switch]$ReadOnly,
+		[Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true)] 
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+		[Parameter(Position = 1, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true)] 
+        [NtApiDotNet.NtType]$Type,
+		[Parameter(ParameterSetName = "FromSecurityDescriptor")] 
+		[string]$Name = "Object",
+		[switch]$Wait
+    )
+
+	if ($Object -ne $null) {
+		if (!$Object.IsAccessGranted("ReadControl")) {
+			Write-Error "Object doesn't have Read Control access."
+			return
+		}
+		Use-NtObject($obj = $Object.Duplicate()) {
+			$obj.Inherit = $true
+			$cmdline = [string]::Format("ViewSecurityDescriptor {0}", $obj.Handle.DangerousGetHandle())
+			if ($ReadOnly) {
+				$cmdline += " --readonly"
+			}
+			$config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\ViewSecurityDescriptor.exe" -InheritHandles
+			$config.InheritHandleList.Add($obj.Handle.DangerousGetHandle())
+			Use-NtObject($p = New-Win32Process -Config $config) {
+				if ($Wait) {
+					$p.Process.Wait() | Out-Null
+				}
+			}
+		}
+	} else {	
+		Start-Process -FilePath "$PSScriptRoot\ViewSecurityDescriptor.exe" -ArgumentList @($Name,$SecurityDescriptor.ToSddl(),$Type.Name) -Wait:$Wait
 	}
 }
 
