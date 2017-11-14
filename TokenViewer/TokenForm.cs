@@ -317,13 +317,29 @@ namespace TokenViewer
             _token.Dispose();
         }
 
+        private bool ShowTokenPermissions(TokenAccessRights access, bool throw_on_error)
+        {
+            using (var result = _token.Duplicate(access, AttributeFlags.None, DuplicateObjectOptions.None, throw_on_error))
+            {
+                if (result.IsSuccess)
+                {
+                    NativeBridge.EditSecurity(Handle,
+                        result.Result,
+                        "Token", false);
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private void btnPermissions_Click(object sender, EventArgs e)
         {
             try
             {
-                NativeBridge.EditSecurity(Handle, 
-                    _token.Duplicate(TokenAccessRights.ReadControl), 
-                    "Token", true);
+                if (!ShowTokenPermissions(TokenAccessRights.ReadControl | TokenAccessRights.WriteDac, false))
+                {
+                    ShowTokenPermissions(TokenAccessRights.ReadControl, true);
+                }
             }
             catch (NtException ex)
             {
