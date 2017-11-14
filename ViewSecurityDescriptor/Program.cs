@@ -27,21 +27,32 @@ namespace ViewSecurityDescriptor
         [STAThread]
         static void Main(string[] args)
         {
-            if (args.Length < 3)
+            if (args.Length != 1 && args.Length != 3)
             {
-                MessageBox.Show("Usage: ViewSecurityDescriptor.exe Name SDDL NtType", "Usage", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                MessageBox.Show("Usage: ViewSecurityDescriptor.exe (handle|Name SDDL NtType)", "Usage", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
             else
             {
                 try
                 {
-                    SecurityDescriptor sd = new SecurityDescriptor(args[1]);
-                    NtType type = NtType.GetTypeByName(args[2], false);
-                    if (type == null)
+                    if (args.Length == 1)
                     {
-                        throw new ArgumentException(string.Format("Unknown NT type {0}", args[2]));
+                        var handle = new SafeKernelObjectHandle(new IntPtr(int.Parse(args[0])), true);
+                        using (var obj = NtGeneric.FromHandle(handle))
+                        {
+                            NativeBridge.EditSecurity(IntPtr.Zero, obj, obj.Name, true);
+                        }
                     }
-                    NativeBridge.EditSecurity(IntPtr.Zero, args[0], sd, type);
+                    else
+                    {
+                        SecurityDescriptor sd = new SecurityDescriptor(args[1]);
+                        NtType type = NtType.GetTypeByName(args[2], false);
+                        if (type == null)
+                        {
+                            throw new ArgumentException(string.Format("Unknown NT type {0}", args[2]));
+                        }
+                        NativeBridge.EditSecurity(IntPtr.Zero, args[0], sd, type);
+                    }
                 }
                 catch (Exception ex)
                 {
