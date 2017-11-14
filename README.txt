@@ -8,28 +8,24 @@ tools take a -p flag which is used to specify the PID of a sandboxed process. Th
 the token of that process and determine what access is allowed from that location. Also it's recommended
 to run these tools as an administrator or local system to ensure the system can be appropriately enumerated.
 
-CheckExeManifest: Check for specific executable manifest flags
-CheckNetworkAccess: Check access to network stack
-NewProcessFromToken: Create a new process based on existing token
-TokenView: View and manipulate various process token values
+CheckExeManifest: Check for specific executable manifest flags.
+CheckNetworkAccess: Check access to network stack.
+NewProcessFromToken: Create a new process based on existing token.
+TokenView: View and manipulate various process token values.
 NtApiDotNet: A basic managed library to access NT system calls and objects.
-NtObjectManager: A powershell module which uses NtApiDotNet to expose the NT object manager
+NtObjectManager: A powershell module which uses NtApiDotNet to expose the NT object manager.
+ViewSecurityDescriptor: View the security descriptor from an SDDL string or an inherited object.
 
-Note that the following tools are deprecated, they've been replaced with more flexible Powershell cmdlets.
-You shouldn't use them as they've not even guaranteed to work correctly.
-
-CheckDeviceAccess : Check access to device objects
-CheckFileAccess: Check access to files
-CheckObjectManagerAccess: Check access to object manager objects
-CheckProcessAccess: Check access to processes
-CheckResistryAccess: Check access to registry
-ObjectList: Dump object manager namespace information
-DumpTypeInfo: Dump simple kernel object type information
-DumpProcessMitigations: Dump basic process mitigation details on Windows8+
-
-The tools can be built with Visual Studio 2015
+The tools can be built with Visual Studio 2017
 
 Release Notes:
+
+1.1.4
+-----
+* Added Show-NtSecurityDescriptor function.
+* Added support for modifying security descriptors in the UI.
+* Cleanup of access mask when being displayed in the UI.
+* Added opaque reparse buffer.
 
 1.1.3
 -----

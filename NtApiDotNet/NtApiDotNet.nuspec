@@ -11,6 +11,13 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A .NET class library to access native NT API system calls</description>
     <releaseNotes>
+1.1.4
+-----
+* Added Show-NtSecurityDescriptor function.
+* Added support for modifying security descriptors in the UI.
+* Cleanup of access mask when being displayed in the UI.
+* Added opaque reparse buffer.
+
 1.1.3
 -----
 * Added Show-NtToken function.

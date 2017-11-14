@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.3'
+ModuleVersion = '1.1.4'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -131,7 +131,13 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.3
+        ReleaseNotes = '1.1.4
+-----
+* Added Show-NtSecurityDescriptor function.
+* Added support for modifying security descriptors in the UI.
+* Cleanup of access mask when being displayed in the UI.
+* Added opaque reparse buffer.
+1.1.3
 -----
 * Added Show-NtToken function.
 * Added basic version checking for certain functions which can''t be accessed on Windows 7.
