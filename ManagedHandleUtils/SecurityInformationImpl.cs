@@ -16,6 +16,7 @@ using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace SandboxAnalysisUtils
 {
@@ -178,8 +179,8 @@ namespace SandboxAnalysisUtils
         public void GetObjectInformation(IntPtr pObjectInfo)
         {
             SiObjectInfo object_info = new SiObjectInfo();
-            SiObjectInfoFlags flags = SiObjectInfoFlags.SI_ADVANCED;
-            if (_read_only || _handle.IsAccessMaskGranted(GenericAccessRights.WriteDac))
+            SiObjectInfoFlags flags = SiObjectInfoFlags.SI_ADVANCED | SiObjectInfoFlags.SI_EDIT_ALL;
+            if (_read_only || !_handle.IsAccessMaskGranted(GenericAccessRights.WriteDac))
             {
                 flags |= SiObjectInfoFlags.SI_READONLY;
             }
@@ -213,7 +214,14 @@ namespace SandboxAnalysisUtils
 
         public void SetSecurity(SecurityInformation SecurityInformation, IntPtr pSecurityDescriptor)
         {
-            throw new NotImplementedException();
+            if (_read_only || _handle == null)
+            {
+                throw new SecurityException("Can't edit a read only security descriptor");
+            }
+
+            SecurityDescriptor sd = new SecurityDescriptor(pSecurityDescriptor);
+
+            _handle.SetSecurityDescriptor(sd, SecurityInformation);
         }
 
         #region IDisposable Support
