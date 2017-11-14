@@ -118,14 +118,14 @@ namespace SandboxAnalysisUtils
         private SafeHGlobalBuffer _access_map; // SI_ACCESS
         private SafeStringBuffer _obj_name;
         private NtObject _handle;
+        private byte[] _sd;
         private bool _read_only;
 
-        public SecurityInformationImpl(string obj_name, NtObject handle,
+        private SecurityInformationImpl(string obj_name, 
             Dictionary<uint, string> names, GenericMapping generic_mapping,
             bool read_only)
         {
             _mapping = generic_mapping;
-            _handle = handle;
             _obj_name = new SafeStringBuffer(obj_name);
             _access_map = new SafeHGlobalBuffer(Marshal.SizeOf(typeof(SiAccess)) * names.Count);
             SiAccess[] sis = new SiAccess[names.Count];
@@ -135,15 +135,31 @@ namespace SandboxAnalysisUtils
             foreach (KeyValuePair<uint, string> pair in names)
             {
                 _names.Add(new SafeStringBuffer(pair.Value));
-                SiAccess si = new SiAccess();
-                si.dwFlags = SiAccessFlags.SI_ACCESS_SPECIFIC | SiAccessFlags.SI_ACCESS_GENERAL;
-                si.mask = pair.Key;
-                si.pszName = _names[i].DangerousGetHandle();
+                SiAccess si = new SiAccess
+                {
+                    dwFlags = SiAccessFlags.SI_ACCESS_SPECIFIC | SiAccessFlags.SI_ACCESS_GENERAL,
+                    mask = pair.Key,
+                    pszName = _names[i].DangerousGetHandle()
+                };
                 sis[i] = si;
                 i++;
             }
             _access_map.WriteArray(0, sis, 0, names.Count);
             _read_only = read_only;
+        }
+
+        public SecurityInformationImpl(string obj_name, NtObject handle,
+            Dictionary<uint, string> names, GenericMapping generic_mapping,
+            bool read_only) : this(obj_name, names, generic_mapping, read_only)
+        {
+            _handle = handle;
+        }
+
+        public SecurityInformationImpl(string obj_name, SecurityDescriptor sd,
+            Dictionary<uint, string> names, GenericMapping generic_mapping) 
+            : this(obj_name, names, generic_mapping, true)
+        {
+            _sd = sd.ToByteArray();
         }
 
         public void GetAccessRights(ref Guid pguidObjectType, SiObjectInfoFlags dwFlags, out IntPtr ppAccess, out uint pcAccesses, out uint piDefaultAccess)
@@ -179,7 +195,7 @@ namespace SandboxAnalysisUtils
         public void GetSecurity(SecurityInformation RequestedInformation, 
             out IntPtr ppSecurityDescriptor, [MarshalAs(UnmanagedType.Bool)] bool fDefault)
         {
-            byte[] raw_sd = _handle.GetSecurityDescriptorBytes(RequestedInformation);
+            byte[] raw_sd = _sd ?? _handle.GetSecurityDescriptorBytes(RequestedInformation);
             IntPtr ret = LocalAlloc(0, new IntPtr(raw_sd.Length));
             Marshal.Copy(raw_sd, 0, ret, raw_sd.Length);
             ppSecurityDescriptor = ret;
@@ -207,23 +223,10 @@ namespace SandboxAnalysisUtils
         {
             if (!disposedValue)
             {
-                if (_names != null)
-                {
-                    _names.Dispose();
-                }
-                if (_access_map != null)
-                {
-                    _access_map.Close();
-                }
-                if (_obj_name != null)
-                {
-                    _obj_name.Close();
-                }
-                if (_handle != null)
-                {
-                    _handle.Close();
-                }
-                
+                _names?.Dispose();
+                _access_map?.Close();
+                _obj_name?.Close();
+                _handle?.Close();
                 disposedValue = true;
             }
         }

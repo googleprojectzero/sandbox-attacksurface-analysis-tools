@@ -28,7 +28,10 @@ namespace SandboxAnalysisUtils
 
             foreach(uint mask in Enum.GetValues(enumType))
             {
-                access.Add(mask, re.Replace(Enum.GetName(enumType, mask), " $1").Trim());
+                if (mask != 0)
+                {
+                    access.Add(mask, re.Replace(Enum.GetName(enumType, mask), " $1").Trim());
+                }
             }
         }
 
@@ -50,6 +53,15 @@ namespace SandboxAnalysisUtils
 
             using (SecurityInformationImpl impl = new SecurityInformationImpl(object_name, handle, access,
                handle.NtType.GenericMapping, read_only))
+            {
+                EditSecurity(hwnd, impl);
+            }
+        }
+
+        public static void EditSecurity(IntPtr hwnd, string name, SecurityDescriptor sd, NtType type)
+        {
+            Dictionary<uint, String> access = GetMaskDictionary(type.AccessRightsType);
+            using (var impl = new SecurityInformationImpl(name, sd, access, type.GenericMapping))
             {
                 EditSecurity(hwnd, impl);
             }
