@@ -1004,6 +1004,7 @@ namespace NtApiDotNet
         FILE_PLACEHOLDER = 0x80000015,
         DFM = 0x80000016,
         WOF = 0x80000017,
+        GLOBAL_REPARSE = 0xA0000019,
     }
 
     public abstract class ReparseBuffer
@@ -1018,7 +1019,14 @@ namespace NtApiDotNet
             Tag = tag;
         }
 
-        public static ReparseBuffer FromByteArray(byte[] ba)
+        /// <summary>
+        /// Get a reparse buffer from a byte array.
+        /// </summary>
+        /// <param name="ba">The byte array to parse</param>
+        /// <param name="opaque_buffer">True to return an opaque buffer if 
+        /// the tag isn't known, otherwise try and parse as a generic buffer</param>
+        /// <returns>The reparse buffer.</returns>
+        public static ReparseBuffer FromByteArray(byte[] ba, bool opaque_buffer)
         {
             BinaryReader reader = new BinaryReader(new MemoryStream(ba));
             ReparseTag tag = (ReparseTag)reader.ReadUInt32();
@@ -1034,10 +1042,20 @@ namespace NtApiDotNet
                     buffer = new MountPointReparseBuffer();
                     break;
                 case ReparseTag.SYMLINK:
-                    buffer = new SymlinkReparseBuffer();
+                    buffer = new SymlinkReparseBuffer(false);
+                    break;
+                case ReparseTag.GLOBAL_REPARSE:
+                    buffer = new SymlinkReparseBuffer(true);
                     break;
                 default:
-                    buffer = new GenericReparseBuffer(tag);
+                    if (opaque_buffer)
+                    {
+                        buffer = new OpaqueReparseBuffer(tag);
+                    }
+                    else
+                    {
+                        buffer = new GenericReparseBuffer(tag);
+                    }
                     break;
             }
 
@@ -1064,9 +1082,10 @@ namespace NtApiDotNet
 
     public sealed class GenericReparseBuffer : ReparseBuffer
     {
-        public GenericReparseBuffer(ReparseTag tag, byte[] data) : base(tag)
+        public GenericReparseBuffer(ReparseTag tag, Guid guid, byte[] data) : base(tag)
         {
             Data = (byte[])data.Clone();
+            Guid = guid;
         }
 
         internal GenericReparseBuffer(ReparseTag tag) : base(tag)
@@ -1079,12 +1098,40 @@ namespace NtApiDotNet
 
         protected override byte[] GetBuffer()
         {
-            return Data;
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            writer.Write(Guid.ToByteArray());
+            writer.Write(Data);
+            return stm.ToArray();
         }
 
         protected override void ParseBuffer(int data_length, BinaryReader reader)
         {
             Guid = new Guid(reader.ReadAllBytes(16));
+            Data = reader.ReadAllBytes(data_length);
+        }
+    }
+
+    public sealed class OpaqueReparseBuffer : ReparseBuffer
+    {
+        public OpaqueReparseBuffer(ReparseTag tag, byte[] data) : base(tag)
+        {
+            Data = (byte[])data.Clone();
+        }
+
+        internal OpaqueReparseBuffer(ReparseTag tag) : base(tag)
+        {
+        }
+        
+        public byte[] Data { get; private set; }
+
+        protected override byte[] GetBuffer()
+        {
+            return Data;
+        }
+
+        protected override void ParseBuffer(int data_length, BinaryReader reader)
+        {
             Data = reader.ReadAllBytes(data_length);
         }
     }
@@ -1150,9 +1197,17 @@ namespace NtApiDotNet
 
     public sealed class SymlinkReparseBuffer : ReparseBuffer
     {
+        public SymlinkReparseBuffer(string substitution_name,
+            string print_name, SymlinkReparseBufferFlags flags)
+            : this(substitution_name, print_name, flags, false)
+        {
+
+        }
+
         public SymlinkReparseBuffer(string substitution_name, 
-            string print_name, SymlinkReparseBufferFlags flags) 
-            : base(ReparseTag.SYMLINK)
+            string print_name, SymlinkReparseBufferFlags flags,
+            bool global) 
+            : this(global)
         {
             if (String.IsNullOrEmpty(substitution_name))
             {
@@ -1169,7 +1224,8 @@ namespace NtApiDotNet
             Flags = flags;
         }
 
-        internal SymlinkReparseBuffer() : base(ReparseTag.SYMLINK)
+        internal SymlinkReparseBuffer(bool global) 
+            : base(global ? ReparseTag.GLOBAL_REPARSE : ReparseTag.SYMLINK)
         {
         }
 
@@ -2455,15 +2511,26 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the reparse point buffer for the file.
         /// </summary>
+        /// <param name="opaque_buffer">If the reparse tag isn't known 
+        /// return an opaque buffer, otherwise a generic buffer</param>
         /// <returns>The reparse point buffer.</returns>
-        public ReparseBuffer GetReparsePoint()
+        public ReparseBuffer GetReparsePoint(bool opaque_buffer)
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(16 * 1024))
             {
                 FsControl(NtWellKnownIoControlCodes.FSCTL_GET_REPARSE_POINT, null, buffer);
 
-                return ReparseBuffer.FromByteArray(buffer.ToArray());
+                return ReparseBuffer.FromByteArray(buffer.ToArray(), opaque_buffer);
             }
+        }
+
+        /// <summary>
+        /// Get the reparse point buffer for the file.
+        /// </summary>
+        /// <returns>The reparse point buffer.</returns>
+        public ReparseBuffer GetReparsePoint()
+        {
+            return GetReparsePoint(false);
         }
 
         /// <summary>
@@ -2487,7 +2554,7 @@ namespace NtApiDotNet
         public ReparseBuffer DeleteReparsePoint()
         {
             ReparseBuffer reparse = GetReparsePoint();
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(new GenericReparseBuffer(reparse.Tag, new byte[0]).ToByteArray()))
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(new OpaqueReparseBuffer(reparse.Tag, new byte[0]).ToByteArray()))
             {
                 FsControl(NtWellKnownIoControlCodes.FSCTL_DELETE_REPARSE_POINT, buffer, null);
             }
