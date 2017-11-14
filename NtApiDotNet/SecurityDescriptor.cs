@@ -221,6 +221,15 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="ptr">Native pointer to security descriptor.</param>
+        public SecurityDescriptor(IntPtr ptr)
+        {
+            ParseSecurityDescriptor(new SafeHGlobalBuffer(ptr, 0, false));
+        }
+
+        /// <summary>
         /// Constructor
         /// </summary>
         public SecurityDescriptor()
