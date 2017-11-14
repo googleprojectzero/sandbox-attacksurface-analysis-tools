@@ -27,20 +27,21 @@ namespace ViewSecurityDescriptor
         [STAThread]
         static void Main(string[] args)
         {
-            if (args.Length != 1 && args.Length != 3)
+            try
             {
-                MessageBox.Show("Usage: ViewSecurityDescriptor.exe (handle|Name SDDL NtType)", "Usage", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-            }
-            else
-            {
-                try
+                if (args.Length == 0)
                 {
-                    if (args.Length == 1)
+                    MessageBox.Show("Usage: ViewSecurityDescriptor.exe (handle [--readonly]|Name SDDL NtType)", "Usage", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                }
+                else
+                {
+                    if (args.Length < 3)
                     {
                         var handle = new SafeKernelObjectHandle(new IntPtr(int.Parse(args[0])), true);
+                        bool read_only = args.Length > 1 ? args[1].Equals("--readonly") : false;
                         using (var obj = NtGeneric.FromHandle(handle))
                         {
-                            NativeBridge.EditSecurity(IntPtr.Zero, obj, obj.Name, true);
+                            NativeBridge.EditSecurity(IntPtr.Zero, obj, obj.Name, read_only);
                         }
                     }
                     else
@@ -54,10 +55,10 @@ namespace ViewSecurityDescriptor
                         NativeBridge.EditSecurity(IntPtr.Zero, args[0], sd, type);
                     }
                 }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
