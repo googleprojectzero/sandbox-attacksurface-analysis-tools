@@ -2352,10 +2352,10 @@ namespace NtApiDotNet
             }
         }
 
-        private void DoLinkRename(FileInformationClass file_info, string linkname, NtFile root)
+        private void DoLinkRename(FileInformationClass file_info, string linkname, NtFile root, bool replace_if_exists)
         {
             FileLinkRenameInformation link = new FileLinkRenameInformation();
-            link.ReplaceIfExists = true;
+            link.ReplaceIfExists = replace_if_exists;
             link.RootDirectory = root != null ? root.Handle.DangerousGetHandle() : IntPtr.Zero;
             char[] chars = linkname.ToCharArray();
             link.FileNameLength = chars.Length * 2;
@@ -2366,6 +2366,11 @@ namespace NtApiDotNet
                 NtSystemCalls.NtSetInformationFile(Handle, iostatus, buffer,
                         buffer.Length, file_info).ToNtException();
             }
+        }
+        
+        private void DoLinkRename(FileInformationClass file_info, string linkname, NtFile root)
+        {
+            DoLinkRename(file_info, linkname, root, true);
         }
 
         /// <summary>
@@ -2409,10 +2414,33 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="new_name">The target NT path.</param>
         /// <param name="root">The root directory if new_name is relative</param>
+        /// <param name="replace_if_exists">If TRUE, replaces the target file if it exists. If FALSE, fails if the target file already exists.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void Rename(string new_name, NtFile root, bool replace_if_exists)
+        {
+            DoLinkRename(FileInformationClass.FileRenameInformation, new_name, root, replace_if_exists);
+        }
+
+        /// <summary>
+        /// Rename file.
+        /// </summary>
+        /// <param name="new_name">The target NT path.</param>
+        /// <param name="root">The root directory if new_name is relative</param>
         /// <exception cref="NtException">Thrown on error.</exception>
         public void Rename(string new_name, NtFile root)
         {
-            DoLinkRename(FileInformationClass.FileRenameInformation, new_name, root);
+            Rename(new_name, root, true);
+        }
+
+        /// <summary>
+        /// Rename this file with an absolute path.
+        /// </summary>
+        /// <param name="new_name">The target absolute NT path.</param>
+        /// <param name="replace_if_exists">If TRUE, replace the target file if it exists. If FALSE, fails if the target file already exists.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void Rename(string new_name, bool replace_if_exists)
+        {
+            DoLinkRename(FileInformationClass.FileRenameInformation, new_name, null, replace_if_exists);
         }
 
         /// <summary>
@@ -2422,7 +2450,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public void Rename(string new_name)
         {
-            DoLinkRename(FileInformationClass.FileRenameInformation, new_name, null);
+            Rename(new_name, true);
         }
 
         /// <summary>
