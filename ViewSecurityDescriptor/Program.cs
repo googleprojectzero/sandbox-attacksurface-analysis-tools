@@ -13,7 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
-using NtApiDotNet.Win32Utils;
+using NtApiDotNet.Win32;
 using System;
 using System.Windows.Forms;
 

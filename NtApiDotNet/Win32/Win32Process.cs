@@ -17,7 +17,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32Utils
+namespace NtApiDotNet.Win32
 {
     /// <summary>
     /// Flags for create process.

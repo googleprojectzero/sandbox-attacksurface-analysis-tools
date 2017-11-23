@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.4'
+ModuleVersion = '1.1.5'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -131,7 +131,11 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.4
+        ReleaseNotes = '1.1.5
+-----
+* Fixed crash on 32 bit Windows when enumerating NT types.
+* Merged ManagedHandleUtils assembly into main NtApiDotNet under the Win32 namespace.
+1.1.4
 -----
 * Added Show-NtSecurityDescriptor function.
 * Added support for modifying security descriptors in the UI.

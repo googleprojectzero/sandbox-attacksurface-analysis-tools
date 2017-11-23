@@ -16,7 +16,7 @@ using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32Utils
+namespace NtApiDotNet.Win32
 {
     /// <summary>
     /// Represents a safe win32 exception, which resolves the win32 message when Message is called.

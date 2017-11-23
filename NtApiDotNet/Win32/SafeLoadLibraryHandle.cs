@@ -18,7 +18,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace NtApiDotNet.Win32Utils
+namespace NtApiDotNet.Win32
 {
     /// <summary>
     /// Flags for loading a library.

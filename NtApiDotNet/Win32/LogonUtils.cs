@@ -17,7 +17,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace NtApiDotNet.Win32Utils
+namespace NtApiDotNet.Win32
 {
     enum KERB_LOGON_SUBMIT_TYPE
     {

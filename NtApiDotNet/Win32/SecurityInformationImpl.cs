@@ -17,7 +17,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security;
 
-namespace NtApiDotNet.Win32Utils
+namespace NtApiDotNet.Win32
 {
     [StructLayout(LayoutKind.Sequential)]
     struct SiObjectInfo

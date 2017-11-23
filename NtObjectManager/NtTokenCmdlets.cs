@@ -17,7 +17,7 @@ using System;
 using System.Management.Automation;
 using System.Collections.Generic;
 using System.Linq;
-using NtApiDotNet.Win32Utils;
+using NtApiDotNet.Win32;
 
 namespace NtObjectManager
 {

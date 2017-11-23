@@ -20,6 +20,11 @@ The tools can be built with Visual Studio 2017
 
 Release Notes:
 
+1.1.5
+-----
+* Fixed crash on 32 bit Windows when enumerating NT types.
+* Merged ManagedHandleUtils assembly into main NtApiDotNet under the Win32 namespace.
+
 1.1.4
 -----
 * Added Show-NtSecurityDescriptor function.

@@ -24,7 +24,7 @@ using System.Management;
 using System.Windows.Forms;
 using System.Text;
 using System.Runtime.InteropServices;
-using NtApiDotNet.Win32Utils;
+using NtApiDotNet.Win32;
 
 namespace TokenViewer
 {

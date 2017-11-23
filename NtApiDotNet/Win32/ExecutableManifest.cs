@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml;
 
-namespace NtApiDotNet.Win32Utils
+namespace NtApiDotNet.Win32
 {
     /// <summary>
     /// Contains information about a manifest file.

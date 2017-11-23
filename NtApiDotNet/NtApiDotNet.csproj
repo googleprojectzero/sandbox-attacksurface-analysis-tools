@@ -89,15 +89,15 @@
     <Compile Include="ThreadImpersonationContext.cs" />
     <Compile Include="UnicodeString.cs" />
     <Compile Include="NtObjectUtils.cs" />
-    <Compile Include="Win32Utils\ExecutableManifest.cs" />
-    <Compile Include="Win32Utils\LogonUtils.cs" />
-    <Compile Include="Win32Utils\NativeBridge.cs" />
-    <Compile Include="Win32Utils\SafeLoadLibraryHandle.cs" />
-    <Compile Include="Win32Utils\SafeWin32Exception.cs" />
-    <Compile Include="Win32Utils\SecurityInformationImpl.cs" />
-    <Compile Include="Win32Utils\ServiceUtils.cs" />
-    <Compile Include="Win32Utils\TokenUtils.cs" />
-    <Compile Include="Win32Utils\Win32Process.cs" />
+    <Compile Include="Win32\ExecutableManifest.cs" />
+    <Compile Include="Win32\LogonUtils.cs" />
+    <Compile Include="Win32\NativeBridge.cs" />
+    <Compile Include="Win32\SafeLoadLibraryHandle.cs" />
+    <Compile Include="Win32\SafeWin32Exception.cs" />
+    <Compile Include="Win32\SecurityInformationImpl.cs" />
+    <Compile Include="Win32\ServiceUtils.cs" />
+    <Compile Include="Win32\TokenUtils.cs" />
+    <Compile Include="Win32\Win32Process.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Readme.txt" />
