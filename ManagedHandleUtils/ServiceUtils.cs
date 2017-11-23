@@ -88,6 +88,7 @@ namespace SandboxAnalysisUtils
             Start = 0x0010,
             Stop = 0x0020,
             UserDefinedControl = 0x0100,
+            SetStatus = 0x8000,
             All = ChangeConfig | EnumerateDependents | Interrogate | PauseContinue
                 | QueryStatus | QueryConfig | Start | Stop | UserDefinedControl | ReadControl
                 | Delete | WriteDac | WriteOwner,
