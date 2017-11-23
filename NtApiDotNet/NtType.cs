@@ -597,22 +597,30 @@ namespace NtApiDotNet
             return GetTypeByType<T>(true);
         }
 
-        private static Dictionary<string, NtType> LoadTypes()
+        private static int GetTypeSize()
         {
-            var type_factories = NtTypeFactory.GetAssemblyNtTypeFactories(Assembly.GetExecutingAssembly());
             using (var type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>())
             {
                 Dictionary<string, NtType> ret = new Dictionary<string, NtType>(StringComparer.OrdinalIgnoreCase);
-                int return_length;
                 NtStatus status = NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectAllInformation,
-                    type_info, type_info.Length, out return_length);
+                    type_info, type_info.Length, out int return_length);
                 if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
                     status.ToNtException();
-                type_info.Resize(return_length);
-                
+                return return_length;
+            }
+        }
+
+        private static Dictionary<string, NtType> LoadTypes()
+        {
+            var type_factories = NtTypeFactory.GetAssemblyNtTypeFactories(Assembly.GetExecutingAssembly());
+            int type_size = GetTypeSize();
+            Dictionary<string, NtType> ret = new Dictionary<string, NtType>(StringComparer.OrdinalIgnoreCase);
+
+            using (var type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>(type_size, true))
+            {
                 int alignment = IntPtr.Size - 1;
                 NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectAllInformation,
-                    type_info, type_info.Length, out return_length).ToNtException();
+                    type_info, type_info.Length, out int return_length).ToNtException();
                 ObjectAllTypesInformation result = type_info.Result;
                 IntPtr curr_typeinfo = type_info.DangerousGetHandle() + IntPtr.Size;
                 for (int count = 0; count < result.NumberOfTypes; ++count)
