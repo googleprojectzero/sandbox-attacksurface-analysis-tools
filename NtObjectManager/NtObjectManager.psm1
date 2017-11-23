@@ -361,7 +361,7 @@ Specify the filter level for the Win32k filter.
 .INPUTS
 None
 .OUTPUTS
-SandboxAnalysisUtils.Win32ProcessConfig
+NtApiDotNet.Win32.Win32ProcessConfig
 #>
 function New-Win32ProcessConfig
 {
@@ -372,8 +372,8 @@ function New-Win32ProcessConfig
         [NtApiDotNet.SecurityDescriptor]$ProcessSecurityDescriptor,
 		[NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
 		[NtApiDotNet.NtProcess]$ParentProcess,
-		[SandboxAnalysisUtils.CreateProcessFlags]$CreationFlags = 0,
-		[SandboxAnalysisUtils.ProcessMitigationOptions]$MitigationOptions = 0,
+		[NtApiDotNet.Win32.CreateProcessFlags]$CreationFlags = 0,
+		[NtApiDotNet.Win32.ProcessMitigationOptions]$MitigationOptions = 0,
 		[switch]$TerminateOnDispose,
 		[byte[]]$Environment,
 		[string]$CurrentDirectory,
@@ -382,10 +382,10 @@ function New-Win32ProcessConfig
 		[switch]$InheritHandles,
 		[switch]$InheritProcessHandle,
 		[switch]$InheritThreadHandle,
-		[SandboxAnalysisUtils.Win32kFilterFlags]$Win32kFilterFlags = 0,
+		[NtApiDotNet.Win32.Win32kFilterFlags]$Win32kFilterFlags = 0,
 		[int]$Win32kFilterLevel = 0
     )
-    $config = New-Object SandboxAnalysisUtils.Win32ProcessConfig
+    $config = New-Object NtApiDotNet.Win32.Win32ProcessConfig
     $config.CommandLine = $CommandLine
 	if (-not [string]::IsNullOrEmpty($ApplicationName))
 	{
@@ -460,7 +460,7 @@ Specify the configuration for the new process.
 .INPUTS
 None
 .OUTPUTS
-SandboxAnalysisUtils.Win32Process
+NtApiDotNet.Win32.Win32Process
 #>
 function New-Win32Process
 {
@@ -477,9 +477,9 @@ function New-Win32Process
 		[Parameter(ParameterSetName = "FromArgs")]
 		[NtApiDotNet.NtProcess]$ParentProcess,
 		[Parameter(ParameterSetName = "FromArgs")]
-		[SandboxAnalysisUtils.CreateProcessFlags]$CreationFlags = 0,
+		[NtApiDotNet.Win32.CreateProcessFlags]$CreationFlags = 0,
 		[Parameter(ParameterSetName = "FromArgs")]
-		[SandboxAnalysisUtils.ProcessMitigationOptions]$MitigationOptions = 0,
+		[NtApiDotNet.Win32.ProcessMitigationOptions]$MitigationOptions = 0,
 		[Parameter(ParameterSetName = "FromArgs")]
 		[switch]$TerminateOnDispose,
 		[Parameter(ParameterSetName = "FromArgs")]
@@ -499,7 +499,7 @@ function New-Win32Process
 		[Parameter(ParameterSetName = "FromArgs")]
 		[NtApiDotNet.NtToken]$Token,
 		[Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromConfig")]
-		[SandboxAnalysisUtils.Win32ProcessConfig]$Config
+		[NtApiDotNet.Win32.Win32ProcessConfig]$Config
     )
 
 	if ($null -eq $Config) {
@@ -512,9 +512,9 @@ function New-Win32Process
 	}
 
 	if ($null -eq $Token) {
-		[SandboxAnalysisUtils.Win32Process]::CreateProcess($config)
+		[NtApiDotNet.Win32.Win32Process]::CreateProcess($config)
 	} else {
-		[SandboxAnalysisUtils.Win32Process]::CreateProcessAsUser($Token, $config)
+		[NtApiDotNet.Win32.Win32Process]::CreateProcessAsUser($Token, $config)
 	}
 }
 
@@ -813,7 +813,7 @@ One or more filenames to get the executable manifest from
 .INPUTS
 List of filenames
 .OUTPUTS
-SandboxAnalysisUtils.ExecutableManifest
+NtApiDotNet.Win32.ExecutableManifest
 .EXAMPLE
 Get-ExecutableManifest abc.dll
 Gets manifest from file abc.dll.
@@ -835,7 +835,7 @@ function Get-ExecutableManifest
 		foreach($p in $Path)
 		{
 			$fullpath = Resolve-Path -LiteralPath $p
-			$manifest = [SandboxAnalysisUtils.ExecutableManifest]::GetManifests($fullpath)
+			$manifest = [NtApiDotNet.Win32.ExecutableManifest]::GetManifests($fullpath)
 			Write-Output $manifest
 		}
     }
