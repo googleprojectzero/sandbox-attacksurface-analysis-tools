@@ -12,13 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using SandboxAnalysisUtils;
 using NtApiDotNet;
 using System;
 using System.Management.Automation;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using NtApiDotNet.Win32Utils;
 
 namespace NtObjectManager
 {
@@ -313,7 +312,7 @@ namespace NtObjectManager
 
         private NtToken GetS4UToken(TokenAccessRights desired_access)
         {
-            using (NtToken token = SandboxAnalysisUtils.LogonUtils.LogonS4U(User, Domain, LogonType))
+            using (NtToken token = LogonUtils.LogonS4U(User, Domain, LogonType))
             {
                 if (desired_access == TokenAccessRights.MaximumAllowed)
                 {
@@ -539,7 +538,7 @@ namespace NtObjectManager
         /// </summary>
         protected override void ProcessRecord()
         {
-            Sid package_sid = SandboxAnalysisUtils.TokenUtils.GetPackageSidFromName(PackageSid);
+            Sid package_sid = TokenUtils.GetPackageSidFromName(PackageSid);
             if (!NtSecurity.IsPackageSid(package_sid))
             {
                 throw new ArgumentException(String.Format("Invalid Package Sid {0}", package_sid));
@@ -547,7 +546,7 @@ namespace NtObjectManager
 
             if (!String.IsNullOrEmpty(RestrictedPackageName))
             {
-                package_sid = SandboxAnalysisUtils.TokenUtils.DeriveRestrictedPackageSidFromSid(package_sid, RestrictedPackageName);
+                package_sid = TokenUtils.DeriveRestrictedPackageSidFromSid(package_sid, RestrictedPackageName);
             }
 
             WriteObject(Token.CreateLowBoxToken(package_sid, CapabilitySids ?? new Sid[0], Handles ?? new NtObject[0], TokenAccessRights.MaximumAllowed));

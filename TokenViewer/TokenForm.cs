@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using SandboxAnalysisUtils;
 using NtApiDotNet;
 using System;
 using System.Collections.Generic;
@@ -25,6 +24,7 @@ using System.Management;
 using System.Windows.Forms;
 using System.Text;
 using System.Runtime.InteropServices;
+using NtApiDotNet.Win32Utils;
 
 namespace TokenViewer
 {
@@ -323,7 +323,7 @@ namespace TokenViewer
             {
                 if (result.IsSuccess)
                 {
-                    NativeBridge.EditSecurity(Handle,
+                    SecurityUtils.EditSecurity(Handle,
                         result.Result,
                         "Token", false);
                     return true;
@@ -424,6 +424,24 @@ namespace TokenViewer
             }
         }
 
+        static NtToken CreateProcessForToken(string cmdline, NtToken token, bool make_interactive)
+        {
+            using (NtToken newtoken = token.DuplicateToken(TokenType.Primary, SecurityImpersonationLevel.Anonymous, TokenAccessRights.MaximumAllowed))
+            {
+                string desktop = null;
+                if (make_interactive)
+                {
+                    desktop = @"WinSta0\Default";
+                    newtoken.SetSessionId(NtProcess.Current.SessionId);
+                }
+
+                using (Win32Process process = Win32Process.CreateProcessAsUser(newtoken, null, cmdline, CreateProcessFlags.None, desktop))
+                {
+                    return process.Process.OpenToken();
+                }
+            }
+        }
+
         private void btnCreateProcess_Click(object sender, EventArgs e)
         {
             try
@@ -461,7 +479,7 @@ namespace TokenViewer
                 }
                 else
                 {
-                    using (TokenUtils.CreateProcessForToken(txtCommandLine.Text, _token, checkBoxMakeInteractive.Checked))
+                    using (CreateProcessForToken(txtCommandLine.Text, _token, checkBoxMakeInteractive.Checked))
                     {
                     }
                 }

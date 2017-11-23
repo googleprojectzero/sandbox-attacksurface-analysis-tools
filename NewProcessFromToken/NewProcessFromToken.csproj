@@ -55,10 +55,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ManagedHandleUtils\ManagedHandleUtils.csproj">
-      <Project>{4146b337-25d5-4ceb-a1a0-c6b9cca19a3f}</Project>
-      <Name>ManagedHandleUtils</Name>
-    </ProjectReference>
     <ProjectReference Include="..\NtApiDotNet\NtApiDotNet.csproj">
       <Project>{6aeb5004-6093-4c23-aeae-911d64cacc58}</Project>
       <Name>NtApiDotNet</Name>

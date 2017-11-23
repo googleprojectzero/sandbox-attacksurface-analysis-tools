@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtApiDotNet.Win32Utils;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -117,7 +118,7 @@ namespace TokenViewer
 
         private NtToken CreateLowBoxToken(NtToken token)
         {
-            Sid package_sid = SandboxAnalysisUtils.TokenUtils.GetPackageSidFromName(textBoxPackageSid.Text);
+            Sid package_sid = TokenUtils.GetPackageSidFromName(textBoxPackageSid.Text);
             if (!NtSecurity.IsPackageSid(package_sid))
             {
                 throw new ArgumentException(String.Format("Invalid Package Sid {0}", package_sid));

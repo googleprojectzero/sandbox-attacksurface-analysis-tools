@@ -13,7 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
-using SandboxAnalysisUtils;
+using NtApiDotNet.Win32Utils;
 using System;
 using System.Windows.Forms;
 
@@ -41,7 +41,7 @@ namespace ViewSecurityDescriptor
                         bool read_only = args.Length > 1 ? args[1].Equals("--readonly") : false;
                         using (var obj = NtGeneric.FromHandle(handle))
                         {
-                            NativeBridge.EditSecurity(IntPtr.Zero, obj, obj.Name, read_only);
+                            SecurityUtils.EditSecurity(IntPtr.Zero, obj, obj.Name, read_only);
                         }
                     }
                     else
@@ -52,7 +52,7 @@ namespace ViewSecurityDescriptor
                         {
                             throw new ArgumentException(string.Format("Unknown NT type {0}", args[2]));
                         }
-                        NativeBridge.EditSecurity(IntPtr.Zero, args[0], sd, type);
+                        SecurityUtils.EditSecurity(IntPtr.Zero, args[0], sd, type);
                     }
                 }
             }

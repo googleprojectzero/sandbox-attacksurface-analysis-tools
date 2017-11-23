@@ -13,7 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
-using SandboxAnalysisUtils;
+using NtApiDotNet.Win32Utils;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -110,7 +110,7 @@ namespace NtObjectManager
                 {
                     try
                     {
-                        var service = ServiceUtils.GetServiceSecurityInformation(name);
+                        var service = ServiceUtils.GetServiceInformation(name);
                         foreach (TokenEntry token in tokens)
                         {
                             AccessMask granted_access = NtSecurity.GetMaximumAccess(service.SecurityDescriptor,

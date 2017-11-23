@@ -12,9 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using SandboxAnalysisUtils;
 using NDesk.Options;
 using NtApiDotNet;
+using NtApiDotNet.Win32Utils;
 using System;
 using System.Collections.Generic;
 
