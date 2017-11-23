@@ -121,7 +121,7 @@ namespace SandboxAnalysisUtils
         }
     }
 
-    public class LogonUtils
+    public static class LogonUtils
     {
         [DllImport("Secur32.dll")]
         static extern NtStatus LsaConnectUntrusted(out SafeLsaHandle handle);

@@ -671,11 +671,13 @@ namespace SandboxAnalysisUtils
 
         public static Win32Process CreateProcessAsUser(NtToken token, string application_name, string command_line, CreateProcessFlags flags, string desktop)
         {
-            Win32ProcessConfig config = new Win32ProcessConfig();
-            config.ApplicationName = application_name;
-            config.CommandLine = command_line;
-            config.CreationFlags = flags;
-            config.Desktop = desktop;
+            Win32ProcessConfig config = new Win32ProcessConfig
+            {
+                ApplicationName = application_name,
+                CommandLine = command_line,
+                CreationFlags = flags,
+                Desktop = desktop
+            };
 
             return CreateProcessAsUser(token, config);
         }
@@ -699,11 +701,13 @@ namespace SandboxAnalysisUtils
         public static Win32Process CreateProcessWithLogin(string username, string domain, string password, CreateProcessLogonFlags logon_flags,
             string application_name, string command_line, CreateProcessFlags flags, string desktop)
         {
-            Win32ProcessConfig config = new Win32ProcessConfig();
-            config.ApplicationName = application_name;
-            config.CommandLine = command_line;
-            config.CreationFlags = flags;
-            config.Desktop = desktop;
+            Win32ProcessConfig config = new Win32ProcessConfig
+            {
+                ApplicationName = application_name,
+                CommandLine = command_line,
+                CreationFlags = flags,
+                Desktop = desktop
+            };
             return CreateProcessWithLogin(username, domain, password, logon_flags, config);
         }
 
@@ -729,12 +733,14 @@ namespace SandboxAnalysisUtils
 
         public static Win32Process CreateProcess(NtProcess parent, string application_name, string command_line, CreateProcessFlags flags, string desktop)
         {
-            Win32ProcessConfig config = new Win32ProcessConfig();
-            config.ParentProcess = parent;
-            config.ApplicationName = application_name;
-            config.CommandLine = command_line;
-            config.CreationFlags = flags;
-            config.Desktop = desktop;
+            Win32ProcessConfig config = new Win32ProcessConfig
+            {
+                ParentProcess = parent,
+                ApplicationName = application_name,
+                CommandLine = command_line,
+                CreationFlags = flags,
+                Desktop = desktop
+            };
             return CreateProcess(config);
         }
 

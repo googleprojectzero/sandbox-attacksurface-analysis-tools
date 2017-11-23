@@ -115,9 +115,7 @@ namespace SandboxAnalysisUtils
 
             if (node != null)
             {
-                bool ret;
-
-                if (bool.TryParse(node.Value, out ret))
+                if (bool.TryParse(node.Value, out bool ret))
                 {
                     return ret;
                 }
