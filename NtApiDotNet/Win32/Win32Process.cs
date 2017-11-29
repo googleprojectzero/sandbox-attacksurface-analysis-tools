@@ -485,7 +485,10 @@ namespace NtApiDotNet.Win32
         LoadIntegrityContinuityAlwaysOff = (0x00000002UL << 4),
         LoadIntegrityContinuityAudit = (0x00000003UL << 4),
         StrictControlFlowGuardAlwaysOn = (0x00000001UL << 8),
-        StrictControlFlowGuardAlwaysOff = (0x00000002UL << 8)
+        StrictControlFlowGuardAlwaysOff = (0x00000002UL << 8),
+        ModuleTamperingProtectionAlwaysOn = (0x00000001UL << 12),
+        ModuleTamperingProtectionAlwaysOff = (0x00000002UL << 12),
+        ModuleTamperingProtectionNoInherit  = (0x00000003UL << 12),
     }
 #pragma warning restore
 
