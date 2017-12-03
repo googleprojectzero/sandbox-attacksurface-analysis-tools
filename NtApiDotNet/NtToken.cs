@@ -2209,6 +2209,16 @@ namespace NtApiDotNet
             return ret.FirstOrDefault();
         }
 
+        /// <summary>
+        /// Get a security attribute by name.
+        /// </summary>
+        /// <param name="name">The name of the security attribute, such as WIN://PKG</param>
+        /// <returns>The security attribute or null if not found.</returns>
+        public ClaimSecurityAttribute GetSecurityAttributeByName(string name)
+        {
+            return GetSecurityAttributeByName(name, ClaimSecurityValueType.None);
+        }
+
         private void SetIntegrityLevelSid(Sid sid)
         {
             using (SafeSidBufferHandle sid_buffer = sid.ToSafeBuffer())
