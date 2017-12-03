@@ -20,6 +20,12 @@ The tools can be built with Visual Studio 2017
 
 Release Notes:
 
+1.1.6
+-----
+* Added support for child process policy and desktop app policy to Win32ProcessConfig.
+* Added new mitigation options from Win10 1709.
+* Fix a couple of crashes.
+
 1.1.5
 -----
 * Fixed crash on 32 bit Windows when enumerating NT types.
