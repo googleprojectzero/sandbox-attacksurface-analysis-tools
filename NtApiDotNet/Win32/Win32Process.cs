@@ -351,6 +351,14 @@ namespace NtApiDotNet.Win32
                 return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeSecurityCapabilities, false, true, false);
             }
         }
+
+        public static IntPtr ProcThreadAttributeDesktopAppPolicy
+        {
+            get
+            {
+                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeDesktopAppPolicy, false, true, false);
+            }
+        }
     }
 
     class SafeProcThreadAttributeListBuffer : SafeHGlobalBuffer
@@ -490,6 +498,15 @@ namespace NtApiDotNet.Win32
         ModuleTamperingProtectionAlwaysOff = (0x00000002UL << 12),
         ModuleTamperingProtectionNoInherit  = (0x00000003UL << 12),
     }
+
+    [Flags]
+    public enum ProcessDesktopAppBreakawayFlags
+    {
+        None = 0,
+        Enable = 1,
+        Disable = 2,
+        Override = 4
+    }
 #pragma warning restore
 
     /// <summary>
@@ -589,6 +606,14 @@ namespace NtApiDotNet.Win32
         /// Specify LPAC.
         /// </summary>
         public bool LowPrivilegeAppContainer { get; set; }
+        /// <summary>
+        /// Restrict the process from creating child processes.
+        /// </summary>
+        public bool RestrictChildProcessCreation { get; set; }
+        /// <summary>
+        /// Specify new process policy when creating a desktop bridge application.
+        /// </summary>
+        public ProcessDesktopAppBreakawayFlags DesktopAppBreakaway { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -647,6 +672,16 @@ namespace NtApiDotNet.Win32
             }
 
             if (LowPrivilegeAppContainer)
+            {
+                count++;
+            }
+
+            if (RestrictChildProcessCreation)
+            {
+                count++;
+            }
+
+            if (DesktopAppBreakaway != ProcessDesktopAppBreakawayFlags.None)
             {
                 count++;
             }
@@ -730,6 +765,16 @@ namespace NtApiDotNet.Win32
             if (LowPrivilegeAppContainer)
             {
                 attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeAllApplicationPackagesPolicy, 1);
+            }
+
+            if (RestrictChildProcessCreation)
+            {
+                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeChildProcessPolicy, 1);
+            }
+
+            if (DesktopAppBreakaway != ProcessDesktopAppBreakawayFlags.None)
+            {
+                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeDesktopAppPolicy, (int)DesktopAppBreakaway);
             }
 
             return attr_list;
