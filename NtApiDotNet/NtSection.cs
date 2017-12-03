@@ -225,8 +225,14 @@ namespace NtApiDotNet
         /// <returns></returns>
         protected override bool ReleaseHandle()
         {
-            bool ret = NtSystemCalls.NtUnmapViewOfSection(Process.Handle, handle).IsSuccess();
-            Process.Close();
+            bool ret = false;
+            if (!Process.Handle.IsClosed)
+            {
+                using (Process)
+                {
+                    ret = NtSystemCalls.NtUnmapViewOfSection(Process.Handle, handle).IsSuccess();
+                }
+            }
             handle = IntPtr.Zero;
             return ret;
         }
