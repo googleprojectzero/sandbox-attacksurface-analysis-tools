@@ -424,7 +424,7 @@ namespace NtApiDotNet
                 return result;
             }
         }
-    }    
+    }
 
     public sealed class SafeKernelObjectHandle
       : SafeHandle
@@ -612,6 +612,51 @@ namespace NtApiDotNet
     }
 
     /// <summary>
+    /// Safe buffer to container a list of structures.
+    /// </summary>
+    public class SafeArrayBuffer<T> : SafeHGlobalBuffer
+    {
+        public int Count { get; private set; }
+
+        private static int _element_size = Marshal.SizeOf(typeof(T));
+
+        static int GetArraySize(T[] array)
+        {
+            return _element_size * array.Length;
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="array">Array of elements.</param>
+        public SafeArrayBuffer(T[] array) 
+            : base(GetArraySize(array))
+        {
+            Count = array.Length;
+            IntPtr ptr = DangerousGetHandle();
+            for (int i = 0; i < array.Length; ++i)
+            {
+                Marshal.StructureToPtr(array[i], ptr + (i * _element_size), false);
+            }
+        }
+
+        /// <summary>
+        /// Dispose buffer.
+        /// </summary>
+        /// <param name="disposing">True if disposing.</param>
+        protected override void Dispose(bool disposing)
+        {
+            IntPtr ptr = DangerousGetHandle();
+            for (int i = 0; i < Count; ++i)
+            {
+                Marshal.DestroyStructure(ptr + (i * _element_size), typeof(T));
+            }
+
+            base.Dispose(disposing);
+        }
+    }
+
+    /// <summary>
     /// Some simple utilities to create structure buffers.
     /// </summary>
     public static class BufferUtils
@@ -665,25 +710,14 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Create an array buffer based on a passed type.
+        /// Create an array buffer from the array.
         /// </summary>
-        /// <typeparam name="T">The type to use in the structure buffer.</typeparam>
-        /// <param name="value">The value to initialize the buffer with.</param>
-        /// <returns>The new array buffer.</returns>
-        public static SafeStructureArrayBuffer<T> CreateArrayBuffer<T>(T value) where T : new()
+        /// <typeparam name="T">The array element type.</typeparam>
+        /// <param name="value">The array of elements.</param>
+        /// <returns>The allocated array buffer.</returns>
+        public static SafeArrayBuffer<T> ToArrayBuffer<T>(this T[] value)
         {
-            return new SafeStructureArrayBuffer<T>(value);
-        }
-
-        /// <summary>
-        /// Create an array buffer based on a passed type.
-        /// </summary>
-        /// <typeparam name="T">The type to use in the structure buffer.</typeparam>
-        /// <param name="value">The value to initialize the buffer with.</param>
-        /// <returns>The new array buffer.</returns>
-        public static SafeStructureArrayBuffer<T> ToArrayBuffer<T>(this T value) where T : new()
-        {
-            return CreateArrayBuffer(value);
+            return new SafeArrayBuffer<T>(value);
         }
     }
 

@@ -20,6 +20,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace NtApiDotNet
 {
@@ -199,6 +200,18 @@ namespace NtApiDotNet
         ForceRestore = 8,
     }
 
+    [Flags]
+    public enum NotifyCompletionFilter
+    {
+        None = 0,
+        Name = 1,
+        Attributes = 2,
+        LastSet = 4,
+        Security = 8,
+        All = Name | Attributes | LastSet | Security,
+        ThreadAgnostic = 0x10000000
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
@@ -335,6 +348,35 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtLockProductActivationKeys(
             OptionalInt32 pPrivateVer, OptionalInt32 pSafeMode);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtNotifyChangeKey(
+              SafeKernelObjectHandle KeyHandle,
+              SafeKernelObjectHandle Event,
+              IntPtr ApcRoutine,
+              IntPtr ApcContext,
+              SafeIoStatusBuffer IoStatusBlock,
+              NotifyCompletionFilter CompletionFilter,
+              bool WatchTree,
+              SafeBuffer Buffer,
+              int BufferSize,
+              bool Asynchronous
+            );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtNotifyChangeMultipleKeys(
+          SafeKernelObjectHandle MasterKeyHandle,
+          int Count,
+          SafeBuffer SubordinateObjects,
+          SafeKernelObjectHandle Event,
+          IntPtr ApcRoutine,
+          IntPtr ApcContext,
+          SafeIoStatusBuffer IoStatusBlock,
+          NotifyCompletionFilter CompletionFilter,
+          bool WatchTree,
+          SafeBuffer Buffer,
+          int BufferSize,
+          bool Asynchronous);
 
     }
 #pragma warning restore 1591
@@ -479,9 +521,8 @@ namespace NtApiDotNet
         public static NtResult<NtKey> LoadKey(ObjectAttributes key_obj_attr, ObjectAttributes file_obj_attr, 
             LoadKeyFlags flags, KeyAccessRights desired_access, bool throw_on_error)
         {
-            SafeKernelObjectHandle key_handle;
             return NtSystemCalls.NtLoadKeyEx(key_obj_attr, file_obj_attr, flags,
-                IntPtr.Zero, IntPtr.Zero, desired_access, out key_handle, 0)
+                IntPtr.Zero, IntPtr.Zero, desired_access, out SafeKernelObjectHandle key_handle, 0)
                 .CreateResult(throw_on_error, () => new NtKey(key_handle, KeyDisposition.OpenedExistingKey));
         }
 
@@ -495,9 +536,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtKey> Create(ObjectAttributes obj_attributes, KeyAccessRights desired_access, KeyCreateOptions options, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            KeyDisposition disposition;
-            return NtSystemCalls.NtCreateKey(out handle, desired_access, obj_attributes, 0, null, options, out disposition)
+            return NtSystemCalls.NtCreateKey(out SafeKernelObjectHandle handle, desired_access, obj_attributes, 0, null, options, out KeyDisposition disposition)
                 .CreateResult(throw_on_error, () => new NtKey(handle, disposition));
         }
 
@@ -1072,10 +1111,42 @@ namespace NtApiDotNet
             NtSystemCalls.NtLockRegistryKey(Handle).ToNtException();
         }
 
+        /// <summary>
+        /// Wait for a change on thie registry key.
+        /// </summary>
+        /// <param name="completion_filter">Specify what changes will be notified.</param>
+        /// <param name="watch_tree">True to watch the entire tree.</param>
+        /// <returns>The status from the change notification.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus NotifyChange(NotifyCompletionFilter completion_filter, bool watch_tree)
+        {
+            using (SafeIoStatusBuffer io_status = new SafeIoStatusBuffer())
+            {
+                return NtSystemCalls.NtNotifyChangeKey(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero,
+                    IntPtr.Zero, io_status, completion_filter, watch_tree, SafeHGlobalBuffer.Null, 0, false).ToNtException();
+            }
+        }
+
+        /// <summary>
+        /// Wait for a change on thie registry key asynchronously.
+        /// </summary>
+        /// <param name="completion_filter">Specify what changes will be notified.</param>
+        /// <param name="watch_tree">True to watch the entire tree.</param>
+        /// <returns>The status from the change notification.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public async Task<NtStatus> NotifyChangeAsync(NotifyCompletionFilter completion_filter, bool watch_tree)
+        {
+            using (NtAsyncResult result = new NtAsyncResult(this))
+            {
+                NtStatus status = await result.CompleteCallAsync(NtSystemCalls.NtNotifyChangeKey(Handle, result.EventHandle, IntPtr.Zero,
+                    IntPtr.Zero, result.IoStatusBuffer, completion_filter, watch_tree, SafeHGlobalBuffer.Null, 0, true), CancellationToken.None);
+                return status.ToNtException();
+            }
+        }
+
         private SafeStructureInOutBuffer<T> QueryKey<T>(KeyInformationClass info_class) where T : new()
         {
-            int return_length;
-            NtStatus status = NtSystemCalls.NtQueryKey(Handle, info_class, SafeHGlobalBuffer.Null, 0, out return_length);
+            NtStatus status = NtSystemCalls.NtQueryKey(Handle, info_class, SafeHGlobalBuffer.Null, 0, out int return_length);
             if (status != NtStatus.STATUS_BUFFER_OVERFLOW && status != NtStatus.STATUS_INFO_LENGTH_MISMATCH && status != NtStatus.STATUS_BUFFER_TOO_SMALL)
             {
                 status.ToNtException();
@@ -1254,11 +1325,13 @@ namespace NtApiDotNet
     {
         private static Dictionary<string, string> CreateWin32BaseKeys()
         {
-            Dictionary<string, string> dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            dict.Add("HKLM", @"\Registry\Machine");
-            dict.Add("HKEY_LOCAL_MACHINE", @"\Registry\Machine");
-            dict.Add("HKU", @"\Registry\User");
-            dict.Add("HKEY_USERS", @"\Registry\User");
+            Dictionary<string, string> dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "HKLM", @"\Registry\Machine" },
+                { "HKEY_LOCAL_MACHINE", @"\Registry\Machine" },
+                { "HKU", @"\Registry\User" },
+                { "HKEY_USERS", @"\Registry\User" }
+            };
             using (NtToken token = NtToken.OpenProcessToken())
             {
                 string current_user = String.Format(@"\Registry\User\{0}", token.User.Sid);
