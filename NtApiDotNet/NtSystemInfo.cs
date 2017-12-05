@@ -68,6 +68,9 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtSetSystemEnvironmentValueEx([In] UnicodeString VariableName,
             ref Guid VendorGuid, [In] byte[] Value, int ValueLength, int Attributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAllocateLocallyUniqueId(out Luid Luid);
     }
 
     public class SystemEnvironmentValue
@@ -1217,6 +1220,16 @@ namespace NtApiDotNet
         public static void SetSystemEnvironmentValue(string name, Guid vendor_guid, string value, int attributes)
         {
             SetSystemEnvironmentValue(name, vendor_guid, Encoding.Unicode.GetBytes(value), attributes);
+        }
+
+        /// <summary>
+        /// Allocate a LUID.
+        /// </summary>
+        /// <returns>The allocated LUID.</returns>
+        public static Luid AllocateLocallyUniqueId()
+        {
+            NtSystemCalls.NtAllocateLocallyUniqueId(out Luid luid).ToNtException();
+            return luid;
         }
     }
 }
