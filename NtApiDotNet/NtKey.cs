@@ -134,6 +134,17 @@ namespace NtApiDotNet
         KeyHandleTagsInformation = 7,
     }
 
+    public enum KeySetInformationClass
+    {
+        KeyWriteTimeInformation,
+        KeyWow64FlagsInformation,
+        KeyControlFlagsInformation,
+        KeySetVirtualizationInformation,
+        KeySetDebugInformation,
+        KeySetHandleTagsInformation,
+        MaxKeySetInfoClass
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     [DataStart("Name")]
     public class KeyBasicInformation
@@ -210,6 +221,33 @@ namespace NtApiDotNet
         Security = 8,
         All = Name | Attributes | LastSet | Security,
         ThreadAgnostic = 0x10000000
+    }
+
+    [Flags]
+    public enum KeyVirtualizationFlags
+    {
+        VirtualizationCandidate = 1,
+        VirtualizationEnabled = 2,
+        VirtualTarget = 4,
+        VirtualStore = 8,
+        VirtualSource = 0x10,
+    }
+
+    [Flags]
+    public enum KeyControlFlags
+    {
+        None = 0,
+        DontVirtualize = 2,
+        DontSilentFail = 4,
+        RecurseFlag = 8
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct KeyFlags
+    {
+        public int Wow64Flags;
+        public int Unknown4;
+        public KeyControlFlags ControlFlags;
     }
 
     public static partial class NtSystemCalls
@@ -378,6 +416,12 @@ namespace NtApiDotNet
           int BufferSize,
           bool Asynchronous);
 
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSetInformationKey(
+             SafeKernelObjectHandle KeyHandle,
+             KeySetInformationClass KeySetInformationClass,
+             SafeBuffer KeySetInformation,
+             int KeySetInformationLength);
     }
 #pragma warning restore 1591
 
@@ -518,7 +562,7 @@ namespace NtApiDotNet
         /// <param name="desired_access">Desired access for the root key</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
-        public static NtResult<NtKey> LoadKey(ObjectAttributes key_obj_attr, ObjectAttributes file_obj_attr, 
+        public static NtResult<NtKey> LoadKey(ObjectAttributes key_obj_attr, ObjectAttributes file_obj_attr,
             LoadKeyFlags flags, KeyAccessRights desired_access, bool throw_on_error)
         {
             return NtSystemCalls.NtLoadKeyEx(key_obj_attr, file_obj_attr, flags,
@@ -660,7 +704,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public void SetValue(string value_name, RegistryValueType type, byte[] data)
         {
-            NtSystemCalls.NtSetValueKey(Handle, new UnicodeString(value_name ?? String.Empty), 
+            NtSystemCalls.NtSetValueKey(Handle, new UnicodeString(value_name ?? String.Empty),
                 0, type, data, data.Length).ToNtException();
         }
 
@@ -913,7 +957,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey CreateSymbolicLink(string path, NtKey rootkey, string target)
         {
-            using (ObjectAttributes obja = new ObjectAttributes(path, 
+            using (ObjectAttributes obja = new ObjectAttributes(path,
                 AttributeFlags.CaseInsensitive | AttributeFlags.OpenIf | AttributeFlags.OpenLink, rootkey))
             {
                 using (NtKey key = Create(obja, KeyAccessRights.MaximumAllowed, KeyCreateOptions.CreateLink))
@@ -1166,6 +1210,23 @@ namespace NtApiDotNet
             }
         }
 
+        private T QueryKeyFixed<T>(KeyInformationClass info_class) where T : new()
+        {
+            using (var buffer = default(T).ToBuffer())
+            {
+                NtSystemCalls.NtQueryKey(Handle, info_class, buffer, buffer.Length, out int return_length).ToNtException();
+                return buffer.Result;
+            }
+        }
+
+        private void SetKey<T>(KeySetInformationClass info_class, T value) where T : new()
+        {
+            using (var buffer = value.ToBuffer())
+            {
+                NtSystemCalls.NtSetInformationKey(Handle, info_class, buffer, buffer.Length).ToNtException();
+            }
+        }
+
         private Tuple<KeyFullInformation, string> GetFullInfo()
         {
             using (var buffer = QueryKey<KeyFullInformation>(KeyInformationClass.KeyFullInformation))
@@ -1315,6 +1376,59 @@ namespace NtApiDotNet
         public KeyDisposition Disposition
         {
             get; private set;
+        }
+
+        /// <summary>
+        /// Get or set virtualization flags.
+        /// </summary>
+        public KeyVirtualizationFlags VirtualizationFlags
+        {
+            get
+            {
+                return (KeyVirtualizationFlags)QueryKeyFixed<int>(KeyInformationClass.KeyVirtualizationInformation);
+            }
+            set
+            {
+                SetKey(KeySetInformationClass.KeySetVirtualizationInformation, (int)value);
+            }
+        }
+
+        /// <summary>
+        /// Get or set key control flags.
+        /// </summary>
+        public KeyControlFlags ControlFlags
+        {
+            get
+            {
+                return QueryKeyFixed<KeyFlags>(KeyInformationClass.KeyFlagsInformation).ControlFlags;
+            }
+
+            set
+            {
+                using (var buffer = value.ToBuffer())
+                {
+                    SetKey(KeySetInformationClass.KeyControlFlagsInformation, (int)value);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get or set wow64 flags.
+        /// </summary>
+        public int Wow64Flags
+        {
+            get
+            {
+                return QueryKeyFixed<KeyFlags>(KeyInformationClass.KeyFlagsInformation).Wow64Flags;
+            }
+
+            set
+            {
+                using (var buffer = value.ToBuffer())
+                {
+                    SetKey(KeySetInformationClass.KeyWow64FlagsInformation, value);
+                }
+            }
         }
     }
 
