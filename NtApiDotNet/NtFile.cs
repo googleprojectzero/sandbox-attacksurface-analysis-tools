@@ -1324,17 +1324,17 @@ namespace NtApiDotNet
         }
     }
 
-    internal sealed class NtFileResult : IDisposable
+    internal sealed class NtAsyncResult : IDisposable
     {
-        private NtFile _file;
+        private NtObject _object;
         private NtEvent _event;
         private SafeIoStatusBuffer _io_status;
         private IoStatus _result;
 
-        internal NtFileResult(NtFile file)
+        internal NtAsyncResult(NtObject @object)
         {
-            _file = file;
-            if (!_file.CanSynchronize)
+            _object = @object;
+            if (!_object.CanSynchronize)
             {
                 _event = NtEvent.Create(null, 
                     EventType.SynchronizationEvent, false);
@@ -1375,7 +1375,7 @@ namespace NtApiDotNet
                         return _result.Status;
                     }
                 }
-                else if (status == NtStatus.STATUS_SUCCESS)
+                else if (status.IsSuccess())
                 {
                     _result = _io_status.Result;
                 }
@@ -1409,7 +1409,7 @@ namespace NtApiDotNet
             }
             else
             {
-                status = _file.Wait(NtWaitTimeout.Infinite).ToNtException();
+                status = _object.Wait(NtWaitTimeout.Infinite).ToNtException();
             }
 
             if (status == NtStatus.STATUS_SUCCESS)
@@ -1437,7 +1437,7 @@ namespace NtApiDotNet
 
             bool success;
 
-            using (NtWaitHandle wait_handle = _event != null ? _event.DuplicateAsWaitHandle() : _file.DuplicateAsWaitHandle())
+            using (NtWaitHandle wait_handle = _event != null ? _event.DuplicateAsWaitHandle() : _object.DuplicateAsWaitHandle())
             {
                 success = await wait_handle.WaitAsync(Timeout.Infinite, token);
             }
@@ -1553,9 +1553,12 @@ namespace NtApiDotNet
         /// </summary>
         internal void Cancel()
         {
-            IoStatus io_status = new IoStatus();
-            NtSystemCalls.NtCancelIoFileEx(_file.Handle, 
-                _io_status, io_status).ToNtException();
+            if (_object is NtFile)
+            {
+                IoStatus io_status = new IoStatus();
+                NtSystemCalls.NtCancelIoFileEx(_object.Handle,
+                    _io_status, io_status).ToNtException();
+            }
         }
     }
 
@@ -1886,7 +1889,7 @@ namespace NtApiDotNet
         {
             using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
             {
-                using (NtFileResult result = new NtFileResult(this))
+                using (NtAsyncResult result = new NtAsyncResult(this))
                 {
                     NtStatus status = await result.CompleteCallAsync(func(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
                         control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), 
@@ -2024,7 +2027,7 @@ namespace NtApiDotNet
 
         private int IoControlGeneric(IoControlFunction func, NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
         {
-            using (NtFileResult result = new NtFileResult(this))
+            using (NtAsyncResult result = new NtAsyncResult(this))
             {
                 NtStatus status = result.CompleteCall(func(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
                     control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), 
@@ -2650,7 +2653,7 @@ namespace NtApiDotNet
             // 32k seems to be a reasonable size, too big and some volumes will fail with STATUS_INVALID_PARAMETER.
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(32 * 1024))
             {
-                using (NtFileResult result = new NtFileResult(this))
+                using (NtAsyncResult result = new NtAsyncResult(this))
                 {
                     NtStatus status = result.CompleteCall(NtSystemCalls.NtQueryDirectoryFile(Handle, result.EventHandle,
                         IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, FileInformationClass.FileDirectoryInformation, false, mask, true));
@@ -2711,7 +2714,7 @@ namespace NtApiDotNet
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(length))
             {
-                using (NtFileResult result = new NtFileResult(this))
+                using (NtAsyncResult result = new NtAsyncResult(this))
                 {
                     NtStatus status = result.CompleteCall(NtSystemCalls.NtReadFile(Handle, result.EventHandle, IntPtr.Zero,
                         IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero)).ToNtException();
@@ -2779,7 +2782,7 @@ namespace NtApiDotNet
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(data))
             {
-                using (NtFileResult result = new NtFileResult(this))
+                using (NtAsyncResult result = new NtAsyncResult(this))
                 {
                     NtStatus status = result.CompleteCall(NtSystemCalls.NtWriteFile(Handle, result.EventHandle, IntPtr.Zero,
                         IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero)).ToNtException();
@@ -2789,11 +2792,11 @@ namespace NtApiDotNet
             }
         }
 
-        private async Task<IoStatus> RunFileCallAsync(Func<NtFileResult, NtStatus> func, CancellationToken token)
+        private async Task<IoStatus> RunFileCallAsync(Func<NtAsyncResult, NtStatus> func, CancellationToken token)
         {
             using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
             {
-                using (NtFileResult result = new NtFileResult(this))
+                using (NtAsyncResult result = new NtAsyncResult(this))
                 {
                     NtStatus status = await result.CompleteCallAsync(func(result), linked_cts.Token);
                     if (status == NtStatus.STATUS_PENDING)
@@ -2870,7 +2873,7 @@ namespace NtApiDotNet
         /// <param name="exclusive">True to do an exclusive lock</param>
         public void Lock(long offset, long size, bool fail_immediately, bool exclusive)
         {
-            using (NtFileResult result = new NtFileResult(this))
+            using (NtAsyncResult result = new NtAsyncResult(this))
             {
                 result.CompleteCall(NtSystemCalls.NtLockFile(Handle, result.EventHandle, IntPtr.Zero,
                     IntPtr.Zero, result.IoStatusBuffer, new LargeInteger(offset), 
