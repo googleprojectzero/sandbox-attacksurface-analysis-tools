@@ -319,12 +319,12 @@ namespace NtApiDotNet
         Hidden = 0x00000002,
         System = 0x00000004,
         Directory = 0x00000010,
-        Achive = 0x00000020,
+        Archive = 0x00000020,
         Device = 0x00000040,
         Normal = 0x00000080,
         Temporary = 0x00000100,
         SparseFile = 0x00000200,
-        RepasePoint = 0x00000400,
+        ReparsePoint = 0x00000400,
         Compressed = 0x00000800,
         Offline = 0x00001000,
         NotContentIndexed = 0x00002000,
@@ -1306,7 +1306,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return HasAttributes(FileAttributes.RepasePoint);
+                return HasAttributes(FileAttributes.ReparsePoint);
             }
         }
 
@@ -2246,7 +2246,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return (FileAttributes & FileAttributes.RepasePoint) == FileAttributes.RepasePoint;
+                return (FileAttributes & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint;
             }
         }
 
