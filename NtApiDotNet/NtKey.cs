@@ -329,6 +329,10 @@ namespace NtApiDotNet
         public static extern NtStatus NtLoadKeyEx([In] ObjectAttributes DestinationName, [In] ObjectAttributes FileName, LoadKeyFlags Flags,
           IntPtr TrustKeyHandle, IntPtr EventHandle, KeyAccessRights DesiredAccess, out SafeKernelObjectHandle KeyHandle, int Unused);
 
+        [DllImport("ntdll.dll", EntryPoint = "NtLoadKeyEx")]
+        public static extern NtStatus NtLoadKeyExNoHandle([In] ObjectAttributes DestinationName, [In] ObjectAttributes FileName, LoadKeyFlags Flags,
+            IntPtr TrustKeyHandle, IntPtr EventHandle, KeyAccessRights DesiredAccess, IntPtr KeyHandle, int Unused);
+
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtUnloadKey2([In] ObjectAttributes KeyObjectAttributes, UnloadKeyFlags Flags);
 
@@ -575,9 +579,23 @@ namespace NtApiDotNet
         public static NtResult<NtKey> LoadKey(ObjectAttributes key_obj_attr, ObjectAttributes file_obj_attr,
             LoadKeyFlags flags, KeyAccessRights desired_access, bool throw_on_error)
         {
-            return NtSystemCalls.NtLoadKeyEx(key_obj_attr, file_obj_attr, flags,
-                IntPtr.Zero, IntPtr.Zero, desired_access, out SafeKernelObjectHandle key_handle, 0)
-                .CreateResult(throw_on_error, () => new NtKey(key_handle, KeyDisposition.OpenedExistingKey));
+            if ((flags & LoadKeyFlags.AppKey) != 0)
+            {
+                return NtSystemCalls.NtLoadKeyEx(key_obj_attr, file_obj_attr, flags,
+                    IntPtr.Zero, IntPtr.Zero, desired_access, out SafeKernelObjectHandle key_handle, 0)
+                    .CreateResult(throw_on_error, () => new NtKey(key_handle, KeyDisposition.OpenedExistingKey));
+            }
+            else
+            {
+                var result = NtSystemCalls.NtLoadKeyExNoHandle(key_obj_attr, file_obj_attr, flags,
+                    IntPtr.Zero, IntPtr.Zero, 0, IntPtr.Zero, 0).CreateResult<NtKey>(throw_on_error, () => null);
+                if (!result.IsSuccess)
+                {
+                    return result;
+                }
+
+                return Open(key_obj_attr, desired_access, KeyCreateOptions.NonVolatile, throw_on_error);
+            }
         }
 
         /// <summary>
