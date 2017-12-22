@@ -242,6 +242,13 @@ namespace NtApiDotNet
         RecurseFlag = 8
     }
 
+    [Flags]
+    public enum UnloadKeyFlags
+    {
+        None = 0,
+        ForceUnload = 1
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct KeyFlags
     {
@@ -321,6 +328,9 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtLoadKeyEx([In] ObjectAttributes DestinationName, [In] ObjectAttributes FileName, LoadKeyFlags Flags,
           IntPtr TrustKeyHandle, IntPtr EventHandle, KeyAccessRights DesiredAccess, out SafeKernelObjectHandle KeyHandle, int Unused);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtUnloadKey2([In] ObjectAttributes KeyObjectAttributes, UnloadKeyFlags Flags);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtEnumerateKey(
@@ -568,6 +578,42 @@ namespace NtApiDotNet
             return NtSystemCalls.NtLoadKeyEx(key_obj_attr, file_obj_attr, flags,
                 IntPtr.Zero, IntPtr.Zero, desired_access, out SafeKernelObjectHandle key_handle, 0)
                 .CreateResult(throw_on_error, () => new NtKey(key_handle, KeyDisposition.OpenedExistingKey));
+        }
+
+        /// <summary>
+        /// Unload an existing hive.
+        /// </summary>
+        /// <param name="key_obj_attr">Object attributes for the key name</param>
+        /// <param name="flags">Unload flags</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus UnloadKey(ObjectAttributes key_obj_attr, UnloadKeyFlags flags, bool throw_on_error)
+        {
+            return NtSystemCalls.NtUnloadKey2(key_obj_attr, flags).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Unload an existing hive.
+        /// </summary>
+        /// <param name="key">Path to key to unload.</param>
+        /// <param name="flags">Unload flags</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static void UnloadKey(string key, UnloadKeyFlags flags)
+        {
+            using (var obj_attr = new ObjectAttributes(key, AttributeFlags.CaseInsensitive))
+            {
+                UnloadKey(obj_attr, flags, true);
+            }
+        }
+
+        /// <summary>
+        /// Unload an existing hive.
+        /// </summary>
+        /// <param name="key">Path to key to unload.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static void UnloadKey(string key)
+        {
+            UnloadKey(key, UnloadKeyFlags.None);
         }
 
         /// <summary>
