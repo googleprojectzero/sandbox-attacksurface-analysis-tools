@@ -1554,11 +1554,16 @@ namespace NtApiDotNet
         /// <param name="device_map">The device map directory to set.</param>
         public void SetProcessDeviceMap(NtDirectory device_map)
         {
-            ProcessDeviceMapInformationSet device_map_set = new ProcessDeviceMapInformationSet();
-            device_map_set.DirectoryHandle = device_map.Handle.DangerousGetHandle();
+            // Note that due to a bug in the Wow64 layer this won't work in a 32 bit process on
+            // a 64 bit system.
+            var device_map_set = new ProcessDeviceMapInformationSet
+            {
+                DirectoryHandle = device_map.Handle.DangerousGetHandle()
+            };
+
             using (var buffer = device_map_set.ToBuffer())
             {
-                NtSystemCalls.NtSetInformationProcess(Handle, ProcessInformationClass.ProcessDeviceMap, buffer, buffer.Length);
+                NtSystemCalls.NtSetInformationProcess(Handle, ProcessInformationClass.ProcessDeviceMap, buffer, buffer.Length).ToNtException();
             }
         }
 
