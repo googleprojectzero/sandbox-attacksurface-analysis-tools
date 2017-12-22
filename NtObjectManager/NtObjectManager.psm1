@@ -1051,6 +1051,54 @@ function Get-NtIoControlCode
 
 <#
 .SYNOPSIS
+Export details about an object to re-import in another process.
+.DESCRIPTION
+This function generates a short JSON string which can be used to duplicate into another process
+using the Import-NtObject function. The handle must be valid when the import function is executed.
+.PARAMETER Object
+Specify the object to export.
+.OUTPUTS
+string
+.EXAMPLE
+Export-NtObject $obj
+Export an object to a JSON string.
+#>
+function Export-NtObject {
+    param(
+		[Parameter(Position = 0, Mandatory = $true)] 
+		[NtApiDotNet.NtObject]$Object
+	)
+    $obj = [PSCustomObject]@{ProcessId=$PID;Handle=$Object.Handle.DangerousGetHandle().ToInt32()}
+    $obj | ConvertTo-Json -Compress
+}
+
+<#
+.SYNOPSIS
+Imports an object exported with Export-NtObject.
+.DESCRIPTION
+This function accepts a JSON string exported from Export-NtObject which allows an object to be
+duplicated between PowerShell instances.
+.PARAMETER Object
+Specify the object to import as a JSON string.
+.OUTPUTS
+NtApiDotNet.NtObject
+.EXAMPLE
+Import-NtObject '{"ProcessId":3300,"Handle":2660}'
+Import an object from a JSON string.
+#>
+function Import-NtObject {
+    param(
+		[Parameter(Position = 0, Mandatory = $true)] 
+		[string]$Object
+	)
+    $obj = ConvertFrom-Json $Object
+    Use-NtObject($generic = [NtApiDotNet.NtGeneric]::DuplicateFrom($obj.ProcessId, $obj.Handle)) {
+        $generic.ToTypedObject()
+    }
+}
+
+<#
+.SYNOPSIS
 Get process primary token. Here for legacy reasons, use Get-NtToken -Primary.
 #>
 function Get-NtTokenPrimary
