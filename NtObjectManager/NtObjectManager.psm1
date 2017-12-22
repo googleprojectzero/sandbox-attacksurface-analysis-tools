@@ -1001,6 +1001,56 @@ function Show-NtSecurityDescriptor {
 
 <#
 .SYNOPSIS
+Gets an IO control code structure.
+.DESCRIPTION
+This cmdlet gets an IO control code structure from a code or from its constituent parts.
+.PARAMETER ControlCode
+Specify the control code for the structure.
+.PARAMETER DeviceType
+Specify the device type component.
+.PARAMETER Function
+Specify the function code component.
+.PARAMETER Method
+Specify the control method component.
+.PARAMETER Access
+Specify the access component.
+.OUTPUTS
+NtApiDotNet.NtIoControlCode
+.EXAMPLE
+Get-NtIoControlCode 0x22000C
+Get the IO control code structure for a control code.
+.EXAMPLE
+Get-NtIoControlCode -DeviceType NAMED_PIPE -Function 10 -Method Buffered -Access Any
+Get the IO control code structure from component parts.
+#>
+function Get-NtIoControlCode
+{
+	[CmdletBinding(DefaultParameterSetName = "FromCode")]
+    Param(
+		[Parameter(Position = 0, ParameterSetName = "FromCode", Mandatory = $true)] 
+        [int]$ControlCode,
+		[Parameter(ParameterSetName = "FromParts", Mandatory = $true)] 
+		[NtApiDotNet.FileDeviceType]$DeviceType,
+		[Parameter(ParameterSetName = "FromParts", Mandatory = $true)] 
+		[int]$Function,
+		[Parameter(ParameterSetName = "FromParts", Mandatory = $true)] 
+		[NtApiDotNet.FileControlMethod]$Method,
+		[Parameter(ParameterSetName = "FromParts", Mandatory = $true)] 
+		[NtApiDotNet.FileControlAccess]$Access
+    )
+
+	switch ($PsCmdlet.ParameterSetName) {
+		"FromCode" {
+			return [NtApiDotNet.NtIoControlCode]::new($ControlCode)
+		}
+		"FromParts" {
+			return [NtApiDotNet.NtIoControlCode]::new($DeviceType, $Function, $Method, $Access)
+		}
+	}
+}
+
+<#
+.SYNOPSIS
 Get process primary token. Here for legacy reasons, use Get-NtToken -Primary.
 #>
 function Get-NtTokenPrimary

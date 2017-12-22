@@ -130,20 +130,26 @@ namespace NtObjectManager
     ///   <para>Load a hive to a new attachment point.</para>
     /// </example>
     /// <example>
-    ///   <code>$obj = Add-NtKey \??\C:\Windows\Temp\test.hiv \Registry\Machine\ABC -LoadFlags AppKey</code>
+    ///   <code>$obj = Add-NtKey \??\C:\Windows\Temp\test.hiv \Registry\A\ABC -LoadFlags AppKey</code>
     ///   <para>Load a app hive to a new attachment point (can be done without privileges).</para>
     /// </example>
     /// <example>
-    ///   <code>$obj = Add-NtKey \??\C:\Windows\Temp\test.hiv \Registry\Machine\ABC -LoadFlags AppKey,ReadOnly</code>
+    ///   <code>$obj = Add-NtKey \??\C:\Windows\Temp\test.hiv \Registry\A\ABC -LoadFlags AppKey,ReadOnly</code>
     ///   <para>Load a app hive to a new attachment point read-only.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Add, "NtKey")]
     [OutputType(typeof(NtKey))]
-    public sealed class AddNtKeyHiveCmdlet : GetNtKeyCmdlet
+    public sealed class AddNtKeyHiveCmdlet : NtObjectBaseCmdletWithAccess<KeyAccessRights>
     {
         /// <summary>
-        /// <para type="description">Specifes the path to where the hive should be loaded.</para>
+        /// <para type="description">The path to the hive file to add.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true)]
+        new public string Path { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specifes the native path to where the hive should be loaded.</para>
         /// </summary>
         [Parameter(Position = 1, Mandatory = true)]
         public string KeyPath { get; set; }
@@ -153,6 +159,22 @@ namespace NtObjectManager
         /// </summary>
         [Parameter]
         public LoadKeyFlags LoadFlags { get; set; }
+
+        /// <summary>
+        /// Virtual method to return the value of the Path variable.
+        /// </summary>
+        /// <returns>The object path.</returns>
+        protected override string GetPath()
+        {
+            if (Win32Path)
+            {
+                return NtFileUtils.DosFileNameToNt(Path);
+            }
+            else
+            {
+                return Path;
+            }
+        }
 
         /// <summary>
         /// Method to create an object from a set of object attributes.
@@ -184,6 +206,15 @@ namespace NtObjectManager
 
                 return NtKey.LoadKey(name, obj_attributes, LoadFlags, Access);
             }
+        }
+
+        /// <summary>
+        /// Determine if the cmdlet can create objects.
+        /// </summary>
+        /// <returns>True if objects can be created.</returns>
+        protected override bool CanCreateDirectories()
+        {
+            return false;
         }
     }
 }
