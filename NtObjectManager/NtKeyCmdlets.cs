@@ -183,7 +183,9 @@ namespace NtObjectManager
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            using (ObjectAttributes name = new ObjectAttributes(KeyPath, AttributeFlags.CaseInsensitive))
+            string key_path = Win32Path ? NtKeyUtils.Win32KeyNameToNt(KeyPath) : KeyPath;
+
+            using (ObjectAttributes name = new ObjectAttributes(key_path, AttributeFlags.CaseInsensitive))
             {
                 if ((LoadFlags & LoadKeyFlags.AppKey) == 0)
                 {
