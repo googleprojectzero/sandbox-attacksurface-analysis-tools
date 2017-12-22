@@ -217,4 +217,68 @@ namespace NtObjectManager
             return false;
         }
     }
+
+    /// <summary>
+    /// <para type="synopsis">Unloads a registry hive.</para>
+    /// <para type="description">This cmdlet unloads a registry hive in the registry namespace.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>Remove-NtKey \Registry\Machine\ABC</code>
+    ///   <para>Unload the \Registry\Machine\ABC hive.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Remove-NtKey \Registry\Machine\ABC -Flags ForceUnload</code>
+    ///   <para>Unload the \Registry\Machine\ABC hive, forcing the unload if necessary.</para>
+    /// </example>
+    [Cmdlet(VerbsCommon.Remove, "NtKey")]
+    public sealed class RemoveKeyCmdlet : NtObjectBaseCmdlet
+    {
+        /// <summary>
+        /// Determine if the cmdlet can create objects.
+        /// </summary>
+        /// <returns>True if objects can be created.</returns>
+        protected override bool CanCreateDirectories()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// <para type="description">The NT object manager path to the object to use.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true)]
+        new public string Path { get; set; }
+
+        /// <summary>
+        /// Virtual method to return the value of the Path variable.
+        /// </summary>
+        /// <returns>The object path.</returns>
+        protected override string GetPath()
+        {
+            if (Win32Path)
+            {
+                return NtKeyUtils.Win32KeyNameToNt(Path);
+            }
+            else
+            {
+                return Path;
+            }
+        }
+
+        /// <summary>
+        /// <para type="description">Specifes the flags for unloading the hive.</para>
+        /// </summary>
+        [Parameter]
+        public UnloadKeyFlags Flags { get; set; }
+
+        /// <summary>
+        /// Method to create an object from a set of object attributes.
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes to create/open from.</param>
+        /// <returns>Always null.</returns>
+        protected override object CreateObject(ObjectAttributes obj_attributes)
+        {
+            NtKey.UnloadKey(obj_attributes, Flags, true);
+            return null;
+        }
+    }
 }
