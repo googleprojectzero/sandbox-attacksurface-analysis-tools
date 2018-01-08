@@ -343,12 +343,58 @@ namespace NtApiDotNet
         }
     }
 
+    [Flags]
+    public enum SystemCodeIntegrityPolicyOptions : uint
+    {
+        None = 0,
+        Enabled = 1,
+        Audit = 2,
+        RequireWHQL = 4,
+        DisabledFlightSigning = 8,
+        EnabledUMCI = 0x10,
+        EnabledUpdatePolicyNoReboot = 0x20,
+        EnabledSecureSettingPolicy = 0x40,
+        EnabledUnsignedSystemIntegrityPolicy = 0x80,
+        Flag100 = 0x100,
+        Flag200 = 0x200,
+        Flag400 = 0x400,
+        Flag800 = 0x800,
+        Flag1000 = 0x1000,
+        Flag2000 = 0x2000,
+        Flag4000 = 0x4000,
+        Flag8000 = 0x8000,
+        Flag10000 = 0x10000,
+        Flag20000 = 0x20000,
+        Flag40000 = 0x40000,
+        Flag80000 = 0x80000,
+        Flag100000 = 0x100000,
+        Flag200000 = 0x200000,
+        Flag400000 = 0x400000,
+        Flag800000 = 0x800000,
+        Flag1000000 = 0x1000000,
+        Flag2000000 = 0x2000000,
+        Flag4000000 = 0x4000000,
+        Flag8000000 = 0x8000000,
+        Flag10000000 = 0x10000000,
+        Flag20000000 = 0x20000000,
+        Flag40000000 = 0x40000000,
+        Flag80000000 = 0x80000000
+    }
+
+    [Flags]
+    public enum SystemCodeIntegrityPolicyHVCIOptions : uint
+    {
+        None = 0,
+        Enabled = 1,
+        Strict = 2,
+        Debug = 4
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct SystemCodeIntegrityPolicy
     {
-        // 2 enabled auditing (at least in WLDP). 0x10 enables UMCI
-        public int Options;
-        public int HVCIOptions;
+        public SystemCodeIntegrityPolicyOptions Options;
+        public SystemCodeIntegrityPolicyHVCIOptions HVCIOptions;
         public ushort VersionRevision;
         public ushort VersionBuild;
         public ushort VersionMinor;
