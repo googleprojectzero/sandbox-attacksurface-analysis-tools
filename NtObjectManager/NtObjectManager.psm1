@@ -715,6 +715,7 @@ function New-NtSectionImage
         [NtApiDotNet.NtFile]$File,
 		[Parameter(Position = 0, ParameterSetName = "FromPath", Mandatory = $true)] 
 		[string]$Path,
+		[Parameter(ParameterSetName = "FromPath")] 
 		[switch]$Win32Path
 	)
 
