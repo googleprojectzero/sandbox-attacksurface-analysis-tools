@@ -282,23 +282,26 @@ namespace NtApiDotNet
         {
             AddEntry(name, Encoding.Unicode.GetBytes(data), flags, false);
         }
+        
+        private EaBufferEntry GetEntry(string name, bool throw_on_missing)
+        {
+            var ret = _buffers.Where(e => e.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            if (ret == null && throw_on_missing)
+            {
+                throw new KeyNotFoundException();
+            }
+            return ret;
+        }
 
         /// <summary>
         /// Get an entry by name.
         /// </summary>
         /// <param name="name">The name of the entry.</param>
-        /// <returns>The entry to return.</returns>
+        /// <returns>The found entry.</returns>
         /// <exception cref="KeyNotFoundException">Thrown if no entry by that name.</exception>
         public EaBufferEntry GetEntry(string name)
         {
-            foreach (EaBufferEntry entry in _buffers)
-            {
-                if (entry.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
-                {
-                    return entry;
-                }
-            }
-            throw new KeyNotFoundException();
+            return GetEntry(name, true);
         }
 
         /// <summary>
@@ -308,6 +311,16 @@ namespace NtApiDotNet
         public void RemoveEntry(EaBufferEntry entry)
         {
             _buffers.Remove(entry);
+        }
+
+        /// <summary>
+        /// Remove an entry from the buffer by name.
+        /// </summary>
+        /// <param name="name">The name of the entry.</param>
+        /// <exception cref="KeyNotFoundException">Thrown if no entry by that name.</exception>
+        public void RemoveEntry(string name)
+        {
+            RemoveEntry(GetEntry(name, true));
         }
 
         /// <summary>
@@ -336,6 +349,30 @@ namespace NtApiDotNet
         /// Get number of entries.
         /// </summary>
         public int Count { get { return _buffers.Count; } }
+
+        /// <summary>
+        /// Get whether the buffer contains a specific entry.
+        /// </summary>
+        /// <param name="name">The name of the entry.</param>
+        /// <returns>True if the buffer contains an entry with the name.</returns>
+        public bool ContainsEntry(string name)
+        {
+            return GetEntry(name, false) != null;
+        }
+
+        /// <summary>
+        /// Index to get an entry by name.
+        /// </summary>
+        /// <param name="name">The name of the entry.</param>
+        /// <returns>The found entry.</returns>
+        /// <exception cref="KeyNotFoundException">Thrown if no entry by that name.</exception>
+        public EaBufferEntry this[string name]
+        {
+            get
+            {
+                return GetEntry(name, true);
+            }
+        }
 
         /// <summary>
         /// Clear all entries.
