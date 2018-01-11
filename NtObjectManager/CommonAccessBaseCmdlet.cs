@@ -178,7 +178,11 @@ namespace NtObjectManager
             return String.Format("User: {0}", UserName);
         }
 
-        internal TokenInformation(NtToken token)
+        internal TokenInformation(NtToken token) : this(token, null)
+        {
+        }
+
+        internal TokenInformation(NtToken token, NtProcess process)
         {
             SourceData = new Dictionary<string, object>();
             TokenId = token.Id;
@@ -192,15 +196,14 @@ namespace NtObjectManager
             Restricted = token.Restricted;
             LowPrivilegeAppContainer = token.LowPrivilegeAppContainer;
             SessionId = token.SessionId;
-        }
 
-        internal TokenInformation(NtToken token, NtProcess process)
-            : this(token)
-        {
-            SourceData["ProcessId"] = process.ProcessId;
-            SourceData["Name"] = process.Name;
-            SourceData["ImagePath"] = process.GetImageFilePath(false);
-            SourceData["CommandLine"] = process.CommandLine;
+            if (process != null)
+            {
+                SourceData["ProcessId"] = process.ProcessId;
+                SourceData["Name"] = process.Name;
+                SourceData["ImagePath"] = process.GetImageFilePath(false);
+                SourceData["CommandLine"] = process.CommandLine;
+            }
         }
     }
 
@@ -222,16 +225,20 @@ namespace NtObjectManager
             }
         }
 
-        public TokenEntry(NtToken token)
+        public TokenEntry(NtToken token) 
+            : this(token, null)
         {
-            Information = new TokenInformation(token);
-            Token = DuplicateToken(token);
         }
 
-        public TokenEntry(NtToken token, NtProcess process)
+        public TokenEntry(NtToken token, NtProcess process) 
+            : this(token, token, process)
+        {
+        }
+
+        public TokenEntry(NtToken token, NtToken imp_token, NtProcess process)
         {
             Information = new TokenInformation(token, process);
-            Token = DuplicateToken(token);
+            Token = DuplicateToken(imp_token);
         }
 
         public void Dispose()
@@ -291,14 +298,74 @@ namespace NtObjectManager
             }
         }
 
-        private static void AddTokenEntryFromProcess(HashSet<TokenEntry> tokens, NtProcess process)
+        private static NtToken GetTokenFromProcessDuplication(NtProcess process)
         {
-            using (NtToken token = NtToken.OpenProcessToken(process, false,
+            using (NtProcess dup_process = NtProcess.Open(process.ProcessId, ProcessAccessRights.QueryInformation))
+            {
+                using (var thread = dup_process.GetFirstThread(ThreadAccessRights.DirectImpersonation))
+                {
+                    if (thread == null)
+                    {
+                        throw new NtException(NtStatus.STATUS_ACCESS_DENIED);
+                    }
+
+                    using (NtThread.Current.ImpersonateThread(thread))
+                    {
+                        return NtThread.Current.OpenToken();
+                    }
+                }
+            }
+        }
+
+        private static NtToken GetTokenFromProcessWithImpersonation(NtProcess process)
+        {
+            if (_system_token.Value != null)
+            {
+                using (_system_token.Value.Impersonate())
+                {
+                    using (var token = NtToken.OpenProcessToken(process,
                                             TokenAccessRights.Duplicate |
                                             TokenAccessRights.Impersonate |
-                                            TokenAccessRights.Query))
+                                            TokenAccessRights.Query, false))
+                    {
+                        if (!token.IsSuccess)
+                        {
+                            if (token.Status != NtStatus.STATUS_ACCESS_DENIED)
+                            {
+                                token.Status.ToNtException();
+                            }
+                        }
+                        return token.Result.Duplicate();
+                    }
+                }
+            }
+            
+            return GetTokenFromProcessDuplication(process);            
+        }
+
+        private static void AddTokenEntryFromProcess(HashSet<TokenEntry> tokens, NtProcess process)
+        {
+            using (var token = NtToken.OpenProcessToken(process, false, TokenAccessRights.Query))
             {
-                AddTokenEntry(tokens, new TokenEntry(token, process));
+                using (var imp_token = token.DuplicateToken(TokenType.Impersonation, SecurityImpersonationLevel.Impersonation, 
+                    TokenAccessRights.Query | TokenAccessRights.Impersonate | TokenAccessRights.Duplicate, false))
+                {
+                    NtToken valid_imp_token = null;
+                    if (!imp_token.IsSuccess)
+                    {
+                        if (!_has_impersonate_privilege.Value || imp_token.Status != NtStatus.STATUS_ACCESS_DENIED)
+                        {
+                            imp_token.Status.ToNtException();
+                        }
+
+                        valid_imp_token = GetTokenFromProcessWithImpersonation(process);
+                    }
+                    else
+                    {
+                        valid_imp_token = imp_token.Result;
+                    }
+                    AddTokenEntry(tokens, new TokenEntry(token, valid_imp_token, process));
+                }
             }
         }
 
@@ -320,7 +387,7 @@ namespace NtObjectManager
             }
         }
 
-        private void GetTokensFromArguments(HashSet<TokenEntry> tokens, IEnumerable<string> names, IEnumerable<string> cmdlines)
+        private bool GetTokensFromArguments(HashSet<TokenEntry> tokens, IEnumerable<string> names, IEnumerable<string> cmdlines)
         {
             HashSet<string> names_set = new HashSet<string>(names ?? new string[0], StringComparer.OrdinalIgnoreCase);
             HashSet<string> cmdline_set = new HashSet<string>(cmdlines ?? new string[0], StringComparer.OrdinalIgnoreCase);
@@ -356,7 +423,9 @@ namespace NtObjectManager
                         }
                     }
                 }
+                return true;
             }
+            return false;
         }
 
         internal void WriteAccessWarning(string path, NtStatus status)
@@ -390,6 +459,7 @@ namespace NtObjectManager
             HashSet<TokenEntry> tokens = new HashSet<TokenEntry>(new TokenEntryComparer());
             try
             {
+                bool explicit_tokens = false;
                 NtToken.EnableDebugPrivilege();
 
                 if (Tokens != null)
@@ -398,21 +468,36 @@ namespace NtObjectManager
                     {
                         AddTokenEntry(tokens, new TokenEntry(token));
                     }
+                    explicit_tokens = true;
                 }
+
                 if (ProcessIds != null)
                 {
                     GetTokensFromPids(tokens, ProcessIds);
+                    explicit_tokens = true;
                 }
-                GetTokensFromArguments(tokens, ProcessNames, ProcessCommandLines);
+
+                if (GetTokensFromArguments(tokens, ProcessNames, ProcessCommandLines))
+                {
+                    explicit_tokens = true;
+                }
+
                 if (Processes != null)
                 {
                     foreach (NtProcess process in Processes)
                     {
                         AddTokenEntryFromProcess(tokens, process);
                     }
+                    explicit_tokens = true;
                 }
+
                 if (tokens.Count == 0)
                 {
+                    if (explicit_tokens)
+                    {
+                        return;
+                    }
+
                     AddTokenEntryFromProcess(tokens, NtProcess.Current);
                 }
 
@@ -426,6 +511,40 @@ namespace NtObjectManager
                 }
             }
         }
+
+        private static bool CheckImpersonatePrivilege()
+        {
+            using (var token = NtProcess.Current.OpenToken())
+            {
+                var priv = token.GetPrivilege(TokenPrivilegeValue.SeImpersonatePrivilege);
+                return priv != null ? priv.Enabled : false;
+            }
+        }
+
+        private static NtToken FindSystemToken()
+        {
+            using (var ps = NtProcess.GetProcesses(ProcessAccessRights.QueryLimitedInformation).ToDisposableList())
+            {
+                foreach (var p in ps)
+                {
+                    if (p.Name.Equals("services.exe", StringComparison.OrdinalIgnoreCase))
+                    {
+                        using (var token = NtToken.OpenProcessToken(p, TokenAccessRights.Duplicate, false))
+                        {
+                            if (!token.IsSuccess)
+                            {
+                                return null;
+                            }
+                            return token.Result.DuplicateToken(SecurityImpersonationLevel.Impersonation);
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        private static Lazy<bool> _has_impersonate_privilege = new Lazy<bool>(CheckImpersonatePrivilege);
+        private static Lazy<NtToken> _system_token = new Lazy<NtToken>(FindSystemToken);
     }
 
     /// <summary>
@@ -434,7 +553,6 @@ namespace NtObjectManager
     /// <typeparam name="A">The type of access rights to check against.</typeparam>
     public abstract class CommonAccessBaseWithAccessCmdlet<A> : CommonAccessBaseCmdlet
     {
-
         /// <summary>
         /// <para type="description">Access rights to check for in an object's access.</para>
         /// </summary>
@@ -551,7 +669,7 @@ namespace NtObjectManager
 
         internal int GetMaxDepth()
         {
-            return MaxDepth.HasValue ? MaxDepth.Value : int.MaxValue;
+            return MaxDepth ?? int.MaxValue;
         }
     }
 }
