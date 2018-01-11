@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	<AssemblyName>NtApiDotNet</AssemblyName>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageId>NtApiDotNet</PackageId>
+    <Authors>James Forshaw</Authors>
+    <Company>Google Inc.</Company>
+    <Product>NtApiDotNet</Product>
+    <FileVersion>1.1.6.0</FileVersion>
+    <Copyright>Copyright © Google Inc. 2016, 2017</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Win32.Registry" Version="4.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<Compile Remove="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+</Project>

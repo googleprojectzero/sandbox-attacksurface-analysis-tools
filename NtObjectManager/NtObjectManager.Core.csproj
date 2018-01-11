@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	<AssemblyName>NtObjectManager</AssemblyName>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageId>NtObjectManager</PackageId>
+    <Authors>James Forshaw</Authors>
+    <Company>Google Inc.</Company>
+    <Product>NtObjectManager</Product>
+    <FileVersion>1.1.6.0</FileVersion>
+    <Copyright>Copyright © Google Inc. 2016, 2017</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Win32.Registry" Version="4.4.0" />
+    <PackageReference Include="PowerShellStandard.Library" Version="3.0.0-preview-01" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="4.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<Compile Remove="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\NtApiDotNet\NtApiDotNet.Core.csproj" />
+  </ItemGroup>
+</Project>
