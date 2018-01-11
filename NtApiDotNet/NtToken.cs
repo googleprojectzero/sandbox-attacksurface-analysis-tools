@@ -1049,6 +1049,38 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Duplicate token as specific type.
+        /// </summary>
+        /// <param name="type">The token type</param>
+        /// <param name="level">The impersonation level us type is Impersonation</param>
+        /// <param name="desired_access">Open with the desired access.</param>
+        /// <param name="throw_on_error">If true then throw an exception on error.</param>
+        /// <returns>The new token</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public NtResult<NtToken> DuplicateToken(TokenType type, SecurityImpersonationLevel level, TokenAccessRights desired_access, bool throw_on_error)
+        {
+            using (var token = Duplicate(TokenAccessRights.Duplicate, AttributeFlags.None, DuplicateObjectOptions.None, throw_on_error))
+            {
+                if (!token.IsSuccess)
+                {
+                    return token;
+                }
+
+                SecurityQualityOfService sqos = null;
+                if (type == TokenType.Impersonation)
+                {
+                    sqos = new SecurityQualityOfService(level, SecurityContextTrackingMode.Static, false);
+                }
+
+                using (ObjectAttributes obja = new ObjectAttributes(null, AttributeFlags.None, SafeKernelObjectHandle.Null, sqos, null))
+                {
+                    return NtSystemCalls.NtDuplicateToken(token.Result.Handle,
+                      desired_access, obja, false, type, out SafeKernelObjectHandle new_token).CreateResult(throw_on_error, () => new NtToken(new_token));
+                }
+            }
+        }
+
+        /// <summary>
         /// Duplicate token as specific type
         /// </summary>
         /// <param name="type">The token type</param>
@@ -1058,22 +1090,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error</exception>
         public NtToken DuplicateToken(TokenType type, SecurityImpersonationLevel level, TokenAccessRights desired_access)
         {
-            using (NtToken token = Duplicate(TokenAccessRights.Duplicate))
-            {
-                SafeKernelObjectHandle new_token;
-                SecurityQualityOfService sqos = null;
-                if (type == TokenType.Impersonation)
-                {
-                    sqos = new SecurityQualityOfService(level, SecurityContextTrackingMode.Static, false);
-                }
-
-                using (ObjectAttributes obja = new ObjectAttributes(null, AttributeFlags.None, SafeKernelObjectHandle.Null, sqos, null))
-                {
-                    NtSystemCalls.NtDuplicateToken(token.Handle,
-                      desired_access, obja, false, type, out new_token).ToNtException();
-                    return new NtToken(new_token);
-                }
-            }
+            return DuplicateToken(type, level, desired_access, true).Result;
         }
 
         /// <summary>
