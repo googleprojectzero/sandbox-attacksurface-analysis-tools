@@ -13,11 +13,11 @@
 #  limitations under the License.
 
 if (($PSVersionTable.Keys -contains "PSEdition") -and ($PSVersionTable.PSEdition -ne 'Desktop')) {
-    Import-Module "$PSScriptRoot\NtObjectManager.Core.dll"
+  Import-Module "$PSScriptRoot\Core\NtObjectManager.dll"
 }
 else
 {
-	Import-Module "$PSScriptRoot\NtObjectManager.dll"    
+  Import-Module "$PSScriptRoot\NtObjectManager.dll"    
 }
 
 <#

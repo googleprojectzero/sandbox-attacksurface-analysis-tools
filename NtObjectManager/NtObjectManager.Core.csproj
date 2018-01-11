@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<AssemblyName>NtObjectManager.Core</AssemblyName>
+    <AssemblyName>NtObjectManager</AssemblyName>
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageId>NtObjectManager</PackageId>
     <Authors>James Forshaw</Authors>
@@ -9,6 +9,9 @@
     <Product>NtObjectManager</Product>
     <FileVersion>1.1.6.0</FileVersion>
     <Copyright>Copyright © Google Inc. 2016, 2017</Copyright>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <PackageLicenseUrl>https://www.apache.org/licenses/LICENSE-2.0</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/google/sandbox-attacksurface-analysis-tools</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
