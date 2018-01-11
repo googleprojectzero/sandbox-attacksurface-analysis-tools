@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<AssemblyName>NtObjectManager</AssemblyName>
+	<AssemblyName>NtObjectManager.Core</AssemblyName>
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageId>NtObjectManager</PackageId>
     <Authors>James Forshaw</Authors>

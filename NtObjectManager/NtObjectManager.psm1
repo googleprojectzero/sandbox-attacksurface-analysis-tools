@@ -12,7 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-Import-Module "$PSScriptRoot\NtObjectManager.dll"
+if (($PSVersionTable.Keys -contains "PSEdition") -and ($PSVersionTable.PSEdition -ne 'Desktop')) {
+    Import-Module "$PSScriptRoot\NtObjectManager.Core.dll"
+}
+else
+{
+	Import-Module "$PSScriptRoot\NtObjectManager.dll"    
+}
 
 <#
 .SYNOPSIS

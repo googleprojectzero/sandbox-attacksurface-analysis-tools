@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<AssemblyName>NtApiDotNet</AssemblyName>
+	<AssemblyName>NtApiDotNet.Core</AssemblyName>
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageId>NtApiDotNet</PackageId>
     <Authors>James Forshaw</Authors>
