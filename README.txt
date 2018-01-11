@@ -16,9 +16,19 @@ NtApiDotNet: A basic managed library to access NT system calls and objects.
 NtObjectManager: A powershell module which uses NtApiDotNet to expose the NT object manager.
 ViewSecurityDescriptor: View the security descriptor from an SDDL string or an inherited object.
 
-The tools can be built with Visual Studio 2017
+The tools can be built with Visual Studio 2017. It's possible to also build NtApiDotNet and NtObjectManager
+with .NET Core 2.0 by building the specific project files.
 
 Release Notes:
+
+1.1.7
+-----
+* Added projects to build NtObjectManager for PowerShell Core 6.0
+* Added additional techniques to open process tokens in access checking cmdlets.
+* Fixed issues with Add-NtKey and added Remove-NtKey cmdlets.
+* Minor fixes from fllombard
+* Added change notify key with asynchronous support
+* Added kernel LUID allocation
 
 1.1.6
 -----

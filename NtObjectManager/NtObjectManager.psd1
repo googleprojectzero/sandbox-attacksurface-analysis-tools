@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.6'
+ModuleVersion = '1.1.7'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -132,7 +132,15 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.6
+        ReleaseNotes = '1.1.7
+-----
+* Added projects to build NtObjectManager for PowerShell Core 6.0
+* Added additional techniques to open process tokens in access checking cmdlets.
+* Fixed issues with Add-NtKey and added Remove-NtKey cmdlets.
+* Minor fixes from fllombard
+* Added change notify key with asynchronous support
+* Added kernel LUID allocation
+1.1.6
 -----
 * Added support for child process policy and desktop app policy to Win32ProcessConfig.
 * Added new mitigation options from Win10 1709.
