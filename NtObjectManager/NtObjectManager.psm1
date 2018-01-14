@@ -1106,6 +1106,82 @@ function Import-NtObject {
 
 <#
 .SYNOPSIS
+Gets the execution alias information from a name.
+.DESCRIPTION
+This cmdlet looks up an execution alias and tries to parse its reparse point to extract internal information.
+.PARAMETER AliasName
+The alias name to lookup. Can be either a full path to the alias or a name which will be found in the WindowsApps
+folder.
+.EXAMPLE
+Get-ExecutionAlias ubuntu.exe
+Get the ubuntu.exe execution alias from local appdata.
+.EXAMPLE
+Get-ExecutionAlias c:\path\to\alias.exe
+Get the alias.exe execution alias from an absolute path.
+#>
+function Get-ExecutionAlias
+{
+    Param(
+        [Parameter(Mandatory=$true, Position=0)]
+        [string]$AliasName
+        )
+
+    if (Test-Path $AliasName) {
+        $path = Resolve-Path $AliasName
+    } else {
+        $path = $env:LOCALAPPDATA + "\Microsoft\WindowsApps\$AliasName"
+    }
+    
+    Use-NtObject($file = Get-NtFile -Path $path -Win32Path -Options OpenReparsePoint,SynchronousIoNonAlert `
+									-Access GenericRead,Synchronize) {
+        $file.GetReparsePoint($true)
+    }
+}
+
+<#
+.SYNOPSIS
+Creates a new execution alias information.
+.DESCRIPTION
+This cmdlet creates a new execution alias for a packaged application.
+.PARAMETER PackageName
+The name of the UWP package.
+.PARAMETER EntryPoint
+The entry point of the application
+.PARAMETER Target
+The target executable path
+.PARAMETER Flags
+Additional flags
+.PARAMETER Version
+Version number
+.EXAMPLE
+Set-ExecutionAlias c:\path\to\alias.exe -PackageName test -EntryPoint test!test -Target c:\test.exe -Flags 48 -Version 3
+Set the alias.exe execution alias.
+#>
+function New-ExecutionAlias
+{
+    Param(
+        [Parameter(Mandatory=$true, Position=0)]
+        [string]$Path,
+        [Parameter(Mandatory=$true, Position=1)]
+        [string]$PackageName,
+        [Parameter(Mandatory=$true, Position=2)]
+        [string]$EntryPoint,
+        [Parameter(Mandatory=$true, Position=3)]
+        [string]$Target,
+        [Int32]$Flags = 48,
+        [Int32]$Version = 3
+    )
+
+	$rp = [NtApiDotNet.ExecutionAliasReparseBuffer]::new($Version, $PackageName, $EntryPoint, $Target, $Flags)
+
+    Use-NtObject($file = New-NtFile -Path $Path -Win32Path -Options OpenReparsePoint,SynchronousIoNonAlert `
+									-Access GenericWrite,Synchronize -Disposition OpenIf) {
+            $file.SetReparsePoint($rp)
+    }
+}
+
+<#
+.SYNOPSIS
 Get process primary token. Here for legacy reasons, use Get-NtToken -Primary.
 #>
 function Get-NtTokenPrimary

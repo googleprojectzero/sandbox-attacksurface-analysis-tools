@@ -1005,6 +1005,7 @@ namespace NtApiDotNet
         DFM = 0x80000016,
         WOF = 0x80000017,
         GLOBAL_REPARSE = 0xA0000019,
+        EXECUTION_ALIAS = 0x8000001B,
     }
 
     public abstract class ReparseBuffer
@@ -1028,7 +1029,7 @@ namespace NtApiDotNet
         /// <returns>The reparse buffer.</returns>
         public static ReparseBuffer FromByteArray(byte[] ba, bool opaque_buffer)
         {
-            BinaryReader reader = new BinaryReader(new MemoryStream(ba));
+            BinaryReader reader = new BinaryReader(new MemoryStream(ba), Encoding.Unicode);
             ReparseTag tag = (ReparseTag)reader.ReadUInt32();
             int data_length = reader.ReadUInt16();
             // Reserved
@@ -1046,6 +1047,9 @@ namespace NtApiDotNet
                     break;
                 case ReparseTag.GLOBAL_REPARSE:
                     buffer = new SymlinkReparseBuffer(true);
+                    break;
+                case ReparseTag.EXECUTION_ALIAS:
+                    buffer = new ExecutionAliasReparseBuffer();
                     break;
                 default:
                     if (opaque_buffer)
@@ -1267,6 +1271,71 @@ namespace NtApiDotNet
             writer.Write(pname);
             writer.Write(new byte[2]);
             return stm.ToArray();
+        }
+    }
+
+    public class ExecutionAliasReparseBuffer : ReparseBuffer
+    {
+        public int Version { get; private set; }
+        public string PackageName { get; private set; }
+        public string EntryPoint { get; private set; }
+        public string Target { get; private set; }
+        public int Flags { get; private set; }
+
+        private static string ReadNulTerminated(BinaryReader reader)
+        {
+            StringBuilder builder = new StringBuilder();
+
+            while (true)
+            {
+                char c = reader.ReadChar();
+                if (c == 0)
+                {
+                    break;
+                }
+                builder.Append(c);
+            }
+            return builder.ToString();
+        }
+
+        private static void WriteNulTerminated(BinaryWriter writer, string str)
+        {
+            writer.Write(Encoding.Unicode.GetBytes(str + "\0"));
+        }
+
+        public ExecutionAliasReparseBuffer(int version, string package_name, string entry_point, string target, int flags) 
+            : this()
+        {
+            Version = version;
+            PackageName = package_name;
+            EntryPoint = entry_point;
+            Target = target;
+            Flags = flags;
+        }
+
+        internal ExecutionAliasReparseBuffer() : base(ReparseTag.EXECUTION_ALIAS)
+        {
+        }
+
+        protected override byte[] GetBuffer()
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm, Encoding.Unicode);
+            writer.Write(Version);
+            WriteNulTerminated(writer, PackageName);
+            WriteNulTerminated(writer, EntryPoint);
+            WriteNulTerminated(writer, Target);
+            writer.Write(Flags);
+            return stm.ToArray();
+        }
+
+        protected override void ParseBuffer(int data_length, BinaryReader reader)
+        {
+            Version = reader.ReadInt32();
+            PackageName = ReadNulTerminated(reader);
+            EntryPoint = ReadNulTerminated(reader);
+            Target = ReadNulTerminated(reader);
+            Flags = reader.ReadInt32();
         }
     }
 
