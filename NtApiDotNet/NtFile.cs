@@ -365,6 +365,25 @@ namespace NtApiDotNet
         public FileDispositionInformationExFlags Flags;
     }
 
+    [Flags]
+    public enum FileRenameInformationExFlags : uint
+    {
+        None = 0,
+        ReplaceIfExists = 0x00000001,
+        PosixSemantics = 0x00000002,
+        SuppressPinStateInheritance = 0x00000004,
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    [DataStart("FileName")]
+    public class FileRenameInformationEx
+    {
+        public FileRenameInformationExFlags Flags;
+        public IntPtr RootDirectory;
+        public int FileNameLength;
+        public char FileName; // Unused, place holder for start of data.
+    }
+
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     [DataStart("FileName")]
     public class FileLinkRenameInformation
@@ -2449,6 +2468,22 @@ namespace NtApiDotNet
             SetFileFixed(new FileDispositionInformationEx() { Flags = flags }, FileInformationClass.FileDispositionInformationEx);
         }
 
+        private void DoRenameEx(string filename, NtFile root, FileRenameInformationExFlags flags)
+        {
+            FileRenameInformationEx information = new FileRenameInformationEx();
+            information.Flags = flags;
+            information.RootDirectory = root != null ? root.Handle.DangerousGetHandle() : IntPtr.Zero;
+            char[] chars = filename.ToCharArray();
+            information.FileNameLength = chars.Length * 2;
+            using (var buffer = information.ToBuffer(information.FileNameLength, true))
+            {
+                IoStatus iostatus = new IoStatus();
+                buffer.Data.WriteArray(0, chars, 0, chars.Length);
+                NtSystemCalls.NtSetInformationFile(Handle, iostatus, buffer,
+                        buffer.Length, FileInformationClass.FileRenameInformationEx).ToNtException();
+            }
+        }
+
         private void DoLinkRename(FileInformationClass file_info, string linkname, NtFile root, bool replace_if_exists)
         {
             FileLinkRenameInformation link = new FileLinkRenameInformation();
@@ -2563,6 +2598,17 @@ namespace NtApiDotNet
             {
                 file.Rename(new_name);
             }
+        }
+
+        /// <summary>
+        /// Rename (extended Windows version) this file with an absolute path.
+        /// </summary>
+        /// <param name="new_name">The target absolute NT path.</param>
+        /// <param name="flags">The flags associated to FileRenameInformationEx.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void RenameEx(string new_name, FileRenameInformationExFlags flags)
+        {
+            DoRenameEx(new_name, null, flags);
         }
 
         /// <summary>
