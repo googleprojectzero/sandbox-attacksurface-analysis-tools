@@ -349,6 +349,22 @@ namespace NtApiDotNet
         public bool DeleteFile;
     }
 
+    [Flags]
+    public enum FileDispositionInformationExFlags : uint
+    {
+        None = 0,
+        Delete = 0x00000001,
+        PosixSemantics = 0x00000002,
+        ForceImageSectionCheck = 0x00000004,
+        OnClose = 0x00000008,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct FileDispositionInformationEx
+    {
+        public FileDispositionInformationExFlags Flags;
+    }
+
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     [DataStart("FileName")]
     public class FileLinkRenameInformation
@@ -2422,6 +2438,15 @@ namespace NtApiDotNet
             {
                 Delete(obja);
             }
+        }
+
+        /// <summary>
+        /// Delete the file (extended Windows version). Must have been opened with DELETE access.
+        /// </summary>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void DeleteEx(FileDispositionInformationExFlags flags)
+        {
+            SetFileFixed(new FileDispositionInformationEx() { Flags = flags }, FileInformationClass.FileDispositionInformationEx);
         }
 
         private void DoLinkRename(FileInformationClass file_info, string linkname, NtFile root, bool replace_if_exists)
