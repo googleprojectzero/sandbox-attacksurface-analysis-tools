@@ -435,7 +435,7 @@ namespace NtApiDotNet.Win32
             byte[] sd = new byte[8192];
             if (!QueryServiceObjectSecurity(handle, SecurityInformation.AllBasic, sd, sd.Length, out required))
             {
-                throw new Win32Exception();
+                throw new SafeWin32Exception();
             }
 
             return new SecurityDescriptor(sd);
@@ -480,7 +480,7 @@ namespace NtApiDotNet.Win32
             {
                 if (service.IsInvalid)
                 {
-                    throw new Win32Exception();
+                    throw new SafeWin32Exception();
                 }
 
                 return new ServiceInformation(name, GetServiceSecurityDescriptor(service), GetTriggersForService(service));
@@ -499,7 +499,7 @@ namespace NtApiDotNet.Win32
             {
                 if (scm.IsInvalid)
                 {
-                    throw new Win32Exception();
+                    throw new SafeWin32Exception();
                 }
 
                 return GetServiceSecurityInformation(scm, name);

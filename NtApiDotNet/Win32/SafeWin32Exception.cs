@@ -14,26 +14,15 @@
 
 using System;
 using System.ComponentModel;
-using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32
 {
     /// <summary>
-    /// Represents a safe win32 exception, which resolves the win32 message when Message is called.
+    /// Represents an impersonation safe win32 exception, which resolves the win32 message when Message is called.
     /// </summary>
     [Serializable]
-    public class SafeWin32Exception : ApplicationException
+    public class SafeWin32Exception : Win32Exception
 	{
-		int _last_error;
-                
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public SafeWin32Exception()
-        {
-            _last_error = Marshal.GetLastWin32Error();
-        }
-
         /// <summary>
         /// The message for the exception.
         /// </summary>
@@ -41,9 +30,9 @@ namespace NtApiDotNet.Win32
         {
             get
             {
-                Win32Exception e = new Win32Exception(_last_error);
+                Win32Exception e = new Win32Exception(NativeErrorCode);
                 return e.Message;
             }
-        }        
+        }
     }
 }

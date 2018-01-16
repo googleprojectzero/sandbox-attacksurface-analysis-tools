@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using Microsoft.Win32.SafeHandles;
+using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -3161,7 +3162,7 @@ namespace NtApiDotNet
             StringBuilder builder = new StringBuilder(1000);
             if (GetFinalPathNameByHandle(Handle, builder, builder.Capacity, flags) == 0)
             {
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+                throw new SafeWin32Exception();
             }
             return builder.ToString();
         }

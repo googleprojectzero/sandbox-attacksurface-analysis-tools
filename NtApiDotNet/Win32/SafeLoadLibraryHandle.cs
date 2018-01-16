@@ -117,7 +117,7 @@ namespace NtApiDotNet.Win32
                 StringBuilder builder = new StringBuilder(260);
                 if (GetModuleFileName(handle, builder, builder.Capacity) == 0)
                 {
-                    throw new Win32Exception();
+                    throw new SafeWin32Exception();
                 }
                 return builder.ToString();
             }
@@ -134,7 +134,7 @@ namespace NtApiDotNet.Win32
             SafeLoadLibraryHandle ret = LoadLibraryEx(name, IntPtr.Zero, flags);
             if (ret.IsInvalid)
             {
-                throw new Win32Exception();
+                throw new SafeWin32Exception();
             }
             return ret;
         }
