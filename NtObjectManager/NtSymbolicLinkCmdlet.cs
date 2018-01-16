@@ -52,16 +52,7 @@ namespace NtObjectManager
         /// <para type="description">The NT object manager path to the object to use.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
-        new public string Path { get; set; }
-
-        /// <summary>
-        /// Virtual method to return the value of the Path variable.
-        /// </summary>
-        /// <returns>The object path.</returns>
-        protected override string GetPath()
-        {
-            return Path;
-        }
+        public override string Path { get; set; }
 
         /// <summary>
         /// Method to create an object from a set of object attributes.
@@ -104,16 +95,7 @@ namespace NtObjectManager
         /// <para type="description">The NT object manager path to the object to use.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
-        new public string Path { get; set; }
-
-        /// <summary>
-        /// Virtual method to return the value of the Path variable.
-        /// </summary>
-        /// <returns>The object path.</returns>
-        protected override string GetPath()
-        {
-            return Path;
-        }
+        public override string Path { get; set; }
 
         /// <summary>
         /// Method to create an object from a set of object attributes.

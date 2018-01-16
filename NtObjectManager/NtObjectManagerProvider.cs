@@ -33,7 +33,7 @@ namespace NtObjectManager
     {
         private static Dictionary<string, NtDirectoryEntry> _item_cache = new Dictionary<string, NtDirectoryEntry>();
 
-        private class ObjectManagerPSDriveInfo : PSDriveInfo
+        internal class ObjectManagerPSDriveInfo : PSDriveInfo
         {
             public ObjectManagerPSDriveInfo(NtDirectory root, PSDriveInfo drive_info) 
                 : base(drive_info)

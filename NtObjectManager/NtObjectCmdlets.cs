@@ -31,7 +31,7 @@ namespace NtObjectManager
         /// <para type="description">The NT object manager path to the object to use.</para>
         /// </summary>
         [Parameter(Position = 0)]
-        public string Path { get; set; }
+        public virtual string Path { get; set; }
 
         /// <summary>
         /// <para type="description">An existing open NT object to use when Path is relative.</para>
@@ -125,6 +125,16 @@ namespace NtObjectManager
             }
         }
 
+        private static string RemoveDrive(string path)
+        {
+            int index = path.IndexOf(@":\");
+            if (index < 0)
+            {
+                throw new ArgumentException("Invalid drive path");
+            }
+            return path.Substring(index + 2);
+        }
+
         /// <summary>
         /// Virtual method to return the value of the Path variable.
         /// </summary>
@@ -152,7 +162,32 @@ namespace NtObjectManager
                 }
                 return String.Format(@"\{0}", String.Join(@"\", ret));
             }
-            return Path;
+
+            if (Path.StartsWith(@"\") || Root != null)
+            {
+                return Path;
+            }
+
+            var current_path = SessionState.Path.CurrentLocation;
+            if (current_path.Drive is NtObjectManagerProvider.ObjectManagerPSDriveInfo drive)
+            {
+                string root_path = drive.DirectoryRoot.FullPath;
+                if (root_path == @"\")
+                {
+                    root_path = String.Empty;
+                }
+
+                string relative_path = RemoveDrive(current_path.Path);
+                if (relative_path.Length == 0)
+                {
+                    return string.Format(@"{0}\{1}", root_path, Path);
+                }
+                return string.Format(@"{0}\{1}\{2}", root_path, relative_path, Path);
+            }
+            else
+            {
+                throw new ArgumentException("Can't make a relative object path when not in a NtObject drive.");
+            }
         }
 
 
@@ -340,7 +375,7 @@ namespace NtObjectManager
         /// <para type="description">The NT object manager path to the object to use.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
-        new public string Path { get; set; }
+        public override string Path { get; set; }
 
         /// <summary>
         /// Determine if the cmdlet can create objects.
@@ -349,15 +384,6 @@ namespace NtObjectManager
         protected override bool CanCreateDirectories()
         {
             return false;
-        }
-
-        /// <summary>
-        /// Virtual method to return the value of the Path variable.
-        /// </summary>
-        /// <returns>The object path.</returns>
-        protected override string GetPath()
-        {
-            return Path;
         }
 
         /// <summary>
