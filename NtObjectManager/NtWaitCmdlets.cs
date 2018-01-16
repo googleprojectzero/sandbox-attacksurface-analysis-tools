@@ -44,7 +44,7 @@ namespace NtObjectManager
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet("Start", "NtWait")]
     [OutputType(typeof(NtStatus))]
-    public class StartNtObjectWait : Cmdlet
+    public class StartNtWait : Cmdlet
     {
         /// <summary>
         /// <para type="description">Specify a list of objects to wait on.</para>
@@ -55,35 +55,35 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Specify a wait time in seconds.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "time")]
         [Alias(new string[] { "s" })]
         public int Seconds { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a wait time in milliseconds.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "time")]
         [Alias(new string[] { "ms" })]
         public long MilliSeconds { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a wait time in minutes.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "time")]
         [Alias(new string[] { "m" })]
         public int Minutes { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a wait time in hours.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "time")]
         [Alias(new string[] { "h" })]
         public int Hours { get; set; }
 
         /// <summary>
         /// <para type="description">Specify an infinite wait time.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "infinite")]
         public SwitchParameter Infinite { get; set; }
 
         /// <summary>
