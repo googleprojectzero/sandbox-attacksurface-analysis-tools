@@ -25,7 +25,7 @@ namespace NtObjectManager
     /// <summary>
     /// Base object cmdlet.
     /// </summary>
-    public abstract class NtObjectBaseCmdlet : Cmdlet, IDisposable
+    public abstract class NtObjectBaseCmdlet : PSCmdlet, IDisposable
     {
         /// <summary>
         /// <para type="description">The NT object manager path to the object to use.</para>
