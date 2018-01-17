@@ -14,7 +14,6 @@
 
 using NtApiDotNet;
 using System.Management.Automation;
-using System;
 
 namespace NtObjectManager
 {
@@ -66,10 +65,10 @@ namespace NtObjectManager
         public string PrivateNamespaceDescriptor { get; set; }
 
         /// <summary>
-        /// Virtual method to return the value of the Path variable.
+        /// Virtual method to resolve the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
-        protected override string GetPath()
+        protected override string ResolvePath()
         {
             if (PrivateNamespaceDescriptor != null)
             {
@@ -77,7 +76,7 @@ namespace NtObjectManager
             }
             else
             {
-                return base.GetPath();
+                return base.ResolvePath();
             }
         }
 

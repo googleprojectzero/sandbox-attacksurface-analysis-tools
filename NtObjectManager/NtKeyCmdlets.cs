@@ -66,10 +66,10 @@ namespace NtObjectManager
         public override string Path { get; set; }
 
         /// <summary>
-        /// Virtual method to return the value of the Path variable.
+        /// Virtual method to resolve the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
-        protected override string GetPath()
+        protected override string ResolvePath()
         {
             if (Win32Path)
             {
@@ -164,7 +164,7 @@ namespace NtObjectManager
         /// Virtual method to return the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
-        protected override string GetPath()
+        protected override string ResolvePath()
         {
             if (Win32Path)
             {
@@ -254,7 +254,7 @@ namespace NtObjectManager
         /// Virtual method to return the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
-        protected override string GetPath()
+        protected override string ResolvePath()
         {
             if (Win32Path)
             {

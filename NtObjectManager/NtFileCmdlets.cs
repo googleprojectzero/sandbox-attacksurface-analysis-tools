@@ -98,10 +98,10 @@ namespace NtObjectManager
         }
 
         /// <summary>
-        /// Virtual method to return the value of the Path variable.
+        /// Virtual method to resolve the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
-        protected override string GetPath()
+        protected override string ResolvePath()
         {
             if (Win32Path)
             {

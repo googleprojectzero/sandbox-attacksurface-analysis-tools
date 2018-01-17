@@ -102,13 +102,18 @@ namespace NtObjectManager
         /// </summary>
         protected virtual void VerifyParameters()
         {
-            string path = GetPath();
+            string path = ResolvePath();
             if (path != null)
             {
                 if (!path.StartsWith(@"\") && Root == null)
                 {
                     throw new ArgumentException("Relative paths with no Root directory are not allowed.");
                 }
+            }
+
+            if (Win32Path && Root != null)
+            {
+                throw new ArgumentException("Can't combine Win32Path and Root");
             }
 
             if (CreateDirectories)
@@ -136,10 +141,10 @@ namespace NtObjectManager
         }
 
         /// <summary>
-        /// Virtual method to return the value of the Path variable.
+        /// Virtual method to resolve the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
-        protected virtual string GetPath()
+        protected virtual string ResolvePath()
         {
             if (Win32Path)
             {
@@ -217,7 +222,7 @@ namespace NtObjectManager
         private IEnumerable<NtObject> CreateDirectoriesAndObject()
         {
             DisposableList<NtObject> objects = new DisposableList<NtObject>();
-            string[] path_parts = GetPath().Split(new char[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] path_parts = ResolvePath().Split(new char[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
             StringBuilder builder = new StringBuilder();
             bool finished = false;
             if (Root == null)
@@ -245,7 +250,7 @@ namespace NtObjectManager
                     }
                     builder.Append(@"\");
                 }
-                objects.Add((NtObject)DoCreateObject(GetPath(), ObjectAttributes, Root, SecurityQualityOfService, GetSecurityDescriptor()));
+                objects.Add((NtObject)DoCreateObject(ResolvePath(), ObjectAttributes, Root, SecurityQualityOfService, GetSecurityDescriptor()));
                 finished = true;
             }
             finally
@@ -267,7 +272,7 @@ namespace NtObjectManager
             VerifyParameters();
             try
             {
-                WriteObject(DoCreateObject(GetPath(), ObjectAttributes, Root, SecurityQualityOfService, GetSecurityDescriptor()));
+                WriteObject(DoCreateObject(ResolvePath(), ObjectAttributes, Root, SecurityQualityOfService, GetSecurityDescriptor()));
             }
             catch (NtException ex)
             {
