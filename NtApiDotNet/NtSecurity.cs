@@ -1508,6 +1508,7 @@ namespace NtApiDotNet
                 "lpacAppExperience",
                 "lpacCom",
                 "lpacCryptoServices",
+                "lpacClipboard",
                 "lpacEnterprisePolicyChangeNotifications",
                 "lpacIdentityServices",
                 "lpacInstrumentation",
