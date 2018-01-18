@@ -782,6 +782,35 @@ namespace NtApiDotNet
             TotalLength = new IntPtr(IntPtr.Size + Marshal.SizeOf(typeof(ProcessAttributeNative)) * attrs.Length);
         }
     }
+
+    /// <summary>
+    /// Partial definition of the PEB
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PartialPeb
+    {
+        public byte InheritedAddressSpace;
+        public byte ReadImageFileExecOptions;
+        public byte BeingDebugged;
+        public byte SpareBool;
+        public IntPtr Mutant;
+        public IntPtr ImageBaseAddress;
+    }
+
+    /// <summary>
+    /// Partial definition of the PEB
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PartialPeb32
+    {
+        public byte InheritedAddressSpace;
+        public byte ReadImageFileExecOptions;
+        public byte BeingDebugged;
+        public byte SpareBool;
+        public int Mutant;
+        public int ImageBaseAddress;
+    }
+
 #pragma warning restore 1591
 
     /// <summary>
@@ -1072,6 +1101,25 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the base address of the process from the PEB.
+        /// </summary>
+        public IntPtr ImageBaseAddress
+        {
+            get
+            {
+                long address = PebAddress.ToInt64();
+                if (Wow64)
+                {
+                    return new IntPtr(NtVirtualMemory.ReadMemory<PartialPeb32>(Handle, address).ImageBaseAddress);
+                }
+                else
+                {
+                    return NtVirtualMemory.ReadMemory<PartialPeb>(Handle, address).ImageBaseAddress;
+                }
+            }
+        }
+
+        /// <summary>
         /// Get the process' exit status.
         /// </summary>
         public int ExitStatus
@@ -1117,8 +1165,10 @@ namespace NtApiDotNet
         public static NtResult<NtProcess> Open(int pid, ProcessAccessRights desired_access, bool throw_on_error)
         {
             SafeKernelObjectHandle process;
-            ClientId client_id = new ClientId();
-            client_id.UniqueProcess = new IntPtr(pid);
+            ClientId client_id = new ClientId
+            {
+                UniqueProcess = new IntPtr(pid)
+            };
             return NtSystemCalls.NtOpenProcess(out process, desired_access, new ObjectAttributes(), client_id)
                 .CreateResult(throw_on_error, () => new NtProcess(process) { _pid = pid });
         }
@@ -1252,8 +1302,7 @@ namespace NtApiDotNet
 
             using (var buffer = p.ToBuffer())
             {
-                int return_length;
-                NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInformationClass.ProcessMitigationPolicy, buffer, buffer.Length, out return_length);
+                NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInformationClass.ProcessMitigationPolicy, buffer, buffer.Length, out int return_length);
                 if (!status.IsSuccess())
                 {
                     if (status != NtStatus.STATUS_INVALID_PARAMETER && status != NtStatus.STATUS_NOT_SUPPORTED)
