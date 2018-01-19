@@ -27,43 +27,43 @@ namespace NtApiDotNet
             DepEnabled = dep_status.Enabled;
             DepPermanent = dep_status.Permanent;
                     
-            int result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessASLRPolicy);
+            int result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ASLR);
             EnableBottomUpRandomization = result.GetBit(0);
             EnableForceRelocateImages = result.GetBit(1);
             EnableHighEntropy = result.GetBit(2);
             DisallowStrippedImages = result.GetBit(3);
 
-            DisallowWin32kSystemCalls = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessSystemCallDisablePolicy).GetBit(0);
-            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessStrictHandleCheckPolicy);
+            DisallowWin32kSystemCalls = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.SystemCallDisable).GetBit(0);
+            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.StrictHandleCheck);
             RaiseExceptionOnInvalidHandleReference = result.GetBit(0);
             HandleExceptionsPermanentlyEnabled = result.GetBit(1);
 
-            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessFontDisablePolicy);
+            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.FontDisable);
             DisableNonSystemFonts = result.GetBit(0);
             AuditNonSystemFontLoading = result.GetBit(1);
 
-            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessDynamicCodePolicy);
+            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.DynamicCode);
             ProhibitDynamicCode = result.GetBit(0);
             AllowThreadOptOut = result.GetBit(1);
             AllowRemoteDowngrade = result.GetBit(2);
-            DisableExtensionPoints = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessExtensionPointDisablePolicy).GetBit(0);
+            DisableExtensionPoints = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ExtensionPointDisable).GetBit(0);
 
-            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessControlFlowGuardPolicy);
+            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ControlFlowGuard);
             EnabledControlFlowGuard = result.GetBit(0);
             EnableExportSuppression = result.GetBit(1);
             ControlFlowGuardStrictMode = result.GetBit(2);
 
-            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessSignaturePolicy);
+            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.Signature);
             MicrosoftSignedOnly = result.GetBit(0);
             StoreSignedOnly = result.GetBit(1);
             SignedMitigationOptIn = result.GetBit(2);
 
-            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessImageLoadPolicy);
+            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ImageLoad);
             NoRemoteImages = result.GetBit(0);
             NoLowMandatoryLabelImages = result.GetBit(1);
             PreferSystem32Images = result.GetBit(2);
 
-            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ProcessReturnFlowGuardPolicy);
+            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ReturnFlowGuard);
             EnabledReturnFlowGuard = result.GetBit(0);
             ReturnFlowGuardStrictMode = result.GetBit(1);
             IsChildProcessRestricted = process.IsChildProcessRestricted;

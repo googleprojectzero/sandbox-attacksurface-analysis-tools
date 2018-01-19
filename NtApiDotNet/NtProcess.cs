@@ -468,18 +468,18 @@ namespace NtApiDotNet
 
     public enum ProcessMitigationPolicy
     {
-        ProcessDEPPolicy, // Comes from ProcessExecuteFlags, we don't use.
-        ProcessASLRPolicy,
-        ProcessDynamicCodePolicy,
-        ProcessStrictHandleCheckPolicy,
-        ProcessSystemCallDisablePolicy,
-        ProcessMitigationOptionsMask, // Unused
-        ProcessExtensionPointDisablePolicy,
-        ProcessControlFlowGuardPolicy,
-        ProcessSignaturePolicy,
-        ProcessFontDisablePolicy,
-        ProcessImageLoadPolicy,
-        ProcessReturnFlowGuardPolicy,
+        DEP, // Comes from ProcessExecuteFlags, we don't use.
+        ASLR,
+        DynamicCode,
+        StrictHandleCheck,
+        SystemCallDisable,
+        MitigationOptionsMask, // Unused
+        ExtensionPointDisable,
+        ControlFlowGuard,
+        Signature,
+        FontDisable,
+        ImageLoad,
+        ReturnFlowGuard,
     }
 
     public struct MitigationPolicy
@@ -1242,8 +1242,8 @@ namespace NtApiDotNet
         {
             switch (policy)
             {
-                case ProcessMitigationPolicy.ProcessDEPPolicy:
-                case ProcessMitigationPolicy.ProcessMitigationOptionsMask:
+                case ProcessMitigationPolicy.DEP:
+                case ProcessMitigationPolicy.MitigationOptionsMask:
                     throw new ArgumentException("Invalid mitigation policy");
             }
 
@@ -1267,6 +1267,32 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Set a mitigation policy raw value
+        /// </summary>
+        /// <param name="policy">The policy to set</param>
+        /// <param name="value">The value to set</param>
+        public void SetProcessMitigationPolicy(ProcessMitigationPolicy policy, int value)
+        {
+            switch (policy)
+            {
+                case ProcessMitigationPolicy.DEP:
+                case ProcessMitigationPolicy.MitigationOptionsMask:
+                    throw new ArgumentException("Invalid mitigation policy");
+            }
+
+            MitigationPolicy p = new MitigationPolicy()
+            {
+                Policy = policy,
+                Result = value
+            };
+
+            using (var buffer = p.ToBuffer())
+            {
+                NtSystemCalls.NtSetInformationProcess(Handle, ProcessInformationClass.ProcessMitigationPolicy, buffer, buffer.Length).ToNtException();
+            }
+        }
+
+        /// <summary>
         /// Disable dynamic code policy on another process.
         /// </summary>
         public void DisableDynamicCodePolicy()
@@ -1276,13 +1302,7 @@ namespace NtApiDotNet
                 throw new InvalidOperationException("Must have Debug privilege to disable code policy");
             }
 
-            MitigationPolicy p = new MitigationPolicy();
-            p.Policy = ProcessMitigationPolicy.ProcessDynamicCodePolicy;
-
-            using (var buffer = p.ToBuffer())
-            {
-                NtSystemCalls.NtSetInformationProcess(Handle, ProcessInformationClass.ProcessMitigationPolicy, buffer, buffer.Length).ToNtException();
-            }
+            SetProcessMitigationPolicy(ProcessMitigationPolicy.DynamicCode, 0);
         }
 
         /// <summary>
