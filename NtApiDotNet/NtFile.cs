@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using Microsoft.Win32.SafeHandles;
+using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -347,6 +348,41 @@ namespace NtApiDotNet
     {
         [MarshalAs(UnmanagedType.U1)]
         public bool DeleteFile;
+    }
+
+    [Flags]
+    public enum FileDispositionInformationExFlags : uint
+    {
+        None = 0,
+        Delete = 0x00000001,
+        PosixSemantics = 0x00000002,
+        ForceImageSectionCheck = 0x00000004,
+        OnClose = 0x00000008,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct FileDispositionInformationEx
+    {
+        public FileDispositionInformationExFlags Flags;
+    }
+
+    [Flags]
+    public enum FileRenameInformationExFlags : uint
+    {
+        None = 0,
+        ReplaceIfExists = 0x00000001,
+        PosixSemantics = 0x00000002,
+        SuppressPinStateInheritance = 0x00000004,
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    [DataStart("FileName")]
+    public class FileRenameInformationEx
+    {
+        public FileRenameInformationExFlags Flags;
+        public IntPtr RootDirectory;
+        public int FileNameLength;
+        public char FileName; // Unused, place holder for start of data.
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -1005,6 +1041,7 @@ namespace NtApiDotNet
         DFM = 0x80000016,
         WOF = 0x80000017,
         GLOBAL_REPARSE = 0xA0000019,
+        EXECUTION_ALIAS = 0x8000001B,
     }
 
     public abstract class ReparseBuffer
@@ -1028,7 +1065,7 @@ namespace NtApiDotNet
         /// <returns>The reparse buffer.</returns>
         public static ReparseBuffer FromByteArray(byte[] ba, bool opaque_buffer)
         {
-            BinaryReader reader = new BinaryReader(new MemoryStream(ba));
+            BinaryReader reader = new BinaryReader(new MemoryStream(ba), Encoding.Unicode);
             ReparseTag tag = (ReparseTag)reader.ReadUInt32();
             int data_length = reader.ReadUInt16();
             // Reserved
@@ -1046,6 +1083,9 @@ namespace NtApiDotNet
                     break;
                 case ReparseTag.GLOBAL_REPARSE:
                     buffer = new SymlinkReparseBuffer(true);
+                    break;
+                case ReparseTag.EXECUTION_ALIAS:
+                    buffer = new ExecutionAliasReparseBuffer();
                     break;
                 default:
                     if (opaque_buffer)
@@ -1267,6 +1307,71 @@ namespace NtApiDotNet
             writer.Write(pname);
             writer.Write(new byte[2]);
             return stm.ToArray();
+        }
+    }
+
+    public class ExecutionAliasReparseBuffer : ReparseBuffer
+    {
+        public int Version { get; private set; }
+        public string PackageName { get; private set; }
+        public string EntryPoint { get; private set; }
+        public string Target { get; private set; }
+        public int Flags { get; private set; }
+
+        private static string ReadNulTerminated(BinaryReader reader)
+        {
+            StringBuilder builder = new StringBuilder();
+
+            while (true)
+            {
+                char c = reader.ReadChar();
+                if (c == 0)
+                {
+                    break;
+                }
+                builder.Append(c);
+            }
+            return builder.ToString();
+        }
+
+        private static void WriteNulTerminated(BinaryWriter writer, string str)
+        {
+            writer.Write(Encoding.Unicode.GetBytes(str + "\0"));
+        }
+
+        public ExecutionAliasReparseBuffer(int version, string package_name, string entry_point, string target, int flags) 
+            : this()
+        {
+            Version = version;
+            PackageName = package_name;
+            EntryPoint = entry_point;
+            Target = target;
+            Flags = flags;
+        }
+
+        internal ExecutionAliasReparseBuffer() : base(ReparseTag.EXECUTION_ALIAS)
+        {
+        }
+
+        protected override byte[] GetBuffer()
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm, Encoding.Unicode);
+            writer.Write(Version);
+            WriteNulTerminated(writer, PackageName);
+            WriteNulTerminated(writer, EntryPoint);
+            WriteNulTerminated(writer, Target);
+            writer.Write(Flags);
+            return stm.ToArray();
+        }
+
+        protected override void ParseBuffer(int data_length, BinaryReader reader)
+        {
+            Version = reader.ReadInt32();
+            PackageName = ReadNulTerminated(reader);
+            EntryPoint = ReadNulTerminated(reader);
+            Target = ReadNulTerminated(reader);
+            Flags = reader.ReadInt32();
         }
     }
 
@@ -2355,6 +2460,31 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Delete the file (extended Windows version). Must have been opened with DELETE access.
+        /// </summary>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void DeleteEx(FileDispositionInformationExFlags flags)
+        {
+            SetFileFixed(new FileDispositionInformationEx() { Flags = flags }, FileInformationClass.FileDispositionInformationEx);
+        }
+
+        private void DoRenameEx(string filename, NtFile root, FileRenameInformationExFlags flags)
+        {
+            FileRenameInformationEx information = new FileRenameInformationEx();
+            information.Flags = flags;
+            information.RootDirectory = root != null ? root.Handle.DangerousGetHandle() : IntPtr.Zero;
+            char[] chars = filename.ToCharArray();
+            information.FileNameLength = chars.Length * 2;
+            using (var buffer = information.ToBuffer(information.FileNameLength, true))
+            {
+                IoStatus iostatus = new IoStatus();
+                buffer.Data.WriteArray(0, chars, 0, chars.Length);
+                NtSystemCalls.NtSetInformationFile(Handle, iostatus, buffer,
+                        buffer.Length, FileInformationClass.FileRenameInformationEx).ToNtException();
+            }
+        }
+
         private void DoLinkRename(FileInformationClass file_info, string linkname, NtFile root, bool replace_if_exists)
         {
             FileLinkRenameInformation link = new FileLinkRenameInformation();
@@ -2469,6 +2599,17 @@ namespace NtApiDotNet
             {
                 file.Rename(new_name);
             }
+        }
+
+        /// <summary>
+        /// Rename (extended Windows version) this file with an absolute path.
+        /// </summary>
+        /// <param name="new_name">The target absolute NT path.</param>
+        /// <param name="flags">The flags associated to FileRenameInformationEx.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void RenameEx(string new_name, FileRenameInformationExFlags flags)
+        {
+            DoRenameEx(new_name, null, flags);
         }
 
         /// <summary>
@@ -3021,7 +3162,7 @@ namespace NtApiDotNet
             StringBuilder builder = new StringBuilder(1000);
             if (GetFinalPathNameByHandle(Handle, builder, builder.Capacity, flags) == 0)
             {
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+                throw new SafeWin32Exception();
             }
             return builder.ToString();
         }

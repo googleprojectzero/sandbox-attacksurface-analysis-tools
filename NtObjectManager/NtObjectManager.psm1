@@ -1106,6 +1106,197 @@ function Import-NtObject {
 
 <#
 .SYNOPSIS
+Gets the execution alias information from a name.
+.DESCRIPTION
+This cmdlet looks up an execution alias and tries to parse its reparse point to extract internal information.
+.PARAMETER AliasName
+The alias name to lookup. Can be either a full path to the alias or a name which will be found in the WindowsApps
+folder.
+.EXAMPLE
+Get-ExecutionAlias ubuntu.exe
+Get the ubuntu.exe execution alias from local appdata.
+.EXAMPLE
+Get-ExecutionAlias c:\path\to\alias.exe
+Get the alias.exe execution alias from an absolute path.
+#>
+function Get-ExecutionAlias
+{
+    Param(
+        [Parameter(Mandatory=$true, Position=0)]
+        [string]$AliasName
+        )
+
+    if (Test-Path $AliasName) {
+        $path = Resolve-Path $AliasName
+    } else {
+        $path = $env:LOCALAPPDATA + "\Microsoft\WindowsApps\$AliasName"
+    }
+    
+    Use-NtObject($file = Get-NtFile -Path $path -Win32Path -Options OpenReparsePoint,SynchronousIoNonAlert `
+									-Access GenericRead,Synchronize) {
+        $file.GetReparsePoint($true)
+    }
+}
+
+<#
+.SYNOPSIS
+Creates a new execution alias information.
+.DESCRIPTION
+This cmdlet creates a new execution alias for a packaged application.
+.PARAMETER PackageName
+The name of the UWP package.
+.PARAMETER EntryPoint
+The entry point of the application
+.PARAMETER Target
+The target executable path
+.PARAMETER Flags
+Additional flags
+.PARAMETER Version
+Version number
+.EXAMPLE
+Set-ExecutionAlias c:\path\to\alias.exe -PackageName test -EntryPoint test!test -Target c:\test.exe -Flags 48 -Version 3
+Set the alias.exe execution alias.
+#>
+function New-ExecutionAlias
+{
+    Param(
+        [Parameter(Mandatory=$true, Position=0)]
+        [string]$Path,
+        [Parameter(Mandatory=$true, Position=1)]
+        [string]$PackageName,
+        [Parameter(Mandatory=$true, Position=2)]
+        [string]$EntryPoint,
+        [Parameter(Mandatory=$true, Position=3)]
+        [string]$Target,
+        [Int32]$Flags = 48,
+        [Int32]$Version = 3
+    )
+
+	$rp = [NtApiDotNet.ExecutionAliasReparseBuffer]::new($Version, $PackageName, $EntryPoint, $Target, $Flags)
+
+    Use-NtObject($file = New-NtFile -Path $Path -Win32Path -Options OpenReparsePoint,SynchronousIoNonAlert `
+									-Access GenericWrite,Synchronize -Disposition OpenIf) {
+            $file.SetReparsePoint($rp)
+    }
+}
+
+function Start-NtTokenViewer {
+    param(
+        [Parameter(Mandatory=$true, Position=0)]
+        [NtApiDotNet.NtToken]$Token,
+        [string]$Text
+    )
+
+    Use-NtObject($dup_token = $Token.Duplicate()) {
+        $dup_token.Inherit = $true
+        $cmdline = [string]::Format("TokenViewer --handle={0}", $dup_token.Handle.DangerousGetHandle())
+        if ($Text -ne "") {
+            $cmdline += " ""--text=$Text"""
+        }
+        $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\TokenViewer.exe" -InheritHandles
+        $config.InheritHandleList.Add($dup_token.Handle.DangerousGetHandle())
+        Use-NtObject($p = New-Win32Process -Config $config) {
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Display a UI viewer for a NT token.
+.DESCRIPTION
+This function will create an instance of the TokenViewer application to display the opened token.
+.PARAMETER Token
+The token to view.
+.PARAMETER Text
+Additional text to show in title bar for this token.
+.PARAMETER Process
+The process to display the token for.
+.PARAMETER ProcessId
+A process ID of a process to display the token for.
+.PARAMETER Name
+The name of a process to display the token for.
+.PARAMETER MaxTokens
+When getting the name only display at most this number of tokens.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Show-NtToken
+Display the primary token for the current process.
+.EXAMPLE
+Show-NtToken -ProcessId 1234
+Display the primary token for the process with PID 1234.
+.EXAMPLE
+Show-NtToken -Process $process
+Display the primary token for the process specified with an NtProcess object.
+.EXAMPLE
+$ps | Select-Object -First 5 | Show-NtToken
+Display the first 5 primary tokens from a list of processes.
+.EXAMPLE
+Show-NtToken -Token $token
+Display the token specified with an NtToken object.
+.EXAMPLE
+Show-NtToken -Name "notepad.exe"
+Display the primary tokens from accessible processes named notepad.exe.
+.EXAMPLE
+Show-NtToken -Name "notepad.exe" -MaxTokens 5
+Display up to 5 primary tokens from accessible processes named notepad.exe.
+#>
+function Show-NtToken {
+    [CmdletBinding(DefaultParameterSetName = "FromPid")]
+    param(
+		[Parameter(Mandatory=$true, Position=0, ParameterSetName="FromToken", ValueFromPipeline=$true)]
+        [NtApiDotNet.NtToken[]]$Token,
+        [Parameter(Mandatory=$true, Position=0, ParameterSetName="FromProcess", ValueFromPipeline=$true)]
+        [NtApiDotNet.NtProcess[]]$Process,
+        [Parameter(Position=0, ParameterSetName="FromPid")]
+        [int]$ProcessId = $pid,
+        [Parameter(Mandatory=$true, Position=0, ParameterSetName="FromName")]
+        [string]$Name,
+        [Parameter(Position=0, ParameterSetName="FromName")]
+        [int]$MaxTokens = 0
+    )
+
+    PROCESS {
+		if (-not $(Test-Path "$PSScriptRoot\TokenViewer.exe" -PathType Leaf)) {
+			Write-Error "Missing token viewer application $PSScriptRoot\TokenViewer.exe"
+			return
+		}
+		switch($PSCmdlet.ParameterSetName) {
+			"FromProcess" {
+				foreach($p in $Process) {
+					Use-NtObject($t = Get-NtToken -Primary -Process $p) {
+						$text = "$($p.Name):$($p.ProcessId)"
+						Start-NtTokenViewer $t -Text $text
+					}
+				}
+			}
+			"FromName" {
+				Use-NtObject($ps = Get-NtProcess -Name $Name -Access QueryLimitedInformation) {
+					if ($MaxTokens -gt 0) {
+						$ps = $ps | Select-Object -First $MaxTokens
+					}
+					$ps | Show-NtToken
+				}
+			}
+			"FromPid" {
+				$cmdline = [string]::Format("TokenViewer --pid={0}", $ProcessId)
+				$config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\TokenViewer.exe" -InheritHandles
+				Use-NtObject($p = New-Win32Process -Config $config) {
+				}
+			}
+			"FromToken" {
+				foreach($token in $Tokens) {
+					Start-NtTokenViewer $token
+				}
+			}
+		}
+    }
+}
+
+<#
+.SYNOPSIS
 Get process primary token. Here for legacy reasons, use Get-NtToken -Primary.
 #>
 function Get-NtTokenPrimary

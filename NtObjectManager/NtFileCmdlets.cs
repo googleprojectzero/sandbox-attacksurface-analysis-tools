@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using System;
 using System.Management.Automation;
 
 namespace NtObjectManager
@@ -48,7 +49,7 @@ namespace NtObjectManager
         /// <para type="description">The NT object manager path to the object to use.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
-        new public string Path { get; set; }
+        public override string Path { get; set; }
 
         /// <summary>
         /// Determine if the cmdlet can create objects.
@@ -71,15 +72,52 @@ namespace NtObjectManager
         [Parameter]
         public FileOpenOptions Options { get; set; }
 
+        private string ResolveRelativePath(string path, RtlPathType path_type)
+        {
+            var current_path = SessionState.Path.CurrentFileSystemLocation;
+            if (!current_path.Provider.Name.Equals("FileSystem", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Can't make a relative Win32 path when not in a file system drive.");
+            }
+
+            switch (path_type)
+            {
+                case RtlPathType.Relative:
+                    return System.IO.Path.Combine(current_path.Path, path);
+                case RtlPathType.Rooted:
+                    return string.Format("{0}:{1}", current_path.Drive.Name, path);
+                case RtlPathType.DriveRelative:
+                    if (path.Substring(0, 1).Equals(current_path.Drive.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return System.IO.Path.Combine(current_path.Path, path.Substring(2));
+                    }
+                    break;
+            }
+
+            return path;
+        }
+
         /// <summary>
-        /// Virtual method to return the value of the Path variable.
+        /// Virtual method to resolve the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
-        protected override string GetPath()
+        protected override string ResolvePath()
         {
             if (Win32Path)
             {
-                return NtFileUtils.DosFileNameToNt(Path);
+                string path = Path;
+
+                var path_type = NtFileUtils.GetDosPathType(Path);
+                switch (path_type)
+                {
+                    case RtlPathType.Relative:
+                    case RtlPathType.DriveRelative:
+                    case RtlPathType.Rooted:
+                        path = ResolveRelativePath(path, path_type);
+                        break;
+                }
+
+                return NtFileUtils.DosFileNameToNt(path);
             }
             else
             {

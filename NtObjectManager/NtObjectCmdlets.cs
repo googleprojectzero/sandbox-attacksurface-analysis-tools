@@ -25,13 +25,13 @@ namespace NtObjectManager
     /// <summary>
     /// Base object cmdlet.
     /// </summary>
-    public abstract class NtObjectBaseCmdlet : Cmdlet, IDisposable
+    public abstract class NtObjectBaseCmdlet : PSCmdlet, IDisposable
     {
         /// <summary>
         /// <para type="description">The NT object manager path to the object to use.</para>
         /// </summary>
         [Parameter(Position = 0)]
-        public string Path { get; set; }
+        public virtual string Path { get; set; }
 
         /// <summary>
         /// <para type="description">An existing open NT object to use when Path is relative.</para>
@@ -102,13 +102,18 @@ namespace NtObjectManager
         /// </summary>
         protected virtual void VerifyParameters()
         {
-            string path = GetPath();
+            string path = ResolvePath();
             if (path != null)
             {
                 if (!path.StartsWith(@"\") && Root == null)
                 {
                     throw new ArgumentException("Relative paths with no Root directory are not allowed.");
                 }
+            }
+
+            if (Win32Path && Root != null)
+            {
+                throw new ArgumentException("Can't combine Win32Path and Root");
             }
 
             if (CreateDirectories)
@@ -125,11 +130,21 @@ namespace NtObjectManager
             }
         }
 
+        private static string RemoveDrive(string path)
+        {
+            int index = path.IndexOf(@":\");
+            if (index < 0)
+            {
+                throw new ArgumentException("Invalid drive path");
+            }
+            return path.Substring(index + 2);
+        }
+
         /// <summary>
-        /// Virtual method to return the value of the Path variable.
+        /// Virtual method to resolve the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
-        protected virtual string GetPath()
+        protected virtual string ResolvePath()
         {
             if (Win32Path)
             {
@@ -152,7 +167,32 @@ namespace NtObjectManager
                 }
                 return String.Format(@"\{0}", String.Join(@"\", ret));
             }
-            return Path;
+
+            if (Path.StartsWith(@"\") || Root != null)
+            {
+                return Path;
+            }
+
+            var current_path = SessionState.Path.CurrentLocation;
+            if (current_path.Drive is NtObjectManagerProvider.ObjectManagerPSDriveInfo drive)
+            {
+                string root_path = drive.DirectoryRoot.FullPath;
+                if (root_path == @"\")
+                {
+                    root_path = String.Empty;
+                }
+
+                string relative_path = RemoveDrive(current_path.Path);
+                if (relative_path.Length == 0)
+                {
+                    return string.Format(@"{0}\{1}", root_path, Path);
+                }
+                return string.Format(@"{0}\{1}\{2}", root_path, relative_path, Path);
+            }
+            else
+            {
+                throw new ArgumentException("Can't make a relative object path when not in a NtObject drive.");
+            }
         }
 
 
@@ -182,7 +222,7 @@ namespace NtObjectManager
         private IEnumerable<NtObject> CreateDirectoriesAndObject()
         {
             DisposableList<NtObject> objects = new DisposableList<NtObject>();
-            string[] path_parts = GetPath().Split(new char[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] path_parts = ResolvePath().Split(new char[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
             StringBuilder builder = new StringBuilder();
             bool finished = false;
             if (Root == null)
@@ -210,7 +250,7 @@ namespace NtObjectManager
                     }
                     builder.Append(@"\");
                 }
-                objects.Add((NtObject)DoCreateObject(GetPath(), ObjectAttributes, Root, SecurityQualityOfService, GetSecurityDescriptor()));
+                objects.Add((NtObject)DoCreateObject(ResolvePath(), ObjectAttributes, Root, SecurityQualityOfService, GetSecurityDescriptor()));
                 finished = true;
             }
             finally
@@ -232,7 +272,7 @@ namespace NtObjectManager
             VerifyParameters();
             try
             {
-                WriteObject(DoCreateObject(GetPath(), ObjectAttributes, Root, SecurityQualityOfService, GetSecurityDescriptor()));
+                WriteObject(DoCreateObject(ResolvePath(), ObjectAttributes, Root, SecurityQualityOfService, GetSecurityDescriptor()));
             }
             catch (NtException ex)
             {
@@ -340,7 +380,7 @@ namespace NtObjectManager
         /// <para type="description">The NT object manager path to the object to use.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
-        new public string Path { get; set; }
+        public override string Path { get; set; }
 
         /// <summary>
         /// Determine if the cmdlet can create objects.
@@ -349,15 +389,6 @@ namespace NtObjectManager
         protected override bool CanCreateDirectories()
         {
             return false;
-        }
-
-        /// <summary>
-        /// Virtual method to return the value of the Path variable.
-        /// </summary>
-        /// <returns>The object path.</returns>
-        protected override string GetPath()
-        {
-            return Path;
         }
 
         /// <summary>

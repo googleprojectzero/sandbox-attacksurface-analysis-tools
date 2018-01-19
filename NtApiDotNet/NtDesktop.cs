@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32;
 using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -86,7 +87,7 @@ namespace NtApiDotNet
                 SafeKernelObjectHandle handle = NtSystemCalls.NtUserOpenDesktop(obj_attributes, 0, DesktopAccessRights.MaximumAllowed);
                 if (handle.IsInvalid)
                 {
-                    throw new Win32Exception();
+                    throw new SafeWin32Exception();
                 }
                 return new NtDesktop(handle);
             }

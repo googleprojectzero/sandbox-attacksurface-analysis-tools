@@ -63,13 +63,13 @@ namespace NtObjectManager
         /// <para type="description">The NT object manager path to the object to use.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
-        new public string Path { get; set; }
+        public override string Path { get; set; }
 
         /// <summary>
-        /// Virtual method to return the value of the Path variable.
+        /// Virtual method to resolve the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
-        protected override string GetPath()
+        protected override string ResolvePath()
         {
             if (Win32Path)
             {
@@ -146,7 +146,7 @@ namespace NtObjectManager
         /// <para type="description">The path to the hive file to add.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
-        new public string Path { get; set; }
+        public override string Path { get; set; }
 
         /// <summary>
         /// <para type="description">Specifes the native path to where the hive should be loaded.</para>
@@ -164,7 +164,7 @@ namespace NtObjectManager
         /// Virtual method to return the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
-        protected override string GetPath()
+        protected override string ResolvePath()
         {
             if (Win32Path)
             {
@@ -248,13 +248,13 @@ namespace NtObjectManager
         /// <para type="description">The NT object manager path to the object to use.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
-        new public string Path { get; set; }
+        public override string Path { get; set; }
 
         /// <summary>
         /// Virtual method to return the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
-        protected override string GetPath()
+        protected override string ResolvePath()
         {
             if (Win32Path)
             {

@@ -385,9 +385,8 @@ namespace NtApiDotNet
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(length))
             {
-                int return_length;
-                NtStatus status = NtSystemCalls.NtReadVirtualMemory(process, 
-                    new IntPtr(base_address), buffer, buffer.Length, out return_length);
+                NtStatus status = NtSystemCalls.NtReadVirtualMemory(process,
+                    new IntPtr(base_address), buffer, buffer.Length, out int return_length);
                 if (status != NtStatus.STATUS_PARTIAL_COPY)
                 {
                     status.ToNtException();
@@ -408,14 +407,58 @@ namespace NtApiDotNet
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(data))
             {
-                int return_length;
-                NtStatus status = NtSystemCalls.NtWriteVirtualMemory(process, 
-                    new IntPtr(base_address), buffer, buffer.Length, out return_length);
+                NtStatus status = NtSystemCalls.NtWriteVirtualMemory(process,
+                    new IntPtr(base_address), buffer, buffer.Length, out int return_length);
                 if (status != NtStatus.STATUS_PARTIAL_COPY)
                 {
                     status.ToNtException();
                 }
                 return return_length;
+            }
+        }
+
+        /// <summary>
+        /// Read memory from a process.
+        /// </summary>
+        /// <param name="process">The process to read from.</param>
+        /// <param name="base_address">The base address in the process.</param>
+        /// <returns>The array of bytes read from the location. 
+        /// If a read is short then returns fewer bytes than requested.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <typeparam name="T">Type of structure to read.</typeparam>
+        public static T ReadMemory<T>(SafeKernelObjectHandle process, long base_address) where T : new()
+        {
+            using (var buffer = new SafeStructureInOutBuffer<T>())
+            {
+                NtSystemCalls.NtReadVirtualMemory(process,
+                    new IntPtr(base_address), buffer, buffer.Length, out int return_length).ToNtException();
+                if (return_length != buffer.Length)
+                {
+                    throw new NtException(NtStatus.STATUS_PARTIAL_COPY);
+                }
+                return buffer.Result;
+            }
+        }
+
+        /// <summary>
+        /// Write memory to a process.
+        /// </summary>
+        /// <param name="process">The process to write to.</param>
+        /// <param name="base_address">The base address in the process.</param>
+        /// <param name="data">The data to write.</param>
+        /// <returns>The number of bytes written to the location</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <typeparam name="T">Type of structure to write.</typeparam>
+        public static void WriteMemory<T>(SafeKernelObjectHandle process, long base_address, T data) where T : new()
+        {
+            using (var buffer = data.ToBuffer())
+            {
+                NtSystemCalls.NtWriteVirtualMemory(process,
+                    new IntPtr(base_address), buffer, buffer.Length, out int return_length).ToNtException();
+                if (return_length != buffer.Length)
+                {
+                    throw new NtException(NtStatus.STATUS_PARTIAL_COPY);
+                }
             }
         }
 
