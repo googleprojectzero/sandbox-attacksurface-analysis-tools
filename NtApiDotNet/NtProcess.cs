@@ -855,10 +855,9 @@ namespace NtApiDotNet
 
         private NtStatus Query<T>(ProcessInformationClass info_class, out SafeStructureInOutBuffer<T> buffer) where T : new()
         {
-            int return_length = 0;
             buffer = null;
 
-            NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, info_class, SafeHGlobalBuffer.Null, 0, out return_length);
+            NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, info_class, SafeHGlobalBuffer.Null, 0, out int return_length);
             if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH && status != NtStatus.STATUS_BUFFER_TOO_SMALL)
             {
                 return status;
@@ -880,8 +879,7 @@ namespace NtApiDotNet
 
         private SafeStructureInOutBuffer<T> Query<T>(ProcessInformationClass info_class) where T : new()
         {
-            SafeStructureInOutBuffer<T> buffer;
-            Query(info_class, out buffer).ToNtException();
+            Query(info_class, out SafeStructureInOutBuffer<T> buffer).ToNtException();
             return buffer;
         }
 
@@ -889,8 +887,7 @@ namespace NtApiDotNet
         {
             using (var buffer = new SafeStructureInOutBuffer<T>())
             {
-                int return_length = 0;
-                NtSystemCalls.NtQueryInformationProcess(Handle, info_class, buffer, buffer.Length, out return_length).ToNtException();
+                NtSystemCalls.NtQueryInformationProcess(Handle, info_class, buffer, buffer.Length, out int return_length).ToNtException();
                 return buffer.Result;
             }
         }
@@ -966,9 +963,8 @@ namespace NtApiDotNet
         /// <returns>The accessible process, or null if one couldn't be opened.</returns>
         public static NtProcess GetFirstProcess(ProcessAccessRights desired_access)
         {
-            SafeKernelObjectHandle new_handle;
             NtStatus status = NtSystemCalls.NtGetNextProcess(SafeKernelObjectHandle.Null, desired_access,
-                AttributeFlags.None, 0, out new_handle);
+                AttributeFlags.None, 0, out SafeKernelObjectHandle new_handle);
             if (status == NtStatus.STATUS_SUCCESS)
             {
                 return new NtProcess(new_handle);
@@ -983,8 +979,7 @@ namespace NtApiDotNet
         /// <returns>The accessible process, or null if one couldn't be opened.</returns>
         public NtProcess GetNextProcess(ProcessAccessRights desired_access)
         {
-            SafeKernelObjectHandle new_handle;
-            NtStatus status = NtSystemCalls.NtGetNextProcess(Handle, desired_access, AttributeFlags.None, 0, out new_handle);
+            NtStatus status = NtSystemCalls.NtGetNextProcess(Handle, desired_access, AttributeFlags.None, 0, out SafeKernelObjectHandle new_handle);
             if (status == NtStatus.STATUS_SUCCESS)
             {
                 return new NtProcess(new_handle);
@@ -1055,9 +1050,8 @@ namespace NtApiDotNet
             {
                 using (SafeStructureInOutBuffer<ProcessSessionInformation> session_info = new SafeStructureInOutBuffer<ProcessSessionInformation>())
                 {
-                    int return_length = 0;
                     NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInformationClass.ProcessSessionInformation,
-                      session_info, session_info.Length, out return_length).ToNtException();
+                      session_info, session_info.Length, out int return_length).ToNtException();
                     return session_info.Result.SessionId;
                 }
             }
@@ -1137,8 +1131,7 @@ namespace NtApiDotNet
         {
             get
             {
-                SafeStructureInOutBuffer<UnicodeStringOut> buffer;
-                NtStatus status = Query(ProcessInformationClass.ProcessCommandLineInformation, out buffer);
+                NtStatus status = Query(ProcessInformationClass.ProcessCommandLineInformation, out SafeStructureInOutBuffer<UnicodeStringOut> buffer);
                 using (buffer)
                 {
                     // This will fail if process is being torn down, just return an empty string.
@@ -1193,10 +1186,9 @@ namespace NtApiDotNet
         /// <returns>The created process</returns>
         public static NtProcess CreateProcessEx(NtProcess ParentProcess, ProcessCreateFlags Flags, NtSection SectionHandle)
         {
-            SafeKernelObjectHandle process;
             SafeHandle parent_process = ParentProcess != null ? ParentProcess.Handle : Current.Handle;
-            SafeHandle section = SectionHandle != null ? SectionHandle.Handle : null;
-            NtSystemCalls.NtCreateProcessEx(out process, ProcessAccessRights.MaximumAllowed,
+            SafeHandle section = SectionHandle?.Handle;
+            NtSystemCalls.NtCreateProcessEx(out SafeKernelObjectHandle process, ProcessAccessRights.MaximumAllowed,
                 new ObjectAttributes(), parent_process, Flags, section, null, null, 0).ToNtException();
             return new NtProcess(process);
         }
@@ -1239,8 +1231,7 @@ namespace NtApiDotNet
         public string GetImageFilePath(bool native)
         {
             ProcessInformationClass info_class = native ? ProcessInformationClass.ProcessImageFileName : ProcessInformationClass.ProcessImageFileNameWin32;
-            int return_length = 0;
-            NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, info_class, SafeHGlobalBuffer.Null, 0, out return_length);
+            NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, info_class, SafeHGlobalBuffer.Null, 0, out int return_length);
             if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
                 status.ToNtException();
             using (SafeStructureInOutBuffer<UnicodeStringOut> buf = new SafeStructureInOutBuffer<UnicodeStringOut>(return_length, false))
@@ -1379,9 +1370,8 @@ namespace NtApiDotNet
             {
                 using (SafeStructureInOutBuffer<uint> buffer = new SafeStructureInOutBuffer<uint>())
                 {
-                    int return_length;
                     ProcessDepStatus ret = new ProcessDepStatus();
-                    NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInformationClass.ProcessExecuteFlags, buffer, buffer.Length, out return_length);
+                    NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInformationClass.ProcessExecuteFlags, buffer, buffer.Length, out int return_length);
                     if (!status.IsSuccess())
                     {
                         if (status != NtStatus.STATUS_INVALID_PARAMETER)
@@ -1621,10 +1611,9 @@ namespace NtApiDotNet
         /// Set the process device map.
         /// </summary>
         /// <param name="device_map">The device map directory to set.</param>
+        /// <remarks>Note that due to a bug in the Wow64 layer this won't work in a 32 bit process on a 64 bit system.</remarks>
         public void SetProcessDeviceMap(NtDirectory device_map)
         {
-            // Note that due to a bug in the Wow64 layer this won't work in a 32 bit process on
-            // a 64 bit system.
             var device_map_set = new ProcessDeviceMapInformationSet
             {
                 DirectoryHandle = device_map.Handle.DangerousGetHandle()
@@ -1874,9 +1863,8 @@ namespace NtApiDotNet
             // If you want this to be reliable you probably need to suspend the process.
             using (var buf = new SafeHGlobalBuffer((HandleCount + 1000) * 4))
             {
-                int return_length;
                 NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInformationClass.ProcessHandleTable,
-                    buf, buf.Length, out return_length).ToNtException();
+                    buf, buf.Length, out int return_length).ToNtException();
                 int[] ret = new int[return_length / 4];
                 buf.ReadArray(0, ret, 0, ret.Length);
                 return ret;
