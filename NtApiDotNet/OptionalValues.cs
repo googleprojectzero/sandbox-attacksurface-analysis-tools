@@ -140,7 +140,7 @@ namespace NtApiDotNet
     }
 
     /// <summary>
-    /// This class allows a function to specify an optional int32.
+    /// This class allows a function to specify an optional pointer.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public class OptionalPointer
