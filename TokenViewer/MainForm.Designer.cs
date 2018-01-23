@@ -107,6 +107,8 @@
             this.contextMenuStripHandles = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.toolStripMenuItemHandlesOpenToken = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemHandlesRefresh = new System.Windows.Forms.ToolStripMenuItem();
+            this.checkAddServiceSid = new System.Windows.Forms.CheckBox();
+            this.txtServiceSid = new System.Windows.Forms.TextBox();
             tabPageServices = new System.Windows.Forms.TabPage();
             groupBoxAnonymous = new System.Windows.Forms.GroupBox();
             groupBox2 = new System.Windows.Forms.GroupBox();
@@ -158,11 +160,11 @@
             tabPageServices.Controls.Add(groupBoxAnonymous);
             tabPageServices.Controls.Add(groupBox2);
             tabPageServices.Controls.Add(groupBox1);
-            tabPageServices.Location = new System.Drawing.Point(4, 25);
-            tabPageServices.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            tabPageServices.Location = new System.Drawing.Point(4, 29);
+            tabPageServices.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             tabPageServices.Name = "tabPageServices";
-            tabPageServices.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            tabPageServices.Size = new System.Drawing.Size(803, 492);
+            tabPageServices.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            tabPageServices.Size = new System.Drawing.Size(904, 618);
             tabPageServices.TabIndex = 4;
             tabPageServices.Text = "Services";
             tabPageServices.UseVisualStyleBackColor = true;
@@ -170,21 +172,21 @@
             // groupBoxAnonymous
             // 
             groupBoxAnonymous.Controls.Add(this.btnCreateAnonymous);
-            groupBoxAnonymous.Location = new System.Drawing.Point(8, 207);
-            groupBoxAnonymous.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            groupBoxAnonymous.Location = new System.Drawing.Point(9, 259);
+            groupBoxAnonymous.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             groupBoxAnonymous.Name = "groupBoxAnonymous";
-            groupBoxAnonymous.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            groupBoxAnonymous.Size = new System.Drawing.Size(395, 65);
+            groupBoxAnonymous.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            groupBoxAnonymous.Size = new System.Drawing.Size(444, 81);
             groupBoxAnonymous.TabIndex = 3;
             groupBoxAnonymous.TabStop = false;
             groupBoxAnonymous.Text = "Anonymous Token";
             // 
             // btnCreateAnonymous
             // 
-            this.btnCreateAnonymous.Location = new System.Drawing.Point(8, 23);
-            this.btnCreateAnonymous.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnCreateAnonymous.Location = new System.Drawing.Point(9, 29);
+            this.btnCreateAnonymous.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnCreateAnonymous.Name = "btnCreateAnonymous";
-            this.btnCreateAnonymous.Size = new System.Drawing.Size(100, 28);
+            this.btnCreateAnonymous.Size = new System.Drawing.Size(112, 35);
             this.btnCreateAnonymous.TabIndex = 10;
             this.btnCreateAnonymous.Text = "Create";
             this.btnCreateAnonymous.UseVisualStyleBackColor = true;
@@ -193,21 +195,21 @@
             // groupBox2
             // 
             groupBox2.Controls.Add(this.btnClipboardToken);
-            groupBox2.Location = new System.Drawing.Point(8, 134);
-            groupBox2.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            groupBox2.Location = new System.Drawing.Point(9, 168);
+            groupBox2.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             groupBox2.Name = "groupBox2";
-            groupBox2.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            groupBox2.Size = new System.Drawing.Size(395, 65);
+            groupBox2.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            groupBox2.Size = new System.Drawing.Size(444, 81);
             groupBox2.TabIndex = 2;
             groupBox2.TabStop = false;
             groupBox2.Text = "Win32 Clipboard Token";
             // 
             // btnClipboardToken
             // 
-            this.btnClipboardToken.Location = new System.Drawing.Point(8, 23);
-            this.btnClipboardToken.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnClipboardToken.Location = new System.Drawing.Point(9, 29);
+            this.btnClipboardToken.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnClipboardToken.Name = "btnClipboardToken";
-            this.btnClipboardToken.Size = new System.Drawing.Size(100, 28);
+            this.btnClipboardToken.Size = new System.Drawing.Size(112, 35);
             this.btnClipboardToken.TabIndex = 2;
             this.btnClipboardToken.Text = "Create";
             this.btnClipboardToken.UseVisualStyleBackColor = true;
@@ -219,21 +221,21 @@
             groupBox1.Controls.Add(this.btnStartServer);
             groupBox1.Controls.Add(this.txtPipeName);
             groupBox1.Controls.Add(label3);
-            groupBox1.Location = new System.Drawing.Point(8, 7);
-            groupBox1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            groupBox1.Location = new System.Drawing.Point(9, 9);
+            groupBox1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             groupBox1.Name = "groupBox1";
-            groupBox1.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            groupBox1.Size = new System.Drawing.Size(395, 119);
+            groupBox1.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            groupBox1.Size = new System.Drawing.Size(444, 149);
             groupBox1.TabIndex = 1;
             groupBox1.TabStop = false;
             groupBox1.Text = "Named Pipe";
             // 
             // btnPipeConnect
             // 
-            this.btnPipeConnect.Location = new System.Drawing.Point(145, 76);
-            this.btnPipeConnect.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnPipeConnect.Location = new System.Drawing.Point(163, 95);
+            this.btnPipeConnect.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnPipeConnect.Name = "btnPipeConnect";
-            this.btnPipeConnect.Size = new System.Drawing.Size(100, 28);
+            this.btnPipeConnect.Size = new System.Drawing.Size(112, 35);
             this.btnPipeConnect.TabIndex = 10;
             this.btnPipeConnect.Text = "Connect";
             this.btnPipeConnect.UseVisualStyleBackColor = true;
@@ -241,10 +243,10 @@
             // 
             // btnStartServer
             // 
-            this.btnStartServer.Location = new System.Drawing.Point(8, 76);
-            this.btnStartServer.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnStartServer.Location = new System.Drawing.Point(9, 95);
+            this.btnStartServer.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnStartServer.Name = "btnStartServer";
-            this.btnStartServer.Size = new System.Drawing.Size(100, 28);
+            this.btnStartServer.Size = new System.Drawing.Size(112, 35);
             this.btnStartServer.TabIndex = 9;
             this.btnStartServer.Text = "Start Server";
             this.btnStartServer.UseVisualStyleBackColor = true;
@@ -252,20 +254,20 @@
             // 
             // txtPipeName
             // 
-            this.txtPipeName.Location = new System.Drawing.Point(111, 28);
-            this.txtPipeName.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.txtPipeName.Location = new System.Drawing.Point(125, 35);
+            this.txtPipeName.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.txtPipeName.Name = "txtPipeName";
-            this.txtPipeName.Size = new System.Drawing.Size(259, 22);
+            this.txtPipeName.Size = new System.Drawing.Size(291, 26);
             this.txtPipeName.TabIndex = 8;
             this.txtPipeName.Text = "dummypipe";
             // 
             // label3
             // 
             label3.AutoSize = true;
-            label3.Location = new System.Drawing.Point(8, 32);
+            label3.Location = new System.Drawing.Point(9, 40);
             label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label3.Name = "label3";
-            label3.Size = new System.Drawing.Size(81, 17);
+            label3.Size = new System.Drawing.Size(90, 20);
             label3.TabIndex = 7;
             label3.Text = "Pipe Name:";
             // 
@@ -273,35 +275,37 @@
             // 
             tabPageGeneral.Controls.Add(this.groupBoxServiceAccounts);
             tabPageGeneral.Controls.Add(groupBoxLogonUser);
-            tabPageGeneral.Location = new System.Drawing.Point(4, 25);
-            tabPageGeneral.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            tabPageGeneral.Location = new System.Drawing.Point(4, 29);
+            tabPageGeneral.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             tabPageGeneral.Name = "tabPageGeneral";
-            tabPageGeneral.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            tabPageGeneral.Size = new System.Drawing.Size(803, 492);
+            tabPageGeneral.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            tabPageGeneral.Size = new System.Drawing.Size(904, 618);
             tabPageGeneral.TabIndex = 3;
             tabPageGeneral.Text = "Logon User";
             tabPageGeneral.UseVisualStyleBackColor = true;
             // 
             // groupBoxServiceAccounts
             // 
+            this.groupBoxServiceAccounts.Controls.Add(this.txtServiceSid);
+            this.groupBoxServiceAccounts.Controls.Add(this.checkAddServiceSid);
             this.groupBoxServiceAccounts.Controls.Add(this.btnCreateSystem);
             this.groupBoxServiceAccounts.Controls.Add(this.btnCreateNetworkService);
             this.groupBoxServiceAccounts.Controls.Add(this.btnCreateLocalService);
-            this.groupBoxServiceAccounts.Location = new System.Drawing.Point(8, 240);
-            this.groupBoxServiceAccounts.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.groupBoxServiceAccounts.Location = new System.Drawing.Point(9, 300);
+            this.groupBoxServiceAccounts.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.groupBoxServiceAccounts.Name = "groupBoxServiceAccounts";
-            this.groupBoxServiceAccounts.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.groupBoxServiceAccounts.Size = new System.Drawing.Size(411, 63);
+            this.groupBoxServiceAccounts.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.groupBoxServiceAccounts.Size = new System.Drawing.Size(462, 117);
             this.groupBoxServiceAccounts.TabIndex = 2;
             this.groupBoxServiceAccounts.TabStop = false;
             this.groupBoxServiceAccounts.Text = "Service Accounts";
             // 
             // btnCreateSystem
             // 
-            this.btnCreateSystem.Location = new System.Drawing.Point(295, 23);
-            this.btnCreateSystem.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnCreateSystem.Location = new System.Drawing.Point(332, 29);
+            this.btnCreateSystem.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnCreateSystem.Name = "btnCreateSystem";
-            this.btnCreateSystem.Size = new System.Drawing.Size(100, 28);
+            this.btnCreateSystem.Size = new System.Drawing.Size(112, 35);
             this.btnCreateSystem.TabIndex = 13;
             this.btnCreateSystem.Text = "System";
             this.btnCreateSystem.UseVisualStyleBackColor = true;
@@ -309,10 +313,10 @@
             // 
             // btnCreateNetworkService
             // 
-            this.btnCreateNetworkService.Location = new System.Drawing.Point(149, 23);
-            this.btnCreateNetworkService.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnCreateNetworkService.Location = new System.Drawing.Point(168, 29);
+            this.btnCreateNetworkService.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnCreateNetworkService.Name = "btnCreateNetworkService";
-            this.btnCreateNetworkService.Size = new System.Drawing.Size(137, 28);
+            this.btnCreateNetworkService.Size = new System.Drawing.Size(154, 35);
             this.btnCreateNetworkService.TabIndex = 12;
             this.btnCreateNetworkService.Text = "Network Service";
             this.btnCreateNetworkService.UseVisualStyleBackColor = true;
@@ -320,10 +324,10 @@
             // 
             // btnCreateLocalService
             // 
-            this.btnCreateLocalService.Location = new System.Drawing.Point(19, 23);
-            this.btnCreateLocalService.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnCreateLocalService.Location = new System.Drawing.Point(21, 29);
+            this.btnCreateLocalService.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnCreateLocalService.Name = "btnCreateLocalService";
-            this.btnCreateLocalService.Size = new System.Drawing.Size(123, 28);
+            this.btnCreateLocalService.Size = new System.Drawing.Size(138, 35);
             this.btnCreateLocalService.TabIndex = 11;
             this.btnCreateLocalService.Text = "Local Service";
             this.btnCreateLocalService.UseVisualStyleBackColor = true;
@@ -342,11 +346,11 @@
             groupBoxLogonUser.Controls.Add(this.txtS4URealm);
             groupBoxLogonUser.Controls.Add(this.txtS4UUserName);
             groupBoxLogonUser.Controls.Add(this.labelUsername);
-            groupBoxLogonUser.Location = new System.Drawing.Point(8, 7);
-            groupBoxLogonUser.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            groupBoxLogonUser.Location = new System.Drawing.Point(9, 9);
+            groupBoxLogonUser.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             groupBoxLogonUser.Name = "groupBoxLogonUser";
-            groupBoxLogonUser.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            groupBoxLogonUser.Size = new System.Drawing.Size(411, 225);
+            groupBoxLogonUser.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            groupBoxLogonUser.Size = new System.Drawing.Size(462, 281);
             groupBoxLogonUser.TabIndex = 0;
             groupBoxLogonUser.TabStop = false;
             groupBoxLogonUser.Text = "Logon User";
@@ -354,10 +358,10 @@
             // radioLUS4U
             // 
             this.radioLUS4U.AutoSize = true;
-            this.radioLUS4U.Location = new System.Drawing.Point(120, 23);
-            this.radioLUS4U.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.radioLUS4U.Location = new System.Drawing.Point(135, 29);
+            this.radioLUS4U.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.radioLUS4U.Name = "radioLUS4U";
-            this.radioLUS4U.Size = new System.Drawing.Size(136, 21);
+            this.radioLUS4U.Size = new System.Drawing.Size(153, 24);
             this.radioLUS4U.TabIndex = 17;
             this.radioLUS4U.Text = "Services 4 Users";
             this.radioLUS4U.UseVisualStyleBackColor = true;
@@ -367,10 +371,10 @@
             // 
             this.radioLUNormal.AutoSize = true;
             this.radioLUNormal.Checked = true;
-            this.radioLUNormal.Location = new System.Drawing.Point(21, 23);
-            this.radioLUNormal.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.radioLUNormal.Location = new System.Drawing.Point(24, 29);
+            this.radioLUNormal.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.radioLUNormal.Name = "radioLUNormal";
-            this.radioLUNormal.Size = new System.Drawing.Size(74, 21);
+            this.radioLUNormal.Size = new System.Drawing.Size(84, 24);
             this.radioLUNormal.TabIndex = 16;
             this.radioLUNormal.TabStop = true;
             this.radioLUNormal.Text = "Normal";
@@ -378,20 +382,20 @@
             // 
             // txtLUPassword
             // 
-            this.txtLUPassword.Location = new System.Drawing.Point(120, 121);
-            this.txtLUPassword.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.txtLUPassword.Location = new System.Drawing.Point(135, 151);
+            this.txtLUPassword.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.txtLUPassword.Name = "txtLUPassword";
-            this.txtLUPassword.Size = new System.Drawing.Size(259, 22);
+            this.txtLUPassword.Size = new System.Drawing.Size(291, 26);
             this.txtLUPassword.TabIndex = 15;
             this.txtLUPassword.UseSystemPasswordChar = true;
             // 
             // label6
             // 
             label6.AutoSize = true;
-            label6.Location = new System.Drawing.Point(17, 122);
+            label6.Location = new System.Drawing.Point(19, 152);
             label6.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label6.Name = "label6";
-            label6.Size = new System.Drawing.Size(73, 17);
+            label6.Size = new System.Drawing.Size(82, 20);
             label6.TabIndex = 14;
             label6.Text = "Password:";
             // 
@@ -399,28 +403,28 @@
             // 
             this.comboBoxS4ULogonType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxS4ULogonType.FormattingEnabled = true;
-            this.comboBoxS4ULogonType.Location = new System.Drawing.Point(120, 153);
-            this.comboBoxS4ULogonType.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.comboBoxS4ULogonType.Location = new System.Drawing.Point(135, 191);
+            this.comboBoxS4ULogonType.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.comboBoxS4ULogonType.Name = "comboBoxS4ULogonType";
-            this.comboBoxS4ULogonType.Size = new System.Drawing.Size(160, 24);
+            this.comboBoxS4ULogonType.Size = new System.Drawing.Size(180, 28);
             this.comboBoxS4ULogonType.TabIndex = 11;
             // 
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new System.Drawing.Point(17, 156);
+            label2.Location = new System.Drawing.Point(19, 195);
             label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label2.Name = "label2";
-            label2.Size = new System.Drawing.Size(88, 17);
+            label2.Size = new System.Drawing.Size(96, 20);
             label2.TabIndex = 10;
             label2.Text = "Logon Type:";
             // 
             // btnCreteS4U
             // 
-            this.btnCreteS4U.Location = new System.Drawing.Point(21, 186);
-            this.btnCreteS4U.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnCreteS4U.Location = new System.Drawing.Point(24, 232);
+            this.btnCreteS4U.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnCreteS4U.Name = "btnCreteS4U";
-            this.btnCreteS4U.Size = new System.Drawing.Size(100, 28);
+            this.btnCreteS4U.Size = new System.Drawing.Size(112, 35);
             this.btnCreteS4U.TabIndex = 9;
             this.btnCreteS4U.Text = "Create";
             this.btnCreteS4U.UseVisualStyleBackColor = true;
@@ -429,36 +433,36 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(17, 89);
+            this.label1.Location = new System.Drawing.Point(19, 111);
             this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(60, 17);
+            this.label1.Size = new System.Drawing.Size(68, 20);
             this.label1.TabIndex = 8;
             this.label1.Text = "Domain:";
             // 
             // txtS4URealm
             // 
-            this.txtS4URealm.Location = new System.Drawing.Point(120, 89);
-            this.txtS4URealm.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.txtS4URealm.Location = new System.Drawing.Point(135, 111);
+            this.txtS4URealm.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.txtS4URealm.Name = "txtS4URealm";
-            this.txtS4URealm.Size = new System.Drawing.Size(259, 22);
+            this.txtS4URealm.Size = new System.Drawing.Size(291, 26);
             this.txtS4URealm.TabIndex = 7;
             // 
             // txtS4UUserName
             // 
-            this.txtS4UUserName.Location = new System.Drawing.Point(120, 55);
-            this.txtS4UUserName.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.txtS4UUserName.Location = new System.Drawing.Point(135, 69);
+            this.txtS4UUserName.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.txtS4UUserName.Name = "txtS4UUserName";
-            this.txtS4UUserName.Size = new System.Drawing.Size(259, 22);
+            this.txtS4UUserName.Size = new System.Drawing.Size(291, 26);
             this.txtS4UUserName.TabIndex = 6;
             // 
             // labelUsername
             // 
             this.labelUsername.AutoSize = true;
-            this.labelUsername.Location = new System.Drawing.Point(17, 59);
+            this.labelUsername.Location = new System.Drawing.Point(19, 74);
             this.labelUsername.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.labelUsername.Name = "labelUsername";
-            this.labelUsername.Size = new System.Drawing.Size(77, 17);
+            this.labelUsername.Size = new System.Drawing.Size(87, 20);
             this.labelUsername.TabIndex = 5;
             this.labelUsername.Text = "Username:";
             // 
@@ -480,10 +484,10 @@
             // label4
             // 
             label4.AutoSize = true;
-            label4.Location = new System.Drawing.Point(145, 14);
+            label4.Location = new System.Drawing.Point(163, 18);
             label4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label4.Name = "label4";
-            label4.Size = new System.Drawing.Size(84, 17);
+            label4.Size = new System.Drawing.Size(94, 20);
             label4.TabIndex = 3;
             label4.Text = "Name Filter:";
             // 
@@ -554,12 +558,12 @@
             this.openTokenToolStripMenuItem,
             this.refreshToolStripMenuItem});
             this.contextMenuStripProcesses.Name = "contextMenuStripProcesses";
-            this.contextMenuStripProcesses.Size = new System.Drawing.Size(158, 52);
+            this.contextMenuStripProcesses.Size = new System.Drawing.Size(180, 64);
             // 
             // openTokenToolStripMenuItem
             // 
             this.openTokenToolStripMenuItem.Name = "openTokenToolStripMenuItem";
-            this.openTokenToolStripMenuItem.Size = new System.Drawing.Size(157, 24);
+            this.openTokenToolStripMenuItem.Size = new System.Drawing.Size(179, 30);
             this.openTokenToolStripMenuItem.Text = "Open Token";
             this.openTokenToolStripMenuItem.Click += new System.EventHandler(this.openTokenToolStripMenuItem_Click);
             // 
@@ -567,7 +571,7 @@
             // 
             this.refreshToolStripMenuItem.Name = "refreshToolStripMenuItem";
             this.refreshToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F5;
-            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(157, 24);
+            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(179, 30);
             this.refreshToolStripMenuItem.Text = "Refresh";
             this.refreshToolStripMenuItem.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
             // 
@@ -579,19 +583,19 @@
             this.openProcessTokenToolStripMenuItem,
             this.toolStripMenuItemRefreshThreads});
             this.contextMenuStripThreads.Name = "contextMenuStripProcesses";
-            this.contextMenuStripThreads.Size = new System.Drawing.Size(211, 76);
+            this.contextMenuStripThreads.Size = new System.Drawing.Size(245, 94);
             // 
             // toolStripMenuItemOpenThreadToken
             // 
             this.toolStripMenuItemOpenThreadToken.Name = "toolStripMenuItemOpenThreadToken";
-            this.toolStripMenuItemOpenThreadToken.Size = new System.Drawing.Size(210, 24);
+            this.toolStripMenuItemOpenThreadToken.Size = new System.Drawing.Size(244, 30);
             this.toolStripMenuItemOpenThreadToken.Text = "Open Thread Token";
             this.toolStripMenuItemOpenThreadToken.Click += new System.EventHandler(this.toolStripMenuItemOpenThreadToken_Click);
             // 
             // openProcessTokenToolStripMenuItem
             // 
             this.openProcessTokenToolStripMenuItem.Name = "openProcessTokenToolStripMenuItem";
-            this.openProcessTokenToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
+            this.openProcessTokenToolStripMenuItem.Size = new System.Drawing.Size(244, 30);
             this.openProcessTokenToolStripMenuItem.Text = "Open Process Token";
             this.openProcessTokenToolStripMenuItem.Click += new System.EventHandler(this.openProcessTokenToolStripMenuItem_Click);
             // 
@@ -599,7 +603,7 @@
             // 
             this.toolStripMenuItemRefreshThreads.Name = "toolStripMenuItemRefreshThreads";
             this.toolStripMenuItemRefreshThreads.ShortcutKeys = System.Windows.Forms.Keys.F5;
-            this.toolStripMenuItemRefreshThreads.Size = new System.Drawing.Size(210, 24);
+            this.toolStripMenuItemRefreshThreads.Size = new System.Drawing.Size(244, 30);
             this.toolStripMenuItemRefreshThreads.Text = "Refresh";
             this.toolStripMenuItemRefreshThreads.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
             // 
@@ -610,12 +614,12 @@
             this.openSessionTokenToolStripMenuItem,
             this.refreshSessionsToolStripMenuItem});
             this.contextMenuStripSessions.Name = "contextMenuStripSessions";
-            this.contextMenuStripSessions.Size = new System.Drawing.Size(158, 52);
+            this.contextMenuStripSessions.Size = new System.Drawing.Size(180, 64);
             // 
             // openSessionTokenToolStripMenuItem
             // 
             this.openSessionTokenToolStripMenuItem.Name = "openSessionTokenToolStripMenuItem";
-            this.openSessionTokenToolStripMenuItem.Size = new System.Drawing.Size(157, 24);
+            this.openSessionTokenToolStripMenuItem.Size = new System.Drawing.Size(179, 30);
             this.openSessionTokenToolStripMenuItem.Text = "Open Token";
             this.openSessionTokenToolStripMenuItem.Click += new System.EventHandler(this.openSessionTokenToolStripMenuItem_Click);
             // 
@@ -623,7 +627,7 @@
             // 
             this.refreshSessionsToolStripMenuItem.Name = "refreshSessionsToolStripMenuItem";
             this.refreshSessionsToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F5;
-            this.refreshSessionsToolStripMenuItem.Size = new System.Drawing.Size(157, 24);
+            this.refreshSessionsToolStripMenuItem.Size = new System.Drawing.Size(179, 30);
             this.refreshSessionsToolStripMenuItem.Text = "Refresh";
             this.refreshSessionsToolStripMenuItem.Click += new System.EventHandler(this.refreshSessionsToolStripMenuItem_Click);
             // 
@@ -631,21 +635,21 @@
             // 
             this.tabPageSessions.Controls.Add(this.btnRefreshSessions);
             this.tabPageSessions.Controls.Add(this.listViewSessions);
-            this.tabPageSessions.Location = new System.Drawing.Point(4, 25);
-            this.tabPageSessions.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tabPageSessions.Location = new System.Drawing.Point(4, 29);
+            this.tabPageSessions.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.tabPageSessions.Name = "tabPageSessions";
-            this.tabPageSessions.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.tabPageSessions.Size = new System.Drawing.Size(803, 492);
+            this.tabPageSessions.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.tabPageSessions.Size = new System.Drawing.Size(904, 618);
             this.tabPageSessions.TabIndex = 6;
             this.tabPageSessions.Text = "Sessions";
             this.tabPageSessions.UseVisualStyleBackColor = true;
             // 
             // btnRefreshSessions
             // 
-            this.btnRefreshSessions.Location = new System.Drawing.Point(8, 4);
-            this.btnRefreshSessions.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnRefreshSessions.Location = new System.Drawing.Point(9, 5);
+            this.btnRefreshSessions.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnRefreshSessions.Name = "btnRefreshSessions";
-            this.btnRefreshSessions.Size = new System.Drawing.Size(100, 28);
+            this.btnRefreshSessions.Size = new System.Drawing.Size(112, 35);
             this.btnRefreshSessions.TabIndex = 1;
             this.btnRefreshSessions.Text = "Refresh";
             this.btnRefreshSessions.UseVisualStyleBackColor = true;
@@ -661,11 +665,11 @@
             columnHeaderUserName});
             this.listViewSessions.ContextMenuStrip = this.contextMenuStripSessions;
             this.listViewSessions.FullRowSelect = true;
-            this.listViewSessions.Location = new System.Drawing.Point(0, 34);
-            this.listViewSessions.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.listViewSessions.Location = new System.Drawing.Point(0, 42);
+            this.listViewSessions.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.listViewSessions.MultiSelect = false;
             this.listViewSessions.Name = "listViewSessions";
-            this.listViewSessions.Size = new System.Drawing.Size(795, 450);
+            this.listViewSessions.Size = new System.Drawing.Size(894, 562);
             this.listViewSessions.TabIndex = 0;
             this.listViewSessions.UseCompatibleStateImageBehavior = false;
             this.listViewSessions.View = System.Windows.Forms.View.Details;
@@ -674,11 +678,11 @@
             // tabPageThreads
             // 
             this.tabPageThreads.Controls.Add(this.listViewThreads);
-            this.tabPageThreads.Location = new System.Drawing.Point(4, 25);
-            this.tabPageThreads.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tabPageThreads.Location = new System.Drawing.Point(4, 29);
+            this.tabPageThreads.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.tabPageThreads.Name = "tabPageThreads";
-            this.tabPageThreads.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.tabPageThreads.Size = new System.Drawing.Size(803, 492);
+            this.tabPageThreads.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.tabPageThreads.Size = new System.Drawing.Size(904, 618);
             this.tabPageThreads.TabIndex = 5;
             this.tabPageThreads.Text = "Threads";
             this.tabPageThreads.UseVisualStyleBackColor = true;
@@ -693,10 +697,10 @@
             this.listViewThreads.ContextMenuStrip = this.contextMenuStripThreads;
             this.listViewThreads.Dock = System.Windows.Forms.DockStyle.Fill;
             this.listViewThreads.FullRowSelect = true;
-            this.listViewThreads.Location = new System.Drawing.Point(4, 4);
-            this.listViewThreads.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.listViewThreads.Location = new System.Drawing.Point(4, 5);
+            this.listViewThreads.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.listViewThreads.Name = "listViewThreads";
-            this.listViewThreads.Size = new System.Drawing.Size(795, 484);
+            this.listViewThreads.Size = new System.Drawing.Size(896, 608);
             this.listViewThreads.TabIndex = 0;
             this.listViewThreads.UseCompatibleStateImageBehavior = false;
             this.listViewThreads.View = System.Windows.Forms.View.Details;
@@ -726,11 +730,11 @@
             this.tabPageProcesses.Controls.Add(label4);
             this.tabPageProcesses.Controls.Add(this.checkBoxUnrestricted);
             this.tabPageProcesses.Controls.Add(this.btnCurrentProcess);
-            this.tabPageProcesses.Location = new System.Drawing.Point(4, 25);
-            this.tabPageProcesses.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tabPageProcesses.Location = new System.Drawing.Point(4, 29);
+            this.tabPageProcesses.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.tabPageProcesses.Name = "tabPageProcesses";
-            this.tabPageProcesses.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.tabPageProcesses.Size = new System.Drawing.Size(803, 492);
+            this.tabPageProcesses.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.tabPageProcesses.Size = new System.Drawing.Size(904, 618);
             this.tabPageProcesses.TabIndex = 2;
             this.tabPageProcesses.Text = "Processes";
             this.tabPageProcesses.UseVisualStyleBackColor = true;
@@ -749,11 +753,11 @@
             columnHeaderProcessAC});
             this.listViewProcesses.ContextMenuStrip = this.contextMenuStripProcesses;
             this.listViewProcesses.FullRowSelect = true;
-            this.listViewProcesses.Location = new System.Drawing.Point(4, 43);
-            this.listViewProcesses.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.listViewProcesses.Location = new System.Drawing.Point(4, 54);
+            this.listViewProcesses.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.listViewProcesses.MultiSelect = false;
             this.listViewProcesses.Name = "listViewProcesses";
-            this.listViewProcesses.Size = new System.Drawing.Size(795, 445);
+            this.listViewProcesses.Size = new System.Drawing.Size(894, 555);
             this.listViewProcesses.TabIndex = 6;
             this.listViewProcesses.UseCompatibleStateImageBehavior = false;
             this.listViewProcesses.View = System.Windows.Forms.View.Details;
@@ -762,18 +766,18 @@
             // 
             // txtFilter
             // 
-            this.txtFilter.Location = new System.Drawing.Point(237, 10);
-            this.txtFilter.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.txtFilter.Location = new System.Drawing.Point(267, 12);
+            this.txtFilter.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.txtFilter.Name = "txtFilter";
-            this.txtFilter.Size = new System.Drawing.Size(185, 22);
+            this.txtFilter.Size = new System.Drawing.Size(208, 26);
             this.txtFilter.TabIndex = 4;
             // 
             // btnFilter
             // 
-            this.btnFilter.Location = new System.Drawing.Point(584, 6);
-            this.btnFilter.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnFilter.Location = new System.Drawing.Point(657, 8);
+            this.btnFilter.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnFilter.Name = "btnFilter";
-            this.btnFilter.Size = new System.Drawing.Size(100, 28);
+            this.btnFilter.Size = new System.Drawing.Size(112, 35);
             this.btnFilter.TabIndex = 5;
             this.btnFilter.Text = "Apply Filter";
             this.btnFilter.UseVisualStyleBackColor = true;
@@ -782,20 +786,20 @@
             // checkBoxUnrestricted
             // 
             this.checkBoxUnrestricted.AutoSize = true;
-            this.checkBoxUnrestricted.Location = new System.Drawing.Point(432, 10);
-            this.checkBoxUnrestricted.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.checkBoxUnrestricted.Location = new System.Drawing.Point(486, 12);
+            this.checkBoxUnrestricted.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.checkBoxUnrestricted.Name = "checkBoxUnrestricted";
-            this.checkBoxUnrestricted.Size = new System.Drawing.Size(140, 21);
+            this.checkBoxUnrestricted.Size = new System.Drawing.Size(159, 24);
             this.checkBoxUnrestricted.TabIndex = 2;
             this.checkBoxUnrestricted.Text = "Hide Unrestricted";
             this.checkBoxUnrestricted.UseVisualStyleBackColor = true;
             // 
             // btnCurrentProcess
             // 
-            this.btnCurrentProcess.Location = new System.Drawing.Point(4, 7);
-            this.btnCurrentProcess.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnCurrentProcess.Location = new System.Drawing.Point(4, 9);
+            this.btnCurrentProcess.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnCurrentProcess.Name = "btnCurrentProcess";
-            this.btnCurrentProcess.Size = new System.Drawing.Size(133, 28);
+            this.btnCurrentProcess.Size = new System.Drawing.Size(150, 35);
             this.btnCurrentProcess.TabIndex = 1;
             this.btnCurrentProcess.Text = "Current Process";
             this.btnCurrentProcess.UseVisualStyleBackColor = true;
@@ -811,31 +815,31 @@
             this.tabControlTests.Controls.Add(tabPageServices);
             this.tabControlTests.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControlTests.Location = new System.Drawing.Point(0, 0);
-            this.tabControlTests.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tabControlTests.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.tabControlTests.Name = "tabControlTests";
             this.tabControlTests.SelectedIndex = 0;
-            this.tabControlTests.Size = new System.Drawing.Size(811, 521);
+            this.tabControlTests.Size = new System.Drawing.Size(912, 651);
             this.tabControlTests.TabIndex = 0;
             // 
             // tabPageHandles
             // 
             this.tabPageHandles.Controls.Add(this.btnRefreshHandles);
             this.tabPageHandles.Controls.Add(this.listViewHandles);
-            this.tabPageHandles.Location = new System.Drawing.Point(4, 25);
-            this.tabPageHandles.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tabPageHandles.Location = new System.Drawing.Point(4, 29);
+            this.tabPageHandles.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.tabPageHandles.Name = "tabPageHandles";
-            this.tabPageHandles.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.tabPageHandles.Size = new System.Drawing.Size(803, 492);
+            this.tabPageHandles.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.tabPageHandles.Size = new System.Drawing.Size(904, 618);
             this.tabPageHandles.TabIndex = 7;
             this.tabPageHandles.Text = "Handles";
             this.tabPageHandles.UseVisualStyleBackColor = true;
             // 
             // btnRefreshHandles
             // 
-            this.btnRefreshHandles.Location = new System.Drawing.Point(4, 4);
-            this.btnRefreshHandles.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnRefreshHandles.Location = new System.Drawing.Point(4, 5);
+            this.btnRefreshHandles.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnRefreshHandles.Name = "btnRefreshHandles";
-            this.btnRefreshHandles.Size = new System.Drawing.Size(100, 28);
+            this.btnRefreshHandles.Size = new System.Drawing.Size(112, 35);
             this.btnRefreshHandles.TabIndex = 8;
             this.btnRefreshHandles.Text = "Refresh";
             this.btnRefreshHandles.UseVisualStyleBackColor = true;
@@ -858,11 +862,11 @@
             columnHeaderHandleImpLevel});
             this.listViewHandles.ContextMenuStrip = this.contextMenuStripHandles;
             this.listViewHandles.FullRowSelect = true;
-            this.listViewHandles.Location = new System.Drawing.Point(0, 39);
-            this.listViewHandles.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.listViewHandles.Location = new System.Drawing.Point(0, 49);
+            this.listViewHandles.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.listViewHandles.MultiSelect = false;
             this.listViewHandles.Name = "listViewHandles";
-            this.listViewHandles.Size = new System.Drawing.Size(795, 448);
+            this.listViewHandles.Size = new System.Drawing.Size(894, 559);
             this.listViewHandles.TabIndex = 7;
             this.listViewHandles.UseCompatibleStateImageBehavior = false;
             this.listViewHandles.View = System.Windows.Forms.View.Details;
@@ -876,12 +880,12 @@
             this.toolStripMenuItemHandlesOpenToken,
             this.toolStripMenuItemHandlesRefresh});
             this.contextMenuStripHandles.Name = "contextMenuStripSessions";
-            this.contextMenuStripHandles.Size = new System.Drawing.Size(158, 52);
+            this.contextMenuStripHandles.Size = new System.Drawing.Size(180, 64);
             // 
             // toolStripMenuItemHandlesOpenToken
             // 
             this.toolStripMenuItemHandlesOpenToken.Name = "toolStripMenuItemHandlesOpenToken";
-            this.toolStripMenuItemHandlesOpenToken.Size = new System.Drawing.Size(157, 24);
+            this.toolStripMenuItemHandlesOpenToken.Size = new System.Drawing.Size(179, 30);
             this.toolStripMenuItemHandlesOpenToken.Text = "Open Token";
             this.toolStripMenuItemHandlesOpenToken.Click += new System.EventHandler(this.toolStripMenuItemHandlesOpenToken_Click);
             // 
@@ -889,18 +893,38 @@
             // 
             this.toolStripMenuItemHandlesRefresh.Name = "toolStripMenuItemHandlesRefresh";
             this.toolStripMenuItemHandlesRefresh.ShortcutKeys = System.Windows.Forms.Keys.F5;
-            this.toolStripMenuItemHandlesRefresh.Size = new System.Drawing.Size(157, 24);
+            this.toolStripMenuItemHandlesRefresh.Size = new System.Drawing.Size(179, 30);
             this.toolStripMenuItemHandlesRefresh.Text = "Refresh";
             this.toolStripMenuItemHandlesRefresh.Click += new System.EventHandler(this.btnRefreshHandles_Click);
             // 
+            // checkAddServiceSid
+            // 
+            this.checkAddServiceSid.AutoSize = true;
+            this.checkAddServiceSid.Location = new System.Drawing.Point(24, 78);
+            this.checkAddServiceSid.Name = "checkAddServiceSid";
+            this.checkAddServiceSid.Size = new System.Drawing.Size(147, 24);
+            this.checkAddServiceSid.TabIndex = 14;
+            this.checkAddServiceSid.Text = "Add Service Sid";
+            this.checkAddServiceSid.UseVisualStyleBackColor = true;
+            this.checkAddServiceSid.CheckedChanged += new System.EventHandler(this.checkAddServiceSid_CheckedChanged);
+            // 
+            // txtServiceSid
+            // 
+            this.txtServiceSid.Enabled = false;
+            this.txtServiceSid.Location = new System.Drawing.Point(177, 76);
+            this.txtServiceSid.Name = "txtServiceSid";
+            this.txtServiceSid.Size = new System.Drawing.Size(267, 26);
+            this.txtServiceSid.TabIndex = 15;
+            this.txtServiceSid.Text = "TrustedInstaller";
+            // 
             // MainForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(811, 521);
+            this.ClientSize = new System.Drawing.Size(912, 651);
             this.Controls.Add(this.tabControlTests);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Token Viewer";
@@ -912,6 +936,7 @@
             groupBox1.PerformLayout();
             tabPageGeneral.ResumeLayout(false);
             this.groupBoxServiceAccounts.ResumeLayout(false);
+            this.groupBoxServiceAccounts.PerformLayout();
             groupBoxLogonUser.ResumeLayout(false);
             groupBoxLogonUser.PerformLayout();
             this.contextMenuStripProcesses.ResumeLayout(false);
@@ -978,6 +1003,8 @@
         private System.Windows.Forms.ContextMenuStrip contextMenuStripHandles;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemHandlesOpenToken;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemHandlesRefresh;
+        private System.Windows.Forms.TextBox txtServiceSid;
+        private System.Windows.Forms.CheckBox checkAddServiceSid;
     }
 }
 

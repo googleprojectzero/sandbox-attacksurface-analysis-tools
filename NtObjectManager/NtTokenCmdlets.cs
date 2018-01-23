@@ -300,7 +300,7 @@ namespace NtObjectManager
 
         private NtToken GetLogonToken(TokenAccessRights desired_access)
         {
-            using (NtToken token = TokenUtils.GetLogonUserToken(User, Domain, Password, LogonType))
+            using (NtToken token = TokenUtils.GetLogonUserToken(User, Domain, Password, LogonType, null))
             {
                 if (desired_access == TokenAccessRights.MaximumAllowed)
                 {

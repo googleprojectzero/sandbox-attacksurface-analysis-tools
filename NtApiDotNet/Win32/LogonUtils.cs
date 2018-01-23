@@ -14,6 +14,8 @@
 
 using Microsoft.Win32.SafeHandles;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -190,7 +192,7 @@ namespace NtApiDotNet.Win32
               string lpszPassword,
               SecurityLogonType dwLogonType,
               int dwLogonProvider,
-              TokenGroups pTokenGroups,
+              SafeTokenGroupsBuffer pTokenGroups,
               out SafeKernelObjectHandle phToken,
               [Out] OptionalPointer ppLogonSid,
               [Out] OptionalPointer ppProfileBuffer,
@@ -208,12 +210,39 @@ namespace NtApiDotNet.Win32
         /// <returns>The logged on token.</returns>
         public static NtToken Logon(string user, string domain, string password, SecurityLogonType type)
         {
-            SafeKernelObjectHandle handle;
-            if (!LogonUser(user, domain, password, type, 0, out handle))
+            if (!LogonUser(user, domain, password, type, 0, out SafeKernelObjectHandle handle))
             {
                 throw new SafeWin32Exception();
             }
             return NtToken.FromHandle(handle);
+        }
+
+        /// <summary>
+        /// Logon a user with a username and password.
+        /// </summary>
+        /// <param name="user">The username.</param>
+        /// <param name="domain">The user's domain.</param>
+        /// <param name="password">The user's password.</param>
+        /// <param name="type">The type of logon token.</param>
+        /// <param name="groups">Additional groups to add. Needs SeTcbPrivilege.</param>
+        /// <returns>The logged on token.</returns>
+        public static NtToken Logon(string user, string domain, string password, SecurityLogonType type, IEnumerable<UserGroup> groups)
+        {
+            TokenGroupsBuilder builder = new TokenGroupsBuilder();
+            foreach (var group in groups)
+            {
+                builder.AddGroup(group.Sid, group.Attributes);
+            }
+
+            using (var group_buffer = builder.ToBuffer())
+            {
+                if (!LogonUserExExW(user, domain, password, type, 0, group_buffer, 
+                    out SafeKernelObjectHandle token, null, null, null, null))
+                {
+                    throw new SafeWin32Exception();
+                }
+                return new NtToken(token);
+            }
         }
 
         /// <summary>

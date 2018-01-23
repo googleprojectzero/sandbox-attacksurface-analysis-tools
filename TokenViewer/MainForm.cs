@@ -249,7 +249,7 @@ namespace TokenViewer
 
                 if (radioLUNormal.Checked)
                 {
-                    using (NtToken token = TokenUtils.GetLogonUserToken(txtS4UUserName.Text, txtS4URealm.Text, txtLUPassword.Text, logonType))
+                    using (NtToken token = TokenUtils.GetLogonUserToken(txtS4UUserName.Text, txtS4URealm.Text, txtLUPassword.Text, logonType, null))
                     {
                         TokenForm.OpenForm(token, "LogonUser", true);
                     }
@@ -301,11 +301,35 @@ namespace TokenViewer
             }
         }
 
+        private IEnumerable<UserGroup> GetServiceSids()
+        {
+            if (!checkAddServiceSid.Checked || String.IsNullOrWhiteSpace(txtServiceSid.Text))
+            {
+                return null;
+            }
+
+            List<Sid> groups = new List<Sid>();
+
+            Luid logon_id = NtSystemInfo.AllocateLocallyUniqueId();
+            groups.Add(new Sid(SecurityAuthority.Nt, 5, (uint)logon_id.HighPart, logon_id.LowPart));
+
+            foreach (string sid in txtServiceSid.Text.Split(',').Select(s => s.Trim()))
+            {
+                groups.Add(NtSecurity.GetServiceSid(sid));
+            }
+
+            return groups.Select(s => 
+                    new UserGroup(s, GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Mandatory));
+        }
+
         private void GetServiceToken(string name)
         {
             try
             {
-                TokenForm.OpenForm(TokenUtils.GetLogonUserToken(name, "NT AUTHORITY", null, SecurityLogonType.Service), "Service", false);
+                IEnumerable<UserGroup> groups = GetServiceSids();
+                
+                TokenForm.OpenForm(TokenUtils.GetLogonUserToken(name, "NT AUTHORITY", null, 
+                    SecurityLogonType.Service, groups), "Service", false);
             }
             catch (Exception ex)
             {
@@ -543,6 +567,11 @@ namespace TokenViewer
         private void toolStripMenuItemHandlesOpenToken_Click(object sender, EventArgs e)
         {
             listViewHandles_DoubleClick(sender, e);
+        }
+
+        private void checkAddServiceSid_CheckedChanged(object sender, EventArgs e)
+        {
+            txtServiceSid.Enabled = checkAddServiceSid.Checked;
         }
     }
 }

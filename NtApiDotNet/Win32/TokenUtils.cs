@@ -91,14 +91,15 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
-        /// Logon a user using S4U
+        /// Logon a user.
         /// </summary>
         /// <param name="username">The username.</param>
         /// <param name="domain">The user's domain.</param>
         /// <param name="password">The user's password.</param>
         /// <param name="logon_type">The logon token's type.</param>
+        /// <param name="groups">Optional list of additonal groups to add.</param>
         /// <returns>The logged on token.</returns>
-        public static NtToken GetLogonUserToken(string username, string domain, string password, SecurityLogonType logon_type)
+        public static NtToken GetLogonUserToken(string username, string domain, string password, SecurityLogonType logon_type, IEnumerable<UserGroup> groups)
         {
             switch (logon_type)
             {
@@ -113,7 +114,14 @@ namespace NtApiDotNet.Win32
                     throw new ArgumentException("Invalid logon type for Logon");
             }
 
-            return LogonUtils.Logon(username, domain, password, logon_type);
+            if (groups != null)
+            {
+                return LogonUtils.Logon(username, domain, password, logon_type, groups);
+            }
+            else
+            {
+                return LogonUtils.Logon(username, domain, password, logon_type);
+            }
         }
 
         [DllImport("user32.dll", SetLastError=true)]
