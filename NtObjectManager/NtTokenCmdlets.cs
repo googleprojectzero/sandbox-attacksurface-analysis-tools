@@ -208,6 +208,12 @@ namespace NtObjectManager
         public string Password { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify additional group sids for logon token. Needs TCB privilege.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Logon")]
+        public Sid[] AdditionalGroups { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify domain for logon token.</para>
         /// </summary>
         [Parameter(ParameterSetName = "Logon"), Parameter(ParameterSetName = "S4U")]
@@ -300,7 +306,13 @@ namespace NtObjectManager
 
         private NtToken GetLogonToken(TokenAccessRights desired_access)
         {
-            using (NtToken token = TokenUtils.GetLogonUserToken(User, Domain, Password, LogonType, null))
+            IEnumerable<UserGroup> groups = null;
+            if (AdditionalGroups != null && AdditionalGroups.Length > 0)
+            {
+                groups = AdditionalGroups.Select(s => new UserGroup(s, 
+                    GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Mandatory));
+            }
+            using (NtToken token = TokenUtils.GetLogonUserToken(User, Domain, Password, LogonType, groups))
             {
                 if (desired_access == TokenAccessRights.MaximumAllowed)
                 {
