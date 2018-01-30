@@ -1044,13 +1044,16 @@ namespace NtApiDotNet
                 try
                 {
                     MemoryStream stm = new MemoryStream(QueryBlob(SystemInformationClass.SystemCodeIntegrityAllPoliciesInformation));
-                    BinaryReader reader = new BinaryReader(stm);
-                    int header_size = reader.ReadInt32();
-                    int total_policies = reader.ReadInt32();
-                    reader.ReadBytes(8 - header_size);
-                    for (int i = 0; i < total_policies; ++i)
+                    if (stm.Length > 0)
                     {
-                        policies.Add(new CodeIntegrityPolicy(reader));
+                        BinaryReader reader = new BinaryReader(stm);
+                        int header_size = reader.ReadInt32();
+                        int total_policies = reader.ReadInt32();
+                        reader.ReadBytes(8 - header_size);
+                        for (int i = 0; i < total_policies; ++i)
+                        {
+                            policies.Add(new CodeIntegrityPolicy(reader));
+                        }
                     }
                 }
                 catch (NtException)
