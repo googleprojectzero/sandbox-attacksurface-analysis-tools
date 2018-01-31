@@ -491,6 +491,10 @@ namespace NtApiDotNet
     ///   <code>Get-NtGrantedAccess -Sddl "O:BAG:BAD:(A;;GA;;;WD)" -Type $(Get-NtType Process)</code>
     ///   <para>Get the maximum access for a security descriptor for a process object based on an SDDL string.</para>
     /// </example>
+    /// <example>
+    ///   <code>Get-NtGrantedAccess -Object $obj</code>
+    ///   <para>Get the maximum access for a security descriptor for an object.</para>
+    /// </example>
     [Cmdlet(VerbsCommon.Get, "NtGrantedAccess")]
     public class GetNtGrantedAccessCmdlet : Cmdlet
     {
