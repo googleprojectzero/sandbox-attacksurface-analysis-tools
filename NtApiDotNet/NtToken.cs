@@ -256,9 +256,8 @@ namespace NtApiDotNet
         
         public override bool Equals(object obj)
         {
-            if (obj is Luid)
+            if (obj is Luid luid)
             {
-                Luid luid = (Luid)obj;
                 return LowPart == luid.LowPart && HighPart == luid.HighPart;
             }
             return false;
@@ -769,8 +768,7 @@ namespace NtApiDotNet
 
         private static Luid LookupPrivilegeLuid(string name)
         {
-            Luid luid;
-            if (!LookupPrivilegeValue(".", name, out luid))
+            if (!LookupPrivilegeValue(".", name, out Luid luid))
             {
                 throw new NtException(NtStatus.STATUS_NO_SUCH_PRIVILEGE);
             }
@@ -822,9 +820,8 @@ namespace NtApiDotNet
             get
             {
                 int name_length = 0;
-                int lang_id = 0;
                 string name = Name;
-                LookupPrivilegeDisplayName(null, name, null, ref name_length, out lang_id);
+                LookupPrivilegeDisplayName(null, name, null, ref name_length, out int lang_id);
                 if (name_length <= 0)
                 {
                     return String.Empty;
@@ -1022,8 +1019,7 @@ namespace NtApiDotNet
             NtStatus status = NtStatus.STATUS_BUFFER_TOO_SMALL;
             try
             {
-                int return_length;
-                status = NtSystemCalls.NtQueryInformationToken(Handle, token_info, IntPtr.Zero, 0, out return_length);
+                status = NtSystemCalls.NtQueryInformationToken(Handle, token_info, IntPtr.Zero, 0, out int return_length);
                 if ((status != NtStatus.STATUS_BUFFER_TOO_SMALL) && (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH))
                     throw new NtException(status);
                 ret = new SafeStructureInOutBuffer<T>(return_length, false);
@@ -2264,8 +2260,6 @@ namespace NtApiDotNet
             SetIntegrityLevelSid(NtSecurity.GetIntegritySid(level));
         }
 
-        private bool? _app_container;
-
         /// <summary>
         /// Get whether a token is an AppContainer token
         /// </summary>
@@ -2278,15 +2272,11 @@ namespace NtApiDotNet
                     return false;
                 }
 
-                if (!_app_container.HasValue)
+                using (var appcontainer 
+                    = QueryToken<uint>(TokenInformationClass.TokenIsAppContainer))
                 {
-                    using (var appcontainer 
-                        = QueryToken<uint>(TokenInformationClass.TokenIsAppContainer))
-                    {
-                        _app_container = appcontainer.Result != 0;
-                    }
+                    return appcontainer.Result != 0;
                 }
-                return _app_container.Value;
             }
         }
 
