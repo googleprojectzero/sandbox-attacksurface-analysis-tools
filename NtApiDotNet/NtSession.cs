@@ -41,7 +41,7 @@ namespace NtApiDotNet
     {
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtOpenSession(out SafeKernelObjectHandle Handle,
-            SessionAccessRights DesiredAccess, [Out]ObjectAttributes ObjectAttributes);
+            SessionAccessRights DesiredAccess, [In]ObjectAttributes ObjectAttributes);
     }
 #pragma warning restore 1591
 
@@ -64,8 +64,8 @@ namespace NtApiDotNet
         /// <returns>The open result.</returns>
         public static NtResult<NtSession> Open(ObjectAttributes obj_attributes, SessionAccessRights desired_access, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtOpenSession(out handle, desired_access, obj_attributes).CreateResult(throw_on_error, () => new NtSession(handle));
+            return NtSystemCalls.NtOpenSession(out SafeKernelObjectHandle handle,
+                desired_access, obj_attributes).CreateResult(throw_on_error, () => new NtSession(handle));
         }
 
         /// <summary>
