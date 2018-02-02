@@ -32,7 +32,7 @@ namespace NtApiDotNet
         public UnicodeString(string str)
         {
             Length = (ushort)(str.Length * 2);
-            MaximumLength = (ushort)((str.Length * 2) + 1);
+            MaximumLength = (ushort)((str.Length + 1) * 2);
             Buffer = str;
         }
 
