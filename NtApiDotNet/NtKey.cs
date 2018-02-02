@@ -357,6 +357,12 @@ namespace NtApiDotNet
         );
 
         [DllImport("ntdll.dll")]
+        public static extern NtStatus NtDeleteValueKey(
+                SafeKernelObjectHandle KeyHandle,
+                UnicodeString ValueName
+            );
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus NtQueryKey(
                 SafeKernelObjectHandle KeyHandle,
                 KeyInformationClass KeyInformationClass,
@@ -804,6 +810,16 @@ namespace NtApiDotNet
         public void SetValue(string value_name, ulong data)
         {
             SetValue(value_name, RegistryValueType.Qword, BitConverter.GetBytes(data));
+        }
+
+        /// <summary>
+        /// Delete a registry value
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void DeleteValue(string value_name)
+        {
+            NtSystemCalls.NtDeleteValueKey(Handle, new UnicodeString(value_name ?? String.Empty)).ToNtException();
         }
 
         /// <summary>
