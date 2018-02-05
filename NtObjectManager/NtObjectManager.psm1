@@ -867,16 +867,16 @@ Show integrity information.
 .OUTPUTS
 Text data
 .EXAMPLE
-Show-NtToken
+Show-NtTokenEffective
 Show only the user name of the current token.
 .EXAMPLE
-Show-NtToken -All
+Show-NtTokenEffective -All
 Show the user, groups, privileges and integrity of the current token.
 .EXAMPLE
-Show-NtToken -User -Group
+Show-NtTokenEffective -User -Group
 Show the user and groups of the current token.
 #>
-function Show-NtToken {
+function Show-NtTokenEffective {
     Param(
         [switch]$All,
 		[switch]$Group,
