@@ -146,6 +146,11 @@ namespace NtObjectManager
         /// <returns>The object path.</returns>
         protected virtual string ResolvePath()
         {
+            if (Path == null)
+            {
+                return null;
+            }
+
             if (Win32Path)
             {
                 if (Path.StartsWith(@"\"))
