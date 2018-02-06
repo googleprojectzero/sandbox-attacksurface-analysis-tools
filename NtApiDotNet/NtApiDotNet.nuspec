@@ -11,6 +11,17 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A .NET class library to access native NT API system calls</description>
     <releaseNotes>
+1.1.8
+-----
+* Better support for relative paths in the cmdlets including supporting ones based on the current directory.
+* RenameEx and DispositionEx support from fllombard.
+* Added Key value deletion and fixes from rsiestrunck.
+* Fixed bug in NtOpenSession prototype.
+* Added support for adding additional groups to a token in Get-NtToken if user has SeTcbPrivilege.
+* Added Show-NtToken to display a token in the GUI, renamed old whois style token viewer to Show-NtTokenEffective.
+* Added PowerShell functions to get and create execution alias reparse points.
+* Added section viewer and editor with Show-NtSection function.
+
 1.1.7
 -----
 * Added projects to build NtObjectManager for PowerShell Core 6.0

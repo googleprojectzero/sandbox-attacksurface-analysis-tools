@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.7'
+ModuleVersion = '1.1.8'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -33,7 +33,7 @@ Author = 'James Forshaw'
 CompanyName = 'Google Inc.'
 
 # Copyright statement for this module
-Copyright = '(c) 2016, 2017 Google Inc. All rights reserved.'
+Copyright = '(c) 2016, 2017, 2018 Google Inc. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = 'This module adds a provider and cmdlets to access the NT object manager namespace.'
@@ -41,38 +41,14 @@ Description = 'This module adds a provider and cmdlets to access the NT object m
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '3.0'
 
-# Name of the Windows PowerShell host required by this module
-# PowerShellHostName = ''
-
-# Minimum version of the Windows PowerShell host required by this module
-# PowerShellHostVersion = ''
-
 # Minimum version of Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
 DotNetFrameworkVersion = '4.5'
 
 # Minimum version of the common language runtime (CLR) required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
 CLRVersion = '4.0'
 
-# Processor architecture (None, X86, Amd64) required by this module
-# ProcessorArchitecture = ''
-
-# Modules that must be imported into the global environment prior to importing this module
-# RequiredModules = @()
-
-# Assemblies that must be loaded prior to importing this module
-# RequiredAssemblies = @()
-
-# Script files (.ps1) that are run in the caller's environment prior to importing this module.
-# ScriptsToProcess = @()
-
-# Type files (.ps1xml) to be loaded when importing this module
-# TypesToProcess = @()
-
 # Format files (.ps1xml) to be loaded when importing this module
 FormatsToProcess = 'Formatters.ps1xml'
-
-# Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-# NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = 'Get-NtTokenPrimary', 'Get-NtTokenThread', 'Get-NtTokenEffective', 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
@@ -80,7 +56,7 @@ FunctionsToExport = 'Get-NtTokenPrimary', 'Get-NtTokenThread', 'Get-NtTokenEffec
 					'New-NtSecurityQualityOfService', 'Get-NtLicenseValue', 'Get-NtSystemEnvironmentValue', 'New-Win32Process',
 					'New-NtEaBuffer', 'New-NtSectionImage', 'New-Win32ProcessConfig', 'Get-NtTokenFromProcess', 'Get-ExecutableManifest',
 					'New-NtProcess', 'New-NtProcessConfig', 'Get-NtFilePath', 'Show-NtTokenEffective', 'Show-NtSecurityDescriptor', 'Get-NtIoControlCode',
-					'Import-NtObject', 'Export-NtObject', 'Get-ExecutionAlias', 'New-ExecutionAlias', 'Show-NtToken'
+					'Import-NtObject', 'Export-NtObject', 'Get-ExecutionAlias', 'New-ExecutionAlias', 'Show-NtToken', 'Show-NtSection'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
@@ -92,27 +68,15 @@ CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile',
                'New-NtMailslotFile', 'New-NtMutant', 'New-NtNamedPipeFile', 
                'New-NtSecurityDescriptor', 'New-NtSemaphore', 'New-NtSymbolicLink', 
                'Remove-NtFileReparsePoint', 'Start-NtWait', 'Use-NtObject',
-			   'Get-NtFilteredToken', 'Get-NtLowBoxToken', 'Get-NtSid',
-			   'Get-NtSection', 'New-NtSection', 'Get-AccessibleAlpcPort',
-			   'Get-AccessibleKey', 'Get-AccessibleProcess', 'Get-AccessibleFile',
-			   'Get-AccessibleObject', 'Get-NtAccessMask', 'Get-AccessibleDevice',
-			   'Get-AccessibleNamedPipe', 'Get-NtGrantedAccess', 'Get-NtJob', 'New-NtJob',
-			   'Get-AccessibleService', 'Get-AccessibleHandle', 'Remove-NtKey'
-
-# Variables to export from this module
-# VariablesToExport = @()
+               'Get-NtFilteredToken', 'Get-NtLowBoxToken', 'Get-NtSid',
+               'Get-NtSection', 'New-NtSection', 'Get-AccessibleAlpcPort',
+               'Get-AccessibleKey', 'Get-AccessibleProcess', 'Get-AccessibleFile',
+               'Get-AccessibleObject', 'Get-NtAccessMask', 'Get-AccessibleDevice',
+               'Get-AccessibleNamedPipe', 'Get-NtGrantedAccess', 'Get-NtJob', 'New-NtJob',
+               'Get-AccessibleService', 'Get-AccessibleHandle', 'Remove-NtKey'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @()
-
-# DSC resources to export from this module
-# DscResourcesToExport = @()
-
-# List of all modules packaged with this module
-# ModuleList = @()
-
-# List of all files packaged with this module
-# FileList = @()
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{
@@ -128,11 +92,18 @@ PrivateData = @{
         # A URL to the main website for this project.
         ProjectUri = 'https://github.com/google/sandbox-attacksurface-analysis-tools'
 
-        # A URL to an icon representing this module.
-        # IconUri = ''
-
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.7
+        ReleaseNotes = '1.1.8
+-----
+* Better support for relative paths in the cmdlets including supporting ones based on the current directory.
+* RenameEx and DispositionEx support from fllombard.
+* Added Key value deletion and fixes from rsiestrunck.
+* Fixed bug in NtOpenSession prototype.
+* Added support for adding additional groups to a token in Get-NtToken if user has SeTcbPrivilege.
+* Added Show-NtToken to display a token in the GUI, renamed old whois style token viewer to Show-NtTokenEffective.
+* Added PowerShell functions to get and create execution alias reparse points.
+* Added section viewer and editor with Show-NtSection function.
+1.1.7
 -----
 * Added projects to build NtObjectManager for PowerShell Core 6.0
 * Added additional techniques to open process tokens in access checking cmdlets.

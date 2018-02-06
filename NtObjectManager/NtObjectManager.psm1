@@ -1292,7 +1292,57 @@ function Show-NtToken {
 				}
 			}
 		}
-    }
+	}
+}
+
+<#
+.SYNOPSIS
+Displays a mapped section in a UI.
+.DESCRIPTION
+This cmdlet displays a section object inside a UI from where the data can be inspected or edited.
+.PARAMETER Section
+Specify a section object.
+.PARAMETER Wait
+Optionally wait for the user to close the UI.
+.PARAMETER ReadOnly
+Optionally force the viewer to be read-only when passing a section with Map Write access.
+.OUTPUTS
+None
+.EXAMPLE
+Show-NtSection $section
+Show the mapped section.
+.EXAMPLE
+Show-NtSection $section -ReadOnly
+Show the mapped section as read only.
+.EXAMPLE
+Show-NtSection $section -Wait
+Show the mapped section and wait for the viewer to exit.
+#>
+function Show-NtSection {
+    Param(
+        [Parameter(Position = 0, Mandatory = $true)] 
+        [NtApiDotNet.NtSection]$Section,
+        [switch]$ReadOnly
+    )
+
+	if (!$Section.IsAccessGranted("MapRead")) {
+		Write-Error "Section doesn't have Map Read access."
+		return
+	}
+	Use-NtObject($obj = $Section.Duplicate()) {
+		$obj.Inherit = $true
+		$cmdline = [string]::Format("EditSection {0}", $obj.Handle.DangerousGetHandle())
+		if ($ReadOnly) {
+			$cmdline += " --readonly"
+		}
+		$config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\EditSection.exe" -InheritHandles
+		$config.InheritHandleList.Add($obj.Handle.DangerousGetHandle())
+		Use-NtObject($p = New-Win32Process -Config $config) {
+			if ($Wait) {
+				$p.Process.Wait() | Out-Null
+			}
+		}
+	}
 }
 
 <#
