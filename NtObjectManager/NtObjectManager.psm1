@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+Set-StrictMode -Version Latest
+
 if (($PSVersionTable.Keys -contains "PSEdition") -and ($PSVersionTable.PSEdition -ne 'Desktop')) {
   Import-Module "$PSScriptRoot\Core\NtObjectManager.dll"
 }
@@ -1173,7 +1175,6 @@ function New-ExecutionAlias
     )
 
 	$rp = [NtApiDotNet.ExecutionAliasReparseBuffer]::new($Version, $PackageName, $EntryPoint, $Target, $Flags)
-
     Use-NtObject($file = New-NtFile -Path $Path -Win32Path -Options OpenReparsePoint,SynchronousIoNonAlert `
 									-Access GenericWrite,Synchronize -Disposition OpenIf) {
             $file.SetReparsePoint($rp)
@@ -1246,7 +1247,7 @@ Display up to 5 primary tokens from accessible processes named notepad.exe.
 function Show-NtToken {
     [CmdletBinding(DefaultParameterSetName = "FromPid")]
     param(
-		[Parameter(Mandatory=$true, Position=0, ParameterSetName="FromToken", ValueFromPipeline=$true)]
+        [Parameter(Mandatory=$true, Position=0, ParameterSetName="FromToken", ValueFromPipeline=$true)]
         [NtApiDotNet.NtToken[]]$Token,
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="FromProcess", ValueFromPipeline=$true)]
         [NtApiDotNet.NtProcess[]]$Process,
@@ -1259,40 +1260,40 @@ function Show-NtToken {
     )
 
     PROCESS {
-		if (-not $(Test-Path "$PSScriptRoot\TokenViewer.exe" -PathType Leaf)) {
-			Write-Error "Missing token viewer application $PSScriptRoot\TokenViewer.exe"
-			return
-		}
-		switch($PSCmdlet.ParameterSetName) {
-			"FromProcess" {
-				foreach($p in $Process) {
-					Use-NtObject($t = Get-NtToken -Primary -Process $p) {
-						$text = "$($p.Name):$($p.ProcessId)"
-						Start-NtTokenViewer $t -Text $text
-					}
-				}
-			}
-			"FromName" {
-				Use-NtObject($ps = Get-NtProcess -Name $Name -Access QueryLimitedInformation) {
-					if ($MaxTokens -gt 0) {
-						$ps = $ps | Select-Object -First $MaxTokens
-					}
-					$ps | Show-NtToken
-				}
-			}
-			"FromPid" {
-				$cmdline = [string]::Format("TokenViewer --pid={0}", $ProcessId)
-				$config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\TokenViewer.exe" -InheritHandles
-				Use-NtObject($p = New-Win32Process -Config $config) {
-				}
-			}
-			"FromToken" {
-				foreach($token in $Tokens) {
-					Start-NtTokenViewer $token
-				}
-			}
-		}
-	}
+	    if (-not $(Test-Path "$PSScriptRoot\TokenViewer.exe" -PathType Leaf)) {
+		    Write-Error "Missing token viewer application $PSScriptRoot\TokenViewer.exe"
+		    return
+	    }
+	    switch($PSCmdlet.ParameterSetName) {
+		    "FromProcess" {
+			    foreach($p in $Process) {
+				    Use-NtObject($t = Get-NtToken -Primary -Process $p) {
+					    $text = "$($p.Name):$($p.ProcessId)"
+					    Start-NtTokenViewer $t -Text $text
+				    }
+			    }
+		    }
+		    "FromName" {
+			    Use-NtObject($ps = Get-NtProcess -Name $Name -Access QueryLimitedInformation) {
+				    if ($MaxTokens -gt 0) {
+					    $ps = $ps | Select-Object -First $MaxTokens
+				    }
+				    $ps | Show-NtToken
+			    }
+		    }
+		    "FromPid" {
+			    $cmdline = [string]::Format("TokenViewer --pid={0}", $ProcessId)
+			    $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\TokenViewer.exe" -InheritHandles
+			    Use-NtObject($p = New-Win32Process -Config $config) {
+			    }
+		    }
+		    "FromToken" {
+			    foreach($t in $Token) {
+				    Start-NtTokenViewer $t
+			    }
+		    }
+	    }
+    }
 }
 
 <#
@@ -1322,7 +1323,8 @@ function Show-NtSection {
     Param(
         [Parameter(Position = 0, Mandatory = $true)] 
         [NtApiDotNet.NtSection]$Section,
-        [switch]$ReadOnly
+        [switch]$ReadOnly,
+        [switch]$Wait
     )
 
 	if (!$Section.IsAccessGranted("MapRead")) {
