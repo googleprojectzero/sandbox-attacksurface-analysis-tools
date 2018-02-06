@@ -39,6 +39,11 @@ namespace NtObjectManager
     ///   <code>$obj = Get-NtEvent -Path \BaseNamedObjects\ABC&#x0A;$obj.Set()</code>
     ///   <para>Get an event object, and set it.</para>
     /// </example>
+    /// <example>
+    ///   <code>cd NtObject:\BaseNamedObjects&#x0A;$obj = Get-NtEvent ABC</code>
+    ///   <para>Get an event object with a relative path based on the current location.
+    ///   </para>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtEvent")]
     [OutputType(typeof(NtEvent))]
@@ -89,6 +94,10 @@ namespace NtObjectManager
     ///   <para>Create a new event object with a relative path.
     ///   </para>
     /// </example>
+    /// <example>
+    ///   <code>cd NtObject:\BaseNamedObjects&#x0A;$obj = New-NtEvent ABC</code>
+    ///   <para>Create a new event object with a relative path based on the current location.
+    ///   </para>
     /// <example>
     ///   <code>$mutant = New-NtEvent -InitialState $true</code>
     ///   <para>Create a new anonymous event object with it initially set.</para>

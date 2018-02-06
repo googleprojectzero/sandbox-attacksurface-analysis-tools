@@ -28,7 +28,12 @@ namespace NtObjectManager
     /// </example>
     /// <example>
     ///   <code>$root = Get-NtDirectory \BaseNamedObjects&#x0A;$obj = Get-NtDirectory ABC -Root $root</code>
-    ///   <para>Get a mutant object with a relative path.
+    ///   <para>Get a directory object with a relative path.
+    ///   </para>
+    /// </example>
+    /// <example>
+    ///   <code>cd NtObject:\BaseNamedObjects&#x0A;$obj = Get-NtDirectory ABC</code>
+    ///   <para>Get a directory object with a relative path based on the current location.
     ///   </para>
     /// </example>
     /// <example>
@@ -118,6 +123,10 @@ namespace NtObjectManager
     ///   <code>$root = Get-NtDirectory \BaseNamedObjects&#x0A;$obj = New-NtDirectory ABC -Root $root</code>
     ///   <para>Create a new directory object with a relative path.
     ///   </para>
+    /// </example>
+    /// <example>
+    ///   <code>cd NtObject:\BaseNamedObjects&#x0A;$obj = New-NtDirectory ABC</code>
+    ///   <para>Create a new directory object with a relative path based on the current location.</para>
     /// </example>
     /// <example>
     ///   <code>$shadow = Get-NtDirectory \SomeDir&#x0A;$obj = New-NtDirectory \BaseNamedObjects\ABC -ShadowDirectory $shadow</code>
