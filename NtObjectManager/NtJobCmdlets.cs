@@ -28,14 +28,13 @@ namespace NtObjectManager
     /// </example>
     /// <example>
     ///   <code>$root = Get-NtDirectory \BaseNamedObjects&#x0A;$obj = Get-NtJob ABC -Root $root</code>
-    ///   <para>Get an job object with a relative path.
-    ///   </para>
+    ///   <para>Get an job object with a relative path.</para>
     /// </example>
     /// <example>
     ///   <code>cd NtObject:\BaseNamedObjects&#x0A;$obj = Get-NtJob ABC</code>
     ///   <para>Get a job object with a relative path based on the current location.
     ///   </para>
-    /// <example>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtJob")]
     [OutputType(typeof(NtJob))]
@@ -90,7 +89,7 @@ namespace NtObjectManager
     ///   <code>cd NtObject:\BaseNamedObjects&#x0A;$obj = New-NtJob ABC</code>
     ///   <para>Create a new job object with a relative path based on the current location.
     ///   </para>
-    /// <example>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.New, "NtJob")]
     [OutputType(typeof(NtJob))]

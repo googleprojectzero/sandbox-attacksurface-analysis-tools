@@ -98,6 +98,7 @@ namespace NtObjectManager
     ///   <code>cd NtObject:\BaseNamedObjects&#x0A;$obj = New-NtEvent ABC</code>
     ///   <para>Create a new event object with a relative path based on the current location.
     ///   </para>
+    /// </example>
     /// <example>
     ///   <code>$mutant = New-NtEvent -InitialState $true</code>
     ///   <para>Create a new anonymous event object with it initially set.</para>

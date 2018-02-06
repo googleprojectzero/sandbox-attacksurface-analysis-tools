@@ -35,7 +35,7 @@ namespace NtObjectManager
     ///   <code>cd NtObject:\BaseNamedObjects&#x0A;$obj = Get-NtSemaphore ABC</code>
     ///   <para>Get a semaphore object with a relative path based on the current location.
     ///   </para>
-    /// <example>
+    /// </example>
     /// <example>
     ///   <code>$obj = Get-NtSemaphore -Path \BaseNamedObjects\ABC&#x0A;$obj.Wait()&#x0A;# Do something in lock...&#x0A;$obj.Release()</code>
     ///   <para>Get a semaphore object, acquire the lock via Wait and Release it.</para>
@@ -94,7 +94,7 @@ namespace NtObjectManager
     ///   <code>cd NtObject:\BaseNamedObjects&#x0A;$obj = New-NtSemaphore ABC</code>
     ///   <para>Create a new semaphore object with a relative path based on the current location.
     ///   </para>
-    /// <example>
+    /// </example>
     /// <example>
     ///   <code>$semaphore = New-NtSemaphore -MaximumCount 10</code>
     ///   <para>Create a new anonymous semaphore object a maximum count of 10.</para>

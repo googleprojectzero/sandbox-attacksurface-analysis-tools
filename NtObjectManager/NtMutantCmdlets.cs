@@ -35,7 +35,7 @@ namespace NtObjectManager
     ///   <code>cd NtObject:\BaseNamedObjects&#x0A;$obj = Get-NtMutant ABC</code>
     ///   <para>Get a mutant object with a relative path based on the current location.
     ///   </para>
-    /// <example>
+    /// </example>
     /// <example>
     ///   <code>$obj = Get-NtMutant -Path \BaseNamedObjects\ABC&#x0A;$obj.Wait()&#x0A;# Do something in lock...&#x0A;$obj.Release()</code>
     ///   <para>Get a mutant object, acquire the lock via Wait and Release it.</para>
@@ -94,7 +94,7 @@ namespace NtObjectManager
     ///   <code>cd NtObject:\BaseNamedObjects&#x0A;$obj = New-NtMutant ABC</code>
     ///   <para>Create a new mutant object with a relative path based on the current location.
     ///   </para>
-    /// <example>
+    /// </example>
     /// <example>
     ///   <code>$mutant = New-NtMutant -InitialOwner</code>
     ///   <para>Create a new anonymous mutant object with the caller as the initial owner.</para>

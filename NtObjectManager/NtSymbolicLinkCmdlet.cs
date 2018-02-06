@@ -34,7 +34,7 @@ namespace NtObjectManager
     /// <example>
     ///   <code>cd NtObject:\BaseNamedObjects&#x0A;$obj = Get-NtSymbolicLink ABC</code>
     ///   <para>Get a symbolic link object with a relative path based on the current location.</para>
-    /// <example>
+    /// </example>
     /// <example>
     ///   <code>$obj = Get-NtSymbolicLink \DosDevices\ABC&#x0A;$obj.Query()</code>
     ///   <para>Open a symbolic link object and query its target.</para>
@@ -137,7 +137,7 @@ namespace NtObjectManager
     /// <example>
     ///   <code>cd NtObject:\BaseNamedObjects&#x0A;$obj = New-NtSymbolicLink ABC \Symlink\Target</code>
     ///   <para>Create a new symbolic link object with a relative path based on the current location.</para>
-    /// <example>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.New, "NtSymbolicLink")]
     public class NewNtSymbolicLinkCmdlet : NtObjectBaseCmdletWithAccess<SymbolicLinkAccessRights>
