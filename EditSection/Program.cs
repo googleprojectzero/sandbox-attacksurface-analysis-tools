@@ -12,25 +12,73 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace EditSection
 {
     static class Program
     {
+        static string GetName(NtSection section, NtMappedSection map)
+        {
+            string name = String.Empty;
+            try
+            {
+                name = map.FullPath;
+                if (string.IsNullOrEmpty(name))
+                {
+                    name = section.FullPath;
+                }
+            }
+            catch (NtException)
+            {
+            }
+
+            return string.IsNullOrEmpty(name) ? string.Format("Handle {0} - 0x{1:X}", 
+                section.Handle.DangerousGetHandle(), map.DangerousGetHandle().ToInt64()) : name;
+        }
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());
+            
+
+            try
+            {
+                if (args.Length == 0)
+                {
+                    Application.Run(new MainForm());
+                }
+                else
+                {
+                    if (args.Length < 3)
+                    {
+                        var handle = new SafeKernelObjectHandle(new IntPtr(int.Parse(args[0])), true);
+                        
+                        using (var section = NtSection.FromHandle(handle))
+                        {
+                            bool read_only = args.Length > 1 ? args[1].Equals("--readonly") : !section.IsAccessGranted(SectionAccessRights.MapWrite);
+                            using (var map = read_only ? section.MapRead() : section.MapReadWrite())
+                            {
+                                using (SectionEditorForm frm = new SectionEditorForm(map, GetName(section, map), read_only))
+                                {
+                                    Application.Run(frm);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

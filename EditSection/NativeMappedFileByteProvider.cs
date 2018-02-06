@@ -49,7 +49,7 @@ namespace EditSection
         }
 
         public void InsertBytes(long index, byte[] bs)
-        {            
+        {
         }
 
         public long Length

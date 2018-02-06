@@ -22,7 +22,7 @@ namespace EditSection
 {
     public partial class SectionEditorForm : DockContent
     {
-        NtMappedSection _map;        
+        NtMappedSection _map;
         bool _readOnly;
         NativeMappedFileByteProvider _prov;
         Random _random;
@@ -47,15 +47,16 @@ namespace EditSection
         }
 
         public SectionEditorForm(NtMappedSection map, NtHandle handle, bool readOnly) 
-            : this(map, readOnly)        
-        {                           
-            TabText = String.Format("Process {0} - Handle {1} {2}", handle.ProcessId, handle.Handle, _readOnly ? "(RO)" : "");            
+            : this(map, readOnly)
+        {
+            TabText = String.Format("Process {0} - Handle {1} {2}", handle.ProcessId, handle.Handle, _readOnly ? "(RO)" : "");
         }
 
         public SectionEditorForm(NtMappedSection map, string name, bool readOnly)
             : this(map, readOnly)
-        {            
+        {
             TabText = String.Format("{0} {1}", name, _readOnly ? "(RO)" : "");
+            Text = TabText;
         }
 
         void SectionEditorForm_Disposed(object sender, EventArgs e)
@@ -138,7 +139,7 @@ namespace EditSection
                         MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
-            }            
+            }
         }
 
         private void corruptToolStripMenuItem_Click(object sender, EventArgs e)
@@ -176,6 +177,11 @@ namespace EditSection
         private void selectAllToolStripMenuItem_Click(object sender, EventArgs e)
         {
             hexBox.SelectAll();
+        }
+
+        private void refreshToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            hexBox.Refresh();
         }
     }
 }

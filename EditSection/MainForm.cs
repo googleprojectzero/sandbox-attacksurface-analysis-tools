@@ -23,7 +23,7 @@ namespace EditSection
     {
         public MainForm()
         {            
-            InitializeComponent();            
+            InitializeComponent();
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -36,9 +36,8 @@ namespace EditSection
             using (SelectSectionForm frm = new SelectSectionForm())
             {
                 if (frm.ShowDialog(this) == DialogResult.OK)
-                {                    
+                {
                     SectionEditorForm c = new SectionEditorForm(frm.MappedFile, frm.OpenedHandle, frm.ReadOnly);
-
                     c.Show(dockPanel, DockState.Document);
                 }
             }
@@ -54,7 +53,6 @@ namespace EditSection
                     {
                         NtMappedSection mapped_file = handle.Map(frm.ReadOnly ? MemoryAllocationProtect.ReadOnly : MemoryAllocationProtect.ReadWrite);
                         SectionEditorForm c = new SectionEditorForm(mapped_file, frm.ObjectName, frm.ReadOnly);
-
                         c.Show(dockPanel, DockState.Document);
                     }
                 }
