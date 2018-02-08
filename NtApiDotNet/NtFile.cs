@@ -334,6 +334,9 @@ namespace NtApiDotNet
         Virtual = 0x00010000,
         NoScrubData = 0x00020000,
         Ea = 0x00040000,
+        Pinned = 0x00080000,
+        Unpinned = 0x00100000,
+        RecallOnDataAccess = 0x00400000,
     }
 
     [StructLayout(LayoutKind.Sequential)]
