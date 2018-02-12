@@ -1648,16 +1648,49 @@ namespace NtApiDotNet
 
         private static string ReadMoniker(NtKey rootkey, Sid sid)
         {
+            PackageSidType sid_type = GetPackageSidType(sid);
+            Sid child_sid = null;
+            if (sid_type == PackageSidType.Child)
+            {
+                child_sid = sid;
+                sid = GetPackageSidParent(sid);
+            }
+
             string path = string.Format(@"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppContainer\Mappings\{0}", sid);
+            if (child_sid != null)
+            {
+                path = string.Format(@"{0}\Children\{1}", path, child_sid);
+            }
+
             using (ObjectAttributes obj_attr = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, rootkey))
             {
                 using (var key = NtKey.Open(obj_attr, KeyAccessRights.QueryValue, KeyCreateOptions.NonVolatile, false))
                 {
                     if (key.IsSuccess)
                     {
-                        var value = key.Result.QueryValue("Moniker", false);
-                        if (value.IsSuccess)
-                            return value.Result.ToString();
+                        var moniker = key.Result.QueryValue("Moniker", false);
+                        if (!moniker.IsSuccess)
+                        {
+                            return null;
+                        }
+
+                        if (child_sid == null)
+                        {
+                            return moniker.Result.ToString().TrimEnd('\0');
+                        }
+
+                        var parent_moniker = key.Result.QueryValue("ParentMoniker", false);
+                        string parent_moniker_string;
+                        if (parent_moniker.IsSuccess)
+                        {
+                            parent_moniker_string = parent_moniker.Result.ToString();
+                        }
+                        else
+                        {
+                            parent_moniker_string = ReadMoniker(rootkey, sid) ?? String.Empty;
+                        }
+                        
+                        return string.Format("{0}/{1}", parent_moniker_string.TrimEnd('\0'), moniker.Result.ToString().TrimEnd('\0'));
                     }
                 }
             }
@@ -2102,6 +2135,22 @@ namespace NtApiDotNet
             return sid.Authority.IsAuthority(SecurityAuthority.Package) &&
                 (sid.SubAuthorities.Count == 8 || sid.SubAuthorities.Count == 12) &&
                 (sid.SubAuthorities[0] == 2);
+        }
+
+        /// <summary>
+        /// Get the parent package SID for a child package SID.
+        /// </summary>
+        /// <param name="sid">The child package SID.</param>
+        /// <returns>The parent package SID.</returns>
+        /// <exception cref="ArgumentException">Thrown if sid not a child package SID.</exception>
+        public static Sid GetPackageSidParent(Sid sid)
+        {
+            if (GetPackageSidType(sid) != PackageSidType.Child)
+            {
+                throw new ArgumentException("Package sid not a child sid");
+            }
+
+            return new Sid(sid.Authority, sid.SubAuthorities.Take(8).ToArray());
         }
 
         /// <summary>
