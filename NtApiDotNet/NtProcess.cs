@@ -1263,7 +1263,7 @@ namespace NtApiDotNet
                             case 4:
                                 return "System";
                             default:
-                                return String.Format("process:{0}", ProcessId);
+                                return $"process:{ProcessId}";
                         }
                     }
                     else

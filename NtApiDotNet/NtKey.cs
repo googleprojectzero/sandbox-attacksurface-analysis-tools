@@ -1528,7 +1528,7 @@ namespace NtApiDotNet
             };
             using (NtToken token = NtToken.OpenProcessToken())
             {
-                string current_user = String.Format(@"\Registry\User\{0}", token.User.Sid);
+                string current_user = $@"\Registry\User\{token.User.Sid}";
                 dict.Add("HKCU", current_user);
                 dict.Add("HKEY_CURRENT_USER", current_user);
             }

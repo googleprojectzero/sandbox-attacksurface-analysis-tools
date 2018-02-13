@@ -61,7 +61,7 @@ namespace TokenViewer
                                 {
                                     if (token != null)
                                     {
-                                        ListViewItem item = new ListViewItem(String.Format("{0} - {1}", entry.ProcessId, entry.Name));
+                                        ListViewItem item = new ListViewItem($"{entry.ProcessId} - {entry.Name}");
                                         item.SubItems.Add(thread.ThreadId.ToString());
                                         item.SubItems.Add(token.User.ToString());
                                         item.SubItems.Add(token.ImpersonationLevel.ToString());
@@ -238,7 +238,7 @@ namespace TokenViewer
             comboBoxS4ULogonType.Items.Add(SecurityLogonType.NewCredentials);
             comboBoxS4ULogonType.Items.Add(SecurityLogonType.Service);
             comboBoxS4ULogonType.SelectedItem = SecurityLogonType.Network;
-            TokenForm.RegisterMainForm(this);            
+            TokenForm.RegisterMainForm(this);
         }
 
         private void btnTestS4U_Click(object sender, EventArgs e)
@@ -283,7 +283,7 @@ namespace TokenViewer
                     NtToken token = item.Tag as NtToken;
                     if (token != null)
                     {
-                        TokenForm.OpenForm(token, string.Format("{0}:{1}", item.SubItems[1].Text, item.SubItems[0].Text), true);
+                        TokenForm.OpenForm(token, $"{item.SubItems[1].Text}:{item.SubItems[0].Text}", true);
                     }
                 }
             }
@@ -399,13 +399,13 @@ namespace TokenViewer
             {
                 using (NamedPipeClientStream pipe = new NamedPipeClientStream("localhost", txtPipeName.Text, PipeDirection.Out))
                 {
-                    pipe.Connect(1000);                    
+                    pipe.Connect(1000);
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }            
+            }
         }
 
         private void btnCurrentProcess_Click(object sender, EventArgs e)
@@ -445,9 +445,8 @@ namespace TokenViewer
         private void toolStripMenuItemOpenThreadToken_Click(object sender, EventArgs e)
         {
             if (listViewThreads.SelectedItems.Count > 0)
-            {                
-                NtThread thread = listViewThreads.SelectedItems[0].Tag as NtThread;
-                if(thread != null)
+            {
+                if (listViewThreads.SelectedItems[0].Tag is NtThread thread)
                 {
                     NtToken token = GetToken(thread);
                     if (token != null)
@@ -462,8 +461,7 @@ namespace TokenViewer
         {
             if (listViewThreads.SelectedItems.Count > 0)
             {
-                NtThread thread = listViewThreads.SelectedItems[0].Tag as NtThread;
-                if (thread != null)
+                if (listViewThreads.SelectedItems[0].Tag is NtThread thread)
                 {
                     TokenForm.OpenForm(GetProcessToken(thread), "Process", false);
                 }
@@ -505,41 +503,39 @@ namespace TokenViewer
             List<ListViewItem> items = new List<ListViewItem>();
 
             foreach (var group in NtSystemInfo.GetHandles()
-                                                    .Where(h => h.ProcessId != current_pid && h.ObjectType.Equals("token", StringComparison.OrdinalIgnoreCase))
-                                                    .GroupBy(h => h.ProcessId))
+                        .Where(h => h.ProcessId != current_pid && h.ObjectType.Equals("token", StringComparison.OrdinalIgnoreCase))
+                        .GroupBy(h => h.ProcessId))
             {
-                try
+                using (var proc = NtProcess.Open(group.Key, ProcessAccessRights.DupHandle | ProcessAccessRights.QueryLimitedInformation, false))
                 {
-                    using (NtProcess proc = NtProcess.Open(group.Key, ProcessAccessRights.DupHandle | ProcessAccessRights.QueryLimitedInformation))
+                    if (!proc.IsSuccess)
                     {
-                        foreach (NtHandle handle in group)
+                        continue;
+                    }
+
+                    foreach (NtHandle handle in group)
+                    {
+                        using (var token_result = NtToken.DuplicateFrom(proc.Result, new IntPtr(handle.Handle), 
+                            TokenAccessRights.Query | TokenAccessRights.QuerySource, DuplicateObjectOptions.None, false))
                         {
-                            try
+                            if (!token_result.IsSuccess)
                             {
-                                using (NtToken token = NtToken.DuplicateFrom(proc, new IntPtr(handle.Handle),
-                                            TokenAccessRights.Query | TokenAccessRights.QuerySource))
-                                {
-                                    ListViewItem item = new ListViewItem(handle.ProcessId.ToString());
-                                    item.SubItems.Add(proc.Name);
-                                    item.SubItems.Add(String.Format("0x{0:X}", handle.Handle));
-                                    item.SubItems.Add(token.User.ToString());
-                                    item.SubItems.Add(token.IntegrityLevel.ToString());
-                                    item.SubItems.Add(token.Restricted.ToString());
-                                    item.SubItems.Add(token.AppContainer.ToString());
-                                    item.SubItems.Add(token.TokenType.ToString());
-                                    item.SubItems.Add(token.ImpersonationLevel.ToString());
-                                    item.Tag = token.Duplicate();
-                                    items.Add(item);
-                                }
+                                continue;
                             }
-                            catch (NtException)
-                            {
-                            }
+                            NtToken token = token_result.Result;
+                            ListViewItem item = new ListViewItem(handle.ProcessId.ToString());
+                            item.SubItems.Add(proc.Result.Name);
+                            item.SubItems.Add($"0x{handle.Handle:X}");
+                            item.SubItems.Add(token.User.ToString());
+                            item.SubItems.Add(token.IntegrityLevel.ToString());
+                            item.SubItems.Add(token.Restricted.ToString());
+                            item.SubItems.Add(token.AppContainer.ToString());
+                            item.SubItems.Add(token.TokenType.ToString());
+                            item.SubItems.Add(token.ImpersonationLevel.ToString());
+                            item.Tag = token.Duplicate();
+                            items.Add(item);
                         }
                     }
-                }
-                catch (NtException)
-                {
                 }
             }
             listViewHandles.Items.AddRange(items.ToArray());
@@ -550,8 +546,7 @@ namespace TokenViewer
         {
             if (listViewHandles.SelectedItems.Count > 0)
             {
-                NtToken token = listViewHandles.SelectedItems[0].Tag as NtToken;
-                if (token != null)
+                if (listViewHandles.SelectedItems[0].Tag is NtToken token)
                 {
                     try
                     {

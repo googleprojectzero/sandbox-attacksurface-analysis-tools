@@ -171,14 +171,14 @@ namespace NtApiDotNet.Win32
                 case ServiceTriggerDataType.Level:
                     if (RawData.Length == 1)
                     {
-                        return String.Format("0x{0:X02}", RawData[0]);
+                        return $"0x{RawData[0]:X02}";
                     }
                     break;
                 case ServiceTriggerDataType.KeywordAny:
                 case ServiceTriggerDataType.KeywordAll:
                     if (RawData.Length == 8)
                     {
-                        return String.Format("0x{0:X016}", BitConverter.ToUInt64(RawData, 0));
+                        return $"0x{BitConverter.ToUInt64(RawData, 0):X016}";
                     }
                     break;
                 case ServiceTriggerDataType.String:
@@ -196,7 +196,7 @@ namespace NtApiDotNet.Win32
                     }
                     break;
             }
-            return String.Join(",", RawData.Select(b => String.Format("0x{0:X02}", b)));
+            return String.Join(",", RawData.Select(b => $"0x{b:X02}"));
         }
 
         internal ServiceTriggerCustomData(SERVICE_TRIGGER_SPECIFIC_DATA_ITEM data_item)
@@ -240,9 +240,9 @@ namespace NtApiDotNet.Win32
             switch (TriggerType)
             {
                 case ServiceTriggerType.Custom:
-                    return String.Format("[ETW UUID] {0:B}", SubType);
+                    return $"[ETW UUID] {SubType:B}";
                 case ServiceTriggerType.DeviceInterfaceArrival:
-                    return String.Format("[Interface Class GUID] {0:B}", SubType);
+                    return $"[Interface Class GUID] {SubType:B}";
                 case ServiceTriggerType.GroupPolicy:
                     {
                         if (SubType == MACHINE_POLICY_PRESENT_GUID)
@@ -253,7 +253,7 @@ namespace NtApiDotNet.Win32
                         {
                             return "[User Policy Present]";
                         }
-                        return String.Format("[Unknown Group Policy] {0:B}", SubType);
+                        return $"[Unknown Group Policy] {SubType:B}";
                     }
                 case ServiceTriggerType.NetworkEndpoint:
                     {
@@ -265,7 +265,7 @@ namespace NtApiDotNet.Win32
                         {
                             return "[Named Pipe]";
                         }
-                        return String.Format("[Unknown Network Endpoint] {0:B}", SubType);
+                        return $"[Unknown Network Endpoint] {SubType:B}";
                     }
                 case ServiceTriggerType.DomainJoin:
                     {
@@ -277,7 +277,7 @@ namespace NtApiDotNet.Win32
                         {
                             return "[Domain Leave]";
                         }
-                        return String.Format("[Unknown Domain Join] {0:B}", SubType);
+                        return $"[Unknown Domain Join] {SubType:B}";
                     }
                 case ServiceTriggerType.IPAddressAvailability:
                     {
@@ -289,10 +289,10 @@ namespace NtApiDotNet.Win32
                         {
                             return "[Last IP Address Available]";
                         }
-                        return String.Format("[Unknown IP Address Availability] {0:B}", SubType);
+                        return $"[Unknown IP Address Availability] {SubType:B}";
                     }
                 default:
-                    return String.Format("Unknown Trigger Type: {0} SubType: {1}", TriggerType, SubType);
+                    return $"Unknown Trigger Type: {TriggerType} SubType: {SubType}";
             }
         }
 

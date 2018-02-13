@@ -84,7 +84,7 @@ namespace NtObjectManager
 
         private static string FormatPath(string path, bool win32_path)
         {
-            return String.Format("{0}{1}", win32_path ? @"\\.\pipe\" : NamedPipeBasePath, path);
+            return $"{(win32_path ? @"\\.\pipe\" : NamedPipeBasePath)}{path}";
         }
 
         private void CheckAccess(TokenEntry token, AccessMask access_rights, string path, NtFile file)

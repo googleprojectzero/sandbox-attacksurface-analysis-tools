@@ -170,7 +170,7 @@ namespace NtObjectManager
                 {
                     ret.AddRange(Path.Split('\\'));
                 }
-                return String.Format(@"\{0}", String.Join(@"\", ret));
+                return $@"\{String.Join(@"\", ret)}";
             }
 
             if (Path.StartsWith(@"\") || Root != null)
@@ -190,9 +190,9 @@ namespace NtObjectManager
                 string relative_path = RemoveDrive(current_path.Path);
                 if (relative_path.Length == 0)
                 {
-                    return string.Format(@"{0}\{1}", root_path, Path);
+                    return $@"{root_path}\{Path}";
                 }
-                return string.Format(@"{0}\{1}\{2}", root_path, relative_path, Path);
+                return $@"{root_path}\{relative_path}\{Path}";
             }
             else
             {

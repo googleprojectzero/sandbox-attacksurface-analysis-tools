@@ -661,7 +661,7 @@ namespace NtApiDotNet
         /// <returns>The access mask.</returns>
         public override string ToString()
         {
-            return String.Format("{0:X08}", Access);
+            return $"{Access:X08}";
         }
 
         bool IEquatable<AccessMask>.Equals(AccessMask other)
@@ -788,9 +788,7 @@ namespace NtApiDotNet
         /// <returns>The generic mapping as a string.</returns>
         public override string ToString()
         {
-            return String.Format("R:{0:X08} W:{1:X08} E:{2:X08} A:{3:X08}",
-                GenericRead, GenericWrite, 
-                GenericExecute, GenericAll);
+            return $"R:{GenericRead:X08} W:{GenericWrite:X08} E:{GenericExecute:X08} A:{GenericAll:X08}";
         }
     }
 
@@ -891,7 +889,6 @@ namespace NtApiDotNet
 
         internal void Serialize(BinaryWriter writer)
         {
-            // Length = sizeof(AceHeader) + sizeof(Mask) + ObjectAceData + Sid
             byte[] sid_data = Sid.ToArray();
             int total_length = 4 + 4 + sid_data.Length + ApplicationData.Length;
             ObjectAceFlags flags = ObjectAceFlags.None;
@@ -976,8 +973,7 @@ namespace NtApiDotNet
         /// <returns>The ACE as a string</returns>
         public override string ToString()
         {
-            return String.Format("Type {0} - Flags {1} - Mask {2:X08} - Sid {3}",
-                AceType, AceFlags, Mask, Sid);
+            return $"Type {AceType} - Flags {AceFlags} - Mask {Mask:X08} - Sid {Sid}";
         }
 
         /// <summary>
@@ -994,8 +990,7 @@ namespace NtApiDotNet
             {
                 account = NtSecurity.LookupAccountSid(Sid) ?? Sid.ToString();
             }
-            return String.Format("Type {0} - Flags {1} - Mask {2} - Sid {3}",
-                AceType, AceFlags, mask, account);
+            return $"Type {AceType} - Flags {AceFlags} - Mask {mask} - Sid {account}";
         }
 
         /// <summary>
@@ -1429,8 +1424,7 @@ namespace NtApiDotNet
                 int length = name.Capacity;
                 StringBuilder domain = new StringBuilder(1024);
                 int domain_length = domain.Capacity;
-                SidNameUse name_use;
-                if (!LookupAccountSid(null, sid_buffer, name, ref length, domain, ref domain_length, out name_use))
+                if (!LookupAccountSid(null, sid_buffer, name, ref length, domain, ref domain_length, out SidNameUse name_use))
                 {
                     return null;
                 }
@@ -1441,7 +1435,7 @@ namespace NtApiDotNet
                 }
                 else
                 {
-                    return String.Format("{0}\\{1}", domain, name);
+                    return $@"{domain}\{name}";
                 }
             }
         }
@@ -1656,10 +1650,10 @@ namespace NtApiDotNet
                 sid = GetPackageSidParent(sid);
             }
 
-            string path = string.Format(@"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppContainer\Mappings\{0}", sid);
+            string path = $@"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppContainer\Mappings\{sid}";
             if (child_sid != null)
             {
-                path = string.Format(@"{0}\Children\{1}", path, child_sid);
+                path = $@"{path}\Children\{child_sid}";
             }
 
             using (ObjectAttributes obj_attr = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, rootkey))
@@ -1689,8 +1683,8 @@ namespace NtApiDotNet
                         {
                             parent_moniker_string = ReadMoniker(rootkey, sid) ?? String.Empty;
                         }
-                        
-                        return string.Format("{0}/{1}", parent_moniker_string.TrimEnd('\0'), moniker.Result.ToString().TrimEnd('\0'));
+
+                        return $"{parent_moniker_string.TrimEnd('\0')}/{moniker.Result.ToString().TrimEnd('\0')}";
                     }
                 }
             }

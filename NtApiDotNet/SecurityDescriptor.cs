@@ -75,7 +75,7 @@ namespace NtApiDotNet
         /// <returns>The string form of the SID</returns>
         public override string ToString()
         {
-            return String.Format("{0} - Defaulted: {1}", Sid, Defaulted);
+            return $"{Sid} - Defaulted: {Defaulted}";
         }
     }
 

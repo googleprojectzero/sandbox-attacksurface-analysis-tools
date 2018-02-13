@@ -77,7 +77,7 @@ namespace NtObjectManager
 
         internal ThreadAccessCheckResult(string name, string image_path, int thread_id, string thread_description, int process_id, 
             int session_id, string command_line, AccessMask granted_access,
-            NtType type, string sddl, TokenInformation token_info) : base(String.Format("{0}/{1}.{2}", name, process_id, thread_id), 
+            NtType type, string sddl, TokenInformation token_info) : base($"{name}/{process_id}.{thread_id}", 
                 image_path, process_id, session_id, command_line, granted_access,
                 true, type, sddl, token_info)
         {

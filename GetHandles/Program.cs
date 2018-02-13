@@ -169,20 +169,20 @@ namespace GetHandles
                     switch(mode)
                     {
                         case GroupingMode.Type:
-                            PrintGrouping(totalHandles.GroupBy(f => f.ObjectType), pidToName, k => String.Format("Type: {0}", k), 
-                                e => String.Format("{0:X08} {1:X08} {2}", e.Object, e.GrantedAccess, e.Name), 
+                            PrintGrouping(totalHandles.GroupBy(f => f.ObjectType), pidToName, k => $"Type: {k}", 
+                                e => $"{e.Object:X08} {e.GrantedAccess:X08} {e.Name}", 
                                 shareMode, pids.Count, showsd);
                             break;
                         case GroupingMode.Object:
-                            PrintGrouping(totalHandles.GroupBy(f => f.Object), pidToName, k => String.Format("Object: {0:X08}", k),
-                                e => String.Format("{0,20} {1:X08} {2}", e.ObjectType, e.GrantedAccess, e.Name),
+                            PrintGrouping(totalHandles.GroupBy(f => f.Object), pidToName, k => $"Object: {k:X08}",
+                                e => $"{e.ObjectType,20} {e.GrantedAccess:X08} {e.Name}",
                                 shareMode, pids.Count, showsd);
                             break;
                         case GroupingMode.Name:
-                            PrintGrouping(totalHandles.GroupBy(f => f.ObjectType), pidToName, k => String.Format("Name: {0:X08}", k),
-                                e => String.Format("{0:X08} {1,20} {2:X08} {2}", e.Object, e.Name, e.GrantedAccess), 
+                            PrintGrouping(totalHandles.GroupBy(f => f.ObjectType), pidToName, k => $"Name: {k:X08}",
+                                e => $"{e.Object:X08} {e.Name,20} {e.GrantedAccess:X08} {e.GrantedAccess}", 
                                 shareMode, pids.Count, showsd);
-                            break;                        
+                            break;
                     }
                 }
             }

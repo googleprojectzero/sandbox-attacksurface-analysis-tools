@@ -51,7 +51,7 @@ namespace EditSection
                 builder.Append("W");
             }
 
-            return String.Format("[{0}/0x{0:X}] {1} Size: {2} Access: {3}", ent.Handle, ent.Name, size, builder.ToString());
+            return $"[{ent.Handle}/0x{ent.Handle:X}] {ent.Name} Size: {size} Access: {builder}";
         }
 
         public SectionTreeNode(NtHandle ent)

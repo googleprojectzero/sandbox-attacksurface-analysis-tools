@@ -128,7 +128,7 @@ namespace NtApiDotNet
         /// <returns>The entry as a string</returns>
         public override string ToString()
         {
-            return string.Format("Name: {0} - Data Size: {1} - Flags {2}", Name, Data.Length, Flags);
+            return $"Name: {Name} - Data Size: {Data.Length} - Flags {Flags}";
         }
     }
 

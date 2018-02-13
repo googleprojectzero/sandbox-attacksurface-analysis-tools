@@ -200,7 +200,7 @@ namespace NtObjectManager
                 }
                 else
                 {
-                    WriteWarning(String.Format("Opening {0} failed: {1}", path, result.Status));
+                    WriteWarning("Opening {path} failed: {result.Status}");
                 }
             }
         }

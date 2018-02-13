@@ -35,8 +35,8 @@ namespace EditSection
             {
             }
 
-            return string.IsNullOrEmpty(name) ? string.Format("Handle {0} - 0x{1:X}", 
-                section.Handle.DangerousGetHandle(), map.DangerousGetHandle().ToInt64()) : name;
+            return string.IsNullOrEmpty(name) ? 
+                    $"Handle {section.Handle.DangerousGetHandle()} - 0x{map.DangerousGetHandle().ToInt64():X}" : name;
         }
 
         /// <summary>

@@ -168,7 +168,7 @@ namespace NtApiDotNet
 
             byte[] temp = _value;
             Array.Resize(ref temp, 8);
-            return String.Format("Authority {0}", BitConverter.ToInt64(temp, 0));
+            return $"Authority {BitConverter.ToInt64(temp, 0)}";
         }
     }
 
@@ -489,7 +489,7 @@ namespace NtApiDotNet
             parts.Add(name.Substring(start));
             parts[0] = Char.ToUpper(parts[0][0]) + parts[0].Substring(1);
 
-            return String.Format(@"NAMED CAPABILITIES\{0}", String.Join(" ", parts));
+            return $@"NAMED CAPABILITIES\{String.Join(" ", parts)}";
         }
 
         /// <summary>

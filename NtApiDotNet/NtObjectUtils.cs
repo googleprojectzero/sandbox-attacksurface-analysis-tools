@@ -217,7 +217,7 @@ namespace NtApiDotNet
 
             if (remaining != 0)
             {
-                names.Add(String.Format("0x{0:X}", remaining));
+                names.Add($"0x{remaining:X}");
             }
 
             if (names.Count == 0)

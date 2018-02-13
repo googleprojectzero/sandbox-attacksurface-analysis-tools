@@ -32,12 +32,6 @@ namespace TokenViewer
     {
         private NtToken _token;
 
-        static string FormatLuid(Luid luid)
-        {
-            return String.Format("{0:X08}-{1:X08}",
-                luid.HighPart, luid.LowPart);
-        }
-
         private static void PopulateGroupList(ListView listView, IEnumerable<UserGroup> groups)
         {
             foreach (UserGroup group in groups)
@@ -111,11 +105,11 @@ namespace TokenViewer
                 foreach (ClaimSecurityAttribute attr in attrs)
                 {
                     TreeNode node = new TreeNode(attr.Name);
-                    node.Nodes.Add(String.Format("Flags: {0}", attr.Flags));
+                    node.Nodes.Add($"Flags: {attr.Flags}");
                     int value_index = 0;
                     foreach (object value in attr.Values)
                     {
-                        node.Nodes.Add(String.Format("Value {0}: {1}", value_index++, value));
+                        node.Nodes.Add($"Value {value_index++}: {value}");
                     }
                     treeViewSecurityAttributes.Nodes.Add(node);
                 }
@@ -146,9 +140,9 @@ namespace TokenViewer
                 txtImpLevel.Text = "N/A";
             }
 
-            txtTokenId.Text = FormatLuid(_token.Id);
-            txtModifiedId.Text = FormatLuid(_token.ModifiedId);
-            txtAuthId.Text = FormatLuid(_token.AuthenticationId);
+            txtTokenId.Text = _token.Id.ToString();
+            txtModifiedId.Text = _token.ModifiedId.ToString();
+            txtAuthId.Text = _token.AuthenticationId.ToString();
             if (Enum.IsDefined(typeof(TokenIntegrityLevel), _token.IntegrityLevel))
             {
                 comboBoxIL.SelectedItem = _token.IntegrityLevel;
@@ -164,7 +158,7 @@ namespace TokenViewer
             if (_token.IsAccessGranted(TokenAccessRights.QuerySource))
             {
                 txtSourceName.Text = _token.Source.SourceName;
-                txtSourceId.Text = FormatLuid(_token.Source.SourceIdentifier);
+                txtSourceId.Text = _token.Source.SourceIdentifier.ToString();
             }
             else
             {
@@ -174,7 +168,7 @@ namespace TokenViewer
             TokenElevationType evtype = _token.ElevationType;
             txtElevationType.Text = evtype.ToString();
             txtIsElevated.Text = _token.Elevated.ToString();
-            txtOriginLoginId.Text = FormatLuid(_token.Origin);
+            txtOriginLoginId.Text = _token.Origin.ToString();
 
             btnLinkedToken.Enabled = evtype != TokenElevationType.Default;
 
@@ -197,7 +191,7 @@ namespace TokenViewer
 
                     if ((ace.Mask & ~mask).HasAccess)
                     {
-                        maskstr = String.Format("0x{0:X08}", ace.Mask);
+                        maskstr = $"0x{ace.Mask:X08}";
                     }
                     else
                     {

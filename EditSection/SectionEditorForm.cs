@@ -32,7 +32,7 @@ namespace EditSection
             _random = new Random();
             _map = map;
             _readOnly = readOnly;
-            _prov = new NativeMappedFileByteProvider(_map, _readOnly);            
+            _prov = new NativeMappedFileByteProvider(_map, _readOnly);
 
             InitializeComponent();
             if (_readOnly)
@@ -46,16 +46,21 @@ namespace EditSection
             Disposed += SectionEditorForm_Disposed;
         }
 
+        private string GetReadOnlyString()
+        {
+            return _readOnly ? "(RO)" : String.Empty;
+        }
+
         public SectionEditorForm(NtMappedSection map, NtHandle handle, bool readOnly) 
             : this(map, readOnly)
         {
-            TabText = String.Format("Process {0} - Handle {1} {2}", handle.ProcessId, handle.Handle, _readOnly ? "(RO)" : "");
+            TabText = $"Process {handle.ProcessId} - Handle {handle.Handle} {GetReadOnlyString()}";
         }
 
         public SectionEditorForm(NtMappedSection map, string name, bool readOnly)
             : this(map, readOnly)
         {
-            TabText = String.Format("{0} {1}", name, _readOnly ? "(RO)" : "");
+            TabText = $"{name} {GetReadOnlyString()}";
             Text = TabText;
         }
 

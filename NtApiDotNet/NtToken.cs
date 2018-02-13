@@ -226,7 +226,7 @@ namespace NtApiDotNet
 
         public override string ToString()
         {
-            return String.Format("Identifier = {0} - Name = {1}", SourceIdentifier, SourceName);
+            return $"Identifier = {SourceIdentifier} - Name = {SourceName}";
         }
     }
 
@@ -251,7 +251,7 @@ namespace NtApiDotNet
 
         public override string ToString()
         {
-            return String.Format("{0:X08}-{1:X08}", HighPart, LowPart);
+            return $"{HighPart:X08}-{LowPart:X08}";
         }
         
         public override bool Equals(object obj)
@@ -806,7 +806,7 @@ namespace NtApiDotNet
                     {
                         return builder.ToString();
                     }
-                    return String.Format("UnknownPrivilege-{0}", luid);
+                    return $"UnknownPrivilege-{luid}";
                 }
             }
         }
@@ -2433,7 +2433,7 @@ namespace NtApiDotNet
             {
                 try
                 {
-                    return String.Format("{0} - {1}", User.Sid.Name, AuthenticationId);
+                    return $"{User.Sid.Name} - {AuthenticationId}";
                 }
                 catch
                 {

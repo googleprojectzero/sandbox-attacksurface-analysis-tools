@@ -87,7 +87,7 @@ namespace NtApiDotNet
             _root = root;
             Name = name;
             NtTypeName = typename;
-            FullPath = String.Format(@"{0}\{1}", base_path, Name);
+            FullPath = $@"{base_path}\{Name}";
         }
 
         public NtObject Open(AccessMask access)
@@ -555,10 +555,10 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error</exception>
         public static NtDirectory OpenSessionDirectory(int sessionid, string sub_directory, DirectoryAccessRights desired_access)
         {
-            string directory = String.Format(@"\Sessions\{0}", sessionid);
+            string directory = $@"\Sessions\{sessionid}";
             if (!String.IsNullOrEmpty(sub_directory))
             {
-                directory = String.Format(@"{0}\{1}", directory, sub_directory);
+                directory = $@"{directory}\{sub_directory}";
             }
             return Open(directory, null, desired_access);
         }
@@ -617,7 +617,7 @@ namespace NtApiDotNet
             }
             else
             {
-                return string.Format(@"\Sessions\{0}\BaseNamedObjects", session_id);
+                return $@"\Sessions\{session_id}\BaseNamedObjects";
             }
         }
 
@@ -643,7 +643,7 @@ namespace NtApiDotNet
             }
             else
             {
-                return string.Format(@"\Sessions\{0}\Windows", session_id);
+                return $@"\Sessions\{session_id}\Windows";
             }
         }
 
@@ -663,7 +663,7 @@ namespace NtApiDotNet
         /// <returns>The path to the window stations object directory.</returns>
         public static string GetWindowStations(int session_id)
         {
-            return string.Format(@"{0}\WindowStations", GetWindows(session_id));
+            return $@"{GetWindows(session_id)}\WindowStations";
         }
 
         /// <summary>
@@ -688,7 +688,7 @@ namespace NtApiDotNet
                 return NtDirectory.Open(@"\GLOBAL??");
             }
 
-            return NtDirectory.Open(String.Format(@"\Sessions\0\DosDevices\{0:X08}-{1:X08}", authid.HighPart, authid.LowPart));
+            return NtDirectory.Open($@"\Sessions\0\DosDevices\{authid}");
         }
 
         /// <summary>
@@ -718,7 +718,7 @@ namespace NtApiDotNet
             NtSystemCalls.NtCreatePrivateNamespace(out handle, desired_access, obj_attributes, boundary_descriptor.Handle).ToNtException();
             NtDirectory ret = new NtDirectory(handle);
             ret._private_namespace = true;
-            return ret;         
+            return ret;
         }
 
         /// <summary>
@@ -747,8 +747,10 @@ namespace NtApiDotNet
         {
             SafeKernelObjectHandle handle;
             NtSystemCalls.NtOpenPrivateNamespace(out handle, desired_access, obj_attributes, boundary_descriptor.Handle).ToNtException();
-            NtDirectory ret = new NtDirectory(handle);
-            ret._private_namespace = true;
+            NtDirectory ret = new NtDirectory(handle)
+            {
+                _private_namespace = true
+            };
             return ret;
         }
 

@@ -175,7 +175,7 @@ namespace NtObjectManager
         /// <returns></returns>
         public override string ToString()
         {
-            return String.Format("User: {0}", UserName);
+            return $"User: {UserName}";
         }
 
         internal TokenInformation(NtToken token) : this(token, null)
@@ -382,7 +382,7 @@ namespace NtObjectManager
                 }
                 catch (NtException ex)
                 {
-                    WriteError(new ErrorRecord(ex, "OpenTokenError", ErrorCategory.OpenError, string.Format("pid:{0}", pid)));
+                    WriteError(new ErrorRecord(ex, "OpenTokenError", ErrorCategory.OpenError, $"pid:{pid}"));
                 }
             }
         }
@@ -430,12 +430,12 @@ namespace NtObjectManager
 
         internal void WriteAccessWarning(string path, NtStatus status)
         {
-            WriteWarning(String.Format("Couldn't access {0} - Status: {1}", path, status));
+            WriteWarning($"Couldn't access {path} - Status: {status}");
         }
 
         internal void WriteAccessWarning(NtObject root, string path, NtStatus status)
         {
-            WriteAccessWarning(String.Format(@"{0}\{1}", root.FullPath.TrimEnd('\\'), path), status);
+            WriteAccessWarning($@"{root.FullPath.TrimEnd('\\')}\{path}", status);
         }
 
         private class TokenEntryComparer : IEqualityComparer<TokenEntry>
@@ -653,7 +653,7 @@ namespace NtObjectManager
             {
                 if (!path.StartsWith(@"\"))
                 {
-                    WriteWarning(String.Format("Path '{0}' doesn't start with \\. Perhaps you want to specify -Win32Path instead?", path));
+                    WriteWarning($"Path '{path}' doesn't start with \\. Perhaps you want to specify -Win32Path instead?");
                 }
 
                 try

@@ -851,7 +851,7 @@ namespace NtApiDotNet
             {
                 try
                 {
-                    return string.Format("thread:{0} - process:{1}", ThreadId, ProcessId);
+                    return $"thread:{ThreadId} - process:{ProcessId}";
                 }
                 catch
                 {

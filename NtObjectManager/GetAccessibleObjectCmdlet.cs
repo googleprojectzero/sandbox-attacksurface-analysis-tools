@@ -237,7 +237,7 @@ namespace NtObjectManager
                             }
                             else
                             {
-                                WriteWarning(String.Format(@"Can't open {0}\{1} with type {2}", dir.FullPath, entry.Name, entry.NtTypeName));
+                                WriteWarning($@"Can't open {dir.FullPath}\{entry.Name} with type {entry.NtTypeName}");
                             }
                         }
                     }
@@ -284,7 +284,7 @@ namespace NtObjectManager
             }
             else
             {
-                base_path = String.Format(@"{0}\{1}", _base_named_objects, base_path);
+                base_path = $@"{_base_named_objects}\{base_path}";
             }
             return base_path;
         }

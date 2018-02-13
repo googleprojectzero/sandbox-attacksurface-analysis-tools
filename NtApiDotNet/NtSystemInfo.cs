@@ -653,7 +653,7 @@ namespace NtApiDotNet
             {
                 if (NtType == null)
                 {
-                    return String.Format("Unknown Type: {0}", ObjectTypeIndex);
+                    return $"Unknown Type: {ObjectTypeIndex}";
                 }
                 return NtType.Name;
             }

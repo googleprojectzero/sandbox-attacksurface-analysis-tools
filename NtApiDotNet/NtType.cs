@@ -112,7 +112,7 @@ namespace NtApiDotNet
                 new Type[] { typeof(ObjectAttributes), typeof(AccessMask), typeof(bool) }, null);
             if (from_name_method == null)
             {
-                System.Diagnostics.Debug.WriteLine(String.Format("Type {0} doesn't have a FromName method", object_type));
+                System.Diagnostics.Debug.WriteLine($"Type {object_type} doesn't have a FromName method");
             }
             else
             {
@@ -298,7 +298,7 @@ namespace NtApiDotNet
             {
                 if (throw_on_error)
                 {
-                    throw new ArgumentException(String.Format("Can't open type {0} by name", Name));
+                    throw new ArgumentException($"Can't open type {Name} by name");
                 }
                 return NtStatus.STATUS_OBJECT_PATH_INVALID.CreateResultFromError<NtObject>(false);
             }
@@ -460,9 +460,9 @@ namespace NtApiDotNet
             Name = name;
             if (Name == null)
             {
-                Name = String.Format("Unknown {0}", id);
+                Name = $"Unknown {id}";
             }
-            System.Diagnostics.Debug.WriteLine(String.Format("Generating Fake Type for {0}", Name));
+            System.Diagnostics.Debug.WriteLine($"Generating Fake Type for {Name}");
             _type_factory = _generic_factory;
             GenericRead = String.Empty;
             GenericWrite = String.Empty;
@@ -645,7 +645,7 @@ namespace NtApiDotNet
         /// <returns>Returns the type as a string.</returns>
         public override string ToString()
         {
-            return String.Format("Name = {0} - Index = {1}", Name, Index);
+            return $"Name = {Name} - Index = {Index}";
         }
 
         /// <summary>

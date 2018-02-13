@@ -680,7 +680,7 @@ namespace NtApiDotNet
                 typename = NtDirectory.GetDirectoryEntryType(path, root);
                 if (typename == null)
                 {
-                    throw new ArgumentException(String.Format("Can't find type for path {0}", path));
+                    throw new ArgumentException($"Can't find type for path {path}");
                 }
             }
 
@@ -691,7 +691,7 @@ namespace NtApiDotNet
             }
             else
             {
-                throw new ArgumentException(String.Format("Can't open type {0}", typename));
+                throw new ArgumentException($"Can't open type {typename}");
             }
         }
 

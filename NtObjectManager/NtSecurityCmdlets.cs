@@ -471,7 +471,7 @@ namespace NtApiDotNet
                 NtType type = NtType.GetTypeByName(ToSpecificAccess, false);
                 if (type == null)
                 {
-                    throw new ArgumentException(String.Format("'{0}' is not a valid NT type name", ToSpecificAccess));
+                    throw new ArgumentException($"'{ToSpecificAccess}' is not a valid NT type name");
                 }
                 WriteObject(mask.ToSpecificAccess(type.AccessRightsType));
             }

@@ -130,8 +130,8 @@ namespace TokenViewer
                 {
                     using (NtProcess process = NtProcess.Open(pid, ProcessAccessRights.QueryLimitedInformation))
                     {
-                        return new TokenForm(process.OpenToken(), 
-                            string.Format("{0}:{1}", process.Name, pid));
+                        return new TokenForm(process.OpenToken(),
+                            $"{process.Name}:{pid}");
                     }
                 }
             }

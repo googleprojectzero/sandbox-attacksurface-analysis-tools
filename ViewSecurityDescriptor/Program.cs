@@ -50,7 +50,7 @@ namespace ViewSecurityDescriptor
                         NtType type = NtType.GetTypeByName(args[2], false);
                         if (type == null)
                         {
-                            throw new ArgumentException(string.Format("Unknown NT type {0}", args[2]));
+                            throw new ArgumentException($"Unknown NT type {args[2]}");
                         }
                         SecurityUtils.EditSecurity(IntPtr.Zero, args[0], sd, type);
                     }

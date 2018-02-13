@@ -25,8 +25,8 @@ namespace EditSection
         private int _id;
         private string _name;
 
-        public ProcessTreeNode(Process p) 
-            : base(String.Format("[{0}/0x{0:X}] {1}", p.Id, p.ProcessName))
+        public ProcessTreeNode(Process p)
+            : base($"[{p.Id}/0x{p.Id:X}] {p.ProcessName}")
         {
             _id = p.Id;
             _name = p.ProcessName;
@@ -42,7 +42,7 @@ namespace EditSection
                 {
                     Nodes.Add(new SectionTreeNode(h));
                 }
-            }            
+            }
         }
     }
 }

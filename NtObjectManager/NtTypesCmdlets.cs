@@ -72,7 +72,7 @@ namespace NtObjectManager
                 }
                 else
                 {
-                    throw new ArgumentException(String.Format("Invalid Type Name {0}", TypeName));
+                    throw new ArgumentException($"Invalid Type Name {TypeName}");
                 }
             }
             else

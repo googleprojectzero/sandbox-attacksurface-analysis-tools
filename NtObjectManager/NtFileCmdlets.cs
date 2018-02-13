@@ -85,7 +85,7 @@ namespace NtObjectManager
                 case RtlPathType.Relative:
                     return System.IO.Path.Combine(current_path.Path, path);
                 case RtlPathType.Rooted:
-                    return string.Format("{0}:{1}", current_path.Drive.Name, path);
+                    return $"{current_path.Drive.Name}:{path}";
                 case RtlPathType.DriveRelative:
                     if (path.Substring(0, 1).Equals(current_path.Drive.Name, StringComparison.OrdinalIgnoreCase))
                     {

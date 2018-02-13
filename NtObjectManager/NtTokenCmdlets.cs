@@ -553,7 +553,7 @@ namespace NtObjectManager
             Sid package_sid = TokenUtils.GetPackageSidFromName(PackageSid);
             if (!NtSecurity.IsPackageSid(package_sid))
             {
-                throw new ArgumentException(String.Format("Invalid Package Sid {0}", package_sid));
+                throw new ArgumentException($"Invalid Package Sid {package_sid}");
             }
 
             if (!String.IsNullOrEmpty(RestrictedPackageName))

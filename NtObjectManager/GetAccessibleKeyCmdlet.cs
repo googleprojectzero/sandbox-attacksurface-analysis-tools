@@ -132,7 +132,7 @@ namespace NtObjectManager
                         }
                         else
                         {
-                            WriteAccessWarning(String.Format(@"{0}\{1}", key.FullPath, subkey), result.Status);
+                            WriteAccessWarning($@"{key.FullPath}\{subkey}", result.Status);
                         }
                     }
                 }

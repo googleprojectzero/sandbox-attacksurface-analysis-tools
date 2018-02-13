@@ -39,7 +39,7 @@ namespace NtObjectManager
                 : base(drive_info)
             {
                 DirectoryRoot = root;
-            }            
+            }
 
             public NtDirectory DirectoryRoot { get; private set; }
         }
@@ -79,11 +79,11 @@ namespace NtObjectManager
             }
             else
             {
-                base_dir = String.Format(@"{0}Sessions\{1}\BaseNamedObjects", GLOBAL_ROOT, session_id);
+                base_dir = $@"{GLOBAL_ROOT}Sessions\{session_id}\BaseNamedObjects";
             }
 
             PSDriveInfo session = new PSDriveInfo("SessionNtObject", this.ProviderInfo, 
-                String.Format(base_dir, Process.GetCurrentProcess().SessionId), "Current Session NT Objects", null);
+                base_dir, "Current Session NT Objects", null);
             Collection<PSDriveInfo> drives = new Collection<PSDriveInfo>() { drive, session };
             return drives;
         }
@@ -345,7 +345,7 @@ namespace NtObjectManager
             }
             else
             {
-                return String.Format(@"{0}\{1}", drive_path, relative_path);
+                return $@"{drive_path}\{relative_path}";
             }
         }
 
@@ -357,7 +357,7 @@ namespace NtObjectManager
             }
             else
             {
-                return String.Format(@"{0}\{1}", relative_path, name);
+                return $@"{relative_path}\{name}";
             }
         }
 
@@ -638,7 +638,7 @@ namespace NtObjectManager
                     obj = NtSemaphore.Create(relative_path, GetDrive().DirectoryRoot, 0, max_count);
                     break;
                 default:
-                    throw new ArgumentException(String.Format("Can't create new object of type {0}", itemTypeName));
+                    throw new ArgumentException($"Can't create new object of type {itemTypeName}");
             }
 
             WriteItemObject(obj, path, container);

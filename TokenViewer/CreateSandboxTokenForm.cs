@@ -121,7 +121,7 @@ namespace TokenViewer
             Sid package_sid = TokenUtils.GetPackageSidFromName(textBoxPackageSid.Text);
             if (!NtSecurity.IsPackageSid(package_sid))
             {
-                throw new ArgumentException(String.Format("Invalid Package Sid {0}", package_sid));
+                throw new ArgumentException($"Invalid Package Sid {package_sid}");
             }
             
             Sid[] capabilities = GetGroupFromList(listViewCapabilities.Items.OfType<ListViewItem>());
@@ -129,7 +129,7 @@ namespace TokenViewer
             {
                 if (!NtSecurity.IsCapabilitySid(cap))
                 {
-                    throw new ArgumentException(String.Format("Invalid Capability Sid {0}", cap));
+                    throw new ArgumentException($"Invalid Capability Sid {cap}");
                 }
             }
 
