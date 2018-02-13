@@ -177,9 +177,7 @@ namespace NtApiDotNet
 
         private static SecurityDescriptorSid QuerySid(SafeBuffer buffer, QuerySidFunc func)
         {
-            IntPtr sid;
-            bool sid_defaulted;
-            func(buffer, out sid, out sid_defaulted).ToNtException();
+            func(buffer, out IntPtr sid, out bool sid_defaulted).ToNtException();
             if (sid != IntPtr.Zero)
             {
                 return new SecurityDescriptorSid(new Sid(sid), sid_defaulted);
@@ -189,11 +187,7 @@ namespace NtApiDotNet
 
         private static Acl QueryAcl(SafeBuffer buffer, QueryAclFunc func)
         {
-            IntPtr acl;
-            bool acl_present;
-            bool acl_defaulted;
-
-            func(buffer, out acl_present, out acl, out acl_defaulted).ToNtException();
+            func(buffer, out bool acl_present, out IntPtr acl, out bool acl_defaulted).ToNtException();
             if (!acl_present)
             {
                 return null;
@@ -213,9 +207,7 @@ namespace NtApiDotNet
             Group = QuerySid(buffer, NtRtl.RtlGetGroupSecurityDescriptor);
             Dacl = QueryAcl(buffer, NtRtl.RtlGetDaclSecurityDescriptor);
             Sacl = QueryAcl(buffer, NtRtl.RtlGetSaclSecurityDescriptor);
-            SecurityDescriptorControl control;
-            uint revision;
-            NtRtl.RtlGetControlSecurityDescriptor(buffer, out control, out revision).ToNtException();
+            NtRtl.RtlGetControlSecurityDescriptor(buffer, out SecurityDescriptorControl control, out uint revision).ToNtException();
             Control = control;
             Revision = revision;
         }
@@ -260,8 +252,10 @@ namespace NtApiDotNet
             Dacl = token.DefaultDacl;
             if (token.IntegrityLevel< TokenIntegrityLevel.Medium)
             {
-                Sacl = new Acl();
-                Sacl.Add(new Ace(AceType.MandatoryLabel, AceFlags.None, 1, token.IntegrityLevelSid.Sid));
+                Sacl = new Acl
+                {
+                    new Ace(AceType.MandatoryLabel, AceFlags.None, 1, token.IntegrityLevelSid.Sid)
+                };
             }
         }
 
@@ -287,10 +281,12 @@ namespace NtApiDotNet
             SecurityDescriptor creator_sd = null;
             if (token != null)
             {
-                creator_sd = new SecurityDescriptor();
-                creator_sd.Owner = new SecurityDescriptorSid(token.Owner, false);
-                creator_sd.Group = new SecurityDescriptorSid(token.PrimaryGroup, false);
-                creator_sd.Dacl = token.DefaultDacl;
+                creator_sd = new SecurityDescriptor
+                {
+                    Owner = new SecurityDescriptorSid(token.Owner, false),
+                    Group = new SecurityDescriptorSid(token.PrimaryGroup, false),
+                    Dacl = token.DefaultDacl
+                };
             }
 
             NtType type = base_object.NtType;
