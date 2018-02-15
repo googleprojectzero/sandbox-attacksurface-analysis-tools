@@ -14,8 +14,6 @@
 
 using NtApiDotNet;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Windows.Forms;
 
 namespace EditSection
@@ -25,11 +23,11 @@ namespace EditSection
         private int _id;
         private string _name;
 
-        public ProcessTreeNode(Process p)
-            : base($"[{p.Id}/0x{p.Id:X}] {p.ProcessName}")
+        public ProcessTreeNode(NtProcess p)
+            : base($"[{p.ProcessId}/0x{p.ProcessId:X}] {p.Name}")
         {
-            _id = p.Id;
-            _name = p.ProcessName;
+            _id = p.ProcessId;
+            _name = p.Name;
             Nodes.Add(new TreeNode("Dummy"));
         }
 

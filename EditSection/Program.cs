@@ -47,7 +47,7 @@ namespace EditSection
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            
+            NtToken.EnableDebugPrivilege();
 
             try
             {

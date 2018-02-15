@@ -48,7 +48,7 @@ namespace EditSection
 
         private string GetReadOnlyString()
         {
-            return _readOnly ? "(RO)" : String.Empty;
+            return $"({_map.Protection.ToString()})";
         }
 
         public SectionEditorForm(NtMappedSection map, NtHandle handle, bool readOnly) 
@@ -77,6 +77,33 @@ namespace EditSection
             }
         }
 
+        private void SaveSelectionToFile(long start, long length)
+        {
+            using (SaveFileDialog dlg = new SaveFileDialog())
+            {
+                dlg.Filter = "All Files (*.*)|*.*";
+
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    byte[] data = new byte[length];
+
+                    for (long i = 0; i < length; ++i)
+                    {
+                        data[i] = _prov.ReadByte(i + start);
+                    }
+
+                    try
+                    {
+                        File.WriteAllBytes(dlg.FileName, data);
+                    }
+                    catch (IOException ex)
+                    {
+                        MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
         private void saveToFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
             long start = hexBox.SelectionStart;
@@ -84,35 +111,18 @@ namespace EditSection
 
             if (length > 0)
             {
-                using (SaveFileDialog dlg = new SaveFileDialog())
-                {
-                    dlg.Filter = "All Files (*.*)|*.*";
-
-                    if (dlg.ShowDialog(this) == DialogResult.OK)
-                    {
-                        byte[] data = new byte[length];
-
-                        for (long i = 0; i < length; ++i)
-                        {
-                            data[i] = _prov.ReadByte(i + start);
-                        }
-
-                        try
-                        {
-                            File.WriteAllBytes(dlg.FileName, data);
-                        }
-                        catch (IOException ex)
-                        {
-                            MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                    }
-                }
+                SaveSelectionToFile(start, length);
+            }
+            else
+            {
+                MessageBox.Show(this, "Select a part of the section to save", 
+                    "Select", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
         }
 
         private void loadFromFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            long start = hexBox.SelectionStart;            
+            long start = hexBox.SelectionStart;
 
             using (OpenFileDialog dlg = new OpenFileDialog())
             {
