@@ -16,7 +16,7 @@ using NtApiDotNet;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace EditSection
@@ -25,52 +25,36 @@ namespace EditSection
     {
         static string _last_filter;
 
-        private class ProcessComparer : IComparer<Process>
-        {
-            public int Compare(Process x, Process y)
-            {
-                return x.Id.CompareTo(y.Id);
-            }
-        }
-
         private void UpdateProcesses(string nameFilter)
         {
-            Process[] ps = Process.GetProcesses();
-
-            treeViewProcesses.SuspendLayout();
-
-            try
+            using (var ps = NtProcess.GetProcesses(ProcessAccessRights.DupHandle 
+                | ProcessAccessRights.QueryLimitedInformation, true).ToDisposableList())
             {
-                treeViewProcesses.Nodes.Clear();
+                treeViewProcesses.SuspendLayout();
 
-                Array.Sort(ps, new ProcessComparer());
-
-                foreach (Process p in ps)
+                try
                 {
-                    if (!String.IsNullOrWhiteSpace(nameFilter))
+                    treeViewProcesses.Nodes.Clear();
+                    IEnumerable<NtProcess> ps_list = ps.OrderBy(p => p.ProcessId);
+                    if (!string.IsNullOrWhiteSpace(nameFilter))
                     {
-                        if (!p.ProcessName.ToLower().Contains(nameFilter.ToLower()))
-                        {
-                            continue;
-                        }
+                        nameFilter = nameFilter.ToLower();
+                        ps_list = ps_list.Where(p => p.Name.ToLower().Contains(nameFilter));
                     }
 
-                    TreeNode node = new ProcessTreeNode(p);                    
-
-                    treeViewProcesses.Nodes.Add(node);                    
+                    foreach (var p in ps_list)
+                    {
+                        TreeNode node = new ProcessTreeNode(p);
+                        treeViewProcesses.Nodes.Add(node);
+                    }
                 }
-            }
-            finally
-            {
-                foreach (Process p in ps)
+                finally
                 {
-                    p.Close();
+                    treeViewProcesses.ResumeLayout();
                 }
 
-                treeViewProcesses.ResumeLayout();
+                _last_filter = nameFilter;
             }
-
-            _last_filter = nameFilter;
         }
 
         public SelectSectionForm()
@@ -82,7 +66,7 @@ namespace EditSection
                 textBoxFilter.Text = _last_filter;
             }
 
-            UpdateProcesses(textBoxFilter.Text);       
+            UpdateProcesses(textBoxFilter.Text);
         }
 
         private void treeViewProcesses_BeforeExpand(object sender, TreeViewCancelEventArgs e)
