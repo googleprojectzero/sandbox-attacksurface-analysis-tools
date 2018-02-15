@@ -276,10 +276,9 @@ namespace NtApiDotNet
         {
             using (var buffer = new SafeStructureInOutBuffer<UnicodeStringOut>(0x1000, true))
             {
-                IntPtr ret_length;
                 return NtSystemCalls.NtQueryVirtualMemory(process,
                     new IntPtr(base_address), MemoryInformationClass.MemorySectionName,
-                    buffer, buffer.LengthIntPtr, out ret_length)
+                    buffer, buffer.LengthIntPtr, out IntPtr ret_length)
                     .CreateResult(throw_on_error, () => buffer.Result.ToString());
             }
         }
@@ -309,10 +308,9 @@ namespace NtApiDotNet
             string mapped_image_path = String.Empty;
             using (var buffer = new SafeStructureInOutBuffer<MemoryBasicInformation>())
             {
-                IntPtr ret_length;
-                NtSystemCalls.NtQueryVirtualMemory(process, 
-                    new IntPtr(base_address), MemoryInformationClass.MemoryBasicInformation, 
-                    buffer, buffer.LengthIntPtr, out ret_length).ToNtException();
+                NtSystemCalls.NtQueryVirtualMemory(process,
+                    new IntPtr(base_address), MemoryInformationClass.MemoryBasicInformation,
+                    buffer, buffer.LengthIntPtr, out IntPtr ret_length).ToNtException();
                 basic_info = buffer.Result;
             }
 

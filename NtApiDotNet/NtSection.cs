@@ -201,6 +201,17 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Query the memory protection setting for this mapping.
+        /// </summary>
+        public MemoryAllocationProtect Protection
+        {
+            get
+            {
+                return NtVirtualMemory.QueryMemoryInformation(Process.Handle, DangerousGetHandle().ToInt64()).Protect;
+            }
+        }
+
         internal NtMappedSection(IntPtr pointer, long size, NtProcess process, bool writable) : base(true)
         {
             SetHandle(pointer); 
