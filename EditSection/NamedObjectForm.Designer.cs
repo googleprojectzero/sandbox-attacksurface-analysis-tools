@@ -48,20 +48,20 @@
             // 
             label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             label1.AutoSize = true;
-            label1.Location = new System.Drawing.Point(16, 348);
+            label1.Location = new System.Drawing.Point(18, 435);
             label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label1.Name = "label1";
-            label1.Size = new System.Drawing.Size(49, 17);
+            label1.Size = new System.Drawing.Size(55, 20);
             label1.TabIndex = 5;
             label1.Text = "Name:";
             // 
             // btnOpen
             // 
             this.btnOpen.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btnOpen.Location = new System.Drawing.Point(256, 378);
-            this.btnOpen.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnOpen.Location = new System.Drawing.Point(288, 472);
+            this.btnOpen.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnOpen.Name = "btnOpen";
-            this.btnOpen.Size = new System.Drawing.Size(100, 28);
+            this.btnOpen.Size = new System.Drawing.Size(112, 35);
             this.btnOpen.TabIndex = 0;
             this.btnOpen.Text = "Open";
             this.btnOpen.UseVisualStyleBackColor = true;
@@ -71,10 +71,10 @@
             // 
             this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnCancel.Location = new System.Drawing.Point(487, 378);
-            this.btnCancel.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnCancel.Location = new System.Drawing.Point(548, 472);
+            this.btnCancel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(100, 28);
+            this.btnCancel.Size = new System.Drawing.Size(112, 35);
             this.btnCancel.TabIndex = 1;
             this.btnCancel.Text = "Cancel";
             this.btnCancel.UseVisualStyleBackColor = true;
@@ -84,10 +84,10 @@
             // 
             this.checkReadOnly.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.checkReadOnly.AutoSize = true;
-            this.checkReadOnly.Location = new System.Drawing.Point(709, 379);
-            this.checkReadOnly.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.checkReadOnly.Location = new System.Drawing.Point(798, 476);
+            this.checkReadOnly.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.checkReadOnly.Name = "checkReadOnly";
-            this.checkReadOnly.Size = new System.Drawing.Size(97, 21);
+            this.checkReadOnly.Size = new System.Drawing.Size(109, 24);
             this.checkReadOnly.TabIndex = 2;
             this.checkReadOnly.Text = "Read Only";
             this.checkReadOnly.UseVisualStyleBackColor = true;
@@ -101,11 +101,11 @@
             columnHeaderName});
             this.listViewSections.FullRowSelect = true;
             this.listViewSections.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
-            this.listViewSections.Location = new System.Drawing.Point(16, 15);
-            this.listViewSections.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.listViewSections.Location = new System.Drawing.Point(18, 19);
+            this.listViewSections.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.listViewSections.MultiSelect = false;
             this.listViewSections.Name = "listViewSections";
-            this.listViewSections.Size = new System.Drawing.Size(833, 322);
+            this.listViewSections.Size = new System.Drawing.Size(937, 402);
             this.listViewSections.TabIndex = 3;
             this.listViewSections.UseCompatibleStateImageBehavior = false;
             this.listViewSections.View = System.Windows.Forms.View.Details;
@@ -116,19 +116,19 @@
             // 
             this.txtObjectName.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtObjectName.Location = new System.Drawing.Point(75, 345);
-            this.txtObjectName.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.txtObjectName.Location = new System.Drawing.Point(84, 431);
+            this.txtObjectName.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.txtObjectName.Name = "txtObjectName";
-            this.txtObjectName.Size = new System.Drawing.Size(775, 22);
+            this.txtObjectName.Size = new System.Drawing.Size(871, 26);
             this.txtObjectName.TabIndex = 4;
             // 
             // NamedObjectForm
             // 
             this.AcceptButton = this.btnOpen;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(867, 421);
+            this.ClientSize = new System.Drawing.Size(975, 526);
             this.ControlBox = false;
             this.Controls.Add(label1);
             this.Controls.Add(this.txtObjectName);
@@ -137,10 +137,12 @@
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnOpen);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "NamedObjectForm";
+            this.ShowIcon = false;
+            this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Open Named Section";
             this.ResumeLayout(false);

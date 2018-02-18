@@ -43,9 +43,17 @@ namespace EditSection
             }
         }
 
+        private static NtSection OpenSection(string name, bool read_only)
+        {
+            SectionAccessRights access = SectionAccessRights.MapRead;
+            if (!read_only)
+                access |= SectionAccessRights.MapWrite;
+            return NtSection.Open(name, null, access);
+        }
+
         private void openNamedSectionToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            using (NamedObjectForm frm = new NamedObjectForm("Section"))
+            using (NamedObjectForm frm = new NamedObjectForm("Section", OpenSection))
             {
                 if (frm.ShowDialog(this) == DialogResult.OK)
                 {
@@ -59,9 +67,17 @@ namespace EditSection
             }
         }
 
+        private static NtEvent OpenEvent(string name, bool read_only)
+        {
+            EventAccessRights access = EventAccessRights.QueryState;
+            if (!read_only)
+                access |= EventAccessRights.ModifyState;
+            return NtEvent.Open(name, null, access);
+        }
+
         private void setNamedEventToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            using (NamedObjectForm frm = new NamedObjectForm("Event"))
+            using (NamedObjectForm frm = new NamedObjectForm("Event", OpenEvent))
             {
                 if (frm.ShowDialog(this) == DialogResult.OK)
                 {

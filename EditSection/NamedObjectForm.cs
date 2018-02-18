@@ -22,7 +22,8 @@ namespace EditSection
 {
     public partial class NamedObjectForm : Form
     {
-        string _typename;
+        private readonly string _typename;
+        private readonly Func<string, bool, NtObject> _open_object;
 
         private void UpdateObjectList(string typename, HashSet<string> walked, NtDirectory dir, HashSet<string> names)
         {            
@@ -39,15 +40,15 @@ namespace EditSection
                 }
                 else if (entry.IsDirectory)
                 {
-                    try
+                    using (var obj_attr = new ObjectAttributes(entry.Name, AttributeFlags.CaseInsensitive, dir))
                     {
-                        using (NtDirectory subdir = NtDirectory.Open(entry.Name, dir, DirectoryAccessRights.Query))
+                        using (var subdir = NtDirectory.Open(obj_attr, DirectoryAccessRights.Query, false))
                         {
-                            UpdateObjectList(typename, walked, subdir, names);
+                            if (subdir.IsSuccess)
+                            {
+                                UpdateObjectList(typename, walked, subdir.Result, names);
+                            }
                         }
-                    }
-                    catch (NtException)
-                    {
                     }
                 }
             }
@@ -87,7 +88,7 @@ namespace EditSection
             return ret;
         }
 
-        public NamedObjectForm(string typename)
+        public NamedObjectForm(string typename, Func<string, bool, NtObject> open_object)
         {
             InitializeComponent();
 
@@ -99,6 +100,7 @@ namespace EditSection
             }
             Text = "Open Named " + typename;
             _typename = typename;
+            _open_object = open_object;
         }
 
         private void btnOpen_Click(object sender, EventArgs e)
@@ -113,10 +115,7 @@ namespace EditSection
 
                 try
                 {
-                    GenericAccessRights access = GenericAccessRights.GenericRead;
-                    if (!checkReadOnly.Checked)
-                        access |= GenericAccessRights.GenericWrite;
-                    ObjectHandle = NtObject.OpenWithType(_typename, name, null, access);
+                    ObjectHandle = _open_object(name, checkReadOnly.Checked);
                     ObjectName = name;
                     ReadOnly = checkReadOnly.Checked;
                     DialogResult = DialogResult.OK;

@@ -198,5 +198,14 @@ namespace EditSection
         {
             hexBox.Refresh();
         }
+
+        private void hexBox_SelectionChanged(object sender, EventArgs e)
+        {
+            bool sized_selection = hexBox.SelectionLength > 0;
+            saveToFileToolStripMenuItem.Enabled = sized_selection;
+            loadFromFileToolStripMenuItem.Enabled = sized_selection;
+            toolStripButtonLoad.Enabled = sized_selection;
+            toolStripButtonSave.Enabled = sized_selection;
+        }
     }
 }
