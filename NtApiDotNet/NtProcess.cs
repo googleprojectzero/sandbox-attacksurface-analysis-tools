@@ -352,11 +352,16 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct ProcessExtendedBasicInformation
+    public class ProcessExtendedBasicInformation
     {
         public IntPtr Size;
         public ProcessBasicInformation BasicInfo;
         public ProcessExtendedBasicInformationFlags Flags;
+
+        public ProcessExtendedBasicInformation()
+        {
+            Size = new IntPtr(Marshal.SizeOf(this));
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -820,11 +825,11 @@ namespace NtApiDotNet
     public class NtProcess : NtObjectWithDuplicate<NtProcess, ProcessAccessRights>
     {
         private int? _pid;
-        private ProcessExtendedBasicInformation? _extended_info;
+        private ProcessExtendedBasicInformation _extended_info;
         
         private ProcessExtendedBasicInformation GetExtendedBasicInfo()
         {
-            if (!_extended_info.HasValue)
+            if (_extended_info == null)
             {
                 if (!IsAccessGranted(ProcessAccessRights.QueryLimitedInformation))
                 {
@@ -845,7 +850,7 @@ namespace NtApiDotNet
                 }
             }
 
-            return _extended_info.Value;
+            return _extended_info;
         }
 
         private ProcessBasicInformation GetBasicInfo()
