@@ -138,6 +138,5 @@ namespace EditSection
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden), Browsable(false)]
         public bool ReadOnly { get; private set; }
-
     }
 }

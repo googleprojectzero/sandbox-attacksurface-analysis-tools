@@ -12,9 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using Be.Windows.Forms;
 using NtApiDotNet;
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
 
@@ -22,10 +24,87 @@ namespace EditSection
 {
     public partial class SectionEditorForm : DockContent
     {
-        NtMappedSection _map;
-        bool _readOnly;
-        NativeMappedFileByteProvider _prov;
-        Random _random;
+        private NtMappedSection _map;
+        private bool _readOnly;
+        private NativeMappedFileByteProvider _prov;
+        private Random _random;
+
+        private class FunctionDataInspector : IDataInspector
+        {
+            private Func<IByteProvider, long, long, string> _func;
+
+            public FunctionDataInspector(string name, Func<IByteProvider, long, long, string> func)
+            {
+                Name = name;
+                _func = func;
+            }
+
+            public string Name { get; private set; }
+
+            public string GetValue(IByteProvider provider, long start, long length)
+            {
+                return _func(provider, start, length);
+            }
+        }
+
+        private class FixedDataInspector : FunctionDataInspector
+        {
+            private static string GetFixedValue(IByteProvider provider, long start, long length, int fixed_length, bool reverse, Func<byte[], string> func)
+            {
+                long max_length = provider.Length - start;
+                if (max_length < fixed_length)
+                {
+                    return string.Empty;
+                }
+                byte[] ba = new byte[fixed_length];
+                if (reverse)
+                {
+                    for (int i = 0; i < fixed_length; ++i)
+                    {
+                        ba[fixed_length - i - 1] = provider.ReadByte(i + start);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < fixed_length; ++i)
+                    {
+                        ba[i] = provider.ReadByte(i + start);
+                    }
+                }
+
+                return func(ba);
+            }
+
+            public FixedDataInspector(string name, int length, bool reverse, Func<byte[], string> func) 
+                : base(name, (p, s, l) => GetFixedValue(p, s, l, length, reverse, func))
+            {
+            }
+        }
+
+        private class IntegerDataInspector<T> : FixedDataInspector where T : struct
+        {
+            private static string FormatInt(byte[] ba, Func<byte[], int, T> func)
+            {
+                T value = func(ba, 0);
+                return $"{value}/0x{value:X}";
+            }
+
+            public IntegerDataInspector(bool big_endian, Func<byte[], int, T> func) : 
+                base($"{typeof(T).Name} ({(big_endian ? "Big Endian" : "Little Endian")})", 
+                    Marshal.SizeOf<T>(), big_endian, ba => FormatInt(ba, func))
+            {
+            }
+
+            public IntegerDataInspector(Func<byte[], int, T> func) :
+                 base(typeof(T).Name, Marshal.SizeOf<T>(), false, ba => FormatInt(ba, func))
+            {
+            }
+        }
+
+        private static IntegerDataInspector<T> CreateIntegerDataInspector<T>(bool big_endian, Func<byte[], int, T> func) where T : struct
+        {
+            return new IntegerDataInspector<T>(big_endian, func);
+        }
 
         private SectionEditorForm(NtMappedSection map, bool readOnly)
         {
@@ -42,6 +121,8 @@ namespace EditSection
             }
 
             hexBox.ByteProvider = _prov;
+            InitDataInspectors();
+            UpdateDataInspectors();
 
             Disposed += SectionEditorForm_Disposed;
         }
@@ -75,6 +156,46 @@ namespace EditSection
             {
                 hexBox.Copy();
             }
+        }
+
+        private void AddDataInspector(IDataInspector inspector)
+        {
+            ListViewItem item = new ListViewItem(inspector.Name);
+            item.SubItems.Add(string.Empty);
+            item.Tag = inspector;
+            listViewInspector.Items.Add(item);
+        }
+
+        private void AddIntegerDataInspector<T>(Func<byte[], int, T> func) where T : struct
+        {
+            AddDataInspector(CreateIntegerDataInspector(false, func));
+            AddDataInspector(CreateIntegerDataInspector(true, func));
+        }
+
+        private void InitDataInspectors()
+        {
+            AddDataInspector(new IntegerDataInspector<byte>((ba, i) => ba[0]));
+            AddDataInspector(new IntegerDataInspector<sbyte>((ba, i) => (sbyte)ba[0]));
+            AddIntegerDataInspector(BitConverter.ToInt16);
+            AddIntegerDataInspector(BitConverter.ToInt32);
+            AddIntegerDataInspector(BitConverter.ToInt64);
+            AddIntegerDataInspector(BitConverter.ToUInt16);
+            AddIntegerDataInspector(BitConverter.ToUInt32);
+            AddIntegerDataInspector(BitConverter.ToUInt64);
+        }
+
+        private void UpdateDataInspectors()
+        {
+            long start = hexBox.SelectionStart;
+            long length = hexBox.SelectionLength;
+            foreach (ListViewItem item in listViewInspector.Items)
+            {
+                if (item.Tag is IDataInspector inspector)
+                {
+                    item.SubItems[1].Text = inspector.GetValue(_prov, start, length);
+                }
+            }
+            listViewInspector.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
         }
 
         private void SaveSelectionToFile(long start, long length)
@@ -206,6 +327,7 @@ namespace EditSection
             loadFromFileToolStripMenuItem.Enabled = sized_selection;
             toolStripButtonLoad.Enabled = sized_selection;
             toolStripButtonSave.Enabled = sized_selection;
+            UpdateDataInspectors();
         }
     }
 }

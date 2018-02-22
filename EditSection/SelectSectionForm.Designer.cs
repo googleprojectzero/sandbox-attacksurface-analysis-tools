@@ -35,13 +35,16 @@
             this.checkBoxOpenReadonly = new System.Windows.Forms.CheckBox();
             this.textBoxFilter = new System.Windows.Forms.TextBox();
             this.btnApply = new System.Windows.Forms.Button();
+            this.tableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             lblFilter = new System.Windows.Forms.Label();
+            this.tableLayoutPanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // lblFilter
             // 
+            lblFilter.Anchor = System.Windows.Forms.AnchorStyles.Left;
             lblFilter.AutoSize = true;
-            lblFilter.Location = new System.Drawing.Point(11, 11);
+            lblFilter.Location = new System.Drawing.Point(4, 9);
             lblFilter.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             lblFilter.Name = "lblFilter";
             lblFilter.Size = new System.Drawing.Size(43, 17);
@@ -50,9 +53,9 @@
             // 
             // btnOK
             // 
-            this.btnOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btnOK.Location = new System.Drawing.Point(201, 539);
-            this.btnOK.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnOK.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.btnOK.Location = new System.Drawing.Point(55, 550);
+            this.btnOK.Margin = new System.Windows.Forms.Padding(4);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(100, 28);
             this.btnOK.TabIndex = 0;
@@ -62,10 +65,10 @@
             // 
             // btnCancel
             // 
-            this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnCancel.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnCancel.Location = new System.Drawing.Point(351, 539);
-            this.btnCancel.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnCancel.Location = new System.Drawing.Point(163, 550);
+            this.btnCancel.Margin = new System.Windows.Forms.Padding(4);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(100, 28);
             this.btnCancel.TabIndex = 1;
@@ -78,10 +81,11 @@
             this.treeViewProcesses.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.treeViewProcesses.Location = new System.Drawing.Point(-1, 39);
-            this.treeViewProcesses.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel.SetColumnSpan(this.treeViewProcesses, 4);
+            this.treeViewProcesses.Location = new System.Drawing.Point(4, 40);
+            this.treeViewProcesses.Margin = new System.Windows.Forms.Padding(4);
             this.treeViewProcesses.Name = "treeViewProcesses";
-            this.treeViewProcesses.Size = new System.Drawing.Size(651, 491);
+            this.treeViewProcesses.Size = new System.Drawing.Size(644, 502);
             this.treeViewProcesses.TabIndex = 2;
             this.treeViewProcesses.BeforeExpand += new System.Windows.Forms.TreeViewCancelEventHandler(this.treeViewProcesses_BeforeExpand);
             // 
@@ -89,8 +93,8 @@
             // 
             this.checkBoxOpenReadonly.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.checkBoxOpenReadonly.AutoSize = true;
-            this.checkBoxOpenReadonly.Location = new System.Drawing.Point(494, 544);
-            this.checkBoxOpenReadonly.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.checkBoxOpenReadonly.Location = new System.Drawing.Point(511, 557);
+            this.checkBoxOpenReadonly.Margin = new System.Windows.Forms.Padding(4);
             this.checkBoxOpenReadonly.Name = "checkBoxOpenReadonly";
             this.checkBoxOpenReadonly.Size = new System.Drawing.Size(137, 21);
             this.checkBoxOpenReadonly.TabIndex = 3;
@@ -100,25 +104,49 @@
             // textBoxFilter
             // 
             this.textBoxFilter.AcceptsReturn = true;
-            this.textBoxFilter.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.textBoxFilter.Location = new System.Drawing.Point(65, 7);
-            this.textBoxFilter.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.textBoxFilter.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.tableLayoutPanel.SetColumnSpan(this.textBoxFilter, 2);
+            this.textBoxFilter.Location = new System.Drawing.Point(55, 7);
+            this.textBoxFilter.Margin = new System.Windows.Forms.Padding(4);
             this.textBoxFilter.Name = "textBoxFilter";
-            this.textBoxFilter.Size = new System.Drawing.Size(476, 22);
+            this.textBoxFilter.Size = new System.Drawing.Size(448, 22);
             this.textBoxFilter.TabIndex = 4;
             // 
             // btnApply
             // 
-            this.btnApply.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnApply.Location = new System.Drawing.Point(551, 5);
-            this.btnApply.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnApply.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.btnApply.Location = new System.Drawing.Point(529, 4);
+            this.btnApply.Margin = new System.Windows.Forms.Padding(4);
             this.btnApply.Name = "btnApply";
             this.btnApply.Size = new System.Drawing.Size(100, 28);
             this.btnApply.TabIndex = 6;
             this.btnApply.Text = "Apply";
             this.btnApply.UseVisualStyleBackColor = true;
             this.btnApply.Click += new System.EventHandler(this.btnApply_Click);
+            // 
+            // tableLayoutPanel
+            // 
+            this.tableLayoutPanel.ColumnCount = 4;
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            this.tableLayoutPanel.Controls.Add(lblFilter, 0, 0);
+            this.tableLayoutPanel.Controls.Add(this.treeViewProcesses, 0, 1);
+            this.tableLayoutPanel.Controls.Add(this.textBoxFilter, 1, 0);
+            this.tableLayoutPanel.Controls.Add(this.checkBoxOpenReadonly, 3, 2);
+            this.tableLayoutPanel.Controls.Add(this.btnCancel, 2, 2);
+            this.tableLayoutPanel.Controls.Add(this.btnOK, 1, 2);
+            this.tableLayoutPanel.Controls.Add(this.btnApply, 3, 0);
+            this.tableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel.Name = "tableLayoutPanel";
+            this.tableLayoutPanel.RowCount = 3;
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel.Size = new System.Drawing.Size(652, 582);
+            this.tableLayoutPanel.TabIndex = 7;
             // 
             // SelectSectionForm
             // 
@@ -127,25 +155,17 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
             this.ClientSize = new System.Drawing.Size(652, 582);
-            this.ControlBox = false;
-            this.Controls.Add(this.btnApply);
-            this.Controls.Add(lblFilter);
-            this.Controls.Add(this.textBoxFilter);
-            this.Controls.Add(this.checkBoxOpenReadonly);
-            this.Controls.Add(this.treeViewProcesses);
-            this.Controls.Add(this.btnCancel);
-            this.Controls.Add(this.btnOK);
+            this.Controls.Add(this.tableLayoutPanel);
             this.KeyPreview = true;
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "SelectSectionForm";
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Select Process Section";
+            this.tableLayoutPanel.ResumeLayout(false);
+            this.tableLayoutPanel.PerformLayout();
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
@@ -157,5 +177,6 @@
         private System.Windows.Forms.CheckBox checkBoxOpenReadonly;
         private System.Windows.Forms.TextBox textBoxFilter;
         private System.Windows.Forms.Button btnApply;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel;
     }
 }
