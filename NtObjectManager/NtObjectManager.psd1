@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.8'
+ModuleVersion = '1.1.9'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -93,7 +93,13 @@ PrivateData = @{
         ProjectUri = 'https://github.com/google/sandbox-attacksurface-analysis-tools'
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.8
+        ReleaseNotes = '1.1.9
+-----
+* Fix for bug when querying extended process information on Windows 7/8.
+* Add OneDrive file attributes from thierry.franzetti.
+* Added support for displaying child AppContainer names.
+* Various improvements to section editor including integer data inspectors.
+1.1.8
 -----
 * Better support for relative paths in the cmdlets including supporting ones based on the current directory.
 * RenameEx and DispositionEx support from fllombard.

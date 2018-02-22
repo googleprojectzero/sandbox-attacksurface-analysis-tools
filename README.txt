@@ -21,6 +21,13 @@ with .NET Core 2.0 by building the specific project files.
 
 Release Notes:
 
+1.1.9
+-----
+* Fix for bug when querying extended process information on Windows 7/8.
+* Add OneDrive file attributes from thierry.franzetti.
+* Added support for displaying child AppContainer names.
+* Various improvements to section editor including integer data inspectors.
+
 1.1.8
 -----
 * Better support for relative paths in the cmdlets including supporting ones based on the current directory.
