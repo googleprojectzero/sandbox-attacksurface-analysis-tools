@@ -1018,61 +1018,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Visit all accessible directories under this one.
-        /// </summary>
-        /// <param name="visitor">A function to be called on every accessible key. Return true to continue enumeration.</param>
-        /// <param name="open_link">True to open link keys rather than following the link.</param>
-        /// <param name="open_for_backup">True to open keys with backup flag set.</param>
-        /// <param name="desired_access">Specify the desired access for the key</param>
-        /// <param name="recurse">True to recurse into sub keys.</param>
-        /// <param name="max_depth">Specify max recursive depth. -1 to not set a limit.</param>
-        //public void VisitAccessibleKeys(Func<NtDirectory, bool> visitor, KeyAccessRights desired_access, bool open_link, bool open_for_backup, bool recurse, int max_depth)
-        //{
-        //    if (max_depth == 0)
-        //    {
-        //        return;
-        //    }
-
-        //    using (var for_query = (KeyAccessRights.EnumerateSubKeys, AttributeFlags.None, DuplicateObjectOptions.SameAttributes, false))
-        //    {
-        //        if (!for_query.IsSuccess)
-        //        {
-        //            return;
-        //        }
-
-        //        ObjectDirectoryInformation[] entries = for_query.Result.Query().Where(e => e.IsDirectory).ToArray();
-        //        if (max_depth > 0)
-        //        {
-        //            max_depth--;
-        //        }
-
-        //        foreach (var entry in entries)
-        //        {
-        //            using (var obj_attr = new ObjectAttributes(entry.Name, AttributeFlags.CaseInsensitive, this))
-        //            {
-        //                using (var directory = NtDirectory.Open(obj_attr, desired_access, false))
-        //                {
-        //                    if (!directory.IsSuccess)
-        //                    {
-        //                        continue;
-        //                    }
-
-        //                    if (!visitor(directory.Result))
-        //                    {
-        //                        break;
-        //                    }
-
-        //                    if (recurse)
-        //                    {
-        //                        directory.Result.VisitAccessibleDirectories(visitor, desired_access, recurse, max_depth);
-        //                    }
-        //                }
-        //            }
-        //        }
-        //    }
-        //}
-
-        /// <summary>
         /// Set a symbolic link target for this key (must have been created with
         /// appropriate create flags)
         /// </summary>
