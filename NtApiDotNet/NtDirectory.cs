@@ -41,7 +41,7 @@ namespace NtApiDotNet
                 return NtType.GetTypeByName(NtTypeName, true);
             }
         }
-        public string FullPath { get; private set; }         
+        public string FullPath { get; private set; }
         public string SymbolicLinkTarget
         {
             get
@@ -546,6 +546,89 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Visit all accessible directories under this one.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
+        /// <param name="desired_access">Specify the desired access for the directory</param>
+        /// <param name="recurse">True to recurse into sub directories.</param>
+        /// <param name="max_depth">Specify max recursive depth. -1 to not set a limit.</param>
+        public void VisitAccessibleDirectories(Func<NtDirectory, bool> visitor, DirectoryAccessRights desired_access, bool recurse, int max_depth)
+        {
+            if (max_depth == 0)
+            {
+                return;
+            }
+
+            using (var for_query = Duplicate(DirectoryAccessRights.Query, AttributeFlags.None, DuplicateObjectOptions.SameAttributes, false))
+            {
+                if (!for_query.IsSuccess)
+                {
+                    return;
+                }
+
+                ObjectDirectoryInformation[] entries = for_query.Result.Query().Where(e => e.IsDirectory).ToArray();
+                if (max_depth > 0)
+                {
+                    max_depth--;
+                }
+
+                foreach (var entry in entries)
+                {
+                    using (var obj_attr = new ObjectAttributes(entry.Name, AttributeFlags.CaseInsensitive, this))
+                    {
+                        using (var directory = NtDirectory.Open(obj_attr, desired_access, false))
+                        {
+                            if (!directory.IsSuccess)
+                            {
+                                continue;
+                            }
+
+                            if (!visitor(directory.Result))
+                            {
+                                break;
+                            }
+
+                            if (recurse)
+                            {
+                                directory.Result.VisitAccessibleDirectories(visitor, desired_access, recurse, max_depth);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Visit all accessible directories under this one.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
+        public void VisitAccessibleDirectories(Func<NtDirectory, bool> visitor)
+        {
+            VisitAccessibleDirectories(visitor, false);
+        }
+
+        /// <summary>
+        /// Visit all accessible directories under this one.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
+        /// <param name="recurse">True to recurse into sub directories.</param>
+        public void VisitAccessibleDirectories(Func<NtDirectory, bool> visitor, bool recurse)
+        {
+            VisitAccessibleDirectories(visitor, DirectoryAccessRights.MaximumAllowed, recurse);
+        }
+
+        /// <summary>
+        /// Visit all accessible directories under this one.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
+        /// <param name="desired_access">Specify the desired access for the directory</param>
+        /// <param name="recurse">True to recurse into sub directories.</param>
+        public void VisitAccessibleDirectories(Func<NtDirectory, bool> visitor, DirectoryAccessRights desired_access, bool recurse)
+        {
+            VisitAccessibleDirectories(visitor, desired_access, recurse, -1);
+        }
+
+        /// <summary>
         /// Open a session directory.
         /// </summary>
         /// <param name="sessionid">The session ID to open</param>
@@ -716,8 +799,10 @@ namespace NtApiDotNet
         {
             SafeKernelObjectHandle handle;
             NtSystemCalls.NtCreatePrivateNamespace(out handle, desired_access, obj_attributes, boundary_descriptor.Handle).ToNtException();
-            NtDirectory ret = new NtDirectory(handle);
-            ret._private_namespace = true;
+            NtDirectory ret = new NtDirectory(handle)
+            {
+                _private_namespace = true
+            };
             return ret;
         }
 
