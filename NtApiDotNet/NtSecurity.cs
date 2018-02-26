@@ -1465,6 +1465,7 @@ namespace NtApiDotNet
                 "cloudExperienceHost",
                 "cloudStore",
                 "confirmAppClose",
+                "constrainedImpersonation",
                 "contacts",
                 "contactsSystem",
                 "contentDeliveryManagerSettings",
@@ -1539,6 +1540,7 @@ namespace NtApiDotNet
                 "screenDuplication",
                 "secondaryAuthenticationFactor",
                 "secureAssessment",
+                "sessionImpersonation",
                 "settingSyncConfiguration",
                 "sharedUserCertificates",
                 "shellExperience",
@@ -1619,9 +1621,8 @@ namespace NtApiDotNet
         {
             int sid_length = 0;
             int domain_length = 0;
-            SidNameUse name;
             if (!LookupAccountName(null, username, SafeHGlobalBuffer.Null, ref sid_length,
-                SafeHGlobalBuffer.Null, ref domain_length, out name))
+                SafeHGlobalBuffer.Null, ref domain_length, out SidNameUse name))
             {
                 if (sid_length <= 0)
                 {
@@ -1638,6 +1639,58 @@ namespace NtApiDotNet
 
                 return new Sid(buffer);
             }
+        }
+
+        /// <summary>
+        /// Lookup the name of a process trust SID.
+        /// </summary>
+        /// <param name="trust_sid">The trust sid to lookup.</param>
+        /// <returns>The name of the trust sid. null if not found.</returns>
+        /// <exception cref="ArgumentException">Thrown if trust_sid is not a trust sid.</exception>
+        public static string LookupProcessTrustName(Sid trust_sid)
+        {
+            if (!IsProcessTrustSid(trust_sid))
+            {
+                throw new ArgumentException("Must pass a process trust sid to lookup", "trust_sid");
+            }
+
+            if (trust_sid.SubAuthorities.Count != 2)
+            {
+                return null;
+            }
+
+            string protection_type;
+            switch (trust_sid.SubAuthorities[0])
+            {
+                case 512:
+                    protection_type = "ProtectedLight";
+                    break;
+                case 1024:
+                    protection_type = "Protected";
+                    break;
+                default:
+                    protection_type = $"Protected-{trust_sid.SubAuthorities[0]}";
+                    break;
+            }
+
+            string protection_level;
+            switch (trust_sid.SubAuthorities[1])
+            {
+                case 0:
+                    protection_level = "None";
+                    break;
+                case 4096:
+                    protection_level = "Windows";
+                    break;
+                case 8192:
+                    protection_level = "WinTcb";
+                    break;
+                default:
+                    protection_level = trust_sid.SubAuthorities[1].ToString();
+                    break;
+            }
+
+            return $"{protection_type}-{protection_level}";
         }
 
         private static string ReadMoniker(NtKey rootkey, Sid sid)
@@ -1697,7 +1750,7 @@ namespace NtApiDotNet
         /// <param name="sid">The package sid.</param>
         /// <returns>Returns the moniker name. If not found returns null.</returns>
         /// <exception cref="ArgumentException">Thrown if SID is not a package sid.</exception>
-        public static string LookupPackageSid(Sid sid)
+        public static string LookupPackageName(Sid sid)
         {
             if (!IsPackageSid(sid))
             {
@@ -2052,6 +2105,16 @@ namespace NtApiDotNet
         public static bool IsServiceSid(Sid sid)
         {
             return sid.Authority.IsAuthority(SecurityAuthority.Nt) && sid.SubAuthorities.Count > 0 && sid.SubAuthorities[0] == 80;
+        }
+
+        /// <summary>
+        /// Checks if a SID is a process trust SID.
+        /// </summary>
+        /// <param name="sid">The sid to check.</param>
+        /// <returns>True if a process trust sid.</returns>
+        public static bool IsProcessTrustSid(Sid sid)
+        {
+            return sid.Authority.IsAuthority(SecurityAuthority.ProcessTrust);
         }
 
         /// <summary>

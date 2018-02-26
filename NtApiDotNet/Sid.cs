@@ -500,7 +500,12 @@ namespace NtApiDotNet
             get
             {
                 string name = NtSecurity.LookupAccountSid(this);
-                if (name == null && NtSecurity.IsCapabilitySid(this))
+                if (name != null)
+                {
+                    return name;
+                }
+
+                if (NtSecurity.IsCapabilitySid(this))
                 {
                     // See if there's a known SID with this name.
                     name = NtSecurity.LookupKnownCapabilityName(this);
@@ -509,9 +514,13 @@ namespace NtApiDotNet
                         name = MakeFakeCapabilityName(name);
                     }
                 }
-                else if (name == null && NtSecurity.IsPackageSid(this))
+                else if (NtSecurity.IsPackageSid(this))
                 {
-                    name = NtSecurity.LookupPackageSid(this);
+                    name = NtSecurity.LookupPackageName(this);
+                }
+                else if (NtSecurity.IsProcessTrustSid(this))
+                {
+                    name = NtSecurity.LookupProcessTrustName(this);
                 }
 
                 return name ?? ToString();
@@ -892,7 +901,7 @@ namespace NtApiDotNet
                 case KnownSidValue.CapabilityContacts: return GetCapabilitySid(12);
                 case KnownSidValue.CapabilityInternetExplorer: return GetCapabilitySid(4096);
                 case KnownSidValue.CapabilityConstrainedImpersonation:
-                    return GetCapabilitySid(1024, 1604681682, 535129537, 3273749797, 3666938095, 336295784, 2177615760, 2743807136, 2867270584);
+                    return NtSecurity.GetCapabilitySid("constrainedImpersonation");
                 case KnownSidValue.Self: return new Sid(SecurityAuthority.Nt, 10);
                 default:
                     throw new ArgumentException("Unknown SID type");
