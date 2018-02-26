@@ -895,6 +895,35 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Reopen object with different access rights.
+        /// </summary>
+        /// <param name="desired_access">The desired access.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns></returns>
+        public virtual NtResult<O> ReOpen(A desired_access, bool throw_on_error)
+        {
+            if (!NtType.CanOpen)
+            {
+                throw new ArgumentException("Can't re-open this type");
+            }
+
+            using (var obj_attr = new ObjectAttributes(string.Empty, AttributeFlags.CaseInsensitive, this))
+            {
+                return NtType.Open(obj_attr, ToGenericAccess(desired_access), throw_on_error).Cast<O>();
+            }
+        }
+
+        /// <summary>
+        /// Reopen object with different access rights.
+        /// </summary>
+        /// <param name="desired_access">The desired access.</param>
+        /// <returns></returns>
+        public O ReOpen(A desired_access)
+        {
+            return ReOpen(desired_access, true).Result;
+        }
+
+        /// <summary>
         /// Duplicate object.
         /// </summary>
         /// <param name="access_rights">Access rights to duplicate with.</param>
