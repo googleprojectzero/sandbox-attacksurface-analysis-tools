@@ -19,14 +19,14 @@ if (($PSVersionTable.Keys -contains "PSEdition") -and ($PSVersionTable.PSEdition
 }
 else
 {
-  Import-Module "$PSScriptRoot\NtObjectManager.dll"    
+  Import-Module "$PSScriptRoot\NtObjectManager.dll"
 }
 
 <#
 .SYNOPSIS
 Get a list of ALPC Ports that can be opened by a specified token.
 .DESCRIPTION
-This cmdlet checks for all ALPC ports on the system and tries to determine if one or more specified tokens can connect to them. 
+This cmdlet checks for all ALPC ports on the system and tries to determine if one or more specified tokens can connect to them.
 If no tokens are specified then the current process token is used. This function searches handles for existing ALPC Port servers as you can't directly open the server object and just connecting might show inconsistent results.
 .PARAMETER ProcessIds
 Specify a list of process IDs to open for their tokens.
@@ -53,23 +53,23 @@ Get all ALPC Ports connectable by the process tokens of PIDs 1234 and 5678
 #>
 function Get-AccessibleAlpcPort
 {
-	Param(
-		[Int32[]]$ProcessIds,
-		[string[]]$ProcessNames,
-		[string[]]$ProcessCommandLines,
-		[NtApiDotNet.NtToken[]]$Tokens,
-		[NtApiDotNet.NtProcess[]]$Processes
-		)
-	$access = Get-NtAccessMask -AlpcPortAccess Connect -ToGenericAccess
-	Get-AccessibleObject -FromHandles -ProcessIds $ProcessIds -ProcessNames $ProcessNames `
-		-ProcessCommandLines $ProcessCommandLines -Tokens $Tokens -Processes $Processes -TypeFilter "ALPC Port" -AccessRights $access 
+  Param(
+    [Int32[]]$ProcessIds,
+    [string[]]$ProcessNames,
+    [string[]]$ProcessCommandLines,
+    [NtApiDotNet.NtToken[]]$Tokens,
+    [NtApiDotNet.NtProcess[]]$Processes
+    )
+  $access = Get-NtAccessMask -AlpcPortAccess Connect -ToGenericAccess
+  Get-AccessibleObject -FromHandles -ProcessIds $ProcessIds -ProcessNames $ProcessNames `
+    -ProcessCommandLines $ProcessCommandLines -Tokens $Tokens -Processes $Processes -TypeFilter "ALPC Port" -AccessRights $access
 }
 
 <#
 .SYNOPSIS
 Set the state of a token's privileges.
 .DESCRIPTION
-This cmdlet will set the state of a token's privileges. This is commonly used to enable debug/backup privileges to perform privileged actions. 
+This cmdlet will set the state of a token's privileges. This is commonly used to enable debug/backup privileges to perform privileged actions.
 If no token is specified then the current process token is used.
 .PARAMETER Privileges
 A list of privileges to set their state.
@@ -93,27 +93,27 @@ Enable SeBackupPrivilege and SeRestorePrivilege on an explicit token object.
 #>
 function Set-NtTokenPrivilege
 {
-	Param(
-		[Parameter(Mandatory=$true, Position=0)]
-		[NtApiDotNet.TokenPrivilegeValue[]]$Privileges,
-		[NtApiDotNet.NtToken]$Token,
-		[NtApiDotNet.PrivilegeAttributes]$Attributes = "Enabled"
-		)
-	if ($Token -eq $null) {
-		$Token = Get-NtToken -Primary
-	} else {
-		$Token = $Token.Duplicate()
-	}
+  Param(
+    [Parameter(Mandatory=$true, Position=0)]
+    [NtApiDotNet.TokenPrivilegeValue[]]$Privileges,
+    [NtApiDotNet.NtToken]$Token,
+    [NtApiDotNet.PrivilegeAttributes]$Attributes = "Enabled"
+    )
+  if ($Token -eq $null) {
+    $Token = Get-NtToken -Primary
+  } else {
+    $Token = $Token.Duplicate()
+  }
 
-	Use-NtObject($Token) {
-		$result = @()
-		foreach($priv in $Privileges) {
-			if ($Token.SetPrivilege($priv, $Attributes)) {
-				$result += @($Token.GetPrivilege($priv))
-			}
-		}
-		return $result
-	}
+  Use-NtObject($Token) {
+    $result = @()
+    foreach($priv in $Privileges) {
+      if ($Token.SetPrivilege($priv, $Attributes)) {
+        $result += @($Token.GetPrivilege($priv))
+      }
+    }
+    return $result
+  }
 }
 
 <#
@@ -141,22 +141,22 @@ Enable SeBackupPrivilege and SeRestorePrivilege on an explicit token object.
 #>
 function Set-NtTokenIntegrityLevel
 {
-	Param(
-		[Parameter(Mandatory=$true, Position=0)]
-		[NtApiDotNet.TokenIntegrityLevel[]]$IntegrityLevel,
-		[NtApiDotNet.NtToken]$Token,
-		[Int32]$Adjustment = 0
-		)
-	if ($Token -eq $null) {
-		$Token = Get-NtToken -Primary
-	} else {
-		$Token = $Token.Duplicate()
-	}
+  Param(
+    [Parameter(Mandatory=$true, Position=0)]
+    [NtApiDotNet.TokenIntegrityLevel[]]$IntegrityLevel,
+    [NtApiDotNet.NtToken]$Token,
+    [Int32]$Adjustment = 0
+    )
+  if ($Token -eq $null) {
+    $Token = Get-NtToken -Primary
+  } else {
+    $Token = $Token.Duplicate()
+  }
 
-	$il_raw = $IntegrityLevel.ToInt32($null) + $Adjustment
-	Use-NtObject($Token) {
-		$Token.SetIntegrityLevelRaw($il_raw) | Out-Null
-	}
+  $il_raw = $IntegrityLevel.ToInt32($null) + $Adjustment
+  Use-NtObject($Token) {
+    $Token.SetIntegrityLevelRaw($il_raw) | Out-Null
+  }
 }
 
 <#
@@ -181,32 +181,32 @@ Create a new crash dump at c:\memory.dmp including user memory pages.
 #>
 function New-NtKernelCrashDump
 {
-	Param(
-		[Parameter(Mandatory=$true, Position=0)]
-		[string]$Path,
-		[NtApiDotNet.SystemDebugKernelDumpControlFlags]$Flags = 0,
-		[NtApiDotNet.SystemDebugKernelDumpPageControlFlags]$PageFlags = 0
-	)
-	[NtApiDotNet.NtSystemInfo]::CreateKernelDump($Path, $Flags, $PageFlags)
+  Param(
+    [Parameter(Mandatory=$true, Position=0)]
+    [string]$Path,
+    [NtApiDotNet.SystemDebugKernelDumpControlFlags]$Flags = 0,
+    [NtApiDotNet.SystemDebugKernelDumpPageControlFlags]$PageFlags = 0
+  )
+  [NtApiDotNet.NtSystemInfo]::CreateKernelDump($Path, $Flags, $PageFlags)
 }
 
 <#
 .SYNOPSIS
 Get security mitigations and token security information for processes.
 .DESCRIPTION
-This cmdlet will get the mitigation policies for all processes it can access for QueryInformation rights. 
+This cmdlet will get the mitigation policies for all processes it can access for QueryInformation rights.
 #>
 function Get-NtProcessMitigations
 {
-	Set-NtTokenPrivilege SeDebugPrivilege | Out-Null
-	Use-NtObject($ps = Get-NtProcess -Access QueryInformation) {
-		foreach($p in $ps) {
-			try {
-				Write-Output $p.Mitigations
-			} catch {
-			}
-		}
-	}
+  Set-NtTokenPrivilege SeDebugPrivilege | Out-Null
+  Use-NtObject($ps = Get-NtProcess -Access QueryInformation) {
+    foreach($p in $ps) {
+      try {
+        Write-Output $p.Mitigations
+      } catch {
+      }
+    }
+  }
 }
 
 <#
@@ -235,23 +235,23 @@ Create a new object attributes for \??\C:\windows
 #>
 function New-NtObjectAttributes
 {
-	Param(
-		[Parameter(Position=0)]
-		[string]$Name,
-		[NtApiDotNet.NtObject]$Root,
-		[NtApiDotNet.AttributeFlags]$Attributes = "None",
-		[NtApiDotNet.SecurityQualityOfService]$SecurityQualityOfService,
-		[NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
-		[string]$Sddl
-	)
+  Param(
+    [Parameter(Position=0)]
+    [string]$Name,
+    [NtApiDotNet.NtObject]$Root,
+    [NtApiDotNet.AttributeFlags]$Attributes = "None",
+    [NtApiDotNet.SecurityQualityOfService]$SecurityQualityOfService,
+    [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+    [string]$Sddl
+  )
 
-	$sd = $SecurityDescriptor
-	if ($Sddl -ne $null)
-	{
-		$sd = New-NtSecurityDescriptor -Sddl $Sddl
-	}
+  $sd = $SecurityDescriptor
+  if ($Sddl -ne $null)
+  {
+    $sd = New-NtSecurityDescriptor -Sddl $Sddl
+  }
 
-	[NtApiDotNet.ObjectAttributes]::new($Name, $Attributes, [NtApiDotNet.NtObject]$Root, $SecurityQualityOfService, $sd)
+  [NtApiDotNet.ObjectAttributes]::new($Name, $Attributes, [NtApiDotNet.NtObject]$Root, $SecurityQualityOfService, $sd)
 }
 
 <#
@@ -272,7 +272,7 @@ function New-NtSecurityQualityOfService
 {
   Param(
       [Parameter(Mandatory=$true, Position=0)]
-	  [NtApiDotNet.SecurityImpersonationLevel]$ImpersonationLevel,
+    [NtApiDotNet.SecurityImpersonationLevel]$ImpersonationLevel,
       [NtApiDotNet.SecurityContextTrackingMode]$ContextTrackingMode = "Static",
       [switch]$EffectiveOnly
   )
@@ -293,17 +293,17 @@ None
 #>
 function Get-NtSystemEnvironmentValue
 {
-	Param(
-		[Parameter(Position=0)]
-		[string]$Name = [System.Management.Automation.Language.NullString]::Value
-		)
-	Set-NtTokenPrivilege SeSystemEnvironmentPrivilege | Out-Null
-	$values = [NtApiDotNet.NtSystemInfo]::QuerySystemEnvironmentValueNamesAndValues()
-	if ($Name -eq [string]::Empty) {
-		$values
-	} else {
-		$values | Where-Object Name -eq $Name
-	}
+  Param(
+    [Parameter(Position=0)]
+    [string]$Name = [System.Management.Automation.Language.NullString]::Value
+    )
+  Set-NtTokenPrivilege SeSystemEnvironmentPrivilege | Out-Null
+  $values = [NtApiDotNet.NtSystemInfo]::QuerySystemEnvironmentValueNamesAndValues()
+  if ($Name -eq [string]::Empty) {
+    $values
+  } else {
+    $values | Where-Object Name -eq $Name
+  }
 }
 
 <#
@@ -320,11 +320,11 @@ NtApiDotNet.NtKeyValue
 #>
 function Get-NtLicenseValue
 {
-	Param(
-		[Parameter(Mandatory=$true, Position=0)]
-		[string]$Name
-		)
-	[NtApiDotNet.NtKey]::QueryLicenseValue($Name)
+  Param(
+    [Parameter(Mandatory=$true, Position=0)]
+    [string]$Name
+    )
+    [NtApiDotNet.NtKey]::QueryLicenseValue($Name)
 }
 
 <#
@@ -376,53 +376,53 @@ function New-Win32ProcessConfig
     Param(
         [Parameter(Mandatory=$true, Position=0)]
         [string]$CommandLine,
-		[string]$ApplicationName,
+    [string]$ApplicationName,
         [NtApiDotNet.SecurityDescriptor]$ProcessSecurityDescriptor,
-		[NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
-		[NtApiDotNet.NtProcess]$ParentProcess,
-		[NtApiDotNet.Win32.CreateProcessFlags]$CreationFlags = 0,
-		[NtApiDotNet.Win32.ProcessMitigationOptions]$MitigationOptions = 0,
-		[switch]$TerminateOnDispose,
-		[byte[]]$Environment,
-		[string]$CurrentDirectory,
-		[string]$Desktop,
-		[string]$Title,
-		[switch]$InheritHandles,
-		[switch]$InheritProcessHandle,
-		[switch]$InheritThreadHandle,
-		[NtApiDotNet.Win32.Win32kFilterFlags]$Win32kFilterFlags = 0,
-		[int]$Win32kFilterLevel = 0
+    [NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
+    [NtApiDotNet.NtProcess]$ParentProcess,
+    [NtApiDotNet.Win32.CreateProcessFlags]$CreationFlags = 0,
+    [NtApiDotNet.Win32.ProcessMitigationOptions]$MitigationOptions = 0,
+    [switch]$TerminateOnDispose,
+    [byte[]]$Environment,
+    [string]$CurrentDirectory,
+    [string]$Desktop,
+    [string]$Title,
+    [switch]$InheritHandles,
+    [switch]$InheritProcessHandle,
+    [switch]$InheritThreadHandle,
+    [NtApiDotNet.Win32.Win32kFilterFlags]$Win32kFilterFlags = 0,
+    [int]$Win32kFilterLevel = 0
     )
     $config = New-Object NtApiDotNet.Win32.Win32ProcessConfig
     $config.CommandLine = $CommandLine
-	if (-not [string]::IsNullOrEmpty($ApplicationName))
-	{
-		$config.ApplicationName = $ApplicationName
-	}
+    if (-not [string]::IsNullOrEmpty($ApplicationName))
+    {
+        $config.ApplicationName = $ApplicationName
+    }
     $config.ProcessSecurityDescriptor = $ProcessSecurityDescriptor
     $config.ThreadSecurityDescriptor = $ThreadSecurityDescriptor
-	$config.ParentProcess = $ParentProcess
-	$config.CreationFlags = $CreationFlags
-	$config.TerminateOnDispose = $TerminateOnDispose
-	$config.Environment = $Environment
-	if (-not [string]::IsNullOrEmpty($Desktop))
-	{
-		$config.Desktop = $Desktop
-	}
-	if (-not [string]::IsNullOrEmpty($CurrentDirectory))
-	{
-		$config.CurrentDirectory = $CurrentDirectory
-	}
-	if (-not [string]::IsNullOrEmpty($Title))
-	{
-		$config.Title = $Title
-	}
-	$config.InheritHandles = $InheritHandles
-	$config.InheritProcessHandle = $InheritProcessHandle
-	$config.InheritThreadHandle = $InheritThreadHandle
-	$config.MitigationOptions = $MitigationOptions
-	$config.Win32kFilterFlags = $Win32kFilterFlags
-	$config.Win32kFilterLevel = $Win32kFilterLevel
+    $config.ParentProcess = $ParentProcess
+    $config.CreationFlags = $CreationFlags
+    $config.TerminateOnDispose = $TerminateOnDispose
+    $config.Environment = $Environment
+    if (-not [string]::IsNullOrEmpty($Desktop))
+    {
+        $config.Desktop = $Desktop
+    }
+    if (-not [string]::IsNullOrEmpty($CurrentDirectory))
+    {
+        $config.CurrentDirectory = $CurrentDirectory
+    }
+    if (-not [string]::IsNullOrEmpty($Title))
+    {
+        $config.Title = $Title
+    }
+    $config.InheritHandles = $InheritHandles
+    $config.InheritProcessHandle = $InheritProcessHandle
+    $config.InheritThreadHandle = $InheritThreadHandle
+    $config.MitigationOptions = $MitigationOptions
+    $config.Win32kFilterFlags = $Win32kFilterFlags
+    $config.Win32kFilterLevel = $Win32kFilterLevel
     return $config
 }
 
@@ -472,58 +472,58 @@ NtApiDotNet.Win32.Win32Process
 #>
 function New-Win32Process
 {
-	[CmdletBinding(DefaultParameterSetName = "FromArgs")]
+  [CmdletBinding(DefaultParameterSetName = "FromArgs")]
     Param(
-        [Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromArgs")]
-        [string]$CommandLine,
-		[Parameter(ParameterSetName = "FromArgs")]
-		[string]$ApplicationName,
-		[Parameter(ParameterSetName = "FromArgs")]
+    [Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromArgs")]
+    [string]$CommandLine,
+    [Parameter(ParameterSetName = "FromArgs")]
+    [string]$ApplicationName,
+    [Parameter(ParameterSetName = "FromArgs")]
         [NtApiDotNet.SecurityDescriptor]$ProcessSecurityDescriptor,
-		[Parameter(ParameterSetName = "FromArgs")]
-		[NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
-		[Parameter(ParameterSetName = "FromArgs")]
-		[NtApiDotNet.NtProcess]$ParentProcess,
-		[Parameter(ParameterSetName = "FromArgs")]
-		[NtApiDotNet.Win32.CreateProcessFlags]$CreationFlags = 0,
-		[Parameter(ParameterSetName = "FromArgs")]
-		[NtApiDotNet.Win32.ProcessMitigationOptions]$MitigationOptions = 0,
-		[Parameter(ParameterSetName = "FromArgs")]
-		[switch]$TerminateOnDispose,
-		[Parameter(ParameterSetName = "FromArgs")]
-		[byte[]]$Environment,
-		[Parameter(ParameterSetName = "FromArgs")]
-		[string]$CurrentDirectory,
-		[Parameter(ParameterSetName = "FromArgs")]
-		[string]$Desktop,
-		[Parameter(ParameterSetName = "FromArgs")]
-		[string]$Title,
-		[Parameter(ParameterSetName = "FromArgs")]
-		[switch]$InheritHandles,
-		[Parameter(ParameterSetName = "FromArgs")]
-		[switch]$InheritProcessHandle,
-		[Parameter(ParameterSetName = "FromArgs")]
-		[switch]$InheritThreadHandle,
-		[Parameter(ParameterSetName = "FromArgs")]
-		[NtApiDotNet.NtToken]$Token,
-		[Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromConfig")]
-		[NtApiDotNet.Win32.Win32ProcessConfig]$Config
+    [Parameter(ParameterSetName = "FromArgs")]
+    [NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
+    [Parameter(ParameterSetName = "FromArgs")]
+    [NtApiDotNet.NtProcess]$ParentProcess,
+    [Parameter(ParameterSetName = "FromArgs")]
+    [NtApiDotNet.Win32.CreateProcessFlags]$CreationFlags = 0,
+    [Parameter(ParameterSetName = "FromArgs")]
+    [NtApiDotNet.Win32.ProcessMitigationOptions]$MitigationOptions = 0,
+    [Parameter(ParameterSetName = "FromArgs")]
+    [switch]$TerminateOnDispose,
+    [Parameter(ParameterSetName = "FromArgs")]
+    [byte[]]$Environment,
+    [Parameter(ParameterSetName = "FromArgs")]
+    [string]$CurrentDirectory,
+    [Parameter(ParameterSetName = "FromArgs")]
+    [string]$Desktop,
+    [Parameter(ParameterSetName = "FromArgs")]
+    [string]$Title,
+    [Parameter(ParameterSetName = "FromArgs")]
+    [switch]$InheritHandles,
+    [Parameter(ParameterSetName = "FromArgs")]
+    [switch]$InheritProcessHandle,
+    [Parameter(ParameterSetName = "FromArgs")]
+    [switch]$InheritThreadHandle,
+    [Parameter(ParameterSetName = "FromArgs")]
+    [NtApiDotNet.NtToken]$Token,
+    [Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromConfig")]
+    [NtApiDotNet.Win32.Win32ProcessConfig]$Config
     )
 
-	if ($null -eq $Config) {
-		$Config = New-Win32ProcessConfig $CommandLine -ApplicationName $ApplicationName `
-		-ProcessSecurityDescriptor $ProcessSecurityDescriptor -ThreadSecurityDescriptor $ThreadSecurityDescriptor `
-		-ParentProcess $ParentProcess -CreationFlags $CreationFlags -TerminateOnDispose:$TerminateOnDispose `
-		-Environment $Environment -CurrentDirectory $CurrentDirectory -Desktop $Desktop -Title $Title `
-		-InheritHandles:$InheritHandles -InheritProcessHandle:$InheritProcessHandle -InheritThreadHandle:$InheritThreadHandle `
-		-MitigationOptions $MitigationOptions
-	}
+  if ($null -eq $Config) {
+    $Config = New-Win32ProcessConfig $CommandLine -ApplicationName $ApplicationName `
+    -ProcessSecurityDescriptor $ProcessSecurityDescriptor -ThreadSecurityDescriptor $ThreadSecurityDescriptor `
+    -ParentProcess $ParentProcess -CreationFlags $CreationFlags -TerminateOnDispose:$TerminateOnDispose `
+    -Environment $Environment -CurrentDirectory $CurrentDirectory -Desktop $Desktop -Title $Title `
+    -InheritHandles:$InheritHandles -InheritProcessHandle:$InheritProcessHandle -InheritThreadHandle:$InheritThreadHandle `
+    -MitigationOptions $MitigationOptions
+  }
 
-	if ($null -eq $Token) {
-		[NtApiDotNet.Win32.Win32Process]::CreateProcess($config)
-	} else {
-		[NtApiDotNet.Win32.Win32Process]::CreateProcessAsUser($Token, $config)
-	}
+  if ($null -eq $Token) {
+    [NtApiDotNet.Win32.Win32Process]::CreateProcess($config)
+  } else {
+    [NtApiDotNet.Win32.Win32Process]::CreateProcessAsUser($Token, $config)
+  }
 }
 
 <#
@@ -541,26 +541,26 @@ string[] List of paths to convert.
 string[] Converted paths.
 #>
 function Get-NtFilePath {
-	[CmdletBinding()]
-	Param(
-		[parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
+  [CmdletBinding()]
+  Param(
+    [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
         [string[]]$Path,
-		[switch]$Resolve
-	)
+    [switch]$Resolve
+  )
 
-	PROCESS {
-		foreach($path in $Path) {
-			$type = [NtApiDotNet.NtFileUtils]::GetDosPathType($path)
-			$p = $path
-			if ($Resolve) {
-				if ($type -eq "Relative" -or $type -eq "Rooted") {
-					$p = Resolve-Path -LiteralPath $p
-				}
-			}
-			$p = [NtApiDotNet.NtFileUtils]::DosFileNameToNt($p)
-			Write-Output $p
-		}
-	}
+  PROCESS {
+    foreach($path in $Path) {
+      $type = [NtApiDotNet.NtFileUtils]::GetDosPathType($path)
+      $p = $path
+      if ($Resolve) {
+        if ($type -eq "Relative" -or $type -eq "Rooted") {
+          $p = Resolve-Path -LiteralPath $p
+        }
+      }
+      $p = [NtApiDotNet.NtFileUtils]::DosFileNameToNt($p)
+      Write-Output $p
+    }
+  }
 }
 
 <#
@@ -588,25 +588,25 @@ NtApiDotNet.CreateUserProcess
 function New-NtProcessConfig
 {
     Param(
-		[Parameter(Mandatory=$true, Position=0)]
+    [Parameter(Mandatory=$true, Position=0)]
         [string]$CommandLine,
-		[NtApiDotNet.ProcessCreateFlags]$ProcessFlags = 0,
-		[NtApiDotNet.ThreadCreateFlags]$ThreadFlags = 0,
-		[NtApiDotNet.PsProtectedType]$ProtectedType = 0,
-		[NtApiDotNet.PsProtectedSigner]$ProtectedSigner = 0,
-		[switch]$TerminateOnDispose
+    [NtApiDotNet.ProcessCreateFlags]$ProcessFlags = 0,
+    [NtApiDotNet.ThreadCreateFlags]$ThreadFlags = 0,
+    [NtApiDotNet.PsProtectedType]$ProtectedType = 0,
+    [NtApiDotNet.PsProtectedSigner]$ProtectedSigner = 0,
+    [switch]$TerminateOnDispose
     )
     $config = New-Object NtApiDotNet.CreateUserProcess
-	$config.ProcessFlags = $ProcessFlags
-	$config.ThreadFlags = $ThreadFlags
-	$config.CommandLine = $CommandLine
-	$config.TerminateOnDispose = $TerminateOnDispose
+  $config.ProcessFlags = $ProcessFlags
+  $config.ThreadFlags = $ThreadFlags
+  $config.CommandLine = $CommandLine
+  $config.TerminateOnDispose = $TerminateOnDispose
 
-	if ($ProtectedType -ne 0 -or $ProtectedSigner -ne 0)
-	{
-		$config.AddProtectionLevel($ProtectedType, $ProtectedSigner)
-		$config.ProcessFlags = $ProcessFlags -bor "ProtectedProcess"
-	}
+  if ($ProtectedType -ne 0 -or $ProtectedSigner -ne 0)
+  {
+    $config.AddProtectionLevel($ProtectedType, $ProtectedSigner)
+    $config.ProcessFlags = $ProcessFlags -bor "ProtectedProcess"
+  }
 
     return $config
 }
@@ -629,23 +629,23 @@ NtApiDotNet.CreateUserProcessResult
 #>
 function New-NtProcess
 {
-	[CmdletBinding(DefaultParameterSetName = "FromArgs")]
+  [CmdletBinding(DefaultParameterSetName = "FromArgs")]
     Param(
         [Parameter(Mandatory=$true, Position=0)]
-        [string]$ImagePath,		
-		[NtApiDotNet.CreateUserProcess]$Config,
-		[switch]$Win32Path
+        [string]$ImagePath,
+    [NtApiDotNet.CreateUserProcess]$Config,
+    [switch]$Win32Path
     )
 
-	if ($null -eq $Config) {
-		$Config = New-NtProcessConfig -CommandLine $ImagePath
-	}
+  if ($null -eq $Config) {
+    $Config = New-NtProcessConfig -CommandLine $ImagePath
+  }
 
-	if ($Win32Path) {
-		$ImagePath = Get-NtFilePath $ImagePath -Resolve
-	}
+  if ($Win32Path) {
+    $ImagePath = Get-NtFilePath $ImagePath -Resolve
+  }
 
-	$Config.Start($ImagePath)
+  $Config.Start($ImagePath)
 }
 
 <#
@@ -670,27 +670,27 @@ Create a new EaBuffer object initialized with three separate entries.
 #>
 function New-NtEaBuffer
 {
-	[CmdletBinding(DefaultParameterSetName = "FromEntries")]
-	Param(
-		[Parameter(ParameterSetName = "FromEntries", Position = 0)] 
+  [CmdletBinding(DefaultParameterSetName = "FromEntries")]
+  Param(
+    [Parameter(ParameterSetName = "FromEntries", Position = 0)]
         [Hashtable]$Entries = @{},
-		[Parameter(ParameterSetName = "FromExisting", Position = 0)]
-		[NtApiDotnet.Eabuffer]$ExistingBuffer
-	)
+    [Parameter(ParameterSetName = "FromExisting", Position = 0)]
+    [NtApiDotnet.Eabuffer]$ExistingBuffer
+  )
 
-	if ($null -eq $ExistingBuffer)
-	{
-		$ea_buffer = New-Object NtApiDotNet.EaBuffer
-		foreach($entry in $Entries.Keys) 
-		{
-			$ea_buffer.AddEntry($entry, $Entries.Item($entry), 0)
-		}
-		return $ea_buffer
-	}
-	else
-	{
-		return New-Object NtApiDotNet.EaBuffer -ArgumentList $ExistingBuffer
-	}
+  if ($null -eq $ExistingBuffer)
+  {
+    $ea_buffer = New-Object NtApiDotNet.EaBuffer
+    foreach($entry in $Entries.Keys)
+    {
+      $ea_buffer.AddEntry($entry, $Entries.Item($entry), 0)
+    }
+    return $ea_buffer
+  }
+  else
+  {
+    return New-Object NtApiDotNet.EaBuffer -ArgumentList $ExistingBuffer
+  }
 }
 
 <#
@@ -710,37 +710,37 @@ None
 NtApiDotNet.NtSection
 .EXAMPLE
 New-NtSectionImage -Path \??\c:\windows\notepad.exe
-Creates a 
+Creates a
 .EXAMPLE
 New-NtSectionImage -File $file
 Creates a new image section from an open NtFile object.
 #>
 function New-NtSectionImage
 {
-	[CmdletBinding(DefaultParameterSetName = "FromFile")]
-	Param(
-		[Parameter(Position = 0, ParameterSetName = "FromFile", Mandatory = $true)] 
+  [CmdletBinding(DefaultParameterSetName = "FromFile")]
+  Param(
+    [Parameter(Position = 0, ParameterSetName = "FromFile", Mandatory = $true)]
         [NtApiDotNet.NtFile]$File,
-		[Parameter(Position = 0, ParameterSetName = "FromPath", Mandatory = $true)] 
-		[string]$Path,
-		[Parameter(ParameterSetName = "FromPath")] 
-		[switch]$Win32Path
-	)
+    [Parameter(Position = 0, ParameterSetName = "FromPath", Mandatory = $true)]
+    [string]$Path,
+    [Parameter(ParameterSetName = "FromPath")]
+    [switch]$Win32Path
+  )
 
-	if ($null -eq $File)
-	{
-		if ($Win32Path)
-		{
-			$Path = Get-NtFilePath $Path -Resolve
-		}
-		Use-NtObject($new_file = Get-NtFile -Path $Path -Share Read,Delete -Access GenericExecute) {
-			return [NtApiDotNet.NtSection]::CreateImageSection($new_file)
-		}
-	}
-	else
-	{
-		return [NtApiDotNet.NtSection]::CreateImageSection($File)
-	}
+  if ($null -eq $File)
+  {
+    if ($Win32Path)
+    {
+      $Path = Get-NtFilePath $Path -Resolve
+    }
+    Use-NtObject($new_file = Get-NtFile -Path $Path -Share Read,Delete -Access GenericExecute) {
+      return [NtApiDotNet.NtSection]::CreateImageSection($new_file)
+    }
+  }
+  else
+  {
+    return [NtApiDotNet.NtSection]::CreateImageSection($File)
+  }
 }
 
 <#
@@ -773,42 +773,42 @@ Gets token from process ID 1234.
 #>
 function Get-NtTokenFromProcess
 {
-	[CmdletBinding(DefaultParameterSetName = "FromProcess")]
+  [CmdletBinding(DefaultParameterSetName = "FromProcess")]
     Param(
-		[Parameter(Position = 0, ParameterSetName = "FromProcess", Mandatory = $true)] 
-		[ValidateScript({$_ -ge 0})]
+    [Parameter(Position = 0, ParameterSetName = "FromProcess", Mandatory = $true)]
+    [ValidateScript({$_ -ge 0})]
         [int]$ProcessId = -1,
-		[Parameter(ParameterSetName = "FromThread", Mandatory = $true)] 
-		[ValidateScript({$_ -ge 0})]
+    [Parameter(ParameterSetName = "FromThread", Mandatory = $true)]
+    [ValidateScript({$_ -ge 0})]
         [int]$ThreadId = -1,
-		[NtApiDotNet.TokenAccessRights]$Access = "MaximumAllowed"
+    [NtApiDotNet.TokenAccessRights]$Access = "MaximumAllowed"
     )
 
     Set-NtTokenPrivilege SeDebugPrivilege | Out-Null
-	$t = $null
+  $t = $null
 
-	try
-	{
-		if (-1 -ne $ProcessId)
-		{
-			$t = Use-NtObject($p = Get-NtProcess -ProcessId $ProcessId) {
-				$p.GetFirstThread("DirectImpersonation")
-			}
-		}
-		else
-		{
-			$t = Get-NtThread -ThreadId $ThreadId -Access DirectImpersonation
-		}
+  try
+  {
+    if (-1 -ne $ProcessId)
+    {
+      $t = Use-NtObject($p = Get-NtProcess -ProcessId $ProcessId) {
+        $p.GetFirstThread("DirectImpersonation")
+      }
+    }
+    else
+    {
+      $t = Get-NtThread -ThreadId $ThreadId -Access DirectImpersonation
+    }
 
-		$current = Get-NtThread -Current -PseudoHandle
-		Use-NtObject($t, $current.ImpersonateThread($t)) {
-			Get-NtToken -Impersonation -Thread $current -Access $Access
-		}
-	}
-	catch
-	{
-		Write-Error $_
-	}
+    $current = Get-NtThread -Current -PseudoHandle
+    Use-NtObject($t, $current.ImpersonateThread($t)) {
+      Get-NtToken -Impersonation -Thread $current -Access $Access
+    }
+  }
+  catch
+  {
+    Write-Error $_
+  }
 }
 
 <#
@@ -833,20 +833,20 @@ Gets all manifests from EXE files, recursively under Windows.
 Get-ChildItem $env:windir\*.exe -Recurse | Get-ExecutableManifest | Where-Object AutoElevate | Select-Object FullPath
 Get the full path of all executables with Auto Elevate manifest configuration.
 #>
-function Get-ExecutableManifest 
+function Get-ExecutableManifest
 {
     [CmdletBinding()]
     param (
         [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
-        [string[]]$Path   
+        [string[]]$Path
     )
     PROCESS {
-		foreach($p in $Path)
-		{
-			$fullpath = Resolve-Path -LiteralPath $p
-			$manifest = [NtApiDotNet.Win32.ExecutableManifest]::GetManifests($fullpath)
-			Write-Output $manifest
-		}
+    foreach($p in $Path)
+    {
+      $fullpath = Resolve-Path -LiteralPath $p
+      $manifest = [NtApiDotNet.Win32.ExecutableManifest]::GetManifests($fullpath)
+      Write-Output $manifest
+    }
     }
 }
 
@@ -881,61 +881,61 @@ Show the user and groups of the current token.
 function Show-NtTokenEffective {
     Param(
         [switch]$All,
-		[switch]$Group,
-		[switch]$Privilege,
-		[switch]$User,
-		[switch]$Integrity
+    [switch]$Group,
+    [switch]$Privilege,
+    [switch]$User,
+    [switch]$Integrity
     )
 
-	$token = Get-NtToken -Effective
+  $token = Get-NtToken -Effective
 
-	if ($All) {
-		$Group = $true
-		$User = $true
-		$Privilege = $true
-		$Integrity = $true
-	}
+  if ($All) {
+    $Group = $true
+    $User = $true
+    $Privilege = $true
+    $Integrity = $true
+  }
 
-	if (!$User -and !$Group -and !$Privilege -and !$Integrity) {
-		$token.User.ToString()
-		return
-	}
+  if (!$User -and !$Group -and !$Privilege -and !$Integrity) {
+    $token.User.ToString()
+    return
+  }
 
-	if ($User) {
-		"USER INFORMATION"
-		"----------------"
-		$token.User | Format-Table
-	}
+  if ($User) {
+    "USER INFORMATION"
+    "----------------"
+    $token.User | Format-Table
+  }
 
-	if ($Group) {
-		"GROUP SID INFORMATION"
-		"-----------------"
-		$token.Groups | Format-Table
+  if ($Group) {
+    "GROUP SID INFORMATION"
+    "-----------------"
+    $token.Groups | Format-Table
 
-		if ($token.AppContainer) {
-			"CAPABILITY SID INFORMATION"
-			"----------------------"
-			$token.Capabilities | Format-Table
-		}
+    if ($token.AppContainer) {
+      "CAPABILITY SID INFORMATION"
+      "----------------------"
+      $token.Capabilities | Format-Table
+    }
 
-		if ($token.Restricted) {
-			"RESTRICTED SID INFORMATION"
-			"--------------------------"
-			$token.RestrictedSids | Format-Table
-		}
-	}
+    if ($token.Restricted) {
+      "RESTRICTED SID INFORMATION"
+      "--------------------------"
+      $token.RestrictedSids | Format-Table
+    }
+  }
 
-	if ($Privilege) {
-		"PRIVILEGE INFORMATION"
-		"---------------------"
-		$token.Privileges | Format-Table
-	}
+  if ($Privilege) {
+    "PRIVILEGE INFORMATION"
+    "---------------------"
+    $token.Privileges | Format-Table
+  }
 
-	if ($Integrity) {
-		"INTEGRITY LEVEL"
-		"---------------"
-		$token.IntegrityLevel | Format-Table
-	}
+  if ($Integrity) {
+    "INTEGRITY LEVEL"
+    "---------------"
+    $token.IntegrityLevel | Format-Table
+  }
 }
 
 <#
@@ -969,43 +969,43 @@ Show-NtSecurityDescriptor $obj.SecurityDescriptor -Type $obj.NtType
 Show the security descriptor for an object via it's properties.
 #>
 function Show-NtSecurityDescriptor {
-	[CmdletBinding(DefaultParameterSetName = "FromObject")]
+  [CmdletBinding(DefaultParameterSetName = "FromObject")]
     Param(
-		[Parameter(Position = 0, ParameterSetName = "FromObject", Mandatory = $true)] 
+    [Parameter(Position = 0, ParameterSetName = "FromObject", Mandatory = $true)]
         [NtApiDotNet.NtObject]$Object,
-		[Parameter(ParameterSetName = "FromObject")] 
+    [Parameter(ParameterSetName = "FromObject")]
         [switch]$ReadOnly,
-		[Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true)] 
+    [Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
-		[Parameter(Position = 1, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true)] 
+    [Parameter(Position = 1, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true)]
         [NtApiDotNet.NtType]$Type,
-		[Parameter(ParameterSetName = "FromSecurityDescriptor")] 
-		[string]$Name = "Object",
-		[switch]$Wait
+    [Parameter(ParameterSetName = "FromSecurityDescriptor")]
+    [string]$Name = "Object",
+    [switch]$Wait
     )
 
-	if ($Object -ne $null) {
-		if (!$Object.IsAccessGranted("ReadControl")) {
-			Write-Error "Object doesn't have Read Control access."
-			return
-		}
-		Use-NtObject($obj = $Object.Duplicate()) {
-			$obj.Inherit = $true
-			$cmdline = [string]::Format("ViewSecurityDescriptor {0}", $obj.Handle.DangerousGetHandle())
-			if ($ReadOnly) {
-				$cmdline += " --readonly"
-			}
-			$config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\ViewSecurityDescriptor.exe" -InheritHandles
-			$config.InheritHandleList.Add($obj.Handle.DangerousGetHandle())
-			Use-NtObject($p = New-Win32Process -Config $config) {
-				if ($Wait) {
-					$p.Process.Wait() | Out-Null
-				}
-			}
-		}
-	} else {	
-		Start-Process -FilePath "$PSScriptRoot\ViewSecurityDescriptor.exe" -ArgumentList @($Name,$SecurityDescriptor.ToSddl(),$Type.Name) -Wait:$Wait
-	}
+  if ($Object -ne $null) {
+    if (!$Object.IsAccessGranted("ReadControl")) {
+      Write-Error "Object doesn't have Read Control access."
+      return
+    }
+    Use-NtObject($obj = $Object.Duplicate()) {
+      $obj.Inherit = $true
+      $cmdline = [string]::Format("ViewSecurityDescriptor {0}", $obj.Handle.DangerousGetHandle())
+      if ($ReadOnly) {
+        $cmdline += " --readonly"
+      }
+      $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\ViewSecurityDescriptor.exe" -InheritHandles
+      $config.InheritHandleList.Add($obj.Handle.DangerousGetHandle())
+      Use-NtObject($p = New-Win32Process -Config $config) {
+        if ($Wait) {
+          $p.Process.Wait() | Out-Null
+        }
+      }
+    }
+  } else {
+    Start-Process -FilePath "$PSScriptRoot\ViewSecurityDescriptor.exe" -ArgumentList @($Name,$SecurityDescriptor.ToSddl(),$Type.Name) -Wait:$Wait
+  }
 }
 
 <#
@@ -1034,28 +1034,28 @@ Get the IO control code structure from component parts.
 #>
 function Get-NtIoControlCode
 {
-	[CmdletBinding(DefaultParameterSetName = "FromCode")]
+  [CmdletBinding(DefaultParameterSetName = "FromCode")]
     Param(
-		[Parameter(Position = 0, ParameterSetName = "FromCode", Mandatory = $true)] 
+    [Parameter(Position = 0, ParameterSetName = "FromCode", Mandatory = $true)]
         [int]$ControlCode,
-		[Parameter(ParameterSetName = "FromParts", Mandatory = $true)] 
-		[NtApiDotNet.FileDeviceType]$DeviceType,
-		[Parameter(ParameterSetName = "FromParts", Mandatory = $true)] 
-		[int]$Function,
-		[Parameter(ParameterSetName = "FromParts", Mandatory = $true)] 
-		[NtApiDotNet.FileControlMethod]$Method,
-		[Parameter(ParameterSetName = "FromParts", Mandatory = $true)] 
-		[NtApiDotNet.FileControlAccess]$Access
+    [Parameter(ParameterSetName = "FromParts", Mandatory = $true)]
+    [NtApiDotNet.FileDeviceType]$DeviceType,
+    [Parameter(ParameterSetName = "FromParts", Mandatory = $true)]
+    [int]$Function,
+    [Parameter(ParameterSetName = "FromParts", Mandatory = $true)]
+    [NtApiDotNet.FileControlMethod]$Method,
+    [Parameter(ParameterSetName = "FromParts", Mandatory = $true)]
+    [NtApiDotNet.FileControlAccess]$Access
     )
 
-	switch ($PsCmdlet.ParameterSetName) {
-		"FromCode" {
-			return [NtApiDotNet.NtIoControlCode]::new($ControlCode)
-		}
-		"FromParts" {
-			return [NtApiDotNet.NtIoControlCode]::new($DeviceType, $Function, $Method, $Access)
-		}
-	}
+  switch ($PsCmdlet.ParameterSetName) {
+    "FromCode" {
+      return [NtApiDotNet.NtIoControlCode]::new($ControlCode)
+    }
+    "FromParts" {
+      return [NtApiDotNet.NtIoControlCode]::new($DeviceType, $Function, $Method, $Access)
+    }
+  }
 }
 
 <#
@@ -1074,9 +1074,9 @@ Export an object to a JSON string.
 #>
 function Export-NtObject {
     param(
-		[Parameter(Position = 0, Mandatory = $true)] 
-		[NtApiDotNet.NtObject]$Object
-	)
+    [Parameter(Position = 0, Mandatory = $true)]
+    [NtApiDotNet.NtObject]$Object
+  )
     $obj = [PSCustomObject]@{ProcessId=$PID;Handle=$Object.Handle.DangerousGetHandle().ToInt32()}
     $obj | ConvertTo-Json -Compress
 }
@@ -1097,9 +1097,9 @@ Import an object from a JSON string.
 #>
 function Import-NtObject {
     param(
-		[Parameter(Position = 0, Mandatory = $true)] 
-		[string]$Object
-	)
+    [Parameter(Position = 0, Mandatory = $true)]
+    [string]$Object
+  )
     $obj = ConvertFrom-Json $Object
     Use-NtObject($generic = [NtApiDotNet.NtGeneric]::DuplicateFrom($obj.ProcessId, $obj.Handle)) {
         $generic.ToTypedObject()
@@ -1133,9 +1133,9 @@ function Get-ExecutionAlias
     } else {
         $path = $env:LOCALAPPDATA + "\Microsoft\WindowsApps\$AliasName"
     }
-    
+
     Use-NtObject($file = Get-NtFile -Path $path -Win32Path -Options OpenReparsePoint,SynchronousIoNonAlert `
-									-Access GenericRead,Synchronize) {
+                  -Access GenericRead,Synchronize) {
         $file.GetReparsePoint($true)
     }
 }
@@ -1174,9 +1174,9 @@ function New-ExecutionAlias
         [Int32]$Version = 3
     )
 
-	$rp = [NtApiDotNet.ExecutionAliasReparseBuffer]::new($Version, $PackageName, $EntryPoint, $Target, $Flags)
+  $rp = [NtApiDotNet.ExecutionAliasReparseBuffer]::new($Version, $PackageName, $EntryPoint, $Target, $Flags)
     Use-NtObject($file = New-NtFile -Path $Path -Win32Path -Options OpenReparsePoint,SynchronousIoNonAlert `
-									-Access GenericWrite,Synchronize -Disposition OpenIf) {
+                  -Access GenericWrite,Synchronize -Disposition OpenIf) {
             $file.SetReparsePoint($rp)
     }
 }
@@ -1260,39 +1260,39 @@ function Show-NtToken {
     )
 
     PROCESS {
-	    if (-not $(Test-Path "$PSScriptRoot\TokenViewer.exe" -PathType Leaf)) {
-		    Write-Error "Missing token viewer application $PSScriptRoot\TokenViewer.exe"
-		    return
-	    }
-	    switch($PSCmdlet.ParameterSetName) {
-		    "FromProcess" {
-			    foreach($p in $Process) {
-				    Use-NtObject($t = Get-NtToken -Primary -Process $p) {
-					    $text = "$($p.Name):$($p.ProcessId)"
-					    Start-NtTokenViewer $t -Text $text
-				    }
-			    }
-		    }
-		    "FromName" {
-			    Use-NtObject($ps = Get-NtProcess -Name $Name -Access QueryLimitedInformation) {
-				    if ($MaxTokens -gt 0) {
-					    $ps = $ps | Select-Object -First $MaxTokens
-				    }
-				    $ps | Show-NtToken
-			    }
-		    }
-		    "FromPid" {
-			    $cmdline = [string]::Format("TokenViewer --pid={0}", $ProcessId)
-			    $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\TokenViewer.exe" -InheritHandles
-			    Use-NtObject($p = New-Win32Process -Config $config) {
-			    }
-		    }
-		    "FromToken" {
-			    foreach($t in $Token) {
-				    Start-NtTokenViewer $t
-			    }
-		    }
-	    }
+      if (-not $(Test-Path "$PSScriptRoot\TokenViewer.exe" -PathType Leaf)) {
+        Write-Error "Missing token viewer application $PSScriptRoot\TokenViewer.exe"
+        return
+      }
+      switch($PSCmdlet.ParameterSetName) {
+        "FromProcess" {
+          foreach($p in $Process) {
+            Use-NtObject($t = Get-NtToken -Primary -Process $p) {
+              $text = "$($p.Name):$($p.ProcessId)"
+              Start-NtTokenViewer $t -Text $text
+            }
+          }
+        }
+        "FromName" {
+          Use-NtObject($ps = Get-NtProcess -Name $Name -Access QueryLimitedInformation) {
+            if ($MaxTokens -gt 0) {
+              $ps = $ps | Select-Object -First $MaxTokens
+            }
+            $ps | Show-NtToken
+          }
+        }
+        "FromPid" {
+          $cmdline = [string]::Format("TokenViewer --pid={0}", $ProcessId)
+          $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\TokenViewer.exe" -InheritHandles
+          Use-NtObject($p = New-Win32Process -Config $config) {
+          }
+        }
+        "FromToken" {
+          foreach($t in $Token) {
+            Start-NtTokenViewer $t
+          }
+        }
+      }
     }
 }
 
@@ -1321,30 +1321,30 @@ Show the mapped section and wait for the viewer to exit.
 #>
 function Show-NtSection {
     Param(
-        [Parameter(Position = 0, Mandatory = $true)] 
+        [Parameter(Position = 0, Mandatory = $true)]
         [NtApiDotNet.NtSection]$Section,
         [switch]$ReadOnly,
         [switch]$Wait
     )
 
-	if (!$Section.IsAccessGranted("MapRead")) {
-		Write-Error "Section doesn't have Map Read access."
-		return
-	}
-	Use-NtObject($obj = $Section.Duplicate()) {
-		$obj.Inherit = $true
-		$cmdline = [string]::Format("EditSection {0}", $obj.Handle.DangerousGetHandle())
-		if ($ReadOnly) {
-			$cmdline += " --readonly"
-		}
-		$config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\EditSection.exe" -InheritHandles
-		$config.InheritHandleList.Add($obj.Handle.DangerousGetHandle())
-		Use-NtObject($p = New-Win32Process -Config $config) {
-			if ($Wait) {
-				$p.Process.Wait() | Out-Null
-			}
-		}
-	}
+  if (!$Section.IsAccessGranted("MapRead")) {
+    Write-Error "Section doesn't have Map Read access."
+    return
+  }
+  Use-NtObject($obj = $Section.Duplicate()) {
+    $obj.Inherit = $true
+    $cmdline = [string]::Format("EditSection {0}", $obj.Handle.DangerousGetHandle())
+    if ($ReadOnly) {
+      $cmdline += " --readonly"
+    }
+    $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\EditSection.exe" -InheritHandles
+    $config.InheritHandleList.Add($obj.Handle.DangerousGetHandle())
+    Use-NtObject($p = New-Win32Process -Config $config) {
+      if ($Wait) {
+        $p.Process.Wait() | Out-Null
+      }
+    }
+  }
 }
 
 <#
@@ -1353,7 +1353,7 @@ Get process primary token. Here for legacy reasons, use Get-NtToken -Primary.
 #>
 function Get-NtTokenPrimary
 {
-	Get-NtToken -Primary @args
+  Get-NtToken -Primary @args
 }
 
 <#
@@ -1362,7 +1362,7 @@ Get thread impersonation token. Here for legacy reasons, use Get-NtToken -Impers
 #>
 function Get-NtTokenThread
 {
-	Get-NtToken -Impersonation @args
+  Get-NtToken -Impersonation @args
 }
 
 <#
@@ -1371,5 +1371,5 @@ Get thread effective token. Here for legacy reasons, use Get-NtToken -Effective.
 #>
 function Get-NtTokenEffective
 {
-	Get-NtToken -Effective @args
+  Get-NtToken -Effective @args
 }
