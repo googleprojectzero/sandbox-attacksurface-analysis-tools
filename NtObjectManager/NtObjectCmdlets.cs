@@ -343,7 +343,7 @@ namespace NtObjectManager
 
         /// <summary>
         /// Constructor.
-        /// </summary>        
+        /// </summary>
         protected NtObjectBaseCmdletWithAccess()
         {
             Access = (T)Enum.ToObject(typeof(T), (uint)GenericAccessRights.MaximumAllowed);

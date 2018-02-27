@@ -564,4 +564,98 @@ namespace NtObjectManager
             WriteObject(Token.CreateLowBoxToken(package_sid, CapabilitySids ?? new Sid[0], Handles ?? new NtObject[0], TokenAccessRights.MaximumAllowed));
         }
     }
+
+    /// <summary>
+    /// <para type="synopsis">Create a new NT token.</para>
+    /// <para type="description">This cmdlet creates a new NT token kernel APIs. It needs SeCreateTokenPrivilege to succeed.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>$token = New-NtToken -User "SY"</code>
+    ///   <para>Create a new LocalSystem token with no groups or privileges.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$token = New-NtToken -User "SY" -Groups "BA","WD" -Privileges SeDebugPrivilege,SeImpersonatePrivilege</code>
+    ///   <para>Create a new LocalSystem token with two groups and two privileges.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet(VerbsCommon.New, "NtToken")]
+    [OutputType(typeof(NtToken))]
+    public sealed class NewNtTokenCmdlet : NtObjectBaseCmdletWithAccess<TokenAccessRights>
+    {
+        /// <summary>
+        /// <para type="description">Specify the user SID.</para>
+        /// </summary>
+        [Parameter(Mandatory = true)]
+        public Sid User { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a list of groups.</para>
+        /// </summary>
+        [Parameter]
+        public Sid[] Groups { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a list of groups.</para>
+        /// </summary>
+        [Parameter]
+        public TokenPrivilegeValue[] Privileges { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify an authentication ID.</para>
+        /// </summary>
+        [Parameter]
+        public Luid AuthenticationId { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the token type.</para>
+        /// </summary>
+        [Parameter]
+        public TokenType TokenType { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the token expiration time.</para>
+        /// </summary>
+        public DateTime ExpirationTime { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the token's default ACL.</para>
+        /// </summary>
+        public Acl DefaultAcl { get; set; }
+
+        /// <summary>
+        /// Determine if the cmdlet can create objects.
+        /// </summary>
+        /// <returns>True if objects can be created.</returns>
+        protected override bool CanCreateDirectories()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Method to create an object from a set of object attributes.
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes to create/open from.</param>
+        /// <returns>The newly created object.</returns>
+        protected override object CreateObject(ObjectAttributes obj_attributes)
+        {
+            return NtToken.Create(Access, obj_attributes, TokenType, AuthenticationId, ExpirationTime.ToFileTimeUtc(), new UserGroup(User, GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Owner),
+                Groups.Select(g => new UserGroup(g, GroupAttributes.Enabled | GroupAttributes.EnabledByDefault)), Privileges.Select(p => new TokenPrivilege(p, PrivilegeAttributes.EnabledByDefault)),
+                User, User, DefaultAcl, "NT.NET");
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public NewNtTokenCmdlet()
+        {
+            AuthenticationId = NtToken.LocalSystemAuthId;
+            TokenType = TokenType.Primary;
+            ExpirationTime = DateTime.Now.AddYears(10);
+            Groups = new Sid[0];
+            Privileges = new TokenPrivilegeValue[0];
+            DefaultAcl = new Acl();
+            DefaultAcl.AddAccessAllowedAce(GenericAccessRights.GenericAll, AceFlags.None, "SY");
+            DefaultAcl.AddAccessAllowedAce(GenericAccessRights.GenericAll, AceFlags.None, "BA");
+        }
+    }
 }
