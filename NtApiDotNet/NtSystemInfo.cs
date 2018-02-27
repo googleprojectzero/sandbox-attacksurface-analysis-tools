@@ -835,7 +835,7 @@ namespace NtApiDotNet
                 SystemHandleTableInfoEntry[] handles = new SystemHandleTableInfoEntry[handle_count];
                 handle_info.ReadArray((ulong)IntPtr.Size, handles, 0, handle_count);
 
-                return handles.Where(h => pid == -1 || h.UniqueProcessId == pid).Select(h => new NtHandle(h, allow_query));
+                return handles.Where(h => pid == -1 || h.UniqueProcessId == (ushort)pid).Select(h => new NtHandle(h, allow_query));
             }
         }
 
@@ -1279,6 +1279,32 @@ namespace NtApiDotNet
         {
             NtSystemCalls.NtAllocateLocallyUniqueId(out Luid luid).ToNtException();
             return luid;
+        }
+
+        /// <summary>
+        /// Get the addresses of a list of objects from the handle table and initialize the Address property.
+        /// </summary>
+        /// <param name="objects">The list of objects to initialize.</param>
+        public static void ResolveObjectAddress(IEnumerable<NtObject> objects)
+        {
+            var handles = GetHandles(NtProcess.Current.ProcessId, false).ToDictionary(h => h.Handle, h => h.Object);
+            foreach (var obj in objects)
+            {
+                int obj_handle = obj.Handle.DangerousGetHandle().ToInt32();
+                if (handles.ContainsKey(obj_handle))
+                {
+                    obj.Address = handles[obj_handle];
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get the address of an object in kernel memory from the handle table and initialize the Address property.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        public static void ResolveObjectAddress(NtObject obj)
+        {
+            ResolveObjectAddress(new[] { obj });
         }
     }
 }

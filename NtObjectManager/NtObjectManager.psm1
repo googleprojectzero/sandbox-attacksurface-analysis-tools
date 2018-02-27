@@ -841,12 +841,12 @@ function Get-ExecutableManifest
         [string[]]$Path
     )
     PROCESS {
-    foreach($p in $Path)
-    {
-      $fullpath = Resolve-Path -LiteralPath $p
-      $manifest = [NtApiDotNet.Win32.ExecutableManifest]::GetManifests($fullpath)
-      Write-Output $manifest
-    }
+        foreach($p in $Path)
+        {
+          $fullpath = Resolve-Path -LiteralPath $p
+          $manifest = [NtApiDotNet.Win32.ExecutableManifest]::GetManifests($fullpath)
+          Write-Output $manifest
+        }
     }
 }
 
@@ -1174,7 +1174,7 @@ function New-ExecutionAlias
         [Int32]$Version = 3
     )
 
-  $rp = [NtApiDotNet.ExecutionAliasReparseBuffer]::new($Version, $PackageName, $EntryPoint, $Target, $Flags)
+    $rp = [NtApiDotNet.ExecutionAliasReparseBuffer]::new($Version, $PackageName, $EntryPoint, $Target, $Flags)
     Use-NtObject($file = New-NtFile -Path $Path -Win32Path -Options OpenReparsePoint,SynchronousIoNonAlert `
                   -Access GenericWrite,Synchronize -Disposition OpenIf) {
             $file.SetReparsePoint($rp)
@@ -1345,6 +1345,38 @@ function Show-NtSection {
       }
     }
   }
+}
+
+<#
+.SYNOPSIS
+Resolve the address of a list of objects.
+.DESCRIPTION
+This cmdlet resolves the kernel address for a list of objects. This is an expensive operation so it's designed to
+be 
+.PARAMETER Objects
+The list of objects to resolve.
+.OUTPUTS
+None
+.EXAMPLE
+Resolve-NtObjectAddress @($obj1, $obj2); $obj1.Address
+Resolve the address of two objects.
+#>
+function Resolve-NtObjectAddress
+{
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
+        [NtApiDotNet.NtObject[]]$Objects
+    )
+    BEGIN {
+        $objs = @()
+    }
+    PROCESS {
+        $objs += $Objects
+    }
+    END {
+        [NtApiDotNet.NtSystemInfo]::ResolveObjectAddress([NtApiDotNet.NtObject[]]$objs)
+    }
 }
 
 <#
