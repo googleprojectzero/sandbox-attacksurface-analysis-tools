@@ -218,7 +218,16 @@ namespace NtApiDotNet
         public TokenSource()
         {
             _sourcename = new byte[8];
-        }        
+        }
+
+        public TokenSource(string source)
+        {
+            _sourcename = Encoding.ASCII.GetBytes(source);
+            if (_sourcename.Length != 8)
+            {
+                Array.Resize(ref _sourcename, 8);
+            }
+        }
 
         public Luid SourceIdentifier { get { return _sourceidentifier; } }
 
@@ -513,7 +522,7 @@ namespace NtApiDotNet
             [In] ObjectAttributes ObjectAttributes,
             TokenType TokenType,
             [In] ref Luid AuthenticationId,
-            [In] ref LargeIntegerStruct ExpirationTime,
+            [In] LargeInteger ExpirationTime,
             [In] ref TokenUser TokenUser,
             [In] SafeTokenGroupsBuffer TokenGroups,
             [In] SafeTokenPrivilegesBuffer TokenPrivileges,
@@ -637,6 +646,11 @@ namespace NtApiDotNet
         public void AddGroup(Sid sid, GroupAttributes attributes)
         {
             _sid_and_attrs.Add(new InternalSidAndAttributes() { sid = sid, attr = (uint)attributes });
+        }
+
+        public void AddGroup(UserGroup group)
+        {
+            AddGroup(group.Sid, group.Attributes);
         }
 
         public SafeTokenGroupsBuffer ToBuffer()
@@ -1519,10 +1533,15 @@ namespace NtApiDotNet
 
         private static SafeTokenGroupsBuffer BuildGroups(IEnumerable<Sid> sids, GroupAttributes attributes)
         {
+            return BuildGroups(sids.Select(s => new UserGroup(s, attributes)));
+        }
+
+        private static SafeTokenGroupsBuffer BuildGroups(IEnumerable<UserGroup> groups)
+        {
             TokenGroupsBuilder builder = new TokenGroupsBuilder();
-            foreach (Sid sid in sids)
+            foreach (UserGroup group in groups)
             {
-                builder.AddGroup(sid, attributes);
+                builder.AddGroup(group);
             }
             return builder.ToBuffer();
         }
@@ -1594,6 +1613,135 @@ namespace NtApiDotNet
         public NtToken Filter(FilterTokenFlags flags)
         {
             return Filter(flags, null, (IEnumerable<Luid>)null, null);
+        }
+
+        /// <summary>
+        /// Create a token. Needs SeCreateTokenPrivilege.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the token.</param>
+        /// <param name="object_attributes">Object attributes, used to pass SecurityDescriptor or SQOS for impersonation token.</param>
+        /// <param name="token_type">The type of token.</param>
+        /// <param name="authentication_id">The authentication ID for the token.</param>
+        /// <param name="expiration_time">The expiration time for the token.</param>
+        /// <param name="token_user">The user for the token.</param>
+        /// <param name="token_groups">The groups for the token.</param>
+        /// <param name="token_privileges">The privileges for the token.</param>
+        /// <param name="token_owner">The owner of the token.</param>
+        /// <param name="token_primary_group">The primary group for the token.</param>
+        /// <param name="token_default_dacl">The default dacl for the token.</param>
+        /// <param name="token_source">The source for the token.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The token object.</returns>
+        public static NtResult<NtToken> Create(
+                    TokenAccessRights desired_access, 
+                    ObjectAttributes object_attributes,
+                    TokenType token_type,
+                    Luid authentication_id,
+                    long expiration_time,
+                    UserGroup token_user,
+                    IEnumerable<UserGroup> token_groups,
+                    IEnumerable<TokenPrivilege> token_privileges,
+                    Sid token_owner,
+                    Sid token_primary_group,
+                    Acl token_default_dacl,
+                    string token_source,
+                    bool throw_on_error)
+        {
+            using (var list = new DisposableList())
+            {
+                TokenUser user = new TokenUser();
+                SafeSidBufferHandle user_buffer = list.AddResource(token_user.Sid.ToSafeBuffer());
+                user.User.Sid = user_buffer.DangerousGetHandle();
+                user.User.Attributes = token_user.Attributes;
+                var groups = list.AddResource(BuildGroups(token_groups));
+                TokenPrivilegesBuilder builder = new TokenPrivilegesBuilder();
+                builder.AddPrivilegeRange(token_privileges);
+                var privileges = list.AddResource(builder.ToBuffer());
+
+                TokenPrimaryGroup primary_group = new TokenPrimaryGroup
+                {
+                    PrimaryGroup = list.AddResource(token_primary_group.ToSafeBuffer()).DangerousGetHandle()
+                };
+
+                TokenOwner owner = new TokenOwner()
+                {
+                    Owner = list.AddResource(token_owner.ToSafeBuffer()).DangerousGetHandle()
+                };
+
+                TokenDefaultDacl dacl = new TokenDefaultDacl()
+                {
+                    DefaultDacl = list.AddResource(token_default_dacl.ToSafeBuffer()).DangerousGetHandle()
+                };
+
+                return NtSystemCalls.NtCreateToken(out SafeKernelObjectHandle handle, desired_access, object_attributes,
+                    token_type, ref authentication_id, new LargeInteger(expiration_time),
+                    ref user, groups, privileges, ref owner, ref primary_group, ref dacl, 
+                    new TokenSource(token_source)).CreateResult(throw_on_error, () => new NtToken(handle));
+            }
+        }
+
+        /// <summary>
+        /// Create a token. Needs SeCreateTokenPrivilege.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the token.</param>
+        /// <param name="object_attributes">Object attributes, used to pass SecurityDescriptor or SQOS for impersonation token.</param>
+        /// <param name="token_type">The type of token.</param>
+        /// <param name="authentication_id">The authentication ID for the token.</param>
+        /// <param name="expiration_time">The expiration time for the token.</param>
+        /// <param name="token_user">The user for the token.</param>
+        /// <param name="token_groups">The groups for the token.</param>
+        /// <param name="token_privileges">The privileges for the token.</param>
+        /// <param name="token_owner">The owner of the token.</param>
+        /// <param name="token_primary_group">The primary group for the token.</param>
+        /// <param name="token_default_dacl">The default dacl for the token.</param>
+        /// <param name="token_source">The source for the token.</param>
+        /// <returns>The token object.</returns>
+        public static NtToken Create(
+                    TokenAccessRights desired_access,
+                    ObjectAttributes object_attributes,
+                    TokenType token_type,
+                    Luid authentication_id,
+                    long expiration_time,
+                    UserGroup token_user,
+                    IEnumerable<UserGroup> token_groups,
+                    IEnumerable<TokenPrivilege> token_privileges,
+                    Sid token_owner,
+                    Sid token_primary_group,
+                    Acl token_default_dacl,
+                    string token_source)
+        {
+            return Create(desired_access, object_attributes, token_type, authentication_id, expiration_time, token_user, 
+                token_groups, token_privileges, token_owner, token_primary_group, token_default_dacl, token_source, true).Result;
+        }
+
+        /// <summary>
+        /// Create a token. Needs SeCreateTokenPrivilege.
+        /// </summary>
+        /// <param name="token_user">The user for the token.</param>
+        /// <param name="token_groups">The groups for the token.</param>
+        /// <param name="token_privileges">The privileges for the token.</param>
+        /// <returns>The token object.</returns>
+        public static NtToken Create(Sid token_user,
+                    IEnumerable<Sid> token_groups,
+                    IEnumerable<TokenPrivilegeValue> token_privileges)
+        {
+            Acl default_dacl = new Acl();
+            default_dacl.AddAccessAllowedAce(GenericAccessRights.GenericAll, AceFlags.None, token_user);
+            return Create(TokenAccessRights.GenericAll, null, TokenType.Primary, new Luid(999, 0),
+                DateTime.Now.AddYears(10).ToFileTimeUtc(), new UserGroup(token_user, GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Owner),
+                token_groups.Select(s => new UserGroup(s, GroupAttributes.Enabled | GroupAttributes.EnabledByDefault)),
+                token_privileges.Select(p => new TokenPrivilege(p, PrivilegeAttributes.Enabled | PrivilegeAttributes.EnabledByDefault)),
+                token_user, token_user, default_dacl, "NT.NET");
+        }
+
+        /// <summary>
+        /// Create a token. Needs SeCreateTokenPrivilege.
+        /// </summary>
+        /// <param name="token_user">The user for the token.</param>
+        /// <returns>The token object.</returns>
+        public static NtToken Create(Sid token_user)
+        {
+            return Create(token_user, new Sid[] { new Sid("WD") }, new TokenPrivilegeValue[] { TokenPrivilegeValue.SeDebugPrivilege });
         }
 
         /// <summary>
@@ -2238,7 +2386,7 @@ namespace NtApiDotNet
             {                
                 TokenMandatoryLabel label = new TokenMandatoryLabel();
                 label.Label.Sid = sid_buffer.DangerousGetHandle();
-                SetToken(TokenInformationClass.TokenIntegrityLevel, label);                
+                SetToken(TokenInformationClass.TokenIntegrityLevel, label);
             }
         }
 
@@ -2423,6 +2571,10 @@ namespace NtApiDotNet
         /// Get authentication ID for NETWORK SERVICE
         /// </summary>
         public static Luid NetworkServiceAuthId { get { return new Luid(0x3e4, 0); } }
+        /// <summary>
+        /// Get authentication ID for ANONYMOUS
+        /// </summary>
+        public static Luid AnonymousAuthId { get { return new Luid(0x3e6, 0); } }
 
         /// <summary>
         /// Get full path to token
