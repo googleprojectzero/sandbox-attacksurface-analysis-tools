@@ -109,6 +109,13 @@ namespace NtApiDotNet
     }
 
     /// <summary>
+    /// Implementation of disposable list which just accepts IDisposable objects.
+    /// </summary>
+    public sealed class DisposableList : DisposableList<IDisposable>
+    {
+    }
+
+    /// <summary>
     /// Disposable list of safe handles
     /// </summary>
     public sealed class SafeHandleList : DisposableList<SafeHandle>
