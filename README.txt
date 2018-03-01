@@ -21,6 +21,15 @@ with .NET Core 2.0 by building the specific project files.
 
 Release Notes:
 
+1.1.10
+------
+* Added support for extended handle information to allow for PIDs > 64k.
+* Added basic New-NtToken cmdlet and system call.
+* Added Resolve-NtObjectAdddress cmdlet to resolve the addresses of a list of objects.
+* Added generic object ReOpen method.
+* Added vistor method to object directories to enumerate recursively with a callback.
+* Added display of process trust labels.
+
 1.1.9
 -----
 * Fix for bug when querying extended process information on Windows 7/8.

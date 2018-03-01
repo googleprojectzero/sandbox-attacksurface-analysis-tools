@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.9'
+ModuleVersion = '1.1.10'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -94,7 +94,15 @@ PrivateData = @{
         ProjectUri = 'https://github.com/google/sandbox-attacksurface-analysis-tools'
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.9
+        ReleaseNotes = '1.1.10
+------
+* Added support for extended handle information to allow for PIDs > 64k.
+* Added basic New-NtToken cmdlet and system call.
+* Added Resolve-NtObjectAdddress cmdlet to resolve the addresses of a list of objects.
+* Added generic object ReOpen method.
+* Added vistor method to object directories to enumerate recursively with a callback.
+* Added display of process trust labels.
+1.1.9
 -----
 * Fix for bug when querying extended process information on Windows 7/8.
 * Add OneDrive file attributes from thierry.franzetti.
