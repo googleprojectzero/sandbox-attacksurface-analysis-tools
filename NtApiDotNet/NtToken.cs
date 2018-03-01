@@ -71,7 +71,10 @@ namespace NtApiDotNet
         TokenSecurityAttributes = 39,
         TokenIsRestricted = 40,
         TokenProcessTrustLevel = 41,
-        MaxTokenInfoClass = 42
+        TokenPrivateNameSpace = 42,
+        TokenSingletonAttributes = 43,
+        TokenBnoIsolation = 44,
+        TokenChildProcessFlags = 45,
     }
 
     public enum TokenPrivilegeValue : uint
@@ -435,6 +438,13 @@ namespace NtApiDotNet
         SandboxInert = 0x2,
         LuaToken = 0x4,
         WriteRestricted = 0x8,
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("Sid")]
+    public struct TokenProcessTrustLevel
+    {
+        public int Size;
+        public IntPtr Sid;
     }
 
     public static partial class NtSystemCalls
@@ -1037,7 +1047,7 @@ namespace NtApiDotNet
                 if ((status != NtStatus.STATUS_BUFFER_TOO_SMALL) && (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH))
                     throw new NtException(status);
                 ret = new SafeStructureInOutBuffer<T>(return_length, false);
-                status = NtSystemCalls.NtQueryInformationToken(Handle, token_info, ret.DangerousGetHandle(), ret.Length, out return_length).ToNtException();                
+                status = NtSystemCalls.NtQueryInformationToken(Handle, token_info, ret.DangerousGetHandle(), ret.Length, out return_length).ToNtException();
             }
             finally
             {
@@ -2591,6 +2601,31 @@ namespace NtApiDotNet
                 {
                     return String.Empty;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Get the token's trust level. Will be null if no trust level present.
+        /// </summary>
+        public Sid TrustLevel
+        {
+            get
+            {
+                try
+                {
+                    using (var buffer = QueryToken<TokenProcessTrustLevel>(TokenInformationClass.TokenProcessTrustLevel))
+                    {
+                        if (buffer.Result.Size > IntPtr.Size)
+                        {
+                            return new Sid(buffer.Data.DangerousGetHandle());
+                        }
+                    }
+                }
+                catch (NtException)
+                {
+                }
+
+                return null;
             }
         }
     }

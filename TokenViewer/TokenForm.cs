@@ -218,7 +218,7 @@ namespace TokenViewer
             }
             else
             {
-                tabControlMain.TabPages.Remove(tabPageRestricted);                
+                tabControlMain.TabPages.Remove(tabPageRestricted);
             }
 
             if (_token.AppContainer)
@@ -249,6 +249,8 @@ namespace TokenViewer
 
             txtMandatoryILPolicy.Text = _token.MandatoryPolicy.ToString();
             txtHandleAccess.Text = _token.GrantedAccess.ToString();
+            Sid trust_level = _token.TrustLevel;
+            txtTrustLevel.Text = trust_level != null ? trust_level.Name : "N/A";
             UpdatePrivileges();
             UpdateSecurityAttributes();
         }
