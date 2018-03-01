@@ -615,12 +615,20 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Specify the token expiration time.</para>
         /// </summary>
+        [Parameter]
         public DateTime ExpirationTime { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the token's default ACL.</para>
         /// </summary>
+        [Parameter]
         public Acl DefaultAcl { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the token's integrity level.</para>
+        /// </summary>
+        [Parameter]
+        public TokenIntegrityLevel IntegrityLevel { get; set; }
 
         /// <summary>
         /// Determine if the cmdlet can create objects.
@@ -631,6 +639,13 @@ namespace NtObjectManager
             return false;
         }
 
+        private IEnumerable<UserGroup> GetGroups()
+        {
+            List<UserGroup> groups = Groups.Select(g => new UserGroup(g, GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Mandatory)).ToList();
+            groups.Add(new UserGroup(NtSecurity.GetIntegritySid(IntegrityLevel), GroupAttributes.Integrity | GroupAttributes.IntegrityEnabled));
+            return groups;
+        }
+
         /// <summary>
         /// Method to create an object from a set of object attributes.
         /// </summary>
@@ -639,7 +654,7 @@ namespace NtObjectManager
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
             return NtToken.Create(Access, obj_attributes, TokenType, AuthenticationId, ExpirationTime.ToFileTimeUtc(), new UserGroup(User, GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Owner),
-                Groups.Select(g => new UserGroup(g, GroupAttributes.Enabled | GroupAttributes.EnabledByDefault)), Privileges.Select(p => new TokenPrivilege(p, PrivilegeAttributes.EnabledByDefault)),
+                GetGroups(), Privileges.Select(p => new TokenPrivilege(p, PrivilegeAttributes.EnabledByDefault)),
                 User, User, DefaultAcl, "NT.NET");
         }
 
@@ -656,6 +671,7 @@ namespace NtObjectManager
             DefaultAcl = new Acl();
             DefaultAcl.AddAccessAllowedAce(GenericAccessRights.GenericAll, AceFlags.None, "SY");
             DefaultAcl.AddAccessAllowedAce(GenericAccessRights.GenericAll, AceFlags.None, "BA");
+            IntegrityLevel = TokenIntegrityLevel.System;
         }
     }
 }
