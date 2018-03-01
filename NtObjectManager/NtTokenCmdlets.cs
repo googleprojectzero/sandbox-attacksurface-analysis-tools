@@ -654,7 +654,7 @@ namespace NtObjectManager
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
             return NtToken.Create(Access, obj_attributes, TokenType, AuthenticationId, ExpirationTime.ToFileTimeUtc(), new UserGroup(User, GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Owner),
-                GetGroups(), Privileges.Select(p => new TokenPrivilege(p, PrivilegeAttributes.EnabledByDefault)),
+                GetGroups(), Privileges.Select(p => new TokenPrivilege(p, PrivilegeAttributes.EnabledByDefault | PrivilegeAttributes.Enabled)),
                 User, User, DefaultAcl, "NT.NET");
         }
 
@@ -672,6 +672,7 @@ namespace NtObjectManager
             DefaultAcl.AddAccessAllowedAce(GenericAccessRights.GenericAll, AceFlags.None, "SY");
             DefaultAcl.AddAccessAllowedAce(GenericAccessRights.GenericAll, AceFlags.None, "BA");
             IntegrityLevel = TokenIntegrityLevel.System;
+            SecurityQualityOfService = new SecurityQualityOfService(SecurityImpersonationLevel.Anonymous, SecurityContextTrackingMode.Static, false);
         }
     }
 }
