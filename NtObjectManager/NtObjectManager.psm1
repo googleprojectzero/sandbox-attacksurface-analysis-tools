@@ -1243,6 +1243,9 @@ Display the primary tokens from accessible processes named notepad.exe.
 .EXAMPLE
 Show-NtToken -Name "notepad.exe" -MaxTokens 5
 Display up to 5 primary tokens from accessible processes named notepad.exe.
+.EXAMPLE
+Show-NtToken -All
+Show a list of all accessible tokens to choose from.
 #>
 function Show-NtToken {
     [CmdletBinding(DefaultParameterSetName = "FromPid")]
@@ -1256,7 +1259,9 @@ function Show-NtToken {
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="FromName")]
         [string]$Name,
         [Parameter(Position=0, ParameterSetName="FromName")]
-        [int]$MaxTokens = 0
+        [int]$MaxTokens = 0,
+		[Parameter(Position=0, ParameterSetName="All")]
+		[switch]$All
     )
 
     PROCESS {
@@ -1291,6 +1296,9 @@ function Show-NtToken {
           foreach($t in $Token) {
             Start-NtTokenViewer $t
           }
+        }
+        "All" {
+            Start-Process "$PSScriptRoot\TokenViewer.exe"
         }
       }
     }
