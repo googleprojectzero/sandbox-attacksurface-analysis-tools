@@ -521,6 +521,10 @@ namespace NtApiDotNet
                 else if (NtSecurity.IsProcessTrustSid(this))
                 {
                     name = NtSecurity.LookupProcessTrustName(this);
+                    if (name != null)
+                    {
+                        name = $@"TRUST LEVEL\{name}";
+                    }
                 }
 
                 return name ?? ToString();
