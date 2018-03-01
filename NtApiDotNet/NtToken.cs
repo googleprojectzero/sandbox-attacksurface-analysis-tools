@@ -2049,6 +2049,11 @@ namespace NtApiDotNet
                     return buf.Result;
                 }
             }
+
+            set
+            {
+                SetSessionId(value);
+            }
         }
 
         /// <summary>
@@ -2066,7 +2071,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get token's origin
+        /// Get/set token's origin
         /// </summary>
         public Luid Origin
         {
@@ -2077,6 +2082,21 @@ namespace NtApiDotNet
                     return buf.Result;
                 }
             }
+
+            set
+            {
+                SetOrigin(value);
+                
+            }
+        }
+
+        /// <summary>
+        /// Set the origin logon session ID.
+        /// </summary>
+        /// <param name="origin">The origin logon session ID.</param>
+        public void SetOrigin(Luid origin)
+        {
+            SetToken(TokenInformationClass.TokenOrigin, origin);
         }
 
         /// <summary>
