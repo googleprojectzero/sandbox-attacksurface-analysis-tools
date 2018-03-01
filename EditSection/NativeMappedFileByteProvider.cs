@@ -86,6 +86,22 @@ namespace EditSection
             return !_readOnly;
         }
 
+        public void WriteBytes(long index, byte[] value)
+        {
+            if (index < _map.Length)
+            {
+                try
+                {
+                    long count = Math.Min(_map.Length - index, value.Length);
+                    _map.WriteArray((ulong)index, value, 0, (int)count);
+                    ByteWritten?.Invoke(this, new EventArgs());
+                }
+                catch
+                {
+                }
+            }
+        }
+
         public void WriteByte(long index, byte value)
         {
             if (index < _map.Length)
@@ -93,11 +109,14 @@ namespace EditSection
                 try
                 {
                     _map.Write((ulong)index, value);
+                    ByteWritten?.Invoke(this, new EventArgs());
                 }
                 catch
                 {
                 }
             }
         }
+
+        public event EventHandler ByteWritten;
     }
 }

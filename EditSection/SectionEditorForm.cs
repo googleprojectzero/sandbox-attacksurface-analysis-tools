@@ -112,6 +112,7 @@ namespace EditSection
             _map = map;
             _readOnly = readOnly;
             _prov = new NativeMappedFileByteProvider(_map, _readOnly);
+            _prov.ByteWritten += _prov_ByteWritten;
 
             InitializeComponent();
             if (_readOnly)
@@ -120,11 +121,18 @@ namespace EditSection
                 loadFromFileToolStripMenuItem.Visible = false;
             }
 
+            loadFromFileToolStripMenuItem.Enabled = !_readOnly;
+            toolStripButtonLoad.Enabled = !_readOnly;
             hexBox.ByteProvider = _prov;
             InitDataInspectors();
             UpdateDataInspectors();
 
             Disposed += SectionEditorForm_Disposed;
+        }
+
+        private void _prov_ByteWritten(object sender, EventArgs e)
+        {
+            UpdateDataInspectors();
         }
 
         private string GetReadOnlyString()
@@ -261,13 +269,7 @@ namespace EditSection
                             totalLength = _prov.Length - start;
                         }
 
-                        for (long i = 0; i < totalLength; ++i)
-                        {
-                            _prov.WriteByte(start + i, data[i]);
-                        }
-                    
-                        File.WriteAllBytes(dlg.FileName, data);
-
+                        _prov.WriteBytes(start, data);
                         hexBox.Invalidate();
                     }
                     catch (IOException ex)
@@ -324,8 +326,6 @@ namespace EditSection
         {
             bool sized_selection = hexBox.SelectionLength > 0;
             saveToFileToolStripMenuItem.Enabled = sized_selection;
-            loadFromFileToolStripMenuItem.Enabled = sized_selection;
-            toolStripButtonLoad.Enabled = sized_selection;
             toolStripButtonSave.Enabled = sized_selection;
             UpdateDataInspectors();
         }
