@@ -1662,6 +1662,9 @@ namespace NtApiDotNet
             string protection_type;
             switch (trust_sid.SubAuthorities[0])
             {
+                case 0:
+                    protection_type = "None";
+                    break;
                 case 512:
                     protection_type = "ProtectedLight";
                     break;
