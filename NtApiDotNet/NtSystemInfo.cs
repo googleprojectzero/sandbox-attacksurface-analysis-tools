@@ -167,6 +167,27 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    public struct SystemHandleTableInfoEntryEx
+    {
+        public UIntPtr Object;
+        public IntPtr UniqueProcessId;
+        public IntPtr HandleValue;
+        public AccessMask GrantedAccess;
+        public ushort CreatorBackTraceIndex;
+        public ushort ObjectTypeIndex;
+        public uint HandleAttributes;
+        public uint Reserved;
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("Handles")]
+    public struct SystemHandleInformationEx
+    {
+        public IntPtr NumberOfHandles;
+        public IntPtr Reserved;
+        public SystemHandleTableInfoEntryEx Handles;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public struct SystemThreadInformation
     {
         public LargeIntegerStruct KernelTime;
@@ -729,9 +750,9 @@ namespace NtApiDotNet
             }
         }
 
-        internal NtHandle(SystemHandleTableInfoEntry entry, bool allow_query)
+        internal NtHandle(SystemHandleTableInfoEntryEx entry, bool allow_query)
         {
-            ProcessId = entry.UniqueProcessId;
+            ProcessId = entry.UniqueProcessId.ToInt32();
             NtType info = NtType.GetTypeByIndex(entry.ObjectTypeIndex);
             if (info != null)
             {
@@ -739,9 +760,9 @@ namespace NtApiDotNet
             }
             
             Attributes = (AttributeFlags)entry.HandleAttributes;
-            Handle = entry.HandleValue;
+            Handle = entry.HandleValue.ToInt32();
             Object = entry.Object.ToUInt64();
-            GrantedAccess = (GenericAccessRights)entry.GrantedAccess;
+            GrantedAccess = entry.GrantedAccess.ToGenericAccess();
             _allow_query = allow_query;
         }
 
@@ -805,19 +826,35 @@ namespace NtApiDotNet
     /// </summary>
     public static class NtSystemInfo
     {
-        private static void AllocateSafeBuffer(SafeHGlobalBuffer buffer, SystemInformationClass info_class)
+        private static SafeStructureInOutBuffer<T> QuerySystemInfoVariable<T>(SystemInformationClass info_class) where T : new()
         {
-            NtStatus status = 0;
-            int return_length = 0;
-            while ((status = NtSystemCalls.NtQuerySystemInformation(info_class,
-                                                     buffer,
-                                                     buffer.Length,
-                                                     out return_length)) == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
+            bool free_buffer = true;
+            SafeStructureInOutBuffer<T> buffer = new SafeStructureInOutBuffer<T>(0x1000, true);
+            try
             {
-                int length = buffer.Length * 2;
-                buffer.Resize(length);
+                NtStatus status = 0;
+                int return_length = 0;
+                while ((status = NtSystemCalls.NtQuerySystemInformation(info_class,
+                                                         buffer,
+                                                         buffer.Length,
+                                                         out return_length)) == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
+                {
+                    int length = buffer.Length * 2;
+                    buffer.Dispose();
+                    buffer = new SafeStructureInOutBuffer<T>(length, true);
+                }
+                status.ToNtException();
+                free_buffer = false;
+                return buffer;
             }
-            status.ToNtException();
+            finally
+            {
+                if (free_buffer)
+                {
+                    buffer.Dispose();
+                }
+            }
+            
         }
 
         /// <summary>
@@ -828,14 +865,13 @@ namespace NtApiDotNet
         /// <returns>The list of handles</returns>
         public static IEnumerable<NtHandle> GetHandles(int pid, bool allow_query)
         {
-            using (SafeHGlobalBuffer handle_info = new SafeHGlobalBuffer(0x10000))
+            using (var buffer = QuerySystemInfoVariable<SystemHandleInformationEx>(SystemInformationClass.SystemExtendedHandleInformation))
             {
-                AllocateSafeBuffer(handle_info, SystemInformationClass.SystemHandleInformation);
-                int handle_count = handle_info.Read<Int32>(0);
-                SystemHandleTableInfoEntry[] handles = new SystemHandleTableInfoEntry[handle_count];
-                handle_info.ReadArray((ulong)IntPtr.Size, handles, 0, handle_count);
-
-                return handles.Where(h => pid == -1 || h.UniqueProcessId == (ushort)pid).Select(h => new NtHandle(h, allow_query));
+                var handle_info = buffer.Result;
+                int handle_count = handle_info.NumberOfHandles.ToInt32();
+                SystemHandleTableInfoEntryEx[] handles = new SystemHandleTableInfoEntryEx[handle_count];
+                buffer.Data.ReadArray(0, handles, 0, handle_count);
+                return handles.Where(h => pid == -1 || h.UniqueProcessId.ToInt32() == pid).Select(h => new NtHandle(h, allow_query));
             }
         }
 
@@ -873,9 +909,8 @@ namespace NtApiDotNet
         /// <returns>The list of process information.</returns>
         public static IEnumerable<NtProcessInformation> GetProcessInformation()
         {
-            using (SafeHGlobalBuffer process_info = new SafeHGlobalBuffer(0x10000))
+            using (var process_info = QuerySystemInfoVariable<SystemProcessInformation>(SystemInformationClass.SystemProcessInformation))
             {
-                AllocateSafeBuffer(process_info, SystemInformationClass.SystemProcessInformation);
                 int offset = 0;
                 while (true)
                 {
@@ -902,9 +937,8 @@ namespace NtApiDotNet
         /// <returns>The list of page file names.</returns>
         public static IEnumerable<string> GetPageFileNames()
         {
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(0x10000))
+            using (var buffer = QuerySystemInfoVariable<SystemPageFileInformation>(SystemInformationClass.SystemPageFileInformation))
             {
-                AllocateSafeBuffer(buffer, SystemInformationClass.SystemPageFileInformation);
                 int offset = 0;
                 while (true)
                 {
