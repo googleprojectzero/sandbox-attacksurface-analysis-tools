@@ -2635,7 +2635,7 @@ namespace NtApiDotNet
                 {
                     using (var buffer = QueryToken<TokenProcessTrustLevel>(TokenInformationClass.TokenProcessTrustLevel))
                     {
-                        if (buffer.Result.Size > IntPtr.Size)
+                        if (buffer.Length > IntPtr.Size)
                         {
                             return new Sid(buffer.Data.DangerousGetHandle());
                         }
