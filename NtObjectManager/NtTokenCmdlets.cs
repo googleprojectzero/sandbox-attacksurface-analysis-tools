@@ -653,7 +653,7 @@ namespace NtObjectManager
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            return NtToken.Create(Access, obj_attributes, TokenType, AuthenticationId, ExpirationTime.ToFileTimeUtc(), new UserGroup(User, GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Owner),
+            return NtToken.Create(Access, obj_attributes, TokenType, AuthenticationId, ExpirationTime.ToFileTimeUtc(), new UserGroup(User, GroupAttributes.Owner),
                 GetGroups(), Privileges.Select(p => new TokenPrivilege(p, PrivilegeAttributes.EnabledByDefault | PrivilegeAttributes.Enabled)),
                 User, User, DefaultAcl, "NT.NET");
         }
