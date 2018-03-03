@@ -364,7 +364,7 @@ namespace TokenViewer
                 btnStartServer.Enabled = false;
 
                 using (NamedPipeServerStream pipe = new NamedPipeServerStream(txtPipeName.Text,
-                    PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+                    PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
                 {
                     await Task.Factory.FromAsync(pipe.BeginWaitForConnection,
                         pipe.EndWaitForConnection, null);
