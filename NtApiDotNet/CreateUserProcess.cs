@@ -183,6 +183,22 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Specify a security descriptor for the process.
+        /// </summary>
+        public SecurityDescriptor ProcessSecurityDescriptor
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Specify a security descriptor for the initial thread.
+        /// </summary>
+        public SecurityDescriptor ThreadSecurityDescriptor
+        {
+            get; set;
+        }
+
+        /// <summary>
         /// Constructor
         /// </summary>
         public CreateUserProcess()
@@ -296,36 +312,40 @@ namespace NtApiDotNet
                 create_info.Data.ProhibitedImageCharacteristics = ProhibitedImageCharacteristics;
                 create_info.Data.AdditionalFileAccess = AdditionalFileAccess;
 
-                NtStatus status = NtSystemCalls.NtCreateUserProcess(
-                  out process_handle, out thread_handle,
-                  ProcessAccessRights.MaximumAllowed, ThreadAccessRights.MaximumAllowed,
-                  null, null, ProcessFlags,
-                  ThreadFlags, process_params, create_info, attr_list);
-
-                if (!status.IsSuccess() && !ReturnOnError)
+                using (ObjectAttributes proc_attr = new ObjectAttributes(null, AttributeFlags.None, (NtObject)null, null, ProcessSecurityDescriptor),
+                    thread_attr = new ObjectAttributes(null, AttributeFlags.None, (NtObject)null, null, ThreadSecurityDescriptor))
                 {
-                    // Close handles which come from errors
-                    switch (create_info.State)
+                    NtStatus status = NtSystemCalls.NtCreateUserProcess(
+                      out process_handle, out thread_handle,
+                      ProcessAccessRights.MaximumAllowed, ThreadAccessRights.MaximumAllowed,
+                      proc_attr, thread_attr, ProcessFlags,
+                      ThreadFlags, process_params, create_info, attr_list);
+
+                    if (!status.IsSuccess() && !ReturnOnError)
                     {
-                        case ProcessCreateState.FailOnSectionCreate:
-                            NtSystemCalls.NtClose(create_info.Data.FileHandle);
-                            break;
-                        case ProcessCreateState.FailExeName:
-                            NtSystemCalls.NtClose(create_info.Data.IFEOKey);
-                            break;
+                        // Close handles which come from errors
+                        switch (create_info.State)
+                        {
+                            case ProcessCreateState.FailOnSectionCreate:
+                                NtSystemCalls.NtClose(create_info.Data.FileHandle);
+                                break;
+                            case ProcessCreateState.FailExeName:
+                                NtSystemCalls.NtClose(create_info.Data.IFEOKey);
+                                break;
+                        }
+
+                        status.ToNtException();
                     }
 
-                    status.ToNtException();
-                }
-
-                if (create_info.State == ProcessCreateState.Success)
-                {
-                    return new CreateUserProcessResult(process_handle, thread_handle,
-                      create_info.Data, image_info.Result, client_id.Result, TerminateOnDispose);
-                }
-                else
-                {
-                    return new CreateUserProcessResult(status, create_info.Data, create_info.State);
+                    if (create_info.State == ProcessCreateState.Success)
+                    {
+                        return new CreateUserProcessResult(process_handle, thread_handle,
+                          create_info.Data, image_info.Result, client_id.Result, TerminateOnDispose);
+                    }
+                    else
+                    {
+                        return new CreateUserProcessResult(status, create_info.Data, create_info.State);
+                    }
                 }
             }
             finally
