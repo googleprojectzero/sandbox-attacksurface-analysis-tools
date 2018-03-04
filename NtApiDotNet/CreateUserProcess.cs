@@ -199,6 +199,14 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Specify the primary token for the new process.
+        /// </summary>
+        public NtToken Token
+        {
+            get; set;
+        }
+
+        /// <summary>
         /// Constructor
         /// </summary>
         public CreateUserProcess()
@@ -272,6 +280,15 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Start the new process based on the ImagePath parameter.
+        /// </summary>
+        /// <returns>The result of the process creation</returns>
+        public CreateUserProcessResult Start()
+        {
+            return Start(ImagePath);
+        }
+
+        /// <summary>
         /// Start the new process
         /// </summary>
         /// <param name="image_path">The image path to the file to execute</param>
@@ -281,9 +298,9 @@ namespace NtApiDotNet
             if (image_path == null)
                 throw new System.ArgumentNullException("image_path");
 
-            IntPtr process_params = CreateProcessParameters(ImagePath ?? image_path, DllPath, CurrentDirectory,
+            IntPtr process_params = CreateProcessParameters(ConfigImagePath ?? image_path, DllPath, CurrentDirectory,
                   CommandLine, Environment, WindowTitle, DesktopInfo, ShellInfo, RuntimeData, 1);
-            List<ProcessAttribute> attrs = new List<ProcessAttribute>();
+            DisposableList<ProcessAttribute> attrs = new DisposableList<ProcessAttribute>();
             try
             {
                 ProcessCreateInfo create_info = new ProcessCreateInfo();
@@ -304,6 +321,11 @@ namespace NtApiDotNet
                 if (RestrictChildProcess || OverrideRestrictChildProcess)
                 {
                     attrs.Add(ProcessAttribute.ChildProcess(RestrictChildProcess, OverrideRestrictChildProcess));
+                }
+
+                if (Token != null)
+                {
+                    attrs.Add(ProcessAttribute.Token(Token.Handle));
                 }
 
                 ProcessAttributeList attr_list = new ProcessAttributeList(attrs);
@@ -351,10 +373,7 @@ namespace NtApiDotNet
             finally
             {
                 NtRtl.RtlDestroyProcessParameters(process_params);
-                foreach (ProcessAttribute attr in attrs)
-                {
-                    attr.Dispose();
-                }
+                attrs.Dispose();
             }
         }
     }

@@ -597,16 +597,16 @@ function New-NtProcessConfig
     [switch]$TerminateOnDispose
     )
     $config = New-Object NtApiDotNet.CreateUserProcess
-  $config.ProcessFlags = $ProcessFlags
-  $config.ThreadFlags = $ThreadFlags
-  $config.CommandLine = $CommandLine
-  $config.TerminateOnDispose = $TerminateOnDispose
+    $config.ProcessFlags = $ProcessFlags
+    $config.ThreadFlags = $ThreadFlags
+    $config.CommandLine = $CommandLine
+    $config.TerminateOnDispose = $TerminateOnDispose
 
-  if ($ProtectedType -ne 0 -or $ProtectedSigner -ne 0)
-  {
-    $config.AddProtectionLevel($ProtectedType, $ProtectedSigner)
-    $config.ProcessFlags = $ProcessFlags -bor "ProtectedProcess"
-  }
+    if ($ProtectedType -ne 0 -or $ProtectedSigner -ne 0)
+    {
+        $config.AddProtectionLevel($ProtectedType, $ProtectedSigner)
+        $config.ProcessFlags = $ProcessFlags -bor "ProtectedProcess"
+    }
 
     return $config
 }
@@ -631,8 +631,8 @@ function New-NtProcess
 {
   [CmdletBinding(DefaultParameterSetName = "FromArgs")]
     Param(
-        [Parameter(Mandatory=$true, Position=0)]
-        [string]$ImagePath,
+    [Parameter(Mandatory=$true, Position=0)]
+    [string]$ImagePath,
     [NtApiDotNet.CreateUserProcess]$Config,
     [switch]$Win32Path
     )
