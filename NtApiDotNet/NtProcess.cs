@@ -286,8 +286,9 @@ namespace NtApiDotNet
         UmsThread, // ? in PUMS_CREATE_THREAD_ATTRIBUTES
         MitigationOptions, // in UCHAR
         ProtectionLevel,
-        ChildProcess, // since THRESHOLD
+        Unknown18,
         JobList,
+        ChildProcess, // since THRESHOLD
     }
 
     [Flags]
@@ -724,7 +725,7 @@ namespace NtApiDotNet
             {
                 value |= 2;
             }
-            return new ProcessAttribute(ProcessAttributeNum.ChildProcess, false, true, false, new IntPtr(value), IntPtr.Size, IntPtr.Zero);
+            return new ProcessAttribute(ProcessAttributeNum.ChildProcess, false, true, false, value.ToBuffer());
         }
 
         public static ProcessAttribute ProtectionLevel(PsProtectedType type, PsProtectedSigner signer, bool audit)
