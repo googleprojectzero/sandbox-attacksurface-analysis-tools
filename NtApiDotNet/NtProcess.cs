@@ -386,6 +386,14 @@ namespace NtApiDotNet
         public byte EnableAutomaticOverride;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public class ProcessChildProcessRestricted1709
+    {
+        public byte IsNoChildProcessRestricted;
+        public byte EnableAutomaticOverride;
+        public byte Unknown2;
+    }
+
     public enum ProcessSubsystemInformationType
     {
         Win32 = 0,
@@ -1941,6 +1949,15 @@ namespace NtApiDotNet
                 try
                 {
                     var result = QueryFixed<ProcessChildProcessRestricted>(ProcessInformationClass.ProcessChildProcessRestricted);
+                    return result.IsNoChildProcessRestricted != 0;
+                }
+                catch (NtException)
+                {
+                }
+
+                try
+                {
+                    var result = QueryFixed<ProcessChildProcessRestricted1709>(ProcessInformationClass.ProcessChildProcessRestricted);
                     return result.IsNoChildProcessRestricted != 0;
                 }
                 catch (NtException)
