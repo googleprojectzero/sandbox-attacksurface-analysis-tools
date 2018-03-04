@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.10'
+ModuleVersion = '1.1.11'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -94,7 +94,17 @@ PrivateData = @{
         ProjectUri = 'https://github.com/google/sandbox-attacksurface-analysis-tools'
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.10
+        ReleaseNotes = '1.1.11
+------
+* Improved New-NtToken including adding missing IL
+* Added new NTSTATUS codes from 1709
+* Changes to native process creation
+* Added OverrideChildProcessCreation for Win32 process
+* Added display of process trust labels from tokens.
+* Fixed IsChildProcessRestricted on 1709 and above (changed structure)
+* Fixed named pipe server in TokenViewer
+* Added -All parameter to Show-NtToken to display list of tokens.
+1.1.10
 ------
 * Added support for extended handle information to allow for PIDs > 64k.
 * Added basic New-NtToken cmdlet and system call.

@@ -1,6 +1,6 @@
 sandbox-attacksurface-analysis-tools
 
-(c) Google Inc. 2015, 2016, 2017
+(c) Google Inc. 2015, 2016, 2017, 2018
 Developed by James Forshaw
 
 This is a small suite of tools to test various properties of sandboxes on Windows. Many of the checking
@@ -20,6 +20,17 @@ The tools can be built with Visual Studio 2017. It's possible to also build NtAp
 with .NET Core 2.0 by building the specific project files.
 
 Release Notes:
+
+1.1.11
+------
+* Improved New-NtToken including adding missing IL
+* Added new NTSTATUS codes from 1709
+* Changes to native process creation
+* Added OverrideChildProcessCreation for Win32 process
+* Added display of process trust labels from tokens.
+* Fixed IsChildProcessRestricted on 1709 and above (changed structure)
+* Fixed named pipe server in TokenViewer
+* Added -All parameter to Show-NtToken to display list of tokens.
 
 1.1.10
 ------
