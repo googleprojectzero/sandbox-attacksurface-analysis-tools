@@ -611,6 +611,10 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public bool RestrictChildProcessCreation { get; set; }
         /// <summary>
+        /// Override child process creation restriction.
+        /// </summary>
+        public bool OverrideChildProcessCreation { get; set; }
+        /// <summary>
         /// Specify new process policy when creating a desktop bridge application.
         /// </summary>
         public ProcessDesktopAppBreakawayFlags DesktopAppBreakaway { get; set; }
@@ -676,7 +680,7 @@ namespace NtApiDotNet.Win32
                 count++;
             }
 
-            if (RestrictChildProcessCreation)
+            if (RestrictChildProcessCreation || OverrideChildProcessCreation)
             {
                 count++;
             }
@@ -767,9 +771,12 @@ namespace NtApiDotNet.Win32
                 attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeAllApplicationPackagesPolicy, 1);
             }
 
-            if (RestrictChildProcessCreation)
+            if (RestrictChildProcessCreation || OverrideChildProcessCreation)
             {
-                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeChildProcessPolicy, 1);
+                int flags = RestrictChildProcessCreation ? 1 : 0;
+                flags |= OverrideChildProcessCreation ? 2 : 0;
+
+                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeChildProcessPolicy, flags);
             }
 
             if (DesktopAppBreakaway != ProcessDesktopAppBreakawayFlags.None)
