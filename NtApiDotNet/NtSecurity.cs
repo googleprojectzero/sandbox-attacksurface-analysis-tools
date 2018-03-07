@@ -2642,6 +2642,12 @@ namespace NtApiDotNet
 
         private static NtToken DuplicateForAccessCheck(NtToken token)
         {
+            if (token.IsPseudoToken)
+            {
+                // This is a pseudo token, pass along as no need to duplicate.
+                return token;
+            }
+
             if (token.TokenType == TokenType.Primary)
             {
                 return token.DuplicateToken(TokenType.Impersonation, SecurityImpersonationLevel.Identification, TokenAccessRights.Query);

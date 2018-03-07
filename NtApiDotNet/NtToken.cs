@@ -2669,8 +2669,16 @@ namespace NtApiDotNet
 
         private static NtToken GetPseudoToken(int handle)
         {
-            return new NtToken(new SafeKernelObjectHandle(new IntPtr(handle), false));
+            return new NtToken(new SafeKernelObjectHandle(new IntPtr(handle), false))
+            {
+                IsPseudoToken = true
+            };
         }
+
+        /// <summary>
+        /// Returns true if this is a pseudo token.
+        /// </summary>
+        public bool IsPseudoToken { get; private set; }
 
         /// <summary>
         /// Get a pseudo handle to the primary token.
