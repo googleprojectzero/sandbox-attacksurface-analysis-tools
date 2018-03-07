@@ -470,14 +470,28 @@ namespace NtApiDotNet
         ProcessCommitReleaseInformation, // PROCESS_COMMIT_RELEASE_INFORMATION
         ProcessDefaultCpuSetsInformation,
         ProcessAllowedCpuSetsInformation,
-        ProcessReserved1Information,
-        ProcessReserved2Information,
-        ProcessSubsystemProcess, // 70
+        ProcessSubsystemProcess,
         ProcessJobMemoryInformation, // PROCESS_JOB_MEMORY_INFO
-        Process72, // Unknown, set only?
-        ProcessChildProcessRestricted, // BYTE[2] 
-        ProcessFlags3_100000, // BYTE
-        ProcessSubsystemInformation
+        ProcessInPrivate, // since THRESHOLD2 // 70
+        ProcessRaiseUMExceptionOnInvalidHandleClose,
+        ProcessIumChallengeResponse,
+        ProcessChildProcessInformation, // PROCESS_CHILD_PROCESS_INFORMATION
+        ProcessHighGraphicsPriorityInformation,
+        ProcessSubsystemInformation, // q: SUBSYSTEM_INFORMATION_TYPE // since REDSTONE2
+        ProcessEnergyValues, // PROCESS_ENERGY_VALUES, PROCESS_EXTENDED_ENERGY_VALUES
+        ProcessActivityThrottleState, // PROCESS_ACTIVITY_THROTTLE_STATE
+        ProcessActivityThrottlePolicy, // PROCESS_ACTIVITY_THROTTLE_POLICY
+        ProcessWin32kSyscallFilterInformation,
+        ProcessDisableSystemAllowedCpuSets,
+        ProcessWakeInformation, // PROCESS_WAKE_INFORMATION
+        ProcessEnergyTrackingState, // PROCESS_ENERGY_TRACKING_STATE
+        ProcessManageWritesToExecutableMemory, // MANAGE_WRITES_TO_EXECUTABLE_MEMORY // since REDSTONE3
+        ProcessCaptureTrustletLiveDump,
+        ProcessTelemetryCoverage,
+        ProcessEnclaveInformation,
+        ProcessEnableReadWriteVmLogging, // PROCESS_READWRITEVM_LOGGING_INFORMATION
+        ProcessUptimeInformation, // PROCESS_UPTIME_INFORMATION
+        ProcessImageSection,
     }
 
     public enum ProcessMitigationPolicy
@@ -1948,7 +1962,7 @@ namespace NtApiDotNet
             {
                 try
                 {
-                    var result = QueryFixed<ProcessChildProcessRestricted>(ProcessInformationClass.ProcessChildProcessRestricted);
+                    var result = QueryFixed<ProcessChildProcessRestricted>(ProcessInformationClass.ProcessChildProcessInformation);
                     return result.IsNoChildProcessRestricted != 0;
                 }
                 catch (NtException)
@@ -1957,7 +1971,7 @@ namespace NtApiDotNet
 
                 try
                 {
-                    var result = QueryFixed<ProcessChildProcessRestricted1709>(ProcessInformationClass.ProcessChildProcessRestricted);
+                    var result = QueryFixed<ProcessChildProcessRestricted1709>(ProcessInformationClass.ProcessChildProcessInformation);
                     return result.IsNoChildProcessRestricted != 0;
                 }
                 catch (NtException)
