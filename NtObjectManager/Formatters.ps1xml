@@ -215,6 +215,36 @@
               </ListItem>
             </ListItems>
           </ListEntry>
+          <ListEntry>
+            <EntrySelectedBy>
+              <SelectionCondition>
+                <TypeName>NtApiDotNet.Ace</TypeName>
+                <PropertyName>IsConditionalAce</PropertyName>
+              </SelectionCondition>
+            </EntrySelectedBy>
+            <ListItems>
+              <ListItem>
+                <PropertyName>Type</PropertyName>
+              </ListItem>
+              <ListItem>
+                <ScriptBlock>$_.Sid.Name</ScriptBlock>
+                <Label>User</Label>
+              </ListItem>
+              <ListItem>
+                <PropertyName>Sid</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>Flags</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>Mask</PropertyName>
+                <FormatString>X08</FormatString>
+              </ListItem>
+              <ListItem>
+                <PropertyName>Condition</PropertyName>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
         </ListEntries>
       </ListControl>
     </View>
