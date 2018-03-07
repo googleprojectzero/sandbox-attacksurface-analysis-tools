@@ -27,19 +27,27 @@ namespace NtObjectManager
     /// <para>Note that tokens objects need to be disposed of after use, therefore capture them in Use-NtObject or manually Close them once used.</para>
     /// </summary>
     /// <example>
-    ///   <code>$obj = Get-NtToken -Primary</code>
+    ///   <code>$obj = Get-NtToken</code>
     ///   <para>Get current process' primary token.</para>
     /// </example>
     /// <example>
-    ///   <code>$obj = Get-NtToken -Primary -Access Duplicate</code>
+    ///   <code>$obj = Get-NtToken -Pseudo</code>
+    ///   <para>Get current process' pseudo primary token.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtToken -Primary</code>
+    ///   <para>Get current process' primary token (-Primary is optional)</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtToken -Access Duplicate</code>
     ///   <para>Get current process' primary token for Duplicate access.</para>
     /// </example>
     /// <example>
-    ///   <code>$obj = Get-NtToken -Primary -Duplicate -TokenType Impersonation -ImpersonationLevel Impersonation</code>
+    ///   <code>$obj = Get-NtToken -Duplicate -TokenType Impersonation -ImpersonationLevel Impersonation</code>
     ///   <para>Get current process' primary token and convert to an impersonation token.</para>
     /// </example>
     /// <example>
-    ///   <code>$obj = Get-NtToken -Primary -Duplicate -TokenType Primary -IntegrityLevel Low</code>
+    ///   <code>$obj = Get-NtToken -Duplicate -TokenType Primary -IntegrityLevel Low</code>
     ///   <para>Get current process token, duplicate as primary and set integrity level to Low.</para>
     /// </example>
     /// <example>
@@ -95,7 +103,7 @@ namespace NtObjectManager
     ///   <para>Get the anonymous logon token.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.Get, "NtToken")]
+    [Cmdlet(VerbsCommon.Get, "NtToken", DefaultParameterSetName = "Primary")]
     [OutputType(typeof(NtToken))]
     public sealed class GetNtTokenCmdlet : Cmdlet
     {
@@ -132,7 +140,7 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Get the primary token for a process.</para>
         /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "Primary")]
+        [Parameter(ParameterSetName = "Primary")]
         public SwitchParameter Primary { get; set; }
 
         /// <summary>
@@ -359,11 +367,7 @@ namespace NtObjectManager
 
         private NtToken GetToken(TokenAccessRights desired_access)
         {
-            if (Primary)
-            {
-                return GetPrimaryToken(desired_access);
-            }
-            else if (Impersonation)
+            if (Impersonation)
             {
                 return GetImpersonationToken(desired_access);
             }
@@ -387,8 +391,11 @@ namespace NtObjectManager
             {
                 return GetAnonymousToken(desired_access);
             }
-
-            throw new ArgumentException("Unknown token type");
+            else
+            {
+                // The default is primary token.
+                return GetPrimaryToken(desired_access);
+            }
         }
 
         /// <summary>
@@ -401,12 +408,15 @@ namespace NtObjectManager
             {
                 using (NtToken base_token = GetToken(TokenAccessRights.Duplicate))
                 {
-                    token = base_token.DuplicateToken(TokenType, ImpersonationLevel, Access);
-                    if (IntegrityLevel.HasValue)
+                    if (base_token != null)
                     {
-                        using (NtToken set_token = token.Duplicate(TokenAccessRights.AdjustDefault))
+                        token = base_token.DuplicateToken(TokenType, ImpersonationLevel, Access);
+                        if (IntegrityLevel.HasValue)
                         {
-                            set_token.SetIntegrityLevel(IntegrityLevel.Value);
+                            using (NtToken set_token = token.Duplicate(TokenAccessRights.AdjustDefault))
+                            {
+                                set_token.SetIntegrityLevel(IntegrityLevel.Value);
+                            }
                         }
                     }
                 }
