@@ -18,6 +18,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace NtApiDotNet
 {
@@ -863,7 +864,7 @@ namespace NtApiDotNet
                     return false;
                 }
 
-                if (ApplicationData.Length < 4)
+                if (ApplicationData == null || ApplicationData.Length < 4)
                 {
                     return false;
                 }
@@ -916,7 +917,12 @@ namespace NtApiDotNet
         internal void Serialize(BinaryWriter writer)
         {
             byte[] sid_data = Sid.ToArray();
-            int total_length = 4 + 4 + sid_data.Length + ApplicationData.Length;
+            int total_length = 4 + 4 + sid_data.Length;
+            if (ApplicationData != null)
+            {
+                total_length += ApplicationData.Length;
+            }
+
             ObjectAceFlags flags = ObjectAceFlags.None;
             if (IsObjectAce)
             {
@@ -1004,6 +1010,51 @@ namespace NtApiDotNet
         /// Optional application data.
         /// </summary>
         public byte[] ApplicationData { get; set; }
+
+        /// <summary>
+        /// Get conditional check if a conditional ace.
+        /// </summary>
+        public string Condition
+        {
+            get
+            {
+                if (IsConditionalAce)
+                {
+                    return NtSecurity.ConditionalAceToString(ApplicationData);
+                }
+                return String.Empty;
+            }
+
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    ApplicationData = new byte[0];
+                    switch (Type)
+                    {
+                        case AceType.AllowedCallback:
+                            Type = AceType.Allowed;
+                            break;
+                        case AceType.DeniedCallback:
+                            Type = AceType.Denied;
+                            break;
+                    }
+                }
+                else
+                {
+                    ApplicationData = NtSecurity.StringToConditionalAce(value);
+                    switch (Type)
+                    {
+                        case AceType.Allowed:
+                            Type = AceType.AllowedCallback;
+                            break;
+                        case AceType.Denied:
+                            Type = AceType.DeniedCallback;
+                            break;
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Convert ACE to a string
@@ -2986,24 +3037,41 @@ namespace NtApiDotNet
             return new Sid(sid.Authority, sid.SubAuthorities.Take(8).ToArray());
         }
 
+        private static Regex ConditionalAceRegex = new Regex(@"^D:\(XA;;;;;WD;\((.+)\)\)$");
+
         /// <summary>
-        /// Converts a conditional ACE to an SDDL string
+        /// Converts conditional ACE data to an SDDL string
         /// </summary>
         /// <param name="conditional_data">The conditional application data.</param>
         /// <returns>The conditional ACE string.</returns>
         public static string ConditionalAceToString(byte[] conditional_data)
         {
-            SecurityDescriptor sd = new SecurityDescriptor();
-            sd.Dacl.NullAcl = false;
+            SecurityDescriptor sd = new SecurityDescriptor
+            {
+                Dacl = new Acl
+                {
+                    NullAcl = false
+                }
+            };
             sd.Dacl.Add(new Ace(AceType.AllowedCallback, AceFlags.None, 0, KnownSids.World) { ApplicationData = conditional_data });
-            string sddl = sd.ToSddl();
-            int last_semi = sddl.LastIndexOf(";(");
-            if (last_semi < 0)
+            var matches = ConditionalAceRegex.Match(sd.ToSddl());
+
+            if (!matches.Success || matches.Groups.Count != 2)
             {
                 throw new ArgumentException("Invalid condition data");
             }
+            return matches.Groups[1].Value;
+        }
 
-            return sddl.Substring(last_semi + 1);
+        /// <summary>
+        /// Converts a condition in SDDL format to an ACE application data.
+        /// </summary>
+        /// <param name="condition_sddl">The condition in SDDL format.</param>
+        /// <returns>The condition in ACE application data format.</returns>
+        public static byte[] StringToConditionalAce(string condition_sddl)
+        {
+            SecurityDescriptor sd = new SecurityDescriptor($"D:(XA;;;;;WD;({condition_sddl}))");
+            return sd.Dacl[0].ApplicationData;
         }
 
         /// <summary>
@@ -3013,14 +3081,11 @@ namespace NtApiDotNet
         /// <returns>The cached signing level.</returns>
         public static CachedSigningLevel GetCachedSigningLevel(SafeKernelObjectHandle handle)
         {
-            int flags;
-            SigningLevel signing_level;
             byte[] thumb_print = new byte[0x68];
             int thumb_print_size = thumb_print.Length;
-            int thumb_print_algo = 0;
 
-            NtSystemCalls.NtGetCachedSigningLevel(handle, out flags,
-                out signing_level, thumb_print, ref thumb_print_size, out thumb_print_algo).ToNtException();
+            NtSystemCalls.NtGetCachedSigningLevel(handle, out int flags,
+                out SigningLevel signing_level, thumb_print, ref thumb_print_size, out int thumb_print_algo).ToNtException();
             Array.Resize(ref thumb_print, thumb_print_size);
             return new CachedSigningLevel(flags, signing_level, thumb_print, thumb_print_algo);
         }
@@ -3038,8 +3103,7 @@ namespace NtApiDotNet
                                                  IEnumerable<SafeKernelObjectHandle> source_files,
                                                  string name)
         {
-            IntPtr[] handles = source_files == null ? null 
-                : source_files.Select(f => f.DangerousGetHandle()).ToArray();
+            IntPtr[] handles = source_files?.Select(f => f.DangerousGetHandle()).ToArray();
             int handles_count = handles == null ? 0 : handles.Length;
             if (name != null)
             {
