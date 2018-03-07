@@ -561,9 +561,11 @@ namespace NtApiDotNet
 
         public void AddPrivilege(Luid luid, PrivilegeAttributes attributes)
         {
-            LuidAndAttributes priv = new LuidAndAttributes();
-            priv.Luid = luid;
-            priv.Attributes = (uint)attributes;
+            LuidAndAttributes priv = new LuidAndAttributes
+            {
+                Luid = luid,
+                Attributes = (uint)attributes
+            };
             _privs.Add(priv);
         }
 
@@ -2432,7 +2434,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="level">The level to set.</param>
         public void SetIntegrityLevelRaw(int level)
-        {            
+        {
             SetIntegrityLevelSid(NtSecurity.GetIntegritySidRaw(level));
         }
 

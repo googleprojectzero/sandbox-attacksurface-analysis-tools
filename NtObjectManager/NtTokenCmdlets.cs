@@ -178,6 +178,12 @@ namespace NtObjectManager
         public SwitchParameter OpenAsSelf { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify the token should be a pseudo token. When set you can't use the object for anything other than queries.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Primary"), Parameter(ParameterSetName = "Impersonation"), Parameter(ParameterSetName = "Effective")]
+        public SwitchParameter Pseduo { get; set; }
+
+        /// <summary>
         /// <para type="description">Get the current clipboard token.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "Clipboard")]
@@ -252,6 +258,10 @@ namespace NtObjectManager
 
         private NtToken GetPrimaryToken(TokenAccessRights desired_access)
         {
+            if (Pseduo)
+            {
+                return NtToken.PseudoPrimaryToken;
+            }
             if (ProcessId.HasValue)
             {
                 return NtToken.OpenProcessToken(ProcessId.Value, false, desired_access);
@@ -267,6 +277,10 @@ namespace NtObjectManager
 
         private NtToken GetImpersonationToken(TokenAccessRights desired_access)
         {
+            if (Pseduo)
+            {
+                return NtToken.PseudoImpersonationToken;
+            }
             if (ThreadId.HasValue)
             {
                 return NtToken.OpenThreadToken(ThreadId.Value, OpenAsSelf, false, desired_access);
@@ -277,6 +291,10 @@ namespace NtObjectManager
 
         private NtToken GetEffectiveToken(TokenAccessRights desired_access)
         {
+            if (Pseduo)
+            {
+                return NtToken.PseudoEffectiveToken;
+            }
             NtToken token = GetImpersonationToken(desired_access);
             if (token != null)
             {
