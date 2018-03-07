@@ -1183,7 +1183,7 @@ namespace NtApiDotNet
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Mandatory Label - Flags {Flags} - Policy {Policy} - IntegerityLevel {IntegrityLevel}";
+            return $"Mandatory Label - Flags {Flags} - Policy {Policy} - IntegrityLevel {IntegrityLevel}";
         }
     }
 
