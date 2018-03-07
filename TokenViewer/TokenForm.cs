@@ -199,8 +199,8 @@ namespace TokenViewer
                     }
 
                     item.SubItems.Add(maskstr);
-                    item.SubItems.Add(ace.AceFlags.ToString());
-                    item.SubItems.Add(ace.AceType.ToString());
+                    item.SubItems.Add(ace.Flags.ToString());
+                    item.SubItems.Add(ace.Type.ToString());
                     listViewDefDacl.Items.Add(item);
                 } 
             }
