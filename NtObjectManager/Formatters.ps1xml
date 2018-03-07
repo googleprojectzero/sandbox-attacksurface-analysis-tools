@@ -1,5 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Configuration>
+  <SelectionSets>
+    <SelectionSet>
+      <Name>AceTypes</Name>
+      <Types>
+        <TypeName>NtApiDotNet.Ace</TypeName>
+        <TypeName>NtApiDotNet.MandatoryLabelAce</TypeName>
+      </Types>
+    </SelectionSet>
+  </SelectionSets>
   <ViewDefinitions>
     <View>
       <Name>NtDirectoryEntryTable</Name>
@@ -130,9 +139,9 @@
       </TableControl>
     </View>
     <View>
-      <Name>Ace</Name>
+      <Name>AceTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtApiDotNet.Ace</TypeName>
+        <SelectionSetName>AceTypes</SelectionSetName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -161,13 +170,13 @@
           <TableRowEntry>
             <TableColumnItems>
               <TableColumnItem>
-                <PropertyName>AceType</PropertyName>
+                <PropertyName>Type</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
                 <ScriptBlock>$_.Sid.Name</ScriptBlock>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>AceFlags</PropertyName>
+                <PropertyName>Flags</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>Mask</PropertyName>
@@ -179,7 +188,7 @@
       </TableControl>
     </View>
     <View>
-      <Name>Ace</Name>
+      <Name>AceList</Name>
       <ViewSelectedBy>
         <TypeName>NtApiDotNet.Ace</TypeName>
       </ViewSelectedBy>
@@ -188,7 +197,7 @@
           <ListEntry>
             <ListItems>
               <ListItem>
-                <PropertyName>AceType</PropertyName>
+                <PropertyName>Type</PropertyName>
               </ListItem>
               <ListItem>
                 <ScriptBlock>$_.Sid.Name</ScriptBlock>
@@ -198,7 +207,7 @@
                 <PropertyName>Sid</PropertyName>
               </ListItem>
               <ListItem>
-                <PropertyName>AceFlags</PropertyName>
+                <PropertyName>Flags</PropertyName>
               </ListItem>
               <ListItem>
                 <PropertyName>Mask</PropertyName>
@@ -272,6 +281,29 @@
               </ListItem>
               <ListItem>
                 <PropertyName>DisplayName</PropertyName>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+    <View>
+      <Name>MandatoryLabelAceList</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.MandatoryLabelAce</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <PropertyName>Flags</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>Policy</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>IntegrityLevel</PropertyName>
               </ListItem>
             </ListItems>
           </ListEntry>

@@ -115,7 +115,7 @@ namespace NtApiDotNet
             {
                 foreach (var ace in Sacl)
                 {
-                    if (ace.AceType == AceType.MandatoryLabel)
+                    if (ace.Type == AceType.MandatoryLabel)
                     {
                         return ace;
                     }
@@ -132,9 +132,8 @@ namespace NtApiDotNet
             get
             {
                 return FindMandatoryLabel() 
-                    ?? new Ace(AceType.MandatoryLabel, 
-                    AceFlags.None, MandatoryLabelPolicy.NoWriteUp, 
-                    NtSecurity.GetIntegritySid(TokenIntegrityLevel.Medium));
+                    ?? new MandatoryLabelAce(AceFlags.None, MandatoryLabelPolicy.NoWriteUp, 
+                        TokenIntegrityLevel.Medium);
             }
 
             set
@@ -150,7 +149,12 @@ namespace NtApiDotNet
                     Sacl = new Acl();
                 }
                 Sacl.NullAcl = false;
-                Sacl.Add(value);
+                MandatoryLabelAce ace = value as MandatoryLabelAce;
+                if (ace == null)
+                {
+                    ace = new MandatoryLabelAce(value.Flags, value.Mask.ToMandatoryLabelPolicy(), value.Sid);
+                }
+                Sacl.Add(ace);
             }
         }
 
@@ -250,7 +254,7 @@ namespace NtApiDotNet
             Owner = new SecurityDescriptorSid(token.Owner, true);
             Group = new SecurityDescriptorSid(token.PrimaryGroup, true);
             Dacl = token.DefaultDacl;
-            if (token.IntegrityLevel< TokenIntegrityLevel.Medium)
+            if (token.IntegrityLevel < TokenIntegrityLevel.Medium)
             {
                 Sacl = new Acl
                 {

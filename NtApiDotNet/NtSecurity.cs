@@ -795,17 +795,12 @@ namespace NtApiDotNet
     /// <summary>
     /// Class to represent an Access Control Entry (ACE)
     /// </summary>
-    public sealed class Ace
+    public class Ace
     {
-        /// <summary>
-        /// Check if the ACE is an Object ACE
-        /// </summary>
-        public bool IsObjectAce
+        private static bool IsObjectAceType(AceType type)
         {
-            get
+            switch(type)
             {
-                switch (AceType)
-                {
                     case AceType.AlarmCallbackObject:
                     case AceType.AllowedCallbackObject:
                     case AceType.AllowedObject:
@@ -813,9 +808,36 @@ namespace NtApiDotNet
                     case AceType.AuditObject:
                     case AceType.DeniedCallbackObject:
                         return true;
-                }
-                return false;
             }
+            return false;
+        }
+
+        /// <summary>
+        /// Check if the ACE is an Object ACE
+        /// </summary>
+        public bool IsObjectAce
+        {
+            get
+            {
+                return IsObjectAceType(Type);
+            }
+        }
+
+        private static bool IsCallbackAceType(AceType type)
+        {
+            switch (type)
+            {
+                case AceType.AlarmCallbackObject:
+                case AceType.AllowedCallbackObject:
+                case AceType.AuditCallbackObject:
+                case AceType.DeniedCallbackObject:
+                case AceType.AlarmCallback:
+                case AceType.AllowedCallback:
+                case AceType.AuditCallback:
+                case AceType.DeniedCallback:
+                    return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -825,19 +847,7 @@ namespace NtApiDotNet
         {
             get
             {
-                switch (AceType)
-                {
-                    case AceType.AlarmCallbackObject:
-                    case AceType.AllowedCallbackObject:
-                    case AceType.AuditCallbackObject:
-                    case AceType.DeniedCallbackObject:
-                    case AceType.AlarmCallback:
-                    case AceType.AllowedCallback:
-                    case AceType.AuditCallback:
-                    case AceType.DeniedCallback:
-                        return true;
-                }
-                return false;
+                return IsCallbackAceType(Type);
             }
         }
 
@@ -862,29 +872,45 @@ namespace NtApiDotNet
             }
         }
 
-        internal Ace(BinaryReader reader)
+        internal Ace(AceType type)
+        {
+            Type = type;
+        }
+
+        internal static Ace CreateAceFromReader(BinaryReader reader)
         {
             long current_position = reader.BaseStream.Position;
-            AceType = (AceType)reader.ReadByte();
-            AceFlags = (AceFlags)reader.ReadByte();
+            AceType type = (AceType)reader.ReadByte();
+            Ace ace;
+            switch (type)
+            {
+                case AceType.MandatoryLabel:
+                    ace = new MandatoryLabelAce();
+                    break;
+                default:
+                    ace = new Ace(type);
+                    break;
+            }
+            ace.Flags = (AceFlags)reader.ReadByte();
             int ace_size = reader.ReadUInt16();
-            Mask = reader.ReadUInt32();
-            if (IsObjectAce)
+            ace.Mask = reader.ReadUInt32();
+            if (ace.IsObjectAce)
             {
                 ObjectAceFlags flags = (ObjectAceFlags)reader.ReadUInt32();
                 if ((flags & ObjectAceFlags.ObjectTypePresent) != 0)
                 {
-                    ObjectType = new Guid(reader.ReadAllBytes(16));
+                    ace.ObjectType = new Guid(reader.ReadAllBytes(16));
                 }
                 if ((flags & ObjectAceFlags.InheritedObjectTypePresent) != 0)
                 {
-                    InheritedObjectType = new Guid(reader.ReadAllBytes(16));
+                    ace.InheritedObjectType = new Guid(reader.ReadAllBytes(16));
                 }
             }
-            
-            Sid = new Sid(reader);
+
+            ace.Sid = new Sid(reader);
             int bytes_used = (int)(reader.BaseStream.Position - current_position);
-            ApplicationData = reader.ReadAllBytes(ace_size - bytes_used);
+            ace.ApplicationData = reader.ReadAllBytes(ace_size - bytes_used);
+            return ace;
         }
 
         internal void Serialize(BinaryWriter writer)
@@ -912,8 +938,8 @@ namespace NtApiDotNet
                 throw new ArgumentOutOfRangeException("Total ACE length greater than maximum");
             }
 
-            writer.Write((byte)AceType);
-            writer.Write((byte)AceFlags);
+            writer.Write((byte)Type);
+            writer.Write((byte)Flags);
             writer.Write((ushort)total_length);
             writer.Write(Mask.Access);
             if (IsObjectAce)
@@ -935,12 +961,24 @@ namespace NtApiDotNet
         /// <summary>
         /// Get ACE type
         /// </summary>
-        public AceType AceType { get; set; }
+        [Obsolete("Use Type property")]
+        public AceType AceType { get { return Type; } set { Type = value; } }
 
         /// <summary>
         /// Get ACE flags
         /// </summary>
-        public AceFlags AceFlags { get; set; }
+        [Obsolete("Use Flags property")]
+        public AceFlags AceFlags { get { return Flags; } set { Flags = value; } }
+
+        /// <summary>
+        /// Get ACE type
+        /// </summary>
+        public AceType Type { get; set; }
+
+        /// <summary>
+        /// Get ACE flags
+        /// </summary>
+        public AceFlags Flags { get; set; }
 
         /// <summary>
         /// Get ACE access mask
@@ -973,7 +1011,7 @@ namespace NtApiDotNet
         /// <returns>The ACE as a string</returns>
         public override string ToString()
         {
-            return $"Type {AceType} - Flags {AceFlags} - Mask {Mask:X08} - Sid {Sid}";
+            return $"Type {Type} - Flags {Flags} - Mask {Mask:X08} - Sid {Sid}";
         }
 
         /// <summary>
@@ -990,7 +1028,7 @@ namespace NtApiDotNet
             {
                 account = NtSecurity.LookupAccountSid(Sid) ?? Sid.ToString();
             }
-            return $"Type {AceType} - Flags {AceFlags} - Mask {mask} - Sid {account}";
+            return $"Type {Type} - Flags {Flags} - Mask {mask} - Sid {account}";
         }
 
         /// <summary>
@@ -1011,7 +1049,7 @@ namespace NtApiDotNet
                 return false;
             }
 
-            return ace.AceType == AceType && ace.AceFlags == AceFlags && ace.Sid == Sid && ace.Mask == Mask
+            return ace.Type == Type && ace.Flags == Flags && ace.Sid == Sid && ace.Mask == Mask
                 && ace.ObjectType == ObjectType && ace.InheritedObjectType == InheritedObjectType;
         }
 
@@ -1021,7 +1059,7 @@ namespace NtApiDotNet
         /// <returns>The hash code</returns>
         public override int GetHashCode()
         {
-            return AceType.GetHashCode() ^ AceFlags.GetHashCode() ^ Mask.GetHashCode() ^ Sid.GetHashCode() ^ ObjectType.GetHashCode() ^ InheritedObjectType.GetHashCode();
+            return Type.GetHashCode() ^ Flags.GetHashCode() ^ Mask.GetHashCode() ^ Sid.GetHashCode() ^ ObjectType.GetHashCode() ^ InheritedObjectType.GetHashCode();
         }
 
         /// <summary>
@@ -1037,12 +1075,12 @@ namespace NtApiDotNet
                 return true;
             }
 
-            if (Object.ReferenceEquals(a, null))
+            if (a is null)
             {
                 return false;
             }
 
-            if (Object.ReferenceEquals(b, null))
+            if (b is null)
             {
                 return false;
             }
@@ -1070,11 +1108,82 @@ namespace NtApiDotNet
         /// <param name="sid">ACE sid</param>
         public Ace(AceType type, AceFlags flags, AccessMask mask, Sid sid)
         {
-            AceType = type;
-            AceFlags = flags;
+            Type = type;
+            Flags = flags;
             Mask = mask;
             Sid = sid;
             ApplicationData = new byte[0];
+        }
+    }
+
+    /// <summary>
+    /// Class to represent an Access Control Entry for a Mandatory Label.
+    /// </summary>
+    public sealed class MandatoryLabelAce : Ace
+    {
+        internal MandatoryLabelAce() : base(AceType.MandatoryLabel)
+        {
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="flags">Flags for the ACE.</param>
+        /// <param name="policy">The mandatory label policy.</param>
+        /// <param name="integrity_level">The integrity level.</param>
+        public MandatoryLabelAce(AceFlags flags, MandatoryLabelPolicy policy, TokenIntegrityLevel integrity_level) 
+            : this(flags, policy, NtSecurity.GetIntegritySid(integrity_level))
+        {
+        }
+
+        /// <summary>
+        /// Constructor from a raw integrity level.
+        /// </summary>
+        /// <param name="flags">Flags for the ACE.</param>
+        /// <param name="policy">The mandatory label policy.</param>
+        /// <param name="sid">The integrity level sid.</param>
+        public MandatoryLabelAce(AceFlags flags, MandatoryLabelPolicy policy, Sid sid)
+            : base(AceType.MandatoryLabel, flags, policy, sid)
+        {
+        }
+
+        /// <summary>
+        /// The policy for the mandatory label.
+        /// </summary>
+        public MandatoryLabelPolicy Policy
+        {
+            get
+            {
+                return Mask.ToMandatoryLabelPolicy();
+            }
+            set
+            {
+                Mask = value;
+            }
+        }
+
+        /// <summary>
+        /// Get or set the integrity level
+        /// </summary>
+        public TokenIntegrityLevel IntegrityLevel
+        {
+            get
+            {
+                return NtSecurity.GetIntegrityLevel(Sid);
+            }
+            set
+            {
+                Sid = NtSecurity.GetIntegritySid(value);
+            }
+        }
+
+        /// <summary>
+        /// Convert ACE to a string.
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Mandatory Label - Flags {Flags} - Policy {Policy} - IntegerityLevel {IntegrityLevel}";
         }
     }
 
@@ -1101,10 +1210,9 @@ namespace NtApiDotNet
                 {
                     for (int i = 0; i < size_info.AceCount; ++i)
                     {
-                        IntPtr ace;
-                        NtRtl.RtlGetAce(acl, i, out ace).ToNtException();
+                        NtRtl.RtlGetAce(acl, i, out IntPtr ace).ToNtException();
                         reader.BaseStream.Position = ace.ToInt64() - acl.ToInt64();
-                        Add(new Ace(reader));
+                        Add(Ace.CreateAceFromReader(reader));
                     }
                 }
             }
@@ -1351,13 +1459,13 @@ namespace NtApiDotNet
 
             foreach (Ace ace in this)
             {
-                if ((ace.AceFlags & AceFlags.Inherited) == AceFlags.Inherited)
+                if ((ace.Flags & AceFlags.Inherited) == AceFlags.Inherited)
                 {
                     inherited.Add(ace);
                 }
                 else
                 {
-                    switch (ace.AceType)
+                    switch (ace.Type)
                     {
                         case AceType.Allowed:
                         case AceType.AllowedObject:
