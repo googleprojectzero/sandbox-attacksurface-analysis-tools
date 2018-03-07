@@ -18,7 +18,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class representing various process mitigations
     /// </summary>
-    public class NtProcessMitigations
+    public sealed class NtProcessMitigations
     {
         internal NtProcessMitigations(NtProcess process)
         {
@@ -34,6 +34,8 @@ namespace NtApiDotNet
             DisallowStrippedImages = result.GetBit(3);
 
             DisallowWin32kSystemCalls = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.SystemCallDisable).GetBit(0);
+            AuditDisallowWin32kSystemCalls = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.SystemCallDisable).GetBit(1);
+
             result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.StrictHandleCheck);
             RaiseExceptionOnInvalidHandleReference = result.GetBit(0);
             HandleExceptionsPermanentlyEnabled = result.GetBit(1);
@@ -46,6 +48,8 @@ namespace NtApiDotNet
             ProhibitDynamicCode = result.GetBit(0);
             AllowThreadOptOut = result.GetBit(1);
             AllowRemoteDowngrade = result.GetBit(2);
+            AuditProhibitDynamicCode = result.GetBit(3);
+
             DisableExtensionPoints = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ExtensionPointDisable).GetBit(0);
 
             result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ControlFlowGuard);
@@ -57,22 +61,46 @@ namespace NtApiDotNet
             MicrosoftSignedOnly = result.GetBit(0);
             StoreSignedOnly = result.GetBit(1);
             SignedMitigationOptIn = result.GetBit(2);
+            AuditMicrosoftSignedOnly = result.GetBit(3);
+            AuditStoreSignedOnly = result.GetBit(4);
 
             result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ImageLoad);
             NoRemoteImages = result.GetBit(0);
             NoLowMandatoryLabelImages = result.GetBit(1);
             PreferSystem32Images = result.GetBit(2);
+            AuditNoRemoteImages = result.GetBit(3);
+            AuditNoLowMandatoryLabelImages = result.GetBit(4);
 
-            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ReturnFlowGuard);
-            EnabledReturnFlowGuard = result.GetBit(0);
-            ReturnFlowGuardStrictMode = result.GetBit(1);
-            IsChildProcessRestricted = process.IsChildProcessRestricted;
+            SystemCallFilterId = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.SystemCallFilter) & 0xF;
+
+            NoChildProcessCreation = process.IsChildProcessRestricted;
+            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ChildProcess);
+            AuditNoChildProcessCreation = result.GetBit(1);
+            AllowSecureProcessCreation = result.GetBit(2);
+
+            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.PayloadRestriction);
+            EnableExportAddressFilter     = result.GetBit(0);
+            AuditExportAddressFilter      = result.GetBit(1);
+            EnableExportAddressFilterPlus = result.GetBit(2);
+            AuditExportAddressFilterPlus  = result.GetBit(3);
+            EnableImportAddressFilter     = result.GetBit(4);
+            AuditImportAddressFilter      = result.GetBit(5);
+            EnableRopStackPivot           = result.GetBit(6);
+            AuditRopStackPivot            = result.GetBit(7);
+            EnableRopCallerCheck          = result.GetBit(8);
+            AuditRopCallerCheck           = result.GetBit(9);
+            EnableRopSimExec              = result.GetBit(10);
+            AuditRopSimExec               = result.GetBit(11);
+
             using (var token = NtToken.OpenProcessToken(process, TokenAccessRights.Query, false))
             {
-                IsRestricted = token.Result.Restricted;
-                IsAppContainer = token.Result.AppContainer;
-                IsLowPrivilegeAppContainer = token.Result.LowPrivilegeAppContainer;
-                IntegrityLevel = token.Result.IntegrityLevel;
+                if (token.IsSuccess)
+                {
+                    IsRestricted = token.Result.Restricted;
+                    IsAppContainer = token.Result.AppContainer;
+                    IsLowPrivilegeAppContainer = token.Result.LowPrivilegeAppContainer;
+                    IntegrityLevel = token.Result.IntegrityLevel;
+                }
             }
             ProcessId = process.ProcessId;
             Name = process.Name;
@@ -80,42 +108,61 @@ namespace NtApiDotNet
             CommandLine = process.CommandLine;
         }
 
-        public int ProcessId { get; private set; }
-        public string Name { get; private set; }
-        public string ImagePath { get; private set; }
-        public string CommandLine { get; private set; }
-        public bool DisallowWin32kSystemCalls { get; private set; }
-        public bool DepEnabled { get; private set; }
-        public bool DisableAtlThunkEmulation { get; private set; }
-        public bool DepPermanent { get; private set; }
-        public bool EnableBottomUpRandomization { get; private set; }
-        public bool EnableForceRelocateImages { get; private set; }
-        public bool EnableHighEntropy { get; private set; }
-        public bool DisallowStrippedImages { get; private set; }
-        public bool RaiseExceptionOnInvalidHandleReference { get; private set; }
-        public bool HandleExceptionsPermanentlyEnabled { get; private set; }
-        public bool DisableNonSystemFonts { get; private set; }
-        public bool AuditNonSystemFontLoading { get; private set; }
-        public bool ProhibitDynamicCode { get; private set; }
-        public bool DisableExtensionPoints { get; private set; }
-        public bool EnabledControlFlowGuard { get; private set; }
-        public bool EnableExportSuppression { get; private set; }
-        public bool ControlFlowGuardStrictMode { get; private set; }
-        public bool MicrosoftSignedOnly { get; private set; }
-        public bool StoreSignedOnly { get; private set; }
-        public bool SignedMitigationOptIn { get; private set; }
-        public bool NoRemoteImages { get; private set; }
-        public bool NoLowMandatoryLabelImages { get; private set; }
-        public bool PreferSystem32Images { get; private set; }
-        public bool AllowThreadOptOut { get; private set; }
-        public bool AllowRemoteDowngrade { get; private set; }
-        public bool EnabledReturnFlowGuard { get; private set; }
-        public bool ReturnFlowGuardStrictMode { get; private set; }
-        public bool IsChildProcessRestricted { get; private set; }
-        public bool IsRestricted { get; private set; }
-        public bool IsAppContainer { get; private set; }
-        public bool IsLowPrivilegeAppContainer { get; private set; }
-        public TokenIntegrityLevel IntegrityLevel { get; private set; }
+        public int ProcessId { get; }
+        public string Name { get; }
+        public string ImagePath { get; }
+        public string CommandLine { get; }
+        public bool DisallowWin32kSystemCalls { get; }
+        public bool AuditDisallowWin32kSystemCalls { get; }
+        public bool DepEnabled { get; }
+        public bool DisableAtlThunkEmulation { get; }
+        public bool DepPermanent { get; }
+        public bool EnableBottomUpRandomization { get; }
+        public bool EnableForceRelocateImages { get; }
+        public bool EnableHighEntropy { get; }
+        public bool DisallowStrippedImages { get; }
+        public bool RaiseExceptionOnInvalidHandleReference { get; }
+        public bool HandleExceptionsPermanentlyEnabled { get; }
+        public bool DisableNonSystemFonts { get; }
+        public bool AuditNonSystemFontLoading { get; }
+        public bool ProhibitDynamicCode { get; }
+        public bool DisableExtensionPoints { get; }
+        public bool EnabledControlFlowGuard { get; }
+        public bool EnableExportSuppression { get; }
+        public bool ControlFlowGuardStrictMode { get; }
+        public bool MicrosoftSignedOnly { get; }
+        public bool StoreSignedOnly { get; }
+        public bool SignedMitigationOptIn { get; }
+        public bool AuditMicrosoftSignedOnly { get; }
+        public bool AuditStoreSignedOnly { get; }
+        public bool NoRemoteImages { get; }
+        public bool NoLowMandatoryLabelImages { get; }
+        public bool PreferSystem32Images { get; }
+        public bool AuditNoRemoteImages { get; }
+        public bool AuditNoLowMandatoryLabelImages { get; }
+        public int SystemCallFilterId { get; }
+        public bool AllowThreadOptOut { get; }
+        public bool AllowRemoteDowngrade { get; }
+        public bool AuditProhibitDynamicCode { get; }
+        public bool NoChildProcessCreation { get; }
+        public bool IsRestricted { get; }
+        public bool IsAppContainer { get; }
+        public bool IsLowPrivilegeAppContainer { get; }
+        public TokenIntegrityLevel IntegrityLevel { get; }
+        public bool AuditNoChildProcessCreation { get; }
+        public bool AllowSecureProcessCreation { get; }
+        public bool EnableExportAddressFilter { get; }
+        public bool AuditExportAddressFilter { get; }
+        public bool EnableExportAddressFilterPlus { get; }
+        public bool AuditExportAddressFilterPlus { get; }
+        public bool EnableImportAddressFilter { get; }
+        public bool AuditImportAddressFilter { get; }
+        public bool EnableRopStackPivot { get; }
+        public bool AuditRopStackPivot { get; }
+        public bool EnableRopCallerCheck { get; }
+        public bool AuditRopCallerCheck { get; }
+        public bool EnableRopSimExec { get; }
+        public bool AuditRopSimExec { get; }
     }
 #pragma warning restore 1591
 }

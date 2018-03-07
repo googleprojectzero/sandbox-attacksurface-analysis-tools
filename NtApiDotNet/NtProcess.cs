@@ -507,7 +507,9 @@ namespace NtApiDotNet
         Signature,
         FontDisable,
         ImageLoad,
-        ReturnFlowGuard,
+        SystemCallFilter,
+        PayloadRestriction,
+        ChildProcess
     }
 
     public struct MitigationPolicy
@@ -1316,15 +1318,19 @@ namespace NtApiDotNet
                     throw new ArgumentException("Invalid mitigation policy");
             }
 
-            MitigationPolicy p = new MitigationPolicy();
-            p.Policy = policy;
+            MitigationPolicy p = new MitigationPolicy
+            {
+                Policy = policy
+            };
 
             using (var buffer = p.ToBuffer())
             {
                 NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInformationClass.ProcessMitigationPolicy, buffer, buffer.Length, out int return_length);
                 if (!status.IsSuccess())
                 {
-                    if (status != NtStatus.STATUS_INVALID_PARAMETER && status != NtStatus.STATUS_NOT_SUPPORTED)
+                    if (status != NtStatus.STATUS_INVALID_PARAMETER 
+                     && status != NtStatus.STATUS_NOT_SUPPORTED 
+                     && status != NtStatus.STATUS_PROCESS_IS_TERMINATING)
                     {
                         status.ToNtException();
                     }
@@ -1960,6 +1966,12 @@ namespace NtApiDotNet
         {
             get
             {
+                int policy = GetProcessMitigationPolicy(ProcessMitigationPolicy.ChildProcess);
+                if (policy != 0)
+                {
+                    return (policy & 1) == 1;
+                }
+
                 try
                 {
                     var result = QueryFixed<ProcessChildProcessRestricted>(ProcessInformationClass.ProcessChildProcessInformation);
