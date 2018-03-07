@@ -540,6 +540,13 @@ namespace NtApiDotNet
             [In] ref TokenPrimaryGroup TokenPrimaryGroup,
             [In] ref TokenDefaultDacl TokenDefaultDacl,
             [In] TokenSource TokenSource);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtCompareTokens(
+            SafeKernelObjectHandle FirstTokenHandle,
+            SafeKernelObjectHandle SecondTokenHandle,
+            out bool Equal
+        );
     }
 
 
@@ -2648,5 +2655,37 @@ namespace NtApiDotNet
                 return null;
             }
         }
+
+        /// <summary>
+        /// Compare two tokens.
+        /// </summary>
+        /// <param name="token">The other token to compare.</param>
+        /// <returns>True if tokens are equal.</returns>
+        public bool Compare(NtToken token)
+        {
+            NtSystemCalls.NtCompareTokens(Handle, token.Handle, out bool equal).ToNtException();
+            return equal;
+        }
+
+        private static NtToken GetPseudoToken(int handle)
+        {
+            return new NtToken(new SafeKernelObjectHandle(new IntPtr(handle), false));
+        }
+
+        /// <summary>
+        /// Get a pseudo handle to the primary token.
+        /// </summary>
+        /// <remarks>Only useful for querying information.</remarks>
+        public static NtToken PseudoPrimaryToken { get { return GetPseudoToken(-4); } }
+        /// <summary>
+        /// Get a pseudo handle to the impersonation token.
+        /// </summary>
+        /// <remarks>Only useful for querying information.</remarks>
+        public static NtToken PseudoImpersonationToken { get { return GetPseudoToken(-5); } }
+        /// <summary>
+        /// Get a pseudo handle to the effective token.
+        /// </summary>
+        /// <remarks>Only useful for querying information.</remarks>
+        public static NtToken PseudoEffectiveToken { get { return GetPseudoToken(-6); } }
     }
 }
