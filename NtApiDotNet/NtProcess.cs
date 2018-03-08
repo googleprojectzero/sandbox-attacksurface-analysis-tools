@@ -2022,5 +2022,15 @@ namespace NtApiDotNet
                 return QueryFixed<SectionImageInformation>(ProcessInformationClass.ProcessImageInformation);
             }
         }
+
+        /// <summary>
+        /// Open image section for process.
+        /// </summary>
+        /// <returns>The opened image section.</returns>
+        /// <remarks>Should only work on the pseudo process handle.</remarks>
+        public NtSection OpenImageSection()
+        {
+            return NtSection.FromHandle(new SafeKernelObjectHandle(QueryFixed<IntPtr>(ProcessInformationClass.ProcessImageSection), true));
+        }
     }
 }
