@@ -58,6 +58,7 @@
     <Compile Include="NtKey.cs" />
     <Compile Include="NtLocale.cs" />
     <Compile Include="NtMutant.cs" />
+    <Compile Include="NtPartition.cs" />
     <Compile Include="NtRegistryTransaction.cs" />
     <Compile Include="NtSemaphore.cs" />
     <Compile Include="NtSession.cs" />
