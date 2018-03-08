@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -109,19 +110,18 @@ namespace NtApiDotNet
         /// </summary>
         public uint Revision { get; set; }
 
-        private Ace FindMandatoryLabel()
+        private Ace FindSaclAce(AceType type)
         {
             if (Sacl != null && !Sacl.NullAcl)
             {
-                foreach (var ace in Sacl)
-                {
-                    if (ace.Type == AceType.MandatoryLabel)
-                    {
-                        return ace;
-                    }
-                }
+                return Sacl.Where(ace => ace.Type == type).FirstOrDefault();
             }
             return null;
+        }
+
+        private Ace FindMandatoryLabel()
+        {
+            return FindSaclAce(AceType.MandatoryLabel);
         }
 
         /// <summary>
@@ -155,6 +155,17 @@ namespace NtApiDotNet
                     ace = new MandatoryLabelAce(value.Flags, value.Mask.ToMandatoryLabelPolicy(), value.Sid);
                 }
                 Sacl.Add(ace);
+            }
+        }
+
+        /// <summary>
+        /// Get the process trust label.
+        /// </summary>
+        public Ace ProcessTrustLabel
+        {
+            get
+            {
+                return FindSaclAce(AceType.ProcessTrustLabel);
             }
         }
 
