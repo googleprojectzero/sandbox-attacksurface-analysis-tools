@@ -540,7 +540,7 @@ namespace NtObjectManager
             else
             {
                 DisposeObject(InputObject);
-            }            
+            }
         }
     }
 
