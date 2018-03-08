@@ -72,9 +72,9 @@ namespace NtObjectManager
         [Parameter]
         public FileOpenOptions Options { get; set; }
 
-        private string ResolveRelativePath(string path, RtlPathType path_type)
+        private static string ResolveRelativePath(SessionState state, string path, RtlPathType path_type)
         {
-            var current_path = SessionState.Path.CurrentFileSystemLocation;
+            var current_path = state.Path.CurrentFileSystemLocation;
             if (!current_path.Provider.Name.Equals("FileSystem", StringComparison.OrdinalIgnoreCase))
             {
                 throw new ArgumentException("Can't make a relative Win32 path when not in a file system drive.");
@@ -97,23 +97,17 @@ namespace NtObjectManager
             return path;
         }
 
-        /// <summary>
-        /// Virtual method to resolve the value of the Path variable.
-        /// </summary>
-        /// <returns>The object path.</returns>
-        protected override string ResolvePath()
+        private static string ResolvePath(SessionState state, string path, bool win32_path)
         {
-            if (Win32Path)
+            if (win32_path)
             {
-                string path = Path;
-
-                var path_type = NtFileUtils.GetDosPathType(Path);
+                var path_type = NtFileUtils.GetDosPathType(path);
                 switch (path_type)
                 {
                     case RtlPathType.Relative:
                     case RtlPathType.DriveRelative:
                     case RtlPathType.Rooted:
-                        path = ResolveRelativePath(path, path_type);
+                        path = ResolveRelativePath(state, path, path_type);
                         break;
                 }
 
@@ -121,8 +115,17 @@ namespace NtObjectManager
             }
             else
             {
-                return Path;
+                return path;
             }
+        }
+
+        /// <summary>
+        /// Virtual method to resolve the value of the Path variable.
+        /// </summary>
+        /// <returns>The object path.</returns>
+        protected override string ResolvePath()
+        {
+            return ResolvePath(SessionState, Path, Win32Path);
         }
 
         /// <summary>
@@ -209,6 +212,77 @@ namespace NtObjectManager
         {
             Disposition = FileDisposition.Create;
             Attributes = FileAttributes.Normal;
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Open a existing NT file object.</para>
+    /// <para type="description">This cmdlet opens a existing NT file object. The absolute path to the object in the NT object manager name space can be specified. 
+    /// It's also possible to open the object relative to an existing object by specified the -Root parameter. To simply calling it's also possible to specify the
+    /// path in a Win32 format when using the -Win32Path parameter.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>Remove-NtFile \??\C:\path\file.exe</code>
+    ///   <para>Delete a file object with an absolute path.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$root = Get-NtFile \??\C:\path&#x0A;Remove-NtFile file.exe -Root $root</code>
+    ///   <para>Delete a file object with a relative path.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Remove-NtFile c:\path\file.exe -Win32Path</code>
+    ///   <para>Delete a file object with an absolute win32 path.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Remove-NtFile ..\..\..\path\file.exe -Win32Path</code>
+    ///   <para>Delete a file object with a relative win32 path.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Remove-NtFile \??\C:\path\file.exe -PosixSemantics</code>
+    ///   <para>Delete a file object with POSIX semantics (needs Win10 RS3+).</para>
+    /// </example>
+    /// <example>
+    ///   <code>Remove-NtFile \??\C:\path\file.exe -DeleteReparsePoint</code>
+    ///   <para>Delete a file reparse point rather than following the link.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Remove-NtFile \??\C:\path\file.exe -ShareMode Read</code>
+    ///   <para>Delete a file object specifying a Read sharemode.</para>
+    /// </example>
+    [Cmdlet(VerbsCommon.Remove, "NtFile")]
+    public class RemoveNtFileCmdlet : GetNtFileCmdlet
+    {
+        /// <summary>
+        /// <para type="description">Specify whether to delete with POSIX semantics.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter PosixSemantics;
+
+        /// <summary>
+        /// <para type="description">Specify whether to delete the reparse point or the target.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter DeleteReparsePoint;
+
+        /// <summary>
+        /// Method to create an object from a set of object attributes.
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes to create/open from.</param>
+        protected override object CreateObject(ObjectAttributes obj_attributes)
+        {
+            using (var file = NtFile.Open(obj_attributes, FileAccessRights.Delete | Access, ShareMode,
+                Options | (DeleteReparsePoint ? FileOpenOptions.OpenReparsePoint : FileOpenOptions.None)))
+            {
+                if (PosixSemantics)
+                {
+                    file.DeleteEx(FileDispositionInformationExFlags.PosixSemantics | FileDispositionInformationExFlags.Delete);
+                }
+                else
+                {
+                    file.Delete();
+                }
+            }
+            return null;
         }
     }
 

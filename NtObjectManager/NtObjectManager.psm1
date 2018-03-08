@@ -544,7 +544,7 @@ function Get-NtFilePath {
   [CmdletBinding()]
   Param(
     [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
-        [string[]]$Path,
+    [string[]]$Path,
     [switch]$Resolve
   )
 
