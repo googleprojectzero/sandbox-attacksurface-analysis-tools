@@ -1044,7 +1044,30 @@ namespace NtApiDotNet
         DFM = 0x80000016,
         WOF = 0x80000017,
         GLOBAL_REPARSE = 0xA0000019,
-        EXECUTION_ALIAS = 0x8000001B,
+        APPEXECLINK = 0x8000001B,
+        CLOUD = 0x9000001A,
+        CLOUD_1 = 0x9000101A,
+        CLOUD_2 = 0x9000201A,
+        CLOUD_3 = 0x9000301A,
+        CLOUD_4 = 0x9000401A,
+        CLOUD_5 = 0x9000501A,
+        CLOUD_6 = 0x9000601A,
+        CLOUD_7 = 0x9000701A,
+        CLOUD_8 = 0x9000801A,
+        CLOUD_9 = 0x9000901A,
+        CLOUD_A = 0x9000A01A,
+        CLOUD_B = 0x9000B01A,
+        CLOUD_C = 0x9000C01A,
+        CLOUD_D = 0x9000D01A,
+        CLOUD_E = 0x9000E01A,
+        CLOUD_F = 0x9000F01A,
+        CLOUD_MASK = 0x0000F000,
+        GVFS = 0x9000001C,
+        STORAGE_SYNC = 0x8000001E,
+        WCI_TOMBSTONE = 0xA000001F,
+        UNHANDLED = 0x80000020,
+        ONEDRIVE = 0x80000021,
+        GVFS_TOMBSTONE = 0xA0000022,
     }
 
     public abstract class ReparseBuffer
@@ -1087,7 +1110,7 @@ namespace NtApiDotNet
                 case ReparseTag.GLOBAL_REPARSE:
                     buffer = new SymlinkReparseBuffer(true);
                     break;
-                case ReparseTag.EXECUTION_ALIAS:
+                case ReparseTag.APPEXECLINK:
                     buffer = new ExecutionAliasReparseBuffer();
                     break;
                 default:
@@ -1352,7 +1375,7 @@ namespace NtApiDotNet
             Flags = flags;
         }
 
-        internal ExecutionAliasReparseBuffer() : base(ReparseTag.EXECUTION_ALIAS)
+        internal ExecutionAliasReparseBuffer() : base(ReparseTag.APPEXECLINK)
         {
         }
 
