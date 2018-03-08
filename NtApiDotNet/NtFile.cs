@@ -517,6 +517,11 @@ namespace NtApiDotNet
         FileDispositionInformationEx,
         FileRenameInformationEx,
         FileRenameInformationExBypassAccessCheck,
+        FileDesiredStorageClassInformation,
+        FileStatInformation,
+        FileMemoryPartitionInformation,
+        FileStatLxInformation,
+        FileCaseSensitiveInformation,
         FileMaximumInformation
     }
 
@@ -3218,22 +3223,31 @@ namespace NtApiDotNet
 
         private T QueryFileFixed<T>(FileInformationClass info_class) where T : new()
         {
+            return QueryFileFixed<T>(info_class, true).Result;
+        }
+
+        private NtResult<T> QueryFileFixed<T>(FileInformationClass info_class, bool throw_on_error) where T : new()
+        {
             using (var buffer = new SafeStructureInOutBuffer<T>())
             {
                 IoStatus status = new IoStatus();
-                NtSystemCalls.NtQueryInformationFile(Handle, status, buffer,
-                    buffer.Length, info_class).ToNtException();
-                return buffer.Result;
+                return NtSystemCalls.NtQueryInformationFile(Handle, status, buffer,
+                    buffer.Length, info_class).CreateResult(throw_on_error, () => buffer.Result);
             }
         }
 
         private void SetFileFixed<T>(T value, FileInformationClass info_class) where T : new()
         {
+            SetFileFixed(value, info_class, true);
+        }
+
+        private NtStatus SetFileFixed<T>(T value, FileInformationClass info_class, bool throw_on_error) where T : new()
+        {
             using (var buffer = value.ToBuffer())
             {
                 IoStatus io_status = new IoStatus();
-                NtSystemCalls.NtSetInformationFile(Handle, io_status, 
-                    buffer, buffer.Length, info_class).ToNtException();
+                return NtSystemCalls.NtSetInformationFile(Handle, io_status,
+                    buffer, buffer.Length, info_class).ToNtException(throw_on_error);
             }
         }
 
@@ -3732,6 +3746,28 @@ namespace NtApiDotNet
                 return QueryFileFixed<bool>(FileInformationClass.FileIsRemoteDeviceInformation);
             }
         }
+
+        /// <summary>
+        /// Get or set whether this file/directory is case sensitive.
+        /// </summary>
+        public bool CaseSensitive
+        {
+            get
+            {
+                var result = QueryFileFixed<int>(FileInformationClass.FileCaseSensitiveInformation, false);
+                if (!result.IsSuccess)
+                {
+                    return false;
+                }
+
+                return (result.Result & 1) == 1;
+            }
+
+            set
+            {
+                SetFileFixed(value ? 1 : 0, FileInformationClass.FileCaseSensitiveInformation);
+            }
+        }
     }
 
     /// <summary>
@@ -3749,8 +3785,7 @@ namespace NtApiDotNet
             UnicodeStringOut nt_name = new UnicodeStringOut();
             try
             {
-                IntPtr short_path;
-                NtRtl.RtlDosPathNameToRelativeNtPathName_U_WithStatus(filename, out nt_name, out short_path, null).ToNtException();
+                NtRtl.RtlDosPathNameToRelativeNtPathName_U_WithStatus(filename, out nt_name, out IntPtr short_path, null).ToNtException();
                 return nt_name.ToString();
             }
             finally
@@ -3773,8 +3808,7 @@ namespace NtApiDotNet
             RtlRelativeName relative_name = new RtlRelativeName();
             try
             {
-                IntPtr short_path;
-                NtRtl.RtlDosPathNameToRelativeNtPathName_U_WithStatus(filename, out nt_name, out short_path, relative_name).ToNtException();
+                NtRtl.RtlDosPathNameToRelativeNtPathName_U_WithStatus(filename, out nt_name, out IntPtr short_path, relative_name).ToNtException();
                 if (relative_name.RelativeName.Buffer != IntPtr.Zero)
                 {
                     return new ObjectAttributes(relative_name.RelativeName.ToString(), AttributeFlags.CaseInsensitive,
