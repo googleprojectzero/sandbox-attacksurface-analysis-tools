@@ -41,7 +41,7 @@ namespace NtApiDotNet
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 
-    public enum JOBOBJECTINFOCLASS
+    public enum JobObjectInformationClass
     {
         JobObjectBasicAccountingInformation = 1,
         JobObjectBasicLimitInformation,
@@ -153,11 +153,11 @@ namespace NtApiDotNet
         public static extern NtStatus NtTerminateJobObject(SafeKernelObjectHandle JobHandle, NtStatus ExitStatus);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtQueryInformationJobObject(SafeKernelObjectHandle JobHandle, JOBOBJECTINFOCLASS JobInfoClass, 
+        public static extern NtStatus NtQueryInformationJobObject(SafeKernelObjectHandle JobHandle, JobObjectInformationClass JobInfoClass, 
             SafeBuffer JobInformation, int JobInformationLength, out int ReturnLength);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtSetInformationJobObject(SafeKernelObjectHandle JobHandle, JOBOBJECTINFOCLASS JobInfoClass, 
+        public static extern NtStatus NtSetInformationJobObject(SafeKernelObjectHandle JobHandle, JobObjectInformationClass JobInfoClass, 
             SafeBuffer JobInformation, int JobInformationLength);
 
         [DllImport("ntdll.dll")]
@@ -188,7 +188,7 @@ namespace NtApiDotNet
         public static NtResult<NtJob> Create(ObjectAttributes object_attributes, JobAccessRights desired_access, bool throw_on_error)
         {
             SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtCreateJobObject(out handle, JobAccessRights.MaximumAllowed, object_attributes).CreateResult(throw_on_error, () => new NtJob(handle));
+            return NtSystemCalls.NtCreateJobObject(out handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtJob(handle));
         }
 
         /// <summary>
@@ -242,7 +242,7 @@ namespace NtApiDotNet
         /// </summary>
         public void CreateSilo()
         {
-            NtSystemCalls.NtSetInformationJobObject(Handle, JOBOBJECTINFOCLASS.JobObjectCreateSilo, 
+            NtSystemCalls.NtSetInformationJobObject(Handle, JobObjectInformationClass.JobObjectCreateSilo, 
                 SafeHGlobalBuffer.Null, 0).ToNtException();
         }
 
@@ -310,7 +310,7 @@ namespace NtApiDotNet
             NtSystemCalls.NtAssignProcessToJobObject(Handle, process.Handle).ToNtException();
         }
 
-        private void SetInfo<T>(JOBOBJECTINFOCLASS info_class, T value) where T : new()
+        private void SetInfo<T>(JobObjectInformationClass info_class, T value) where T : new()
         {
             using (var buffer = value.ToBuffer())
             {
@@ -318,7 +318,7 @@ namespace NtApiDotNet
             }
         }
 
-        private T QueryInfoFixed<T>(JOBOBJECTINFOCLASS info_class) where T : new()
+        private T QueryInfoFixed<T>(JobObjectInformationClass info_class) where T : new()
         {
             using (var buffer = new SafeStructureInOutBuffer<T>())
             {
@@ -338,7 +338,7 @@ namespace NtApiDotNet
             JobObjectAssociateCompletionPort info = new JobObjectAssociateCompletionPort();
             info.CompletionKey = key;
             info.CompletionPort = port.Handle.DangerousGetHandle();
-            SetInfo(JOBOBJECTINFOCLASS.JobObjectAssociateCompletionPortInformation, info);
+            SetInfo(JobObjectInformationClass.JobObjectAssociateCompletionPortInformation, info);
         }
         
         /// <summary>
@@ -349,7 +349,7 @@ namespace NtApiDotNet
             get
             {
                 int mask = ((int)JobObjectCompletionPortMessageFilters.MaxMessage - 1) - 1;
-                int result = QueryInfoFixed<int>(JOBOBJECTINFOCLASS.JobObjectCompletionFilter);
+                int result = QueryInfoFixed<int>(JobObjectInformationClass.JobObjectCompletionFilter);
 
                 return (JobObjectCompletionPortMessageFilters)(~result & mask);
             }
@@ -357,7 +357,7 @@ namespace NtApiDotNet
             set
             {
                 int filter = (int)value;
-                SetInfo(JOBOBJECTINFOCLASS.JobObjectCompletionFilter, filter);
+                SetInfo(JobObjectInformationClass.JobObjectCompletionFilter, filter);
             }
         }
 
