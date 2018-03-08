@@ -149,6 +149,10 @@ namespace NtObjectManager
     ///   <para>Creates a new file object with an absolute path.</para>
     /// </example>
     /// <example>
+    ///   <code>$obj = New-NtFile \??\C:\Windows\Temp\ABC -Directory</code>
+    ///   <para>Creates a new directory file object with an absolute path.</para>
+    /// </example>
+    /// <example>
     ///   <code>$obj = New-NtFile \??\C:\Windows\Temp\abc.txt -Attributes Hidden</code>
     ///   <para>Creates a new file object with an absolute path, with the hidden attribute.</para>
     /// </example>
@@ -196,13 +200,20 @@ namespace NtObjectManager
         public EaBuffer EaBuffer { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify to create a directory instead of a file.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter Directory { get; set; }
+
+        /// <summary>
         /// Method to create an object from a set of object attributes.
         /// </summary>
         /// <param name="obj_attributes">The object attributes to create/open from.</param>
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            return NtFile.Create(obj_attributes, Access, Attributes, ShareMode, Options, Disposition, EaBuffer);
+            return NtFile.Create(obj_attributes, Access, Attributes, 
+                ShareMode, Options | (Directory ? FileOpenOptions.DirectoryFile : FileOpenOptions.None), Disposition, EaBuffer);
         }
 
         /// <summary>
