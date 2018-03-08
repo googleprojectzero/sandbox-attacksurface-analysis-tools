@@ -129,6 +129,15 @@ namespace NtApiDotNet
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 
+    [Flags]
+    public enum DirectoryCreateFlags
+    {
+        None = 0,
+        AlwaysInheritSecurity = 1,
+        // Only works in kernel mode.
+        FakeObjectRoot = 2,
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
@@ -137,7 +146,7 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtCreateDirectoryObjectEx(out SafeKernelObjectHandle Handle,
-            DirectoryAccessRights DesiredAccess, ObjectAttributes ObjectAttributes, SafeKernelObjectHandle ShadowDirectory, int Flags);
+            DirectoryAccessRights DesiredAccess, ObjectAttributes ObjectAttributes, SafeKernelObjectHandle ShadowDirectory, DirectoryCreateFlags Flags);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtOpenDirectoryObject(out SafeKernelObjectHandle Handle, DirectoryAccessRights DesiredAccess, [In] ObjectAttributes ObjectAttributes);
@@ -339,8 +348,8 @@ namespace NtApiDotNet
         /// Dispose
         /// </summary>
         public void Dispose()
-        {            
-            Dispose(true);        
+        {
+            Dispose(true);
             GC.SuppressFinalize(this);
         }
         #endregion
@@ -420,23 +429,52 @@ namespace NtApiDotNet
         /// <param name="obj_attributes">The object attributes to create the directory with</param>
         /// <param name="desired_access">The desired access to the directory</param>
         /// <param name="shadow_dir">The shadow directory</param>
+        /// <param name="flags">Flags for creation.</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
         /// <exception cref="NtException">Thrown on error and throw_on_error is true.</exception>
-        public static NtResult<NtDirectory> Create(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access, NtDirectory shadow_dir, bool throw_on_error)
+        public static NtResult<NtDirectory> Create(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access, NtDirectory shadow_dir, DirectoryCreateFlags flags, bool throw_on_error)
         {
             SafeKernelObjectHandle handle;
             NtStatus status;
-            if (shadow_dir == null)
+            if (shadow_dir == null && flags == DirectoryCreateFlags.None)
             {
                 status = NtSystemCalls.NtCreateDirectoryObject(out handle, desired_access, obj_attributes);
             }
             else
             {
                 status = NtSystemCalls.NtCreateDirectoryObjectEx(out handle, desired_access, obj_attributes,
-                    shadow_dir.Handle, 0);
+                    shadow_dir != null ? shadow_dir.Handle : SafeKernelObjectHandle.Null, flags);
             }
             return status.CreateResult(throw_on_error, () => new NtDirectory(handle));
+        }
+
+        /// <summary>
+        /// Create a directory object with a shadow
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes to create the directory with</param>
+        /// <param name="desired_access">The desired access to the directory</param>
+        /// <param name="shadow_dir">The shadow directory</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        /// <exception cref="NtException">Thrown on error and throw_on_error is true.</exception>
+        public static NtResult<NtDirectory> Create(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access, NtDirectory shadow_dir, bool throw_on_error)
+        {
+            return Create(obj_attributes, desired_access, shadow_dir, DirectoryCreateFlags.None, throw_on_error);
+        }
+
+        /// <summary>
+        /// Create a directory object with a shadow
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes to create the directory with</param>
+        /// <param name="desired_access">The desired access to the directory</param>
+        /// <param name="shadow_dir">The shadow directory</param>
+        /// <param name="flags">Flags for creation.</param>
+        /// <returns>The directory object</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public static NtDirectory Create(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access, NtDirectory shadow_dir, DirectoryCreateFlags flags)
+        {
+            return Create(obj_attributes, desired_access, shadow_dir, flags, true).Result;
         }
 
         /// <summary>
@@ -449,17 +487,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error</exception>
         public static NtDirectory Create(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access, NtDirectory shadow_dir)
         {
-            SafeKernelObjectHandle handle;
-            if (shadow_dir == null)
-            {
-                NtSystemCalls.NtCreateDirectoryObject(out handle, desired_access, obj_attributes).ToNtException();
-            }
-            else
-            {
-                NtSystemCalls.NtCreateDirectoryObjectEx(out handle, desired_access, obj_attributes,
-                    shadow_dir.Handle, 0).ToNtException();
-            }
-            return new NtDirectory(handle);
+            return Create(obj_attributes, desired_access, shadow_dir, DirectoryCreateFlags.None, true).Result;
         }
 
         /// <summary>

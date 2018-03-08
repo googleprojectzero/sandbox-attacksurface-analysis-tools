@@ -154,6 +154,13 @@ namespace NtObjectManager
         public NtDirectory ShadowDirectory { get; set; }
 
         /// <summary>
+        /// <para type="description">Specifies flags to use when creating the directory object.
+        /// </para>
+        /// </summary>
+        [Parameter]
+        public DirectoryCreateFlags Flags { get; set; }
+
+        /// <summary>
         /// Determine if the cmdlet can create objects.
         /// </summary>
         /// <returns>True if objects can be created.</returns>
@@ -178,7 +185,7 @@ namespace NtObjectManager
             }
             else
             {
-                return NtDirectory.Create(obj_attributes, Access, ShadowDirectory);
+                return NtDirectory.Create(obj_attributes, Access, ShadowDirectory, Flags);
             }
         }
     }

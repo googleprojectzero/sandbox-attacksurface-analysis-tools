@@ -447,6 +447,13 @@ namespace NtApiDotNet
         public IntPtr Sid;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TokenBnoIsolationInformation
+    {
+        public UnicodeStringOut IsolationPrefix;
+        public bool   IsolationEnabled;
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]

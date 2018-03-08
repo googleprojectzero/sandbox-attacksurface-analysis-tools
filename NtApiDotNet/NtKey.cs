@@ -96,9 +96,9 @@ namespace NtApiDotNet
         KeyValuePartialInformation,
         KeyValueFullInformationAlign64,
         KeyValuePartialInformationAlign64,
+        KeyValueLayerInformation,
         MaxKeyValueInfoClass
     }
-
 
     [StructLayout(LayoutKind.Sequential)]
     [DataStart("Data")]
@@ -132,6 +132,8 @@ namespace NtApiDotNet
         KeyFlagsInformation = 5,
         KeyVirtualizationInformation = 6,
         KeyHandleTagsInformation = 7,
+        KeyTrustInformation = 8,
+        KeyLayerInformation = 9,
     }
 
     public enum KeySetInformationClass
@@ -142,6 +144,7 @@ namespace NtApiDotNet
         KeySetVirtualizationInformation,
         KeySetDebugInformation,
         KeySetHandleTagsInformation,
+        KeySetLayerInformation,
         MaxKeySetInfoClass
     }
 
@@ -255,6 +258,13 @@ namespace NtApiDotNet
         public int Wow64Flags;
         public int Unknown4;
         public KeyControlFlags ControlFlags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct KeyTrustInformation
+    {
+        private int _flags;
+        public bool TrustedKey { get { return (_flags & 1) == 1; } }
     }
 
     public static partial class NtSystemCalls
@@ -1534,6 +1544,17 @@ namespace NtApiDotNet
                 {
                     SetKey(KeySetInformationClass.KeyWow64FlagsInformation, value);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Indicates if this key is from a trusted hive.
+        /// </summary>
+        public bool Trusted
+        {
+            get
+            {
+                return QueryKeyFixed<KeyTrustInformation>(KeyInformationClass.KeyTrustInformation).TrustedKey;
             }
         }
     }
