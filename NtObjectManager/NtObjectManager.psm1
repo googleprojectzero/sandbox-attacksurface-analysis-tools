@@ -1419,30 +1419,3 @@ function Resolve-NtObjectAddress
         [NtApiDotNet.NtSystemInfo]::ResolveObjectAddress([NtApiDotNet.NtObject[]]$objs)
     }
 }
-
-<#
-.SYNOPSIS
-Get process primary token. Here for legacy reasons, use Get-NtToken -Primary.
-#>
-function Get-NtTokenPrimary
-{
-  Get-NtToken -Primary @args
-}
-
-<#
-.SYNOPSIS
-Get thread impersonation token. Here for legacy reasons, use Get-NtToken -Impersonation.
-#>
-function Get-NtTokenThread
-{
-  Get-NtToken -Impersonation @args
-}
-
-<#
-.SYNOPSIS
-Get thread effective token. Here for legacy reasons, use Get-NtToken -Effective.
-#>
-function Get-NtTokenEffective
-{
-  Get-NtToken -Effective @args
-}
