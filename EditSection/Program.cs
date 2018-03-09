@@ -62,6 +62,7 @@ namespace EditSection
                     int handle = -1;
                     string text = String.Empty;
                     bool read_only = false;
+                    bool delete_file = false;
                     string filename = string.Empty;
 
                     OptionSet opts = new OptionSet() {
@@ -69,6 +70,7 @@ namespace EditSection
                             v => handle = int.Parse(v) },
                         { "readonly", "Specify view section readonly", v => read_only = v != null },
                         { "file=", "Specify a file to view", v => filename = v },
+                        { "delete", "Delete file after viewing", v => delete_file = v != null },
                     };
 
                     opts.Parse(args);
@@ -89,18 +91,28 @@ namespace EditSection
                     }
                     else if (File.Exists(filename))
                     {
-                        using (var file = NtFile.Open(NtFileUtils.DosFileNameToNt(filename), null, 
-                            FileAccessRights.ReadData, FileShareMode.Read | FileShareMode.Delete, FileOpenOptions.NonDirectoryFile))
+                        try
                         {
-                            using (NtSection section = NtSection.CreateReadOnlyDataSection(file))
+                            using (var file = NtFile.Open(NtFileUtils.DosFileNameToNt(filename), null,
+                                FileAccessRights.ReadData, FileShareMode.Read | FileShareMode.Delete, FileOpenOptions.NonDirectoryFile))
                             {
-                                using (var map = section.MapRead())
+                                using (NtSection section = NtSection.CreateReadOnlyDataSection(file))
                                 {
-                                    using (SectionEditorForm frm = new SectionEditorForm(map, filename, true, file.Length))
+                                    using (var map = section.MapRead())
                                     {
-                                        Application.Run(frm);
+                                        using (SectionEditorForm frm = new SectionEditorForm(map, filename, true, file.Length))
+                                        {
+                                            Application.Run(frm);
+                                        }
                                     }
                                 }
+                            }
+                        }
+                        finally
+                        {
+                            if (delete_file)
+                            {
+                                File.Delete(filename);
                             }
                         }
                     }
