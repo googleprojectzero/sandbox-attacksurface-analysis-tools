@@ -286,6 +286,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create a data section from a file.
+        /// </summary>
+        /// <param name="file">The file to create from.</param>
+        /// <returns>The created section object.</returns>
+        public static NtSection CreateReadOnlyDataSection(NtFile file)
+        {
+            return Create(null, SectionAccessRights.MapRead, null, MemoryAllocationProtect.ReadOnly, SectionAttributes.Commit, file);
+        }
+
+        /// <summary>
         /// Create a section object
         /// </summary>
         /// <param name="object_attributes">The object attributes</param>
