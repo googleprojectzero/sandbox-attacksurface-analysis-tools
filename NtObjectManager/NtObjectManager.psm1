@@ -1260,8 +1260,8 @@ function Show-NtToken {
         [string]$Name,
         [Parameter(Position=0, ParameterSetName="FromName")]
         [int]$MaxTokens = 0,
-		[Parameter(Position=0, ParameterSetName="All")]
-		[switch]$All
+        [Parameter(Position=0, ParameterSetName="All")]
+        [switch]$All
     )
 
     PROCESS {
@@ -1302,6 +1302,39 @@ function Show-NtToken {
         }
       }
     }
+}
+
+<#
+.SYNOPSIS
+Invokes a script block while impersonating a token.
+.DESCRIPTION
+This cmdlet invokes a script block while impersonating a token. 
+.PARAMETER Token
+The token to impersonate, if the token is a primary token it will be duplicated.
+.PARAMETER Script
+The script block to execute during impersonation.
+.PARAMETER ImpersonationLevel
+When the token is duplicated specify the impersonation level to use.
+.OUTPUTS
+Result of the script block.
+.EXAMPLE
+Invoke-NtToken -Token $token -Script { Get-NtFile \Path\To\File }
+Open a file under impersonation.
+.EXAMPLE
+Invoke-NtToken -Token $token -ImpersonationLevel Identification -Script { Get-NtToken -Impersonation -OpenAsSelf }
+Open the impersontation token under identification level impersonation.
+#>
+function Invoke-NtToken{
+    param(
+        [Parameter(Mandatory=$true, Position=0)]
+        [NtApiDotNet.NtToken]$Token,
+        [Parameter(Mandatory=$true, Position=1)]
+        [ScriptBlock]$Script,
+        [NtApiDotNet.SecurityImpersonationLevel]$ImpersonationLevel = "Impersonation"
+    )
+
+    $cb = [System.Func[Object]]{ & $Script }
+    $Token.RunUnderImpersonate($cb, $ImpersonationLevel)
 }
 
 <#
