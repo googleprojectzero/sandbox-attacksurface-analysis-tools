@@ -1149,6 +1149,22 @@ namespace NtApiDotNet
             writer.Write(buffer);
             return stm.ToArray();
         }
+
+        /// <summary>
+        /// Get if a reparse tag is a Microsoft defined one.
+        /// </summary>
+        public bool IsMicrosoft => NtFileUtils.IsReparseTagMicrosoft(Tag);
+
+        /// <summary>
+        /// Get if a reparse tag is a name surrogate.
+        /// </summary>
+        /// <returns>True if it's a surrogate reparse tag.</returns>
+        public bool IsNameSurrogate => NtFileUtils.IsReparseTagNameSurrogate(Tag);
+
+        /// <summary>
+        /// Get if a reparse tag is a directory.
+        /// </summary>
+        public bool IsTagDirectory => NtFileUtils.IsReparseTagDirectory(Tag);
     }
 
     public sealed class GenericReparseBuffer : ReparseBuffer
@@ -3894,6 +3910,36 @@ namespace NtApiDotNet
         public static string FileIdToString(long fileid)
         {
             return Encoding.Unicode.GetString(BitConverter.GetBytes(fileid));
+        }
+
+        /// <summary>
+        /// Get if a reparse tag is a Microsoft defined one.
+        /// </summary>
+        /// <param name="tag">The reparse tag.</param>
+        /// <returns>True if it's a Microsoft reparse tag.</returns>
+        public static bool IsReparseTagMicrosoft(ReparseTag tag)
+        {
+            return ((uint)tag & 0x80000000) != 0;
+        }
+
+        /// <summary>
+        /// Get if a reparse tag is a name surrogate.
+        /// </summary>
+        /// <param name="tag">The reparse tag.</param>
+        /// <returns>True if it's a surrogate reparse tag.</returns>
+        public static bool IsReparseTagNameSurrogate(ReparseTag tag)
+        {
+            return ((uint) tag & 0x20000000) != 0;
+        }
+
+        /// <summary>
+        /// Get if a reparse tag is a directory.
+        /// </summary>
+        /// <param name="tag">The reparse tag.</param>
+        /// <returns>True if it's a directory reparse tag.</returns>
+        public static bool IsReparseTagDirectory(ReparseTag tag)
+        {
+            return ((uint)tag & 0x10000000) != 0;
         }
     }
 }
