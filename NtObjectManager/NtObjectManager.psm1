@@ -1361,31 +1361,51 @@ Show-NtSection $section -Wait
 Show the mapped section and wait for the viewer to exit.
 #>
 function Show-NtSection {
+    [CmdletBinding(DefaultParameterSetName = "FromSection")]
     Param(
-        [Parameter(Position = 0, Mandatory = $true)]
+        [Parameter(Position = 0, Mandatory = $true, ParameterSetName = "FromSection")]
         [NtApiDotNet.NtSection]$Section,
+        [Parameter(ParameterSetName = "FromSection")]
         [switch]$ReadOnly,
+        [Parameter(Position = 0, Mandatory = $true, ParameterSetName = "FromData")]
+        [byte[]]$Data,
         [switch]$Wait
     )
-
-  if (!$Section.IsAccessGranted("MapRead")) {
-    Write-Error "Section doesn't have Map Read access."
-    return
-  }
-  Use-NtObject($obj = $Section.Duplicate()) {
-    $obj.Inherit = $true
-    $cmdline = [string]::Format("EditSection --handle {0}", $obj.Handle.DangerousGetHandle())
-    if ($ReadOnly) {
-      $cmdline += " --readonly"
-    }
-    $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\EditSection.exe" -InheritHandles
-    $config.InheritHandleList.Add($obj.Handle.DangerousGetHandle())
-    Use-NtObject($p = New-Win32Process -Config $config) {
-      if ($Wait) {
-        $p.Process.Wait() | Out-Null
-      }
-    }
-  }
+    switch($PSCmdlet.ParameterSetName) {
+        "FromSection" {
+            if (!$Section.IsAccessGranted("MapRead")) {
+                Write-Error "Section doesn't have Map Read access."
+                return
+            }
+            Use-NtObject($obj = $Section.Duplicate()) {
+                $obj.Inherit = $true
+                $cmdline = [string]::Format("EditSection --handle {0}", $obj.Handle.DangerousGetHandle())
+                if ($ReadOnly) {
+                    $cmdline += " --readonly"
+                }
+                $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\EditSection.exe" -InheritHandles
+                $config.InheritHandleList.Add($obj.Handle.DangerousGetHandle())
+                Use-NtObject($p = New-Win32Process -Config $config) {
+                    if ($Wait) {
+                        $p.Process.Wait() | Out-Null
+                    }
+                }
+            }
+        }
+        "FromData" {
+            if ($Data.Length -eq 0) {
+                return
+            }
+            $tempfile = New-TemporaryFile
+            $path = $tempfile.FullName
+            [System.IO.File]::WriteAllBytes($path, $Data)
+            Use-NtObject($p = New-Win32Process "EditSection --delete --file=""$path""" -ApplicationName "$PSScriptRoot\EditSection.exe") {
+                if ($Wait) {
+                    $p.Process.Wait() | Out-Null
+                }
+            }
+        }
+    } 
 }
 
 <#
