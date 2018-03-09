@@ -2278,13 +2278,27 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Impersonate the token
+        /// Impersonate the token.
         /// </summary>
         /// <returns>An impersonation context, dispose to revert to process token</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public ThreadImpersonationContext Impersonate()
         {
             return NtThread.Current.Impersonate(this);
+        }
+
+        /// <summary>
+        /// Impersonate the token.
+        /// </summary>
+        /// <param name="impersonation_level">Impersonation level for token.</param>
+        /// <returns>An impersonation context, dispose to revert to process token</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public ThreadImpersonationContext Impersonate(SecurityImpersonationLevel impersonation_level)
+        {
+            using (NtToken token = DuplicateToken(impersonation_level))
+            {
+                return NtThread.Current.Impersonate(token);
+            }
         }
 
         /// <summary>
@@ -2310,6 +2324,36 @@ namespace NtApiDotNet
         public void RunUnderImpersonate(Action callback)
         {
             using (Impersonate())
+            {
+                callback();
+            }
+        }
+
+        /// <summary>
+        /// Run a function under impersonation.
+        /// </summary>
+        /// <typeparam name="T">The return type.</typeparam>
+        /// <param name="callback">The callback to run.</param>
+        /// <param name="impersonation_level">Impersonation level for token.</param>
+        /// <returns>The return value from the callback.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public T RunUnderImpersonate<T>(Func<T> callback, SecurityImpersonationLevel impersonation_level)
+        {
+            using (Impersonate(impersonation_level))
+            {
+                return callback();
+            }
+        }
+
+        /// <summary>
+        /// Run an action under impersonation.
+        /// </summary>
+        /// <param name="callback">The callback to run.</param>
+        /// <param name="impersonation_level">Impersonation level for token.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void RunUnderImpersonate(Action callback, SecurityImpersonationLevel impersonation_level)
+        {
+            using (Impersonate(impersonation_level))
             {
                 callback();
             }
