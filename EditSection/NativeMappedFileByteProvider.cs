@@ -23,10 +23,11 @@ namespace EditSection
         NtMappedSection _map;
         bool _readOnly;
 
-        public NativeMappedFileByteProvider(NtMappedSection map, bool readOnly)
+        public NativeMappedFileByteProvider(NtMappedSection map, bool readOnly, long length)
         {
             _readOnly = readOnly;
             _map = map;
+            Length = length;
         }
 
         public void ApplyChanges()
@@ -52,10 +53,7 @@ namespace EditSection
         {
         }
 
-        public long Length
-        {
-            get { return _map.Length; }
-        }
+        public long Length { get; }
 
 #pragma warning disable 67
         public event EventHandler LengthChanged;
@@ -63,7 +61,7 @@ namespace EditSection
 
         public byte ReadByte(long index)
         {            
-            if (index < _map.Length)
+            if (index < Length)
             {
                 return _map.Read<byte>((ulong)index);
             }
@@ -88,11 +86,11 @@ namespace EditSection
 
         public void WriteBytes(long index, byte[] value)
         {
-            if (index < _map.Length)
+            if (index < Length)
             {
                 try
                 {
-                    long count = Math.Min(_map.Length - index, value.Length);
+                    long count = Math.Min(Length - index, value.Length);
                     _map.WriteArray((ulong)index, value, 0, (int)count);
                     ByteWritten?.Invoke(this, new EventArgs());
                 }
@@ -104,7 +102,7 @@ namespace EditSection
 
         public void WriteByte(long index, byte value)
         {
-            if (index < _map.Length)
+            if (index < Length)
             {
                 try
                 {

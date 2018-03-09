@@ -12,8 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NDesk.Options;
 using NtApiDotNet;
 using System;
+using System.IO;
 using System.Windows.Forms;
 
 namespace EditSection
@@ -57,13 +59,25 @@ namespace EditSection
                 }
                 else
                 {
-                    if (args.Length < 3)
+                    int handle = -1;
+                    string text = String.Empty;
+                    bool read_only = false;
+                    string filename = string.Empty;
+
+                    OptionSet opts = new OptionSet() {
+                        { "handle=", "Specify an inherited handle to view.",
+                            v => handle = int.Parse(v) },
+                        { "readonly", "Specify view section readonly", v => read_only = v != null },
+                        { "file=", "Specify a file to view", v => filename = v },
+                    };
+
+                    opts.Parse(args);
+
+                    if (handle > 0)
                     {
-                        var handle = new SafeKernelObjectHandle(new IntPtr(int.Parse(args[0])), true);
-                        
-                        using (var section = NtSection.FromHandle(handle))
+                        using (var section = NtSection.FromHandle(new SafeKernelObjectHandle(new IntPtr(handle), true)))
                         {
-                            bool read_only = args.Length > 1 ? args[1].Equals("--readonly") : !section.IsAccessGranted(SectionAccessRights.MapWrite);
+                            read_only = read_only || !section.IsAccessGranted(SectionAccessRights.MapWrite);
                             using (var map = read_only ? section.MapRead() : section.MapReadWrite())
                             {
                                 using (SectionEditorForm frm = new SectionEditorForm(map, GetName(section, map), read_only))
@@ -72,6 +86,27 @@ namespace EditSection
                                 }
                             }
                         }
+                    }
+                    else if (File.Exists(filename))
+                    {
+                        using (var file = NtFile.Open(NtFileUtils.DosFileNameToNt(filename), null, 
+                            FileAccessRights.ReadData, FileShareMode.Read | FileShareMode.Delete, FileOpenOptions.NonDirectoryFile))
+                        {
+                            using (NtSection section = NtSection.CreateReadOnlyDataSection(file))
+                            {
+                                using (var map = section.MapRead())
+                                {
+                                    using (SectionEditorForm frm = new SectionEditorForm(map, filename, true, file.Length))
+                                    {
+                                        Application.Run(frm);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("Invalid command line arguments");
                     }
                 }
             }

@@ -91,12 +91,12 @@ namespace EditSection
 
             public IntegerDataInspector(bool big_endian, Func<byte[], int, T> func) : 
                 base($"{typeof(T).Name} ({(big_endian ? "Big Endian" : "Little Endian")})", 
-                    Marshal.SizeOf<T>(), big_endian, ba => FormatInt(ba, func))
+                    Marshal.SizeOf(typeof(T)), big_endian, ba => FormatInt(ba, func))
             {
             }
 
             public IntegerDataInspector(Func<byte[], int, T> func) :
-                 base(typeof(T).Name, Marshal.SizeOf<T>(), false, ba => FormatInt(ba, func))
+                 base(typeof(T).Name, Marshal.SizeOf(typeof(T)), false, ba => FormatInt(ba, func))
             {
             }
         }
@@ -106,12 +106,12 @@ namespace EditSection
             return new IntegerDataInspector<T>(big_endian, func);
         }
 
-        private SectionEditorForm(NtMappedSection map, bool readOnly)
+        private SectionEditorForm(NtMappedSection map, bool readOnly, long length)
         {
             _random = new Random();
             _map = map;
             _readOnly = readOnly;
-            _prov = new NativeMappedFileByteProvider(_map, _readOnly);
+            _prov = new NativeMappedFileByteProvider(_map, _readOnly, length);
             _prov.ByteWritten += _prov_ByteWritten;
 
             InitializeComponent();
@@ -140,17 +140,27 @@ namespace EditSection
             return $"({_map.Protection.ToString()})";
         }
 
-        public SectionEditorForm(NtMappedSection map, NtHandle handle, bool readOnly) 
-            : this(map, readOnly)
+        public SectionEditorForm(NtMappedSection map, NtHandle handle, bool readOnly, long length) 
+            : this(map, readOnly, length)
         {
             TabText = $"Process {handle.ProcessId} - Handle {handle.Handle} {GetReadOnlyString()}";
         }
 
-        public SectionEditorForm(NtMappedSection map, string name, bool readOnly)
-            : this(map, readOnly)
+        public SectionEditorForm(NtMappedSection map, NtHandle handle, bool readOnly)
+            : this(map, handle, readOnly, map.Length)
+        {
+        }
+
+        public SectionEditorForm(NtMappedSection map, string name, bool readOnly, long length)
+            : this(map, readOnly, length)
         {
             TabText = $"{name} {GetReadOnlyString()}";
             Text = TabText;
+        }
+
+        public SectionEditorForm(NtMappedSection map, string name, bool readOnly)
+            : this(map, name, readOnly, map.Length)
+        {
         }
 
         void SectionEditorForm_Disposed(object sender, EventArgs e)

@@ -1374,7 +1374,7 @@ function Show-NtSection {
   }
   Use-NtObject($obj = $Section.Duplicate()) {
     $obj.Inherit = $true
-    $cmdline = [string]::Format("EditSection {0}", $obj.Handle.DangerousGetHandle())
+    $cmdline = [string]::Format("EditSection --handle {0}", $obj.Handle.DangerousGetHandle())
     if ($ReadOnly) {
       $cmdline += " --readonly"
     }
