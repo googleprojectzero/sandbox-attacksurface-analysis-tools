@@ -112,7 +112,8 @@ namespace NtApiDotNet
         SeRelabelPrivilege,
         SeIncreaseWorkingSetPrivilege,
         SeTimeZonePrivilege,
-        SeCreateSymbolicLinkPrivilege, // 35
+        SeCreateSymbolicLinkPrivilege,
+        SeDelegateSessionUserImpersonatePrivilege,
     }
 
     [Flags]
