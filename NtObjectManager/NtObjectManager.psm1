@@ -1439,3 +1439,46 @@ function Resolve-NtObjectAddress
         [NtApiDotNet.NtSystemInfo]::ResolveObjectAddress([NtApiDotNet.NtObject[]]$objs)
     }
 }
+
+<#
+.SYNOPSIS
+Get a filtered token.
+.DESCRIPTION
+This is left for backwards compatibility, use 'Get-NtToken -Filtered' instead.
+#>
+function Get-NtFilteredToken
+{
+    Param(
+       [parameter(Mandatory=$true, Position=0)]
+       [NtApiDotNet.NtToken]$Token,
+       [NtApiDotNet.TokenPrivilege[]]$PrivilegesToDelete,
+       [NtApiDotNet.UserGroup[]]$SidsToDisable,
+       [NtApiDotNet.UserGroup[]]$RestrictedSids,
+       [NtApiDotNet.FilterTokenFlags]$Flags
+    )
+
+    Write-Warning "This cmdlet is deprecated. Please use Get-NtToken -Filtered instead"
+    Get-NtToken -Filtered -Token $Token -PrivilegesToDelete $PrivilegesToDelete -SidsToDisable $SidsToDisable -RestrictedSids $RestrictedSids -Flags $Flags
+}
+
+<#
+.SYNOPSIS
+Get a lowbox token.
+.DESCRIPTION
+This is left for backwards compatibility, use 'Get-NtToken -LowBox' instead.
+#>
+function Get-NtLowBoxToken
+{
+    Param(
+       [parameter(Mandatory=$true, Position=0)]
+       [NtApiDotNet.NtToken]$Token,
+       [parameter(Mandatory=$true)]
+       [string]$PackageSid,
+       [string]$RestrictedPackageName,
+       [NtApiDotNet.Sid[]]$CapabilitySids,
+       [NtApiDotNet.NtObject[]]$Handles
+    )
+
+    Write-Warning "This cmdlet is deprecated. Please use Get-NtToken -LowBox instead"
+    Get-NtToken -LowBox -Token $Token -PackageSid $PackageSid -RestrictedPackageName $RestrictedPackageName -CapabilitySids $CapabilitySids -Handles $Handles
+}

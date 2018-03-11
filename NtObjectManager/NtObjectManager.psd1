@@ -57,7 +57,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'New-NtEaBuffer', 'New-NtSectionImage', 'New-Win32ProcessConfig', 'Get-NtTokenFromProcess', 'Get-ExecutableManifest',
           'New-NtProcess', 'New-NtProcessConfig', 'Get-NtFilePath', 'Show-NtTokenEffective', 'Show-NtSecurityDescriptor', 'Get-NtIoControlCode',
           'Import-NtObject', 'Export-NtObject', 'Get-ExecutionAlias', 'New-ExecutionAlias', 'Show-NtToken', 'Show-NtSection',
-          'Resolve-NtObjectAddress', 'Invoke-NtToken'
+          'Resolve-NtObjectAddress', 'Invoke-NtToken', 'Get-NtFilteredToken', 'Get-NtLowBoxToken'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
@@ -69,8 +69,7 @@ CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile',
                'New-NtMailslotFile', 'New-NtMutant', 'New-NtNamedPipeFile', 
                'New-NtSecurityDescriptor', 'New-NtSemaphore', 'New-NtSymbolicLink', 
                'Remove-NtFileReparsePoint', 'Start-NtWait', 'Use-NtObject',
-               'Get-NtFilteredToken', 'Get-NtLowBoxToken', 'Get-NtSid',
-               'Get-NtSection', 'New-NtSection', 'Get-AccessibleAlpcPort',
+               'Get-NtSid', 'Get-NtSection', 'New-NtSection', 'Get-AccessibleAlpcPort',
                'Get-AccessibleKey', 'Get-AccessibleProcess', 'Get-AccessibleFile',
                'Get-AccessibleObject', 'Get-NtAccessMask', 'Get-AccessibleDevice',
                'Get-AccessibleNamedPipe', 'Get-NtGrantedAccess', 'Get-NtJob', 'New-NtJob',

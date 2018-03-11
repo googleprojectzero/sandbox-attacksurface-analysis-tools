@@ -23,7 +23,8 @@ namespace NtObjectManager
 {
     /// <summary>
     /// <para type="synopsis">Open an NT token from different sources.</para>
-    /// <para type="description">This cmdlet gets a token from one of multiple possible sources. You can specify either a Primary process token, a Thread impersonation token, an Effective token, a Clipboard token a Logon/S4U token or the anonymous token.</para>
+    /// <para type="description">This cmdlet gets a token from one of multiple possible sources. You can specify either a Primary process token, a Thread impersonation token, an Effective token, 
+    /// a Clipboard token, a Logon/S4U token, the anonymous token, a lowbox or a filtered token.</para>
     /// <para>Note that tokens objects need to be disposed of after use, therefore capture them in Use-NtObject or manually Close them once used.</para>
     /// </summary>
     /// <example>
@@ -102,10 +103,38 @@ namespace NtObjectManager
     ///   <code>$obj = Get-NtToken -Anonymous</code>
     ///   <para>Get the anonymous logon token.</para>
     /// </example>
+    /// <example>
+    ///   <code>Get-NtToken -Filtered -Flags DisableMaxPrivileges</code>
+    ///   <para>Get current process' primary token and disable the maximum privileges.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtToken -Filtered -SidsToDisable "WD","BA"</code>
+    ///   <para>Get current process' primary token and set Everyone and Built Administrators groups to deny only.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$token = Use-NtObject($tmp = Get-NtToken -Primary) { Get-NtToken -Filtered -Token $tmp -RestrictedSids $tmp.Groups }</code>
+    ///   <para>Get current process' primary token, pass it as an explicit token and add all groups as restricted SIDs.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtToken -Filtered -Flags LuaToken</code>
+    ///   <para>Get current process' primary token and convert it to a LUA token.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtToken -LowBox -PackageSid "Application.Name"</code>
+    ///   <para>Get current process' primary token create a lowbox token with a named package.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtToken -LowBox -PackageSid "S-1-15-2-1-2-3-4-5-6-7"</code>
+    ///   <para>Get current process' primary token create a lowbox token with a package Sid.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtToken -LowBox -PackageSid "Application.Name" -CapabilitySid "readRegistry", "S-1-15-3-1"</code>
+    ///   <para>Get current process' primary token create a lowbox token with a named package and the internetClient and readRegistry capabilities.</para>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtToken", DefaultParameterSetName = "Primary")]
     [OutputType(typeof(NtToken))]
-    public sealed class GetNtTokenCmdlet : Cmdlet
+    public sealed class GetNtTokenCmdlet : PSCmdlet
     {
         /// <summary>
         /// <para type="description">Specify access rights for the token.</para>
@@ -246,6 +275,98 @@ namespace NtObjectManager
         public SwitchParameter Anonymous { get; set; }
 
         /// <summary>
+        /// <para type="description">Get a lowbox token.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "LowBox")]
+        public SwitchParameter LowBox { get; set; }
+
+        /// <summary>
+        /// <para type="description">Get a filtered token.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "Filtered")]
+        public SwitchParameter Filtered { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the token to sandbox. If not specified then the current primary token is used.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "LowBox"), Parameter(ParameterSetName = "Filtered")]
+        public NtToken Token { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify list of privileges to delete.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Filtered")]
+        public TokenPrivilege[] PrivilegesToDelete { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify list group SIDS to disable.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Filtered")]
+        public UserGroup[] SidsToDisable { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify list restricted SIDS to add to token.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Filtered")]
+        public UserGroup[] RestrictedSids { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify filter flags.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Filtered")]
+        public FilterTokenFlags Flags { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify package SID or a package name.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "LowBox")]
+        public string PackageSid { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify an additional restricted name for the package SID.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "LowBox")]
+        public string RestrictedPackageName { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify list of capability SIDS to add to token. Can specify an SDDL format string or a capability name.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "LowBox")]
+        public string[] CapabilitySids { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify list of handles to capture with lowbox token..</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "LowBox")]
+        public NtObject[] Handles { get; set; }
+
+        private static void AddLuids(HashSet<Luid> set, IEnumerable<Luid> luids)
+        {
+            foreach (Luid l in luids)
+            {
+                set.Add(l);
+            }
+        }
+
+        private IEnumerable<Luid> GetPrivileges(IEnumerable<TokenPrivilege> privs)
+        {
+            if (privs == null)
+            {
+                return null;
+            }
+            return privs.Select(p => p.Luid);
+        }
+
+        private static IEnumerable<Sid> GroupsToSids(IEnumerable<UserGroup> groups)
+        {
+            if (groups == null)
+            {
+                return null;
+            }
+            return groups.Select(g => g.Sid);
+        }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public GetNtTokenCmdlet()
@@ -365,6 +486,51 @@ namespace NtObjectManager
             return TokenUtils.GetAnonymousToken(desired_access);
         }
 
+        private NtToken GetSandboxedToken(Func<NtToken, NtToken> sandbox_func)
+        {
+            using (NtToken token = Token != null ? Token.Duplicate() : NtToken.OpenProcessToken())
+            {
+                return sandbox_func(token);
+            }
+        }
+
+        private NtToken GetLowBoxToken(NtToken token)
+        {
+            Sid package_sid = TokenUtils.GetPackageSidFromName(PackageSid);
+            if (!NtSecurity.IsPackageSid(package_sid))
+            {
+                throw new ArgumentException($"Invalid Package Sid {package_sid}");
+            }
+
+            if (!String.IsNullOrEmpty(RestrictedPackageName))
+            {
+                package_sid = TokenUtils.DeriveRestrictedPackageSidFromSid(package_sid, RestrictedPackageName);
+            }
+
+            IEnumerable<Sid> capability_sids = CapabilitySids == null ? new Sid[0] : CapabilitySids.Select(s =>
+                {
+                    if (!s.StartsWith("S-"))
+                    {
+                        return NtSecurity.GetCapabilitySid(s);
+                    }
+                    Sid sid = new Sid(s);
+                    if (!NtSecurity.IsCapabilitySid(sid))
+                    {
+                        throw new ArgumentException($"{s} is not a capability SID", s);
+                    }
+                    return sid;
+                }
+            );
+                
+            return token.CreateLowBoxToken(package_sid, capability_sids, Handles ?? new NtObject[0], TokenAccessRights.MaximumAllowed);
+        }
+
+        private NtToken GetFilteredToken(NtToken token)
+        {
+            return token.Filter(Flags, GroupsToSids(SidsToDisable),
+                GetPrivileges(PrivilegesToDelete), GroupsToSids(RestrictedSids));
+        }
+
         private NtToken GetToken(TokenAccessRights desired_access)
         {
             if (Impersonation)
@@ -390,6 +556,14 @@ namespace NtObjectManager
             else if (Anonymous)
             {
                 return GetAnonymousToken(desired_access);
+            }
+            else if (LowBox)
+            {
+                return GetSandboxedToken(GetLowBoxToken);
+            }
+            else if (Filtered)
+            {
+                return GetSandboxedToken(GetFilteredToken);
             }
             else
             {
@@ -426,170 +600,6 @@ namespace NtObjectManager
                 token = GetToken(Access);
             }
             WriteObject(token);
-        }
-    }
-
-    /// <summary>
-    /// <para type="synopsis">Filter an existing NT token.</para>
-    /// <para type="description">This cmdlet takes a token and filters (also referred to as restricting) it.</para>
-    /// <para>Note that tokens objects need to be disposed of after use, therefore capture them in Use-NtObject or manually Close them once used.</para>
-    /// </summary>
-    /// <example>
-    ///   <code>$token = Use-NtObject($tmp = Get-NtToken -Primary) { Get-NtFilteredToken $tmp -Flags DisableMaxPrivileges }</code>
-    ///   <para>Get current process' primary token and disable the maximum privileges.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$token = Use-NtObject($tmp = Get-NtToken -Primary) { Get-NtFilteredToken $tmp -SidsToDisable "Everyone","BA" }</code>
-    ///   <para>Get current process' primary token and set Everyone and Built Administrators groups to deny only.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$token = Use-NtObject($tmp = Get-NtToken -Primary) { Get-NtFilteredToken $tmp -SidsToDisable "Everyone","BA" }</code>
-    ///   <para>Get current process' primary token and set Everyone and Built Administrators groups to deny only.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$token = Use-NtObject($tmp = Get-NtToken -Primary) { Get-NtFilteredToken $tmp -RestrictedSids $tmp.Groups }</code>
-    ///   <para>Get current process' primary token and add all groups as restricted SIDs.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$token = Use-NtObject($tmp = Get-NtToken -Primary) { Get-NtFilteredToken $tmp -Flags LuaToken }</code>
-    ///   <para>Get current process' primary token and convert it to a LUA token.</para>
-    /// </example>
-    /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.Get, "NtFilteredToken")]
-    [OutputType(typeof(NtToken))]
-    public sealed class GetNtFilteredTokenCmdlet : Cmdlet
-    {
-        /// <summary>
-        /// <para type="description">Specify access rights for the token.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 0)]
-        public NtToken Token { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify list of privileges to delete.</para>
-        /// </summary>
-        [Parameter]
-        public TokenPrivilege[] PrivilegesToDelete { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify list group SIDS to disable.</para>
-        /// </summary>
-        [Parameter]
-        public UserGroup[] SidsToDisable { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify list restricted SIDS to add to token.</para>
-        /// </summary>
-        [Parameter]
-        public UserGroup[] RestrictedSids { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify filter flags.</para>
-        /// </summary>
-        [Parameter]
-        public FilterTokenFlags Flags { get; set; }
-
-        private static void AddLuids(HashSet<Luid> set, IEnumerable<Luid> luids)
-        {
-            foreach (Luid l in luids)
-            {
-                set.Add(l);
-            }
-        }
-
-        private IEnumerable<Luid> GetPrivileges(IEnumerable<TokenPrivilege> privs)
-        {
-            if (privs == null)
-            {
-                return null;
-            }
-            return privs.Select(p => p.Luid);
-        }
-
-        private static IEnumerable<Sid> GroupsToSids(IEnumerable<UserGroup> groups)
-        {
-            if (groups == null)
-            {
-                return null;
-            }
-            return groups.Select(g => g.Sid);
-        }
-
-        /// <summary>
-        /// Overridden ProcessRecord method.
-        /// </summary>
-        protected override void ProcessRecord()
-        {
-            WriteObject(Token.Filter(Flags, GroupsToSids(SidsToDisable), 
-                GetPrivileges(PrivilegesToDelete), GroupsToSids(RestrictedSids)));
-        }
-    }
-
-    /// <summary>
-    /// <para type="synopsis">Get a LowBox version of an existing NT token.</para>
-    /// <para type="description">This cmdlet takes a token and creates a new lowbox token from it.</para>
-    /// <para>Note that tokens objects need to be disposed of after use, therefore capture them in Use-NtObject or manually Close them once used.</para>
-    /// </summary>
-    /// <example>
-    ///   <code>$token = Use-NtObject($tmp = Get-NtToken -Primary) { Get-NtLowBoxToken $tmp -PackageSid "Application.Name" }</code>
-    ///   <para>Get current process' primary token create a lowbox token with a named package.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$token = Use-NtObject($tmp = Get-NtToken -Primary) { Get-NtLowBoxToken $tmp -PackageSid "S-1-15-2-1-2-3-4-5-6-7" }</code>
-    ///   <para>Get current process' primary token create a lowbox token with a package Sid.</para>
-    /// </example>
-    /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.Get, "NtLowBoxToken")]
-    [OutputType(typeof(NtToken))]
-    public sealed class GetNtLowBoxTokenCmdlet : Cmdlet
-    {
-        /// <summary>
-        /// <para type="description">Specify access rights for the token.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, Position = 0)]
-        public NtToken Token { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify package SID or a name.</para>
-        /// </summary>
-        [Parameter(Mandatory = true)]
-        public string PackageSid { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify an additional restricted name for the package SID.</para>
-        /// </summary>
-        [Parameter]
-        public string RestrictedPackageName { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify list of capability SIDS to add to token.</para>
-        /// </summary>
-        [Parameter]
-        public Sid[] CapabilitySids { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify list of handles to capture with lowbox token..</para>
-        /// </summary>
-        [Parameter]
-        public NtObject[] Handles { get; set; }
-        
-        /// <summary>
-        /// Overridden ProcessRecord method.
-        /// </summary>
-        protected override void ProcessRecord()
-        {
-            Sid package_sid = TokenUtils.GetPackageSidFromName(PackageSid);
-            if (!NtSecurity.IsPackageSid(package_sid))
-            {
-                throw new ArgumentException($"Invalid Package Sid {package_sid}");
-            }
-
-            if (!String.IsNullOrEmpty(RestrictedPackageName))
-            {
-                package_sid = TokenUtils.DeriveRestrictedPackageSidFromSid(package_sid, RestrictedPackageName);
-            }
-
-            WriteObject(Token.CreateLowBoxToken(package_sid, CapabilitySids ?? new Sid[0], Handles ?? new NtObject[0], TokenAccessRights.MaximumAllowed));
         }
     }
 
