@@ -37,6 +37,7 @@ namespace NtApiDotNet
         Attribute = 0x20,
         Scope = 0x40,
         ProcessTrustLabel = 0x80,
+        AccessFilter = 0x100,
         Backup = 0x10000,
         ProtectedDacl = 0x80000000,
         ProtectedSacl = 0x40000000,
