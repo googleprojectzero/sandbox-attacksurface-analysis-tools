@@ -486,11 +486,18 @@ namespace NtObjectManager
             return TokenUtils.GetAnonymousToken(desired_access);
         }
 
-        private NtToken GetSandboxedToken(Func<NtToken, NtToken> sandbox_func)
+        private NtToken GetSandboxedToken(TokenAccessRights desired_access, Func<NtToken, NtToken> sandbox_func)
         {
             using (NtToken token = Token != null ? Token.Duplicate() : NtToken.OpenProcessToken())
             {
-                return sandbox_func(token);
+                using (NtToken sandbox_token = sandbox_func(token))
+                {
+                    if (desired_access == TokenAccessRights.MaximumAllowed)
+                    {
+                        return token.Duplicate();
+                    }
+                    return token.Duplicate(desired_access);
+                }
             }
         }
 
@@ -559,11 +566,11 @@ namespace NtObjectManager
             }
             else if (LowBox)
             {
-                return GetSandboxedToken(GetLowBoxToken);
+                return GetSandboxedToken(desired_access, GetLowBoxToken);
             }
             else if (Filtered)
             {
-                return GetSandboxedToken(GetFilteredToken);
+                return GetSandboxedToken(desired_access, GetFilteredToken);
             }
             else
             {
