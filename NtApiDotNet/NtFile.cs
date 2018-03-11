@@ -1068,6 +1068,7 @@ namespace NtApiDotNet
         CLOUD_F = 0x9000F01A,
         CLOUD_MASK = 0x0000F000,
         GVFS = 0x9000001C,
+        WSL_SYMLINK = 0xA000001D,
         STORAGE_SYNC = 0x8000001E,
         WCI_TOMBSTONE = 0xA000001F,
         UNHANDLED = 0x80000020,
