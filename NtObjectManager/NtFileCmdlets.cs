@@ -61,6 +61,16 @@ namespace NtObjectManager
         }
 
         /// <summary>
+        /// <para type="description">Specify file access using directory access rights.</para>
+        /// </summary>
+        [Parameter]
+        public FileDirectoryAccessRights DirectoryAccess
+        {
+            get => Access.ToDirectoryAccessRights();
+            set => Access = value.ToFileAccessRights();
+        }
+
+        /// <summary>
         /// <para type="description">The access share mode to open the file with.</para>
         /// </summary>
         [Parameter]
