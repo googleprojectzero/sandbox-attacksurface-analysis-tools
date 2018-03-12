@@ -1885,6 +1885,7 @@ namespace NtApiDotNet
     {
         // Cancellation source for stopping pending IO on close.
         private CancellationTokenSource _cts;
+        private bool? _is_directory;
 
         internal NtFile(SafeKernelObjectHandle handle, IoStatus io_status) : base(handle)
         {
@@ -1911,7 +1912,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtFile> Create(ObjectAttributes obj_attributes, FileAccessRights desired_access, FileAttributes file_attributes, FileShareMode share_access,
             FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer, bool throw_on_error)
-        {            
+        {
             SafeKernelObjectHandle handle;
             IoStatus iostatus = new IoStatus();
             byte[] buffer = ea_buffer != null ? ea_buffer.ToByteArray() : null;
@@ -2479,7 +2480,11 @@ namespace NtApiDotNet
         {
             get
             {
-                return (FileAttributes & FileAttributes.Directory) == FileAttributes.Directory;
+                if (!_is_directory.HasValue)
+                {
+                    _is_directory = (FileAttributes & FileAttributes.Directory) == FileAttributes.Directory;
+                }
+                return _is_directory.Value;
             }
         }
 
@@ -2889,24 +2894,41 @@ namespace NtApiDotNet
         /// <param name="share_access">Share access for file open</param>
         /// <param name="open_options">Options for open call.</param>
         /// <param name="desired_access">The desired access for each file.</param>
+        /// <param name="file_mask">A file name mask (such as *.txt). Can be null.</param>
+        /// <param name="type_mask">Indicate what entries to return.</param>
         /// <returns>The list of files which can be access.</returns>
-        public IEnumerable<NtFile> QueryAccessibleFiles(FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options)
+        public IEnumerable<NtFile> QueryAccessibleFiles(FileAccessRights desired_access, FileShareMode share_access, 
+            FileOpenOptions open_options, string file_mask, FileTypeMask type_mask)
         {
             using (var list = new DisposableList<NtFile>())
             {
-                foreach (var entry in QueryDirectoryInfo())
+                foreach (var entry in QueryDirectoryInfo(file_mask, type_mask))
                 {
                     using (ObjectAttributes obja = new ObjectAttributes(entry.FileName, AttributeFlags.CaseInsensitive, this))
                     {
                         var result = Open(obja, desired_access, share_access, open_options, false);
                         if (result.IsSuccess)
                         {
+                            result.Result._is_directory = entry.IsDirectory;
                             list.Add(result.Result);
                         }
                     }
                 }
                 return new List<NtFile>(list.ToArrayAndClear());
             }
+        }
+
+        /// <summary>
+        /// Get list of accessible files underneath a directory.
+        /// </summary>
+        /// <param name="share_access">Share access for file open</param>
+        /// <param name="open_options">Options for open call.</param>
+        /// <param name="desired_access">The desired access for each file.</param>
+        /// <returns>The list of files which can be access.</returns>
+        public IEnumerable<NtFile> QueryAccessibleFiles(FileAccessRights desired_access, FileShareMode share_access,
+            FileOpenOptions open_options)
+        {
+            return QueryAccessibleFiles(desired_access, share_access, open_options, null, FileTypeMask.All);
         }
 
         /// <summary>
@@ -2926,14 +2948,15 @@ namespace NtApiDotNet
         /// <returns></returns>
         public IEnumerable<FileDirectoryEntry> QueryDirectoryInfo(string file_mask, FileTypeMask type_mask)
         {
-            UnicodeString mask = file_mask != null ? new UnicodeString(file_mask) : null;
+            UnicodeString mask = new UnicodeString(string.IsNullOrEmpty(file_mask) ? "*" : file_mask);
             // 32k seems to be a reasonable size, too big and some volumes will fail with STATUS_INVALID_PARAMETER.
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(32 * 1024))
             {
                 using (NtAsyncResult result = new NtAsyncResult(this))
                 {
                     NtStatus status = result.CompleteCall(NtSystemCalls.NtQueryDirectoryFile(Handle, result.EventHandle,
-                        IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, FileInformationClass.FileDirectoryInformation, false, mask, true));
+                        IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, 
+                        FileInformationClass.FileDirectoryInformation, false, mask, true));
 
                     while (status.IsSuccess())
                     {
@@ -2979,7 +3002,7 @@ namespace NtApiDotNet
                             result.IoStatusBuffer, buffer, buffer.Length, FileInformationClass.FileDirectoryInformation, false, mask, false));
                     }
 
-                    if (status != NtStatus.STATUS_NO_MORE_FILES)
+                    if (status != NtStatus.STATUS_NO_MORE_FILES && status != NtStatus.STATUS_NO_SUCH_FILE)
                     {
                         status.ToNtException();
                     }
@@ -3811,7 +3834,7 @@ namespace NtApiDotNet
                     }
                     status.ToNtException();
 
-                    int ofs = 0;                    
+                    int ofs = 0;
                     while (!done)
                     {
                         var stream = buffer.GetStructAtOffset<FileStreamInformation>(ofs);
@@ -3895,6 +3918,118 @@ namespace NtApiDotNet
             {
                 SetFileFixed(value ? 1 : 0, FileInformationClass.FileCaseSensitiveInformation);
             }
+        }
+
+        private bool VisitFileEntry(FileDirectoryEntry entry, Func<NtFile, bool> visitor, FileAccessRights desired_access,
+            FileShareMode share_access, FileOpenOptions open_options)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(entry.FileName, AttributeFlags.CaseInsensitive, this))
+            {
+                using (var result = Open(obja, desired_access, share_access, open_options, false))
+                {
+                    if (!result.IsSuccess)
+                    {
+                        return true;
+                    }
+
+                    result.Result._is_directory = entry.IsDirectory;
+                    return visitor(result.Result);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Visit all accessible files under this directory.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible file. Return true to continue enumeration.</param>
+        /// <param name="desired_access">Specify the desired access for the files.</param>
+        /// <param name="recurse">True to recurse into sub keys.</param>
+        /// <param name="share_access">The share access to open the files with.</param>
+        /// <param name="max_depth">Specify max recursive depth. -1 to not set a limit.</param>
+        /// <param name="open_options">Additional options to open the files with.</param>
+        /// <param name="file_mask">A file name mask (such as *.txt). Can be null.</param>
+        /// <param name="type_mask">Indicate what entries to return.</param>
+        /// <returns>True if all accessible files were visited, false if not.</returns>
+        public bool VisitAccessibleFiles(Func<NtFile, bool> visitor, FileAccessRights desired_access,
+            FileShareMode share_access, FileOpenOptions open_options, bool recurse, int max_depth,
+            string file_mask, FileTypeMask type_mask)
+        {
+            if (!IsDirectory)
+            {
+                throw new ArgumentException("Can't enumerate a non-directory file");
+            }
+
+            if (max_depth == 0)
+            {
+                return true;
+            }
+
+            foreach (var entry in QueryDirectoryInfo(file_mask, type_mask))
+            {
+                if (!VisitFileEntry(entry, visitor, desired_access, share_access, open_options))
+                {
+                    return false;
+                }
+            }
+
+            if (!recurse)
+            {
+                return true;
+            }
+
+            if (max_depth > 0)
+            {
+                max_depth--;
+            }
+
+            foreach (var entry in QueryDirectoryInfo(null, FileTypeMask.DirectoriesOnly))
+            {
+                if (!VisitFileEntry(entry, f => f.VisitAccessibleFiles(visitor, desired_access, share_access, open_options, recurse, max_depth, file_mask, type_mask),
+                FileDirectoryAccessRights.ListDirectory.ToFileAccessRights(), FileShareMode.Read | FileShareMode.Delete,
+                    open_options & FileOpenOptions.OpenForBackupIntent))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Visit all accessible files under this directory.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible file. Return true to continue enumeration.</param>
+        /// <param name="desired_access">Specify the desired access for the files.</param>
+        /// <param name="recurse">True to recurse into sub keys.</param>
+        /// <param name="share_access">The share access to open the files with.</param>
+        /// <param name="max_depth">Specify max recursive depth. -1 to not set a limit.</param>
+        /// <param name="open_options">Additional options to open the files with.</param>
+        /// <returns>True if all accessible files were visited, false if not.</returns>
+        public bool VisitAccessibleFiles(Func<NtFile, bool> visitor, FileAccessRights desired_access,
+            FileShareMode share_access, FileOpenOptions open_options, bool recurse, int max_depth)
+        {
+            return VisitAccessibleFiles(visitor, desired_access, share_access, open_options, recurse, max_depth, null, FileTypeMask.All);
+        }
+
+        /// <summary>
+        /// Visit all accessible files under this directory.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible file. Return true to continue enumeration.</param>
+        public void VisitAccessibleFiles(Func<NtFile, bool> visitor)
+        {
+            VisitAccessibleFiles(visitor, FileAccessRights.MaximumAllowed, FileShareMode.Read | FileShareMode.Delete);
+        }
+
+        /// <summary>
+        /// Visit all accessible files under this directory.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible file. Return true to continue enumeration.</param>
+        /// <param name="desired_access">Specify the desired access for the files.</param>
+        /// <param name="share_access">The share access to open the files with.</param>
+        public void VisitAccessibleFiles(Func<NtFile, bool> visitor, FileAccessRights desired_access,
+            FileShareMode share_access)
+        {
+            VisitAccessibleFiles(visitor, desired_access, share_access, FileOpenOptions.None, false, -1, null, FileTypeMask.All);
         }
     }
 
@@ -4029,6 +4164,28 @@ namespace NtApiDotNet
         public static bool IsReparseTagDirectory(ReparseTag tag)
         {
             return ((uint)tag & 0x10000000) != 0;
+        }
+
+        /// <summary>
+        /// Convert a directory access rights mask to a normal file access mask.
+        /// </summary>
+        /// <param name="access">The access to convert.</param>
+        /// <returns>The converted access rights.</returns>
+        public static FileAccessRights ToFileAccessRights(this FileDirectoryAccessRights access)
+        {
+            AccessMask mask = access;
+            return mask.ToSpecificAccess<FileAccessRights>();
+        }
+
+        /// <summary>
+        /// Convert a file access rights mask to a directory file access mask.
+        /// </summary>
+        /// <param name="access">The access to convert.</param>
+        /// <returns>The converted access rights.</returns>
+        public static FileDirectoryAccessRights ToDirectoryAccessRights(this FileAccessRights access)
+        {
+            AccessMask mask = access;
+            return mask.ToSpecificAccess<FileDirectoryAccessRights>();
         }
     }
 }
