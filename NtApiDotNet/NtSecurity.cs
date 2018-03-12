@@ -544,7 +544,7 @@ namespace NtApiDotNet
         /// <returns>True access all is granted.</returns>
         public bool IsAllAccessGranted(AccessMask mask)
         {
-            return (Access & mask.Access) == mask;
+            return (Access & mask.Access) == mask.Access;
         }
 
         /// <summary>
