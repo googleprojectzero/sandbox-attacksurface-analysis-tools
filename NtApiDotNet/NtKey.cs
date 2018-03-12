@@ -1094,11 +1094,24 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="desired_access">The access rights to reopen with.</param>
         /// <param name="options">Open options.</param>
-        /// <param name="throw_on_error">True to thow on error.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The opened key.</returns>
         public NtResult<NtKey> ReOpen(KeyAccessRights desired_access, KeyCreateOptions options, bool throw_on_error)
         {
-            using (var obj_attr = new ObjectAttributes(string.Empty, AttributeFlags.CaseInsensitive, this))
+            return ReOpen(desired_access, AttributeFlags.CaseInsensitive, options, throw_on_error);
+        }
+
+        /// <summary>
+        /// Reopen the key with different access rights.
+        /// </summary>
+        /// <param name="desired_access">The access rights to reopen with.</param>
+        /// <param name="attributes">The object attributes to open with.</param>
+        /// <param name="options">Open options.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened key.</returns>
+        public NtResult<NtKey> ReOpen(KeyAccessRights desired_access, AttributeFlags attributes, KeyCreateOptions options, bool throw_on_error)
+        {
+            using (var obj_attr = new ObjectAttributes(string.Empty, attributes, this))
             {
                 return NtKey.Open(obj_attr, desired_access, options, throw_on_error);
             }
@@ -1556,6 +1569,95 @@ namespace NtApiDotNet
             {
                 return QueryKeyFixed<KeyTrustInformation>(KeyInformationClass.KeyTrustInformation).TrustedKey;
             }
+        }
+
+        private NtResult<NtKey> GetKeyForEnumeration(bool open_for_backup)
+        {
+            if (IsAccessGranted(KeyAccessRights.EnumerateSubKeys))
+            {
+                return Duplicate(KeyAccessRights.EnumerateSubKeys, AttributeFlags.None, DuplicateObjectOptions.SameAttributes, false);
+            }
+            else
+            {
+                return ReOpen(KeyAccessRights.EnumerateSubKeys, AttributeFlags.OpenLink | AttributeFlags.CaseInsensitive,
+                    open_for_backup ? KeyCreateOptions.BackupRestore : KeyCreateOptions.NonVolatile, false);
+            }
+        }
+
+        /// <summary>
+        /// Visit all accessible keys under this one.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible key. Return true to continue enumeration.</param>
+        /// <param name="desired_access">Specify the desired access for the keys.</param>
+        /// <param name="recurse">True to recurse into sub keys.</param>
+        /// <param name="max_depth">Specify max recursive depth. -1 to not set a limit.</param>
+        /// <param name="open_for_backup">Open the key using backup privileges.</param>
+        public void VisitAccessibleKeys(Func<NtKey, bool> visitor, KeyAccessRights desired_access, bool open_for_backup, bool recurse, int max_depth)
+        {
+            if (max_depth == 0)
+            {
+                return;
+            }
+
+            using (var for_enum = GetKeyForEnumeration(open_for_backup))
+            {
+                if (!for_enum.IsSuccess)
+                {
+                    return;
+                }
+
+                using (var keys = for_enum.Result.QueryAccessibleKeys(desired_access, true, open_for_backup).ToDisposableList())
+                {
+                    if (max_depth > 0)
+                    {
+                        max_depth--;
+                    }
+
+                    foreach (var key in keys)
+                    {
+                        if (!visitor(key))
+                        {
+                            break;
+                        }
+
+                        if (recurse)
+                        {
+                            key.VisitAccessibleKeys(visitor, desired_access, open_for_backup, recurse, max_depth);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Visit all accessible directories under this one.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
+        public void VisitAccessibleKeys(Func<NtKey, bool> visitor)
+        {
+            VisitAccessibleKeys(visitor, false);
+        }
+
+        /// <summary>
+        /// Visit all accessible directories under this one.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
+        /// <param name="recurse">True to recurse into sub directories.</param>
+        public void VisitAccessibleKeys(Func<NtKey, bool> visitor, bool recurse)
+        {
+            VisitAccessibleKeys(visitor, KeyAccessRights.MaximumAllowed, false, recurse);
+        }
+
+        /// <summary>
+        /// Visit all accessible directories under this one.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
+        /// <param name="desired_access">Specify the desired access for the directory</param>
+        /// <param name="recurse">True to recurse into sub directories.</param>
+        /// <param name="open_for_backup">Open the key using backup privileges.</param>
+        public void VisitAccessibleKeys(Func<NtKey, bool> visitor, KeyAccessRights desired_access, bool open_for_backup, bool recurse)
+        {
+            VisitAccessibleKeys(visitor, desired_access, open_for_backup, recurse, -1);
         }
     }
 
