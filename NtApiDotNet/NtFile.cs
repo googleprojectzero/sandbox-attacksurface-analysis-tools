@@ -600,6 +600,7 @@ namespace NtApiDotNet
         VIRTUAL_DISK = 0x00000024,
         WAVE_IN = 0x00000025,
         WAVE_OUT = 0x00000026,
+        MOUNTMGR = 0x0000006D,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -869,6 +870,39 @@ namespace NtApiDotNet
         {
             return _control_code;
         }
+
+        /// <summary>
+        /// Overriden hash code.
+        /// </summary>
+        /// <returns>The hash code.</returns>
+        public override int GetHashCode()
+        {
+            return _control_code.GetHashCode();
+        }
+
+        /// <summary>
+        /// Overridden equals.
+        /// </summary>
+        /// <param name="obj">The object to compare against.</param>
+        /// <returns>True if equal.</returns>
+        public override bool Equals(object obj)
+        {
+            if (obj is NtIoControlCode other)
+            {
+                return _control_code == other._control_code;
+            }
+            return false;
+        }
+
+        public override string ToString()
+        {
+            string result = NtWellKnownIoControlCodes.KnownControlCodeToName(this);
+            if (!string.IsNullOrWhiteSpace(result))
+            {
+                return result;
+            }
+            return $"DeviceType: {DeviceType} Function: {Function} Method: {Method} Access: {Access}";
+        }
     }
 
     public static class NtWellKnownIoControlCodes
@@ -889,7 +923,6 @@ namespace NtApiDotNet
         public static readonly NtIoControlCode FSCTL_GET_COMPRESSION = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 15, FileControlMethod.Buffered, FileControlAccess.Any);
         public static readonly NtIoControlCode FSCTL_SET_COMPRESSION = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 16, FileControlMethod.Buffered, FileControlAccess.Read | FileControlAccess.Write);
         public static readonly NtIoControlCode FSCTL_SET_BOOTLOADER_ACCESSED = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 19, FileControlMethod.Neither, FileControlAccess.Any);
-        //#define FSCTL_MARK_AS_SYSTEM_HIVE       FSCTL_SET_BOOTLOADER_ACCESSED
         public static readonly NtIoControlCode FSCTL_OPLOCK_BREAK_ACK_NO_2 = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 20, FileControlMethod.Buffered, FileControlAccess.Any);
         public static readonly NtIoControlCode FSCTL_INVALIDATE_VOLUMES = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 21, FileControlMethod.Buffered, FileControlAccess.Any);
         public static readonly NtIoControlCode FSCTL_QUERY_FAT_BPB = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 22, FileControlMethod.Buffered, FileControlAccess.Any); // FSCTL_QUERY_FAT_BPB_BUFFER
@@ -1026,6 +1059,61 @@ namespace NtApiDotNet
         public static readonly NtIoControlCode FSCTL_ADD_OVERLAY = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 204, FileControlMethod.Buffered, FileControlAccess.Write);
         public static readonly NtIoControlCode FSCTL_REMOVE_OVERLAY = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 205, FileControlMethod.Buffered, FileControlAccess.Write);
         public static readonly NtIoControlCode FSCTL_UPDATE_OVERLAY = new NtIoControlCode(FileDeviceType.FILE_SYSTEM, 206, FileControlMethod.Buffered, FileControlAccess.Write);
+        public static readonly NtIoControlCode IOCTL_MOUNTMGR_CREATE_POINT = new NtIoControlCode(FileDeviceType.MOUNTMGR, 0, FileControlMethod.Buffered, FileControlAccess.Read | FileControlAccess.Write);
+        public static readonly NtIoControlCode IOCTL_MOUNTMGR_DELETE_POINTS = new NtIoControlCode(FileDeviceType.MOUNTMGR, 1, FileControlMethod.Buffered, FileControlAccess.Read | FileControlAccess.Write);
+        public static readonly NtIoControlCode IOCTL_MOUNTMGR_QUERY_POINTS = new NtIoControlCode(FileDeviceType.MOUNTMGR, 2, FileControlMethod.Buffered, FileControlAccess.Any);
+        public static readonly NtIoControlCode IOCTL_MOUNTMGR_DELETE_POINTS_DBONLY = new NtIoControlCode(FileDeviceType.MOUNTMGR, 3, FileControlMethod.Buffered, FileControlAccess.Read | FileControlAccess.Write);
+        public static readonly NtIoControlCode IOCTL_MOUNTMGR_NEXT_DRIVE_LETTER = new NtIoControlCode(FileDeviceType.MOUNTMGR, 4, FileControlMethod.Buffered, FileControlAccess.Read | FileControlAccess.Write);
+        public static readonly NtIoControlCode IOCTL_MOUNTMGR_AUTO_DL_ASSIGNMENTS = new NtIoControlCode(FileDeviceType.MOUNTMGR, 5, FileControlMethod.Buffered, FileControlAccess.Read | FileControlAccess.Write);
+        public static readonly NtIoControlCode IOCTL_MOUNTMGR_VOLUME_MOUNT_POINT_CREATED = new NtIoControlCode(FileDeviceType.MOUNTMGR, 6, FileControlMethod.Buffered, FileControlAccess.Read | FileControlAccess.Write);
+        public static readonly NtIoControlCode IOCTL_MOUNTMGR_VOLUME_MOUNT_POINT_DELETED = new NtIoControlCode(FileDeviceType.MOUNTMGR, 7, FileControlMethod.Buffered, FileControlAccess.Read | FileControlAccess.Write);
+        public static readonly NtIoControlCode IOCTL_MOUNTMGR_CHANGE_NOTIFY = new NtIoControlCode(FileDeviceType.MOUNTMGR, 8, FileControlMethod.Buffered, FileControlAccess.Read);
+        public static readonly NtIoControlCode IOCTL_MOUNTMGR_KEEP_LINKS_WHEN_OFFLINE = new NtIoControlCode(FileDeviceType.MOUNTMGR, 9, FileControlMethod.Buffered, FileControlAccess.Read | FileControlAccess.Write);
+        public static readonly NtIoControlCode IOCTL_MOUNTMGR_CHECK_UNPROCESSED_VOLUMES = new NtIoControlCode(FileDeviceType.MOUNTMGR, 10, FileControlMethod.Buffered, FileControlAccess.Read);
+        public static readonly NtIoControlCode IOCTL_MOUNTMGR_VOLUME_ARRIVAL_NOTIFICATION = new NtIoControlCode(FileDeviceType.MOUNTMGR, 11, FileControlMethod.Buffered, FileControlAccess.Read);
+        public static readonly NtIoControlCode IOCTL_MOUNTMGR_QUERY_DOS_VOLUME_PATH = new NtIoControlCode(FileDeviceType.MOUNTMGR, 12, FileControlMethod.Buffered, FileControlAccess.Any);
+        public static readonly NtIoControlCode IOCTL_MOUNTMGR_QUERY_DOS_VOLUME_PATHS = new NtIoControlCode(FileDeviceType.MOUNTMGR, 13, FileControlMethod.Buffered, FileControlAccess.Any);
+        public static readonly NtIoControlCode IOCTL_MOUNTMGR_SCRUB_REGISTRY = new NtIoControlCode(FileDeviceType.MOUNTMGR, 14, FileControlMethod.Buffered, FileControlAccess.Read | FileControlAccess.Write);
+        public static readonly NtIoControlCode IOCTL_MOUNTMGR_QUERY_AUTO_MOUNT = new NtIoControlCode(FileDeviceType.MOUNTMGR, 15, FileControlMethod.Buffered, FileControlAccess.Any);
+        public static readonly NtIoControlCode IOCTL_MOUNTMGR_SET_AUTO_MOUNT = new NtIoControlCode(FileDeviceType.MOUNTMGR, 16, FileControlMethod.Buffered, FileControlAccess.Read | FileControlAccess.Write);
+
+        private static Dictionary<NtIoControlCode, string> BuildControlCodeToName()
+        {
+            Dictionary<NtIoControlCode, string> result = new Dictionary<NtIoControlCode, string>();
+            foreach (var field in typeof(NtWellKnownIoControlCodes).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
+            {
+                if (field.FieldType == typeof(NtIoControlCode))
+                {
+                    result[(NtIoControlCode)field.GetValue(null)] = field.Name;
+                }
+            }
+            return result;
+        }
+
+        private static Dictionary<NtIoControlCode, string> _control_code_to_name = BuildControlCodeToName();
+
+        /// <summary>
+        /// Convert a control code to a known name.
+        /// </summary>
+        /// <param name="control_code">The control code.</param>
+        /// <returns>The known name, or an empty string.</returns>
+        public static string KnownControlCodeToName(NtIoControlCode control_code)
+        {
+            if (_control_code_to_name.ContainsKey(control_code))
+            {
+                return _control_code_to_name[control_code];
+            }
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Get a list of known control codes.
+        /// </summary>
+        /// <returns>The list of known control codes.</returns>
+        public static IEnumerable<NtIoControlCode> GetKnownControlCodes()
+        {
+            return _control_code_to_name.Keys;
+        }
     }
 
     public enum ReparseTag : uint
