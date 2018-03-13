@@ -1592,18 +1592,18 @@ namespace NtApiDotNet
         /// <param name="recurse">True to recurse into sub keys.</param>
         /// <param name="max_depth">Specify max recursive depth. -1 to not set a limit.</param>
         /// <param name="open_for_backup">Open the key using backup privileges.</param>
-        public void VisitAccessibleKeys(Func<NtKey, bool> visitor, KeyAccessRights desired_access, bool open_for_backup, bool recurse, int max_depth)
+        public bool VisitAccessibleKeys(Func<NtKey, bool> visitor, KeyAccessRights desired_access, bool open_for_backup, bool recurse, int max_depth)
         {
             if (max_depth == 0)
             {
-                return;
+                return true;
             }
 
             using (var for_enum = GetKeyForEnumeration(open_for_backup))
             {
                 if (!for_enum.IsSuccess)
                 {
-                    return;
+                    return true;
                 }
 
                 using (var keys = for_enum.Result.QueryAccessibleKeys(desired_access, true, open_for_backup).ToDisposableList())
@@ -1617,16 +1617,21 @@ namespace NtApiDotNet
                     {
                         if (!visitor(key))
                         {
-                            break;
+                            return false;
                         }
 
                         if (recurse)
                         {
-                            key.VisitAccessibleKeys(visitor, desired_access, open_for_backup, recurse, max_depth);
+                            if (!key.VisitAccessibleKeys(visitor, desired_access, open_for_backup, recurse, max_depth))
+                            {
+                                return false;
+                            }
                         }
                     }
                 }
             }
+
+            return true;
         }
 
         /// <summary>
