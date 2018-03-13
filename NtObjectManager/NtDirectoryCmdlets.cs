@@ -193,7 +193,7 @@ namespace NtObjectManager
 
     /// <summary>
     /// <para type="synopsis">Get the accessible children of an object directory.</para>
-    /// <para type="description">This cmdlet gets the children of directory object.
+    /// <para type="description">This cmdlet gets the children of a directory object.
     ///  It allows the children to be extracted recursively. You can choose to get the children through the pipeline or specify a vistor script.
     /// </para>
     /// </summary>
