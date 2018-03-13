@@ -2032,5 +2032,16 @@ namespace NtApiDotNet
         {
             return NtSection.FromHandle(new SafeKernelObjectHandle(QueryFixed<IntPtr>(ProcessInformationClass.ProcessImageSection), true));
         }
+
+        /// <summary>
+        /// Get whether LUID device maps are enabled.
+        /// </summary>
+        public bool LUIDDeviceMapsEnabled
+        {
+            get
+            {
+                return QueryFixed<int>(ProcessInformationClass.ProcessLUIDDeviceMapsEnabled) != 0;
+            }
+        }
     }
 }
