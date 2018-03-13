@@ -590,7 +590,7 @@ namespace NtObjectManager
     ///   <code>Get-NtStatus</code>
     ///   <para>Gets all known NTSTATUS codes defined in this library.</para>
     /// </example>
-    /// /// <example>
+    /// <example>
     ///   <code>Get-NtStatus -Status 0xc0000022</code>
     ///   <para>Gets information about a specific status code.</para>
     /// </example>
@@ -615,6 +615,126 @@ namespace NtObjectManager
             else
             {
                 WriteObject(new NtStatusResult(Status.Value));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Base class for child object visitor.
+    /// </summary>
+    /// <typeparam name="O">The type of NT object.</typeparam>
+    /// <typeparam name="A">The access rights type.</typeparam>
+    public abstract class BaseGetNtChildObjectCmdlet<O, A> : PSCmdlet where A : struct where O : NtObject
+    {
+        /// <summary>
+        /// <para type="description">Specify an object to get children from, should be a directory.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true)]
+        public O Object { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the access when opening a child.</para>
+        /// </summary>
+        [Parameter]
+        public A Access { get; set; }
+
+        /// <summary>
+        /// <para type="description">Get children recursively.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter Recurse { get; set; }
+
+        /// <summary>
+        /// <para type="description">When recursing specify the maximum depth of recursion. -1 indicates no limit.</para>
+        /// </summary>
+        [Parameter]
+        public int MaxDepth { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a script block to run for every child. The file object will automatically 
+        /// be disposed once the vistor has executed. If you want to cancel enumeration return $false.</para>
+        /// </summary>
+        [Parameter]
+        public ScriptBlock Visitor { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a script block to filter child objects. Return $true to keep the object.</para>
+        /// </summary>
+        [Parameter]
+        public ScriptBlock Filter { get; set; }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public BaseGetNtChildObjectCmdlet()
+        {
+            Access = (A)Enum.ToObject(typeof(A), (uint)GenericAccessRights.MaximumAllowed);
+            MaxDepth = -1;
+        }
+
+        /// <summary>
+        /// Function to visit child objects.
+        /// </summary>
+        /// <param name="visitor">The visitor function to execute.</param>
+        /// <returns>True if visited all children, false if cancelled.</returns>
+        protected abstract bool VisitChildObjects(Func<O, bool> visitor);
+
+        private static bool? InvokeScriptBlock(ScriptBlock script_block, params object[] args)
+        {
+            if (script_block.InvokeReturnAsIs(args) is PSObject result && result.BaseObject is bool b)
+            {
+                return b;
+            }
+            return null;
+        }
+
+        private bool WriteObjectVisitor(O obj)
+        {
+            WriteObject(obj.DuplicateObject());
+            return !Stopping;
+        }
+
+        private bool ScriptBlockVisitor(O obj)
+        {
+            bool? result = InvokeScriptBlock(Visitor, obj);
+            if (result.HasValue)
+            {
+                return result.Value;
+            }
+            
+            return !Stopping;
+        }
+
+        /// <summary>
+        /// Process record.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            Func<O, bool> visitor;
+            if (Visitor != null)
+            {
+                visitor = ScriptBlockVisitor;
+            }
+            else
+            {
+                visitor = WriteObjectVisitor;
+            }
+
+            if (Filter != null)
+            {
+                VisitChildObjects(o =>
+                {
+                    bool? result = InvokeScriptBlock(Filter, o);
+                    if (result.HasValue && result.Value)
+                    {
+                        return visitor(o);
+                    }
+                    return !Stopping;
+                });
+            }
+            else
+            {
+                VisitChildObjects(visitor);
             }
         }
     }
