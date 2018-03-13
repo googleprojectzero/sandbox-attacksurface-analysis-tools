@@ -580,18 +580,19 @@ namespace NtApiDotNet
         /// <param name="desired_access">Specify the desired access for the directory</param>
         /// <param name="recurse">True to recurse into sub directories.</param>
         /// <param name="max_depth">Specify max recursive depth. -1 to not set a limit.</param>
-        public void VisitAccessibleDirectories(Func<NtDirectory, bool> visitor, DirectoryAccessRights desired_access, bool recurse, int max_depth)
+        /// <returns>True if all children were visited.</returns>
+        public bool VisitAccessibleDirectories(Func<NtDirectory, bool> visitor, DirectoryAccessRights desired_access, bool recurse, int max_depth)
         {
             if (max_depth == 0)
             {
-                return;
+                return true;
             }
 
             using (var for_query = Duplicate(DirectoryAccessRights.Query, AttributeFlags.None, DuplicateObjectOptions.SameAttributes, false))
             {
                 if (!for_query.IsSuccess)
                 {
-                    return;
+                    return true;
                 }
 
                 ObjectDirectoryInformation[] entries = for_query.Result.Query().Where(e => e.IsDirectory).ToArray();
@@ -613,17 +614,22 @@ namespace NtApiDotNet
 
                             if (!visitor(directory.Result))
                             {
-                                break;
+                                return false;
                             }
 
                             if (recurse)
                             {
-                                directory.Result.VisitAccessibleDirectories(visitor, desired_access, recurse, max_depth);
+                                if (!directory.Result.VisitAccessibleDirectories(visitor, desired_access, recurse, max_depth))
+                                {
+                                    return false;
+                                }
                             }
                         }
                     }
                 }
             }
+
+            return true;
         }
 
         /// <summary>
