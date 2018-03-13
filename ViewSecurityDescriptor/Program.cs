@@ -41,7 +41,7 @@ namespace ViewSecurityDescriptor
                         bool read_only = args.Length > 1 ? args[1].Equals("--readonly") : false;
                         using (var obj = NtGeneric.FromHandle(handle))
                         {
-                            SecurityUtils.EditSecurity(IntPtr.Zero, obj, obj.Name, read_only);
+                            Win32Utils.EditSecurity(IntPtr.Zero, obj, obj.Name, read_only);
                         }
                     }
                     else
@@ -52,7 +52,7 @@ namespace ViewSecurityDescriptor
                         {
                             throw new ArgumentException($"Unknown NT type {args[2]}");
                         }
-                        SecurityUtils.EditSecurity(IntPtr.Zero, args[0], sd, type);
+                        Win32Utils.EditSecurity(IntPtr.Zero, args[0], sd, type);
                     }
                 }
             }

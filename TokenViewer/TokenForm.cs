@@ -319,7 +319,7 @@ namespace TokenViewer
             {
                 if (result.IsSuccess)
                 {
-                    SecurityUtils.EditSecurity(Handle,
+                    Win32Utils.EditSecurity(Handle,
                         result.Result,
                         "Token", false);
                     return true;

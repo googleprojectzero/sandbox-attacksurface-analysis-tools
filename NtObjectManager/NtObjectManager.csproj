@@ -46,6 +46,7 @@
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Win32Cmdlets.cs" />
     <Compile Include="CommonAccessBaseCmdlet.cs" />
     <Compile Include="GenericObjectSecurity.cs" />
     <Compile Include="GetAccessibleDeviceCmdlet.cs" />

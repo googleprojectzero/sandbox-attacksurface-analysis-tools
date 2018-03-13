@@ -12,18 +12,16 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet;
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
 namespace NtApiDotNet.Win32
 {
     /// <summary>
-    /// Utilities for Win32 security APIs.
+    /// Utilities for Win32 APIs.
     /// </summary>
-    public static class SecurityUtils
+    public static class Win32Utils
     {
         static bool IsValidMask(uint mask, uint valid_mask)
         {
@@ -68,10 +66,7 @@ namespace NtApiDotNet.Win32
 
             return access;
         }
-        
-        [DllImport("aclui.dll")]
-        static extern bool EditSecurity(IntPtr hwndOwner, ISecurityInformation psi);
-        
+
         /// <summary>
         /// Display the edit security dialog.
         /// </summary>
@@ -86,7 +81,7 @@ namespace NtApiDotNet.Win32
             using (SecurityInformationImpl impl = new SecurityInformationImpl(object_name, handle, access,
                handle.NtType.GenericMapping, read_only))
             {
-                EditSecurity(hwnd, impl);
+                Win32NativeMethods.EditSecurity(hwnd, impl);
             }
         }
 
@@ -102,7 +97,21 @@ namespace NtApiDotNet.Win32
             Dictionary<uint, String> access = GetMaskDictionary(type);
             using (var impl = new SecurityInformationImpl(name, sd, access, type.GenericMapping))
             {
-                EditSecurity(hwnd, impl);
+                Win32NativeMethods.EditSecurity(hwnd, impl);
+            }
+        }
+
+        /// <summary>
+        /// Define a new DOS device.
+        /// </summary>
+        /// <param name="flags">The dos device flags.</param>
+        /// <param name="device_name">The device name to define.</param>
+        /// <param name="target_path">The target path.</param>
+        public static void DefineDosDevice(DefineDosDeviceFlags flags, string device_name, string target_path)
+        {
+            if (!Win32NativeMethods.DefineDosDevice(flags, device_name, target_path))
+            {
+                throw new SafeWin32Exception();
             }
         }
     }
