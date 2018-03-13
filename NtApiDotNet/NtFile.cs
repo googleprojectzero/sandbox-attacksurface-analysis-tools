@@ -3833,18 +3833,43 @@ namespace NtApiDotNet
                         continue;
                     }
                     status.ToNtException();
+                    done = true;
 
                     int ofs = 0;
-                    while (!done)
+                    while (ofs < io_status.Information32)
                     {
                         var stream = buffer.GetStructAtOffset<FileStreamInformation>(ofs);
-                        yield return new FileStreamEntry(stream);
                         var result = stream.Result;
+                        yield return new FileStreamEntry(stream);
+                        if (result.NextEntryOffset == 0)
+                        {
+                            break;
+                        }
                         ofs += result.NextEntryOffset;
-                        done = result.NextEntryOffset == 0;
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Visit all accessible streams under this file.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible stream. Return true to continue enumeration.</param>
+        /// <param name="desired_access">Specify the desired access for the streams.</param>
+        /// <param name="share_access">The share access to open the streams with.</param>
+        /// <param name="open_options">Additional options to open the s with.</param>
+        /// <returns>True if all accessible streams were visited, false if not.</returns>
+        public bool VisitAccessibleStreams(Func<NtFile, bool> visitor, FileAccessRights desired_access,
+            FileShareMode share_access, FileOpenOptions open_options)
+        {
+            foreach (var stream in GetStreams().Where(s => !s.Name.Equals("::$DATA")))
+            {
+                if (!VisitFileEntry(stream.Name, false, visitor, desired_access, share_access, open_options))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         /// <summary>
@@ -3920,10 +3945,10 @@ namespace NtApiDotNet
             }
         }
 
-        private bool VisitFileEntry(FileDirectoryEntry entry, Func<NtFile, bool> visitor, FileAccessRights desired_access,
+        private bool VisitFileEntry(string filename, bool directory, Func<NtFile, bool> visitor, FileAccessRights desired_access,
             FileShareMode share_access, FileOpenOptions open_options)
         {
-            using (ObjectAttributes obja = new ObjectAttributes(entry.FileName, AttributeFlags.CaseInsensitive, this))
+            using (ObjectAttributes obja = new ObjectAttributes(filename, AttributeFlags.CaseInsensitive, this))
             {
                 using (var result = Open(obja, desired_access, share_access, open_options, false))
                 {
@@ -3932,7 +3957,7 @@ namespace NtApiDotNet
                         return true;
                     }
 
-                    result.Result._is_directory = entry.IsDirectory;
+                    result.Result._is_directory = directory;
                     return visitor(result.Result);
                 }
             }
@@ -3966,7 +3991,7 @@ namespace NtApiDotNet
 
             foreach (var entry in QueryDirectoryInfo(file_mask, type_mask))
             {
-                if (!VisitFileEntry(entry, visitor, desired_access, share_access, open_options))
+                if (!VisitFileEntry(entry.FileName, entry.IsDirectory, visitor, desired_access, share_access, open_options))
                 {
                     return false;
                 }
@@ -3984,8 +4009,9 @@ namespace NtApiDotNet
 
             foreach (var entry in QueryDirectoryInfo(null, FileTypeMask.DirectoriesOnly))
             {
-                if (!VisitFileEntry(entry, f => f.VisitAccessibleFiles(visitor, desired_access, share_access, open_options, recurse, max_depth, file_mask, type_mask),
-                FileDirectoryAccessRights.ListDirectory.ToFileAccessRights(), FileShareMode.Read | FileShareMode.Delete,
+                if (!VisitFileEntry(entry.FileName, entry.IsDirectory, 
+                    f => f.VisitAccessibleFiles(visitor, desired_access, share_access, open_options, recurse, max_depth, file_mask, type_mask),
+                        FileDirectoryAccessRights.ListDirectory.ToFileAccessRights(), FileShareMode.Read | FileShareMode.Delete,
                     open_options & FileOpenOptions.OpenForBackupIntent))
                 {
                     return false;
