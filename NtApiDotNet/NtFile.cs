@@ -601,6 +601,7 @@ namespace NtApiDotNet
         WAVE_IN = 0x00000025,
         WAVE_OUT = 0x00000026,
         MOUNTMGR = 0x0000006D,
+        MOUNTDEV = 0x0000004D,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -1103,6 +1104,7 @@ namespace NtApiDotNet
         public static readonly NtIoControlCode IOCTL_MOUNTMGR_SCRUB_REGISTRY = new NtIoControlCode(FileDeviceType.MOUNTMGR, 14, FileControlMethod.Buffered, FileControlAccess.Read | FileControlAccess.Write);
         public static readonly NtIoControlCode IOCTL_MOUNTMGR_QUERY_AUTO_MOUNT = new NtIoControlCode(FileDeviceType.MOUNTMGR, 15, FileControlMethod.Buffered, FileControlAccess.Any);
         public static readonly NtIoControlCode IOCTL_MOUNTMGR_SET_AUTO_MOUNT = new NtIoControlCode(FileDeviceType.MOUNTMGR, 16, FileControlMethod.Buffered, FileControlAccess.Read | FileControlAccess.Write);
+        public static readonly NtIoControlCode IOCTL_MOUNTDEV_QUERY_DEVICE_NAME = new NtIoControlCode(FileDeviceType.MOUNTDEV, 2, FileControlMethod.Buffered, FileControlAccess.Any);
 
         private static Dictionary<NtIoControlCode, string> BuildControlCodeToName()
         {
