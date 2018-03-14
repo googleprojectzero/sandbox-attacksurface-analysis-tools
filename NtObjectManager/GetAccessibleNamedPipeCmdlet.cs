@@ -71,7 +71,7 @@ namespace NtObjectManager
                     return NtFile.CreateNamedPipe(obja, desired_access | FileAccessRights.Synchronize, 
                         FileShareMode.Read | FileShareMode.Write, FileOpenOptions.SynchronousIoNonAlert, 
                         FileDisposition.Open, NamedPipeType.Bytestream, NamedPipeReadMode.ByteStream, 
-                        NamedPipeCompletionMode.CompleteOperation, 0, 0, 0, NtWaitTimeout.FromMilliseconds(0), false);
+                        NamedPipeCompletionMode.CompleteOperation, 0, 0, 0, NtWaitTimeout.FromMilliseconds(0), false).Cast<NtFile>();
 
                 }
                 else

@@ -1940,10 +1940,9 @@ namespace NtApiDotNet
         public static NtResult<NtFile> Create(ObjectAttributes obj_attributes, FileAccessRights desired_access, FileAttributes file_attributes, FileShareMode share_access,
             FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
             IoStatus iostatus = new IoStatus();
-            byte[] buffer = ea_buffer != null ? ea_buffer.ToByteArray() : null;
-            return NtSystemCalls.NtCreateFile(out handle, desired_access, obj_attributes, iostatus, null, FileAttributes.Normal,
+            byte[] buffer = ea_buffer?.ToByteArray();
+            return NtSystemCalls.NtCreateFile(out SafeKernelObjectHandle handle, desired_access, obj_attributes, iostatus, null, FileAttributes.Normal,
                 share_access, disposition, open_options, 
                 buffer, buffer != null ? buffer.Length : 0).CreateResult(throw_on_error, () => new NtFile(handle, iostatus));
         }
@@ -2020,16 +2019,15 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtResult<NtFile> CreateNamedPipe(ObjectAttributes obj_attributes, FileAccessRights desired_access,
+        public static NtResult<NtNamedPipeFile> CreateNamedPipe(ObjectAttributes obj_attributes, FileAccessRights desired_access,
             FileShareMode share_access, FileOpenOptions open_options, FileDisposition disposition, NamedPipeType pipe_type,
             NamedPipeReadMode read_mode, NamedPipeCompletionMode completion_mode, int maximum_instances, int input_quota,
             int output_quota, NtWaitTimeout default_timeout, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
             IoStatus io_status = new IoStatus();
-            return NtSystemCalls.NtCreateNamedPipeFile(out handle, desired_access, obj_attributes, io_status, share_access, disposition, open_options,
+            return NtSystemCalls.NtCreateNamedPipeFile(out SafeKernelObjectHandle handle, desired_access, obj_attributes, io_status, share_access, disposition, open_options,
                 pipe_type, read_mode, completion_mode, maximum_instances, input_quota, output_quota, default_timeout.Timeout)
-                .CreateResult(throw_on_error, () => new NtFile(handle, io_status));
+                .CreateResult(throw_on_error, () => new NtNamedPipeFile(handle, io_status));
         }
 
         /// <summary>
@@ -2049,7 +2047,7 @@ namespace NtApiDotNet
         /// <param name="read_mode">Pipe read mode</param>
         /// <returns>The file instance for the pipe.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtFile CreateNamedPipe(ObjectAttributes obj_attributes, FileAccessRights desired_access,
+        public static NtNamedPipeFile CreateNamedPipe(ObjectAttributes obj_attributes, FileAccessRights desired_access,
             FileShareMode share_access, FileOpenOptions open_options, FileDisposition disposition, NamedPipeType pipe_type,
             NamedPipeReadMode read_mode, NamedPipeCompletionMode completion_mode, int maximum_instances, int input_quota,
             int output_quota, NtWaitTimeout default_timeout)
@@ -2076,7 +2074,7 @@ namespace NtApiDotNet
         /// <param name="read_mode">Pipe read mode</param>
         /// <returns>The file instance for the pipe.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtFile CreateNamedPipe(string name, NtObject root, FileAccessRights desired_access,
+        public static NtNamedPipeFile CreateNamedPipe(string name, NtObject root, FileAccessRights desired_access,
             FileShareMode share_access, FileOpenOptions open_options, FileDisposition disposition, NamedPipeType pipe_type,
             NamedPipeReadMode read_mode, NamedPipeCompletionMode completion_mode, int maximum_instances, int input_quota,
             int output_quota, NtWaitTimeout default_timeout)
@@ -2384,9 +2382,8 @@ namespace NtApiDotNet
         public static NtResult<NtFile> Open(ObjectAttributes obj_attributes, FileAccessRights desired_access, 
             FileShareMode share_access, FileOpenOptions open_options, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
             IoStatus iostatus = new IoStatus();
-            return NtSystemCalls.NtOpenFile(out handle, desired_access, obj_attributes, iostatus, share_access, open_options)
+            return NtSystemCalls.NtOpenFile(out SafeKernelObjectHandle handle, desired_access, obj_attributes, iostatus, share_access, open_options)
                 .CreateResult(throw_on_error, () => new NtFile(handle, iostatus));
         }
 
@@ -4083,6 +4080,54 @@ namespace NtApiDotNet
             FileShareMode share_access)
         {
             VisitAccessibleFiles(visitor, desired_access, share_access, FileOpenOptions.None, false, -1, null, FileTypeMask.All);
+        }
+    }
+
+    /// <summary>
+    /// Class to add additional methods to a file for a named pipe.
+    /// </summary>
+    public class NtNamedPipeFile : NtFile
+    {
+        internal NtNamedPipeFile(SafeKernelObjectHandle handle, IoStatus io_status) 
+            : base(handle, io_status)
+        {
+        }
+
+        /// <summary>
+        /// Listen for a new connection to this named pipe server.
+        /// </summary>
+        public void Listen()
+        {
+            FsControl(NtWellKnownIoControlCodes.FSCTL_PIPE_LISTEN, null, null);
+        }
+
+        /// <summary>
+        /// Listen for a new connection to this named pipe server asynchronously.
+        /// </summary>
+        /// <param name="token">An optional cancellation token.</param>
+        /// <returns>The async task to complete.</returns>
+        public Task ListenAsync(CancellationToken token)
+        {
+            return FsControlAsync(NtWellKnownIoControlCodes.FSCTL_PIPE_LISTEN, null, null, token);
+        }
+
+        /// <summary>
+        /// Listen for a new connection to this named pipe server asynchronously.
+        /// </summary>
+        /// <returns>The async task to complete.</returns>
+        public Task ListenAsync()
+        {
+            return ListenAsync(CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Impersonate the client of the named pipe.
+        /// </summary>
+        /// <returns>The impersonation context. Dispose to revert to self.</returns>
+        public ThreadImpersonationContext Impersonate()
+        {
+            FsControl(NtWellKnownIoControlCodes.FSCTL_PIPE_IMPERSONATE, null, null);
+            return new ThreadImpersonationContext(NtThread.Current.Duplicate());
         }
     }
 
