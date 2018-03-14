@@ -126,7 +126,7 @@ namespace NtApiDotNet
             Dictionary<string, NtTypeFactory> _factories = new Dictionary<string, NtTypeFactory>(StringComparer.OrdinalIgnoreCase);
             foreach (Type type in assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && typeof(NtObject).IsAssignableFrom(t)))
             {
-                IEnumerable<NtTypeAttribute> attrs = type.GetCustomAttributes<NtTypeAttribute>();
+                IEnumerable<NtTypeAttribute> attrs = type.GetCustomAttributes<NtTypeAttribute>(false);
                 foreach (NtTypeAttribute attr in attrs)
                 {
                     System.Diagnostics.Debug.Assert(!_factories.ContainsKey(attr.TypeName));
@@ -577,7 +577,7 @@ namespace NtApiDotNet
         /// <exception cref="ArgumentException">Thrown if there exists no .NET type which maps to this type.</exception>
         public static NtType GetTypeByType<T>(bool cached) where T : NtObject
         {
-            IEnumerable<NtTypeAttribute> attrs = typeof(T).GetCustomAttributes<NtTypeAttribute>();
+            IEnumerable<NtTypeAttribute> attrs = typeof(T).GetCustomAttributes<NtTypeAttribute>(false);
             if (!attrs.Any())
             {
                 throw new ArgumentException("Type has no mapping to an NT Type");
