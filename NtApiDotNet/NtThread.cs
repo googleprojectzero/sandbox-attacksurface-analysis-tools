@@ -851,7 +851,12 @@ namespace NtApiDotNet
             {
                 try
                 {
-                    return $"thread:{ThreadId} - process:{ProcessId}";
+                    string description = Description;
+                    if (string.IsNullOrEmpty(description))
+                    {
+                        return $"thread:{ThreadId} - process:{ProcessId}";
+                    }
+                    return description;
                 }
                 catch
                 {
@@ -1034,10 +1039,18 @@ namespace NtApiDotNet
             NtStatus status = NtSystemCalls.NtDelayExecution(alertable, new LargeInteger(delay));
             if (!status.IsSuccess())
             {
-                throw new NtException(status);                
+                throw new NtException(status);
             }
 
             return status == NtStatus.STATUS_ALERTED;
         }
-    }    
+
+        /// <summary>
+        /// Get the Win32 start address for the thread.
+        /// </summary>
+        public long Win32StartAddress
+        {
+            get { return Query<IntPtr>(ThreadInformationClass.ThreadQuerySetWin32StartAddress).ToInt64(); }
+        }
+    }
 }
