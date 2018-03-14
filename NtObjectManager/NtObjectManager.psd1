@@ -75,7 +75,7 @@ CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile',
                'Get-AccessibleNamedPipe', 'Get-NtGrantedAccess', 'Get-NtJob', 'New-NtJob',
                'Get-AccessibleService', 'Get-AccessibleHandle', 'Remove-NtKey', 'New-NtToken',
                'Remove-NtFile', 'Get-NtDirectoryChild', 'Get-NtKeyChild', 'Add-DosDevice', 
-               'Remove-DosDevice'
+               'Remove-DosDevice', 'Get-NtFileChild'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @()
