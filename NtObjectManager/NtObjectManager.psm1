@@ -530,7 +530,7 @@ function New-Win32Process
 .SYNOPSIS
 Get the NT path for a dos path.
 .DESCRIPTION
-This cmdlet gets the full NT path for a specified DOS path or multiple.
+This cmdlet gets the full NT path for a specified DOS path.
 .PARAMETER Path
 The DOS path to convert to NT.
 .PARAMETER Resolve
@@ -538,28 +538,31 @@ Resolve relative paths to the current PS directory.
 .INPUTS
 string[] List of paths to convert.
 .OUTPUTS
-string[] Converted paths.
+string Converted path
+.EXAMPLE
+Get-NtFilePath c:\Windows
+Get c:\windows as an NT file path.
+Get-ChildItem c:\windows | Get-NtFilePath
+Get list of NT file paths from the pipeline.
 #>
 function Get-NtFilePath {
   [CmdletBinding()]
   Param(
     [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
-    [string[]]$Path,
+    [string]$Path,
     [switch]$Resolve
   )
 
   PROCESS {
-    foreach($path in $Path) {
-      $type = [NtApiDotNet.NtFileUtils]::GetDosPathType($path)
-      $p = $path
-      if ($Resolve) {
+    $type = [NtApiDotNet.NtFileUtils]::GetDosPathType($Path)
+    $p = $Path
+    if ($Resolve) {
         if ($type -eq "Relative" -or $type -eq "Rooted") {
-          $p = Resolve-Path -LiteralPath $p
+            $p = Resolve-Path -LiteralPath $Path
         }
-      }
-      $p = [NtApiDotNet.NtFileUtils]::DosFileNameToNt($p)
-      Write-Output $p
     }
+    $p = [NtApiDotNet.NtFileUtils]::DosFileNameToNt($p)
+    Write-Output $p
   }
 }
 
@@ -818,7 +821,7 @@ Gets the executable manifest for a PE file.
 This cmdlet extracts the manifes from a PE file and extracts basic information such as UIAccess
 setting or Auto Elevation.
 .PARAMETER Path
-One or more filenames to get the executable manifest from
+Filename to get the executable manifest from.
 .INPUTS
 List of filenames
 .OUTPUTS
@@ -838,15 +841,12 @@ function Get-ExecutableManifest
     [CmdletBinding()]
     param (
         [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
-        [string[]]$Path
+        [string]$Path
     )
     PROCESS {
-        foreach($p in $Path)
-        {
-          $fullpath = Resolve-Path -LiteralPath $p
-          $manifest = [NtApiDotNet.Win32.ExecutableManifest]::GetManifests($fullpath)
-          Write-Output $manifest
-        }
+        $fullpath = Resolve-Path -LiteralPath $Path
+        $manifest = [NtApiDotNet.Win32.ExecutableManifest]::GetManifests($fullpath)
+        Write-Output $manifest
     }
 }
 
@@ -1264,16 +1264,15 @@ function Show-NtToken {
     [CmdletBinding(DefaultParameterSetName = "FromPid")]
     param(
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="FromToken", ValueFromPipeline=$true)]
-        [NtApiDotNet.NtToken[]]$Token,
+        [NtApiDotNet.NtToken]$Token,
         [Parameter(Mandatory=$true, Position=0, ParameterSetName="FromProcess", ValueFromPipeline=$true)]
-        [NtApiDotNet.NtProcess[]]$Process,
+        [NtApiDotNet.NtProcess]$Process,
         [Parameter(Position=0, ParameterSetName="FromPid")]
         [int]$ProcessId = $pid,
-        [Parameter(Mandatory=$true, Position=0, ParameterSetName="FromName")]
+        [Parameter(Mandatory=$true, ParameterSetName="FromName")]
         [string]$Name,
-        [Parameter(Position=0, ParameterSetName="FromName")]
         [int]$MaxTokens = 0,
-        [Parameter(Position=0, ParameterSetName="All")]
+        [Parameter(ParameterSetName="All")]
         [switch]$All
     )
 
@@ -1284,12 +1283,10 @@ function Show-NtToken {
       }
       switch($PSCmdlet.ParameterSetName) {
         "FromProcess" {
-          foreach($p in $Process) {
-            Use-NtObject($t = Get-NtToken -Primary -Process $p) {
-              $text = "$($p.Name):$($p.ProcessId)"
+            Use-NtObject($t = Get-NtToken -Primary -Process $Process) {
+              $text = "$($Process.Name):$($Process.ProcessId)"
               Start-NtTokenViewer $t -Text $text
             }
-          }
         }
         "FromName" {
           Use-NtObject($ps = Get-NtProcess -Name $Name -Access QueryLimitedInformation) {
@@ -1306,9 +1303,7 @@ function Show-NtToken {
           }
         }
         "FromToken" {
-          foreach($t in $Token) {
-            Start-NtTokenViewer $t
-          }
+          Start-NtTokenViewer $Token
         }
         "All" {
             Start-Process "$PSScriptRoot\TokenViewer.exe"
