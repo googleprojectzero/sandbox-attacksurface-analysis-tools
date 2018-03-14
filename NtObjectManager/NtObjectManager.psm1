@@ -271,10 +271,10 @@ None
 function New-NtSecurityQualityOfService
 {
   Param(
-      [Parameter(Mandatory=$true, Position=0)]
+    [Parameter(Mandatory=$true, Position=0)]
     [NtApiDotNet.SecurityImpersonationLevel]$ImpersonationLevel,
-      [NtApiDotNet.SecurityContextTrackingMode]$ContextTrackingMode = "Static",
-      [switch]$EffectiveOnly
+    [NtApiDotNet.SecurityContextTrackingMode]$ContextTrackingMode = "Static",
+    [switch]$EffectiveOnly
   )
 
   [NtApiDotNet.SecurityQualityOfService]::new($ImpersonationLevel, $ContextTrackingMode, $EffectiveOnly)
@@ -374,10 +374,10 @@ NtApiDotNet.Win32.Win32ProcessConfig
 function New-Win32ProcessConfig
 {
     Param(
-        [Parameter(Mandatory=$true, Position=0)]
-        [string]$CommandLine,
+    [Parameter(Mandatory=$true, Position=0)]
+    [string]$CommandLine,
     [string]$ApplicationName,
-        [NtApiDotNet.SecurityDescriptor]$ProcessSecurityDescriptor,
+    [NtApiDotNet.SecurityDescriptor]$ProcessSecurityDescriptor,
     [NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
     [NtApiDotNet.NtProcess]$ParentProcess,
     [NtApiDotNet.Win32.CreateProcessFlags]$CreationFlags = 0,
@@ -479,7 +479,7 @@ function New-Win32Process
     [Parameter(ParameterSetName = "FromArgs")]
     [string]$ApplicationName,
     [Parameter(ParameterSetName = "FromArgs")]
-        [NtApiDotNet.SecurityDescriptor]$ProcessSecurityDescriptor,
+    [NtApiDotNet.SecurityDescriptor]$ProcessSecurityDescriptor,
     [Parameter(ParameterSetName = "FromArgs")]
     [NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
     [Parameter(ParameterSetName = "FromArgs")]
@@ -589,7 +589,7 @@ function New-NtProcessConfig
 {
     Param(
     [Parameter(Mandatory=$true, Position=0)]
-        [string]$CommandLine,
+    [string]$CommandLine,
     [NtApiDotNet.ProcessCreateFlags]$ProcessFlags = 0,
     [NtApiDotNet.ThreadCreateFlags]$ThreadFlags = 0,
     [NtApiDotNet.PsProtectedType]$ProtectedType = 0,
@@ -673,7 +673,7 @@ function New-NtEaBuffer
   [CmdletBinding(DefaultParameterSetName = "FromEntries")]
   Param(
     [Parameter(ParameterSetName = "FromEntries", Position = 0)]
-        [Hashtable]$Entries = @{},
+    [Hashtable]$Entries = @{},
     [Parameter(ParameterSetName = "FromExisting", Position = 0)]
     [NtApiDotnet.Eabuffer]$ExistingBuffer
   )
@@ -720,7 +720,7 @@ function New-NtSectionImage
   [CmdletBinding(DefaultParameterSetName = "FromFile")]
   Param(
     [Parameter(Position = 0, ParameterSetName = "FromFile", Mandatory = $true)]
-        [NtApiDotNet.NtFile]$File,
+    [NtApiDotNet.NtFile]$File,
     [Parameter(Position = 0, ParameterSetName = "FromPath", Mandatory = $true)]
     [string]$Path,
     [Parameter(ParameterSetName = "FromPath")]
@@ -777,10 +777,10 @@ function Get-NtTokenFromProcess
     Param(
     [Parameter(Position = 0, ParameterSetName = "FromProcess", Mandatory = $true)]
     [ValidateScript({$_ -ge 0})]
-        [int]$ProcessId = -1,
+    [int]$ProcessId = -1,
     [Parameter(ParameterSetName = "FromThread", Mandatory = $true)]
     [ValidateScript({$_ -ge 0})]
-        [int]$ThreadId = -1,
+    [int]$ThreadId = -1,
     [NtApiDotNet.TokenAccessRights]$Access = "MaximumAllowed"
     )
 
@@ -880,7 +880,7 @@ Show the user and groups of the current token.
 #>
 function Show-NtTokenEffective {
     Param(
-        [switch]$All,
+    [switch]$All,
     [switch]$Group,
     [switch]$Privilege,
     [switch]$User,
@@ -1064,9 +1064,7 @@ function Get-NtIoControlCode
       [NtApiDotNet.NtIoControlCode]::new($DeviceType, $Function, $Method, $Access)
     }
   }
-  if ($control_code -eq $null) {
-    return
-  }
+
   if ($LookupName) {
     return [NtApiDotNet.NtWellKnownIoControlCodes]::KnownControlCodeToName($control_code)
   }
@@ -1452,6 +1450,103 @@ function Resolve-NtObjectAddress
     }
     END {
         [NtApiDotNet.NtSystemInfo]::ResolveObjectAddress([NtApiDotNet.NtObject[]]$objs)
+    }
+}
+
+<#
+.SYNOPSIS
+Get the security descriptor from an object.
+.DESCRIPTION
+This cmdlet gets the security descriptor from an object with specified list of security information.
+.PARAMETER Object
+The object to get the security descriptor from.
+.PARAMETER SecurityInformation
+The security information to get from the object.
+.PARAMETER ToSddl
+Convert the security descriptor to an SDDL string.
+.OUTPUTS
+NtApiDotNet.SecurityDescriptor
+string
+.EXAMPLE
+Get-NtSecurityDescriptor $obj
+Get the security descriptor with default security information.
+.EXAMPLE
+Get-NtSecurityDescriptor $obj Dacl,Owner,Group
+Get the security descriptor with DACL, OWNER and GROUP values.
+.EXAMPLE
+Get-NtSecurityDescriptor $obj Dacl -ToSddl
+Get the security descriptor with DACL and output as an SDDL string.
+.EXAMPLE
+@($obj1, $obj2) | Get-NtSecurityDescriptor
+Get the security descriptors from an array of objects.
+#>
+function Get-NtSecurityDescriptor
+{
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
+        [NtApiDotNet.NtObject]$Object,
+        [parameter(Position=1)]
+        [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
+        [switch]$ToSddl
+    )
+    PROCESS {
+        $sd = $Object.GetSecurityDescriptor($SecurityInformation)
+        if ($ToSddl) {
+            $sd.ToSddl($SecurityInformation)
+        } else {
+            $sd
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Set the security descriptor for an object.
+.DESCRIPTION
+This cmdlet sets the security descriptor for an object with specified list of security information.
+.PARAMETER Object
+The object to get the security descriptor from.
+.PARAMETER SecurityInformation
+The security information to get from the object.
+.PARAMETER ToSddl
+Convert the security descriptor to an SDDL string.
+.OUTPUTS
+NtApiDotNet.SecurityDescriptor
+string
+.EXAMPLE
+Set-NtSecurityDescriptor $obj $sd Dacl
+Set the DACL of an object.
+.EXAMPLE
+Set-NtSecurityDescriptor $obj "D:(A;;GA;;;WD)" Dacl
+Set the DACL of an object based on an SDDL string.
+#>
+function Set-NtSecurityDescriptor
+{
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
+        [NtApiDotNet.NtObject]$Object,
+        [parameter(Mandatory=$true, Position=1, ParameterSetName = "FromSD")]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [parameter(Mandatory=$true, Position=1, ParameterSetName = "FromSddl")]
+        [string]$Sddl,
+        [parameter(Mandatory=$true, Position=2)]
+        [NtApiDotNet.SecurityInformation]$SecurityInformation
+        
+    )
+    BEGIN {
+        switch($PSCmdlet.ParameterSetName) {
+            "FromSD" {
+                $sd = $SecurityDescriptor
+            }
+            "FromSddl" {
+                $sd = New-NtSecurityDescriptor -Sddl $Sddl
+            }
+        }
+    }
+    PROCESS {
+        $Object.SetSecurityDescriptor($sd, $SecurityInformation)
     }
 }
 
