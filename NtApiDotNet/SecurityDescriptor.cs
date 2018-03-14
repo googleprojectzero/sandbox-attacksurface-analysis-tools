@@ -437,7 +437,7 @@ namespace NtApiDotNet
         /// <returns>The SDDL string</returns>
         public string ToSddl()
         {
-            return ToSddl(SecurityInformation.Dacl | SecurityInformation.Label | SecurityInformation.Owner | SecurityInformation.Group);
+            return ToSddl(SecurityInformation.AllBasic);
         }
 
         /// <summary>

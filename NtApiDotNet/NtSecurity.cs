@@ -43,7 +43,7 @@ namespace NtApiDotNet
         ProtectedSacl = 0x40000000,
         UnprotectedDacl = 0x20000000,
         UnprotectedSacl = 0x1000000,
-        AllBasic = Dacl | Owner | Group | Label,
+        AllBasic = Dacl | Owner | Group | Label | ProcessTrustLabel,
     }
 
     [StructLayout(LayoutKind.Sequential)]
