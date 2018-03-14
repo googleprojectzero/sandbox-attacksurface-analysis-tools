@@ -4003,11 +4003,6 @@ namespace NtApiDotNet
             FileShareMode share_access, FileOpenOptions open_options, bool recurse, int max_depth,
             string file_mask, FileTypeMask type_mask)
         {
-            if (!IsDirectory)
-            {
-                throw new ArgumentException("Can't enumerate a non-directory file");
-            }
-
             if (max_depth == 0)
             {
                 return true;
@@ -4036,7 +4031,7 @@ namespace NtApiDotNet
                 if (!VisitFileEntry(entry.FileName, entry.IsDirectory, 
                     f => f.VisitAccessibleFiles(visitor, desired_access, share_access, open_options, recurse, max_depth, file_mask, type_mask),
                         FileDirectoryAccessRights.ListDirectory.ToFileAccessRights(), FileShareMode.Read | FileShareMode.Delete,
-                    open_options & FileOpenOptions.OpenForBackupIntent))
+                    (open_options & FileOpenOptions.OpenForBackupIntent) | FileOpenOptions.OpenReparsePoint))
                 {
                     return false;
                 }
