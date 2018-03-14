@@ -1023,21 +1023,29 @@ Specify the function code component.
 Specify the control method component.
 .PARAMETER Access
 Specify the access component.
+.PARAMETER LookupName
+Specify to try and lookup a known name for the IO control code. If no name found will just return an empty string.
 .OUTPUTS
 NtApiDotNet.NtIoControlCode
 .EXAMPLE
-Get-NtIoControlCode 0x22000C
+Get-NtIoControlCode 0x110028
 Get the IO control code structure for a control code.
+.EXAMPLE
+Get-NtIoControlCode 0x110028 -LookupName
+Get the IO control code structure for a control code and lookup its name (if known).
 .EXAMPLE
 Get-NtIoControlCode -DeviceType NAMED_PIPE -Function 10 -Method Buffered -Access Any
 Get the IO control code structure from component parts.
+.EXAMPLE
+Get-NtIoControlCode -DeviceType NAMED_PIPE -Function 10 -Method Buffered -Access Any -LookupName
+Get the IO control code structure from component parts and lookup its name (if known).
 #>
 function Get-NtIoControlCode
 {
   [CmdletBinding(DefaultParameterSetName = "FromCode")]
     Param(
     [Parameter(Position = 0, ParameterSetName = "FromCode", Mandatory = $true)]
-        [int]$ControlCode,
+    [int]$ControlCode,
     [Parameter(ParameterSetName = "FromParts", Mandatory = $true)]
     [NtApiDotNet.FileDeviceType]$DeviceType,
     [Parameter(ParameterSetName = "FromParts", Mandatory = $true)]
@@ -1045,17 +1053,24 @@ function Get-NtIoControlCode
     [Parameter(ParameterSetName = "FromParts", Mandatory = $true)]
     [NtApiDotNet.FileControlMethod]$Method,
     [Parameter(ParameterSetName = "FromParts", Mandatory = $true)]
-    [NtApiDotNet.FileControlAccess]$Access
+    [NtApiDotNet.FileControlAccess]$Access,
+    [switch]$LookupName
     )
-
-  switch ($PsCmdlet.ParameterSetName) {
+  $control_code = switch ($PsCmdlet.ParameterSetName) {
     "FromCode" {
-      return [NtApiDotNet.NtIoControlCode]::new($ControlCode)
+      [NtApiDotNet.NtIoControlCode]::new($ControlCode)
     }
     "FromParts" {
-      return [NtApiDotNet.NtIoControlCode]::new($DeviceType, $Function, $Method, $Access)
+      [NtApiDotNet.NtIoControlCode]::new($DeviceType, $Function, $Method, $Access)
     }
   }
+  if ($control_code -eq $null) {
+    return
+  }
+  if ($LookupName) {
+    return [NtApiDotNet.NtWellKnownIoControlCodes]::KnownControlCodeToName($control_code)
+  }
+  $control_code
 }
 
 <#
