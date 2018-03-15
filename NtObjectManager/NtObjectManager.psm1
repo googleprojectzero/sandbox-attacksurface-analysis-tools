@@ -120,40 +120,58 @@ function Set-NtTokenPrivilege
 .SYNOPSIS
 Set the integrity level of a token.
 .DESCRIPTION
-This cmdlet will set the integrity level of a token. If you want to raise the level you must have SeTcbPrivilege otherwise you can only lower it. If no token is specified then the current process token is used.
+This cmdlet will set the integrity level of a token. If you want to raise the level you must have SeTcbPrivilege otherwise you can only lower it. 
+If no token is specified then the current process token is used.
 .PARAMETER IntegrityLevel
-A list of privileges to set their state.
+Specify the integrity level.
 .PARAMETER Token
 Optional token object to use to set privileges. Must be accesible for AdjustDefault right.
 .PARAMETER Adjustment
 Increment or decrement the IL level from the base specified in -IntegrityLevel.
+.PARAMETER IntegrityLevelRaw
+Specify the integrity level as a raw value.
 .INPUTS
 None
 .EXAMPLE
-Set-NtTokenPrivilege SeDebugPrivilege
-Enable SeDebugPrivilege on the current process token
+Set-NtTokenIntegrityLevel Low
+Set the current token's integrity level to low.
 .EXAMPLE
-Set-NtTokenPrivilege SeDebugPrivilege -Attributes Disabled
-Disable SeDebugPrivilege on the current process token
+Set-NtTokenIntegrityLevel Low -Token $Token
+Set a specific token's integrity level to low.
 .EXAMPLE
-Set-NtTokenPrivilege SeBackupPrivilege, SeRestorePrivilege -Token $token
-Enable SeBackupPrivilege and SeRestorePrivilege on an explicit token object.
+Set-NtTokenIntegrityLevel Low -Adjustment -16
+Set the current token's integrity level to low minus 16.
+.EXAMPLE
+Set-NtTokenIntegrityLevel -IntegrityLevelRaw 0x800 
+Set the current token's integrity level to 0x800.
 #>
 function Set-NtTokenIntegrityLevel
 {
+  [CmdletBinding(DefaultParameterSetName = "FromIL")]
   Param(
-    [Parameter(Mandatory=$true, Position=0)]
-    [NtApiDotNet.TokenIntegrityLevel[]]$IntegrityLevel,
+    [Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromIL")]
+    [NtApiDotNet.TokenIntegrityLevel]$IntegrityLevel,
     [NtApiDotNet.NtToken]$Token,
-    [Int32]$Adjustment = 0
+    [Parameter(ParameterSetName = "FromIL")]
+    [Int32]$Adjustment = 0,
+    [Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromRaw")]
+    [Int32]$IntegrityLevelRaw
     )
+  switch($PSCmdlet.ParameterSetName) {
+    "FromIL" {
+        $il_raw = $IntegrityLevel.ToInt32($null) + $Adjustment
+    }
+    "FromRaw" {
+        $il_raw = $IntegrityLevelRaw
+    }
+  }
+
   if ($Token -eq $null) {
     $Token = Get-NtToken -Primary
   } else {
     $Token = $Token.Duplicate()
   }
 
-  $il_raw = $IntegrityLevel.ToInt32($null) + $Adjustment
   Use-NtObject($Token) {
     $Token.SetIntegrityLevelRaw($il_raw) | Out-Null
   }
