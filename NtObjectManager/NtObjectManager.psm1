@@ -415,7 +415,7 @@ function New-Win32ProcessConfig
     [NtApiDotNet.Win32.Win32kFilterFlags]$Win32kFilterFlags = 0,
     [int]$Win32kFilterLevel = 0,
     [NtApiDotNet.NtToken]$Token,
-    [NtApiDotNet.Win32.ProtectionLevel]$ProtectionLevel
+    [NtApiDotNet.Win32.ProtectionLevel]$ProtectionLevel = "WindowsPPL"
     )
     $config = New-Object NtApiDotNet.Win32.Win32ProcessConfig
     $config.CommandLine = $CommandLine
