@@ -125,6 +125,7 @@ namespace NtApiDotNet
     [Flags]
     public enum MemoryType
     {
+        None = 0,
         Private = 0x20000,
         Mapped = 0x40000,
         Image = 0x1000000
@@ -561,9 +562,8 @@ namespace NtApiDotNet
             IntPtr base_address_ptr = new IntPtr(base_address);
             IntPtr region_size_ptr = new IntPtr(region_size);
 
-            MemoryAllocationProtect old_protect;
-            NtSystemCalls.NtProtectVirtualMemory(process, ref base_address_ptr, 
-                ref region_size_ptr, new_protect, out old_protect).ToNtException();
+            NtSystemCalls.NtProtectVirtualMemory(process, ref base_address_ptr,
+                ref region_size_ptr, new_protect, out MemoryAllocationProtect old_protect).ToNtException();
             return old_protect;
         }
     }
