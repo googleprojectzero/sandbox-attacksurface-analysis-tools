@@ -548,17 +548,17 @@ Get list of NT file paths from the pipeline.
 function Get-NtFilePath {
   [CmdletBinding()]
   Param(
-    [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
-    [string]$Path,
+    [parameter(Mandatory=$true, Position=0, ValueFromPipeline, valueFromPipelineByPropertyName)]
+    [string]$FullName,
     [switch]$Resolve
   )
 
   PROCESS {
-    $type = [NtApiDotNet.NtFileUtils]::GetDosPathType($Path)
-    $p = $Path
+    $type = [NtApiDotNet.NtFileUtils]::GetDosPathType($FullName)
+    $p = $FullName
     if ($Resolve) {
         if ($type -eq "Relative" -or $type -eq "Rooted") {
-            $p = Resolve-Path -LiteralPath $Path
+            $p = Resolve-Path -LiteralPath $FullName
         }
     }
     $p = [NtApiDotNet.NtFileUtils]::DosFileNameToNt($p)
@@ -975,13 +975,13 @@ function Show-NtSecurityDescriptor {
   [CmdletBinding(DefaultParameterSetName = "FromObject")]
     Param(
     [Parameter(Position = 0, ParameterSetName = "FromObject", Mandatory = $true)]
-        [NtApiDotNet.NtObject]$Object,
+    [NtApiDotNet.NtObject]$Object,
     [Parameter(ParameterSetName = "FromObject")]
-        [switch]$ReadOnly,
+    [switch]$ReadOnly,
     [Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+    [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
     [Parameter(Position = 1, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true)]
-        [NtApiDotNet.NtType]$Type,
+    [NtApiDotNet.NtType]$Type,
     [Parameter(ParameterSetName = "FromSecurityDescriptor")]
     [string]$Name = "Object",
     [switch]$Wait
@@ -1684,7 +1684,7 @@ function Get-NtVirtualMemory
 
 <#
 .SYNOPSIS
-Set information protection flags for a virtual memory region.
+Set protection flags for a virtual memory region.
 .DESCRIPTION
 This cmdlet sets protection flags for a region of virtual memory in the current process or another specified process.
 .PARAMETER Address
