@@ -757,9 +757,9 @@ namespace NtApiDotNet
     }
 
 
-    public class SafeSecurityObjectHandle : SafeBuffer
+    public class SafeSecurityObjectBuffer : SafeBuffer
     {
-        public SafeSecurityObjectHandle() : base(true)
+        public SafeSecurityObjectBuffer() : base(true)
         {
             Initialize(0);
         }

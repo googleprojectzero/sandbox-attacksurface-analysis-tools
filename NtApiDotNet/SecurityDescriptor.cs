@@ -308,7 +308,7 @@ namespace NtApiDotNet
 
             SafeBuffer parent_sd_buffer = SafeHGlobalBuffer.Null;
             SafeBuffer creator_sd_buffer = SafeHGlobalBuffer.Null;
-            SafeSecurityObjectHandle security_obj = null;
+            SafeSecurityObjectBuffer security_obj = null;
             try
             {
                 if (parent_sd != null)

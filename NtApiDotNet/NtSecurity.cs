@@ -265,7 +265,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus RtlNewSecurityObject(SafeBuffer ParentDescriptor,
                      SafeBuffer CreatorDescriptor,
-                     out SafeSecurityObjectHandle NewDescriptor,
+                     out SafeSecurityObjectBuffer NewDescriptor,
                      bool IsDirectoryObject,
                      SafeKernelObjectHandle Token,
                      ref GenericMapping GenericMapping);
