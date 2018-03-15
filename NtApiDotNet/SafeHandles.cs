@@ -612,7 +612,7 @@ namespace NtApiDotNet
     }
 
     /// <summary>
-    /// Safe buffer to container a list of structures.
+    /// Safe buffer to contain a list of structures.
     /// </summary>
     public class SafeArrayBuffer<T> : SafeHGlobalBuffer
     {

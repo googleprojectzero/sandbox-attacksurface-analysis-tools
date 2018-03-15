@@ -1221,6 +1221,7 @@ namespace NtApiDotNet
             Status.ToNtException();
             return Result;
         }
+
         /// <summary>
         /// Is the result successful.
         /// </summary>

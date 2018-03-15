@@ -1533,6 +1533,55 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Read structured memory from a process.
+        /// </summary>
+        /// <param name="base_address">The base address in the process.</param>
+        /// <returns>The read structure.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <typeparam name="T">Type of structure to read.</typeparam>
+        public T ReadMemory<T>(long base_address) where T : new()
+        {
+            return NtVirtualMemory.ReadMemory<T>(Handle, base_address);
+        }
+
+        /// <summary>
+        /// Write structured memory to a process.
+        /// </summary>
+        /// <param name="base_address">The base address in the process.</param>
+        /// <param name="data">The data to write.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <typeparam name="T">Type of structure to write.</typeparam>
+        public void WriteMemory<T>(long base_address, T data) where T : new()
+        {
+            NtVirtualMemory.WriteMemory(Handle, base_address, data);
+        }
+
+        /// <summary>
+        /// Read structured memory array from a process.
+        /// </summary>
+        /// <param name="base_address">The base address in the process.</param>
+        /// <param name="count">The number of elements in the array to read.</param>
+        /// <returns>The read structure.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <typeparam name="T">Type of structure to read.</typeparam>
+        public T[] ReadMemoryArray<T>(long base_address, int count) where T : new()
+        {
+            return NtVirtualMemory.ReadMemoryArray<T>(Handle, base_address, count);
+        }
+
+        /// <summary>
+        /// Write structured memory array to a process.
+        /// </summary>
+        /// <param name="base_address">The base address in the process.</param>
+        /// <param name="data">The data array to write.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <typeparam name="T">Type of structure to write.</typeparam>
+        public void WriteMemoryArray<T>(long base_address, T[] data) where T : new()
+        {
+            NtVirtualMemory.WriteMemoryArray(Handle, base_address, data);
+        }
+
+        /// <summary>
         /// Query memory information for a process.
         /// </summary>
         /// <param name="base_address">The base address.</param>
