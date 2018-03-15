@@ -277,12 +277,27 @@ namespace NtApiDotNet
         /// <summary>
         /// Create an Image section object
         /// </summary>
+        /// <param name="object_name">The object name to use for the image section.</param>
+        /// <param name="file">The file to create the image section from</param>
+        /// <returns>The opened section</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtSection CreateImageSection(string object_name, NtFile file)
+        {
+            using (var obj_attr = new ObjectAttributes(object_name, AttributeFlags.CaseInsensitive))
+            {
+                return Create(obj_attr, SectionAccessRights.MaximumAllowed, null, MemoryAllocationProtect.Execute, SectionAttributes.Image, file);
+            }
+        }
+
+        /// <summary>
+        /// Create an Image section object
+        /// </summary>
         /// <param name="file">The file to create the image section from</param>
         /// <returns>The opened section</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtSection CreateImageSection(NtFile file)
         {
-            return Create(null, SectionAccessRights.MaximumAllowed, null, MemoryAllocationProtect.Execute, SectionAttributes.Image, file);
+            return CreateImageSection(null, file);
         }
 
         /// <summary>

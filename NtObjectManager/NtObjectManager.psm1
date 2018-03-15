@@ -707,6 +707,8 @@ A file object to an image file to create.
 A path to an image to create.
 .PARAMETER Win32Path
 Resolve path as a Win32 path
+.PARAMETER ObjectPath
+Specify an object path for the new section object.
 .INPUTS
 None
 .OUTPUTS
@@ -727,7 +729,8 @@ function New-NtSectionImage
     [Parameter(Position = 0, ParameterSetName = "FromPath", Mandatory = $true)]
     [string]$Path,
     [Parameter(ParameterSetName = "FromPath")]
-    [switch]$Win32Path
+    [switch]$Win32Path,
+    [string]$ObjectPath
   )
 
   if ($null -eq $File)
@@ -737,12 +740,12 @@ function New-NtSectionImage
       $Path = Get-NtFilePath $Path -Resolve
     }
     Use-NtObject($new_file = Get-NtFile -Path $Path -Share Read,Delete -Access GenericExecute) {
-      return [NtApiDotNet.NtSection]::CreateImageSection($new_file)
+      return [NtApiDotNet.NtSection]::CreateImageSection($ObjectPath, $new_file)
     }
   }
   else
   {
-    return [NtApiDotNet.NtSection]::CreateImageSection($File)
+    return [NtApiDotNet.NtSection]::CreateImageSection($ObjectPath, $File)
   }
 }
 
