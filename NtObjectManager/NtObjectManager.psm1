@@ -1784,6 +1784,75 @@ function Write-NtVirtualMemory
 
 <#
 .SYNOPSIS
+Get the embedded signature information from a file.
+.DESCRIPTION
+This cmdlet gets the embedded authenticode signature information from a file. This differs
+from Get-AuthenticodeSignature in that it doesn't take into account catalog signing which is
+important for tracking down PP and PPL executables.
+.PARAMETER FullName
+The path to the file to extract the signature from.
+#>
+function Get-EmbeddedAuthenticodeSignature {
+    [CmdletBinding()]
+    param(
+        [parameter(Mandatory, Position = 0, ValueFromPipeline = $true, ValueFromPipelineByPropertyName=$true)]
+        [string]$FullName
+    )
+    PROCESS {
+        $content_type = [System.Security.Cryptography.X509Certificates.X509ContentType]::Unknown
+        try {
+            $path = Resolve-Path $FullName
+            $content_type = [System.Security.Cryptography.X509Certificates.X509Certificate2]::GetCertContentType($Path)
+        } catch {
+        }
+
+        if ($content_type -ne "Authenticode") {
+            return
+        }
+        
+        $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($Path)
+        $ppl = $false
+        $pp = $false
+        $tcb = $false
+        $system = $false
+        $dynamic = $false
+        $elam = $false
+        $store = $false
+
+        foreach($eku in $cert.EnhancedKeyUsageList) {
+           switch($eku.ObjectId) {
+                "1.3.6.1.4.1.311.10.3.22" { $ppl = $true }
+                "1.3.6.1.4.1.311.10.3.24" { $pp = $true }
+                "1.3.6.1.4.1.311.10.3.23" { $tcb = $true }
+                "1.3.6.1.4.1.311.10.3.6" { $system = $true }
+                "1.3.6.1.4.1.311.76.11.1" { $elam = $true }
+                "1.3.6.1.4.1.311.76.5.1" { $dynamic = $true }
+                "1.3.6.1.4.311.76.3.1" { $store = $true }
+            }
+        }
+
+        if (-not $ppl -and -not $pp) {
+            return
+        }
+
+        $props = @{
+            Path=$Path;
+            Certificate=$cert;
+            ProtectedProcess=$pp;
+            ProtectedProcessLight=$ppl;
+            Tcb=$tcb;
+            SystemComponent=$system;
+            DynamicCodeGeneration=$dynamic;
+            Elam=$elam;
+            Store=$store;
+        }
+        $obj = New-Object –TypeName PSObject –Prop $props
+        Write-Output $obj
+    }
+}
+
+<#
+.SYNOPSIS
 Get a filtered token.
 .DESCRIPTION
 This is left for backwards compatibility, use 'Get-NtToken -Filtered' instead.
