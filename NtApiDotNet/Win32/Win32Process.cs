@@ -618,6 +618,10 @@ namespace NtApiDotNet.Win32
         /// Specify new process policy when creating a desktop bridge application.
         /// </summary>
         public ProcessDesktopAppBreakawayFlags DesktopAppBreakaway { get; set; }
+        /// <summary>
+        /// Specify a token to use for the new process.
+        /// </summary>
+        public NtToken Token { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -744,9 +748,11 @@ namespace NtApiDotNet.Win32
 
             if (AppContainerSid != null)
             {
-                SECURITY_CAPABILITIES caps = new SECURITY_CAPABILITIES();
-                caps.AppContainerSid = resources.AddResource(AppContainerSid.ToSafeBuffer()).DangerousGetHandle();
-                
+                SECURITY_CAPABILITIES caps = new SECURITY_CAPABILITIES
+                {
+                    AppContainerSid = resources.AddResource(AppContainerSid.ToSafeBuffer()).DangerousGetHandle()
+                };
+
                 if (Capabilities.Count > 0)
                 {
                     SidAndAttributes[] cap_sids = new SidAndAttributes[Capabilities.Count];
@@ -1003,6 +1009,11 @@ namespace NtApiDotNet.Win32
         /// <returns>The created win32 process.</returns>
         public static Win32Process CreateProcess(Win32ProcessConfig config)
         {
+            if (config.Token != null)
+            {
+                return CreateProcessAsUser(config.Token, config);
+            }
+
             PROCESS_INFORMATION proc_info = new PROCESS_INFORMATION();
 
             using (var resources = new DisposableList<IDisposable>())
