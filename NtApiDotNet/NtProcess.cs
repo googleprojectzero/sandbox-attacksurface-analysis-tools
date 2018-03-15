@@ -1658,9 +1658,23 @@ namespace NtApiDotNet
         /// <returns>The address of the allocated region.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public long AllocateMemory(long base_address,
-            long region_size, MemoryAllocationType allocation_type, MemoryAllocationProtect protect)
+            long region_size, 
+            MemoryAllocationType allocation_type, MemoryAllocationProtect protect)
         {
             return NtVirtualMemory.AllocateMemory(Handle, base_address, region_size, allocation_type, protect);
+        }
+
+        /// <summary>
+        /// Allocate read/write virtual memory in a process.
+        /// </summary>
+        /// <param name="region_size">The region size to allocate.</param>
+        /// <returns>The address of the allocated region.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public long AllocateMemory(long region_size)
+        {
+            return AllocateMemory(0, region_size, 
+                MemoryAllocationType.Reserve | MemoryAllocationType.Commit, 
+                MemoryAllocationProtect.ReadWrite);
         }
 
         /// <summary>
