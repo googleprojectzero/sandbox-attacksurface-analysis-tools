@@ -384,6 +384,10 @@ Specify optional mitigation options.
 Specify filter flags for Win32k filter
 .PARAMETER Win32kFilterLevel
 Specify the filter level for the Win32k filter.
+.PARAMETER Token
+Specify a token to start the process with.
+.PARAMETER ProtectionLevel
+Specify the protection level when creating a protected process.
 .INPUTS
 None
 .OUTPUTS
@@ -409,7 +413,9 @@ function New-Win32ProcessConfig
     [switch]$InheritProcessHandle,
     [switch]$InheritThreadHandle,
     [NtApiDotNet.Win32.Win32kFilterFlags]$Win32kFilterFlags = 0,
-    [int]$Win32kFilterLevel = 0
+    [int]$Win32kFilterLevel = 0,
+    [NtApiDotNet.NtToken]$Token,
+    [NtApiDotNet.Win32.ProtectionLevel]$ProtectionLevel
     )
     $config = New-Object NtApiDotNet.Win32.Win32ProcessConfig
     $config.CommandLine = $CommandLine
@@ -441,6 +447,8 @@ function New-Win32ProcessConfig
     $config.MitigationOptions = $MitigationOptions
     $config.Win32kFilterFlags = $Win32kFilterFlags
     $config.Win32kFilterLevel = $Win32kFilterLevel
+    $config.Token = $Token
+    $config.ProtectionLevel = $ProtectionLevel
     return $config
 }
 
@@ -534,14 +542,10 @@ function New-Win32Process
     -ParentProcess $ParentProcess -CreationFlags $CreationFlags -TerminateOnDispose:$TerminateOnDispose `
     -Environment $Environment -CurrentDirectory $CurrentDirectory -Desktop $Desktop -Title $Title `
     -InheritHandles:$InheritHandles -InheritProcessHandle:$InheritProcessHandle -InheritThreadHandle:$InheritThreadHandle `
-    -MitigationOptions $MitigationOptions
+    -MitigationOptions $MitigationOptions -Token $Token
   }
 
-  if ($null -eq $Token) {
-    [NtApiDotNet.Win32.Win32Process]::CreateProcess($config)
-  } else {
-    [NtApiDotNet.Win32.Win32Process]::CreateProcessAsUser($Token, $config)
-  }
+  [NtApiDotNet.Win32.Win32Process]::CreateProcess($config)
 }
 
 <#
@@ -1847,10 +1851,6 @@ function Get-EmbeddedAuthenticodeSignature {
                 "1.3.6.1.4.1.311.76.5.1" { $dynamic = $true }
                 "1.3.6.1.4.311.76.3.1" { $store = $true }
             }
-        }
-
-        if (-not $ppl -and -not $pp) {
-            return
         }
 
         $props = @{
