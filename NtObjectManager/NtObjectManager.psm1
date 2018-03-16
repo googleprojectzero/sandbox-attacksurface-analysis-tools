@@ -1499,19 +1499,33 @@ Get the security descriptor with DACL and output as an SDDL string.
 .EXAMPLE
 @($obj1, $obj2) | Get-NtSecurityDescriptor
 Get the security descriptors from an array of objects.
+.EXAMPLE
+Get-NtSecurityDescriptor -Process $process -Address 0x12345678
+Get the security descriptor from another process at address 0x12345678.
 #>
 function Get-NtSecurityDescriptor
 {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = "FromObject")]
     param (
-        [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
+        [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true, ParameterSetName = "FromObject")]
         [NtApiDotNet.NtObject]$Object,
-        [parameter(Position=1)]
+        [parameter(Position=1, ParameterSetName = "FromObject")]
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
+        [parameter(Mandatory = $true, ParameterSetName = "FromProcess")]
+        [NtApiDotNet.NtProcess]$Process,
+        [parameter(Mandatory = $true, ParameterSetName = "FromProcess")]
+        [int64]$Address,
         [switch]$ToSddl
     )
     PROCESS {
-        $sd = $Object.GetSecurityDescriptor($SecurityInformation)
+        $sd = switch($PsCmdlet.ParameterSetName) {
+            "FromObject" {
+                $Object.GetSecurityDescriptor($SecurityInformation)
+            }
+            "FromProcess" {
+                [NtApiDotNet.SecurityDescriptor]::new($Process, [IntPtr]::new($Address))
+            }
+        }
         if ($ToSddl) {
             $sd.ToSddl($SecurityInformation)
         } else {
