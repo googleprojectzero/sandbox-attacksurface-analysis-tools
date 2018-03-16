@@ -110,6 +110,228 @@ namespace NtApiDotNet
         /// </summary>
         public uint Revision { get; set; }
 
+        [StructLayout(LayoutKind.Sequential)]
+        struct SecurityDescriptorHeader
+        {
+            public byte Revision;
+            public byte Sbz1;
+            public SecurityDescriptorControl Control;
+
+            public bool HasFlag(SecurityDescriptorControl control)
+            {
+                return (control & Control) == control;
+            }
+        }
+
+        interface ISecurityDescriptor
+        {
+            long GetOwner(long base_address);
+            long GetGroup(long base_address);
+            long GetSacl(long base_address);
+            long GetDacl(long base_address);
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct SecurityDescriptorRelative : ISecurityDescriptor
+        {
+            public SecurityDescriptorHeader Header;
+            public int Owner;
+            public int Group;
+            public int Sacl;
+            public int Dacl;
+
+            long ISecurityDescriptor.GetOwner(long base_address)
+            {
+                if (Owner == 0)
+                {
+                    return 0;
+                }
+
+                return base_address + Owner;
+            }
+
+            long ISecurityDescriptor.GetGroup(long base_address)
+            {
+                if (Group == 0)
+                {
+                    return 0;
+                }
+
+                return base_address + Group;
+            }
+
+            long ISecurityDescriptor.GetSacl(long base_address)
+            {
+                if (Sacl == 0)
+                {
+                    return 0;
+                }
+
+                return base_address + Sacl;
+            }
+
+            long ISecurityDescriptor.GetDacl(long base_address)
+            {
+                if (Dacl == 0)
+                {
+                    return 0;
+                }
+
+                return base_address + Dacl;
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct SecurityDescriptorAbsolute : ISecurityDescriptor
+        {
+            public SecurityDescriptorHeader Header;
+            public IntPtr Owner;
+            public IntPtr Group;
+            public IntPtr Sacl;
+            public IntPtr Dacl;
+
+            long ISecurityDescriptor.GetOwner(long base_address)
+            {
+                return Owner.ToInt64();
+            }
+
+            long ISecurityDescriptor.GetGroup(long base_address)
+            {
+                return Group.ToInt64();
+            }
+
+            long ISecurityDescriptor.GetSacl(long base_address)
+            {
+                return Sacl.ToInt64();
+            }
+
+            long ISecurityDescriptor.GetDacl(long base_address)
+            {
+                return Dacl.ToInt64();
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct SecurityDescriptorAbsolute32 : ISecurityDescriptor
+        {
+            public SecurityDescriptorHeader Header;
+            public int Owner;
+            public int Group;
+            public int Sacl;
+            public int Dacl;
+
+            long ISecurityDescriptor.GetOwner(long base_address)
+            {
+                return Owner;
+            }
+
+            long ISecurityDescriptor.GetGroup(long base_address)
+            {
+                return Group;
+            }
+
+            long ISecurityDescriptor.GetSacl(long base_address)
+            {
+                return Sacl;
+            }
+
+            long ISecurityDescriptor.GetDacl(long base_address)
+            {
+                return Dacl;
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct SidHeader
+        {
+            public byte Revision;
+            public byte RidCount;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct AclHeader
+        {
+            public byte AclRevision;
+            public byte Sbz1;
+            public ushort AclSize;
+            public ushort AceCount;
+            public ushort Sbz2;
+        }
+
+        private static SecurityDescriptorSid ReadSid(NtProcess process, long address, bool defaulted)
+        {
+            if (address == 0)
+            {
+                return null;
+            }
+
+            SidHeader header = process.ReadMemory<SidHeader>(address);
+            if (header.Revision != 1)
+            {
+                throw new NtException(NtStatus.STATUS_INVALID_SID);
+            }
+
+            Sid sid = new Sid(process.ReadMemory(address, 8 + header.RidCount * 4, true));
+            return new SecurityDescriptorSid(sid, defaulted);
+        }
+
+        private static Acl ReadAcl(NtProcess process, long address, bool defaulted)
+        {
+            if (address == 0)
+            {
+                return new Acl() { NullAcl = true };
+            }
+
+            AclHeader header = process.ReadMemory<AclHeader>(address);
+            if (header.AclRevision > 4)
+            {
+                throw new NtException(NtStatus.STATUS_INVALID_ACL);
+            }
+
+            if (header.AclSize < Marshal.SizeOf(typeof(AclHeader)))
+            {
+                throw new NtException(NtStatus.STATUS_INVALID_ACL);
+            }
+
+            return new Acl(process.ReadMemory(address, header.AclSize, true), defaulted);
+        }
+
+        private void ParseSecurityDescriptor(NtProcess process, long address)
+        {
+            SecurityDescriptorHeader header = process.ReadMemory<SecurityDescriptorHeader>(address);
+            if (header.Revision != 1)
+            {
+                throw new NtException(NtStatus.STATUS_INVALID_SECURITY_DESCR);
+            }
+            Revision = header.Revision;
+            Control = header.Control & ~SecurityDescriptorControl.SelfRelative;
+
+            ISecurityDescriptor sd = null;
+            if (header.HasFlag(SecurityDescriptorControl.SelfRelative))
+            {
+                sd = process.ReadMemory<SecurityDescriptorRelative>(address);
+            }
+            else if (process.Is64Bit)
+            {
+                sd = process.ReadMemory<SecurityDescriptorAbsolute>(address);
+            }
+            else
+            {
+                sd = process.ReadMemory<SecurityDescriptorAbsolute32>(address);
+            }
+
+            Owner = ReadSid(process, sd.GetOwner(address), header.HasFlag(SecurityDescriptorControl.OwnerDefaulted));
+            Group = ReadSid(process, sd.GetGroup(address), header.HasFlag(SecurityDescriptorControl.GroupDefaulted));
+            if (header.HasFlag(SecurityDescriptorControl.DaclPresent))
+            {
+                Dacl = ReadAcl(process, sd.GetDacl(address), header.HasFlag(SecurityDescriptorControl.DaclDefaulted));
+            }
+            if (header.HasFlag(SecurityDescriptorControl.SaclPresent))
+            {
+                Sacl = ReadAcl(process, sd.GetSacl(address), header.HasFlag(SecurityDescriptorControl.SaclDefaulted));
+            }
+        }
+
         private Ace FindSaclAce(AceType type)
         {
             if (Sacl != null && !Sacl.NullAcl)
@@ -215,7 +437,7 @@ namespace NtApiDotNet
         {
             if (!NtRtl.RtlValidSecurityDescriptor(buffer))
             {
-                throw new ArgumentException("Invalid security descriptor");
+                throw new NtException(NtStatus.STATUS_INVALID_SECURITY_DESCR);
             }
 
             Owner = QuerySid(buffer, NtRtl.RtlGetOwnerSecurityDescriptor);
@@ -234,6 +456,16 @@ namespace NtApiDotNet
         public SecurityDescriptor(IntPtr ptr)
         {
             ParseSecurityDescriptor(new SafeHGlobalBuffer(ptr, 0, false));
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="process">The process containing the security descriptor.</param>
+        /// <param name="ptr">Native pointer to security descriptor.</param>
+        public SecurityDescriptor(NtProcess process, IntPtr ptr)
+        {
+            ParseSecurityDescriptor(process, ptr.ToInt64());
         }
 
         /// <summary>
