@@ -52,12 +52,12 @@ namespace NtApiDotNet
         /// <summary>
         /// The SID.
         /// </summary>
-        public Sid Sid { get; private set; }
+        public Sid Sid { get; set; }
 
         /// <summary>
         /// Indicates whether the SID was defaulted or not.
         /// </summary>
-        public bool Defaulted { get; private set; }
+        public bool Defaulted { get; set; }
 
         /// <summary>
         /// Constructor from existing SID.
