@@ -1502,10 +1502,29 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get the current process.        
+        /// Get the current process.
         /// </summary>
         /// <remarks>This only uses the pseudo handle, for the process. If you need a proper handle use OpenCurrent.</remarks>
         public static NtProcess Current { get { return new NtProcess(new SafeKernelObjectHandle(new IntPtr(-1), false)); } }
+
+        /// <summary>
+        /// Read memory from a process.
+        /// </summary>
+        /// <param name="base_address">The base address in the process.</param>
+        /// <param name="length">The length to read.</param>
+        /// <param name="read_all">If true ensure we read all bytes, otherwise throw on exception.</param>
+        /// <returns>The array of bytes read from the location. 
+        /// If a read is short then returns fewer bytes than requested.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public byte[] ReadMemory(long base_address, int length, bool read_all)
+        {
+            byte[] ret = NtVirtualMemory.ReadMemory(Handle, base_address, length);
+            if (read_all && length != ret.Length)
+            {
+                throw new NtException(NtStatus.STATUS_PARTIAL_COPY);
+            }
+            return ret;
+        }
 
         /// <summary>
         /// Read memory from a process.
@@ -1926,6 +1945,17 @@ namespace NtApiDotNet
             get
             {
                 return QueryFixed<IntPtr>(ProcessInformationClass.ProcessWow64Information) != IntPtr.Zero;
+            }
+        }
+
+        /// <summary>
+        /// Get whether the process is 64bit.
+        /// </summary>
+        public bool Is64Bit
+        {
+            get
+            {
+                return Environment.Is64BitOperatingSystem && !Wow64;
             }
         }
 
