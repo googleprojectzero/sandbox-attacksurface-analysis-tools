@@ -1271,12 +1271,7 @@ namespace NtApiDotNet
             Revision = GetAclInformation<AclRevisionInformation>(acl, AclInformationClass.AclRevisionInformation).AclRevision;
         }
 
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="acl">Pointer to a raw ACL in memory</param>
-        /// <param name="defaulted">True if the ACL was defaulted</param>
-        public Acl(IntPtr acl, bool defaulted)
+        private void InitializeFromPointer(IntPtr acl, bool defaulted)
         {
             if (acl != IntPtr.Zero)
             {
@@ -1288,6 +1283,29 @@ namespace NtApiDotNet
             }
 
             Defaulted = defaulted;
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="acl">Pointer to a raw ACL in memory</param>
+        /// <param name="defaulted">True if the ACL was defaulted</param>
+        public Acl(IntPtr acl, bool defaulted)
+        {
+            InitializeFromPointer(acl, defaulted);
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="acl">Buffer containing an ACL in memory</param>
+        /// <param name="defaulted">True if the ACL was defaulted</param>
+        public Acl(byte[] acl, bool defaulted)
+        {
+            using (var buffer = new SafeHGlobalBuffer(acl))
+            {
+                InitializeFromPointer(buffer.DangerousGetHandle(), defaulted);
+            }
         }
 
         /// <summary>
