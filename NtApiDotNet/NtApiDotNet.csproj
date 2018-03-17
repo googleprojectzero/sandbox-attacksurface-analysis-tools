@@ -92,6 +92,7 @@
     <Compile Include="NtObjectUtils.cs" />
     <Compile Include="Win32\ExecutableManifest.cs" />
     <Compile Include="Win32\LogonUtils.cs" />
+    <Compile Include="Win32\SymbolResolver.cs" />
     <Compile Include="Win32\Win32Utils.cs" />
     <Compile Include="Win32\Win32NativeMethods.cs" />
     <Compile Include="Win32\SafeLoadLibraryHandle.cs" />
