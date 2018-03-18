@@ -334,7 +334,7 @@ namespace NtApiDotNet
                 NtRtl.RtlAllocateAndInitializeSid(Authority, (byte)SubAuthorities.Count,
                     sub_authories[0], sub_authories[1], sub_authories[2], sub_authories[3],
                     sub_authories[4], sub_authories[5], sub_authories[6], sub_authories[7],
-                    out sid).ToNtException();            
+                    out sid).ToNtException();
             }
             return sid;
         }
@@ -352,7 +352,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Compares two sids to see if their prefixes are the same.
+        /// Compares two sids to see if their prefixes are the same. The sids must have the same number of subauthorities.
         /// </summary>
         /// <param name="sid">The sid to compare against</param>
         /// <returns>True if the sids share a prefix.</returns>
