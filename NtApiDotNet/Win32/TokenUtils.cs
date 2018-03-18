@@ -30,16 +30,16 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Fully trusted.
         /// </summary>
-		FullyTrusted = 0x40000,
+        FullyTrusted = 0x40000,
         /// <summary>
         /// Normal user.
         /// </summary>
-		NormalUser = 0x20000,
+        NormalUser = 0x20000,
         /// <summary>
         /// Untrusted.
         /// </summary>
-		Untrusted = 0x01000,
-	}
+        Untrusted = 0x01000,
+    }
 
     /// <summary>
     /// Class to access tokens through various mechanisms.

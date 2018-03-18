@@ -61,7 +61,6 @@ namespace NtApiDotNet.Win32
         static Dictionary<uint, String> GetMaskDictionary(NtType type)
         {
             Dictionary<uint, String> access = new Dictionary<uint, String>();
-                        
             AddEnumToDictionary(access, type.AccessRightsType, type.ValidAccess.Access);
 
             return access;
