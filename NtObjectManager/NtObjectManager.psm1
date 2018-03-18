@@ -1763,6 +1763,8 @@ The address location to read.
 The size of the memory to read. This is the maximum, if the memory address is invalid the returned buffer can be smaller.
 .PARAMETER Process
 The process to read from, defaults to current process.
+.PARAMETER ReadAll
+Specify to ensure you read all the requested memory from the process.
 .OUTPUTS
 byte[] - The array of read bytes. The size of the output might be smaller than the requested size.
 .EXAMPLE
@@ -1771,6 +1773,9 @@ Read up to 4096 from $addr.
 .EXAMPLE
 Read-NtVirtualMemory $addr 0x1000 -Process $process
 Read up to 4096 from $addr in another process.
+.EXAMPLE
+Read-NtVirtualMemory $addr 0x1000 -ReadAll
+Read up to 4096 from $addr, fail if can't read all the bytes.
 #>
 function Read-NtVirtualMemory
 {
@@ -1780,9 +1785,10 @@ function Read-NtVirtualMemory
         [int64]$Address,
         [parameter(Mandatory, Position=1)]
         [int]$Size,
-        [NtApiDotNet.NtProcess]$Process = [NtApiDotnet.NtProcess]::Current
+        [NtApiDotNet.NtProcess]$Process = [NtApiDotnet.NtProcess]::Current,
+        [switch]$ReadAll,
     )
-    $Process.ReadMemory($Address, $Size)
+    $Process.ReadMemory($Address, $Size, $ReadAll)
 }
 
 <#

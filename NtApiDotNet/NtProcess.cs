@@ -1536,7 +1536,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public byte[] ReadMemory(long base_address, int length)
         {
-            return NtVirtualMemory.ReadMemory(Handle, base_address, length);
+            return ReadMemory(base_address, length, false);
         }
 
         /// <summary>
