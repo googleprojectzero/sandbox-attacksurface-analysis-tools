@@ -1786,7 +1786,7 @@ function Read-NtVirtualMemory
         [parameter(Mandatory, Position=1)]
         [int]$Size,
         [NtApiDotNet.NtProcess]$Process = [NtApiDotnet.NtProcess]::Current,
-        [switch]$ReadAll,
+        [switch]$ReadAll
     )
     $Process.ReadMemory($Address, $Size, $ReadAll)
 }
