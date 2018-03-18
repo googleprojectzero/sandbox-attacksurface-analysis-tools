@@ -179,7 +179,7 @@ namespace NtApiDotNet.Win32
         public void GetObjectInformation(IntPtr pObjectInfo)
         {
             SiObjectInfo object_info = new SiObjectInfo();
-            SiObjectInfoFlags flags = SiObjectInfoFlags.SI_ADVANCED | SiObjectInfoFlags.SI_EDIT_ALL;
+            SiObjectInfoFlags flags = SiObjectInfoFlags.SI_ADVANCED | SiObjectInfoFlags.SI_EDIT_ALL | SiObjectInfoFlags.SI_NO_ADDITIONAL_PERMISSION;
             if (_read_only || !_handle.IsAccessMaskGranted(GenericAccessRights.WriteDac))
             {
                 flags |= SiObjectInfoFlags.SI_READONLY;

@@ -58,10 +58,10 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        static Dictionary<uint, String> GetMaskDictionary(NtType type)
+        static Dictionary<uint, String> GetMaskDictionary(Type access_type, AccessMask valid_access)
         {
             Dictionary<uint, String> access = new Dictionary<uint, String>();
-            AddEnumToDictionary(access, type.AccessRightsType, type.ValidAccess.Access);
+            AddEnumToDictionary(access, access_type, valid_access.Access);
 
             return access;
         }
@@ -75,7 +75,7 @@ namespace NtApiDotNet.Win32
         /// <param name="read_only">True to force the UI to read only.</param>
         public static void EditSecurity(IntPtr hwnd, NtObject handle, string object_name, bool read_only)
         {
-            Dictionary<uint, String> access = GetMaskDictionary(handle.NtType);
+            Dictionary<uint, String> access = GetMaskDictionary(handle.NtType.AccessRightsType, handle.NtType.ValidAccess);
 
             using (SecurityInformationImpl impl = new SecurityInformationImpl(object_name, handle, access,
                handle.NtType.GenericMapping, read_only))
@@ -91,10 +91,25 @@ namespace NtApiDotNet.Win32
         /// <param name="name">The name of the object to display.</param>
         /// <param name="sd">The security descriptor to display.</param>
         /// <param name="type">The NT type of the object.</param>
-        public static void EditSecurity(IntPtr hwnd, string name, SecurityDescriptor sd, NtType type)
+        public static void EditSecurity(IntPtr hwnd, string name, SecurityDescriptor sd, NtType type) 
         {
-            Dictionary<uint, String> access = GetMaskDictionary(type);
-            using (var impl = new SecurityInformationImpl(name, sd, access, type.GenericMapping))
+            EditSecurity(hwnd, name, sd, type.AccessRightsType, type.ValidAccess, type.GenericMapping);
+        }
+
+        /// <summary>
+        /// Display the edit security dialog.
+        /// </summary>
+        /// <param name="hwnd">Parent window handle.</param>
+        /// <param name="name">The name of the object to display.</param>
+        /// <param name="sd">The security descriptor to display.</param>
+        /// <param name="access_type">An enumerated type for the access mask.</param>
+        /// <param name="generic_mapping">Generic mapping for the access rights.</param>
+        /// <param name="valid_access">Valid access mask for the access rights.</param>
+        public static void EditSecurity(IntPtr hwnd, string name, SecurityDescriptor sd, 
+            Type access_type, AccessMask valid_access, GenericMapping generic_mapping)
+        {
+            Dictionary<uint, String> access = GetMaskDictionary(access_type, valid_access);
+            using (var impl = new SecurityInformationImpl(name, sd, access, generic_mapping))
             {
                 Win32NativeMethods.EditSecurity(hwnd, impl);
             }
