@@ -361,7 +361,7 @@ namespace NtApiDotNet.Win32
         {
             LIST_MODULES_DEFAULT = 0x00,
             LIST_MODULES_32BIT = 0x01,
-            LIST_MODULES_64BIT = 0x02,        
+            LIST_MODULES_64BIT = 0x02,
             LIST_MODULES_ALL = LIST_MODULES_32BIT | LIST_MODULES_64BIT,
         }
 
@@ -541,7 +541,19 @@ namespace NtApiDotNet.Win32
                 long displacement;
                 if (_sym_from_addr(_process, address.ToInt64(), out displacement, sym_info))
                 {
-                    return GetNameFromSymbolInfo(sym_info);
+                    string name = GetNameFromSymbolInfo(sym_info);
+                    string disp_str = string.Empty;
+
+                    if (displacement < 0)
+                    {
+                        disp_str = $"-0x{Math.Abs(displacement):X}";
+                    }
+                    else if (displacement > 0)
+                    {
+                        disp_str = $"+0x{displacement:X}";
+                    }
+
+                    return $"{name}{disp_str}";
                 }
                 // Perhaps should return module+X?
                 if (generate_fake_symbol)
