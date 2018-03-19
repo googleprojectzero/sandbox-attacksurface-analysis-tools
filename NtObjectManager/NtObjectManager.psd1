@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.11'
+ModuleVersion = '1.1.12'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -97,7 +97,32 @@ PrivateData = @{
         ProjectUri = 'https://github.com/google/sandbox-attacksurface-analysis-tools'
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.11
+        ReleaseNotes = '1.1.12
+------
+* Added basic NDR parser.
+* Added basic symbol resolver.
+* Added method to read a security descriptor from another process.
+* Improved process memory read and writing methods.
+* Added virtual memory cmdlets to allocate, release and modify memory.
+* Added Get-EmbeddedAuthenticodeSignature function.
+* Added Get and Set NtSecurityDescriptor functions.
+* Added ProcessTrustLabel to basic security information set.
+* Added Get-NtFileChild cmdlet.
+* Added Get-NtKeyChild cmdlet.
+* Added Get-NtDirectoryChild cmdlet.
+* Added name lookup to NtIoControlCode.
+* Added NtNamedPipeFile type with implementations of basic pipe functions.
+* Added ADd-DosDevice and Remove-DosDevice cmdlets.
+* Added file directory and stream visitors.
+* Merged Get-NtLowBoxToken and Get-NtFilteredToken into Get-NtToken.
+* Modified Show-NtSection to also display an arbitrary byte array.
+* Added an Invoke-NtToken cmdlet to run a script block under impersonation.
+* Added Remove-NtFile cmdlet.
+* Added case sensitive property for RS4.
+* Added flags for NtCreateDirectoryObjectEx.
+* Added pseudo option to Get-NtToken.
+* Improved conditional ACE support.
+1.1.11
 ------
 * Improved New-NtToken including adding missing IL
 * Added new NTSTATUS codes from 1709
