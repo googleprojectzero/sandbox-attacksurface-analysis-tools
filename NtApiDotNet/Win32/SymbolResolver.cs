@@ -87,6 +87,13 @@ namespace NtApiDotNet.Win32
         /// <param name="address">The address of the symbol.</param>
         /// <returns>The symbol name.</returns>
         string GetSymbolForAddress(IntPtr address);
+        /// <summary>
+        /// Get the symbol name for an address, with no fallback.
+        /// </summary>
+        /// <param name="address">The address of the symbol.</param>
+        /// <param name="generate_fake_symbol">If true then generate a fake symbol.</param>
+        /// <returns>The symbol name. If |generate_fake_symbol| is true and the symbol doesn't exist one is generated based on module name.</returns>
+        string GetSymbolForAddress(IntPtr address, bool generate_fake_symbol);
     }
 
     /// <summary>
@@ -524,6 +531,11 @@ namespace NtApiDotNet.Win32
 
         public string GetSymbolForAddress(IntPtr address)
         {
+            return GetSymbolForAddress(address, true);
+        }
+
+        public string GetSymbolForAddress(IntPtr address, bool generate_fake_symbol)
+        {
             using (var sym_info = AllocateSymInfo())
             {
                 long displacement;
@@ -532,7 +544,11 @@ namespace NtApiDotNet.Win32
                     return GetNameFromSymbolInfo(sym_info);
                 }
                 // Perhaps should return module+X?
-                return String.Format("0x{0:X}", address.ToInt64());
+                if (generate_fake_symbol)
+                {
+                    return String.Format("0x{0:X}", address.ToInt64());
+                }
+                return null;
             }
         }
 
