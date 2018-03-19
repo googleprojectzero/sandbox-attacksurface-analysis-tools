@@ -45,6 +45,13 @@
     <Compile Include="CreateUserProcessResult.cs" />
     <Compile Include="DisposableList.cs" />
     <Compile Include="EaBuffer.cs" />
+    <Compile Include="Ndr\NdrFormatter.cs" />
+    <Compile Include="Ndr\NdrCorrelationDescriptor.cs" />
+    <Compile Include="Ndr\NdrNativeUtils.cs" />
+    <Compile Include="Ndr\NdrParser.cs" />
+    <Compile Include="Ndr\NdrProcedureDefinition.cs" />
+    <Compile Include="Ndr\NdrTypes.cs" />
+    <Compile Include="Ndr\NdrRpcServerInterface.cs" />
     <Compile Include="NtAlpc.cs" />
     <Compile Include="NtAtom.cs" />
     <Compile Include="NtDebug.cs" />
