@@ -494,9 +494,9 @@ namespace NtObjectManager
                 {
                     if (desired_access == TokenAccessRights.MaximumAllowed)
                     {
-                        return token.Duplicate();
+                        return sandbox_token.Duplicate();
                     }
-                    return token.Duplicate(desired_access);
+                    return sandbox_token.Duplicate(desired_access);
                 }
             }
         }
