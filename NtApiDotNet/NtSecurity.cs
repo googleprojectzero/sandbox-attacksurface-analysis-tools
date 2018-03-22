@@ -2626,6 +2626,83 @@ namespace NtApiDotNet
             return ret;
         }
 
+        private static Dictionary<Sid, string> _device_capabilities;
+
+        private static Sid GuidToCapabilitySid(Guid g)
+        {
+            byte[] guid_buffer = g.ToByteArray();
+            List<uint> subauthorities = new List<uint>
+            {
+                3
+            };
+            for (int i = 0; i < 4; ++i)
+            {
+                subauthorities.Add(BitConverter.ToUInt32(guid_buffer, i * 4));
+            }
+            return new Sid(SecurityAuthority.Package, subauthorities.ToArray());
+        }
+
+        private static Dictionary<Sid, string> GetDeviceCapabilities()
+        {
+            if (_device_capabilities != null)
+            {
+                return _device_capabilities;
+            }
+
+            var device_capabilities = new Dictionary<Sid, string>();
+
+            try
+            {
+                using (var base_key = NtKey.Open(@"\Registry\Machine\SOFTWARE\Microsoft\Windows\CurrentVersion\DeviceAccess\CapabilityMappings", null, KeyAccessRights.EnumerateSubKeys))
+                {
+                    using (var key_list = base_key.QueryAccessibleKeys(KeyAccessRights.EnumerateSubKeys).ToDisposableList())
+                    {
+                        foreach (var key in key_list)
+                        {
+                            foreach (var guid in key.QueryKeys())
+                            {
+                                if (Guid.TryParse(guid, out Guid g))
+                                {
+                                    Sid sid = GuidToCapabilitySid(g);
+                                    if (!device_capabilities.ContainsKey(sid))
+                                    {
+                                        device_capabilities[sid] = key.Name;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (NtException)
+            {
+            }
+            
+            _device_capabilities = device_capabilities;
+            return _device_capabilities;
+        }
+
+        /// <summary>
+        /// Lookup a device capability SID name if known.
+        /// </summary>
+        /// <param name="sid">The SID to lookup.</param>
+        /// <returns>Returns the device capability name. If not found returns null.</returns>
+        /// <exception cref="ArgumentException">Thrown if SID is not a package sid.</exception>
+        public static string LookupDeviceCapabilityName(Sid sid)
+        {
+            if (!IsCapabilitySid(sid))
+            {
+                throw new ArgumentException("Sid not a capability sid", "sid");
+            }
+
+            var device_capabilities = GetDeviceCapabilities();
+            if (device_capabilities.ContainsKey(sid))
+            {
+                return device_capabilities[sid];
+            }
+            return null;
+        }
+
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static extern bool ConvertSecurityDescriptorToStringSecurityDescriptor(
             byte[] SecurityDescriptor,

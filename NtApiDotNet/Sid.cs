@@ -516,6 +516,23 @@ namespace NtApiDotNet
                 {
                     // See if there's a known SID with this name.
                     name = NtSecurity.LookupKnownCapabilityName(this);
+                    if (name == null)
+                    {
+                        switch (SubAuthorities.Count)
+                        {
+                            case 8:
+                                uint[] sub_authorities = SubAuthorities.ToArray();
+                                // Convert to a package SID.
+                                sub_authorities[0] = 2;
+                                name = NtSecurity.LookupPackageName(new Sid(Authority, sub_authorities));
+                                break;
+                            case 5:
+                                name = NtSecurity.LookupDeviceCapabilityName(this);
+                                break;
+                        }
+                    }
+
+
                     if (name != null)
                     {
                         name = MakeFakeCapabilityName(name);
