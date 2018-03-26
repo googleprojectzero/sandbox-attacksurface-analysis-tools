@@ -47,7 +47,7 @@ namespace NtApiDotNet
         JobObjectBasicLimitInformation,
         JobObjectBasicProcessIdList,
         JobObjectBasicUIRestrictions,
-        JobObjectSecurityLimitInformation,  // deprecated
+        JobObjectSecurityLimitInformation,
         JobObjectEndOfJobTimeInformation,
         JobObjectAssociateCompletionPortInformation,
         JobObjectBasicAndIoAccountingInformation,
@@ -60,37 +60,36 @@ namespace NtApiDotNet
         JobObjectCpuRateControlInformation,
         JobObjectCompletionFilter,
         JobObjectCompletionCounter,
-        JobObjectReserved1Information = 18,
-        JobObjectReserved2Information,
-        JobObjectReserved3Information,
-        JobObjectReserved4Information,
-        JobObjectReserved5Information,
-        JobObjectReserved6Information,
-        JobObjectReserved7Information,
-        JobObjectReserved8Information,
-        JobObjectReserved9Information,
-        JobObjectReserved10Information,
-        JobObjectReserved11Information,
-        JobObjectReserved12Information,
-        JobObjectReserved13Information,
-        JobObjectReserved14Information = 31,
+        JobObjectFreezeInformation,
+        JobObjectExtendedAccountingInformation,
+        JobObjectWakeInformation,
+        JobObjectBackgroundInformation,
+        JobObjectSchedulingRankBiasInformation,
+        JobObjectTimerVirtualizationInformation,
+        JobObjectCycleTimeNotification,
+        JobObjectClearEvent,
+        JobObjectInterferenceInformation,
+        JobObjectClearPeakJobMemoryUsed,
+        JobObjectMemoryUsageInformation,
+        JobObjectSharedCommit,
+        JobObjectContainerId,
+        JobObjectIoRateControlInformation,
         JobObjectNetRateControlInformation,
         JobObjectNotificationLimitInformation2,
         JobObjectLimitViolationInformation2,
         JobObjectCreateSilo,
         JobObjectSiloBasicInformation,
-        JobObjectReserved15Information = 37,
-        JobObjectReserved16Information = 38,
-        JobObjectReserved17Information = 39,
-        JobObjectReserved18Information = 40,
-        JobObjectReserved19Information = 41,
-        JobObjectReserved20Information = 42,
-        JobObjectReserved21Information = 43,
-        JobObjectReserved22Information = 44,
-        JobObjectReserved23Information = 45,
-        JobObjectReserved24Information = 46,
-        JobObjectReserved25Information = 47,
-        MaxJobObjectInfoClass
+        JobObjectSiloRootDirectory,
+        JobObjectServerSiloBasicInformation,
+        JobObjectServerSiloUserSharedData,
+        JobObjectServerSiloInitialize,
+        JobObjectServerSiloRunningState,
+        JobObjectIoAttribution,
+        JobObjectMemoryPartitionInformation,
+        JobObjectContainerTelemetryId,
+        JobObjectSiloSystemRoot,
+        JobObjectEnergyTrackingState,
+        JobObjectThreadImpersonationInformation,
     }
 
     public enum JobObjectCompletionPortMessages
@@ -136,6 +135,73 @@ namespace NtApiDotNet
     {
         public IntPtr CompletionKey;
         public IntPtr CompletionPort;
+    }
+
+    [Flags]
+    public enum JobObjectLimitFlags
+    {
+        None = 0,
+        WorkingSet = 0x00000001,
+        ProcessTime = 0x00000002,
+        JobTime= 0x00000004,
+        ActiveProcess = 0x00000008,
+        Affinity = 0x00000010,
+        PriorityClass = 0x00000020,
+        PreserveJobTime = 0x00000040,
+        SchedulingClass = 0x00000080,
+        ProcessMemory = 0x00000100,
+        JobMemory = 0x00000200,
+        DieOnUnhandledException = 0x00000400,
+        BreakawayOk = 0x00000800,
+        SilentBreakawayOk = 0x00001000,
+        KillOnJobClose = 0x00002000,
+        SubsetAffinity = 0x00004000,
+        JobMemoryLow = 0x00008000,
+        Application = 0x00400000
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct JobObjectBasicLimitInformation
+    {
+        public LargeIntegerStruct PerProcessUserTimeLimit;
+        public LargeIntegerStruct PerJobUserTimeLimit;
+        public JobObjectLimitFlags LimitFlags;
+        public IntPtr MinimumWorkingSetSize;
+        public IntPtr MaximumWorkingSetSize;
+        public int ActiveProcessLimit;
+        public IntPtr Affinity;
+        public int PriorityClass;
+        public int SchedulingClass;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct IoCounters
+    {
+        public ulong ReadOperationCount;
+        public ulong WriteOperationCount;
+        public ulong OtherOperationCount;
+        public ulong ReadTransferCount;
+        public ulong WriteTransferCount;
+        public ulong OtherTransferCount;
+    } 
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct JobObjectExtendedLimitInformation
+    {
+        public JobObjectBasicLimitInformation BasicLimitInformation;
+        public IoCounters IoInfo;
+        public IntPtr ProcessMemoryLimit;
+        public IntPtr JobMemoryLimit;
+        public IntPtr PeakProcessMemoryUsed;
+        public IntPtr PeakJobMemoryUsed;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct JobObjectExtendedExtendedLimitInformation
+    {
+        public JobObjectExtendedLimitInformation ExtendedLimitInformation;
+        public int Unknown1;
+        public int Unknown2;
     }
 
     public static partial class NtSystemCalls
@@ -314,7 +380,7 @@ namespace NtApiDotNet
         {
             using (var buffer = value.ToBuffer())
             {
-                NtSystemCalls.NtSetInformationJobObject(Handle, info_class, buffer, buffer.Length);
+                NtSystemCalls.NtSetInformationJobObject(Handle, info_class, buffer, buffer.Length).ToNtException();
             }
         }
 
@@ -368,6 +434,26 @@ namespace NtApiDotNet
         public void Terminate(NtStatus status)
         {
             NtSystemCalls.NtTerminateJobObject(Handle, status).ToNtException();
+        }
+
+        /// <summary>
+        /// Set the limit flags for the job.
+        /// </summary>
+        /// <param name="flags">The limit flags.</param>
+        public void SetLimitFlags(JobObjectLimitFlags flags)
+        {
+            if ((flags & JobObjectLimitFlags.Application) != 0)
+            {
+                JobObjectExtendedExtendedLimitInformation info = new JobObjectExtendedExtendedLimitInformation();
+                info.ExtendedLimitInformation.BasicLimitInformation.LimitFlags = flags;
+                SetInfo(JobObjectInformationClass.JobObjectExtendedLimitInformation, info);
+            }
+            else
+            {
+                JobObjectExtendedLimitInformation info = new JobObjectExtendedLimitInformation();
+                info.BasicLimitInformation.LimitFlags = flags;
+                SetInfo(JobObjectInformationClass.JobObjectExtendedLimitInformation, info);
+            }
         }
     }
 }
