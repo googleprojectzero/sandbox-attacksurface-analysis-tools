@@ -1241,9 +1241,16 @@ namespace NtApiDotNet
         /// <returns>True if set the privilege.</returns>
         public static bool EnableEffectivePrivilege(TokenPrivilegeValue privilege)
         {
-            using (NtToken token = NtToken.OpenEffectiveToken())
+            try
             {
-                return token.SetPrivilege(privilege, PrivilegeAttributes.Enabled);
+                using (NtToken token = NtToken.OpenEffectiveToken())
+                {
+                    return token.SetPrivilege(privilege, PrivilegeAttributes.Enabled);
+                }
+            }
+            catch (NtException)
+            {
+                return false;
             }
         }
 
