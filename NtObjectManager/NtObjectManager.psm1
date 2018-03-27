@@ -1381,6 +1381,8 @@ Specify a section object.
 Optionally wait for the user to close the UI.
 .PARAMETER ReadOnly
 Optionally force the viewer to be read-only when passing a section with Map Write access.
+.PARAMETER Path
+Path to a file to view as a section.
 .OUTPUTS
 None
 .EXAMPLE
@@ -1392,6 +1394,12 @@ Show the mapped section as read only.
 .EXAMPLE
 Show-NtSection $section -Wait
 Show the mapped section and wait for the viewer to exit.
+.EXAMPLE
+Show-NtSection ([byte[]]@(0, 1, 2, 3))
+Show an arbitrary byte array in the viewer.
+.EXAMPLE
+Show-NtSection path\to\file.bin
+Show an arbitrary file in the viewer.
 #>
 function Show-NtSection {
     [CmdletBinding(DefaultParameterSetName = "FromSection")]
@@ -1402,6 +1410,8 @@ function Show-NtSection {
         [switch]$ReadOnly,
         [Parameter(Position = 0, Mandatory = $true, ParameterSetName = "FromData")]
         [byte[]]$Data,
+		[Parameter(Position = 0, Mandatory = $true, ParameterSetName = "FromFile")]
+		[string]$Path,
         [switch]$Wait
     )
     switch($PSCmdlet.ParameterSetName) {
@@ -1437,6 +1447,16 @@ function Show-NtSection {
                     $p.Process.Wait() | Out-Null
                 }
             }
+        }
+		"FromFile" {
+			$Path = Resolve-Path $Path
+			if ($Path -ne "") {
+				Use-NtObject($p = New-Win32Process "EditSection --file=""$Path""" -ApplicationName "$PSScriptRoot\EditSection.exe") {
+					if ($Wait) {
+						$p.Process.Wait() | Out-Null
+					}
+				}
+			}
         }
     } 
 }
