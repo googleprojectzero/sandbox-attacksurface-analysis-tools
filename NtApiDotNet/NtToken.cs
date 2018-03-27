@@ -1235,6 +1235,19 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Enable a privilege of the effective token.
+        /// </summary>
+        /// <param name="privilege">The privilege to enable.</param>
+        /// <returns>True if set the privilege.</returns>
+        public static bool EnableEffectivePrivilege(TokenPrivilegeValue privilege)
+        {
+            using (NtToken token = NtToken.OpenEffectiveToken())
+            {
+                return token.SetPrivilege(privilege, PrivilegeAttributes.Enabled);
+            }
+        }
+
+        /// <summary>
         /// Open the process token of another process
         /// </summary>
         /// <param name="process">The process to open the token for</param>
