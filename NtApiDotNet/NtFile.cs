@@ -4140,6 +4140,11 @@ namespace NtApiDotNet
         /// <returns>The NT filename</returns>
         public static string DosFileNameToNt(string filename)
         {
+            if (filename == null)
+            {
+                throw new ArgumentNullException("filename");
+            }
+
             UnicodeStringOut nt_name = new UnicodeStringOut();
             try
             {
@@ -4162,6 +4167,11 @@ namespace NtApiDotNet
         /// <returns>The object attributes</returns>
         public static ObjectAttributes DosFileNameToObjectAttributes(string filename)
         {
+            if (filename == null)
+            {
+                throw new ArgumentNullException("filename");
+            }
+
             UnicodeStringOut nt_name = new UnicodeStringOut();
             RtlRelativeName relative_name = new RtlRelativeName();
             try
@@ -4208,6 +4218,11 @@ namespace NtApiDotNet
         /// <returns>The type of DOS path</returns>
         public static RtlPathType GetDosPathType(string filename)
         {
+            if (filename == null)
+            {
+                throw new ArgumentNullException("filename");
+            }
+
             return NtRtl.RtlDetermineDosPathNameType_U(filename);
         }
 
