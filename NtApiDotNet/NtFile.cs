@@ -1195,7 +1195,7 @@ namespace NtApiDotNet
 
     public abstract class ReparseBuffer
     {
-        public ReparseTag Tag { get; private set; }
+        public ReparseTag Tag { get; set; }
 
         protected abstract void ParseBuffer(int data_length, BinaryReader reader);
         protected abstract byte[] GetBuffer();
@@ -1297,9 +1297,9 @@ namespace NtApiDotNet
         {
         }
 
-        public Guid Guid { get; private set; }
+        public Guid Guid { get; set; }
 
-        public byte[] Data { get; private set; }
+        public byte[] Data { get; set; }
 
         protected override byte[] GetBuffer()
         {
@@ -1328,7 +1328,7 @@ namespace NtApiDotNet
         {
         }
         
-        public byte[] Data { get; private set; }
+        public byte[] Data { get; set; }
 
         protected override byte[] GetBuffer()
         {
@@ -1357,8 +1357,8 @@ namespace NtApiDotNet
         {
         }
 
-        public string SubstitutionName { get; private set; }
-        public string PrintName { get; private set; }
+        public string SubstitutionName { get; set; }
+        public string PrintName { get; set; }
         
         protected override void ParseBuffer(int data_length, BinaryReader reader)
         {
@@ -1434,9 +1434,9 @@ namespace NtApiDotNet
         {
         }
 
-        public string SubstitutionName { get; private set; }
-        public string PrintName { get; private set; }
-        public SymlinkReparseBufferFlags Flags { get; private set; }
+        public string SubstitutionName { get; set; }
+        public string PrintName { get; set; }
+        public SymlinkReparseBufferFlags Flags { get; set; }
 
         protected override void ParseBuffer(int data_length, BinaryReader reader)
         {
@@ -1477,11 +1477,11 @@ namespace NtApiDotNet
 
     public class ExecutionAliasReparseBuffer : ReparseBuffer
     {
-        public int Version { get; private set; }
-        public string PackageName { get; private set; }
-        public string EntryPoint { get; private set; }
-        public string Target { get; private set; }
-        public int Flags { get; private set; }
+        public int Version { get; set; }
+        public string PackageName { get; set; }
+        public string EntryPoint { get; set; }
+        public string Target { get; set; }
+        public int Flags { get; set; }
 
         private static string ReadNulTerminated(BinaryReader reader)
         {
