@@ -852,11 +852,12 @@ namespace NtApiDotNet
         private int? _pid;
         private ProcessExtendedBasicInformation _extended_info;
         
-        private ProcessExtendedBasicInformation GetExtendedBasicInfo()
+        private ProcessExtendedBasicInformation GetExtendedBasicInfo(bool get_cached)
         {
-            if (_extended_info == null)
+            if (_extended_info == null || !get_cached)
             {
-                if (!IsAccessGranted(ProcessAccessRights.QueryLimitedInformation))
+                if (!IsAccessGranted(ProcessAccessRights.QueryLimitedInformation) 
+                    && !IsAccessGranted(ProcessAccessRights.QueryInformation))
                 {
                     _extended_info = new ProcessExtendedBasicInformation();
                 }
@@ -868,8 +869,10 @@ namespace NtApiDotNet
                     }
                     catch (NtException)
                     {
-                        ProcessExtendedBasicInformation result = new ProcessExtendedBasicInformation();
-                        result.BasicInfo = QueryFixed<ProcessBasicInformation>(ProcessInformationClass.ProcessBasicInformation);
+                        ProcessExtendedBasicInformation result = new ProcessExtendedBasicInformation
+                        {
+                            BasicInfo = QueryFixed<ProcessBasicInformation>(ProcessInformationClass.ProcessBasicInformation)
+                        };
                         _extended_info = result;
                     }
                 }
@@ -880,7 +883,7 @@ namespace NtApiDotNet
 
         private ProcessBasicInformation GetBasicInfo()
         {
-            return GetExtendedBasicInfo().BasicInfo;
+            return GetExtendedBasicInfo(true).BasicInfo;
         }
 
         private NtStatus Query<T>(ProcessInformationClass info_class, out SafeStructureInOutBuffer<T> buffer) where T : new()
@@ -1094,11 +1097,11 @@ namespace NtApiDotNet
         {
             get
             {
-                if (_pid.HasValue)
+                if (!_pid.HasValue)
                 {
-                    return _pid.Value;
+                    _pid = GetBasicInfo().UniqueProcessId.ToInt32();
                 }
-                return GetBasicInfo().UniqueProcessId.ToInt32();
+                return _pid.Value;
             }
         }
 
@@ -1150,7 +1153,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFixed<ProcessBasicInformation>(ProcessInformationClass.ProcessBasicInformation).ExitStatus;
+                return GetExtendedBasicInfo(false).BasicInfo.ExitStatus;
             }
         }
 
@@ -1488,7 +1491,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return GetExtendedBasicInfo().Flags;
+                return GetExtendedBasicInfo(false).Flags;
             }
         }
 
@@ -1500,12 +1503,12 @@ namespace NtApiDotNet
         {
             return Current.Duplicate();
         }
-
+        
         /// <summary>
         /// Get the current process.
         /// </summary>
         /// <remarks>This only uses the pseudo handle, for the process. If you need a proper handle use OpenCurrent.</remarks>
-        public static NtProcess Current { get { return new NtProcess(new SafeKernelObjectHandle(new IntPtr(-1), false)); } }
+        public static NtProcess Current { get => new NtProcess(new SafeKernelObjectHandle(new IntPtr(-1), false)); }
 
         /// <summary>
         /// Read memory from a process.
