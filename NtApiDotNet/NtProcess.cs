@@ -185,7 +185,8 @@ namespace NtApiDotNet
         ComPlusILOnly = 2,
         ImageDynamicallyRelocated = 4,
         ImageMappedFlat = 8,
-        BaseBelow4gb = 16
+        BaseBelow4gb = 16,
+        ComPlusPrefer32bit = 32
     }
 
     [StructLayout(LayoutKind.Sequential)]
