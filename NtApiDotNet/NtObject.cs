@@ -148,7 +148,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtClose(IntPtr handle);
 
         [DllImport("ntdll.dll")]
-        internal static extern NtStatus NtDuplicateObject(
+        public static extern NtStatus NtDuplicateObject(
           SafeHandle SourceProcessHandle,
           IntPtr SourceHandle,
           SafeHandle TargetProcessHandle,
