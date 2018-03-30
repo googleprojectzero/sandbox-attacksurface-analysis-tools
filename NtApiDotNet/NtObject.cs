@@ -150,9 +150,9 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtDuplicateObject(
           SafeHandle SourceProcessHandle,
-          SafeHandle SourceHandle,
+          IntPtr SourceHandle,
           SafeHandle TargetProcessHandle,
-          out SafeKernelObjectHandle TargetHandle,
+          out IntPtr TargetHandle,
           AccessMask DesiredAccess,
           AttributeFlags HandleAttributes,
           DuplicateObjectOptions Options
@@ -294,16 +294,38 @@ namespace NtApiDotNet
         /// <param name="access_rights">The access rights for the new handle</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
+        internal static NtResult<IntPtr> DuplicateHandle(
+            NtProcess src_process, IntPtr src_handle,
+            NtProcess dest_process, AccessMask access_rights,
+            AttributeFlags flags, DuplicateObjectOptions options,
+            bool throw_on_error)
+        {
+            IntPtr external_handle;
+            return NtSystemCalls.NtDuplicateObject(src_process.Handle, src_handle,
+                dest_process.Handle, out external_handle, access_rights, flags,
+                options).CreateResult(throw_on_error, () => external_handle);
+        }
+
+        /// <summary>
+        /// Duplicate the internal handle to a new handle.
+        /// </summary>
+        /// <param name="flags">Attribute flags for new handle</param>
+        /// <param name="src_handle">The source handle to duplicate</param>
+        /// <param name="src_process">The source process to duplicate from</param>
+        /// <param name="dest_process">The desination process for the handle</param>
+        /// <param name="options">Duplicate handle options</param>
+        /// <param name="access_rights">The access rights for the new handle</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
         internal static NtResult<SafeKernelObjectHandle> DuplicateHandle(
             NtProcess src_process, SafeKernelObjectHandle src_handle,
             NtProcess dest_process, AccessMask access_rights,
             AttributeFlags flags, DuplicateObjectOptions options,
             bool throw_on_error)
         {
-            SafeKernelObjectHandle new_handle;
-            return NtSystemCalls.NtDuplicateObject(src_process.Handle, src_handle,
-              dest_process.Handle, out new_handle, access_rights, flags,
-              options).CreateResult(throw_on_error, () => new_handle);
+            return DuplicateHandle(src_process, src_handle.DangerousGetHandle(),
+                dest_process, access_rights, flags, options,
+                throw_on_error).Map(h => new SafeKernelObjectHandle(h, true));
         }
 
         /// <summary>
@@ -1164,6 +1186,196 @@ namespace NtApiDotNet
         public static O DuplicateFrom(int pid, IntPtr handle)
         {
             return DuplicateFrom(pid, handle, default(A), DuplicateObjectOptions.SameAccess, true).Result;
+        }
+
+        /// <summary>
+        /// Duplicate an instance from current process to an other process
+        /// </summary>
+        /// <param name="process">The destination process (with DupHandle access)</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <param name="access">The access rights to duplicate with</param>
+        /// <param name="options">The options for duplication.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<IntPtr> DuplicateTo(NtProcess process, SafeKernelObjectHandle handle,
+            A access, DuplicateObjectOptions options, bool throw_on_error)
+        {
+            return NtObject.DuplicateHandle(NtProcess.Current, handle.DangerousGetHandle(),
+                process, ToGenericAccess(access), AttributeFlags.None,
+                options, throw_on_error);
+        }
+
+        /// <summary>
+        /// Duplicate an instance from current process to an other process
+        /// </summary>
+        /// <param name="pid">The destination process ID</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <param name="access">The access rights to duplicate with</param>
+        /// <param name="options">The options for duplication.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<IntPtr> DuplicateTo(int pid, SafeKernelObjectHandle handle,
+            A access, DuplicateObjectOptions options, bool throw_on_error)
+        {
+            using (var process = NtProcess.Open(pid, ProcessAccessRights.DupHandle, throw_on_error))
+            {
+                if (!process.IsSuccess)
+                {
+                    return new NtResult<IntPtr>(process.Status, IntPtr.Zero);
+                }
+
+                return DuplicateTo(process.Result, handle, access, options, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Duplicate an instance from current process to an other process with a specified access rights.
+        /// </summary>
+        /// <param name="process">The destination process (with DupHandle access)</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <param name="access">The access rights to duplicate.</param>
+        /// <returns>The duplicated handle</returns>
+        public static IntPtr DuplicateTo(NtProcess process, SafeKernelObjectHandle handle, A access)
+        {
+            return DuplicateTo(process, handle, access,
+                DuplicateObjectOptions.None, true).Result;
+        }
+
+        /// <summary>
+        /// Duplicate an instance from current process to an other process
+        /// </summary>
+        /// <param name="pid">The destination process ID</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <param name="access">The access rights to duplicate with</param>
+        /// <returns>The duplicated handle</returns>
+        public static IntPtr DuplicateTo(int pid, SafeKernelObjectHandle handle, A access)
+        {
+            return DuplicateTo(pid, handle, access,
+                DuplicateObjectOptions.None, true).Result;
+        }
+
+        /// <summary>
+        /// Duplicate an instance from current process to an other process with same access rights.
+        /// </summary>
+        /// <param name="process">The destination process (with DupHandle access)</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <returns>The duplicated object.</returns>
+        public static IntPtr DuplicateTo(NtProcess process, SafeKernelObjectHandle handle)
+        {
+            return DuplicateTo(process, handle, default(A), DuplicateObjectOptions.SameAccess, true).Result;
+        }
+
+        /// <summary>
+        /// Duplicate an instance from current process to an other process with same access rights
+        /// </summary>
+        /// <param name="pid">The destination process ID</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <returns>The duplicated handle</returns>
+        public static IntPtr DuplicateTo(int pid, SafeKernelObjectHandle handle)
+        {
+            return DuplicateTo(pid, handle, default(A), DuplicateObjectOptions.SameAccess, true).Result;
+        }
+
+        /// <summary>
+        /// Duplicate an instance from a process to an other process
+        /// </summary>
+        /// <param name="src_process">The source process (with DupHandle access)</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <param name="dst_process">The destination process (with DupHandle access)</param>
+        /// <param name="access">The access rights to duplicate with</param>
+        /// <param name="options">The options for duplication.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<IntPtr> DuplicateTo(NtProcess src_process, IntPtr handle, NtProcess dst_process,
+            A access, DuplicateObjectOptions options, bool throw_on_error)
+        {
+            return NtObject.DuplicateHandle(src_process, handle,
+                dst_process, ToGenericAccess(access), AttributeFlags.None,
+                options, throw_on_error);
+        }
+
+        /// <summary>
+        /// Duplicate an instance from a process to an other process
+        /// </summary>
+        /// <param name="src_pid">The source process ID</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <param name="dst_pid">The destination process ID</param>
+        /// <param name="access">The access rights to duplicate with</param>
+        /// <param name="options">The options for duplication.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<IntPtr> DuplicateTo(int src_pid, IntPtr handle, int dst_pid,
+            A access, DuplicateObjectOptions options, bool throw_on_error)
+        {
+            using (var src_process = NtProcess.Open(src_pid, ProcessAccessRights.DupHandle, throw_on_error))
+            {
+                if (!src_process.IsSuccess)
+                {
+                    return new NtResult<IntPtr>(src_process.Status, IntPtr.Zero);
+                }
+
+                using (var dst_process = NtProcess.Open(dst_pid, ProcessAccessRights.DupHandle, throw_on_error))
+                {
+                    if (!dst_process.IsSuccess)
+                    {
+                        return new NtResult<IntPtr>(dst_process.Status, IntPtr.Zero);
+                    }
+
+                    return DuplicateTo(src_process.Result, handle, dst_process.Result, access, options, throw_on_error);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Duplicate an instance from a process to an other process with a specified access rights.
+        /// </summary>
+        /// <param name="src_process">The source process (with DupHandle access)</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <param name="dst_process">The destination process (with DupHandle access)</param>
+        /// <param name="access">The access rights to duplicate.</param>
+        /// <returns>The duplicated handle</returns>
+        public static IntPtr DuplicateTo(NtProcess src_process, IntPtr handle, NtProcess dst_process, A access)
+        {
+            return DuplicateTo(src_process, handle, dst_process, access,
+                DuplicateObjectOptions.None, true).Result;
+        }
+
+        /// <summary>
+        /// Duplicate an instance from a process to an other process
+        /// </summary>
+        /// <param name="src_pid">The source process ID</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <param name="dst_pid">The destination process ID</param>
+        /// <param name="access">The access rights to duplicate with</param>
+        /// <returns>The duplicated handle</returns>
+        public static IntPtr DuplicateTo(int src_pid, IntPtr handle, int dst_pid, A access)
+        {
+            return DuplicateTo(src_pid, handle, dst_pid, access,
+                DuplicateObjectOptions.None, true).Result;
+        }
+
+        /// <summary>
+        /// Duplicate an instance from a process to an other process with same access rights.
+        /// </summary>
+        /// <param name="src_process">The source process (with DupHandle access)</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <param name="dst_process">The destination process (with DupHandle access)</param>
+        /// <returns>The duplicated object.</returns>
+        public static IntPtr DuplicateTo(NtProcess src_process, IntPtr handle, NtProcess dst_process)
+        {
+            return DuplicateTo(src_process, handle, dst_process, default(A), DuplicateObjectOptions.SameAccess, true).Result;
+        }
+
+        /// <summary>
+        /// Duplicate an instance from a process to an other process with same access rights
+        /// </summary>
+        /// <param name="src_pid">The source process ID</param>
+        /// <param name="handle">The handle value to duplicate</param>
+        /// <param name="dst_pid">The destination process ID</param>
+        /// <returns>The duplicated handle</returns>
+        public static IntPtr DuplicateTo(int src_pid, IntPtr handle, int dst_pid)
+        {
+            return DuplicateTo(src_pid, handle, dst_pid, default(A), DuplicateObjectOptions.SameAccess, true).Result;
         }
     }
 
