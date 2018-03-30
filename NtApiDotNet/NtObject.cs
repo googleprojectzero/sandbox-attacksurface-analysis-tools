@@ -148,20 +148,9 @@ namespace NtApiDotNet
         public static extern NtStatus NtClose(IntPtr handle);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtDuplicateObject(
-          SafeHandle SourceProcessHandle,
-          SafeHandle SourceHandle,
-          SafeHandle TargetProcessHandle,
-          out SafeKernelObjectHandle TargetHandle,
-          AccessMask DesiredAccess,
-          AttributeFlags HandleAttributes,
-          DuplicateObjectOptions Options
-        );
-
-        [DllImport("ntdll.dll")]
         internal static extern NtStatus NtDuplicateObject(
           SafeHandle SourceProcessHandle,
-          SafeHandle SourceHandle,
+          IntPtr SourceHandle,
           SafeHandle TargetProcessHandle,
           out IntPtr TargetHandle,
           AccessMask DesiredAccess,
@@ -305,26 +294,38 @@ namespace NtApiDotNet
         /// <param name="access_rights">The access rights for the new handle</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
+        internal static NtResult<IntPtr> DuplicateHandle(
+            NtProcess src_process, IntPtr src_handle,
+            NtProcess dest_process, AccessMask access_rights,
+            AttributeFlags flags, DuplicateObjectOptions options,
+            bool throw_on_error)
+        {
+            IntPtr external_handle;
+            return NtSystemCalls.NtDuplicateObject(src_process.Handle, src_handle,
+                dest_process.Handle, out external_handle, access_rights, flags,
+                options).CreateResult(throw_on_error, () => external_handle);
+        }
+
+        /// <summary>
+        /// Duplicate the internal handle to a new handle.
+        /// </summary>
+        /// <param name="flags">Attribute flags for new handle</param>
+        /// <param name="src_handle">The source handle to duplicate</param>
+        /// <param name="src_process">The source process to duplicate from</param>
+        /// <param name="dest_process">The desination process for the handle</param>
+        /// <param name="options">Duplicate handle options</param>
+        /// <param name="access_rights">The access rights for the new handle</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
         internal static NtResult<SafeKernelObjectHandle> DuplicateHandle(
             NtProcess src_process, SafeKernelObjectHandle src_handle,
             NtProcess dest_process, AccessMask access_rights,
             AttributeFlags flags, DuplicateObjectOptions options,
             bool throw_on_error)
         {
-            if (NtProcess.Current.ProcessId == dest_process.ProcessId)
-            {
-                SafeKernelObjectHandle new_handle;
-                return NtSystemCalls.NtDuplicateObject(src_process.Handle, src_handle,
-                  dest_process.Handle, out new_handle, access_rights, flags,
-                  options).CreateResult(throw_on_error, () => new_handle);
-            }
-            else
-            {
-                IntPtr external_handle;
-                return NtSystemCalls.NtDuplicateObject(src_process.Handle, src_handle,
-                  dest_process.Handle, out external_handle, access_rights, flags,
-                  options).CreateResult(throw_on_error, () => new SafeKernelObjectHandle(external_handle, false) );
-            }
+            return DuplicateHandle(src_process, src_handle.DangerousGetHandle(),
+                dest_process, access_rights, flags, options,
+                throw_on_error).Map(h => new SafeKernelObjectHandle(h, true));
         }
 
         /// <summary>
@@ -1196,12 +1197,12 @@ namespace NtApiDotNet
         /// <param name="options">The options for duplication.</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
-        public static NtResult<IntPtr> DuplicateTo(NtProcess process, IntPtr handle,
+        public static NtResult<IntPtr> DuplicateTo(NtProcess process, SafeKernelObjectHandle handle,
             A access, DuplicateObjectOptions options, bool throw_on_error)
         {
-            return NtObject.DuplicateHandle(NtProcess.Current, new SafeKernelObjectHandle(handle, false),
+            return NtObject.DuplicateHandle(NtProcess.Current, handle.DangerousGetHandle(),
                 process, ToGenericAccess(access), AttributeFlags.None,
-                options, throw_on_error).Map(h => h.DangerousGetHandle());
+                options, throw_on_error);
         }
 
         /// <summary>
@@ -1213,7 +1214,7 @@ namespace NtApiDotNet
         /// <param name="options">The options for duplication.</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
-        public static NtResult<IntPtr> DuplicateTo(int pid, IntPtr handle,
+        public static NtResult<IntPtr> DuplicateTo(int pid, SafeKernelObjectHandle handle,
             A access, DuplicateObjectOptions options, bool throw_on_error)
         {
             using (var process = NtProcess.Open(pid, ProcessAccessRights.DupHandle, throw_on_error))
@@ -1234,7 +1235,7 @@ namespace NtApiDotNet
         /// <param name="handle">The handle value to duplicate</param>
         /// <param name="access">The access rights to duplicate.</param>
         /// <returns>The duplicated handle</returns>
-        public static IntPtr DuplicateTo(NtProcess process, IntPtr handle, A access)
+        public static IntPtr DuplicateTo(NtProcess process, SafeKernelObjectHandle handle, A access)
         {
             return DuplicateTo(process, handle, access,
                 DuplicateObjectOptions.None, true).Result;
@@ -1247,7 +1248,7 @@ namespace NtApiDotNet
         /// <param name="handle">The handle value to duplicate</param>
         /// <param name="access">The access rights to duplicate with</param>
         /// <returns>The duplicated handle</returns>
-        public static IntPtr DuplicateTo(int pid, IntPtr handle, A access)
+        public static IntPtr DuplicateTo(int pid, SafeKernelObjectHandle handle, A access)
         {
             return DuplicateTo(pid, handle, access,
                 DuplicateObjectOptions.None, true).Result;
@@ -1259,7 +1260,7 @@ namespace NtApiDotNet
         /// <param name="process">The destination process (with DupHandle access)</param>
         /// <param name="handle">The handle value to duplicate</param>
         /// <returns>The duplicated object.</returns>
-        public static IntPtr DuplicateTo(NtProcess process, IntPtr handle)
+        public static IntPtr DuplicateTo(NtProcess process, SafeKernelObjectHandle handle)
         {
             return DuplicateTo(process, handle, default(A), DuplicateObjectOptions.SameAccess, true).Result;
         }
@@ -1270,7 +1271,7 @@ namespace NtApiDotNet
         /// <param name="pid">The destination process ID</param>
         /// <param name="handle">The handle value to duplicate</param>
         /// <returns>The duplicated handle</returns>
-        public static IntPtr DuplicateTo(int pid, IntPtr handle)
+        public static IntPtr DuplicateTo(int pid, SafeKernelObjectHandle handle)
         {
             return DuplicateTo(pid, handle, default(A), DuplicateObjectOptions.SameAccess, true).Result;
         }
@@ -1288,9 +1289,9 @@ namespace NtApiDotNet
         public static NtResult<IntPtr> DuplicateTo(NtProcess src_process, IntPtr handle, NtProcess dst_process,
             A access, DuplicateObjectOptions options, bool throw_on_error)
         {
-            return NtObject.DuplicateHandle(src_process, new SafeKernelObjectHandle(handle, false),
+            return NtObject.DuplicateHandle(src_process, handle,
                 dst_process, ToGenericAccess(access), AttributeFlags.None,
-                options, throw_on_error).Map(h => h.DangerousGetHandle());
+                options, throw_on_error);
         }
 
         /// <summary>
