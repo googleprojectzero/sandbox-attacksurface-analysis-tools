@@ -22,21 +22,19 @@ namespace NtApiDotNet
     [Serializable]
     public sealed class NtException : ApplicationException
     {
-        private NtStatus _status;
-
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="status">Status result</param>
         public NtException(NtStatus status) 
         {
-            _status = status;
+            Status = status;
         }
 
         /// <summary>
         /// Returns the contained NT status code
         /// </summary>
-        public NtStatus Status { get { return _status; } }
+        public NtStatus Status { get; }
 
         /// <summary>
         /// Returns a string form of the NT status code.
@@ -45,12 +43,12 @@ namespace NtApiDotNet
         {
             get
             {
-                string message = NtObjectUtils.GetNtStatusMessage(_status);
+                string message = NtObjectUtils.GetNtStatusMessage(Status);
                 if (String.IsNullOrEmpty(message))
                 {
-                    if (Enum.IsDefined(typeof(NtStatus), _status))
+                    if (Enum.IsDefined(typeof(NtStatus), Status))
                     {
-                        message = _status.ToString();
+                        message = Status.ToString();
                     }
                     else
                     {
@@ -58,7 +56,7 @@ namespace NtApiDotNet
                     }
                 }
 
-                return string.Format("(0x{0:X08}) - {1}", (uint)_status, message);
+                return string.Format("(0x{0:X08}) - {1}", (uint)Status, message);
             }
         }
     }
