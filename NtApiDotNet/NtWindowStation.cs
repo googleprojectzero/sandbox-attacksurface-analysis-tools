@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Win32;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 
@@ -51,6 +52,10 @@ namespace NtApiDotNet
         public static extern SafeKernelObjectHandle NtUserOpenWindowStation(
             ObjectAttributes ObjectAttributes,
             WindowStationAccessRights DesiredAccess);
+
+        [DllImport("win32u.dll", SetLastError = true)]
+        public static extern NtStatus NtUserBuildNameList(
+            SafeKernelObjectHandle Handle, int Size, SafeBuffer NameList, out int RequiredSize);
     }
 
 #pragma warning restore
@@ -114,6 +119,72 @@ namespace NtApiDotNet
         internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
         {
             return Open(object_attributes, desired_access.ToSpecificAccess<WindowStationAccessRights>(), throw_on_error).Cast<NtObject>();
+        }
+
+        /// <summary>
+        /// Get a list of desktops for this Window Station.
+        /// </summary>
+        public IEnumerable<string> Desktops
+        {
+            get
+            {
+                int size = 522;
+                for (int i = 0; i < 10; ++i)
+                {
+                    using (var buffer = new SafeHGlobalBuffer(size))
+                    {
+                        NtStatus status = NtSystemCalls.NtUserBuildNameList(Handle, buffer.Length, buffer, out size);
+                        if (!status.IsSuccess())
+                        {
+                            if (status == NtStatus.STATUS_BUFFER_TOO_SMALL)
+                            {
+                                continue;
+                            }
+                            status.ToNtException();
+                        }
+                        int total_count = buffer.Read<int>(4);
+                        int offset = 8;
+                        while (total_count > 0)
+                        {
+                            string desktop = buffer.ReadNulTerminatedUnicodeString((ulong)offset);
+                            yield return desktop;
+                            offset += (desktop.Length + 1) * 2;
+                            total_count--;
+                        }
+                        yield break;
+                    }
+                }
+                throw new NtException(NtStatus.STATUS_NO_MEMORY);
+            }
+        }
+
+        /// <summary>
+        /// Get a list of accessible desktop objects.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the desktops.</param>
+        /// <returns>The list of desktops.</returns>
+        public IEnumerable<NtDesktop> GetAccessibleDesktops(DesktopAccessRights desired_access)
+        {
+            foreach (string desktop in Desktops)
+            {
+                using (ObjectAttributes obj_attr = new ObjectAttributes(desktop, AttributeFlags.CaseInsensitive, this))
+                {
+                    var result = NtDesktop.Open(obj_attr, 0, desired_access, false);
+                    if (result.IsSuccess)
+                    {
+                        yield return result.Result;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get a list of accessible desktop objects.
+        /// </summary>
+        /// <returns>The list of desktops.</returns>
+        public IEnumerable<NtDesktop> GetAccessibleDesktops()
+        {
+            return GetAccessibleDesktops(DesktopAccessRights.MaximumAllowed);
         }
     }
 }
