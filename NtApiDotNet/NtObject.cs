@@ -1192,6 +1192,21 @@ namespace NtApiDotNet
         /// Duplicate an instance from current process to an other process
         /// </summary>
         /// <param name="process">The destination process (with DupHandle access)</param>
+        /// <param name="access">The access rights to duplicate with</param>
+        /// <param name="options">The options for duplication.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public NtResult<IntPtr> DuplicateTo(NtProcess process, 
+            A access, DuplicateObjectOptions options, bool throw_on_error)
+        {
+            return DuplicateTo(process, Handle,
+                access, options, throw_on_error);
+        }
+
+        /// <summary>
+        /// Duplicate an instance from current process to an other process
+        /// </summary>
+        /// <param name="process">The destination process (with DupHandle access)</param>
         /// <param name="handle">The handle value to duplicate</param>
         /// <param name="access">The access rights to duplicate with</param>
         /// <param name="options">The options for duplication.</param>
@@ -1200,7 +1215,7 @@ namespace NtApiDotNet
         public static NtResult<IntPtr> DuplicateTo(NtProcess process, SafeKernelObjectHandle handle,
             A access, DuplicateObjectOptions options, bool throw_on_error)
         {
-            return NtObject.DuplicateHandle(NtProcess.Current, handle.DangerousGetHandle(),
+            return DuplicateHandle(NtProcess.Current, handle.DangerousGetHandle(),
                 process, ToGenericAccess(access), AttributeFlags.None,
                 options, throw_on_error);
         }
@@ -1266,6 +1281,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Duplicate an instance from current process to an other process with same access rights.
+        /// </summary>
+        /// <param name="process">The destination process (with DupHandle access)</param>
+        /// <returns>The duplicated object.</returns>
+        public IntPtr DuplicateTo(NtProcess process)
+        {
+            return DuplicateTo(process, Handle);
+        }
+
+        /// <summary>
         /// Duplicate an instance from current process to an other process with same access rights
         /// </summary>
         /// <param name="pid">The destination process ID</param>
@@ -1274,6 +1299,16 @@ namespace NtApiDotNet
         public static IntPtr DuplicateTo(int pid, SafeKernelObjectHandle handle)
         {
             return DuplicateTo(pid, handle, default(A), DuplicateObjectOptions.SameAccess, true).Result;
+        }
+
+        /// <summary>
+        /// Duplicate an instance from current process to an other process with same access rights
+        /// </summary>
+        /// <param name="pid">The destination process ID</param>
+        /// <returns>The duplicated handle</returns>
+        public IntPtr DuplicateTo(int pid)
+        {
+            return DuplicateTo(pid, Handle);
         }
 
         /// <summary>
