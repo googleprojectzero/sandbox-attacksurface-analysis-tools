@@ -278,6 +278,77 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Run a function on an NtResult and dispose the result afterwards.
+        /// </summary>
+        /// <typeparam name="T">The underlying result type.</typeparam>
+        /// <typeparam name="S">The result of the function.</typeparam>
+        /// <param name="result">The result.</param>
+        /// <param name="func">The function to call.</param>
+        /// <returns>The result of func.</returns>
+        /// <remarks>If result is not a success then the function is not called.</remarks>
+        public static S RunAndDispose<T, S>(this NtResult<T> result, Func<T, S> func) where T : NtObject
+        {
+            if (!result.IsSuccess)
+            {
+                return default(S);
+            }
+            using (result)
+            {
+                return func(result.Result);
+            }
+        }
+
+        /// <summary>
+        /// Run an action on an NtResult and dispose the result afterwards.
+        /// </summary>
+        /// <typeparam name="T">The underlying result type.</typeparam>
+        /// <param name="result">The result.</param>
+        /// <param name="action">The action to call.</param>
+        /// <remarks>If result is not a success then the action is not called.</remarks>
+        public static void RunAndDispose<T>(this NtResult<T> result, Action<T> action) where T : NtObject
+        {
+            if (!result.IsSuccess)
+            {
+                return;
+            }
+
+            using (result)
+            {
+                action(result.Result);
+            }
+        }
+
+        /// <summary>
+        /// Run a function on an NtResult and dispose the result afterwards.
+        /// </summary>
+        /// <typeparam name="T">The underlying result type.</typeparam>
+        /// <typeparam name="S">The result of the function.</typeparam>
+        /// <param name="result">The result.</param>
+        /// <param name="func">The function to call.</param>
+        /// <returns>The result of func.</returns>
+        public static S RunAndDispose<T, S>(this T result, Func<T, S> func) where T : NtObject
+        {
+            using (result)
+            {
+                return func(result);
+            }
+        }
+
+        /// <summary>
+        /// Run an action on an NtResult and dispose the result afterwards.
+        /// </summary>
+        /// <typeparam name="T">The underlying result type.</typeparam>
+        /// <param name="result">The result.</param>
+        /// <param name="action">The action to call.</param>
+        public static void RunAndDispose<T>(this T result, Action<T> action) where T : NtObject
+        {
+            using (result)
+            {
+                action(result);
+            }
+        }
+
+        /// <summary>
         /// Create an NT result object. If status is successful then call function otherwise use default value.
         /// </summary>
         /// <typeparam name="T">The result type.</typeparam>
