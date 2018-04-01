@@ -852,12 +852,12 @@ namespace NtApiDotNet
     {
         private int? _pid;
         private ProcessExtendedBasicInformation _extended_info;
-        
+
         private ProcessExtendedBasicInformation GetExtendedBasicInfo(bool get_cached)
         {
             if (_extended_info == null || !get_cached)
             {
-                if (!IsAccessGranted(ProcessAccessRights.QueryLimitedInformation) 
+                if (!IsAccessGranted(ProcessAccessRights.QueryLimitedInformation)
                     && !IsAccessGranted(ProcessAccessRights.QueryInformation))
                 {
                     _extended_info = new ProcessExtendedBasicInformation();
@@ -1060,7 +1060,7 @@ namespace NtApiDotNet
             }
             else
             {
-                handles.AddRange(NtSystemInfo.GetThreadInformation(ProcessId).Select(t => 
+                handles.AddRange(NtSystemInfo.GetThreadInformation(ProcessId).Select(t =>
                             NtThread.Open(t.ThreadId, desired_access, false)).SelectValidResults());
             }
             return handles;
@@ -1332,8 +1332,8 @@ namespace NtApiDotNet
                 NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInformationClass.ProcessMitigationPolicy, buffer, buffer.Length, out int return_length);
                 if (!status.IsSuccess())
                 {
-                    if (status != NtStatus.STATUS_INVALID_PARAMETER 
-                     && status != NtStatus.STATUS_NOT_SUPPORTED 
+                    if (status != NtStatus.STATUS_INVALID_PARAMETER
+                     && status != NtStatus.STATUS_NOT_SUPPORTED
                      && status != NtStatus.STATUS_PROCESS_IS_TERMINATING)
                     {
                         status.ToNtException();
@@ -1504,7 +1504,7 @@ namespace NtApiDotNet
         {
             return Current.Duplicate();
         }
-        
+
         /// <summary>
         /// Get the current process.
         /// </summary>
@@ -1681,7 +1681,7 @@ namespace NtApiDotNet
         /// <returns>The address of the allocated region.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public long AllocateMemory(long base_address,
-            long region_size, 
+            long region_size,
             MemoryAllocationType allocation_type, MemoryAllocationProtect protect)
         {
             return NtVirtualMemory.AllocateMemory(Handle, base_address, region_size, allocation_type, protect);
@@ -1695,8 +1695,8 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public long AllocateMemory(long region_size)
         {
-            return AllocateMemory(0, region_size, 
-                MemoryAllocationType.Reserve | MemoryAllocationType.Commit, 
+            return AllocateMemory(0, region_size,
+                MemoryAllocationType.Reserve | MemoryAllocationType.Commit,
                 MemoryAllocationProtect.ReadWrite);
         }
 
@@ -1723,7 +1723,7 @@ namespace NtApiDotNet
         public MemoryAllocationProtect ProtectMemory(long base_address,
             long region_size, MemoryAllocationProtect new_protect)
         {
-            return NtVirtualMemory.ProtectMemory(Handle, base_address, 
+            return NtVirtualMemory.ProtectMemory(Handle, base_address,
                 region_size, new_protect);
         }
 
@@ -1900,7 +1900,7 @@ namespace NtApiDotNet
         {
             return OpenOwner(ProcessAccessRights.MaximumAllowed);
         }
-        
+
         /// <summary>
         /// Get process window title (from Process Parameters).
         /// </summary>
@@ -1970,8 +1970,8 @@ namespace NtApiDotNet
         /// <returns>True if in specific job.</returns>
         public bool IsInJob(NtJob job)
         {
-            return NtSystemCalls.NtIsProcessInJob(Handle, 
-                job == null ? SafeKernelObjectHandle.Null : job.Handle) 
+            return NtSystemCalls.NtIsProcessInJob(Handle,
+                job == null ? SafeKernelObjectHandle.Null : job.Handle)
                         == NtStatus.STATUS_PROCESS_IN_JOB;
         }
 
@@ -2138,6 +2138,18 @@ namespace NtApiDotNet
             get
             {
                 return QueryFixed<int>(ProcessInformationClass.ProcessLUIDDeviceMapsEnabled) != 0;
+            }
+        }
+
+        /// <summary>
+        /// Return whether this process is sandboxed.
+        /// </summary>
+        public bool IsSandboxToken
+        {
+            get
+            {
+                return NtToken.OpenProcessToken(this, 
+                    TokenAccessRights.Query, false).RunAndDispose(token => token.IsSandbox);
             }
         }
     }

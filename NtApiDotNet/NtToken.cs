@@ -2769,5 +2769,34 @@ namespace NtApiDotNet
         /// </summary>
         /// <remarks>Only useful for querying information.</remarks>
         public static NtToken PseudoEffectiveToken { get { return GetPseudoToken(-6); } }
+
+        /// <summary>
+        /// Get whether this token is a sandboxed token.
+        /// </summary>
+        public bool IsSandbox
+        {
+            get
+            {
+                try
+                {
+                    if (TokenType == TokenType.Primary)
+                    {
+                        return DuplicateToken(SecurityImpersonationLevel.Identification)
+                            .RunAndDispose(token => token.IsSandbox);
+                    }
+
+                    if (NtRtl.RtlCheckSandboxedToken(Handle, out bool is_sandboxed).IsSuccess())
+                    {
+                        return is_sandboxed;
+                    }
+                }
+                catch
+                {
+                }
+
+                // Default to not using the RTL version.
+                return AppContainer || Restricted || IntegrityLevel < TokenIntegrityLevel.Medium;
+            }
+        }
     }
 }

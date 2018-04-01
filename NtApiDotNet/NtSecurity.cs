@@ -278,6 +278,9 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus RtlDeriveCapabilitySidsFromName(
             UnicodeString CapabilityName, SafeBuffer CapabilityGroupSid, SafeBuffer CapabilitySid);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlCheckSandboxedToken(SafeKernelObjectHandle token, out bool is_sandboxed);
     }
 
     public static partial class NtSystemCalls
