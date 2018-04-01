@@ -15,7 +15,6 @@
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -121,6 +120,25 @@ namespace NtApiDotNet.Win32
         {
             return CloseServiceHandle(handle);
         }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SERVICE_STATUS_PROCESS
+    {
+        public int  dwServiceType;
+        public int  dwCurrentState;
+        public int  dwControlsAccepted;
+        public int  dwWin32ExitCode;
+        public int  dwServiceSpecificExitCode;
+        public int  dwCheckPoint;
+        public int  dwWaitHint;
+        public int  dwProcessId;
+        public int  dwServiceFlags;
+    }
+
+    internal enum SC_STATUS_TYPE
+    {
+        SC_STATUS_PROCESS_INFO = 0
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -386,17 +404,28 @@ namespace NtApiDotNet.Win32
           out int pcbBytesNeeded
         );
 
+        [DllImport("Advapi32.dll", SetLastError = true)]
+        static extern bool QueryServiceStatusEx(
+          SafeServiceHandle hService,
+          SC_STATUS_TYPE InfoLevel,
+          SafeBuffer lpBuffer,
+          int cbBufSize,
+          out int pcbBytesNeeded
+        );
+
         /// <summary>
         /// Get the generic mapping for the SCM.
         /// </summary>
         /// <returns>The SCM generic mapping.</returns>
         public static GenericMapping GetScmGenericMapping()
         {
-            GenericMapping mapping = new GenericMapping();
-            mapping.GenericRead = ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.EnumerateService | ServiceControlManagerAccessRights.QueryLockStatus;
-            mapping.GenericWrite = ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.CreateService | ServiceControlManagerAccessRights.ModifyBootConfig;
-            mapping.GenericExecute = ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.Lock;
-            mapping.GenericAll = ServiceControlManagerAccessRights.All;
+            GenericMapping mapping = new GenericMapping
+            {
+                GenericRead = ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.EnumerateService | ServiceControlManagerAccessRights.QueryLockStatus,
+                GenericWrite = ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.CreateService | ServiceControlManagerAccessRights.ModifyBootConfig,
+                GenericExecute = ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.Lock,
+                GenericAll = ServiceControlManagerAccessRights.All
+            };
             return mapping;
         }
 
@@ -406,13 +435,15 @@ namespace NtApiDotNet.Win32
         /// <returns>The service generic mapping.</returns>
         public static GenericMapping GetServiceGenericMapping()
         {
-            GenericMapping mapping = new GenericMapping();
-            mapping.GenericRead = ServiceAccessRights.ReadControl | ServiceAccessRights.QueryConfig
-                | ServiceAccessRights.QueryStatus | ServiceAccessRights.Interrogate | ServiceAccessRights.EnumerateDependents;
-            mapping.GenericWrite = ServiceAccessRights.ReadControl | ServiceAccessRights.ChangeConfig;
-            mapping.GenericExecute = ServiceAccessRights.ReadControl | ServiceAccessRights.Start
-                | ServiceAccessRights.Stop | ServiceAccessRights.PauseContinue | ServiceAccessRights.UserDefinedControl;
-            mapping.GenericAll = ServiceAccessRights.All;
+            GenericMapping mapping = new GenericMapping
+            {
+                GenericRead = ServiceAccessRights.ReadControl | ServiceAccessRights.QueryConfig
+                | ServiceAccessRights.QueryStatus | ServiceAccessRights.Interrogate | ServiceAccessRights.EnumerateDependents,
+                GenericWrite = ServiceAccessRights.ReadControl | ServiceAccessRights.ChangeConfig,
+                GenericExecute = ServiceAccessRights.ReadControl | ServiceAccessRights.Start
+                | ServiceAccessRights.Stop | ServiceAccessRights.PauseContinue | ServiceAccessRights.UserDefinedControl,
+                GenericAll = ServiceAccessRights.All
+            };
             return mapping;
         }
         
@@ -504,6 +535,79 @@ namespace NtApiDotNet.Win32
 
                 return GetServiceSecurityInformation(scm, name);
             }
+        }
+
+        private static SERVICE_STATUS_PROCESS QueryStatus(SafeServiceHandle service)
+        {
+            using (var buffer = new SafeStructureInOutBuffer<SERVICE_STATUS_PROCESS>())
+            {
+                if (!QueryServiceStatusEx(service, SC_STATUS_TYPE.SC_STATUS_PROCESS_INFO, buffer, buffer.Length, out int length))
+                {
+                    throw new SafeWin32Exception();
+                }
+                return buffer.Result;
+            }
+        }
+
+        private static int GetServiceProcessId(SafeServiceHandle scm, string name)
+        {
+            using (SafeServiceHandle service = OpenService(scm, name, ServiceAccessRights.QueryStatus))
+            {
+                if (service.IsInvalid)
+                {
+                    throw new SafeWin32Exception();
+                }
+
+                return QueryStatus(service).dwProcessId;
+            }
+        }
+
+        /// <summary>
+        /// Get the PID of a running service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <returns>Returns the PID of the running service, or 0 if not running.</returns>
+        /// <exception cref="SafeWin32Exception">Thrown on error.</exception>
+        public static int GetServiceProcessId(string name)
+        {
+            using (SafeServiceHandle scm = OpenSCManager(null, null,
+                            ServiceControlManagerAccessRights.Connect))
+            {
+                if (scm.IsInvalid)
+                {
+                    throw new SafeWin32Exception();
+                }
+
+                return GetServiceProcessId(scm, name);
+            }
+        }
+
+        /// <summary>
+        /// Get the PIDs of a list of running service.
+        /// </summary>
+        /// <param name="names">The names of the services.</param>
+        /// <returns>Returns the PID of the running service, or 0 if not running.</returns>
+        /// <exception cref="SafeWin32Exception">Thrown on error.</exception>
+        public static IDictionary<string, int> GetServiceProcessIds(IEnumerable<string> names)
+        {
+            Dictionary<string, int> result = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            using (SafeServiceHandle scm = OpenSCManager(null, null,
+                            ServiceControlManagerAccessRights.Connect))
+            {
+                if (scm.IsInvalid)
+                {
+                    throw new SafeWin32Exception();
+                }
+
+                foreach (var name in names)
+                {
+                    if (!result.ContainsKey(name))
+                    {
+                        result[name] = GetServiceProcessId(scm, name);
+                    }
+                }
+            }
+            return result;
         }
     }
 }
