@@ -376,6 +376,14 @@ namespace NtApiDotNet
             NtSystemCalls.NtAssignProcessToJobObject(Handle, process.Handle).ToNtException();
         }
 
+        /// <summary>
+        /// Assign a process to this job object using current Job on Windows 1709+.
+        /// </summary>
+        public void AssignProcessPseudoHandle()
+        {
+            AssignProcess(NtProcess.FromHandle(new SafeKernelObjectHandle(new IntPtr(-7), false)));
+        }
+
         private void SetInfo<T>(JobObjectInformationClass info_class, T value) where T : new()
         {
             using (var buffer = value.ToBuffer())
