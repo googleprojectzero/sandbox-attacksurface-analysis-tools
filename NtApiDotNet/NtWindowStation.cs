@@ -50,7 +50,7 @@ namespace NtApiDotNet
         [DllImport("win32u.dll", SetLastError = true)]
         public static extern SafeKernelObjectHandle NtUserOpenWindowStation(
             ObjectAttributes ObjectAttributes,
-            DesktopAccessRights DesiredAccess);
+            WindowStationAccessRights DesiredAccess);
     }
 
 #pragma warning restore
@@ -69,20 +69,34 @@ namespace NtApiDotNet
         /// <summary>
         /// Open a window station by name.
         /// </summary>
+        /// <param name="object_attributes">The object attributes for opening.</param>
+        /// <param name="desired_access">Desired access.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The instance of the window station</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<NtWindowStation> Open(ObjectAttributes object_attributes, WindowStationAccessRights desired_access, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle = NtSystemCalls.NtUserOpenWindowStation(object_attributes, desired_access);
+            if (handle.IsInvalid)
+            {
+                return NtObjectUtils.CreateResultFromDosError<NtWindowStation>(Marshal.GetLastWin32Error(), throw_on_error);
+                
+            }
+            return new NtResult<NtWindowStation>(NtStatus.STATUS_SUCCESS, new NtWindowStation(handle));
+        }
+
+        /// <summary>
+        /// Open a window station by name.
+        /// </summary>
         /// <param name="winsta_name">The name of the window station</param>
         /// <param name="root">Optional root object</param>
         /// <returns>The instance of the window station</returns>
-        /// <exception cref="Win32Exception">Thrown on error.</exception>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static NtWindowStation Open(string winsta_name, NtObject root)
         {
             using (ObjectAttributes obj_attr = new ObjectAttributes(winsta_name, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle = NtSystemCalls.NtUserOpenWindowStation(obj_attr, DesktopAccessRights.MaximumAllowed);
-                if (handle.IsInvalid)
-                {
-                    throw new SafeWin32Exception();
-                }
-                return new NtWindowStation(handle);
+                return Open(obj_attr, WindowStationAccessRights.MaximumAllowed, true).Result;
             }
         }
 
@@ -91,10 +105,15 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="winsta_name"></param>
         /// <returns>The instance of the window station</returns>
-        /// <exception cref="Win32Exception">Thrown on error.</exception>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static NtWindowStation Open(string winsta_name)
         {
             return Open(winsta_name, null);
+        }
+
+        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
+        {
+            return Open(object_attributes, desired_access.ToSpecificAccess<WindowStationAccessRights>(), throw_on_error).Cast<NtObject>();
         }
     }
 }

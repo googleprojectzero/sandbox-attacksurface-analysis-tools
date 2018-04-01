@@ -75,21 +75,35 @@ namespace NtApiDotNet
         /// <summary>
         /// Open a desktop by name.
         /// </summary>
+        /// <param name="object_attributes">The object attributes for opening.</param>
+        /// <param name="flags">Flags for opening the desktop.</param>
+        /// <param name="desired_access">Desired access.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The instance of the desktop.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<NtDesktop> Open(ObjectAttributes object_attributes, int flags, DesktopAccessRights desired_access, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle = NtSystemCalls.NtUserOpenDesktop(object_attributes, flags, desired_access);
+            if (handle.IsInvalid)
+            {
+                return NtObjectUtils.CreateResultFromDosError<NtDesktop>(Marshal.GetLastWin32Error(), throw_on_error);
+            }
+            return new NtResult<NtDesktop>(NtStatus.STATUS_SUCCESS, new NtDesktop(handle));
+        }
+
+        /// <summary>
+        /// Open a desktop by name.
+        /// </summary>
         /// <param name="desktop_name">The name of the desktop.</param>
         /// <param name="root">Optional root object</param>
         /// <returns>An instance of NtDesktop.</returns>
-        /// <exception cref="Win32Exception">Thrown on error.</exception>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public static NtDesktop Open(string desktop_name, NtObject root)
         {
             using (ObjectAttributes obj_attributes 
                 = new ObjectAttributes(desktop_name, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle = NtSystemCalls.NtUserOpenDesktop(obj_attributes, 0, DesktopAccessRights.MaximumAllowed);
-                if (handle.IsInvalid)
-                {
-                    throw new SafeWin32Exception();
-                }
-                return new NtDesktop(handle);
+                return Open(obj_attributes, 0, DesktopAccessRights.MaximumAllowed, true).Result;
             }
         }
 
@@ -117,7 +131,7 @@ namespace NtApiDotNet
                     IntPtr.Zero, 0, DesktopAccessRights.MaximumAllowed, 0);
                 if (handle.IsInvalid)
                 {
-                    throw new Win32Exception();
+                    throw new NtException(NtObjectUtils.MapDosErrorToStatus());
                 }
                 return new NtDesktop(handle);
             }
@@ -131,6 +145,11 @@ namespace NtApiDotNet
         public static NtDesktop Create(string desktop_name)
         {
             return Create(desktop_name, null);
+        }
+
+        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
+        {
+            return Open(object_attributes, 0, desired_access.ToSpecificAccess<DesktopAccessRights>(), throw_on_error).Cast<NtObject>();
         }
     }
 }
