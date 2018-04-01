@@ -80,6 +80,10 @@ namespace NtObjectManager
     ///   <code>$ps = Get-NtProcess -FilterScript { param($p); $p.Mitigations.DisallowWin32kSystemCalls -eq $true }</code>
     ///   <para>Get all processes with the Disallow Win32k System Calls mitigation policy.</para>
     /// </example>
+    /// <example>
+    ///   <code>$p = Get-NtProcess -ServiceName WebClient</code>
+    ///   <para>Open the process which hosts the WebClient service, if it's running.</para>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtProcess", DefaultParameterSetName = "all")]
     [OutputType(typeof(NtProcess))]
@@ -285,7 +289,6 @@ namespace NtObjectManager
                     OpenServiceProcess();
                     break;
             }
-            
         }
     }
 }
