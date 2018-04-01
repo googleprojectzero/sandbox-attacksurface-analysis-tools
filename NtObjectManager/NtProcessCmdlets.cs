@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtApiDotNet.Win32;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
@@ -81,7 +83,7 @@ namespace NtObjectManager
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtProcess", DefaultParameterSetName = "all")]
     [OutputType(typeof(NtProcess))]
-    public class GetNtProcessCmdlet : Cmdlet
+    public class GetNtProcessCmdlet : PSCmdlet
     {
         /// <summary>
         /// <para type="description">Specify a process ID to open.</para>
@@ -114,6 +116,12 @@ namespace NtObjectManager
         /// </summary>
         [Parameter(ParameterSetName = "all")]
         public string CommandLine { get; set; }
+
+        /// <summary>
+        /// <para type="description">Get the process for the specified service name.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "service")]
+        public string ServiceName { get; set; }
 
         /// <summary>
         /// <para type="description">Specify an arbitrary filter script.</para>
@@ -234,29 +242,50 @@ namespace NtObjectManager
             return Current ? GetCurrentProcess(desired_access) : NtProcess.Open(ProcessId, desired_access);
         }
 
+        private void OpenProcess()
+        {
+            if (OpenParent || OpenOwner)
+            {
+                using (NtProcess process = OpenSpecificProcess(ProcessAccessRights.QueryLimitedInformation))
+                {
+                    WriteObject(OpenParent ? process.OpenParent(Access) : process.OpenOwner(Access));
+                }
+            }
+            else
+            {
+                WriteObject(OpenSpecificProcess(Access));
+            }
+        }
+
+        private void OpenServiceProcess()
+        {
+            int pid = ServiceUtils.GetServiceProcessId(ServiceName);
+            if (pid == 0)
+            {
+                throw new ArgumentException($"Service {ServiceName} is not running");
+            }
+            WriteObject(NtProcess.Open(pid, Access));
+        }
+
         /// <summary>
         /// Overridden ProcessRecord method.
         /// </summary>
         protected override void ProcessRecord()
         {
-            if (ProcessId == -1 && !Current)
+            switch (ParameterSetName)
             {
-                WriteObject(GetProcesses(), true);
+                case "all":
+                    WriteObject(GetProcesses(), true);
+                    break;
+                case "pid":
+                case "current":
+                    OpenProcess();
+                    break;
+                case "service":
+                    OpenServiceProcess();
+                    break;
             }
-            else
-            {
-                if (OpenParent || OpenOwner)
-                {
-                    using (NtProcess process = OpenSpecificProcess(ProcessAccessRights.QueryLimitedInformation))
-                    {
-                        WriteObject(OpenParent ? process.OpenParent(Access) : process.OpenOwner(Access));
-                    }
-                }
-                else
-                {
-                    WriteObject(OpenSpecificProcess(Access));
-                }
-            }
+            
         }
     }
 }
