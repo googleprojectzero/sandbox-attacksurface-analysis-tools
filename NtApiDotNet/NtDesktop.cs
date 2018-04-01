@@ -120,6 +120,32 @@ namespace NtApiDotNet
         /// <summary>
         /// Create a new desktop.
         /// </summary>
+        /// <param name="object_attributes">The object attributes for opening.</param>
+        /// <param name="flags">Flags for opening the desktop.</param>
+        /// <param name="desired_access">Desired access.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <param name="device">Device name.</param>
+        /// <param name="dev_mode">Device mode.</param>
+        /// <param name="heap_size">Heap size.</param>
+        /// <returns>An instance of NtDesktop.</returns>
+        public static NtResult<NtDesktop> Create(ObjectAttributes object_attributes, string device, 
+            IntPtr dev_mode, int flags, DesktopAccessRights desired_access, int heap_size,
+            bool throw_on_error)
+        {
+
+            SafeKernelObjectHandle handle = NtSystemCalls.NtUserCreateDesktopEx(object_attributes, 
+                device == null ? null : new UnicodeString(device),
+                dev_mode, flags, desired_access, heap_size);
+            if (handle.IsInvalid)
+            {
+                return NtObjectUtils.CreateResultFromDosError<NtDesktop>(Marshal.GetLastWin32Error(), throw_on_error);
+            }
+            return new NtResult<NtDesktop>(NtStatus.STATUS_SUCCESS, new NtDesktop(handle));
+        }
+
+        /// <summary>
+        /// Create a new desktop.
+        /// </summary>
         /// <param name="desktop_name">The name of the desktop.</param>
         /// <param name="root">Optional root object</param>
         /// <returns>An instance of NtDesktop.</returns>
@@ -127,13 +153,7 @@ namespace NtApiDotNet
         {
             using (ObjectAttributes obj_attributes = new ObjectAttributes(desktop_name, AttributeFlags.CaseInsensitive, root))
             {
-                SafeKernelObjectHandle handle = NtSystemCalls.NtUserCreateDesktopEx(obj_attributes, null, 
-                    IntPtr.Zero, 0, DesktopAccessRights.MaximumAllowed, 0);
-                if (handle.IsInvalid)
-                {
-                    throw new NtException(NtObjectUtils.MapDosErrorToStatus());
-                }
-                return new NtDesktop(handle);
+                return Create(obj_attributes, null, IntPtr.Zero, 0, DesktopAccessRights.MaximumAllowed, 0, true).Result;
             }
         }
 
