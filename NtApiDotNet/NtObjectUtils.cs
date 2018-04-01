@@ -119,7 +119,7 @@ namespace NtApiDotNet
         private static extern int FormatMessage(
           FormatFlags dwFlags,
           IntPtr lpSource,
-          NtStatus dwMessageId,
+          uint dwMessageId,
           int dwLanguageId,
           out SafeLocalAllocHandle lpBuffer,
           int nSize,
@@ -133,10 +133,21 @@ namespace NtApiDotNet
         /// <returns>The message description, or an empty string if not found.</returns>
         public static string GetNtStatusMessage(NtStatus status)
         {
-            SafeLocalAllocHandle buffer = null;
+            IntPtr module_handle = IntPtr.Zero;
+            uint message_id = (uint)status;
+            if ((message_id & 0xFFFF0000) == DosErrorStatusCode)
+            {
+                message_id &= 0xFFFF;
+                module_handle = GetModuleHandle("kernel32.dll");
+            }
+            else
+            {
+                module_handle = GetModuleHandle("ntdll.dll");
+            }
+
             if (FormatMessage(FormatFlags.AllocateBuffer | FormatFlags.FromHModule
                 | FormatFlags.FromSystem | FormatFlags.IgnoreInserts,
-                GetModuleHandle("ntdll.dll"), status, 0, out buffer, 0, IntPtr.Zero) > 0)
+                module_handle, message_id, 0, out SafeLocalAllocHandle buffer, 0, IntPtr.Zero) > 0)
             {
                 using (buffer)
                 {
@@ -348,6 +359,19 @@ namespace NtApiDotNet
             }
         }
 
+        // A special "fake" status code to map DOS errors to NTSTATUS.
+        private const uint DosErrorStatusCode = 0xF00D0000;
+
+        internal static NtStatus MapDosErrorToStatus(int dos_error)
+        {
+            return (NtStatus)(DosErrorStatusCode | dos_error);
+        }
+
+        internal static NtStatus MapDosErrorToStatus()
+        {
+            return MapDosErrorToStatus(Marshal.GetLastWin32Error());
+        }
+
         /// <summary>
         /// Create an NT result object. If status is successful then call function otherwise use default value.
         /// </summary>
@@ -373,6 +397,17 @@ namespace NtApiDotNet
 
         internal static NtResult<T> CreateResultFromError<T>(this NtStatus status, bool throw_on_error)
         {
+            if (throw_on_error)
+            {
+                throw new NtException(status);
+            }
+
+            return new NtResult<T>(status, default(T));
+        }
+
+        internal static NtResult<T> CreateResultFromDosError<T>(int error, bool throw_on_error)
+        {
+            NtStatus status = MapDosErrorToStatus(error);
             if (throw_on_error)
             {
                 throw new NtException(status);
