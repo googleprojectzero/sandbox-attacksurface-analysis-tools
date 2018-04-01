@@ -284,7 +284,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Duplicate the internal handle to a new handle.
+        /// Duplicate a handle to a new handle, potentially in a different process.
         /// </summary>
         /// <param name="flags">Attribute flags for new handle</param>
         /// <param name="src_handle">The source handle to duplicate</param>
@@ -294,16 +294,35 @@ namespace NtApiDotNet
         /// <param name="access_rights">The access rights for the new handle</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
-        internal static NtResult<IntPtr> DuplicateHandle(
+        public static NtResult<IntPtr> DuplicateHandle(
             NtProcess src_process, IntPtr src_handle,
             NtProcess dest_process, AccessMask access_rights,
             AttributeFlags flags, DuplicateObjectOptions options,
             bool throw_on_error)
         {
-            IntPtr external_handle;
             return NtSystemCalls.NtDuplicateObject(src_process.Handle, src_handle,
-                dest_process.Handle, out external_handle, access_rights, flags,
+                dest_process.Handle, out IntPtr external_handle, access_rights, flags,
                 options).CreateResult(throw_on_error, () => external_handle);
+        }
+
+        /// <summary>
+        /// Duplicate a handle to a new handle, potentially in a different process.
+        /// </summary>
+        /// <param name="flags">Attribute flags for new handle</param>
+        /// <param name="src_handle">The source handle to duplicate</param>
+        /// <param name="src_process">The source process to duplicate from</param>
+        /// <param name="dest_process">The desination process for the handle</param>
+        /// <param name="options">Duplicate handle options</param>
+        /// <param name="access_rights">The access rights for the new handle</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static IntPtr DuplicateHandle(
+            NtProcess src_process, IntPtr src_handle,
+            NtProcess dest_process, AccessMask access_rights,
+            AttributeFlags flags, DuplicateObjectOptions options)
+        {
+            return DuplicateHandle(src_process, src_handle,
+                dest_process, access_rights, flags,
+                options, true).Result;
         }
 
         /// <summary>
