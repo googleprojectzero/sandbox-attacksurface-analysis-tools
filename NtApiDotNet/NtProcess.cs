@@ -1169,7 +1169,9 @@ namespace NtApiDotNet
                 using (buffer)
                 {
                     // This will fail if process is being torn down, just return an empty string.
-                    if (status == NtStatus.STATUS_PROCESS_IS_TERMINATING)
+                    if (status == NtStatus.STATUS_PROCESS_IS_TERMINATING 
+                        || status == NtStatus.STATUS_PARTIAL_COPY 
+                        || status == NtStatus.STATUS_NOT_FOUND)
                     {
                         return String.Empty;
                     }
