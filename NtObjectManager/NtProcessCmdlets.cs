@@ -188,19 +188,7 @@ namespace NtObjectManager
 
         private static bool ArbitraryFilter(NtProcess proc, ScriptBlock filter)
         {
-            try
-            {
-                ICollection<PSObject> os = filter.Invoke(proc);
-                if (os.Count == 1)
-                {
-                    return (bool)os.First().BaseObject;
-                }
-            }
-            catch
-            {
-            }
-
-            return false;
+            return filter.InvokeWithArg(false, proc);
         }
 
         private IEnumerable<NtObject> GetProcesses()

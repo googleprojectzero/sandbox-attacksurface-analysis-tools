@@ -468,8 +468,10 @@ namespace NtObjectManager
             }
             else
             {
-                sd = new SecurityDescriptor();
-                sd.Dacl = new Acl();
+                sd = new SecurityDescriptor
+                {
+                    Dacl = new Acl()
+                };
                 sd.Dacl.NullAcl = NullDacl;
             }
 
@@ -510,7 +512,7 @@ namespace NtObjectManager
         /// </summary>
         protected override void ProcessRecord()
         {
-            WriteObject(ScriptBlock.Invoke(InputObject), true);
+            WriteObject(ScriptBlock.InvokeWithArg(InputObject), true);
         }
 
         private static void DisposeObject(object obj)
@@ -681,7 +683,8 @@ namespace NtObjectManager
 
         private static bool? InvokeScriptBlock(ScriptBlock script_block, params object[] args)
         {
-            if (script_block.InvokeReturnAsIs(args) is PSObject result && result.BaseObject is bool b)
+            if (script_block.InvokeWithArg<object>(null, args) is PSObject result 
+                && result.BaseObject is bool b)
             {
                 return b;
             }

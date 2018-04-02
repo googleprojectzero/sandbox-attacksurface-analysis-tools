@@ -110,19 +110,7 @@ namespace NtObjectManager
 
         private static bool ArbitraryFilter(NtThread thread, ScriptBlock filter)
         {
-            try
-            {
-                ICollection<PSObject> os = filter.Invoke(thread);
-                if (os.Count == 1)
-                {
-                    return (bool)os.First().BaseObject;
-                }
-            }
-            catch
-            {
-            }
-
-            return false;
+            return filter.InvokeWithArg(false, thread);
         }
 
         private static NtThread GetCurrentThread(ThreadAccessRights access, bool pseudo_handle)
