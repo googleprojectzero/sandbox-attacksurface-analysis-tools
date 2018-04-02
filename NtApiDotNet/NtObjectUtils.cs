@@ -373,6 +373,22 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Map a status to a DOS error code. Takes into account the fake
+        /// status codes.
+        /// </summary>
+        /// <param name="status">The status code.</param>
+        /// <returns>The mapped DOS error.</returns>
+        public static int MapNtStatusToDosError(NtStatus status)
+        {
+            uint value = (uint)status;
+            if ((value & 0xFFFF0000) == DosErrorStatusCode)
+            {
+                return (int)(value & 0xFFFF);
+            }
+            return NtRtl.RtlNtStatusToDosError(status);
+        }
+
+        /// <summary>
         /// Create an NT result object. If status is successful then call function otherwise use default value.
         /// </summary>
         /// <typeparam name="T">The result type.</typeparam>

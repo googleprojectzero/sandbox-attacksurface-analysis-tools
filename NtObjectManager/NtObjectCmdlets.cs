@@ -570,7 +570,7 @@ namespace NtObjectManager
         {
             Status = (uint)status;
             Message = NtObjectUtils.GetNtStatusMessage(status);
-            Win32Error = NtRtl.RtlNtStatusToDosError(status);
+            Win32Error = NtObjectUtils.MapNtStatusToDosError(status);
             StatusName = status.ToString();
         }
 
