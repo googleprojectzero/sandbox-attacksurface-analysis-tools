@@ -13,9 +13,11 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace NtApiDotNet
 {
@@ -407,17 +409,17 @@ namespace NtApiDotNet
         /// <returns>True if the Sids are equal.</returns>
         public static bool operator ==(Sid a, Sid b)
         {
-            if (Object.ReferenceEquals(a, b))
+            if (ReferenceEquals(a, b))
             {
                 return true;
             }
 
-            if (System.Object.ReferenceEquals(a, null))
+            if (a is null)
             {
                 return false;
             }
 
-            if (System.Object.ReferenceEquals(b, null))
+            if (b is null)
             {
                 return false;
             }
@@ -471,34 +473,6 @@ namespace NtApiDotNet
             }
         }
 
-        private static string MakeFakeCapabilityName(string name)
-        {
-            List<string> parts = new List<string>();
-            if (name.Contains("_"))
-            {
-                parts.Add(name);
-            }
-            else
-            {
-                int start = 0;
-                int index = 0;
-                while (index < name.Length)
-                {
-                    if (Char.IsUpper(name[index]))
-                    {
-                        parts.Add(name.Substring(start, index - start));
-                        start = index;
-                    }
-                    index++;
-                }
-
-                parts.Add(name.Substring(start));
-                parts[0] = Char.ToUpper(parts[0][0]) + parts[0].Substring(1);
-            }
-
-            return $@"NAMED CAPABILITIES\{String.Join(" ", parts)}";
-        }
-
         /// <summary>
         /// Get the account name of the SID or the SDDL form is no corresponding name.
         /// </summary>
@@ -506,52 +480,7 @@ namespace NtApiDotNet
         {
             get
             {
-                string name = NtSecurity.LookupAccountSid(this);
-                if (name != null)
-                {
-                    return name;
-                }
-
-                if (NtSecurity.IsCapabilitySid(this))
-                {
-                    // See if there's a known SID with this name.
-                    name = NtSecurity.LookupKnownCapabilityName(this);
-                    if (name == null)
-                    {
-                        switch (SubAuthorities.Count)
-                        {
-                            case 8:
-                                uint[] sub_authorities = SubAuthorities.ToArray();
-                                // Convert to a package SID.
-                                sub_authorities[0] = 2;
-                                name = NtSecurity.LookupPackageName(new Sid(Authority, sub_authorities));
-                                break;
-                            case 5:
-                                name = NtSecurity.LookupDeviceCapabilityName(this);
-                                break;
-                        }
-                    }
-
-
-                    if (name != null)
-                    {
-                        name = MakeFakeCapabilityName(name);
-                    }
-                }
-                else if (NtSecurity.IsPackageSid(this))
-                {
-                    name = NtSecurity.LookupPackageName(this);
-                }
-                else if (NtSecurity.IsProcessTrustSid(this))
-                {
-                    name = NtSecurity.LookupProcessTrustName(this);
-                    if (name != null)
-                    {
-                        name = $@"TRUST LEVEL\{name}";
-                    }
-                }
-
-                return name ?? ToString();
+                return NtSecurity.GetNameForSid(this).Name;
             }
         }
     }

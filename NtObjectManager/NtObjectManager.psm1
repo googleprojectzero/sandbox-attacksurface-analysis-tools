@@ -1911,6 +1911,37 @@ function Get-EmbeddedAuthenticodeSignature {
 
 <#
 .SYNOPSIS
+Get the name for a SID.
+.DESCRIPTION
+This cmdlet looks up a name for a SID and returns the name with a source for where the name came from.
+.PARAMETER Sid
+The SID to lookup the name for.
+.PARAMETER BypassCache
+Specify to bypass the name cache for this lookup.
+.OUTPUTS
+NtApiDotNet.SidName - The looked up SID name.
+.EXAMPLE
+Get-NtSidName "S-1-1-0"
+Lookup the name for the SID S-1-1-0.
+.EXAMPLE
+Get-NtSidName "S-1-1-0" -BypassCache
+Lookup the name for the SID S-1-1-0 without checking the name cache.
+#>
+function Get-NtSidName {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory=$true, Position=0, ValueFromPipelineByPropertyName)]
+        [NtApiDotNet.Sid]$Sid,
+        [switch]$BypassCache
+    )
+
+    PROCESS {
+        [NtApiDotNet.NtSecurity]::GetNameForSid($Sid, $BypassCache)
+    }
+}
+
+<#
+.SYNOPSIS
 Get a filtered token.
 .DESCRIPTION
 This is left for backwards compatibility, use 'Get-NtToken -Filtered' instead.

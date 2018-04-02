@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -146,6 +147,39 @@ namespace NtApiDotNet
 
         public SafePrivilegeSetBuffer() : this(1)
         {
+        }
+    }
+
+    /// <summary>
+    /// Source for a SID name.
+    /// </summary>
+    public enum SidNameSource
+    {
+        Sddl,
+        Account,
+        Capability,
+        Package,
+        ProcessTrust,
+    }
+
+    /// <summary>
+    /// Represents a name for a SID.
+    /// </summary>
+    public class SidName
+    {
+        /// <summary>
+        /// The name of the SID.
+        /// </summary>
+        public string Name { get; }
+        /// <summary>
+        /// The source of name.
+        /// </summary>
+        public SidNameSource Source { get; }
+
+        internal SidName(string name, SidNameSource source)
+        {
+            Name = name;
+            Source = source;
         }
     }
 
@@ -2877,7 +2911,8 @@ namespace NtApiDotNet
         public static AccessMask GetAllowedAccess(SecurityDescriptor sd, NtToken token,
             AccessMask access_rights, GenericMapping generic_mapping)
         {
-            return GetAllowedAccess(sd, token, access_rights, null, generic_mapping);
+            return GetAllowedAccess
+                (sd, token, access_rights, null, generic_mapping);
         }
 
         /// <summary>
@@ -3213,6 +3248,123 @@ namespace NtApiDotNet
             {
                 NtSystemCalls.NtSetCachedSigningLevel(flags, signing_level, handles, handles_count, handle).ToNtException();
             }
+        }
+
+        private static string MakeFakeCapabilityName(string name)
+        {
+            List<string> parts = new List<string>();
+            if (name.Contains("_"))
+            {
+                parts.Add(name);
+            }
+            else
+            {
+                int start = 0;
+                int index = 0;
+                while (index < name.Length)
+                {
+                    if (Char.IsUpper(name[index]))
+                    {
+                        parts.Add(name.Substring(start, index - start));
+                        start = index;
+                    }
+                    index++;
+                }
+
+                parts.Add(name.Substring(start));
+                parts[0] = Char.ToUpper(parts[0][0]) + parts[0].Substring(1);
+            }
+
+            return $@"NAMED CAPABILITIES\{String.Join(" ", parts)}";
+        }
+
+        private static SidName GetNameForSidInternal(Sid sid)
+        {
+            string name = LookupAccountSid(sid);
+            if (name != null)
+            {
+                return new SidName(name, SidNameSource.Account);
+            }
+
+            if (IsCapabilitySid(sid))
+            {
+                // See if there's a known SID with this name.
+                name = LookupKnownCapabilityName(sid);
+                if (name == null)
+                {
+                    switch (sid.SubAuthorities.Count)
+                    {
+                        case 8:
+                            uint[] sub_authorities = sid.SubAuthorities.ToArray();
+                            // Convert to a package SID.
+                            sub_authorities[0] = 2;
+                            name = NtSecurity.LookupPackageName(new Sid(sid.Authority, sub_authorities));
+                            break;
+                        case 5:
+                            name = NtSecurity.LookupDeviceCapabilityName(sid);
+                            break;
+                    }
+                }
+
+                if (name != null)
+                {
+                    return new SidName(MakeFakeCapabilityName(name), SidNameSource.Capability);
+                }
+            }
+            else if (IsPackageSid(sid))
+            {
+                name = LookupPackageName(sid);
+                if (name != null)
+                {
+                    return new SidName(name, SidNameSource.Package);
+                }
+            }
+            else if (IsProcessTrustSid(sid))
+            {
+                name = LookupProcessTrustName(sid);
+                if (name != null)
+                {
+                    return new SidName($@"TRUST LEVEL\{name}", SidNameSource.ProcessTrust);
+                }
+            }
+
+            return new SidName(sid.ToString(), SidNameSource.Sddl);
+        }
+
+        private static ConcurrentDictionary<Sid, SidName> _cached_names = new ConcurrentDictionary<Sid, SidName>();
+
+        /// <summary>
+        /// Get readable name for a SID, if known. This covers sources of names such as LSASS lookup, capability names and package names.
+        /// </summary>
+        /// <param name="sid">The SID to lookup.</param>
+        /// <param name="bypass_cache">True to bypass the internal cache and get the current name.</param>
+        /// <returns>The name for the SID. Returns the SDDL form if no other name is known.</returns>
+        public static SidName GetNameForSid(Sid sid, bool bypass_cache)
+        {
+            if (bypass_cache)
+            {
+                return GetNameForSidInternal(sid);
+            }
+            return _cached_names.GetOrAdd(sid, s => GetNameForSidInternal(sid));
+        }
+
+        /// <summary>
+        /// Get readable name for a SID, if known. This covers sources of names such as LSASS lookup, capability names and package names.
+        /// </summary>
+        /// <param name="sid">The SID to lookup.</param>
+        /// <returns>The name for the SID. Returns the SDDL form if no other name is known.</returns>
+        /// <remarks>This function will cache name lookups, this means the name might not reflect what's currently in LSASS if it's been changed.</remarks>
+        public static SidName GetNameForSid(Sid sid)
+        {
+            return GetNameForSid(sid, false);
+        }
+
+        /// <summary>
+        /// Clear the SID name cache.
+        /// </summary>
+        public static void ClearSidNameCache()
+        {
+            _cached_names.Clear();
         }
     }
 }
