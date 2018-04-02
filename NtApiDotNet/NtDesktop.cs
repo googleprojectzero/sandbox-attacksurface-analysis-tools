@@ -43,17 +43,24 @@ namespace NtApiDotNet
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 
+    [Flags]
+    public enum CreateDesktopFlags
+    {
+        None = 0,
+        AllowOtherAccountHook = 1,
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("win32u.dll", SetLastError = true)]
         public static extern SafeKernelObjectHandle NtUserOpenDesktop(
-            ObjectAttributes ObjectAttributes, int Flags,
+            ObjectAttributes ObjectAttributes, CreateDesktopFlags Flags,
             DesktopAccessRights DesiredAccess);
 
         [DllImport("win32u.dll", SetLastError = true)]
         public static extern SafeKernelObjectHandle NtUserCreateDesktopEx(
             ObjectAttributes ObjectAttributes, UnicodeString Device, 
-            IntPtr DevMode, int Flags,
+            IntPtr DevMode, CreateDesktopFlags Flags,
             DesktopAccessRights DesiredAccess, 
             int HeapSize);
     }
@@ -79,7 +86,8 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The instance of the desktop.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtResult<NtDesktop> Open(ObjectAttributes object_attributes, int flags, DesktopAccessRights desired_access, bool throw_on_error)
+        public static NtResult<NtDesktop> Open(ObjectAttributes object_attributes, CreateDesktopFlags flags, 
+            DesktopAccessRights desired_access, bool throw_on_error)
         {
             SafeKernelObjectHandle handle = NtSystemCalls.NtUserOpenDesktop(object_attributes, flags, desired_access);
             if (handle.IsInvalid)
@@ -127,7 +135,7 @@ namespace NtApiDotNet
         /// <param name="heap_size">Heap size.</param>
         /// <returns>An instance of NtDesktop.</returns>
         public static NtResult<NtDesktop> Create(ObjectAttributes object_attributes, string device, 
-            IntPtr dev_mode, int flags, DesktopAccessRights desired_access, int heap_size,
+            IntPtr dev_mode, CreateDesktopFlags flags, DesktopAccessRights desired_access, int heap_size,
             bool throw_on_error)
         {
 
