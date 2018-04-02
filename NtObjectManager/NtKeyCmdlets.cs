@@ -312,15 +312,15 @@ namespace NtObjectManager
     ///   <para>Get children of a key which can be opened for ReadControl access.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-NtKeyChild $key -Visitor { $path = $args[0].FullPath; Write-Host $path }</code>
+    ///   <code>Get-NtKeyChild $key -Visitor { $path = $_.FullPath; Write-Host $path }</code>
     ///   <para>Get children of a key via the visitor pattern.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-NtKeyChild $key -Recurse -Visitor { $path = $args[0].FullPath; Write-Host $path; $path -notmatch "BLAH" }</code>
+    ///   <code>Get-NtKeyChild $key -Recurse -Visitor { $path = $_.FullPath; Write-Host $path; $path -notmatch "BLAH" }</code>
     ///   <para>Get children of a key via the visitor pattern, exiting the recursion if the object path contains the string BLAH.</para>
     /// </example>
     /// <example>
-    ///   <code>$keys = Get-NtKeyChild $key -Recurse -Filter { $args[0].FullPath -match "BLAH" }</code>
+    ///   <code>$keys = Get-NtKeyChild $key -Recurse -Filter { $_.FullPath -match "BLAH" }</code>
     ///   <para>Get children of a key filtering out any objects which don't have BLAH in the name.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>

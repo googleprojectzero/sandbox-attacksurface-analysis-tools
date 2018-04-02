@@ -683,8 +683,7 @@ namespace NtObjectManager
 
         private static bool? InvokeScriptBlock(ScriptBlock script_block, params object[] args)
         {
-            if (script_block.InvokeWithArg<object>(null, args) is PSObject result 
-                && result.BaseObject is bool b)
+            if (script_block.InvokeWithArg<object>(null, args) is bool b)
             {
                 return b;
             }

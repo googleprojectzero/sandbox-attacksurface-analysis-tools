@@ -777,15 +777,15 @@ namespace NtObjectManager
     ///   <para>Get children of a file directory which can be opened for ReadControl access.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-NtFileChild $file -Visitor { $path = $args[0].FullPath; Write-Host $path }</code>
+    ///   <code>Get-NtFileChild $file -Visitor { $path = $_.FullPath; Write-Host $path }</code>
     ///   <para>Get children of a file directory via the visitor pattern.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-NtFileChild $file -Recurse -Visitor { $path = $args[0].FullPath; Write-Host $path; $path -notmatch "BLAH" }</code>
+    ///   <code>Get-NtFileChild $file -Recurse -Visitor { $path = $_.FullPath; Write-Host $path; $path -notmatch "BLAH" }</code>
     ///   <para>Get children of a file directory via the visitor pattern, exiting the recursion if the object path contains the string BLAH.</para>
     /// </example>
     /// <example>
-    ///   <code>$files = Get-NtFileChild $file -Recurse -Filter { $args[0].FullPath -match "BLAH" }</code>
+    ///   <code>$files = Get-NtFileChild $file -Recurse -Filter { $_.FullPath -match "BLAH" }</code>
     ///   <para>Get children of a file directory filtering out any objects which don't have BLAH in the name.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>

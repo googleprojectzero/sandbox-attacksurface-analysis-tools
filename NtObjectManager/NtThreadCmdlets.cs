@@ -45,7 +45,7 @@ namespace NtObjectManager
     ///   <para>Get the current NT thread.</para>
     /// </example>
     /// <example>
-    ///   <code>$ts = Get-NtThread -FilterScript { param($t); Use-NtObject($k = $t.OpenToken()) { $k -ne $null } }</code>
+    ///   <code>$ts = Get-NtThread -FilterScript { Use-NtObject($k = $_.OpenToken()) { $k -ne $null } }</code>
     ///   <para>Get threads which have impersonation tokens set.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
