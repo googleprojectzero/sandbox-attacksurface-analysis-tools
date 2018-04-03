@@ -30,7 +30,12 @@ namespace NtObjectManager
                 {
                     vars.Add(new PSVariable("_", args[0]));
                 }
+#if NETCORE
+                // Work around issue with standard PS library until it's fixed.
+                var os = script_block.Invoke(args);
+#else
                 var os = script_block.InvokeWithContext(null, vars, args);
+#endif
                 if (os.Count > 0)
                 {
                     return (T)Convert.ChangeType(os[0].BaseObject, typeof(T));
@@ -49,7 +54,12 @@ namespace NtObjectManager
             {
                 vars.Add(new PSVariable("_", args[0]));
             }
+#if NETCORE
+            // Work around issue with standard PS library until it's fixed.
+            return script_block.Invoke(args);
+#else
             return script_block.InvokeWithContext(null, vars, args);
+#endif
         }
     }
 }
