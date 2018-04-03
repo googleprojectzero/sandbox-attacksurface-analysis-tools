@@ -1010,7 +1010,7 @@ function Show-NtSecurityDescriptor {
     )
 
   if ($Object -ne $null) {
-    if (!$Object.IsAccessGranted("ReadControl")) {
+    if (!$Object.IsAccessMaskGranted([NtApiDotNet.GenericAccessRights]::ReadControl)) {
       Write-Error "Object doesn't have Read Control access."
       return
     }

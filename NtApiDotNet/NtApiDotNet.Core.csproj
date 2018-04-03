@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-	<Compile Remove="Properties\AssemblyInfo.cs" />
+  <Compile Remove="Properties\AssemblyInfo.cs" />
+  <Compile Remove="Forms\*" />
   </ItemGroup>
 </Project>

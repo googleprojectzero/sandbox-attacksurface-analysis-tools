@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtApiDotNet.Forms;
 using NtApiDotNet.Win32;
 using System;
 using System.Windows.Forms;
@@ -21,12 +22,19 @@ namespace ViewSecurityDescriptor
 {
     static class Program
     {
+        private static void RunForm(Form form)
+        {
+        }
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
         static void Main(string[] args)
         {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+
             try
             {
                 if (args.Length == 0)
@@ -41,7 +49,7 @@ namespace ViewSecurityDescriptor
                         bool read_only = args.Length > 1 ? args[1].Equals("--readonly") : false;
                         using (var obj = NtGeneric.FromHandle(handle))
                         {
-                            Win32Utils.EditSecurity(IntPtr.Zero, obj, obj.Name, read_only);
+                            Application.Run(new SecurityDescriptorViewerForm(obj, read_only));
                         }
                     }
                     else
@@ -52,8 +60,10 @@ namespace ViewSecurityDescriptor
                         {
                             throw new ArgumentException($"Unknown NT type {args[2]}");
                         }
-                        Win32Utils.EditSecurity(IntPtr.Zero, args[0], sd, type);
+
+                        Application.Run(new SecurityDescriptorViewerForm(args[0], sd, type));
                     }
+                    
                 }
             }
             catch (Exception ex)

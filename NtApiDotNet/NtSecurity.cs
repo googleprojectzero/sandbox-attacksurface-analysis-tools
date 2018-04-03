@@ -1592,6 +1592,24 @@ namespace NtApiDotNet
             ret.AddRange(inherited);
             return ret;
         }
+
+        /// <summary>
+        /// Indicates the ACL has at least one conditional ACE.
+        /// </summary>
+        public bool HasConditionalAce
+        {
+            get
+            {
+                foreach (var ace in this)
+                {
+                    if (ace.IsConditionalAce)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
     }
 
     /// <summary>

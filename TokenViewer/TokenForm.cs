@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -21,10 +22,9 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Management;
-using System.Windows.Forms;
-using System.Text;
 using System.Runtime.InteropServices;
-using NtApiDotNet.Win32;
+using System.Text;
+using System.Windows.Forms;
 
 namespace TokenViewer
 {
@@ -253,6 +253,15 @@ namespace TokenViewer
             txtTrustLevel.Text = trust_level != null ? trust_level.Name : "N/A";
             UpdatePrivileges();
             UpdateSecurityAttributes();
+
+            if (_token.IsAccessGranted(TokenAccessRights.ReadControl))
+            {
+                securityDescriptorViewerControl.SetSecurityDescriptor(_token.SecurityDescriptor, _token.NtType);
+            }
+            else
+            {
+                tabControlMain.TabPages.Remove(tabPageSecurity);
+            }
         }
 
         private static string GetFormText(NtToken token, string text)
@@ -328,7 +337,7 @@ namespace TokenViewer
             return false;
         }
 
-        private void btnPermissions_Click(object sender, EventArgs e)
+        private void btnEditPermissions_Click(object sender, EventArgs e)
         {
             try
             {
