@@ -1135,6 +1135,23 @@ namespace NtApiDotNet.Ndr
         {
             List<StandardUserMarshaler> _marshalers;
 
+            private void LoadMarshallersForComBase(SafeLoadLibraryHandle lib)
+            {
+                _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.CLIPFORMAT));
+                _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HACCEL));
+                _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HBITMAP));
+                _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HBRUSH));
+                _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HDC));
+                _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HGLOBAL));
+                _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HICON));
+                _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HMENU));
+                _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HMONITOR));
+                _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HPALETTE));
+                _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HRGN));
+                _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HSTRING));
+                _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.WdtpInterfacePointer));
+            }
+
             public StandardUserMarshalers()
             {
                 _marshalers = new List<StandardUserMarshaler>();
@@ -1153,23 +1170,18 @@ namespace NtApiDotNet.Ndr
                     _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HMETAFILE));
                     _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.SNB));
                     _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.STGMEDIUM));
+                    if (NtObjectUtils.IsWindows7OrLess)
+                    {
+                        LoadMarshallersForComBase(lib);
+                    }
                 }
 
-                using (var lib = SafeLoadLibraryHandle.LoadLibrary("combase.dll"))
+                if (!NtObjectUtils.IsWindows7OrLess)
                 {
-                    _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.CLIPFORMAT));
-                    _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HACCEL));
-                    _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HBITMAP));
-                    _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HBRUSH));
-                    _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HDC));
-                    _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HGLOBAL));
-                    _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HICON));
-                    _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HMENU));
-                    _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HMONITOR));
-                    _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HPALETTE));
-                    _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HRGN));
-                    _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.HSTRING));
-                    _marshalers.Add(new StandardUserMarshaler(lib, NdrKnownTypes.WdtpInterfacePointer));
+                    using (var lib = SafeLoadLibraryHandle.LoadLibrary("combase.dll"))
+                    {
+                        LoadMarshallersForComBase(lib);
+                    }
                 }
             }
 
