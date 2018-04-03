@@ -17,6 +17,7 @@
 // the original author James Forshaw to be used under the Apache License for this
 // project.
 
+using System;
 using System.Windows.Forms;
 
 namespace NtApiDotNet.Forms
@@ -26,7 +27,7 @@ namespace NtApiDotNet.Forms
     /// </summary>
     public partial class SecurityDescriptorViewerControl : UserControl
     {
-        private void AddAclTab(TabPage tab_page, AclViewerControl control, Acl acl, NtType type)
+        private void AddAclTab(TabPage tab_page, AclViewerControl control, Acl acl, Type access_type, GenericMapping mapping, bool unmap_mask)
         {
             if (acl == null)
             {
@@ -41,7 +42,7 @@ namespace NtApiDotNet.Forms
                 }
                 else
                 {
-                    control.SetAcl(acl, type);
+                    control.SetAcl(acl, access_type, mapping, unmap_mask);
                 }
             }
         }
@@ -63,10 +64,23 @@ namespace NtApiDotNet.Forms
         /// </summary>
         /// <param name="security_descriptor">Security descriptor to view.</param>
         /// <param name="type">NT type for view.</param>
-        public void SetSecurityDescriptor(SecurityDescriptor security_descriptor, NtType type)
+        /// <param name="unmap_mask">True to unmap mask into generic access rights.</param>
+        public void SetSecurityDescriptor(SecurityDescriptor security_descriptor, NtType type, bool unmap_mask)
         {
-            AddAclTab(tabPageDACL, aclViewerControlDacl, security_descriptor.Dacl, type);
-            AddAclTab(tabPageSACL, aclViewerControlSacl, security_descriptor.Sacl, type);
+            SetSecurityDescriptor(security_descriptor, type.AccessRightsType, type.GenericMapping, unmap_mask);
+        }
+
+        /// <summary>
+        /// Set the security descriptor for the control.
+        /// </summary>
+        /// <param name="security_descriptor">Security descriptor to view.</param>
+        /// <param name="access_type">The enum type for the view.</param>
+        /// <param name="mapping">Generic mapping for the type.</param>
+        /// <param name="unmap_mask">True to unmap mask into generic access rights.</param>
+        public void SetSecurityDescriptor(SecurityDescriptor security_descriptor, Type access_type, GenericMapping mapping, bool unmap_mask)
+        {
+            AddAclTab(tabPageDACL, aclViewerControlDacl, security_descriptor.Dacl, access_type, mapping, unmap_mask);
+            AddAclTab(tabPageSACL, aclViewerControlSacl, security_descriptor.Sacl, access_type, mapping, unmap_mask);
             SetSidLabel(lblOwnerValue, security_descriptor.Owner);
             SetSidLabel(lblGroupValue, security_descriptor.Group);
             lblIntegrityValue.Text = security_descriptor.IntegrityLevel.ToString();

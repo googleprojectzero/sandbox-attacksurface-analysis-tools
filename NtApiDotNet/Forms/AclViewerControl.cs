@@ -17,6 +17,7 @@
 // the original author James Forshaw to be used under the Apache License for this
 // project.
 
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -39,8 +40,10 @@ namespace NtApiDotNet.Forms
         /// Set ACL for control.
         /// </summary>
         /// <param name="acl">The ACL to view.</param>
-        /// <param name="type">The underlying NT type.</param>
-        public void SetAcl(Acl acl, NtType type)
+        /// <param name="access_type">The enum type for the view.</param>
+        /// <param name="mapping">Generic mapping for the type.</param>
+        /// <param name="unmap_mask">True to unmap mask into generic access rights.</param>
+        public void SetAcl(Acl acl, Type access_type, GenericMapping mapping, bool unmap_mask)
         {
             if (!acl.HasConditionalAce)
             {
@@ -58,9 +61,12 @@ namespace NtApiDotNet.Forms
                 }
                 else
                 {
-                    GenericMapping mapping = type.GenericMapping;
-                    AccessMask mapped_mask = mapping.UnmapMask(mapping.MapMask(ace.Mask));
-                    access = mapped_mask.ToSpecificAccess(type.AccessRightsType).ToString();
+                    AccessMask mapped_mask = mapping.MapMask(ace.Mask);
+                    if (unmap_mask)
+                    {
+                        mapped_mask = mapping.UnmapMask(mapped_mask);
+                    }
+                    access = mapped_mask.ToSpecificAccess(access_type).ToString();
                 }
 
                 item.SubItems.Add(access);
