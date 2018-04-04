@@ -82,6 +82,12 @@ namespace NtObjectManager
         [Parameter]
         public FileOpenOptions Options { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify a transaction to create the file under.</para>
+        /// </summary>
+        [Parameter]
+        public NtTransaction Transaction { get; set; }
+
         private static string ResolveRelativePath(SessionState state, string path, RtlPathType path_type)
         {
             var current_path = state.Path.CurrentFileSystemLocation;
@@ -145,7 +151,10 @@ namespace NtObjectManager
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            return NtFile.Open(obj_attributes, Access, ShareMode, Options);
+            using (Transaction?.Enable())
+            {
+                return NtFile.Open(obj_attributes, Access, ShareMode, Options);
+            }
         }
     }
 
@@ -222,8 +231,11 @@ namespace NtObjectManager
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            return NtFile.Create(obj_attributes, Access, Attributes, 
-                ShareMode, Options | (Directory ? FileOpenOptions.DirectoryFile : FileOpenOptions.None), Disposition, EaBuffer);
+            using (Transaction?.Enable())
+            {
+                return NtFile.Create(obj_attributes, Access, Attributes,
+                    ShareMode, Options | (Directory ? FileOpenOptions.DirectoryFile : FileOpenOptions.None), Disposition, EaBuffer);
+            }
         }
 
         /// <summary>
