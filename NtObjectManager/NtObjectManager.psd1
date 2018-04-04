@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.12'
+ModuleVersion = '1.1.13'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -97,7 +97,19 @@ PrivateData = @{
         ProjectUri = 'https://github.com/google/sandbox-attacksurface-analysis-tools'
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.12
+        ReleaseNotes = '1.1.13
+------
+* Fixed bug in Get-NtToken for sandboxed tokens.
+* Extended support for Job objects.
+* Added Set-NtFileReparsePoint cmdlet.
+* Added support for viewing a file with Show-NtSection
+* Added support for DuplicateTo methods from rosalie.lecart.
+* Improved support for Win32 Desktop and WindowStation objects.
+* ScriptBlock support for the $_ argument.
+* Added SID -> Name cache to improve performance.
+* Fixed user marshallers in NDR for Windows 7.
+* Added internal security descriptor viewer control.
+1.1.12
 ------
 * Added basic NDR parser.
 * Added basic symbol resolver.
