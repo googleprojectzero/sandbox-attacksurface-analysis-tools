@@ -100,6 +100,7 @@
     <Compile Include="NtStructures.cs" />
     <Compile Include="NtThread.cs" />
     <Compile Include="NtToken.cs" />
+    <Compile Include="NtTransaction.cs" />
     <Compile Include="NtVirtualMemory.cs" />
     <Compile Include="NtWait.cs" />
     <Compile Include="NtWindowStation.cs" />

@@ -1,4 +1,4 @@
-﻿//  Copyright 2016 Google Inc. All Rights Reserved.
+﻿//  Copyright 2018 Google Inc. All Rights Reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -12,17 +12,18 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
 #pragma warning disable 1591
-    public enum RegistryTransactionAccessRights : uint
+    public enum TransactionAccessRights : uint
     {
-        QueryInformation = 0x01,
-        SetInformation = 0x02,
-        Enlist = 0x04,
-        Commit = 0x08,
+        QueryInformation = 1,
+        SetInformation = 2,
+        Enlist = 4,
+        Commit = 8,
         Rollback = 0x10,
         Propagate = 0x20,
         GenericRead = GenericAccessRights.GenericRead,
@@ -38,31 +39,67 @@ namespace NtApiDotNet
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 
-    public static partial class NtSystemCalls
-    {        
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCreateRegistryTransaction(out SafeKernelObjectHandle Handle, RegistryTransactionAccessRights DesiredAccess,
-            ObjectAttributes ObjectAttributes, int Flags);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtOpenRegistryTransaction(out SafeKernelObjectHandle Handle, RegistryTransactionAccessRights DesiredAccess,
-            ObjectAttributes ObjectAttributes);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCommitRegistryTransaction(SafeKernelObjectHandle Handle, bool Wait);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtRollbackRegistryTransaction(SafeKernelObjectHandle Handle, bool Wait);
+    [Flags]
+    public enum TransactionCreateFlags
+    {
+        None = 0,
+        DoNotPromote = 1,
     }
+
+    public static partial class NtSystemCalls
+    {
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtCreateTransaction(out SafeKernelObjectHandle TransactionHandle, 
+                TransactionAccessRights DesiredAccess, ObjectAttributes ObjectAttributes, 
+                OptionalGuid Uow, SafeKernelObjectHandle TmHandle,
+                TransactionCreateFlags CreateOptions,
+                int IsolationLevel,
+                int IsolationFlags,
+                LargeInteger Timeout,
+                UnicodeString Description);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtOpenTransaction(out SafeKernelObjectHandle TransactionHandle, TransactionAccessRights DesiredAccess,
+            ObjectAttributes ObjectAttributes, OptionalGuid Uow, SafeKernelObjectHandle TmHandle);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtCommitTransaction(SafeKernelObjectHandle TransactionHandle, bool Wait);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtRollbackTransaction(SafeKernelObjectHandle TransactionHandle, bool Wait);
+    }
+
+    public static partial class NtRtl
+    {
+        [DllImport("ntdll.dll")]
+        public static extern bool RtlSetCurrentTransaction(SafeKernelObjectHandle TransactionHandle);
+
+        [DllImport("ntdll.dll")]
+        public static extern IntPtr RtlGetCurrentTransaction();
+    }
+
+    public sealed class TransactionContext : IDisposable
+    {
+        internal TransactionContext(SafeKernelObjectHandle transaction)
+        {
+            NtRtl.RtlSetCurrentTransaction(transaction);
+        }
+
+        void IDisposable.Dispose()
+        {
+            NtRtl.RtlSetCurrentTransaction(SafeKernelObjectHandle.Null);
+        }
+    }
+
 #pragma warning restore 1591
 
     /// <summary>
-    /// Class to represent a registry transaction object
+    /// Class to represent a kernel transaction.
     /// </summary>
-    [NtType("RegistryTransaction")]
-    public class NtRegistryTransaction : NtObjectWithDuplicate<NtRegistryTransaction, RegistryTransactionAccessRights>
+    [NtType("TmTx")]
+    public class NtTransaction : NtObjectWithDuplicate<NtTransaction, TransactionAccessRights>
     {
-        internal NtRegistryTransaction(SafeKernelObjectHandle handle) : base(handle)
+        internal NtTransaction(SafeKernelObjectHandle handle) : base(handle)
         {
         }
 
@@ -73,11 +110,12 @@ namespace NtApiDotNet
         /// <param name="desired_access">Desired access for the handle</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
-        public static NtResult<NtRegistryTransaction> Create(ObjectAttributes object_attributes, RegistryTransactionAccessRights desired_access, bool throw_on_error)
+        public static NtResult<NtTransaction> Create(ObjectAttributes object_attributes, TransactionAccessRights desired_access, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtCreateRegistryTransaction(out handle,
-                desired_access, object_attributes, 0).CreateResult(throw_on_error, () => new NtRegistryTransaction(handle));
+            return NtSystemCalls.NtCreateTransaction(out SafeKernelObjectHandle handle,
+                desired_access, object_attributes, null,
+                SafeKernelObjectHandle.Null, TransactionCreateFlags.None,
+                0, 0, null, null).CreateResult(throw_on_error, () => new NtTransaction(handle));
         }
 
         /// <summary>
@@ -86,7 +124,7 @@ namespace NtApiDotNet
         /// <param name="object_attributes">The object attributes</param>
         /// <param name="desired_access">Desired access for the handle</param>
         /// <returns>The opened transaction</returns>
-        public static NtRegistryTransaction Create(ObjectAttributes object_attributes, RegistryTransactionAccessRights desired_access)
+        public static NtTransaction Create(ObjectAttributes object_attributes, TransactionAccessRights desired_access)
         {
             return Create(object_attributes, desired_access, true).Result;
         }
@@ -97,11 +135,11 @@ namespace NtApiDotNet
         /// <param name="path">The path of the transaction</param>
         /// <param name="root">The root if path is relative</param>
         /// <returns>The opened transaction</returns>
-        public static NtRegistryTransaction Create(string path, NtObject root)
+        public static NtTransaction Create(string path, NtObject root)
         {
             using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
-                return Create(obja, RegistryTransactionAccessRights.MaximumAllowed);
+                return Create(obja, TransactionAccessRights.MaximumAllowed);
             }
         }
 
@@ -110,7 +148,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="path">The path of the transaction</param>
         /// <returns>The opened transaction</returns>
-        public static NtRegistryTransaction Create(string path)
+        public static NtTransaction Create(string path)
         {
             return Create(path, null);
         }
@@ -119,7 +157,7 @@ namespace NtApiDotNet
         /// Create a transaction
         /// </summary>
         /// <returns>The opened transaction</returns>
-        public static NtRegistryTransaction Create()
+        public static NtTransaction Create()
         {
             return Create(null, null);
         }
@@ -131,7 +169,7 @@ namespace NtApiDotNet
         /// <param name="root">The root if path is relative</param>
         /// <param name="desired_access">The desired access for the object</param>
         /// <returns>The opened object</returns>
-        public static NtRegistryTransaction Open(string path, NtObject root, RegistryTransactionAccessRights desired_access)
+        public static NtTransaction Open(string path, NtObject root, TransactionAccessRights desired_access)
         {
             using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
@@ -146,10 +184,10 @@ namespace NtApiDotNet
         /// <param name="desired_access">The desired access for the object</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
-        public static NtResult<NtRegistryTransaction> Open(ObjectAttributes object_attributes, RegistryTransactionAccessRights desired_access, bool throw_on_error)
+        public static NtResult<NtTransaction> Open(ObjectAttributes object_attributes, TransactionAccessRights desired_access, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtOpenRegistryTransaction(out handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtRegistryTransaction(handle));
+            return NtSystemCalls.NtOpenTransaction(out SafeKernelObjectHandle handle, desired_access, object_attributes, 
+                null, SafeKernelObjectHandle.Null).CreateResult(throw_on_error, () => new NtTransaction(handle));
         }
 
         /// <summary>
@@ -158,14 +196,14 @@ namespace NtApiDotNet
         /// <param name="object_attributes">The object attributes for the object</param>
         /// <param name="desired_access">The desired access for the object</param>
         /// <returns>The opened object</returns>
-        public static NtRegistryTransaction Open(ObjectAttributes object_attributes, RegistryTransactionAccessRights desired_access)
+        public static NtTransaction Open(ObjectAttributes object_attributes, TransactionAccessRights desired_access)
         {
             return Open(object_attributes, desired_access, true).Result;
         }
 
         internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
         {
-            return Open(object_attributes, desired_access.ToSpecificAccess<RegistryTransactionAccessRights>(), throw_on_error).Cast<NtObject>();
+            return Open(object_attributes, desired_access.ToSpecificAccess<TransactionAccessRights>(), throw_on_error).Cast<NtObject>();
         }
 
         /// <summary>
@@ -173,9 +211,18 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="path">The path to the object</param>
         /// <returns>The opened object</returns>
-        public static NtRegistryTransaction Open(string path)
+        public static NtTransaction Open(string path)
         {
-            return Open(path, null, RegistryTransactionAccessRights.MaximumAllowed);
+            return Open(path, null, TransactionAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Commit the transaction
+        /// </summary>
+        /// <param name="wait">Wait for transaction to commit.</param>
+        public void Commit(bool wait)
+        {
+            NtSystemCalls.NtCommitTransaction(Handle, wait).ToNtException();
         }
 
         /// <summary>
@@ -183,7 +230,16 @@ namespace NtApiDotNet
         /// </summary>
         public void Commit()
         {
-            NtSystemCalls.NtCommitRegistryTransaction(Handle, true).ToNtException();
+            Commit(true);
+        }
+
+        /// <summary>
+        /// Rollback the transaction
+        /// </summary>
+        /// <param name="wait">Wait for transaction to rollback.</param>
+        public void Rollback(bool wait)
+        {
+            NtSystemCalls.NtRollbackTransaction(Handle, wait).ToNtException();
         }
 
         /// <summary>
@@ -191,7 +247,7 @@ namespace NtApiDotNet
         /// </summary>
         public void Rollback()
         {
-            NtSystemCalls.NtRollbackRegistryTransaction(Handle, true).ToNtException();
+            Rollback(true);
         }
 
         /// <summary>
@@ -203,5 +259,4 @@ namespace NtApiDotNet
             return new TransactionContext(Handle);
         }
     }
-
 }
