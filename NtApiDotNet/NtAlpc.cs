@@ -57,6 +57,7 @@ namespace NtApiDotNet
         AlpcWaitForPortReferences
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     public class AlpcPortMessage
     {
         [StructLayout(LayoutKind.Explicit)]
@@ -101,15 +102,15 @@ namespace NtApiDotNet
     public class AlpcPortAttributes
     {
         public uint Flags;
-        SecurityQualityOfServiceStruct SecurityQos;
-        IntPtr MaxMessageLength;
-        IntPtr MemoryBandwidth;
-        IntPtr MaxPoolUsage;
-        IntPtr MaxSectionSize;
-        IntPtr MaxViewSize;
-        IntPtr MaxTotalSectionSize;
-        uint DupObjectTypes;
-        uint Reserved; // Only Win64?
+        public SecurityQualityOfServiceStruct SecurityQos;
+        public IntPtr MaxMessageLength;
+        public IntPtr MemoryBandwidth;
+        public IntPtr MaxPoolUsage;
+        public IntPtr MaxSectionSize;
+        public IntPtr MaxViewSize;
+        public IntPtr MaxTotalSectionSize;
+        public uint DupObjectTypes;
+        public uint Reserved; // Only Win64?
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -166,7 +167,7 @@ namespace NtApiDotNet
             [In] UnicodeString PortName,
             [Optional, In] ObjectAttributes ObjectAttributes,
             [Optional, In] AlpcPortAttributes PortAttributes,
-            uint Flags,
+            [Optional] uint Flags,
             [Optional] IntPtr RequiredServerSid,
             [Optional, In, Out] AlpcPortMessage ConnectionMessage,
             [Optional, In, Out] OptionalInt32 BufferLength,
@@ -182,7 +183,7 @@ namespace NtApiDotNet
             [In] ObjectAttributes ConnectionPortObjectAttributes,
             [Optional, In] ObjectAttributes ClientPortObjectAttributes,
             [Optional, In] AlpcPortAttributes PortAttributes,
-            uint Flags,
+            [Optional] uint Flags,
             [Optional] IntPtr ServerSecurityRequirements, // SECURITY_DESCRIPTOR
             [Optional, In, Out] AlpcPortMessage ConnectionMessage,
             [Optional, In, Out] OptionalLength BufferLength,
@@ -193,7 +194,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcSendWaitReceivePort(
             [In] SafeKernelObjectHandle PortHandle,
-            uint Flags,
+            [Optional] uint Flags,
             [Optional, In] AlpcPortMessage SendMessage,
             [Optional, In, Out] AlpcMessageAtributes SendMessageAttributes,
             [Optional, Out] AlpcPortMessage ReceiveMessage,
@@ -251,6 +252,20 @@ namespace NtApiDotNet
     {
         internal NtAlpc(SafeKernelObjectHandle handle) : base(handle)
         {
+        }
+
+        /// <summary>
+        /// Connect to an ALPC port.
+        /// </summary>
+        /// <param name="port_name">The name of the port to connect to.</param>
+        /// <param name="port_attributes">Attributes for the port.</param>
+        /// <returns>The connected ALPC port object.</returns>
+        public static NtAlpc Connect(string port_name, AlpcPortAttributes port_attributes)
+        {
+            AlpcPortAttributes attrs = new AlpcPortAttributes();
+            NtSystemCalls.NtAlpcConnectPort(out SafeKernelObjectHandle handle, 
+                new UnicodeString(port_name), null, port_attributes, 0).ToNtException();
+            return new NtAlpc(handle);
         }
     }
 }
