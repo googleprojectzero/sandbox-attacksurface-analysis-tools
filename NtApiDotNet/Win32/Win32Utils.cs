@@ -58,7 +58,7 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        static Dictionary<uint, String> GetMaskDictionary(Type access_type, AccessMask valid_access)
+        internal static Dictionary<uint, String> GetMaskDictionary(Type access_type, AccessMask valid_access)
         {
             Dictionary<uint, String> access = new Dictionary<uint, String>();
             AddEnumToDictionary(access, access_type, valid_access.Access);

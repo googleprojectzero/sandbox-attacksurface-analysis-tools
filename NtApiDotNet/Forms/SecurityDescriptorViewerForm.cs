@@ -34,7 +34,7 @@ namespace NtApiDotNet.Forms
         {
             InitializeComponent();
             Text = $"Security for {name}";
-            securityDescriptorViewerControl.SetSecurityDescriptor(security_descriptor, type, true);
+            securityDescriptorViewerControl.SetSecurityDescriptor(security_descriptor, type, type.ValidAccess);
         }
 
         /// <summary>

@@ -256,7 +256,7 @@ namespace TokenViewer
 
             if (_token.IsAccessGranted(TokenAccessRights.ReadControl))
             {
-                securityDescriptorViewerControl.SetSecurityDescriptor(_token.SecurityDescriptor, _token.NtType, true);
+                securityDescriptorViewerControl.SetSecurityDescriptor(_token.SecurityDescriptor, _token.NtType, _token.NtType.ValidAccess);
             }
             else
             {
