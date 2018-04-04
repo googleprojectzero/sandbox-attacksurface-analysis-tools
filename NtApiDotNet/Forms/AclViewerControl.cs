@@ -237,5 +237,22 @@ namespace NtApiDotNet.Forms
                 CopyToClipboard(ace.Condition);
             }
         }
+
+        private void copyACESDDLToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Ace ace = GetSelectedAce();
+            if (ace == null)
+            {
+                return;
+            }
+
+            SecurityDescriptor sd = new SecurityDescriptor
+            {
+                Dacl = new Acl() { ace }
+            };
+
+            // Copy and remove the DACL prefix.
+            CopyToClipboard(sd.ToSddl().Substring(2));
+        }
     }
 }

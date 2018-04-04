@@ -39,12 +39,13 @@
             System.Windows.Forms.ColumnHeader columnHeaderAccessMask;
             this.listViewAcl = new System.Windows.Forms.ListView();
             this.columnHeaderCondition = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.listViewAccess = new System.Windows.Forms.ListView();
-            this.tableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.contextMenuStripAcl = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.copySIDToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.copyAccountToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.copyConditionToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.listViewAccess = new System.Windows.Forms.ListView();
+            this.tableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
+            this.copyACESDDLToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             columnHeaderType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeaderAccount = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeaderAccess = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -54,9 +55,9 @@
             columnHeaderName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeaderAccessMask = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             groupBoxAclEntries.SuspendLayout();
+            this.contextMenuStripAcl.SuspendLayout();
             groupBoxAccess.SuspendLayout();
             this.tableLayoutPanel.SuspendLayout();
-            this.contextMenuStripAcl.SuspendLayout();
             this.SuspendLayout();
             // 
             // columnHeaderType
@@ -114,6 +115,39 @@
             // 
             this.columnHeaderCondition.Text = "Condition";
             // 
+            // contextMenuStripAcl
+            // 
+            this.contextMenuStripAcl.ImageScalingSize = new System.Drawing.Size(20, 20);
+            this.contextMenuStripAcl.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.copySIDToolStripMenuItem,
+            this.copyAccountToolStripMenuItem,
+            this.copyConditionToolStripMenuItem,
+            this.copyACESDDLToolStripMenuItem});
+            this.contextMenuStripAcl.Name = "contextMenuStripAcl";
+            this.contextMenuStripAcl.Size = new System.Drawing.Size(211, 128);
+            this.contextMenuStripAcl.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStripAcl_Opening);
+            // 
+            // copySIDToolStripMenuItem
+            // 
+            this.copySIDToolStripMenuItem.Name = "copySIDToolStripMenuItem";
+            this.copySIDToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
+            this.copySIDToolStripMenuItem.Text = "Copy SID";
+            this.copySIDToolStripMenuItem.Click += new System.EventHandler(this.copySIDToolStripMenuItem_Click);
+            // 
+            // copyAccountToolStripMenuItem
+            // 
+            this.copyAccountToolStripMenuItem.Name = "copyAccountToolStripMenuItem";
+            this.copyAccountToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
+            this.copyAccountToolStripMenuItem.Text = "Copy Account";
+            this.copyAccountToolStripMenuItem.Click += new System.EventHandler(this.copyAccountToolStripMenuItem_Click);
+            // 
+            // copyConditionToolStripMenuItem
+            // 
+            this.copyConditionToolStripMenuItem.Name = "copyConditionToolStripMenuItem";
+            this.copyConditionToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
+            this.copyConditionToolStripMenuItem.Text = "Copy Condition";
+            this.copyConditionToolStripMenuItem.Click += new System.EventHandler(this.copyConditionToolStripMenuItem_Click);
+            // 
             // groupBoxAccess
             // 
             groupBoxAccess.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -169,37 +203,12 @@
             this.tableLayoutPanel.Size = new System.Drawing.Size(461, 506);
             this.tableLayoutPanel.TabIndex = 1;
             // 
-            // contextMenuStripAcl
+            // copyACESDDLToolStripMenuItem
             // 
-            this.contextMenuStripAcl.ImageScalingSize = new System.Drawing.Size(20, 20);
-            this.contextMenuStripAcl.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.copySIDToolStripMenuItem,
-            this.copyAccountToolStripMenuItem,
-            this.copyConditionToolStripMenuItem});
-            this.contextMenuStripAcl.Name = "contextMenuStripAcl";
-            this.contextMenuStripAcl.Size = new System.Drawing.Size(182, 76);
-            this.contextMenuStripAcl.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStripAcl_Opening);
-            // 
-            // copySIDToolStripMenuItem
-            // 
-            this.copySIDToolStripMenuItem.Name = "copySIDToolStripMenuItem";
-            this.copySIDToolStripMenuItem.Size = new System.Drawing.Size(181, 24);
-            this.copySIDToolStripMenuItem.Text = "Copy SID";
-            this.copySIDToolStripMenuItem.Click += new System.EventHandler(this.copySIDToolStripMenuItem_Click);
-            // 
-            // copyAccountToolStripMenuItem
-            // 
-            this.copyAccountToolStripMenuItem.Name = "copyAccountToolStripMenuItem";
-            this.copyAccountToolStripMenuItem.Size = new System.Drawing.Size(181, 24);
-            this.copyAccountToolStripMenuItem.Text = "Copy Account";
-            this.copyAccountToolStripMenuItem.Click += new System.EventHandler(this.copyAccountToolStripMenuItem_Click);
-            // 
-            // copyConditionToolStripMenuItem
-            // 
-            this.copyConditionToolStripMenuItem.Name = "copyConditionToolStripMenuItem";
-            this.copyConditionToolStripMenuItem.Size = new System.Drawing.Size(181, 24);
-            this.copyConditionToolStripMenuItem.Text = "Copy Condition";
-            this.copyConditionToolStripMenuItem.Click += new System.EventHandler(this.copyConditionToolStripMenuItem_Click);
+            this.copyACESDDLToolStripMenuItem.Name = "copyACESDDLToolStripMenuItem";
+            this.copyACESDDLToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
+            this.copyACESDDLToolStripMenuItem.Text = "Copy ACE SDDL";
+            this.copyACESDDLToolStripMenuItem.Click += new System.EventHandler(this.copyACESDDLToolStripMenuItem_Click);
             // 
             // AclViewerControl
             // 
@@ -209,9 +218,9 @@
             this.Name = "AclViewerControl";
             this.Size = new System.Drawing.Size(461, 506);
             groupBoxAclEntries.ResumeLayout(false);
+            this.contextMenuStripAcl.ResumeLayout(false);
             groupBoxAccess.ResumeLayout(false);
             this.tableLayoutPanel.ResumeLayout(false);
-            this.contextMenuStripAcl.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -226,5 +235,6 @@
         private System.Windows.Forms.ToolStripMenuItem copySIDToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem copyAccountToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem copyConditionToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem copyACESDDLToolStripMenuItem;
     }
 }

@@ -18,6 +18,7 @@
 // project.
 
 using System;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace NtApiDotNet.Forms
@@ -83,7 +84,15 @@ namespace NtApiDotNet.Forms
             AddAclTab(tabPageSACL, aclViewerControlSacl, security_descriptor.Sacl, access_type, mapping, valid_access);
             SetSidLabel(lblOwnerValue, security_descriptor.Owner);
             SetSidLabel(lblGroupValue, security_descriptor.Group);
-            lblIntegrityValue.Text = security_descriptor.IntegrityLevel.ToString();
+            if (security_descriptor.Sacl != null && !security_descriptor.Sacl.NullAcl 
+                && security_descriptor.Sacl.Where(a => a.Type == AceType.MandatoryLabel).Count() > 0)
+            {
+                lblIntegrityValue.Text = security_descriptor.IntegrityLevel.ToString();
+            }
+            else
+            {
+                lblIntegrityValue.Text = "N/A";
+            }
         }
 
         /// <summary>
