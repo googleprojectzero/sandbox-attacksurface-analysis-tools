@@ -26,6 +26,7 @@ namespace NtApiDotNet.Ndr
         IntPtr ReadIntPtr(IntPtr address);
         int ReadInt32(IntPtr address);
         T ReadStruct<T>(IntPtr address) where T : struct;
+        T[] ReadArray<T>(IntPtr address, int count) where T : struct;
         BinaryReader GetReader(IntPtr address);
     }
 
@@ -66,6 +67,14 @@ namespace NtApiDotNet.Ndr
         public T ReadStruct<T>(IntPtr address) where T : struct
         {
             return (T)Marshal.PtrToStructure(address, typeof(T));
+        }
+
+        public T[] ReadArray<T>(IntPtr address, int count) where T : struct
+        {
+            var buffer = new SafeBufferWrapper(address);
+            T[] ret = new T[count];
+            buffer.ReadArray(0, ret, 0, count);
+            return ret;
         }
     }
 
@@ -119,7 +128,7 @@ namespace NtApiDotNet.Ndr
     }
 
     /// <summary>
-    /// Class for a process which matches the current bitness.
+    /// IMemoryReader implementation for a process.
     /// </summary>
     internal class ProcessMemoryReader : IMemoryReader
     {
@@ -167,6 +176,17 @@ namespace NtApiDotNet.Ndr
         public T ReadStruct<T>(IntPtr address) where T : struct
         {
             return _process.ReadMemory<T>(address.ToInt64());
+        }
+
+        public T[] ReadArray<T>(IntPtr address, int count) where T : struct
+        {
+            T[] ret = new T[count];
+            int size = Marshal.SizeOf(typeof(T));
+            for (int i = 0; i < count; ++i)
+            {
+                ret[i] = ReadStruct<T>(address + i * size);
+            }
+            return ret;
         }
     }
 }
