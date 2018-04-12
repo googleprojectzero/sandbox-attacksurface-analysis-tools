@@ -169,10 +169,9 @@ namespace NtApiDotNet.Ndr
                 Name, string.Join(", ", Params.Select((p, i) => String.Format("/* Stack Offset: {0} */ {1} p{2}", p.Offset, p.Format(context), i))));
         }
 
-        internal NdrProcedureDefinition(NdrTypeCache type_cache, ISymbolResolver symbol_resolver, MIDL_STUB_DESC stub_desc, IntPtr proc_desc, IntPtr type_desc, IntPtr dispatch_func)
+        internal NdrProcedureDefinition(IMemoryReader mem_reader, NdrTypeCache type_cache, ISymbolResolver symbol_resolver, MIDL_STUB_DESC stub_desc, IntPtr proc_desc, IntPtr type_desc, IntPtr dispatch_func)
         {
-            UnmanagedMemoryStream stm = new UnmanagedMemoryStream(new SafeBufferWrapper(proc_desc), 0, int.MaxValue);
-            BinaryReader reader = new BinaryReader(stm);
+            BinaryReader reader = mem_reader.GetReader(proc_desc);
             NdrFormatCharacter handle_type = (NdrFormatCharacter)reader.ReadByte();
             NdrInterpreterFlags old_oi_flags = (NdrInterpreterFlags)reader.ReadByte();
 
@@ -238,7 +237,7 @@ namespace NtApiDotNet.Ndr
             if ((oi2_flags & NdrInterpreterOptFlags.HasExtensions) == NdrInterpreterOptFlags.HasExtensions)
             {
                 int ext_size = reader.ReadByte();
-                stm.Position -= 1;
+                reader.BaseStream.Position -= 1;
                 // Read out extension bytes.
                 byte[] extension = reader.ReadAll(ext_size);
                 if (Marshal.SizeOf(typeof(NdrProcHeaderExts)) <= ext_size)
@@ -260,7 +259,7 @@ namespace NtApiDotNet.Ndr
                     desc_size = 16;
                 }
             }
-            NdrParseContext context = new NdrParseContext(type_cache, symbol_resolver, stub_desc, type_desc, desc_size);
+            NdrParseContext context = new NdrParseContext(type_cache, symbol_resolver, stub_desc, type_desc, desc_size, mem_reader);
             List<NdrProcedureParameter> ps = new List<NdrProcedureParameter>();
 
             bool has_return = (oi2_flags & NdrInterpreterOptFlags.HasReturn) == NdrInterpreterOptFlags.HasReturn;

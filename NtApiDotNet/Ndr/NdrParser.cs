@@ -20,7 +20,6 @@
 using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Ndr
 {
@@ -77,15 +76,17 @@ namespace NtApiDotNet.Ndr
         public MIDL_STUB_DESC StubDesc { get; private set; }
         public IntPtr TypeDesc { get; private set; }
         public int CorrDescSize { get; private set; }
+        public IMemoryReader Reader { get; private set;}
 
         internal NdrParseContext(NdrTypeCache type_cache, ISymbolResolver symbol_resolver, 
-            MIDL_STUB_DESC stub_desc, IntPtr type_desc, int desc_size)
+            MIDL_STUB_DESC stub_desc, IntPtr type_desc, int desc_size, IMemoryReader reader)
         {
             TypeCache = type_cache;
             SymbolResolver = symbol_resolver;
             StubDesc = stub_desc;
             TypeDesc = type_desc;
             CorrDescSize = desc_size;
+            Reader = reader;
         }
     }
 
@@ -94,15 +95,25 @@ namespace NtApiDotNet.Ndr
     /// </summary>
     public sealed class NdrParser
     {
-        private NdrTypeCache _type_cache;
-        private ISymbolResolver _symbol_resolver;
+        private readonly NdrTypeCache _type_cache;
+        private readonly ISymbolResolver _symbol_resolver;
+        private readonly IMemoryReader _reader;
 
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="process">Process to parse from.</param>
         /// <param name="symbol_resolver">Specify a symbol resolver to use for looking up symbols.</param>
-        public NdrParser(ISymbolResolver symbol_resolver)
+        public NdrParser(NtProcess process, ISymbolResolver symbol_resolver)
         {
+            if (process == null || process.ProcessId == NtProcess.Current.ProcessId)
+            {
+                _reader = new CurrentProcessMemoryReader();
+            }
+            else
+            {
+                _reader = new ProcessMemoryReader(process);
+            }
             _symbol_resolver = symbol_resolver;
             _type_cache = new NdrTypeCache();
         }
@@ -110,30 +121,46 @@ namespace NtApiDotNet.Ndr
         /// <summary>
         /// Constructor.
         /// </summary>
-        public NdrParser() : this(null)
+        /// <param name="symbol_resolver">Specify a symbol resolver to use for looking up symbols.</param>
+        public NdrParser(ISymbolResolver symbol_resolver) : this(null, symbol_resolver)
         {
         }
 
-        private static NdrRpcServerInterface ReadRpcServerInterface(RPC_SERVER_INTERFACE server_interface, NdrTypeCache type_cache, ISymbolResolver symbol_resolver)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="process">Process to parse from.</param>
+        public NdrParser(NtProcess process) : this(process, null)
         {
-            RPC_DISPATCH_TABLE dispatch_table = server_interface.GetDispatchTable();
-            var procs = ReadProcs(server_interface.GetServerInfo(), 0, dispatch_table.DispatchTableCount, type_cache, symbol_resolver);
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public NdrParser() : this(null, null)
+        {
+        }
+
+        private static NdrRpcServerInterface ReadRpcServerInterface(IMemoryReader reader, RPC_SERVER_INTERFACE server_interface, NdrTypeCache type_cache, ISymbolResolver symbol_resolver)
+        {
+            RPC_DISPATCH_TABLE dispatch_table = server_interface.GetDispatchTable(reader);
+            var procs = ReadProcs(reader, server_interface.GetServerInfo(reader), 0, dispatch_table.DispatchTableCount, type_cache, symbol_resolver);
             return new NdrRpcServerInterface(server_interface.InterfaceId, server_interface.TransferSyntax, procs);
         }
 
-        private static IEnumerable<NdrProcedureDefinition> ReadProcs(MIDL_SERVER_INFO server_info, int start_offset, 
+        private static IEnumerable<NdrProcedureDefinition> ReadProcs(IMemoryReader reader, MIDL_SERVER_INFO server_info, int start_offset, 
             int dispatch_count, NdrTypeCache type_cache, ISymbolResolver symbol_resolver)
         {
-            IntPtr[] dispatch_funcs = server_info.GetDispatchTable(dispatch_count);
-            MIDL_STUB_DESC stub_desc = server_info.GetStubDesc();
+            IntPtr[] dispatch_funcs = server_info.GetDispatchTable(reader, dispatch_count);
+            MIDL_STUB_DESC stub_desc = server_info.GetStubDesc(reader);
             IntPtr type_desc = stub_desc.pFormatTypes;
             List<NdrProcedureDefinition> procs = new List<NdrProcedureDefinition>();
             for(int i = start_offset; i < dispatch_count; ++i)
             {
-                int fmt_ofs = Marshal.ReadInt16(server_info.FmtStringOffset, i * 2);
+                int fmt_ofs = reader.ReadInt16(server_info.FmtStringOffset + i * 2);
                 if (fmt_ofs >= 0)
                 {
-                    procs.Add(new NdrProcedureDefinition(type_cache, symbol_resolver, stub_desc, server_info.ProcString + fmt_ofs, type_desc, dispatch_funcs[i]));
+                    procs.Add(new NdrProcedureDefinition(reader, type_cache, symbol_resolver, stub_desc, server_info.ProcString + fmt_ofs, type_desc, dispatch_funcs[i]));
                 }
             }
             return procs.AsReadOnly();
@@ -146,7 +173,7 @@ namespace NtApiDotNet.Ndr
         /// <returns>The parsed NDR content.</returns>
         public NdrRpcServerInterface ReadRpcServerInterface(IntPtr server_interface)
         {
-            return ReadRpcServerInterface((RPC_SERVER_INTERFACE)Marshal.PtrToStructure(server_interface, typeof(RPC_SERVER_INTERFACE)), _type_cache, _symbol_resolver);
+            return ReadRpcServerInterface(_reader, _reader.ReadStruct<RPC_SERVER_INTERFACE>(server_interface), _type_cache, _symbol_resolver);
         }
 
         /// <summary>
@@ -158,7 +185,7 @@ namespace NtApiDotNet.Ndr
         /// <returns>The parsed NDR content.</returns>
         public IEnumerable<NdrProcedureDefinition> ReadFromMidlServerInfo(IntPtr server_info, int start_offset, int dispatch_count)
         {
-            return ReadProcs((MIDL_SERVER_INFO)Marshal.PtrToStructure(server_info, typeof(MIDL_SERVER_INFO)), start_offset, dispatch_count, _type_cache, _symbol_resolver);
+            return ReadProcs(_reader, _reader.ReadStruct<MIDL_SERVER_INFO>(server_info), start_offset, dispatch_count, _type_cache, _symbol_resolver);
         }
 
         /// <summary>

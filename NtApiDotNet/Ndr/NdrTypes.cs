@@ -1275,7 +1275,7 @@ namespace NtApiDotNet.Ndr
 
         private static NdrBaseTypeReference FixupUserMarshal(NdrParseContext context, NdrUserMarshalTypeReference type)
         {
-            if (context.StubDesc.aUserMarshalQuadruple == IntPtr.Zero)
+            if (context.StubDesc.aUserMarshalQuadruple == IntPtr.Zero || !context.Reader.InProcess)
             {
                 return type;
             }

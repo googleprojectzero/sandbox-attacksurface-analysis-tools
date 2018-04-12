@@ -28,10 +28,13 @@ namespace NtApiDotNet.Ndr
         T ReadStruct<T>(IntPtr address) where T : struct;
         T[] ReadArray<T>(IntPtr address, int count) where T : struct;
         BinaryReader GetReader(IntPtr address);
+        bool InProcess { get; }
     }
 
     internal class CurrentProcessMemoryReader : IMemoryReader
     {
+        public bool InProcess => true;
+
         public BinaryReader GetReader(IntPtr address)
         {
             return new BinaryReader(new UnmanagedMemoryStream(new SafeBufferWrapper(address), 0, int.MaxValue));
@@ -82,6 +85,7 @@ namespace NtApiDotNet.Ndr
     {
         private readonly long _base_address;
         private readonly NtProcess _process;
+        private long _offset;
 
         internal ProcessMemoryStream(NtProcess process, IntPtr base_address)
         {
@@ -97,7 +101,7 @@ namespace NtApiDotNet.Ndr
 
         public override long Length => throw new NotSupportedException();
 
-        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override long Position { get => _offset; set => _offset = value; }
 
         public override void Flush()
         {
@@ -106,8 +110,9 @@ namespace NtApiDotNet.Ndr
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            var result = _process.ReadMemory(_base_address, count);
+            var result = _process.ReadMemory(_base_address + _offset, count);
             Array.Copy(result, 0, buffer, offset, result.Length);
+            _offset += result.Length;
             return result.Length;
         }
 
@@ -143,6 +148,8 @@ namespace NtApiDotNet.Ndr
             _process = process;
         }
 
+        public bool InProcess => false;
+
         public BinaryReader GetReader(IntPtr address)
         {
             return new BinaryReader(new ProcessMemoryStream(_process, address));
@@ -155,7 +162,7 @@ namespace NtApiDotNet.Ndr
 
         public byte[] ReadBytes(IntPtr address, int length)
         {
-            return _process.ReadMemory(address.ToInt64(), length);
+            return _process.ReadMemory(address.ToInt64(), length, true);
         }
 
         public short ReadInt16(IntPtr address)

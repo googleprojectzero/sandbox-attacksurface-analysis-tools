@@ -30,15 +30,13 @@ namespace NtApiDotNet.Ndr
             return ret;
         }
 
-        internal static Guid ReadGuid(IntPtr p)
+        internal static Guid ReadGuid(IMemoryReader reader, IntPtr p)
         {
             if (p == IntPtr.Zero)
             {
                 return NdrInterfacePointerTypeReference.IID_IUnknown;
             }
-            byte[] guid = new byte[16];
-            Marshal.Copy(p, guid, 0, 16);
-            return new Guid(guid);
+            return new Guid(reader.ReadBytes(p, 16));
         }
     }
 
@@ -83,24 +81,22 @@ namespace NtApiDotNet.Ndr
         public IntPtr nCount;
         public IntPtr pSyntaxInfo;
 
-        public MIDL_STUB_DESC GetStubDesc()
+        public MIDL_STUB_DESC GetStubDesc(IMemoryReader reader)
         {
             if (pStubDesc == IntPtr.Zero)
             {
                 return new MIDL_STUB_DESC();
             }
-            return (MIDL_STUB_DESC)Marshal.PtrToStructure(pStubDesc, typeof(MIDL_STUB_DESC));
+            return reader.ReadStruct<MIDL_STUB_DESC>(pStubDesc);
         }
 
-        public IntPtr[] GetDispatchTable(int dispatch_count)
+        public IntPtr[] GetDispatchTable(IMemoryReader reader, int dispatch_count)
         {
             if (DispatchTable == IntPtr.Zero)
             {
                 return new IntPtr[dispatch_count];
             }
-            IntPtr[] table = new IntPtr[dispatch_count];
-            Marshal.Copy(DispatchTable, table, 0, table.Length);
-            return table;
+            return reader.ReadArray<IntPtr>(DispatchTable, dispatch_count);
         }
     }
 
@@ -125,11 +121,9 @@ namespace NtApiDotNet.Ndr
         public IntPtr DispatchTable; // RPC_DISPATCH_FUNCTION*
         public IntPtr Reserved;
 
-        public IntPtr[] GetDispatchTable()
+        public IntPtr[] GetDispatchTable(IMemoryReader reader)
         {
-            IntPtr[] table = new IntPtr[DispatchTableCount];
-            Marshal.Copy(DispatchTable, table, 0, table.Length);
-            return table;
+            return reader.ReadArray<IntPtr>(DispatchTable, DispatchTableCount);
         }
     }
 
@@ -146,23 +140,23 @@ namespace NtApiDotNet.Ndr
         public IntPtr InterpreterInfo;    // MIDL_SERVER_INFO
         public int Flags;
 
-        public RPC_DISPATCH_TABLE GetDispatchTable()
+        public RPC_DISPATCH_TABLE GetDispatchTable(IMemoryReader reader)
         {
             if (DispatchTable == IntPtr.Zero)
             {
                 return new RPC_DISPATCH_TABLE();
             }
 
-            return (RPC_DISPATCH_TABLE)Marshal.PtrToStructure(DispatchTable, typeof(RPC_DISPATCH_TABLE));
+            return reader.ReadStruct<RPC_DISPATCH_TABLE>(DispatchTable);
         }
 
-        public MIDL_SERVER_INFO GetServerInfo()
+        public MIDL_SERVER_INFO GetServerInfo(IMemoryReader reader)
         {
             if (InterpreterInfo == IntPtr.Zero)
             {
                 return new MIDL_SERVER_INFO();
             }
-            return (MIDL_SERVER_INFO)Marshal.PtrToStructure(InterpreterInfo, typeof(MIDL_SERVER_INFO));
+            return reader.ReadStruct<MIDL_SERVER_INFO>(InterpreterInfo);
         }
     }
 
