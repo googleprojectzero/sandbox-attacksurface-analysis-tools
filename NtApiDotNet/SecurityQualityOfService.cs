@@ -59,6 +59,7 @@ namespace NtApiDotNet
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     public struct SecurityQualityOfServiceStruct
     {
         public int Length;

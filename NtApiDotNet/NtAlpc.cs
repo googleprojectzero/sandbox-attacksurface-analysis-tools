@@ -43,13 +43,13 @@ namespace NtApiDotNet
     /// </summary>
     public enum AlpcPortInformationClass
     {
-        AlpcBasicInformation, 
+        AlpcBasicInformation,
         AlpcPortInformation,
-        AlpcAssociateCompletionPortInformation, 
-        AlpcConnectedSIDInformation, 
-        AlpcServerInformation, 
-        AlpcMessageZoneInformation, 
-        AlpcRegisterCompletionListInformation, 
+        AlpcAssociateCompletionPortInformation,
+        AlpcConnectedSIDInformation,
+        AlpcServerInformation,
+        AlpcMessageZoneInformation,
+        AlpcRegisterCompletionListInformation,
         AlpcUnregisterCompletionListInformation,
         AlpcAdjustCompletionListConcurrencyCountInformation,
         AlpcRegisterCallbackInformation,
@@ -98,10 +98,20 @@ namespace NtApiDotNet
         public PortMessageUnion3 u3;
     }
 
+    [Flags]
+    public enum AlpcPortAttributeFlags
+    {
+        None = 0,
+        LpcPort = 0x1000, // Not accessible outside the kernel.
+        AllowLpcRequests = 0x20000,
+        WaitablePort = 0x40000,
+        SystemProcess = 0x100000 // Not accessible outside the kernel.
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public class AlpcPortAttributes
     {
-        public uint Flags;
+        public AlpcPortAttributeFlags Flags;
         public SecurityQualityOfServiceStruct SecurityQos;
         public IntPtr MaxMessageLength;
         public IntPtr MemoryBandwidth;
@@ -113,15 +123,40 @@ namespace NtApiDotNet
         public uint Reserved; // Only Win64?
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    public class AlpcMessageAtributes
+    [Flags]
+    public enum AlpcHandleAttributeFlags
     {
-        public uint AllocatedAttributes;
-        public uint ValidAttributes;
+        DuplicateSameAccess = 0x10000,
+        DuplicateSameAttributes = 0x20000,
+        DuplicateInherit = 0x80000,
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public class AlpcContextAttr
+    public class AlpcHandleAttribute
+    {
+        public AlpcHandleAttributeFlags Flags;
+        public IntPtr Handle;
+        public int ObjectType; 
+        public AccessMask DesiredAccess;
+    }
+
+    [Flags]
+    public enum AlpcSecurityAttributeFlags
+    {
+        None = 0,
+        CreateHandle = 0x20000,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class AlpcSecurityAttribute
+    {
+        public AlpcSecurityAttributeFlags Flags;
+        public IntPtr QoS;
+        public IntPtr ContextHandle;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class AlpcContextAttribute
     {
         public IntPtr PortContext;
         public IntPtr MessageContext;
@@ -130,19 +165,46 @@ namespace NtApiDotNet
         public uint CallbackId;
     }
 
+    [Flags]
+    public enum AlpcMessageAttributeFlags : uint
+    {
+        None = 0,
+        WorkOnBehalfOf = 0x2000000,
+        Direct = 0x4000000,
+        Token = 0x8000000,
+        Handle = 0x10000000,
+        Context = 0x20000000,
+        View = 0x40000000,
+        Security = 0x80000000,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class AlpcMessageAtributes
+    {
+        public AlpcMessageAttributeFlags AllocatedAttributes;
+        public AlpcMessageAttributeFlags ValidAttributes;
+    }
+
+    [Flags]
+    public enum AlpcDisconnectPortFlags
+    {
+        None = 0,
+        NoFlushOnClose = 1,
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcCreatePort(
             out SafeKernelObjectHandle PortHandle,
             [In] ObjectAttributes ObjectAttributes,
-            AlpcPortAttributes PortAttributes
+            [In, Optional] AlpcPortAttributes PortAttributes
         );
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcDisconnectPort(
             [In] SafeKernelObjectHandle PortHandle,
-            uint Flags
+            AlpcDisconnectPortFlags Flags
         );
 
         [DllImport("ntdll.dll")]
@@ -206,7 +268,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtAlpcCancelMessage(
             [In] SafeKernelObjectHandle PortHandle,
             uint Flags,
-            [In] AlpcContextAttr MessageContext
+            [In] AlpcContextAttribute MessageContext
            );
 
         [DllImport("ntdll.dll")]
@@ -241,6 +303,12 @@ namespace NtApiDotNet
             uint Flags,
             ProcessAccessRights DesiredAccess,
             [In] ObjectAttributes ObjectAttributes);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAlpcCreateSecurityContext(
+            SafeKernelObjectHandle PortHandle,
+            int Flags,
+            [In, Out] AlpcSecurityAttribute SecurityAttribute);
     }
 #pragma warning restore 1591
 
@@ -255,17 +323,66 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create an ALPC port.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the port.</param>
+        /// <param name="port_attributes">The attributes for the port.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The created object.</returns>
+        public static NtResult<NtAlpc> Create(ObjectAttributes object_attributes, AlpcPortAttributes port_attributes, bool throw_on_error)
+        {
+            return NtSystemCalls.NtAlpcCreatePort(out SafeKernelObjectHandle handle, object_attributes, port_attributes).CreateResult(throw_on_error, () => new NtAlpc(handle));
+        }
+
+        /// <summary>
+        /// Create an ALPC port.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the port.</param>
+        /// <param name="port_attributes">The attributes for the port.</param>
+        /// <returns>The created object.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtAlpc Create(ObjectAttributes object_attributes, AlpcPortAttributes port_attributes)
+        {
+            return Create(object_attributes, port_attributes, true).Result;
+        }
+
+        /// <summary>
+        /// Create an ALPC port.
+        /// </summary>
+        /// <param name="port_name">The name of the port to create.</param>
+        /// <param name="port_attributes">The attributes for the port.</param>
+        /// <returns>The created object.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtAlpc Create(string port_name = null, AlpcPortAttributes port_attributes = null)
+        {
+            using (var obj_attr = new ObjectAttributes(port_name, AttributeFlags.CaseInsensitive))
+            {
+                return Create(obj_attr, port_attributes);
+            }
+        }
+
+        /// <summary>
         /// Connect to an ALPC port.
         /// </summary>
         /// <param name="port_name">The name of the port to connect to.</param>
         /// <param name="port_attributes">Attributes for the port.</param>
         /// <returns>The connected ALPC port object.</returns>
-        public static NtAlpc Connect(string port_name, AlpcPortAttributes port_attributes)
+        public static NtAlpc Connect(string port_name, AlpcPortAttributes port_attributes = null)
         {
             AlpcPortAttributes attrs = new AlpcPortAttributes();
             NtSystemCalls.NtAlpcConnectPort(out SafeKernelObjectHandle handle, 
                 new UnicodeString(port_name), null, port_attributes, 0).ToNtException();
             return new NtAlpc(handle);
+        }
+
+        /// <summary>
+        /// Dispose port.
+        /// </summary>
+        /// <param name="disposing">True when disposing, false if finalizing</param>
+        protected override void Dispose(bool disposing)
+        {
+            NtSystemCalls.NtAlpcDisconnectPort(Handle, 0);
+            base.Dispose(disposing);
         }
     }
 }
