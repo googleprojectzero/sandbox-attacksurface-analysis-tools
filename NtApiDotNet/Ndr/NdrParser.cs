@@ -112,7 +112,19 @@ namespace NtApiDotNet.Ndr
             }
             else
             {
-                _reader = new ProcessMemoryReader(process);
+                if (!Environment.Is64BitProcess && process.Is64Bit)
+                {
+                    throw new ArgumentException("Do not support 32 to 64 bit reading.");
+                }
+
+                if (Environment.Is64BitProcess != process.Is64Bit)
+                {
+                    _reader = new CrossBitnessProcessMemoryReader(process);
+                }
+                else
+                {
+                    _reader = new ProcessMemoryReader(process);
+                }
             }
             _symbol_resolver = symbol_resolver;
             _type_cache = new NdrTypeCache();

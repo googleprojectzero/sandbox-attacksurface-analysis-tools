@@ -1465,10 +1465,9 @@ namespace NtApiDotNet.Ndr
 
         internal static BinaryReader GetReader(NdrParseContext context, int ofs)
         {
-            UnmanagedMemoryStream stm = new UnmanagedMemoryStream(
-                new SafeBufferWrapper(context.TypeDesc), 0, int.MaxValue);
-            stm.Position = ofs;
-            return new BinaryReader(stm);
+            BinaryReader reader = context.Reader.GetReader(context.TypeDesc);
+            reader.BaseStream.Position = ofs;
+            return reader;
         }
 
         internal static NdrBaseTypeReference Read(NdrParseContext context, int ofs)

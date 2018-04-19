@@ -14,10 +14,68 @@
 
 using System;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Ndr
 {
+
+    internal class CrossBitnessTypeAttribute : Attribute
+    {
+        private Lazy<MethodInfo> _base_method;
+        public Type CrossBitnessType { get; private set; }
+
+        private static MethodInfo GetMethodInfo(Type cross_bitness_type)
+        {
+            Func<long, int> read_memory = NtProcess.Current.ReadMemory<int>;
+            return read_memory.Method.GetGenericMethodDefinition().MakeGenericMethod(cross_bitness_type);
+        }
+
+        public CrossBitnessTypeAttribute(Type cross_bitness_type)
+        {
+            CrossBitnessType = cross_bitness_type;
+            _base_method = new Lazy<MethodInfo>(() => GetMethodInfo(cross_bitness_type));
+        }
+
+        public T ReadType<T>(NtProcess process, long base_address) where T : struct
+        {
+            IConvertToNative<T> converter = (IConvertToNative<T>)_base_method.Value.Invoke(process, new object[] { base_address });
+            return converter.Convert();
+        }
+
+        public int GetSize()
+        {
+            return Marshal.SizeOf(CrossBitnessType);
+        }
+    }
+
+    internal interface IConvertToNative<T> where T : struct
+    {
+        T Convert();
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct IntPtr32 : IConvertToNative<IntPtr>
+    {
+        public int value;
+
+        public IntPtr Convert()
+        {
+            return new IntPtr(value);
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct UIntPtr32 : IConvertToNative<UIntPtr>
+    {
+        public uint value;
+
+        public UIntPtr Convert()
+        {
+            return new UIntPtr(value);
+        }
+    }
+
     internal interface IMemoryReader
     {
         byte ReadByte(IntPtr address);
@@ -137,14 +195,10 @@ namespace NtApiDotNet.Ndr
     /// </summary>
     internal class ProcessMemoryReader : IMemoryReader
     {
-        private readonly NtProcess _process;
+        protected readonly NtProcess _process;
 
         internal ProcessMemoryReader(NtProcess process)
         {
-            if (process.Is64Bit != Environment.Is64BitProcess)
-            {
-                throw new ArgumentException("Currently do not support cross bitness reading");
-            }
             _process = process;
         }
 
@@ -175,23 +229,76 @@ namespace NtApiDotNet.Ndr
             return _process.ReadMemory<int>(address.ToInt64());
         }
 
-        public IntPtr ReadIntPtr(IntPtr address)
+        public virtual IntPtr ReadIntPtr(IntPtr address)
         {
             return _process.ReadMemory<IntPtr>(address.ToInt64());
         }
 
-        public T ReadStruct<T>(IntPtr address) where T : struct
+        public virtual T ReadStruct<T>(IntPtr address) where T : struct
         {
             return _process.ReadMemory<T>(address.ToInt64());
         }
 
-        public T[] ReadArray<T>(IntPtr address, int count) where T : struct
+        public virtual T[] ReadArray<T>(IntPtr address, int count) where T : struct
         {
             T[] ret = new T[count];
             int size = Marshal.SizeOf(typeof(T));
             for (int i = 0; i < count; ++i)
             {
                 ret[i] = ReadStruct<T>(address + i * size);
+            }
+            return ret;
+        }
+    }
+
+    /// <summary>
+    /// IMemoryReader implementation for a process.
+    /// </summary>
+    internal sealed class CrossBitnessProcessMemoryReader : ProcessMemoryReader
+    {
+        internal CrossBitnessProcessMemoryReader(NtProcess process) : base(process)
+        {
+        }
+
+        public override IntPtr ReadIntPtr(IntPtr address)
+        {
+            return _process.ReadMemory<IntPtr32>(address.ToInt64()).Convert();
+        }
+
+        private static CrossBitnessTypeAttribute GetCrossBitnessAttribute<T>() where T : struct
+        {
+            object[] attrs = typeof(T).GetCustomAttributes(typeof(CrossBitnessTypeAttribute), false);
+            if (attrs.Length > 0)
+            {
+                return (CrossBitnessTypeAttribute)attrs[0];
+            }
+            return null;
+        }
+
+        public override T ReadStruct<T>(IntPtr address)
+        {
+            var attr = GetCrossBitnessAttribute<T>();
+            if (attr == null)
+            {
+                return base.ReadStruct<T>(address);
+            }
+
+            return attr.ReadType<T>(_process, address.ToInt64());
+        }
+
+        public override T[] ReadArray<T>(IntPtr address, int count)
+        {
+            var attr = GetCrossBitnessAttribute<T>();
+            if (attr == null)
+            {
+                return base.ReadArray<T>(address, count);
+            }
+
+            T[] ret = new T[count];
+            int size = attr.GetSize();
+            for (int i = 0; i < count; ++i)
+            {
+                ret[i] = attr.ReadType<T>(_process, address.ToInt64() + i * size);
             }
             return ret;
         }

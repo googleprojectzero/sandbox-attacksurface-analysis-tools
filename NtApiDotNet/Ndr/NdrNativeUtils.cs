@@ -41,6 +41,126 @@ namespace NtApiDotNet.Ndr
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct MIDL_STUB_DESC32 : IConvertToNative<MIDL_STUB_DESC>
+    {
+        public IntPtr32 RpcInterfaceInformation;
+        public IntPtr32 pfnAllocate;
+        public IntPtr32 pfnFree;
+        public IntPtr32 pGenericBindingInfo;
+        public IntPtr32 apfnNdrRundownRoutines;
+        public IntPtr32 aGenericBindingRoutinePairs;
+        public IntPtr32 apfnExprEval;
+        public IntPtr32 aXmitQuintuple;
+        public IntPtr32 pFormatTypes;
+        public int fCheckBounds;
+        public int Version;
+        public IntPtr32 pMallocFreeStruct;
+        public int MIDLVersion;
+        public IntPtr32 CommFaultOffsets;
+        public IntPtr32 aUserMarshalQuadruple;
+        public IntPtr32 NotifyRoutineTable;
+        public IntPtr32 mFlags;
+        public IntPtr32 CsRoutineTables;
+        public IntPtr32 ProxyServerInfo;
+        public IntPtr32 pExprInfo;
+        public MIDL_STUB_DESC Convert()
+        {
+            MIDL_STUB_DESC ret = new MIDL_STUB_DESC();
+            ret.RpcInterfaceInformation = RpcInterfaceInformation.Convert();
+            ret.pfnAllocate = pfnAllocate.Convert();
+            ret.pfnFree = pfnFree.Convert();
+            ret.pGenericBindingInfo = pGenericBindingInfo.Convert();
+            ret.apfnNdrRundownRoutines = apfnNdrRundownRoutines.Convert();
+            ret.aGenericBindingRoutinePairs = aGenericBindingRoutinePairs.Convert();
+            ret.apfnExprEval = apfnExprEval.Convert();
+            ret.aXmitQuintuple = aXmitQuintuple.Convert();
+            ret.pFormatTypes = pFormatTypes.Convert();
+            ret.fCheckBounds = fCheckBounds;
+            ret.Version = Version;
+            ret.pMallocFreeStruct = pMallocFreeStruct.Convert();
+            ret.MIDLVersion = MIDLVersion;
+            ret.CommFaultOffsets = CommFaultOffsets.Convert();
+            ret.aUserMarshalQuadruple = aUserMarshalQuadruple.Convert();
+            ret.NotifyRoutineTable = NotifyRoutineTable.Convert();
+            ret.mFlags = mFlags.Convert();
+            ret.CsRoutineTables = CsRoutineTables.Convert();
+            ret.ProxyServerInfo = ProxyServerInfo.Convert();
+            ret.pExprInfo = pExprInfo.Convert();
+            return ret;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MIDL_SERVER_INFO32 : IConvertToNative<MIDL_SERVER_INFO>
+    {
+        public IntPtr32 pStubDesc;
+        public IntPtr32 DispatchTable;
+        public IntPtr32 ProcString;
+        public IntPtr32 FmtStringOffset;
+        public IntPtr32 ThunkTable;
+        public IntPtr32 pTransferSyntax;
+        public IntPtr32 nCount;
+        public IntPtr32 pSyntaxInfo;
+        public MIDL_SERVER_INFO Convert()
+        {
+            MIDL_SERVER_INFO ret = new MIDL_SERVER_INFO();
+            ret.pStubDesc = pStubDesc.Convert();
+            ret.DispatchTable = DispatchTable.Convert();
+            ret.ProcString = ProcString.Convert();
+            ret.FmtStringOffset = FmtStringOffset.Convert();
+            ret.ThunkTable = ThunkTable.Convert();
+            ret.pTransferSyntax = pTransferSyntax.Convert();
+            ret.nCount = nCount.Convert();
+            ret.pSyntaxInfo = pSyntaxInfo.Convert();
+            return ret;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RPC_DISPATCH_TABLE32 : IConvertToNative<RPC_DISPATCH_TABLE>
+    {
+        public int DispatchTableCount;
+        public IntPtr32 DispatchTable;
+        public IntPtr32 Reserved;
+        public RPC_DISPATCH_TABLE Convert()
+        {
+            RPC_DISPATCH_TABLE ret = new RPC_DISPATCH_TABLE();
+            ret.DispatchTableCount = DispatchTableCount;
+            ret.DispatchTable = DispatchTable.Convert();
+            ret.Reserved = Reserved.Convert();
+            return ret;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RPC_SERVER_INTERFACE32 : IConvertToNative<RPC_SERVER_INTERFACE>
+    {
+        public int Length;
+        public RPC_SYNTAX_IDENTIFIER InterfaceId;
+        public RPC_SYNTAX_IDENTIFIER TransferSyntax;
+        public IntPtr32 DispatchTable;
+        public int RpcProtseqEndpointCount;
+        public IntPtr32 RpcProtseqEndpoint;
+        public IntPtr32 DefaultManagerEpv;
+        public IntPtr32 InterpreterInfo;
+        public int Flags;
+        public RPC_SERVER_INTERFACE Convert()
+        {
+            RPC_SERVER_INTERFACE ret = new RPC_SERVER_INTERFACE();
+            ret.Length = Length;
+            ret.InterfaceId = InterfaceId;
+            ret.TransferSyntax = TransferSyntax;
+            ret.DispatchTable = DispatchTable.Convert();
+            ret.RpcProtseqEndpointCount = RpcProtseqEndpointCount;
+            ret.RpcProtseqEndpoint = RpcProtseqEndpoint.Convert();
+            ret.DefaultManagerEpv = DefaultManagerEpv.Convert();
+            ret.InterpreterInfo = InterpreterInfo.Convert();
+            ret.Flags = Flags;
+            return ret;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential), CrossBitnessType(typeof(MIDL_STUB_DESC32))]
     internal struct MIDL_STUB_DESC
     {
         public IntPtr RpcInterfaceInformation;
@@ -69,7 +189,7 @@ namespace NtApiDotNet.Ndr
         public IntPtr pExprInfo;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential), CrossBitnessType(typeof(MIDL_SERVER_INFO32))]
     internal struct MIDL_SERVER_INFO
     {
         public IntPtr pStubDesc;
@@ -114,7 +234,7 @@ namespace NtApiDotNet.Ndr
         public RPC_VERSION SyntaxVersion;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential), CrossBitnessType(typeof(RPC_DISPATCH_TABLE32))]
     internal struct RPC_DISPATCH_TABLE
     {
         public int DispatchTableCount;
@@ -127,7 +247,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential), CrossBitnessType(typeof(RPC_SERVER_INTERFACE32))]
     internal struct RPC_SERVER_INTERFACE
     {
         public int Length;
