@@ -852,6 +852,7 @@ namespace NtApiDotNet
     {
         private int? _pid;
         private ProcessExtendedBasicInformation _extended_info;
+        private bool? _wow64;
 
         private ProcessExtendedBasicInformation GetExtendedBasicInfo(bool get_cached)
         {
@@ -1950,7 +1951,11 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFixed<IntPtr>(ProcessInformationClass.ProcessWow64Information) != IntPtr.Zero;
+                if (!_wow64.HasValue)
+                {
+                    _wow64 = QueryFixed<IntPtr>(ProcessInformationClass.ProcessWow64Information) != IntPtr.Zero;
+                }
+                return _wow64.Value;
             }
         }
 
