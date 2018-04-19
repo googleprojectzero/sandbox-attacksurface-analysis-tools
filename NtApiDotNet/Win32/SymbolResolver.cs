@@ -94,6 +94,14 @@ namespace NtApiDotNet.Win32
         /// <param name="generate_fake_symbol">If true then generate a fake symbol.</param>
         /// <returns>The symbol name. If |generate_fake_symbol| is true and the symbol doesn't exist one is generated based on module name.</returns>
         string GetSymbolForAddress(IntPtr address, bool generate_fake_symbol);
+        /// <summary>
+        /// Get the symbol name for an address, with no fallback.
+        /// </summary>
+        /// <param name="address">The address of the symbol.</param>
+        /// <param name="generate_fake_symbol">If true then generate a fake symbol.</param>
+        /// <param name="return_name_only">If true then return only the name of the symbols (such as C++ symbol name) rather than full symbol.</param>
+        /// <returns>The symbol name. If |generate_fake_symbol| is true and the symbol doesn't exist one is generated based on module name.</returns>
+        string GetSymbolForAddress(IntPtr address, bool generate_fake_symbol, bool return_name_only);
     }
 
     /// <summary>
@@ -534,16 +542,34 @@ namespace NtApiDotNet.Win32
             return GetSymbolForAddress(address, true);
         }
 
-        public string GetSymbolForAddress(IntPtr address, bool generate_fake_symbol)
+        private static string GetSymbolName(string symbol)
+        {
+            int last_index = symbol.LastIndexOf("::");
+            if (last_index >= 0)
+            {
+                symbol = symbol.Substring(last_index + 2);
+            }
+
+            last_index = symbol.LastIndexOf("`");
+            if (last_index >= 0)
+            {
+                symbol = symbol.Substring(last_index + 1);
+            }
+            return symbol;
+        }
+
+        public string GetSymbolForAddress(IntPtr address, bool generate_fake_symbol, bool return_name_only)
         {
             using (var sym_info = AllocateSymInfo())
             {
-                long displacement;
-                if (_sym_from_addr(_process, address.ToInt64(), out displacement, sym_info))
+                if (_sym_from_addr(_process, address.ToInt64(), out long displacement, sym_info))
                 {
                     string name = GetNameFromSymbolInfo(sym_info);
+                    if (return_name_only)
+                    {
+                        return GetSymbolName(name);
+                    }
                     string disp_str = string.Empty;
-
                     if (displacement < 0)
                     {
                         disp_str = $"-0x{Math.Abs(displacement):X}";
@@ -556,12 +582,17 @@ namespace NtApiDotNet.Win32
                     return $"{name}{disp_str}";
                 }
                 // Perhaps should return module+X?
-                if (generate_fake_symbol)
+                if (generate_fake_symbol && !return_name_only)
                 {
                     return String.Format("0x{0:X}", address.ToInt64());
                 }
                 return null;
             }
+        }
+
+        public string GetSymbolForAddress(IntPtr address, bool generate_fake_symbol)
+        {
+            return GetSymbolForAddress(address, generate_fake_symbol, false);
         }
 
         #region IDisposable Support
