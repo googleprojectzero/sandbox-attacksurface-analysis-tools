@@ -1944,6 +1944,78 @@ function Get-NtSidName {
 .SYNOPSIS
 Creates a symbol resolver for a process.
 .DESCRIPTION
+This cmdlet creates a new symbol resolver for the given process.
+.PARAMETER Process
+The process to create the symbol resolver on. If not specified then the current process is used.
+.PARAMETER DbgHelpPath
+Specify path to a dbghelp DLL to use for symbol resolving. This should be ideally the dbghelp from debugging tool for Windows
+which will allow symbol servers however you can use the system version if you just want to pull symbols locally.
+.PARAMETER SymbolPath
+Specify path for the symbols. If not specified it will first use the _NT_SYMBOL_PATH environment variable then use the 
+default of 'srv*https://msdl.microsoft.com/download/symbols'
+.OUTPUTS
+NtApiDotNet.Win32.ISymbolResolver - The symbol resolver. Dispose after use.
+.EXAMPLE
+New-SymbolResolver
+Get a symbol resolver for the current process with default settings.
+.EXAMPLE
+New-SymbolResolver -SymbolPath "c:\symbols"
+Get a symbol resolver specifying for the current process specifying symbols in c:\symbols.
+.EXAMPLE
+New-SymbolResolver -Process $p -DbgHelpPath "c:\path\to\dbghelp.dll" -SymbolPath "srv*c:\symbols*https://blah.com/symbols"
+Get a symbol resolver specifying a dbghelp path and symbol path and a specific process.
+#>
+function New-SymbolResolver {
+    Param(
+        [NtApiDotNet.NtProcess]$Process,
+		[string]$DbgHelpPath,
+		[string]$SymbolPath
+    )
+	if ($DbgHelpPath -eq "") {
+		$DbgHelpPath = "dbghelp.dll"
+	}
+	if ($SymbolPath -eq "") {
+		$SymbolPath = $env:_NT_SYMBOL_PATH
+		if ($SymbolPath -eq "") {
+			$SymbolPath = 'srv*https://msdl.microsoft.com/download/symbols'
+		}
+	}
+	if ($Process -eq $null) {
+		$Process = Get-NtProcess -Current
+	}
+	[NtApiDotNet.Win32.SymbolResolver]::Create($Process, $DbgHelpPath, $SymbolPath)
+}
+
+<#
+.SYNOPSIS
+Creates a NDR parser for a process.
+.DESCRIPTION
+This cmdlet creates a new NDR parser for the given process.
+.PARAMETER Process
+The process to create the NDR parser on. If not specified then the current process is used.
+.PARAMETER SymbolResolver
+Specify a symbol resolver for the parser. Note that this should be a resolver for the same process as we're parsing.
+.OUTPUTS
+NtApiDotNet.Ndr.NdrParser - The NDR parser.
+.EXAMPLE
+$ndr = New-NdrParser
+Get an NDR parser for the current process.
+.EXAMPLE
+New-NdrParserNew -Process $p -SymbolResolver $resolver
+Get an NDR parser for a specific process with a know resolver.
+#>
+function New-NdrParser {
+    Param(
+        [NtApiDotNet.NtProcess]$Process,
+		[NtApiDotNet.Win32.ISymbolResolver]$SymbolResolver
+    )
+	[NtApiDotNet.Ndr.NdrParser]::new($Process, $SymbolResolver)
+}
+
+<#
+.SYNOPSIS
+Creates a symbol resolver for a process.
+.DESCRIPTION
 This cmdlet creates a new symbol resolve for the given process.
 .PARAMETER Process
 The process to create the symbol resolver on. If not specified then the current process is used.
