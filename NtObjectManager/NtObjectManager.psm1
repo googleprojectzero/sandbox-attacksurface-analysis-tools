@@ -1942,6 +1942,52 @@ function Get-NtSidName {
 
 <#
 .SYNOPSIS
+Creates a symbol resolver for a process.
+.DESCRIPTION
+This cmdlet creates a new symbol resolve for the given process.
+.PARAMETER Process
+The process to create the symbol resolver on. If not specified then the current process is used.
+.PARAMETER DbgHelpPath
+Specify path to a dbghelp DLL to use for symbol resolving. This should be ideally the dbghelp from debugging tool for Windows
+which will allow symbol servers however you can use the system version if you just want to pull symbols locally.
+.PARAMETER SymbolPath
+Specify path for the symbols. If not specified it will first use the _NT_SYMBOL_PATH environment variable then use the 
+default of 'srv*https://msdl.microsoft.com/download/symbols'
+.OUTPUTS
+NtApiDotNet.Win32.ISymbolResolver - The symbol resolver. Dispose after use.
+.EXAMPLE
+Get-SymbolResolver
+Get a symbol resolver for the current process with default settings.
+.EXAMPLE
+Get-SymbolResolver -SymbolPath "c:\symbols"
+Get a symbol resolver specifying for the current process specifying symbols in c:\symbols.
+.EXAMPLE
+Get-SymbolResolver -Process $p -DbgHelpPath "c:\path\to\dbghelp.dll" -SymbolPath "srv*c:\symbols*https://blah.com/symbols"
+Get a symbol resolver specifying a dbghelp path and symbol path and a specific process.
+#>
+function Get-SymbolResolver {
+    Param(
+        [NtApiDotNet.NtProcess]$Process,
+		[string]$DbgHelpPath,
+		[string]$SymbolPath
+    )
+	if ($DbgHelpPath -eq "") {
+		$DbgHelpPath = "dbghelp.dll"
+	}
+	if ($SymbolPath -eq "") {
+		$SymbolPath = $env:_NT_SYMBOL_PATH
+		if ($SymbolPath -eq "") {
+			$SymbolPath = 'srv*https://msdl.microsoft.com/download/symbols'
+		}
+	}
+	if ($Process -eq $null) {
+		$Process = Get-NtProcess -Current
+	}
+	[NtApiDotNet.Win32.SymbolResolver]::Create($Process, $DbgHelpPath, $SymbolPath)
+}
+
+<#
+.SYNOPSIS
 Get a filtered token.
 .DESCRIPTION
 This is left for backwards compatibility, use 'Get-NtToken -Filtered' instead.
