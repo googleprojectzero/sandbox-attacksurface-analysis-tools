@@ -366,6 +366,28 @@ namespace NtApiDotNet.Ndr
         WdtpInterfacePointer,
     }
 
+    public class NdrNamedTypeReference : NdrBaseTypeReference
+    {
+        public string Name { get; private set; }
+
+        public NdrNamedTypeReference(string name)
+            : base(NdrFormatCharacter.FC_USER_MARSHAL)
+        {
+            Name = name;
+        }
+
+        internal override string FormatType(NdrFormatter formatter)
+        {
+            return Name;
+        }
+
+        public override int GetSize()
+        {
+            // We don't really know how big this type is, so just return pointer sized.
+            return IntPtr.Size;
+        }
+    }
+
     public class NdrKnownTypeReference : NdrBaseTypeReference
     {
         public NdrKnownTypes KnownType { get; private set; }
@@ -1283,25 +1305,6 @@ namespace NtApiDotNet.Ndr
             IntPtr marshal_ptr = context.Reader.ReadIntPtr(context.StubDesc.aUserMarshalQuadruple
                     + (type.QuadrupleIndex * context.Reader.PointerSize * 4));
 
-            // If we have a symbol resolver then see if we can get it from the symbol name.
-            if (context.SymbolResolver != null)
-            {
-                string name = context.SymbolResolver.GetSymbolForAddress(marshal_ptr);
-                int index = name.IndexOf("_UserSize", StringComparison.OrdinalIgnoreCase);
-                if (index <= 0)
-                {
-                    return type;
-                }
-                name = name.Substring(0, index);
-                if (Enum.TryParse(name.Substring(0, index), true, out NdrKnownTypes known_type)
-                    && known_type != NdrKnownTypes.None)
-                {
-                    return new NdrKnownTypeReference(known_type);
-                }
-
-                // TODO: Maybe return a known type based just on the name.
-            }
-
             // If in process try and read out known type by walking pointers.
             if (context.Reader.InProcess)
             {
@@ -1328,6 +1331,23 @@ namespace NtApiDotNet.Ndr
                     {
                         return new NdrKnownTypeReference(known_type);
                     }
+                }
+            }
+
+            // If we have a symbol resolver then see if we can get it from the symbol name.
+            if (context.SymbolResolver != null)
+            {
+                string name = context.SymbolResolver.GetSymbolForAddress(marshal_ptr);
+                int index = name.IndexOf("_UserSize", StringComparison.OrdinalIgnoreCase);
+                if (index > 0)
+                {
+                    name = name.Substring(0, index);
+                    if (Enum.TryParse(name.Substring(0, index), true, out NdrKnownTypes known_type)
+                        && known_type != NdrKnownTypes.None)
+                    {
+                        return new NdrKnownTypeReference(known_type);
+                    }
+                    return new NdrNamedTypeReference(name);
                 }
             }
 
