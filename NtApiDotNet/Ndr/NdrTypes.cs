@@ -1282,7 +1282,26 @@ namespace NtApiDotNet.Ndr
 
             IntPtr marshal_ptr = context.Reader.ReadIntPtr(context.StubDesc.aUserMarshalQuadruple
                     + (type.QuadrupleIndex * context.Reader.PointerSize * 4));
-            
+
+            // If we have a symbol resolver then see if we can get it from the symbol name.
+            if (context.SymbolResolver != null)
+            {
+                string name = context.SymbolResolver.GetSymbolForAddress(marshal_ptr);
+                int index = name.IndexOf("_UserSize", StringComparison.OrdinalIgnoreCase);
+                if (index <= 0)
+                {
+                    return type;
+                }
+                name = name.Substring(0, index);
+                if (Enum.TryParse(name.Substring(0, index), true, out NdrKnownTypes known_type)
+                    && known_type != NdrKnownTypes.None)
+                {
+                    return new NdrKnownTypeReference(known_type);
+                }
+
+                // TODO: Maybe return a known type based just on the name.
+            }
+
             // If in process try and read out known type by walking pointers.
             if (context.Reader.InProcess)
             {
@@ -1298,33 +1317,18 @@ namespace NtApiDotNet.Ndr
                         m_marshalers = new StandardUserMarshalers();
                     }
 
-                    IntPtr usersize_ptr = GetTargetAddress(module, marshal_ptr);
-                    NdrKnownTypes known_type = m_marshalers.GetKnownType(usersize_ptr);
+                    NdrKnownTypes known_type = m_marshalers.GetKnownType(marshal_ptr);
+                    if (known_type == NdrKnownTypes.None)
+                    {
+                        IntPtr usersize_ptr = GetTargetAddress(module, marshal_ptr);
+                        known_type = m_marshalers.GetKnownType(usersize_ptr);
+                    }
+
                     if (known_type != NdrKnownTypes.None)
                     {
                         return new NdrKnownTypeReference(known_type);
                     }
                 }
-            }
-
-            // If we have a symbol resolver then see if we can get it from the symbol name.
-            if (context.SymbolResolver != null)
-            {
-                string name = context.SymbolResolver.GetSymbolForAddress(marshal_ptr);
-                int index = name.IndexOf("_UserSize", StringComparison.OrdinalIgnoreCase);
-                if (index <= 0)
-                {
-                    return type;
-                }
-                name = name.Substring(0, index);
-                NdrKnownTypes known_type;
-                if (Enum.TryParse(name.Substring(0, index), true, out known_type)
-                    && known_type != NdrKnownTypes.None)
-                {
-                    return new NdrKnownTypeReference(known_type);
-                }
-
-                // TODO: Maybe return a known type based just on the name.
             }
 
             return type;

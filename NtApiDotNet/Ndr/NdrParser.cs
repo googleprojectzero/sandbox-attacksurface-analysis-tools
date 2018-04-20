@@ -20,6 +20,7 @@
 using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Ndr
 {
@@ -210,12 +211,18 @@ namespace NtApiDotNet.Ndr
         /// <returns>The parsed NDR content.</returns>
         public IEnumerable<NdrProcedureDefinition> ReadFromMidlServerInfo(IntPtr server_info, int start_offset, int dispatch_count)
         {
-            return ReadProcs(_reader, _reader.ReadStruct<MIDL_SERVER_INFO>(server_info), start_offset, dispatch_count, _type_cache, _symbol_resolver);
+            return ReadProcs(_reader, _reader.ReadStruct<MIDL_SERVER_INFO>(server_info), 
+                start_offset, dispatch_count, _type_cache, _symbol_resolver);
         }
 
         /// <summary>
         /// List of parsed types from the NDR.
         /// </summary>
         public IEnumerable<NdrBaseTypeReference> Types { get { return _type_cache.Cache.Values; } }
+
+        /// <summary>
+        /// List of parsed complex types from the NDR.
+        /// </summary>
+        public IEnumerable<NdrComplexTypeReference> ComplexTypes { get { return Types.OfType<NdrComplexTypeReference>(); } }
     }
 }
