@@ -1930,7 +1930,7 @@ Lookup the name for the SID S-1-1-0 without checking the name cache.
 function Get-NtSidName {
     [CmdletBinding()]
     Param(
-        [parameter(Mandatory=$true, Position=0, ValueFromPipelineByPropertyName)]
+        [parameter(Mandatory, Position=0, ValueFromPipelineByPropertyName)]
         [NtApiDotNet.Sid]$Sid,
         [switch]$BypassCache
     )
@@ -2012,50 +2012,98 @@ function New-NdrParser {
 	[NtApiDotNet.Ndr.NdrParser]::new($Process, $SymbolResolver)
 }
 
-<#
-.SYNOPSIS
-Creates a symbol resolver for a process.
-.DESCRIPTION
-This cmdlet creates a new symbol resolve for the given process.
-.PARAMETER Process
-The process to create the symbol resolver on. If not specified then the current process is used.
-.PARAMETER DbgHelpPath
-Specify path to a dbghelp DLL to use for symbol resolving. This should be ideally the dbghelp from debugging tool for Windows
-which will allow symbol servers however you can use the system version if you just want to pull symbols locally.
-.PARAMETER SymbolPath
-Specify path for the symbols. If not specified it will first use the _NT_SYMBOL_PATH environment variable then use the 
-default of 'srv*https://msdl.microsoft.com/download/symbols'
-.OUTPUTS
-NtApiDotNet.Win32.ISymbolResolver - The symbol resolver. Dispose after use.
-.EXAMPLE
-Get-SymbolResolver
-Get a symbol resolver for the current process with default settings.
-.EXAMPLE
-Get-SymbolResolver -SymbolPath "c:\symbols"
-Get a symbol resolver specifying for the current process specifying symbols in c:\symbols.
-.EXAMPLE
-Get-SymbolResolver -Process $p -DbgHelpPath "c:\path\to\dbghelp.dll" -SymbolPath "srv*c:\symbols*https://blah.com/symbols"
-Get a symbol resolver specifying a dbghelp path and symbol path and a specific process.
-#>
-function Get-SymbolResolver {
-    Param(
-        [NtApiDotNet.NtProcess]$Process,
-		[string]$DbgHelpPath,
-		[string]$SymbolPath
-    )
-	if ($DbgHelpPath -eq "") {
-		$DbgHelpPath = "dbghelp.dll"
-	}
-	if ($SymbolPath -eq "") {
-		$SymbolPath = $env:_NT_SYMBOL_PATH
-		if ($SymbolPath -eq "") {
-			$SymbolPath = 'srv*https://msdl.microsoft.com/download/symbols'
+function Convert-HashTableToIidNames {
+	Param(
+		[Hashtable]$IidToName
+	)
+	$dict = [System.Collections.Generic.Dictionary[Guid, string]]::new()
+	if ($IidToName -ne $null) {
+		foreach($pair in $IidToName.GetEnumerator()) {
+			$guid = [Guid]::new($pair.Key)
+			$dict.Add($guid, $pair.Value)
 		}
 	}
-	if ($Process -eq $null) {
-		$Process = Get-NtProcess -Current
+	return $dict
+}
+
+<#
+.SYNOPSIS
+Format an NDR procedure.
+.DESCRIPTION
+This cmdlet formats a parsed NDR procedure.
+.PARAMETER Procedure
+The procedure to format.
+.PARAMETER IidToName
+A dictionary of IID to name mappings for parameters.
+.OUTPUTS
+string - The formatted procedure.
+.EXAMPLE
+Format-NdrProcedure $proc
+Format a procedure.
+.EXAMPLE
+$procs = | Format-NdrProcedure
+Format a list of procedures from a pipeline.
+.EXAMPLE
+Format-NdrProcedure $proc -IidToName @{"00000000-0000-0000-C000-000000000046"="IUnknown";}
+Format a procedure with a known IID to name mapping.
+#>
+function Format-NdrProcedure {
+	[CmdletBinding()]
+    Param(
+		[parameter(Mandatory, Position=0, ValueFromPipeline = $true)]
+        [NtApiDotNet.Ndr.NdrProcedureDefinition]$Procedure,
+		[Hashtable]$IidToName
+    )
+
+	BEGIN {
+		$dict = Convert-HashTableToIidNames($IidToName)
+		$formatter = [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create($dict)
 	}
-	[NtApiDotNet.Win32.SymbolResolver]::Create($Process, $DbgHelpPath, $SymbolPath)
+
+	PROCESS {
+		$fmt = $formatter.FormatProcedure($Procedure)
+		Write-Output $fmt
+	}
+}
+
+<#
+.SYNOPSIS
+Format an NDR complex type.
+.DESCRIPTION
+This cmdlet formats a parsed NDR complex type.
+.PARAMETER ComplexType
+The complex type to format.
+.PARAMETER IidToName
+A dictionary of IID to name mappings for parameters.
+.OUTPUTS
+string - The formatted complex type.
+.EXAMPLE
+Format-NdrComplexType $type
+Format a complex type.
+.EXAMPLE
+$ndr.ComplexTypes = | Format-NdrComplexType
+Format a list of complex types from a pipeline.
+.EXAMPLE
+Format-NdrComplexType $type -IidToName @{"00000000-0000-0000-C000-000000000046"="IUnknown";}
+Format a complex type with a known IID to name mapping.
+#>
+function Format-NdrComplexType {
+	[CmdletBinding()]
+    Param(
+		[parameter(Mandatory, Position=0, ValueFromPipeline = $true)]
+        [NtApiDotNet.Ndr.NdrComplexTypeReference]$ComplexType,
+		[Hashtable]$IidToName
+    )
+
+	BEGIN {
+		$dict = Convert-HashTableToIidNames($IidToName)
+		$formatter = [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create($dict)
+	}
+
+	PROCESS {
+		$fmt = $formatter.FormatComplexType($ComplexType)
+		Write-Output $fmt
+	}
 }
 
 <#

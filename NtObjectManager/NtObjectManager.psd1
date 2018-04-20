@@ -60,7 +60,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Resolve-NtObjectAddress', 'Invoke-NtToken', 'Get-NtFilteredToken', 'Get-NtLowBoxToken', 'Get-NtSecurityDescriptor',
           'Set-NtSecurityDescriptor', 'Add-NtVirtualMemory', 'Get-NtVirtualMemory', 'Remove-NtVirtualMemory', 'Set-NtVirtualMemory',
           'Read-NtVirtualMemory', 'Write-NtVirtualMemory', 'Get-EmbeddedAuthenticodeSignature', 'Get-NtSidName', 'New-SymbolResolver', 
-		  'New-NdrParser'
+		  'New-NdrParser', 'Format-NdrComplexType', 'Format-NdrProcedure'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
