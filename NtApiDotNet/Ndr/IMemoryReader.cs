@@ -87,6 +87,7 @@ namespace NtApiDotNet.Ndr
         T[] ReadArray<T>(IntPtr address, int count) where T : struct;
         BinaryReader GetReader(IntPtr address);
         bool InProcess { get; }
+        int PointerSize { get;}
     }
 
     internal class CurrentProcessMemoryReader : IMemoryReader
@@ -137,6 +138,8 @@ namespace NtApiDotNet.Ndr
             buffer.ReadArray(0, ret, 0, count);
             return ret;
         }
+
+        public int PointerSize { get { return IntPtr.Size; } }
     }
 
     internal class ProcessMemoryStream : Stream
@@ -200,6 +203,7 @@ namespace NtApiDotNet.Ndr
         internal ProcessMemoryReader(NtProcess process)
         {
             _process = process;
+            PointerSize = _process.Is64Bit ? 8 : 4;
         }
 
         public bool InProcess => false;
@@ -249,6 +253,8 @@ namespace NtApiDotNet.Ndr
             }
             return ret;
         }
+
+        public int PointerSize { get; private set; }
     }
 
     /// <summary>

@@ -1275,32 +1275,58 @@ namespace NtApiDotNet.Ndr
 
         private static NdrBaseTypeReference FixupUserMarshal(NdrParseContext context, NdrUserMarshalTypeReference type)
         {
-            if (context.StubDesc.aUserMarshalQuadruple == IntPtr.Zero || !context.Reader.InProcess)
+            if (context.StubDesc.aUserMarshalQuadruple == IntPtr.Zero)
             {
                 return type;
             }
 
-            using (var module = SafeLoadLibraryHandle.GetModuleHandle(context.StubDesc.aUserMarshalQuadruple))
+            IntPtr marshal_ptr = context.Reader.ReadIntPtr(context.StubDesc.aUserMarshalQuadruple
+                    + (type.QuadrupleIndex * context.Reader.PointerSize * 4));
+            
+            // If in process try and read out known type by walking pointers.
+            if (context.Reader.InProcess)
             {
-                if (module == null)
+                using (var module = SafeLoadLibraryHandle.GetModuleHandle(context.StubDesc.aUserMarshalQuadruple))
+                {
+                    if (module == null)
+                    {
+                        return type;
+                    }
+
+                    if (m_marshalers == null)
+                    {
+                        m_marshalers = new StandardUserMarshalers();
+                    }
+
+                    IntPtr usersize_ptr = GetTargetAddress(module, marshal_ptr);
+                    NdrKnownTypes known_type = m_marshalers.GetKnownType(usersize_ptr);
+                    if (known_type != NdrKnownTypes.None)
+                    {
+                        return new NdrKnownTypeReference(known_type);
+                    }
+                }
+            }
+
+            // If we have a symbol resolver then see if we can get it from the symbol name.
+            if (context.SymbolResolver != null)
+            {
+                string name = context.SymbolResolver.GetSymbolForAddress(marshal_ptr);
+                int index = name.IndexOf("_UserSize", StringComparison.OrdinalIgnoreCase);
+                if (index <= 0)
                 {
                     return type;
                 }
-
-                if (m_marshalers == null)
-                {
-                    m_marshalers = new StandardUserMarshalers();
-                }
-
-                IntPtr usersize_ptr = GetTargetAddress(module,
-                    Marshal.ReadIntPtr(context.StubDesc.aUserMarshalQuadruple, type.QuadrupleIndex * IntPtr.Size * 4));
-
-                NdrKnownTypes known_type = m_marshalers.GetKnownType(usersize_ptr);
-                if (known_type != NdrKnownTypes.None)
+                name = name.Substring(0, index);
+                NdrKnownTypes known_type;
+                if (Enum.TryParse(name.Substring(0, index), true, out known_type)
+                    && known_type != NdrKnownTypes.None)
                 {
                     return new NdrKnownTypeReference(known_type);
                 }
+
+                // TODO: Maybe return a known type based just on the name.
             }
+
             return type;
         }
 
