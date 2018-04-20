@@ -170,12 +170,12 @@ namespace NtApiDotNet.Ndr
         private static NdrRpcServerInterface ReadRpcServerInterface(IMemoryReader reader, RPC_SERVER_INTERFACE server_interface, NdrTypeCache type_cache, ISymbolResolver symbol_resolver)
         {
             RPC_DISPATCH_TABLE dispatch_table = server_interface.GetDispatchTable(reader);
-            var procs = ReadProcs(reader, server_interface.GetServerInfo(reader), 0, dispatch_table.DispatchTableCount, type_cache, symbol_resolver);
+            var procs = ReadProcs(reader, server_interface.GetServerInfo(reader), 0, dispatch_table.DispatchTableCount, type_cache, symbol_resolver, null);
             return new NdrRpcServerInterface(server_interface.InterfaceId, server_interface.TransferSyntax, procs);
         }
 
         private static IEnumerable<NdrProcedureDefinition> ReadProcs(IMemoryReader reader, MIDL_SERVER_INFO server_info, int start_offset, 
-            int dispatch_count, NdrTypeCache type_cache, ISymbolResolver symbol_resolver)
+            int dispatch_count, NdrTypeCache type_cache, ISymbolResolver symbol_resolver, IList<string> names)
         {
             IntPtr[] dispatch_funcs = server_info.GetDispatchTable(reader, dispatch_count);
             MIDL_STUB_DESC stub_desc = server_info.GetStubDesc(reader);
@@ -186,7 +186,12 @@ namespace NtApiDotNet.Ndr
                 int fmt_ofs = reader.ReadInt16(server_info.FmtStringOffset + i * 2);
                 if (fmt_ofs >= 0)
                 {
-                    procs.Add(new NdrProcedureDefinition(reader, type_cache, symbol_resolver, stub_desc, server_info.ProcString + fmt_ofs, type_desc, dispatch_funcs[i]));
+                    string name = null;
+                    if (names != null)
+                    {
+                        name = names[i - start_offset];
+                    }
+                    procs.Add(new NdrProcedureDefinition(reader, type_cache, symbol_resolver, stub_desc, server_info.ProcString + fmt_ofs, type_desc, dispatch_funcs[i], name));
                 }
             }
             return procs.AsReadOnly();
@@ -208,11 +213,29 @@ namespace NtApiDotNet.Ndr
         /// <param name="server_info">Pointer to the MIDL_SERVER_INFO.</param>
         /// <param name="dispatch_count">Number of dispatch functions to parse.</param>
         /// <param name="start_offset">The start offset to parse from. This is used for COM where the first few proxy stubs are not implemented.</param>
+        /// <param name="names">List of names for the valid procedures. Should either be null or a list equal in size to dispatch_count - start_offset.</param>
+        /// <returns>The parsed NDR content.</returns>
+        public IEnumerable<NdrProcedureDefinition> ReadFromMidlServerInfo(IntPtr server_info, int start_offset, int dispatch_count, IList<string> names)
+        {
+            if (names != null && names.Count != (dispatch_count - start_offset))
+            {
+                throw new ArgumentException("List of names must be same size of the total methods to parse");
+            }
+            return ReadProcs(_reader, _reader.ReadStruct<MIDL_SERVER_INFO>(server_info), 
+                start_offset, dispatch_count, _type_cache, _symbol_resolver, names);
+        }
+
+        /// <summary>
+        /// Parse NDR procedures from an MIDL_SERVER_INFO structure in memory.
+        /// </summary>
+        /// <param name="server_info">Pointer to the MIDL_SERVER_INFO.</param>
+        /// <param name="dispatch_count">Number of dispatch functions to parse.</param>
+        /// <param name="start_offset">The start offset to parse from. This is used for COM where the first few proxy stubs are not implemented.</param>
         /// <returns>The parsed NDR content.</returns>
         public IEnumerable<NdrProcedureDefinition> ReadFromMidlServerInfo(IntPtr server_info, int start_offset, int dispatch_count)
         {
-            return ReadProcs(_reader, _reader.ReadStruct<MIDL_SERVER_INFO>(server_info), 
-                start_offset, dispatch_count, _type_cache, _symbol_resolver);
+            return ReadProcs(_reader, _reader.ReadStruct<MIDL_SERVER_INFO>(server_info),
+                start_offset, dispatch_count, _type_cache, _symbol_resolver, null);
         }
 
         /// <summary>

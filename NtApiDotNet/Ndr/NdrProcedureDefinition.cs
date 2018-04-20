@@ -170,7 +170,9 @@ namespace NtApiDotNet.Ndr
         }
 
         internal NdrProcedureDefinition(IMemoryReader mem_reader, NdrTypeCache type_cache, 
-            ISymbolResolver symbol_resolver, MIDL_STUB_DESC stub_desc, IntPtr proc_desc, IntPtr type_desc, IntPtr dispatch_func)
+            ISymbolResolver symbol_resolver, MIDL_STUB_DESC stub_desc, 
+            IntPtr proc_desc, IntPtr type_desc, IntPtr dispatch_func,
+            string name)
         {
             BinaryReader reader = mem_reader.GetReader(proc_desc);
             NdrFormatCharacter handle_type = (NdrFormatCharacter)reader.ReadByte();
@@ -182,12 +184,20 @@ namespace NtApiDotNet.Ndr
             }
 
             ProcNum = reader.ReadUInt16();
-            if (symbol_resolver != null && dispatch_func != IntPtr.Zero)
-            {
-                Name = symbol_resolver.GetSymbolForAddress(dispatch_func, false, true);
-            }
 
-            Name = Name ?? $"Proc{ProcNum}";
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                if (symbol_resolver != null && dispatch_func != IntPtr.Zero)
+                {
+                    Name = symbol_resolver.GetSymbolForAddress(dispatch_func, false, true);
+                }
+
+                Name = Name ?? $"Proc{ProcNum}";
+            }
+            else
+            {
+                Name = name;
+            }
 
             StackSize = reader.ReadUInt16();
             if (handle_type == 0)
