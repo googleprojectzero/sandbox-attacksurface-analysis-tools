@@ -62,19 +62,42 @@ namespace NtApiDotNet.Win32
         /// Get list of loaded modules.
         /// </summary>
         /// <returns>The list of loaded modules</returns>
+        /// <remarks>Note this will cache the results so subsequent calls won't necessarily see new modules.</remarks>
         IEnumerable<SymbolLoadedModule> GetLoadedModules();
+        /// <summary>
+        /// Get list of loaded modules and optionally refresh the list.
+        /// </summary>
+        /// <param name="refresh">True to refresh the current cached list of modules.</param>
+        /// <returns>The list of loaded modules</returns>
+        IEnumerable<SymbolLoadedModule> GetLoadedModules(bool refresh);
         /// <summary>
         /// Get module at an address.
         /// </summary>
         /// <param name="address">The address for the module.</param>
         /// <returns>The module, or null if not found.</returns>
+        /// <remarks>Note this will cache the results so subsequent calls won't necessarily see new modules.</remarks>
         SymbolLoadedModule GetModuleForAddress(IntPtr address);
+        /// <summary>
+        /// Get module at an address.
+        /// </summary>
+        /// <param name="address">The address for the module.</param>
+        /// <param name="refresh">True to refresh the current cached list of modules.</param>
+        /// <returns>The module, or null if not found.</returns>
+        SymbolLoadedModule GetModuleForAddress(IntPtr address, bool refresh);
         /// <summary>
         /// Get a string representation of a relative address to a module.
         /// </summary>
         /// <param name="address">The address to get the string for,</param>
         /// <returns>The string form of the address, e.g. modulename+0x100</returns>
+        /// <remarks>Note this will cache the results so subsequent calls won't necessarily see new modules.</remarks>
         string GetModuleRelativeAddress(IntPtr address);
+        /// <summary>
+        /// Get a string representation of a relative address to a module.
+        /// </summary>
+        /// <param name="address">The address to get the string for,</param>
+        /// <param name="refresh">True to refresh the current cached list of modules.</param>
+        /// <returns>The string form of the address, e.g. modulename+0x100</returns>
+        string GetModuleRelativeAddress(IntPtr address, bool refresh);
         /// <summary>
         /// Get the address of a symbol.
         /// </summary>
@@ -399,6 +422,7 @@ namespace NtApiDotNet.Win32
         private SymFromAddrW _sym_from_addr;
         private SymGetModuleInfoW64 _sym_get_module_info;
         private SymLoadModule64 _sym_load_module;
+        private NtProcess _process_object;
         private SafeKernelObjectHandle _process;
 
         private void GetFunc<T>(ref T f) where T : class
@@ -419,7 +443,8 @@ namespace NtApiDotNet.Win32
 
         internal DbgHelpSymbolResolver(NtProcess process, string dbghelp_path, string symbol_path)
         {
-            _process = process.Handle;
+            _process_object = process.Duplicate();
+            _process = _process_object.Handle;
             _dbghelp_lib = SafeLoadLibraryHandle.LoadLibrary(dbghelp_path);
             GetFunc(ref _sym_init);
             GetFunc(ref _sym_cleanup);
@@ -491,18 +516,23 @@ namespace NtApiDotNet.Win32
 
         public IEnumerable<SymbolLoadedModule> GetLoadedModules()
         {
-            if (_loaded_modules == null)
+            return GetLoadedModules(false);
+        }
+
+        public IEnumerable<SymbolLoadedModule> GetLoadedModules(bool refresh)
+        {
+            if (_loaded_modules == null || refresh)
             {
                 _loaded_modules = GetLoadedModulesInternal().OrderBy(s => s.BaseAddress.ToInt64());
             }
             return _loaded_modules;
         }
 
-        public SymbolLoadedModule GetModuleForAddress(IntPtr address)
+        public SymbolLoadedModule GetModuleForAddress(IntPtr address, bool refresh)
         {
             long check_addr = address.ToInt64();
 
-            foreach (SymbolLoadedModule module in GetLoadedModules())
+            foreach (SymbolLoadedModule module in GetLoadedModules(refresh))
             {
                 long base_address = module.BaseAddress.ToInt64();
                 if (check_addr >= base_address && check_addr < base_address + module.ImageSize)
@@ -514,9 +544,19 @@ namespace NtApiDotNet.Win32
             return null;
         }
 
+        public SymbolLoadedModule GetModuleForAddress(IntPtr address)
+        {
+            return GetModuleForAddress(address, false);
+        }
+
         public string GetModuleRelativeAddress(IntPtr address)
         {
-            SymbolLoadedModule module = GetModuleForAddress(address);
+            return GetModuleRelativeAddress(address, false);
+        }
+
+        public string GetModuleRelativeAddress(IntPtr address, bool refresh)
+        {
+            SymbolLoadedModule module = GetModuleForAddress(address, refresh);
             if (module == null)
             {
                 return String.Format("0x{0:X}", address.ToInt64());
@@ -605,6 +645,7 @@ namespace NtApiDotNet.Win32
                 disposedValue = true;
                 _sym_cleanup?.Invoke(_process);
                 _dbghelp_lib?.Close();
+                _process_object?.Dispose();
             }
         }
 
