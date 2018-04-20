@@ -99,6 +99,18 @@ namespace NtApiDotNet.Ndr
         private readonly ISymbolResolver _symbol_resolver;
         private readonly IMemoryReader _reader;
 
+        private static void CheckSymbolResolver(NtProcess process, ISymbolResolver symbol_resolver)
+        {
+            int pid = process == null ? NtProcess.Current.ProcessId : process.ProcessId;
+            if (symbol_resolver is DbgHelpSymbolResolver dbghelp_resolver)
+            {
+                if (dbghelp_resolver.Process.ProcessId != pid)
+                {
+                    throw new ArgumentException("Symbol resolver must be for the same process as the passed process");
+                }
+            }
+        }
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -106,6 +118,7 @@ namespace NtApiDotNet.Ndr
         /// <param name="symbol_resolver">Specify a symbol resolver to use for looking up symbols.</param>
         public NdrParser(NtProcess process, ISymbolResolver symbol_resolver)
         {
+            CheckSymbolResolver(process, symbol_resolver);
             if (process == null || process.ProcessId == NtProcess.Current.ProcessId)
             {
                 _reader = new CurrentProcessMemoryReader();

@@ -422,8 +422,6 @@ namespace NtApiDotNet.Win32
         private SymFromAddrW _sym_from_addr;
         private SymGetModuleInfoW64 _sym_get_module_info;
         private SymLoadModule64 _sym_load_module;
-        private NtProcess _process_object;
-        private SafeKernelObjectHandle _process;
 
         private void GetFunc<T>(ref T f) where T : class
         {
@@ -443,8 +441,7 @@ namespace NtApiDotNet.Win32
 
         internal DbgHelpSymbolResolver(NtProcess process, string dbghelp_path, string symbol_path)
         {
-            _process_object = process.Duplicate();
-            _process = _process_object.Handle;
+            Process = process.Duplicate();
             _dbghelp_lib = SafeLoadLibraryHandle.LoadLibrary(dbghelp_path);
             GetFunc(ref _sym_init);
             GetFunc(ref _sym_cleanup);
@@ -457,25 +454,25 @@ namespace NtApiDotNet.Win32
 
             _sym_set_options(SymOptions.INCLUDE_32BIT_MODULES | SymOptions.UNDNAME | SymOptions.DEFERRED_LOADS);
 
-            if (!_sym_init(_process, symbol_path, true))
+            if (!_sym_init(Handle, symbol_path, true))
             {
                 // If SymInitialize failed then we'll have to bootstrap modules manually.
-                if (!_sym_init(_process, symbol_path, false))
+                if (!_sym_init(Handle, symbol_path, false))
                 {
                     throw new Win32Exception();
                 }
                 
                 IntPtr[] modules = new IntPtr[1024];
                 int return_length;
-                if (EnumProcessModulesEx(_process, modules, modules.Length * IntPtr.Size, out return_length,
+                if (EnumProcessModulesEx(Handle, modules, modules.Length * IntPtr.Size, out return_length,
                     process.Is64Bit ? EnumProcessModulesFilter.LIST_MODULES_64BIT : EnumProcessModulesFilter.LIST_MODULES_32BIT))
                 {
                     foreach (IntPtr module in modules.Take(return_length / IntPtr.Size))
                     {
                         StringBuilder dllpath = new StringBuilder(260);
-                        if (GetModuleFileNameEx(_process, module, dllpath, dllpath.Capacity) > 0)
+                        if (GetModuleFileNameEx(Handle, module, dllpath, dllpath.Capacity) > 0)
                         {
-                            if (_sym_load_module(_process, IntPtr.Zero, dllpath.ToString(), 
+                            if (_sym_load_module(Handle, IntPtr.Zero, dllpath.ToString(), 
                                 Path.GetFileNameWithoutExtension(dllpath.ToString()), module.ToInt64(), 0) == 0)
                             {
                                 System.Diagnostics.Debug.WriteLine(String.Format("Couldn't load {0}", dllpath));
@@ -490,7 +487,7 @@ namespace NtApiDotNet.Win32
         {
             IMAGEHLP_MODULE64 module = new IMAGEHLP_MODULE64();
             module.SizeOfStruct = Marshal.SizeOf(module);
-            if (_sym_get_module_info(_process, base_address, ref module))
+            if (_sym_get_module_info(Handle, base_address, ref module))
             {
                 return module;
             }
@@ -501,7 +498,7 @@ namespace NtApiDotNet.Win32
         {
             List<SymbolLoadedModule> modules = new List<SymbolLoadedModule>();
 
-            if (!_sym_enum_modules(_process, (s, m, p) =>
+            if (!_sym_enum_modules(Handle, (s, m, p) =>
             {
                 modules.Add(new SymbolLoadedModule(s, new IntPtr(m), GetModuleInfo(m).ImageSize));
                 return true;
@@ -569,7 +566,7 @@ namespace NtApiDotNet.Win32
         {
             using (var sym_info = AllocateSymInfo())
             {
-                if (!_sym_from_name(_process, name, sym_info))
+                if (!_sym_from_name(Handle, name, sym_info))
                 {
                     return IntPtr.Zero;
                 }
@@ -602,7 +599,7 @@ namespace NtApiDotNet.Win32
         {
             using (var sym_info = AllocateSymInfo())
             {
-                if (_sym_from_addr(_process, address.ToInt64(), out long displacement, sym_info))
+                if (_sym_from_addr(Handle, address.ToInt64(), out long displacement, sym_info))
                 {
                     string name = GetNameFromSymbolInfo(sym_info);
                     if (return_name_only)
@@ -635,6 +632,9 @@ namespace NtApiDotNet.Win32
             return GetSymbolForAddress(address, generate_fake_symbol, false);
         }
 
+        internal NtProcess Process { get; }
+        internal SafeKernelObjectHandle Handle { get { return Process.Handle; } }
+
         #region IDisposable Support
         private bool disposedValue = false; 
 
@@ -643,9 +643,9 @@ namespace NtApiDotNet.Win32
             if (!disposedValue)
             {
                 disposedValue = true;
-                _sym_cleanup?.Invoke(_process);
+                _sym_cleanup?.Invoke(Handle);
                 _dbghelp_lib?.Close();
-                _process_object?.Dispose();
+                Process?.Dispose();
             }
         }
 
