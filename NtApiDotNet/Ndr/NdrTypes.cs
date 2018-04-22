@@ -632,7 +632,10 @@ namespace NtApiDotNet.Ndr
         internal override string FormatType(NdrFormatter context)
         {
             int array_size = GetArraySize();
-            return String.Format("{0}[{1}]", ElementType.FormatType(context), array_size == 0 ? String.Empty : array_size.ToString());
+            int element_size = ElementType.GetSize();
+            int array_count = (element_size != 0) ? array_size / element_size : array_size;
+
+            return String.Format("{0}[{1}]", ElementType.FormatType(context), array_size == 0 ? String.Empty : array_count.ToString());
         }
     }
 
