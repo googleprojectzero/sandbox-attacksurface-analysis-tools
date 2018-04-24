@@ -1394,8 +1394,8 @@ namespace NtApiDotNet.Ndr
                 case NdrFormatCharacter.FC_BYTE:
                 case NdrFormatCharacter.FC_SMALL:
                 case NdrFormatCharacter.FC_CHAR:
-                    return 1;
                 case NdrFormatCharacter.FC_USMALL:
+                    return 1;
                 case NdrFormatCharacter.FC_WCHAR:
                 case NdrFormatCharacter.FC_SHORT:
                 case NdrFormatCharacter.FC_USHORT:
