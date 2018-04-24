@@ -626,16 +626,22 @@ namespace NtApiDotNet.Ndr
 
         protected virtual int GetArraySize()
         {
+            int array_size = GetSize();
+            int element_size = ElementType.GetSize();
+            int array_count = (element_size != 0) ? array_size / element_size : array_size;
+
+            return array_count;
+        }
+
+        public override int GetSize()
+        {
             return 0;
         }
 
         internal override string FormatType(NdrFormatter context)
         {
-            int array_size = GetArraySize();
-            int element_size = ElementType.GetSize();
-            int array_count = (element_size != 0) ? array_size / element_size : array_size;
-
-            return String.Format("{0}[{1}]", ElementType.FormatType(context), array_size == 0 ? String.Empty : array_count.ToString());
+            int array_count = GetArraySize();
+            return String.Format("{0}[{1}]", ElementType.FormatType(context), array_count == 0 ? String.Empty : array_count.ToString());
         }
     }
 
@@ -658,11 +664,6 @@ namespace NtApiDotNet.Ndr
         }
 
         public override int GetSize()
-        {
-            return TotalSize;
-        }
-
-        protected override int GetArraySize()
         {
             return TotalSize;
         }
