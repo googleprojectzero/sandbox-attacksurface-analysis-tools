@@ -55,6 +55,8 @@ namespace TokenViewer
                     listView.Items.Add(item);
                 }
             }
+            listView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+            listView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
         private void UpdateGroupList()
@@ -95,6 +97,8 @@ namespace TokenViewer
 
                 listViewPrivs.Items.Add(item);
             }
+            listViewPrivs.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+            listViewPrivs.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
         private void UpdateSecurityAttributes()
