@@ -262,6 +262,7 @@ namespace NtApiDotNet.Ndr
                 case NdrFormatCharacter.FC_BSTRING:
                 case NdrFormatCharacter.FC_CSTRING:
                 case NdrFormatCharacter.FC_WSTRING:
+                    reader.ReadByte(); // Padding.
                     StringSize = reader.ReadUInt16();
                     break;
             }
@@ -279,9 +280,20 @@ namespace NtApiDotNet.Ndr
             }
         }
 
+        private int GetCharSize()
+        {
+            switch (Format)
+            {
+                case NdrFormatCharacter.FC_WSTRING:
+                case NdrFormatCharacter.FC_C_WSTRING:
+                    return 2;
+            }
+            return 1;
+        }
+
         public override int GetSize()
         {
-            return StringSize;
+            return StringSize * GetCharSize();
         }
     }
 
@@ -609,10 +621,13 @@ namespace NtApiDotNet.Ndr
         }
     }
 
-    public class NdrBaseArrayTypeReference : NdrBaseTypeReference
+    public abstract class NdrBaseArrayTypeReference : NdrBaseTypeReference
     {
         public int Alignment { get; private set; }
         public NdrBaseTypeReference ElementType { get; private set; }
+        public NdrPointerInfoTypeReference PointerLayout { get; private set; }
+        public int ElementCount => GetElementCount();
+        public int ElementSize => GetElementSize();
 
         internal NdrBaseArrayTypeReference(NdrParseContext context, NdrFormatCharacter format, BinaryReader reader) : base(format)
         {
@@ -621,27 +636,33 @@ namespace NtApiDotNet.Ndr
 
         internal void ReadElementType(NdrParseContext context, BinaryReader reader)
         {
-            ElementType = Read(context, reader);
+            NdrBaseTypeReference type = Read(context, reader);
+            if (type is NdrPointerInfoTypeReference pointer_layout)
+            {
+                PointerLayout = pointer_layout;
+                ElementType = Read(context, reader);
+            }
+            else
+            {
+                ElementType = type;
+            }
         }
 
-        protected virtual int GetArraySize()
-        {
-            int array_size = GetSize();
-            int element_size = ElementType.GetSize();
-            int array_count = (element_size != 0) ? array_size / element_size : array_size;
+        protected abstract int GetElementCount();
 
-            return array_count;
+        protected virtual int GetElementSize()
+        {
+            return ElementType.GetSize();
         }
 
         public override int GetSize()
         {
-            return 0;
+            return ElementCount * ElementSize;
         }
 
         internal override string FormatType(NdrFormatter context)
         {
-            int array_count = GetArraySize();
-            return String.Format("{0}[{1}]", ElementType.FormatType(context), array_count == 0 ? String.Empty : array_count.ToString());
+            return String.Format("{0}[{1}]", ElementType.FormatType(context), ElementCount == 0 ? String.Empty : ElementCount.ToString());
         }
     }
 
@@ -663,6 +684,11 @@ namespace NtApiDotNet.Ndr
             ReadElementType(context, reader);
         }
 
+        protected override int GetElementCount()
+        {
+            return ElementSize > 0 ? TotalSize / ElementSize : 0;
+        }
+
         public override int GetSize()
         {
             return TotalSize;
@@ -671,14 +697,15 @@ namespace NtApiDotNet.Ndr
 
     public class NdrConformantArrayTypeReference : NdrBaseArrayTypeReference
     {
-        public int ElementSize { get; private set; }
+        private int _element_size;
+
         public NdrCorrelationDescriptor ConformanceDescriptor { get; private set; }
         public NdrCorrelationDescriptor VarianceDescriptor { get; private set; }
 
         internal NdrConformantArrayTypeReference(NdrFormatCharacter format, NdrParseContext context,
             BinaryReader reader) : base(context, format, reader)
         {
-            ElementSize = reader.ReadInt16();
+            _element_size = reader.ReadInt16();
             ConformanceDescriptor = new NdrCorrelationDescriptor(context, reader);
             if (format == NdrFormatCharacter.FC_CVARRAY)
             {
@@ -687,7 +714,12 @@ namespace NtApiDotNet.Ndr
             ReadElementType(context, reader);
         }
 
-        protected override int GetArraySize()
+        protected override int GetElementSize()
+        {
+            return _element_size;
+        }
+
+        protected override int GetElementCount()
         {
             if (VarianceDescriptor != null
                 && VarianceDescriptor.CorrelationType == NdrCorrelationType.FC_CONSTANT_CONFORMANCE)
@@ -701,7 +733,26 @@ namespace NtApiDotNet.Ndr
                 return ConformanceDescriptor.Offset;
             }
 
-            return base.GetArraySize();
+            return 0;
+        }
+
+        internal override string FormatType(NdrFormatter context)
+        {
+            StringBuilder builder = new StringBuilder();
+            if (ConformanceDescriptor != null && ConformanceDescriptor.IsValid)
+            {
+                builder.AppendFormat("C:{0}", ConformanceDescriptor);
+            }
+            if (VarianceDescriptor != null && VarianceDescriptor.IsValid)
+            {
+                builder.AppendFormat("V:{0}", VarianceDescriptor);
+            }
+
+            if (builder.Length > 0)
+            {
+                return $"/* {builder} */ {base.FormatType(context)}";
+            }
+            return base.FormatType(context);
         }
     }
 
@@ -720,7 +771,7 @@ namespace NtApiDotNet.Ndr
             ReadElementType(context, reader);
         }
 
-        protected override int GetArraySize()
+        protected override int GetElementCount()
         {
             if (NumberofElements > 0)
             {
@@ -739,12 +790,90 @@ namespace NtApiDotNet.Ndr
                 return ConformanceDescriptor.Offset;
             }
 
-            return base.GetArraySize();
+            return 0;
         }
 
-        public override int GetSize()
+        internal override string FormatType(NdrFormatter context)
         {
-            return NumberofElements * ElementType.GetSize();
+            StringBuilder builder = new StringBuilder();
+            if (ConformanceDescriptor != null && ConformanceDescriptor.IsValid)
+            {
+                builder.AppendFormat("C:{0}", ConformanceDescriptor);
+            }
+            if (VarianceDescriptor != null && VarianceDescriptor.IsValid)
+            {
+                builder.AppendFormat("V:{0}", VarianceDescriptor);
+            }
+
+            if (builder.Length > 0)
+            {
+                return $"/* {builder} */ {base.FormatType(context)}";
+            }
+            return base.FormatType(context);
+        }
+    }
+
+    public class NdrVaryingArrayTypeReference : NdrBaseArrayTypeReference
+    {
+        private int _element_size;
+
+        public int TotalSize { get; private set; }
+        public int NumberofElements { get; private set; }
+        public NdrCorrelationDescriptor VarianceDescriptor { get; private set; }
+
+        internal NdrVaryingArrayTypeReference(NdrParseContext context, NdrFormatCharacter format, BinaryReader reader)
+            : base(context, format, reader)
+        {
+            if (format == NdrFormatCharacter.FC_SMVARRAY)
+            {
+                TotalSize = reader.ReadUInt16();
+                NumberofElements = reader.ReadUInt16();
+            }
+            else
+            {
+                TotalSize = reader.ReadInt32();
+                NumberofElements = reader.ReadInt32();
+            }
+
+            _element_size = reader.ReadUInt16();
+            VarianceDescriptor = new NdrCorrelationDescriptor(context, reader);
+            ReadElementType(context, reader);
+        }
+
+        protected override int GetElementSize()
+        {
+            return _element_size;
+        }
+
+        protected override int GetElementCount()
+        {
+            if (NumberofElements > 0)
+            {
+                return NumberofElements;
+            }
+
+            if (VarianceDescriptor != null
+                && VarianceDescriptor.CorrelationType == NdrCorrelationType.FC_CONSTANT_CONFORMANCE)
+            {
+                return VarianceDescriptor.Offset;
+            }
+
+            return 0;
+        }
+
+        internal override string FormatType(NdrFormatter context)
+        {
+            StringBuilder builder = new StringBuilder();
+            if (VarianceDescriptor != null && VarianceDescriptor.IsValid)
+            {
+                builder.AppendFormat("V:{0}", VarianceDescriptor);
+            }
+
+            if (builder.Length > 0)
+            {
+                return $"/* {builder} */ {base.FormatType(context)}";
+            }
+            return base.FormatType(context);
         }
     }
 
@@ -992,7 +1121,7 @@ namespace NtApiDotNet.Ndr
             if (format == NdrFormatCharacter.FC_NON_ENCAPSULATED_UNION)
             {
                 Correlation = new NdrCorrelationDescriptor(context, reader);
-                Arms = new NdrUnionArms(context, NdrBaseTypeReference.ReadTypeOffset(reader));
+                Arms = new NdrUnionArms(context, ReadTypeOffset(reader));
             }
             else
             {
@@ -1019,6 +1148,10 @@ namespace NtApiDotNet.Ndr
                 builder.Append(' ', indent).AppendFormat("{0} Selector;", new NdrBaseTypeReference(SwitchType).FormatType(context)).AppendLine();
                 builder.Append(' ', indent).AppendLine("union { ");
                 indent *= 2;
+            }
+            else
+            {
+                builder.AppendFormat("/* {0} */", Correlation).AppendLine();
             }
 
             int index = 0;
@@ -1491,6 +1624,9 @@ namespace NtApiDotNet.Ndr
                         return new NdrConformantArrayTypeReference(format, context, reader);
                     case NdrFormatCharacter.FC_BOGUS_ARRAY:
                         return new NdrBogusArrayTypeReference(context, reader);
+                    case NdrFormatCharacter.FC_SMVARRAY:
+                    case NdrFormatCharacter.FC_LGVARRAY:
+                        return new NdrVaryingArrayTypeReference(context, format, reader);
                     case NdrFormatCharacter.FC_RANGE:
                         return new NdrRangeTypeReference(reader);
                     case NdrFormatCharacter.FC_ENCAPSULATED_UNION:
