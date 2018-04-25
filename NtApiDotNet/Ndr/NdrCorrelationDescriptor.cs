@@ -76,6 +76,15 @@ namespace NtApiDotNet.Ndr
                 Flags = (NdrCorrelationFlags)flags;
             }
         }
+
+        public override string ToString()
+        {
+            if (IsValid)
+            {
+                return $"({CorrelationType})({Offset})({Operator})({ValueType})({Flags})";
+            }
+            return string.Empty;
+        }
     }
 #pragma warning restore 1591
 }
