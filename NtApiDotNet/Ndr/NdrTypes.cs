@@ -257,15 +257,8 @@ namespace NtApiDotNet.Ndr
 
         internal NdrStringTypeReference(NdrFormatCharacter format, BinaryReader reader) : base(format)
         {
-            switch (format)
-            {
-                case NdrFormatCharacter.FC_BSTRING:
-                case NdrFormatCharacter.FC_CSTRING:
-                case NdrFormatCharacter.FC_WSTRING:
-                    reader.ReadByte(); // Padding.
-                    StringSize = reader.ReadUInt16();
-                    break;
-            }
+            reader.ReadByte(); // Padding.
+            StringSize = reader.ReadUInt16();
         }
 
         internal override string FormatType(NdrFormatter context)
@@ -282,12 +275,8 @@ namespace NtApiDotNet.Ndr
 
         private int GetCharSize()
         {
-            switch (Format)
-            {
-                case NdrFormatCharacter.FC_WSTRING:
-                case NdrFormatCharacter.FC_C_WSTRING:
-                    return 2;
-            }
+            if (Format == NdrFormatCharacter.FC_WSTRING)
+                return 2;
             return 1;
         }
 
@@ -295,6 +284,55 @@ namespace NtApiDotNet.Ndr
         {
             return StringSize * GetCharSize();
         }
+    }
+
+    public class NdrConformantStringTypeReference : NdrBaseTypeReference
+    {
+        public NdrCorrelationDescriptor ConformanceDescriptor { get; private set; }
+
+        internal NdrConformantStringTypeReference(NdrParseContext context, 
+            NdrFormatCharacter format, BinaryReader reader) : base(format)
+        {
+            NdrFormatCharacter padding = (NdrFormatCharacter) reader.ReadByte();
+            if (padding == NdrFormatCharacter.FC_STRING_SIZED)
+            {
+                ConformanceDescriptor = new NdrCorrelationDescriptor(context, reader);
+            }
+        }
+
+        internal override string FormatType(NdrFormatter context)
+        {
+            string conformance_desc = string.Empty;
+            if (ConformanceDescriptor != null && ConformanceDescriptor.IsValid)
+            {
+                conformance_desc = string.Format("/* {0} */ ", ConformanceDescriptor);
+            }
+
+            return string.Format("{0}{1}[{2}]", conformance_desc, base.FormatType(context), GetCharCount());
+        }
+
+        private int GetCharSize()
+        {
+            if (Format == NdrFormatCharacter.FC_C_WSTRING)
+                return 2;
+            return 1;
+        }
+
+        private int GetCharCount()
+        {
+            if (ConformanceDescriptor != null
+                && ConformanceDescriptor.CorrelationType == NdrCorrelationType.FC_CONSTANT_CONFORMANCE)
+            {
+                return ConformanceDescriptor.Offset;
+            }
+            return 1;
+        }
+
+        public override int GetSize()
+        {
+            return GetCharCount() * GetCharSize();
+        }
+
     }
 
     public class NdrStructureStringTypeReferece : NdrBaseTypeReference
@@ -1594,6 +1632,7 @@ namespace NtApiDotNet.Ndr
                     case NdrFormatCharacter.FC_C_CSTRING:
                     case NdrFormatCharacter.FC_C_BSTRING:
                     case NdrFormatCharacter.FC_C_WSTRING:
+                        return new NdrConformantStringTypeReference(context, format, reader);
                     case NdrFormatCharacter.FC_CSTRING:
                     case NdrFormatCharacter.FC_BSTRING:
                     case NdrFormatCharacter.FC_WSTRING:
