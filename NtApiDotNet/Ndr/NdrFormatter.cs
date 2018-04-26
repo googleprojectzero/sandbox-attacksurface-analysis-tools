@@ -94,9 +94,9 @@ namespace NtApiDotNet.Ndr
                 case NdrFormatCharacter.FC_CSTRING:
                     return "char";
                 case NdrFormatCharacter.FC_ENUM16:
-                    return "/* enum */ short";
+                    return "/* ENUM16 */ int";
                 case NdrFormatCharacter.FC_ENUM32:
-                    return "/* enum */ int";
+                    return "/* ENUM32 */ int";
                 case NdrFormatCharacter.FC_SYSTEM_HANDLE:
                     return "HANDLE";
                 case NdrFormatCharacter.FC_AUTO_HANDLE:

@@ -1574,11 +1574,12 @@ namespace NtApiDotNet.Ndr
                 case NdrFormatCharacter.FC_WCHAR:
                 case NdrFormatCharacter.FC_SHORT:
                 case NdrFormatCharacter.FC_USHORT:
-                case NdrFormatCharacter.FC_ENUM16:
                     return 2;
                 case NdrFormatCharacter.FC_LONG:
                 case NdrFormatCharacter.FC_ULONG:
                 case NdrFormatCharacter.FC_FLOAT:
+                    // ENUM16 is still emitted as a 32 bit value.
+                case NdrFormatCharacter.FC_ENUM16:
                 case NdrFormatCharacter.FC_ENUM32:
                 case NdrFormatCharacter.FC_ERROR_STATUS_T:
                     return 4;
