@@ -68,6 +68,14 @@ namespace NtApiDotNet.Ndr
         {
             Cache = new Dictionary<IntPtr, NdrBaseTypeReference>();
         }
+
+        internal void FixupLateBoundTypes()
+        {
+            foreach (var type in Cache.Values)
+            {
+                type.FixupLateBoundTypes();
+            }
+        }
     }
 
     internal class NdrParseContext
@@ -241,7 +249,14 @@ namespace NtApiDotNet.Ndr
         /// <summary>
         /// List of parsed types from the NDR.
         /// </summary>
-        public IEnumerable<NdrBaseTypeReference> Types { get { return _type_cache.Cache.Values; } }
+        public IEnumerable<NdrBaseTypeReference> Types
+        {
+            get
+            {
+                _type_cache.FixupLateBoundTypes();
+                return _type_cache.Cache.Values;
+            }
+        }
 
         /// <summary>
         /// List of parsed complex types from the NDR.

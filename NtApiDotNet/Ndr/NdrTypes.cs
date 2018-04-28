@@ -249,6 +249,11 @@ namespace NtApiDotNet.Ndr
         {
             return IntPtr.Size;
         }
+
+        protected override void OnFixupLateBoundTypes()
+        {
+            Type = GetIndirectType(Type);
+        }
     }
 
     public class NdrStringTypeReference : NdrBaseTypeReference
@@ -523,6 +528,11 @@ namespace NtApiDotNet.Ndr
         {
             return String.Format("/* Offset: {0} */ {1}", Offset, MemberType.FormatType(context));
         }
+
+        internal void FixupLateBoundTypes()
+        {
+            MemberType = NdrBaseTypeReference.GetIndirectType(MemberType);
+        }
     }
 
     public class NdrBaseStructureTypeReference : NdrComplexTypeReference
@@ -586,6 +596,14 @@ namespace NtApiDotNet.Ndr
         public override int GetSize()
         {
             return MemorySize;
+        }
+
+        protected override void OnFixupLateBoundTypes()
+        {
+            foreach (var member in _members)
+            {
+                member.FixupLateBoundTypes();
+            }
         }
     }
 
@@ -701,6 +719,11 @@ namespace NtApiDotNet.Ndr
         internal override string FormatType(NdrFormatter context)
         {
             return String.Format("{0}[{1}]", ElementType.FormatType(context), ElementCount == 0 ? String.Empty : ElementCount.ToString());
+        }
+
+        protected override void OnFixupLateBoundTypes()
+        {
+            ElementType = GetIndirectType(ElementType);
         }
     }
 
@@ -1040,11 +1063,11 @@ namespace NtApiDotNet.Ndr
 
     public class NdrIndirectTypeReference : NdrBaseTypeReference
     {
-        NdrBaseTypeReference _ref_type;
+        public NdrBaseTypeReference RefType { get; private set; }
 
         internal void FixupType(NdrBaseTypeReference ref_type)
         {
-            _ref_type = ref_type;
+            RefType = ref_type;
         }
 
         internal NdrIndirectTypeReference() : base(NdrFormatCharacter.FC_ZERO)
@@ -1053,17 +1076,17 @@ namespace NtApiDotNet.Ndr
 
         internal override string FormatType(NdrFormatter context)
         {
-            return _ref_type.FormatType(context);
+            return RefType.FormatType(context);
         }
 
         public override int GetSize()
         {
-            return _ref_type.GetSize();
+            return RefType.GetSize();
         }
 
         public override string ToString()
         {
-            return _ref_type.ToString();
+            return RefType.ToString();
         }
     }
 
@@ -1260,6 +1283,7 @@ namespace NtApiDotNet.Ndr
                 object access = null;
                 switch (Resource)
                 {
+                    case NdrSystemHandleResource.Pipe:
                     case NdrSystemHandleResource.File:
                         access = (FileAccessRights)AccessMask;
                         break;
@@ -1268,6 +1292,27 @@ namespace NtApiDotNet.Ndr
                         break;
                     case NdrSystemHandleResource.Thread:
                         access = (ThreadAccessRights)AccessMask;
+                        break;
+                    case NdrSystemHandleResource.Event:
+                        access = (EventAccessRights)AccessMask;
+                        break;
+                    case NdrSystemHandleResource.Job:
+                        access = (JobAccessRights)AccessMask;
+                        break;
+                    case NdrSystemHandleResource.Mutex:
+                        access = (MutantAccessRights)AccessMask;
+                        break;
+                    case NdrSystemHandleResource.RegKey:
+                        access = (KeyAccessRights)AccessMask;
+                        break;
+                    case NdrSystemHandleResource.Section:
+                        access = (SectionAccessRights)AccessMask;
+                        break;
+                    case NdrSystemHandleResource.Semaphore:
+                        access = (SemaphoreAccessRights)AccessMask;
+                        break;
+                    case NdrSystemHandleResource.Token:
+                        access = (TokenAccessRights)AccessMask;
                         break;
                     default:
                         access = string.Format("0x{0:X}", AccessMask);
@@ -1307,6 +1352,31 @@ namespace NtApiDotNet.Ndr
         internal static NdrFormatCharacter ReadFormat(BinaryReader reader)
         {
             return (NdrFormatCharacter)reader.ReadByte();
+        }
+
+        protected virtual void OnFixupLateBoundTypes()
+        {
+            // Do nothing in the base.
+        }
+
+        private bool _late_bound_types_fixed;
+
+        internal static NdrBaseTypeReference GetIndirectType(NdrBaseTypeReference base_type)
+        {
+            if (base_type is NdrIndirectTypeReference type)
+            {
+                return type.RefType;
+            }
+            return base_type;
+        }
+
+        internal void FixupLateBoundTypes()
+        {
+            if (!_late_bound_types_fixed)
+            {
+                _late_bound_types_fixed = true;
+                OnFixupLateBoundTypes();
+            }
         }
 
         private class StandardUserMarshaler
