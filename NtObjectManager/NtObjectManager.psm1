@@ -2124,6 +2124,8 @@ This cmdlet formats a parsed NDR COM proxy.
 The proxy to format.
 .PARAMETER IidToName
 A dictionary of IID to name mappings for parameters.
+.PARAMETER DemangleComName
+A script block which demangles a COM name (for WinRT types)
 .OUTPUTS
 string - The formatted proxy.
 .EXAMPLE
@@ -2141,12 +2143,17 @@ function Format-NdrComProxy {
     Param(
         [parameter(Mandatory, Position=0, ValueFromPipeline = $true)]
         [NtApiDotNet.Ndr.NdrComProxyDefinition]$Proxy,
-        [Hashtable]$IidToName
+        [Hashtable]$IidToName,
+        [ScriptBlock]$DemangleComName
     )
 
     BEGIN {
         $dict = Convert-HashTableToIidNames($IidToName)
-        $formatter = [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create($dict)
+        $formatter = if ($DemangleComName -eq $null) {
+            [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create($dict)
+        } else {
+            [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create($dict, [Func[string, string]]$DemangleComName)
+        }
     }
 
     PROCESS {
