@@ -16,6 +16,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NtApiDotNet.Ndr
 {
@@ -87,7 +88,8 @@ namespace NtApiDotNet.Ndr
         T[] ReadArray<T>(IntPtr address, int count) where T : struct;
         BinaryReader GetReader(IntPtr address);
         bool InProcess { get; }
-        int PointerSize { get;}
+        int PointerSize { get; }
+        string ReadAnsiStringZ(IntPtr address);
     }
 
     internal class CurrentProcessMemoryReader : IMemoryReader
@@ -137,6 +139,11 @@ namespace NtApiDotNet.Ndr
             T[] ret = new T[count];
             buffer.ReadArray(0, ret, 0, count);
             return ret;
+        }
+
+        public string ReadAnsiStringZ(IntPtr address)
+        {
+            return Marshal.PtrToStringAnsi(address);
         }
 
         public int PointerSize { get { return IntPtr.Size; } }
@@ -252,6 +259,19 @@ namespace NtApiDotNet.Ndr
                 ret[i] = ReadStruct<T>(address + i * size);
             }
             return ret;
+        }
+
+        public string ReadAnsiStringZ(IntPtr address)
+        {
+            ProcessMemoryStream stm = new ProcessMemoryStream(_process, address);
+            StringBuilder builder = new StringBuilder();
+            int ch = stm.ReadByte();
+            while (ch > 0)
+            {
+                builder.Append((char)ch);
+                ch = stm.ReadByte();
+            }
+            return builder.ToString();
         }
 
         public int PointerSize { get; private set; }
