@@ -2001,8 +2001,8 @@ NtApiDotNet.Ndr.NdrParser - The NDR parser.
 $ndr = New-NdrParser
 Get an NDR parser for the current process.
 .EXAMPLE
-New-NdrParserNew -Process $p -SymbolResolver $resolver
-Get an NDR parser for a specific process with a know resolver.
+New-NdrParser -Process $p -SymbolResolver $resolver
+Get an NDR parser for a specific process with a known resolver.
 #>
 function New-NdrParser {
     Param(
@@ -2014,13 +2014,20 @@ function New-NdrParser {
 
 function Convert-HashTableToIidNames {
     Param(
-        [Hashtable]$IidToName
+        [Hashtable]$IidToName,
+        [NtApiDotNet.Ndr.NdrComProxyDefinition[]]$Proxy
     )
     $dict = [System.Collections.Generic.Dictionary[Guid, string]]::new()
     if ($IidToName -ne $null) {
         foreach($pair in $IidToName.GetEnumerator()) {
             $guid = [Guid]::new($pair.Key)
             $dict.Add($guid, $pair.Value)
+        }
+    }
+
+    if ($Proxy -ne $null) {
+        foreach($p in $Proxy) {
+            $dict.Add($p.Iid, $p.Name)
         }
     }
 
@@ -2033,6 +2040,45 @@ function Convert-HashTableToIidNames {
     }
 
     return $dict
+}
+
+<#
+.SYNOPSIS
+Parses COM proxy information from a DLL.
+.DESCRIPTION
+This cmdlet parses the COM proxy information from a specified DLL.
+.PARAMETER Path
+The path to the DLL containing the COM proxy information.
+.PARAMETER Clsid
+Optional CLSID for the object used to find the proxy information.
+.OUTPUTS
+The parsed proxy information and complex types.
+.EXAMPLE
+$p = Get-NdrComProxy c:\path\to\proxy.dll
+Parse the proxy information from c:\path\to\proxy.dll
+.EXAMPLE
+$p = Get-NdrComProxy $env:SystemRoot\system32\combase.dll -Clsid "00000320-0000-0000-C000-000000000046"
+Parse the proxy information from combase.dll with a specific proxy CLSID.
+#>
+function Get-NdrComProxy {
+    Param(
+        [parameter(Mandatory, Position=0)]
+        [string]$Path,
+        [Guid]$Clsid = [Guid]::Empty,
+        [NtApiDotNet.Win32.ISymbolResolver]$SymbolResolver
+    )
+    $Path = Resolve-Path $Path -ErrorAction Stop
+    Use-NtObject($parser = New-NdrParser -SymbolResolver $SymbolResolver) {
+        $proxies = $parser.ReadFromComProxyFile($Path, $Clsid)
+        $props = @{
+            Path=$Path;
+            Proxies=$proxies;
+            ComplexTypes=$parser.ComplexTypes;
+            IidToNames=Convert-HashTableToIidNames -Proxy $proxies;
+        }
+        $obj = New-Object –TypeName PSObject –Prop $props
+        Write-Output $obj
+    }
 }
 
 <#
@@ -2060,7 +2106,7 @@ function Format-NdrProcedure {
   [CmdletBinding()]
     Param(
     [parameter(Mandatory, Position=0, ValueFromPipeline = $true)]
-        [NtApiDotNet.Ndr.NdrProcedureDefinition]$Procedure,
+    [NtApiDotNet.Ndr.NdrProcedureDefinition]$Procedure,
     [Hashtable]$IidToName
     )
 
@@ -2099,8 +2145,8 @@ Format a complex type with a known IID to name mapping.
 function Format-NdrComplexType {
   [CmdletBinding()]
     Param(
-    [parameter(Mandatory, Position=0, ValueFromPipeline = $true)]
-        [NtApiDotNet.Ndr.NdrComplexTypeReference]$ComplexType,
+    [parameter(Mandatory, Position=0, ValueFromPipeline)]
+    [NtApiDotNet.Ndr.NdrComplexTypeReference]$ComplexType,
     [Hashtable]$IidToName
     )
 
@@ -2141,7 +2187,7 @@ Format a COM proxy with a known IID to name mapping.
 function Format-NdrComProxy {
     [CmdletBinding()]
     Param(
-        [parameter(Mandatory, Position=0, ValueFromPipeline = $true)]
+        [parameter(Mandatory, Position=0, ValueFromPipeline)]
         [NtApiDotNet.Ndr.NdrComProxyDefinition]$Proxy,
         [Hashtable]$IidToName,
         [ScriptBlock]$DemangleComName
