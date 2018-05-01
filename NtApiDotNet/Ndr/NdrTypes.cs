@@ -165,8 +165,6 @@ namespace NtApiDotNet.Ndr
 
     public class NdrInterfacePointerTypeReference : NdrBaseTypeReference
     {
-        internal static readonly Guid IID_IUnknown = new Guid("{00000000-0000-0000-C000-000000000046}");
-
         public Guid Iid { get; private set; }
 
         public bool IsConstant { get; private set; }
@@ -183,7 +181,7 @@ namespace NtApiDotNet.Ndr
             }
             else
             {
-                Iid = IID_IUnknown;
+                Iid = NdrNativeUtils.IID_IUnknown;
                 IidIsDescriptor = new NdrCorrelationDescriptor(context, reader);
             }
         }

@@ -32,9 +32,16 @@ namespace NtApiDotNet.Ndr
         /// <summary>
         /// Format a procedure using the current formatter.
         /// </summary>
-        /// <param name="procedure">The formatted procedure.</param>
+        /// <param name="procedure">The procedure to format.</param>
         /// <returns>The formatted procedure.</returns>
         string FormatProcedure(NdrProcedureDefinition procedure);
+
+        /// <summary>
+        /// Format a COM proxy using the current formatter.
+        /// </summary>
+        /// <param name="com_proxy">The COM proxy to format.</param>
+        /// <returns>The formatted COM proxy.</returns>
+        string FormatComProxy(NdrComProxyDefinition com_proxy);
     }
 
     /// <summary>
@@ -43,10 +50,12 @@ namespace NtApiDotNet.Ndr
     internal class NdrFormatter : INdrFormatter
     {
         private IDictionary<Guid, string> _iids_to_name;
+        private Func<string, string> _demangle_com_name;
 
-        internal NdrFormatter(IDictionary<Guid, string> iids_to_names)
+        internal NdrFormatter(IDictionary<Guid, string> iids_to_names, Func<string, string> demangle_com_name)
         {
             _iids_to_name = iids_to_names;
+            _demangle_com_name = demangle_com_name;
         }
 
         internal string IidToName(Guid iid)
@@ -56,6 +65,11 @@ namespace NtApiDotNet.Ndr
                 return _iids_to_name[iid];
             }
             return null;
+        }
+
+        internal string DemangleComName(string name)
+        {
+            return _demangle_com_name(name);
         }
 
         internal string SimpleTypeToName(NdrFormatCharacter format)
@@ -134,6 +148,11 @@ namespace NtApiDotNet.Ndr
         {
             return procedure.FormatProcedure(this);
         }
+
+        string INdrFormatter.FormatComProxy(NdrComProxyDefinition com_proxy)
+        {
+            return com_proxy.Format(this);
+        }
     }
 
     /// <summary>
@@ -145,10 +164,21 @@ namespace NtApiDotNet.Ndr
         /// Create the default formatter.
         /// </summary>
         /// <param name="iids_to_names">Specify a dictionary of IIDs to names.</param>
+        /// <param name="demangle_com_name">Function to demangle COM interface names during formatting.</param>
+        /// <returns>The default formatter.</returns>
+        public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names, Func<string, string> demangle_com_name)
+        {
+            return new NdrFormatter(iids_to_names, demangle_com_name);
+        }
+
+        /// <summary>
+        /// Create the default formatter.
+        /// </summary>
+        /// <param name="iids_to_names">Specify a dictionary of IIDs to names.</param>
         /// <returns>The default formatter.</returns>
         public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names)
         {
-            return new NdrFormatter(iids_to_names);
+            return Create(iids_to_names, s => s);
         }
 
         /// <summary>

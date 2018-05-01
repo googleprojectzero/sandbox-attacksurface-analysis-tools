@@ -1410,8 +1410,8 @@ function Show-NtSection {
         [switch]$ReadOnly,
         [Parameter(Position = 0, Mandatory = $true, ParameterSetName = "FromData")]
         [byte[]]$Data,
-		[Parameter(Position = 0, Mandatory = $true, ParameterSetName = "FromFile")]
-		[string]$Path,
+    [Parameter(Position = 0, Mandatory = $true, ParameterSetName = "FromFile")]
+    [string]$Path,
         [switch]$Wait
     )
     switch($PSCmdlet.ParameterSetName) {
@@ -1448,15 +1448,15 @@ function Show-NtSection {
                 }
             }
         }
-		"FromFile" {
-			$Path = Resolve-Path $Path
-			if ($Path -ne "") {
-				Use-NtObject($p = New-Win32Process "EditSection --file=""$Path""" -ApplicationName "$PSScriptRoot\EditSection.exe") {
-					if ($Wait) {
-						$p.Process.Wait() | Out-Null
-					}
-				}
-			}
+    "FromFile" {
+      $Path = Resolve-Path $Path
+      if ($Path -ne "") {
+        Use-NtObject($p = New-Win32Process "EditSection --file=""$Path""" -ApplicationName "$PSScriptRoot\EditSection.exe") {
+          if ($Wait) {
+            $p.Process.Wait() | Out-Null
+          }
+        }
+      }
         }
     } 
 }
@@ -1968,22 +1968,22 @@ Get a symbol resolver specifying a dbghelp path and symbol path and a specific p
 function New-SymbolResolver {
     Param(
         [NtApiDotNet.NtProcess]$Process,
-		[string]$DbgHelpPath,
-		[string]$SymbolPath
+        [string]$DbgHelpPath,
+        [string]$SymbolPath
     )
-	if ($DbgHelpPath -eq "") {
-		$DbgHelpPath = "dbghelp.dll"
-	}
-	if ($SymbolPath -eq "") {
-		$SymbolPath = $env:_NT_SYMBOL_PATH
-		if ($SymbolPath -eq "") {
-			$SymbolPath = 'srv*https://msdl.microsoft.com/download/symbols'
-		}
-	}
-	if ($Process -eq $null) {
-		$Process = Get-NtProcess -Current
-	}
-	[NtApiDotNet.Win32.SymbolResolver]::Create($Process, $DbgHelpPath, $SymbolPath)
+  if ($DbgHelpPath -eq "") {
+    $DbgHelpPath = "dbghelp.dll"
+  }
+  if ($SymbolPath -eq "") {
+    $SymbolPath = $env:_NT_SYMBOL_PATH
+    if ($SymbolPath -eq "") {
+      $SymbolPath = 'srv*https://msdl.microsoft.com/download/symbols'
+    }
+  }
+  if ($Process -eq $null) {
+    $Process = Get-NtProcess -Current
+  }
+  [NtApiDotNet.Win32.SymbolResolver]::Create($Process, $DbgHelpPath, $SymbolPath)
 }
 
 <#
@@ -2007,23 +2007,32 @@ Get an NDR parser for a specific process with a know resolver.
 function New-NdrParser {
     Param(
         [NtApiDotNet.NtProcess]$Process,
-		[NtApiDotNet.Win32.ISymbolResolver]$SymbolResolver
+        [NtApiDotNet.Win32.ISymbolResolver]$SymbolResolver
     )
-	[NtApiDotNet.Ndr.NdrParser]::new($Process, $SymbolResolver)
+    [NtApiDotNet.Ndr.NdrParser]::new($Process, $SymbolResolver)
 }
 
 function Convert-HashTableToIidNames {
-	Param(
-		[Hashtable]$IidToName
-	)
-	$dict = [System.Collections.Generic.Dictionary[Guid, string]]::new()
-	if ($IidToName -ne $null) {
-		foreach($pair in $IidToName.GetEnumerator()) {
-			$guid = [Guid]::new($pair.Key)
-			$dict.Add($guid, $pair.Value)
-		}
-	}
-	return $dict
+    Param(
+        [Hashtable]$IidToName
+    )
+    $dict = [System.Collections.Generic.Dictionary[Guid, string]]::new()
+    if ($IidToName -ne $null) {
+        foreach($pair in $IidToName.GetEnumerator()) {
+            $guid = [Guid]::new($pair.Key)
+            $dict.Add($guid, $pair.Value)
+        }
+    }
+
+    if (!$dict.ContainsKey("00000000-0000-0000-C000-000000000046")) {
+        $dict.Add("00000000-0000-0000-C000-000000000046", "IUnknown")
+    }
+
+    if (!$dict.ContainsKey("00020400-0000-0000-C000-000000000046")) {
+        $dict.Add("00020400-0000-0000-C000-000000000046", "IDispatch")
+    }
+
+    return $dict
 }
 
 <#
@@ -2048,22 +2057,22 @@ Format-NdrProcedure $proc -IidToName @{"00000000-0000-0000-C000-000000000046"="I
 Format a procedure with a known IID to name mapping.
 #>
 function Format-NdrProcedure {
-	[CmdletBinding()]
+  [CmdletBinding()]
     Param(
-		[parameter(Mandatory, Position=0, ValueFromPipeline = $true)]
+    [parameter(Mandatory, Position=0, ValueFromPipeline = $true)]
         [NtApiDotNet.Ndr.NdrProcedureDefinition]$Procedure,
-		[Hashtable]$IidToName
+    [Hashtable]$IidToName
     )
 
-	BEGIN {
-		$dict = Convert-HashTableToIidNames($IidToName)
-		$formatter = [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create($dict)
-	}
+  BEGIN {
+    $dict = Convert-HashTableToIidNames($IidToName)
+    $formatter = [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create($dict)
+  }
 
-	PROCESS {
-		$fmt = $formatter.FormatProcedure($Procedure)
-		Write-Output $fmt
-	}
+  PROCESS {
+    $fmt = $formatter.FormatProcedure($Procedure)
+    Write-Output $fmt
+  }
 }
 
 <#
@@ -2088,22 +2097,62 @@ Format-NdrComplexType $type -IidToName @{"00000000-0000-0000-C000-000000000046"=
 Format a complex type with a known IID to name mapping.
 #>
 function Format-NdrComplexType {
-	[CmdletBinding()]
+  [CmdletBinding()]
     Param(
-		[parameter(Mandatory, Position=0, ValueFromPipeline = $true)]
+    [parameter(Mandatory, Position=0, ValueFromPipeline = $true)]
         [NtApiDotNet.Ndr.NdrComplexTypeReference]$ComplexType,
-		[Hashtable]$IidToName
+    [Hashtable]$IidToName
     )
 
-	BEGIN {
-		$dict = Convert-HashTableToIidNames($IidToName)
-		$formatter = [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create($dict)
-	}
+  BEGIN {
+    $dict = Convert-HashTableToIidNames($IidToName)
+    $formatter = [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create($dict)
+  }
 
-	PROCESS {
-		$fmt = $formatter.FormatComplexType($ComplexType)
-		Write-Output $fmt
-	}
+  PROCESS {
+    $fmt = $formatter.FormatComplexType($ComplexType)
+    Write-Output $fmt
+  }
+}
+
+<#
+.SYNOPSIS
+Format an NDR COM proxy.
+.DESCRIPTION
+This cmdlet formats a parsed NDR COM proxy.
+.PARAMETER Proxy
+The proxy to format.
+.PARAMETER IidToName
+A dictionary of IID to name mappings for parameters.
+.OUTPUTS
+string - The formatted proxy.
+.EXAMPLE
+Format-NdrComProxy $proxy
+Format a COM proxy.
+.EXAMPLE
+$proxies = | Format-NdrComProxy
+Format a list of COM proxies from a pipeline.
+.EXAMPLE
+Format-NdrComProxy $proxy -IidToName @{"00000000-0000-0000-C000-000000000046"="IUnknown";}
+Format a COM proxy with a known IID to name mapping.
+#>
+function Format-NdrComProxy {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory, Position=0, ValueFromPipeline = $true)]
+        [NtApiDotNet.Ndr.NdrComProxyDefinition]$Proxy,
+        [Hashtable]$IidToName
+    )
+
+    BEGIN {
+        $dict = Convert-HashTableToIidNames($IidToName)
+        $formatter = [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create($dict)
+    }
+
+    PROCESS {
+        $fmt = $formatter.FormatComProxy($Proxy)
+        Write-Output $fmt
+    }
 }
 
 <#

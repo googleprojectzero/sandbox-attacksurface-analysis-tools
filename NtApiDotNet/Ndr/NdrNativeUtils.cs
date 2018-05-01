@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -30,13 +31,154 @@ namespace NtApiDotNet.Ndr
             return ret;
         }
 
-        internal static Guid ReadGuid(IMemoryReader reader, IntPtr p)
+        internal static Guid ReadComGuid(this IMemoryReader reader, IntPtr p)
         {
             if (p == IntPtr.Zero)
             {
-                return NdrInterfacePointerTypeReference.IID_IUnknown;
+                return IID_IUnknown;
             }
             return new Guid(reader.ReadBytes(p, 16));
+        }
+
+        internal static T[] EnumeratePointerList<T>(this IMemoryReader reader, IntPtr p, Func<IntPtr, T> load_type)
+        {
+            List<T> ret = new List<T>();
+
+            if (p == IntPtr.Zero)
+            {
+                return new T[0];
+            }
+
+            IntPtr curr = p;
+            IntPtr value = IntPtr.Zero;
+            while ((value = reader.ReadIntPtr(curr)) != IntPtr.Zero)
+            {
+                ret.Add(load_type(value));
+                curr += reader.PointerSize;
+            }
+            return ret.ToArray();
+        }
+
+        internal static T[] EnumeratePointerList<T>(this IMemoryReader reader, IntPtr p) where T : struct
+        {
+            return EnumeratePointerList(reader, p, i => reader.ReadStruct<T>(i));
+        }
+
+        internal static T[] ReadPointerArray<T>(this IMemoryReader reader, IntPtr p, int count, Func<IntPtr, T> load_type)
+        {
+            T[] ret = new T[count];
+            if (p == IntPtr.Zero)
+            {
+                return ret;
+            }
+
+            for (int i = 0; i < count; ++i)
+            {
+                IntPtr curr = reader.ReadIntPtr(p + i * reader.PointerSize);
+                if (curr == IntPtr.Zero)
+                {
+                    ret[i] = default(T);
+                }
+                else
+                {
+                    ret[i] = load_type(curr);
+                }
+            }
+            return ret;
+        }
+
+        internal static T[] ReadPointerArray<T>(this IMemoryReader reader, IntPtr p, int count) where T : struct
+        {
+            return ReadPointerArray(reader, p, count, i => reader.ReadStruct<T>(i));
+        }
+
+        internal static readonly Guid IID_IUnknown = new Guid("00000000-0000-0000-C000-000000000046");
+        internal static readonly Guid IID_IDispatch = new Guid("00020400-0000-0000-C000-000000000046");
+        internal static readonly Guid IID_IPSFactoryBuffer = new Guid("D5F569D0-593B-101A-B569-08002B2DBF7A");
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct ProxyFileInfo32 : IConvertToNative<ProxyFileInfo>
+    {
+        public IntPtr32 pProxyVtblList;
+        public IntPtr32 pStubVtblList;
+        public IntPtr32 pNamesArray;
+        public IntPtr32 pDelegatedIIDs;
+        public IntPtr32 pIIDLookupRtn;
+        public ushort TableSize;
+        public ushort TableVersion;
+
+        public ProxyFileInfo Convert()
+        {
+            ProxyFileInfo ret = new ProxyFileInfo();
+            ret.pProxyVtblList = pProxyVtblList.Convert();
+            ret.pStubVtblList = pStubVtblList.Convert();
+            ret.pNamesArray = pNamesArray.Convert();
+            ret.pDelegatedIIDs = pDelegatedIIDs.Convert();
+            ret.pIIDLookupRtn = pIIDLookupRtn.Convert();
+            ret.TableSize = TableSize;
+            ret.TableVersion = TableVersion;
+            return ret;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential), CrossBitnessType(typeof(ProxyFileInfo32))]
+    struct ProxyFileInfo
+    {
+        public IntPtr pProxyVtblList;
+        public IntPtr pStubVtblList;
+        public IntPtr pNamesArray;
+        public IntPtr pDelegatedIIDs;
+        public IntPtr pIIDLookupRtn;
+        public ushort TableSize;
+        public ushort TableVersion;
+
+        public string[] GetNames(IMemoryReader reader)
+        {
+            return reader.ReadPointerArray(pNamesArray, TableSize, i => reader.ReadAnsiStringZ(i));
+        }
+
+        public Guid[] GetBaseIids(IMemoryReader reader)
+        {
+            return reader.ReadPointerArray(pDelegatedIIDs, TableSize, i => reader.ReadComGuid(i));
+        }
+
+        public CInterfaceStubHeader[] GetStubs(IMemoryReader reader)
+        {
+            return reader.ReadPointerArray<CInterfaceStubHeader>(pStubVtblList, TableSize);
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct CInterfaceStubHeader32 : IConvertToNative<CInterfaceStubHeader>
+    {
+        public IntPtr32 piid;
+        public IntPtr32 pServerInfo;
+        public int DispatchTableCount;
+        public IntPtr32 pDispatchTable;
+
+        public CInterfaceStubHeader Convert()
+        {
+            CInterfaceStubHeader ret = new CInterfaceStubHeader();
+            ret.piid = piid.Convert();
+            ret.pServerInfo = pServerInfo.Convert();
+            ret.DispatchTableCount = DispatchTableCount;
+            ret.pDispatchTable = pDispatchTable.Convert();
+            return ret;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential), CrossBitnessType(typeof(CInterfaceStubHeader32))]
+    struct CInterfaceStubHeader
+    {
+        public IntPtr piid;
+        public IntPtr pServerInfo;
+        public int DispatchTableCount;
+        public IntPtr pDispatchTable;
+
+        public Guid GetIid(IMemoryReader reader)
+        {
+            return reader.ReadComGuid(piid);
         }
     }
 

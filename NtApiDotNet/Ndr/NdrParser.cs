@@ -20,7 +20,9 @@
 using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Ndr
 {
@@ -203,6 +205,183 @@ namespace NtApiDotNet.Ndr
                 }
             }
             return procs.AsReadOnly();
+        }
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate void GetProxyDllInfo(out IntPtr pInfo, out IntPtr pId);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate int DllGetClassObject(ref Guid clsid, ref Guid riid, out IntPtr ppv);
+
+        private IList<NdrProcedureDefinition> ReadProcs(Guid base_iid, CInterfaceStubHeader stub)
+        {
+            int start_ofs = 3;
+            if (base_iid == NdrNativeUtils.IID_IDispatch)
+            {
+                start_ofs = 7;
+            }
+
+            return ReadFromMidlServerInfo(stub.pServerInfo, start_ofs, stub.DispatchTableCount).ToList().AsReadOnly();
+        }
+
+        private static IntPtr FindProxyDllInfo(SafeLoadLibraryHandle lib, Guid clsid)
+        {
+            try
+            {
+                GetProxyDllInfo get_proxy_dllinfo = lib.GetFunctionPointer<GetProxyDllInfo>();
+                get_proxy_dllinfo(out IntPtr pInfo, out IntPtr pId);
+                return pInfo;
+            }
+            catch (Win32Exception)
+            {
+            }
+
+            IntPtr psfactory = IntPtr.Zero;
+            try
+            {
+                DllGetClassObject dll_get_class_object = lib.GetFunctionPointer<DllGetClassObject>();
+                Guid IID_IPSFactoryBuffer = NdrNativeUtils.IID_IPSFactoryBuffer;
+
+                int hr = dll_get_class_object(ref clsid, ref IID_IPSFactoryBuffer, out psfactory);
+                if (hr != 0)
+                {
+                    throw new Win32Exception(hr);
+                }
+
+                // The PSFactoryBuffer object seems to be structured like on Win10 at least.
+                // VTABLE*
+                // Reference Count
+                // ProxyFileInfo*
+
+                IntPtr pInfo = Marshal.ReadIntPtr(psfactory, 2 * IntPtr.Size);
+                // TODO: Should add better checks here, 
+                // for example VTable should be in COMBASE and the pointer should be in the
+                // server DLL's rdata section. But this is probably good enough for now.
+                using (SafeLoadLibraryHandle module = SafeLoadLibraryHandle.GetModuleHandle(pInfo))
+                {
+                    if (module == null || lib.DangerousGetHandle() != module.DangerousGetHandle())
+                    {
+                        return IntPtr.Zero;
+                    }
+                }
+
+                return pInfo;
+            }
+            catch (Win32Exception)
+            {
+                return IntPtr.Zero;
+            }
+            finally
+            {
+                if (psfactory != IntPtr.Zero)
+                {
+                    Marshal.Release(psfactory);
+                }
+            }
+        }
+
+        private bool InitFromProxyFileInfo(ProxyFileInfo proxy_file_info, IList<NdrComProxyDefinition> interfaces)
+        {
+            string[] names = proxy_file_info.GetNames(_reader);
+            CInterfaceStubHeader[] stubs = proxy_file_info.GetStubs(_reader);
+            Guid[] base_iids = proxy_file_info.GetBaseIids(_reader);
+            for (int i = 0; i < names.Length; ++i)
+            {
+                interfaces.Add(new NdrComProxyDefinition(names[i], stubs[i].GetIid(_reader),
+                    base_iids[i], stubs[i].DispatchTableCount, ReadProcs(base_iids[i], stubs[i])));
+            }
+            return true;
+        }
+
+        private bool InitFromProxyFileInfoArray(IntPtr proxy_file_info_array, IList<NdrComProxyDefinition> interfaces)
+        {
+            foreach (var file_info in _reader.EnumeratePointerList<ProxyFileInfo>(proxy_file_info_array))
+            {
+                if (!InitFromProxyFileInfo(file_info, interfaces))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private bool InitFromFile(string path, Guid clsid, IList<NdrComProxyDefinition> interfaces)
+        {
+            using (SafeLoadLibraryHandle lib = SafeLoadLibraryHandle.LoadLibrary(path))
+            {
+                IntPtr pInfo = FindProxyDllInfo(lib, clsid);
+                if (pInfo == IntPtr.Zero)
+                {
+                    return false;
+                }
+
+                return InitFromProxyFileInfoArray(pInfo, interfaces);
+            }
+        }
+
+        /// <summary>
+        /// Read COM proxy information from a ProxyFileInfo structure.
+        /// </summary>
+        /// <param name="proxy_file_info">The address of the ProxyFileInfo structure.</param>
+        /// <returns>The list of parsed proxy definitions.</returns>
+        public IEnumerable<NdrComProxyDefinition> ReadFromProxyFileInfo(IntPtr proxy_file_info)
+        {
+            List<NdrComProxyDefinition> interfaces = new List<NdrComProxyDefinition>();
+            if (!InitFromProxyFileInfo(_reader.ReadStruct<ProxyFileInfo>(proxy_file_info), interfaces))
+            {
+                throw new ArgumentException("Can't find proxy information in server DLL");
+            }
+
+            return interfaces.AsReadOnly();
+        }
+
+        /// <summary>
+        /// Read COM proxy information from an array of pointers to ProxyFileInfo structures.
+        /// </summary>
+        /// <param name="proxy_file_info_array">The address of an array of pointers to ProxyFileInfo structures. The last pointer should be NULL.</param>
+        /// <returns>The list of parsed proxy definitions.</returns>
+        public IEnumerable<NdrComProxyDefinition> ReadFromProxyFileInfoArray(IntPtr proxy_file_info_array)
+        {
+            List<NdrComProxyDefinition> interfaces = new List<NdrComProxyDefinition>();
+            if (!InitFromProxyFileInfoArray(proxy_file_info_array, interfaces))
+            {
+                throw new ArgumentException("Can't find proxy information in server DLL");
+            }
+
+            return interfaces.AsReadOnly();
+        }
+
+        /// <summary>
+        /// Read COM proxy information from a file.
+        /// </summary>
+        /// <param name="path">The path to the DLL containing the proxy.</param>
+        /// <param name="clsid">Optional CLSID for the proxy class.</param>
+        /// <returns>The list of parsed proxy definitions.</returns>
+        public IEnumerable<NdrComProxyDefinition> ReadFromComProxyFile(string path, Guid clsid)
+        {
+            if (!_reader.InProcess)
+            {
+                throw new ArgumentException("Can't parse COM proxy information from a file out of process.");
+            }
+
+            List<NdrComProxyDefinition> interfaces = new List<NdrComProxyDefinition>();
+            if (!InitFromFile(path, clsid, interfaces))
+            {
+                throw new ArgumentException("Can't find proxy information in server DLL");
+            }
+
+            return interfaces.AsReadOnly();
+        }
+
+        /// <summary>
+        /// Read COM proxy information from a file.
+        /// </summary>
+        /// <param name="path">The path to the DLL containing the proxy.</param>
+        /// <returns>The list of parsed proxy definitions.</returns>
+        public IEnumerable<NdrComProxyDefinition> ReadFromComProxyFile(string path)
+        {
+            return ReadFromComProxyFile(path, Guid.Empty);
         }
 
         /// <summary>

@@ -67,6 +67,7 @@
       <DependentUpon>SecurityDescriptorViewerForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Ndr\IMemoryReader.cs" />
+    <Compile Include="Ndr\NdrComProxyDefinition.cs" />
     <Compile Include="Ndr\NdrFormatter.cs" />
     <Compile Include="Ndr\NdrCorrelationDescriptor.cs" />
     <Compile Include="Ndr\NdrNativeUtils.cs" />
