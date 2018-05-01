@@ -19,6 +19,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Ndr
 {
@@ -55,6 +56,20 @@ namespace NtApiDotNet.Ndr
             BaseIid = base_iid == Guid.Empty ? NdrNativeUtils.IID_IUnknown : base_iid;
             DispatchCount = dispatch_count;
             Procedures = procedures;
+        }
+
+        /// <summary>
+        /// Creates a proxy definition from a list of procedures.
+        /// </summary>
+        /// <param name="name">The name of the proxy interface.</param>
+        /// <param name="iid">The IID of the proxy interface.</param>
+        /// <param name="base_iid">The base IID of the proxy interface.</param>
+        /// <param name="dispatch_count">The total dispatch count for the proxy interface.</param>
+        /// <param name="procedures">The list of parsed procedures for the proxy interface.</param>
+        /// <returns></returns>
+        public static NdrComProxyDefinition FromProcedures(string name, Guid iid, Guid base_iid, int dispatch_count, IEnumerable<NdrProcedureDefinition> procedures)
+        {
+            return new NdrComProxyDefinition(name, iid, base_iid, dispatch_count, procedures.ToList().AsReadOnly());
         }
 
         internal string Format(NdrFormatter context)
