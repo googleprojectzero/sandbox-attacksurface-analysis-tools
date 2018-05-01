@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.13'
+ModuleVersion = '1.1.14'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -98,7 +98,16 @@ PrivateData = @{
         ProjectUri = 'https://github.com/google/sandbox-attacksurface-analysis-tools'
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.13
+        ReleaseNotes = '1.1.14
+------
+* Added basic support for transaction objects.
+* Minor fixes for ALPC support.
+* Implemented OOP NDR parsing.
+* Added NDR parsing and formatting powershell functions such as New-NdrParser and Format-NdrComProxy
+* Fix for display of NDR arrays from 1orenz0.
+* Print NDR correlation descriptors during formatting.
+* Added support to read out COM proxies.
+1.1.13
 ------
 * Fixed bug in Get-NtToken for sandboxed tokens.
 * Extended support for Job objects.

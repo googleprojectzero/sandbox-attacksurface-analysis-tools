@@ -21,6 +21,16 @@ with .NET Core 2.0 by building the specific project files.
 
 Release Notes:
 
+1.1.14
+------
+* Added basic support for transaction objects.
+* Minor fixes for ALPC support.
+* Implemented OOP NDR parsing.
+* Added NDR parsing and formatting powershell functions such as New-NdrParser and Format-NdrComProxy
+* Fix for display of NDR arrays from 1orenz0.
+* Print NDR correlation descriptors during formatting.
+* Added support to read out COM proxies.
+
 1.1.13
 ------
 * Fixed bug in Get-NtToken for sandboxed tokens.
