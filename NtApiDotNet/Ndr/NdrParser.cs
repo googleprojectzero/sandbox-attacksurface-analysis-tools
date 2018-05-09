@@ -288,6 +288,7 @@ namespace NtApiDotNet.Ndr
 
         #endregion
 
+        #region Public Constructors
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -343,6 +344,9 @@ namespace NtApiDotNet.Ndr
         {
         }
 
+        #endregion
+
+        #region Public Methods
 
         /// <summary>
         /// Read COM proxy information from a ProxyFileInfo structure.
@@ -449,6 +453,10 @@ namespace NtApiDotNet.Ndr
                 start_offset, dispatch_count, _type_cache, _symbol_resolver, null));
         }
 
+        #endregion
+
+        #region Public Properties
+
         /// <summary>
         /// List of parsed types from the NDR.
         /// </summary>
@@ -465,5 +473,7 @@ namespace NtApiDotNet.Ndr
         /// List of parsed complex types from the NDR.
         /// </summary>
         public IEnumerable<NdrComplexTypeReference> ComplexTypes { get { return Types.OfType<NdrComplexTypeReference>(); } }
+
+        #endregion
     }
 }
