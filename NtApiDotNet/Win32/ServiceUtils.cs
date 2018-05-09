@@ -700,7 +700,7 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Get a list of running services with their process IDs.
         /// </summary>
-        /// <returns>A dictionary of running services with process IDs.</returns>
+        /// <returns>A list of running services with process IDs.</returns>
         public static IEnumerable<RunningService> GetRunningServicesWithProcessIds()
         {
             using (SafeServiceHandle scm = OpenSCManager(null, null,
