@@ -72,6 +72,7 @@
     <Compile Include="Ndr\NdrCorrelationDescriptor.cs" />
     <Compile Include="Ndr\NdrNativeUtils.cs" />
     <Compile Include="Ndr\NdrParser.cs" />
+    <Compile Include="Ndr\NdrParserException.cs" />
     <Compile Include="Ndr\NdrProcedureDefinition.cs" />
     <Compile Include="Ndr\NdrStringBuilder.cs" />
     <Compile Include="Ndr\NdrTypes.cs" />

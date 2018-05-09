@@ -22,6 +22,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Ndr
@@ -106,76 +107,10 @@ namespace NtApiDotNet.Ndr
     /// </summary>
     public sealed class NdrParser
     {
+        #region Private Members
         private readonly NdrTypeCache _type_cache;
         private readonly ISymbolResolver _symbol_resolver;
         private readonly IMemoryReader _reader;
-
-        private static void CheckSymbolResolver(NtProcess process, ISymbolResolver symbol_resolver)
-        {
-            int pid = process == null ? NtProcess.Current.ProcessId : process.ProcessId;
-            if (symbol_resolver is DbgHelpSymbolResolver dbghelp_resolver)
-            {
-                if (dbghelp_resolver.Process.ProcessId != pid)
-                {
-                    throw new ArgumentException("Symbol resolver must be for the same process as the passed process");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="process">Process to parse from.</param>
-        /// <param name="symbol_resolver">Specify a symbol resolver to use for looking up symbols.</param>
-        public NdrParser(NtProcess process, ISymbolResolver symbol_resolver)
-        {
-            CheckSymbolResolver(process, symbol_resolver);
-            if (process == null || process.ProcessId == NtProcess.Current.ProcessId)
-            {
-                _reader = new CurrentProcessMemoryReader();
-            }
-            else
-            {
-                if (!Environment.Is64BitProcess && process.Is64Bit)
-                {
-                    throw new ArgumentException("Do not support 32 to 64 bit reading.");
-                }
-
-                if (Environment.Is64BitProcess != process.Is64Bit)
-                {
-                    _reader = new CrossBitnessProcessMemoryReader(process);
-                }
-                else
-                {
-                    _reader = new ProcessMemoryReader(process);
-                }
-            }
-            _symbol_resolver = symbol_resolver;
-            _type_cache = new NdrTypeCache();
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="symbol_resolver">Specify a symbol resolver to use for looking up symbols.</param>
-        public NdrParser(ISymbolResolver symbol_resolver) : this(null, symbol_resolver)
-        {
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="process">Process to parse from.</param>
-        public NdrParser(NtProcess process) : this(process, null)
-        {
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public NdrParser() : this(null, null)
-        {
-        }
 
         private static NdrRpcServerInterface ReadRpcServerInterface(IMemoryReader reader, RPC_SERVER_INTERFACE server_interface, NdrTypeCache type_cache, ISymbolResolver symbol_resolver)
         {
@@ -184,14 +119,14 @@ namespace NtApiDotNet.Ndr
             return new NdrRpcServerInterface(server_interface.InterfaceId, server_interface.TransferSyntax, procs);
         }
 
-        private static IEnumerable<NdrProcedureDefinition> ReadProcs(IMemoryReader reader, MIDL_SERVER_INFO server_info, int start_offset, 
+        private static IEnumerable<NdrProcedureDefinition> ReadProcs(IMemoryReader reader, MIDL_SERVER_INFO server_info, int start_offset,
             int dispatch_count, NdrTypeCache type_cache, ISymbolResolver symbol_resolver, IList<string> names)
         {
             IntPtr[] dispatch_funcs = server_info.GetDispatchTable(reader, dispatch_count);
             MIDL_STUB_DESC stub_desc = server_info.GetStubDesc(reader);
             IntPtr type_desc = stub_desc.pFormatTypes;
             List<NdrProcedureDefinition> procs = new List<NdrProcedureDefinition>();
-            for(int i = start_offset; i < dispatch_count; ++i)
+            for (int i = start_offset; i < dispatch_count; ++i)
             {
                 int fmt_ofs = reader.ReadInt16(server_info.FmtStringOffset + i * 2);
                 if (fmt_ofs >= 0)
@@ -320,6 +255,95 @@ namespace NtApiDotNet.Ndr
             }
         }
 
+        private static void CheckSymbolResolver(NtProcess process, ISymbolResolver symbol_resolver)
+        {
+            int pid = process == null ? NtProcess.Current.ProcessId : process.ProcessId;
+            if (symbol_resolver is DbgHelpSymbolResolver dbghelp_resolver)
+            {
+                if (dbghelp_resolver.Process.ProcessId != pid)
+                {
+                    throw new ArgumentException("Symbol resolver must be for the same process as the passed process");
+                }
+            }
+        }
+
+        [HandleProcessCorruptedStateExceptions]
+        static T RunWithAccessCatch<T>(Func<T> func)
+        {
+            try
+            {
+                return func();
+            }
+            catch (Exception ex)
+            {
+                if (ex is NdrParserException)
+                {
+                    // Re-throw if already is an NDR parser exception.
+                    throw;
+                }
+
+                throw new NdrParserException("Error while parsing NDR structures");
+            }
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="process">Process to parse from.</param>
+        /// <param name="symbol_resolver">Specify a symbol resolver to use for looking up symbols.</param>
+        public NdrParser(NtProcess process, ISymbolResolver symbol_resolver)
+        {
+            CheckSymbolResolver(process, symbol_resolver);
+            if (process == null || process.ProcessId == NtProcess.Current.ProcessId)
+            {
+                _reader = new CurrentProcessMemoryReader();
+            }
+            else
+            {
+                if (!Environment.Is64BitProcess && process.Is64Bit)
+                {
+                    throw new ArgumentException("Do not support 32 to 64 bit reading.");
+                }
+
+                if (Environment.Is64BitProcess != process.Is64Bit)
+                {
+                    _reader = new CrossBitnessProcessMemoryReader(process);
+                }
+                else
+                {
+                    _reader = new ProcessMemoryReader(process);
+                }
+            }
+            _symbol_resolver = symbol_resolver;
+            _type_cache = new NdrTypeCache();
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="symbol_resolver">Specify a symbol resolver to use for looking up symbols.</param>
+        public NdrParser(ISymbolResolver symbol_resolver) : this(null, symbol_resolver)
+        {
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="process">Process to parse from.</param>
+        public NdrParser(NtProcess process) : this(process, null)
+        {
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public NdrParser() : this(null, null)
+        {
+        }
+
+
         /// <summary>
         /// Read COM proxy information from a ProxyFileInfo structure.
         /// </summary>
@@ -328,9 +352,9 @@ namespace NtApiDotNet.Ndr
         public IEnumerable<NdrComProxyDefinition> ReadFromProxyFileInfo(IntPtr proxy_file_info)
         {
             List<NdrComProxyDefinition> interfaces = new List<NdrComProxyDefinition>();
-            if (!InitFromProxyFileInfo(_reader.ReadStruct<ProxyFileInfo>(proxy_file_info), interfaces))
+            if (!RunWithAccessCatch(() => InitFromProxyFileInfo(_reader.ReadStruct<ProxyFileInfo>(proxy_file_info), interfaces)))
             {
-                throw new ArgumentException("Can't find proxy information in server DLL");
+                throw new NdrParserException("Can't find proxy information in server DLL");
             }
 
             return interfaces.AsReadOnly();
@@ -344,9 +368,9 @@ namespace NtApiDotNet.Ndr
         public IEnumerable<NdrComProxyDefinition> ReadFromProxyFileInfoArray(IntPtr proxy_file_info_array)
         {
             List<NdrComProxyDefinition> interfaces = new List<NdrComProxyDefinition>();
-            if (!InitFromProxyFileInfoArray(proxy_file_info_array, interfaces))
+            if (!RunWithAccessCatch(() => InitFromProxyFileInfoArray(proxy_file_info_array, interfaces)))
             {
-                throw new ArgumentException("Can't find proxy information in server DLL");
+                throw new NdrParserException("Can't find proxy information in server DLL");
             }
 
             return interfaces.AsReadOnly();
@@ -362,13 +386,13 @@ namespace NtApiDotNet.Ndr
         {
             if (!_reader.InProcess)
             {
-                throw new ArgumentException("Can't parse COM proxy information from a file out of process.");
+                throw new NdrParserException("Can't parse COM proxy information from a file out of process.");
             }
 
             List<NdrComProxyDefinition> interfaces = new List<NdrComProxyDefinition>();
-            if (!InitFromFile(path, clsid, interfaces))
+            if (!RunWithAccessCatch(() => InitFromFile(path, clsid, interfaces)))
             {
-                throw new ArgumentException("Can't find proxy information in server DLL");
+                throw new NdrParserException("Can't find proxy information in server DLL");
             }
 
             return interfaces.AsReadOnly();
@@ -391,7 +415,7 @@ namespace NtApiDotNet.Ndr
         /// <returns>The parsed NDR content.</returns>
         public NdrRpcServerInterface ReadRpcServerInterface(IntPtr server_interface)
         {
-            return ReadRpcServerInterface(_reader, _reader.ReadStruct<RPC_SERVER_INTERFACE>(server_interface), _type_cache, _symbol_resolver);
+            return RunWithAccessCatch(() => ReadRpcServerInterface(_reader, _reader.ReadStruct<RPC_SERVER_INTERFACE>(server_interface), _type_cache, _symbol_resolver));
         }
 
         /// <summary>
@@ -406,10 +430,10 @@ namespace NtApiDotNet.Ndr
         {
             if (names != null && names.Count != (dispatch_count - start_offset))
             {
-                throw new ArgumentException("List of names must be same size of the total methods to parse");
+                throw new NdrParserException("List of names must be same size of the total methods to parse");
             }
-            return ReadProcs(_reader, _reader.ReadStruct<MIDL_SERVER_INFO>(server_info), 
-                start_offset, dispatch_count, _type_cache, _symbol_resolver, names);
+            return RunWithAccessCatch(() => ReadProcs(_reader, _reader.ReadStruct<MIDL_SERVER_INFO>(server_info),
+                start_offset, dispatch_count, _type_cache, _symbol_resolver, names));
         }
 
         /// <summary>
@@ -421,8 +445,8 @@ namespace NtApiDotNet.Ndr
         /// <returns>The parsed NDR content.</returns>
         public IEnumerable<NdrProcedureDefinition> ReadFromMidlServerInfo(IntPtr server_info, int start_offset, int dispatch_count)
         {
-            return ReadProcs(_reader, _reader.ReadStruct<MIDL_SERVER_INFO>(server_info),
-                start_offset, dispatch_count, _type_cache, _symbol_resolver, null);
+            return RunWithAccessCatch(() => ReadProcs(_reader, _reader.ReadStruct<MIDL_SERVER_INFO>(server_info),
+                start_offset, dispatch_count, _type_cache, _symbol_resolver, null));
         }
 
         /// <summary>
