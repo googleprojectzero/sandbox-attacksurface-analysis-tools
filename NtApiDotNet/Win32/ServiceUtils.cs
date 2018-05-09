@@ -125,15 +125,38 @@ namespace NtApiDotNet.Win32
     [StructLayout(LayoutKind.Sequential)]
     internal struct SERVICE_STATUS_PROCESS
     {
-        public int  dwServiceType;
-        public int  dwCurrentState;
-        public int  dwControlsAccepted;
-        public int  dwWin32ExitCode;
-        public int  dwServiceSpecificExitCode;
-        public int  dwCheckPoint;
-        public int  dwWaitHint;
-        public int  dwProcessId;
-        public int  dwServiceFlags;
+        public int dwServiceType;
+        public int dwCurrentState;
+        public int dwControlsAccepted;
+        public int dwWin32ExitCode;
+        public int dwServiceSpecificExitCode;
+        public int dwCheckPoint;
+        public int dwWaitHint;
+        public int dwProcessId;
+        public int dwServiceFlags;
+    }
+
+    internal enum SC_ENUM_TYPE {
+        SC_ENUM_PROCESS_INFO = 0
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ENUM_SERVICE_STATUS_PROCESS
+    {
+        public IntPtr lpServiceName;
+        public IntPtr lpDisplayName;
+        public SERVICE_STATUS_PROCESS ServiceStatusProcess;
+    }
+
+    [Flags]
+    public enum ServiceType
+    {
+        KernelDriver = 0x00000001,
+        SystemDriver = 0x00000002,
+        Win32OwnProcess = 0x00000010,
+        Win32ShareProcess = 0x00000020,
+        UserService         =  0x00000040,
+        UserServiceInstance =  0x00000080,
     }
 
     internal enum SC_STATUS_TYPE
@@ -372,6 +395,46 @@ namespace NtApiDotNet.Win32
     }
 
     /// <summary>
+    /// Representation of a running service.
+    /// </summary>
+    public class RunningService
+    {
+        /// <summary>
+        /// The name of the service.
+        /// </summary>
+        public string Name { get; }
+        /// <summary>
+        /// The description of the service.
+        /// </summary>
+        public string DisplayName { get; }
+        /// <summary>
+        /// Process ID of the running service.
+        /// </summary>
+        public int ProcessId { get; }
+        /// <summary>
+        /// Type of service.
+        /// </summary>
+        public ServiceType ServiceType { get; }
+
+        static string GetString(IntPtr ptr)
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                return string.Empty;
+            }
+            return Marshal.PtrToStringUni(ptr);
+        }
+
+        internal RunningService(ENUM_SERVICE_STATUS_PROCESS process)
+        {
+            Name = GetString(process.lpServiceName);
+            DisplayName = GetString(process.lpDisplayName);
+            ProcessId = process.ServiceStatusProcess.dwProcessId;
+            ServiceType = (ServiceType)process.ServiceStatusProcess.dwServiceType;
+        }
+    }
+
+    /// <summary>
     /// Utilities for accessing services.
     /// </summary>
     public static class ServiceUtils
@@ -412,6 +475,30 @@ namespace NtApiDotNet.Win32
           int cbBufSize,
           out int pcbBytesNeeded
         );
+
+        [Flags]
+        enum SERVICE_STATE
+        {
+            SERVICE_ACTIVE = 1,
+            SERVICE_INACTIVE = 2,
+            SERVICE_STATE_ALL = SERVICE_ACTIVE | SERVICE_INACTIVE
+        }
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        static extern bool EnumServicesStatusEx(
+              SafeServiceHandle hSCManager,
+              SC_ENUM_TYPE InfoLevel,
+              ServiceType dwServiceType,
+              SERVICE_STATE dwServiceState,
+              SafeHGlobalBuffer lpServices,
+              int cbBufSize,
+              out int pcbBytesNeeded,
+              out int lpServicesReturned,
+              ref int lpResumeHandle,
+              string pszGroupName
+            );
+
+        const int ERROR_MORE_DATA = 234;
 
         /// <summary>
         /// Get the generic mapping for the SCM.
@@ -608,6 +695,55 @@ namespace NtApiDotNet.Win32
                 }
             }
             return result;
+        }
+
+        /// <summary>
+        /// Get a list of running services with their process IDs.
+        /// </summary>
+        /// <returns>A dictionary of running services with process IDs.</returns>
+        public static IEnumerable<RunningService> GetRunningServicesWithProcessIds()
+        {
+            using (SafeServiceHandle scm = OpenSCManager(null, null,
+                            ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.EnumerateService))
+            {
+                if (scm.IsInvalid)
+                {
+                    throw new SafeWin32Exception();
+                }
+
+                ServiceType service_types = ServiceType.Win32OwnProcess | ServiceType.Win32ShareProcess;
+                if (!NtObjectUtils.IsWindows81OrLess)
+                {
+                    service_types |= ServiceType.UserService;
+                }
+
+                using (var buffer = new SafeHGlobalBuffer(4 * 1024))
+                {
+                    int resume_handle = 0;
+                    while (true)
+                    {
+                        bool ret = EnumServicesStatusEx(scm, SC_ENUM_TYPE.SC_ENUM_PROCESS_INFO, service_types, SERVICE_STATE.SERVICE_ACTIVE, buffer,
+                            buffer.Length, out int bytes_needed, out int services_returned, ref resume_handle, null);
+                        int error = Marshal.GetLastWin32Error();
+                        if (!ret && error != ERROR_MORE_DATA)
+                        {
+                            throw new SafeWin32Exception(error);
+                        }
+
+                        ENUM_SERVICE_STATUS_PROCESS[] services = new ENUM_SERVICE_STATUS_PROCESS[services_returned];
+                        buffer.ReadArray(0, services, 0, services_returned);
+                        foreach (var service in services)
+                        {
+                            yield return new RunningService(service);
+                        }
+
+                        if (ret)
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
 }
