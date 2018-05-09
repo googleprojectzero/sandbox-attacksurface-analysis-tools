@@ -39,8 +39,7 @@ namespace NtApiDotNet.Ndr
         IsByValue = 0x0080,
         IsSimpleRef = 0x0100,
         IsDontCallFreeInst = 0x0200,
-        SaveForAsyncFinish = 0x0400,
-        ServerAllocSizeMask = 0xe000
+        SaveForAsyncFinish = 0x0400
     }
 
     [Flags]
@@ -61,18 +60,24 @@ namespace NtApiDotNet.Ndr
     {
         public NdrParamAttributes Attributes { get; }
         public NdrBaseTypeReference Type { get; }
+        public int ServerAllocSize { get; }
         public int Offset { get; }
 
-        internal NdrProcedureParameter(NdrParamAttributes attributes, NdrBaseTypeReference type, int offset)
+        private const ushort ServerAllocSizeMask = 0xe000;
+
+        internal NdrProcedureParameter(NdrParamAttributes attributes, int server_alloc_size, NdrBaseTypeReference type, int offset)
         {
             Attributes = attributes;
+            ServerAllocSize = server_alloc_size;
             Type = type;
             Offset = offset;
         }
 
         internal NdrProcedureParameter(NdrParseContext context, BinaryReader reader)
         {
-            Attributes = (NdrParamAttributes)reader.ReadUInt16();
+            ushort attr = reader.ReadUInt16();
+            Attributes = (NdrParamAttributes)(attr & ~ServerAllocSizeMask);
+            ServerAllocSize = (attr & ServerAllocSizeMask) >> 10;
             Offset = reader.ReadUInt16();
             if ((Attributes & NdrParamAttributes.IsBasetype) == 0)
             {
@@ -129,7 +134,7 @@ namespace NtApiDotNet.Ndr
 
         internal NdrProcedureHandleParameter(NdrParamAttributes attributes, 
             NdrBaseTypeReference type, int offset, bool explicit_handle, NdrHandleParamFlags flags) 
-            : base(attributes, type, offset)
+            : base(attributes, 0, type, offset)
         {
             Flags = flags;
             Explicit = explicit_handle;
