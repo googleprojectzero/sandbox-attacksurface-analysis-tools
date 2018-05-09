@@ -717,7 +717,8 @@ namespace NtApiDotNet.Win32
                     service_types |= ServiceType.UserService;
                 }
 
-                using (var buffer = new SafeHGlobalBuffer(4 * 1024))
+                const int Length = 32 * 1024;
+                using (var buffer = new SafeHGlobalBuffer(Length))
                 {
                     int resume_handle = 0;
                     while (true)
