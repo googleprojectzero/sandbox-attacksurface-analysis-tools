@@ -22,7 +22,22 @@ namespace NtApiDotNet.Win32
     /// </summary>
     [Serializable]
     public class SafeWin32Exception : Win32Exception
-	{
+    {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public SafeWin32Exception()
+        {
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="error">Win32 error.</param>
+        public SafeWin32Exception(int error) : base(error)
+        {
+        }
+
         /// <summary>
         /// The message for the exception.
         /// </summary>
