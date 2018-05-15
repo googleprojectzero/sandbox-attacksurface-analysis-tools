@@ -125,6 +125,16 @@ namespace NtApiDotNet.Win32
         /// <param name="return_name_only">If true then return only the name of the symbols (such as C++ symbol name) rather than full symbol.</param>
         /// <returns>The symbol name. If |generate_fake_symbol| is true and the symbol doesn't exist one is generated based on module name.</returns>
         string GetSymbolForAddress(IntPtr address, bool generate_fake_symbol, bool return_name_only);
+        /// <summary>
+        /// Reload the list of modules for this symbol resolver.
+        /// </summary>
+        void ReloadModuleList();
+        /// <summary>
+        /// Load a specific module into the symbol resolver.
+        /// </summary>
+        /// <param name="module_path">The path to the module.</param>
+        /// <param name="base_address">The base address of the loaded module.</param>
+        void LoadModule(string module_path, IntPtr base_address);
     }
 
     /// <summary>
@@ -220,6 +230,11 @@ namespace NtApiDotNet.Win32
               long BaseOfDll,
               int SizeOfDll
             );
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
+        delegate bool SymRefreshModuleList(
+            SafeKernelObjectHandle hProcess
+        );
 
         enum SymTagEnum
         {
@@ -413,6 +428,22 @@ namespace NtApiDotNet.Win32
               int nSize
             );
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MODULEINFO
+        {
+            public IntPtr lpBaseOfDll;
+            public int SizeOfImage;
+            public IntPtr EntryPoint;
+        }
+
+        [DllImport("Psapi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool GetModuleInformation(
+          SafeKernelObjectHandle hProcess,
+          IntPtr hModule,
+          out MODULEINFO lpmodinfo,
+          int cb
+        );
+
         private SafeLoadLibraryHandle _dbghelp_lib;
         private SymInitializeW _sym_init;
         private SymCleanup _sym_cleanup;
@@ -422,6 +453,7 @@ namespace NtApiDotNet.Win32
         private SymFromAddrW _sym_from_addr;
         private SymGetModuleInfoW64 _sym_get_module_info;
         private SymLoadModule64 _sym_load_module;
+        private SymRefreshModuleList _sym_refresh_module_list;
 
         private void GetFunc<T>(ref T f) where T : class
         {
@@ -451,6 +483,7 @@ namespace NtApiDotNet.Win32
             GetFunc(ref _sym_from_addr);
             GetFunc(ref _sym_get_module_info);
             GetFunc(ref _sym_load_module);
+            GetFunc(ref _sym_refresh_module_list);
 
             _sym_set_options(SymOptions.INCLUDE_32BIT_MODULES | SymOptions.UNDNAME | SymOptions.DEFERRED_LOADS);
 
@@ -473,7 +506,7 @@ namespace NtApiDotNet.Win32
                         if (GetModuleFileNameEx(Handle, module, dllpath, dllpath.Capacity) > 0)
                         {
                             if (_sym_load_module(Handle, IntPtr.Zero, dllpath.ToString(), 
-                                Path.GetFileNameWithoutExtension(dllpath.ToString()), module.ToInt64(), 0) == 0)
+                                Path.GetFileNameWithoutExtension(dllpath.ToString()), module.ToInt64(), GetImageSize(module)) == 0)
                             {
                                 System.Diagnostics.Debug.WriteLine(String.Format("Couldn't load {0}", dllpath));
                             }
@@ -481,6 +514,17 @@ namespace NtApiDotNet.Win32
                     }
                 }
             }
+        }
+
+        private int GetImageSize(IntPtr base_address)
+        {
+            if (!GetModuleInformation(Handle, base_address, 
+                out MODULEINFO mod_info, Marshal.SizeOf(typeof(MODULEINFO))))
+            {
+                throw new SafeWin32Exception();
+            }
+
+            return mod_info.SizeOfImage;
         }
 
         private IMAGEHLP_MODULE64 GetModuleInfo(long base_address)
@@ -630,6 +674,27 @@ namespace NtApiDotNet.Win32
         public string GetSymbolForAddress(IntPtr address, bool generate_fake_symbol)
         {
             return GetSymbolForAddress(address, generate_fake_symbol, false);
+        }
+
+        public void ReloadModuleList()
+        {
+            if (!_sym_refresh_module_list(Handle))
+            {
+                throw new SafeWin32Exception();
+            }
+        }
+
+        public void LoadModule(string module_path, IntPtr base_address)
+        {
+            if (_sym_load_module(Handle, IntPtr.Zero, module_path,
+                                Path.GetFileNameWithoutExtension(module_path), base_address.ToInt64(), GetImageSize(base_address)) == 0)
+            {
+                int error = Marshal.GetLastWin32Error();
+                if (error != 0)
+                {
+                    throw new SafeWin32Exception(error);
+                }
+            }
         }
 
         internal NtProcess Process { get; }
