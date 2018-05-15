@@ -245,6 +245,7 @@ namespace NtApiDotNet.Ndr
         {
             using (SafeLoadLibraryHandle lib = SafeLoadLibraryHandle.LoadLibrary(path))
             {
+                _symbol_resolver?.LoadModule(path, lib.DangerousGetHandle());
                 IntPtr pInfo = FindProxyDllInfo(lib, clsid);
                 if (pInfo == IntPtr.Zero)
                 {
@@ -417,9 +418,24 @@ namespace NtApiDotNet.Ndr
         /// </summary>
         /// <param name="server_interface">Pointer to the RPC_SERVER_INTERFACE.</param>
         /// <returns>The parsed NDR content.</returns>
-        public NdrRpcServerInterface ReadRpcServerInterface(IntPtr server_interface)
+        public NdrRpcServerInterface ReadFromRpcServerInterface(IntPtr server_interface)
         {
             return RunWithAccessCatch(() => ReadRpcServerInterface(_reader, _reader.ReadStruct<RPC_SERVER_INTERFACE>(server_interface), _type_cache, _symbol_resolver));
+        }
+
+        /// <summary>
+        /// Parse NDR content from an RPC_SERVER_INTERFACE structure in memory.
+        /// </summary>
+        /// <param name="dll_path">The path to a DLL containing the RPC_SERVER_INTERFACE.</param>
+        /// <param name="offset">Offset to the RPC_SERVER_INTERFACE from the base of the DLL.</param>
+        /// <returns>The parsed NDR content.</returns>
+        public NdrRpcServerInterface ReadFromRpcServerInterface(string dll_path, int offset)
+        {
+            using (var lib = SafeLoadLibraryHandle.LoadLibrary(dll_path, LoadLibraryFlags.DontResolveDllReferences))
+            {
+                _symbol_resolver?.LoadModule(dll_path, lib.DangerousGetHandle());
+                return ReadFromRpcServerInterface(lib.DangerousGetHandle() + offset);
+            }
         }
 
         /// <summary>

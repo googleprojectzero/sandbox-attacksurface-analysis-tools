@@ -42,6 +42,13 @@ namespace NtApiDotNet.Ndr
         /// <param name="com_proxy">The COM proxy to format.</param>
         /// <returns>The formatted COM proxy.</returns>
         string FormatComProxy(NdrComProxyDefinition com_proxy);
+
+        /// <summary>
+        /// Format an RPC server interface using the current formatter.
+        /// </summary>
+        /// <param name="rpc_server">The RPC server.</param>
+        /// <returns>The formatted RPC server interface.</returns>
+        string FormatRpcServerInterface(NdrRpcServerInterface rpc_server);
     }
 
     /// <summary>
@@ -152,6 +159,11 @@ namespace NtApiDotNet.Ndr
         string INdrFormatter.FormatComProxy(NdrComProxyDefinition com_proxy)
         {
             return com_proxy.Format(this);
+        }
+
+        string INdrFormatter.FormatRpcServerInterface(NdrRpcServerInterface rpc_server)
+        {
+            return rpc_server.Format(this);
         }
     }
 

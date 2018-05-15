@@ -53,5 +53,20 @@ namespace NtApiDotNet.Ndr
             TransferSyntaxVersion = new Version(transfer_syntax_id.SyntaxVersion.MajorVersion, transfer_syntax_id.SyntaxVersion.MinorVersion);
             Procedures = procedures.ToList().AsReadOnly();
         }
+
+        internal string Format(NdrFormatter context)
+        {
+            NdrStringBuilder builder = new NdrStringBuilder();
+            builder.AppendLine("[uuid(\"{0}\")]", InterfaceId);
+            builder.AppendLine("interface intf_{0} {{", InterfaceId.ToString().Replace('-','_'));
+            builder.PushIndent(' ', 4);
+            foreach (NdrProcedureDefinition proc in Procedures)
+            {
+                builder.AppendLine(proc.FormatProcedure(context));
+            }
+            builder.PopIndent();
+            builder.AppendLine("}").AppendLine();
+            return builder.ToString();
+        }
     }
 }

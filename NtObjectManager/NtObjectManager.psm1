@@ -2210,6 +2210,72 @@ function Format-NdrComProxy {
 
 <#
 .SYNOPSIS
+Parses RPC server information from an executable.
+.DESCRIPTION
+This cmdlet parses the RPC server information from a specified executable with a known offset.
+.PARAMETER Path
+The path to the executable containing the RPC server information.
+.PARAMETER Offset
+The offset into the executable where the RPC_SERVER_INTERFACE structure is loaded.
+.OUTPUTS
+The parsed RPC server information and complex types.
+.EXAMPLE
+$p = Get-NdrRpcServerInterface c:\path\to\server.dll 0x18000
+Parse the RPC server information from c:\path\to\proxy.dll with offset 0x18000
+#>
+function Get-NdrRpcServerInterface {
+    Param(
+        [parameter(Mandatory, Position=0)]
+        [string]$Path,
+        [parameter(Mandatory, Position=1)]
+        [int]$Offset,
+        [NtApiDotNet.Win32.ISymbolResolver]$SymbolResolver
+    )
+    $Path = Resolve-Path $Path -ErrorAction Stop
+    Use-NtObject($parser = New-NdrParser -SymbolResolver $SymbolResolver) {
+        $rpc_server = $parser.ReadFromRpcServerInterface($Path, $Offset)
+        $props = @{
+            Path=$Path;
+            RpcServer=$rpc_server;
+            ComplexTypes=$parser.ComplexTypes;
+        }
+        $obj = New-Object –TypeName PSObject –Prop $props
+        Write-Output $obj
+    }
+}
+
+<#
+.SYNOPSIS
+Format an RPC server interface type.
+.DESCRIPTION
+This cmdlet formats a parsed RPC server interface type.
+.PARAMETER RpcServer
+The RPC server interface to format.
+.OUTPUTS
+string - The formatted RPC server interface.
+.EXAMPLE
+Format-NdrRpcServerInterface $type
+Format an RPC server interface type.
+#>
+function Format-NdrRpcServerInterface {
+  [CmdletBinding()]
+    Param(
+    [parameter(Mandatory, Position=0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [NtApiDotNet.Ndr.NdrRpcServerInterface]$RpcServer
+    )
+
+  BEGIN {
+    $formatter = [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create()
+  }
+
+  PROCESS {
+    $fmt = $formatter.FormatRpcServerInterface($RpcServer)
+    Write-Output $fmt
+  }
+}
+
+<#
+.SYNOPSIS
 Get a filtered token.
 .DESCRIPTION
 This is left for backwards compatibility, use 'Get-NtToken -Filtered' instead.
