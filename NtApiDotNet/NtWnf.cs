@@ -143,7 +143,7 @@ namespace NtApiDotNet
 #pragma warning restore 1591
 
     /// <summary>
-    /// Currently unused.
+    /// NT WNF object.
     /// </summary>
     public class NtWnf
     {
