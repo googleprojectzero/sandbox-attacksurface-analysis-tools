@@ -122,6 +122,11 @@ namespace NtApiDotNet.Ndr
         private static IEnumerable<NdrProcedureDefinition> ReadProcs(IMemoryReader reader, MIDL_SERVER_INFO server_info, int start_offset,
             int dispatch_count, NdrTypeCache type_cache, ISymbolResolver symbol_resolver, IList<string> names)
         {
+            RPC_SYNTAX_IDENTIFIER transfer_syntax = server_info.GetTransferSyntax(reader);
+            if (transfer_syntax.SyntaxGUID != NdrNativeUtils.DCE_TransferSyntax)
+            {
+                throw new NdrParserException("Can't parse NDR64 syntax data");
+            }
             IntPtr[] dispatch_funcs = server_info.GetDispatchTable(reader, dispatch_count);
             MIDL_STUB_DESC stub_desc = server_info.GetStubDesc(reader);
             IntPtr type_desc = stub_desc.pFormatTypes;
@@ -421,6 +426,17 @@ namespace NtApiDotNet.Ndr
         public NdrRpcServerInterface ReadFromRpcServerInterface(IntPtr server_interface)
         {
             return RunWithAccessCatch(() => ReadRpcServerInterface(_reader, _reader.ReadStruct<RPC_SERVER_INTERFACE>(server_interface), _type_cache, _symbol_resolver));
+        }
+
+        /// <summary>
+        /// Parse NDR content from an RPC_SERVER_INTERFACE structure in memory. Deprecated.
+        /// </summary>
+        /// <param name="server_interface">Pointer to the RPC_SERVER_INTERFACE.</param>
+        /// <returns>The parsed NDR content.</returns>
+        [Obsolete("Use ReadFromRpcServerInterface instead.")]
+        public NdrRpcServerInterface ReadRpcServerInterface(IntPtr server_interface)
+        {
+            return ReadFromRpcServerInterface(server_interface);
         }
 
         /// <summary>

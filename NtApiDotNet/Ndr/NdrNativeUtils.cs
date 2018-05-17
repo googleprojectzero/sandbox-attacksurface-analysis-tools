@@ -95,6 +95,8 @@ namespace NtApiDotNet.Ndr
         internal static readonly Guid IID_IUnknown = new Guid("00000000-0000-0000-C000-000000000046");
         internal static readonly Guid IID_IDispatch = new Guid("00020400-0000-0000-C000-000000000046");
         internal static readonly Guid IID_IPSFactoryBuffer = new Guid("D5F569D0-593B-101A-B569-08002B2DBF7A");
+        internal static readonly Guid DCE_TransferSyntax = new Guid("8A885D04-1CEB-11C9-9FE8-08002B104860");
+        internal static readonly Guid NDR64_TransferSyntax = new Guid("71710533-BEBA-4937-8319-B5DBEF9CCC36");
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -359,6 +361,15 @@ namespace NtApiDotNet.Ndr
                 return new IntPtr[dispatch_count];
             }
             return reader.ReadArray<IntPtr>(DispatchTable, dispatch_count);
+        }
+
+        public RPC_SYNTAX_IDENTIFIER GetTransferSyntax(IMemoryReader reader)
+        {
+            if (pTransferSyntax == IntPtr.Zero)
+            {
+                return new RPC_SYNTAX_IDENTIFIER() { SyntaxGUID = NdrNativeUtils.DCE_TransferSyntax };
+            }
+            return reader.ReadStruct<RPC_SYNTAX_IDENTIFIER>(pTransferSyntax);
         }
     }
 
