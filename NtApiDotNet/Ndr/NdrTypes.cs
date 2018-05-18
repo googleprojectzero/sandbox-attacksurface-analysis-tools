@@ -152,6 +152,7 @@ namespace NtApiDotNet.Ndr
         FC_ALLOCED_ON_STACK = 0x04,
         FC_SIMPLE_POINTER = 0x08,
         FC_POINTER_DEREF = 0x10,
+        FC_MAYBE_NULL_SIZEIS = 0x20,
     }
 
     [Flags]
