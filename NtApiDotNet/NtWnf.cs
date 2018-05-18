@@ -61,6 +61,17 @@ namespace NtApiDotNet
         public uint StateDataOffset;
     }
 
+    public class WnfStateData
+    {
+        public byte[] Data { get; }
+        public int ChangeStamp { get; }
+        public WnfStateData(byte[] data, int changestamp)
+        {
+            Data = data;
+            ChangeStamp = changestamp;
+        }
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
@@ -92,7 +103,7 @@ namespace NtApiDotNet
             [In, Optional] WnfTypeId TypeId,
             [Optional] IntPtr ExplicitScope,
             int MatchingChangeStamp,
-            int CheckStamp
+            [MarshalAs(UnmanagedType.Bool)] bool CheckChangeStamp
         );
 
         [DllImport("ntdll.dll")]
@@ -108,18 +119,6 @@ namespace NtApiDotNet
             SafeBuffer InfoBuffer,
             int InfoBufferSize
         );
-    }
-
-    public class WnfStateData
-    {
-        public byte[] Data { get; }
-        public int Changestamp { get; }
-
-        internal WnfStateData(byte[] data, int changestamp)
-        {
-            Data = data;
-            Changestamp = changestamp;
-        }
     }
 
     public enum WnfAccessRights : uint
@@ -152,6 +151,16 @@ namespace NtApiDotNet
         private static readonly string[] _root_keys = { @"\Registry\Machine\System\CurrentControlSet\Control\Notifications",
             @"\Registry\Machine\Software\Microsoft\Windows NT\CurrentVersion\Notifications",
             @"\Registry\Machine\Software\Microsoft\Windows NT\CurrentVersion\VolatileNotifications" };
+
+        private static NtResult<T> Query<T>(ulong state_name, WnfStateNameInformation info_class, bool throw_on_error) where T : struct
+        {
+            using (var buffer = new SafeStructureInOutBuffer<T>())
+            {
+                return NtSystemCalls.NtQueryWnfStateNameInformation(ref state_name,
+                    WnfStateNameInformation.NameExist, 
+                    IntPtr.Zero, buffer, buffer.Length).CreateResult(throw_on_error, () => buffer.Result);
+            }
+        }
 
         /// <summary>
         /// Get the generic mapping for a 
@@ -240,18 +249,15 @@ namespace NtApiDotNet
         {
             if (check_exists)
             {
-                using (var buffer = new SafeStructureInOutBuffer<int>())
+                var exists = Query<int>(state_name, WnfStateNameInformation.NameExist, throw_on_error);
+                if (!exists.IsSuccess)
                 {
-                    NtStatus status = NtSystemCalls.NtQueryWnfStateNameInformation(ref state_name, 
-                        WnfStateNameInformation.NameExist, IntPtr.Zero, buffer, buffer.Length);
-                    if (!status.IsSuccess())
-                    {
-                        return status.CreateResultFromError<NtWnf>(throw_on_error);
-                    }
-                    if (buffer.Result == 0)
-                    {
-                        return NtStatus.STATUS_OBJECT_NAME_NOT_FOUND.CreateResultFromError<NtWnf>(throw_on_error);
-                    }
+                    return exists.Status.CreateResultFromError<NtWnf>(false);
+                }
+
+                if (exists.Result == 0)
+                {
+                    return NtStatus.STATUS_OBJECT_NAME_NOT_FOUND.CreateResultFromError<NtWnf>(throw_on_error);
                 }
             }
 
@@ -293,6 +299,17 @@ namespace NtApiDotNet
             {
                 ulong decoded_statename = StateName ^ StateNameKey;
                 return (WnfStateNameLifetime)(int)((decoded_statename >> 4) & 3);
+            }
+        }
+
+        /// <summary>
+        /// Get if the state has subscribers.
+        /// </summary>
+        public bool SubscribersPresent
+        {
+            get
+            {
+                return Query<int>(StateName, WnfStateNameInformation.SubscribersPresent, true).Result != 0;
             }
         }
 
@@ -341,6 +358,85 @@ namespace NtApiDotNet
 
                 return _security_descriptor;
             }
+        }
+
+        /// <summary>
+        /// Query state data for the WNF object.
+        /// </summary>
+        /// <param name="type_id">Optional Type ID.</param>
+        /// <param name="explicit_scope">Optional explicit scope.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The state data.</returns>
+        public NtResult<WnfStateData> QueryStateData(WnfTypeId type_id, IntPtr explicit_scope, bool throw_on_error)
+        {
+            int tries = 10;
+            int size = 4096;
+            while (tries-- > 0)
+            {
+                using (var buffer = new SafeHGlobalBuffer(size))
+                {
+                    ulong state_name = StateName;
+                    NtStatus status = NtSystemCalls.NtQueryWnfStateData(ref state_name, type_id, 
+                        explicit_scope, out int changestamp, buffer, ref size);
+                    if (status == NtStatus.STATUS_BUFFER_TOO_SMALL)
+                    {
+                        continue;
+                    }
+
+                    return status.CreateResult(throw_on_error, () => new WnfStateData(buffer.ReadBytes(size), changestamp));
+                }
+            }
+
+            return NtStatus.STATUS_BUFFER_TOO_SMALL.CreateResultFromError<WnfStateData>(throw_on_error);
+        }
+
+        /// <summary>
+        /// Query state data for the WNF object.
+        /// </summary>
+        /// <param name="type_id">Optional Type ID.</param>
+        /// <param name="explicit_scope">Optional explicit scope.</param>
+        /// <returns>The state data.</returns>
+        public WnfStateData QueryStateData(WnfTypeId type_id, IntPtr explicit_scope)
+        {
+            return QueryStateData(type_id, explicit_scope, true).Result;
+        }
+
+        /// <summary>
+        /// Query state data for the WNF object.
+        /// </summary>
+        /// <returns>The state data.</returns>
+        public WnfStateData QueryStateData()
+        {
+            return QueryStateData(null, IntPtr.Zero);
+        }
+
+        /// <summary>
+        /// Update state data for the WNF object.
+        /// </summary>
+        /// <param name="data">The data to set.</param>
+        /// <param name="type_id">Optional Type ID.</param>
+        /// <param name="explicit_scope">Optional explicit scope.</param>
+        /// <param name="matching_changestamp">Optional matching changestamp.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The status from the update.</returns>
+        public NtStatus UpdateStateData(byte[] data, WnfTypeId type_id, IntPtr explicit_scope, int? matching_changestamp, bool throw_on_error)
+        {
+            using (var buffer = data.ToBuffer())
+            {
+                ulong state_name = StateName;
+                return NtSystemCalls.NtUpdateWnfStateData(ref state_name, buffer, 
+                    buffer.Length, type_id, explicit_scope,
+                    matching_changestamp ?? 0, matching_changestamp.HasValue).ToNtException(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Update state data for the WNF object.
+        /// </summary>
+        /// <param name="data">The data to set.</param>
+        public void UpdateStateData(byte[] data)
+        {
+            UpdateStateData(data, null, IntPtr.Zero, null, true);
         }
 
         /// <summary>
