@@ -710,6 +710,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create a buffer based on a byte array.
+        /// </summary>
+        /// <param name="value">The byte array for the buffer.</param>
+        /// <returns>The safe buffer.</returns>
+        public static SafeHGlobalBuffer ToBuffer(this byte[] value)
+        {
+            return new SafeHGlobalBuffer(value);
+        }
+
+        /// <summary>
         /// Create an array buffer from the array.
         /// </summary>
         /// <typeparam name="T">The array element type.</typeparam>
