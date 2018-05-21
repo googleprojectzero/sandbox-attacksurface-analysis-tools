@@ -138,10 +138,19 @@ namespace NtApiDotNet.Ndr
         FC_USER_MARSHAL,            // 0xb4
         FC_PIPE,                    // 0xb5
         FC_BLKHOLE,                 // 0xb6
-        FC_RANGE,                   // 0xb7     
-        FC_INT3264,                 // 0xb8     
-        FC_UINT3264,                // 0xb9    
+        FC_RANGE,                   // 0xb7
+        FC_INT3264,                 // 0xb8
+        FC_UINT3264,                // 0xb9
         FC_END_OF_UNIVERSE          // 0xba
+    }
+
+    [Flags]
+    public enum NdrBlackholeFlags
+    {
+        None = 0,
+        BaseType = 0x1,
+        Function = 0x2,
+        XurType = 0x4,  // Xmit Usermarshal or Represent-as TYPE
     }
 
     [Flags]
