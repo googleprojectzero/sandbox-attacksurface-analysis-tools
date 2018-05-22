@@ -137,10 +137,10 @@ namespace NtApiDotNet
     [StructLayout(LayoutKind.Sequential)]
     public struct RtlDriveLetterCurDir
     {
-        ushort Flags;
-        ushort Length;
-        uint TimeStamp;
-        UnicodeStringOut DosPath;
+        public ushort Flags;
+        public ushort Length;
+        public uint TimeStamp;
+        public UnicodeStringOut DosPath;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -814,32 +814,91 @@ namespace NtApiDotNet
         }
     }
 
-    /// <summary>
-    /// Partial definition of the PEB
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
-    public struct PartialPeb
+    [Flags]
+    public enum PebFlags : byte
     {
-        public byte InheritedAddressSpace;
-        public byte ReadImageFileExecOptions;
-        public byte BeingDebugged;
-        public byte SpareBool;
-        public IntPtr Mutant;
-        public IntPtr ImageBaseAddress;
+        None = 0,
+        ImageUsesLargePages = 0x01,
+        IsProtectedProcess = 0x02,
+        IsImageDynamicallyRelocated = 0x04,
+        SkipPatchingUser32Forwarders = 0x08,
+        IsPackagedProcess = 0x10,
+        IsAppContainer = 0x20,
+        IsProtectedProcessLight = 0x40,
+        IsLongPathAwareProcess = 0x80,
+    }
+
+    public interface IPeb
+    {
+        PebFlags GetPebFlags();
+        IntPtr GetImageBaseAddress();
+        IntPtr GetProcessHeap();
     }
 
     /// <summary>
     /// Partial definition of the PEB
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public struct PartialPeb32
+    public struct PartialPeb : IPeb
     {
         public byte InheritedAddressSpace;
         public byte ReadImageFileExecOptions;
         public byte BeingDebugged;
-        public byte SpareBool;
+        public PebFlags PebFlags;
+        public IntPtr Mutant;
+        public IntPtr ImageBaseAddress;
+        public IntPtr Ldr; // PPEB_LDR_DATA
+        public IntPtr ProcessParameters; // PRTL_USER_PROCESS_PARAMETERS
+        public IntPtr SubSystemData;
+        public IntPtr ProcessHeap;
+
+        IntPtr IPeb.GetImageBaseAddress()
+        {
+            return ImageBaseAddress;
+        }
+
+        PebFlags IPeb.GetPebFlags()
+        {
+            return PebFlags;
+        }
+
+        IntPtr IPeb.GetProcessHeap()
+        {
+            return ProcessHeap;
+        }
+    }
+
+    /// <summary>
+    /// Partial definition of the PEB
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PartialPeb32 : IPeb
+    {
+        public byte InheritedAddressSpace;
+        public byte ReadImageFileExecOptions;
+        public byte BeingDebugged;
+        public PebFlags PebFlags;
         public int Mutant;
         public int ImageBaseAddress;
+        public int Ldr; // PPEB_LDR_DATA
+        public int ProcessParameters; // PRTL_USER_PROCESS_PARAMETERS
+        public int SubSystemData;
+        public int ProcessHeap;
+
+        IntPtr IPeb.GetImageBaseAddress()
+        {
+            return new IntPtr(ImageBaseAddress);
+        }
+
+        PebFlags IPeb.GetPebFlags()
+        {
+            return PebFlags;
+        }
+
+        IntPtr IPeb.GetProcessHeap()
+        {
+            return new IntPtr(ProcessHeap);
+        }
     }
 
 #pragma warning restore 1591
@@ -1130,21 +1189,38 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Read a partial PEB from the process.
+        /// </summary>
+        /// <returns>The read PEB structure.</returns>
+        public IPeb GetPeb()
+        {
+            long address = PebAddress.ToInt64();
+            if (Wow64)
+            {
+                return NtVirtualMemory.ReadMemory<PartialPeb32>(Handle, address);
+            }
+            return NtVirtualMemory.ReadMemory<PartialPeb>(Handle, address);
+        }
+
+        /// <summary>
         /// Get the base address of the process from the PEB.
         /// </summary>
         public IntPtr ImageBaseAddress
         {
             get
             {
-                long address = PebAddress.ToInt64();
-                if (Wow64)
-                {
-                    return new IntPtr(NtVirtualMemory.ReadMemory<PartialPeb32>(Handle, address).ImageBaseAddress);
-                }
-                else
-                {
-                    return NtVirtualMemory.ReadMemory<PartialPeb>(Handle, address).ImageBaseAddress;
-                }
+                return GetPeb().GetImageBaseAddress();
+            }
+        }
+
+        /// <summary>
+        /// Read flags from PEB.
+        /// </summary>
+        public PebFlags PebFlags
+        {
+            get
+            {
+                return GetPeb().GetPebFlags();
             }
         }
 
