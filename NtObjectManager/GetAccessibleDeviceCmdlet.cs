@@ -200,7 +200,7 @@ namespace NtObjectManager
                 }
                 else
                 {
-                    WriteWarning("Opening {path} failed: {result.Status}");
+                    WriteWarning($"Opening {path} failed: {result.Status}");
                 }
             }
         }
