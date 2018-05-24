@@ -3268,6 +3268,16 @@ namespace NtApiDotNet
             }
         }
 
+        private static string UpperCaseString(string name)
+        {
+            StringBuilder result = new StringBuilder(name);
+            if (result.Length > 0)
+            {
+                result[0] = char.ToUpper(result[0]);
+            }
+            return result.ToString();
+        }
+
         private static string MakeFakeCapabilityName(string name)
         {
             List<string> parts = new List<string>();
@@ -3278,7 +3288,7 @@ namespace NtApiDotNet
             else
             {
                 int start = 0;
-                int index = 0;
+                int index = 1;
                 while (index < name.Length)
                 {
                     if (Char.IsUpper(name[index]))
@@ -3290,7 +3300,7 @@ namespace NtApiDotNet
                 }
 
                 parts.Add(name.Substring(start));
-                parts[0] = Char.ToUpper(parts[0][0]) + parts[0].Substring(1);
+                parts[0] = UpperCaseString(parts[0]);
             }
 
             return $@"NAMED CAPABILITIES\{String.Join(" ", parts)}";
@@ -3324,7 +3334,7 @@ namespace NtApiDotNet
                     }
                 }
 
-                if (name != null)
+                if (!string.IsNullOrWhiteSpace(name))
                 {
                     return new SidName(MakeFakeCapabilityName(name), SidNameSource.Capability);
                 }
