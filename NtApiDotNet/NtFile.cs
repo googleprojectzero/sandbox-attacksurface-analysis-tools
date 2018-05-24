@@ -290,6 +290,9 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
         public static extern RtlPathType RtlDetermineDosPathNameType_U(string Path);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlDefaultNpAcl(out IntPtr NamedPipeAcl);
     }
 
     public enum FileDisposition
@@ -4125,6 +4128,27 @@ namespace NtApiDotNet
         {
             FsControl(NtWellKnownIoControlCodes.FSCTL_PIPE_IMPERSONATE, null, null);
             return new ThreadImpersonationContext(NtThread.Current.Duplicate());
+        }
+
+        /// <summary>
+        /// Get the default named pipe ACL for the current caller.
+        /// </summary>
+        /// <returns>The default named pipe ACL.</returns>
+        public static Acl GetDefaultNamedPipeAcl()
+        {
+            IntPtr acl = IntPtr.Zero;
+            try
+            {
+                NtRtl.RtlDefaultNpAcl(out acl).ToNtException();
+                return new Acl(acl, false);
+            }
+            finally
+            {
+                if (acl != IntPtr.Zero)
+                {
+                    NtHeap.Current.Free(HeapAllocFlags.None, acl.ToInt64());
+                }
+            }
         }
     }
 

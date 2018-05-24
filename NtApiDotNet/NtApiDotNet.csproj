@@ -85,6 +85,7 @@
     <Compile Include="NtEvent.cs" />
     <Compile Include="NtException.cs" />
     <Compile Include="NtFile.cs" />
+    <Compile Include="NtHeap.cs" />
     <Compile Include="NtIoCompletion.cs" />
     <Compile Include="NtJob.cs" />
     <Compile Include="NtKey.cs" />
