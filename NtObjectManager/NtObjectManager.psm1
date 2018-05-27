@@ -2276,6 +2276,68 @@ function Format-NdrRpcServerInterface {
 
 <#
 .SYNOPSIS
+Get a mapped view of a section.
+.DESCRIPTION
+This cmdlet calls the Map method on a section to map it into memory.
+.PARAMETER Section
+The section object to map.
+.PARAMETER Protection
+The protection of the mapping.
+.PARAMETER Process
+Optional process to map the section into. Default is the current process.
+.PARAMETER ViewSize
+The size of the view to map, 0 means map the entire section.
+.PARAMETER BaseAddress
+Base address for the mapping, 0 means pick a location.
+.PARAMETER ZeroBits
+The number of zero bits in the mapping address.
+.PARAMETER CommitSize
+The size of memory to commit from the section.
+.PARAMETER SectionOffset
+Offset into the section for the base address.
+.PARAMETER SectionInherit
+Inheritance flags for the section.
+.PARAMETER AllocationType
+The allocation type for the mapping.
+.OUTPUTS
+NtApiDotNet.NtMappedSection - The mapped section.
+.EXAMPLE
+Get-NtMappedSection -Section $sect -Protection ReadWrite
+Map the section as Read/Write.
+.EXAMPLE
+Get-NtMappedSection -Section $sect -Protection ReadWrite -ViewSize 4096
+Map the first 4096 bytes of the section as Read/Write.
+.EXAMPLE
+Get-NtMappedSection -Section $sect -Protection ReadWrite -SectionOffset (64*1024)
+Map the section starting from offset 64k.
+#>
+function Get-NtMappedSection {
+    Param(
+        [parameter(Mandatory, Position=0)]
+        [NtApiDotNet.NtSection]$Section,
+        [parameter(Mandatory, Position=1)]
+        [NtApiDotNet.MemoryAllocationProtect]$Protection,
+        [NtApiDotNet.NtProcess]$Process,
+        [IntPtr]$ViewSize=0,
+        [IntPtr]$BaseAddress=0, 
+        [IntPtr]$ZeroBits=0,
+        [IntPtr]$CommitSize=0,
+        [NtApiDotNet.LargeInteger]$SectionOffset,
+        [NtApiDotNet.SectionInherit]$SectionInherit=[NtApiDotNet.SectionInherit]::ViewUnmap,
+        [NtApiDotNet.AllocationType]$AllocationType="None"
+    )
+
+    if ($Process -eq $null) {
+        $Process = Get-NtProcess -Current
+    }
+
+    $Section.Map($Process, $Protection, $ViewSize, $BaseAddress, `
+            $ZeroBits, $CommitSize, $SectionOffset, `
+            $SectionInherit, $AllocationType)
+}
+
+<#
+.SYNOPSIS
 Get a filtered token.
 .DESCRIPTION
 This is left for backwards compatibility, use 'Get-NtToken -Filtered' instead.
