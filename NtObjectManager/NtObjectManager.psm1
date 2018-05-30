@@ -2258,7 +2258,7 @@ Format-NdrRpcServerInterface $type
 Format an RPC server interface type.
 #>
 function Format-NdrRpcServerInterface {
-  [CmdletBinding()]
+    [CmdletBinding()]
     Param(
     [parameter(Mandatory, Position=0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
     [NtApiDotNet.Ndr.NdrRpcServerInterface]$RpcServer
@@ -2334,6 +2334,45 @@ function Get-NtMappedSection {
     $Section.Map($Process, $Protection, $ViewSize, $BaseAddress, `
             $ZeroBits, $CommitSize, $SectionOffset, `
             $SectionInherit, $AllocationType)
+}
+
+<#
+.SYNOPSIS
+Get registered WNF subscription.
+.DESCRIPTION
+This cmdlet gets the registered WNF entries or a specific entry from a state name.
+.PARAMETER StateName
+The statename to get.
+.PARAMETER DontCheckExists
+Specify to not check that the WNF entry exists.
+.OUTPUTS
+NtApiDotNet.NtWnf
+.EXAMPLE
+Get-NtWnf
+Get all registered WNF entries.
+.EXAMPLE
+Get-NtWnf 0x12345678 
+Get a WNF entry from a state name.
+.EXAMPLE
+Get-NtWnf 0x12345678 -DontCheckExists
+Get a WNF entry from a state name but don't check if it exists.
+#>
+function Get-NtWnf {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+        [parameter(Position=0, Mandatory, ParameterSetName="StateName")]
+        [uint64]$StateName,
+        [parameter(ParameterSetName="StateName")]
+        [switch]$DontCheckExists
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            [NtApiDotNet.NtWnf]::GetRegisteredNotifications()
+        }
+        "StateName" { 
+            [NtApiDotNet.NtWnf]::Open($StateName, -not $DontCheckExists)
+        }
+    }
 }
 
 <#
