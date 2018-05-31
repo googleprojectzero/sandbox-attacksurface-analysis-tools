@@ -35,6 +35,7 @@ namespace NtApiDotNet
         DirectImpersonation = 0x0200,
         SetLimitedInformation = 0x0400,
         QueryLimitedInformation = 0x0800,
+        Resume = 0x1000,
         AllAccess = 0x1FFFFF,
         GenericRead = GenericAccessRights.GenericRead,
         GenericWrite = GenericAccessRights.GenericWrite,
