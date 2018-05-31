@@ -84,8 +84,9 @@ namespace NtApiDotNet.Ndr
             switch (format)
             {
                 case NdrFormatCharacter.FC_BYTE:
-                case NdrFormatCharacter.FC_SMALL:
+                case NdrFormatCharacter.FC_USMALL:
                     return "byte";
+                case NdrFormatCharacter.FC_SMALL:
                 case NdrFormatCharacter.FC_CHAR:
                     return "sbyte";
                 case NdrFormatCharacter.FC_WCHAR:
@@ -126,6 +127,8 @@ namespace NtApiDotNet.Ndr
                 case NdrFormatCharacter.FC_BIND_PRIMITIVE:
                 case NdrFormatCharacter.FC_BIND_GENERIC:
                     return "handle_t";
+                case NdrFormatCharacter.FC_ERROR_STATUS_T:
+                    return "uint";
             }
 
             return String.Format("{0}", format);
