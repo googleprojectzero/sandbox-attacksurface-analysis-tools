@@ -2077,6 +2077,37 @@ namespace NtApiDotNet
         /// <param name="output_quota">Output quota</param>
         /// <param name="pipe_type">Type of pipe to create</param>
         /// <param name="read_mode">Pipe read mode</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The file instance for the pipe.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<NtNamedPipeFile> CreateNamedPipe(string name, NtObject root, FileAccessRights desired_access,
+            FileShareMode share_access, FileOpenOptions open_options, FileDisposition disposition, NamedPipeType pipe_type,
+            NamedPipeReadMode read_mode, NamedPipeCompletionMode completion_mode, int maximum_instances, int input_quota,
+            int output_quota, NtWaitTimeout default_timeout, bool throw_on_error)
+        {
+            using (ObjectAttributes obj_attributes = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
+            {
+                return CreateNamedPipe(obj_attributes, desired_access, share_access, open_options, disposition, pipe_type,
+                    read_mode, completion_mode, maximum_instances, input_quota, output_quota, default_timeout, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Create a new named pipe file
+        /// </summary>
+        /// <param name="name">The path to the pipe file</param>
+        /// <param name="root">A root object to parse relative filenames</param>
+        /// <param name="desired_access">Desired access for the file</param>
+        /// <param name="share_access">Share access for the file</param>
+        /// <param name="open_options">Open options for file</param>
+        /// <param name="disposition">Disposition when opening the file</param>
+        /// <param name="completion_mode">Pipe completion mode</param>
+        /// <param name="default_timeout">Default timeout</param>
+        /// <param name="input_quota">Input quota</param>
+        /// <param name="maximum_instances">Maximum number of instances (-1 for infinite)</param>
+        /// <param name="output_quota">Output quota</param>
+        /// <param name="pipe_type">Type of pipe to create</param>
+        /// <param name="read_mode">Pipe read mode</param>
         /// <returns>The file instance for the pipe.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtNamedPipeFile CreateNamedPipe(string name, NtObject root, FileAccessRights desired_access,
@@ -2084,11 +2115,56 @@ namespace NtApiDotNet
             NamedPipeReadMode read_mode, NamedPipeCompletionMode completion_mode, int maximum_instances, int input_quota,
             int output_quota, NtWaitTimeout default_timeout)
         {
-            using (ObjectAttributes obj_attributes = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
+            return CreateNamedPipe(name, root, desired_access, share_access, open_options, disposition, pipe_type,
+                  read_mode, completion_mode, maximum_instances, input_quota, output_quota, default_timeout, true).Result;
+        }
+
+        /// <summary>
+        /// Create an anonymous named pipe pair.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The named pipe pair.</returns>
+        public static NtResult<NtNamedPipeFilePair> CreatePipePair(bool throw_on_error)
+        {
+            using (var np_dir = Open(@"\Device\NamedPipe\", null,
+                FileAccessRights.Synchronize | FileAccessRights.GenericRead,
+                FileShareMode.Read | FileShareMode.Write, FileOpenOptions.SynchronousIoNonAlert, throw_on_error))
             {
-                return CreateNamedPipe(obj_attributes, desired_access, share_access, open_options, disposition, pipe_type,
-                    read_mode, completion_mode, maximum_instances, input_quota, output_quota, default_timeout);
+                if (!np_dir.IsSuccess)
+                {
+                    return np_dir.Status.CreateResultFromError<NtNamedPipeFilePair>(false);
+                }
+                using (var list = new DisposableList())
+                {
+                    var read_pipe = list.AddResource(CreateNamedPipe(string.Empty, np_dir.Result, FileAccessRights.GenericRead | FileAccessRights.Synchronize | FileAccessRights.WriteAttributes,
+                        FileShareMode.Read | FileShareMode.Write, FileOpenOptions.SynchronousIoNonAlert, FileDisposition.Create,
+                        NamedPipeType.Bytestream, NamedPipeReadMode.ByteStream, NamedPipeCompletionMode.QueueOperation,
+                        1, 4096, 4096, new NtWaitTimeout(-1200000000), false));
+                    if (!read_pipe.IsSuccess)
+                    {
+                        return read_pipe.Status.CreateResultFromError<NtNamedPipeFilePair>(false);
+                    }
+
+                    var write_pipe = list.AddResource(Open(string.Empty, read_pipe.Result, FileAccessRights.GenericWrite | FileAccessRights.Synchronize | FileAccessRights.ReadAttributes,
+                        FileShareMode.Read | FileShareMode.Write, FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.NonDirectoryFile, false));
+                    if (!write_pipe.IsSuccess)
+                    {
+                        return write_pipe.Status.CreateResultFromError<NtNamedPipeFilePair>(false);
+                    }
+
+                    list.Clear();
+                    return new NtResult<NtNamedPipeFilePair>(NtStatus.STATUS_SUCCESS, new NtNamedPipeFilePair(read_pipe.Result, write_pipe.Result));
+                }
             }
+        }
+
+        /// <summary>
+        /// Create an anonymous named pipe pair.
+        /// </summary>
+        /// <returns>The named pipe pair.</returns>
+        public static NtNamedPipeFilePair CreatePipePair()
+        {
+            return CreatePipePair(true).Result;
         }
 
         /// <summary>
@@ -2420,15 +2496,32 @@ namespace NtApiDotNet
         /// <param name="desired_access">The desired access for the file handle</param>
         /// <param name="shared_access">The file share access</param>
         /// <param name="open_options">File open options</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The opened file</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<NtFile> Open(string path, NtObject root, FileAccessRights desired_access,
+            FileShareMode shared_access, FileOpenOptions open_options, bool throw_on_error)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
+            {
+                return Open(obja, desired_access, shared_access, open_options, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Open a file
+        /// </summary>
+        /// <param name="path">The path to the file</param>
+        /// <param name="root">The root directory if path is relative.</param>
+        /// <param name="desired_access">The desired access for the file handle</param>
+        /// <param name="shared_access">The file share access</param>
+        /// <param name="open_options">File open options</param>
         /// <returns>The opened file</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtFile Open(string path, NtObject root, FileAccessRights desired_access, 
             FileShareMode shared_access, FileOpenOptions open_options)
         {
-            using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
-            {
-                return Open(obja, desired_access, shared_access, open_options);
-            }
+            return Open(path, root, desired_access, shared_access, open_options, true).Result;
         }
 
         /// <summary>
@@ -4080,6 +4173,33 @@ namespace NtApiDotNet
             FileShareMode share_access)
         {
             VisitAccessibleFiles(visitor, desired_access, share_access, FileOpenOptions.None, false, -1, null, FileTypeMask.All);
+        }
+    }
+
+    /// <summary>
+    /// A pair of named pipes.
+    /// </summary>
+    public sealed class NtNamedPipeFilePair : IDisposable
+    {
+        /// <summary>
+        /// Read pipe for the pair.
+        /// </summary>
+        public NtNamedPipeFile ReadPipe { get; }
+        /// <summary>
+        /// Write pipe for the pair.
+        /// </summary>
+        public NtFile WritePipe { get; }
+
+        internal NtNamedPipeFilePair(NtNamedPipeFile read_pipe, 
+            NtFile write_pipe)
+        {
+            ReadPipe = read_pipe;
+            WritePipe = write_pipe;
+        }
+
+        void IDisposable.Dispose()
+        {
+            throw new NotImplementedException();
         }
     }
 
