@@ -264,7 +264,7 @@ function New-NtObjectAttributes
   )
 
   $sd = $SecurityDescriptor
-  if ($Sddl -ne $null)
+  if ($Sddl -ne "")
   {
     $sd = New-NtSecurityDescriptor -Sddl $Sddl
   }
