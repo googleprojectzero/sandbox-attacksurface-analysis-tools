@@ -3839,10 +3839,20 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="flags">Flags to set for the cache.</param>
         /// <param name="signing_level">The signing level to cache</param>
-        /// <param name="name">Optional name for the cache.</param>
-        public void SetCachedSigningLevel(int flags, SigningLevel signing_level, string name)
+        public void SetCachedSigningLevel(int flags, SigningLevel signing_level)
         {
-            SetCachedSigningLevel(flags, signing_level, new NtFile[] { this }, name);
+            SetCachedSigningLevel(flags, signing_level, null);
+        }
+
+        /// <summary>
+        /// Set the cached signing level for a file.
+        /// </summary>
+        /// <param name="flags">Flags to set for the cache.</param>
+        /// <param name="signing_level">The signing level to cache</param>
+        /// <param name="catalog_path">Optional directory path to look for catalog files.</param>
+        public void SetCachedSigningLevel(int flags, SigningLevel signing_level, string catalog_path)
+        {
+            SetCachedSigningLevel(flags, signing_level, new NtFile[] { this }, catalog_path);
         }
 
         /// <summary>
@@ -3851,10 +3861,10 @@ namespace NtApiDotNet
         /// <param name="flags">Flags to set for the cache.</param>
         /// <param name="signing_level">The signing level to cache</param>
         /// <param name="files">Files for signature.</param>
-        /// <param name="name">Optional name for the cache.</param>
-        public void SetCachedSigningLevel(int flags, SigningLevel signing_level, IEnumerable<NtFile> files, string name)
+        /// <param name="catalog_path">Optional directory path to look for catalog files.</param>
+        public void SetCachedSigningLevel(int flags, SigningLevel signing_level, IEnumerable<NtFile> files, string catalog_path)
         {
-            NtSecurity.SetCachedSigningLevel(Handle, flags, signing_level, files.Select(f => f.Handle), name);
+            NtSecurity.SetCachedSigningLevel(Handle, flags, signing_level, files.Select(f => f.Handle), catalog_path);
         }
 
         /// <summary>

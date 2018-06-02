@@ -107,12 +107,12 @@ namespace NtApiDotNet
     public class CachedSigningLevelInformation
     {
         int Size;
-        UnicodeStringIn Name;
+        UnicodeStringIn CatalogDirectory;
 
         public CachedSigningLevelInformation(string name)
         {
             Size = Marshal.SizeOf(this);
-            Name.SetString(name);
+            CatalogDirectory.SetString(name);
         }
     }
 
@@ -3249,17 +3249,17 @@ namespace NtApiDotNet
         /// <param name="flags">Flags to set for the cache.</param>
         /// <param name="signing_level">The signing level to cache</param>
         /// <param name="source_files">A list of source file for the cache.</param>
-        /// <param name="name">Optional name for the cache.</param>
+        /// <param name="catalog_path">Optional directory path to look for catalog files.</param>
         public static void SetCachedSigningLevel(SafeKernelObjectHandle handle, 
                                                  int flags, SigningLevel signing_level,
                                                  IEnumerable<SafeKernelObjectHandle> source_files,
-                                                 string name)
+                                                 string catalog_path)
         {
             IntPtr[] handles = source_files?.Select(f => f.DangerousGetHandle()).ToArray();
             int handles_count = handles == null ? 0 : handles.Length;
-            if (name != null)
+            if (catalog_path != null)
             {
-                CachedSigningLevelInformation info = new CachedSigningLevelInformation(name);
+                CachedSigningLevelInformation info = new CachedSigningLevelInformation(catalog_path);
                 NtSystemCalls.NtSetCachedSigningLevel2(flags, signing_level, handles, handles_count, handle, info).ToNtException();
             }
             else
