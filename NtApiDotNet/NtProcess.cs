@@ -228,6 +228,7 @@ namespace NtApiDotNet
         Lsa,
         Windows,
         WinTcb,
+        System
     }
 
     [StructLayout(LayoutKind.Sequential)]
