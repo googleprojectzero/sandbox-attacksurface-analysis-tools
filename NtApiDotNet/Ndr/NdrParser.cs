@@ -123,17 +123,34 @@ namespace NtApiDotNet.Ndr
             int dispatch_count, NdrTypeCache type_cache, ISymbolResolver symbol_resolver, IList<string> names)
         {
             RPC_SYNTAX_IDENTIFIER transfer_syntax = server_info.GetTransferSyntax(reader);
+
+            IntPtr proc_str = IntPtr.Zero;
+            IntPtr fmt_str_ofs = IntPtr.Zero;
+
             if (transfer_syntax.SyntaxGUID != NdrNativeUtils.DCE_TransferSyntax)
             {
-                throw new NdrParserException("Can't parse NDR64 syntax data");
+                MIDL_SYNTAX_INFO[] syntax_info = server_info.GetSyntaxInfo(reader);
+                if (!syntax_info.Any(s => s.TransferSyntax.SyntaxGUID == NdrNativeUtils.DCE_TransferSyntax))
+                {
+                    throw new NdrParserException("Can't parse NDR64 syntax data");
+                }
+                MIDL_SYNTAX_INFO dce_syntax_info = syntax_info.First(s => s.TransferSyntax.SyntaxGUID == NdrNativeUtils.DCE_TransferSyntax);
+                proc_str = dce_syntax_info.ProcString;
+                fmt_str_ofs = dce_syntax_info.FmtStringOffset;
             }
+            else
+            {
+                proc_str = server_info.ProcString;
+                fmt_str_ofs = server_info.FmtStringOffset;
+            }
+
             IntPtr[] dispatch_funcs = server_info.GetDispatchTable(reader, dispatch_count);
             MIDL_STUB_DESC stub_desc = server_info.GetStubDesc(reader);
             IntPtr type_desc = stub_desc.pFormatTypes;
             List<NdrProcedureDefinition> procs = new List<NdrProcedureDefinition>();
             for (int i = start_offset; i < dispatch_count; ++i)
             {
-                int fmt_ofs = reader.ReadInt16(server_info.FmtStringOffset + i * 2);
+                int fmt_ofs = reader.ReadInt16(fmt_str_ofs + i * 2);
                 if (fmt_ofs >= 0)
                 {
                     string name = null;
@@ -141,7 +158,7 @@ namespace NtApiDotNet.Ndr
                     {
                         name = names[i - start_offset];
                     }
-                    procs.Add(new NdrProcedureDefinition(reader, type_cache, symbol_resolver, stub_desc, server_info.ProcString + fmt_ofs, type_desc, dispatch_funcs[i], name));
+                    procs.Add(new NdrProcedureDefinition(reader, type_cache, symbol_resolver, stub_desc, proc_str + fmt_ofs, type_desc, dispatch_funcs[i], name));
                 }
             }
             return procs.AsReadOnly();

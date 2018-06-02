@@ -304,6 +304,46 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MIDL_SYNTAX_INFO32 : IConvertToNative<MIDL_SYNTAX_INFO>
+    {
+        public RPC_SYNTAX_IDENTIFIER TransferSyntax;
+        public IntPtr32 DispatchTable; // RPC_DISPATCH_TABLE
+        public IntPtr32 ProcString; // PFORMAT_STRING 
+        public IntPtr32 FmtStringOffset; // const unsigned short* 
+        public IntPtr32 TypeString; // PFORMAT_STRING 
+        public IntPtr32 aUserMarshalQuadruple; // const void* 
+        public IntPtr32 pMethodProperties; // const MIDL_INTERFACE_METHOD_PROPERTIES* 
+        public IntPtr32 pReserved2;
+
+        public MIDL_SYNTAX_INFO Convert()
+        {
+            MIDL_SYNTAX_INFO ret = new MIDL_SYNTAX_INFO();
+            ret.TransferSyntax = TransferSyntax;
+            ret.DispatchTable = DispatchTable.Convert();
+            ret.ProcString = ProcString.Convert();
+            ret.FmtStringOffset = ProcString.Convert();
+            ret.TypeString = TypeString.Convert();
+            ret.aUserMarshalQuadruple = aUserMarshalQuadruple.Convert();
+            ret.pMethodProperties = pMethodProperties.Convert();
+            ret.pReserved2 = pReserved2.Convert();
+            return ret;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential), CrossBitnessType(typeof(MIDL_SYNTAX_INFO32))]
+    internal struct MIDL_SYNTAX_INFO
+    {
+        public RPC_SYNTAX_IDENTIFIER TransferSyntax;
+        public IntPtr DispatchTable; // RPC_DISPATCH_TABLE
+        public IntPtr ProcString; // PFORMAT_STRING 
+        public IntPtr FmtStringOffset; // const unsigned short* 
+        public IntPtr TypeString; // PFORMAT_STRING 
+        public IntPtr aUserMarshalQuadruple; // const void* 
+        public IntPtr pMethodProperties; // const MIDL_INTERFACE_METHOD_PROPERTIES* 
+        public IntPtr pReserved2;
+    }
+
     [StructLayout(LayoutKind.Sequential), CrossBitnessType(typeof(MIDL_STUB_DESC32))]
     internal struct MIDL_STUB_DESC
     {
@@ -370,6 +410,15 @@ namespace NtApiDotNet.Ndr
                 return new RPC_SYNTAX_IDENTIFIER() { SyntaxGUID = NdrNativeUtils.DCE_TransferSyntax };
             }
             return reader.ReadStruct<RPC_SYNTAX_IDENTIFIER>(pTransferSyntax);
+        }
+
+        public MIDL_SYNTAX_INFO[] GetSyntaxInfo(IMemoryReader reader)
+        {
+            if (nCount == IntPtr.Zero || pSyntaxInfo == IntPtr.Zero)
+            {
+                return new MIDL_SYNTAX_INFO[0];
+            }
+            return reader.ReadArray<MIDL_SYNTAX_INFO>(pSyntaxInfo, nCount.ToInt32());
         }
     }
 
