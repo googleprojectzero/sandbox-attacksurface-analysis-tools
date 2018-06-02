@@ -2377,6 +2377,36 @@ function Get-NtWnf {
 
 <#
 .SYNOPSIS
+Get the cached signing level for a file.
+.DESCRIPTION
+This cmdlet gets the cached signing level for a specified file.
+.PARAMETER Path
+The file to get the cached signing level from.
+.PARAMETER Win32Path
+Specify to treat Path as a Win32 path.
+.OUTPUTS
+NtApiDotNet.CachedSigningLevel
+.EXAMPLE
+Get-NtCachedSigningLevel \??\c:\path\to\file.dll
+Get the cached signing level from \??\c:\path\to\file.dll
+.EXAMPLE
+Get-NtCachedSigningLevel c:\path\to\file.dll -Win32Path
+Get the cached signing level from c:\path\to\file.dll converting from a win32 path.
+#>
+function Get-NtCachedSigningLevel {
+    Param(
+        [parameter(Position=0, Mandatory)]
+        [string]$Path,
+        [switch]$Win32Path
+    )
+
+    Use-NtObject($f = Get-NtFile $Path -Win32Path:$Win32Path -Access ReadData -ShareMode Read) {
+        $f.GetCachedSigningLevel()
+    }
+}
+
+<#
+.SYNOPSIS
 Get a filtered token.
 .DESCRIPTION
 This is left for backwards compatibility, use 'Get-NtToken -Filtered' instead.
