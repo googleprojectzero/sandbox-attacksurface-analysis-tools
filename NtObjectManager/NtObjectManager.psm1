@@ -487,6 +487,8 @@ Switch to specify whether the process handle is inheritable
 Switch to specify whether the thread handle is inheritable.
 .PARAMETER MitigationOptions
 Specify optional mitigation options.
+.PARAMETER ProtectionLevel
+Specify the protection level when creating a protected process.
 .PARAMETER Token
 Specify an explicit token to create the new process with.
 .PARAMETER Config
@@ -532,6 +534,8 @@ function New-Win32Process
     [switch]$InheritThreadHandle,
     [Parameter(ParameterSetName = "FromArgs")]
     [NtApiDotNet.NtToken]$Token,
+    [Parameter(ParameterSetName = "FromArgs")]
+    [NtApiDotNet.Win32.ProtectionLevel]$ProtectionLevel = "WindowsPPL",
     [Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromConfig")]
     [NtApiDotNet.Win32.Win32ProcessConfig]$Config
     )
@@ -542,7 +546,7 @@ function New-Win32Process
     -ParentProcess $ParentProcess -CreationFlags $CreationFlags -TerminateOnDispose:$TerminateOnDispose `
     -Environment $Environment -CurrentDirectory $CurrentDirectory -Desktop $Desktop -Title $Title `
     -InheritHandles:$InheritHandles -InheritProcessHandle:$InheritProcessHandle -InheritThreadHandle:$InheritThreadHandle `
-    -MitigationOptions $MitigationOptions -Token $Token
+    -MitigationOptions $MitigationOptions -Token $Token -ProtectionLevel $ProtectionLevel
   }
 
   [NtApiDotNet.Win32.Win32Process]::CreateProcess($config)
