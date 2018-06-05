@@ -980,10 +980,15 @@ namespace NtApiDotNet
 
         private T QueryFixed<T>(ProcessInformationClass info_class) where T : new()
         {
+            return QueryFixed<T>(info_class, true).Result;
+        }
+
+        private NtResult<T> QueryFixed<T>(ProcessInformationClass info_class, bool throw_on_error) where T : new()
+        {
             using (var buffer = new SafeStructureInOutBuffer<T>())
             {
-                NtSystemCalls.NtQueryInformationProcess(Handle, info_class, buffer, buffer.Length, out int return_length).ToNtException();
-                return buffer.Result;
+                return NtSystemCalls.NtQueryInformationProcess(Handle, info_class, buffer, buffer.Length, 
+                    out int return_length).CreateResult(throw_on_error, () => buffer.Result);
             }
         }
 
@@ -2153,24 +2158,17 @@ namespace NtApiDotNet
                     return (policy & 1) == 1;
                 }
 
-                try
+                var result = QueryFixed<ProcessChildProcessRestricted>(ProcessInformationClass.ProcessChildProcessInformation, false);
+                if (result.IsSuccess)
                 {
-                    var result = QueryFixed<ProcessChildProcessRestricted>(ProcessInformationClass.ProcessChildProcessInformation);
-                    return result.IsNoChildProcessRestricted != 0;
+                    return result.Result.IsNoChildProcessRestricted != 0;
                 }
-                catch (NtException)
+                var result_1709 = QueryFixed<ProcessChildProcessRestricted1709>(ProcessInformationClass.ProcessChildProcessInformation, false);
+                if (result_1709.IsSuccess)
                 {
+                    return result_1709.Result.IsNoChildProcessRestricted != 0;
                 }
-
-                try
-                {
-                    var result = QueryFixed<ProcessChildProcessRestricted1709>(ProcessInformationClass.ProcessChildProcessInformation);
-                    return result.IsNoChildProcessRestricted != 0;
-                }
-                catch (NtException)
-                {
-                    return false;
-                }
+                return false;
             }
         }
 
