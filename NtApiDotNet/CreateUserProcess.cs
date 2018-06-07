@@ -207,6 +207,22 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Access for process handle.
+        /// </summary>
+        public ProcessAccessRights ProcessDesiredAccess
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Access for thread handle.
+        /// </summary>
+        public ThreadAccessRights ThreadDesiredAccess
+        {
+            get; set; 
+        }
+
+        /// <summary>
         /// Constructor
         /// </summary>
         public CreateUserProcess()
@@ -216,6 +232,8 @@ namespace NtApiDotNet
             RuntimeData = "";
             WindowTitle = "";
             AdditionalAttributes = new List<ProcessAttribute>();
+            ProcessDesiredAccess = ProcessAccessRights.MaximumAllowed;
+            ThreadDesiredAccess = ThreadAccessRights.MaximumAllowed;
         }
 
         /// <summary>
@@ -228,8 +246,6 @@ namespace NtApiDotNet
             try
             {
                 ProcessCreateInfo create_info = new ProcessCreateInfo();
-                SafeKernelObjectHandle process_handle;
-                SafeKernelObjectHandle thread_handle;
 
                 SafeStructureInOutBuffer<ClientId> client_id = new SafeStructureInOutBuffer<ClientId>();
                 attrs.Add(ProcessAttribute.ClientId(client_id));
@@ -237,7 +253,7 @@ namespace NtApiDotNet
                 ProcessAttributeList attr_list = new ProcessAttributeList(attrs);
 
                 NtStatus status = NtSystemCalls.NtCreateUserProcess(
-                  out process_handle, out thread_handle,
+                  out SafeKernelObjectHandle process_handle, out SafeKernelObjectHandle thread_handle,
                   ProcessAccessRights.MaximumAllowed, ThreadAccessRights.MaximumAllowed,
                   null, null, ProcessCreateFlags.InheritFromParent,
                   ThreadCreateFlags.Suspended, IntPtr.Zero, create_info, attr_list).ToNtException();
@@ -304,8 +320,6 @@ namespace NtApiDotNet
             try
             {
                 ProcessCreateInfo create_info = new ProcessCreateInfo();
-                SafeKernelObjectHandle process_handle;
-                SafeKernelObjectHandle thread_handle;
 
                 attrs.Add(ProcessAttribute.ImageName(image_path));
                 SafeStructureInOutBuffer<SectionImageInformation> image_info = new SafeStructureInOutBuffer<SectionImageInformation>();
@@ -338,8 +352,8 @@ namespace NtApiDotNet
                     thread_attr = new ObjectAttributes(null, AttributeFlags.None, (NtObject)null, null, ThreadSecurityDescriptor))
                 {
                     NtStatus status = NtSystemCalls.NtCreateUserProcess(
-                      out process_handle, out thread_handle,
-                      ProcessAccessRights.MaximumAllowed, ThreadAccessRights.MaximumAllowed,
+                      out SafeKernelObjectHandle process_handle, out SafeKernelObjectHandle thread_handle,
+                      ProcessDesiredAccess, ThreadDesiredAccess,
                       proc_attr, thread_attr, ProcessFlags,
                       ThreadFlags, process_params, create_info, attr_list);
 
