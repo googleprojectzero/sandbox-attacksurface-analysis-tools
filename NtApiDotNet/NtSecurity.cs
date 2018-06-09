@@ -79,19 +79,121 @@ namespace NtApiDotNet
         public int AclBytesFree;
     }
 
+    public enum HashAlgorithm
+    {
+        Unknown = 0,
+        Sha1 = 0x8004,
+        Sha256 = 0x800C,
+        Sha384 = 0x800D,
+        Sha512 = 0x800E
+    }
+
+    [Flags]
+    public enum CachedSigningLevelFlags
+    {
+        None = 0,
+        UntrustedSignature = 1,
+        TrustedSignature = 2,
+        Unknown4 = 4,
+        DontUseUSNJournal = 8,
+        HasPerAppRules = 0x10,
+        SetInTestMode = 0x20,
+        ProtectedLightVerification = 0x40
+    }
+
     public class CachedSigningLevel
     {
-        public int Flags { get; private set; }
-        public SigningLevel SigningLevel { get; private set; }
-        public byte[] Thumbprint { get; private set; }
-        public int ThumbprintAlgorithm { get; private set; }
+        public CachedSigningLevelFlags Flags { get; }
+        public SigningLevel SigningLevel { get; }
+        public byte[] Thumbprint { get; }
+        public HashAlgorithm ThumbprintAlgorithm { get; }
 
-        internal CachedSigningLevel(int flags, SigningLevel signing_level, byte[] thumb_print, int thumb_print_algo)
+        internal CachedSigningLevel(int flags, SigningLevel signing_level, byte[] thumbprint, HashAlgorithm thumbprint_algo)
         {
-            Flags = flags;
+            Flags = (CachedSigningLevelFlags)flags;
             SigningLevel = signing_level;
-            Thumbprint = thumb_print;
-            ThumbprintAlgorithm = thumb_print_algo;
+            Thumbprint = thumbprint;
+            ThumbprintAlgorithm = thumbprint_algo;
+        }
+    }
+
+    public enum CachedSigningLevelBlobType
+    {
+        FileHash,
+        SignerHash,
+        WIMGuid,
+        Timestamp,
+        DGPolicyHash,
+        AntiCheatPolicyHash
+    }
+
+    public class CachedSigningLevelBlob
+    {
+        public CachedSigningLevelBlobType BlobType { get; }
+        public byte[] Data { get; }
+        internal CachedSigningLevelBlob(CachedSigningLevelBlobType blob_type, byte[] data)
+        {
+            BlobType = blob_type;
+            Data = data;
+        }
+
+        public override string ToString()
+        {
+            return $"Type {BlobType} - Length {Data.Length}";
+        }
+
+        internal static CachedSigningLevelBlob ReadBlob(BinaryReader reader)
+        {
+            int blob_size = reader.ReadByte();
+            CachedSigningLevelBlobType type = (CachedSigningLevelBlobType)reader.ReadByte();
+            byte[] data = reader.ReadAllBytes(blob_size - 2);
+            switch (type)
+            {
+                case CachedSigningLevelBlobType.SignerHash:
+                case CachedSigningLevelBlobType.FileHash:
+                case CachedSigningLevelBlobType.DGPolicyHash:
+                case CachedSigningLevelBlobType.AntiCheatPolicyHash:
+                    return new HashCachedSigningLevelBlob(type, data);
+                default:
+                    return new CachedSigningLevelBlob(type, data);
+            }
+        }
+    }
+
+    public class HashCachedSigningLevelBlob : CachedSigningLevelBlob
+    {
+        public HashAlgorithm Algorithm { get; }
+        public byte[] Hash { get; }
+
+        internal HashCachedSigningLevelBlob(CachedSigningLevelBlobType blob_type, byte[] data)
+            : base(blob_type, data)
+        {
+            Algorithm = (HashAlgorithm)BitConverter.ToInt32(data, 0);
+            int size = data[4];
+            Hash = new byte[size];
+            Buffer.BlockCopy(data, 5, Hash, 0, size); 
+        }
+
+        public override string ToString()
+        {
+            return $"Type {BlobType} - Algorithm {Algorithm} - Hash {BitConverter.ToString(Hash).Replace("-", "")}";
+        }
+    }
+
+    public class CachedSigningLevelVersion3 : CachedSigningLevel
+    {
+        public long USNJournalId { get; }
+        public DateTime LastBlackListTime { get; }
+        public IEnumerable<CachedSigningLevelBlob> ExtraData { get; }
+        
+        internal CachedSigningLevelVersion3(int flags, SigningLevel signing_level, 
+            long usn, long last_blacklist_time, IEnumerable<CachedSigningLevelBlob> extra_data,
+            byte[] thumbprint, HashAlgorithm thumbprint_algo) 
+            : base(flags, signing_level, thumbprint, thumbprint_algo)
+        {
+            USNJournalId = usn;
+            LastBlackListTime = DateTime.FromFileTime(last_blacklist_time);
+            ExtraData = extra_data;
         }
     }
 
@@ -129,11 +231,11 @@ namespace NtApiDotNet
         Microsoft = 8,
         Custom4 = 9,
         Custom5 = 10,
-        DynamicCodeGeneration = 12,
-        Windows = 13,
-        WindowsProtectedProcessLight = 14,
-        WindowsTCB = 15,
-        Custom6 = 16
+        DynamicCodeGeneration = 11,
+        Windows = 12,
+        WindowsProtectedProcessLight = 13,
+        WindowsTCB = 14,
+        Custom6 = 15
     }
 
     public class SafePrivilegeSetBuffer : SafeStructureInOutBuffer<PrivilegeSet>
@@ -370,7 +472,7 @@ namespace NtApiDotNet
           out SigningLevel SigningLevel,
           [Out] byte[] Thumbprint,
           ref int ThumbprintSize,
-          out int ThumbprintAlgorithm
+          out HashAlgorithm ThumbprintAlgorithm
         );
     }
 
@@ -3237,9 +3339,58 @@ namespace NtApiDotNet
             int thumb_print_size = thumb_print.Length;
 
             NtSystemCalls.NtGetCachedSigningLevel(handle, out int flags,
-                out SigningLevel signing_level, thumb_print, ref thumb_print_size, out int thumb_print_algo).ToNtException();
+                out SigningLevel signing_level, thumb_print, ref thumb_print_size, out HashAlgorithm thumb_print_algo).ToNtException();
             Array.Resize(ref thumb_print, thumb_print_size);
             return new CachedSigningLevel(flags, signing_level, thumb_print, thumb_print_algo);
+        }
+
+        /// <summary>
+        /// Get the cached singing level from the raw EA buffer.
+        /// </summary>
+        /// <param name="ea">The EA buffer to read the cached signing level from.</param>
+        /// <returns>The cached signing level.</returns>
+        /// <exception cref="NtException">Throw on error.</exception>
+        public static CachedSigningLevel GetCachedSigningLevelFromEa(EaBuffer ea)
+        {
+            EaBufferEntry buffer = ea.GetEntry("$KERNEL.PURGE.ESBCACHE");
+            if (buffer == null)
+            {
+                NtStatus.STATUS_OBJECT_NAME_NOT_FOUND.ToNtException();
+            }
+
+            File.WriteAllBytes("ea.bin", buffer.Data);
+
+            BinaryReader reader = new BinaryReader(new MemoryStream(buffer.Data));
+            int total_size = reader.ReadInt32();
+            int version = reader.ReadInt16();
+            if (version != 3)
+            {
+                throw new ArgumentException("Only support parsing version 3 cached signing level buffers");
+            }
+            
+            int version2 = reader.ReadByte();
+            int policy = reader.ReadByte();
+            long usn = reader.ReadInt64();
+            long last_blacklist_time = reader.ReadInt64();
+            int flags = reader.ReadInt32();
+            int extra_size = reader.ReadUInt16();
+            long end_size = reader.BaseStream.Position + extra_size;
+            List<CachedSigningLevelBlob> extra_data = new List<CachedSigningLevelBlob>();
+            HashCachedSigningLevelBlob thumbprint = null;
+            while (reader.BaseStream.Position < end_size)
+            {
+                CachedSigningLevelBlob blob = CachedSigningLevelBlob.ReadBlob(reader);
+                if (blob.BlobType == CachedSigningLevelBlobType.SignerHash)
+                {
+                    thumbprint = (HashCachedSigningLevelBlob)blob;
+                }
+                extra_data.Add(blob);
+            }
+
+            return new CachedSigningLevelVersion3(flags, (SigningLevel)policy, usn,
+                last_blacklist_time, extra_data.AsReadOnly(), 
+                    thumbprint != null ? thumbprint.Hash : new byte[0], 
+                    thumbprint != null ? thumbprint.Algorithm : 0);
         }
 
         /// <summary>
