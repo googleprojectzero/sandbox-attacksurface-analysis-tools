@@ -180,6 +180,21 @@ namespace NtApiDotNet
             }
         }
 
+        internal static string ToHexString(this byte[] ba, int offset, int length)
+        {
+            return BitConverter.ToString(ba, offset, length).Replace("-", string.Empty);
+        }
+
+        internal static string ToHexString(this byte[] ba, int offset)
+        {
+            return BitConverter.ToString(ba, offset).Replace("-", string.Empty);
+        }
+
+        internal static string ToHexString(this byte[] ba)
+        {
+            return BitConverter.ToString(ba).Replace("-", string.Empty);
+        }
+
         /// <summary>
         /// Convert an access rights type to a string.
         /// </summary>

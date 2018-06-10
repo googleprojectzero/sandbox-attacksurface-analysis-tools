@@ -105,15 +105,17 @@ namespace NtApiDotNet
     {
         public CachedSigningLevelFlags Flags { get; }
         public SigningLevel SigningLevel { get; }
-        public byte[] Thumbprint { get; }
+        public string Thumbprint { get; }
+        public byte[] ThumbprintBytes { get; }
         public HashAlgorithm ThumbprintAlgorithm { get; }
 
         internal CachedSigningLevel(int flags, SigningLevel signing_level, byte[] thumbprint, HashAlgorithm thumbprint_algo)
         {
             Flags = (CachedSigningLevelFlags)flags;
             SigningLevel = signing_level;
-            Thumbprint = thumbprint;
+            ThumbprintBytes = thumbprint;
             ThumbprintAlgorithm = thumbprint_algo;
+            Thumbprint = thumbprint.ToHexString();
         }
     }
 
@@ -180,17 +182,76 @@ namespace NtApiDotNet
         }
     }
 
-    public class CachedSigningLevelVersion3 : CachedSigningLevel
+    public class CachedSigningLevelEaBuffer : CachedSigningLevel
     {
+        public int Version { get; }
+        public int Version2 { get; }
+        public long USNJournalId { get; }
+        public DateTime LastBlackListTime { get; }
+        public string Hash { get; }
+        public byte[] HashBytes { get; }
+        public HashAlgorithm HashAlgorithm { get; }
+        public int Sequence { get; }
+
+        internal CachedSigningLevelEaBuffer(int version2, int flags, SigningLevel signing_level,
+            long usn, long last_blacklist_time, int sequence, byte[] thumbprint, 
+            HashAlgorithm thumbprint_algo, byte[] hash, HashAlgorithm hash_algo)
+            : base(flags, signing_level, thumbprint, thumbprint_algo)
+        {
+            Version = 1;
+            Version2 = version2;
+            USNJournalId = usn;
+            LastBlackListTime = DateTime.FromFileTime(last_blacklist_time);
+            Sequence = sequence;
+            Hash = hash.ToHexString();
+            HashBytes = hash;
+            HashAlgorithm = hash_algo;
+        }
+    }
+
+    public class CachedSigningLevelEaBufferV2 : CachedSigningLevel
+    {
+        public int Version { get; }
+        public int Version2 { get; }
+        public long USNJournalId { get; }
+        public DateTime LastBlackListTime { get; }
+        public string Hash { get; }
+        public byte[] HashBytes { get; }
+        public HashAlgorithm HashAlgorithm { get; }
+        public DateTime LastTimeStamp { get; }
+
+        internal CachedSigningLevelEaBufferV2(int version2, int flags, SigningLevel signing_level,
+            long usn, long last_blacklist_time, long last_timestamp,
+            byte[] thumbprint, HashAlgorithm thumbprint_algo, byte[] hash, HashAlgorithm hash_algo)
+            : base(flags, signing_level, thumbprint, thumbprint_algo)
+        {
+            Version = 2;
+            Version2 = version2;
+            USNJournalId = usn;
+            LastBlackListTime = DateTime.FromFileTime(last_blacklist_time);
+            LastTimeStamp = DateTime.FromFileTime(last_timestamp);
+            Hash = hash.ToHexString();
+            HashBytes = hash;
+            HashAlgorithm = hash_algo;
+        }
+    }
+
+    public class CachedSigningLevelEaBufferV3 : CachedSigningLevel
+    {
+        public int Version { get; }
+        public int Version2 { get; }
         public long USNJournalId { get; }
         public DateTime LastBlackListTime { get; }
         public IEnumerable<CachedSigningLevelBlob> ExtraData { get; }
-        
-        internal CachedSigningLevelVersion3(int flags, SigningLevel signing_level, 
+
+        internal CachedSigningLevelEaBufferV3(int version2, int flags, SigningLevel signing_level,
             long usn, long last_blacklist_time, IEnumerable<CachedSigningLevelBlob> extra_data,
-            byte[] thumbprint, HashAlgorithm thumbprint_algo) 
-            : base(flags, signing_level, thumbprint, thumbprint_algo)
+            HashCachedSigningLevelBlob thumbprint)
+            : base(flags, signing_level, thumbprint != null ? thumbprint.Hash : new byte[0], 
+                  thumbprint != null ? thumbprint.Algorithm : 0)
         {
+            Version = 3;
+            Version2 = version2;
             USNJournalId = usn;
             LastBlackListTime = DateTime.FromFileTime(last_blacklist_time);
             ExtraData = extra_data;
@@ -3344,30 +3405,48 @@ namespace NtApiDotNet
             return new CachedSigningLevel(flags, signing_level, thumb_print, thumb_print_algo);
         }
 
-        /// <summary>
-        /// Get the cached singing level from the raw EA buffer.
-        /// </summary>
-        /// <param name="ea">The EA buffer to read the cached signing level from.</param>
-        /// <returns>The cached signing level.</returns>
-        /// <exception cref="NtException">Throw on error.</exception>
-        public static CachedSigningLevel GetCachedSigningLevelFromEa(EaBuffer ea)
+        private static CachedSigningLevelEaBuffer ReadCachedSigningLevelVersion1(BinaryReader reader)
         {
-            EaBufferEntry buffer = ea.GetEntry("$KERNEL.PURGE.ESBCACHE");
-            if (buffer == null)
-            {
-                NtStatus.STATUS_OBJECT_NAME_NOT_FOUND.ToNtException();
-            }
+            int version2 = reader.ReadInt16();
+            int flags = reader.ReadInt32();
+            int policy = reader.ReadInt32();
+            long last_blacklist_time = reader.ReadInt64();
+            int sequence = reader.ReadInt32();
+            byte[] thumbprint = reader.ReadAllBytes(64);
+            int thumbprint_size = reader.ReadInt32();
+            Array.Resize(ref thumbprint, thumbprint_size);
+            HashAlgorithm thumbprint_algo = (HashAlgorithm)reader.ReadInt32();
+            byte[] hash = reader.ReadAllBytes(64);
+            int hash_size = reader.ReadInt32();
+            Array.Resize(ref hash, hash_size);
+            HashAlgorithm hash_algo = (HashAlgorithm)reader.ReadInt32();
+            long usn = reader.ReadInt64();
+           
+            return new CachedSigningLevelEaBuffer(version2, flags, (SigningLevel)policy, usn,
+                last_blacklist_time, sequence, thumbprint, thumbprint_algo, hash, hash_algo);
+        }
 
-            File.WriteAllBytes("ea.bin", buffer.Data);
-
-            BinaryReader reader = new BinaryReader(new MemoryStream(buffer.Data));
-            int total_size = reader.ReadInt32();
-            int version = reader.ReadInt16();
-            if (version != 3)
-            {
-                throw new ArgumentException("Only support parsing version 3 cached signing level buffers");
-            }
+        private static CachedSigningLevelEaBufferV2 ReadCachedSigningLevelVersion2(BinaryReader reader)
+        {
+            int version2 = reader.ReadInt16();
+            int flags = reader.ReadInt32();
+            int policy = reader.ReadInt32();
+            long last_blacklist_time = reader.ReadInt64();
+            long last_timestamp = reader.ReadInt64();
+            int thumbprint_size = reader.ReadInt32();
+            HashAlgorithm thumbprint_algo = (HashAlgorithm) reader.ReadInt32();
+            int hash_size = reader.ReadInt32();
+            HashAlgorithm hash_algo = (HashAlgorithm) reader.ReadInt32();
+            long usn = reader.ReadInt64();
+            byte[] thumbprint = reader.ReadAllBytes(thumbprint_size);
+            byte[] hash = reader.ReadAllBytes(hash_size);
             
+            return new CachedSigningLevelEaBufferV2(version2, flags, (SigningLevel)policy, usn,
+                last_blacklist_time, last_timestamp, thumbprint, thumbprint_algo, hash, hash_algo);
+        }
+
+        private static CachedSigningLevelEaBufferV3 ReadCachedSigningLevelVersion3(BinaryReader reader)
+        {
             int version2 = reader.ReadByte();
             int policy = reader.ReadByte();
             long usn = reader.ReadInt64();
@@ -3387,10 +3466,38 @@ namespace NtApiDotNet
                 extra_data.Add(blob);
             }
 
-            return new CachedSigningLevelVersion3(flags, (SigningLevel)policy, usn,
-                last_blacklist_time, extra_data.AsReadOnly(), 
-                    thumbprint != null ? thumbprint.Hash : new byte[0], 
-                    thumbprint != null ? thumbprint.Algorithm : 0);
+            return new CachedSigningLevelEaBufferV3(version2, flags, (SigningLevel)policy, usn,
+                last_blacklist_time, extra_data.AsReadOnly(), thumbprint);
+        }
+
+        /// <summary>
+        /// Get the cached singing level from the raw EA buffer.
+        /// </summary>
+        /// <param name="ea">The EA buffer to read the cached signing level from.</param>
+        /// <returns>The cached signing level.</returns>
+        /// <exception cref="NtException">Throw on error.</exception>
+        public static CachedSigningLevel GetCachedSigningLevelFromEa(EaBuffer ea)
+        {
+            EaBufferEntry buffer = ea.GetEntry("$KERNEL.PURGE.ESBCACHE");
+            if (buffer == null)
+            {
+                NtStatus.STATUS_OBJECT_NAME_NOT_FOUND.ToNtException();
+            }
+
+            BinaryReader reader = new BinaryReader(new MemoryStream(buffer.Data));
+            int total_size = reader.ReadInt32();
+            int version = reader.ReadInt16();
+            switch (version)
+            {
+                case 1:
+                    return ReadCachedSigningLevelVersion1(reader);
+                case 2:
+                    return ReadCachedSigningLevelVersion2(reader);
+                case 3:
+                    return ReadCachedSigningLevelVersion3(reader);
+                default:
+                    throw new ArgumentException($"Unsupported cached signing level buffer version {version}");
+            }
         }
 
         /// <summary>
