@@ -3835,6 +3835,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the cached singing level from the raw EA buffer.
+        /// </summary>
+        /// <returns>The cached signing level data.</returns>
+        /// <exception cref="NtException">Throw on error.</exception>
+        public CachedSigningLevel GetCachedSigningLevelFromEa()
+        {
+            return NtSecurity.GetCachedSigningLevelFromEa(GetEa());
+        }
+
+        /// <summary>
         /// Set the cached signing level for a file.
         /// </summary>
         /// <param name="flags">Flags to set for the cache.</param>

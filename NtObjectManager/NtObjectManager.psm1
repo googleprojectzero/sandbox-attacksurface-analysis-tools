@@ -2388,6 +2388,8 @@ This cmdlet gets the cached signing level for a specified file.
 The file to get the cached signing level from.
 .PARAMETER Win32Path
 Specify to treat Path as a Win32 path.
+.PARAMETER FromEa
+Specify whether to the read the cached signing level from the extended attribute.
 .OUTPUTS
 NtApiDotNet.CachedSigningLevel
 .EXAMPLE
@@ -2396,16 +2398,30 @@ Get the cached signing level from \??\c:\path\to\file.dll
 .EXAMPLE
 Get-NtCachedSigningLevel c:\path\to\file.dll -Win32Path
 Get the cached signing level from c:\path\to\file.dll converting from a win32 path.
+.EXAMPLE
+Get-NtCachedSigningLevel \??\c:\path\to\file.dll -FromEa
+Get the cached signing level from \??\c:\path\to\file.dll using the extended attribute.
 #>
 function Get-NtCachedSigningLevel {
     Param(
         [parameter(Position=0, Mandatory)]
         [string]$Path,
-        [switch]$Win32Path
+        [switch]$Win32Path,
+        [switch]$FromEa
     )
 
-    Use-NtObject($f = Get-NtFile $Path -Win32Path:$Win32Path -Access ReadData -ShareMode Read) {
-        $f.GetCachedSigningLevel()
+    $access = if ($FromEa) {
+        [NtApiDotNet.FileAccessRights]::ReadEa
+    } else {
+        [NtApiDotNet.FileAccessRights]::ReadData
+    }
+
+    Use-NtObject($f = Get-NtFile $Path -Win32Path:$Win32Path -Access $access -ShareMode Read) {
+        if ($FromEa) {
+            $f.GetCachedSigningLevelFromEa();
+        } else {
+            $f.GetCachedSigningLevel()
+        }
     }
 }
 
