@@ -2234,5 +2234,29 @@ namespace NtApiDotNet
                     TokenAccessRights.Query, false).RunAndDispose(token => token.IsSandbox);
             }
         }
+
+        /// <summary>
+        /// Get or set the hard error mode.
+        /// </summary>
+        public int HardErrorMode
+        {
+            get
+            {
+                var result = QueryFixed<int>(ProcessInformationClass.ProcessDefaultHardErrorMode, false);
+                if (result.IsSuccess)
+                {
+                    return result.Result;
+                }
+                return 0;
+            }
+
+            set
+            {
+                using (var buffer = value.ToBuffer())
+                {
+                    NtSystemCalls.NtSetInformationProcess(Handle, ProcessInformationClass.ProcessDefaultHardErrorMode, buffer, buffer.Length).ToNtException();
+                }
+            }
+        }
     }
 }
