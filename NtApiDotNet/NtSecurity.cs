@@ -2740,6 +2740,9 @@ namespace NtApiDotNet
                 case 1024:
                     protection_level = "Authenticode";
                     break;
+                case 1536:
+                    protection_level = "AntiMalware";
+                    break;
                 case 2048:
                     protection_level = "App";
                     break;
