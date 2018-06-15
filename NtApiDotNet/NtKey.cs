@@ -983,14 +983,7 @@ namespace NtApiDotNet
             }
         }
 
-        /// <summary>
-        /// Return a list of subkeys which can be accessed.
-        /// </summary>
-        /// <param name="desired_access">The required access rights for the subkeys</param>
-        /// <param name="open_link">True to open link keys rather than following the link.</param>
-        /// <param name="open_for_backup">True to open keys with backup flag set.</param>
-        /// <returns>The disposable list of subkeys.</returns>
-        public IEnumerable<NtKey> QueryAccessibleKeys(KeyAccessRights desired_access, bool open_link, bool open_for_backup)
+        private IEnumerable<NtKey> QueryAccessibleKeys(KeyAccessRights desired_access, bool open_link, bool open_for_backup, bool ignore_predefined_keys)
         {
             List<NtKey> ret = new List<NtKey>();
             AttributeFlags flags = AttributeFlags.CaseInsensitive;
@@ -1006,7 +999,7 @@ namespace NtApiDotNet
                     using (ObjectAttributes obja = new ObjectAttributes(name, flags, this))
                     {
                         var result = Open(obja, desired_access, open_for_backup ? KeyCreateOptions.BackupRestore : 0, false);
-                        if (result.IsSuccess)
+                        if (result.IsSuccess && (!ignore_predefined_keys || result.Status != NtStatus.STATUS_PREDEFINED_HANDLE))
                         {
                             ret.Add(result.Result);
                         }
@@ -1014,6 +1007,18 @@ namespace NtApiDotNet
                 }
             }
             return ret;
+        }
+
+        /// <summary>
+        /// Return a list of subkeys which can be accessed.
+        /// </summary>
+        /// <param name="desired_access">The required access rights for the subkeys</param>
+        /// <param name="open_link">True to open link keys rather than following the link.</param>
+        /// <param name="open_for_backup">True to open keys with backup flag set.</param>
+        /// <returns>The disposable list of subkeys.</returns>
+        public IEnumerable<NtKey> QueryAccessibleKeys(KeyAccessRights desired_access, bool open_link, bool open_for_backup)
+        {
+            return QueryAccessibleKeys(desired_access, open_link, open_for_backup, false);
         }
 
         /// <summary>
@@ -1606,7 +1611,7 @@ namespace NtApiDotNet
                     return true;
                 }
 
-                using (var keys = for_enum.Result.QueryAccessibleKeys(desired_access, true, open_for_backup).ToDisposableList())
+                using (var keys = for_enum.Result.QueryAccessibleKeys(desired_access, true, open_for_backup, true).ToDisposableList())
                 {
                     if (max_depth > 0)
                     {
