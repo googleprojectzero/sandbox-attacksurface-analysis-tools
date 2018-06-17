@@ -208,6 +208,10 @@ namespace NtApiDotNet.Win32
     public enum ProtectionLevel
     {
         /// <summary>
+        /// None
+        /// </summary>
+        None = -2,
+        /// <summary>
         /// Safe level as parent.
         /// </summary>
         Same = -1,
@@ -242,7 +246,11 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Authenticode PP
         /// </summary>
-        AuthenticodePP = 7
+        AuthenticodePP = 7,
+        /// <summary>
+        /// App PPL
+        /// </summary>
+        AppPPL = 8
     }
 
     class ProcessAttributes
@@ -733,7 +741,7 @@ namespace NtApiDotNet.Win32
                 attr_list.AddAttributeBuffer(ProcessAttributes.ProcThreadAttributeWin32kFilter, resources.AddResource(filter.ToBuffer()));
             }
 
-            if ((CreationFlags & CreateProcessFlags.ProtectedProcess) != 0)
+            if ((CreationFlags & CreateProcessFlags.ProtectedProcess) != 0 && ProtectionLevel != ProtectionLevel.None)
             {
                 attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeProtectionLevel, (int)ProtectionLevel);
             }
