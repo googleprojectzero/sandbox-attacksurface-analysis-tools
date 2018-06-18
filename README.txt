@@ -21,6 +21,20 @@ with .NET Core 2.0 by building the specific project files.
 
 Release Notes:
 
+1.1.15
+------
+* Convert access exceptions during NDR parsing into an NdrParser exception rather than crashing the process.
+* Added function to enumerate running services with PIDs.
+* Added methods to load module into a symbol resolver after creation.
+* Added basic support for WNF registrations including a Get-NtWnf cmdlet.
+* Expose all parameters for section mapping.
+* Added a Get-NtMappedSection cmdlet.
+* Various fixes to NDR decoding.
+* Added method to create an anonymous named pipe pair.
+* Rework of cached signing level, including unpacked EA data based on information provided by Alex Ionescu.
+* Added protection level to the base New-Win32Process function.
+* Added access rights for process creation.
+
 1.1.14
 ------
 * Added basic support for transaction objects.
