@@ -104,7 +104,7 @@ namespace NtApiDotNet
     [StructLayout(LayoutKind.Sequential)]
     public struct ObjectBasicInformation
     {
-        public int Attributes;
+        public AttributeFlags Attributes;
         public uint DesiredAccess;
         public int HandleCount;
         public int ReferenceCount;
@@ -160,12 +160,12 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtQueryObject(
-		    SafeHandle ObjectHandle,
+            SafeHandle ObjectHandle,
             ObjectInformationClass ObjectInformationClass,
-		    SafeBuffer ObjectInformation,
+            SafeBuffer ObjectInformation,
             int ObjectInformationLength,
-		    out int ReturnLength
-		);
+            out int ReturnLength
+        );
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtSetInformationObject(
@@ -835,6 +835,39 @@ namespace NtApiDotNet
             get
             {
                 return DateTime.FromFileTime(_basic_information.CreationTime.QuadPart);
+            }
+        }
+
+        /// <summary>
+        /// Get the attribute flags for the object.
+        /// </summary>
+        public AttributeFlags AttributesFlags
+        {
+            get
+            {
+                return _basic_information.Attributes;
+            }
+        }
+
+        /// <summary>
+        /// Get number of handles for this object.
+        /// </summary>
+        public int HandleCount
+        {
+            get
+            {
+                return QueryBasicInformation(Handle).HandleCount;
+            }
+        }
+
+        /// <summary>
+        /// Get reference count for this object.
+        /// </summary>
+        public int ReferenceCount
+        {
+            get
+            {
+                return QueryBasicInformation(Handle).ReferenceCount;
             }
         }
         
