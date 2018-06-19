@@ -2462,6 +2462,7 @@ namespace NtApiDotNet
                 "backgroundMediaPlayback",
                 "biometricSystem",
                 "blockedChatMessages",
+                "broadFileSystemAccess",
                 "cellularDeviceControl",
                 "cellularDeviceIdentity",
                 "cellularMessaging",
