@@ -541,12 +541,13 @@ namespace NtApiDotNet
     [NtType("Key")]
     public class NtKey : NtObjectWithDuplicate<NtKey, KeyAccessRights>
     {
-        internal NtKey(SafeKernelObjectHandle handle, KeyDisposition disposition) : base(handle)
+        internal NtKey(SafeKernelObjectHandle handle, KeyDisposition disposition, bool predefined_handle) : base(handle)
         {
             Disposition = disposition;
+            PredefinedHandle = predefined_handle;
         }
 
-        internal NtKey(SafeKernelObjectHandle handle) : this(handle, KeyDisposition.OpenedExistingKey)
+        internal NtKey(SafeKernelObjectHandle handle) : this(handle, KeyDisposition.OpenedExistingKey, false)
         {
         }
 
@@ -599,7 +600,7 @@ namespace NtApiDotNet
             {
                 return NtSystemCalls.NtLoadKeyEx(key_obj_attr, file_obj_attr, flags,
                     IntPtr.Zero, IntPtr.Zero, desired_access, out SafeKernelObjectHandle key_handle, 0)
-                    .CreateResult(throw_on_error, () => new NtKey(key_handle, KeyDisposition.OpenedExistingKey));
+                    .CreateResult(throw_on_error, () => new NtKey(key_handle, KeyDisposition.OpenedExistingKey, false));
             }
             else
             {
@@ -661,7 +662,7 @@ namespace NtApiDotNet
         public static NtResult<NtKey> Create(ObjectAttributes obj_attributes, KeyAccessRights desired_access, KeyCreateOptions options, bool throw_on_error)
         {
             return NtSystemCalls.NtCreateKey(out SafeKernelObjectHandle handle, desired_access, obj_attributes, 0, null, options, out KeyDisposition disposition)
-                .CreateResult(throw_on_error, () => new NtKey(handle, disposition));
+                .CreateResult(throw_on_error, s => new NtKey(handle, disposition, s == NtStatus.STATUS_PREDEFINED_HANDLE));
         }
 
         /// <summary>
@@ -730,7 +731,7 @@ namespace NtApiDotNet
         {
             SafeKernelObjectHandle handle;
             return NtSystemCalls.NtOpenKeyEx(out handle, desired_access, obj_attributes, open_options)
-                .CreateResult(throw_on_error, () => new NtKey(handle, KeyDisposition.OpenedExistingKey));
+                .CreateResult(throw_on_error, s => new NtKey(handle, KeyDisposition.OpenedExistingKey, s == NtStatus.STATUS_PREDEFINED_HANDLE));
         }
 
         internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
@@ -1508,6 +1509,14 @@ namespace NtApiDotNet
         /// The disposition when the key was created.
         /// </summary>
         public KeyDisposition Disposition
+        {
+            get; private set;
+        }
+
+        /// <summary>
+        /// Indicates the handle is a special pre-defined one by the kernel.
+        /// </summary>
+        public bool PredefinedHandle
         {
             get; private set;
         }
