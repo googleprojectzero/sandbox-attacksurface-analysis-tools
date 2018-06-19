@@ -60,7 +60,7 @@ namespace NtApiDotNet
     /// Class to represent a registry transaction object
     /// </summary>
     [NtType("RegistryTransaction")]
-    public class NtRegistryTransaction : NtObjectWithDuplicate<NtRegistryTransaction, RegistryTransactionAccessRights>
+    public class NtRegistryTransaction : NtObjectWithDuplicate<NtRegistryTransaction, RegistryTransactionAccessRights>, INtTransaction
     {
         internal NtRegistryTransaction(SafeKernelObjectHandle handle) : base(handle)
         {

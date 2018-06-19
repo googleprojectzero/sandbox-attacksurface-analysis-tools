@@ -321,7 +321,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtOpenKeyTransacted(out SafeKernelObjectHandle KeyHandle, KeyAccessRights DesiredAccess, [In] ObjectAttributes ObjectAttributes, [In] SafeKernelObjectHandle TransactionHandle);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtOpenKeyTransactedEx(out SafeKernelObjectHandle KeyHandle, KeyAccessRights DesiredAccess, [In] ObjectAttributes ObjectAttributes, int OpenOptions, [In] SafeKernelObjectHandle TransactionHandle);
+        public static extern NtStatus NtOpenKeyTransactedEx(out SafeKernelObjectHandle KeyHandle, KeyAccessRights DesiredAccess, [In] ObjectAttributes ObjectAttributes, KeyCreateOptions OpenOptions, [In] SafeKernelObjectHandle TransactionHandle);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtCreateKeyTransacted(
@@ -657,12 +657,37 @@ namespace NtApiDotNet
         /// <param name="obj_attributes">Object attributes for the key name</param>
         /// <param name="desired_access">Desired access for the root key</param>
         /// <param name="options">Create options</param>
+        /// <param name="transaction">Optional transaction object.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtKey> Create(ObjectAttributes obj_attributes, KeyAccessRights desired_access, KeyCreateOptions options, INtTransaction transaction, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle;
+            KeyDisposition disposition;
+            NtStatus status;
+
+            if (transaction != null)
+            {
+                status = NtSystemCalls.NtCreateKeyTransacted(out handle, desired_access, obj_attributes, 0, null, options, transaction.Handle, out disposition);
+            }
+            else
+            {
+                status = NtSystemCalls.NtCreateKey(out handle, desired_access, obj_attributes, 0, null, options, out disposition);
+            }
+            return status.CreateResult(throw_on_error, s => new NtKey(handle, disposition, s == NtStatus.STATUS_PREDEFINED_HANDLE));
+        }
+
+        /// <summary>
+        /// Create a new Key
+        /// </summary>
+        /// <param name="obj_attributes">Object attributes for the key name</param>
+        /// <param name="desired_access">Desired access for the root key</param>
+        /// <param name="options">Create options</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtKey> Create(ObjectAttributes obj_attributes, KeyAccessRights desired_access, KeyCreateOptions options, bool throw_on_error)
         {
-            return NtSystemCalls.NtCreateKey(out SafeKernelObjectHandle handle, desired_access, obj_attributes, 0, null, options, out KeyDisposition disposition)
-                .CreateResult(throw_on_error, s => new NtKey(handle, disposition, s == NtStatus.STATUS_PREDEFINED_HANDLE));
+            return Create(obj_attributes, desired_access, options, null, throw_on_error);
         }
 
         /// <summary>
@@ -675,7 +700,20 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey Create(ObjectAttributes obj_attributes, KeyAccessRights desired_access, KeyCreateOptions options)
         {
-            return Create(obj_attributes, desired_access, options, true).Result;
+            return Create(obj_attributes, desired_access, options, null);
+        }
+
+        /// <summary>
+        /// Create a new Key
+        /// </summary>
+        /// <param name="obj_attributes">Object attributes for the key name</param>
+        /// <param name="desired_access">Desired access for the root key</param>
+        /// <param name="options">Create options</param>
+        /// <param name="transaction">Optional transaction object.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtKey Create(ObjectAttributes obj_attributes, KeyAccessRights desired_access, KeyCreateOptions options, INtTransaction transaction)
+        {
+            return Create(obj_attributes, desired_access, options, transaction, true).Result;
         }
 
         /// <summary>
@@ -725,13 +763,35 @@ namespace NtApiDotNet
         /// <param name="obj_attributes">Object attributes for the key name</param>
         /// <param name="desired_access">Desired access for the root key</param>
         /// <param name="open_options">Open options.</param>
+        /// <param name="transaction">Optional transaction object.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtKey> Open(ObjectAttributes obj_attributes, KeyAccessRights desired_access, KeyCreateOptions open_options, INtTransaction transaction, bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle;
+            NtStatus status;
+            if (transaction != null)
+            {
+                status = NtSystemCalls.NtOpenKeyTransactedEx(out handle, desired_access, obj_attributes, open_options, transaction.Handle);
+            }
+            else
+            {
+                status = NtSystemCalls.NtOpenKeyEx(out handle, desired_access, obj_attributes, open_options);
+            }
+            return status.CreateResult(throw_on_error, s => new NtKey(handle, KeyDisposition.OpenedExistingKey, s == NtStatus.STATUS_PREDEFINED_HANDLE));
+        }
+
+        /// <summary>
+        /// Try and open a Key
+        /// </summary>
+        /// <param name="obj_attributes">Object attributes for the key name</param>
+        /// <param name="desired_access">Desired access for the root key</param>
+        /// <param name="open_options">Open options.</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtKey> Open(ObjectAttributes obj_attributes, KeyAccessRights desired_access, KeyCreateOptions open_options, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtOpenKeyEx(out handle, desired_access, obj_attributes, open_options)
-                .CreateResult(throw_on_error, s => new NtKey(handle, KeyDisposition.OpenedExistingKey, s == NtStatus.STATUS_PREDEFINED_HANDLE));
+            return Open(obj_attributes, desired_access, open_options, null, throw_on_error);
         }
 
         internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
@@ -749,7 +809,21 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey Open(ObjectAttributes obj_attributes, KeyAccessRights desired_access, KeyCreateOptions open_options)
         {
-            return Open(obj_attributes, desired_access, open_options, true).Result;
+            return Open(obj_attributes, desired_access, open_options, null);
+        }
+
+        /// <summary>
+        /// Open a Key
+        /// </summary>
+        /// <param name="obj_attributes">Object attributes for the key name</param>
+        /// <param name="desired_access">Desired access for the root key</param>
+        /// <param name="open_options">Open options.</param>
+        /// <param name="transaction">Optional transaction object.</param>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtKey Open(ObjectAttributes obj_attributes, KeyAccessRights desired_access, KeyCreateOptions open_options, INtTransaction transaction)
+        {
+            return Open(obj_attributes, desired_access, open_options, transaction, true).Result;
         }
 
         /// <summary>

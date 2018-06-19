@@ -67,6 +67,12 @@ namespace NtObjectManager
         public override string Path { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify a transaction to create the key under.</para>
+        /// </summary>
+        [Parameter]
+        public INtTransaction Transaction { get; set; }
+
+        /// <summary>
         /// Virtual method to resolve the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
@@ -89,7 +95,7 @@ namespace NtObjectManager
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            return NtKey.Open(obj_attributes, Access, Options);
+            return NtKey.Open(obj_attributes, Access, Options, Transaction);
         }
     }
 
@@ -118,7 +124,7 @@ namespace NtObjectManager
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            return NtKey.Create(obj_attributes, Access, Options);
+            return NtKey.Create(obj_attributes, Access, Options, Transaction);
         }
     }
 

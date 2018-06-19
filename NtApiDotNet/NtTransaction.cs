@@ -49,8 +49,8 @@ namespace NtApiDotNet
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCreateTransaction(out SafeKernelObjectHandle TransactionHandle, 
-                TransactionAccessRights DesiredAccess, ObjectAttributes ObjectAttributes, 
+        public static extern NtStatus NtCreateTransaction(out SafeKernelObjectHandle TransactionHandle,
+                TransactionAccessRights DesiredAccess, ObjectAttributes ObjectAttributes,
                 OptionalGuid Uow, SafeKernelObjectHandle TmHandle,
                 TransactionCreateFlags CreateOptions,
                 int IsolationLevel,
@@ -93,11 +93,39 @@ namespace NtApiDotNet
 
 #pragma warning restore 1591
 
+
+    /// <summary>
+    /// Interface to abstract the kernel transaction manager support.
+    /// </summary>
+    public interface INtTransaction
+    {
+        /// <summary>
+        /// Get handle for the transaction.
+        /// </summary>
+        SafeKernelObjectHandle Handle { get; }
+
+        /// <summary>
+        /// Commit the transaction
+        /// </summary>
+        void Commit();
+
+        /// <summary>
+        /// Rollback the transaction
+        /// </summary>
+        void Rollback();
+
+        /// <summary>
+        /// Enable the transaction for anything in the current thread context.
+        /// </summary>
+        /// <returns>The transaction context. This should be disposed to disable the transaction.</returns>
+        TransactionContext Enable();
+    }
+
     /// <summary>
     /// Class to represent a kernel transaction.
     /// </summary>
     [NtType("TmTx")]
-    public class NtTransaction : NtObjectWithDuplicate<NtTransaction, TransactionAccessRights>
+    public class NtTransaction : NtObjectWithDuplicate<NtTransaction, TransactionAccessRights>, INtTransaction
     {
         internal NtTransaction(SafeKernelObjectHandle handle) : base(handle)
         {

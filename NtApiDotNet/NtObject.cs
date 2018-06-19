@@ -871,7 +871,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get number of handles for this object.
         /// </summary>
-        public int HandleCount
+        public int HandleReferenceCount
         {
             get
             {
@@ -882,7 +882,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get reference count for this object.
         /// </summary>
-        public int ReferenceCount
+        public int PointerReferenceCount
         {
             get
             {
