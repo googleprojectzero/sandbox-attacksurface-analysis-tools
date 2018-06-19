@@ -196,6 +196,9 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtMakePermanentObject(SafeKernelObjectHandle Handle);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtCompareObjects(SafeKernelObjectHandle Object1, SafeKernelObjectHandle Object2);
     }
 #pragma warning restore 1591
 
@@ -821,6 +824,22 @@ namespace NtApiDotNet
             return Name;
         }
 
+        /// <summary>
+        /// Check if this object is exactly the same as another.
+        /// </summary>
+        /// <param name="obj">The object to compare against.</param>
+        /// <returns>True if this is the same object.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public bool SameObject(NtObject obj)
+        {
+            NtStatus status = NtSystemCalls.NtCompareObjects(Handle, obj.Handle);
+            if (status == NtStatus.STATUS_NOT_SAME_OBJECT)
+            {
+                return false;
+            }
+            status.ToNtException();
+            return true;
+        }
 
         /// <summary>
         /// Indicates if the handle can be used for synchronization.
