@@ -128,5 +128,10 @@ namespace NtApiDotNet.Win32
                 throw new SafeWin32Exception();
             }
         }
+
+        /// <summary>
+        /// Get Windows INVALID_HANDLE_VALUE.
+        /// </summary>
+        public static IntPtr InvalidHandle { get => new IntPtr(-1); }
     }
 }
