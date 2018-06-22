@@ -4219,7 +4219,8 @@ namespace NtApiDotNet
 
         void IDisposable.Dispose()
         {
-            throw new NotImplementedException();
+            ReadPipe?.Dispose();
+            WritePipe?.Dispose();
         }
     }
 
