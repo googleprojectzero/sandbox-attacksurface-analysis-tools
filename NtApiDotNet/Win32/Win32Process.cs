@@ -142,23 +142,37 @@ namespace NtApiDotNet.Win32
         public int FilterLevel;
     }
 
+    [Flags]
+    enum STARTF : uint
+    {
+        STARTF_USESHOWWINDOW = 0x00000001,
+        STARTF_USESIZE = 0x00000002,
+        STARTF_USEPOSITION = 0x00000004,
+        STARTF_USECOUNTCHARS = 0x00000008,
+        STARTF_USEFILLATTRIBUTE = 0x00000010,
+        STARTF_RUNFULLSCREEN = 0x00000020,
+        STARTF_FORCEONFEEDBACK = 0x00000040,
+        STARTF_FORCEOFFFEEDBACK = 0x00000080,
+        STARTF_USESTDHANDLES = 0x00000100,
+    }
+
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     struct STARTUPINFO
     {
-        public Int32 cb;
+        public int cb;
         public string lpReserved;
         public string lpDesktop;
         public string lpTitle;
-        public Int32 dwX;
-        public Int32 dwY;
-        public Int32 dwXSize;
-        public Int32 dwYSize;
-        public Int32 dwXCountChars;
-        public Int32 dwYCountChars;
-        public Int32 dwFillAttribute;
-        public Int32 dwFlags;
-        public Int16 wShowWindow;
-        public Int16 cbReserved2;
+        public int dwX;
+        public int dwY;
+        public int dwXSize;
+        public int dwYSize;
+        public int dwXCountChars;
+        public int dwYCountChars;
+        public int dwFillAttribute;
+        public STARTF dwFlags;
+        public short wShowWindow;
+        public short cbReserved2;
         public IntPtr lpReserved2;
         public IntPtr hStdInput;
         public IntPtr hStdOutput;
@@ -630,6 +644,33 @@ namespace NtApiDotNet.Win32
         /// Specify a token to use for the new process.
         /// </summary>
         public NtToken Token { get; set; }
+        /// <summary>
+        /// Specify a stdin handle for the new process (you must inherit the handle).
+        /// </summary>
+        public IntPtr StdInputHandle { get; set; }
+        /// <summary>
+        /// Specify a stdout handle for the new process (you must inherit the handle).
+        /// </summary>
+        public IntPtr StdOutputHandle { get; set; }
+        /// <summary>
+        /// Specify a stderror handle for the new process (you must inherit the handle).
+        /// </summary>
+        public IntPtr StdErrorHandle { get; set; }
+
+        /// <summary>
+        /// Add an object's handle to the list of inherited handles. 
+        /// </summary>
+        /// <param name="obj">The object to add.</param>
+        /// <returns>The raw handle value.</returns>
+        /// <remarks>Note that this doesn't maintain a reference to the object. It should be kept
+        /// alive until the process has been created.</remarks>
+        public IntPtr AddInheritedHandle(NtObject obj)
+        {
+            obj.Inherit = true;
+            IntPtr handle = obj.Handle.DangerousGetHandle();
+            InheritHandleList.Add(handle);
+            return handle;
+        }
 
         /// <summary>
         /// Constructor.
@@ -638,12 +679,24 @@ namespace NtApiDotNet.Win32
         {
             InheritHandleList = new List<IntPtr>();
             Capabilities = new List<Sid>();
+            StdInputHandle = Win32Utils.InvalidHandle;
+            StdOutputHandle = Win32Utils.InvalidHandle;
+            StdErrorHandle = Win32Utils.InvalidHandle;
         }
 
         private void PopulateStartupInfo(ref STARTUPINFO start_info)
         {
             start_info.lpDesktop = Desktop;
             start_info.lpTitle = Title;
+            if (StdInputHandle != Win32Utils.InvalidHandle ||
+                StdOutputHandle != Win32Utils.InvalidHandle ||
+                StdErrorHandle != Win32Utils.InvalidHandle)
+            {
+                start_info.hStdInput = StdInputHandle;
+                start_info.hStdOutput = StdOutputHandle;
+                start_info.hStdError = StdErrorHandle;
+                start_info.dwFlags = STARTF.STARTF_USESTDHANDLES;
+            }
         }
 
         internal STARTUPINFO ToStartupInfo()
