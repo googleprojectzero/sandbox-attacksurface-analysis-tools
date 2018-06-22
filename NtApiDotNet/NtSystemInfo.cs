@@ -422,7 +422,15 @@ namespace NtApiDotNet
         public ushort VersionMajor;
         public Guid PolicyGuid;
     }
-    
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemCodeIntegrityVerificationInformation
+    {
+        public IntPtr FileHandle;
+        public int ImageSize;
+        public IntPtr Image;
+    }
+
     public enum SystemInformationClass
     {
         SystemBasicInformation = 0,
@@ -594,7 +602,7 @@ namespace NtApiDotNet
         SystemHardwareSecurityTestInterfaceResultsInformation = 166,
         SystemSingleModuleInformation = 167,
         SystemAllowedCpuSetsInformation = 168,
-        SystemDmaProtectionInformation = 169,
+        SystemVsmProtectionInformation = 169,
         SystemInterruptCpuSetsInformation = 170,
         SystemSecureBootPolicyFullInformation = 171,
         SystemCodeIntegrityPolicyFullInformation = 172,
@@ -622,7 +630,13 @@ namespace NtApiDotNet
         SystemSecureDumpEncryptionInformation = 194,
         SystemWriteConstraintInformation = 195,
         SystemKernelVaShadowInformation = 196,
+        SystemHypervisorSharedPageInformation = 197,
+        SystemFirmwareBootPerformanceInformation = 198,
+        SystemCodeIntegrityVerificationInformation = 199,
+        SystemFirmwarePartitionInformation = 200,
         SystemSpeculationControlInformation = 201,
+        SystemDmaGuardPolicyInformation = 202,
+        SystemEnclaveLaunchControlInformation = 203,
         MaxSystemInfoClass
     }
 
