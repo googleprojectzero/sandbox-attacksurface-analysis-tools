@@ -468,7 +468,7 @@ namespace NtApiDotNet
             using (var buffer = new SafeStructureInOutBuffer<ObjectHandleInformation>())
             {
                 int return_length;
-                NtSystemCalls.NtQueryObject(this, ObjectInformationClass.ObjectHandleInformation,
+                NtSystemCalls.NtQueryObject(this, ObjectInformationClass.ObjectHandleFlagInformation,
                     buffer, buffer.Length, out return_length).ToNtException();
                 return buffer.Result;
             }
@@ -479,7 +479,7 @@ namespace NtApiDotNet
             using (var buffer = handle_info.ToBuffer())
             {
                 NtSystemCalls.NtSetInformationObject(
-                    this, ObjectInformationClass.ObjectHandleInformation,
+                    this, ObjectInformationClass.ObjectHandleFlagInformation,
                     buffer, buffer.Length).ToNtException();
             }
         }

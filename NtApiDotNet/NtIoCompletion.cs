@@ -37,6 +37,11 @@ namespace NtApiDotNet
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 
+    public enum IoCompletionInformationClass
+    {
+        IoCompletionBasicInformation
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct FileIoCompletionInformation
     {

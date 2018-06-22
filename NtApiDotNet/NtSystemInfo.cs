@@ -376,7 +376,7 @@ namespace NtApiDotNet
         EnabledUpdatePolicyNoReboot = 0x20,
         EnabledSecureSettingPolicy = 0x40,
         EnabledUnsignedSystemIntegrityPolicy = 0x80,
-        Flag100 = 0x100,
+        DynamicCodePolicyEnabled = 0x100,
         Flag200 = 0x200,
         Flag400 = 0x400,
         Flag800 = 0x800,
@@ -601,7 +601,14 @@ namespace NtApiDotNet
         SystemAffinitizedInterruptProcessorInformation,
         SystemRootSiloInformation, // q: SYSTEM_ROOT_SILO_INFORMATION
         SystemCodeIntegrityAllPoliciesInformation = 189,
-        SystemCodeIntegrityUnlockInformation = 190,
+        SystemCodeIntegrityUnlockInformation,
+        SystemIntegrityQuotaInformation,
+        SystemFlushInformation,
+        SystemProcessorIdleMaskInformation,
+        SystemSecureDumpEncryptionInformation,
+        SystemWriteConstraintInformation,
+        SystemKernelVaShadowInformation,
+        SystemSpeculationControlInformation = 201,
         MaxSystemInfoClass
     }
 

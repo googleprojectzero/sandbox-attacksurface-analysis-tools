@@ -40,6 +40,11 @@ namespace NtApiDotNet
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 
+    public enum SemaphoreInformationClass
+    {
+        SemaphoreBasicInformation
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]

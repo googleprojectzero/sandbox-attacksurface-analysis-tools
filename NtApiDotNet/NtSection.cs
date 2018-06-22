@@ -104,7 +104,10 @@ namespace NtApiDotNet
     public enum SectionInformationClass
     {
         SectionBasicInformation,
-        SectionImageInformation
+        SectionImageInformation,
+        SectionRelocationInformation,
+        SectionOriginalBaseInformation,
+        SectionInternalImageInformation
     }
 
     [StructLayout(LayoutKind.Sequential)]

@@ -36,6 +36,12 @@ namespace NtApiDotNet
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 
+    public enum MutantInformationClass
+    {
+        MutantBasicInformation,
+        MutantOwnerInformation
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]

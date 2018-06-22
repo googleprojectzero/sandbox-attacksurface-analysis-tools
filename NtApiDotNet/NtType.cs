@@ -602,7 +602,7 @@ namespace NtApiDotNet
             using (var type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>())
             {
                 Dictionary<string, NtType> ret = new Dictionary<string, NtType>(StringComparer.OrdinalIgnoreCase);
-                NtStatus status = NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectAllInformation,
+                NtStatus status = NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectTypesInformation,
                     type_info, type_info.Length, out int return_length);
                 if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
                     status.ToNtException();
@@ -619,7 +619,7 @@ namespace NtApiDotNet
             using (var type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>(type_size, true))
             {
                 int alignment = IntPtr.Size - 1;
-                NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectAllInformation,
+                NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectTypesInformation,
                     type_info, type_info.Length, out int return_length).ToNtException();
                 ObjectAllTypesInformation result = type_info.Result;
                 IntPtr curr_typeinfo = type_info.DangerousGetHandle() + IntPtr.Size;

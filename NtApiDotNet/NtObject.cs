@@ -85,8 +85,10 @@ namespace NtApiDotNet
         ObjectBasicInformation,
         ObjectNameInformation,
         ObjectTypeInformation,
-        ObjectAllInformation,
-        ObjectHandleInformation
+        ObjectTypesInformation,
+        ObjectHandleFlagInformation,
+        ObjectSessionInformation,
+        ObjectSessionObjectInformation
     }
 
     /// <summary>

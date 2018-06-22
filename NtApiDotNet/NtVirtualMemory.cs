@@ -134,9 +134,16 @@ namespace NtApiDotNet
     public enum MemoryInformationClass
     {
         MemoryBasicInformation,
-        MemoryWorkingSetList,
-        MemorySectionName,
-        MemoryBasicVlmInformation
+        MemoryWorkingSetInformation,
+        MemoryMappedFilenameInformation,
+        MemoryRegionInformation,
+        MemoryWorkingSetExInformation,
+        MemorySharedCommitInformation,
+        MemoryImageInformation,
+        MemoryRegionInformationEx,
+        MemoryPrivilegedBasicInformation,
+        MemoryEnclaveImageInformation,
+        MemoryBasicInformationCapped
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -279,7 +286,7 @@ namespace NtApiDotNet
             using (var buffer = new SafeStructureInOutBuffer<UnicodeStringOut>(0x1000, true))
             {
                 return NtSystemCalls.NtQueryVirtualMemory(process,
-                    new IntPtr(base_address), MemoryInformationClass.MemorySectionName,
+                    new IntPtr(base_address), MemoryInformationClass.MemoryMappedFilenameInformation,
                     buffer, buffer.LengthIntPtr, out IntPtr ret_length)
                     .CreateResult(throw_on_error, () => buffer.Result.ToString());
             }
