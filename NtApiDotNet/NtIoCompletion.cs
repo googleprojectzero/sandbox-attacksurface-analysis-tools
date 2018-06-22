@@ -76,11 +76,6 @@ namespace NtApiDotNet
         
     }
 
-    public enum IoCompletionInformationClass
-    {
-        IoCompletionBasicInformation
-    }
-
     public struct IoCompletionBasicInformation
     {
         public int Depth;
