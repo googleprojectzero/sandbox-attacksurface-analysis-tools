@@ -1430,9 +1430,9 @@ namespace NtApiDotNet
         /// Set a file is trusted for dynamic code.
         /// </summary>
         /// <param name="handle">The handle to a file to set.</param>
-        /// <returns>True if the file is trusted.</returns>
+        /// <returns>The status code from the operation.</returns>
         [SupportedVersion(SupportedVersion.Windows10_RS4)]
-        public static void SetDynamicCodeTrust(SafeKernelObjectHandle handle)
+        public static NtStatus SetDynamicCodeTrust(SafeKernelObjectHandle handle)
         {
             SystemCodeIntegrityVerificationInformation info = new SystemCodeIntegrityVerificationInformation()
             {
@@ -1441,8 +1441,8 @@ namespace NtApiDotNet
 
             using (var buffer = info.ToBuffer())
             {
-                NtSystemCalls.NtSetSystemInformation(SystemInformationClass.SystemCodeIntegrityVerificationInformation, buffer,
-                    buffer.Length).ToNtException();
+                return NtSystemCalls.NtSetSystemInformation(SystemInformationClass.SystemCodeIntegrityVerificationInformation, buffer,
+                    buffer.Length);
             }
         }
     }

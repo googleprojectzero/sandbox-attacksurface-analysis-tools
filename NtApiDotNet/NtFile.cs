@@ -4194,6 +4194,25 @@ namespace NtApiDotNet
         {
             VisitAccessibleFiles(visitor, desired_access, share_access, FileOpenOptions.None, false, -1, null, FileTypeMask.All);
         }
+
+        /// <summary>
+        /// Query whether a file is trusted for dynamic code.
+        /// </summary>
+        /// <returns>Returns true if the file is trusted.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS4)]
+        public bool QueryDynamicCodeTrust()
+        {
+            return NtSystemInfo.QueryDynamicCodeTrust(Handle).IsSuccess();
+        }
+
+        /// <summary>
+        /// Set a file is trusted for dynamic code.
+        /// </summary>
+        [SupportedVersion(SupportedVersion.Windows10_RS4)]
+        public void SetDynamicCodeTrust()
+        {
+            NtSystemInfo.SetDynamicCodeTrust(Handle).ToNtException();
+        }
     }
 
     /// <summary>
