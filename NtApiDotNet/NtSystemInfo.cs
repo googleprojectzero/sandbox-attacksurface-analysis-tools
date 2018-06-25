@@ -1375,5 +1375,75 @@ namespace NtApiDotNet
         {
             ResolveObjectAddress(new[] { obj });
         }
+
+        /// <summary>
+        /// Query whether a file is trusted for dynamic code.
+        /// </summary>
+        /// <param name="handle">The handle to a file to query.</param>
+        /// <param name="image">Pointer to a memory buffer containing the image.</param>
+        /// <param name="image_size">The size of the in-memory buffer.</param>
+        /// <returns>True if the file is trusted.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS4)]
+        public static NtStatus QueryDynamicCodeTrust(SafeKernelObjectHandle handle, IntPtr image, int image_size)
+        {
+            SystemCodeIntegrityVerificationInformation info = new SystemCodeIntegrityVerificationInformation()
+            {
+                FileHandle = handle.DangerousGetHandle(),
+                Image = image,
+                ImageSize = image_size
+            };
+
+            using (var buffer = info.ToBuffer())
+            {
+                return NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityVerificationInformation, buffer,
+                    buffer.Length, out int ret_length);
+            }
+        }
+
+        /// <summary>
+        /// Query whether a file is trusted for dynamic code.
+        /// </summary>
+        /// <param name="image">Pointer to a memory buffer containing the image.</param>
+        /// <returns>The status code from the operation. Returns STATUS_SUCCESS is valid.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS4)]
+        public static NtStatus QueryDynamicCodeTrust(byte[] image)
+        {
+            using (var buffer = image.ToBuffer())
+            {
+                return QueryDynamicCodeTrust(SafeKernelObjectHandle.Null, 
+                    buffer.DangerousGetHandle(), buffer.Length);
+            }
+        }
+
+        /// <summary>
+        /// Query whether a file is trusted for dynamic code.
+        /// </summary>
+        /// <param name="handle">The handle to a file to query.</param>
+        /// <returns>The status code from the operation. Returns STATUS_SUCCESS is valid.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS4)]
+        public static NtStatus QueryDynamicCodeTrust(SafeKernelObjectHandle handle)
+        {
+            return QueryDynamicCodeTrust(handle, IntPtr.Zero, 0);
+        }
+
+        /// <summary>
+        /// Set a file is trusted for dynamic code.
+        /// </summary>
+        /// <param name="handle">The handle to a file to set.</param>
+        /// <returns>True if the file is trusted.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS4)]
+        public static void SetDynamicCodeTrust(SafeKernelObjectHandle handle)
+        {
+            SystemCodeIntegrityVerificationInformation info = new SystemCodeIntegrityVerificationInformation()
+            {
+                FileHandle = handle.DangerousGetHandle()
+            };
+
+            using (var buffer = info.ToBuffer())
+            {
+                NtSystemCalls.NtSetSystemInformation(SystemInformationClass.SystemCodeIntegrityVerificationInformation, buffer,
+                    buffer.Length).ToNtException();
+            }
+        }
     }
 }
