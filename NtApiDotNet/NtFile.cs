@@ -784,6 +784,15 @@ namespace NtApiDotNet
         Write = 2,
     }
 
+    public enum CompressionFormat
+    {
+        None,
+        Default,
+        LZNT1,
+        XPress,
+        XPressHuff
+    }
+
     /// <summary>
     /// Represents a NT file IO control code.
     /// </summary>
@@ -4212,6 +4221,28 @@ namespace NtApiDotNet
         public void SetDynamicCodeTrust()
         {
             NtSystemInfo.SetDynamicCodeTrust(Handle).ToNtException();
+        }
+
+        /// <summary>
+        /// Get or set the file's compression format.
+        /// </summary>
+        public CompressionFormat CompressionFormat
+        {
+            get
+            {
+                using (var buffer = new SafeStructureInOutBuffer<int>())
+                {
+                    FsControl(NtWellKnownIoControlCodes.FSCTL_GET_COMPRESSION, SafeHGlobalBuffer.Null, buffer);
+                    return (CompressionFormat)buffer.Result;
+                }
+            }
+            set
+            {
+                using (var buffer = ((int)value).ToBuffer())
+                {
+                    FsControl(NtWellKnownIoControlCodes.FSCTL_SET_COMPRESSION, buffer, SafeHGlobalBuffer.Null);
+                }
+            }
         }
     }
 
