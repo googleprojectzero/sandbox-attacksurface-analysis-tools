@@ -1639,7 +1639,7 @@ namespace NtApiDotNet
                     status = _io_status.Result.Status;
                 }
             }
-            else if (status == NtStatus.STATUS_SUCCESS)
+            else if (status.IsSuccess())
             {
                 _result = _io_status.Result;
             }
@@ -1914,6 +1914,22 @@ namespace NtApiDotNet
         Level2,
         Batch,
         Filter
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("Sid")]
+    public struct FindBySidData
+    {
+        public int Restart;
+        public byte Sid;
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("FileName")]
+    public struct FindBySidOutput
+    {
+        public int NextEntryOffset;
+        public int FileIndex;
+        public int FileNameLength;
+        public ushort FileName;
     }
 
 #pragma warning restore 1591
@@ -2382,31 +2398,44 @@ namespace NtApiDotNet
             return FsControlAsync(control_code, input_buffer, max_output, CancellationToken.None);
         }
 
-        private int IoControlGeneric(IoControlFunction func, NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
+        private NtResult<int> IoControlGeneric(IoControlFunction func, NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, bool throw_on_error)
         {
             using (NtAsyncResult result = new NtAsyncResult(this))
             {
-                NtStatus status = result.CompleteCall(func(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
-                    control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer), 
-                    GetSafeLength(output_buffer))).ToNtException();
-                return result.Information32;
+                return result.CompleteCall(func(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
+                    control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer),
+                    GetSafeLength(output_buffer))).CreateResult(throw_on_error, () => result.Information32);
             }
         }
 
-        private byte[] IoControlGeneric(IoControlFunction func, NtIoControlCode control_code, byte[] input_buffer, int max_output)
+        private NtResult<byte[]> IoControlGeneric(IoControlFunction func, NtIoControlCode control_code, byte[] input_buffer, int max_output, bool throw_on_error)
         {
             using (SafeHGlobalBuffer input = input_buffer != null ? new SafeHGlobalBuffer(input_buffer) : null)
             {
                 using (SafeHGlobalBuffer output = max_output > 0 ? new SafeHGlobalBuffer(max_output) : null)
                 {
-                    int output_length = IoControlGeneric(func, control_code, input, output);
-                    if (output != null)
+                    var result = IoControlGeneric(func, control_code, input, output, throw_on_error);
+                    if (result.IsSuccess && output != null)
                     {
-                        return output.ReadBytes(output_length);
+                        return new NtResult<byte[]>(result.Status, output.ReadBytes(result.Result));
                     }
-                    return new byte[0];
+                    return new NtResult<byte[]>(result.Status, new byte[0]);
                 }
             }
+        }
+
+        /// <summary>
+        /// Send a Device IO Control code to the file driver
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="output_buffer">Output buffer can be null</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <returns>The length of output bytes returned.</returns>
+        public NtResult<int> DeviceIoControl(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, bool throw_on_error)
+        {
+            return IoControlGeneric(NtSystemCalls.NtDeviceIoControlFile, control_code, input_buffer, output_buffer, throw_on_error);
         }
 
         /// <summary>
@@ -2419,7 +2448,20 @@ namespace NtApiDotNet
         /// <returns>The length of output bytes returned.</returns>
         public int DeviceIoControl(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
         {
-            return IoControlGeneric(NtSystemCalls.NtDeviceIoControlFile, control_code, input_buffer, output_buffer);
+            return DeviceIoControl(control_code, input_buffer, output_buffer, true).Result;
+        }
+
+        /// <summary>
+        /// Send a Device IO Control code to the file driver.
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="max_output">Maximum output buffer size</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The output buffer returned by the kernel.</returns>
+        public NtResult<byte[]> DeviceIoControl(NtIoControlCode control_code, byte[] input_buffer, int max_output, bool throw_on_error)
+        {
+            return IoControlGeneric(NtSystemCalls.NtDeviceIoControlFile, control_code, input_buffer, max_output, throw_on_error);
         }
 
         /// <summary>
@@ -2431,7 +2473,34 @@ namespace NtApiDotNet
         /// <returns>The output buffer returned by the kernel.</returns>
         public byte[] DeviceIoControl(NtIoControlCode control_code, byte[] input_buffer, int max_output)
         {
-            return IoControlGeneric(NtSystemCalls.NtDeviceIoControlFile, control_code, input_buffer, max_output);
+            return DeviceIoControl(control_code, input_buffer, max_output, true).Result;
+        }
+
+        /// <summary>
+        /// Send an File System Control code to the file driver
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="output_buffer">Output buffer can be null</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The length of output bytes returned.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtResult<int> FsControl(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, bool throw_on_error)
+        {
+            return IoControlGeneric(NtSystemCalls.NtFsControlFile, control_code, input_buffer, output_buffer, throw_on_error);
+        }
+
+        /// <summary>
+        /// Send a File System Control code to the file driver.
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="max_output">Maximum output buffer size</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The output buffer returned by the kernel.</returns>
+        public NtResult<byte[]> FsControl(NtIoControlCode control_code, byte[] input_buffer, int max_output, bool throw_on_error)
+        {
+            return IoControlGeneric(NtSystemCalls.NtFsControlFile, control_code, input_buffer, max_output, throw_on_error);
         }
 
         /// <summary>
@@ -2444,7 +2513,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public int FsControl(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer)
         {
-            return IoControlGeneric(NtSystemCalls.NtFsControlFile, control_code, input_buffer, output_buffer);
+            return FsControl(control_code, input_buffer, output_buffer, true).Result;
         }
 
         /// <summary>
@@ -2456,9 +2525,8 @@ namespace NtApiDotNet
         /// <returns>The output buffer returned by the kernel.</returns>
         public byte[] FsControl(NtIoControlCode control_code, byte[] input_buffer, int max_output)
         {
-            return IoControlGeneric(NtSystemCalls.NtFsControlFile, control_code, input_buffer, max_output);
+            return FsControl(control_code, input_buffer, max_output, true).Result;
         }
-
 
         /// <summary>
         /// Open a file
@@ -4241,6 +4309,58 @@ namespace NtApiDotNet
                 using (var buffer = ((int)value).ToBuffer())
                 {
                     FsControl(NtWellKnownIoControlCodes.FSCTL_SET_COMPRESSION, buffer, SafeHGlobalBuffer.Null);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Find files in a directory by the owner SID.
+        /// </summary>
+        /// <param name="sid">The owner SID.</param>
+        /// <returns>A list of files in the directory.</returns>
+        /// <remarks>For this method to work you need Quota enabled on the volume.</remarks>
+        public IEnumerable<string> FindFilesBySid(Sid sid)
+        {
+            FindBySidData input = new FindBySidData();
+            input.Restart = 1;
+            byte[] sid_buffer = sid.ToArray();
+
+            using (var buffer = input.ToBuffer(sid_buffer.Length, true))
+            {
+                buffer.Data.WriteBytes(sid_buffer);
+                using (var out_buffer = new SafeHGlobalBuffer(4096))
+                {
+                    while (true)
+                    {
+                        var return_length = FsControl(NtWellKnownIoControlCodes.FSCTL_FIND_FILES_BY_SID, buffer, out_buffer, false);
+                        if (return_length.Status == NtStatus.STATUS_NO_QUOTAS_FOR_ACCOUNT)
+                        {
+                            throw new NtException(NtStatus.STATUS_NO_QUOTAS_FOR_ACCOUNT);
+                        }
+
+                        int length = return_length.GetResultOrThrow();
+                        if (length == 0)
+                        {
+                            yield break;
+                        }
+
+                        int ofs = 0;
+
+                        while (ofs < length)
+                        {
+                            var res_buffer = out_buffer.GetStructAtOffset<FileNameInformation>(ofs);
+                            var result = res_buffer.Result;
+                            if (result.NameLength > 0)
+                            {
+                                yield return res_buffer.Data.ReadUnicodeString(result.NameLength / 2);
+                            }
+
+                            int total_length = (4 + result.NameLength + 7) & ~7;
+                            ofs += total_length;
+                        }
+                        // Modify restart to 0.
+                        buffer.Write(0, 0);
+                    }
                 }
             }
         }
