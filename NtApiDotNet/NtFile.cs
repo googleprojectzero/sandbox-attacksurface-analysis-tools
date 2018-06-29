@@ -1923,15 +1923,6 @@ namespace NtApiDotNet
         public byte Sid;
     }
 
-    [StructLayout(LayoutKind.Sequential), DataStart("FileName")]
-    public struct FindBySidOutput
-    {
-        public int NextEntryOffset;
-        public int FileIndex;
-        public int FileNameLength;
-        public ushort FileName;
-    }
-
 #pragma warning restore 1591
 
     /// <summary>
@@ -4321,8 +4312,10 @@ namespace NtApiDotNet
         /// <remarks>For this method to work you need Quota enabled on the volume.</remarks>
         public IEnumerable<string> FindFilesBySid(Sid sid)
         {
-            FindBySidData input = new FindBySidData();
-            input.Restart = 1;
+            FindBySidData input = new FindBySidData
+            {
+                Restart = 1
+            };
             byte[] sid_buffer = sid.ToArray();
 
             using (var buffer = input.ToBuffer(sid_buffer.Length, true))
@@ -4344,6 +4337,7 @@ namespace NtApiDotNet
                             yield break;
                         }
 
+                        // First entry seems to be empty, but process anyway.
                         int ofs = 0;
 
                         while (ofs < length)
@@ -4355,7 +4349,7 @@ namespace NtApiDotNet
                                 yield return res_buffer.Data.ReadUnicodeString(result.NameLength / 2);
                             }
 
-                            int total_length = (4 + result.NameLength + 7) & ~7;
+                            int total_length = (4 + result.NameLength + 8) & ~7;
                             ofs += total_length;
                         }
                         // Modify restart to 0.
