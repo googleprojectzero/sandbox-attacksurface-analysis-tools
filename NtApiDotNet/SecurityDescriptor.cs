@@ -690,14 +690,23 @@ namespace NtApiDotNet
             return new SafeHGlobalBuffer(ToByteArray());
         }
 
-        private void AddAce(AceType type, AccessMask mask, AceFlags flags, Sid sid)
+        /// <summary>
+        /// Add an ACE to the DACL, creating the DACL if needed.
+        /// </summary>
+        /// <param name="ace">The ACE to add to the DACL.</param>
+        public void AddAce(Ace ace)
         {
             if (Dacl == null)
             {
                 Dacl = new Acl();
             }
             Dacl.NullAcl = false;
-            Dacl.Add(new Ace(type, flags, mask, sid));
+            Dacl.Add(ace);
+        }
+
+        private void AddAce(AceType type, AccessMask mask, AceFlags flags, Sid sid)
+        {
+            AddAce(new Ace(type, flags, mask, sid));
         }
 
         private void AddAccessDeniedAceInternal(AccessMask mask, AceFlags flags, Sid sid)

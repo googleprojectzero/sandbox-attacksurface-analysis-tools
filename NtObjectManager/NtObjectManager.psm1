@@ -2427,6 +2427,81 @@ function Get-NtCachedSigningLevel {
 
 <#
 .SYNOPSIS
+Adds an ACE to a security descriptor DACL.
+.DESCRIPTION
+This cmdlet adds a new ACE to a security descriptor DACL.
+.PARAMETER SecurityDescriptor
+The security descriptor to add the ACE to.
+.PARAMETER Sid
+The SID to add to the ACE.
+.PARAMETER Name
+The username to add to the ACE.
+.PARAMETER KnownSid
+A known SID to add to the ACE.
+.PARAMETER AccessMask
+The access mask for the ACE.
+.PARAMETER GenericAccess
+A generic access mask for the ACE.
+.PARAMETER Type
+The type of the ACE.
+.PARAMETER Flags
+The flags for the ACE.
+.PARAMETER Condition
+The condition string for the ACE.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Add-NtSecurityDescriptorDaclAce -SecurityDescriptor $sd -Sid "S-1-1-0" -AccessMask 0x1234
+Adds an access allowed ACE to the DACL for SID S-1-1-0 and mask of 0x1234
+.EXAMPLE
+Add-NtSecurityDescriptorDaclAce -SecurityDescriptor $sd -Sid "S-1-1-0" -AccessMask (Get-NtAccessMask -FileAccess ReadData)
+Adds an access allowed ACE to the DACL for SID S-1-1-0 and mask for the file ReadData access right.
+#>
+function Add-NtSecurityDescriptorDaclAce {
+    [CmdletBinding(DefaultParameterSetName = "FromSid")]
+    Param(
+        [parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [parameter(Mandatory, ParameterSetName="FromSid")]
+        [NtApiDotNet.Sid]$Sid,
+        [parameter(Mandatory, ParameterSetName="FromName")]
+        [string]$Name,
+        [parameter(Mandatory, ParameterSetName="FromKnownSid")]
+        [NtApiDotNet.KnownSidValue]$KnownSid,
+        [NtApiDotNet.AccessMask]$AccessMask = 0,
+        [NtApiDotNet.GenericAccessRights]$GenericAccess = 0,
+        [NtApiDotNet.AceType]$Type = "Allowed",
+        [NtApiDotNet.AceFlags]$Flags = "None",
+        [string]$Condition
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromSid" {
+            # Do nothing.
+        }
+        "FromName" { 
+            $Sid = Get-NtSid -Name $Name
+        }
+        "FromKnownSid" {
+            $Sid = Get-NtSid -KnownSid $KnownSid
+        }
+    }
+
+    $AccessMask = $AccessMask.Access -bor [uint32]$GenericAccess
+
+    if ($null -ne $Sid) {
+        $ace = [NtApiDotNet.Ace]::new($Type, $Flags, $AccessMask, $Sid)
+        if ($Condition -ne "") {
+            $ace.Condition = $Condition
+        }
+        $SecurityDescriptor.AddAce($ace)
+    }
+}
+
+<#
+.SYNOPSIS
 Get a filtered token.
 .DESCRIPTION
 This is left for backwards compatibility, use 'Get-NtToken -Filtered' instead.
