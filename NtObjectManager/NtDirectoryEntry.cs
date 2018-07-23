@@ -151,5 +151,14 @@ namespace NtObjectManager
 
             _maximum_granted_access = null;
         }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The name of the directory entry.</returns>
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }
