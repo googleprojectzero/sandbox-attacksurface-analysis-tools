@@ -155,7 +155,7 @@ namespace NtObjectManager
         /// Constructor.
         /// </summary>
         public GetNtProcessCmdlet()
-        {                        
+        {
             Access = ProcessAccessRights.MaximumAllowed;
             ProcessId = -1;
         }

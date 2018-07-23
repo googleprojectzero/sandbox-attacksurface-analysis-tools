@@ -403,7 +403,8 @@ namespace NtObjectManager
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            return NtObject.OpenWithType(TypeName, Path, Root, Access);
+            string type_name = string.IsNullOrWhiteSpace(TypeName) ? null : TypeName;
+            return NtObject.OpenWithType(type_name, Path, Root, Access);
         }
     }
 

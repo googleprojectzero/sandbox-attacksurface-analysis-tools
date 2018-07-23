@@ -978,10 +978,6 @@ namespace NtApiDotNet
             {
                 return String.Empty;
             }
-            else if (index == 0)
-            {
-                return @"\";
-            }
             else
             {
                 return path.Substring(0, index);
@@ -1014,21 +1010,23 @@ namespace NtApiDotNet
                 return "Directory";
             }
 
-            try
+            string dir_name = GetDirectoryName(path);
+            if (dir_name == string.Empty && root == null)
             {
-                using (NtDirectory dir = Open(GetDirectoryName(path), root, DirectoryAccessRights.Query))
+                dir_name = @"\";
+            }
+            using (var dir = Open(dir_name, root, DirectoryAccessRights.Query, false))
+            {
+                if (dir.IsSuccess)
                 {
-                    ObjectDirectoryInformation dir_info = dir.GetDirectoryEntry(GetFileName(path));
+                    ObjectDirectoryInformation dir_info = dir.Result.GetDirectoryEntry(GetFileName(path));
                     if (dir_info != null)
                     {
                         return dir_info.NtTypeName;
                     }
                 }
             }
-            catch (NtException)
-            {
-            }
-
+            
             return null;
         }
 

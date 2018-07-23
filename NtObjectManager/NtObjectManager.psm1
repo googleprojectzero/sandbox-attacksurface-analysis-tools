@@ -1533,6 +1533,14 @@ The object to get the security descriptor from.
 The security information to get from the object.
 .PARAMETER ToSddl
 Convert the security descriptor to an SDDL string.
+.PARAMETER Process
+Specify process to a read a security descriptor from memory.
+.PARAMETER Address
+Specify the address in the process to read the security descriptor.
+.PARAMETER Path
+Specify an object path to get the security descriptor from.
+.PARAMETER TypeName
+Specify the type name of the object at Path. Needed if the module cannot automatically determine the NT type to open.
 .OUTPUTS
 NtApiDotNet.SecurityDescriptor
 string
@@ -1546,6 +1554,12 @@ Get the security descriptor with DACL, OWNER and GROUP values.
 Get-NtSecurityDescriptor $obj Dacl -ToSddl
 Get the security descriptor with DACL and output as an SDDL string.
 .EXAMPLE
+Get-NtSecurityDescriptor \BaseNamedObjects\ABC
+Get the security descriptor from path \BaseNamedObjects\ABC.
+.EXAMPLE
+Get-NtSecurityDescriptor \??\C:\Windows -TypeName File
+Get the security descriptor from c:\windows. Needs explicit NtType name of File to work.
+.EXAMPLE
 @($obj1, $obj2) | Get-NtSecurityDescriptor
 Get the security descriptors from an array of objects.
 .EXAMPLE
@@ -1556,14 +1570,18 @@ function Get-NtSecurityDescriptor
 {
     [CmdletBinding(DefaultParameterSetName = "FromObject")]
     param (
-        [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true, ParameterSetName = "FromObject")]
+        [parameter(Mandatory, Position=0, ValueFromPipeline, ParameterSetName = "FromObject")]
         [NtApiDotNet.NtObject]$Object,
         [parameter(Position=1, ParameterSetName = "FromObject")]
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
-        [parameter(Mandatory = $true, ParameterSetName = "FromProcess")]
+        [parameter(Mandatory, ParameterSetName = "FromProcess")]
         [NtApiDotNet.NtProcess]$Process,
-        [parameter(Mandatory = $true, ParameterSetName = "FromProcess")]
+        [parameter(Mandatory, ParameterSetName = "FromProcess")]
         [int64]$Address,
+        [parameter(Mandatory, ParameterSetName = "FromPath")]
+        [string]$Path,
+        [parameter(ParameterSetName = "FromPath")]
+        [string]$TypeName,
         [switch]$ToSddl
     )
     PROCESS {
@@ -1573,6 +1591,11 @@ function Get-NtSecurityDescriptor
             }
             "FromProcess" {
                 [NtApiDotNet.SecurityDescriptor]::new($Process, [IntPtr]::new($Address))
+            }
+            "FromPath" {
+                Use-NtObject($obj = Get-NtObject -Path $Path -TypeName $TypeName -Access ReadControl) {
+                    $obj.GetSecurityDescriptor($SecurityInformation)
+                }
             }
         }
         if ($ToSddl) {
@@ -1608,13 +1631,13 @@ function Set-NtSecurityDescriptor
 {
     [CmdletBinding()]
     param (
-        [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
+        [parameter(Mandatory, Position=0, ValueFromPipeline)]
         [NtApiDotNet.NtObject]$Object,
-        [parameter(Mandatory=$true, Position=1, ParameterSetName = "FromSD")]
+        [parameter(Mandatory, Position=1, ParameterSetName = "FromSD")]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
-        [parameter(Mandatory=$true, Position=1, ParameterSetName = "FromSddl")]
+        [parameter(Mandatory, Position=1, ParameterSetName = "FromSddl")]
         [string]$Sddl,
-        [parameter(Mandatory=$true, Position=2)]
+        [parameter(Mandatory, Position=2)]
         [NtApiDotNet.SecurityInformation]$SecurityInformation
         
     )
