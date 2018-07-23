@@ -557,7 +557,7 @@ function New-Win32Process
 Get the NT path for a dos path.
 .DESCRIPTION
 This cmdlet gets the full NT path for a specified DOS path.
-.PARAMETER Path
+.PARAMETER FullName
 The DOS path to convert to NT.
 .PARAMETER Resolve
 Resolve relative paths to the current PS directory.
@@ -568,6 +568,7 @@ string Converted path
 .EXAMPLE
 Get-NtFilePath c:\Windows
 Get c:\windows as an NT file path.
+.EXAMPLE
 Get-ChildItem c:\windows | Get-NtFilePath
 Get list of NT file paths from the pipeline.
 #>
@@ -590,6 +591,30 @@ function Get-NtFilePath {
     $p = [NtApiDotNet.NtFileUtils]::DosFileNameToNt($p)
     Write-Output $p
   }
+}
+
+<#
+.SYNOPSIS
+Get the NT path type for a dos path.
+.DESCRIPTION
+This cmdlet gets the NT path type for a specified DOS path.
+.PARAMETER FullName
+The DOS path to convert to NT.
+.INPUTS
+string[] List of paths to convert.
+.OUTPUTS
+
+.EXAMPLE
+Get-NtFilePathType c:\Windows
+Get the path type for c:\windows.
+#>
+function Get-NtFilePathType {
+  Param(
+    [parameter(Mandatory, Position=0)]
+    [string]$FullName
+  )
+
+  [NtApiDotNet.NtFileUtils]::GetDosPathType($FullName)
 }
 
 <#
