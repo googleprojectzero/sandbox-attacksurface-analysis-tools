@@ -401,9 +401,24 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Throw on error</exception>
         public static NtDirectory Open(string name, NtObject root, DirectoryAccessRights desired_access)
         {
+            return Open(name, root, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open a directory object by name
+        /// </summary>
+        /// <param name="name">The directory object to open</param>
+        /// <param name="root">Optional root directory to parse from</param>
+        /// <param name="desired_access">Access rights for directory object</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The directory object</returns>
+        /// <exception cref="NtException">Throw on error</exception>
+        public static NtResult<NtDirectory> Open(string name, NtObject root, 
+            DirectoryAccessRights desired_access, bool throw_on_error)
+        {
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
-                return Open(obja, desired_access);
+                return Open(obja, desired_access, throw_on_error);
             }
         }
 
@@ -963,6 +978,10 @@ namespace NtApiDotNet
             {
                 return String.Empty;
             }
+            else if (index == 0)
+            {
+                return @"\";
+            }
             else
             {
                 return path.Substring(0, index);
@@ -997,7 +1016,7 @@ namespace NtApiDotNet
 
             try
             {
-                using (NtDirectory dir = NtDirectory.Open(GetDirectoryName(path), root, DirectoryAccessRights.Query))
+                using (NtDirectory dir = Open(GetDirectoryName(path), root, DirectoryAccessRights.Query))
                 {
                     ObjectDirectoryInformation dir_info = dir.GetDirectoryEntry(GetFileName(path));
                     if (dir_info != null)
