@@ -2527,6 +2527,49 @@ function Add-NtSecurityDescriptorDaclAce {
 
 <#
 .SYNOPSIS
+Creates a new "fake" NT type object.
+.DESCRIPTION
+This cmdlet creates a new "fake" NT type object which can be used to do access checking for objects which aren't 
+real NT types.
+.PARAMETER Name
+The name of the "fake" type.
+.PARAMETER GenericRead
+The value of GenericRead for the GENERIC_MAPPING.
+.PARAMETER GenericWrite
+The value of GenericWrite for the GENERIC_MAPPING.
+.PARAMETER GenericExecute
+The value of GenericExecute for the GENERIC_MAPPING.
+.PARAMETER GenericAll
+The value of GenericAll for the GENERIC_MAPPING.
+.PARAMETER AccessRightsType
+The enumerated type 
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.NtType
+.EXAMPLE
+Add-NtSecurityDescriptorDaclAce -SecurityDescriptor $sd -Sid "S-1-1-0" -AccessMask 0x1234
+Adds an access allowed ACE to the DACL for SID S-1-1-0 and mask of 0x1234
+.EXAMPLE
+Add-NtSecurityDescriptorDaclAce -SecurityDescriptor $sd -Sid "S-1-1-0" -AccessMask (Get-NtAccessMask -FileAccess ReadData)
+Adds an access allowed ACE to the DACL for SID S-1-1-0 and mask for the file ReadData access right.
+#>
+function New-NtType {
+    Param(
+        [parameter(Position=0, Mandatory)]
+        [string]$Name,
+        [System.Type]$AccessRightsType = [NtApiDotNet.GenericAccessRights],
+        [NtApiDotNet.AccessMask]$GenericRead = 0,
+        [NtApiDotNet.AccessMask]$GenericWrite = 0,
+        [NtApiDotNet.AccessMask]$GenericExecute = 0,
+        [NtApiDotNet.AccessMask]$GenericAll = 0
+    )
+
+    [NtApiDotNet.NtType]::GetFakeType($Name, $GenericRead, $GenericWrite, $GenericExecute, $GenericAll, $AccessRightsType)
+}
+
+<#
+.SYNOPSIS
 Get a filtered token.
 .DESCRIPTION
 This is left for backwards compatibility, use 'Get-NtToken -Filtered' instead.

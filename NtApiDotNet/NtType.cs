@@ -94,6 +94,13 @@ namespace NtApiDotNet
             }
         }
 
+        internal NtTypeFactory(Type access_rights_type, Type object_type)
+        {
+            AccessRightsType = access_rights_type;
+            ObjectType = object_type;
+            _from_handle_method = h => throw new NotImplementedException();
+        }
+
         public NtTypeFactory(Type object_type)
         {
             Type base_type = object_type.BaseType;
@@ -454,6 +461,21 @@ namespace NtApiDotNet
             return (GenericMapping.MapMask(access_mask) & ~ValidAccess).IsEmpty;
         }
 
+        internal NtType(string name, GenericMapping generic_mapping, Type access_rights_type)
+        {
+            if (!access_rights_type.IsEnum)
+            {
+                throw new ArgumentException("Specify an enumerated type", "access_rights_type");
+            }
+            _type_factory = new NtTypeFactory(access_rights_type, typeof(object));
+            Name = name;
+            GenericMapping = generic_mapping;
+            GenericRead = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericRead, GenericMapping, access_rights_type, false);
+            GenericWrite = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericWrite, GenericMapping, access_rights_type, false);
+            GenericExecute = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericExecute, GenericMapping, access_rights_type, false);
+            GenericAll = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericAll, GenericMapping, access_rights_type, false);
+        }
+
         internal NtType(int id, string name)
         {
             Index = id;
@@ -608,6 +630,36 @@ namespace NtApiDotNet
                     status.ToNtException();
                 return return_length;
             }
+        }
+
+        /// <summary>
+        /// Get a fake type object. This can be used in access checking for operations which need an NtType object
+        /// but there's no real NT object.
+        /// </summary>
+        /// <param name="name">The name of the fake type. Informational only.</param>
+        /// <param name="generic_mapping">The GENERIC_MAPPING for security checking.</param>
+        /// <param name="access_rights_type">The access rights enumeration type.</param>
+        /// <returns></returns>
+        public static NtType GetFakeType(string name, GenericMapping generic_mapping, Type access_rights_type)
+        {
+            return new NtType(name, generic_mapping, access_rights_type);
+        }
+
+        /// <summary>
+        /// Get a fake type object. This can be used in access checking for operations which need an NtType object
+        /// but there's no real NT object.
+        /// </summary>
+        /// <param name="name">The name of the fake type. Informational only.</param>
+        /// <param name="generic_read">The GENERIC_READ for security checking.</param>
+        /// <param name="generic_write">The GENERIC_WRITE for security checking.</param>
+        /// <param name="generic_exec">The GENERIC_EXECUTE for security checking.</param>
+        /// <param name="generic_all">The GENERIC_ALL for security checking.</param>
+        /// <param name="access_rights_type">The access rights enumeration type.</param>
+        /// <returns></returns>
+        public static NtType GetFakeType(string name, AccessMask generic_read, AccessMask generic_write, 
+            AccessMask generic_exec, AccessMask generic_all, Type access_rights_type)
+        {
+            return new NtType(name, new GenericMapping() { GenericRead = generic_read, GenericWrite = generic_write, GenericExecute = generic_exec, GenericAll = generic_all }, access_rights_type);
         }
 
         private static Dictionary<string, NtType> LoadTypes()
