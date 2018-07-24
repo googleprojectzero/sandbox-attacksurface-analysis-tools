@@ -1338,6 +1338,19 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    public class NdrHandleTypeReference : NdrBaseTypeReference
+    {
+        internal NdrHandleTypeReference(NdrFormatCharacter format) 
+            : base(format)
+        {
+        }
+
+        internal override string FormatType(NdrFormatter context)
+        {
+            return $"{context.FormatComment(Format.ToString())} {context.SimpleTypeToName(Format)}";
+        }
+    }
+
     public class NdrBaseTypeReference
     {
         public NdrFormatCharacter Format { get; private set; }
@@ -1763,6 +1776,12 @@ namespace NtApiDotNet.Ndr
                         return new NdrStructurePaddingTypeReference(format);
                     case NdrFormatCharacter.FC_SYSTEM_HANDLE:
                         return new NdrSystemHandleTypeReference(reader);
+                    case NdrFormatCharacter.FC_AUTO_HANDLE:
+                    case NdrFormatCharacter.FC_CALLBACK_HANDLE:
+                    case NdrFormatCharacter.FC_BIND_CONTEXT:
+                    case NdrFormatCharacter.FC_BIND_PRIMITIVE:
+                    case NdrFormatCharacter.FC_BIND_GENERIC:
+                        return new NdrHandleTypeReference(format);
                     default:
                         return new NdrUnknownTypeReference(format);
                 }
