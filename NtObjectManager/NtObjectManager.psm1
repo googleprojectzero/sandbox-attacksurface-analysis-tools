@@ -1541,6 +1541,8 @@ Specify the address in the process to read the security descriptor.
 Specify an object path to get the security descriptor from.
 .PARAMETER TypeName
 Specify the type name of the object at Path. Needed if the module cannot automatically determine the NT type to open.
+.INPUTS
+NtApiDotNet.NtObject[]
 .OUTPUTS
 NtApiDotNet.SecurityDescriptor
 string
@@ -1612,47 +1614,61 @@ Set the security descriptor for an object.
 .DESCRIPTION
 This cmdlet sets the security descriptor for an object with specified list of security information.
 .PARAMETER Object
-The object to get the security descriptor from.
+The object to set the security descriptor to.
 .PARAMETER SecurityInformation
-The security information to get from the object.
-.PARAMETER ToSddl
-Convert the security descriptor to an SDDL string.
+The security information to set obj the object.
+.PARAMETER Path
+Specify an object path to set the security descriptor to.
+.PARAMETER TypeName
+Specify the type name of the object at Path. Needed if the module cannot automatically determine the NT type to open.
+.PARAMETER SecurityDescriptor
+The security descriptor to set. Can specify an SDDL string which will be auto-converted.
+.INPUTS
+NtApiDotNet.NtObject[]
 .OUTPUTS
-NtApiDotNet.SecurityDescriptor
-string
+None
 .EXAMPLE
 Set-NtSecurityDescriptor $obj $sd Dacl
-Set the DACL of an object.
+Set the DACL of an object using a SecurityDescriptor object.
 .EXAMPLE
 Set-NtSecurityDescriptor $obj "D:(A;;GA;;;WD)" Dacl
 Set the DACL of an object based on an SDDL string.
 #>
 function Set-NtSecurityDescriptor
 {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = "ToObject")]
     param (
-        [parameter(Mandatory, Position=0, ValueFromPipeline)]
+        [parameter(Mandatory, Position=0, ValueFromPipeline, ParameterSetName = "ToObject")]
         [NtApiDotNet.NtObject]$Object,
-        [parameter(Mandatory, Position=1, ParameterSetName = "FromSD")]
+        [parameter(Mandatory, Position=0, ParameterSetName = "ToPath")]
+        [string]$Path,
+        [parameter(Mandatory, Position=1)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
-        [parameter(Mandatory, Position=1, ParameterSetName = "FromSddl")]
-        [string]$Sddl,
         [parameter(Mandatory, Position=2)]
-        [NtApiDotNet.SecurityInformation]$SecurityInformation
+        [NtApiDotNet.SecurityInformation]$SecurityInformation,
+        [parameter(ParameterSetName = "ToPath")]
+        [string]$TypeName
         
     )
-    BEGIN {
-        switch($PSCmdlet.ParameterSetName) {
-            "FromSD" {
-                $sd = $SecurityDescriptor
+    PROCESS {
+        switch($PsCmdlet.ParameterSetName) {
+            "ToObject" {
+                $Object.SetSecurityDescriptor($SecurityDescriptor, $SecurityInformation)
             }
-            "FromSddl" {
-                $sd = New-NtSecurityDescriptor -Sddl $Sddl
+            "ToPath" {
+                $access = [NtApiDotNet.GenericAccessRights]::WriteDac
+                if (($SecurityInformation -band "Owner, Label") -ne 0) {
+                    $access = $access -bor "WriteOwner"
+                }
+                if (($SecurityInformation -band "Sacl") -ne 0) {
+                    $access = $access -bor "AccessSystemSecurity"
+                }
+
+                Use-NtObject($obj = Get-NtObject -Path $Path -TypeName $TypeName -Access $access) {
+                    $obj.SetSecurityDescriptor($SecurityDescriptor, $SecurityInformation)
+                }
             }
         }
-    }
-    PROCESS {
-        $Object.SetSecurityDescriptor($sd, $SecurityInformation)
     }
 }
 
