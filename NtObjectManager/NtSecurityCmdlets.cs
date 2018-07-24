@@ -633,4 +633,88 @@ namespace NtApiDotNet
             }
         }
     }
+
+
+    /// <summary>
+    /// <para type="synopsis">Create a new security descriptor which can be used on NT objects.</para>
+    /// <para type="description">This cmdlet creates a new instance of a SecurityDescriptor object. This can be 
+    /// used directly with one of the New-Nt* cmdlets (via the -SecurityDescriptor parameter) or by calling
+    /// SetSecurityDescriptor on an existing object (assume the object has been opened with the correct permissions.
+    /// </para>
+    /// </summary>
+    /// <example>
+    ///   <code>$sd = New-NtSecurityDescriptor</code>
+    ///   <para>Create a new empty security descriptor object.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$sd = New-NtSecurityDescriptor "O:BAG:BAD:(A;;GA;;;WD)"</code>
+    ///   <para>Create a new security descriptor object from an SDDL string</para>
+    /// </example>
+    /// <example>
+    ///   <code>$sd = New-NtSecurityDescriptor -NullDacl</code>
+    ///   <para>Create a new security descriptor object with a NULL DACL.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$sd = New-NtSecurityDescriptor "D:(A;;GA;;;WD)"&#x0A;$obj = New-NtDirectory \BaseNamedObjects\ABC -SecurityDescriptor $sd</code>
+    ///   <para>Create a new object directory with an explicit security descriptor.</para>
+    /// </example>
+    [Cmdlet(VerbsCommon.New, "NtSecurityDescriptor", DefaultParameterSetName = "EmptySd")]
+    [OutputType(typeof(SecurityDescriptor))]
+    public sealed class NewNtSecurityDescriptorCmdlet : PSCmdlet
+    {
+        /// <summary>
+        /// <para type="description">Specify to create the security descriptor with a NULL DACL.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "EmptySd")]
+        public SwitchParameter NullDacl { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to create the security descriptor from an SDDL representation.</para>
+        /// </summary>
+        [Parameter(Position = 0, ParameterSetName = "FromSddl")]
+        public string Sddl { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to create the security descriptor from the default DACL of a token object.</para>
+        /// </summary>
+        [Parameter(Position = 0, ParameterSetName = "FromToken")]
+        public NtToken Token { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify an NT type to map generic accesses.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromToken"), Parameter(ParameterSetName = "FromSddl")]
+        public NtType MapType { get; set; }
+
+        /// <summary>
+        /// Overridden ProcessRecord method.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            SecurityDescriptor sd = null;
+            switch (ParameterSetName)
+            {
+                case "FromToken":
+                    sd = new SecurityDescriptor(Token);
+                    break;
+                case "FromSddl":
+                    sd = new SecurityDescriptor(Sddl);
+                    break;
+                default:
+                    sd = new SecurityDescriptor
+                    {
+                        Dacl = new Acl()
+                    };
+                    sd.Dacl.NullAcl = NullDacl;
+                    break;
+            }
+
+            if (MapType != null)
+            {
+                sd.MapGenericAccess(MapType);
+            }
+
+            WriteObject(sd);
+        }
+    }
 }

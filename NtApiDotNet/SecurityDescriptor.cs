@@ -853,5 +853,34 @@ namespace NtApiDotNet
         {
             MandatoryLabel = new Ace(AceType.MandatoryLabel, flags, policy, label);
         }
+
+        /// <summary>
+        /// Map all generic access in this security descriptor to a specific type.
+        /// </summary>
+        /// <param name="type">The type to get the generic mapping from.</param>
+        public void MapGenericAccess(NtType type)
+        {
+            MapGenericAccess(type.GenericMapping);
+        }
+
+        /// <summary>
+        /// Map all generic access in this security descriptor to a specific type.
+        /// </summary>
+        /// <param name="generic_mapping">The generic mapping.</param>
+        public void MapGenericAccess(GenericMapping generic_mapping)
+        {
+            if (Dacl != null)
+            {
+                foreach (Ace ace in Dacl)
+                {
+                    ace.Mask = generic_mapping.MapMask(ace.Mask);
+                }
+            }
+
+            if (ProcessTrustLabel != null)
+            {
+                ProcessTrustLabel.Mask = generic_mapping.MapMask(ProcessTrustLabel.Mask);
+            }
+        }
     }
 }
