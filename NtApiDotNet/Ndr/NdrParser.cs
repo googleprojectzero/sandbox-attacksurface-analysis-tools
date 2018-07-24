@@ -237,24 +237,28 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        private bool InitFromProxyFileInfo(ProxyFileInfo proxy_file_info, IList<NdrComProxyDefinition> interfaces)
+        private bool InitFromProxyFileInfo(ProxyFileInfo proxy_file_info, IList<NdrComProxyDefinition> interfaces, HashSet<Guid> iid_set)
         {
             string[] names = proxy_file_info.GetNames(_reader);
             CInterfaceStubHeader[] stubs = proxy_file_info.GetStubs(_reader);
             Guid[] base_iids = proxy_file_info.GetBaseIids(_reader);
             for (int i = 0; i < names.Length; ++i)
             {
-                interfaces.Add(new NdrComProxyDefinition(names[i], stubs[i].GetIid(_reader),
-                    base_iids[i], stubs[i].DispatchTableCount, ReadProcs(base_iids[i], stubs[i])));
+                Guid iid = stubs[i].GetIid(_reader);
+                if (iid_set.Count == 0 || iid_set.Contains(iid))
+                {
+                    interfaces.Add(new NdrComProxyDefinition(names[i], iid,
+                        base_iids[i], stubs[i].DispatchTableCount, ReadProcs(base_iids[i], stubs[i])));
+                }
             }
             return true;
         }
 
-        private bool InitFromProxyFileInfoArray(IntPtr proxy_file_info_array, IList<NdrComProxyDefinition> interfaces)
+        private bool InitFromProxyFileInfoArray(IntPtr proxy_file_info_array, IList<NdrComProxyDefinition> interfaces, HashSet<Guid> iid_set)
         {
             foreach (var file_info in _reader.EnumeratePointerList<ProxyFileInfo>(proxy_file_info_array))
             {
-                if (!InitFromProxyFileInfo(file_info, interfaces))
+                if (!InitFromProxyFileInfo(file_info, interfaces, iid_set))
                 {
                     return false;
                 }
@@ -263,8 +267,13 @@ namespace NtApiDotNet.Ndr
             return true;
         }
 
-        private bool InitFromFile(string path, Guid clsid, IList<NdrComProxyDefinition> interfaces)
+        private bool InitFromFile(string path, Guid clsid, IList<NdrComProxyDefinition> interfaces, IEnumerable<Guid> iids)
         {
+            if (iids == null)
+            {
+                iids = new Guid[0];
+            }
+            HashSet<Guid> iid_set = new HashSet<Guid>(iids);
             using (SafeLoadLibraryHandle lib = SafeLoadLibraryHandle.LoadLibrary(path))
             {
                 _symbol_resolver?.LoadModule(path, lib.DangerousGetHandle());
@@ -274,7 +283,7 @@ namespace NtApiDotNet.Ndr
                     return false;
                 }
 
-                return InitFromProxyFileInfoArray(pInfo, interfaces);
+                return InitFromProxyFileInfoArray(pInfo, interfaces, iid_set);
             }
         }
 
@@ -379,7 +388,7 @@ namespace NtApiDotNet.Ndr
         public IEnumerable<NdrComProxyDefinition> ReadFromProxyFileInfo(IntPtr proxy_file_info)
         {
             List<NdrComProxyDefinition> interfaces = new List<NdrComProxyDefinition>();
-            if (!RunWithAccessCatch(() => InitFromProxyFileInfo(_reader.ReadStruct<ProxyFileInfo>(proxy_file_info), interfaces)))
+            if (!RunWithAccessCatch(() => InitFromProxyFileInfo(_reader.ReadStruct<ProxyFileInfo>(proxy_file_info), interfaces, new HashSet<Guid>())))
             {
                 throw new NdrParserException("Can't find proxy information in server DLL");
             }
@@ -395,7 +404,30 @@ namespace NtApiDotNet.Ndr
         public IEnumerable<NdrComProxyDefinition> ReadFromProxyFileInfoArray(IntPtr proxy_file_info_array)
         {
             List<NdrComProxyDefinition> interfaces = new List<NdrComProxyDefinition>();
-            if (!RunWithAccessCatch(() => InitFromProxyFileInfoArray(proxy_file_info_array, interfaces)))
+            if (!RunWithAccessCatch(() => InitFromProxyFileInfoArray(proxy_file_info_array, interfaces, new HashSet<Guid>())))
+            {
+                throw new NdrParserException("Can't find proxy information in server DLL");
+            }
+
+            return interfaces.AsReadOnly();
+        }
+
+        /// <summary>
+        /// Read COM proxy information from a file.
+        /// </summary>
+        /// <param name="path">The path to the DLL containing the proxy.</param>
+        /// <param name="clsid">Optional CLSID for the proxy class.</param>
+        /// <param name="iids">List of IIDs to parse.</param>
+        /// <returns>The list of parsed proxy definitions.</returns>
+        public IEnumerable<NdrComProxyDefinition> ReadFromComProxyFile(string path, Guid clsid, IEnumerable<Guid> iids)
+        {
+            if (!_reader.InProcess)
+            {
+                throw new NdrParserException("Can't parse COM proxy information from a file out of process.");
+            }
+
+            List<NdrComProxyDefinition> interfaces = new List<NdrComProxyDefinition>();
+            if (!RunWithAccessCatch(() => InitFromFile(path, clsid, interfaces, iids)))
             {
                 throw new NdrParserException("Can't find proxy information in server DLL");
             }
@@ -411,18 +443,7 @@ namespace NtApiDotNet.Ndr
         /// <returns>The list of parsed proxy definitions.</returns>
         public IEnumerable<NdrComProxyDefinition> ReadFromComProxyFile(string path, Guid clsid)
         {
-            if (!_reader.InProcess)
-            {
-                throw new NdrParserException("Can't parse COM proxy information from a file out of process.");
-            }
-
-            List<NdrComProxyDefinition> interfaces = new List<NdrComProxyDefinition>();
-            if (!RunWithAccessCatch(() => InitFromFile(path, clsid, interfaces)))
-            {
-                throw new NdrParserException("Can't find proxy information in server DLL");
-            }
-
-            return interfaces.AsReadOnly();
+            return ReadFromComProxyFile(path, clsid, null);
         }
 
         /// <summary>

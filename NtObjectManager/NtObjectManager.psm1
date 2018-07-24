@@ -2119,6 +2119,8 @@ This cmdlet parses the COM proxy information from a specified DLL.
 The path to the DLL containing the COM proxy information.
 .PARAMETER Clsid
 Optional CLSID for the object used to find the proxy information.
+.PARAMETER Iids
+Optional list of IIDs to parse from the proxy information.
 .OUTPUTS
 The parsed proxy information and complex types.
 .EXAMPLE
@@ -2127,17 +2129,21 @@ Parse the proxy information from c:\path\to\proxy.dll
 .EXAMPLE
 $p = Get-NdrComProxy $env:SystemRoot\system32\combase.dll -Clsid "00000320-0000-0000-C000-000000000046"
 Parse the proxy information from combase.dll with a specific proxy CLSID.
+.EXAMPLE
+$p = Get-NdrComProxy $env:SystemRoot\system32\combase.dll -Clsid "00000320-0000-0000-C000-000000000046" -Iid "00000001-0000-0000-c000-000000000046"
+Parse the proxy information from combase.dll with a specific proxy CLSID, only returning a specific IID.
 #>
 function Get-NdrComProxy {
     Param(
         [parameter(Mandatory, Position=0)]
         [string]$Path,
         [Guid]$Clsid = [Guid]::Empty,
-        [NtApiDotNet.Win32.ISymbolResolver]$SymbolResolver
+        [NtApiDotNet.Win32.ISymbolResolver]$SymbolResolver,
+        [Guid[]]$Iid
     )
     $Path = Resolve-Path $Path -ErrorAction Stop
     Use-NtObject($parser = New-NdrParser -SymbolResolver $SymbolResolver) {
-        $proxies = $parser.ReadFromComProxyFile($Path, $Clsid)
+        $proxies = $parser.ReadFromComProxyFile($Path, $Clsid, $Iid)
         $props = @{
             Path=$Path;
             Proxies=$proxies;
