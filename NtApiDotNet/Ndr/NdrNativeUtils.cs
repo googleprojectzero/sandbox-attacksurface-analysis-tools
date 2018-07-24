@@ -92,6 +92,31 @@ namespace NtApiDotNet.Ndr
             return ReadPointerArray(reader, p, count, i => reader.ReadStruct<T>(i));
         }
 
+        internal static RPC_VERSION ToRpcVersion(this Version version)
+        {
+            return new RPC_VERSION() { MajorVersion = (ushort)version.Major, MinorVersion = (ushort)version.Minor };
+        }
+
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcBindingFromStringBinding([MarshalAs(UnmanagedType.LPTStr)] string StringBinding, out IntPtr Binding);
+
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcBindingFree(ref IntPtr Binding);
+
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcEpResolveBinding(IntPtr Binding, ref RPC_SERVER_INTERFACE IfSpec);
+
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcBindingToStringBinding(
+            IntPtr Binding,
+            out IntPtr StringBinding
+        );
+
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcStringFree(
+            ref IntPtr String
+        );
+
         internal static readonly Guid IID_IUnknown = new Guid("00000000-0000-0000-C000-000000000046");
         internal static readonly Guid IID_IDispatch = new Guid("00020400-0000-0000-C000-000000000046");
         internal static readonly Guid IID_IPSFactoryBuffer = new Guid("D5F569D0-593B-101A-B569-08002B2DBF7A");
@@ -449,6 +474,46 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RPC_PROTSEQ_ENDPOINT32 : IConvertToNative<RPC_PROTSEQ_ENDPOINT>
+    {
+        public IntPtr32 RpcProtocolSequence;
+        public IntPtr32 Endpoint;
+
+        public RPC_PROTSEQ_ENDPOINT Convert()
+        {
+            RPC_PROTSEQ_ENDPOINT ret = new RPC_PROTSEQ_ENDPOINT();
+            ret.RpcProtocolSequence = RpcProtocolSequence.Convert();
+            ret.Endpoint = Endpoint.Convert();
+            return ret;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential), CrossBitnessType(typeof(RPC_PROTSEQ_ENDPOINT32))]
+    internal struct RPC_PROTSEQ_ENDPOINT
+    {
+        public IntPtr RpcProtocolSequence;
+        public IntPtr Endpoint;
+
+        public string GetRpcProtocolSequence(IMemoryReader reader)
+        {
+            if (RpcProtocolSequence == IntPtr.Zero)
+            {
+                return string.Empty;
+            }
+            return reader.ReadAnsiStringZ(RpcProtocolSequence);
+        }
+
+        public string GetEndpoint(IMemoryReader reader)
+        {
+            if (Endpoint == IntPtr.Zero)
+            {
+                return string.Empty;
+            }
+            return reader.ReadAnsiStringZ(Endpoint);
+        }
+    }
+
     [StructLayout(LayoutKind.Sequential), CrossBitnessType(typeof(RPC_SERVER_INTERFACE32))]
     internal struct RPC_SERVER_INTERFACE
     {
@@ -479,6 +544,15 @@ namespace NtApiDotNet.Ndr
                 return new MIDL_SERVER_INFO();
             }
             return reader.ReadStruct<MIDL_SERVER_INFO>(InterpreterInfo);
+        }
+
+        public RPC_PROTSEQ_ENDPOINT[] GetProtSeq(IMemoryReader reader)
+        {
+            if (RpcProtseqEndpoint == IntPtr.Zero || RpcProtseqEndpointCount == 0)
+            {
+                return new RPC_PROTSEQ_ENDPOINT[0];
+            }
+            return reader.ReadArray<RPC_PROTSEQ_ENDPOINT>(RpcProtseqEndpoint, RpcProtseqEndpointCount);
         }
     }
 

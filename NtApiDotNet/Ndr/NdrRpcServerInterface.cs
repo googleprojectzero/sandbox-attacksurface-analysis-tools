@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Ndr
 {
@@ -43,15 +44,72 @@ namespace NtApiDotNet.Ndr
         /// List of parsed procedures.
         /// </summary>
         public IList<NdrProcedureDefinition> Procedures { get; }
+        /// <summary>
+        /// List of protocol sequences.
+        /// </summary>
+        public IList<NdrProtocolSequenceEndpoint> ProtocolSequences { get; }
+
+        /// <summary>
+        /// Resolve the local binding string for this service from the local Endpoint Mapper.
+        /// </summary>
+        /// <remarks>This only will return a valid value if the service is running and registered with the Endpoint Mapper. It can also hang.</remarks>
+        /// <returns>The RPC binding string. Empty string if it doesn't exist or the lookup failed.</returns>
+        public string ResolveLocalBindingString()
+        {
+            IntPtr binding = IntPtr.Zero;
+            IntPtr str_binding = IntPtr.Zero;
+            try
+            {
+                int result = NdrNativeUtils.RpcBindingFromStringBinding("ncalrpc:", out binding);
+                if (result != 0)
+                {
+                    return string.Empty;
+                }
+
+                RPC_SERVER_INTERFACE ifspec = new RPC_SERVER_INTERFACE();
+                ifspec.Length = Marshal.SizeOf(ifspec);
+                ifspec.InterfaceId.SyntaxGUID = InterfaceId;
+                ifspec.InterfaceId.SyntaxVersion = InterfaceVersion.ToRpcVersion();
+                ifspec.TransferSyntax.SyntaxGUID = TransferSyntaxId;
+                ifspec.TransferSyntax.SyntaxVersion = TransferSyntaxVersion.ToRpcVersion();
+
+                result = NdrNativeUtils.RpcEpResolveBinding(binding, ref ifspec);
+                if (result != 0)
+                {
+                    return string.Empty;
+                }
+
+                result = NdrNativeUtils.RpcBindingToStringBinding(binding, out str_binding);
+                if (result != 0)
+                {
+                    return string.Empty;
+                }
+
+                return Marshal.PtrToStringUni(str_binding);
+            }
+            finally
+            {
+                if (binding != IntPtr.Zero)
+                {
+                    NdrNativeUtils.RpcBindingFree(ref binding);
+                }
+                if (str_binding != IntPtr.Zero)
+                {
+                    NdrNativeUtils.RpcStringFree(ref str_binding);
+                }
+            }
+        }
 
         internal NdrRpcServerInterface(RPC_SYNTAX_IDENTIFIER interface_id, 
-            RPC_SYNTAX_IDENTIFIER transfer_syntax_id, IEnumerable<NdrProcedureDefinition> procedures)
+            RPC_SYNTAX_IDENTIFIER transfer_syntax_id, IEnumerable<NdrProcedureDefinition> procedures,
+            IEnumerable<NdrProtocolSequenceEndpoint> protocol_sequences)
         {
             InterfaceId = interface_id.SyntaxGUID;
             InterfaceVersion = new Version(interface_id.SyntaxVersion.MajorVersion, interface_id.SyntaxVersion.MinorVersion);
             TransferSyntaxId = transfer_syntax_id.SyntaxGUID;
             TransferSyntaxVersion = new Version(transfer_syntax_id.SyntaxVersion.MajorVersion, transfer_syntax_id.SyntaxVersion.MinorVersion);
             Procedures = procedures.ToList().AsReadOnly();
+            ProtocolSequences = protocol_sequences.ToList().AsReadOnly();
         }
 
         internal string Format(NdrFormatter context)

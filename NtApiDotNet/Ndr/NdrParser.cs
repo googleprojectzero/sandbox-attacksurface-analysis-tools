@@ -116,7 +116,8 @@ namespace NtApiDotNet.Ndr
         {
             RPC_DISPATCH_TABLE dispatch_table = server_interface.GetDispatchTable(reader);
             var procs = ReadProcs(reader, server_interface.GetServerInfo(reader), 0, dispatch_table.DispatchTableCount, type_cache, symbol_resolver, null);
-            return new NdrRpcServerInterface(server_interface.InterfaceId, server_interface.TransferSyntax, procs);
+            return new NdrRpcServerInterface(server_interface.InterfaceId, server_interface.TransferSyntax, procs,
+                server_interface.GetProtSeq(reader).Select(s => new NdrProtocolSequenceEndpoint(s, reader)));
         }
 
         private static IEnumerable<NdrProcedureDefinition> ReadProcs(IMemoryReader reader, MIDL_SERVER_INFO server_info, int start_offset,
