@@ -1046,7 +1046,7 @@ function Show-NtSecurityDescriptor {
         }
         # For some reason ALPC ports can't be passed to child processes. So instead pass as an SD.
         if ($Object.NtType.Name -eq "ALPC Port") {
-            Show-NtSecurityDescriptor $Object.SecurityDescriptor $Object.NtType -Name $Object.Name
+            Show-NtSecurityDescriptor $Object.SecurityDescriptor $Object.NtType -Name $Object.Name -Wait:$Wait
             return
         }
         Use-NtObject($obj = $Object.Duplicate()) {
