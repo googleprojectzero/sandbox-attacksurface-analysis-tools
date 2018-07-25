@@ -115,7 +115,7 @@ namespace NtApiDotNet.Ndr
         internal string Format(NdrFormatter context)
         {
             NdrStringBuilder builder = new NdrStringBuilder();
-            builder.AppendLine("[uuid(\"{0}\")]", InterfaceId);
+            builder.AppendLine("[uuid(\"{0}\"), version({1})]", InterfaceId, InterfaceVersion);
             builder.AppendLine("interface intf_{0} {{", InterfaceId.ToString().Replace('-','_'));
             builder.PushIndent(' ', 4);
             foreach (NdrProcedureDefinition proc in Procedures)
