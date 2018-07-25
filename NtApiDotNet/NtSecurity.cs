@@ -2639,8 +2639,9 @@ namespace NtApiDotNet
                 {
                     foreach (string name in _known_capability_names)
                     {
-                        Sid sid = GetCapabilitySid(name);
-                        known_capabilities.Add(sid, name);
+                        GetCapabilitySids(name, out Sid capability_sid, out Sid capability_group_sid);
+                        known_capabilities.Add(capability_sid, name);
+                        known_capabilities.Add(capability_group_sid, name);
                     }
                 }
                 catch (EntryPointNotFoundException)
@@ -3281,9 +3282,34 @@ namespace NtApiDotNet
                 (sid.SubAuthorities[0] == 3);
         }
 
+        /// <summary>
+        /// Checks if a SID is a capbility group SID.
+        /// </summary>
+        /// <param name="sid">The sid to check.</param>
+        /// <returns>True if a capability group sid.</returns>
+        public static bool IsCapabilityGroupSid(Sid sid)
+        {
+            return sid.Authority.IsAuthority(SecurityAuthority.Nt) && 
+                sid.SubAuthorities.Count == 9 &&
+                sid.SubAuthorities[0] == 32;
+        }
+
         private static int GetSidSize(int rids)
         {
             return 8 + rids * 4;
+        }
+
+        private static void GetCapabilitySids(string capability_name, out Sid capability_sid, out Sid capability_group_sid)
+        {
+            using (SafeHGlobalBuffer cap_sid = new SafeHGlobalBuffer(GetSidSize(9)),
+                    cap_group_sid = new SafeHGlobalBuffer(GetSidSize(10)))
+            {
+                NtRtl.RtlDeriveCapabilitySidsFromName(
+                    new UnicodeString(capability_name),
+                    cap_group_sid, cap_sid).ToNtException();
+                capability_sid = new Sid(cap_sid);
+                capability_group_sid = new Sid(cap_group_sid);
+            }
         }
 
         /// <summary>
@@ -3546,7 +3572,7 @@ namespace NtApiDotNet
             return result.ToString();
         }
 
-        private static string MakeFakeCapabilityName(string name)
+        private static string MakeFakeCapabilityName(string name, bool group)
         {
             List<string> parts = new List<string>();
             if (name.Contains("_"))
@@ -3571,7 +3597,7 @@ namespace NtApiDotNet
                 parts[0] = UpperCaseString(parts[0]);
             }
 
-            return $@"NAMED CAPABILITIES\{String.Join(" ", parts)}";
+            return $@"NAMED CAPABILITIES{(group ? " GROUP":"")}\{String.Join(" ", parts)}";
         }
 
         private static SidName GetNameForSidInternal(Sid sid)
@@ -3594,17 +3620,25 @@ namespace NtApiDotNet
                             uint[] sub_authorities = sid.SubAuthorities.ToArray();
                             // Convert to a package SID.
                             sub_authorities[0] = 2;
-                            name = NtSecurity.LookupPackageName(new Sid(sid.Authority, sub_authorities));
+                            name = LookupPackageName(new Sid(sid.Authority, sub_authorities));
                             break;
                         case 5:
-                            name = NtSecurity.LookupDeviceCapabilityName(sid);
+                            name = LookupDeviceCapabilityName(sid);
                             break;
                     }
                 }
 
                 if (!string.IsNullOrWhiteSpace(name))
                 {
-                    return new SidName(MakeFakeCapabilityName(name), SidNameSource.Capability);
+                    return new SidName(MakeFakeCapabilityName(name, false), SidNameSource.Capability);
+                }
+            }
+            else if (IsCapabilityGroupSid(sid))
+            {
+                name = LookupKnownCapabilityName(sid);
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    return new SidName(MakeFakeCapabilityName(name, true), SidNameSource.Capability);
                 }
             }
             else if (IsPackageSid(sid))
