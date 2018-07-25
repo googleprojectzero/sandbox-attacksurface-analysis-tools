@@ -2615,6 +2615,52 @@ function New-NtType {
 
 <#
 .SYNOPSIS
+Gets an ALPC server port.
+.DESCRIPTION
+This cmdlet gets an ALPC server port by name. As you can't directly open the server end of the port this function goes through
+all handles and tries to extract the port from the hosting process. This might require elevated privileges.
+.PARAMETER Path
+The path to the ALPC server port to get.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.NtAlpc
+.EXAMPLE
+Add-NtSecurityDescriptorDaclAce -SecurityDescriptor $sd -Sid "S-1-1-0" -AccessMask 0x1234
+Adds an access allowed ACE to the DACL for SID S-1-1-0 and mask of 0x1234
+.EXAMPLE
+Add-NtSecurityDescriptorDaclAce -SecurityDescriptor $sd -Sid "S-1-1-0" -AccessMask (Get-NtAccessMask -FileAccess ReadData)
+Adds an access allowed ACE to the DACL for SID S-1-1-0 and mask for the file ReadData access right.
+#>
+function Get-NtAlpcServer {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+       [parameter(Mandatory=$true, Position=0, ParameterSetName = "FromPath")]
+       [string]$Path
+    )
+
+    if (![NtApiDotNet.NtToken]::EnableDebugPrivilege()) {
+        Write-Warning "Can't enable debug privilege, result might be incomplete"
+    }
+    $hs = Get-NtHandle -ObjectTypes "ALPC Port" | ? Name -ne ""
+
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            Write-Output $hs.GetObject()
+        }
+        "FromPath" {
+            foreach($h in $hs) {
+                if ($h.Name -eq $Path) {
+                    Write-Output $h.GetObject()
+                    break
+                }
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
 Get a filtered token.
 .DESCRIPTION
 This is left for backwards compatibility, use 'Get-NtToken -Filtered' instead.
