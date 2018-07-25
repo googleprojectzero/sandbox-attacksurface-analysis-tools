@@ -79,7 +79,8 @@ namespace NtApiDotNet.Ndr
             string base_name = context.IidToName(BaseIid);
             if (base_name == null)
             {
-                base_name = $"/* Unknown IID {BaseIid} */ IUnknown";
+                string unknown_iid = $"Unknown IID {BaseIid}";
+                base_name = $"{context.FormatComment(unknown_iid)} IUnknown";
             }
 
             builder.AppendLine("interface {0} : {1} {{", context.DemangleComName(Name), base_name);

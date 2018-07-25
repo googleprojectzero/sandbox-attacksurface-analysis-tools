@@ -56,13 +56,15 @@ namespace NtApiDotNet.Ndr
     /// </summary>
     internal class NdrFormatter : INdrFormatter
     {
-        private IDictionary<Guid, string> _iids_to_name;
-        private Func<string, string> _demangle_com_name;
+        private readonly IDictionary<Guid, string> _iids_to_name;
+        private readonly Func<string, string> _demangle_com_name;
+        private DefaultNdrFormatterFlags _flags;
 
-        internal NdrFormatter(IDictionary<Guid, string> iids_to_names, Func<string, string> demangle_com_name)
+        internal NdrFormatter(IDictionary<Guid, string> iids_to_names, Func<string, string> demangle_com_name, DefaultNdrFormatterFlags flags)
         {
             _iids_to_name = iids_to_names;
             _demangle_com_name = demangle_com_name;
+            _flags = flags;
         }
 
         internal string IidToName(Guid iid)
@@ -141,6 +143,10 @@ namespace NtApiDotNet.Ndr
 
         internal string FormatComment(string comment)
         {
+            if ((_flags & DefaultNdrFormatterFlags.RemoveComments) == DefaultNdrFormatterFlags.RemoveComments)
+            {
+                return string.Empty;
+            }
             return $"/* {comment} */";
         }
 
@@ -171,6 +177,22 @@ namespace NtApiDotNet.Ndr
     }
 
     /// <summary>
+    /// Flags for the NDR formatter.
+    /// </summary>
+    [Flags]
+    public enum DefaultNdrFormatterFlags
+    {
+        /// <summary>
+        /// No flags. 
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Don't emit comments.
+        /// </summary>
+        RemoveComments = 0x1,
+    }
+
+    /// <summary>
     /// Default NDR formatter constructor.
     /// </summary>
     public static class DefaultNdrFormatter
@@ -180,10 +202,33 @@ namespace NtApiDotNet.Ndr
         /// </summary>
         /// <param name="iids_to_names">Specify a dictionary of IIDs to names.</param>
         /// <param name="demangle_com_name">Function to demangle COM interface names during formatting.</param>
+        /// <param name="flags">Formatter flags.</param>
+        /// <returns>The default formatter.</returns>
+        public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names, Func<string, string> demangle_com_name, DefaultNdrFormatterFlags flags)
+        {
+            return new NdrFormatter(iids_to_names, demangle_com_name, flags);
+        }
+
+        /// <summary>
+        /// Create the default formatter.
+        /// </summary>
+        /// <param name="iids_to_names">Specify a dictionary of IIDs to names.</param>
+        /// <param name="demangle_com_name">Function to demangle COM interface names during formatting.</param>
         /// <returns>The default formatter.</returns>
         public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names, Func<string, string> demangle_com_name)
         {
-            return new NdrFormatter(iids_to_names, demangle_com_name);
+            return Create(iids_to_names, demangle_com_name, DefaultNdrFormatterFlags.None);
+        }
+
+        /// <summary>
+        /// Create the default formatter.
+        /// </summary>
+        /// <param name="iids_to_names">Specify a dictionary of IIDs to names.</param>
+        /// <param name="flags">Formatter flags.</param>
+        /// <returns>The default formatter.</returns>
+        public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names, DefaultNdrFormatterFlags flags)
+        {
+            return Create(iids_to_names, s => s, flags);
         }
 
         /// <summary>
@@ -194,6 +239,16 @@ namespace NtApiDotNet.Ndr
         public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names)
         {
             return Create(iids_to_names, s => s);
+        }
+
+        /// <summary>
+        /// Create the default formatter.
+        /// </summary>
+        /// <param name="flags">Formatter flags.</param>
+        /// <returns>The default formatter.</returns>
+        public static INdrFormatter Create(DefaultNdrFormatterFlags flags)
+        {
+            return Create(new Dictionary<Guid, string>(), flags);
         }
 
         /// <summary>

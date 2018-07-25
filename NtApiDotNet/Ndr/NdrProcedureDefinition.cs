@@ -171,7 +171,8 @@ namespace NtApiDotNet.Ndr
             }
 
             return String.Format("{0} {1}({2});", return_value,
-                Name, string.Join(", ", Params.Select((p, i) => String.Format("/* Stack Offset: {0} */ {1} p{2}", p.Offset, p.Format(context), i))));
+                Name, string.Join(", ", Params.Select((p, i) => String.Format("{0} {1} p{2}", 
+                        context.FormatComment("Stack Offset: {0}", p.Offset), p.Format(context), i))));
         }
 
         internal NdrProcedureDefinition(IMemoryReader mem_reader, NdrTypeCache type_cache, 

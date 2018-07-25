@@ -248,8 +248,7 @@ namespace NtApiDotNet.Ndr
             else
             {
                 bool is_unique = Format == NdrFormatCharacter.FC_UP;
-
-                return String.Format("{0}{1}*", is_unique ? "/* unique */ " : "", Type.FormatType(formatter));
+                return String.Format("{0}{1}*", is_unique ? formatter.FormatComment("unique") : "", Type.FormatType(formatter));
             }
         }
 
@@ -318,7 +317,7 @@ namespace NtApiDotNet.Ndr
             string conformance_desc = string.Empty;
             if (ConformanceDescriptor != null && ConformanceDescriptor.IsValid)
             {
-                conformance_desc = string.Format("/* {0} */ ", ConformanceDescriptor);
+                conformance_desc = context.FormatComment(ConformanceDescriptor.ToString());
             }
 
             return string.Format("{0}{1}[{2}]", conformance_desc, base.FormatType(context), GetCharCount());
@@ -534,7 +533,7 @@ namespace NtApiDotNet.Ndr
 
         internal string FormatMember(NdrFormatter context)
         {
-            return String.Format("/* Offset: {0} */ {1}", Offset, MemberType.FormatType(context));
+            return String.Format("{0} {1}", context.FormatComment("Offset: {0}", Offset), MemberType.FormatType(context));
         }
 
         internal void FixupLateBoundTypes()
@@ -591,7 +590,7 @@ namespace NtApiDotNet.Ndr
         internal override string FormatComplexType(NdrFormatter context)
         {
             StringBuilder builder = new StringBuilder();
-            builder.AppendFormat("/* Memory Size: {0} */", GetSize()).AppendLine();
+            builder.Append(context.FormatComment("Memory Size: {0}", GetSize())).AppendLine();
             builder.Append(FormatType(context)).AppendLine(" {");
             foreach (var member in Members.Select((m, i) => $"{m.FormatMember(context)} Member{i}"))
             {
@@ -819,7 +818,7 @@ namespace NtApiDotNet.Ndr
 
             if (builder.Length > 0)
             {
-                return $"/* {builder} */ {base.FormatType(context)}";
+                return $"{context.FormatComment(builder.ToString())} {base.FormatType(context)}";
             }
             return base.FormatType(context);
         }
@@ -876,7 +875,7 @@ namespace NtApiDotNet.Ndr
 
             if (builder.Length > 0)
             {
-                return $"/* {builder} */ {base.FormatType(context)}";
+                return $"{context.FormatComment(builder.ToString())} {base.FormatType(context)}";
             }
             return base.FormatType(context);
         }
@@ -940,7 +939,7 @@ namespace NtApiDotNet.Ndr
 
             if (builder.Length > 0)
             {
-                return $"/* {builder} */ {base.FormatType(context)}";
+                return $"{context.FormatComment(builder.ToString())} {base.FormatType(context)}";
             }
             return base.FormatType(context);
         }
@@ -1060,7 +1059,7 @@ namespace NtApiDotNet.Ndr
 
         internal override string FormatType(NdrFormatter context)
         {
-            return String.Format("/* range: {0},{1} */ {2}", MinValue, MaxValue, RangeType.FormatType(context));
+            return String.Format("{0} {1}", context.FormatComment("range: {0},{1}", MinValue, MaxValue), RangeType.FormatType(context));
         }
 
         public override int GetSize()
@@ -1209,7 +1208,7 @@ namespace NtApiDotNet.Ndr
         {
             int indent = 4;
             StringBuilder builder = new StringBuilder();
-            builder.AppendFormat("/* Memory Size: {0} */", GetSize()).AppendLine();
+            builder.Append(context.FormatComment("Memory Size: {0}", GetSize())).AppendLine();
             builder.Append(FormatType(context)).AppendLine(" {");
 
             if (Format == NdrFormatCharacter.FC_ENCAPSULATED_UNION)
@@ -1220,7 +1219,7 @@ namespace NtApiDotNet.Ndr
             }
             else
             {
-                builder.AppendFormat("/* {0} */", Correlation).AppendLine();
+                builder.Append(context.FormatComment(Correlation.ToString())).AppendLine();
             }
 
             int index = 0;
@@ -1327,9 +1326,9 @@ namespace NtApiDotNet.Ndr
                         break;
                 }
 
-                return string.Format("/* FC_SYSTEM_HANDLE {0}({1}) */ HANDLE", Resource, access);
+                return string.Format("{0} HANDLE", context.FormatComment("FC_SYSTEM_HANDLE {0}({1})", Resource, access));
             }
-            return string.Format("/* FC_SYSTEM_HANDLE {0} */ HANDLE", Resource);
+            return string.Format("{0} HANDLE", context.FormatComment("FC_SYSTEM_HANDLE {0}", Resource));
         }
 
         public override int GetSize()
