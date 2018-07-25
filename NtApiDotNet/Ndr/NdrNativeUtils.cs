@@ -117,6 +117,16 @@ namespace NtApiDotNet.Ndr
             ref IntPtr String
         );
 
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcStringBindingParse(
+          string StringBinding,
+          OptionalPointer ObjUuid,
+          OptionalPointer Protseq,
+          OptionalPointer NetworkAddr,
+          OptionalPointer Endpoint,
+          OptionalPointer NetworkOptions
+        );
+
         internal static readonly Guid IID_IUnknown = new Guid("00000000-0000-0000-C000-000000000046");
         internal static readonly Guid IID_IDispatch = new Guid("00020400-0000-0000-C000-000000000046");
         internal static readonly Guid IID_IPSFactoryBuffer = new Guid("D5F569D0-593B-101A-B569-08002B2DBF7A");

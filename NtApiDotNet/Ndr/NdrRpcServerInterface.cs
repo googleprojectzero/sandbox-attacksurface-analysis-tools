@@ -50,6 +50,44 @@ namespace NtApiDotNet.Ndr
         public IList<NdrProtocolSequenceEndpoint> ProtocolSequences { get; }
 
         /// <summary>
+        /// Resolve the ALPC path to the RPC server.
+        /// </summary>
+        /// <returns>The ALPC path for the RPC server. Returns an empty string if unknown.</returns>
+        public string ResolveAlpcPath()
+        {
+            string binding = ResolveLocalBindingString();
+            if (string.IsNullOrWhiteSpace(binding))
+            {
+                return string.Empty;
+            }
+
+            OptionalPointer protseq = new OptionalPointer();
+            OptionalPointer endpoint = new OptionalPointer();
+            try
+            {
+                int result = NdrNativeUtils.RpcStringBindingParse(binding, null, protseq, null, endpoint, null);
+                string protseq_str = Marshal.PtrToStringUni(protseq.Value);
+                string endpoint_str = Marshal.PtrToStringUni(endpoint.Value);
+                if (result != 0 || protseq_str != "ncalrpc" || string.IsNullOrWhiteSpace(endpoint_str))
+                {
+                    return string.Empty;
+                }
+                return $@"\RPC Control\{endpoint_str}";
+            }
+            finally
+            {
+                if (protseq.Value != IntPtr.Zero)
+                {
+                    NdrNativeUtils.RpcStringFree(ref protseq.Value);
+                }
+                if (endpoint.Value != IntPtr.Zero)
+                {
+                    NdrNativeUtils.RpcStringFree(ref endpoint.Value);
+                }
+            }
+        }
+
+        /// <summary>
         /// Resolve the local binding string for this service from the local Endpoint Mapper.
         /// </summary>
         /// <remarks>This only will return a valid value if the service is running and registered with the Endpoint Mapper. It can also hang.</remarks>
