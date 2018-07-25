@@ -1058,7 +1058,7 @@ function Show-NtSecurityDescriptor {
       }
     }
   } else {
-    Start-Process -FilePath "$PSScriptRoot\ViewSecurityDescriptor.exe" -ArgumentList @($Name,$SecurityDescriptor.ToSddl(),$Type.Name) -Wait:$Wait
+    Start-Process -FilePath "$PSScriptRoot\ViewSecurityDescriptor.exe" -ArgumentList @("`"$Name`"", "`"$($SecurityDescriptor.ToSddl())`"","`"$($Type.Name)`"") -Wait:$Wait
   }
 }
 
