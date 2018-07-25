@@ -1038,27 +1038,34 @@ function Show-NtSecurityDescriptor {
     [switch]$Wait
     )
 
-  if ($Object -ne $null) {
-    if (!$Object.IsAccessMaskGranted([NtApiDotNet.GenericAccessRights]::ReadControl)) {
-      Write-Error "Object doesn't have Read Control access."
-      return
-    }
-    Use-NtObject($obj = $Object.Duplicate()) {
-      $obj.Inherit = $true
-      $cmdline = [string]::Format("ViewSecurityDescriptor {0}", $obj.Handle.DangerousGetHandle())
-      if ($ReadOnly) {
-        $cmdline += " --readonly"
-      }
-      $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\ViewSecurityDescriptor.exe" -InheritHandles
-      $config.InheritHandleList.Add($obj.Handle.DangerousGetHandle())
-      Use-NtObject($p = New-Win32Process -Config $config) {
-        if ($Wait) {
-          $p.Process.Wait() | Out-Null
+  switch($PsCmdlet.ParameterSetName) {
+    "FromObject" {
+        if (!$Object.IsAccessMaskGranted([NtApiDotNet.GenericAccessRights]::ReadControl)) {
+            Write-Error "Object doesn't have Read Control access."
+            return
         }
-      }
+        # For some reason ALPC ports can't be passed to child processes. So instead pass as an SD.
+        if ($Object.NtType.Name -eq "ALPC Port") {
+            Show-NtSecurityDescriptor $Object.SecurityDescriptor $Object.NtType -Name $Object.Name
+            return
+        }
+        Use-NtObject($obj = $Object.Duplicate()) {
+            $cmdline = [string]::Format("ViewSecurityDescriptor {0}", $obj.Handle.DangerousGetHandle())
+            if ($ReadOnly) {
+                $cmdline += " --readonly"
+            }
+            $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\ViewSecurityDescriptor.exe" -InheritHandles
+            $config.AddInheritedHandle($obj)
+            Use-NtObject($p = New-Win32Process -Config $config) {
+                if ($Wait) {
+                    $p.Process.Wait() | Out-Null
+                }
+            }
+        }
     }
-  } else {
-    Start-Process -FilePath "$PSScriptRoot\ViewSecurityDescriptor.exe" -ArgumentList @("`"$Name`"", "`"$($SecurityDescriptor.ToSddl())`"","`"$($Type.Name)`"") -Wait:$Wait
+    "FromSecurityDescriptor" {
+        Start-Process -FilePath "$PSScriptRoot\ViewSecurityDescriptor.exe" -ArgumentList @("`"$Name`"", "`"$($SecurityDescriptor.ToSddl())`"","`"$($Type.Name)`"") -Wait:$Wait
+    }
   }
 }
 
