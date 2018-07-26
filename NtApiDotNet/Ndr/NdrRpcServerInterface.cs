@@ -61,30 +61,12 @@ namespace NtApiDotNet.Ndr
                 return string.Empty;
             }
 
-            OptionalPointer protseq = new OptionalPointer();
-            OptionalPointer endpoint = new OptionalPointer();
-            try
+            var cracked = new CrackedBindingString(binding);
+            if (cracked.Protseq != "ncalrpc" || string.IsNullOrWhiteSpace(cracked.Endpoint))
             {
-                int result = NdrNativeUtils.RpcStringBindingParse(binding, null, protseq, null, endpoint, null);
-                string protseq_str = Marshal.PtrToStringUni(protseq.Value);
-                string endpoint_str = Marshal.PtrToStringUni(endpoint.Value);
-                if (result != 0 || protseq_str != "ncalrpc" || string.IsNullOrWhiteSpace(endpoint_str))
-                {
-                    return string.Empty;
-                }
-                return $@"\RPC Control\{endpoint_str}";
+                return string.Empty;
             }
-            finally
-            {
-                if (protseq.Value != IntPtr.Zero)
-                {
-                    NdrNativeUtils.RpcStringFree(ref protseq.Value);
-                }
-                if (endpoint.Value != IntPtr.Zero)
-                {
-                    NdrNativeUtils.RpcStringFree(ref endpoint.Value);
-                }
-            }
+            return $@"\RPC Control\{cracked.Endpoint}";
         }
 
         /// <summary>
@@ -94,8 +76,7 @@ namespace NtApiDotNet.Ndr
         /// <returns>The RPC binding string. Empty string if it doesn't exist or the lookup failed.</returns>
         public string ResolveLocalBindingString()
         {
-            IntPtr binding = IntPtr.Zero;
-            IntPtr str_binding = IntPtr.Zero;
+            SafeRpcBindingHandle binding = null;
             try
             {
                 int result = NdrNativeUtils.RpcBindingFromStringBinding("ncalrpc:", out binding);
@@ -117,24 +98,11 @@ namespace NtApiDotNet.Ndr
                     return string.Empty;
                 }
 
-                result = NdrNativeUtils.RpcBindingToStringBinding(binding, out str_binding);
-                if (result != 0)
-                {
-                    return string.Empty;
-                }
-
-                return Marshal.PtrToStringUni(str_binding);
+                return binding.ToString();
             }
             finally
             {
-                if (binding != IntPtr.Zero)
-                {
-                    NdrNativeUtils.RpcBindingFree(ref binding);
-                }
-                if (str_binding != IntPtr.Zero)
-                {
-                    NdrNativeUtils.RpcStringFree(ref str_binding);
-                }
+                binding?.Dispose();
             }
         }
 
