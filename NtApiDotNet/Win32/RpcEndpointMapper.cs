@@ -223,6 +223,10 @@ namespace NtApiDotNet.Win32
         /// Endpoint network options.
         /// </summary>
         public string NetworkOptions { get; }
+        /// <summary>
+        /// The ALPC port name, if ncalrpc.
+        /// </summary>
+        public string AlpcPortName { get; }
 
         internal RpcEndpoint(RPC_IF_ID if_id, UUID uuid, SafeRpcStringHandle annotation, SafeRpcBindingHandle binding)
         {
@@ -236,6 +240,14 @@ namespace NtApiDotNet.Win32
             NetworkAddr = cracked.NetworkAddr;
             Endpoint = cracked.Endpoint;
             NetworkOptions = cracked.NetworkOptions;
+            if (Protseq.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
+            {
+                AlpcPortName = $@"\RPC Control\{Endpoint}";
+            }
+            else
+            {
+                AlpcPortName = string.Empty;
+            }
         }
 
         /// <summary>
@@ -331,31 +343,31 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
-        /// Resolve the ALPC path to the RPC server.
-        /// </summary>
-        /// <param name="server_interface">The server interface.</param>
-        /// <returns>The ALPC path for the RPC server. Returns an empty string if unknown.</returns>
-        public static string ResolveAlpcPath(NdrRpcServerInterface server_interface)
-        {
-            return ResolveAlpcPath(server_interface.InterfaceId, server_interface.InterfaceVersion);
-        }
-
-        /// <summary>
-        /// Resolve the ALPC path to the RPC server.
+        /// Query for endpoints registered on the local system for an RPC endpoint via ALPC.
         /// </summary>
         /// <param name="interface_id">Interface UUID to lookup.</param>
         /// <param name="interface_version">Interface version lookup.</param>
-        /// <returns>The ALPC path for the RPC server. Returns an empty string if unknown.</returns>
-        public static string ResolveAlpcPath(Guid interface_id, Version interface_version)
+        /// <returns>The list of registered RPC endpoints.</returns>
+        public static IEnumerable<RpcEndpoint> QueryAlpcEndpoints(Guid interface_id, Version interface_version)
         {
-            var endpoint = QueryEndpoints(interface_id, interface_version).Where(e => e.Protseq.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-
-            if (endpoint == null)
+            RPC_IF_ID if_id = new RPC_IF_ID()
             {
-                return string.Empty;
-            }
+                Uuid = interface_id,
+                VersMajor = (ushort)interface_version.Major,
+                VersMinor = (ushort)interface_version.Minor
+            };
+            return QueryEndpoints(SafeRpcBindingHandle.Null, RpcEndpointInquiryFlag.Interface, if_id, 
+                RpcEndPointVersionOption.Exact, null).Where(e => e.Protseq.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase));
+        }
 
-            return $@"\RPC Control\{endpoint.Endpoint}";
+        /// <summary>
+        /// Query for endpoints registered on the local system for an RPC endpoint via ALPC.
+        /// </summary>
+        /// <param name="server_interface">The server interface.</param>
+        /// <returns>The list of registered RPC endpoints.</returns>
+        public static IEnumerable<RpcEndpoint> QueryAlpcEndpoints(NdrRpcServerInterface server_interface)
+        {
+            return QueryAlpcEndpoints(server_interface.InterfaceId, server_interface.InterfaceVersion);
         }
 
         /// <summary>
