@@ -2070,6 +2070,8 @@ This cmdlet creates a new NDR parser for the given process.
 The process to create the NDR parser on. If not specified then the current process is used.
 .PARAMETER SymbolResolver
 Specify a symbol resolver for the parser. Note that this should be a resolver for the same process as we're parsing.
+.PARAMETER ParserFlags
+Specify flags which affect the parsing operation.
 .OUTPUTS
 NtApiDotNet.Ndr.NdrParser - The NDR parser.
 .EXAMPLE
@@ -2082,9 +2084,10 @@ Get an NDR parser for a specific process with a known resolver.
 function New-NdrParser {
     Param(
         [NtApiDotNet.NtProcess]$Process,
-        [NtApiDotNet.Win32.ISymbolResolver]$SymbolResolver
+        [NtApiDotNet.Win32.ISymbolResolver]$SymbolResolver,
+        [NtApiDotNet.Ndr.NdrParserFlags]$ParserFlags = 0
     )
-    [NtApiDotNet.Ndr.NdrParser]::new($Process, $SymbolResolver)
+    [NtApiDotNet.Ndr.NdrParser]::new($Process, $SymbolResolver, $ParserFlags)
 }
 
 function Convert-HashTableToIidNames {
@@ -2128,6 +2131,8 @@ The path to the DLL containing the COM proxy information.
 Optional CLSID for the object used to find the proxy information.
 .PARAMETER Iids
 Optional list of IIDs to parse from the proxy information.
+.PARAMETER ParserFlags
+Specify flags which affect the parsing operation.
 .OUTPUTS
 The parsed proxy information and complex types.
 .EXAMPLE
@@ -2146,10 +2151,11 @@ function Get-NdrComProxy {
         [string]$Path,
         [Guid]$Clsid = [Guid]::Empty,
         [NtApiDotNet.Win32.ISymbolResolver]$SymbolResolver,
-        [Guid[]]$Iid
+        [Guid[]]$Iid,
+        [NtApiDotNet.Ndr.NdrParserFlags]$ParserFlags = 0
     )
     $Path = Resolve-Path $Path -ErrorAction Stop
-    Use-NtObject($parser = New-NdrParser -SymbolResolver $SymbolResolver) {
+    Use-NtObject($parser = New-NdrParser -SymbolResolver $SymbolResolver -NdrParserFlags $ParserFlags) {
         $proxies = $parser.ReadFromComProxyFile($Path, $Clsid, $Iid)
         $props = @{
             Path=$Path;
@@ -2298,6 +2304,8 @@ This cmdlet parses the RPC server information from a specified executable with a
 The path to the executable containing the RPC server information.
 .PARAMETER Offset
 The offset into the executable where the RPC_SERVER_INTERFACE structure is loaded.
+.PARAMETER ParserFlags
+Specify flags which affect the parsing operation.
 .OUTPUTS
 The parsed RPC server information and complex types.
 .EXAMPLE
@@ -2310,10 +2318,11 @@ function Get-NdrRpcServerInterface {
         [string]$Path,
         [parameter(Mandatory, Position=1)]
         [int]$Offset,
-        [NtApiDotNet.Win32.ISymbolResolver]$SymbolResolver
+        [NtApiDotNet.Win32.ISymbolResolver]$SymbolResolver,
+        [NtApiDotNet.Ndr.NdrParserFlags]$ParserFlags = 0
     )
     $Path = Resolve-Path $Path -ErrorAction Stop
-    Use-NtObject($parser = New-NdrParser -SymbolResolver $SymbolResolver) {
+    Use-NtObject($parser = New-NdrParser -SymbolResolver $SymbolResolver -ParserFlags $ParserFlags) {
         $rpc_server = $parser.ReadFromRpcServerInterface($Path, $Offset)
         $props = @{
             Path=$Path;

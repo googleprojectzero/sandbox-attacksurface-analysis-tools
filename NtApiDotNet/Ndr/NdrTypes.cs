@@ -1571,7 +1571,7 @@ namespace NtApiDotNet.Ndr
                     + (type.QuadrupleIndex * context.Reader.PointerSize * 4));
 
             // If in process try and read out known type by walking pointers.
-            if (context.Reader.InProcess)
+            if (context.Reader.InProcess && !context.HasFlag(NdrParserFlags.IgnoreUserMarshal))
             {
                 using (var module = SafeLoadLibraryHandle.GetModuleHandle(context.StubDesc.aUserMarshalQuadruple))
                 {
