@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Ndr;
 using System;
 using System.Runtime.InteropServices;
 
@@ -52,5 +53,60 @@ namespace NtApiDotNet.Win32
 
         [DllImport("aclui.dll", SetLastError = true)]
         internal static extern bool EditSecurity(IntPtr hwndOwner, ISecurityInformation psi);
+
+
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcBindingFromStringBinding([MarshalAs(UnmanagedType.LPTStr)] string StringBinding, out SafeRpcBindingHandle Binding);
+
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcEpResolveBinding(SafeRpcBindingHandle Binding, ref RPC_SERVER_INTERFACE IfSpec);
+
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcMgmtEpEltInqBegin(
+            SafeRpcBindingHandle EpBinding,
+            RpcEndpointInquiryFlag InquiryType,
+            RPC_IF_ID IfId,
+            RpcEndPointVersionOption VersOption,
+            UUID ObjectUuid,
+            out SafeRpcInquiryHandle InquiryContext
+        );
+
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcMgmtEpEltInqNext(
+          SafeRpcInquiryHandle InquiryContext,
+          [Out] RPC_IF_ID IfId,
+          out SafeRpcBindingHandle Binding,
+          [Out] UUID ObjectUuid,
+          out SafeRpcStringHandle Annotation
+        );
+
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcMgmtEpEltInqDone(
+          ref IntPtr InquiryContext
+        );
+
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcBindingFree(ref IntPtr Binding);
+
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcBindingToStringBinding(
+            IntPtr Binding,
+            out SafeRpcStringHandle StringBinding
+        );
+
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcStringBindingParse(
+              string StringBinding,
+              out SafeRpcStringHandle ObjUuid,
+              out SafeRpcStringHandle Protseq,
+              out SafeRpcStringHandle NetworkAddr,
+              out SafeRpcStringHandle Endpoint,
+              out SafeRpcStringHandle NetworkOptions
+            );
+
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcStringFree(
+            ref IntPtr String
+        );
     }
 }

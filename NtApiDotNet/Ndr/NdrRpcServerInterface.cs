@@ -15,7 +15,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Ndr
 {
@@ -48,63 +47,6 @@ namespace NtApiDotNet.Ndr
         /// List of protocol sequences.
         /// </summary>
         public IList<NdrProtocolSequenceEndpoint> ProtocolSequences { get; }
-
-        /// <summary>
-        /// Resolve the ALPC path to the RPC server.
-        /// </summary>
-        /// <returns>The ALPC path for the RPC server. Returns an empty string if unknown.</returns>
-        public string ResolveAlpcPath()
-        {
-            string binding = ResolveLocalBindingString();
-            if (string.IsNullOrWhiteSpace(binding))
-            {
-                return string.Empty;
-            }
-
-            var cracked = new CrackedBindingString(binding);
-            if (cracked.Protseq != "ncalrpc" || string.IsNullOrWhiteSpace(cracked.Endpoint))
-            {
-                return string.Empty;
-            }
-            return $@"\RPC Control\{cracked.Endpoint}";
-        }
-
-        /// <summary>
-        /// Resolve the local binding string for this service from the local Endpoint Mapper.
-        /// </summary>
-        /// <remarks>This only will return a valid value if the service is running and registered with the Endpoint Mapper. It can also hang.</remarks>
-        /// <returns>The RPC binding string. Empty string if it doesn't exist or the lookup failed.</returns>
-        public string ResolveLocalBindingString()
-        {
-            SafeRpcBindingHandle binding = null;
-            try
-            {
-                int result = NdrNativeUtils.RpcBindingFromStringBinding("ncalrpc:", out binding);
-                if (result != 0)
-                {
-                    return string.Empty;
-                }
-
-                RPC_SERVER_INTERFACE ifspec = new RPC_SERVER_INTERFACE();
-                ifspec.Length = Marshal.SizeOf(ifspec);
-                ifspec.InterfaceId.SyntaxGUID = InterfaceId;
-                ifspec.InterfaceId.SyntaxVersion = InterfaceVersion.ToRpcVersion();
-                ifspec.TransferSyntax.SyntaxGUID = TransferSyntaxId;
-                ifspec.TransferSyntax.SyntaxVersion = TransferSyntaxVersion.ToRpcVersion();
-
-                result = NdrNativeUtils.RpcEpResolveBinding(binding, ref ifspec);
-                if (result != 0)
-                {
-                    return string.Empty;
-                }
-
-                return binding.ToString();
-            }
-            finally
-            {
-                binding?.Dispose();
-            }
-        }
 
         internal NdrRpcServerInterface(RPC_SYNTAX_IDENTIFIER interface_id, 
             RPC_SYNTAX_IDENTIFIER transfer_syntax_id, IEnumerable<NdrProcedureDefinition> procedures,
