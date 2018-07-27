@@ -224,9 +224,9 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public string NetworkOptions { get; }
         /// <summary>
-        /// The ALPC port name, if ncalrpc.
+        /// The endpoint path.
         /// </summary>
-        public string AlpcPortName { get; }
+        public string EndpointPath { get; }
 
         internal RpcEndpoint(RPC_IF_ID if_id, UUID uuid, SafeRpcStringHandle annotation, SafeRpcBindingHandle binding)
         {
@@ -242,11 +242,15 @@ namespace NtApiDotNet.Win32
             NetworkOptions = cracked.NetworkOptions;
             if (Protseq.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
             {
-                AlpcPortName = $@"\RPC Control\{Endpoint}";
+                EndpointPath = $@"\RPC Control\{Endpoint}";
+            }
+            else if (Protseq.Equals("ncacn_np", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
+            {
+                EndpointPath = $@"\??{Endpoint}";
             }
             else
             {
-                AlpcPortName = string.Empty;
+                EndpointPath = string.Empty;
             }
         }
 

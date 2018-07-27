@@ -2634,7 +2634,8 @@ function New-NtType {
 Gets an ALPC server port.
 .DESCRIPTION
 This cmdlet gets an ALPC server port by name. As you can't directly open the server end of the port this function goes through
-all handles and tries to extract the port from the hosting process. This might require elevated privileges.
+all handles and tries to extract the port from the hosting process. This might require elevated privileges, especially debug 
+privilege, to work correctly.
 .PARAMETER Path
 The path to the ALPC server port to get.
 .INPUTS
@@ -2642,21 +2643,21 @@ None
 .OUTPUTS
 NtApiDotNet.NtAlpc
 .EXAMPLE
-Add-NtSecurityDescriptorDaclAce -SecurityDescriptor $sd -Sid "S-1-1-0" -AccessMask 0x1234
-Adds an access allowed ACE to the DACL for SID S-1-1-0 and mask of 0x1234
+Get-NtAlpcServer
+Gets all ALPC server objects accessible to the current process.
 .EXAMPLE
-Add-NtSecurityDescriptorDaclAce -SecurityDescriptor $sd -Sid "S-1-1-0" -AccessMask (Get-NtAccessMask -FileAccess ReadData)
-Adds an access allowed ACE to the DACL for SID S-1-1-0 and mask for the file ReadData access right.
+Get-NtAlpcServer "\RPC Control\atsvc"
+Gets the "\RPC Control\atsvc" ALPC server.
 #>
 function Get-NtAlpcServer {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
-       [parameter(Mandatory=$true, Position=0, ParameterSetName = "FromPath")]
+       [parameter(Mandatory, Position=0, ParameterSetName = "FromPath")]
        [string]$Path
     )
 
     if (![NtApiDotNet.NtToken]::EnableDebugPrivilege()) {
-        Write-Warning "Can't enable debug privilege, result might be incomplete"
+        Write-Warning "Can't enable debug privilege, results might be incomplete"
     }
     $hs = Get-NtHandle -ObjectTypes "ALPC Port" | ? Name -ne ""
 
@@ -2670,6 +2671,58 @@ function Get-NtAlpcServer {
                     Write-Output $h.GetObject()
                     break
                 }
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Gets the endpoints for a RPC interface from the local endpoint mapper.
+.DESCRIPTION
+This cmdlet gets the endpoints for a RPC interface from the local endpoint mapper. Not all RPC interfaces
+are registered in the endpoint mapper so it might not show.
+.PARAMETER InterfaceId
+The UUID of the RPC interface.
+.PARAMETER InterfaceVersion
+The version of the RPC interface.
+.PARAMETER Server
+Parsed NDR server.
+.INPUTS
+None or NtApiDotNet.Ndr.NdrRpcServerInterface
+.OUTPUTS
+NtApiDotNet.Win32.RpcEndpoint[]
+.EXAMPLE
+Get-RpcEndpoint
+Get all RPC registered RPC endpoints.
+.EXAMPLE
+Get-RpcEndpoint $Server
+Get RPC endpoints for a parsed NDR server interface.
+.EXAMPLE
+Get-RpcEndpoint "A57A4ED7-0B59-4950-9CB1-E600A665154F" "1.0"
+Get RPC endpoints for a specified interface ID and version.
+#>
+function Get-RpcEndpoint {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+       [parameter(Mandatory, Position=0, ParameterSetName = "FromId")]
+       [string]$InterfaceId,
+       [parameter(Mandatory, Position=1, ParameterSetName = "FromId")]
+       [Version]$InterfaceVersion,
+       [parameter(Mandatory, Position=0, ParameterSetName = "FromServer", ValueFromPipeline)]
+       [NtApiDotNet.Ndr.NdrRpcServerInterface]$Server
+    )
+
+    PROCESS {
+        switch($PsCmdlet.ParameterSetName) {
+            "All" {
+                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints()
+            }
+            "FromId" {
+                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($InterfaceId, $InterfaceVersion)
+            }
+            "FromServer" {
+                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($Server)
             }
         }
     }
