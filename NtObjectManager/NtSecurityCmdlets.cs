@@ -309,7 +309,7 @@ namespace NtApiDotNet
         /// <summary>
         /// <para type="description">Specify a raw access mask.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(Position = 0)]
         public AccessMask AccessMask { get; set; }
         /// <summary>
         /// <para type="description">Return access as GenericAccess.</para>
