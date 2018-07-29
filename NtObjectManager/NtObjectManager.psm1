@@ -51,8 +51,7 @@ Get all ALPC Ports connectable by the current token.
 Get-AccessibleAlpcPort -ProcessIds 1234,5678
 Get all ALPC Ports connectable by the process tokens of PIDs 1234 and 5678
 #>
-function Get-AccessibleAlpcPort
-{
+function Get-AccessibleAlpcPort {
   Param(
     [Int32[]]$ProcessIds,
     [string[]]$ProcessNames,
