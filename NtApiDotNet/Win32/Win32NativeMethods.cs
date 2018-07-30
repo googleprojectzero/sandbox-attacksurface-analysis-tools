@@ -108,5 +108,9 @@ namespace NtApiDotNet.Win32
         internal static extern int RpcStringFree(
             ref IntPtr String
         );
+
+
+        [DllImport("shell32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern SafeLocalAllocHandle CommandLineToArgvW(string lpCmdLine, out int pNumArgs);
     }
 }

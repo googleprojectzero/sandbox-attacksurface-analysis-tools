@@ -14,6 +14,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace NtApiDotNet.Win32
@@ -133,5 +137,65 @@ namespace NtApiDotNet.Win32
         /// Get Windows INVALID_HANDLE_VALUE.
         /// </summary>
         public static IntPtr InvalidHandle { get => new IntPtr(-1); }
+
+        /// <summary>
+        /// Parse a command line into arguments.
+        /// </summary>
+        /// <param name="command_line">The parsed command line.</param>
+        /// <returns>The list of arguments.</returns>
+        public static string[] ParseCommandLine(string command_line)
+        {
+            using (var argv = Win32NativeMethods.CommandLineToArgvW(command_line, out int argc))
+            {
+                if (argv.IsInvalid)
+                {
+                    throw new SafeWin32Exception();
+                }
+
+                string[] ret = new string[argc];
+                for (int i = 0; i < argc; ++i)
+                {
+                    ret[i] = Marshal.PtrToStringUni(Marshal.ReadIntPtr(argv.DangerousGetHandle() + IntPtr.Size * i));
+                }
+                return ret;
+            }
+        }
+
+        /// <summary>
+        /// Get the image path from a command line.
+        /// </summary>
+        /// <param name="command_line">The command line to parse.</param>
+        /// <returns>The image path, returns the original command line if can't find a valid image path.</returns>
+        public static string GetImagePathFromCommandLine(string command_line)
+        {
+            command_line = command_line.Trim();
+            if (File.Exists(command_line))
+            {
+                return command_line;
+            }
+
+            string[] args = ParseCommandLine(command_line);
+            if (args.Length == 0)
+            {
+                return command_line;
+            }
+
+            if (command_line.StartsWith("\""))
+            {
+                return args[0];
+            }
+
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < args.Length; ++i)
+            {
+                string file = string.Join(" ", args.Take(i + 1));
+                if (File.Exists(file))
+                {
+                    return file;
+                }
+            }
+
+            return command_line;
+        }
     }
 }
