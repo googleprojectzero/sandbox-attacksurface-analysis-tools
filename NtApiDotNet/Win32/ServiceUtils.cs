@@ -12,11 +12,13 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
 
 namespace NtApiDotNet.Win32
@@ -51,6 +53,17 @@ namespace NtApiDotNet.Win32
     {
         Start = 1,
         Stop = 2
+    }
+
+    public enum ServiceStatus
+    {
+        Stopped = 1,
+        StartPending = 2,
+        StopPending = 3,
+        Running = 4,
+        ContinuePending = 5,
+        PausePending = 6,
+        Paused = 7,
     }
 
     [Flags]
@@ -125,8 +138,8 @@ namespace NtApiDotNet.Win32
     [StructLayout(LayoutKind.Sequential)]
     internal struct SERVICE_STATUS_PROCESS
     {
-        public int dwServiceType;
-        public int dwCurrentState;
+        public ServiceType dwServiceType;
+        public ServiceStatus dwCurrentState;
         public int dwControlsAccepted;
         public int dwWin32ExitCode;
         public int dwServiceSpecificExitCode;
@@ -157,6 +170,7 @@ namespace NtApiDotNet.Win32
         Win32ShareProcess = 0x00000020,
         UserService         =  0x00000040,
         UserServiceInstance =  0x00000080,
+        InteractiveProcess = 0x00000100
     }
 
     internal enum SC_STATUS_TYPE
@@ -395,9 +409,9 @@ namespace NtApiDotNet.Win32
     }
 
     /// <summary>
-    /// Representation of a running service.
+    /// Class representing a registered service.
     /// </summary>
-    public class RunningService
+    public class RegisteredService
     {
         /// <summary>
         /// The name of the service.
@@ -408,15 +422,75 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public string DisplayName { get; }
         /// <summary>
-        /// Process ID of the running service.
-        /// </summary>
-        public int ProcessId { get; }
-        /// <summary>
         /// Type of service.
         /// </summary>
         public ServiceType ServiceType { get; }
+        /// <summary>
+        /// Image path for the service.
+        /// </summary>
+        public string ImagePath { get; }
+        /// <summary>
+        /// Command line for the service.
+        /// </summary>
+        public string CommandLine { get; }
+        /// <summary>
+        /// Service DLL if a shared process server.
+        /// </summary>
+        public string ServiceDll { get; }
+        /// <summary>
+        /// Current service status.
+        /// </summary>
+        public ServiceStatus Status { get; }
+        /// <summary>
+        /// Process ID of the running service.
+        /// </summary>
+        public int ProcessId { get; }
 
-        static string GetString(IntPtr ptr)
+        private static RegistryKey OpenKeySafe(RegistryKey rootKey, string path)
+        {
+            try
+            {
+                return rootKey.OpenSubKey(path);
+            }
+            catch (SecurityException)
+            {
+                return null;
+            }
+        }
+
+        private static string ReadStringFromKey(RegistryKey rootKey, string keyName, string valueName)
+        {
+            RegistryKey key = rootKey;
+
+            try
+            {
+                if (keyName != null)
+                {
+                    key = OpenKeySafe(rootKey, keyName);
+                }
+
+                string valueString = String.Empty;
+                if (key != null)
+                {
+                    object valueObject = key.GetValue(valueName);
+                    if (valueObject != null)
+                    {
+                        valueString = valueObject.ToString();
+                    }
+                }
+
+                return valueString.TrimEnd('\0');
+            }
+            finally
+            {
+                if (key != null && key != rootKey)
+                {
+                    key.Close();
+                }
+            }
+        }
+
+        private static string GetString(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero)
             {
@@ -425,12 +499,41 @@ namespace NtApiDotNet.Win32
             return Marshal.PtrToStringUni(ptr);
         }
 
-        internal RunningService(ENUM_SERVICE_STATUS_PROCESS process)
+        internal RegisteredService(ENUM_SERVICE_STATUS_PROCESS process)
         {
             Name = GetString(process.lpServiceName);
             DisplayName = GetString(process.lpDisplayName);
+            ServiceType = process.ServiceStatusProcess.dwServiceType;
+            Status = process.ServiceStatusProcess.dwCurrentState;
             ProcessId = process.ServiceStatusProcess.dwProcessId;
-            ServiceType = (ServiceType)process.ServiceStatusProcess.dwServiceType;
+            ServiceDll = string.Empty;
+            ImagePath = string.Empty;
+            CommandLine = string.Empty;
+            using (RegistryKey key = OpenKeySafe(Registry.LocalMachine, $@"SYSTEM\CurrentControlSet\Services\{Name}"))
+            {
+                if (key != null)
+                {
+                    CommandLine = ReadStringFromKey(key, null, "ImagePath");
+                    ImagePath = Win32Utils.GetImagePathFromCommandLine(CommandLine);
+                    ServiceDll = ReadStringFromKey(key, "Parameters", "ServiceDll");
+                    if (String.IsNullOrEmpty(ServiceDll))
+                    {
+                        ServiceDll = ReadStringFromKey(key, null, "ServiceDll");
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Representation of a running service.
+    /// </summary>
+    /// <remarks>This type is left for backwards compat only.</remarks>
+    public class RunningService : RegisteredService
+    {
+        internal RunningService(ENUM_SERVICE_STATUS_PROCESS process) : base(process)
+        {
+            
         }
     }
 
@@ -698,10 +801,10 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
-        /// Get a list of running services with their process IDs.
+        /// Get a list of registered services.
         /// </summary>
         /// <returns>A list of running services with process IDs.</returns>
-        public static IEnumerable<RunningService> GetRunningServicesWithProcessIds()
+        private static IEnumerable<RunningService> GetServices(SERVICE_STATE service_state)
         {
             using (SafeServiceHandle scm = OpenSCManager(null, null,
                             ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.EnumerateService))
@@ -723,7 +826,7 @@ namespace NtApiDotNet.Win32
                     int resume_handle = 0;
                     while (true)
                     {
-                        bool ret = EnumServicesStatusEx(scm, SC_ENUM_TYPE.SC_ENUM_PROCESS_INFO, service_types, SERVICE_STATE.SERVICE_ACTIVE, buffer,
+                        bool ret = EnumServicesStatusEx(scm, SC_ENUM_TYPE.SC_ENUM_PROCESS_INFO, service_types, service_state, buffer,
                             buffer.Length, out int bytes_needed, out int services_returned, ref resume_handle, null);
                         int error = Marshal.GetLastWin32Error();
                         if (!ret && error != ERROR_MORE_DATA)
@@ -745,6 +848,24 @@ namespace NtApiDotNet.Win32
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Get a list of registered services.
+        /// </summary>
+        /// <returns>A list of running services with process IDs.</returns>
+        public static IEnumerable<RegisteredService> GetServices()
+        {
+            return GetServices(SERVICE_STATE.SERVICE_STATE_ALL);
+        }
+
+        /// <summary>
+        /// Get a list of running services with their process IDs.
+        /// </summary>
+        /// <returns>A list of running services with process IDs.</returns>
+        public static IEnumerable<RunningService> GetRunningServicesWithProcessIds()
+        {
+            return GetServices(SERVICE_STATE.SERVICE_ACTIVE);
         }
     }
 }
