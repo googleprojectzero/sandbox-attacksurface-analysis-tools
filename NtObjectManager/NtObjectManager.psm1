@@ -22,6 +22,9 @@ else
   Import-Module "$PSScriptRoot\NtObjectManager.dll"
 }
 
+$Script:GlobalDbgHelpPath = "dbghelp.dll"
+$Script:GlobalSymbolPath = "srv*https://msdl.microsoft.com/download/symbols"
+
 <#
 .SYNOPSIS
 Get a list of ALPC Ports that can be opened by a specified token.
@@ -2046,12 +2049,12 @@ function New-SymbolResolver {
         [string]$SymbolPath
     )
   if ($DbgHelpPath -eq "") {
-    $DbgHelpPath = "dbghelp.dll"
+    $DbgHelpPath = $Script:GlobalDbgHelpPath
   }
   if ($SymbolPath -eq "") {
     $SymbolPath = $env:_NT_SYMBOL_PATH
     if ($SymbolPath -eq "") {
-      $SymbolPath = 'srv*https://msdl.microsoft.com/download/symbols'
+      $SymbolPath = $Script:GlobalSymbolPath
     }
   }
   if ($Process -eq $null) {
@@ -2777,12 +2780,12 @@ function Get-RpcServer {
 
   BEGIN {
     if ($DbgHelpPath -eq "") {
-        $DbgHelpPath = "dbghelp.dll"
+        $DbgHelpPath = $Script:GlobalDbgHelpPath
     }
     if ($SymbolPath -eq "") {
         $SymbolPath = $env:_NT_SYMBOL_PATH
         if ($SymbolPath -eq "") {
-            $SymbolPath = 'srv*https://msdl.microsoft.com/download/symbols'
+            $SymbolPath = $Script:GlobalSymbolPath
         }
     }
   }
@@ -2799,6 +2802,41 @@ function Get-RpcServer {
         Write-Output $servers
     }
   }
+}
+
+<#
+.SYNOPSIS
+Sets the global symbol resolver paths.
+.DESCRIPTION
+This cmdlet sets the global symbol resolver paths. This allows you to specify symbol resolver paths for cmdlets which support it.
+.PARAMETER DbgHelpPath
+Specify path to a dbghelp DLL to use for symbol resolving. This should be ideally the dbghelp from debugging tool for Windows
+which will allow symbol servers however you can use the system version if you just want to pull symbols locally.
+.PARAMETER SymbolPath
+Specify path for the symbols.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Set-GlobalSymbolResolver -DbgHelpPath c:\windbg\x64\dbghelp.dll
+Specify the global dbghelp path.
+.EXAMPLE
+Set-GlobalSymbolResolver -DbgHelpPath dbghelp.dll -SymbolPath "c:\symbols"
+Specify the global dbghelp path using c:\symbols to source the symbol files.
+#>
+function Set-GlobalSymbolResolver {
+    Param(
+        [parameter(Mandatory, Position=0)]
+        [string]$DbgHelpPath,
+        [parameter(Position=1)]
+        [string]$SymbolPath
+    )
+
+    $Script:GlobalDbgHelpPath = $DbgHelpPath
+    if ("" -ne $SymbolPath) {
+        $Script:GlobalSymbolPath = $SymbolPath
+    }
 }
 
 <#
