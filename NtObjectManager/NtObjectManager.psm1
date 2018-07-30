@@ -2729,6 +2729,80 @@ function Get-RpcEndpoint {
 
 <#
 .SYNOPSIS
+Get the RPC servers from a DLL.
+.DESCRIPTION
+This cmdlet parses the RPC servers from a DLL. Note that in order to parse 32 bit DLLs you must run this module in 32 bit PowerShell.
+.PARAMETER FullName
+The path to the DLL.
+.PARAMETER DbgHelpPath
+Specify path to a dbghelp DLL to use for symbol resolving. This should be ideally the dbghelp from debugging tool for Windows
+which will allow symbol servers however you can use the system version if you just want to pull symbols locally.
+.PARAMETER SymbolPath
+Specify path for the symbols. If not specified it will first use the _NT_SYMBOL_PATH environment variable then use the 
+default of 'srv*https://msdl.microsoft.com/download/symbols'
+.PARAMETER AsText
+Return the results as text rather than objects.
+.PARAMETER RemoveComments
+When outputing as text remove comments from the output.
+.INPUTS
+string[] List of paths to DLLs.
+.OUTPUTS
+RpcServer[] The parsed RPC servers.
+.EXAMPLE
+Get-RpcServer c:\windows\system32\rpcss.dll
+Get the list of RPC servers from rpcss.dll.
+.EXAMPLE
+Get-RpcServer c:\windows\system32\rpcss.dll -AsText
+Get the list of RPC servers from rpcss.dll, return it as text.
+.EXAMPLE
+Get-ChildItem c:\windows\system32\*.dll | Get-RpcServer
+Get the list of RPC servers from all DLLs in system32, return it as text.
+.EXAMPLE
+Get-RpcServer c:\windows\system32\rpcss.dll -DbgHelpPath c:\windbg\x64\dbghelp.dll
+Get the list of RPC servers from rpcss.dll, specifying a different DBGHELP for symbol resolving.
+.EXAMPLE
+Get-RpcServer c:\windows\system32\rpcss.dll -SymbolPath c:\symbols
+Get the list of RPC servers from rpcss.dll, specifying a different symbol path.
+#>
+function Get-RpcServer {
+  [CmdletBinding()]
+  Param(
+    [parameter(Mandatory=$true, Position=0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [string]$FullName,
+    [string]$DbgHelpPath,
+    [string]$SymbolPath,
+    [switch]$AsText,
+    [switch]$RemoveComments
+  )
+
+  BEGIN {
+    if ($DbgHelpPath -eq "") {
+        $DbgHelpPath = "dbghelp.dll"
+    }
+    if ($SymbolPath -eq "") {
+        $SymbolPath = $env:_NT_SYMBOL_PATH
+        if ($SymbolPath -eq "") {
+            $SymbolPath = 'srv*https://msdl.microsoft.com/download/symbols'
+        }
+    }
+  }
+
+  PROCESS {
+    Write-Progress -Activity "Parsing RPC Servers" -CurrentOperation "$FullName"
+    $servers = [NtApiDotNet.Win32.RpcServer]::ParsePeFile($FullName, $DbgHelpPath, $SymbolPath)
+    if ($AsText) {
+        foreach($server in $servers) {
+            $text = $server.FormatAsText($RemoveComments)
+            Write-Output $text
+        }
+    } else {
+        Write-Output $servers
+    }
+  }
+}
+
+<#
+.SYNOPSIS
 Get a filtered token.
 .DESCRIPTION
 This is left for backwards compatibility, use 'Get-NtToken -Filtered' instead.
