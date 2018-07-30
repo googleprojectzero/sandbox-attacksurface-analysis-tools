@@ -61,6 +61,85 @@ namespace NtApiDotNet.Win32
     }
 
     /// <summary>
+    /// Class which represents a section from a loaded PE file.
+    /// </summary>
+    public class ImageSection
+    {
+        /// <summary>
+        /// The name of the section.
+        /// </summary>
+        public string Name { get; }
+        /// <summary>
+        /// Buffer to the data.
+        /// </summary>
+        public SafeBuffer Data { get; }
+        /// <summary>
+        /// Relative Virtual address of the data from the library base.
+        /// </summary>
+        public long RelativeVirtualAddress { get; }
+
+        /// <summary>
+        /// Get the data as an array.
+        /// </summary>
+        /// <returns>The data as an array.</returns>
+        public byte[] ToArray()
+        {
+            byte[] ret = new byte[Data.ByteLength];
+            Data.ReadArray(0, ret, 0, ret.Length);
+            return ret;
+        }
+
+        internal ImageSection(ImageSectionHeader header, SafeLoadLibraryHandle lib)
+        {
+            Name = header.GetName();
+            Data = new SafeHGlobalBuffer(lib.DangerousGetHandle() + header.VirtualAddress, header.VirtualSize, false);
+            RelativeVirtualAddress = header.VirtualAddress;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ImageFileHeader
+    {
+        public ushort Machine;
+        public ushort NumberOfSections;
+        public uint TimeDateStamp;
+        public uint PointerToSymbolTable;
+        public uint NumberOfSymbols;
+        public ushort SizeOfOptionalHeader;
+        public ushort Characteristics;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ImageNtHeaders
+    {
+        public uint Signature;
+        public ImageFileHeader FileHeader;
+        // Ignore optional headers for now.
+        // IMAGE_OPTIONAL_HEADER32 OptionalHeader;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ImageSectionHeader
+    {
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
+        public byte[] Name;
+        public int VirtualSize;
+        public int VirtualAddress;
+        public int SizeOfRawData;
+        public int PointerToRawData;
+        public int PointerToRelocations;
+        public int PointerToLinenumbers;
+        public ushort NumberOfRelocations;
+        public ushort NumberOfLinenumbers;
+        public uint Characteristics;
+
+        public string GetName()
+        {
+            return Encoding.UTF8.GetString(Name).TrimEnd('\0');
+        }
+    }
+
+    /// <summary>
     /// Safe handle for a loaded library.
     /// </summary>
     public class SafeLoadLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid
@@ -79,6 +158,14 @@ namespace NtApiDotNet.Win32
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
         private static extern IntPtr GetProcAddress(IntPtr hModule, IntPtr name);
+
+        [DllImport("dbghelp.dll", SetLastError = true)]
+        static extern IntPtr ImageDirectoryEntryToData(IntPtr Base, bool MappedAsImage, ushort DirectoryEntry, out int Size);
+
+        [DllImport("dbghelp.dll", SetLastError = true)]
+        private static extern IntPtr ImageNtHeader(
+            IntPtr Base
+        );
 
         /// <summary>
         /// Constructor
@@ -236,9 +323,6 @@ namespace NtApiDotNet.Win32
             return null;
         }
 
-        [DllImport("dbghelp.dll", SetLastError = true)]
-        static extern IntPtr ImageDirectoryEntryToData(IntPtr Base, bool MappedAsImage, ushort DirectoryEntry, out int Size);
-
         const ushort IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT = 13;
 
         private IntPtr RvaToVA(long rva)
@@ -344,6 +428,33 @@ namespace NtApiDotNet.Win32
             }
 
             return new ReadOnlyDictionary<IntPtr, IntPtr>(_delayed_imports);
+        }
+
+        /// <summary>
+        /// Get the image sections from a loaded library.
+        /// </summary>
+        /// <returns>The list of image sections.</returns>
+        /// <exception cref="SafeWin32Exception">Thrown on error.</exception>
+        public IEnumerable<ImageSection> GetImageSections()
+        {
+            List<ImageSection> sections = new List<ImageSection>();
+            IntPtr header_ptr = ImageNtHeader(this.DangerousGetHandle());
+            if (header_ptr == IntPtr.Zero)
+            {
+                throw new SafeWin32Exception();
+            }
+
+            ImageNtHeaders header = (ImageNtHeaders)Marshal.PtrToStructure(header_ptr, typeof(ImageNtHeaders));
+            var buffer = header_ptr + Marshal.SizeOf(header) + (int)header.FileHeader.SizeOfOptionalHeader;
+            ImageSectionHeader[] section_headers = new ImageSectionHeader[header.FileHeader.NumberOfSections];
+            int header_size = Marshal.SizeOf(typeof(ImageSectionHeader));
+            List<ImageSection> ret = new List<ImageSection>();
+            for (int i = 0; i < header.FileHeader.NumberOfSections; ++i)
+            {
+                ImageSectionHeader section = (ImageSectionHeader)Marshal.PtrToStructure(buffer + i * header_size, typeof(ImageSectionHeader));
+                ret.Add(new ImageSection(section, this));
+            }
+            return ret.AsReadOnly();
         }
     }
 }
