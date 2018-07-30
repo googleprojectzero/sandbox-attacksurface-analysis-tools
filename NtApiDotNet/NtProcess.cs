@@ -1503,6 +1503,13 @@ namespace NtApiDotNet
                         {
                             status.ToNtException();
                         }
+                        else if (Is64Bit)
+                        {
+                            // On 64 bits OS, DEP is always ON for 64 bits processes
+                            ret.Enabled = true;
+                            ret.Permanent = true;
+                        }
+
                         return ret;
                     }
 
