@@ -642,13 +642,20 @@ namespace NtApiDotNet
 
     public class NtThreadInformation
     {
-        public int ThreadId { get; private set; }
-        public int ProcessId { get; private set; }
-        public string ProcessName { get; private set; }
-        public long StartAddress { get; private set; }
-        public uint ThreadState { get; private set; }
-        public int WaitReason { get; private set; }
-
+        public int ThreadId { get; }
+        public int ProcessId { get; }
+        public string ProcessName { get; }
+        public long StartAddress { get; }
+        public uint ThreadState { get; }
+        public int WaitReason { get; }
+        public long KernelTime { get; }
+        public long UserTime { get; }
+        public long CreateTime { get; }
+        public uint WaitTime { get; }
+        public int Priority { get; }
+        public int BasePriority { get; }
+        public uint ContextSwitches { get; }
+        
         internal NtThreadInformation(string name, SystemThreadInformation thread_info)
         {
             ProcessName = name;
@@ -657,6 +664,13 @@ namespace NtApiDotNet
             StartAddress = thread_info.StartAddress.ToInt64();
             ThreadState = thread_info.ThreadState;
             WaitReason = thread_info.WaitReason;
+            KernelTime = thread_info.KernelTime.QuadPart;
+            UserTime = thread_info.UserTime.QuadPart;
+            CreateTime = thread_info.CreateTime.QuadPart;
+            WaitTime = thread_info.WaitTime;
+            Priority = thread_info.Priority;
+            BasePriority = thread_info.BasePriority;
+            ContextSwitches = thread_info.ContextSwitches;
         }
 
         public override string ToString()
@@ -667,11 +681,39 @@ namespace NtApiDotNet
 
     public class NtProcessInformation
     {
-        public int ProcessId { get; private set; }
-        public int ParentProcessId { get; private set; }
-        public IEnumerable<NtThreadInformation> Threads { get; private set; }
-        public string ImageName { get; private set; }
-        public int SessionId { get; private set; }
+        public int ProcessId { get; }
+        public int ParentProcessId { get; }
+        public IEnumerable<NtThreadInformation> Threads { get; }
+        public string ImageName { get; }
+        public int SessionId { get; }
+        public long WorkingSetPrivateSize { get; }
+        public uint HardFaultCount { get; }
+        public uint NumberOfThreadsHighWatermark { get; }
+        public ulong CycleTime { get; }
+        public long CreateTime { get; }
+        public long UserTime { get; }
+        public long KernelTime { get; }
+        public int BasePriority { get; }
+        public int HandleCount { get; }
+        public long UniqueProcessKey { get; }
+        public long PeakVirtualSize { get; }
+        public long VirtualSize { get; }
+        public uint PageFaultCount { get; }
+        public long PeakWorkingSetSize { get; }
+        public long WorkingSetSize { get; }
+        public long QuotaPeakPagedPoolUsage { get; }
+        public long QuotaPagedPoolUsage { get; }
+        public long QuotaPeakNonPagedPoolUsage { get; }
+        public long QuotaNonPagedPoolUsage { get; }
+        public long PagefileUsage { get; }
+        public long PeakPagefileUsage { get; }
+        public long PrivatePageCount { get; }
+        public long ReadOperationCount { get; }
+        public long WriteOperationCount { get; }
+        public long OtherOperationCount { get; }
+        public long ReadTransferCount { get; }
+        public long WriteTransferCount { get; }
+        public long OtherTransferCount { get; }
 
         internal NtProcessInformation(SystemProcessInformation process_info, IEnumerable<NtThreadInformation> threads)
         {
@@ -680,6 +722,34 @@ namespace NtApiDotNet
             ParentProcessId = process_info.InheritedFromUniqueProcessId.ToInt32();
             SessionId = process_info.SessionId;
             Threads = threads.ToArray();
+            WorkingSetPrivateSize = process_info.WorkingSetPrivateSize.QuadPart;
+            HardFaultCount = process_info.HardFaultCount;
+            NumberOfThreadsHighWatermark = process_info.NumberOfThreadsHighWatermark;
+            CycleTime = process_info.CycleTime;
+            CreateTime = process_info.CreateTime.QuadPart;
+            UserTime = process_info.UserTime.QuadPart;
+            KernelTime = process_info.KernelTime.QuadPart;
+            BasePriority = process_info.BasePriority;
+            HandleCount = process_info.HandleCount;
+            UniqueProcessKey = process_info.UniqueProcessKey.ToInt64();
+            PeakVirtualSize = process_info.PeakVirtualSize.ToInt64();
+            VirtualSize = process_info.VirtualSize.ToInt64();
+            PageFaultCount = process_info.PageFaultCount;
+            PeakWorkingSetSize = process_info.PeakWorkingSetSize.ToInt64();
+            WorkingSetSize = process_info.WorkingSetSize.ToInt64();
+            QuotaPeakPagedPoolUsage = process_info.QuotaPeakPagedPoolUsage.ToInt64();
+            QuotaPagedPoolUsage = process_info.QuotaPagedPoolUsage.ToInt64();
+            QuotaPeakNonPagedPoolUsage = process_info.QuotaPeakNonPagedPoolUsage.ToInt64();
+            QuotaNonPagedPoolUsage = process_info.QuotaNonPagedPoolUsage.ToInt64();
+            PagefileUsage = process_info.PagefileUsage.ToInt64();
+            PeakPagefileUsage = process_info.PeakPagefileUsage.ToInt64();
+            PrivatePageCount = process_info.PrivatePageCount.ToInt64();
+            ReadOperationCount = process_info.ReadOperationCount.QuadPart;
+            WriteOperationCount = process_info.WriteOperationCount.QuadPart;
+            OtherOperationCount = process_info.OtherOperationCount.QuadPart;
+            ReadTransferCount = process_info.ReadTransferCount.QuadPart;
+            WriteTransferCount = process_info.WriteTransferCount.QuadPart;
+            OtherTransferCount = process_info.OtherTransferCount.QuadPart;
         }
     }
 
