@@ -2841,6 +2841,60 @@ function Set-GlobalSymbolResolver {
 
 <#
 .SYNOPSIS
+Get process list from system information.
+.DESCRIPTION
+This cmdlet gets a list of all processes from system information.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.NtProcessInformation[]
+.EXAMPLE
+Get-NtProcessInformation
+Get all process information.
+Specify the global dbghelp path using c:\symbols to source the symbol files.
+#>
+function Get-NtProcessInformation {
+    [NtApiDotNet.NtSystemInfo]::GetProcessInformation()
+}
+
+<#
+.SYNOPSIS
+Get a thread list from system information.
+.DESCRIPTION
+This cmdlet gets a list of threads from system information.
+.PARAMETER ProcessId
+Specify a process ID where the threads are running.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.NtThreadInformation[]
+.EXAMPLE
+Get-NtThreadInformation
+Get all thread information.
+.EXAMPLE
+Get-NtThreadInformation -ProcessId $pid
+Get all thread information in the current process.
+#>
+function Get-NtThreadInformation {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+        [parameter(Mandatory, ParameterSetName = "FromPid", Position=0)]
+        [alias("pid")]
+        [int]$ProcessId
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            [NtApiDotNet.NtSystemInfo]::GetThreadInformation()
+        }
+        "FromPid" {
+            [NtApiDotNet.NtSystemInfo]::GetThreadInformation($ProcessId)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
 Get a filtered token.
 .DESCRIPTION
 This is left for backwards compatibility, use 'Get-NtToken -Filtered' instead.

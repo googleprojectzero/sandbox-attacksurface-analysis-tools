@@ -645,7 +645,7 @@ namespace NtApiDotNet
         public int ThreadId { get; private set; }
         public int ProcessId { get; private set; }
         public string ProcessName { get; private set; }
-        public IntPtr StartAddress { get; private set; }
+        public long StartAddress { get; private set; }
         public uint ThreadState { get; private set; }
         public int WaitReason { get; private set; }
 
@@ -654,7 +654,7 @@ namespace NtApiDotNet
             ProcessName = name;
             ThreadId = thread_info.ClientId.UniqueThread.ToInt32();
             ProcessId = thread_info.ClientId.UniqueProcess.ToInt32();
-            StartAddress = thread_info.StartAddress;
+            StartAddress = thread_info.StartAddress.ToInt64();
             ThreadState = thread_info.ThreadState;
             WaitReason = thread_info.WaitReason;
         }
@@ -922,6 +922,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get a list of threads for a specific process.
         /// </summary>
+        /// <param name="process_id">The process ID to list.</param>
         /// <returns>The list of thread information.</returns>
         public static IEnumerable<NtThreadInformation> GetThreadInformation(int process_id)
         {
@@ -936,6 +937,15 @@ namespace NtApiDotNet
                     break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Get a list of all threads.
+        /// </summary>
+        /// <returns>The list of thread information.</returns>
+        public static IEnumerable<NtThreadInformation> GetThreadInformation()
+        {
+            return GetProcessInformation().SelectMany(p => p.Threads);
         }
 
         /// <summary>

@@ -774,7 +774,7 @@
     <View>
       <Name>ExecutableManifest</Name>
       <ViewSelectedBy>
-        <TypeName>SandboxAnalysisUtils.ExecutableManifest</TypeName>
+        <TypeName>NtApiDotNet.Win32.ExecutableManifest</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -818,6 +818,103 @@
           </TableRowEntry>
         </TableRowEntries>
       </TableControl>
+    </View>
+    <View>
+        <Name>NtProcessInformation</Name>
+        <ViewSelectedBy>
+            <TypeName>NtApiDotNet.NtProcessInformation</TypeName>
+        </ViewSelectedBy>
+        <TableControl>
+            <TableHeaders>
+                <TableColumnHeader>
+                    <Label>ProcessId</Label>
+                    <Width>10</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>ParentProcessId</Label>
+                    <Width>10</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>ImageName</Label>
+                    <Width>40</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>SessionId</Label>
+                    <Width>10</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+            </TableHeaders>
+            <TableRowEntries>
+                <TableRowEntry>
+                    <TableColumnItems>
+                        <TableColumnItem>
+                            <PropertyName>ProcessId</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>ParentProcessId</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>ImageName</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>SessionId</PropertyName>
+                        </TableColumnItem>
+                    </TableColumnItems>
+                </TableRowEntry>
+            </TableRowEntries>
+        </TableControl>
+    </View>
+    <View>
+        <Name>NtThreadInformation</Name>
+        <ViewSelectedBy>
+            <TypeName>NtApiDotNet.NtThreadInformation</TypeName>
+        </ViewSelectedBy>
+        <TableControl>
+            <TableHeaders>
+                <TableColumnHeader>
+                    <Label>ThreadId</Label>
+                    <Width>10</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>ProcessId</Label>
+                    <Width>10</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>ProcessName</Label>
+                    <Width>40</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>StartAddress</Label>
+                    <Width>40</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+            </TableHeaders>
+            <TableRowEntries>
+                <TableRowEntry>
+                    <TableColumnItems>
+                        <TableColumnItem>
+                            <PropertyName>ThreadId</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>ProcessId</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>ProcessName</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>StartAddress</PropertyName>
+                            <FormatString>X08</FormatString>
+                        </TableColumnItem>
+                    </TableColumnItems>
+                </TableRowEntry>
+            </TableRowEntries>
+        </TableControl>
     </View>
   </ViewDefinitions>
 </Configuration>
