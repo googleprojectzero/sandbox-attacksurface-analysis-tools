@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace NtApiDotNet.Win32
 {
@@ -33,7 +32,7 @@ namespace NtApiDotNet.Win32
         /// Parse all RPC servers from a PE file.
         /// </summary>
         /// <param name="file">The PE file to parse.</param>
-        /// <param name="dbghelp_path">Path to a DBGHELP to resolve symbols.</param>
+        /// <param name="dbghelp_path">Path to a DBGHELP DLL to resolve symbols.</param>
         /// <param name="symbol_path">Symbol path for DBGHELP</param>
         /// <remarks>This only works for PE files with the same bitness as the current process.</remarks>
         /// <returns>A list of parsed RPC server.</returns>
@@ -54,12 +53,6 @@ namespace NtApiDotNet.Win32
                             NdrParser parser = new NdrParser(null, sym_resolver, NdrParserFlags.IgnoreUserMarshal);
                             IntPtr ifspec = lib.DangerousGetHandle() + (int)offset;
                             var rpc = parser.ReadFromRpcServerInterface(ifspec);
-                            string endpoint = string.Empty;
-                            if (rpc.ProtocolSequences.Count > 0)
-                            {
-                                endpoint = string.Join(",", rpc.ProtocolSequences.Select(s => $"{s.ProtocolSequence}: {s.Endpoint}"));
-                            }
-
                             servers.Add(new RpcServer(rpc, parser.ComplexTypes, file, offset));
                         }
                     }
