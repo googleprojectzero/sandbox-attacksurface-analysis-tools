@@ -179,9 +179,9 @@ namespace NtApiDotNet.Win32
         private static readonly Guid TransferSyntax = new Guid("8A885D04-1CEB-11C9-9FE8-08002B104860");
         private static readonly Guid TransferSyntax64 = new Guid("71710533-BEBA-4937-8319-B5DBEF9CCC36");
 
-        private static Dictionary<string, RegisteredService> GetExesToServices()
+        private static Dictionary<string, RunningService> GetExesToServices()
         {
-            Dictionary<string, RegisteredService> services = new Dictionary<string, RegisteredService>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, RunningService> services = new Dictionary<string, RunningService>(StringComparer.OrdinalIgnoreCase);
             foreach (var entry in ServiceUtils.GetServices())
             {
                 services[entry.ImagePath] = entry;
@@ -194,7 +194,7 @@ namespace NtApiDotNet.Win32
             return services;
         }
 
-        private static Lazy<Dictionary<string, RegisteredService>> _exes_to_service = new Lazy<Dictionary<string, RegisteredService>>(GetExesToServices);
+        private static Lazy<Dictionary<string, RunningService>> _exes_to_service = new Lazy<Dictionary<string, RunningService>>(GetExesToServices);
 
         private RpcServer(NdrRpcServerInterface server, IEnumerable<NdrComplexTypeReference> complex_types, string filepath, long offset)
         {
@@ -207,7 +207,7 @@ namespace NtApiDotNet.Win32
             {
                 ServiceName = services[FilePath].Name;
                 ServiceDisplayName = services[FilePath].DisplayName;
-                IsServiceRunning = services[FilePath] is RunningService;
+                IsServiceRunning = services[FilePath].Status == ServiceStatus.Running;
             }
         }
 

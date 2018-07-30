@@ -2841,6 +2841,36 @@ function Set-GlobalSymbolResolver {
 
 <#
 .SYNOPSIS
+Gets a list of running services.
+.DESCRIPTION
+This cmdlet gets a list of running services. It can also include in the list non-active services.
+.PARAMETER All
+Specify to return all services including non-active ones.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.RunningService[]
+.EXAMPLE
+Get-RunningService
+Get all running services.
+.EXAMPLE
+Get-RunningService -All
+Get all running services including non-active services.
+#>
+function Get-RunningService {
+    Param(
+        [switch]$All
+    )
+
+    if ($All) {
+        [NtApiDotNet.Win32.ServiceUtils]::GetServices()
+    } else {
+        [NtApiDotNet.Win32.ServiceUtils]::GetRunningServicesWithProcessIds()
+    }
+}
+
+<#
+.SYNOPSIS
 Get a filtered token.
 .DESCRIPTION
 This is left for backwards compatibility, use 'Get-NtToken -Filtered' instead.

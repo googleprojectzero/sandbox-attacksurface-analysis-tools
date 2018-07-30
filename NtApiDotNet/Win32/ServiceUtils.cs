@@ -379,6 +379,11 @@ namespace NtApiDotNet.Win32
             }
             CustomData = data.AsReadOnly();
         }
+
+        public override string ToString()
+        {
+            return $"{TriggerType} {Action} {SubTypeDescription}";
+        }
     }
 #pragma warning restore
 
@@ -409,10 +414,24 @@ namespace NtApiDotNet.Win32
     }
 
     /// <summary>
-    /// Class representing a registered service.
+    /// Class representing a running service instance.
     /// </summary>
-    public class RegisteredService
+    public class RunningService
     {
+        private ServiceInformation GetServiceInformation()
+        {
+            try
+            {
+                return ServiceUtils.GetServiceInformation(Name);
+            }
+            catch (SafeWin32Exception)
+            {
+                return new ServiceInformation(Name, null, new ServiceTriggerInformation[0]);
+            }
+        }
+
+        private Lazy<ServiceInformation> _service_information;
+
         /// <summary>
         /// The name of the service.
         /// </summary>
@@ -445,6 +464,14 @@ namespace NtApiDotNet.Win32
         /// Process ID of the running service.
         /// </summary>
         public int ProcessId { get; }
+        /// <summary>
+        /// The security descriptor of the service.
+        /// </summary>
+        public SecurityDescriptor SecurityDescriptor => _service_information.Value.SecurityDescriptor;
+        /// <summary>
+        /// The list of triggers for the service.
+        /// </summary>
+        public IEnumerable<ServiceTriggerInformation> Triggers => _service_information.Value.Triggers;
 
         private static RegistryKey OpenKeySafe(RegistryKey rootKey, string path)
         {
@@ -499,7 +526,7 @@ namespace NtApiDotNet.Win32
             return Marshal.PtrToStringUni(ptr);
         }
 
-        internal RegisteredService(ENUM_SERVICE_STATUS_PROCESS process)
+        internal RunningService(ENUM_SERVICE_STATUS_PROCESS process)
         {
             Name = GetString(process.lpServiceName);
             DisplayName = GetString(process.lpDisplayName);
@@ -522,18 +549,7 @@ namespace NtApiDotNet.Win32
                     }
                 }
             }
-        }
-    }
-
-    /// <summary>
-    /// Representation of a running service.
-    /// </summary>
-    /// <remarks>This type is left for backwards compat only.</remarks>
-    public class RunningService : RegisteredService
-    {
-        internal RunningService(ENUM_SERVICE_STATUS_PROCESS process) : base(process)
-        {
-            
+            _service_information = new Lazy<ServiceInformation>(GetServiceInformation);
         }
     }
 
@@ -654,7 +670,10 @@ namespace NtApiDotNet.Win32
         {
             int required = 0;
             byte[] sd = new byte[8192];
-            if (!QueryServiceObjectSecurity(handle, SecurityInformation.AllBasic, sd, sd.Length, out required))
+            if (!QueryServiceObjectSecurity(handle, SecurityInformation.Dacl 
+                | SecurityInformation.Owner 
+                | SecurityInformation.Label 
+                | SecurityInformation.Group, sd, sd.Length, out required))
             {
                 throw new SafeWin32Exception();
             }
@@ -851,18 +870,18 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
-        /// Get a list of registered services.
+        /// Get a list of all registered services.
         /// </summary>
-        /// <returns>A list of running services with process IDs.</returns>
-        public static IEnumerable<RegisteredService> GetServices()
+        /// <returns>A list of registered services.</returns>
+        public static IEnumerable<RunningService> GetServices()
         {
             return GetServices(SERVICE_STATE.SERVICE_STATE_ALL);
         }
 
         /// <summary>
-        /// Get a list of running services with their process IDs.
+        /// Get a list of all active running services with their process IDs.
         /// </summary>
-        /// <returns>A list of running services with process IDs.</returns>
+        /// <returns>A list of all active running services with process IDs.</returns>
         public static IEnumerable<RunningService> GetRunningServicesWithProcessIds()
         {
             return GetServices(SERVICE_STATE.SERVICE_ACTIVE);

@@ -122,7 +122,7 @@ namespace NtObjectManager
                             }
                         }
                     }
-                    catch (Win32Exception ex)
+                    catch (SafeWin32Exception ex)
                     {
                         WriteError(new ErrorRecord(ex, "OpenService", ErrorCategory.OpenError, name));
                     }
