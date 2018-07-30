@@ -207,7 +207,7 @@ namespace NtObjectManager
         /// <returns>True if objects can be created.</returns>
         protected abstract bool CanCreateDirectories();
 
-        private object DoCreateObject(string path, AttributeFlags attributes, NtObject root, SecurityQualityOfService security_quality_of_service, SecurityDescriptor security_descriptor)
+        private object CreateObject(string path, AttributeFlags attributes, NtObject root, SecurityQualityOfService security_quality_of_service, SecurityDescriptor security_descriptor)
         {
             using (ObjectAttributes obja = new ObjectAttributes(path, attributes, root, security_quality_of_service, security_descriptor))
             {
@@ -255,7 +255,7 @@ namespace NtObjectManager
                     }
                     builder.Append(@"\");
                 }
-                objects.Add((NtObject)DoCreateObject(ResolvePath(), ObjectAttributes, Root, SecurityQualityOfService, GetSecurityDescriptor()));
+                objects.Add((NtObject)CreateObject(ResolvePath(), ObjectAttributes, Root, SecurityQualityOfService, GetSecurityDescriptor()));
                 finished = true;
             }
             finally
@@ -277,7 +277,7 @@ namespace NtObjectManager
             VerifyParameters();
             try
             {
-                WriteObject(DoCreateObject(ResolvePath(), ObjectAttributes, Root, SecurityQualityOfService, GetSecurityDescriptor()));
+                WriteObject(CreateObject(ResolvePath(), ObjectAttributes, Root, SecurityQualityOfService, GetSecurityDescriptor()));
             }
             catch (NtException ex)
             {
@@ -404,7 +404,7 @@ namespace NtObjectManager
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
             string type_name = string.IsNullOrWhiteSpace(TypeName) ? null : TypeName;
-            return NtObject.OpenWithType(type_name, Path, Root, Access);
+            return NtObject.OpenWithType(type_name, ResolvePath(), Root, ObjectAttributes, Access, SecurityQualityOfService);
         }
     }
 

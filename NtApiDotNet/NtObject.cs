@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -717,29 +718,78 @@ namespace NtApiDotNet
         /// <param name="path">The path to the object to open.</param>
         /// <param name="root">A root directory to open from.</param>
         /// <param name="access">Generic access rights to the object.</param>
+        /// <param name="attributes">Attributes to open the object.</param>
+        /// <param name="security_quality_of_service">Security quality of service.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened object.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred opening the object.</exception>
+        public static NtResult<NtObject> OpenWithType(string typename, string path, NtObject root, 
+            AttributeFlags attributes, AccessMask access, SecurityQualityOfService security_quality_of_service, bool throw_on_error)
+        {
+            using (var obj_attr = new ObjectAttributes(path, attributes, root, security_quality_of_service, null))
+            {
+                if (typename == null)
+                {
+                    typename = NtDirectory.GetDirectoryEntryType(path, root);
+                }
+
+                // Brute force the open.
+                if (typename == null)
+                {
+                    foreach (var nttype in NtType.GetTypes().Where(t => t.CanOpen))
+                    {
+                        var result = nttype.Open(obj_attr, access, false);
+                        if (result.IsSuccess)
+                        {
+                            return result;
+                        }
+                    }
+
+                    return NtStatus.STATUS_OBJECT_TYPE_MISMATCH.CreateResultFromError<NtObject>(true);
+                }
+
+                NtType type = NtType.GetTypeByName(typename, false);
+                if (type != null && type.CanOpen)
+                {
+                    return type.Open(obj_attr, access, throw_on_error);
+                }
+                else
+                {
+                    return NtStatus.STATUS_OBJECT_TYPE_MISMATCH.CreateResultFromError<NtObject>(true);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Open an NT object with a specified type.
+        /// </summary>
+        /// <param name="typename">The name of the type to open (e.g. Event). If null the method will try and lookup the appropriate type.</param>
+        /// <param name="path">The path to the object to open.</param>
+        /// <param name="root">A root directory to open from.</param>
+        /// <param name="access">Generic access rights to the object.</param>
+        /// <param name="attributes">Attributes to open the object.</param>
+        /// <param name="security_quality_of_service">Security quality of service.</param>
+        /// <returns>The opened object.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred opening the object.</exception>
+        public static NtObject OpenWithType(string typename, string path, NtObject root,
+            AttributeFlags attributes, AccessMask access, SecurityQualityOfService security_quality_of_service)
+        {
+            return OpenWithType(typename, path, root, attributes, access, security_quality_of_service, true).Result;
+        }
+
+        /// <summary>
+        /// Open an NT object with a specified type.
+        /// </summary>
+        /// <param name="typename">The name of the type to open (e.g. Event). If null the method will try and lookup the appropriate type.</param>
+        /// <param name="path">The path to the object to open.</param>
+        /// <param name="root">A root directory to open from.</param>
+        /// <param name="access">Generic access rights to the object.</param>
         /// <returns>The opened object.</returns>
         /// <exception cref="NtException">Thrown if an error occurred opening the object.</exception>
         /// <exception cref="ArgumentException">Thrown if type of resource couldn't be found.</exception>
         public static NtObject OpenWithType(string typename, string path, NtObject root, AccessMask access)
         {
-            if (typename == null)
-            {
-                typename = NtDirectory.GetDirectoryEntryType(path, root);
-                if (typename == null)
-                {
-                    throw new ArgumentException($"Can't find type for path {path}");
-                }
-            }
-
-            NtType type = NtType.GetTypeByName(typename, false);
-            if (type != null && type.CanOpen)
-            {
-                return type.Open(path, root, access);
-            }
-            else
-            {
-                throw new ArgumentException($"Can't open type {typename}");
-            }
+            return OpenWithType(typename, path, root, AttributeFlags.CaseInsensitive, access, null, true).Result;
         }
 
         /// <summary>
