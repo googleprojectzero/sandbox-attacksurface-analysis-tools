@@ -84,6 +84,10 @@ namespace NtObjectManager
     ///   <code>$p = Get-NtProcess -ServiceName WebClient</code>
     ///   <para>Open the process which hosts the WebClient service, if it's running.</para>
     /// </example>
+    /// <example>
+    ///   <code>Get-NtProcess -InfoOnly</code>
+    ///   <para>Get all process information, don't open the process objects.</para>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtProcess", DefaultParameterSetName = "all")]
     [OutputType(typeof(NtProcess))]
@@ -92,7 +96,7 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Specify a process ID to open.</para>
         /// </summary>
-        [Parameter(Position = 0, ParameterSetName = "pid")]
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "pid")]
         [Alias(new string[] { "pid" })]
         public int ProcessId { get; set; }
 
@@ -124,7 +128,7 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Get the process for the specified service name.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "service")]
+        [Parameter(Mandatory = true, ParameterSetName = "service")]
         public string ServiceName { get; set; }
 
         /// <summary>
@@ -136,20 +140,26 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Specify access rights for each process opened.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "current"), Parameter(ParameterSetName = "all"), Parameter(ParameterSetName = "service"), Parameter(ParameterSetName = "pid")]
         public ProcessAccessRights Access { get; set; }
 
         /// <summary>
         /// <para type="description">Open current process.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "current")]
+        [Parameter(Mandatory = true, ParameterSetName = "current")]
         public SwitchParameter Current { get; set; }
 
         /// <summary>
         /// <para type="description">When getting all processes only get the system information process list.</para>
         /// </summary>
         [Parameter(ParameterSetName = "all")]
-        public SwitchParameter FromSystem { get; set; } 
+        public SwitchParameter FromSystem { get; set; }
+
+        /// <summary>
+        /// <para type="description">Only get process information, no not open the objects.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "infoonly")]
+        public SwitchParameter InfoOnly { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -266,6 +276,9 @@ namespace NtObjectManager
         {
             switch (ParameterSetName)
             {
+                case "infoonly":
+                    WriteObject(NtSystemInfo.GetProcessInformation());
+                    break;
                 case "all":
                     WriteObject(GetProcesses(), true);
                     break;

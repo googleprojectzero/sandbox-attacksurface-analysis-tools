@@ -48,6 +48,14 @@ namespace NtObjectManager
     ///   <code>$ts = Get-NtThread -FilterScript { Use-NtObject($k = $_.OpenToken()) { $k -ne $null } }</code>
     ///   <para>Get threads which have impersonation tokens set.</para>
     /// </example>
+    /// <example>
+    ///   <code>Get-NtThread -InfoOnly</code>
+    ///   <para>Get all thread information, but don't open the thread objects.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtThread -InfoOnly -ProcessId $pid</code>
+    ///   <para>Get all thread information for the current process, but don't open the thread objects.</para>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtThread", DefaultParameterSetName = "all")]
     [OutputType(typeof(NtThread))]
@@ -63,7 +71,7 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Specify a process ID to enumerate only its threads.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "pid", Mandatory = true)]
+        [Parameter(ParameterSetName = "pid", Mandatory = true), Parameter(ParameterSetName = "infoonly")]
         [Alias(new string[] { "pid" })]
         public int ProcessId { get; set; }
 
@@ -89,7 +97,7 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Specify access rights for each thread opened.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "all"), Parameter(ParameterSetName = "tid"), Parameter(ParameterSetName = "pid"), Parameter(ParameterSetName = "current")]
         public ThreadAccessRights Access { get; set; }
 
         /// <summary>
@@ -97,6 +105,12 @@ namespace NtObjectManager
         /// </summary>
         [Parameter(ParameterSetName = "all")]
         public SwitchParameter FromSystem { get; set; }
+
+        /// <summary>
+        /// <para type="description">Only get thread information, no not open the objects.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "infoonly")]
+        public SwitchParameter InfoOnly { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -132,7 +146,18 @@ namespace NtObjectManager
         /// </summary>
         protected override void ProcessRecord()
         {
-            if (Current)
+            if (InfoOnly)
+            {
+                if (ProcessId != -1)
+                {
+                    WriteObject(NtSystemInfo.GetThreadInformation(ProcessId));
+                }
+                else
+                {
+                    WriteObject(NtSystemInfo.GetThreadInformation());
+                }
+            }
+            else if (Current)
             {
                 WriteObject(GetCurrentThread(Access, PseudoHandle));
             }
