@@ -89,12 +89,20 @@ namespace NtApiDotNet.Win32
             return ret;
         }
 
-        internal ImageSection(ImageSectionHeader header, SafeLoadLibraryHandle lib)
+        internal ImageSection(ImageSectionHeader header, bool mapped_as_image, IntPtr base_ptr)
         {
             Name = header.GetName();
-            Data = new SafeHGlobalBuffer(lib.DangerousGetHandle() + header.VirtualAddress, header.VirtualSize, false);
+            int data_offset = mapped_as_image ? header.VirtualAddress : header.PointerToRawData;
+            int data_size = mapped_as_image ? header.VirtualSize : header.SizeOfRawData;
+            Data = new SafeHGlobalBuffer(base_ptr + header.VirtualAddress, header.VirtualSize, false);
             RelativeVirtualAddress = header.VirtualAddress;
         }
+    }
+
+    enum IMAGE_NT_OPTIONAL_HDR_MAGIC : short
+    {
+        HDR32 = 0x10b,
+        HDR64 = 0x20b
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -107,6 +115,100 @@ namespace NtApiDotNet.Win32
         public uint NumberOfSymbols;
         public ushort SizeOfOptionalHeader;
         public ushort Characteristics;
+    }
+
+    internal interface IImageOptionalHeader
+    {
+        long GetImageBase();
+        int GetAddressOfEntryPoint();
+        IMAGE_NT_OPTIONAL_HDR_MAGIC GetMagic();
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ImageOptionalHeaderPartial : IImageOptionalHeader
+    {
+        public IMAGE_NT_OPTIONAL_HDR_MAGIC Magic;
+        public byte MajorLinkerVersion;
+        public byte MinorLinkerVersion;
+        public int SizeOfCode;
+        public int SizeOfInitializedData;
+        public int SizeOfUninitializedData;
+        public int AddressOfEntryPoint;
+        public int BaseOfCode;
+        public int BaseOfData;
+        public int ImageBase;
+        public int SectionAlignment;
+        public int FileAlignment;
+        public short MajorOperatingSystemVersion;
+        public short MinorOperatingSystemVersion;
+        public short MajorImageVersion;
+        public short MinorImageVersion;
+        public short MajorSubsystemVersion;
+        public short MinorSubsystemVersion;
+        public int Win32VersionValue;
+        public int SizeOfImage;
+        public int SizeOfHeaders;
+        public int CheckSum;
+        public short Subsystem;
+        public short DllCharacteristics;
+
+        int IImageOptionalHeader.GetAddressOfEntryPoint()
+        {
+            return AddressOfEntryPoint;
+        }
+
+        long IImageOptionalHeader.GetImageBase()
+        {
+            return ImageBase;
+        }
+
+        IMAGE_NT_OPTIONAL_HDR_MAGIC IImageOptionalHeader.GetMagic()
+        {
+            return Magic;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ImageOptionalHeader64Partial : IImageOptionalHeader
+    {
+        public IMAGE_NT_OPTIONAL_HDR_MAGIC Magic;
+        public byte MajorLinkerVersion;
+        public byte MinorLinkerVersion;
+        public int SizeOfCode;
+        public int SizeOfInitializedData;
+        public int SizeOfUninitializedData;
+        public int AddressOfEntryPoint;
+        public int BaseOfCode;
+        public long ImageBase;
+        public int SectionAlignment;
+        public int FileAlignment;
+        public short MajorOperatingSystemVersion;
+        public short MinorOperatingSystemVersion;
+        public short MajorImageVersion;
+        public short MinorImageVersion;
+        public short MajorSubsystemVersion;
+        public short MinorSubsystemVersion;
+        public int Win32VersionValue;
+        public int SizeOfImage;
+        public int SizeOfHeaders;
+        public int CheckSum;
+        public short Subsystem;
+        public short DllCharacteristics;
+
+        int IImageOptionalHeader.GetAddressOfEntryPoint()
+        {
+            return AddressOfEntryPoint;
+        }
+
+        long IImageOptionalHeader.GetImageBase()
+        {
+            return ImageBase;
+        }
+
+        IMAGE_NT_OPTIONAL_HDR_MAGIC IImageOptionalHeader.GetMagic()
+        {
+            return Magic;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -172,7 +274,7 @@ namespace NtApiDotNet.Win32
         /// </summary>
         /// <param name="handle">The handle to the library</param>
         /// <param name="owns_handle">True if the handle is owned by this object.</param>
-        internal SafeLoadLibraryHandle(IntPtr handle, bool owns_handle) 
+        internal SafeLoadLibraryHandle(IntPtr handle, bool owns_handle)
             : base(owns_handle)
         {
             SetHandle(handle);
@@ -261,6 +363,15 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Whether this library is mapped as an image.
+        /// </summary>
+        public bool MappedAsImage => (DangerousGetHandle().ToInt64() & 0xFFFF) == 0;
+        /// <summary>
+        /// Whether this library is mapped as a datafile.
+        /// </summary>
+        public bool MappedAsDataFile => (DangerousGetHandle().ToInt64() & 0xFFFF) == 1;
+
+        /// <summary>
         /// Load a library into memory.
         /// </summary>
         /// <param name="name">The path to the library.</param>
@@ -327,7 +438,7 @@ namespace NtApiDotNet.Win32
 
         private IntPtr RvaToVA(long rva)
         {
-            return new IntPtr(handle.ToInt64() + rva);
+            return new IntPtr(GetBasePointer().ToInt64() + rva);
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -430,6 +541,87 @@ namespace NtApiDotNet.Win32
             return new ReadOnlyDictionary<IntPtr, IntPtr>(_delayed_imports);
         }
 
+        private IntPtr GetHeaderPointer(IntPtr base_ptr)
+        {
+            IntPtr header_ptr = ImageNtHeader(base_ptr);
+            if (header_ptr == IntPtr.Zero)
+            {
+                throw new SafeWin32Exception();
+            }
+            return header_ptr;
+        }
+
+        private IntPtr GetBasePointer()
+        {
+            IntPtr base_ptr = IntPtr.Zero;
+            if (MappedAsDataFile)
+            {
+                base_ptr = new IntPtr(DangerousGetHandle().ToInt64() & ~0xFFFF);
+            }
+            else if (MappedAsImage)
+            {
+                base_ptr = DangerousGetHandle();
+            }
+            return base_ptr;
+        }
+
+        private IImageOptionalHeader GetOptionalHeader(IntPtr header_ptr)
+        {
+            var buffer = header_ptr + Marshal.SizeOf(typeof(ImageNtHeaders));
+            IMAGE_NT_OPTIONAL_HDR_MAGIC magic = (IMAGE_NT_OPTIONAL_HDR_MAGIC)Marshal.ReadInt16(buffer);
+            switch (magic)
+            {
+                case IMAGE_NT_OPTIONAL_HDR_MAGIC.HDR32:
+                    return (IImageOptionalHeader)Marshal.PtrToStructure(buffer, typeof(ImageOptionalHeaderPartial));
+                case IMAGE_NT_OPTIONAL_HDR_MAGIC.HDR64:
+                    return (IImageOptionalHeader)Marshal.PtrToStructure(buffer, typeof(ImageOptionalHeader64Partial));
+            }
+            return null;
+        }
+
+        private bool _loaded_values;
+        private List<ImageSection> _image_sections;
+        private long _image_base_address;
+        private int _image_entry_point;
+        private bool _is_64bit;
+
+        private void SetupValues()
+        {
+            if (_loaded_values)
+            {
+                return;
+            }
+
+            _loaded_values = true;
+            _image_sections = new List<ImageSection>();
+            IntPtr base_ptr = GetBasePointer();
+            if (base_ptr == IntPtr.Zero)
+            {
+                return;
+            }
+
+            IntPtr header_ptr = GetHeaderPointer(base_ptr);
+            ImageNtHeaders header = (ImageNtHeaders)Marshal.PtrToStructure(header_ptr, typeof(ImageNtHeaders));
+            var buffer = header_ptr + Marshal.SizeOf(header) + header.FileHeader.SizeOfOptionalHeader;
+            ImageSectionHeader[] section_headers = new ImageSectionHeader[header.FileHeader.NumberOfSections];
+            int header_size = Marshal.SizeOf(typeof(ImageSectionHeader));
+            for (int i = 0; i < header.FileHeader.NumberOfSections; ++i)
+            {
+                ImageSectionHeader section = (ImageSectionHeader)Marshal.PtrToStructure(buffer + i * header_size, typeof(ImageSectionHeader));
+                _image_sections.Add(new ImageSection(section, MappedAsImage, base_ptr));
+            }
+
+            IImageOptionalHeader optional_header = GetOptionalHeader(header_ptr);
+            if (optional_header == null)
+            {
+                return;
+            }
+
+            _image_base_address = optional_header.GetImageBase();
+            _image_entry_point = optional_header.GetAddressOfEntryPoint();
+            _is_64bit = optional_header.GetMagic() == IMAGE_NT_OPTIONAL_HDR_MAGIC.HDR64;
+        }
+
         /// <summary>
         /// Get the image sections from a loaded library.
         /// </summary>
@@ -437,24 +629,44 @@ namespace NtApiDotNet.Win32
         /// <exception cref="SafeWin32Exception">Thrown on error.</exception>
         public IEnumerable<ImageSection> GetImageSections()
         {
-            List<ImageSection> sections = new List<ImageSection>();
-            IntPtr header_ptr = ImageNtHeader(this.DangerousGetHandle());
-            if (header_ptr == IntPtr.Zero)
-            {
-                throw new SafeWin32Exception();
-            }
+            SetupValues();
+            return _image_sections.AsReadOnly();
+        }
 
-            ImageNtHeaders header = (ImageNtHeaders)Marshal.PtrToStructure(header_ptr, typeof(ImageNtHeaders));
-            var buffer = header_ptr + Marshal.SizeOf(header) + (int)header.FileHeader.SizeOfOptionalHeader;
-            ImageSectionHeader[] section_headers = new ImageSectionHeader[header.FileHeader.NumberOfSections];
-            int header_size = Marshal.SizeOf(typeof(ImageSectionHeader));
-            List<ImageSection> ret = new List<ImageSection>();
-            for (int i = 0; i < header.FileHeader.NumberOfSections; ++i)
+        /// <summary>
+        /// Get original image base address.
+        /// </summary>
+        public long OriginalImageBase
+        {
+            get
             {
-                ImageSectionHeader section = (ImageSectionHeader)Marshal.PtrToStructure(buffer + i * header_size, typeof(ImageSectionHeader));
-                ret.Add(new ImageSection(section, this));
+                SetupValues();
+                return _image_base_address;
             }
-            return ret.AsReadOnly();
+        }
+
+        /// <summary>
+        /// Get image entry point RVA.
+        /// </summary>
+        public long EntryPoint
+        {
+            get
+            {
+                SetupValues();
+                return _image_entry_point;
+            }
+        }
+
+        /// <summary>
+        /// Get whether the image is 64 bit or not.
+        /// </summary>
+        public bool Is64bit
+        {
+            get
+            {
+                SetupValues();
+                return _is_64bit;
+            }
         }
     }
 }
