@@ -915,5 +915,53 @@
             </TableRowEntries>
         </TableControl>
     </View>
+    <View>
+        <Name>RpcEndpoint</Name>
+        <ViewSelectedBy>
+            <TypeName>NtApiDotNet.Win32.RpcEndpoint</TypeName>
+        </ViewSelectedBy>
+        <TableControl>
+            <TableHeaders>
+                <TableColumnHeader>
+                    <Label>InterfaceId</Label>
+                    <Width>36</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>InterfaceVersion</Label>
+                    <Width>16</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>ProtocolSequence</Label>
+                    <Width>16</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>Endpoint</Label>
+                    <Width>30</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+            </TableHeaders>
+            <TableRowEntries>
+                <TableRowEntry>
+                    <TableColumnItems>
+                        <TableColumnItem>
+                            <PropertyName>InterfaceId</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>InterfaceVersion</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>ProtocolSequence</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>Endpoint</PropertyName>
+                        </TableColumnItem>
+                    </TableColumnItems>
+                </TableRowEntry>
+            </TableRowEntries>
+        </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>
