@@ -83,7 +83,7 @@ namespace NtApiDotNet
     ///   <para>Gets the capability group Sid the internetClient capability.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "NtSid")]
-    public class GetNtSidCmdlet : Cmdlet
+    public class GetNtSidCmdlet : PSCmdlet
     {
         /// <summary>
         /// <para type="description">Specify a SID using an SDDL string.</para>
@@ -107,13 +107,13 @@ namespace NtApiDotNet
         /// <para type="description">Create a SID based on the standard set of integrity levels.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "il")]
-        public TokenIntegrityLevel? IntegrityLevel { get; set; }
+        public TokenIntegrityLevel IntegrityLevel { get; set; }
 
         /// <summary>
         /// <para type="description">Create a SID based on a raw integerity level.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "il_raw")]
-        public int? IntegrityLevelRaw { get; set; }
+        public int IntegrityLevelRaw { get; set; }
 
         /// <summary>
         /// <para type="description">Create a SID from App Container package name.</para>
@@ -131,7 +131,7 @@ namespace NtApiDotNet
         /// <para type="description">Get a known SID.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "known")]
-        public KnownSidValue? KnownSid { get; set; }
+        public KnownSidValue KnownSid { get; set; }
 
         /// <summary>
         /// <para type="description">Get the SID from the current user token. Defaults to the user SID.</para>
@@ -199,80 +199,71 @@ namespace NtApiDotNet
         protected override void ProcessRecord()
         {
             Sid sid;
-            if (Sddl != null)
+            switch (ParameterSetName)
             {
-                sid = new Sid(Sddl);
-            }
-            else if (Name != null)
-            {
-                sid = NtSecurity.LookupAccountName(Name);
-            }
-            else if (ServiceName != null)
-            {
-                sid = NtSecurity.GetServiceSid(ServiceName);
-            }
-            else if (IntegrityLevel.HasValue)
-            {
-                sid = NtSecurity.GetIntegritySid(IntegrityLevel.Value);
-            }
-            else if (IntegrityLevelRaw.HasValue)
-            {
-                sid = NtSecurity.GetIntegritySidRaw(IntegrityLevelRaw.Value);
-            }
-            else if (PackageName != null)
-            {
-                sid = TokenUtils.DerivePackageSidFromName(PackageName);
-                if (RestrictedPackageName != null)
-                {
-                    sid = TokenUtils.DeriveRestrictedPackageSidFromSid(sid, RestrictedPackageName);
-                }
-            }
-            else if (KnownSid.HasValue)
-            {
-                sid = KnownSids.GetKnownSid(KnownSid.Value);
-            }
-            else if (Token)
-            {
-                using (NtToken token = NtToken.OpenProcessToken())
-                {
-                    if (PrimaryGroup)
+                case "sddl":
+                    sid = new Sid(Sddl);
+                    break;
+                case "name":
+                    sid = NtSecurity.LookupAccountName(Name);
+                    break;
+                case "service":
+                    sid = NtSecurity.GetServiceSid(ServiceName);
+                    break;
+                case "il":
+                    sid = NtSecurity.GetIntegritySid(IntegrityLevel);
+                    break;
+                case "il_raw":
+                    sid = NtSecurity.GetIntegritySidRaw(IntegrityLevelRaw);
+                    break;
+                case "package":
+                    sid = TokenUtils.DerivePackageSidFromName(PackageName);
+                    if (RestrictedPackageName != null)
                     {
-                        sid = token.PrimaryGroup;
+                        sid = TokenUtils.DeriveRestrictedPackageSidFromSid(sid, RestrictedPackageName);
                     }
-                    else if (Owner)
+                    break;
+                case "known":
+                    sid = KnownSids.GetKnownSid(KnownSid);
+                    break;
+                case "token":
+                    using (NtToken token = NtToken.OpenProcessToken())
                     {
-                        sid = token.Owner;
+                        if (PrimaryGroup)
+                        {
+                            sid = token.PrimaryGroup;
+                        }
+                        else if (Owner)
+                        {
+                            sid = token.Owner;
+                        }
+                        else if (LogonGroup)
+                        {
+                            sid = token.LogonSid.Sid;
+                        }
+                        else if (AppContainer)
+                        {
+                            sid = token.AppContainerSid;
+                        }
+                        else if (Label)
+                        {
+                            sid = token.IntegrityLevelSid.Sid;
+                        }
+                        else
+                        {
+                            sid = token.User.Sid;
+                        }
                     }
-                    else if (LogonGroup)
-                    {
-                        sid = token.LogonSid.Sid;
-                    }
-                    else if (AppContainer)
-                    {
-                        sid = token.AppContainerSid;
-                    }
-                    else if (Label)
-                    {
-                        sid = token.IntegrityLevelSid.Sid;
-                    }
-                    else
-                    {
-                        sid = token.User.Sid;
-                    }
-                }
-            }
-            else if (CapabilityName != null)
-            {
-                sid = CapabilityGroup ? NtSecurity.GetCapabilityGroupSid(CapabilityName)
-                    : NtSecurity.GetCapabilitySid(CapabilityName);
-            }
-            else if (RelativeIdentifiers != null)
-            {
-                sid = new Sid(SecurityAuthority, RelativeIdentifiers);
-            }
-            else
-            {
-                throw new ArgumentException("No SID type specified");
+                    break;
+                case "cap":
+                    sid = CapabilityGroup ? NtSecurity.GetCapabilityGroupSid(CapabilityName)
+                                    : NtSecurity.GetCapabilitySid(CapabilityName);
+                    break;
+                case "sid":
+                    sid = new Sid(SecurityAuthority, RelativeIdentifiers);
+                    break;
+                default:
+                    throw new ArgumentException("No SID type specified");
             }
 
             WriteObject(sid);
