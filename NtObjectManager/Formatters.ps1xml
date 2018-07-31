@@ -923,22 +923,27 @@
         <TableControl>
             <TableHeaders>
                 <TableColumnHeader>
-                    <Label>InterfaceId</Label>
+                    <Label>UUID</Label>
                     <Width>36</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
-                    <Label>InterfaceVersion</Label>
-                    <Width>16</Width>
+                    <Label>Version</Label>
+                    <Width>8</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
-                    <Label>ProtocolSequence</Label>
-                    <Width>16</Width>
+                    <Label>Protocol</Label>
+                    <Width>8</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>Endpoint</Label>
+                    <Width>30</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>Annotation</Label>
                     <Width>30</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
@@ -957,6 +962,9 @@
                         </TableColumnItem>
                         <TableColumnItem>
                             <PropertyName>Endpoint</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>Annotation</PropertyName>
                         </TableColumnItem>
                     </TableColumnItems>
                 </TableRowEntry>
