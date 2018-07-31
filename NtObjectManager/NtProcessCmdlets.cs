@@ -156,7 +156,7 @@ namespace NtObjectManager
         public SwitchParameter FromSystem { get; set; }
 
         /// <summary>
-        /// <para type="description">Only get process information, no not open the objects.</para>
+        /// <para type="description">Only get process information, do not open the objects.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "infoonly")]
         public SwitchParameter InfoOnly { get; set; }
@@ -277,7 +277,7 @@ namespace NtObjectManager
             switch (ParameterSetName)
             {
                 case "infoonly":
-                    WriteObject(NtSystemInfo.GetProcessInformation());
+                    WriteObject(NtSystemInfo.GetProcessInformation(), true);
                     break;
                 case "all":
                     WriteObject(GetProcesses(), true);

@@ -107,7 +107,7 @@ namespace NtObjectManager
         public SwitchParameter FromSystem { get; set; }
 
         /// <summary>
-        /// <para type="description">Only get thread information, no not open the objects.</para>
+        /// <para type="description">Only get thread information, do not open the objects.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "infoonly")]
         public SwitchParameter InfoOnly { get; set; }
@@ -150,11 +150,11 @@ namespace NtObjectManager
             {
                 if (ProcessId != -1)
                 {
-                    WriteObject(NtSystemInfo.GetThreadInformation(ProcessId));
+                    WriteObject(NtSystemInfo.GetThreadInformation(ProcessId), true);
                 }
                 else
                 {
-                    WriteObject(NtSystemInfo.GetThreadInformation());
+                    WriteObject(NtSystemInfo.GetThreadInformation(), true);
                 }
             }
             else if (Current)
