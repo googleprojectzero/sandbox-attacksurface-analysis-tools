@@ -176,18 +176,21 @@ namespace NtApiDotNet.Ndr
             MIDL_STUB_DESC stub_desc = server_info.GetStubDesc(reader);
             IntPtr type_desc = stub_desc.pFormatTypes;
             List<NdrProcedureDefinition> procs = new List<NdrProcedureDefinition>();
-            for (int i = start_offset; i < dispatch_count; ++i)
+            if (fmt_str_ofs != IntPtr.Zero)
             {
-                int fmt_ofs = reader.ReadInt16(fmt_str_ofs + i * 2);
-                if (fmt_ofs >= 0)
+                for (int i = start_offset; i < dispatch_count; ++i)
                 {
-                    string name = null;
-                    if (names != null)
+                    int fmt_ofs = reader.ReadInt16(fmt_str_ofs + i * 2);
+                    if (fmt_ofs >= 0)
                     {
-                        name = names[i - start_offset];
+                        string name = null;
+                        if (names != null)
+                        {
+                            name = names[i - start_offset];
+                        }
+                        procs.Add(new NdrProcedureDefinition(reader, type_cache, symbol_resolver,
+                            stub_desc, proc_str + fmt_ofs, type_desc, dispatch_funcs[i], name, parser_flags));
                     }
-                    procs.Add(new NdrProcedureDefinition(reader, type_cache, symbol_resolver, 
-                        stub_desc, proc_str + fmt_ofs, type_desc, dispatch_funcs[i], name, parser_flags));
                 }
             }
             return procs.AsReadOnly();
