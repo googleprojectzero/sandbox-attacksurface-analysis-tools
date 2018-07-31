@@ -146,6 +146,10 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public string FilePath { get; }
         /// <summary>
+        /// Name of the the PE file this server came from (if known)
+        /// </summary>
+        public string Name => string.IsNullOrWhiteSpace(FilePath) ? string.Empty : Path.GetFileName(FilePath);
+        /// <summary>
         /// Offset into the PE file this server was parsed from.
         /// </summary>
         public long Offset { get; }
@@ -171,7 +175,10 @@ namespace NtApiDotNet.Win32
                 return RpcEndpointMapper.QueryAlpcEndpoints(Server);
             }
         }
-
+        /// <summary>
+        /// Count of endpoints for this service if running.
+        /// </summary>
+        public int EndpointCount => Endpoints.Count();
         #endregion
 
         #region Private Methods
