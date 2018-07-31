@@ -36,8 +36,14 @@ namespace NtObjectManager
                 {
                     try
                     {
-                        using (NtObject obj = ToObject())
+                        using (var result = ToObject(false))
                         {
+                            if (!result.IsSuccess)
+                            {
+                                return;
+                            }
+                            var obj = result.Result;
+
                             if (obj.IsAccessMaskGranted(GenericAccessRights.ReadControl))
                             {
                                 _sd = obj.SecurityDescriptor;
@@ -119,7 +125,19 @@ namespace NtObjectManager
                 return _maximum_granted_access;
             }
         }
-        
+
+        /// <summary>
+        /// Try and open the directory entry and return an actual NtObject handle.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The object opened.</returns>
+        /// <exception cref="System.ArgumentException">Thrown if invalid typename.</exception>
+        public NtResult<NtObject> ToObject(bool throw_on_error)
+        {
+            return NtObject.OpenWithType(TypeName, RelativePath, _base_directory, 
+                AttributeFlags.CaseInsensitive, GenericAccessRights.MaximumAllowed, null, throw_on_error);
+        }
+
         /// <summary>
         /// Try and open the directory entry and return an actual NtObject handle.
         /// </summary>
@@ -128,7 +146,7 @@ namespace NtObjectManager
         /// <exception cref="System.ArgumentException">Thrown if invalid typename.</exception>
         public NtObject ToObject()
         {
-            return NtObject.OpenWithType(TypeName, RelativePath, _base_directory, GenericAccessRights.MaximumAllowed);
+            return ToObject(true).Result;
         }
 
         internal NtDirectoryEntry(NtDirectory base_directory, string relative_path, string name, string typename)
@@ -149,7 +167,8 @@ namespace NtObjectManager
                     break;
             }
 
-            _maximum_granted_access = null;
+            _maximum_granted_access = GenericAccessRights.None;
+            _sd = new SecurityDescriptor();
         }
 
         /// <summary>
