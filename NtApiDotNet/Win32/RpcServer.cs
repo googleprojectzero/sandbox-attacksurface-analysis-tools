@@ -50,7 +50,9 @@ namespace NtApiDotNet.Win32
                     {
                         foreach (var offset in offsets)
                         {
-                            NdrParser parser = new NdrParser(null, sym_resolver, NdrParserFlags.IgnoreUserMarshal);
+                            IMemoryReader reader = new CurrentProcessMemoryReader(sections.Select(s => Tuple.Create(s.Data.DangerousGetHandle().ToInt64(), (int)s.Data.ByteLength)));
+                            NdrParser parser = new NdrParser(reader, NtProcess.Current, 
+                                sym_resolver, NdrParserFlags.IgnoreUserMarshal);
                             IntPtr ifspec = lib.DangerousGetHandle() + (int)offset;
                             var rpc = parser.ReadFromRpcServerInterface(ifspec);
                             servers.Add(new RpcServer(rpc, parser.ComplexTypes, file, offset));

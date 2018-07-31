@@ -332,7 +332,7 @@ namespace NtApiDotNet.Ndr
         }
 
         [HandleProcessCorruptedStateExceptions]
-        static T RunWithAccessCatch<T>(Func<T> func)
+        private static T RunWithAccessCatch<T>(Func<T> func)
         {
             try
             {
@@ -350,6 +350,48 @@ namespace NtApiDotNet.Ndr
             }
         }
 
+        private static IMemoryReader CreateReader(NtProcess process)
+        {
+            if (process == null || process.ProcessId == NtProcess.Current.ProcessId)
+            {
+                return new CurrentProcessMemoryReader();
+            }
+            else
+            {
+                if (!Environment.Is64BitProcess && process.Is64Bit)
+                {
+                    throw new ArgumentException("Do not support 32 to 64 bit reading.");
+                }
+
+                if (Environment.Is64BitProcess != process.Is64Bit)
+                {
+                    return new CrossBitnessProcessMemoryReader(process);
+                }
+                else
+                {
+                    return new ProcessMemoryReader(process);
+                }
+            }
+        }
+
+        #endregion
+
+        #region Internal Members
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="reader">Memory reader to parse from.</param>
+        /// <param name="process">Process to read from.</param>
+        /// <param name="symbol_resolver">Specify a symbol resolver to use for looking up symbols.</param>
+        /// <param name="parser_flags">Flags which affect the parsing operation.</param>
+        internal NdrParser(IMemoryReader reader, NtProcess process, ISymbolResolver symbol_resolver, NdrParserFlags parser_flags)
+        {
+            CheckSymbolResolver(process, symbol_resolver);
+            _reader = reader;
+            _symbol_resolver = symbol_resolver;
+            _type_cache = new NdrTypeCache();
+            _parser_flags = parser_flags;
+        }
         #endregion
 
         #region Public Constructors
@@ -369,34 +411,11 @@ namespace NtApiDotNet.Ndr
         /// <param name="process">Process to parse from.</param>
         /// <param name="symbol_resolver">Specify a symbol resolver to use for looking up symbols.</param>
         /// <param name="parser_flags">Flags which affect the parsing operation.</param>
-        public NdrParser(NtProcess process, ISymbolResolver symbol_resolver, NdrParserFlags parser_flags)
+        public NdrParser(NtProcess process, ISymbolResolver symbol_resolver, NdrParserFlags parser_flags) 
+            : this(CreateReader(process), process, symbol_resolver, parser_flags)
         {
-            CheckSymbolResolver(process, symbol_resolver);
-            if (process == null || process.ProcessId == NtProcess.Current.ProcessId)
-            {
-                _reader = new CurrentProcessMemoryReader();
-            }
-            else
-            {
-                if (!Environment.Is64BitProcess && process.Is64Bit)
-                {
-                    throw new ArgumentException("Do not support 32 to 64 bit reading.");
-                }
-
-                if (Environment.Is64BitProcess != process.Is64Bit)
-                {
-                    _reader = new CrossBitnessProcessMemoryReader(process);
-                }
-                else
-                {
-                    _reader = new ProcessMemoryReader(process);
-                }
-            }
-            _symbol_resolver = symbol_resolver;
-            _type_cache = new NdrTypeCache();
-            _parser_flags = parser_flags;
         }
-
+        
         /// <summary>
         /// Constructor.
         /// </summary>

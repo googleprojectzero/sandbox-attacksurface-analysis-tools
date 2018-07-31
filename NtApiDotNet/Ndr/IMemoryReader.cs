@@ -13,14 +13,15 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Linq;
 
 namespace NtApiDotNet.Ndr
 {
-
     internal class CrossBitnessTypeAttribute : Attribute
     {
         private Lazy<MethodInfo> _base_method;
@@ -94,35 +95,70 @@ namespace NtApiDotNet.Ndr
 
     internal class CurrentProcessMemoryReader : IMemoryReader
     {
+        private List<Tuple<long, long>> _restricted_zones = new List<Tuple<long, long>>();
+
+        internal CurrentProcessMemoryReader()
+        {
+        }
+
+        internal CurrentProcessMemoryReader(IEnumerable<Tuple<long, int>> restricted_zones)
+        {
+            _restricted_zones.AddRange(restricted_zones.Select(t => Tuple.Create(t.Item1, t.Item1 + t.Item2)).OrderBy(t => t.Item1));
+        }
+
+        private void CheckAddress(IntPtr address, int size)
+        {
+            if (_restricted_zones.Count == 0)
+            {
+                return;
+            }
+
+            long base_address = address.ToInt64();
+            foreach (var t in _restricted_zones)
+            {
+                if (base_address >= t.Item1 && base_address < t.Item2)
+                {
+                    return;
+                }
+            }
+            throw new NtException(NtStatus.STATUS_NO_MEMORY);
+        }
+
         public bool InProcess => true;
 
         public BinaryReader GetReader(IntPtr address)
         {
+            CheckAddress(address, 1);
             return new BinaryReader(new UnmanagedMemoryStream(new SafeBufferWrapper(address), 0, int.MaxValue));
         }
 
         public byte ReadByte(IntPtr address)
         {
+            CheckAddress(address, 1);
             return Marshal.ReadByte(address);
         }
 
         public short ReadInt16(IntPtr address)
         {
+            CheckAddress(address, 2);
             return Marshal.ReadInt16(address);
         }
 
         public int ReadInt32(IntPtr address)
         {
+            CheckAddress(address, 4);
             return Marshal.ReadInt32(address);
         }
 
         public IntPtr ReadIntPtr(IntPtr address)
         {
+            CheckAddress(address, IntPtr.Size);
             return Marshal.ReadIntPtr(address);
         }
 
         public byte[] ReadBytes(IntPtr address, int length)
         {
+            CheckAddress(address, length);
             byte[] ret = new byte[length];
             Marshal.Copy(address, ret, 0, length);
             return ret;
@@ -130,11 +166,13 @@ namespace NtApiDotNet.Ndr
 
         public T ReadStruct<T>(IntPtr address) where T : struct
         {
+            CheckAddress(address, Marshal.SizeOf(typeof(T)));
             return (T)Marshal.PtrToStructure(address, typeof(T));
         }
 
         public T[] ReadArray<T>(IntPtr address, int count) where T : struct
         {
+            CheckAddress(address, Marshal.SizeOf(typeof(T)) * count);
             var buffer = new SafeBufferWrapper(address);
             T[] ret = new T[count];
             buffer.ReadArray(0, ret, 0, count);
@@ -143,6 +181,7 @@ namespace NtApiDotNet.Ndr
 
         public string ReadAnsiStringZ(IntPtr address)
         {
+            CheckAddress(address, 1);
             return Marshal.PtrToStringAnsi(address);
         }
 
