@@ -210,11 +210,11 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Endpoint protocol sequence.
         /// </summary>
-        public string Protseq { get; }
+        public string ProtocolSequence { get; }
         /// <summary>
         /// Endpoint network address.
         /// </summary>
-        public string NetworkAddr { get; }
+        public string NetworkAddress { get; }
         /// <summary>
         /// Endpoint name.
         /// </summary>
@@ -236,15 +236,15 @@ namespace NtApiDotNet.Win32
             Annotation = annotation.ToString();
             BindingString = binding.ToString();
             var cracked = new CrackedBindingString(BindingString);
-            Protseq = cracked.Protseq;
-            NetworkAddr = cracked.NetworkAddr;
+            ProtocolSequence = cracked.Protseq;
+            NetworkAddress = cracked.NetworkAddr;
             Endpoint = cracked.Endpoint;
             NetworkOptions = cracked.NetworkOptions;
-            if (Protseq.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
+            if (ProtocolSequence.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
             {
                 EndpointPath = $@"\RPC Control\{Endpoint}";
             }
-            else if (Protseq.Equals("ncacn_np", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
+            else if (ProtocolSequence.Equals("ncacn_np", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
             {
                 EndpointPath = $@"\??{Endpoint}";
             }
@@ -339,6 +339,21 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Query for endpoints registered on the local system for an RPC endpoint.
         /// </summary>
+        /// <param name="interface_id">Interface UUID to lookup.</param>
+        /// <param name="interface_version">Interface version lookup.</param>
+        /// <returns>The list of registered RPC endpoints.</returns>
+        public static IEnumerable<RpcEndpoint> QueryEndpoints(Guid interface_id)
+        {
+            RPC_IF_ID if_id = new RPC_IF_ID()
+            {
+                Uuid = interface_id
+            };
+            return QueryEndpoints(SafeRpcBindingHandle.Null, RpcEndpointInquiryFlag.Interface, if_id, RpcEndPointVersionOption.All, null);
+        }
+
+        /// <summary>
+        /// Query for endpoints registered on the local system for an RPC endpoint.
+        /// </summary>
         /// <param name="server_interface">The server interface.</param>
         /// <returns>The list of registered RPC endpoints.</returns>
         public static IEnumerable<RpcEndpoint> QueryEndpoints(NdrRpcServerInterface server_interface)
@@ -361,7 +376,7 @@ namespace NtApiDotNet.Win32
                 VersMinor = (ushort)interface_version.Minor
             };
             return QueryEndpoints(SafeRpcBindingHandle.Null, RpcEndpointInquiryFlag.Interface, if_id, 
-                RpcEndPointVersionOption.Exact, null).Where(e => e.Protseq.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase));
+                RpcEndPointVersionOption.Exact, null).Where(e => e.ProtocolSequence.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
