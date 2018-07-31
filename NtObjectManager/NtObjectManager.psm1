@@ -1589,7 +1589,7 @@ function Get-NtSecurityDescriptor
         [NtApiDotNet.NtProcess]$Process,
         [parameter(Mandatory, ParameterSetName = "FromProcess")]
         [int64]$Address,
-        [parameter(Mandatory, ParameterSetName = "FromPath")]
+        [parameter(Mandatory, Position=0, ParameterSetName = "FromPath")]
         [string]$Path,
         [parameter(ParameterSetName = "FromPath")]
         [string]$TypeName,
