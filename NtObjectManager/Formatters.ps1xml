@@ -71,7 +71,6 @@
               </ListItem>
               <ListItem>
                 <PropertyName>MaximumGrantedAccess</PropertyName>
-                <FormatString>X08</FormatString>
               </ListItem>
               <ListItem>
                 <ScriptBlock>$_.SecurityDescriptor.ToSddl()</ScriptBlock>
