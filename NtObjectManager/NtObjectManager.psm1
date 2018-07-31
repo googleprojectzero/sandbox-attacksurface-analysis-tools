@@ -2701,6 +2701,9 @@ Get all RPC registered RPC endpoints.
 Get-RpcEndpoint $Server
 Get RPC endpoints for a parsed NDR server interface.
 .EXAMPLE
+Get-RpcEndpoint "A57A4ED7-0B59-4950-9CB1-E600A665154F"
+Get RPC endpoints for a specified interface ID ignoring the version.
+.EXAMPLE
 Get-RpcEndpoint "A57A4ED7-0B59-4950-9CB1-E600A665154F" "1.0"
 Get RPC endpoints for a specified interface ID and version.
 #>
@@ -2708,8 +2711,9 @@ function Get-RpcEndpoint {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
        [parameter(Mandatory, Position=0, ParameterSetName = "FromId")]
+       [parameter(Mandatory, Position=0, ParameterSetName = "FromIdAndVersion")]
        [string]$InterfaceId,
-       [parameter(Mandatory, Position=1, ParameterSetName = "FromId")]
+       [parameter(Mandatory, Position=1, ParameterSetName = "FromIdAndVersion")]
        [Version]$InterfaceVersion,
        [parameter(Mandatory, Position=0, ParameterSetName = "FromServer", ValueFromPipeline)]
        [NtApiDotNet.Ndr.NdrRpcServerInterface]$Server
@@ -2721,6 +2725,9 @@ function Get-RpcEndpoint {
                 [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints()
             }
             "FromId" {
+                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($InterfaceId)
+            }
+            "FromIdAndVersion" {
                 [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($InterfaceId, $InterfaceVersion)
             }
             "FromServer" {
