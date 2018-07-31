@@ -183,88 +183,6 @@ namespace NtApiDotNet.Win32
     }
 
     /// <summary>
-    /// Class to represent an RPC endpoint.
-    /// </summary>
-    public class RpcEndpoint
-    {
-        /// <summary>
-        /// The interface ID of the endpoint.
-        /// </summary>
-        public Guid InterfaceId { get; }
-        /// <summary>
-        /// The interface version.
-        /// </summary>
-        public Version InterfaceVersion { get; }
-        /// <summary>
-        /// The object UUID.
-        /// </summary>
-        public Guid ObjectUuid { get; }
-        /// <summary>
-        /// Optional annotation.
-        /// </summary>
-        public string Annotation { get; }
-        /// <summary>
-        /// RPC binding string.
-        /// </summary>
-        public string BindingString { get; }
-        /// <summary>
-        /// Endpoint protocol sequence.
-        /// </summary>
-        public string ProtocolSequence { get; }
-        /// <summary>
-        /// Endpoint network address.
-        /// </summary>
-        public string NetworkAddress { get; }
-        /// <summary>
-        /// Endpoint name.
-        /// </summary>
-        public string Endpoint { get; }
-        /// <summary>
-        /// Endpoint network options.
-        /// </summary>
-        public string NetworkOptions { get; }
-        /// <summary>
-        /// The endpoint path.
-        /// </summary>
-        public string EndpointPath { get; }
-
-        internal RpcEndpoint(RPC_IF_ID if_id, UUID uuid, SafeRpcStringHandle annotation, SafeRpcBindingHandle binding)
-        {
-            InterfaceId = if_id.Uuid;
-            InterfaceVersion = new Version(if_id.VersMajor, if_id.VersMinor);
-            ObjectUuid = uuid.Uuid;
-            Annotation = annotation.ToString();
-            BindingString = binding.ToString();
-            var cracked = new CrackedBindingString(BindingString);
-            ProtocolSequence = cracked.Protseq;
-            NetworkAddress = cracked.NetworkAddr;
-            Endpoint = cracked.Endpoint;
-            NetworkOptions = cracked.NetworkOptions;
-            if (ProtocolSequence.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
-            {
-                EndpointPath = $@"\RPC Control\{Endpoint}";
-            }
-            else if (ProtocolSequence.Equals("ncacn_np", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
-            {
-                EndpointPath = $@"\??{Endpoint}";
-            }
-            else
-            {
-                EndpointPath = string.Empty;
-            }
-        }
-
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>String form of the object.</returns>
-        public override string ToString()
-        {
-            return $"[{InterfaceId}, {InterfaceVersion}] {BindingString}";
-        }
-    }
-
-    /// <summary>
     /// Static class to access information from the RPC mapper.
     /// </summary>
     public static class RpcEndpointMapper
@@ -337,10 +255,9 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
-        /// Query for endpoints registered on the local system for an RPC endpoint.
+        /// Query for endpoints registered on the local system for an RPC endpoint ignoring the version.
         /// </summary>
         /// <param name="interface_id">Interface UUID to lookup.</param>
-        /// <param name="interface_version">Interface version lookup.</param>
         /// <returns>The list of registered RPC endpoints.</returns>
         public static IEnumerable<RpcEndpoint> QueryEndpoints(Guid interface_id)
         {
@@ -429,6 +346,17 @@ namespace NtApiDotNet.Win32
         public static string MapServerToBindingString(NdrRpcServerInterface server_interface)
         {
             return MapServerToBindingString(server_interface.InterfaceId, server_interface.InterfaceVersion);
+        }
+
+        /// <summary>
+        /// Resolve the local binding string for this service from the local Endpoint Mapper.
+        /// </summary>
+        /// <param name="endpoint">An existing endpoint used for lookup.</param>
+        /// <remarks>This only will return a valid value if the service is running and registered with the Endpoint Mapper. It can also hang.</remarks>
+        /// <returns>The RPC binding string. Empty string if it doesn't exist or the lookup failed.</returns>
+        public static string MapServerToBindingString(RpcEndpoint endpoint)
+        {
+            return MapServerToBindingString(endpoint.InterfaceId, endpoint.InterfaceVersion);
         }
     }
 }

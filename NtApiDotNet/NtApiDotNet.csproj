@@ -127,6 +127,7 @@
     <Compile Include="NtObjectUtils.cs" />
     <Compile Include="Win32\ExecutableManifest.cs" />
     <Compile Include="Win32\LogonUtils.cs" />
+    <Compile Include="Win32\RpcEndpoint.cs" />
     <Compile Include="Win32\RpcEndpointMapper.cs" />
     <Compile Include="Win32\RpcServer.cs" />
     <Compile Include="Win32\SymbolResolver.cs" />
