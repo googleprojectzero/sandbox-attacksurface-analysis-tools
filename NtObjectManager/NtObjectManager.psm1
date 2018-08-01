@@ -1057,7 +1057,7 @@ function Show-NtSecurityDescriptor {
                 $cmdline += " --readonly"
             }
             $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\ViewSecurityDescriptor.exe" -InheritHandles
-            $config.AddInheritedHandle($obj)
+            $config.AddInheritedHandle($obj) | Out-Null
             Use-NtObject($p = New-Win32Process -Config $config) {
                 if ($Wait) {
                     $p.Process.Wait() | Out-Null
