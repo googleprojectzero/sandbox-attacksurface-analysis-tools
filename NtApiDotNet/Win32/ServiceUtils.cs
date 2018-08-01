@@ -472,6 +472,10 @@ namespace NtApiDotNet.Win32
         /// The list of triggers for the service.
         /// </summary>
         public IEnumerable<ServiceTriggerInformation> Triggers => _service_information.Value.Triggers;
+        /// <summary>
+        /// The user name this service runs under.
+        /// </summary>
+        public string UserName { get; }
 
         private static RegistryKey OpenKeySafe(RegistryKey rootKey, string path)
         {
@@ -547,6 +551,7 @@ namespace NtApiDotNet.Win32
                     {
                         ServiceDll = ReadStringFromKey(key, null, "ServiceDll");
                     }
+                    UserName = ReadStringFromKey(key, null, "ObjectName");
                 }
             }
             _service_information = new Lazy<ServiceInformation>(GetServiceInformation);

@@ -2851,8 +2851,10 @@ function Set-GlobalSymbolResolver {
 Gets a list of running services.
 .DESCRIPTION
 This cmdlet gets a list of running services. It can also include in the list non-active services.
-.PARAMETER All
+.PARAMETER IncludeNonActive
 Specify to return all services including non-active ones.
+.PARAMETER Name
+Specify a name to lookup.
 .INPUTS
 None
 .OUTPUTS
@@ -2861,18 +2863,32 @@ NtApiDotNet.Win32.RunningService[]
 Get-RunningService
 Get all running services.
 .EXAMPLE
-Get-RunningService -All
+Get-RunningService -IncludeNonActive
 Get all running services including non-active services.
+.EXAMPLE
+Get-RunningService -Name Fax
+Get the Fax running services.
 #>
 function Get-RunningService {
+    [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
-        [switch]$All
+        [parameter(ParameterSetName = "All")]
+        [switch]$IncludeNonActive,
+        [parameter(ParameterSetName = "FromName")]
+        [string]$Name
     )
 
-    if ($All) {
-        [NtApiDotNet.Win32.ServiceUtils]::GetServices()
-    } else {
-        [NtApiDotNet.Win32.ServiceUtils]::GetRunningServicesWithProcessIds()
+    switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            if ($IncludeNonActive) {
+                [NtApiDotNet.Win32.ServiceUtils]::GetServices()
+            } else {
+                [NtApiDotNet.Win32.ServiceUtils]::GetRunningServicesWithProcessIds()
+            }
+        }
+        "FromName" {
+            [NtApiDotNet.Win32.ServiceUtils]::GetServices() | ? Name -eq $Name
+        }
     }
 }
 
