@@ -21,6 +21,22 @@ with .NET Core 2.0 by building the specific project files.
 
 Release Notes:
 
+1.1.16
+------
+* Added Get-NtFilePathType function.
+* Added Add-NtSecurityDescriptorDaclAce function.
+* Added Path support to Get-NtSecurityDescriptor and Set-NtSecurityDescriptor.
+* Added parameter to only return a specific set of IIDs from a COM proxy definition.
+* Added support for extracting RPC servers from a DLL.
+* Added support for enumerating registered RPC endpoints with Get-RpcEndpoint.
+* Added support for enumerating running service information with Get-RunningService.
+* Added Get-NtAlpcServer function.
+* Reworked OpenWithType to support bruteforce of the object type.
+* Added Win32Utils method to parse command line and extract image path.
+* Fix DepStatus On Windows Server 2K12 / 2K16 from Rosalie.
+* Added option to Get-NtProcess and Get-NtThread to only return system information.
+* Added basic transaction support to registry keys.
+
 1.1.15
 ------
 * Convert access exceptions during NDR parsing into an NdrParser exception rather than crashing the process.
