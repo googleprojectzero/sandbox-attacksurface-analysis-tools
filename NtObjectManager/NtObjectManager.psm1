@@ -101,7 +101,7 @@ function Set-NtTokenPrivilege
     [NtApiDotNet.NtToken]$Token,
     [NtApiDotNet.PrivilegeAttributes]$Attributes = "Enabled"
     )
-  if ($Token -eq $null) {
+  if ($null -eq $Token) {
     $Token = Get-NtToken -Primary
   } else {
     $Token = $Token.Duplicate()
@@ -2889,6 +2889,65 @@ function Get-RunningService {
         "FromName" {
             [NtApiDotNet.Win32.ServiceUtils]::GetServices() | ? Name -eq $Name
         }
+    }
+}
+
+<#
+.SYNOPSIS
+Duplicates a token to a new token.
+.DESCRIPTION
+This cmdlet duplicates a token to another with specified 
+.PARAMETER Token
+Specify the token to duplicate. If not specified will use the current process token.
+.PARAMETER ImpersonationLevel
+If specified will duplicate the token as an impersonation token.
+.PARAMETER Primary
+If specified will duplicate the token as a primary token.
+.PARAMETER Access
+Specify the access to the new token object.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.NtToken
+.EXAMPLE
+Copy-NtToken -Primary
+Copy the current token as a primary token.
+.EXAMPLE
+Copy-NtToken -ImpersonationLevel Impersonation
+Copy the current token as a primary token.
+.EXAMPLE
+Copy-NtToken -Primary -Token $token
+Copy an existing token as a primary token.
+#>
+function Copy-NtToken {
+    [CmdletBinding(DefaultParameterSetName = "Impersonation")]
+    Param(
+        [NtApiDotNet.NtToken]$Token,
+        [parameter(Mandatory, ParameterSetName="Impersonation", Position=0)]
+        [NtApiDotNet.SecurityImpersonationLevel]$ImpersonationLevel,
+        [parameter(Mandatory, ParameterSetName="Primary")]
+        [switch]$Primary,
+        [NtApiDotNet.TokenAccessRights]$Access = "MaximumAllowed"
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "Impersonation" {
+            $tokentype = "Impersonation"
+        }
+        "Primary" {
+            $tokentype = "Primary"
+            $ImpersonationLevel = "Anonymous"
+        }
+    }
+
+    if ($null -eq $Token) {
+        $Token = Get-NtToken -Primary
+    } else {
+        $Token = $Token.Duplicate()
+    }
+
+    Use-NtObject($Token) {
+        $Token.DuplicateToken($tokentype, $ImpersonationLevel, $Access)
     }
 }
 
