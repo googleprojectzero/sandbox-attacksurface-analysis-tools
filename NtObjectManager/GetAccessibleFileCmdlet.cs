@@ -35,7 +35,7 @@ namespace NtObjectManager
         /// <summary>
         /// Check directories only.
         /// </summary>
-        DirectoriesOnly        
+        DirectoriesOnly
     }
 
     /// <summary>

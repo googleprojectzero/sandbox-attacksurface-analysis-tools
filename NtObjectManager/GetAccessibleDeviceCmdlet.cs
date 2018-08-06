@@ -34,12 +34,18 @@ namespace NtObjectManager
         /// </summary>
         public FileDeviceType DeviceType { get; private set; }
 
-        internal DeviceAccessCheckResult(string name, bool namespace_path, FileDeviceType device_type,
+        /// <summary>
+        /// Indicates the device characteristics.
+        /// </summary>
+        public FileDeviceCharacteristics Characteristics { get; private set; }
+
+        internal DeviceAccessCheckResult(string name, bool namespace_path, FileDeviceType device_type, FileDeviceCharacteristics device_chars,
             AccessMask granted_access, string sddl, TokenInformation token_info) : base(name, "Device",
                 granted_access, NtType.GetTypeByType<NtFile>().GenericMapping, sddl, typeof(FileAccessRights), false, token_info)
         {
             NamespacePath = namespace_path;
             DeviceType = device_type;
+            Characteristics = device_chars;
         }
     }
 
@@ -183,6 +189,19 @@ namespace NtObjectManager
             }
         }
 
+        private static FileDeviceCharacteristics GetDeviceCharacteristics(NtFile file)
+        {
+            try
+            {
+                return file.Characteristics;
+            }
+            catch (NtException)
+            {
+                return FileDeviceCharacteristics.None;
+            }
+        }
+
+
         private void CheckAccessUnderImpersonation(TokenEntry token, string path, bool namespace_path, 
             AccessMask access_rights, FileOpenOptions open_options, EaBuffer ea_buffer)
         {
@@ -194,7 +213,8 @@ namespace NtObjectManager
                     {
                         var sd = result.Result.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
 
-                        WriteObject(new DeviceAccessCheckResult(path, namespace_path, GetDeviceType(result.Result), result.Result.GrantedAccess, 
+                        WriteObject(new DeviceAccessCheckResult(path, namespace_path, GetDeviceType(result.Result), 
+                            GetDeviceCharacteristics(result.Result), result.Result.GrantedAccess, 
                             sd.IsSuccess ? sd.Result.ToSddl() : String.Empty, token.Information));
                     }
                 }
