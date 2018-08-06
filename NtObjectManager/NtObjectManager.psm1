@@ -590,7 +590,7 @@ function Get-NtFilePath {
             $p = Resolve-Path -LiteralPath $FullName
         }
     }
-    $p = [NtApiDotNet.NtFileUtils]::DosFileNameToNt($p)
+    $p = [NtObjectManager.GetNtFileCmdlet]::ResolveWin32Path($PSCmdlet.SessionState, $p)
     Write-Output $p
   }
 }

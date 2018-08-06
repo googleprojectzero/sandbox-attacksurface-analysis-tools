@@ -112,22 +112,33 @@ namespace NtObjectManager
 
             return path;
         }
+
+        /// <summary>
+        /// Resolve a Win32 path using current PS session state.
+        /// </summary>
+        /// <param name="state">The session state.</param>
+        /// <param name="path">The path to resolve.</param>
+        /// <returns></returns>
+        public static string ResolveWin32Path(SessionState state, string path)
+        {
+            var path_type = NtFileUtils.GetDosPathType(path);
+            switch (path_type)
+            {
+                case RtlPathType.Relative:
+                case RtlPathType.DriveRelative:
+                case RtlPathType.Rooted:
+                    path = ResolveRelativePath(state, path, path_type);
+                    break;
+            }
+
+            return NtFileUtils.DosFileNameToNt(path);
+        }
         
         internal static string ResolvePath(SessionState state, string path, bool win32_path)
         {
             if (win32_path)
             {
-                var path_type = NtFileUtils.GetDosPathType(path);
-                switch (path_type)
-                {
-                    case RtlPathType.Relative:
-                    case RtlPathType.DriveRelative:
-                    case RtlPathType.Rooted:
-                        path = ResolveRelativePath(state, path, path_type);
-                        break;
-                }
-
-                return NtFileUtils.DosFileNameToNt(path);
+                return ResolveWin32Path(state, path);
             }
             else
             {
