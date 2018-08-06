@@ -446,7 +446,7 @@ namespace NtApiDotNet
         /// <summary>
         /// <para type="description">Specify Process access rights.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "FromThread", Mandatory = true)]
+        [Parameter(ParameterSetName = "FromProcess", Mandatory = true)]
         public ProcessAccessRights ProcessAccess { get; set; }
         /// <summary>
         /// <para type="description">Specify mandatory label policy.</para>
