@@ -118,7 +118,7 @@ namespace NtObjectManager
         /// </summary>
         /// <param name="state">The session state.</param>
         /// <param name="path">The path to resolve.</param>
-        /// <returns></returns>
+        /// <returns>The resolved Win32 path.</returns>
         public static string ResolveWin32Path(SessionState state, string path)
         {
             var path_type = NtFileUtils.GetDosPathType(path);
