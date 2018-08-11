@@ -474,6 +474,11 @@ namespace NtApiDotNet
         [Parameter]
         public SpecificAccessType ToSpecificAccess { get; set; }
         /// <summary>
+        /// <para type="description">Return access as specific access type based on the NtType object.</para>
+        /// </summary>
+        [Parameter]
+        public NtType ToTypeAccess { get; set; }
+        /// <summary>
         /// <para type="description">Specify that any generic rights should be mapped to type specific rights.</para>
         /// </summary>
         [Parameter]
@@ -531,13 +536,13 @@ namespace NtApiDotNet
             {
                 WriteObject(mask.ToMandatoryLabelPolicy());
             }
-            else if (ToSpecificAccess == SpecificAccessType.None)
+            else if (ToSpecificAccess == SpecificAccessType.None && ToTypeAccess == null)
             {
                 WriteObject(mask);
             }
             else
             {
-                NtType type = GetTypeObject(ToSpecificAccess);
+                NtType type = ToTypeAccess ?? GetTypeObject(ToSpecificAccess);
                 WriteObject(mask.ToSpecificAccess(type.AccessRightsType));
             }
         }
