@@ -61,22 +61,32 @@ namespace NtApiDotNet.Win32
         /// The endpoint path.
         /// </summary>
         public string EndpointPath { get; }
+        /// <summary>
+        /// Indicates this endpoint is registered with the endpoint mapper.
+        /// </summary>
+        public bool Registered { get; }
 
-        internal RpcEndpoint(RPC_IF_ID if_id, UUID uuid, SafeRpcStringHandle annotation, SafeRpcBindingHandle binding)
+        internal RpcEndpoint(RPC_IF_ID if_id, UUID uuid, SafeRpcStringHandle annotation, SafeRpcBindingHandle binding, bool registered)
         {
             InterfaceId = if_id.Uuid;
             InterfaceVersion = new Version(if_id.VersMajor, if_id.VersMinor);
             ObjectUuid = uuid.Uuid;
-            Annotation = annotation.ToString();
+            Annotation = annotation?.ToString() ?? string.Empty;
             BindingString = binding.ToString();
-            var cracked = new CrackedBindingString(BindingString);
-            ProtocolSequence = cracked.Protseq;
-            NetworkAddress = cracked.NetworkAddr;
-            Endpoint = cracked.Endpoint;
-            NetworkOptions = cracked.NetworkOptions;
+            ProtocolSequence = binding.Protseq;
+            NetworkAddress = binding.NetworkAddr;
+            Endpoint = binding.Endpoint;
+            NetworkOptions = binding.NetworkOptions;
             if (ProtocolSequence.Equals("ncalrpc", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
             {
-                EndpointPath = $@"\RPC Control\{Endpoint}";
+                if (Endpoint.Contains(@"\"))
+                {
+                    EndpointPath = Endpoint;
+                }
+                else
+                {
+                    EndpointPath = $@"\RPC Control\{Endpoint}";
+                }
             }
             else if (ProtocolSequence.Equals("ncacn_np", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Endpoint))
             {
@@ -86,6 +96,7 @@ namespace NtApiDotNet.Win32
             {
                 EndpointPath = string.Empty;
             }
+            Registered = registered;
         }
 
         /// <summary>

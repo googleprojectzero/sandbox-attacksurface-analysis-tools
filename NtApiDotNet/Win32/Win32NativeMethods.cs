@@ -86,6 +86,12 @@ namespace NtApiDotNet.Win32
         );
 
         [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcMgmtInqIfIds(
+            SafeRpcBindingHandle Binding,
+            out SafeRpcIfIdVectorHandle IfIdVector
+        );
+
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
         internal static extern int RpcBindingFree(ref IntPtr Binding);
 
         [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
@@ -105,10 +111,24 @@ namespace NtApiDotNet.Win32
             );
 
         [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcStringBindingCompose(
+          string ObjUuid,
+          string ProtSeq,
+          string NetworkAddr,
+          string Endpoint,
+          string Options,
+          out SafeRpcStringHandle StringBinding
+        );
+
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
         internal static extern int RpcStringFree(
             ref IntPtr String
         );
 
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RpcIfIdVectorFree(
+            ref IntPtr IfIdVector
+        );
 
         [DllImport("shell32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern SafeLocalAllocHandle CommandLineToArgvW(string lpCmdLine, out int pNumArgs);

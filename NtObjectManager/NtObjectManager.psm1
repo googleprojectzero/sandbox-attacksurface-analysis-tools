@@ -2690,6 +2690,10 @@ The UUID of the RPC interface.
 The version of the RPC interface.
 .PARAMETER Server
 Parsed NDR server.
+.PARAMETER Binding
+A RPC binding string to query all endpoints from.
+.PARAMETER AlpcPort
+An ALPC port name. Can contain a full path as long as the string contains \RPC Control\ (case sensitive).
 .INPUTS
 None or NtApiDotNet.Ndr.NdrRpcServerInterface
 .OUTPUTS
@@ -2706,6 +2710,12 @@ Get RPC endpoints for a specified interface ID ignoring the version.
 .EXAMPLE
 Get-RpcEndpoint "A57A4ED7-0B59-4950-9CB1-E600A665154F" "1.0"
 Get RPC endpoints for a specified interface ID and version.
+.EXAMPLE
+Get-RpcEndpoint -Binding "ncalrpc:[RPC_PORT]"
+Get RPC endpoints for exposed over ncalrpc with name RPC_PORT.
+.EXAMPLE
+Get-RpcEndpoint -AlpcPort "RPC_PORT"
+Get RPC endpoints for exposed over ALPC with name RPC_PORT.
 #>
 function Get-RpcEndpoint {
     [CmdletBinding(DefaultParameterSetName = "All")]
@@ -2716,7 +2726,11 @@ function Get-RpcEndpoint {
        [parameter(Mandatory, Position=1, ParameterSetName = "FromIdAndVersion")]
        [Version]$InterfaceVersion,
        [parameter(Mandatory, Position=0, ParameterSetName = "FromServer", ValueFromPipeline)]
-       [NtApiDotNet.Ndr.NdrRpcServerInterface]$Server
+       [NtApiDotNet.Ndr.NdrRpcServerInterface]$Server,
+       [parameter(Mandatory, ParameterSetName = "FromBinding")]
+       [string]$Binding,
+       [parameter(Mandatory, ParameterSetName = "FromAlpc")]
+       [string]$AlpcPort
     )
 
     PROCESS {
@@ -2732,6 +2746,12 @@ function Get-RpcEndpoint {
             }
             "FromServer" {
                 [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($Server)
+            }
+            "FromBinding" {
+                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpointsForBinding($Binding)
+            }
+            "FromAlpc" {
+                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpointsForAlpcPort($AlpcPort)
             }
         }
     }

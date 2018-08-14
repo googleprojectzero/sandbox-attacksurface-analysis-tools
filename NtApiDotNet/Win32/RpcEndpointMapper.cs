@@ -52,6 +52,13 @@ namespace NtApiDotNet.Win32
         public ushort VersMinor;
     }
 
+    [StructLayout(LayoutKind.Sequential), DataStart("IfId")]
+    internal class RPC_IF_ID_VECTOR
+    {
+        public int Count;
+        public IntPtr IfId; // RPC_IF_ID*
+    };
+
     internal class CrackedBindingString
     {
         public string ObjUuid { get; }
@@ -102,6 +109,21 @@ namespace NtApiDotNet.Win32
 
     internal sealed class SafeRpcBindingHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
+        private CrackedBindingString _cracked_binding;
+
+        private CrackedBindingString GetCrackedBinding()
+        {
+            if (IsClosed)
+            {
+                throw new ObjectDisposedException("CrackedBindingString");
+            }
+            if (_cracked_binding == null)
+            {
+                _cracked_binding = new CrackedBindingString(ToString());
+            }
+            return _cracked_binding;
+        }
+
         public SafeRpcBindingHandle() : base(true)
         {
         }
@@ -116,6 +138,12 @@ namespace NtApiDotNet.Win32
             return Win32NativeMethods.RpcBindingFree(ref handle) == 0;
         }
 
+        public string ObjUuid => GetCrackedBinding().ObjUuid;
+        public string Protseq => GetCrackedBinding().Protseq;
+        public string NetworkAddr => GetCrackedBinding().NetworkAddr;
+        public string Endpoint => GetCrackedBinding().Endpoint;
+        public string NetworkOptions => GetCrackedBinding().NetworkOptions;
+
         public static SafeRpcBindingHandle Create(string string_binding)
         {
             int status = Win32NativeMethods.RpcBindingFromStringBinding(string_binding, out SafeRpcBindingHandle binding);
@@ -123,7 +151,22 @@ namespace NtApiDotNet.Win32
             {
                 throw new SafeWin32Exception(status);
             }
+            binding._cracked_binding = new CrackedBindingString(string_binding);
             return binding;
+        }
+
+        public static SafeRpcBindingHandle Create(string objuuid, string protseq, string networkaddr, string endpoint, string options)
+        {
+            int status = Win32NativeMethods.RpcStringBindingCompose(objuuid, protseq,
+                networkaddr, endpoint, options, out SafeRpcStringHandle binding);
+            if (status != 0)
+            {
+                throw new SafeWin32Exception(status);
+            }
+            using (binding)
+            {
+                return Create(binding.ToString());
+            }
         }
 
         public override string ToString()
@@ -182,47 +225,77 @@ namespace NtApiDotNet.Win32
         }
     }
 
+    internal sealed class SafeRpcIfIdVectorHandle : SafeHandleZeroOrMinusOneIsInvalid
+    {
+        public SafeRpcIfIdVectorHandle() : base(true)
+        {
+        }
+
+        public SafeRpcIfIdVectorHandle(IntPtr handle, bool owns_handle) : base(owns_handle)
+        {
+            SetHandle(handle);
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            return Win32NativeMethods.RpcIfIdVectorFree(ref handle) == 0;
+        }
+
+        public RPC_IF_ID[] GetIfIds()
+        {
+            if (IsClosed)
+            {
+                throw new ObjectDisposedException("vector");
+            }
+
+            var vector_buffer = new SafeStructureInOutBuffer<RPC_IF_ID_VECTOR>(handle, int.MaxValue, false);
+            var vector = vector_buffer.Result;
+            IntPtr[] ptrs = new IntPtr[vector.Count];
+            vector_buffer.Data.ReadArray(0, ptrs, 0, vector.Count);
+            return ptrs.Select(p => (RPC_IF_ID)Marshal.PtrToStructure(p, typeof(RPC_IF_ID))).ToArray();
+        }
+    }
+
     /// <summary>
     /// Static class to access information from the RPC mapper.
     /// </summary>
     public static class RpcEndpointMapper
     {
-        private static IEnumerable<RpcEndpoint> QueryEndpoints(SafeRpcBindingHandle search_binding, RpcEndpointInquiryFlag inquiry_flag, RPC_IF_ID if_id_search, RpcEndPointVersionOption version, UUID uuid_search)
+        private static IEnumerable<RpcEndpoint> QueryEndpoints(SafeRpcBindingHandle search_binding, RpcEndpointInquiryFlag inquiry_flag, RPC_IF_ID if_id_search, RpcEndPointVersionOption version, UUID uuid_search, bool throw_on_error = true)
         {
-            using (search_binding)
+            int status = Win32NativeMethods.RpcMgmtEpEltInqBegin(search_binding, 
+                inquiry_flag,
+                if_id_search, version, uuid_search, out SafeRpcInquiryHandle inquiry);
+            if (status != 0)
             {
-                int status = Win32NativeMethods.RpcMgmtEpEltInqBegin(search_binding, 
-                    inquiry_flag,
-                    if_id_search, version, uuid_search, out SafeRpcInquiryHandle inquiry);
-                if (status != 0)
-                {
+                if (throw_on_error)
                     throw new SafeWin32Exception(status);
-                }
+                yield break;
+            }
 
-                using (inquiry)
+            using (inquiry)
+            {
+                while (true)
                 {
-                    while (true)
+                    RPC_IF_ID if_id = new RPC_IF_ID();
+                    UUID uuid = new UUID();
+                    status = Win32NativeMethods.RpcMgmtEpEltInqNext(inquiry, if_id, out SafeRpcBindingHandle binding, uuid, out SafeRpcStringHandle annotation);
+                    if (status != 0)
                     {
-                        RPC_IF_ID if_id = new RPC_IF_ID();
-                        UUID uuid = new UUID();
-                        status = Win32NativeMethods.RpcMgmtEpEltInqNext(inquiry, if_id, out SafeRpcBindingHandle binding, uuid, out SafeRpcStringHandle annotation);
-                        if (status != 0)
+                        if (status != 1772 && throw_on_error)
                         {
-                            if (status == 1772)
-                            {
-                                break;
-                            }
                             throw new SafeWin32Exception(status);
                         }
-                        try
-                        {
-                            yield return new RpcEndpoint(if_id, uuid, annotation, binding);
-                        }
-                        finally
-                        {
-                            binding.Dispose();
-                            annotation.Dispose();
-                        }
+                        break;
+                    }
+                    try
+                    {
+                        yield return new RpcEndpoint(if_id, uuid, annotation, binding, true);
+                    }
+                    finally
+                    {
+                        binding.Dispose();
+                        annotation.Dispose();
                     }
                 }
             }
@@ -304,6 +377,63 @@ namespace NtApiDotNet.Win32
         public static IEnumerable<RpcEndpoint> QueryAlpcEndpoints(NdrRpcServerInterface server_interface)
         {
             return QueryAlpcEndpoints(server_interface.InterfaceId, server_interface.InterfaceVersion);
+        }
+
+        private static RpcEndpoint CreateEndpoint(SafeRpcBindingHandle binding_handle, RPC_IF_ID if_id)
+        {
+            var endpoints = QueryEndpoints(binding_handle, RpcEndpointInquiryFlag.Interface, 
+                if_id, RpcEndPointVersionOption.Exact, null, false).ToArray();
+            RpcEndpoint ret = endpoints.Where(ep => ep.BindingString.Equals(binding_handle.ToString(), StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            return ret ?? new RpcEndpoint(if_id, new UUID(), null, binding_handle, false);
+        }
+
+        private const string RPC_CONTROL_PATH = @"\RPC Control\";
+
+        private static IEnumerable<RpcEndpoint> QueryEndpointsForBinding(SafeRpcBindingHandle binding_handle)
+        {
+            using (binding_handle)
+            {
+                int status = Win32NativeMethods.RpcMgmtInqIfIds(binding_handle, out SafeRpcIfIdVectorHandle if_id_vector);
+                // If the RPC server doesn't exist return an empty list.
+                if (status == 1722)
+                {
+                    return new RpcEndpoint[0];
+                }
+                if (status != 0)
+                {
+                    throw new SafeWin32Exception(status);
+                }
+
+                using (if_id_vector)
+                {
+                    return if_id_vector.GetIfIds().Select(if_id => CreateEndpoint(binding_handle, if_id)).ToArray();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Query for endpoints for a RPC binding. 
+        /// </summary>
+        /// <param name="alpc_port">The ALPC port to query. Can be a full path as long as it contains \RPC Control\ somewhere.</param>
+        /// <returns>The list of endpoints on the RPC binding.</returns>
+        public static IEnumerable<RpcEndpoint> QueryEndpointsForAlpcPort(string alpc_port)
+        {
+            int index = alpc_port.IndexOf(@"\RPC Control\", StringComparison.OrdinalIgnoreCase);
+            if (index >= 0)
+            {
+                alpc_port = alpc_port.Substring(0, index) + RPC_CONTROL_PATH + alpc_port.Substring(index + RPC_CONTROL_PATH.Length);
+            }
+            return QueryEndpointsForBinding(SafeRpcBindingHandle.Create(null, "ncalrpc", null, alpc_port, null));
+        }
+
+        /// <summary>
+        /// Query for endpoints for a RPC binding. 
+        /// </summary>
+        /// <param name="string_binding">The RPC binding to query, e.g. ncalrpc:[PORT]</param>
+        /// <returns>The list of endpoints on the RPC binding.</returns>
+        public static IEnumerable<RpcEndpoint> QueryEndpointsForBinding(string string_binding)
+        {
+            return QueryEndpointsForBinding(SafeRpcBindingHandle.Create(string_binding));
         }
 
         /// <summary>
