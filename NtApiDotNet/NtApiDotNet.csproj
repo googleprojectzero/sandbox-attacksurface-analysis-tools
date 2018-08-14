@@ -44,6 +44,7 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CachedEnumerable.cs" />
     <Compile Include="CreateUserProcess.cs" />
     <Compile Include="CreateUserProcessResult.cs" />
     <Compile Include="DisposableList.cs" />
@@ -129,6 +130,7 @@
     <Compile Include="Win32\LogonUtils.cs" />
     <Compile Include="Win32\RpcEndpoint.cs" />
     <Compile Include="Win32\RpcEndpointMapper.cs" />
+    <Compile Include="Win32\RpcProcess.cs" />
     <Compile Include="Win32\RpcServer.cs" />
     <Compile Include="Win32\SymbolResolver.cs" />
     <Compile Include="Win32\Win32Utils.cs" />

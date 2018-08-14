@@ -474,6 +474,11 @@ namespace NtApiDotNet
             return new SafeKernelObjectHandle(handle.DangerousGetHandle(), false);
         }
 
+        internal static IEnumerable<T> ToCached<T>(this IEnumerable<T> enumerable)
+        {
+            return new CachedEnumerable<T>(enumerable);
+        }
+
         internal static bool IsWindows7OrLess
         {
             get
