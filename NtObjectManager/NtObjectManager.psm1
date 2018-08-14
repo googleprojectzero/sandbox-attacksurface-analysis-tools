@@ -2833,24 +2833,23 @@ function Get-RpcServer {
 
 <#
 .SYNOPSIS
-Gets a list of processes with exposed ALPC RPC endpoints.
+Gets a list of ALPC RPC servers.
 .DESCRIPTION
-This cmdlet gets a list of processes with exposed ALPC RPC endpoints. This relies on being able to
-access the list of ALPC ports in side a process so might need elevated privileges.
+This cmdlet gets a list of ALPC RPC servers. This relies on being able to access the list of ALPC ports in side a process so might need elevated privileges.
 .PARAMETER ProcessId
-The ID of a process to get.
+The ID of a process to query for ALPC servers.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.RpcProcess[]
+NtApiDotNet.Win32.RpcAlpcServer[]
 .EXAMPLE
-Get-RpcProcess
-Get all processes with exposed ALPC RPC endpoints.
+Get-RpcAlpcServer
+Get all ALPC RPC servers.
 .EXAMPLE
-Get-RpcProcess -ProcessId 1234
-Get process from ID 1234.
+Get-RpcAlpcServer -ProcessId 1234
+Get all ALPC RPC servers in process ID 1234.
 #>
-function Get-RpcProcess {
+function Get-RpcAlpcServer {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
        [parameter(Mandatory, Position=0, ParameterSetName = "FromProcessId")]
@@ -2860,10 +2859,10 @@ function Get-RpcProcess {
     Set-NtTokenPrivilege SeDebugPrivilege | Out-Null
     switch($PsCmdlet.ParameterSetName) {
         "All" {
-            [NtApiDotNet.Win32.RpcProcess]::GetProcesses()
+            [NtApiDotNet.Win32.RpcAlpcServer]::GetAlpcServers()
         }
         "FromProcessId" {
-            [NtApiDotNet.Win32.RpcProcess]::GetProcess($ProcessId)
+            [NtApiDotNet.Win32.RpcAlpcServer]::GetAlpcServers($ProcessId)
         }
     }
 }

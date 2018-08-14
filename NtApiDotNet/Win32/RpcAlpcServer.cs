@@ -19,31 +19,39 @@ using System.Linq;
 namespace NtApiDotNet.Win32
 {
     /// <summary>
-    /// Class representing an RPC process.
+    /// Class representing an RPC ALPC server.
     /// </summary>
-    public class RpcProcess
+    public class RpcAlpcServer
     {
         /// <summary>
-        /// The PID of the process.
+        /// The PID of the process which contains the ALPC server.
         /// </summary>
         public int ProcessId { get; }
         /// <summary>
-        /// The name of the process.
+        /// The name of the process which contains the ALPC server.
         /// </summary>
         public string ProcessName { get; }
         /// <summary>
-        /// List of known endpoints.
+        /// List of known endpoints potentially accessible via this RPC server.
         /// </summary>
         public IEnumerable<RpcEndpoint> Endpoints { get; }
         /// <summary>
         /// The number of endpoints.
         /// </summary>
         public int EndpointCount { get; }
+        /// <summary>
+        /// The name of the ALPC server.
+        /// </summary>
+        public string Name { get; }
+        /// <summary>
+        /// The security descriptor of the ALPC server.
+        /// </summary>
+        public SecurityDescriptor SecurityDescriptor { get; }
 
-        private RpcProcess(int process_id, List<RpcEndpoint> endpoints)
+        private RpcAlpcServer(NtHandle handle, List<RpcEndpoint> endpoints)
         {
-            ProcessId = process_id;
-            using (var proc = NtProcess.Open(process_id, ProcessAccessRights.QueryLimitedInformation, false))
+            ProcessId = handle.ProcessId;
+            using (var proc = NtProcess.Open(handle.ProcessId, ProcessAccessRights.QueryLimitedInformation, false))
             {
                 if (proc.IsSuccess)
                 {
@@ -54,27 +62,40 @@ namespace NtApiDotNet.Win32
                     ProcessName = string.Empty;
                 }
             }
+            Name = handle.Name;
+            SecurityDescriptor = handle.SecurityDescriptor;
             Endpoints = endpoints.AsReadOnly();
             EndpointCount = endpoints.Count;
         }
 
         /// <summary>
-        /// Get RPC details for a single process.
+        /// Get RPC ALPC servers for a specific process.
         /// </summary>
         /// <param name="process_id">The ID of the process.</param>
-        /// <returns>The parsed process. The process might not have any endpoints available.</returns>
-        public static RpcProcess GetProcess(int process_id)
+        /// <returns>The list of RPC ALPC servers.</returns>
+        public static IEnumerable<RpcAlpcServer> GetAlpcServers(int process_id)
         {
-            return GetProcessInternal(process_id, NtSystemInfo.GetHandles(process_id, true));
+            return GetAlpcServersInternal(NtSystemInfo.GetHandles(process_id, true)).ToCached();
         }
 
-        private static RpcProcess GetProcessInternal(int process_id, IEnumerable<NtHandle> handles)
+        /// <summary>
+        /// Get a list of all RPC ALPC servers.
+        /// </summary>
+        /// <remarks>This works by discovering any server ALPC ports owned by the process and querying for interfaces.</remarks>
+        /// <returns>The list of RPC ALPC servers.</returns>
+        public static IEnumerable<RpcAlpcServer> GetAlpcServers()
+        {
+            return GetAlpcServersInternal(NtSystemInfo.GetHandles()).ToCached();
+        }
+
+        private static IEnumerable<RpcAlpcServer> GetAlpcServersInternal(IEnumerable<NtHandle> handles)
         {
             NtType alpc_type = NtType.GetTypeByType<NtAlpc>();
-            List<RpcEndpoint> endpoints = new List<RpcEndpoint>();
+            
             foreach (var handle in handles.Where(h => h.NtType == alpc_type
                 && h.Name.StartsWith(@"\RPC Control\", StringComparison.OrdinalIgnoreCase)))
             {
+                List<RpcEndpoint> endpoints = new List<RpcEndpoint>();
                 try
                 {
                     endpoints.AddRange(RpcEndpointMapper.QueryEndpointsForAlpcPort(handle.Name));
@@ -82,30 +103,21 @@ namespace NtApiDotNet.Win32
                 catch (SafeWin32Exception)
                 {
                 }
-            }
-            return new RpcProcess(process_id, endpoints);
-        }
 
-        private static IEnumerable<RpcProcess> GetProcessesInternal()
-        {
-            foreach (var group in NtSystemInfo.GetHandles().GroupBy(h => h.ProcessId))
-            {
-                var process = GetProcessInternal(group.Key, group);
-                if (process.EndpointCount > 0)
+                if (endpoints.Count > 0)
                 {
-                    yield return process;
+                    yield return new RpcAlpcServer(handle, endpoints);
                 }
             }
         }
 
         /// <summary>
-        /// Get a list of RPC processes.
+        /// Overridden ToString method.
         /// </summary>
-        /// <remarks>This works by discovering any server ALPC ports owned by the process and querying for interfaces.</remarks>
-        /// <returns>The list of RPC processes.</returns>
-        public static IEnumerable<RpcProcess> GetProcesses()
+        /// <returns>Formatted string.</returns>
+        public override string ToString()
         {
-            return GetProcessesInternal().ToCached();
+            return $"{ProcessName} - Endpoints: {EndpointCount}"; 
         }
     }
 }
