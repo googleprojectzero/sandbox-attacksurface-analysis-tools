@@ -35,6 +35,10 @@ namespace NtApiDotNet.Win32
         /// List of known endpoints.
         /// </summary>
         public IEnumerable<RpcEndpoint> Endpoints { get; }
+        /// <summary>
+        /// The number of endpoints.
+        /// </summary>
+        public int EndpointCount { get; }
 
         private RpcProcess(int process_id, List<RpcEndpoint> endpoints)
         {
@@ -51,13 +55,14 @@ namespace NtApiDotNet.Win32
                 }
             }
             Endpoints = endpoints.AsReadOnly();
+            EndpointCount = endpoints.Count;
         }
 
         /// <summary>
         /// Get RPC details for a single process.
         /// </summary>
         /// <param name="process_id">The ID of the process.</param>
-        /// <returns>The parsed process. Returns null if the process can't be opened or no RPC endpoints discovered.</returns>
+        /// <returns>The parsed process. The process might not have any endpoints available.</returns>
         public static RpcProcess GetProcess(int process_id)
         {
             return GetProcessInternal(process_id, NtSystemInfo.GetHandles(process_id, true));
@@ -77,9 +82,8 @@ namespace NtApiDotNet.Win32
                 catch (SafeWin32Exception)
                 {
                 }
-                return new RpcProcess(process_id, endpoints);
             }
-            return null;
+            return new RpcProcess(process_id, endpoints);
         }
 
         private static IEnumerable<RpcProcess> GetProcessesInternal()
@@ -87,7 +91,7 @@ namespace NtApiDotNet.Win32
             foreach (var group in NtSystemInfo.GetHandles().GroupBy(h => h.ProcessId))
             {
                 var process = GetProcessInternal(group.Key, group);
-                if (process != null)
+                if (process.EndpointCount > 0)
                 {
                     yield return process;
                 }
