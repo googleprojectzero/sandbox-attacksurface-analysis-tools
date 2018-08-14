@@ -2833,6 +2833,43 @@ function Get-RpcServer {
 
 <#
 .SYNOPSIS
+Gets a list of processes with exposed ALPC RPC endpoints.
+.DESCRIPTION
+This cmdlet gets a list of processes with exposed ALPC RPC endpoints. This relies on being able to
+access the list of ALPC ports in side a process so might need elevated privileges.
+.PARAMETER ProcessId
+The ID of a process to get.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.RpcProcess[]
+.EXAMPLE
+Get-RpcProcess
+Get all processes with exposed ALPC RPC endpoints.
+.EXAMPLE
+Get-RpcProcess -ProcessId 1234
+Get process from ID 1234.
+#>
+function Get-RpcProcess {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    Param(
+       [parameter(Mandatory, Position=0, ParameterSetName = "FromProcessId")]
+       [int]$ProcessId
+    )
+
+    Set-NtTokenPrivilege SeDebugPrivilege | Out-Null
+    switch($PsCmdlet.ParameterSetName) {
+        "All" {
+            [NtApiDotNet.Win32.RpcProcess]::GetProcesses()
+        }
+        "FromProcessId" {
+            [NtApiDotNet.Win32.RpcProcess]::GetProcess($ProcessId)
+        }
+    }
+}
+
+<#
+.SYNOPSIS
 Sets the global symbol resolver paths.
 .DESCRIPTION
 This cmdlet sets the global symbol resolver paths. This allows you to specify symbol resolver paths for cmdlets which support it.
