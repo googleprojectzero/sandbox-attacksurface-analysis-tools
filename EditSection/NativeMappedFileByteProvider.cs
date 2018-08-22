@@ -32,7 +32,6 @@ namespace EditSection
 
         public void ApplyChanges()
         {
-            System.Diagnostics.Trace.WriteLine("In ApplyChanges");
         }
 
 #pragma warning disable 67
