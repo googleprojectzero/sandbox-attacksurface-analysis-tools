@@ -210,7 +210,6 @@ namespace NtApiDotNet
     /// </summary>
     public abstract class NtObject : IDisposable
     {
-        private string _type_name;
         private ObjectBasicInformation _basic_information;
         private ulong _address;
 
@@ -800,17 +799,7 @@ namespace NtApiDotNet
         {
             get
             {
-                if (_type_name == null)
-                {
-                    using (var type_info = new SafeStructureInOutBuffer<ObjectTypeInformation>(1024, true))
-                    {
-                        int return_length;
-                        NtSystemCalls.NtQueryObject(Handle,
-                            ObjectInformationClass.ObjectTypeInformation, type_info, type_info.Length, out return_length).ToNtException();
-                        _type_name = type_info.Result.Name.ToString();
-                    }
-                }
-                return _type_name;
+                return Handle.NtTypeName;
             }
         }
 
@@ -1221,6 +1210,28 @@ namespace NtApiDotNet
         public static O FromHandle(SafeKernelObjectHandle handle)
         {
             return Create(handle);
+        }
+
+        /// <summary>
+        /// Create a new instance from a kernel handle
+        /// </summary>
+        /// <param name="handle">The kernel handle</param>
+        /// <param name="owns_handle">True to own the handle.</param>
+        /// <returns>The new typed instance</returns>
+        public static O FromHandle(IntPtr handle, bool owns_handle)
+        {
+            return FromHandle(new SafeKernelObjectHandle(handle, owns_handle));
+        }
+
+        /// <summary>
+        /// Create a new instance from a kernel handle.
+        /// </summary>
+        /// <param name="handle">The kernel handle</param>
+        /// <remarks>The call doesn't own the handle. The returned object can't be used to close the handle.</remarks>
+        /// <returns>The new typed instance</returns>
+        public static O FromHandle(IntPtr handle)
+        {
+            return FromHandle(handle, false);
         }
 
         /// <summary>

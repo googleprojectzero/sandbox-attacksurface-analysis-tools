@@ -3009,6 +3009,37 @@ function Copy-NtToken {
 
 <#
 .SYNOPSIS
+Gets an object from a handle in the current process.
+.DESCRIPTION
+This cmdlet creates an object for a handle in the current process.
+.PARAMETER Handle
+Specify the handle in the current process.
+.PARAMETER OwnsHandle
+Specify the own the handle (closed when object is disposed).
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.NtObject
+.EXAMPLE
+Get-NtObjectFromHandle -Handle 0x1234
+Get an object from handle 0x1234.
+.EXAMPLE
+Get-NtObjectFromHandle -Handle 0x1234 -OwnsHandle
+Get an object from handle 0x1234 and owns the handle.
+#>
+function Get-NtObjectFromHandle {
+    Param(
+        [parameter(Mandatory, Position=0)]
+        [IntPtr]$Handle,
+        [switch]$OwnsHandle
+    )
+
+    $temp_handle = [NtApiDotNet.SafeKernelObjectHandle]::new($Handle, $false)
+    [NtApiDotNet.NtType]::GetTypeForHandle($temp_handle, $true).FromHandle($Handle, $OwnsHandle)
+}
+
+<#
+.SYNOPSIS
 Get a filtered token.
 .DESCRIPTION
 This is left for backwards compatibility, use 'Get-NtToken -Filtered' instead.

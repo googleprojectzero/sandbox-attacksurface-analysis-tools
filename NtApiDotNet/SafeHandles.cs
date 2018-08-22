@@ -429,6 +429,8 @@ namespace NtApiDotNet
     public sealed class SafeKernelObjectHandle
       : SafeHandle
     {
+        private string _type_name;
+
         private SafeKernelObjectHandle()
             : base(IntPtr.Zero, true)
         {
@@ -454,7 +456,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return this.handle.ToInt64() <= 0;
+                return handle.ToInt64() <= 0;
             }
         }
 
@@ -517,6 +519,28 @@ namespace NtApiDotNet
                 var handle_info = QueryHandleInformation();
                 handle_info.ProtectFromClose = value;
                 SetHandleInformation(handle_info);
+            }
+        }
+
+        /// <summary>
+        /// Get the NT type name for this handle.
+        /// </summary>
+        /// <returns>The NT type name.</returns>
+        public string NtTypeName
+        {
+            get
+            {
+                if (_type_name == null)
+                {
+                    using (var type_info = new SafeStructureInOutBuffer<ObjectTypeInformation>(1024, true))
+                    {
+                        NtSystemCalls.NtQueryObject(this,
+                            ObjectInformationClass.ObjectTypeInformation, type_info, 
+                            type_info.Length, out int return_length).ToNtException();
+                        _type_name = type_info.Result.Name.ToString();
+                    }
+                }
+                return _type_name;
             }
         }
     }

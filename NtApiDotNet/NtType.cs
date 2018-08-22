@@ -353,13 +353,35 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get open from an existing handle.
+        /// Get object from an existing handle.
         /// </summary>
         /// <param name="handle">The existing handle.</param>
         /// <returns>The new object.</returns>
         public NtObject FromHandle(SafeKernelObjectHandle handle)
         {
             return _type_factory.FromHandle(handle);
+        }
+
+        /// <summary>
+        /// Get object from an existing handle.
+        /// </summary>
+        /// <param name="handle">The existing handle.</param>
+        /// <param name="owns_handle">True to own the handle.</param>
+        /// <returns>The new object.</returns>
+        public NtObject FromHandle(IntPtr handle, bool owns_handle)
+        {
+            return FromHandle(new SafeKernelObjectHandle(handle, owns_handle));
+        }
+
+        /// <summary>
+        /// Get object from an existing handle.
+        /// </summary>
+        /// <param name="handle">The existing handle.</param>
+        /// <remarks>The call doesn't own the handle. The returned object can't be used to close the handle.</remarks>
+        /// <returns>The new object.</returns>
+        public NtObject FromHandle(IntPtr handle)
+        {
+            return FromHandle(handle, false);
         }
 
         /// <summary>
@@ -590,6 +612,17 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get a type object by a kernel handle.
+        /// </summary>
+        /// <param name="handle">The kernel handle.</param>
+        /// <param name="create_fake_type">True to create a fake type if needed.</param>
+        /// <returns>The object type, null if not found</returns>
+        public static NtType GetTypeForHandle(SafeKernelObjectHandle handle, bool create_fake_type)
+        {
+            return GetTypeByName(handle.NtTypeName, create_fake_type);
+        }
+
+        /// <summary>
         /// Get an NT type based on the implemented .NET type.
         /// </summary>
         /// <typeparam name="T">A type derived from NtObject</typeparam>
@@ -708,7 +741,6 @@ namespace NtApiDotNet
         {
             return GetTypes(true);
         }
-
 
         /// <summary>
         /// Get a list of all types.
