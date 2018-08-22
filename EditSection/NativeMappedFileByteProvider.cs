@@ -27,7 +27,7 @@ namespace EditSection
         {
             _readOnly = readOnly;
             _map = map;
-            Length = length;
+            Length = Math.Min(length, map.ValidLength);
         }
 
         public void ApplyChanges()
@@ -60,7 +60,7 @@ namespace EditSection
 #pragma warning restore 67
 
         public byte ReadByte(long index)
-        {            
+        {
             if (index < Length)
             {
                 return _map.Read<byte>((ulong)index);

@@ -189,6 +189,23 @@ namespace NtApiDotNet
         public long Length { get; private set; }
 
         /// <summary>
+        /// The valid length of the mapped section from the current position.
+        /// </summary>
+        /// <remarks>This doesn't take into account the possibility of fragmented commits.</remarks>
+        public long ValidLength
+        {
+            get
+            {
+                var mem_info = NtVirtualMemory.QueryMemoryInformation(NtProcess.Current.Handle, handle.ToInt64());
+                if (mem_info.State == MemoryState.Commit)
+                {
+                    return mem_info.RegionSize;
+                }
+                return 0;
+            }
+        }
+
+        /// <summary>
         /// Get full path for mapped section.
         /// </summary>
         public string FullPath
@@ -232,7 +249,7 @@ namespace NtApiDotNet
             }
             _writable = writable;
         }
-        
+
         /// <summary>
         /// Release the internal handle
         /// </summary>
