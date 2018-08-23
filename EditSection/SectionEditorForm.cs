@@ -17,6 +17,7 @@ using NtApiDotNet;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
 
@@ -192,6 +193,8 @@ namespace EditSection
 
         private void InitDataInspectors()
         {
+            AddDataInspector(new FunctionDataInspector("Position", (p, s, e) => $"{s}/0x{s:X}"));
+            AddDataInspector(new FunctionDataInspector("Selection Length", (p, s, l) => $"{l}/0x{l:X}"));
             AddDataInspector(new IntegerDataInspector<byte>((ba, i) => ba[0]));
             AddDataInspector(new IntegerDataInspector<sbyte>((ba, i) => (sbyte)ba[0]));
             AddIntegerDataInspector(BitConverter.ToInt16);
@@ -338,6 +341,25 @@ namespace EditSection
             saveToFileToolStripMenuItem.Enabled = sized_selection;
             toolStripButtonSave.Enabled = sized_selection;
             UpdateDataInspectors();
+        }
+
+        private void copyInspectorToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (ListViewItem item in listViewInspector.SelectedItems)
+            {
+                builder.AppendLine($"{item.SubItems[0].Text} - {item.SubItems[1].Text}");
+            }
+            if (builder.Length > 0)
+            {
+                try
+                {
+                    Clipboard.SetText(builder.ToString());
+                }
+                catch
+                {
+                }
+            }
         }
     }
 }
