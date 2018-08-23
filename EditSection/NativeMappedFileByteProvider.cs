@@ -20,8 +20,9 @@ namespace EditSection
 {
     class NativeMappedFileByteProvider : IByteProvider
     {
-        NtMappedSection _map;
-        bool _readOnly;
+        private readonly NtMappedSection _map;
+        private readonly bool _readOnly;
+        private bool _disable_byte_written;
 
         public NativeMappedFileByteProvider(NtMappedSection map, bool readOnly, long length)
         {
@@ -68,6 +69,13 @@ namespace EditSection
             return 0;
         }
 
+        public byte[] ReadBytes(long index, int length)
+        {
+            byte[] ret = new byte[length];
+            _map.ReadArray((ulong)index, ret, 0, length);
+            return ret;
+        }
+
         public bool SupportsDeleteBytes()
         {
             return false;
@@ -83,6 +91,15 @@ namespace EditSection
             return !_readOnly;
         }
 
+        public void DisableByteWritten(bool disable)
+        {
+            _disable_byte_written = disable;
+            if (!_disable_byte_written)
+            {
+                ByteWritten?.Invoke(this, new EventArgs());
+            }
+        }
+
         public void WriteBytes(long index, byte[] value)
         {
             if (index < Length)
@@ -91,7 +108,8 @@ namespace EditSection
                 {
                     long count = Math.Min(Length - index, value.Length);
                     _map.WriteArray((ulong)index, value, 0, (int)count);
-                    ByteWritten?.Invoke(this, new EventArgs());
+                    if (!_disable_byte_written)
+                        ByteWritten?.Invoke(this, new EventArgs());
                 }
                 catch
                 {
@@ -106,7 +124,8 @@ namespace EditSection
                 try
                 {
                     _map.Write((ulong)index, value);
-                    ByteWritten?.Invoke(this, new EventArgs());
+                    if (!_disable_byte_written)
+                        ByteWritten?.Invoke(this, new EventArgs());
                 }
                 catch
                 {

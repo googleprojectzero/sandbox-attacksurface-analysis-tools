@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using Be.Windows.Forms;
 using System;
 
 namespace EditSection
@@ -24,68 +25,117 @@ namespace EditSection
         Xor
     }
 
-    class CorruptSectionFixedValue : ICorruptSection
+    abstract class CorruptSectionBase : ICorruptSection
     {
         internal static byte ApplyOperationToByte(byte left, byte right, CorruptSectionOperation op)
         {
             switch (op)
             {
                 case CorruptSectionOperation.Xor:
-                    return (byte)(left ^ right);                    
+                    return (byte)(left ^ right);
                 case CorruptSectionOperation.And:
-                    return (byte)(left & right);                    
+                    return (byte)(left & right);
                 case CorruptSectionOperation.Or:
-                    return (byte)(left | right);                    
+                    return (byte)(left | right);
                 default:
-                    return right;                    
+                    return right;
             }
         }
 
-        byte[] _data;
-        CorruptSectionOperation _op;
-
-        public CorruptSectionFixedValue(byte[] data, CorruptSectionOperation op)
+        internal static void ApplyOperationToArray(byte[] array, Func<byte> generator, CorruptSectionOperation op)
         {
-            _data = (byte[])data.Clone();
+            for (int i = 0; i < array.Length; ++i)
+            {
+                array[i] = ApplyOperationToByte(array[i], generator(), op);
+            }
+        }
+
+        private readonly CorruptSectionOperation _op;
+        private const int CHUNK_LENGTH = 64 * 1024;
+
+        protected CorruptSectionBase(CorruptSectionOperation op)
+        {
             _op = op;
         }
 
-        public void Corrupt(Be.Windows.Forms.IByteProvider prov, long start, long end)
+        protected abstract Func<byte> GetGenerator();
+
+        public void Corrupt(NativeMappedFileByteProvider prov, long start, long end)
         {
-            if (_data.Length > 0)
+            try
             {
-                int data_pos = 0;
-                for (long i = start; i < end; ++i)
+                prov.DisableByteWritten(true);
+                long total_length = end - start;
+                long chunks = total_length / CHUNK_LENGTH;
+                long remaining = total_length % CHUNK_LENGTH;
+                var generator = GetGenerator();
+                byte[] temp_chunk = new byte[CHUNK_LENGTH];
+
+                for (long chunk = 0; chunk < chunks; ++chunk)
                 {
-                    prov.WriteByte(i, ApplyOperationToByte(prov.ReadByte(i), _data[data_pos], _op));
-                    data_pos = (data_pos + 1) % _data.Length;
+                    long ofs = start + (chunk * CHUNK_LENGTH);
+                    // No point reading chunk if we're just going to overwrite it.
+                    byte[] data = _op == CorruptSectionOperation.Overwrite ? temp_chunk : prov.ReadBytes(ofs, CHUNK_LENGTH);
+                    ApplyOperationToArray(data, generator, _op);
+                    prov.WriteBytes(ofs, data);
                 }
+
+                if (remaining > 0)
+                {
+                    long ofs = start + (chunks * CHUNK_LENGTH);
+                    byte[] data = _op == CorruptSectionOperation.Overwrite ? temp_chunk : prov.ReadBytes(ofs, (int)remaining);
+                    ApplyOperationToArray(data, generator, _op);
+                    prov.WriteBytes(ofs, data);
+                }
+            }
+            finally
+            {
+                prov.DisableByteWritten(false);
             }
         }
     }
 
-    class CorruptSectionRandomValue : ICorruptSection
+    class CorruptSectionFixedValue : CorruptSectionBase
     {
-        Random _rand;
-        int _low_byte;
-        int _high_byte;
-        CorruptSectionOperation _op;
+        private readonly byte[] _data;
+        public CorruptSectionFixedValue(byte[] data, CorruptSectionOperation op) : base(op)
+        {
+            if (data.Length < 1)
+            {
+                throw new ArgumentException("Data array must contain at least one byte");
+            }
 
-        public CorruptSectionRandomValue(byte low_byte, byte high_byte, CorruptSectionOperation op)
+            _data = (byte[])data.Clone();
+        }
+
+        protected override Func<byte> GetGenerator()
+        {
+            int data_pos = 0;
+            return () =>
+            {
+                byte ret = _data[data_pos++];
+                data_pos %= _data.Length;
+                return ret;
+            };
+        }
+    }
+
+    class CorruptSectionRandomValue : CorruptSectionBase
+    {
+        private readonly Random _rand;
+        private readonly int _low_byte;
+        private readonly int _high_byte;
+        
+        public CorruptSectionRandomValue(byte low_byte, byte high_byte, CorruptSectionOperation op) : base(op)
         {
             _rand = new Random();
             _low_byte = low_byte;
             _high_byte = high_byte + 1;
-            _op = op;
         }
 
-        public void Corrupt(Be.Windows.Forms.IByteProvider prov, long start, long end)
+        protected override Func<byte> GetGenerator()
         {
-            for (long i = start; i < end; ++i)
-            {
-                prov.WriteByte(i, CorruptSectionFixedValue.ApplyOperationToByte(prov.ReadByte(i), 
-                    (byte)_rand.Next(_low_byte, _high_byte), _op));                
-            }     
+            return () => (byte)_rand.Next(_low_byte, _high_byte);
         }
     }
 }

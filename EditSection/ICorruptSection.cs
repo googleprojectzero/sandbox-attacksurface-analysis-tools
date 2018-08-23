@@ -18,6 +18,6 @@ namespace EditSection
 {
     interface ICorruptSection
     {
-        void Corrupt(IByteProvider prov, long start, long end);       
+        void Corrupt(NativeMappedFileByteProvider prov, long start, long end);
     }
 }
