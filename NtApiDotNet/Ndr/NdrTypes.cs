@@ -594,7 +594,7 @@ namespace NtApiDotNet.Ndr
             builder.Append(FormatType(context)).AppendLine(" {");
             foreach (var member in Members.Select((m, i) => $"{m.FormatMember(context)} Member{i}"))
             {
-                builder.Append("    ").AppendLine(member);
+                builder.Append("    ").Append(member).AppendLine(";");
             }
             builder.AppendLine("};");
             return builder.ToString();
