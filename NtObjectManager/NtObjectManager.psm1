@@ -2774,6 +2774,8 @@ default of 'srv*https://msdl.microsoft.com/download/symbols'
 Return the results as text rather than objects.
 .PARAMETER RemoveComments
 When outputing as text remove comments from the output.
+.PARAMETER ParseClients
+Also parse client interface information, otherwise only servers are returned.
 .INPUTS
 string[] List of paths to DLLs.
 .OUTPUTS
@@ -2802,7 +2804,8 @@ function Get-RpcServer {
     [string]$DbgHelpPath,
     [string]$SymbolPath,
     [switch]$AsText,
-    [switch]$RemoveComments
+    [switch]$RemoveComments,
+    [switch]$ParseClients
   )
 
   BEGIN {
@@ -2819,7 +2822,7 @@ function Get-RpcServer {
 
   PROCESS {
     Write-Progress -Activity "Parsing RPC Servers" -CurrentOperation "$FullName"
-    $servers = [NtApiDotNet.Win32.RpcServer]::ParsePeFile($FullName, $DbgHelpPath, $SymbolPath)
+    $servers = [NtApiDotNet.Win32.RpcServer]::ParsePeFile($FullName, $DbgHelpPath, $SymbolPath, $ParseClients)
     if ($AsText) {
         foreach($server in $servers) {
             $text = $server.FormatAsText($RemoveComments)

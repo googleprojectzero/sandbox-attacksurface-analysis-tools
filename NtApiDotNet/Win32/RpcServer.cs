@@ -38,11 +38,25 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of parsed RPC server.</returns>
         public static IEnumerable<RpcServer> ParsePeFile(string file, string dbghelp_path, string symbol_path)
         {
+            return ParsePeFile(file, dbghelp_path, symbol_path, false);
+        }
+
+        /// <summary>
+        /// Parse all RPC servers from a PE file.
+        /// </summary>
+        /// <param name="file">The PE file to parse.</param>
+        /// <param name="dbghelp_path">Path to a DBGHELP DLL to resolve symbols.</param>
+        /// <param name="symbol_path">Symbol path for DBGHELP</param>
+        /// <param name="parse_clients">True to parse client RPC interfaces.</param>
+        /// <remarks>This only works for PE files with the same bitness as the current process.</remarks>
+        /// <returns>A list of parsed RPC server.</returns>
+        public static IEnumerable<RpcServer> ParsePeFile(string file, string dbghelp_path, string symbol_path, bool parse_clients)
+        {
             List<RpcServer> servers = new List<RpcServer>();
             using (var lib = SafeLoadLibraryHandle.LoadLibrary(file, LoadLibraryFlags.DontResolveDllReferences))
             {
                 var sections = lib.GetImageSections();
-                var offsets = sections.SelectMany(s => FindRpcServerInterfaces(s));
+                var offsets = sections.SelectMany(s => FindRpcServerInterfaces(s, parse_clients));
                 if (offsets.Any())
                 {
                     using (var sym_resolver = SymbolResolver.Create(NtProcess.Current,
@@ -53,9 +67,9 @@ namespace NtApiDotNet.Win32
                             IMemoryReader reader = new CurrentProcessMemoryReader(sections.Select(s => Tuple.Create(s.Data.DangerousGetHandle().ToInt64(), (int)s.Data.ByteLength)));
                             NdrParser parser = new NdrParser(reader, NtProcess.Current, 
                                 sym_resolver, NdrParserFlags.IgnoreUserMarshal);
-                            IntPtr ifspec = lib.DangerousGetHandle() + (int)offset;
+                            IntPtr ifspec = lib.DangerousGetHandle() + (int)offset.Offset;
                             var rpc = parser.ReadFromRpcServerInterface(ifspec);
-                            servers.Add(new RpcServer(rpc, parser.ComplexTypes, file, offset));
+                            servers.Add(new RpcServer(rpc, parser.ComplexTypes, file, offset.Offset, offset.Client));
                         }
                     }
                 }
@@ -181,9 +195,24 @@ namespace NtApiDotNet.Win32
         /// Count of endpoints for this service if running.
         /// </summary>
         public int EndpointCount => Endpoints.Count();
+        /// <summary>
+        /// This parsed interface represents a client.
+        /// </summary>
+        public bool Client { get; }
         #endregion
 
         #region Private Methods
+
+        struct RpcOffset
+        {
+            public long Offset;
+            public bool Client;
+            public RpcOffset(long offset, bool client)
+            {
+                Offset = offset;
+                Client = client;
+            }
+        }
 
         private static readonly Guid TransferSyntax = new Guid("8A885D04-1CEB-11C9-9FE8-08002B104860");
         private static readonly Guid TransferSyntax64 = new Guid("71710533-BEBA-4937-8319-B5DBEF9CCC36");
@@ -205,7 +234,7 @@ namespace NtApiDotNet.Win32
 
         private static Lazy<Dictionary<string, RunningService>> _exes_to_service = new Lazy<Dictionary<string, RunningService>>(GetExesToServices);
 
-        private RpcServer(NdrRpcServerInterface server, IEnumerable<NdrComplexTypeReference> complex_types, string filepath, long offset)
+        private RpcServer(NdrRpcServerInterface server, IEnumerable<NdrComplexTypeReference> complex_types, string filepath, long offset, bool client)
         {
             Server = server;
             ComplexTypes = complex_types;
@@ -218,6 +247,7 @@ namespace NtApiDotNet.Win32
                 ServiceDisplayName = services[FilePath].DisplayName;
                 IsServiceRunning = services[FilePath].Status == ServiceStatus.Running;
             }
+            Client = client;
         }
 
         static IEnumerable<int> FindBytes(byte[] buffer, byte[] bytes)
@@ -241,7 +271,7 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private static IEnumerable<long> FindRpcServerInterfaces(ImageSection sect)
+        private static IEnumerable<RpcOffset> FindRpcServerInterfaces(ImageSection sect, bool return_clients)
         {
             byte[] rdata = sect.ToArray();
             foreach (int ofs in FindBytes(rdata, TransferSyntax.ToByteArray()).Concat(FindBytes(rdata, TransferSyntax64.ToByteArray())))
@@ -267,12 +297,12 @@ namespace NtApiDotNet.Win32
                 }
 
                 // No dispatch table, likely to be a RPC_CLIENT_INTERFACE.
-                if (ptr == 0)
+                if (ptr == 0 && !return_clients)
                 {
                     continue;
                 }
 
-                yield return ofs + sect.RelativeVirtualAddress - 24;
+                yield return new RpcOffset(ofs + sect.RelativeVirtualAddress - 24, ptr == 0);
             }
         }
         #endregion

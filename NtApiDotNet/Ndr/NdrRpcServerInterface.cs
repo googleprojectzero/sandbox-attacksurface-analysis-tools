@@ -74,5 +74,14 @@ namespace NtApiDotNet.Ndr
             builder.AppendLine("}").AppendLine();
             return builder.ToString();
         }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The string form of this class.</returns>
+        public override string ToString()
+        {
+            return $"UUID: {InterfaceId}";
+        }
     }
 }
