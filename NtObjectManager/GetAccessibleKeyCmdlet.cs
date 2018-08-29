@@ -120,7 +120,8 @@ namespace NtObjectManager
                 return;
             }
 
-            if (Recurse && key.IsAccessGranted(KeyAccessRights.EnumerateSubKeys))
+            // Can never recure predefined key handles so just ignore them.
+            if (Recurse && key.IsAccessGranted(KeyAccessRights.EnumerateSubKeys) && !key.PredefinedHandle)
             {
                 foreach (string subkey in key.QueryKeys())
                 {
