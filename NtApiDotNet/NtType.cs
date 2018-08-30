@@ -652,18 +652,6 @@ namespace NtApiDotNet
             return GetTypeByType<T>(true);
         }
 
-        private static int GetTypeSize()
-        {
-            using (var type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>())
-            {
-                Dictionary<string, NtType> ret = new Dictionary<string, NtType>(StringComparer.OrdinalIgnoreCase);
-                NtStatus status = NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectTypesInformation,
-                    type_info, type_info.Length, out int return_length);
-                if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
-                    status.ToNtException();
-                return return_length;
-            }
-        }
 
         /// <summary>
         /// Get a fake type object. This can be used in access checking for operations which need an NtType object
@@ -698,30 +686,55 @@ namespace NtApiDotNet
         private static Dictionary<string, NtType> LoadTypes()
         {
             var type_factories = NtTypeFactory.GetAssemblyNtTypeFactories(Assembly.GetExecutingAssembly());
-            int type_size = GetTypeSize();
             Dictionary<string, NtType> ret = new Dictionary<string, NtType>(StringComparer.OrdinalIgnoreCase);
 
-            using (var type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>(type_size, true))
+            int size = 0x8000;
+            NtStatus status = NtStatus.STATUS_INFO_LENGTH_MISMATCH;
+
+            // repeatly try to fill out ObjectTypes buffer by increasing it's size between each attempt
+            while (size < 0x1000000)
             {
-                int alignment = IntPtr.Size - 1;
-                NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectTypesInformation,
-                    type_info, type_info.Length, out int return_length).ToNtException();
-                ObjectAllTypesInformation result = type_info.Result;
-                IntPtr curr_typeinfo = type_info.DangerousGetHandle() + IntPtr.Size;
-                for (int count = 0; count < result.NumberOfTypes; ++count)
+                using (var type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>(size, true))
                 {
-                    ObjectTypeInformation info = (ObjectTypeInformation)Marshal.PtrToStructure(curr_typeinfo, typeof(ObjectTypeInformation));
-                    string name = info.Name.ToString();
-                    NtTypeFactory factory = type_factories.ContainsKey(name) ? type_factories[name] : _generic_factory;
-                    NtType ti = new NtType(count + 2, info, factory);
-                    ret[ti.Name] = ti;
+                    status = NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectTypesInformation,
+                        type_info, type_info.Length, out int return_length);
 
-                    int offset = (info.Name.MaximumLength + alignment) & ~alignment;
-                    curr_typeinfo = info.Name.Buffer + offset;
-                }
+                    switch (status)
+                    {
+                        // if the input buffer is too small, double it's size and retry
+                        case NtStatus.STATUS_INFO_LENGTH_MISMATCH:
+                            size *= 2;
+                            break;
 
-                return ret;
+                        // From this point, the return values of NtSystemCalls.NtQueryObject are considered correct
+                        case NtStatus.STATUS_SUCCESS:
+
+                            int alignment = IntPtr.Size - 1;
+                            ObjectAllTypesInformation result = type_info.Result;
+                            IntPtr curr_typeinfo = type_info.DangerousGetHandle() + IntPtr.Size;
+
+                            for (int count = 0; count < result.NumberOfTypes; ++count)
+                            {
+                                ObjectTypeInformation info = (ObjectTypeInformation)Marshal.PtrToStructure(curr_typeinfo, typeof(ObjectTypeInformation));
+                                string name = info.Name.ToString();
+                                NtTypeFactory factory = type_factories.ContainsKey(name) ? type_factories[name] : _generic_factory;
+                                NtType ti = new NtType(count + 2, info, factory);
+                                ret[ti.Name] = ti;
+
+                                int offset = (info.Name.MaximumLength + alignment) & ~alignment;
+                                curr_typeinfo = info.Name.Buffer + offset;
+                            }
+
+                            return ret;
+                        
+                        default:
+                            throw new NtException(status);
+                    }    
+                }    
             }
+
+            // raise exception if the candidate buffer is over a MB.
+            throw new NtException(NtStatus.STATUS_INSUFFICIENT_RESOURCES);
         }
 
         /// <summary>
