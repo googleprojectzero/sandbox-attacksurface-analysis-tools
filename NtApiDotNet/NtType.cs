@@ -652,37 +652,6 @@ namespace NtApiDotNet
             return GetTypeByType<T>(true);
         }
 
-        /// <summary>
-        /// Compute the buffer size necessary to hold the result of NtQueryObject(ObjectTypesInformation) in order to list all Object's types.
-        /// </summary>
-        /// <returns> an integer representing the minimum size for the return buffer for NtQueryObject(ObjectTypesInformation)</returns>
-        private static int GetTypeSize()
-        {
-            int size = 1000;
-            int type_size = 0;
-            NtStatus status = NtStatus.STATUS_INFO_LENGTH_MISMATCH;
-
-            while (status == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
-            {
-                using (var type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>(size, true))
-                {
-                    status = NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectTypesInformation,
-                        type_info, type_info.Length, out int return_length);
-
-                    type_size = return_length;
-                }
-
-                // Double the size of the reception buffer until the API is okay with it. 
-                // TODO : Prevent this exponential increase from grabbing all the RAM by capping it to a large value.
-                size *= 2;
-            }
-
-            if (status != NtStatus.STATUS_SUCCESS)
-                status.ToNtException();
-
-            return type_size;
-
-        }
 
         /// <summary>
         /// Get a fake type object. This can be used in access checking for operations which need an NtType object
@@ -717,30 +686,62 @@ namespace NtApiDotNet
         private static Dictionary<string, NtType> LoadTypes()
         {
             var type_factories = NtTypeFactory.GetAssemblyNtTypeFactories(Assembly.GetExecutingAssembly());
-            int type_size = GetTypeSize();
             Dictionary<string, NtType> ret = new Dictionary<string, NtType>(StringComparer.OrdinalIgnoreCase);
 
-            using (var type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>(type_size, true))
+            int size = 0x8000;
+            NtStatus status = NtStatus.STATUS_INFO_LENGTH_MISMATCH;
+
+            // repeatly try to fill out ObjectTypes buffer by increasing it's size between each attempt
+            while (status == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
             {
-                int alignment = IntPtr.Size - 1;
-                NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectTypesInformation,
-                    type_info, type_info.Length, out int return_length).ToNtException();
-                ObjectAllTypesInformation result = type_info.Result;
-                IntPtr curr_typeinfo = type_info.DangerousGetHandle() + IntPtr.Size;
-                for (int count = 0; count < result.NumberOfTypes; ++count)
+                using (var type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>(size, true))
                 {
-                    ObjectTypeInformation info = (ObjectTypeInformation)Marshal.PtrToStructure(curr_typeinfo, typeof(ObjectTypeInformation));
-                    string name = info.Name.ToString();
-                    NtTypeFactory factory = type_factories.ContainsKey(name) ? type_factories[name] : _generic_factory;
-                    NtType ti = new NtType(count + 2, info, factory);
-                    ret[ti.Name] = ti;
+                    status = NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectTypesInformation,
+                        type_info, type_info.Length, out int return_length);
 
-                    int offset = (info.Name.MaximumLength + alignment) & ~alignment;
-                    curr_typeinfo = info.Name.Buffer + offset;
-                }
+                    switch (status)
+                    {
+                        // if the input buffer is too small, double it's size and retry
+                        case NtStatus.STATUS_INFO_LENGTH_MISMATCH:
+                            size *= 2;
 
-                return ret;
+                            // raise exception if the candidate buffer is over a MB.
+                            if (size > 0x1000000)
+                                NtStatus.STATUS_INSUFFICIENT_RESOURCES.ToNtException();
+
+                            break;
+
+                        // From this point, the return values of NtSystemCalls.NtQueryObject are considered correct
+                        case NtStatus.STATUS_SUCCESS:
+
+                            int alignment = IntPtr.Size - 1;
+                            ObjectAllTypesInformation result = type_info.Result;
+                            IntPtr curr_typeinfo = type_info.DangerousGetHandle() + IntPtr.Size;
+
+                            for (int count = 0; count < result.NumberOfTypes; ++count)
+                            {
+                                ObjectTypeInformation info = (ObjectTypeInformation)Marshal.PtrToStructure(curr_typeinfo, typeof(ObjectTypeInformation));
+                                string name = info.Name.ToString();
+                                NtTypeFactory factory = type_factories.ContainsKey(name) ? type_factories[name] : _generic_factory;
+                                NtType ti = new NtType(count + 2, info, factory);
+                                ret[ti.Name] = ti;
+
+                                int offset = (info.Name.MaximumLength + alignment) & ~alignment;
+                                curr_typeinfo = info.Name.Buffer + offset;
+                            }
+
+                            return ret;
+                        
+                        default:
+                            status.ToNtException();
+                            break;
+                    }    
+                }    
             }
+
+            // This path is never taken since error paths throws an exception, but the C# compiler does not seem to understand it.
+            // This is probably due to the usage of a 'using' statement which obfuscate the function's control flow graph.
+            return ret;
         }
 
         /// <summary>
