@@ -692,7 +692,7 @@ namespace NtApiDotNet
             NtStatus status = NtStatus.STATUS_INFO_LENGTH_MISMATCH;
 
             // repeatly try to fill out ObjectTypes buffer by increasing it's size between each attempt
-            while (status == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
+            while (size < 0x1000000)
             {
                 using (var type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>(size, true))
                 {
@@ -704,11 +704,6 @@ namespace NtApiDotNet
                         // if the input buffer is too small, double it's size and retry
                         case NtStatus.STATUS_INFO_LENGTH_MISMATCH:
                             size *= 2;
-
-                            // raise exception if the candidate buffer is over a MB.
-                            if (size > 0x1000000)
-                                NtStatus.STATUS_INSUFFICIENT_RESOURCES.ToNtException();
-
                             break;
 
                         // From this point, the return values of NtSystemCalls.NtQueryObject are considered correct
@@ -733,15 +728,13 @@ namespace NtApiDotNet
                             return ret;
                         
                         default:
-                            status.ToNtException();
-                            break;
+                            throw new NtException(status);
                     }    
                 }    
             }
 
-            // This path is never taken since error paths throws an exception, but the C# compiler does not seem to understand it.
-            // This is probably due to the usage of a 'using' statement which obfuscate the function's control flow graph.
-            return ret;
+            // raise exception if the candidate buffer is over a MB.
+            throw new NtException(NtStatus.STATUS_INSUFFICIENT_RESOURCES);
         }
 
         /// <summary>
