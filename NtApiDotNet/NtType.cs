@@ -652,17 +652,36 @@ namespace NtApiDotNet
             return GetTypeByType<T>(true);
         }
 
+        /// <summary>
+        /// Compute the buffer size necessary to hold the result of NtQueryObject(ObjectTypesInformation) in order to list all Object's types.
+        /// </summary>
+        /// <returns> an integer representing the minimum size for the return buffer for NtQueryObject(ObjectTypesInformation)</returns>
         private static int GetTypeSize()
         {
-            using (var type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>())
+            int size = 1000;
+            int type_size = 0;
+            NtStatus status = NtStatus.STATUS_INFO_LENGTH_MISMATCH;
+
+            while (status == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
             {
-                Dictionary<string, NtType> ret = new Dictionary<string, NtType>(StringComparer.OrdinalIgnoreCase);
-                NtStatus status = NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectTypesInformation,
-                    type_info, type_info.Length, out int return_length);
-                if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
-                    status.ToNtException();
-                return return_length;
+                using (var type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>(size, true))
+                {
+                    status = NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectTypesInformation,
+                        type_info, type_info.Length, out int return_length);
+
+                    type_size = return_length;
+                }
+
+                // Double the size of the reception buffer until the API is okay with it. 
+                // TODO : Prevent this exponential increase from grabbing all the RAM by capping it to a large value.
+                size *= 2;
             }
+
+            if (status != NtStatus.STATUS_SUCCESS)
+                status.ToNtException();
+
+            return type_size;
+
         }
 
         /// <summary>
