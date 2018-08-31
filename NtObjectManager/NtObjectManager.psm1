@@ -1404,6 +1404,11 @@ function Invoke-NtToken{
         [NtApiDotNet.SecurityImpersonationLevel]$ImpersonationLevel = "Impersonation"
     )
 
+    if ($Token.TokenType -eq "Impersonation" -and $Token.ImpersonationLevel -lt $ImpersonationLevel) {
+        Write-Error "Impersonation level can't be raised, specify an appropriate impersonation level"
+        return
+    }
+
     $cb = [System.Func[Object]]{ & $Script }
     $Token.RunUnderImpersonate($cb, $ImpersonationLevel)
 }
