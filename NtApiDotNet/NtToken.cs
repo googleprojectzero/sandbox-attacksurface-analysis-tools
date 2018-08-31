@@ -1969,7 +1969,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get the token's owner.
+        /// Get/set the token's owner.
         /// </summary>
         public Sid Owner
         {
@@ -1980,10 +1980,18 @@ namespace NtApiDotNet
                     return new Sid(owner_buf.Result.Owner);
                 }
             }
+
+            set
+            {
+                using (var sid_buffer = value.ToSafeBuffer())
+                {
+                    SetToken(TokenInformationClass.TokenOwner, new TokenOwner() { Owner = sid_buffer.DangerousGetHandle() });
+                }
+            }
         }
 
         /// <summary>
-        /// Get the token's primary group
+        /// Get/set the token's primary group
         /// </summary>
         public Sid PrimaryGroup
         {
@@ -1994,10 +2002,17 @@ namespace NtApiDotNet
                     return new Sid(owner_buf.Result.PrimaryGroup);
                 }
             }
+            set
+            {
+                using (var sid_buffer = value.ToSafeBuffer())
+                {
+                    SetToken(TokenInformationClass.TokenPrimaryGroup, new TokenPrimaryGroup() { PrimaryGroup = sid_buffer.DangerousGetHandle() });
+                }
+            }
         }
 
         /// <summary>
-        /// Get the token's default DACL
+        /// Get/set the token's default DACL
         /// </summary>
         public Acl DefaultDacl
         {
@@ -2007,6 +2022,10 @@ namespace NtApiDotNet
                 {
                     return new Acl(dacl_buf.Result.DefaultDacl, false);
                 }
+            }
+            set
+            {
+                SetDefaultDacl(value);
             }
         }
 
@@ -2018,8 +2037,10 @@ namespace NtApiDotNet
         {
             using (var dacl_buf = dacl.ToSafeBuffer())
             {
-                TokenDefaultDacl default_dacl = new TokenDefaultDacl();
-                default_dacl.DefaultDacl = dacl_buf.DangerousGetHandle();
+                TokenDefaultDacl default_dacl = new TokenDefaultDacl
+                {
+                    DefaultDacl = dacl_buf.DangerousGetHandle()
+                };
                 SetToken(TokenInformationClass.TokenDefaultDacl, default_dacl);
             }
         }
@@ -2075,7 +2096,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get token's session ID
+        /// Get/set token's session ID
         /// </summary>
         public int SessionId
         {
@@ -2123,7 +2144,6 @@ namespace NtApiDotNet
             set
             {
                 SetOrigin(value);
-                
             }
         }
 
@@ -2179,7 +2199,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get whether token has UI access flag set
+        /// Get/set token UI access flag
         /// </summary>
         public bool UIAccess
         {
@@ -2189,6 +2209,10 @@ namespace NtApiDotNet
                 {
                     return buf.Result != 0;
                 }
+            }
+            set
+            {
+                SetUIAccess(value);
             }
         }
 
@@ -2207,7 +2231,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get whether virtualization is enabled
+        /// Get/set whether virtualization is enabled
         /// </summary>
         public bool VirtualizationEnabled
         {
@@ -2217,6 +2241,10 @@ namespace NtApiDotNet
                 {
                     return buf.Result != 0;
                 }
+            }
+            set
+            {
+                SetVirtualizationEnabled(value);
             }
         }
 
