@@ -22,7 +22,18 @@ else
   Import-Module "$PSScriptRoot\NtObjectManager.dll"
 }
 
-$Script:GlobalDbgHelpPath = "dbghelp.dll"
+if ([System.Environment]::Is64BitProcess) {
+    $native_dir = "$PSScriptRoot\x64"
+} else {
+    $native_dir = "$PSScriptRoot\x86"
+}
+
+if (Test-Path "$native_dir\dbghelp.dll") {
+    $Script:GlobalDbgHelpPath = "$native_dir\dbghelp.dll"
+} else {
+    $Script:GlobalDbgHelpPath = "dbghelp.dll"
+}
+
 $Script:GlobalSymbolPath = "srv*https://msdl.microsoft.com/download/symbols"
 
 <#
