@@ -4378,6 +4378,14 @@ namespace NtApiDotNet
                 }
             }
         }
+
+        /// <summary>
+        /// Disables impersonation on a named pipe.
+        /// </summary>
+        public void DisableImpersonation()
+        {
+            FsControl(NtWellKnownIoControlCodes.FSCTL_PIPE_DISABLE_IMPERSONATE, null, null);
+        }
     }
 
     /// <summary>
