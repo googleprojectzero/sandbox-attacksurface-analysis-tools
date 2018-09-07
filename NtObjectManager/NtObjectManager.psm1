@@ -3056,3 +3056,96 @@ function Get-NtObjectFromHandle {
     $temp_handle = [NtApiDotNet.SafeKernelObjectHandle]::new($Handle, $false)
     [NtApiDotNet.NtType]::GetTypeForHandle($temp_handle, $true).FromHandle($Handle, $OwnsHandle)
 }
+
+function Test-ProcessToken {
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtProcess]$Process,
+        [parameter(Mandatory, Position = 1)]
+        [NtApiDotNet.Sid]$User,
+        [NtApiDotNet.TokenPrivilegeValue[]]$RequiredPrivilege,
+        [NtApiDotNet.Sid[]]$RequiredGroup
+    )
+    Use-NtObject($token = Get-NtToken -Primary -Process $Process -Access Query -ErrorAction SilentlyContinue) {
+        if ($null -eq $token) {
+            return $false
+        }
+
+        if ($token.User.Sid -ne $User) {
+            return $false
+        }
+        $privs = $token.Privileges.Name
+        foreach($priv in $RequiredPrivilege) {
+            if ($priv.ToString() -notin $privs) {
+                return $false
+            }
+        }
+
+        $groups = $token.Groups | ? Enabled
+        foreach($group in $RequiredGroup) {
+            if ($group -notin $groups.Sid) {
+                return $false
+            }
+        }
+    }
+    return $true
+}
+
+<#
+.SYNOPSIS
+Starts a new Win32 process which is a child of a process meeting a set of criteria.
+.DESCRIPTION
+This cmdlet starts a new Win32 process which is a child of a process meeting a set of criteria such as user account, privileges and groups. You can use this as an admin to get a system process spawned on the current desktop.
+.PARAMETER CommandLine
+The command line of the process to create.
+.PARAMETER CreationFlags
+Flags to affect process creation.
+.PARAMETER TerminateOnDispose
+Specify switch to terminate the process when the Win32Process object is disposed.
+.PARAMETER Desktop
+Optional desktop for the new process.
+.PARAMETER RequiredPrivilege
+Optional list of privileges the parent process must have to create the child.
+.PARAMETER RequiredGroup
+Optional list of groups the parent process must have to create the child.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Win32Process
+.EXAMPLE
+Start-Win32ChildProcess cmd.exe
+Start a new child process as the system user.
+.EXAMPLE
+Start-Win32ChildProcess cmd.exe -User LS
+Start a new child process as the local service user.
+.EXAMPLE
+Start-Win32ChildProcess cmd.exe -RequiredPrivilege SeAssignPrimaryTokenPrivilege
+Start a new child process as the system user with SeAssignPrimaryTokenPrivilege.
+.EXAMPLE
+Start-Win32ChildProcess cmd.exe -RequiredGroup BA
+Start a new child process as the system user with the builtin administrators group.
+#>
+function Start-Win32ChildProcess {
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [string]$CommandLine,
+        [NtApiDotNet.Sid]$User = "SY",
+        [NtApiDotNet.TokenPrivilegeValue[]]$RequiredPrivilege,
+        [NtApiDotNet.Sid[]]$RequiredGroup,
+        [string]$Desktop = "WinSta0\Default",
+        [NtApiDotNet.Win32.CreateProcessFlags]$CreationFlags = "NewConsole",
+        [switch]$TerminateOnDispose
+    )
+
+    Set-NtTokenPrivilege SeDebugPrivilege | Out-Null
+
+    Use-NtObject($ps = Get-NtProcess -Access QueryLimitedInformation,CreateProcess `
+            -FilterScript { Test-ProcessToken $_ -User $User -RequiredPrivilege $RequiredPrivilege -RequiredGroup $RequiredGroup }) {
+        $parent = $ps | Select-Object -First 1
+        if ($null -eq $parent) {
+            Write-Error "Couldn't find suitable process to spawn a child."
+            return
+        }
+        New-Win32Process -CommandLine $CommandLine -Desktop $Desktop -CreationFlags $CreationFlags -ParentProcess $parent -TerminateOnDispose:$TerminateOnDispose
+    }
+}
