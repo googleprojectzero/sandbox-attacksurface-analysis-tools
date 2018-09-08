@@ -2826,5 +2826,175 @@ namespace NtApiDotNet
                 return AppContainer || Restricted || IntegrityLevel < TokenIntegrityLevel.Medium;
             }
         }
+
+        /// <summary>
+        /// Query the token's full package name.
+        /// </summary>
+        public string PackageFullName
+        {
+            get
+            {
+                byte[] package_name = new byte[1024];
+                OptionalLength package_length = new OptionalLength(package_name.Length);
+                if (NtRtl.RtlQueryPackageClaims(Handle, package_name, package_length, null, null, null, null, null).IsSuccess())
+                {
+                    return Encoding.Unicode.GetString(package_name, 0, package_length.Length.ToInt32());
+                }
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Query the token's appid.
+        /// </summary>
+        public string AppId
+        {
+            get
+            {
+                byte[] app_id = new byte[1024];
+                OptionalLength app_id_length = new OptionalLength(app_id.Length);
+                if(NtRtl.RtlQueryPackageClaims(Handle, null, null, app_id, app_id_length, null, null, null).IsSuccess())
+                {
+                    return Encoding.Unicode.GetString(app_id, 0, app_id_length.Length.ToInt32());
+                }
+                return string.Empty;
+            }
+        }
+
+        private static readonly AppModelPolicy_PolicyValue[] _policy_lookup_table = {
+            AppModelPolicy_PolicyValue.LifecycleManager_ManagedByPLM, AppModelPolicy_PolicyValue.LifecycleManager_Unmanaged, AppModelPolicy_PolicyValue.LifecycleManager_Unmanaged, AppModelPolicy_PolicyValue.LifecycleManager_ManagedByPLM, AppModelPolicy_PolicyValue.LifecycleManager_ManagedByEM, AppModelPolicy_PolicyValue.LifecycleManager_ManagedByEM, AppModelPolicy_PolicyValue.LifecycleManager_Unmanaged, AppModelPolicy_PolicyValue.LifecycleManager_Unmanaged,
+            AppModelPolicy_PolicyValue.AppDataAccess_Allowed, AppModelPolicy_PolicyValue.AppDataAccess_Allowed, AppModelPolicy_PolicyValue.AppDataAccess_Denied, AppModelPolicy_PolicyValue.AppDataAccess_Allowed, AppModelPolicy_PolicyValue.AppDataAccess_Denied, AppModelPolicy_PolicyValue.AppDataAccess_Denied, AppModelPolicy_PolicyValue.AppDataAccess_Denied, AppModelPolicy_PolicyValue.AppDataAccess_Denied,
+            AppModelPolicy_PolicyValue.WindowingModel_CoreWindow, AppModelPolicy_PolicyValue.WindowingModel_Hwnd, AppModelPolicy_PolicyValue.WindowingModel_Hwnd, AppModelPolicy_PolicyValue.WindowingModel_CoreWindow, AppModelPolicy_PolicyValue.WindowingModel_LegacyPhone, AppModelPolicy_PolicyValue.WindowingModel_LegacyPhone, AppModelPolicy_PolicyValue.WindowingModel_None, AppModelPolicy_PolicyValue.WindowingModel_Hwnd,
+            AppModelPolicy_PolicyValue.DllSearchOrder_PackageGraphBased, AppModelPolicy_PolicyValue.DllSearchOrder_PackageGraphBased, AppModelPolicy_PolicyValue.DllSearchOrder_Traditional, AppModelPolicy_PolicyValue.DllSearchOrder_PackageGraphBased, AppModelPolicy_PolicyValue.DllSearchOrder_Traditional, AppModelPolicy_PolicyValue.DllSearchOrder_Traditional, AppModelPolicy_PolicyValue.DllSearchOrder_Traditional, AppModelPolicy_PolicyValue.DllSearchOrder_Traditional,
+            AppModelPolicy_PolicyValue.Fusion_Limited, AppModelPolicy_PolicyValue.Fusion_Full, AppModelPolicy_PolicyValue.Fusion_Full, AppModelPolicy_PolicyValue.Fusion_Limited, AppModelPolicy_PolicyValue.Fusion_Full, AppModelPolicy_PolicyValue.Fusion_Full, AppModelPolicy_PolicyValue.Fusion_Full, AppModelPolicy_PolicyValue.Fusion_Full,
+            AppModelPolicy_PolicyValue.NonWindowsCodeLoading_Denied, AppModelPolicy_PolicyValue.NonWindowsCodeLoading_Allowed, AppModelPolicy_PolicyValue.NonWindowsCodeLoading_Allowed, AppModelPolicy_PolicyValue.NonWindowsCodeLoading_Denied, AppModelPolicy_PolicyValue.NonWindowsCodeLoading_Denied, AppModelPolicy_PolicyValue.NonWindowsCodeLoading_Denied, AppModelPolicy_PolicyValue.NonWindowsCodeLoading_Allowed, AppModelPolicy_PolicyValue.NonWindowsCodeLoading_Allowed,
+            AppModelPolicy_PolicyValue.ProcessEnd_TerminateProcess, AppModelPolicy_PolicyValue.ProcessEnd_ExitProcess, AppModelPolicy_PolicyValue.ProcessEnd_ExitProcess, AppModelPolicy_PolicyValue.ProcessEnd_ExitProcess, AppModelPolicy_PolicyValue.ProcessEnd_ExitProcess, AppModelPolicy_PolicyValue.ProcessEnd_ExitProcess, AppModelPolicy_PolicyValue.ProcessEnd_ExitProcess, AppModelPolicy_PolicyValue.ProcessEnd_ExitProcess,
+            AppModelPolicy_PolicyValue.BeginThreadInit_RoInitialize, AppModelPolicy_PolicyValue.BeginThreadInit_None, AppModelPolicy_PolicyValue.BeginThreadInit_None, AppModelPolicy_PolicyValue.BeginThreadInit_None, AppModelPolicy_PolicyValue.BeginThreadInit_None, AppModelPolicy_PolicyValue.BeginThreadInit_None, AppModelPolicy_PolicyValue.BeginThreadInit_None, AppModelPolicy_PolicyValue.BeginThreadInit_None,
+            AppModelPolicy_PolicyValue.DeveloperInformation_None, AppModelPolicy_PolicyValue.DeveloperInformation_UI, AppModelPolicy_PolicyValue.DeveloperInformation_UI, AppModelPolicy_PolicyValue.DeveloperInformation_None, AppModelPolicy_PolicyValue.DeveloperInformation_None, AppModelPolicy_PolicyValue.DeveloperInformation_None, AppModelPolicy_PolicyValue.DeveloperInformation_None, AppModelPolicy_PolicyValue.DeveloperInformation_UI,
+            AppModelPolicy_PolicyValue.CreateFileAccess_Limited, AppModelPolicy_PolicyValue.CreateFileAccess_Full, AppModelPolicy_PolicyValue.CreateFileAccess_Full, AppModelPolicy_PolicyValue.CreateFileAccess_Limited, AppModelPolicy_PolicyValue.CreateFileAccess_Limited, AppModelPolicy_PolicyValue.CreateFileAccess_Full, AppModelPolicy_PolicyValue.CreateFileAccess_Full, AppModelPolicy_PolicyValue.CreateFileAccess_Full,
+            AppModelPolicy_PolicyValue.ImplicitPackageBreakaway_Denied, AppModelPolicy_PolicyValue.ImplicitPackageBreakaway_Allowed, AppModelPolicy_PolicyValue.ImplicitPackageBreakaway_Denied, AppModelPolicy_PolicyValue.ImplicitPackageBreakaway_Denied, AppModelPolicy_PolicyValue.ImplicitPackageBreakaway_Denied, AppModelPolicy_PolicyValue.ImplicitPackageBreakaway_Denied, AppModelPolicy_PolicyValue.ImplicitPackageBreakaway_Denied, AppModelPolicy_PolicyValue.ImplicitPackageBreakaway_Denied,
+            AppModelPolicy_PolicyValue.ProcessActivationShim_None, AppModelPolicy_PolicyValue.ProcessActivationShim_PackagedCWALauncher, AppModelPolicy_PolicyValue.ProcessActivationShim_None, AppModelPolicy_PolicyValue.ProcessActivationShim_None, AppModelPolicy_PolicyValue.ProcessActivationShim_None, AppModelPolicy_PolicyValue.ProcessActivationShim_None, AppModelPolicy_PolicyValue.ProcessActivationShim_None, AppModelPolicy_PolicyValue.ProcessActivationShim_None,
+            AppModelPolicy_PolicyValue.AppKnownToStateRepository_Known, AppModelPolicy_PolicyValue.AppKnownToStateRepository_Known, AppModelPolicy_PolicyValue.AppKnownToStateRepository_Unknown, AppModelPolicy_PolicyValue.AppKnownToStateRepository_Known, AppModelPolicy_PolicyValue.AppKnownToStateRepository_Known, AppModelPolicy_PolicyValue.AppKnownToStateRepository_Known, AppModelPolicy_PolicyValue.AppKnownToStateRepository_Unknown, AppModelPolicy_PolicyValue.AppKnownToStateRepository_Unknown,
+            AppModelPolicy_PolicyValue.AudioManagement_ManagedByPBM, AppModelPolicy_PolicyValue.AudioManagement_Unmanaged, AppModelPolicy_PolicyValue.AudioManagement_Unmanaged, AppModelPolicy_PolicyValue.AudioManagement_ManagedByPBM, AppModelPolicy_PolicyValue.AudioManagement_ManagedByPBM, AppModelPolicy_PolicyValue.AudioManagement_ManagedByPBM, AppModelPolicy_PolicyValue.AudioManagement_Unmanaged, AppModelPolicy_PolicyValue.AudioManagement_Unmanaged,
+            AppModelPolicy_PolicyValue.PackageMayContainPublicComRegistrations_No, AppModelPolicy_PolicyValue.PackageMayContainPublicComRegistrations_Yes, AppModelPolicy_PolicyValue.PackageMayContainPublicComRegistrations_No, AppModelPolicy_PolicyValue.PackageMayContainPublicComRegistrations_No, AppModelPolicy_PolicyValue.PackageMayContainPublicComRegistrations_No, AppModelPolicy_PolicyValue.PackageMayContainPublicComRegistrations_No, AppModelPolicy_PolicyValue.PackageMayContainPublicComRegistrations_No, AppModelPolicy_PolicyValue.PackageMayContainPublicComRegistrations_No,
+            AppModelPolicy_PolicyValue.PackageMayContainPrivateComRegistrations_None, AppModelPolicy_PolicyValue.PackageMayContainPrivateComRegistrations_PrivateHive, AppModelPolicy_PolicyValue.PackageMayContainPrivateComRegistrations_None, AppModelPolicy_PolicyValue.PackageMayContainPrivateComRegistrations_None, AppModelPolicy_PolicyValue.PackageMayContainPrivateComRegistrations_None, AppModelPolicy_PolicyValue.PackageMayContainPrivateComRegistrations_None, AppModelPolicy_PolicyValue.PackageMayContainPrivateComRegistrations_None, AppModelPolicy_PolicyValue.PackageMayContainPrivateComRegistrations_None,
+            AppModelPolicy_PolicyValue.LaunchCreateProcessExtensions_RegisterWithPsm, AppModelPolicy_PolicyValue.LaunchCreateProcessExtensions_RegisterWithDesktopAppX, AppModelPolicy_PolicyValue.LaunchCreateProcessExtensions_None, AppModelPolicy_PolicyValue.LaunchCreateProcessExtensions_RegisterWithPsm, AppModelPolicy_PolicyValue.LaunchCreateProcessExtensions_RegisterWithPsm, AppModelPolicy_PolicyValue.LaunchCreateProcessExtensions_RegisterWithPsm, AppModelPolicy_PolicyValue.LaunchCreateProcessExtensions_None, AppModelPolicy_PolicyValue.LaunchCreateProcessExtensions_None,
+            AppModelPolicy_PolicyValue.ClrCompat_Universal, AppModelPolicy_PolicyValue.ClrCompat_PackagedDesktop, AppModelPolicy_PolicyValue.ClrCompat_ClassicDesktop, AppModelPolicy_PolicyValue.ClrCompat_Others, AppModelPolicy_PolicyValue.ClrCompat_Others, AppModelPolicy_PolicyValue.ClrCompat_Others, AppModelPolicy_PolicyValue.ClrCompat_Others, AppModelPolicy_PolicyValue.ClrCompat_ClassicDesktop,
+            AppModelPolicy_PolicyValue.LoaderIgnoreAlteredSearchForRelativePath_False, AppModelPolicy_PolicyValue.LoaderIgnoreAlteredSearchForRelativePath_True, AppModelPolicy_PolicyValue.LoaderIgnoreAlteredSearchForRelativePath_False, AppModelPolicy_PolicyValue.LoaderIgnoreAlteredSearchForRelativePath_False, AppModelPolicy_PolicyValue.LoaderIgnoreAlteredSearchForRelativePath_False, AppModelPolicy_PolicyValue.LoaderIgnoreAlteredSearchForRelativePath_False, AppModelPolicy_PolicyValue.LoaderIgnoreAlteredSearchForRelativePath_False, AppModelPolicy_PolicyValue.LoaderIgnoreAlteredSearchForRelativePath_False,
+            AppModelPolicy_PolicyValue.ImplicitlyActivateClassicAAAServersAsIU_No, AppModelPolicy_PolicyValue.ImplicitlyActivateClassicAAAServersAsIU_Yes, AppModelPolicy_PolicyValue.ImplicitlyActivateClassicAAAServersAsIU_No, AppModelPolicy_PolicyValue.ImplicitlyActivateClassicAAAServersAsIU_No, AppModelPolicy_PolicyValue.ImplicitlyActivateClassicAAAServersAsIU_No, AppModelPolicy_PolicyValue.ImplicitlyActivateClassicAAAServersAsIU_No, AppModelPolicy_PolicyValue.ImplicitlyActivateClassicAAAServersAsIU_No, AppModelPolicy_PolicyValue.ImplicitlyActivateClassicAAAServersAsIU_Yes,
+            AppModelPolicy_PolicyValue.ComClassicCatalog_MachineHiveOnly, AppModelPolicy_PolicyValue.ComClassicCatalog_MachineHiveAndUserHive, AppModelPolicy_PolicyValue.ComClassicCatalog_MachineHiveAndUserHive, AppModelPolicy_PolicyValue.ComClassicCatalog_MachineHiveOnly, AppModelPolicy_PolicyValue.ComClassicCatalog_MachineHiveOnly, AppModelPolicy_PolicyValue.ComClassicCatalog_MachineHiveAndUserHive, AppModelPolicy_PolicyValue.ComClassicCatalog_MachineHiveAndUserHive, AppModelPolicy_PolicyValue.ComClassicCatalog_MachineHiveAndUserHive,
+            AppModelPolicy_PolicyValue.ComUnmarshaling_ForceStrongUnmarshaling, AppModelPolicy_PolicyValue.ComUnmarshaling_ApplicationManaged, AppModelPolicy_PolicyValue.ComUnmarshaling_ApplicationManaged, AppModelPolicy_PolicyValue.ComUnmarshaling_ForceStrongUnmarshaling, AppModelPolicy_PolicyValue.ComUnmarshaling_ForceStrongUnmarshaling, AppModelPolicy_PolicyValue.ComUnmarshaling_ApplicationManaged, AppModelPolicy_PolicyValue.ComUnmarshaling_ApplicationManaged, AppModelPolicy_PolicyValue.ComUnmarshaling_ApplicationManaged,
+            AppModelPolicy_PolicyValue.ComAppLaunchPerfEnhancements_Enabled, AppModelPolicy_PolicyValue.ComAppLaunchPerfEnhancements_Disabled, AppModelPolicy_PolicyValue.ComAppLaunchPerfEnhancements_Disabled, AppModelPolicy_PolicyValue.ComAppLaunchPerfEnhancements_Enabled, AppModelPolicy_PolicyValue.ComAppLaunchPerfEnhancements_Enabled, AppModelPolicy_PolicyValue.ComAppLaunchPerfEnhancements_Disabled, AppModelPolicy_PolicyValue.ComAppLaunchPerfEnhancements_Disabled, AppModelPolicy_PolicyValue.ComAppLaunchPerfEnhancements_Disabled,
+            AppModelPolicy_PolicyValue.ComSecurityInitialization_SystemManaged, AppModelPolicy_PolicyValue.ComSecurityInitialization_ApplicationManaged, AppModelPolicy_PolicyValue.ComSecurityInitialization_ApplicationManaged, AppModelPolicy_PolicyValue.ComSecurityInitialization_SystemManaged, AppModelPolicy_PolicyValue.ComSecurityInitialization_SystemManaged, AppModelPolicy_PolicyValue.ComSecurityInitialization_SystemManaged, AppModelPolicy_PolicyValue.ComSecurityInitialization_ApplicationManaged, AppModelPolicy_PolicyValue.ComSecurityInitialization_ApplicationManaged,
+            AppModelPolicy_PolicyValue.RoInitializeSingleThreadedBehavior_ASTA, AppModelPolicy_PolicyValue.RoInitializeSingleThreadedBehavior_STA, AppModelPolicy_PolicyValue.RoInitializeSingleThreadedBehavior_STA, AppModelPolicy_PolicyValue.RoInitializeSingleThreadedBehavior_ASTA, AppModelPolicy_PolicyValue.RoInitializeSingleThreadedBehavior_ASTA, AppModelPolicy_PolicyValue.RoInitializeSingleThreadedBehavior_STA, AppModelPolicy_PolicyValue.RoInitializeSingleThreadedBehavior_STA, AppModelPolicy_PolicyValue.RoInitializeSingleThreadedBehavior_STA,
+            AppModelPolicy_PolicyValue.ComDefaultExceptionHandling_HandleNone, AppModelPolicy_PolicyValue.ComDefaultExceptionHandling_HandleAll, AppModelPolicy_PolicyValue.ComDefaultExceptionHandling_HandleAll, AppModelPolicy_PolicyValue.ComDefaultExceptionHandling_HandleNone, AppModelPolicy_PolicyValue.ComDefaultExceptionHandling_HandleNone, AppModelPolicy_PolicyValue.ComDefaultExceptionHandling_HandleAll, AppModelPolicy_PolicyValue.ComDefaultExceptionHandling_HandleAll, AppModelPolicy_PolicyValue.ComDefaultExceptionHandling_HandleAll,
+            AppModelPolicy_PolicyValue.ComOopProxyAgility_Agile, AppModelPolicy_PolicyValue.ComOopProxyAgility_NonAgile, AppModelPolicy_PolicyValue.ComOopProxyAgility_NonAgile, AppModelPolicy_PolicyValue.ComOopProxyAgility_Agile, AppModelPolicy_PolicyValue.ComOopProxyAgility_Agile, AppModelPolicy_PolicyValue.ComOopProxyAgility_NonAgile, AppModelPolicy_PolicyValue.ComOopProxyAgility_NonAgile, AppModelPolicy_PolicyValue.ComOopProxyAgility_NonAgile,
+            AppModelPolicy_PolicyValue.AppServiceLifetime_StandardTimeout, AppModelPolicy_PolicyValue.AppServiceLifetime_ExtendedForSamePackage, AppModelPolicy_PolicyValue.AppServiceLifetime_StandardTimeout, AppModelPolicy_PolicyValue.AppServiceLifetime_StandardTimeout, AppModelPolicy_PolicyValue.AppServiceLifetime_StandardTimeout, AppModelPolicy_PolicyValue.AppServiceLifetime_StandardTimeout, AppModelPolicy_PolicyValue.AppServiceLifetime_StandardTimeout, AppModelPolicy_PolicyValue.AppServiceLifetime_StandardTimeout,
+            AppModelPolicy_PolicyValue.WebPlatform_Edge, AppModelPolicy_PolicyValue.WebPlatform_Legacy, AppModelPolicy_PolicyValue.WebPlatform_Legacy, AppModelPolicy_PolicyValue.WebPlatform_Legacy, AppModelPolicy_PolicyValue.WebPlatform_Legacy, AppModelPolicy_PolicyValue.WebPlatform_Legacy, AppModelPolicy_PolicyValue.WebPlatform_Legacy, AppModelPolicy_PolicyValue.WebPlatform_Legacy,
+            AppModelPolicy_PolicyValue.WinInetStoragePartitioning_Isolated, AppModelPolicy_PolicyValue.WinInetStoragePartitioning_SharedWithAppContainer, AppModelPolicy_PolicyValue.WinInetStoragePartitioning_Isolated, AppModelPolicy_PolicyValue.WinInetStoragePartitioning_Isolated, AppModelPolicy_PolicyValue.WinInetStoragePartitioning_Isolated, AppModelPolicy_PolicyValue.WinInetStoragePartitioning_Isolated, AppModelPolicy_PolicyValue.WinInetStoragePartitioning_Isolated, AppModelPolicy_PolicyValue.WinInetStoragePartitioning_Isolated,
+            AppModelPolicy_PolicyValue.IndexerProtocolHandlerHost_PerUser, AppModelPolicy_PolicyValue.IndexerProtocolHandlerHost_PerApp, AppModelPolicy_PolicyValue.IndexerProtocolHandlerHost_PerUser, AppModelPolicy_PolicyValue.IndexerProtocolHandlerHost_PerUser, AppModelPolicy_PolicyValue.IndexerProtocolHandlerHost_PerUser, AppModelPolicy_PolicyValue.IndexerProtocolHandlerHost_PerUser, AppModelPolicy_PolicyValue.IndexerProtocolHandlerHost_PerUser, AppModelPolicy_PolicyValue.IndexerProtocolHandlerHost_PerUser,
+            AppModelPolicy_PolicyValue.LoaderIncludeUserDirectories_False, AppModelPolicy_PolicyValue.LoaderIncludeUserDirectories_True, AppModelPolicy_PolicyValue.LoaderIncludeUserDirectories_False, AppModelPolicy_PolicyValue.LoaderIncludeUserDirectories_False, AppModelPolicy_PolicyValue.LoaderIncludeUserDirectories_False, AppModelPolicy_PolicyValue.LoaderIncludeUserDirectories_False, AppModelPolicy_PolicyValue.LoaderIncludeUserDirectories_False, AppModelPolicy_PolicyValue.LoaderIncludeUserDirectories_False,
+            AppModelPolicy_PolicyValue.ConvertAppContainerToRestrictedAppContainer_False, AppModelPolicy_PolicyValue.ConvertAppContainerToRestrictedAppContainer_True, AppModelPolicy_PolicyValue.ConvertAppContainerToRestrictedAppContainer_False, AppModelPolicy_PolicyValue.ConvertAppContainerToRestrictedAppContainer_False, AppModelPolicy_PolicyValue.ConvertAppContainerToRestrictedAppContainer_False, AppModelPolicy_PolicyValue.ConvertAppContainerToRestrictedAppContainer_False, AppModelPolicy_PolicyValue.ConvertAppContainerToRestrictedAppContainer_False, AppModelPolicy_PolicyValue.ConvertAppContainerToRestrictedAppContainer_False,
+            AppModelPolicy_PolicyValue.PackageMayContainPrivateMapiProvider_None, AppModelPolicy_PolicyValue.PackageMayContainPrivateMapiProvider_PrivateHive, AppModelPolicy_PolicyValue.PackageMayContainPrivateMapiProvider_None, AppModelPolicy_PolicyValue.PackageMayContainPrivateMapiProvider_None, AppModelPolicy_PolicyValue.PackageMayContainPrivateMapiProvider_None, AppModelPolicy_PolicyValue.PackageMayContainPrivateMapiProvider_None, AppModelPolicy_PolicyValue.PackageMayContainPrivateMapiProvider_None, AppModelPolicy_PolicyValue.PackageMayContainPrivateMapiProvider_None,
+            AppModelPolicy_PolicyValue.AdminProcessPackageClaims_None, AppModelPolicy_PolicyValue.AdminProcessPackageClaims_Caller, AppModelPolicy_PolicyValue.AdminProcessPackageClaims_None, AppModelPolicy_PolicyValue.AdminProcessPackageClaims_None, AppModelPolicy_PolicyValue.AdminProcessPackageClaims_None, AppModelPolicy_PolicyValue.AdminProcessPackageClaims_None, AppModelPolicy_PolicyValue.AdminProcessPackageClaims_None, AppModelPolicy_PolicyValue.AdminProcessPackageClaims_None,
+            AppModelPolicy_PolicyValue.RegistryRedirectionBehavior_None, AppModelPolicy_PolicyValue.RegistryRedirectionBehavior_CopyOnWrite, AppModelPolicy_PolicyValue.RegistryRedirectionBehavior_None, AppModelPolicy_PolicyValue.RegistryRedirectionBehavior_None, AppModelPolicy_PolicyValue.RegistryRedirectionBehavior_None, AppModelPolicy_PolicyValue.RegistryRedirectionBehavior_None, AppModelPolicy_PolicyValue.RegistryRedirectionBehavior_None, AppModelPolicy_PolicyValue.RegistryRedirectionBehavior_None,
+            AppModelPolicy_PolicyValue.BypassCreateProcessAppxExtension_False, AppModelPolicy_PolicyValue.BypassCreateProcessAppxExtension_False, AppModelPolicy_PolicyValue.BypassCreateProcessAppxExtension_False, AppModelPolicy_PolicyValue.BypassCreateProcessAppxExtension_False, AppModelPolicy_PolicyValue.BypassCreateProcessAppxExtension_False, AppModelPolicy_PolicyValue.BypassCreateProcessAppxExtension_False, AppModelPolicy_PolicyValue.BypassCreateProcessAppxExtension_False, AppModelPolicy_PolicyValue.BypassCreateProcessAppxExtension_True,
+            AppModelPolicy_PolicyValue.KnownFolderRedirection_Isolated, AppModelPolicy_PolicyValue.KnownFolderRedirection_RedirectToPackage, AppModelPolicy_PolicyValue.KnownFolderRedirection_Isolated, AppModelPolicy_PolicyValue.KnownFolderRedirection_Isolated, AppModelPolicy_PolicyValue.KnownFolderRedirection_Isolated, AppModelPolicy_PolicyValue.KnownFolderRedirection_Isolated, AppModelPolicy_PolicyValue.KnownFolderRedirection_Isolated, AppModelPolicy_PolicyValue.KnownFolderRedirection_Isolated,
+            AppModelPolicy_PolicyValue.PrivateActivateAsPackageWinrtClasses_AllowNonFullTrust, AppModelPolicy_PolicyValue.PrivateActivateAsPackageWinrtClasses_AllowFullTrust, AppModelPolicy_PolicyValue.PrivateActivateAsPackageWinrtClasses_AllowNone, AppModelPolicy_PolicyValue.PrivateActivateAsPackageWinrtClasses_AllowNone, AppModelPolicy_PolicyValue.PrivateActivateAsPackageWinrtClasses_AllowNone, AppModelPolicy_PolicyValue.PrivateActivateAsPackageWinrtClasses_AllowNone, AppModelPolicy_PolicyValue.PrivateActivateAsPackageWinrtClasses_AllowNone, AppModelPolicy_PolicyValue.PrivateActivateAsPackageWinrtClasses_AllowNone,
+            AppModelPolicy_PolicyValue.AppPrivateFolderRedirection_AppPrivate, AppModelPolicy_PolicyValue.AppPrivateFolderRedirection_AppPrivate, AppModelPolicy_PolicyValue.AppPrivateFolderRedirection_None, AppModelPolicy_PolicyValue.AppPrivateFolderRedirection_None, AppModelPolicy_PolicyValue.AppPrivateFolderRedirection_None, AppModelPolicy_PolicyValue.AppPrivateFolderRedirection_None, AppModelPolicy_PolicyValue.AppPrivateFolderRedirection_None, AppModelPolicy_PolicyValue.AppPrivateFolderRedirection_None,
+            AppModelPolicy_PolicyValue.GlobalSystemAppDataAccess_Virtualized, AppModelPolicy_PolicyValue.GlobalSystemAppDataAccess_Virtualized, AppModelPolicy_PolicyValue.GlobalSystemAppDataAccess_Normal, AppModelPolicy_PolicyValue.GlobalSystemAppDataAccess_Normal, AppModelPolicy_PolicyValue.GlobalSystemAppDataAccess_Normal, AppModelPolicy_PolicyValue.GlobalSystemAppDataAccess_Normal, AppModelPolicy_PolicyValue.GlobalSystemAppDataAccess_Normal, AppModelPolicy_PolicyValue.GlobalSystemAppDataAccess_Normal,
+            AppModelPolicy_PolicyValue.ConsoleHandleInheritance_All, AppModelPolicy_PolicyValue.ConsoleHandleInheritance_ConsoleOnly, AppModelPolicy_PolicyValue.ConsoleHandleInheritance_ConsoleOnly, AppModelPolicy_PolicyValue.ConsoleHandleInheritance_ConsoleOnly, AppModelPolicy_PolicyValue.ConsoleHandleInheritance_ConsoleOnly, AppModelPolicy_PolicyValue.ConsoleHandleInheritance_ConsoleOnly, AppModelPolicy_PolicyValue.ConsoleHandleInheritance_ConsoleOnly, AppModelPolicy_PolicyValue.ConsoleHandleInheritance_ConsoleOnly,
+            AppModelPolicy_PolicyValue.ConsoleBufferAccess_RestrictedUnidirectional, AppModelPolicy_PolicyValue.ConsoleBufferAccess_Unrestricted, AppModelPolicy_PolicyValue.ConsoleBufferAccess_Unrestricted, AppModelPolicy_PolicyValue.ConsoleBufferAccess_RestrictedUnidirectional, AppModelPolicy_PolicyValue.ConsoleBufferAccess_RestrictedUnidirectional, AppModelPolicy_PolicyValue.ConsoleBufferAccess_RestrictedUnidirectional, AppModelPolicy_PolicyValue.ConsoleBufferAccess_Unrestricted, AppModelPolicy_PolicyValue.ConsoleBufferAccess_Unrestricted,
+            AppModelPolicy_PolicyValue.ConvertCallerTokenToUserTokenForDeployment_UserCallerToken, AppModelPolicy_PolicyValue.ConvertCallerTokenToUserTokenForDeployment_ConvertTokenToUserToken, AppModelPolicy_PolicyValue.ConvertCallerTokenToUserTokenForDeployment_UserCallerToken, AppModelPolicy_PolicyValue.ConvertCallerTokenToUserTokenForDeployment_UserCallerToken, AppModelPolicy_PolicyValue.ConvertCallerTokenToUserTokenForDeployment_UserCallerToken, AppModelPolicy_PolicyValue.ConvertCallerTokenToUserTokenForDeployment_UserCallerToken, AppModelPolicy_PolicyValue.ConvertCallerTokenToUserTokenForDeployment_UserCallerToken, AppModelPolicy_PolicyValue.ConvertCallerTokenToUserTokenForDeployment_UserCallerToken,
+        };
+
+        private static int? GetPolicyOffset(AppModelPolicy_Type policy_type, long attributes_present, ulong pkg_claim_flags)
+        {
+            if ((attributes_present & 1) == 0)
+            {
+                return 2;
+            }
+
+            if ((attributes_present & 2) == 0)
+            {
+                return 5;
+            }
+
+            if ((attributes_present & 4) != 0)
+            {
+                return 4;
+            }
+
+            if ((pkg_claim_flags & 4) != 0)
+            {
+                return 1;
+            }
+
+            if ((pkg_claim_flags & 8) != 0)
+            {
+                return 6;
+            }
+
+            if ((pkg_claim_flags & 0x40) != 0)
+            {
+                if (policy_type == AppModelPolicy_Type.LifecycleManager)
+                {
+                    return null;
+                }
+                return 7;
+            }
+            
+            return 0;
+        }
+
+        private static AppModelPolicy_PolicyValue GetAppPolicy(AppModelPolicy_Type policy_type, long attributes_present, ulong pkg_claim_flags)
+        {
+            var offset = GetPolicyOffset(policy_type, attributes_present, pkg_claim_flags);
+            if (!offset.HasValue)
+            {
+                return AppModelPolicy_PolicyValue.None;
+            }
+
+            return _policy_lookup_table[8 * ((int)policy_type - 1) + offset.Value];
+        }
+
+        /// <summary>
+        /// Get the App Policy for this token.
+        /// </summary>
+        /// <param name="policy_type">The type of app policy.</param>
+        /// <returns>The policy value.</returns>
+        public AppModelPolicy_PolicyValue GetAppModelPolicy(AppModelPolicy_Type policy_type)
+        {
+            OptionalInt64 attributes_present_obj = new OptionalInt64(0);
+            PsPkgClaim pkg_claim = new PsPkgClaim();
+
+            if (!NtRtl.RtlQueryPackageClaims(Handle, null, null, null, null, null, 
+                pkg_claim, attributes_present_obj).IsSuccess())
+            {
+                return AppModelPolicy_PolicyValue.None;
+            }
+
+            return GetAppPolicy(policy_type, attributes_present_obj.Value, pkg_claim.Flags);
+        }
+
+        /// <summary>
+        /// Get the list of policies for this App.
+        /// </summary>
+        public IEnumerable<AppModelPolicy_PolicyValue> AppModelPolicies
+        {
+            get
+            {
+                OptionalInt64 attributes_present_obj = new OptionalInt64(0);
+                PsPkgClaim pkg_claim = new PsPkgClaim();
+
+                if (!NtRtl.RtlQueryPackageClaims(Handle, null, null, null, null, null,
+                    pkg_claim, attributes_present_obj).IsSuccess())
+                {
+                    return Enumerable.Empty<AppModelPolicy_PolicyValue>();
+                }
+
+                return Enum.GetValues(typeof(AppModelPolicy_Type)).Cast<AppModelPolicy_Type>().Select(p => GetAppPolicy(p, attributes_present_obj.Value, pkg_claim.Flags));
+            }
+        }
     }
 }
