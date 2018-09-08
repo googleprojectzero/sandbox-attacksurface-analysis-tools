@@ -61,7 +61,7 @@ namespace NtApiDotNet
     public class OptionalInt32
     {
         /// <summary>
-        /// Optional length
+        /// Optional value
         /// </summary>
         public int Value;
 
@@ -84,10 +84,47 @@ namespace NtApiDotNet
         /// <summary>
         /// Implicit conversion
         /// </summary>
-        /// <param name="length">The value</param>
-        public static implicit operator OptionalInt32(int length)
+        /// <param name="value">The value</param>
+        public static implicit operator OptionalInt32(int value)
         {
-            return new OptionalInt32(length);
+            return new OptionalInt32(value);
+        }
+    }
+
+    /// <summary>
+    /// This class allows a function to specify an optional int64.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public class OptionalInt64
+    {
+        /// <summary>
+        /// Optional value
+        /// </summary>
+        public long Value;
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="value">The value</param>
+        public OptionalInt64(long value)
+        {
+            Value = value;
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public OptionalInt64() : this(0)
+        {
+        }
+
+        /// <summary>
+        /// Implicit conversion
+        /// </summary>
+        /// <param name="value">The value</param>
+        public static implicit operator OptionalInt64(long value)
+        {
+            return new OptionalInt64(value);
         }
     }
 
