@@ -21,6 +21,22 @@ with .NET Core 2.0 by building the specific project files.
 
 Release Notes:
 
+1.1.17
+------
+* Added methods to get AppModel policy from a token.
+* Added Start-Win32ChildProcess
+* Default to a version of DbgHelp if installed to the NtObjectManager directory under x86 or x64.
+* Added some setters to token properties.
+* Added a fix for a memory corruption issue in getting NT type information on 32 bit platforms (from 1orenz0).
+* Added option to parse out RPC clients in Get-RpcServer.
+* Fixed performance issue with section viewer and the corrupter.
+* Added a valid length property to NtMappedSection.
+* Added Get-NtObjectFromHandle cmdlet.
+* Added Copy-NtToken function.
+* Added enumeration for device characteristics.
+* Fixed path resolving for file paths.
+* Added Get-RpcAlpcServer cmdlet.
+
 1.1.16
 ------
 * Added Get-NtFilePathType function.

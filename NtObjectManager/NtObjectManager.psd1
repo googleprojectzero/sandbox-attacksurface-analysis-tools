@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.16'
+ModuleVersion = '1.1.17'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -101,19 +101,21 @@ PrivateData = @{
         ProjectUri = 'https://github.com/google/sandbox-attacksurface-analysis-tools'
 
         # ReleaseNotes of this module
-        ReleaseNotes = '* Added Get-NtFilePathType function.
-* Added Add-NtSecurityDescriptorDaclAce function.
-* Added Path support to Get-NtSecurityDescriptor and Set-NtSecurityDescriptor.
-* Added parameter to only return a specific set of IIDs from a COM proxy definition.
-* Added support for extracting RPC servers from a DLL.
-* Added support for enumerating registered RPC endpoints with Get-RpcEndpoint.
-* Added support for enumerating running service information with Get-RunningService.
-* Added Get-NtAlpcServer function.
-* Reworked OpenWithType to support bruteforce of the object type.
-* Added Win32Utils method to parse command line and extract image path.
-* Fix DepStatus On Windows Server 2K12 / 2K16 from Rosalie.
-* Added option to Get-NtProcess and Get-NtThread to only return system information.
-* Added basic transaction support to registry keys.
+        ReleaseNotes = '1.1.17
+------
+* Added methods to get AppModel policy from a token.
+* Added Start-Win32ChildProcess
+* Default to a version of DbgHelp if installed to the NtObjectManager directory under x86 or x64.
+* Added some setters to token properties.
+* Added a fix for a memory corruption issue in getting NT type information on 32 bit platforms (from 1orenz0).
+* Added option to parse out RPC clients in Get-RpcServer.
+* Fixed performance issue with section viewer and the corrupter.
+* Added a valid length property to NtMappedSection.
+* Added Get-NtObjectFromHandle cmdlet.
+* Added Copy-NtToken function.
+* Added enumeration for device characteristics.
+* Fixed path resolving for file paths.
+* Added Get-RpcAlpcServer cmdlet.
 '
 
         # External dependent modules of this module
