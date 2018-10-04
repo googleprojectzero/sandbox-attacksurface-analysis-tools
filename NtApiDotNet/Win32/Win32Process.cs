@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NtApiDotNet.Win32
 {
@@ -300,6 +301,7 @@ namespace NtApiDotNet.Win32
             ProcThreadAttributeIdealProcessor = 5,
             ProcThreadAttributeUmsThread = 6,
             ProcThreadAttributeMitigationPolicy = 7,
+            ProcThreadAttributePackageName = 8,
             ProcThreadAttributeSecurityCapabilities = 9,
             ProcThreadAttributeProtectionLevel = 11,
             ProcThreadAttributeJobList = 13,
@@ -308,6 +310,7 @@ namespace NtApiDotNet.Win32
             ProcThreadAttributeWin32kFilter = 16,
             ProcThreadAttributeSafeOpenPromptOriginClaim = 17,
             ProcThreadAttributeDesktopAppPolicy = 18,
+            ProcThreadAttributePseudoConsole = 22,
         }
 
         public static IntPtr ProcThreadAttributeParentProcess
@@ -379,6 +382,22 @@ namespace NtApiDotNet.Win32
             get
             {
                 return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeDesktopAppPolicy, false, true, false);
+            }
+        }
+
+        public static IntPtr ProcThreadAttributePackageName
+        {
+            get
+            {
+                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributePackageName, false, true, false);
+            }
+        }
+
+        public static IntPtr ProcThreadAttributePseudoConsole
+        {
+            get
+            {
+                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributePseudoConsole, false, true, false);
             }
         }
     }
@@ -656,6 +675,14 @@ namespace NtApiDotNet.Win32
         /// Specify a stderror handle for the new process (you must inherit the handle).
         /// </summary>
         public IntPtr StdErrorHandle { get; set; }
+        /// <summary>
+        /// Specify the package name to use.
+        /// </summary>
+        public string PackageName { get; set; }
+        /// <summary>
+        /// Specify handle to pseudo console.
+        /// </summary>
+        public IntPtr PseudoConsole { get; set; }
 
         /// <summary>
         /// Add an object's handle to the list of inherited handles. 
@@ -755,6 +782,16 @@ namespace NtApiDotNet.Win32
                 count++;
             }
 
+            if (!string.IsNullOrWhiteSpace(PackageName))
+            {
+                count++;
+            }
+
+            if (PseudoConsole != IntPtr.Zero)
+            {
+                count++;
+            }
+
             return count;
         }
 
@@ -849,6 +886,18 @@ namespace NtApiDotNet.Win32
             if (DesktopAppBreakaway != ProcessDesktopAppBreakawayFlags.None)
             {
                 attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeDesktopAppPolicy, (int)DesktopAppBreakaway);
+            }
+
+            if (!string.IsNullOrWhiteSpace(PackageName))
+            {
+                byte[] str_bytes = Encoding.Unicode.GetBytes(PackageName);
+                var string_buffer = resources.AddResource(new SafeHGlobalBuffer(str_bytes));
+                attr_list.AddAttributeBuffer(ProcessAttributes.ProcThreadAttributePackageName, string_buffer);
+            }
+
+            if (PseudoConsole != IntPtr.Zero)
+            {
+                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributePseudoConsole, PseudoConsole);
             }
 
             return attr_list;
