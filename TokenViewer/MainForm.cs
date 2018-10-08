@@ -141,6 +141,8 @@ namespace TokenViewer
         private void RefreshProcessList(string filter, bool hideUnrestricted)
         {
             bool filter_name = !String.IsNullOrWhiteSpace(filter);
+            ClearList(listViewProcesses);
+            ClearList(listViewThreads);
 
             using (var processes = new DisposableList<NtProcess>(NtProcess.GetProcesses(ProcessAccessRights.QueryLimitedInformation)))
             {
@@ -182,8 +184,6 @@ namespace TokenViewer
                         threads.AddRange(CreateThreads(p));
                     }
 
-                    ClearList(listViewProcesses);
-                    ClearList(listViewThreads);
                     listViewProcesses.Items.AddRange(procs.ToArray());
                     listViewThreads.Items.AddRange(threads.ToArray());
                     ResizeColumns(listViewProcesses);
