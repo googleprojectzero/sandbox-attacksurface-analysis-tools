@@ -1120,7 +1120,18 @@ namespace NtApiDotNet
         /// <returns>The duplicated object</returns>
         public O Duplicate(A access)
         {
-            return Duplicate(access, AttributeFlags.None, DuplicateObjectOptions.None, true).Result;
+            return Duplicate(access, true).Result;
+        }
+
+        /// <summary>
+        /// Duplicate the object with specific access rights
+        /// </summary>
+        /// <param name="access">The access rights for the new handle</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The duplicated object</returns>
+        public NtResult<O> Duplicate(A access, bool throw_on_error)
+        {
+            return Duplicate(access, AttributeFlags.None, DuplicateObjectOptions.SameAttributes, throw_on_error);
         }
 
         /// <summary>
