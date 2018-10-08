@@ -47,38 +47,37 @@ namespace TokenViewer
         private IEnumerable<ListViewItem> CreateThreads(NtProcess entry)
         {
             List<ListViewItem> ret = new List<ListViewItem>();
-            try
+
+            using (var query_process = entry.Duplicate(ProcessAccessRights.QueryInformation, false))
             {
-                using (NtProcess query_process = entry.Duplicate(ProcessAccessRights.QueryInformation))
+                if (!query_process.IsSuccess)
                 {
-                    using (var threads = new DisposableList<NtThread>(query_process.GetThreads(ThreadAccessRights.QueryLimitedInformation)))
+                    return ret;
+                }
+                using (var threads = new DisposableList<NtThread>(query_process.Result.GetThreads(ThreadAccessRights.QueryLimitedInformation)))
+                {
+                    foreach (NtThread thread in threads)
                     {
-                        foreach (NtThread thread in threads)
+                        try
                         {
-                            try
+                            using (NtToken token = thread.OpenToken())
                             {
-                                using (NtToken token = thread.OpenToken())
+                                if (token != null)
                                 {
-                                    if (token != null)
-                                    {
-                                        ListViewItem item = new ListViewItem($"{entry.ProcessId} - {entry.Name}");
-                                        item.SubItems.Add(thread.ThreadId.ToString());
-                                        item.SubItems.Add(token.User.ToString());
-                                        item.SubItems.Add(token.ImpersonationLevel.ToString());
-                                        item.Tag = thread.Duplicate();
-                                        ret.Add(item);
-                                    }
+                                    ListViewItem item = new ListViewItem($"{entry.ProcessId} - {entry.Name}");
+                                    item.SubItems.Add(thread.ThreadId.ToString());
+                                    item.SubItems.Add(token.User.ToString());
+                                    item.SubItems.Add(token.ImpersonationLevel.ToString());
+                                    item.Tag = thread.Duplicate();
+                                    ret.Add(item);
                                 }
                             }
-                            catch (NtException)
-                            {
-                            }
+                        }
+                        catch (NtException)
+                        {
                         }
                     }
                 }
-            }
-            catch (NtException)
-            {
             }
 
             return ret;
