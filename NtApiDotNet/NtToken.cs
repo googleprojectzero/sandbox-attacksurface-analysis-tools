@@ -579,8 +579,7 @@ namespace NtApiDotNet
 
         public void AddPrivilege(TokenPrivilegeValue name, PrivilegeAttributes attributes)
         {
-            Luid luid = new Luid();
-            luid.LowPart = (uint)name;
+            Luid luid = new Luid((uint)name, 0);
             AddPrivilege(luid, attributes);
         }
 
@@ -759,10 +758,11 @@ namespace NtApiDotNet
             }
         }
 
-        public string Name { get; private set; }
-        public ClaimSecurityValueType ValueType { get; private set; }
-        public ClaimSecurityFlags Flags { get; private set; }
-        public IEnumerable<object> Values { get; private set; }
+        public string Name { get; }
+        public ClaimSecurityValueType ValueType { get; }
+        public ClaimSecurityFlags Flags { get; }
+        public IEnumerable<object> Values { get; }
+        public int ValueCount { get; }
 
         internal ClaimSecurityAttribute(IntPtr ptr)
         {
@@ -770,8 +770,9 @@ namespace NtApiDotNet
             Name = v1.Name.ToString();
             ValueType = v1.ValueType;
             Flags = v1.Flags;
-
-            Values = ReadValues(v1.Values, v1.ValueCount, v1.ValueType);
+            var values = ReadValues(v1.Values, v1.ValueCount, v1.ValueType).ToArray();
+            Values = values;
+            ValueCount = values.Length;
         }
     }
 
