@@ -120,6 +120,7 @@
     <Compile Include="AnnontationAttributes.cs" />
     <Compile Include="SafeHandles.cs" />
     <Compile Include="NtSecurity.cs" />
+    <Compile Include="SecurityCapabilities.cs" />
     <Compile Include="SecurityDescriptor.cs" />
     <Compile Include="SecurityQualityOfService.cs" />
     <Compile Include="Sid.cs" />
