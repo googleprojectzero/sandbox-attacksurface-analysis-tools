@@ -225,19 +225,57 @@ function New-NtKernelCrashDump
 .SYNOPSIS
 Get security mitigations and token security information for processes.
 .DESCRIPTION
-This cmdlet will get the mitigation policies for all processes it can access for QueryInformation rights.
+This cmdlet will get the mitigation policies for processes it can access. The default is to return mitigations for all accessible processes.
+.PARAMETER Name
+The name of the processes to get mitigations for.
+.PARAMETER ProcessId
+One or more process IDs to get mitigations for.
+.PARAMETER PageFlags
+Optional flags to control what additional pages to dump
+.INPUTS
+None
+.EXAMPLE
+Get-NtProcessMitigations
+Get all accessible process mitigations.
+.EXAMPLE
+Get-NtProcessMitigations -Name MicrosoftEdgeCP.exe
+Get process mitigations for Edge content processes.
+.EXAMPLE
+Get-NtProcessMitigations -ProcessId 1234, 4568
+Get process mitigations for two processes by ID.
 #>
 function Get-NtProcessMitigations
 {
-  Set-NtTokenPrivilege SeDebugPrivilege | Out-Null
-  Use-NtObject($ps = Get-NtProcess -Access QueryInformation) {
-    foreach($p in $ps) {
-      try {
-        Write-Output $p.Mitigations
-      } catch {
-      }
+  [CmdletBinding(DefaultParameterSetName="All")]
+  Param(
+    [parameter(ParameterSetName="FromName")]
+    [string]$Name,
+    [parameter(ParameterSetName="FromProcessId")]
+    [int[]]$ProcessId
+  )
+    Set-NtTokenPrivilege SeDebugPrivilege | Out-Null
+
+    $ps = switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            Get-NtProcess -Access QueryInformation
+        }
+        "FromName" {
+            Get-NtProcess -Name $Name
+        }
+        "FromProcessId" {
+            foreach($id in $ProcessId) {
+                Get-NtProcess -ProcessId $id
+            }
+        }
     }
-  }
+    Use-NtObject($ps) {
+        foreach($p in $ps) {
+            try {
+                Write-Output $p.Mitigations
+            } catch {
+            }
+        }
+    }
 }
 
 <#
