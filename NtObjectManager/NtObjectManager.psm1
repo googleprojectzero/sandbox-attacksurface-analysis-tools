@@ -2694,6 +2694,8 @@ all handles and tries to extract the port from the hosting process. This might r
 privilege, to work correctly.
 .PARAMETER Path
 The path to the ALPC server port to get.
+.PARAMETER ProcessId
+The process ID of the process to query for ALPC servers.
 .INPUTS
 None
 .OUTPUTS
@@ -2704,21 +2706,30 @@ Gets all ALPC server objects accessible to the current process.
 .EXAMPLE
 Get-NtAlpcServer "\RPC Control\atsvc"
 Gets the "\RPC Control\atsvc" ALPC server.
+.EXAMPLE
+Get-NtAlpcServer -ProcessId 1234
+Gets all ALPC servers from PID 1234.
 #>
 function Get-NtAlpcServer {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
        [parameter(Mandatory, Position=0, ParameterSetName = "FromPath")]
-       [string]$Path
+       [string]$Path,
+       [parameter(Mandatory, Position=0, ParameterSetName = "FromProcessId")]
+       [alias("pid")]
+       [int]$ProcessId = -1
     )
 
     if (![NtApiDotNet.NtToken]::EnableDebugPrivilege()) {
         Write-Warning "Can't enable debug privilege, results might be incomplete"
     }
-    $hs = Get-NtHandle -ObjectTypes "ALPC Port" | ? Name -ne ""
+    $hs = Get-NtHandle -ObjectTypes "ALPC Port" -ProcessId $ProcessId | ? Name -ne ""
 
     switch($PSCmdlet.ParameterSetName) {
         "All" {
+            Write-Output $hs.GetObject()
+        }
+        "FromProcessId" {
             Write-Output $hs.GetObject()
         }
         "FromPath" {
