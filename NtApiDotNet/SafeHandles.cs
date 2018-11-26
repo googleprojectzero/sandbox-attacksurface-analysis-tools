@@ -256,7 +256,7 @@ namespace NtApiDotNet
 
         /// <summary>
         /// Constructor, initializes buffer with a default structure.
-        /// </summary>        
+        /// </summary>
         /// <param name="additional_size">Additional data to add to structure buffer.</param>
         /// <param name="add_struct_size">If true additional_size is added to structure size, otherwise reflects the total size.</param>
         public SafeStructureInOutBuffer(int additional_size, bool add_struct_size)
@@ -269,7 +269,7 @@ namespace NtApiDotNet
             DataStartAttribute attr = typeof(T).GetCustomAttribute<DataStartAttribute>();
             if (attr != null)
             {
-                return Marshal.OffsetOf(typeof(T), attr.FieldName).ToInt32();            
+                return Marshal.OffsetOf(typeof(T), attr.FieldName).ToInt32();
             }
             return Marshal.SizeOf(typeof(T));
         }
