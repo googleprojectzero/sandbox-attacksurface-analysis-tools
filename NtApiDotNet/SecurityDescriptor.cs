@@ -15,6 +15,7 @@
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace NtApiDotNet
 {
@@ -581,75 +582,9 @@ namespace NtApiDotNet
         /// <returns>The binary security descriptor</returns>
         public byte[] ToByteArray()
         {
-            SafeStructureInOutBuffer<SecurityDescriptorStructure> sd_buffer = null;
-            SafeHGlobalBuffer dacl_buffer = null;
-            SafeHGlobalBuffer sacl_buffer = null;
-            SafeSidBufferHandle owner_buffer = null;
-            SafeSidBufferHandle group_buffer = null;
-
-            try
+            using (var sd_buffer = CreateRelativeSecurityDescriptor())
             {
-                sd_buffer = new SafeStructureInOutBuffer<SecurityDescriptorStructure>();
-                NtRtl.RtlCreateSecurityDescriptor(sd_buffer, Revision).ToNtException();
-                SecurityDescriptorControl control = Control & SecurityDescriptorControl.ValidControlSetMask;
-                NtRtl.RtlSetControlSecurityDescriptor(sd_buffer, control, control).ToNtException();
-                if (Dacl != null)
-                {
-                    if (!Dacl.NullAcl)
-                    {
-                        dacl_buffer = new SafeHGlobalBuffer(Dacl.ToByteArray());
-                    }
-                    else
-                    {
-                        dacl_buffer = new SafeHGlobalBuffer(IntPtr.Zero, 0, false);
-                    }
-
-                    NtRtl.RtlSetDaclSecurityDescriptor(sd_buffer, true, dacl_buffer.DangerousGetHandle(), Dacl.Defaulted).ToNtException();
-                }
-                if (Sacl != null)
-                {
-                    if (!Sacl.NullAcl)
-                    {
-                        sacl_buffer = new SafeHGlobalBuffer(Sacl.ToByteArray());
-                    }
-                    else
-                    {
-                        sacl_buffer = new SafeHGlobalBuffer(IntPtr.Zero, 0, false);
-                    }
-
-                    NtRtl.RtlSetSaclSecurityDescriptor(sd_buffer, true, sacl_buffer.DangerousGetHandle(), Sacl.Defaulted).ToNtException();
-                }
-                if (Owner != null)
-                {
-                    owner_buffer = Owner.Sid.ToSafeBuffer();
-                    NtRtl.RtlSetOwnerSecurityDescriptor(sd_buffer, owner_buffer.DangerousGetHandle(), Owner.Defaulted);
-                }
-                if (Group != null)
-                {
-                    group_buffer = Group.Sid.ToSafeBuffer();
-                    NtRtl.RtlSetGroupSecurityDescriptor(sd_buffer, group_buffer.DangerousGetHandle(), Group.Defaulted);
-                }
-
-                int total_length = 0;
-                NtStatus status = NtRtl.RtlAbsoluteToSelfRelativeSD(sd_buffer, new SafeHGlobalBuffer(IntPtr.Zero, 0, false), ref total_length);
-                if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
-                {
-                    status.ToNtException();
-                }
-
-                using (SafeHGlobalBuffer relative_sd = new SafeHGlobalBuffer(total_length))
-                {
-                    NtRtl.RtlAbsoluteToSelfRelativeSD(sd_buffer, relative_sd, ref total_length).ToNtException();
-                    return relative_sd.ToArray();
-                }
-            }
-            finally
-            {
-                sd_buffer?.Close();
-                dacl_buffer?.Close();
-                sacl_buffer?.Close();
-                owner_buffer?.Close();
-                group_buffer?.Close();
+                return sd_buffer.ToArray();
             }
         }
 
@@ -681,13 +616,110 @@ namespace NtApiDotNet
             return ToSddl();
         }
 
+        private static IntPtr UpdateBuffer<T>(SafeStructureInOutBuffer<T> buffer, byte[] data, ref int current_ofs) where T : new()
+        {
+            if (data == null)
+            {
+                return IntPtr.Zero;
+            }
+
+            IntPtr ptr = buffer.Data.DangerousGetHandle() + current_ofs;
+            buffer.Data.WriteBytes((ulong)current_ofs, data);
+            current_ofs += data.Length;
+            return ptr;
+        }
+
+        private static int GetLength(byte[] data)
+        {
+            return data?.Length ?? 0;
+        }
+
+        private SafeHGlobalBuffer CreateAbsoluteSecurityDescriptor()
+        {
+            SafeStructureInOutBuffer<SecurityDescriptorStructure> sd_buffer = null;
+            try
+            {
+                byte[] dacl = Dacl?.ToByteArray();
+                byte[] sacl = Sacl?.ToByteArray();
+                byte[] owner = Owner?.Sid.ToArray();
+                byte[] group = Group?.Sid.ToArray();
+                int total_size = GetLength(dacl) + GetLength(sacl) + GetLength(owner) + GetLength(group);
+                sd_buffer = new SafeStructureInOutBuffer<SecurityDescriptorStructure>(total_size, true);
+                NtRtl.RtlCreateSecurityDescriptor(sd_buffer, Revision).ToNtException();
+                SecurityDescriptorControl control = Control & SecurityDescriptorControl.ValidControlSetMask;
+                NtRtl.RtlSetControlSecurityDescriptor(sd_buffer, control, control).ToNtException();
+                int current_ofs = 0;
+                if (Dacl != null)
+                {
+                    IntPtr ptr = UpdateBuffer(sd_buffer, Dacl.NullAcl ? null : dacl, ref current_ofs);
+                    NtRtl.RtlSetDaclSecurityDescriptor(sd_buffer, true, ptr, Dacl.Defaulted).ToNtException();
+                }
+                if (Sacl != null)
+                {
+                    IntPtr ptr = UpdateBuffer(sd_buffer, Sacl.NullAcl ? null : sacl, ref current_ofs);
+                    NtRtl.RtlSetSaclSecurityDescriptor(sd_buffer, true, ptr, Sacl.Defaulted).ToNtException();
+                }
+                if (Owner != null)
+                {
+                    IntPtr ptr = UpdateBuffer(sd_buffer, owner, ref current_ofs);
+                    NtRtl.RtlSetOwnerSecurityDescriptor(sd_buffer, ptr, Owner.Defaulted);
+                }
+                if (Group != null)
+                {
+                    IntPtr ptr = UpdateBuffer(sd_buffer, group, ref current_ofs);
+                    NtRtl.RtlSetGroupSecurityDescriptor(sd_buffer, ptr, Group.Defaulted);
+                }
+
+                return Interlocked.Exchange(ref sd_buffer, null);
+            }
+            finally
+            {
+                sd_buffer?.Close();
+            }
+        }
+
+        private SafeHGlobalBuffer CreateRelativeSecurityDescriptor()
+        {
+            using (var sd_buffer = CreateAbsoluteSecurityDescriptor())
+            {
+                int total_length = 0;
+                NtStatus status = NtRtl.RtlAbsoluteToSelfRelativeSD(sd_buffer, new SafeHGlobalBuffer(IntPtr.Zero, 0, false), ref total_length);
+                if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+                {
+                    status.ToNtException();
+                }
+
+                var relative_sd = new SafeHGlobalBuffer(total_length);
+                try
+                {
+                    NtRtl.RtlAbsoluteToSelfRelativeSD(sd_buffer, relative_sd, ref total_length).ToNtException();
+                    return Interlocked.Exchange(ref relative_sd, null);
+                }
+                finally
+                {
+                    relative_sd?.Close();
+                }
+            }
+        }
+
         /// <summary>
         /// Convert security descriptor to a safe buffer.
         /// </summary>
-        /// <returns></returns>
+        /// <param name="absolute">True to return an absolute security descriptor, false for self-relative.</param>
+        /// <returns>A safe buffer for the security descriptor.</returns>
+        public SafeBuffer ToSafeBuffer(bool absolute)
+        {
+            return absolute ? CreateAbsoluteSecurityDescriptor() : CreateRelativeSecurityDescriptor();
+        }
+
+        /// <summary>
+        /// Convert security descriptor to a safe buffer.
+        /// </summary>
+        /// <returns>A safe buffer for the security descriptor.</returns>
+        /// <remarks>This returns a self-relative security descriptor.</remarks>
         public SafeBuffer ToSafeBuffer()
         {
-            return new SafeHGlobalBuffer(ToByteArray());
+            return ToSafeBuffer(false);
         }
 
         /// <summary>
