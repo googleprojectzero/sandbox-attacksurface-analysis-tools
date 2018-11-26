@@ -622,6 +622,8 @@ namespace NtApiDotNet
             "ID_CAP_WPTOOLS_INSTALL_FOLDER",
             "ID_CAP_ZMFSERVICES",
             "ID_CAP_ZTRACE",
+            "Microsoft.firmwareRead_cw5n1h2txyewy",
+            "Microsoft.firmwareWrite_cw5n1h2txyewy",
             "accessoryManager",
             "activateAsUser",
             "activity",
