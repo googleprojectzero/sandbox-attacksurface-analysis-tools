@@ -2839,7 +2839,7 @@ namespace NtApiDotNet
                 OptionalLength package_length = new OptionalLength(package_name.Length);
                 if (NtRtl.RtlQueryPackageClaims(Handle, package_name, package_length, null, null, null, null, null).IsSuccess())
                 {
-                    return Encoding.Unicode.GetString(package_name, 0, package_length.Length.ToInt32());
+                    return Encoding.Unicode.GetString(package_name, 0, package_length.Length.ToInt32()).TrimEnd('\0');
                 }
                 return string.Empty;
             }
@@ -2856,7 +2856,7 @@ namespace NtApiDotNet
                 OptionalLength app_id_length = new OptionalLength(app_id.Length);
                 if(NtRtl.RtlQueryPackageClaims(Handle, null, null, app_id, app_id_length, null, null, null).IsSuccess())
                 {
-                    return Encoding.Unicode.GetString(app_id, 0, app_id_length.Length.ToInt32());
+                    return Encoding.Unicode.GetString(app_id, 0, app_id_length.Length.ToInt32()).TrimEnd('\0');
                 }
                 return string.Empty;
             }
