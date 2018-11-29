@@ -525,6 +525,10 @@ namespace NtApiDotNet
         FileMemoryPartitionInformation,
         FileStatLxInformation,
         FileCaseSensitiveInformation,
+        FileLinkInformationEx,
+        FileLinkInformationExBypassAccessCheck,
+        FileStorageReserveIdInformation,
+        FileCaseSensitiveInformationForceAccessCheck,
         FileMaximumInformation
     }
 
