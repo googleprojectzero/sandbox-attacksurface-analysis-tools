@@ -73,12 +73,25 @@ namespace NtApiDotNet
         public static extern NtStatus NtAllocateLocallyUniqueId(out Luid Luid);
     }
 
-    public class SystemEnvironmentValue
+    [Flags]
+    public enum SystemEnvironmentValueAttribute
+    {
+        None = 0x0000,
+        NonVolatile = 0x0001,
+        BootServiceAccess = 0x0002,
+        RuntimeAccess = 0x0004,
+        ErrorRecord = 0x0008,
+        WriteAccess = 0x0010,
+        TimeBasedAuthenticatedWriteAccess = 0x0020,
+        AppendWrite = 0x0040,
+    }
+
+    public sealed class SystemEnvironmentValue
     {
         public string Name { get; private set; }
         public Guid VendorGuid { get; private set; }
         public byte[] Value { get; private set; }
-        public int Attributes { get; private set; }
+        public SystemEnvironmentValueAttribute Attributes { get; private set; }
 
         internal SystemEnvironmentValue(SafeStructureInOutBuffer<SystemEnvironmentValueNameAndValue> buffer)
         {
@@ -93,7 +106,7 @@ namespace NtApiDotNet
         {
             Name = name;
             Value = value;
-            Attributes = attributes.Value;
+            Attributes = (SystemEnvironmentValueAttribute) attributes.Value;
             VendorGuid = vendor_guid.Value;
         }
     }
@@ -112,7 +125,7 @@ namespace NtApiDotNet
         public int NextEntryOffset;
         public int ValueOffset;
         public int ValueLength;
-        public int Attributes;
+        public SystemEnvironmentValueAttribute Attributes;
         public Guid VendorGuid;
         public char Name;
         //UCHAR Value[ANYSIZE_ARRAY];
@@ -1415,9 +1428,33 @@ namespace NtApiDotNet
         /// <param name="vendor_guid">The vendor GUID</param>
         /// <param name="value">The value to set</param>
         /// <param name="attributes">Attributes of the value</param>
+        public static void SetSystemEnvironmentValue(string name, Guid vendor_guid, byte[] value, SystemEnvironmentValueAttribute attributes)
+        {
+            SetSystemEnvironmentValue(name, vendor_guid, value, (int)attributes);
+        }
+
+        /// <summary>
+        /// Set a system environment variable.
+        /// </summary>
+        /// <param name="name">The name of the variable.</param>
+        /// <param name="vendor_guid">The vendor GUID</param>
+        /// <param name="value">The value to set</param>
+        /// <param name="attributes">Attributes of the value</param>
         public static void SetSystemEnvironmentValue(string name, Guid vendor_guid, string value, int attributes)
         {
             SetSystemEnvironmentValue(name, vendor_guid, Encoding.Unicode.GetBytes(value), attributes);
+        }
+
+        /// <summary>
+        /// Set a system environment variable.
+        /// </summary>
+        /// <param name="name">The name of the variable.</param>
+        /// <param name="vendor_guid">The vendor GUID</param>
+        /// <param name="value">The value to set</param>
+        /// <param name="attributes">Attributes of the value</param>
+        public static void SetSystemEnvironmentValue(string name, Guid vendor_guid, string value, SystemEnvironmentValueAttribute attributes)
+        {
+            SetSystemEnvironmentValue(name, vendor_guid, value, (int)attributes);
         }
 
         /// <summary>
