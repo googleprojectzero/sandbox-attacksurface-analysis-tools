@@ -127,6 +127,7 @@
     <Compile Include="ThreadImpersonationContext.cs" />
     <Compile Include="UnicodeString.cs" />
     <Compile Include="NtObjectUtils.cs" />
+    <Compile Include="NtIoControlCode.cs" />
     <Compile Include="Win32\ExecutableManifest.cs" />
     <Compile Include="Win32\LogonUtils.cs" />
     <Compile Include="Win32\RpcEndpoint.cs" />
