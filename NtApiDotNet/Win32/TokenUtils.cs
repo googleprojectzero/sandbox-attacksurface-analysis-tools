@@ -124,13 +124,10 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        [DllImport("user32.dll", SetLastError=true)]
-        private static extern bool GetClipboardAccessToken(out SafeKernelObjectHandle handle, TokenAccessRights desired_access);
-
         private static SafeKernelObjectHandle OpenClipboardToken(TokenAccessRights desired_access)
         {
             SafeKernelObjectHandle handle;
-            if (!GetClipboardAccessToken(out handle, desired_access
+            if (!Win32NativeMethods.GetClipboardAccessToken(out handle, desired_access
                 ))
             {
                 throw new NtException(NtStatus.STATUS_NO_TOKEN);
@@ -169,49 +166,6 @@ namespace NtApiDotNet.Win32
                 | TokenAccessRights.ReadControl);
         }
 
-        const int SAFER_LEVEL_OPEN = 1;
-
-        [Flags]
-        enum SaferScope
-        {
-            Machine = 1,
-            User = 2
-        }
-
-        [Flags]
-        enum SaferFlags
-        {
-            NullIfEqual = 1,
-            CompareOnly = 2,
-            MakeInert = 4,
-            WantFlags = 8,
-        }
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        static extern bool SaferCreateLevel(SaferScope dwScopeId, SaferLevel dwLevelId, int OpenFlags, out IntPtr pLevelHandle, IntPtr lpReserved);
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        static extern bool SaferCloseLevel(IntPtr hLevelHandle);
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        static extern bool SaferComputeTokenFromLevel(IntPtr LevelHandle, SafeHandle InAccessToken, 
-            out SafeKernelObjectHandle OutAccessToken, SaferFlags dwFlags, IntPtr lpReserved);
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        static extern IntPtr FreeSid(IntPtr sid);
-
-        [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
-        static extern int DeriveAppContainerSidFromAppContainerName(
-            string pszAppContainerName,
-            out SafeSidBufferHandle ppsidAppContainerSid
-        );
-
-        [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
-        static extern int DeriveRestrictedAppContainerSidFromAppContainerSidAndRestrictedName(
-            SafeSidBufferHandle psidAppContainerSid,
-            string pszRestrictedAppContainerName,
-            out SafeSidBufferHandle ppsidRestrictedAppContainerSid
-        );
 
         /// <summary>
         /// Derive a package sid from a name.
@@ -221,7 +175,7 @@ namespace NtApiDotNet.Win32
         public static Sid DerivePackageSidFromName(string name)
         {
             SafeSidBufferHandle sid;
-            int hr = DeriveAppContainerSidFromAppContainerName(name, out sid);
+            int hr = Win32NativeMethods.DeriveAppContainerSidFromAppContainerName(name, out sid);
             if (hr != 0)
             {
                 Marshal.ThrowExceptionForHR(hr);
@@ -244,7 +198,7 @@ namespace NtApiDotNet.Win32
             using (var sid_buf = package_sid.ToSafeBuffer())
             {
                 SafeSidBufferHandle sid;
-                int hr = DeriveRestrictedAppContainerSidFromAppContainerSidAndRestrictedName(sid_buf, restricted_name, out sid);                
+                int hr = Win32NativeMethods.DeriveRestrictedAppContainerSidFromAppContainerSidAndRestrictedName(sid_buf, restricted_name, out sid);                
                 if (hr != 0)
                 {
                     Marshal.ThrowExceptionForHR(hr);
@@ -282,7 +236,7 @@ namespace NtApiDotNet.Win32
             }
             else
             {
-                return TokenUtils.DerivePackageSidFromName(name);
+                return DerivePackageSidFromName(name);
             }
         }
 
@@ -297,7 +251,7 @@ namespace NtApiDotNet.Win32
         {
             IntPtr level_handle;
 
-            if (!SaferCreateLevel(SaferScope.User, level, SAFER_LEVEL_OPEN, out level_handle, IntPtr.Zero))
+            if (!Win32NativeMethods.SaferCreateLevel(SaferScope.User, level, Win32NativeMethods.SAFER_LEVEL_OPEN, out level_handle, IntPtr.Zero))
             {
                 throw new SafeWin32Exception();
             }
@@ -307,7 +261,8 @@ namespace NtApiDotNet.Win32
                 using (NtToken duptoken = token.Duplicate(TokenAccessRights.GenericRead | TokenAccessRights.GenericExecute))
                 {
                     SafeKernelObjectHandle handle;
-                    if (SaferComputeTokenFromLevel(level_handle, duptoken.Handle, out handle, make_inert ? SaferFlags.MakeInert : 0, IntPtr.Zero))
+                    if (Win32NativeMethods.SaferComputeTokenFromLevel(level_handle, 
+                        duptoken.Handle, out handle, make_inert ? SaferFlags.MakeInert : 0, IntPtr.Zero))
                     {
                         return NtToken.FromHandle(handle);
                     }
@@ -319,45 +274,9 @@ namespace NtApiDotNet.Win32
             }
             finally
             {
-                SaferCloseLevel(level_handle);
+                Win32NativeMethods.SaferCloseLevel(level_handle);
             }
         }
-
-        enum WTS_CONNECTSTATE_CLASS
-        {
-            WTSActive,              // User logged on to WinStation
-            WTSConnected,           // WinStation connected to client
-            WTSConnectQuery,        // In the process of connecting to client
-            WTSShadow,              // Shadowing another WinStation
-            WTSDisconnected,        // WinStation logged on without client
-            WTSIdle,                // Waiting for client to connect
-            WTSListen,              // WinStation is listening for connection
-            WTSReset,               // WinStation is being reset
-            WTSDown,                // WinStation is down due to error
-            WTSInit,                // WinStation in initialization
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        struct WTS_SESSION_INFO
-        {
-            public int SessionId;
-            public IntPtr pWinStationName;
-            public WTS_CONNECTSTATE_CLASS State;
-        }
-
-        [DllImport("wtsapi32.dll", SetLastError = true)]
-        static extern bool WTSEnumerateSessions(
-                IntPtr hServer,
-                int Reserved,
-                int Version,
-                out IntPtr ppSessionInfo,
-                out int pCount);
-
-        [DllImport("wtsapi32.dll", SetLastError = true)]
-        static extern bool WTSQueryUserToken(int SessionId, out SafeKernelObjectHandle phToken);
-
-        [DllImport("wtsapi32.dll", SetLastError = true)]
-        static extern void WTSFreeMemory(IntPtr memory);
 
         /// <summary>
         /// Get tokens for all logged on sessions.
@@ -371,14 +290,14 @@ namespace NtApiDotNet.Win32
             int dwSessionCount = 0;
             try
             {
-                if (WTSEnumerateSessions(IntPtr.Zero, 0, 1, out pSessions, out dwSessionCount))
+                if (Win32NativeMethods.WTSEnumerateSessions(IntPtr.Zero, 0, 1, out pSessions, out dwSessionCount))
                 {
                     IntPtr current = pSessions;
                     for (int i = 0; i < dwSessionCount; ++i)
                     {
                         WTS_SESSION_INFO session_info = (WTS_SESSION_INFO)Marshal.PtrToStructure(current, typeof(WTS_SESSION_INFO));
 
-                        if (session_info.State == WTS_CONNECTSTATE_CLASS.WTSActive && WTSQueryUserToken(session_info.SessionId, out SafeKernelObjectHandle handle))
+                        if (session_info.State == WTS_CONNECTSTATE_CLASS.WTSActive && Win32NativeMethods.WTSQueryUserToken(session_info.SessionId, out SafeKernelObjectHandle handle))
                         {
                             tokens.Add(NtToken.FromHandle(handle));
                         }
@@ -390,7 +309,7 @@ namespace NtApiDotNet.Win32
             {
                 if (pSessions != IntPtr.Zero)
                 {
-                    WTSFreeMemory(pSessions);
+                    Win32NativeMethods.WTSFreeMemory(pSessions);
                 }
             }
 

@@ -246,29 +246,6 @@ namespace NtApiDotNet.Win32
     /// </summary>
     public class SafeLoadLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern SafeLoadLibraryHandle LoadLibraryEx(string name, IntPtr reserved, LoadLibraryFlags flags);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool FreeLibrary(IntPtr hModule);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        static extern IntPtr GetProcAddress(IntPtr hModule, string name);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern int GetModuleFileName(IntPtr hModule, [Out] StringBuilder lpFilename, int nSize);
-
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
-        private static extern IntPtr GetProcAddress(IntPtr hModule, IntPtr name);
-
-        [DllImport("dbghelp.dll", SetLastError = true)]
-        static extern IntPtr ImageDirectoryEntryToData(IntPtr Base, bool MappedAsImage, ushort DirectoryEntry, out int Size);
-
-        [DllImport("dbghelp.dll", SetLastError = true)]
-        private static extern IntPtr ImageNtHeader(
-            IntPtr Base
-        );
-
         /// <summary>
         /// Constructor
         /// </summary>
@@ -290,7 +267,7 @@ namespace NtApiDotNet.Win32
         /// <returns>True if handle released.</returns>
         protected override bool ReleaseHandle()
         {
-            return FreeLibrary(handle);
+            return Win32NativeMethods.FreeLibrary(handle);
         }
 
         /// <summary>
@@ -300,7 +277,7 @@ namespace NtApiDotNet.Win32
         /// <returns>Pointer to the exported function, or IntPtr.Zero if it can't be found.</returns>
         public IntPtr GetProcAddress(string name)
         {
-            return GetProcAddress(handle, name);
+            return Win32NativeMethods.GetProcAddress(handle, name);
         }
 
         /// <summary>
@@ -310,7 +287,7 @@ namespace NtApiDotNet.Win32
         /// <returns>Pointer to the exported function, or IntPtr.Zero if it can't be found.</returns>
         public IntPtr GetProcAddress(IntPtr ordinal)
         {
-            return GetProcAddress(handle, ordinal);
+            return Win32NativeMethods.GetProcAddress(handle, ordinal);
         }
 
         /// <summary>
@@ -343,7 +320,7 @@ namespace NtApiDotNet.Win32
             get
             {
                 StringBuilder builder = new StringBuilder(260);
-                if (GetModuleFileName(handle, builder, builder.Capacity) == 0)
+                if (Win32NativeMethods.GetModuleFileName(handle, builder, builder.Capacity) == 0)
                 {
                     throw new SafeWin32Exception();
                 }
@@ -379,7 +356,7 @@ namespace NtApiDotNet.Win32
         /// <returns></returns>
         public static SafeLoadLibraryHandle LoadLibrary(string name, LoadLibraryFlags flags)
         {
-            SafeLoadLibraryHandle ret = LoadLibraryEx(name, IntPtr.Zero, flags);
+            SafeLoadLibraryHandle ret = Win32NativeMethods.LoadLibraryEx(name, IntPtr.Zero, flags);
             if (ret.IsInvalid)
             {
                 throw new SafeWin32Exception();
@@ -397,14 +374,6 @@ namespace NtApiDotNet.Win32
             return LoadLibrary(name, LoadLibraryFlags.None);
         }
 
-        const int GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS = 0x00000004;
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern bool GetModuleHandleEx(int dwFlags, IntPtr lpModuleName, out SafeLoadLibraryHandle phModule);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "GetModuleHandleExW")]
-        static extern bool GetModuleHandleEx(int dwFlags, string lpModuleName, out SafeLoadLibraryHandle phModule);
-
         /// <summary>
         /// Get the handle to an existing loading library by name.
         /// </summary>
@@ -413,7 +382,7 @@ namespace NtApiDotNet.Win32
         /// <exception cref="SafeWin32Exception">Thrown if the module can't be found.</exception>
         public static SafeLoadLibraryHandle GetModuleHandle(string name)
         {
-            if (GetModuleHandleEx(0, name, out SafeLoadLibraryHandle ret))
+            if (Win32NativeMethods.GetModuleHandleEx(0, name, out SafeLoadLibraryHandle ret))
             {
                 return ret;
             }
@@ -427,7 +396,8 @@ namespace NtApiDotNet.Win32
         /// <returns>The handle to the loaded library, null if the address isn't inside a valid module.</returns>
         public static SafeLoadLibraryHandle GetModuleHandle(IntPtr address)
         {
-            if (GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, address, out SafeLoadLibraryHandle ret))
+            if (Win32NativeMethods.GetModuleHandleEx(Win32NativeMethods.GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, 
+                address, out SafeLoadLibraryHandle ret))
             {
                 return ret;
             }
@@ -515,7 +485,7 @@ namespace NtApiDotNet.Win32
                 return _delayed_imports;
             }
             _delayed_imports = new Dictionary<IntPtr, IntPtr>();
-            IntPtr delayed_imports = ImageDirectoryEntryToData(handle, true, IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT, out int size);
+            IntPtr delayed_imports = Win32NativeMethods.ImageDirectoryEntryToData(handle, true, IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT, out int size);
             if (delayed_imports == null)
             {
                 return new ReadOnlyDictionary<IntPtr, IntPtr>(_delayed_imports);
@@ -543,7 +513,7 @@ namespace NtApiDotNet.Win32
 
         private IntPtr GetHeaderPointer(IntPtr base_ptr)
         {
-            IntPtr header_ptr = ImageNtHeader(base_ptr);
+            IntPtr header_ptr = Win32NativeMethods.ImageNtHeader(base_ptr);
             if (header_ptr == IntPtr.Zero)
             {
                 throw new SafeWin32Exception();

@@ -15,6 +15,7 @@
 using NtApiDotNet.Ndr;
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NtApiDotNet.Win32
 {
@@ -44,6 +45,44 @@ namespace NtApiDotNet.Win32
         /// Don't broadcast changes to the system
         /// </summary>
         NoBroadcastSystem = 8,
+    }
+
+    internal enum WTS_CONNECTSTATE_CLASS
+    {
+        WTSActive,              // User logged on to WinStation
+        WTSConnected,           // WinStation connected to client
+        WTSConnectQuery,        // In the process of connecting to client
+        WTSShadow,              // Shadowing another WinStation
+        WTSDisconnected,        // WinStation logged on without client
+        WTSIdle,                // Waiting for client to connect
+        WTSListen,              // WinStation is listening for connection
+        WTSReset,               // WinStation is being reset
+        WTSDown,                // WinStation is down due to error
+        WTSInit,                // WinStation in initialization
+    }
+
+    [Flags]
+    internal enum SaferScope
+    {
+        Machine = 1,
+        User = 2
+    }
+
+    [Flags]
+    internal enum SaferFlags
+    {
+        NullIfEqual = 1,
+        CompareOnly = 2,
+        MakeInert = 4,
+        WantFlags = 8,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct WTS_SESSION_INFO
+    {
+        public int SessionId;
+        public IntPtr pWinStationName;
+        public WTS_CONNECTSTATE_CLASS State;
     }
 
     internal static class Win32NativeMethods
@@ -132,5 +171,81 @@ namespace NtApiDotNet.Win32
 
         [DllImport("shell32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern SafeLocalAllocHandle CommandLineToArgvW(string lpCmdLine, out int pNumArgs);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern SafeLoadLibraryHandle LoadLibraryEx(string name, IntPtr reserved, LoadLibraryFlags flags);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        internal static extern bool FreeLibrary(IntPtr hModule);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        internal static extern IntPtr GetProcAddress(IntPtr hModule, string name);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern int GetModuleFileName(IntPtr hModule, [Out] StringBuilder lpFilename, int nSize);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
+        internal static extern IntPtr GetProcAddress(IntPtr hModule, IntPtr name);
+
+        [DllImport("dbghelp.dll", SetLastError = true)]
+        internal static extern IntPtr ImageDirectoryEntryToData(IntPtr Base, bool MappedAsImage, ushort DirectoryEntry, out int Size);
+
+        [DllImport("dbghelp.dll", SetLastError = true)]
+        internal static extern IntPtr ImageNtHeader(
+            IntPtr Base
+        );
+
+        internal const int GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS = 0x00000004;
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool GetModuleHandleEx(int dwFlags, IntPtr lpModuleName, out SafeLoadLibraryHandle phModule);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "GetModuleHandleExW")]
+        internal static extern bool GetModuleHandleEx(int dwFlags, string lpModuleName, out SafeLoadLibraryHandle phModule);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        internal static extern bool GetClipboardAccessToken(out SafeKernelObjectHandle handle, TokenAccessRights desired_access);
+
+        internal const int SAFER_LEVEL_OPEN = 1;
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        internal static extern bool SaferCreateLevel(SaferScope dwScopeId, SaferLevel dwLevelId, int OpenFlags, out IntPtr pLevelHandle, IntPtr lpReserved);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        internal static extern bool SaferCloseLevel(IntPtr hLevelHandle);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        internal static extern bool SaferComputeTokenFromLevel(IntPtr LevelHandle, SafeHandle InAccessToken,
+            out SafeKernelObjectHandle OutAccessToken, SaferFlags dwFlags, IntPtr lpReserved);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        internal static extern IntPtr FreeSid(IntPtr sid);
+
+        [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
+        internal static extern int DeriveAppContainerSidFromAppContainerName(
+            string pszAppContainerName,
+            out SafeSidBufferHandle ppsidAppContainerSid
+        );
+
+        [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
+        internal static extern int DeriveRestrictedAppContainerSidFromAppContainerSidAndRestrictedName(
+            SafeSidBufferHandle psidAppContainerSid,
+            string pszRestrictedAppContainerName,
+            out SafeSidBufferHandle ppsidRestrictedAppContainerSid
+        );
+
+        [DllImport("wtsapi32.dll", SetLastError = true)]
+        internal static extern bool WTSEnumerateSessions(
+                IntPtr hServer,
+                int Reserved,
+                int Version,
+                out IntPtr ppSessionInfo,
+                out int pCount);
+
+        [DllImport("wtsapi32.dll", SetLastError = true)]
+        internal static extern bool WTSQueryUserToken(int SessionId, out SafeKernelObjectHandle phToken);
+
+        [DllImport("wtsapi32.dll", SetLastError = true)]
+        internal static extern void WTSFreeMemory(IntPtr memory);
     }
 }
