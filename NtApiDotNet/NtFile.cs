@@ -983,7 +983,7 @@ namespace NtApiDotNet
         internal OpaqueReparseBuffer(ReparseTag tag) : base(tag)
         {
         }
-        
+
         public byte[] Data { get; set; }
 
         protected override byte[] GetBuffer()
@@ -1015,7 +1015,7 @@ namespace NtApiDotNet
 
         public string SubstitutionName { get; set; }
         public string PrintName { get; set; }
-        
+
         protected override void ParseBuffer(int data_length, BinaryReader reader)
         {
             int subname_ofs = reader.ReadUInt16();
@@ -1065,9 +1065,9 @@ namespace NtApiDotNet
 
         }
 
-        public SymlinkReparseBuffer(string substitution_name, 
+        public SymlinkReparseBuffer(string substitution_name,
             string print_name, SymlinkReparseBufferFlags flags,
-            bool global) 
+            bool global)
             : this(global)
         {
             if (String.IsNullOrEmpty(substitution_name))
@@ -1079,13 +1079,13 @@ namespace NtApiDotNet
             {
                 throw new ArgumentException("print_name");
             }
-            
+
             SubstitutionName = substitution_name;
             PrintName = print_name;
             Flags = flags;
         }
 
-        internal SymlinkReparseBuffer(bool global) 
+        internal SymlinkReparseBuffer(bool global)
             : base(global ? ReparseTag.GLOBAL_REPARSE : ReparseTag.SYMLINK)
         {
         }
@@ -1160,7 +1160,7 @@ namespace NtApiDotNet
             writer.Write(Encoding.Unicode.GetBytes(str + "\0"));
         }
 
-        public ExecutionAliasReparseBuffer(int version, string package_name, string entry_point, string target, int flags) 
+        public ExecutionAliasReparseBuffer(int version, string package_name, string entry_point, string target, int flags)
             : this()
         {
             Version = version;
@@ -1262,7 +1262,7 @@ namespace NtApiDotNet
             _object = @object;
             if (!_object.CanSynchronize)
             {
-                _event = NtEvent.Create(null, 
+                _event = NtEvent.Create(null,
                     EventType.SynchronizationEvent, false);
             }
             _io_status = new SafeIoStatusBuffer();
@@ -1327,7 +1327,7 @@ namespace NtApiDotNet
             {
                 return true;
             }
-            
+
             NtStatus status;
             if (_event != null)
             {
@@ -1496,7 +1496,7 @@ namespace NtApiDotNet
         public int FileNameLength;
         public char FileName;
     }
-    
+
     [StructLayout(LayoutKind.Sequential), DataStart("Entry")]
     public struct FileLinksInformation
     {
@@ -1504,7 +1504,7 @@ namespace NtApiDotNet
         public int EntriesReturned;
         public FileLinkEntryInformation Entry;
     }
-    
+
     public class FileLinkEntry
     {
         public long ParentFileId { get; private set; }
@@ -1565,6 +1565,76 @@ namespace NtApiDotNet
     {
         public int Restart;
         public byte Sid;
+    }
+
+    [Flags]
+    public enum OplockLevelCache
+    {
+        None = 0,
+        Read = 1,
+        Handle = 2,
+        Write = 4
+    }
+
+    [Flags]
+    public enum RequestOplockInputFlag
+    {
+        None = 0,
+        Request = 1,
+        Ack = 2,
+        CompleteAckOnClose = 4
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class RequestOplockInputBuffer
+    {
+        public ushort StructureVersion;
+        public ushort StructureLength;
+        public OplockLevelCache RequestedOplockLevel;
+        public RequestOplockInputFlag Flags;
+
+        public RequestOplockInputBuffer()
+        {
+            StructureVersion = 1;
+            StructureLength = (ushort)Marshal.SizeOf(typeof(RequestOplockInputBuffer));
+        }
+
+        public RequestOplockInputBuffer(OplockLevelCache requested_oplock_level, 
+                                        RequestOplockInputFlag flags) : this()
+        {
+            RequestedOplockLevel = requested_oplock_level;
+            Flags = flags;
+        }
+    }
+
+    [Flags]
+    public enum RequestOplockOutputFlag
+    {
+        None = 0,
+        AckRequired = 1,
+        ModesProvided = 2
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class RequestOplockOutputBuffer
+    {
+        public ushort StructureVersion;
+        public ushort StructureLength;
+        public OplockLevelCache OriginalOplockLevel;
+        public OplockLevelCache NewOplockLevel;
+        public RequestOplockOutputFlag Flags;
+        public AccessMask AccessMode;
+        public ushort ShareMode;
+
+        public FileAccessRights FileAccessMode => AccessMode.ToSpecificAccess<FileAccessRights>();
+        public FileDirectoryAccessRights FileDirectoryAccessMode => AccessMode.ToSpecificAccess<FileDirectoryAccessRights>();
+        public FileShareMode FileShareMode => (FileShareMode)ShareMode;
+
+        public RequestOplockOutputBuffer()
+        {
+            StructureVersion = 1;
+            StructureLength = (ushort)Marshal.SizeOf(typeof(RequestOplockOutputBuffer));
+        }
     }
 
 #pragma warning restore 1591
@@ -3364,9 +3434,65 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Oplock the file with a specific level and flags.
+        /// </summary>
+        /// <param name="requested_oplock_level">The oplock level.</param>
+        /// <param name="flags">The flags for the oplock.</param>
+        /// <returns>The request of the oplock request.</returns>
+        public RequestOplockOutputBuffer RequestOplock(OplockLevelCache requested_oplock_level, RequestOplockInputFlag flags)
+        {
+            using (var input_buffer = new RequestOplockInputBuffer(requested_oplock_level, flags).ToBuffer())
+            {
+                using (var output_buffer = new SafeStructureInOutBuffer<RequestOplockOutputBuffer>())
+                {
+                    int size = FsControl(NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK, input_buffer, output_buffer);
+                    if (size != output_buffer.Length)
+                    {
+                        throw new NtException(NtStatus.STATUS_BUFFER_TOO_SMALL);
+                    }
+                    return output_buffer.Result;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Oplock the file with a specific level and flags.
+        /// </summary>
+        /// <param name="requested_oplock_level">The oplock level.</param>
+        /// <param name="flags">The flags for the oplock.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <returns>The request of the oplock request.</returns>
+        public async Task<RequestOplockOutputBuffer> RequestOplockAsync(OplockLevelCache requested_oplock_level, RequestOplockInputFlag flags, CancellationToken token)
+        {
+            using (var input_buffer = new RequestOplockInputBuffer(requested_oplock_level, flags).ToBuffer())
+            {
+                using (var output_buffer = new SafeStructureInOutBuffer<RequestOplockOutputBuffer>())
+                {
+                    int size = await FsControlAsync(NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK, input_buffer, output_buffer, token);
+                    if (size != output_buffer.Length)
+                    {
+                        throw new NtException(NtStatus.STATUS_BUFFER_TOO_SMALL);
+                    }
+                    return output_buffer.Result;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Oplock the file with a specific level and flags.
+        /// </summary>
+        /// <param name="requested_oplock_level">The oplock level.</param>
+        /// <param name="flags">The flags for the oplock.</param>
+        /// <returns>The request of the oplock request.</returns>
+        public Task<RequestOplockOutputBuffer> RequestOplockAsync(OplockLevelCache requested_oplock_level, RequestOplockInputFlag flags)
+        {
+            return RequestOplockAsync(requested_oplock_level, flags, CancellationToken.None);
+        }
+
+        /// <summary>
         /// Oplock the file exclusively (no other users can access the file).
         /// </summary>
-        public void OplockExclusive()
+            public void OplockExclusive()
         {
             RequestOplock(OplockRequestLevel.Level1);
         }
