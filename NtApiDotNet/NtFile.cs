@@ -2365,7 +2365,7 @@ namespace NtApiDotNet
         }
         
         /// <summary>
-        /// Get the attributes of a file.
+        /// Get or set the attributes of a file.
         /// </summary>
         /// <returns>The file attributes</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
@@ -2374,6 +2374,11 @@ namespace NtApiDotNet
             get
             {
                 return QueryFileFixed<FileBasicInformation>(FileInformationClass.FileBasicInformation).FileAttributes;
+            }
+            set
+            {
+                var basic_info = new FileBasicInformation() { FileAttributes = value };
+                SetFileFixed(basic_info, FileInformationClass.FileBasicInformation);
             }
         }
 
