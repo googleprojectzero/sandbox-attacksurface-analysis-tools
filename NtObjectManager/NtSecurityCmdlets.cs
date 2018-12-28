@@ -728,6 +728,10 @@ namespace NtApiDotNet
     ///   <code>$sd = New-NtSecurityDescriptor "D:(A;;GA;;;WD)"&#x0A;$obj = New-NtDirectory \BaseNamedObjects\ABC -SecurityDescriptor $sd</code>
     ///   <para>Create a new object directory with an explicit security descriptor.</para>
     /// </example>
+    /// <example>
+    ///   <code>$sd = New-NtSecurityDescriptor -Key $key -ValueName SD</code>
+    ///   <para>Create a new security descriptor with the contents from the key $Key and value "SD".</para>
+    /// </example>
     [Cmdlet(VerbsCommon.New, "NtSecurityDescriptor", DefaultParameterSetName = "EmptySd")]
     [OutputType(typeof(SecurityDescriptor))]
     public sealed class NewNtSecurityDescriptorCmdlet : PSCmdlet
@@ -741,20 +745,39 @@ namespace NtApiDotNet
         /// <summary>
         /// <para type="description">Specify to create the security descriptor from an SDDL representation.</para>
         /// </summary>
-        [Parameter(Position = 0, ParameterSetName = "FromSddl")]
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromSddl")]
         public string Sddl { get; set; }
 
         /// <summary>
         /// <para type="description">Specify to create the security descriptor from the default DACL of a token object.</para>
         /// </summary>
-        [Parameter(Position = 0, ParameterSetName = "FromToken")]
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromToken")]
         public NtToken Token { get; set; }
 
         /// <summary>
         /// <para type="description">Specify an NT type to map generic accesses.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "FromToken"), Parameter(ParameterSetName = "FromSddl")]
+        [Parameter(ParameterSetName = "FromToken"), Parameter(ParameterSetName = "FromSddl"), Parameter(ParameterSetName = "FromBytes"), Parameter(ParameterSetName = "FromKey")]
         public NtType MapType { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a byte array containing the security descriptor.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromBytes")]
+        public byte[] Bytes { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a registry key to read the security descriptor from.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromKey")]
+        public NtKey Key { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a registry value name in the key to read the security descriptor from.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromKey")]
+        [AllowEmptyString]
+        public string ValueName { get; set; }
 
         /// <summary>
         /// Overridden ProcessRecord method.
@@ -769,6 +792,12 @@ namespace NtApiDotNet
                     break;
                 case "FromSddl":
                     sd = new SecurityDescriptor(Sddl);
+                    break;
+                case "FromBytes":
+                    sd = new SecurityDescriptor(Bytes);
+                    break;
+                case "FromKey":
+                    sd = new SecurityDescriptor(Key.QueryValue(ValueName).Data);
                     break;
                 default:
                     sd = new SecurityDescriptor
