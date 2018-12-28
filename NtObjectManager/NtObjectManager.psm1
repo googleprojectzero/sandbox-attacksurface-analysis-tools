@@ -3198,3 +3198,55 @@ function Start-Win32ChildProcess {
         New-Win32Process -CommandLine $CommandLine -Desktop $Desktop -CreationFlags $CreationFlags -ParentProcess $parent -TerminateOnDispose:$TerminateOnDispose
     }
 }
+
+<#
+.SYNOPSIS
+Get the values from a registry key.
+.DESCRIPTION
+This cmdlet will get one more values from a registry key.
+.PARAMETER Key
+The base key to query the values from.
+.PARAMETER Name
+The name of the value to query. If not specified then returns all values.
+.PARAMETER AsString
+Output the values as strings.
+.INPUTS
+NtKeyValue
+.EXAMPLE
+Get-NtKeyValue $key
+Get all values from a key.
+.EXAMPLE
+Get-NtKeyValue $key -AsString
+Get all values from a key as a string.
+.EXAMPLE
+Get-NtKeyValue $key -Name ""
+Get the default value from a key.
+.EXAMPLE
+Get-NtKeyValue $key -Name MyValue
+Get the MyValue value from a key.
+#>
+function Get-NtKeyValue {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    Param(
+        [parameter(Mandatory, Position=0)]
+        [NtApiDotNet.NtKey]$Key,
+        [parameter(ParameterSetName="FromName", Position=1)]
+        [string]$Name,
+        [switch]$AsString
+    )
+    $values = switch($PSCmdlet.ParameterSetName) {
+        "All" {
+            $Key.QueryValues()
+        }
+        "FromName" {
+            @($Key.QueryValue($Name))
+        }
+    }
+    if ($AsString) {
+        foreach($v in $values) {
+            $v.ToString() | Write-Output
+        }
+    } else {
+        $values | Write-Output
+    }
+}
