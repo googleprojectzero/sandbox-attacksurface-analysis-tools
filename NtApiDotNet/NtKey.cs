@@ -460,6 +460,8 @@ namespace NtApiDotNet
     /// </summary>
     public class NtKeyValue
     {
+        private Lazy<object> _object;
+
         /// <summary>
         /// Name of the value
         /// </summary>
@@ -476,6 +478,31 @@ namespace NtApiDotNet
         /// Title index for the value
         /// </summary>
         public int TitleIndex { get; private set; }
+        /// <summary>
+        /// Get the value as an object.
+        /// </summary>
+        public object DataObject => ToObject();
+
+        private static object ToObject(RegistryValueType type, byte[] data)
+        {
+            switch (type)
+            {
+                case RegistryValueType.String:
+                case RegistryValueType.ExpandString:
+                case RegistryValueType.Link:
+                    return Encoding.Unicode.GetString(data);
+                case RegistryValueType.MultiString:
+                    return Encoding.Unicode.GetString(data).Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
+                case RegistryValueType.Dword:
+                    return BitConverter.ToUInt32(data, 0);
+                case RegistryValueType.DwordBigEndian:
+                    return BitConverter.ToUInt32(data.Reverse().ToArray(), 0);
+                case RegistryValueType.Qword:
+                    return BitConverter.ToUInt64(data, 0);
+                default:
+                    return data;
+            }
+        }
 
         internal NtKeyValue(string name, RegistryValueType type, byte[] data, int title_index)
         {
@@ -483,6 +510,7 @@ namespace NtApiDotNet
             Type = type;
             Data = data;
             TitleIndex = title_index;
+            _object = new Lazy<object>(() => ToObject(type, data));
         }
 
         /// <summary>
@@ -515,23 +543,7 @@ namespace NtApiDotNet
         /// <returns>The value as an object</returns>
         public object ToObject()
         {
-            switch (Type)
-            {
-                case RegistryValueType.String:
-                case RegistryValueType.ExpandString:
-                case RegistryValueType.Link:
-                    return Encoding.Unicode.GetString(Data);
-                case RegistryValueType.MultiString:
-                    return Encoding.Unicode.GetString(Data).Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
-                case RegistryValueType.Dword:
-                    return BitConverter.ToUInt32(Data, 0);
-                case RegistryValueType.DwordBigEndian:
-                    return BitConverter.ToUInt32(Data.Reverse().ToArray(), 0);
-                case RegistryValueType.Qword:
-                    return BitConverter.ToUInt64(Data, 0);
-                default:
-                    return Data;
-            }
+            return _object.Value;
         }
     }
 

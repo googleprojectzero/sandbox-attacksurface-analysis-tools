@@ -1043,5 +1043,45 @@
             </TableRowEntries>
         </TableControl>
     </View>
+    <View>
+        <Name>NtKeyValue</Name>
+        <ViewSelectedBy>
+            <TypeName>NtApiDotNet.NtKeyValue</TypeName>
+        </ViewSelectedBy>
+        <TableControl>
+            <TableHeaders>
+                <TableColumnHeader>
+                    <Label>Name</Label>
+                    <Width>30</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>Type</Label>
+                    <Width>10</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>DataObject</Label>
+                    <Width>40</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+            </TableHeaders>
+            <TableRowEntries>
+                <TableRowEntry>
+                    <TableColumnItems>
+                        <TableColumnItem>
+                            <PropertyName>Name</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>Type</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>DataObject</PropertyName>
+                        </TableColumnItem>
+                    </TableColumnItems>
+                </TableRowEntry>
+            </TableRowEntries>
+        </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>
