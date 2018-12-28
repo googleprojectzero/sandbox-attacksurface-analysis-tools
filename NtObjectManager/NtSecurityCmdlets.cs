@@ -780,6 +780,12 @@ namespace NtApiDotNet
         public string ValueName { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify a registry key value to read the security descriptor from.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromKeyValue")]
+        public NtKeyValue KeyValue { get; set; }
+
+        /// <summary>
         /// Overridden ProcessRecord method.
         /// </summary>
         protected override void ProcessRecord()
@@ -798,6 +804,9 @@ namespace NtApiDotNet
                     break;
                 case "FromKey":
                     sd = new SecurityDescriptor(Key.QueryValue(ValueName).Data);
+                    break;
+                case "FromKeyValue":
+                    sd = new SecurityDescriptor(KeyValue.Data);
                     break;
                 default:
                     sd = new SecurityDescriptor
