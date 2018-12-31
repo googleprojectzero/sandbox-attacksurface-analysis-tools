@@ -3250,3 +3250,54 @@ function Get-NtKeyValue {
         $values | Write-Output
     }
 }
+
+<#
+.SYNOPSIS
+Starts a file oplock with a specific level.
+.DESCRIPTION
+This cmdlet starts a file oplock with a specific level.
+.PARAMETER File
+The file to oplock on.
+.PARAMETER Level
+The oplock level to start.
+.INPUTS
+None
+.OUTPUTS
+None or NtApiDotNet.RequestOplockOutputBuffer if using LeaseLevel.
+.EXAMPLE
+Start-NtFileOplock $file -Exclusive
+Start an exclusive oplock.
+.EXAMPLE
+Start-NtFileOplock $file -Level Level1
+Start a level 1 oplock.
+.EXAMPLE
+Start-NtFileOplock $file -LeaseLevel Read,Handle
+Start a "lease" oplock with Read and Handle levels.
+#>
+function Start-NtFileOplock {
+    [CmdletBinding(DefaultParameterSetName = "OplockLevel")]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.NtFile]$File,
+        [parameter(Mandatory, ParameterSetName = "OplockExclusive")]
+        [switch]$Exclusive,
+        [parameter(Mandatory, Position = 1, ParameterSetName = "OplockLevel")]
+        [NtApiDotNet.OplockRequestLevel]$Level,
+        [parameter(Mandatory, ParameterSetName = "OplockLease")]
+        [NtApiDotNet.OplockLevelCache]$LeaseLevel,
+        [parameter(ParameterSetName = "OplockLease")]
+        [NtApiDotNet.RequestOplockInputFlag]$Flags = "Request"
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "OplockExclusive" {
+            $File.OplockExclusive()
+        }
+        "OplockLevel" {
+            $File.RequestOplock($Level)
+        }
+        "OplockLease" {
+            $File.RequestOplock($LeaseLevel, $Flags)
+        }
+    }
+}
