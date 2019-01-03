@@ -1197,17 +1197,32 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the memory address of the PEB for a 32 bit process.
+        /// </summary>
+        /// <remarks>If the process is 64 bit, or the OS is 32 bit this returns the same value as PebAddress.</remarks>
+        public IntPtr PebAddress32
+        {
+            get
+            {
+                if (!Wow64)
+                {
+                    return PebAddress;
+                }
+                return QueryFixed<IntPtr>(ProcessInformationClass.ProcessWow64Information);
+            }
+        }
+
+        /// <summary>
         /// Read a partial PEB from the process.
         /// </summary>
         /// <returns>The read PEB structure.</returns>
         public IPeb GetPeb()
         {
-            long address = PebAddress.ToInt64();
             if (Wow64)
             {
-                return NtVirtualMemory.ReadMemory<PartialPeb32>(Handle, address);
+                return NtVirtualMemory.ReadMemory<PartialPeb32>(Handle, PebAddress32.ToInt64());
             }
-            return NtVirtualMemory.ReadMemory<PartialPeb>(Handle, address);
+            return NtVirtualMemory.ReadMemory<PartialPeb>(Handle, PebAddress.ToInt64());
         }
 
         /// <summary>
