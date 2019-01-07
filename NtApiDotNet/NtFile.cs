@@ -849,6 +849,7 @@ namespace NtApiDotNet
         WOF = 0x80000017,
         GLOBAL_REPARSE = 0xA0000019,
         APPEXECLINK = 0x8000001B,
+        AFUNIX = 0x80000023,
         CLOUD = 0x9000001A,
         CLOUD_1 = 0x9000101A,
         CLOUD_2 = 0x9000201A,
@@ -917,6 +918,9 @@ namespace NtApiDotNet
                     break;
                 case ReparseTag.APPEXECLINK:
                     buffer = new ExecutionAliasReparseBuffer();
+                    break;
+                case ReparseTag.AFUNIX:
+                    buffer = new OpaqueReparseBuffer(ReparseTag.AFUNIX);
                     break;
                 default:
                     if (opaque_buffer)
