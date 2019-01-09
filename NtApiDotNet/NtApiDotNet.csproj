@@ -87,12 +87,14 @@
     <Compile Include="NtEvent.cs" />
     <Compile Include="NtException.cs" />
     <Compile Include="NtFile.cs" />
+    <Compile Include="NtFileUtils.cs" />
     <Compile Include="NtHeap.cs" />
     <Compile Include="NtIoCompletion.cs" />
     <Compile Include="NtJob.cs" />
     <Compile Include="NtKey.cs" />
     <Compile Include="NtLocale.cs" />
     <Compile Include="NtMutant.cs" />
+    <Compile Include="NtNamedPipeFile.cs" />
     <Compile Include="NtPartition.cs" />
     <Compile Include="NtRegistryTransaction.cs" />
     <Compile Include="NtSemaphore.cs" />
