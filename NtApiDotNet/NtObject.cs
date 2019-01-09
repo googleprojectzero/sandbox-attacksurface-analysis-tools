@@ -841,18 +841,7 @@ namespace NtApiDotNet
         {
             get
             {
-                string name = FullPath;
-                if (name == @"\")
-                {
-                    return String.Empty;
-                }
-
-                int index = name.LastIndexOf('\\');
-                if (index >= 0)
-                {
-                    return name.Substring(index + 1);
-                }
-                return name;
+                return NtObjectUtils.GetFileName(FullPath);
             }
         }
 

@@ -529,5 +529,21 @@ namespace NtApiDotNet
                 return Environment.OSVersion.Version < new Version(6, 4);
             }
         }
+
+        internal static string GetFileName(string full_path)
+        {
+            string name = full_path;
+            if (name == @"\")
+            {
+                return string.Empty;
+            }
+
+            int index = name.LastIndexOf('\\');
+            if (index >= 0)
+            {
+                return name.Substring(index + 1);
+            }
+            return name;
+        }
     }
 }

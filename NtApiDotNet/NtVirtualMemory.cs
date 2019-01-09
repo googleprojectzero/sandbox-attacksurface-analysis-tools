@@ -179,6 +179,18 @@ namespace NtApiDotNet
         public MemoryWorkSetExBlock VirtualAttributes;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MemoryImageInformation
+    {
+        public IntPtr ImageBase;
+        public IntPtr SizeOfImage;
+        public int ImageFlags;
+
+        public bool PartialMap => ImageFlags.GetBit(0);
+        public bool NotExecutable => ImageFlags.GetBit(1);
+        public SigningLevel ImageSigningLevel => (SigningLevel)ImageFlags.GetBits(2, 4);
+    }
+
 #pragma warning restore 1591
 
     /// <summary>
@@ -235,7 +247,7 @@ namespace NtApiDotNet
             State = basic_info.State;
             Protect = basic_info.Protect;
             Type = basic_info.Type;
-            MappedImagePath = mapped_image_path ?? String.Empty;
+            MappedImagePath = mapped_image_path ?? string.Empty;
         }
     }
 
@@ -247,26 +259,35 @@ namespace NtApiDotNet
         /// <summary>
         /// Native path to file.
         /// </summary>
-        public string Path { get; private set; }
+        public string Path { get; }
+        /// <summary>
+        /// Name of the file.
+        /// </summary>
+        public string Name => NtObjectUtils.GetFileName(Path);
         /// <summary>
         /// List of mapped sections.
         /// </summary>
-        public IEnumerable<MemoryInformation> Sections { get; private set; }
+        public IEnumerable<MemoryInformation> Sections { get; }
         /// <summary>
         /// Mapped base address of file.
         /// </summary>
-        public long BaseAddress { get; private set; }
+        public long BaseAddress { get; }
         /// <summary>
         /// Mapped size of file.
         /// </summary>
-        public long Size { get; private set; }
+        public long Size { get; }
 
         /// <summary>
         /// True if the mapped file is an image section.
         /// </summary>
-        public bool IsImage { get; private set; }
+        public bool IsImage { get; }
 
-        internal MappedFile(IEnumerable<MemoryInformation> sections)
+        /// <summary>
+        /// Specified the signing level if an image (only on RS3+).
+        /// </summary>
+        public SigningLevel ImageSigningLevel { get; }
+
+        internal MappedFile(IEnumerable<MemoryInformation> sections, SafeKernelObjectHandle process)
         {
             MemoryInformation first = sections.First();
             BaseAddress = first.AllocationBase;
@@ -275,16 +296,27 @@ namespace NtApiDotNet
             Sections = sections;
             Path = first.MappedImagePath;
             IsImage = first.Type == MemoryType.Image;
+            if (IsImage)
+            {
+                var image_info = NtVirtualMemory.QueryImageInformation(process, BaseAddress, false);
+                if (image_info.IsSuccess)
+                {
+                    ImageSigningLevel = image_info.Result.ImageSigningLevel;
+                }
+            }
         }
 
         static IEnumerable<MemoryInformation> ToEnumerable(MemoryInformation mem_info)
         {
-            List<MemoryInformation> ret = new List<MemoryInformation>();
-            ret.Add(mem_info);
+            List<MemoryInformation> ret = new List<MemoryInformation>
+            {
+                mem_info
+            };
             return ret.AsReadOnly();
         }
 
-        internal MappedFile(MemoryInformation mem_info) : this(ToEnumerable(mem_info))
+        internal MappedFile(MemoryInformation mem_info, SafeKernelObjectHandle process) 
+            : this(ToEnumerable(mem_info), process)
         {
         }
     }
@@ -395,8 +427,8 @@ namespace NtApiDotNet
             // Assume image files tend to be mapped once.
             return mapped_files.Where(m => m.Type == MemoryType.Image)
                                .GroupBy(m => m.MappedImagePath)
-                               .Select(g => new MappedFile(g.ToList().AsReadOnly()))
-                               .Concat(mapped_files.Where(m => m.Type == MemoryType.Mapped).Select(m => new MappedFile(m)))
+                               .Select(g => new MappedFile(g.ToList().AsReadOnly(), process))
+                               .Concat(mapped_files.Where(m => m.Type == MemoryType.Mapped).Select(m => new MappedFile(m, process)))
                                .OrderBy(f => f.BaseAddress);
         }
 
@@ -623,6 +655,36 @@ namespace NtApiDotNet
         public static MemoryWorkingSetExInformation QueryWorkingSetEx(SafeKernelObjectHandle process, long base_address)
         {
             return QueryWorkingSetEx(process, base_address, true).Result;
+        }
+
+        /// <summary>
+        /// Query image information for an address in a process.
+        /// </summary>
+        /// <param name="process">The process to query.</param>
+        /// <param name="base_address">The base address to query.</param>
+        /// <param name="throw_on_error">True to throw on error</param>
+        /// <returns>The image information.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<MemoryImageInformation> QueryImageInformation(SafeKernelObjectHandle process, long base_address, bool throw_on_error)
+        {
+            using (var buffer = new SafeStructureInOutBuffer<MemoryImageInformation>())
+            {
+                return NtSystemCalls.NtQueryVirtualMemory(process, new IntPtr(base_address),
+                    MemoryInformationClass.MemoryImageInformation, buffer, buffer.LengthIntPtr, 
+                    out IntPtr return_length).CreateResult(throw_on_error, () => buffer.Result);
+            }
+        }
+
+        /// <summary>
+        /// Query image information for an address in a process.
+        /// </summary>
+        /// <param name="process">The process to query.</param>
+        /// <param name="base_address">The base address to query.</param>
+        /// <returns>The image information.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static MemoryImageInformation QueryImageInformation(SafeKernelObjectHandle process, long base_address)
+        {
+            return QueryImageInformation(process, base_address, true).Result;
         }
     }
 }
