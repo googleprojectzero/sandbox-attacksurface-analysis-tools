@@ -172,6 +172,33 @@ namespace NtApiDotNet
             return (result & (1 << bit)) != 0;
         }
 
+        internal static bool GetBit(this long result, int bit)
+        {
+            return (result & (1 << bit)) != 0;
+        }
+
+        internal static bool GetBit(this IntPtr result, int bit)
+        {
+            return GetBit(result.ToInt64(), bit);
+        }
+
+        internal static int GetBits(this int result, int bit, int length)
+        {
+            int mask = (1 << length) - 1;
+            return (result >> bit) & mask;
+        }
+
+        internal static long GetBits(this long result, int bit, int length)
+        {
+            long mask = (1L << length) - 1L;
+            return (result >> bit) & mask;
+        }
+
+        internal static long GetBits(this IntPtr result, int bit, int length)
+        {
+            return GetBits(result.ToInt64(), bit, length);
+        }
+
         internal static void CheckEnumType(Type t)
         {
             if (!t.IsEnum || t.GetEnumUnderlyingType() != typeof(uint))
