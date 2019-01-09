@@ -158,6 +158,27 @@ namespace NtApiDotNet
         public MemoryType Type;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MemoryWorkSetExBlock
+    {
+        private IntPtr _flags;
+        public long Flags => _flags.ToInt64();
+        public bool Valid => Flags.GetBit(0);
+        public long ShareCount => Flags.GetBits(1, 3);
+        public MemoryAllocationProtect Win32Protection => (MemoryAllocationProtect) Flags.GetBits(4, 11);
+        public bool Shared => Flags.GetBit(15);
+        public long Node => Flags.GetBits(16, 6);
+        public bool Locked => Flags.GetBit(22);
+        public bool Bad => Flags.GetBit(31);
+    } 
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MemoryWorkingSetExInformation
+    {
+        public IntPtr VirtualAddress;
+        public MemoryWorkSetExBlock VirtualAttributes;
+    }
+
 #pragma warning restore 1591
 
     /// <summary>
@@ -572,6 +593,36 @@ namespace NtApiDotNet
             NtSystemCalls.NtProtectVirtualMemory(process, ref base_address_ptr,
                 ref region_size_ptr, new_protect, out MemoryAllocationProtect old_protect).ToNtException();
             return old_protect;
+        }
+
+        /// <summary>
+        /// Query working set information for an address in a process.
+        /// </summary>
+        /// <param name="process">The process to query.</param>
+        /// <param name="base_address">The base address to query.</param>
+        /// <param name="throw_on_error">True to throw on error</param>
+        /// <returns>The working set information.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<MemoryWorkingSetExInformation> QueryWorkingSetEx(SafeKernelObjectHandle process, long base_address, bool throw_on_error)
+        {
+            MemoryWorkingSetExInformation working_set = new MemoryWorkingSetExInformation() { VirtualAddress = new IntPtr(base_address) };
+            using (var buffer = working_set.ToBuffer())
+            {
+                return NtSystemCalls.NtQueryVirtualMemory(process, IntPtr.Zero, MemoryInformationClass.MemoryWorkingSetExInformation, 
+                    buffer, buffer.LengthIntPtr, out IntPtr return_length).CreateResult(throw_on_error, () => buffer.Result);
+            }
+        }
+
+        /// <summary>
+        /// Query working set information for an address in a process.
+        /// </summary>
+        /// <param name="process">The process to query.</param>
+        /// <param name="base_address">The base address to query.</param>
+        /// <returns>The working set information.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static MemoryWorkingSetExInformation QueryWorkingSetEx(SafeKernelObjectHandle process, long base_address)
+        {
+            return QueryWorkingSetEx(process, base_address, true).Result;
         }
     }
 }

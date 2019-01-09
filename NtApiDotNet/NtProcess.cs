@@ -1837,6 +1837,29 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Query working set information for an address in a process.
+        /// </summary>
+        /// <param name="base_address">The base address to query.</param>
+        /// <param name="throw_on_error">True to throw on error</param>
+        /// <returns>The working set information.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtResult<MemoryWorkingSetExInformation> QueryWorkingSetEx(long base_address, bool throw_on_error)
+        {
+            return NtVirtualMemory.QueryWorkingSetEx(Handle, base_address, throw_on_error);
+        }
+
+        /// <summary>
+        /// Query working set information for an address in a process.
+        /// </summary>
+        /// <param name="base_address">The base address to query.</param>
+        /// <returns>The working set information.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public MemoryWorkingSetExInformation QueryWorkingSetEx(long base_address)
+        {
+            return NtVirtualMemory.QueryWorkingSetEx(Handle, base_address);
+        }
+
+        /// <summary>
         /// Set the process device map.
         /// </summary>
         /// <param name="device_map">The device map directory to set.</param>
