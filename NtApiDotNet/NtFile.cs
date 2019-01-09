@@ -1690,6 +1690,30 @@ namespace NtApiDotNet
         {
         }
 
+        private static FileDeviceType GetDeviceType(SafeKernelObjectHandle handle)
+        {
+            using (var buffer = new SafeStructureInOutBuffer<FileFsDeviceInformation>())
+            {
+                IoStatus status = new IoStatus();
+                var result = NtSystemCalls.NtQueryVolumeInformationFile(handle, status, buffer,
+                    buffer.Length, FsInformationClass.FileFsDeviceInformation);
+                if (result.IsSuccess())
+                {
+                    return buffer.Result.DeviceType;
+                }
+                return FileDeviceType.UNKNOWN;
+            }
+        }
+
+        private static NtFile CreateFileObject(SafeKernelObjectHandle handle, IoStatus io_status)
+        {
+            if (GetDeviceType(handle) == FileDeviceType.NAMED_PIPE)
+            {
+                return new NtNamedPipeFile(handle, io_status);
+            }
+            return new NtFile(handle, io_status);
+        }
+
         /// <summary>
         /// Create a new file
         /// </summary>
@@ -1709,7 +1733,7 @@ namespace NtApiDotNet
             byte[] buffer = ea_buffer?.ToByteArray();
             return NtSystemCalls.NtCreateFile(out SafeKernelObjectHandle handle, desired_access, obj_attributes, iostatus, null, FileAttributes.Normal,
                 share_access, disposition, open_options, 
-                buffer, buffer != null ? buffer.Length : 0).CreateResult(throw_on_error, () => new NtFile(handle, iostatus));
+                buffer, buffer != null ? buffer.Length : 0).CreateResult(throw_on_error, () => CreateFileObject(handle, iostatus));
         }
 
         /// <summary>
@@ -2277,7 +2301,7 @@ namespace NtApiDotNet
         {
             IoStatus iostatus = new IoStatus();
             return NtSystemCalls.NtOpenFile(out SafeKernelObjectHandle handle, desired_access, obj_attributes, iostatus, share_access, open_options)
-                .CreateResult(throw_on_error, () => new NtFile(handle, iostatus));
+                .CreateResult(throw_on_error, () => CreateFileObject(handle, iostatus));
         }
 
         internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
@@ -2454,7 +2478,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public static string GetFileId(string path)
         {
-            using (NtFile file = NtFile.Open(path, null, FileAccessRights.MaximumAllowed, FileShareMode.None, FileOpenOptions.None))
+            using (NtFile file = Open(path, null, FileAccessRights.MaximumAllowed, FileShareMode.None, FileOpenOptions.None))
             {
                 return file.FileId;
             }
@@ -2733,7 +2757,7 @@ namespace NtApiDotNet
         /// <param name="print_name">The print name to display (can be null).</param>
         public static void CreateMountPoint(string path, string substitute_name, string print_name)
         {
-            using (NtFile file = NtFile.Create(path, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
+            using (NtFile file = Create(path, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
                 FileShareMode.None, FileOpenOptions.DirectoryFile | FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint,
                 FileDisposition.OpenIf, null))
             {
@@ -2751,7 +2775,7 @@ namespace NtApiDotNet
         /// <param name="flags">Additional flags for the symlink.</param>
         public static void CreateSymlink(string path, bool directory, string substitute_name, string print_name, SymlinkReparseBufferFlags flags)
         {
-            using (NtFile file = NtFile.Create(path, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
+            using (NtFile file = Create(path, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
                 FileShareMode.None, (directory ? FileOpenOptions.DirectoryFile : FileOpenOptions.NonDirectoryFile)
                 | FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint,
                 FileDisposition.OpenIf, null))
@@ -2792,7 +2816,7 @@ namespace NtApiDotNet
         /// <returns>The reparse point buffer.</returns>
         public static ReparseBuffer GetReparsePoint(string path)
         {
-            using (NtFile file = NtFile.Open(path, null, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
+            using (NtFile file = Open(path, null, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
                 FileShareMode.None, FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint))
             {
                 return file.GetReparsePoint();
@@ -2820,7 +2844,7 @@ namespace NtApiDotNet
         /// <returns>The original reparse buffer.</returns>
         public static ReparseBuffer DeleteReparsePoint(string path)
         {
-            using (NtFile file = NtFile.Open(path, null, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
+            using (NtFile file = Open(path, null, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
                 FileShareMode.None, FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint))
             {
                 return file.DeleteReparsePoint();
@@ -4163,14 +4187,6 @@ namespace NtApiDotNet
                 }
             }
         }
-
-        /// <summary>
-        /// Disables impersonation on a named pipe.
-        /// </summary>
-        public void DisableImpersonation()
-        {
-            FsControl(NtWellKnownIoControlCodes.FSCTL_PIPE_DISABLE_IMPERSONATE, null, null);
-        }
     }
 
     /// <summary>
@@ -4273,6 +4289,14 @@ namespace NtApiDotNet
         {
             FsControl(NtWellKnownIoControlCodes.FSCTL_PIPE_IMPERSONATE, null, null);
             return new ThreadImpersonationContext(NtThread.Current.Duplicate());
+        }
+
+        /// <summary>
+        /// Disables impersonation on a named pipe.
+        /// </summary>
+        public void DisableImpersonation()
+        {
+            FsControl(NtWellKnownIoControlCodes.FSCTL_PIPE_DISABLE_IMPERSONATE, null, null);
         }
 
         /// <summary>
