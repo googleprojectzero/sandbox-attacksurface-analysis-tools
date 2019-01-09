@@ -211,7 +211,6 @@ namespace NtApiDotNet
     public abstract class NtObject : IDisposable
     {
         private ObjectBasicInformation _basic_information;
-        private ulong _address;
 
         /// <summary>
         /// Get the basic information for the object.
@@ -956,18 +955,7 @@ namespace NtApiDotNet
         /// Get the object's address is kernel memory.
         /// </summary>
         /// <remarks>As getting the address is expensive you need to pass the object to NtSystemInfo::ResolveObjectAddress to intialize.</remarks>
-        public ulong Address
-        {
-            get
-            {
-                return _address;
-            }
-
-            internal set
-            {
-                _address = value;
-            }
-        }
+        public ulong Address { get; internal set; }
 
         #region IDisposable Support
         private bool disposedValue = false;
