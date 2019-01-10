@@ -1569,7 +1569,6 @@ namespace NtApiDotNet
         /// The NT status code.
         /// </summary>
         public NtStatus Status { get; private set; }
-
         /// <summary>
         /// The result of the NT call.
         /// </summary>
@@ -1581,27 +1580,15 @@ namespace NtApiDotNet
                 return _result;
             }
         }
-
         /// <summary>
         /// Get the result object or throw an exception if status code is an error.
         /// </summary>
-        /// <returns>The NT result.</returns>
+        /// <returns>The result NT result.</returns>
         /// <exception cref="NtException">Thrown if status code is an error.</exception>
         public T GetResultOrThrow()
         {
             Status.ToNtException();
             return Result;
-        }
-
-        /// <summary>
-        /// Get the result object or throw an exception if status code is an error.
-        /// </summary>
-        /// <returns>The NT result.</returns>
-        /// <exception cref="NtException">Thrown if status code is an error.</exception>
-        public NtResult<T> GetResultOrThrow(bool throw_on_error)
-        {
-            Status.ToNtException(throw_on_error);
-            return this;
         }
 
         /// <summary>
@@ -1637,7 +1624,7 @@ namespace NtApiDotNet
         /// <returns>The mapped result.</returns>
         public NtResult<S> Cast<S>()
         {
-            return Map(d => (S)(object)d);
+            return Map<S>(d => (S)(object)d);
         }
 
         /// <summary>
@@ -1652,27 +1639,6 @@ namespace NtApiDotNet
         {
             Status = status;
             _result = result;
-        }
-
-        /// <summary>
-        /// Create a new NtResult.
-        /// </summary>
-        /// <param name="status">The status code.</param>
-        /// <param name="result">The result value.</param>
-        /// <returns>The result.</returns>
-        public NtResult<T> Create(NtStatus status, T result)
-        {
-            return new NtResult<T>(status, result);
-        }
-
-        /// <summary>
-        /// Create a new successful NtResult.
-        /// </summary>
-        /// <param name="result">The result value.</param>
-        /// <returns>The result.</returns>
-        public NtResult<T> Create(T result)
-        {
-            return Create(NtStatus.STATUS_SUCCESS, result);
         }
     }
 }
