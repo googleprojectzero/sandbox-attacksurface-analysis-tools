@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using System;
+using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -48,7 +50,7 @@ namespace NtApiDotNet
         {
         }
 
-        private static NtIoControlCode AttributeToIoCtl(PipeAttributeType attribute_type)
+        private static NtIoControlCode GetAttributeToIoCtl(PipeAttributeType attribute_type)
         {
             switch (attribute_type)
             {
@@ -58,6 +60,21 @@ namespace NtApiDotNet
                     return NtWellKnownIoControlCodes.FSCTL_PIPE_GET_CONNECTION_ATTRIBUTE;
                 case PipeAttributeType.Handle:
                     return NtWellKnownIoControlCodes.FSCTL_PIPE_GET_HANDLE_ATTRIBUTE;
+                default:
+                    throw new ArgumentException("Invalid attribute type");
+            }
+        }
+
+        private static NtIoControlCode SetAttributeToIoCtl(PipeAttributeType attribute_type)
+        {
+            switch (attribute_type)
+            {
+                case PipeAttributeType.Pipe:
+                    return NtWellKnownIoControlCodes.FSCTL_PIPE_SET_PIPE_ATTRIBUTE;
+                case PipeAttributeType.Connection:
+                    return NtWellKnownIoControlCodes.FSCTL_PIPE_SET_CONNECTION_ATTRIBUTE;
+                case PipeAttributeType.Handle:
+                    return NtWellKnownIoControlCodes.FSCTL_PIPE_SET_HANDLE_ATTRIBUTE;
                 default:
                     throw new ArgumentException("Invalid attribute type");
             }
@@ -73,7 +90,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public NtResult<byte[]> GetAttribute(PipeAttributeType attribute_type, string name, bool throw_on_error)
         {
-            NtIoControlCode ioctl = AttributeToIoCtl(attribute_type);
+            NtIoControlCode ioctl = GetAttributeToIoCtl(attribute_type);
 
             int size = 128;
             byte[] name_buffer = Encoding.ASCII.GetBytes(name + "\0");
@@ -95,6 +112,91 @@ namespace NtApiDotNet
             }
 
             return NtStatus.STATUS_BUFFER_TOO_SMALL.CreateResultFromError<byte[]>(throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a named attribute for a pipe.
+        /// </summary>
+        /// <param name="attribute_type">The attribute type to set.</param>
+        /// <param name="name">The name of the attribute.</param>
+        /// <param name="value">The value to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The status code for the attribute.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus SetAttribute(PipeAttributeType attribute_type, string name, byte[] value, bool throw_on_error)
+        {
+            NtIoControlCode ioctl = SetAttributeToIoCtl(attribute_type);
+            byte[] name_bytes = Encoding.ASCII.GetBytes(name);
+            MemoryStream stm = new MemoryStream();
+            stm.Write(name_bytes, 0, name_bytes.Length);
+            stm.WriteByte(0);
+            stm.Write(value, 0, value.Length);
+
+            return FsControl(ioctl, stm.ToArray(), 0, throw_on_error).Status;
+        }
+
+        /// <summary>
+        /// Set a named attribute for a pipe.
+        /// </summary>
+        /// <param name="attribute_type">The attribute type to set.</param>
+        /// <param name="name">The name of the attribute.</param>
+        /// <param name="value">The value to set.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void SetAttribute(PipeAttributeType attribute_type, string name, byte[] value)
+        {
+            SetAttribute(attribute_type, name, value, true);
+        }
+
+        /// <summary>
+        /// Set a named attribute for a pipe.
+        /// </summary>
+        /// <param name="attribute_type">The attribute type to set.</param>
+        /// <param name="name">The name of the attribute.</param>
+        /// <param name="value">The value to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The status code for the attribute.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus SetAttribute(PipeAttributeType attribute_type, string name, int value, bool throw_on_error)
+        {
+            return SetAttribute(attribute_type, name, BitConverter.GetBytes(value), throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a named attribute for a pipe.
+        /// </summary>
+        /// <param name="attribute_type">The attribute type to set.</param>
+        /// <param name="name">The name of the attribute.</param>
+        /// <param name="value">The value to set.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void SetAttribute(PipeAttributeType attribute_type, string name, int value)
+        {
+            SetAttribute(attribute_type, name, value, true);
+        }
+
+        /// <summary>
+        /// Set a named attribute for a pipe.
+        /// </summary>
+        /// <param name="attribute_type">The attribute type to set.</param>
+        /// <param name="name">The name of the attribute.</param>
+        /// <param name="value">The value to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The status code for the attribute.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus SetAttribute(PipeAttributeType attribute_type, string name, string value, bool throw_on_error)
+        {
+            return SetAttribute(attribute_type, name, Encoding.Unicode.GetBytes(value + "\0"), throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a named attribute for a pipe.
+        /// </summary>
+        /// <param name="attribute_type">The attribute type to set.</param>
+        /// <param name="name">The name of the attribute.</param>
+        /// <param name="value">The value to set.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void SetAttribute(PipeAttributeType attribute_type, string name, string value)
+        {
+            SetAttribute(attribute_type, name, value, true);
         }
 
         /// <summary>
@@ -152,7 +254,7 @@ namespace NtApiDotNet
             var result = GetAttribute(attribute_type, name, throw_on_error);
             if (result.IsSuccess && ((result.Result.Length & 1) == 0))
             {
-                return Encoding.Unicode.GetString(result.Result).CreateResult();
+                return Encoding.Unicode.GetString(result.Result).TrimEnd('\0').CreateResult();
             }
             return NtStatus.STATUS_BUFFER_TOO_SMALL.CreateResultFromError<string>(throw_on_error);
         }
@@ -250,14 +352,14 @@ namespace NtApiDotNet
         public int ClientProcessId => GetAttributeInt(PipeAttributeType.Connection, "ClientProcessId");
 
         /// <summary>
-        /// Get client session ID.
+        /// Get client session ID. If this is 0 then the client is local, otherwise it's set by the SMB server.
         /// </summary>
         public int ClientSessionId => GetAttributeInt(PipeAttributeType.Connection, "ClientSessionId");
 
         /// <summary>
         /// Get client computer name.
         /// </summary>
-        public string ClientComputerName => GetAttributeString(PipeAttributeType.Connection, "ClientComputerName").TrimEnd('\0');
+        public string ClientComputerName => GetAttributeString(PipeAttributeType.Connection, "ClientComputerName");
 
         /// <summary>
         /// Get the default named pipe ACL for the current caller.
