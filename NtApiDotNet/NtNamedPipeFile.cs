@@ -13,15 +13,167 @@
 //  limitations under the License.
 
 using System;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace NtApiDotNet
 {
     /// <summary>
-    /// Class to add additional methods to a file for a named pipe.
+    /// Pipe attribute type.
     /// </summary>
-    public class NtNamedPipeFile : NtFile
+    public enum PipeAttributeType
+    {
+        /// <summary>
+        /// The pipe attributes.
+        /// </summary>
+        Pipe,
+        /// <summary>
+        /// The pipe connect attributes.
+        /// </summary>
+        Connection = 1,
+        /// <summary>
+        /// The pipe handle attributes.
+        /// </summary>
+        Handle = 2
+    }
+
+    /// <summary>
+    /// Class to add additional methods to a file for a named pipe. This is a base class for server and client types.
+    /// </summary>
+    public abstract class NtNamedPipeFileBase : NtFile
+    {
+        internal NtNamedPipeFileBase(SafeKernelObjectHandle handle, IoStatus io_status)
+            : base(handle, io_status)
+        {
+        }
+
+        private static NtIoControlCode AttributeToIoCtl(PipeAttributeType attribute_type)
+        {
+            switch (attribute_type)
+            {
+                case PipeAttributeType.Pipe:
+                    return NtWellKnownIoControlCodes.FSCTL_PIPE_GET_PIPE_ATTRIBUTE;
+                case PipeAttributeType.Connection:
+                    return NtWellKnownIoControlCodes.FSCTL_PIPE_GET_CONNECTION_ATTRIBUTE;
+                case PipeAttributeType.Handle:
+                    return NtWellKnownIoControlCodes.FSCTL_PIPE_GET_HANDLE_ATTRIBUTE;
+                default:
+                    throw new ArgumentException("Invalid attribute type");
+            }
+        }
+
+        /// <summary>
+        /// Get a named attribute from the pipe.
+        /// </summary>
+        /// <param name="attribute_type">The attribute type to query.</param>
+        /// <param name="name">The name of the attribute.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The attribute value as a byte array.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtResult<byte[]> GetAttribute(PipeAttributeType attribute_type, string name, bool throw_on_error)
+        {
+            NtIoControlCode ioctl = AttributeToIoCtl(attribute_type);
+
+            int size = 128;
+            byte[] name_buffer = Encoding.ASCII.GetBytes(name + "\0");
+            while (size < 4096)
+            {
+                var result = FsControl(ioctl, name_buffer, size, false);
+                if (result.IsSuccess)
+                {
+                    return result;
+                }
+
+                if (result.Status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+                {
+                    result.Status.ToNtException(throw_on_error);
+                    return result;
+                }
+
+                size *= 2;
+            }
+
+            return NtStatus.STATUS_BUFFER_TOO_SMALL.CreateResultFromError<byte[]>(throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a named attribute from the pipe.
+        /// </summary>
+        /// <param name="attribute_type">The attribute type to query.</param>
+        /// <param name="name">The name of the attribute.</param>
+        /// <returns>The attribute value as a byte array.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public byte[] GetAttribute(PipeAttributeType attribute_type, string name)
+        {
+            return GetAttribute(attribute_type, name, true).Result;
+        }
+
+        /// <summary>
+        /// Get a named attribute from the pipe as an integer.
+        /// </summary>
+        /// <param name="attribute_type">The attribute type to query.</param>
+        /// <param name="name">The name of the attribute.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The attribute value as an integer.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtResult<int> GetAttributeInt(PipeAttributeType attribute_type, string name, bool throw_on_error)
+        {
+            var result = GetAttribute(attribute_type, name, throw_on_error);
+            if (result.IsSuccess && result.Result.Length == 4)
+            {
+                return BitConverter.ToInt32(result.Result, 0).CreateResult();
+            }
+            return NtStatus.STATUS_BUFFER_TOO_SMALL.CreateResultFromError<int>(throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a named attribute from the pipe as an integer.
+        /// </summary>
+        /// <param name="attribute_type">The attribute type to query.</param>
+        /// <param name="name">The name of the attribute.</param>
+        /// <returns>The attribute value as an integer.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public int GetAttributeInt(PipeAttributeType attribute_type, string name)
+        {
+            return GetAttributeInt(attribute_type, name, true).Result;
+        }
+
+        /// <summary>
+        /// Get a named attribute from the pipe as an integer.
+        /// </summary>
+        /// <param name="attribute_type">The attribute type to query.</param>
+        /// <param name="name">The name of the attribute.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The attribute value as an integer.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtResult<string> GetAttributeString(PipeAttributeType attribute_type, string name, bool throw_on_error)
+        {
+            var result = GetAttribute(attribute_type, name, throw_on_error);
+            if (result.IsSuccess && ((result.Result.Length & 1) == 0))
+            {
+                return Encoding.Unicode.GetString(result.Result).CreateResult();
+            }
+            return NtStatus.STATUS_BUFFER_TOO_SMALL.CreateResultFromError<string>(throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a named attribute from the pipe as an integer.
+        /// </summary>
+        /// <param name="attribute_type">The attribute type to query.</param>
+        /// <param name="name">The name of the attribute.</param>
+        /// <returns>The attribute value as an integer.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public string GetAttributeString(PipeAttributeType attribute_type, string name)
+        {
+            return GetAttributeString(attribute_type, name, true).Result;
+        }
+    }
+
+    /// <summary>
+    /// Class to add additional methods to a file for a named pipe server.
+    /// </summary>
+    public class NtNamedPipeFile : NtNamedPipeFileBase
     {
         internal NtNamedPipeFile(SafeKernelObjectHandle handle, IoStatus io_status)
             : base(handle, io_status)
@@ -93,12 +245,19 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Disables impersonation on a named pipe.
+        /// Get client process ID.
         /// </summary>
-        public void DisableImpersonation()
-        {
-            FsControl(NtWellKnownIoControlCodes.FSCTL_PIPE_DISABLE_IMPERSONATE, null, null);
-        }
+        public int ClientProcessId => GetAttributeInt(PipeAttributeType.Connection, "ClientProcessId");
+
+        /// <summary>
+        /// Get client session ID.
+        /// </summary>
+        public int ClientSessionId => GetAttributeInt(PipeAttributeType.Connection, "ClientSessionId");
+
+        /// <summary>
+        /// Get client computer name.
+        /// </summary>
+        public string ClientComputerName => GetAttributeString(PipeAttributeType.Connection, "ClientComputerName").TrimEnd('\0');
 
         /// <summary>
         /// Get the default named pipe ACL for the current caller.
@@ -123,6 +282,35 @@ namespace NtApiDotNet
     }
 
     /// <summary>
+    /// Class to add additional methods to a file for a named pipe client.
+    /// </summary>
+    public sealed class NtNamedPipeFileClient : NtNamedPipeFileBase
+    {
+        internal NtNamedPipeFileClient(SafeKernelObjectHandle handle, IoStatus io_status)
+            : base(handle, io_status)
+        {
+        }
+
+        /// <summary>
+        /// Disables impersonation on a named pipe.
+        /// </summary>
+        public void DisableImpersonation()
+        {
+            FsControl(NtWellKnownIoControlCodes.FSCTL_PIPE_DISABLE_IMPERSONATE, null, null);
+        }
+
+        /// <summary>
+        /// Get server process ID.
+        /// </summary>
+        public int ServerProcessId => GetAttributeInt(PipeAttributeType.Pipe, "ServerProcessId");
+
+        /// <summary>
+        /// Get client session ID.
+        /// </summary>
+        public int ServerSessionId => GetAttributeInt(PipeAttributeType.Pipe, "ServerSessionId");
+    }
+
+    /// <summary>
     /// A pair of named pipes.
     /// </summary>
     public sealed class NtNamedPipeFilePair : IDisposable
@@ -131,16 +319,17 @@ namespace NtApiDotNet
         /// Read pipe for the pair.
         /// </summary>
         public NtNamedPipeFile ReadPipe { get; }
+
         /// <summary>
         /// Write pipe for the pair.
         /// </summary>
-        public NtFile WritePipe { get; }
+        public NtNamedPipeFileClient WritePipe { get; }
 
         internal NtNamedPipeFilePair(NtNamedPipeFile read_pipe,
-            NtFile write_pipe)
+            NtNamedPipeFileClient write_pipe)
         {
-            ReadPipe = read_pipe;
-            WritePipe = write_pipe;
+            ReadPipe = read_pipe ?? throw new ArgumentNullException(nameof(read_pipe));
+            WritePipe = write_pipe ?? throw new ArgumentNullException(nameof(write_pipe));
         }
 
         void IDisposable.Dispose()

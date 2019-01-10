@@ -1709,7 +1709,7 @@ namespace NtApiDotNet
         {
             if (GetDeviceType(handle) == FileDeviceType.NAMED_PIPE)
             {
-                return new NtNamedPipeFile(handle, io_status);
+                return new NtNamedPipeFileClient(handle, io_status);
             }
             return new NtFile(handle, io_status);
         }
@@ -1937,7 +1937,7 @@ namespace NtApiDotNet
                     }
 
                     list.Clear();
-                    return new NtResult<NtNamedPipeFilePair>(NtStatus.STATUS_SUCCESS, new NtNamedPipeFilePair(read_pipe.Result, write_pipe.Result));
+                    return new NtResult<NtNamedPipeFilePair>(NtStatus.STATUS_SUCCESS, new NtNamedPipeFilePair(read_pipe.Result, write_pipe.Result as NtNamedPipeFileClient));
                 }
             }
         }
