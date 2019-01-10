@@ -218,18 +218,13 @@ namespace NtApiDotNet
         /// <returns>The basic information</returns>
         private static ObjectBasicInformation QueryBasicInformation(SafeKernelObjectHandle handle)
         {
-
-            try
+            using (var basic_info = QueryObject<ObjectBasicInformation>(handle, ObjectInformationClass.ObjectBasicInformation, false))
             {
-                using (var basic_info = QueryObject<ObjectBasicInformation>(handle, ObjectInformationClass.ObjectBasicInformation))
-                {
-                    return basic_info.Result;
-                }
+                if (basic_info.IsSuccess)
+                    return basic_info.Result.Result;
             }
-            catch
-            {
-                return new ObjectBasicInformation();
-            }
+            
+            return new ObjectBasicInformation();
         }
 
         /// <summary>
@@ -259,22 +254,23 @@ namespace NtApiDotNet
             }
         }
 
-        private static SafeStructureInOutBuffer<T> QueryObject<T>(SafeKernelObjectHandle handle, ObjectInformationClass object_info) where T : new()
+        private static NtResult<SafeStructureInOutBuffer<T>> QueryObject<T>(SafeKernelObjectHandle handle, 
+            ObjectInformationClass object_info, bool throw_on_error) where T : new()
         {
             SafeStructureInOutBuffer<T> ret = null;
             NtStatus status = NtStatus.STATUS_BUFFER_TOO_SMALL;
             try
             {
-                int return_length;
-                status = NtSystemCalls.NtQueryObject(handle, object_info, SafeHGlobalBuffer.Null, 0, out return_length);
+                status = NtSystemCalls.NtQueryObject(handle, object_info, SafeHGlobalBuffer.Null, 0, out int return_length);
                 if ((status != NtStatus.STATUS_BUFFER_TOO_SMALL) && (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH))
-                    status.ToNtException();
+                    return status.CreateResultFromError<SafeStructureInOutBuffer<T>>(throw_on_error);
+
                 if (return_length == 0)
                     ret = new SafeStructureInOutBuffer<T>();
                 else
                     ret = new SafeStructureInOutBuffer<T>(return_length, false);
                 status = NtSystemCalls.NtQueryObject(handle, object_info, ret, ret.Length, out return_length);
-                status.ToNtException();
+                return status.CreateResult(throw_on_error, () => ret);
             }
             finally
             {
@@ -284,7 +280,6 @@ namespace NtApiDotNet
                     ret = null;
                 }
             }
-            return ret;
         }
 
         /// <summary>
@@ -434,18 +429,13 @@ namespace NtApiDotNet
 
         private static string GetName(SafeKernelObjectHandle handle)
         {
-            try
+            // TODO: Might need to do this async for file objects, they have a habit of sticking.
+            using (var name = QueryObject<ObjectNameInformation>(handle, ObjectInformationClass.ObjectNameInformation, false))
             {
-                // TODO: Might need to do this async for file objects, they have a habit of sticking.
-                using (var name = QueryObject<ObjectNameInformation>(handle, ObjectInformationClass.ObjectNameInformation))
-                {
-                    return name.Result.Name.ToString();
-                }
+                if (name.IsSuccess)
+                    return name.Result.Result.Name.ToString();
             }
-            catch
-            {
-                return String.Empty;
-            }
+            return string.Empty;
         }
 
         /// <summary>
