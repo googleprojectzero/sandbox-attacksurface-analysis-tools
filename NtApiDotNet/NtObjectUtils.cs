@@ -444,6 +444,17 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create a successful NT result object.
+        /// </summary>
+        /// <typeparam name="T">The result type.</typeparam>
+        /// <param name="result">The result value.</param>
+        /// <returns>The created result.</returns>
+        internal static NtResult<T> CreateResult<T>(this T result)
+        {
+            return new NtResult<T>(NtStatus.STATUS_SUCCESS, result);
+        }
+
+        /// <summary>
         /// Create an NT result object. If status is successful then call function otherwise use default value.
         /// </summary>
         /// <typeparam name="T">The result type.</typeparam>
