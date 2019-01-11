@@ -869,18 +869,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Queue a user APC to the thread.
-        /// </summary>
-        /// <param name="apc_routine">The APC callback delegate.</param>
-        /// <param name="arg1">Argument 0</param>
-        /// <param name="arg2">Argument 1</param>
-        /// <param name="arg3">Argument 2</param>
-        public void QueueUserApc(IntPtr apc_routine, IntPtr arg1, IntPtr arg2, IntPtr arg3)
-        {
-            NtSystemCalls.NtQueueApcThread(Handle, apc_routine, arg1, arg2, arg3).ToNtException();
-        }
-
-        /// <summary>
         /// Get name of the thread.
         /// </summary>
         public override string FullPath
