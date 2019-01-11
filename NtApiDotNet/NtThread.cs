@@ -491,6 +491,15 @@ namespace NtApiDotNet
 #pragma warning restore 1591
 
     /// <summary>
+    /// Delegate for APC callbacks.
+    /// </summary>
+    /// <param name="NormalContext">Context parameter.</param>
+    /// <param name="SystemArgument1">System argument 1.</param>
+    /// <param name="SystemArgument2">System argument 2.</param>
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    public delegate void ApcCallback(IntPtr NormalContext, IntPtr SystemArgument1, IntPtr SystemArgument2);
+
+    /// <summary>
     /// Class to represent a NT Thread object
     /// </summary>
     [NtType("Thread")]
@@ -835,6 +844,34 @@ namespace NtApiDotNet
         /// Queue a user APC to the thread.
         /// </summary>
         /// <param name="apc_routine">The APC callback pointer.</param>
+        /// <param name="normal_context">Context parameter.</param>
+        /// <param name="system_argument1">System argument 1.</param>
+        /// <param name="system_argument2">System argument 2.</param>
+        public void QueueUserApc(IntPtr apc_routine, IntPtr normal_context, IntPtr system_argument1, IntPtr system_argument2)
+        {
+            NtSystemCalls.NtQueueApcThread(Handle, apc_routine, normal_context, system_argument1, system_argument2).ToNtException();
+        }
+
+        /// <summary>
+        /// Queue a user APC to the thread.
+        /// </summary>
+        /// <param name="apc_routine">The APC callback delegate.</param>
+        /// <param name="normal_context">Context parameter.</param>
+        /// <param name="system_argument1">System argument 1.</param>
+        /// <param name="system_argument2">System argument 2.</param>
+        /// <remarks>This is only for APCs in the current process. You also must ensure the delegate is
+        /// valid at all times as this method doesn't take a reference to the delegate to prevent it being
+        /// garbage collected.</remarks>
+        public void QueueUserApc(ApcCallback apc_routine, IntPtr normal_context, IntPtr system_argument1, IntPtr system_argument2)
+        {
+            NtSystemCalls.NtQueueApcThread(Handle, Marshal.GetFunctionPointerForDelegate(apc_routine), 
+                normal_context, system_argument1, system_argument2).ToNtException();
+        }
+
+        /// <summary>
+        /// Queue a user APC to the thread.
+        /// </summary>
+        /// <param name="apc_routine">The APC callback delegate.</param>
         /// <param name="arg1">Argument 0</param>
         /// <param name="arg2">Argument 1</param>
         /// <param name="arg3">Argument 2</param>
