@@ -1179,6 +1179,12 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get flag indicating whether we're running in SMode or not.
+        /// </summary>
+        public static bool IsInSMode => (CodeIntegrityPolicy.Options 
+            & (SystemCodeIntegrityPolicyOptions.Flag80000000 | SystemCodeIntegrityPolicyOptions.Flag20000000)) != 0;
+
+        /// <summary>
         /// Get code integrity unlock information.
         /// </summary>
         public static int CodeIntegrityUnlock
