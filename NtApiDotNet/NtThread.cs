@@ -1023,7 +1023,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get the current thread.        
+        /// Get the current thread.
         /// </summary>
         /// <remarks>This only uses the pseudo handle, for the thread. You can't use it in different threads. If you need to do that use OpenCurrent.</remarks>
         /// <see cref="OpenCurrent"/>
@@ -1044,6 +1044,17 @@ namespace NtApiDotNet
             }
 
             return status == NtStatus.STATUS_ALERTED;
+        }
+
+        /// <summary>
+        /// Sleep the current thread
+        /// </summary>
+        /// <param name="alertable">Set if the thread should be alertable</param>
+        /// <param name="delay">The delay, negative values indicate relative times.</param>
+        /// <returns>True if the thread was alerted before the delay expired.</returns>
+        public static bool Sleep(bool alertable, NtWaitTimeout delay)
+        {
+            return Sleep(alertable, delay.Timeout.QuadPart);
         }
 
         /// <summary>
