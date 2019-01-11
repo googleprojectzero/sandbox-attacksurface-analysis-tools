@@ -104,8 +104,11 @@ namespace NtApiDotNet
         {
             return new NtWaitTimeout(-relative);
         }
-        
-        internal LargeInteger Timeout { get; private set; }
+
+        /// <summary>
+        /// The timeout as a LargeInteger.
+        /// </summary>
+        public LargeInteger Timeout { get; }
     }
 
     /// <summary>
