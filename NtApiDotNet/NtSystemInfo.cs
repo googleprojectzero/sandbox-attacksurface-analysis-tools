@@ -410,9 +410,9 @@ namespace NtApiDotNet
         Flag4000000 = 0x4000000,
         Flag8000000 = 0x8000000,
         Flag10000000 = 0x10000000,
-        Flag20000000 = 0x20000000,
-        Flag40000000 = 0x40000000,
-        Flag80000000 = 0x80000000
+        ConditionalLockdown = 0x20000000,
+        NoLockdown = 0x40000000,
+        Lockdown = 0x80000000
     }
 
     [Flags]
@@ -1177,12 +1177,6 @@ namespace NtApiDotNet
                 }
             }
         }
-
-        /// <summary>
-        /// Get flag indicating whether we're running in SMode or not.
-        /// </summary>
-        public static bool IsInSMode => (CodeIntegrityPolicy.Options 
-            & (SystemCodeIntegrityPolicyOptions.Flag80000000 | SystemCodeIntegrityPolicyOptions.Flag20000000)) != 0;
 
         /// <summary>
         /// Get code integrity unlock information.
