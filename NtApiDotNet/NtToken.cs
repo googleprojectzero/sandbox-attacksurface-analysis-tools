@@ -451,7 +451,7 @@ namespace NtApiDotNet
     [StructLayout(LayoutKind.Sequential)]
     public struct TokenBnoIsolationInformation
     {
-        public UnicodeStringOut IsolationPrefix;
+        public IntPtr IsolationPrefix;
         public bool   IsolationEnabled;
     }
 
@@ -2995,6 +2995,24 @@ namespace NtApiDotNet
                 }
 
                 return Enum.GetValues(typeof(AppModelPolicy_Type)).Cast<AppModelPolicy_Type>().Select(p => GetAppPolicy(p, attributes_present_obj.Value, pkg_claim.Flags));
+            }
+        }
+
+        /// <summary>
+        /// Get the BaseNamedObjects isolation prefix if enabled.
+        /// </summary>
+        public string BnoIsolationPrefix
+        {
+            get
+            {
+                using (var buffer = QueryToken<TokenBnoIsolationInformation>(TokenInformationClass.TokenBnoIsolation))
+                {
+                    var result = buffer.Result;
+                    if (!result.IsolationEnabled && result.IsolationPrefix != IntPtr.Zero)
+                        return string.Empty;
+
+                    return Marshal.PtrToStringUni(result.IsolationPrefix);
+                }
             }
         }
     }
