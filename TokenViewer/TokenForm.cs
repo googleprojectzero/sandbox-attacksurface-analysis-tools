@@ -101,6 +101,30 @@ namespace TokenViewer
             listViewPrivs.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
+        private static string FormatAttributeValue(object value)
+        {
+            if (value is byte[] bytes)
+            {
+                StringBuilder builder = new StringBuilder();
+                builder.AppendFormat("Length {0} - {{", bytes.Length);
+                int count = bytes.Length;
+                builder.Append(string.Join(", ", bytes.Take(count > 16 ? 16 : count).Select(b => $"0x{b:X02}")));
+
+                if (count > 16)
+                {
+                    builder.Append(", ...");
+                }
+                builder.Append("}");
+                return builder.ToString();
+            }
+            else if (value is ulong l)
+            {
+                return $"{l:X016}";
+            }
+
+            return value.ToString();
+        }
+
         private void UpdateSecurityAttributes()
         {
             try
@@ -110,10 +134,11 @@ namespace TokenViewer
                 {
                     TreeNode node = new TreeNode(attr.Name);
                     node.Nodes.Add($"Flags: {attr.Flags}");
+                    node.Nodes.Add($"Type: {attr.ValueType}");
                     int value_index = 0;
                     foreach (object value in attr.Values)
                     {
-                        node.Nodes.Add($"Value {value_index++}: {value}");
+                        node.Nodes.Add($"Value {value_index++}: {FormatAttributeValue(value)}");
                     }
                     treeViewSecurityAttributes.Nodes.Add(node);
                 }
