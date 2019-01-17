@@ -42,6 +42,11 @@ namespace NtApiDotNet
             MaximumLength = 0;
             Buffer = null;
         }
+
+        public override string ToString()
+        {
+            return Buffer;
+        }
     }
 
     /// <summary>
