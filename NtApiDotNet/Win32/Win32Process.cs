@@ -217,10 +217,18 @@ namespace NtApiDotNet.Win32
         public int Reserved;
     }
 
-    /// <summary>
-    /// Specify PPL level.
-    /// </summary>
-    public enum ProtectionLevel
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct BnoIsolationAttribute
+    {
+        public int IsolationEnabled;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 136)]
+        public string IsolationPrefix;
+    }
+
+/// <summary>
+/// Specify PPL level.
+/// </summary>
+public enum ProtectionLevel
     {
         /// <summary>
         /// None
@@ -310,6 +318,7 @@ namespace NtApiDotNet.Win32
             ProcThreadAttributeWin32kFilter = 16,
             ProcThreadAttributeSafeOpenPromptOriginClaim = 17,
             ProcThreadAttributeDesktopAppPolicy = 18,
+            ProcThreadAttributeBnoIsolation = 19,
             ProcThreadAttributePseudoConsole = 22,
         }
 
@@ -398,6 +407,14 @@ namespace NtApiDotNet.Win32
             get
             {
                 return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributePseudoConsole, false, true, false);
+            }
+        }
+
+        public static IntPtr ProcThreadAttributeBnoIsolation
+        {
+            get
+            {
+                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeBnoIsolation, false, true, false);
             }
         }
     }
@@ -683,6 +700,10 @@ namespace NtApiDotNet.Win32
         /// Specify handle to pseudo console.
         /// </summary>
         public IntPtr PseudoConsole { get; set; }
+        /// <summary>
+        /// Specify Base Named Objects isolation prefix.
+        /// </summary>
+        public string BnoIsolationPrefix { get; set; }
 
         /// <summary>
         /// Add an object's handle to the list of inherited handles. 
@@ -788,6 +809,11 @@ namespace NtApiDotNet.Win32
             }
 
             if (PseudoConsole != IntPtr.Zero)
+            {
+                count++;
+            }
+
+            if (!string.IsNullOrEmpty(BnoIsolationPrefix))
             {
                 count++;
             }
@@ -898,6 +924,12 @@ namespace NtApiDotNet.Win32
             if (PseudoConsole != IntPtr.Zero)
             {
                 attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributePseudoConsole, PseudoConsole);
+            }
+
+            if (!string.IsNullOrEmpty(BnoIsolationPrefix))
+            {
+                var prefix = new BnoIsolationAttribute() { IsolationEnabled = 1, IsolationPrefix = BnoIsolationPrefix };
+                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeBnoIsolation, prefix);
             }
 
             return attr_list;
