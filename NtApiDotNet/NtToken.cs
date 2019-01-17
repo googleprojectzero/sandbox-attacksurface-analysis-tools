@@ -325,6 +325,7 @@ namespace NtApiDotNet
         DisabledByDefault = 0x0008,
         Disabled = 0x0010,
         Mandatory = 0x0020,
+        Unknown40 = 0x0040,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -366,6 +367,11 @@ namespace NtApiDotNet
         {
             Version = value.Version;
             Name = Marshal.PtrToStringUni(value.Name);
+        }
+
+        public override string ToString()
+        {
+            return $"Version {Version:X} - {Name}";
         }
     }
 
