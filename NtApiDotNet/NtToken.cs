@@ -336,7 +336,7 @@ namespace NtApiDotNet
 
         public byte[] ToArray()
         {
-            if (pValue != IntPtr.Zero || ValueLength == 0)
+            if (pValue == IntPtr.Zero || ValueLength == 0)
             {
                 return new byte[0];
             }
