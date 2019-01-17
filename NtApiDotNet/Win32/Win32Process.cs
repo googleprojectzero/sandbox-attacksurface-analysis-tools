@@ -713,7 +713,7 @@ public enum ProtectionLevel
         /// </summary>
         public string BnoIsolationPrefix { get; set; }
         /// <summary>
-        /// Specify the same open prompt original claim.
+        /// Specify the safe open prompt original claim.
         /// </summary>
         public byte[] SafeOpenPromptOriginClaim { get; set; }
 
