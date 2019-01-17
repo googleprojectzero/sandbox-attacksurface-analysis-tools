@@ -650,6 +650,7 @@ namespace NtApiDotNet
         SystemSpeculationControlInformation = 201,
         SystemDmaGuardPolicyInformation = 202,
         SystemEnclaveLaunchControlInformation = 203,
+        SystemCodeIntegrityLockdownInformation = 205,
         MaxSystemInfoClass
     }
 
