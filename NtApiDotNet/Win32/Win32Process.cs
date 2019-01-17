@@ -417,6 +417,14 @@ public enum ProtectionLevel
                 return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeBnoIsolation, false, true, false);
             }
         }
+
+        public static IntPtr ProcThreadAttributeSafeOpenPromptOriginClaim
+        {
+            get
+            {
+                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeSafeOpenPromptOriginClaim, false, true, false);
+            }
+        }
     }
 
     class SafeProcThreadAttributeListBuffer : SafeHGlobalBuffer
@@ -704,6 +712,10 @@ public enum ProtectionLevel
         /// Specify Base Named Objects isolation prefix.
         /// </summary>
         public string BnoIsolationPrefix { get; set; }
+        /// <summary>
+        /// Specify the same open prompt original claim.
+        /// </summary>
+        public byte[] SafeOpenPromptOriginClaim { get; set; }
 
         /// <summary>
         /// Add an object's handle to the list of inherited handles. 
@@ -814,6 +826,11 @@ public enum ProtectionLevel
             }
 
             if (!string.IsNullOrEmpty(BnoIsolationPrefix))
+            {
+                count++;
+            }
+
+            if (SafeOpenPromptOriginClaim != null)
             {
                 count++;
             }
@@ -930,6 +947,13 @@ public enum ProtectionLevel
             {
                 var prefix = new BnoIsolationAttribute() { IsolationEnabled = 1, IsolationPrefix = BnoIsolationPrefix };
                 attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeBnoIsolation, prefix);
+            }
+
+            if (SafeOpenPromptOriginClaim != null)
+            {
+                var bytes = (byte[])SafeOpenPromptOriginClaim.Clone();
+                Array.Resize(ref bytes, 524);
+                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeSafeOpenPromptOriginClaim, bytes);
             }
 
             return attr_list;
