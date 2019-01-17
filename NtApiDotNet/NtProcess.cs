@@ -290,9 +290,14 @@ namespace NtApiDotNet
         UmsThread, // ? in PUMS_CREATE_THREAD_ATTRIBUTES
         MitigationOptions, // in UCHAR
         ProtectionLevel,
-        Unknown18,
+        SecureProcess,
         JobList,
         ChildProcess, // since THRESHOLD
+        AllApplicationPackages, // since REDSTONE
+        Win32kFilter,
+        SafeOpenPromptOriginClaim,
+        BnoIsolation, // PS_BNO_ISOLATION_PARAMETERS
+        DesktopAppPolicy, // in ULONG
     }
 
     [Flags]
