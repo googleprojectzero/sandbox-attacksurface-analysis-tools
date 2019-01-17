@@ -230,6 +230,10 @@ namespace NtApiDotNet
         public static extern NtStatus NtDeleteFile(
           [In] ObjectAttributes ObjectAttributes
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtReplacePartitionUnit(UnicodeString TargetInstancePath, 
+            UnicodeString SpareInstancePath, uint Flags);
     }
 
     [Flags]
