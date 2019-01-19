@@ -204,6 +204,23 @@ namespace NtApiDotNet
         public int Unknown2;
     }
 
+    [Flags]
+    public enum JobObjectNetRateControlFlags
+    {
+        None = 0,
+        Enable = 0x1,
+        MaxBandwidth = 0x2,
+        DscpTag = 0x4,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct JobObjectNetRateControlInformation
+    {
+        public ulong MaxBandwidth;
+        public JobObjectNetRateControlFlags ControlFlags;
+        public byte DscpTag;
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
@@ -409,9 +426,11 @@ namespace NtApiDotNet
         /// <param name="key">The key associated with the port.</param>
         public void AssociateCompletionPort(NtIoCompletion port, IntPtr key)
         {
-            JobObjectAssociateCompletionPort info = new JobObjectAssociateCompletionPort();
-            info.CompletionKey = key;
-            info.CompletionPort = port.Handle.DangerousGetHandle();
+            JobObjectAssociateCompletionPort info = new JobObjectAssociateCompletionPort
+            {
+                CompletionKey = key,
+                CompletionPort = port.Handle.DangerousGetHandle()
+            };
             SetInfo(JobObjectInformationClass.JobObjectAssociateCompletionPortInformation, info);
         }
         
@@ -462,6 +481,85 @@ namespace NtApiDotNet
                 info.BasicLimitInformation.LimitFlags = flags;
                 SetInfo(JobObjectInformationClass.JobObjectExtendedLimitInformation, info);
             }
+        }
+
+        private JobObjectNetRateControlInformation GetNetRateControlInformation()
+        {
+            return QueryInfoFixed<JobObjectNetRateControlInformation>(JobObjectInformationClass.JobObjectNetRateControlInformation);
+        }
+
+        private T? GetNetRateValue<T>(JobObjectNetRateControlFlags enable_flag, 
+            Func<JobObjectNetRateControlInformation, T> callback) where T : struct
+        {
+            var result = GetNetRateControlInformation();
+            if (result.ControlFlags.HasFlag(JobObjectNetRateControlFlags.Enable)
+                && result.ControlFlags.HasFlag(enable_flag))
+            {
+                return callback(result);
+            }
+            return null;
+        }
+
+        private void SetNetRateValue<T>(T? value, JobObjectNetRateControlFlags enable_flag, 
+            Func<T, JobObjectNetRateControlInformation, JobObjectNetRateControlInformation> update_func) where T : struct
+        {
+            var result = GetNetRateControlInformation();
+            if (value.HasValue)
+            {
+                result = update_func(value.Value, result);
+                result.ControlFlags |= JobObjectNetRateControlFlags.Enable | enable_flag;
+            }
+            else
+            {
+                result.ControlFlags &= ~enable_flag;
+                if (result.ControlFlags == JobObjectNetRateControlFlags.Enable)
+                {
+                    result.ControlFlags = JobObjectNetRateControlFlags.None;
+                }
+            }
+            SetInfo(JobObjectInformationClass.JobObjectNetRateControlInformation, result);
+        }
+
+        /// <summary>
+        /// Get or set the Maximum Bandwith NetRate limitation.
+        /// </summary>
+        [SupportedVersion(SupportedVersion.Windows10)]
+        public ulong? MaxBandwidth
+        {
+            get
+            {
+                return GetNetRateValue(JobObjectNetRateControlFlags.MaxBandwidth, r => r.MaxBandwidth);
+            }
+            set
+            {
+                SetNetRateValue(value, JobObjectNetRateControlFlags.MaxBandwidth, (v, r) => { r.MaxBandwidth = v; return r; });
+            }
+        }
+
+        /// <summary>
+        /// Get or set the DSCP Tag NetRate limitation.
+        /// </summary>
+        [SupportedVersion(SupportedVersion.Windows10)]
+        public byte? DscpTag
+        {
+            get
+            {
+                return GetNetRateValue(JobObjectNetRateControlFlags.DscpTag, r => r.DscpTag);
+            }
+            set
+            {
+                SetNetRateValue(value, JobObjectNetRateControlFlags.DscpTag, (v, r) => { r.DscpTag = v; return r; });
+            }
+        }
+
+        /// <summary>
+        /// Set the Silo system root directory.
+        /// </summary>
+        /// <param name="system_root">The absolute path to the system root directory.</param>
+        /// <remarks>The system_root path must start with a capital drive letter and not end with a backslash.</remarks>
+        public void SetSiloSystemRoot(string system_root)
+        {
+            SetInfo(JobObjectInformationClass.JobObjectSiloSystemRoot, new UnicodeString(system_root));
         }
     }
 }
