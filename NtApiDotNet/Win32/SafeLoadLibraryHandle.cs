@@ -61,6 +61,78 @@ namespace NtApiDotNet.Win32
     }
 
     /// <summary>
+    /// DLL characteristic flags.
+    /// </summary>
+    [Flags]
+    public enum DllCharacteristics : ushort
+    {
+        /// <summary>
+        /// Reserved
+        /// </summary>
+        Reserved1 = 0x0001,
+        /// <summary>
+        /// Reserved
+        /// </summary>
+        Reserved2 = 0x0002,
+        /// <summary>
+        /// Reserved
+        /// </summary>
+        Reserved4 = 0x0004,
+        /// <summary>
+        /// Reserved
+        /// </summary>
+        Reserved8 = 0x0008,
+        /// <summary>
+        /// Reserved
+        /// </summary>
+        Reserved10 = 0x0010,
+        /// <summary>
+        /// Image can handle a high entropy 64-bit virtual address space. 
+        /// </summary>
+        HighEntropyVA = 0x0020,
+        /// <summary>
+        /// DLL can be relocated at load time.
+        /// </summary>
+        DynamicBase = 0x0040,
+        /// <summary>
+        /// Code Integrity checks are enforced.
+        /// </summary>
+        ForceIntegrity = 0x0080,
+        /// <summary>
+        /// Image is NX compatible.
+        /// </summary>
+        NxCompat = 0x0100,
+        /// <summary>
+        /// Isolation aware, but do not isolate the image.
+        /// </summary>
+        NoIsolation = 0x0200,
+        /// <summary>
+        /// Does not use structured exception (SE) handling. No SE handler may be called in this image.
+        /// </summary>
+        NoSeh = 0x0400,
+        /// <summary>
+        /// Do not bind the image.
+        /// </summary>
+        NoBind = 0x0800,
+        /// <summary>
+        /// Image must execute in an AppContainer.
+        /// </summary>
+        AppContainer = 0x1000,
+        /// <summary>
+        /// A WDM driver.
+        /// </summary>
+        WdmDriver = 0x2000,
+        /// <summary>
+        /// Image supports Control Flow Guard.
+        /// </summary>
+        GuardCF = 0x4000,
+        /// <summary>
+        /// Terminal Server aware. 
+        /// </summary>
+        TerminalServerAware = 0x8000
+    }
+
+    /// <summary>
     /// Class which represents a section from a loaded PE file.
     /// </summary>
     public class ImageSection
@@ -122,6 +194,7 @@ namespace NtApiDotNet.Win32
         long GetImageBase();
         int GetAddressOfEntryPoint();
         IMAGE_NT_OPTIONAL_HDR_MAGIC GetMagic();
+        DllCharacteristics GetDllCharacteristics();
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -150,11 +223,16 @@ namespace NtApiDotNet.Win32
         public int SizeOfHeaders;
         public int CheckSum;
         public short Subsystem;
-        public short DllCharacteristics;
+        public DllCharacteristics DllCharacteristics;
 
         int IImageOptionalHeader.GetAddressOfEntryPoint()
         {
             return AddressOfEntryPoint;
+        }
+
+        DllCharacteristics IImageOptionalHeader.GetDllCharacteristics()
+        {
+            return DllCharacteristics;
         }
 
         long IImageOptionalHeader.GetImageBase()
@@ -166,6 +244,8 @@ namespace NtApiDotNet.Win32
         {
             return Magic;
         }
+
+
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -193,11 +273,16 @@ namespace NtApiDotNet.Win32
         public int SizeOfHeaders;
         public int CheckSum;
         public short Subsystem;
-        public short DllCharacteristics;
+        public DllCharacteristics DllCharacteristics;
 
         int IImageOptionalHeader.GetAddressOfEntryPoint()
         {
             return AddressOfEntryPoint;
+        }
+
+        DllCharacteristics IImageOptionalHeader.GetDllCharacteristics()
+        {
+            return DllCharacteristics;
         }
 
         long IImageOptionalHeader.GetImageBase()
@@ -554,6 +639,7 @@ namespace NtApiDotNet.Win32
         private long _image_base_address;
         private int _image_entry_point;
         private bool _is_64bit;
+        private DllCharacteristics _dll_characteristics;
 
         private void SetupValues()
         {
@@ -590,6 +676,7 @@ namespace NtApiDotNet.Win32
             _image_base_address = optional_header.GetImageBase();
             _image_entry_point = optional_header.GetAddressOfEntryPoint();
             _is_64bit = optional_header.GetMagic() == IMAGE_NT_OPTIONAL_HDR_MAGIC.HDR64;
+            _dll_characteristics = optional_header.GetDllCharacteristics();
         }
 
         /// <summary>
@@ -636,6 +723,18 @@ namespace NtApiDotNet.Win32
             {
                 SetupValues();
                 return _is_64bit;
+            }
+        }
+
+        /// <summary>
+        /// Get the image's DLL characteristics flags.
+        /// </summary>
+        public DllCharacteristics DllCharacteristics
+        {
+            get
+            {
+                SetupValues();
+                return _dll_characteristics;
             }
         }
     }
