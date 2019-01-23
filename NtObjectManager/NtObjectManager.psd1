@@ -64,7 +64,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Format-NdrRpcServerInterface', 'Get-NtMappedSection', 'Get-NtWnf', 'Get-NtCachedSigningLevel', 'Add-NtSecurityDescriptorDaclAce',
           'Get-NtFilePathType', 'New-NtType', 'Get-NtAlpcServer', 'Get-RpcEndpoint', 'Get-RpcServer', 'Set-GlobalSymbolResolver',
           'Get-RunningService', 'Copy-NtToken', 'Get-RpcAlpcServer', 'Get-NtObjectFromHandle', 'Start-Win32ChildProcess', 'Get-NtKeyValue',
-          'Start-NtFileOplock'
+          'Start-NtFileOplock', 'Format-RpcServer'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 

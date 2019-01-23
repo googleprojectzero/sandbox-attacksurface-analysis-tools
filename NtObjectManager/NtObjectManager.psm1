@@ -2901,6 +2901,44 @@ function Get-RpcServer {
 
 <#
 .SYNOPSIS
+Format the RPC servers as text.
+.DESCRIPTION
+This cmdlet formats a list of RPC servers as text.
+.PARAMETER RpcServer
+The RPC servers to format.
+.PARAMETER RemoveComments
+When outputing as text remove comments from the output.
+.INPUTS
+RpcServer[] The RPC servers to format.
+.OUTPUTS
+string[] The formatted RPC servers.
+.EXAMPLE
+Format-RpcServer $rpc
+Format list of RPC servers in $rpc.
+.EXAMPLE
+Format-RpcServer $rpc -RemoveComments
+Format list of RPC servers in $rpc without comments.
+.EXAMPLE
+Get-RpcServer c:\windows\system32\rpcss.dll | Format-RpcServer
+Get the list of RPC servers from rpcss.dll and format them.
+#>
+function Format-RpcServer {
+  [CmdletBinding()]
+  Param(
+    [parameter(Mandatory=$true, Position=0, ValueFromPipeline)]
+    [NtApiDotNet.Win32.RpcServer[]]$RpcServer,
+    [switch]$RemoveComments
+  )
+
+  PROCESS {
+    foreach($server in $RpcServer) {
+        $server.FormatAsText($RemoveComments) | Write-Output
+    }
+  }
+}
+
+<#
+.SYNOPSIS
 Gets a list of ALPC RPC servers.
 .DESCRIPTION
 This cmdlet gets a list of ALPC RPC servers. This relies on being able to access the list of ALPC ports in side a process so might need elevated privileges.
