@@ -381,7 +381,7 @@ namespace NtApiDotNet.Ndr
             QuadrupleIndex = reader.ReadUInt16();
             UserTypeMemorySite = reader.ReadUInt16();
             TransmittedTypeBufferSize = reader.ReadUInt16();
-            Type = NdrBaseTypeReference.Read(context, ReadTypeOffset(reader));
+            Type = Read(context, ReadTypeOffset(reader));
         }
 
         internal override string FormatType(NdrFormatter formatter)
@@ -1273,6 +1273,8 @@ namespace NtApiDotNet.Ndr
 
     public sealed class NdrSystemHandleTypeReference : NdrBaseTypeReference
     {
+        // IDL is [system_handle(sh_file, 0x1234)]HANDLE
+
         public NdrSystemHandleResource Resource { get; }
         public uint AccessMask { get; }
 
@@ -1347,6 +1349,32 @@ namespace NtApiDotNet.Ndr
         internal override string FormatType(NdrFormatter context)
         {
             return $"{context.FormatComment(Format.ToString())} {context.SimpleTypeToName(Format)}";
+        }
+    }
+
+
+    public class NdrPipeTypeReference : NdrBaseTypeReference
+    {
+        // IDL is typedef pipe TYPE CHAR_PIPE_TYPE;
+
+        NdrBaseTypeReference BaseType { get; }
+        public byte Alignment { get; }
+
+        internal NdrPipeTypeReference(NdrParseContext context, BinaryReader reader)
+            : base(NdrFormatCharacter.FC_PIPE)
+        {
+            Alignment = reader.ReadByte();
+            BaseType = Read(context, ReadTypeOffset(reader));
+        }
+
+        internal override string FormatType(NdrFormatter context)
+        {
+            return $"{context.FormatComment("FC_PIPE")} {BaseType.FormatType(context)}";
+        }
+
+        public override int GetSize()
+        {
+            return BaseType.GetSize();
         }
     }
 
@@ -1781,6 +1809,8 @@ namespace NtApiDotNet.Ndr
                     case NdrFormatCharacter.FC_BIND_PRIMITIVE:
                     case NdrFormatCharacter.FC_BIND_GENERIC:
                         return new NdrHandleTypeReference(format);
+                    case NdrFormatCharacter.FC_PIPE:
+                        return new NdrPipeTypeReference(context, reader);
                     default:
                         return new NdrUnknownTypeReference(format);
                 }
