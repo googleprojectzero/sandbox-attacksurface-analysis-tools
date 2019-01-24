@@ -110,6 +110,20 @@ namespace NtApiDotNet.Win32
             {
                 builder.AppendLine($"// DllOffset: 0x{Offset:X}");
                 builder.AppendLine($"// DllPath {FilePath}");
+                if (!string.IsNullOrWhiteSpace(ServiceName))
+                {
+                    builder.AppendLine($"// ServiceName: {ServiceName}");
+                    builder.AppendLine($"// ServiceDisplayName: {ServiceDisplayName}");
+                }
+
+                if (EndpointCount > 0)
+                {
+                    builder.AppendLine($"// Endpoints: {EndpointCount}");
+                    foreach (var ep in Endpoints)
+                    {
+                        builder.AppendLine($"// {ep.BindingString}");
+                    }
+                }
             }
 
             if (ComplexTypes.Any())
