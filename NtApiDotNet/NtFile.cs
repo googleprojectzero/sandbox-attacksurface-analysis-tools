@@ -3394,9 +3394,6 @@ namespace NtApiDotNet
             }
         }
 
-        [DllImport("kernel32.dll")]
-        private static extern int GetFileType(SafeKernelObjectHandle handle);
-
         private string TryGetName(FileInformationClass info_class)
         {
             using (var buffer = new SafeStructureInOutBuffer<FileNameInformation>(32 * 1024, true))
