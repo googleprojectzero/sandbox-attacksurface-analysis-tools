@@ -3410,6 +3410,19 @@ namespace NtApiDotNet
             }
         }
 
+        private void SetName(FileInformationClass info_class, string name)
+        {
+            byte[] data = Encoding.Unicode.GetBytes(name);
+            FileNameInformation info = new FileNameInformation() { NameLength = data.Length };
+            using (var buffer = new SafeStructureInOutBuffer<FileNameInformation>(info, data.Length, true))
+            {
+                buffer.Data.WriteBytes(data);
+                IoStatus status = new IoStatus();
+                NtSystemCalls.NtSetInformationFile(Handle,
+                    status, buffer, buffer.Length, info_class).ToNtException();
+            }
+        }
+
         /// <summary>
         /// Get the filename with the volume path.
         /// </summary>
@@ -3429,6 +3442,10 @@ namespace NtApiDotNet
             get
             {
                 return TryGetName(FileInformationClass.FileAlternateNameInformation);
+            }
+            set
+            {
+                SetName(FileInformationClass.FileShortNameInformation, value);
             }
         }
 
