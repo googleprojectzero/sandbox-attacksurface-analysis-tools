@@ -3428,7 +3428,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return TryGetName(FileInformationClass.FileShortNameInformation);
+                return TryGetName(FileInformationClass.FileAlternateNameInformation);
             }
         }
 
