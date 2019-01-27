@@ -116,7 +116,40 @@ namespace NtApiDotNet
         public IntPtr BaseAddress;
         public SectionAttributes Attributes;
         public LargeIntegerStruct Size;
-    }    
+    }
+
+    public enum MemExtendedParameterType : long
+    {
+        MemExtendedParameterInvalidType,
+        MemExtendedParameterAddressRequirements,
+        MemExtendedParameterNumaNode,
+        MemExtendedParameterPartitionHandle,
+        MemExtendedParameterUserPhysicalHandle,
+        MemExtendedParameterAttributeFlags,
+        MemExtendedParameterMax
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public struct MemExtendedParameterValue
+    {
+        [FieldOffset(0)]
+        public ulong ULong64;
+        [FieldOffset(0)]
+        public IntPtr Pointer;
+        [FieldOffset(0)]
+        public IntPtr Size;
+        [FieldOffset(0)]
+        public IntPtr Handle;
+        [FieldOffset(0)]
+        public uint ULong;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MemExtendedParameter
+    {
+        public MemExtendedParameterType Type;
+        public MemExtendedParameterValue Value;
+    }
 
     public static partial class NtSystemCalls
     {
@@ -126,6 +159,13 @@ namespace NtApiDotNet
             [In] ObjectAttributes ObjectAttributes, [In] LargeInteger SectionSize,
             MemoryAllocationProtect Protect, SectionAttributes Attributes,
             SafeHandle FileHandle);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtCreateSectionEx(out SafeKernelObjectHandle SectionHandle,
+            SectionAccessRights DesiredAccess,
+            [In] ObjectAttributes ObjectAttributes, [In] LargeInteger SectionSize,
+            MemoryAllocationProtect Protect, SectionAttributes Attributes,
+            SafeHandle FileHandle, MemExtendedParameter[] ExtendedParameters, int ExtendedParameterCount);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtOpenSection(out SafeKernelObjectHandle SectionHandle,
@@ -346,7 +386,7 @@ namespace NtApiDotNet
         {
             SafeKernelObjectHandle section_handle;
             return NtSystemCalls.NtCreateSection(out section_handle, desired_access, object_attributes,
-                size, protection, attributes, file == null ? SafeKernelObjectHandle.Null : file.Handle).CreateResult(throw_on_error, () => new NtSection(section_handle));
+                size, protection, attributes, file.GetHandle()).CreateResult(throw_on_error, () => new NtSection(section_handle));
         }
 
         /// <summary>
@@ -378,12 +418,13 @@ namespace NtApiDotNet
         /// <param name="file">Optional backing file</param>
         /// <returns>The opened section</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtSection Create(string path, NtObject root, SectionAccessRights desired_access, long? size, MemoryAllocationProtect protection, SectionAttributes attributes, NtFile file)
+        public static NtSection Create(string path, NtObject root, SectionAccessRights desired_access, 
+            long? size, MemoryAllocationProtect protection, SectionAttributes attributes, NtFile file)
         {
             using (ObjectAttributes obj_attr = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
                 return Create(obj_attr, desired_access, size.HasValue ? new LargeInteger(size.Value) : null, protection, attributes, file);
-            }            
+            }
         }
 
         /// <summary>
@@ -396,6 +437,43 @@ namespace NtApiDotNet
         {
             return Create(null, SectionAccessRights.MaximumAllowed, new LargeInteger(size), 
                 MemoryAllocationProtect.ReadWrite, SectionAttributes.Commit, null);
+        }
+
+        /// <summary>
+        /// Create a section object
+        /// </summary>
+        /// <param name="object_attributes">The object attributes</param>
+        /// <param name="desired_access">The desired access</param>
+        /// <param name="size">Optional size of the section</param>
+        /// <param name="protection">The section protection</param>
+        /// <param name="attributes">The section attributes</param>
+        /// <param name="file">Optional backing file</param>
+        /// <param name="extended_parameters">Extended parameters for section create.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtSection> CreateEx(ObjectAttributes object_attributes, SectionAccessRights desired_access, LargeInteger size,
+            MemoryAllocationProtect protection, SectionAttributes attributes, NtFile file, MemExtendedParameter[] extended_parameters, bool throw_on_error)
+        {
+            return NtSystemCalls.NtCreateSectionEx(out SafeKernelObjectHandle section_handle, desired_access, object_attributes,
+                size, protection, attributes, file.GetHandle(),
+                extended_parameters, extended_parameters?.Length ?? 0).CreateResult(throw_on_error, () => new NtSection(section_handle));
+        }
+
+        /// <summary>
+        /// Create a section object
+        /// </summary>
+        /// <param name="object_attributes">The object attributes</param>
+        /// <param name="desired_access">The desired access</param>
+        /// <param name="size">Optional size of the section</param>
+        /// <param name="protection">The section protection</param>
+        /// <param name="attributes">The section attributes</param>
+        /// <param name="file">Optional backing file</param>
+        /// <param name="extended_parameters">Extended parameters for section create.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtSection CreateEx(ObjectAttributes object_attributes, SectionAccessRights desired_access, LargeInteger size,
+            MemoryAllocationProtect protection, SectionAttributes attributes, NtFile file, MemExtendedParameter[] extended_parameters)
+        {
+            return CreateEx(object_attributes, desired_access, size, protection, attributes, file, extended_parameters, true).Result;
         }
 
         /// <summary>
@@ -525,8 +603,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtSection> Open(ObjectAttributes object_attributes, SectionAccessRights desired_access, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtOpenSection(out handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtSection(handle));
+            return NtSystemCalls.NtOpenSection(out SafeKernelObjectHandle handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtSection(handle));
         }
 
         internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
