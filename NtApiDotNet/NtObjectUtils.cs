@@ -556,5 +556,10 @@ namespace NtApiDotNet
             }
             return name;
         }
+
+        internal static SafeKernelObjectHandle GetHandle(this NtObject obj)
+        {
+            return obj?.Handle ?? SafeKernelObjectHandle.Null;
+        }
     }
 }
