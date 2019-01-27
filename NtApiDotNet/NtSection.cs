@@ -20,7 +20,6 @@ namespace NtApiDotNet
 {
 #pragma warning disable 1591
 
-
     [Flags]
     public enum SectionAttributes : uint
     {
@@ -377,7 +376,7 @@ namespace NtApiDotNet
         /// <param name="desired_access">The desired access</param>
         /// <param name="size">Optional size of the section</param>
         /// <param name="protection">The section protection</param>
-        /// <param name="attributes">The section attributes</param>
+        /// <param name="attributes">The section attributes. The lower 5 bits can be used to specify the NUMA node.</param>
         /// <param name="file">Optional backing file</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
@@ -414,7 +413,7 @@ namespace NtApiDotNet
         /// <param name="desired_access">The desired access</param>
         /// <param name="size">Optional size of the section</param>
         /// <param name="protection">The section protection</param>
-        /// <param name="attributes">The section attributes</param>
+        /// <param name="attributes">The section attributes. The lower 5 bits can be used to specify the NUMA node.</param>
         /// <param name="file">Optional backing file</param>
         /// <returns>The opened section</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
