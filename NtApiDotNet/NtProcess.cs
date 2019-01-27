@@ -2112,8 +2112,7 @@ namespace NtApiDotNet
         public bool IsInJob(NtJob job)
         {
             return NtSystemCalls.NtIsProcessInJob(Handle,
-                job == null ? SafeKernelObjectHandle.Null : job.Handle)
-                        == NtStatus.STATUS_PROCESS_IN_JOB;
+                job.GetHandle()) == NtStatus.STATUS_PROCESS_IN_JOB;
         }
 
         /// <summary>

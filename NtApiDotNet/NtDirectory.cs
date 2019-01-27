@@ -459,7 +459,7 @@ namespace NtApiDotNet
             else
             {
                 status = NtSystemCalls.NtCreateDirectoryObjectEx(out handle, desired_access, obj_attributes,
-                    shadow_dir != null ? shadow_dir.Handle : SafeKernelObjectHandle.Null, flags);
+                    shadow_dir.GetHandle(), flags);
             }
             return status.CreateResult(throw_on_error, () => new NtDirectory(handle));
         }

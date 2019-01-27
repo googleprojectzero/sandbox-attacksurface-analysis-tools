@@ -555,7 +555,7 @@ namespace NtApiDotNet
 
                 GenericMapping mapping = type.GenericMapping;
                 NtRtl.RtlNewSecurityObject(parent_sd_buffer, creator_sd_buffer, out security_obj, is_directory,
-                    token != null ? token.Handle : SafeKernelObjectHandle.Null, ref mapping).ToNtException();
+                    token.GetHandle(), ref mapping).ToNtException();
                 ParseSecurityDescriptor(security_obj);
             }
             finally

@@ -1305,7 +1305,7 @@ namespace NtApiDotNet
 
         internal SafeKernelObjectHandle EventHandle
         {
-            get { return _event != null ? _event.Handle : SafeKernelObjectHandle.Null; }
+            get { return _event.GetHandle(); }
         }
 
         internal NtStatus CompleteCall(NtStatus status)
