@@ -248,7 +248,7 @@ namespace NtApiDotNet
     }
 
     /// <summary>
-    /// Reparse buffer with with an opaque data blob.
+    /// Reparse buffer with an opaque data blob.
     /// </summary>
     public sealed class OpaqueReparseBuffer : ReparseBuffer
     {
@@ -291,6 +291,9 @@ namespace NtApiDotNet
         }
     }
 
+    /// <summary>
+    /// Reparse buffer for an NTFS mount point.
+    /// </summary>
     public sealed class MountPointReparseBuffer : ReparseBuffer
     {
         /// <summary>
