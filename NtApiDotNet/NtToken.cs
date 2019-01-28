@@ -75,6 +75,7 @@ namespace NtApiDotNet
         TokenSingletonAttributes = 43,
         TokenBnoIsolation = 44,
         TokenChildProcessFlags = 45,
+        TokenIsLessPrivilegedAppContainer = 46,
     }
 
     public enum TokenPrivilegeValue : uint
