@@ -59,6 +59,17 @@ namespace NtApiDotNet
         );
 
         [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAllocateVirtualMemoryEx(
+            SafeKernelObjectHandle ProcessHandle,
+            ref IntPtr BaseAddress,
+            ref IntPtr RegionSize,
+            MemoryAllocationType AllocationType,
+            MemoryAllocationProtect Protect,
+            MemExtendedParameter[] ExtendedParameters,
+            int ExtendedParameterCount
+        );
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus NtFreeVirtualMemory(
             SafeKernelObjectHandle ProcessHandle,
             ref IntPtr BaseAddress,

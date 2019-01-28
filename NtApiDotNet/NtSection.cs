@@ -93,6 +93,7 @@ namespace NtApiDotNet
         None = 0,
         Commit = 0x00001000,
         Reserve = 0x00002000,
+        ReplacePlaceholder = 0x00004000,
         Reset = 0x00080000,
         ResetUndo = 0x1000000,
         LargePages = 0x20000000,
@@ -100,6 +101,15 @@ namespace NtApiDotNet
         TopDown = 0x00100000,
         WriteWatch = 0x00200000,
     }
+
+    [Flags]
+    public enum MemUnmapFlags
+    {
+        None = 0,
+        WriteTransientBoost = 0x00000001,
+        PreservePlaceholder = 0x00000002
+    }
+
     public enum SectionInformationClass
     {
         SectionBasicInformation,
@@ -128,6 +138,14 @@ namespace NtApiDotNet
         MemExtendedParameterMax
     }
 
+    public enum MemSectionExtendedParameterType
+    {
+        MemSectionExtendedParameterInvalidType,
+        MemSectionExtendedParameterUserPhysicalFlags,
+        MemSectionExtendedParameterNumaNode,
+        MemSectionExtendedParameterMax
+    }
+
     [StructLayout(LayoutKind.Explicit)]
     public struct MemExtendedParameterValue
     {
@@ -141,6 +159,13 @@ namespace NtApiDotNet
         public IntPtr Handle;
         [FieldOffset(0)]
         public uint ULong;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MemSectionExtendedParameter
+    {
+        public MemSectionExtendedParameterType Type;
+        public MemExtendedParameterValue Value;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -164,7 +189,8 @@ namespace NtApiDotNet
             SectionAccessRights DesiredAccess,
             [In] ObjectAttributes ObjectAttributes, [In] LargeInteger SectionSize,
             MemoryAllocationProtect Protect, SectionAttributes Attributes,
-            SafeHandle FileHandle, MemExtendedParameter[] ExtendedParameters, int ExtendedParameterCount);
+            SafeHandle FileHandle, 
+            MemSectionExtendedParameter[] ExtendedParameters, int ExtendedParameterCount);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtOpenSection(out SafeKernelObjectHandle SectionHandle,
@@ -193,9 +219,32 @@ namespace NtApiDotNet
         );
 
         [DllImport("ntdll.dll")]
+        public static extern NtStatus NtMapViewOfSectionEx(
+            SafeKernelObjectHandle SectionHandle,
+            SafeKernelObjectHandle ProcessHandle,
+            ref IntPtr BaseAddress,
+            IntPtr ZeroBits,
+            IntPtr CommitSize,
+            [In, Out] LargeInteger SectionOffset,
+            ref IntPtr ViewSize,
+            SectionInherit InheritDisposition,
+            AllocationType AllocationType,
+            MemoryAllocationProtect Win32Protect,
+            MemExtendedParameter[] ExtendedParameters,
+            int ExtendedParameterCount
+        );
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus NtUnmapViewOfSection(
             SafeKernelObjectHandle ProcessHandle,
             IntPtr BaseAddress
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtUnmapViewOfSectionEx(
+            SafeKernelObjectHandle ProcessHandle,
+            IntPtr BaseAddress,
+            MemUnmapFlags Flas
         );
 
         [DllImport("ntdll.dll")]
@@ -451,7 +500,7 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtSection> CreateEx(ObjectAttributes object_attributes, SectionAccessRights desired_access, LargeInteger size,
-            MemoryAllocationProtect protection, SectionAttributes attributes, NtFile file, MemExtendedParameter[] extended_parameters, bool throw_on_error)
+            MemoryAllocationProtect protection, SectionAttributes attributes, NtFile file, MemSectionExtendedParameter[] extended_parameters, bool throw_on_error)
         {
             return NtSystemCalls.NtCreateSectionEx(out SafeKernelObjectHandle section_handle, desired_access, object_attributes,
                 size, protection, attributes, file.GetHandle(),
@@ -470,7 +519,7 @@ namespace NtApiDotNet
         /// <param name="extended_parameters">Extended parameters for section create.</param>
         /// <returns>The NT status code and object result.</returns>
         public static NtSection CreateEx(ObjectAttributes object_attributes, SectionAccessRights desired_access, LargeInteger size,
-            MemoryAllocationProtect protection, SectionAttributes attributes, NtFile file, MemExtendedParameter[] extended_parameters)
+            MemoryAllocationProtect protection, SectionAttributes attributes, NtFile file, MemSectionExtendedParameter[] extended_parameters)
         {
             return CreateEx(object_attributes, desired_access, size, protection, attributes, file, extended_parameters, true).Result;
         }
