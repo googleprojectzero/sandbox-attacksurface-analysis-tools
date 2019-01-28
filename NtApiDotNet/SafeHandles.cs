@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
@@ -79,7 +80,7 @@ namespace NtApiDotNet
                 Marshal.Copy(old_data, 0, free_handle, Math.Min(new_length, Length));
                 free_handle = Interlocked.Exchange(ref handle, free_handle);
                 Length = new_length;
-                Initialize((ulong)new_length);                 
+                Initialize((ulong)new_length);
             }
             finally
             {
@@ -217,6 +218,25 @@ namespace NtApiDotNet
 
             return new SafeStructureInOutBuffer<T>(handle + offset, length_left, false);
         }
+
+        /// <summary>
+        /// Detaches the current buffer and allocates a new one.
+        /// </summary>
+        /// <returns></returns>
+        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
+        public SafeHGlobalBuffer Detach()
+        {
+            RuntimeHelpers.PrepareConstrainedRegions();
+            try
+            {
+                IntPtr handle = DangerousGetHandle();
+                SetHandleAsInvalid();
+                return new SafeHGlobalBuffer(handle, Length, true);
+            }
+            finally
+            {
+            }
+        }
     }
 
     /// <summary>
@@ -346,6 +366,25 @@ namespace NtApiDotNet
                 int size = GetStructDataOffset();
                 int length = Length - size;
                 return new SafeHGlobalBuffer(handle + size, length < 0 ? 0 : length, false);
+            }
+        }
+
+        /// <summary>
+        /// Detaches the current buffer and allocates a new one.
+        /// </summary>
+        /// <returns></returns>
+        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
+        new public SafeStructureInOutBuffer<T> Detach()
+        {
+            RuntimeHelpers.PrepareConstrainedRegions();
+            try
+            {
+                IntPtr handle = DangerousGetHandle();
+                SetHandleAsInvalid();
+                return new SafeStructureInOutBuffer<T>(handle, Length, true);
+            }
+            finally
+            {
             }
         }
     }
