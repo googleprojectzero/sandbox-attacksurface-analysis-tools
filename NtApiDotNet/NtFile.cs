@@ -1272,6 +1272,90 @@ namespace NtApiDotNet
         }
     }
 
+    [Flags]
+    public enum FileSystemAttributes : uint
+    {
+        CaseSensitiveSearch = 0x00000001,
+        CasePreservedNames = 0x00000002,
+        UnicodeOnDisk = 0x00000004,
+        PersistentAcls = 0x00000008,
+        FileCompression = 0x00000010,
+        VolumeQuotas = 0x00000020,
+        SupportsSparseFiles = 0x00000040,
+        SupportsReparsePoints = 0x00000080,
+        SupportsRemoteStorage = 0x00000100,
+        ReturnsCleanupResultInfo = 0x00000200,
+        SupportsPosixUnlinkRename = 0x00000400,
+        Available00000800 = 0x00000800,
+        Available00001000 = 0x00001000,
+        Available00002000 = 0x00002000,
+        Available00004000 = 0x00004000,
+        VolumeIsCompressed = 0x00008000,
+        SupportsObjectIds = 0x00010000,
+        SupportsEncryption = 0x00020000,
+        NamedStreams = 0x00040000,
+        ReadOnlyVolume = 0x00080000,
+        SequentialWriteOnce = 0x00100000,
+        SupportsTransactions = 0x00200000,
+        SupportsHardLinks = 0x00400000,
+        SupportsExtendedAttributes = 0x00800000,
+        SupportsOpenByFileId = 0x01000000,
+        SupportsUsnJournal = 0x02000000,
+        SupportsIntegrityStreams = 0x04000000,
+        SupportsBlockRefcounting = 0x08000000,
+        SupportsSparseVdl = 0x10000000,
+        DaxVolume = 0x20000000,
+        SupportsGhosting = 0x40000000,
+        Available80000000 = 0x80000000,
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), DataStart("FileSystemName")]
+    public struct FileFsAttributeInformation
+    {
+        public FileSystemAttributes FileSystemAttributes;
+        public int MaximumComponentNameLength;
+        public int FileSystemNameLength;
+        public char FileSystemName;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), DataStart("VolumeLabel")]
+    public struct FileFsVolumeInformation
+    {
+        public LargeIntegerStruct VolumeCreationTime;
+        public uint VolumeSerialNumber;
+        public int VolumeLabelLength;
+        [MarshalAs(UnmanagedType.I1)]
+        public bool SupportsObjects;
+        public char VolumeLabel;
+    }
+
+    public sealed class FileSystemVolumeInformation
+    {
+        public FileSystemAttributes Attributes { get; }
+        public int MaximumComponentLength { get; }
+        public string Name { get; }
+        public DateTime CreationTime { get; }
+        public uint SerialNumber { get; }
+        public string Label { get; }
+        bool SupportsObjects { get; }
+
+        internal FileSystemVolumeInformation(SafeStructureInOutBuffer<FileFsAttributeInformation> attr_info, 
+            SafeStructureInOutBuffer<FileFsVolumeInformation> vol_info)
+        {
+            var attr_info_res = attr_info.Result;
+            var vol_info_res = vol_info.Result;
+            Attributes = attr_info_res.FileSystemAttributes;
+            MaximumComponentLength = attr_info_res.MaximumComponentNameLength;
+            Name = attr_info.Data.ReadUnicodeString(attr_info_res.FileSystemNameLength / 2);
+
+            CreationTime = DateTime.FromFileTime(vol_info_res.VolumeCreationTime.QuadPart);
+            SerialNumber = vol_info_res.VolumeSerialNumber;
+            SupportsObjects = vol_info_res.SupportsObjects;
+            Label = vol_info.Data.ReadUnicodeString(vol_info_res.VolumeLabelLength / 2);
+        }
+    }
+
+
 #pragma warning restore 1591
 
     /// <summary>
@@ -1290,7 +1374,7 @@ namespace NtApiDotNet
             OpenResult = io_status != null ? (FileOpenResult)io_status.Information.ToInt32() : FileOpenResult.Opened;
         }
 
-        internal NtFile(SafeKernelObjectHandle handle) 
+        internal NtFile(SafeKernelObjectHandle handle)
             : this(handle, null)
         {
         }
@@ -1337,7 +1421,7 @@ namespace NtApiDotNet
             IoStatus iostatus = new IoStatus();
             byte[] buffer = ea_buffer?.ToByteArray();
             return NtSystemCalls.NtCreateFile(out SafeKernelObjectHandle handle, desired_access, obj_attributes, iostatus, null, FileAttributes.Normal,
-                share_access, disposition, open_options, 
+                share_access, disposition, open_options,
                 buffer, buffer != null ? buffer.Length : 0).CreateResult(throw_on_error, () => CreateFileObject(handle, iostatus));
         }
 
@@ -1609,7 +1693,7 @@ namespace NtApiDotNet
         {
             return buffer != null ? (int)buffer.ByteLength : 0;
         }
-        
+
         private delegate NtStatus IoControlFunction(SafeKernelObjectHandle FileHandle,
                                                     SafeKernelObjectHandle Event,
                                                     IntPtr ApcRoutine,
@@ -1621,7 +1705,7 @@ namespace NtApiDotNet
                                                     IntPtr OutputBuffer,
                                                     int OutputBufferLength);
 
-        private async Task<int> IoControlGenericAsync(IoControlFunction func, 
+        private async Task<int> IoControlGenericAsync(IoControlFunction func,
                         NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, CancellationToken token)
         {
             using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
@@ -1629,7 +1713,7 @@ namespace NtApiDotNet
                 using (NtAsyncResult result = new NtAsyncResult(this))
                 {
                     NtStatus status = await result.CompleteCallAsync(func(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
-                        control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), 
+                        control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer),
                         GetSafePointer(output_buffer), GetSafeLength(output_buffer)), linked_cts.Token);
                     if (status == NtStatus.STATUS_PENDING)
                     {
@@ -1901,7 +1985,7 @@ namespace NtApiDotNet
         /// <param name="open_options">File open options</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
-        public static NtResult<NtFile> Open(ObjectAttributes obj_attributes, FileAccessRights desired_access, 
+        public static NtResult<NtFile> Open(ObjectAttributes obj_attributes, FileAccessRights desired_access,
             FileShareMode share_access, FileOpenOptions open_options, bool throw_on_error)
         {
             IoStatus iostatus = new IoStatus();
@@ -1911,7 +1995,7 @@ namespace NtApiDotNet
 
         internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
         {
-            return Open(object_attributes, desired_access.ToSpecificAccess<FileAccessRights>(), FileShareMode.Read | FileShareMode.Delete, 
+            return Open(object_attributes, desired_access.ToSpecificAccess<FileAccessRights>(), FileShareMode.Read | FileShareMode.Delete,
                 FileOpenOptions.None, throw_on_error).Cast<NtObject>();
         }
 
@@ -1959,7 +2043,7 @@ namespace NtApiDotNet
         /// <param name="open_options">File open options</param>
         /// <returns>The opened file</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtFile Open(string path, NtObject root, FileAccessRights desired_access, 
+        public static NtFile Open(string path, NtObject root, FileAccessRights desired_access,
             FileShareMode shared_access, FileOpenOptions open_options)
         {
             return Open(path, root, desired_access, shared_access, open_options, true).Result;
@@ -1975,7 +2059,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtFile Open(string path, NtObject root, FileAccessRights desired_access)
         {
-            return Open(path, root, desired_access, 
+            return Open(path, root, desired_access,
                 FileShareMode.Read | FileShareMode.Delete, FileOpenOptions.None);
         }
 
@@ -2022,7 +2106,7 @@ namespace NtApiDotNet
                 return NtFileUtils.FileIdToString(internal_info.IndexNumber.QuadPart);
             }
         }
-        
+
         /// <summary>
         /// Get or set the attributes of a file.
         /// </summary>
@@ -2209,7 +2293,7 @@ namespace NtApiDotNet
                         buffer.Length, file_info).ToNtException();
             }
         }
-        
+
         private void DoLinkRename(FileInformationClass file_info, string linkname, NtFile root)
         {
             DoLinkRename(file_info, linkname, root, true);
@@ -2465,7 +2549,7 @@ namespace NtApiDotNet
         /// <param name="file_mask">A file name mask (such as *.txt). Can be null.</param>
         /// <param name="type_mask">Indicate what entries to return.</param>
         /// <returns>The list of files which can be access.</returns>
-        public IEnumerable<NtFile> QueryAccessibleFiles(FileAccessRights desired_access, FileShareMode share_access, 
+        public IEnumerable<NtFile> QueryAccessibleFiles(FileAccessRights desired_access, FileShareMode share_access,
             FileOpenOptions open_options, string file_mask, FileTypeMask type_mask)
         {
             using (var list = new DisposableList<NtFile>())
@@ -2523,7 +2607,7 @@ namespace NtApiDotNet
                 using (NtAsyncResult result = new NtAsyncResult(this))
                 {
                     NtStatus status = result.CompleteCall(NtSystemCalls.NtQueryDirectoryFile(Handle, result.EventHandle,
-                        IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, 
+                        IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length,
                         FileInformationClass.FileDirectoryInformation, false, mask, true));
 
                     while (status.IsSuccess())
@@ -2744,7 +2828,7 @@ namespace NtApiDotNet
             using (NtAsyncResult result = new NtAsyncResult(this))
             {
                 result.CompleteCall(NtSystemCalls.NtLockFile(Handle, result.EventHandle, IntPtr.Zero,
-                    IntPtr.Zero, result.IoStatusBuffer, new LargeInteger(offset), 
+                    IntPtr.Zero, result.IoStatusBuffer, new LargeInteger(offset),
                     new LargeInteger(size), 0, fail_immediately, exclusive)).ToNtException();
             }
         }
@@ -2804,7 +2888,7 @@ namespace NtApiDotNet
         public void Unlock(long offset, long size)
         {
             IoStatus io_status = new IoStatus();
-            NtSystemCalls.NtUnlockFile(Handle, io_status, 
+            NtSystemCalls.NtUnlockFile(Handle, io_status,
                 new LargeInteger(offset), new LargeInteger(size), 0).ToNtException();
         }
 
@@ -2940,6 +3024,38 @@ namespace NtApiDotNet
             }
         }
 
+        private SafeStructureInOutBuffer<T> QueryVolume<T>(FsInformationClass info_class) where T : new()
+        {
+            SafeStructureInOutBuffer<T> ret = null;
+            NtStatus status = NtStatus.STATUS_BUFFER_TOO_SMALL;
+            try
+            {
+                int length = Marshal.SizeOf(typeof(T)) + 128;
+                while (true)
+                {
+                    ret = new SafeStructureInOutBuffer<T>(length, false);
+                    IoStatus io_status = new IoStatus();
+                    status = NtSystemCalls.NtQueryVolumeInformationFile(Handle, io_status, ret, ret.Length, info_class);
+                    if (status.IsSuccess())
+                        break;
+
+                    if ((status != NtStatus.STATUS_BUFFER_OVERFLOW) && (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH))
+                        throw new NtException(status);
+                    ret.Close();
+                    length *= 2;
+                }
+            }
+            finally
+            {
+                if (ret != null && !status.IsSuccess())
+                {
+                    ret.Close();
+                    ret = null;
+                }
+            }
+            return ret;
+        }
+
         private T QueryFileFixed<T>(FileInformationClass info_class) where T : new()
         {
             return QueryFileFixed<T>(info_class, true).Result;
@@ -3000,7 +3116,7 @@ namespace NtApiDotNet
             using (var buffer = new SafeStructureInOutBuffer<FileNameInformation>(32 * 1024, true))
             {
                 IoStatus status = new IoStatus();
-                NtSystemCalls.NtQueryInformationFile(Handle, 
+                NtSystemCalls.NtQueryInformationFile(Handle,
                     status, buffer, buffer.Length, info_class).ToNtException();
                 char[] result = new char[buffer.Result.NameLength / 2];
                 buffer.Data.ReadArray(0, result, 0, result.Length);
@@ -3170,7 +3286,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Oplock the file exclusively (no other users can access the file).
         /// </summary>
-            public void OplockExclusive()
+        public void OplockExclusive()
         {
             RequestOplock(OplockRequestLevel.Level1);
         }
@@ -3233,7 +3349,7 @@ namespace NtApiDotNet
         public EaBuffer GetEa()
         {
             int ea_size = 1024;
-            while(true)
+            while (true)
             {
                 IoStatus io_status = new IoStatus();
                 byte[] buffer = new byte[ea_size];
@@ -3467,7 +3583,7 @@ namespace NtApiDotNet
                     }
                     break;
                 }
-            }   
+            }
         }
 
         /// <summary>
@@ -3662,7 +3778,7 @@ namespace NtApiDotNet
 
             foreach (var entry in QueryDirectoryInfo(null, FileTypeMask.DirectoriesOnly))
             {
-                if (!VisitFileEntry(entry.FileName, entry.IsDirectory, 
+                if (!VisitFileEntry(entry.FileName, entry.IsDirectory,
                     f => f.VisitAccessibleFiles(visitor, desired_access, share_access, open_options, recurse, max_depth, file_mask, type_mask),
                         FileDirectoryAccessRights.ListDirectory.ToFileAccessRights(), FileShareMode.Read | FileShareMode.Delete,
                     (open_options & FileOpenOptions.OpenForBackupIntent) | FileOpenOptions.OpenReparsePoint))
@@ -3802,6 +3918,23 @@ namespace NtApiDotNet
                         }
                         // Modify restart to 0.
                         buffer.Write(0, 0);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get filesystem and volume information.
+        /// </summary>
+        public FileSystemVolumeInformation VolumeInformation
+        {
+            get
+            {
+                using (var attr_info = QueryVolume<FileFsAttributeInformation>(FsInformationClass.FileFsAttributeInformation))
+                {
+                    using (var vol_info = QueryVolume<FileFsVolumeInformation>(FsInformationClass.FileFsVolumeInformation))
+                    {
+                        return new FileSystemVolumeInformation(attr_info, vol_info);
                     }
                 }
             }
