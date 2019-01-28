@@ -461,20 +461,35 @@ namespace NtApiDotNet
         /// <param name="status">The associated status case.</param>
         /// <param name="throw_on_error">Throw an exception on error.</param>
         /// <param name="create_func">Function to call to create an instance of the result</param>
+        /// <param name="error_func">Function to call on error.</param>
         /// <returns>The created result.</returns>
-        internal static NtResult<T> CreateResult<T>(this NtStatus status, bool throw_on_error, Func<NtStatus, T> create_func)
+        internal static NtResult<T> CreateResult<T>(this NtStatus status, bool throw_on_error, Func<NtStatus, T> create_func, Action<NtStatus> error_func)
         {
             if (status.IsSuccess())
             {
                 return new NtResult<T>(status, create_func(status));
             }
 
+            error_func?.Invoke(status);
             if (throw_on_error)
             {
                 throw new NtException(status);
             }
 
             return new NtResult<T>(status, default(T));
+        }
+
+        /// <summary>
+        /// Create an NT result object. If status is successful then call function otherwise use default value.
+        /// </summary>
+        /// <typeparam name="T">The result type.</typeparam>
+        /// <param name="status">The associated status case.</param>
+        /// <param name="throw_on_error">Throw an exception on error.</param>
+        /// <param name="create_func">Function to call to create an instance of the result</param>
+        /// <returns>The created result.</returns>
+        internal static NtResult<T> CreateResult<T>(this NtStatus status, bool throw_on_error, Func<NtStatus, T> create_func)
+        {
+            return CreateResult(status, throw_on_error, create_func, null);
         }
 
         internal static NtResult<T> CreateResultFromError<T>(this NtStatus status, bool throw_on_error)
