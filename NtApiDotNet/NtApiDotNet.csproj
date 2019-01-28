@@ -79,6 +79,7 @@
     <Compile Include="Ndr\NdrStringBuilder.cs" />
     <Compile Include="Ndr\NdrTypes.cs" />
     <Compile Include="Ndr\NdrRpcServerInterface.cs" />
+    <Compile Include="ReparseBuffer.cs" />
     <Compile Include="NtAlpc.cs" />
     <Compile Include="NtAtom.cs" />
     <Compile Include="NtDebug.cs" />
