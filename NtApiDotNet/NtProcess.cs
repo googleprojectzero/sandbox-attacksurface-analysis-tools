@@ -518,7 +518,8 @@ namespace NtApiDotNet
         ImageLoad,
         SystemCallFilter,
         PayloadRestriction,
-        ChildProcess
+        ChildProcess,
+        SideChannelIsolation
     }
 
     public struct MitigationPolicy

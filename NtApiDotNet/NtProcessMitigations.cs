@@ -92,6 +92,12 @@ namespace NtApiDotNet
             EnableRopSimExec              = result.GetBit(10);
             AuditRopSimExec               = result.GetBit(11);
 
+            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.SideChannelIsolation);
+            SmtBranchTargetIsolation = result.GetBit(0);
+            IsolateSecurityDomain = result.GetBit(1);
+            DisablePageCombine = result.GetBit(2);
+            SpeculativeStoreBypassDisable = result.GetBit(3);
+
             using (var token = NtToken.OpenProcessToken(process, TokenAccessRights.Query, false))
             {
                 if (token.IsSuccess)
@@ -163,6 +169,10 @@ namespace NtApiDotNet
         public bool AuditRopCallerCheck { get; }
         public bool EnableRopSimExec { get; }
         public bool AuditRopSimExec { get; }
+        public bool SmtBranchTargetIsolation { get; }
+        public bool IsolateSecurityDomain { get; }
+        public bool DisablePageCombine { get; }
+        public bool SpeculativeStoreBypassDisable { get; }
     }
 #pragma warning restore 1591
 }
