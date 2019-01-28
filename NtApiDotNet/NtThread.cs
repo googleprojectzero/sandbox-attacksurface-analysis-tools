@@ -97,7 +97,7 @@ namespace NtApiDotNet
     public class ThreadBasicInformation
     {
         public NtStatus ExitStatus;
-        public IntPtr TebBaseAddress;        
+        public IntPtr TebBaseAddress;
         public ClientIdStruct ClientId;
         public IntPtr AffinityMask;
         public int Priority;
@@ -396,6 +396,41 @@ namespace NtApiDotNet
         public ulong LastExceptionFromRip;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ThreadLastSystemCallInformation
+    {
+        public IntPtr FirstArgument;
+        public ushort SystemCallNumber;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ThreadLastSystemCallExtendedInformation
+    {
+        public IntPtr FirstArgument;
+        public ushort SystemCallNumber;
+        public long TickCountSinceSystemCall;
+    }
+
+    public class ThreadLastSystemCall
+    {
+        public long FirstArgument { get; }
+        public int SystemCallNumber { get; }
+        public long TickCountSinceSystemCall { get; }
+
+        internal ThreadLastSystemCall(ThreadLastSystemCallInformation info)
+        {
+            FirstArgument = info.FirstArgument.ToInt64();
+            SystemCallNumber = info.SystemCallNumber;
+        }
+
+        internal ThreadLastSystemCall(ThreadLastSystemCallExtendedInformation info)
+        {
+            FirstArgument = info.FirstArgument.ToInt64();
+            SystemCallNumber = info.SystemCallNumber;
+            TickCountSinceSystemCall = info.TickCountSinceSystemCall;
+        }
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
@@ -585,9 +620,8 @@ namespace NtApiDotNet
             SafeStructureInOutBuffer<T> info = new SafeStructureInOutBuffer<T>();
             try
             {
-                int return_length = 0;
                 NtStatus status = NtSystemCalls.NtQueryInformationThread(Handle, info_class,
-                  info, info.Length, out return_length);
+                  info, info.Length, out int return_length);
                 if (status == NtStatus.STATUS_INFO_LENGTH_MISMATCH || status == NtStatus.STATUS_BUFFER_TOO_SMALL)
                 {
                     using (SafeBuffer to_close = info)
@@ -1088,6 +1122,28 @@ namespace NtApiDotNet
         public long Win32StartAddress
         {
             get { return Query<IntPtr>(ThreadInformationClass.ThreadQuerySetWin32StartAddress).ToInt64(); }
+        }
+
+        /// <summary>
+        /// Get last system call on the thread.
+        /// </summary>
+        public ThreadLastSystemCall LastSystemCall
+        {
+            get
+            {
+                try
+                {
+                    return new ThreadLastSystemCall(Query<ThreadLastSystemCallExtendedInformation>(ThreadInformationClass.ThreadLastSystemCall));
+                }
+                catch(NtException ex)
+                {
+                    if (ex.Status == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
+                    {
+                        return new ThreadLastSystemCall(Query<ThreadLastSystemCallInformation>(ThreadInformationClass.ThreadLastSystemCall));
+                    }
+                    throw;
+                }
+            }
         }
     }
 }
