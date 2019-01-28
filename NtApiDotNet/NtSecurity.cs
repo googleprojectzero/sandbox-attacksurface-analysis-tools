@@ -735,6 +735,7 @@ namespace NtApiDotNet
         ResourceAttribute = 0x12,
         ScopedPolicyId = 0x13,
         ProcessTrustLabel = 0x14,
+        AccessFilter = 0x15,
     }
 
     [Flags]
@@ -746,6 +747,7 @@ namespace NtApiDotNet
         NoPropagateInherit = 0x4,
         InheritOnly = 0x8,
         Inherited = 0x10,
+        Critical = 0x20,
         SuccessfulAccess = 0x40,
         FailedAccess = 0x80,
     }
