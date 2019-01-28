@@ -46,6 +46,7 @@
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="NtPartitionCmdlets.cs" />
     <Compile Include="PSUtils.cs" />
     <Compile Include="Win32Cmdlets.cs" />
     <Compile Include="CommonAccessBaseCmdlet.cs" />

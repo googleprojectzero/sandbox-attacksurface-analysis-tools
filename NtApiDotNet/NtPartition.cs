@@ -46,11 +46,12 @@ namespace NtApiDotNet
         SystemMemoryPartitionInitialAddMemory,
         SystemMemoryPartitionGetMemoryEvents
     }
-    
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtCreatePartition(
+            SafeKernelObjectHandle ParentPartitionHandle,
             out SafeKernelObjectHandle PartitionHandle,
             AccessMask DesiredAccess,
             [In] ObjectAttributes ObjectAttributes,
@@ -87,25 +88,28 @@ namespace NtApiDotNet
         /// Create a partition object
         /// </summary>
         /// <param name="object_attributes">The object attributes</param>
+        /// <param name="parent_partition">Optional parent parition.</param>
         /// <param name="desired_access">Desired access for the partition.</param>
         /// <param name="preferred_node">The preferred node, -1 for any node.</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
-        public static NtResult<NtPartition> Create(ObjectAttributes object_attributes, MemoryPartitionAccessRights desired_access, int preferred_node, bool throw_on_error)
+        public static NtResult<NtPartition> Create(ObjectAttributes object_attributes, MemoryPartitionAccessRights desired_access, NtPartition parent_partition, int preferred_node, bool throw_on_error)
         {
-            return NtSystemCalls.NtCreatePartition(out SafeKernelObjectHandle handle, desired_access, object_attributes, preferred_node).CreateResult(throw_on_error, () => new NtPartition(handle));
+            return NtSystemCalls.NtCreatePartition(parent_partition.GetHandle(),
+                out SafeKernelObjectHandle handle, desired_access, object_attributes, preferred_node).CreateResult(throw_on_error, () => new NtPartition(handle));
         }
 
         /// <summary>
         /// Create a partition object
         /// </summary>
         /// <param name="object_attributes">The object attributes</param>
+        /// <param name="parent_partition">Optional parent parition.</param>
         /// <param name="desired_access">Desired access for the partition.</param>
         /// <param name="preferred_node">The preferred node, -1 for any node.</param>
         /// <returns>The NT status code and object result.</returns>
-        public static NtPartition Create(ObjectAttributes object_attributes, MemoryPartitionAccessRights desired_access, int preferred_node)
+        public static NtPartition Create(ObjectAttributes object_attributes, MemoryPartitionAccessRights desired_access, NtPartition parent_partition, int preferred_node)
         {
-            return Create(object_attributes, desired_access, preferred_node, true).Result;
+            return Create(object_attributes, desired_access, parent_partition, preferred_node, true).Result;
         }
 
         /// <summary>
