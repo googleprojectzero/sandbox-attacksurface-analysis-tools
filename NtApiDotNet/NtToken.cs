@@ -2445,6 +2445,11 @@ namespace NtApiDotNet
                     return label.Result.Label.ToUserGroup();
                 }
             }
+
+            set
+            {
+                SetIntegrityLevelSid(value.Sid);
+            }
         }
 
         /// <summary>
@@ -2462,7 +2467,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get token's integrity level.
+        /// Get or set token's integrity level.
         /// </summary>
         public TokenIntegrityLevel IntegrityLevel
         {
@@ -2471,6 +2476,11 @@ namespace NtApiDotNet
                 UserGroup group = IntegrityLevelSid;
                 string[] parts = group.Sid.ToString().Split('-');
                 return (TokenIntegrityLevel)int.Parse(parts[parts.Length - 1]);
+            }
+
+            set
+            {
+                SetIntegrityLevel(value);
             }
         }
 
@@ -2736,7 +2746,7 @@ namespace NtApiDotNet
                 }
                 catch
                 {
-                    return String.Empty;
+                    return string.Empty;
                 }
             }
         }
