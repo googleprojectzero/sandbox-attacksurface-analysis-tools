@@ -24,6 +24,9 @@ namespace NtApiDotNet
     public enum SectionAttributes : uint
     {
         None = 0,
+        PartitionOwnerHandle = 0x00040000,
+        Pages64k = 0x00080000,
+        Unknown100000 = 0x00100000,
         Based = 0x00200000,
         NoChange = 0x00400000,
         File = 0x00800000,
@@ -319,6 +322,11 @@ namespace NtApiDotNet
                 return NtVirtualMemory.QueryMemoryInformation(Process.Handle, DangerousGetHandle().ToInt64()).Protect;
             }
         }
+
+        /// <summary>
+        /// Get image signing level.
+        /// </summary>
+        public SigningLevel ImageSigningLevel => NtVirtualMemory.QueryImageInformation(Process.Handle, DangerousGetHandle().ToInt64()).ImageSigningLevel;
 
         internal NtMappedSection(IntPtr pointer, long size, NtProcess process, bool writable) : base(true)
         {
