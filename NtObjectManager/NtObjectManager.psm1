@@ -1211,23 +1211,42 @@ function Export-NtObject {
 Imports an object exported with Export-NtObject.
 .DESCRIPTION
 This function accepts a JSON string exported from Export-NtObject which allows an object to be
-duplicated between PowerShell instances.
+duplicated between PowerShell instances. You can also specify the PID and handle separetly.
 .PARAMETER Object
 Specify the object to import as a JSON string.
+.PARAMETER ProcessId
+Specify the process ID to import from.
+.PARAMETER Handle
+Specify the handle value to import from.
 .OUTPUTS
-NtApiDotNet.NtObject
+NtApiDotNet.NtObject (the best available type).
 .EXAMPLE
 Import-NtObject '{"ProcessId":3300,"Handle":2660}'
 Import an object from a JSON string.
+.EXAMPLE
+Import-NtObject -ProcessId 3300 -Handle 2660
+Import an object from separate PID and handle values.
 #>
 function Import-NtObject {
+    [CmdletBinding(DefaultParameterSetName="FromObject")]
     param(
-    [Parameter(Position = 0, Mandatory = $true)]
-    [string]$Object
+    [Parameter(Position = 0, Mandatory, ParameterSetName = "FromObject")]
+    [string]$Object,
+    [Parameter(Position = 0, Mandatory, ParameterSetName = "FromPid")]
+    [int]$ProcessId,
+    [Parameter(Position = 1, Mandatory, ParameterSetName = "FromPid")]
+    [int]$Handle
   )
-    $obj = ConvertFrom-Json $Object
-    Use-NtObject($generic = [NtApiDotNet.NtGeneric]::DuplicateFrom($obj.ProcessId, $obj.Handle)) {
-        $generic.ToTypedObject()
+    switch($PSCmdlet.ParameterSetName) {
+        "FromObject" {
+            $obj = ConvertFrom-Json $Object
+            Import-NtObject -ProcessId $obj.ProcessId -Handle $obj.Handle
+        }
+        "FromPid" {
+            Use-NtObject($generic = [NtApiDotNet.NtGeneric]::DuplicateFrom($ProcessId, $Handle)) {
+                $generic.ToTypedObject()
+            }
+        }
     }
 }
 
