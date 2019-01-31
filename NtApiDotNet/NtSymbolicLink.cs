@@ -21,7 +21,9 @@ namespace NtApiDotNet
     [Flags]
     public enum SymbolicLinkAccessRights : uint
     {
-        Query = 1,        
+        Query = 1,
+        // Not accessible from user mode.
+        Set = 2,
         GenericRead = GenericAccessRights.GenericRead,
         GenericWrite = GenericAccessRights.GenericWrite,
         GenericExecute = GenericAccessRights.GenericExecute,
