@@ -109,6 +109,23 @@ namespace NtApiDotNet
         /// The timeout as a long.
         /// </summary>
         public long Timeout { get; }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The timeout as a string.</returns>
+        public override string ToString()
+        {
+            if (Timeout < 0)
+            {
+                return $"Relative: {-Timeout}";
+            }
+            else if (Timeout > 0)
+            {
+                return $"Absolute: {Timeout}";
+            }
+            return "Infinite";
+        }
     }
 
     /// <summary>
