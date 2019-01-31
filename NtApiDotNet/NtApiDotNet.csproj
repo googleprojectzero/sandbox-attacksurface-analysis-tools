@@ -67,7 +67,6 @@
     <Compile Include="Forms\SecurityDescriptorViewerForm.Designer.cs">
       <DependentUpon>SecurityDescriptorViewerForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="INtObjectInternal.cs" />
     <Compile Include="Ndr\IMemoryReader.cs" />
     <Compile Include="Ndr\NdrComProxyDefinition.cs" />
     <Compile Include="Ndr\NdrFormatter.cs" />
@@ -82,6 +81,7 @@
     <Compile Include="Ndr\NdrRpcServerInterface.cs" />
     <Compile Include="NtGeneric.cs" />
     <Compile Include="NtObjectWithDuplicate.cs" />
+    <Compile Include="NtObjectWithDuplicateAndInfo.cs" />
     <Compile Include="NtResult.cs" />
     <Compile Include="NtTransactionManager.cs" />
     <Compile Include="ReparseBuffer.cs" />

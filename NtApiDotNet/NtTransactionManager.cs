@@ -154,7 +154,7 @@ namespace NtApiDotNet
     /// Class to represent a kernel transaction.
     /// </summary>
     [NtType("TmTm")]
-    public class NtTransactionManager : NtObjectWithDuplicate<NtTransactionManager, TransactionManagerAccessRights>, INtObjectInternal<TransactionManagerInformationClass>
+    public sealed class NtTransactionManager : NtObjectWithDuplicateAndInfo<NtTransactionManager, TransactionManagerAccessRights, TransactionManagerInformationClass>
     {
         #region Constructors
         internal NtTransactionManager(SafeKernelObjectHandle handle) 
@@ -449,8 +449,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get Transaction Manager last recovered Log Sequence Number.
         /// </summary>
-        public ulong LastRecoveredLsn => this.QueryFixed(TransactionManagerInformationClass.TransactionManagerRecoveryInformation, 
-                                            new TransactionManagerRecoveryInformation()).LastRecoveredLsn;
+        public ulong LastRecoveredLsn => Query< TransactionManagerRecoveryInformation>(TransactionManagerInformationClass.TransactionManagerRecoveryInformation).LastRecoveredLsn;
 
         #endregion
 
@@ -530,38 +529,51 @@ namespace NtApiDotNet
             Rollforward(null);
         }
 
+        /// <summary>
+        /// Method to query information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to return data in.</param>
+        /// <param name="return_length">Return length from the query.</param>
+        /// <returns>The NT status code for the query.</returns>
+        public override NtStatus QueryInformation(TransactionManagerInformationClass info_class, SafeBuffer buffer, out int return_length)
+        {
+            return NtSystemCalls.NtQueryInformationTransactionManager(Handle, info_class, buffer, (int)buffer.ByteLength, out return_length);
+        }
+
+        /// <summary>
+        /// Method to set information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to return data in.</param>
+        /// <returns>The NT status code for the query.</returns>
+        public override NtStatus SetInformation(TransactionManagerInformationClass info_class, SafeBuffer buffer)
+        {
+            return NtSystemCalls.NtSetInformationTransactionManager(Handle, info_class, buffer, (int)buffer.ByteLength);
+        }
+
         #endregion
 
         #region Private Members
 
         private TransactionManagerBasicInformation GetBasicInformation()
         {
-            return this.QueryFixed(TransactionManagerInformationClass.TransactionManagerBasicInformation, new TransactionManagerBasicInformation());
+            return Query<TransactionManagerBasicInformation>(TransactionManagerInformationClass.TransactionManagerBasicInformation);
         }
 
         private NtResult<Guid> GetIdentity(bool throw_on_error)
         {
-            return this.QueryFixed(TransactionManagerInformationClass.TransactionManagerLogInformation, 
+            return Query(TransactionManagerInformationClass.TransactionManagerLogInformation, 
                 new TransactionManagerLogInformation(), throw_on_error).Map(i => i.LogIdentity);
         }
 
         private NtResult<string> GetLogPath(bool throw_on_error)
         {
-            using (var buffer = this.Query(TransactionManagerInformationClass.TransactionManagerLogPathInformation, 
+            using (var buffer = QueryBuffer(TransactionManagerInformationClass.TransactionManagerLogPathInformation, 
                 new TransactionLogPathInformation(), throw_on_error))
             {
                 return buffer.Map(i => i.Data.ReadUnicodeString(i.Result.LogPathLength / 2));
             }
-        }
-
-        NtStatus INtObjectInternal<TransactionManagerInformationClass>.QueryInformation(TransactionManagerInformationClass info_class, SafeHGlobalBuffer buffer, out int return_length)
-        {
-            return NtSystemCalls.NtQueryInformationTransactionManager(Handle, info_class, buffer, buffer.Length, out return_length);
-        }
-
-        NtStatus INtObjectInternal<TransactionManagerInformationClass>.SetInformation(TransactionManagerInformationClass info_class, SafeHGlobalBuffer buffer)
-        {
-            return NtSystemCalls.NtSetInformationTransactionManager(Handle, info_class, buffer, buffer.Length);
         }
 
         #endregion

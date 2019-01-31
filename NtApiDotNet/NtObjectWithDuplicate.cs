@@ -26,8 +26,7 @@ namespace NtApiDotNet
     {
         internal NtObjectWithDuplicate(SafeKernelObjectHandle handle) : base(handle)
         {
-            if (!typeof(A).IsEnum)
-                throw new ArgumentException("Type of access must be an enum");
+            System.Diagnostics.Debug.Assert(typeof(A).IsEnum);
         }
 
         private static O Create(params object[] ps)

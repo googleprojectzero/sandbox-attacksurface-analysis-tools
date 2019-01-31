@@ -596,37 +596,5 @@ namespace NtApiDotNet
         {
             return ToLargeInteger(timeout?.Timeout);
         }
-
-        internal static NtResult<T> QueryFixed<T, I>(this INtObjectInternal<I> obj, I info_class, T default_value, bool throw_on_error) where T : new() where I : struct
-        {
-            using (var buffer = new SafeStructureInOutBuffer<T>(default_value))
-            {
-                return obj.QueryInformation(info_class, buffer, out int return_length).CreateResult(throw_on_error, () => buffer.Result);
-            }
-        }
-
-        internal static T QueryFixed<T, I>(this INtObjectInternal<I> obj, I info_class, T default_value) where T : new() where I : struct
-        {
-            return QueryFixed<T, I>(obj, info_class, default_value, true).Result;
-        }
-
-        internal static NtResult<SafeStructureInOutBuffer<T>> Query<T, I>(this INtObjectInternal<I> obj, I info_class, T default_value, bool throw_on_error) where T : new() where I : struct
-        {
-            NtStatus status = obj.QueryInformation(info_class, SafeHGlobalBuffer.Null, out int return_length);
-            if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH && status != NtStatus.STATUS_BUFFER_TOO_SMALL)
-            {
-                return status.CreateResultFromError<SafeStructureInOutBuffer<T>>(throw_on_error);
-            }
-
-            using (var buffer = new SafeStructureInOutBuffer<T>(default_value, return_length, false))
-            {
-                return obj.QueryInformation(info_class, buffer, out return_length).CreateResult(throw_on_error, () => buffer.Detach());
-            }
-        }
-
-        internal static SafeStructureInOutBuffer<T> Query<T, I>(this INtObjectInternal<I> obj, I info_class, T default_value) where T : new() where I : struct
-        {
-            return Query<T, I>(obj, info_class, default_value, true).Result;
-        }
     }
 }
