@@ -54,6 +54,13 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtReleaseMutant(SafeKernelObjectHandle MutantHandle, out uint PreviousState);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQueryMutant(SafeKernelObjectHandle MutantHandle, 
+            MutantInformationClass MutantInformationClass, 
+            SafeBuffer MutantInformation, 
+            int MutantInformationLength, 
+            out int ResultLength);
     }
 #pragma warning restore 1591
 
@@ -61,7 +68,7 @@ namespace NtApiDotNet
     /// Class representing a NT Mutant object
     /// </summary>
     [NtType("Mutant")]
-    public class NtMutant : NtObjectWithDuplicate<NtMutant, MutantAccessRights>
+    public class NtMutant : NtObjectWithDuplicateAndInfo<NtMutant, MutantAccessRights, MutantInformationClass>
     {
         internal NtMutant(SafeKernelObjectHandle handle) : base(handle)
         {
@@ -178,9 +185,31 @@ namespace NtApiDotNet
         /// <returns>The previous release count</returns>
         public uint Release()
         {
-            uint ret = 0;
-            NtSystemCalls.NtReleaseMutant(Handle, out ret).ToNtException();
+            NtSystemCalls.NtReleaseMutant(Handle, out uint ret).ToNtException();
             return ret;
+        }
+
+        /// <summary>
+        /// Method to query information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to return data in.</param>
+        /// <param name="return_length">Return length from the query.</param>
+        /// <returns>The NT status code for the query.</returns>
+        public override NtStatus QueryInformation(MutantInformationClass info_class, SafeBuffer buffer, out int return_length)
+        {
+            return NtSystemCalls.NtQueryMutant(Handle, info_class, buffer, (int)buffer.ByteLength, out return_length);
+        }
+
+        /// <summary>
+        /// Method to set information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to set data from.</param>
+        /// <returns>The NT status code for the set.</returns>
+        public override NtStatus SetInformation(MutantInformationClass info_class, SafeBuffer buffer)
+        {
+            return NtStatus.STATUS_NOT_SUPPORTED;
         }
     }
 }

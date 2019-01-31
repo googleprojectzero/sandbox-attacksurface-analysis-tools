@@ -545,8 +545,8 @@ namespace NtApiDotNet
         /// Method to set information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
-        /// <param name="buffer">The buffer to set data in.</param>
-        /// <returns>The NT status code for the query.</returns>
+        /// <param name="buffer">The buffer to set data from.</param>
+        /// <returns>The NT status code for the set.</returns>
         public override NtStatus SetInformation(TransactionManagerInformationClass info_class, SafeBuffer buffer)
         {
             return NtSystemCalls.NtSetInformationTransactionManager(Handle, info_class, buffer, (int)buffer.ByteLength);
