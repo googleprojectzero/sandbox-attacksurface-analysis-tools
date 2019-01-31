@@ -78,15 +78,41 @@ namespace NtApiDotNet
         public virtual NtResult<SafeStructureInOutBuffer<T>> QueryBuffer<T>(I info_class, T default_value, bool throw_on_error) where T : new()
         {
             NtStatus status = QueryInformation(info_class, SafeHGlobalBuffer.Null, out int return_length);
-            if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH && status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+            if (!IsInvalidBufferSize(status))
             {
                 return status.CreateResultFromError<SafeStructureInOutBuffer<T>>(throw_on_error);
             }
 
-            using (var buffer = new SafeStructureInOutBuffer<T>(default_value, return_length, false))
+            // If the function returned a length then trust it.
+            if (return_length > 0)
             {
-                return QueryInformation(info_class, buffer, out return_length).CreateResult(throw_on_error, () => buffer.Detach());
+                using (var buffer = new SafeStructureInOutBuffer<T>(default_value, return_length, false))
+                {
+                    return QueryInformation(info_class, buffer, out return_length).CreateResult(throw_on_error, () => buffer.Detach());
+                }
             }
+
+            // Function length can't be trusted, we'll need to brute force it.
+            return_length = GetSmallestPower2(Marshal.SizeOf(typeof(T)));
+            int max_length = GetMaximumBruteForceLength();
+            while (return_length < max_length)
+            {
+                using (var buffer = new SafeStructureInOutBuffer<T>(default_value, return_length, false))
+                {
+                    status = QueryInformation(info_class, buffer, out int dummy_length);
+                    if (status.IsSuccess())
+                    {
+                        return status.CreateResult(throw_on_error, () => buffer.Detach());
+                    }
+                    else if (!IsInvalidBufferSize(status))
+                    {
+                        return status.CreateResultFromError<SafeStructureInOutBuffer<T>>(throw_on_error);
+                    }
+                    return_length *= 2;
+                }
+            }
+
+            return NtStatus.STATUS_BUFFER_TOO_SMALL.CreateResultFromError<SafeStructureInOutBuffer<T>>(throw_on_error);
         }
 
         /// <summary>
@@ -144,10 +170,6 @@ namespace NtApiDotNet
             Set(info_class, value, true);
         }
 
-        #endregion
-
-        #region Protected Methods
-
         /// <summary>
         /// Method to query information for this object type.
         /// </summary>
@@ -164,6 +186,50 @@ namespace NtApiDotNet
         /// <param name="buffer">The buffer to return data in.</param>
         /// <returns>The NT status code for the query.</returns>
         public abstract NtStatus SetInformation(I info_class, SafeBuffer buffer);
+
+        #endregion
+
+        #region Protected Methods
+        /// <summary>
+        /// Overriddable method to determine the maximum brute force length for query.
+        /// </summary>
+        /// <returns>The maximum bytes to brute force. Returning 0 will disable brute force.</returns>
+        protected virtual int GetMaximumBruteForceLength()
+        {
+            return 16 * 1024;
+        }
+        #endregion
+
+        #region Private Members
+        private static bool IsInvalidBufferSize(NtStatus status)
+        {
+            return status == NtStatus.STATUS_INFO_LENGTH_MISMATCH || status == NtStatus.STATUS_BUFFER_TOO_SMALL || status == NtStatus.STATUS_BUFFER_OVERFLOW;
+        }
+
+        private static int GetSmallestPower2(int size)
+        {
+            if (size <= 0)
+            {
+                throw new ArgumentException("Size must be greater than 0");
+            }
+
+            // Already a power of 2.
+            if ((size & (size - 1)) == 0)
+            {
+                return size;
+            }
+
+            int bits = 0;
+            int curr_size = size;
+            while (curr_size != 0)
+            {
+                bits++;
+                curr_size >>= 1;
+            }
+
+            curr_size = 1 << bits;
+            return Math.Max(curr_size, size);
+        }
 
         #endregion
     }
