@@ -77,7 +77,18 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public virtual NtResult<SafeStructureInOutBuffer<T>> QueryBuffer<T>(I info_class, T default_value, bool throw_on_error) where T : new()
         {
-            NtStatus status = QueryInformation(info_class, SafeHGlobalBuffer.Null, out int return_length);
+            NtStatus status;
+            int return_length;
+            // First try base size before trying to reallocate.
+            using (var buffer = default_value.ToBuffer())
+            {
+                status = QueryInformation(info_class, buffer, out return_length);
+                if (status.IsSuccess())
+                {
+                    return status.CreateResult(false, () => buffer.Detach());
+                }
+            }
+
             if (!IsInvalidBufferSize(status))
             {
                 return status.CreateResultFromError<SafeStructureInOutBuffer<T>>(throw_on_error);
