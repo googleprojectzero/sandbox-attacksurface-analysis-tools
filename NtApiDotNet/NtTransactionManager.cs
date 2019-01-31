@@ -405,6 +405,13 @@ namespace NtApiDotNet
             return NtSystemCalls.NtRenameTransactionManager(logpath.ToUnicodeString(),
                 new OptionalGuid(identity)).ToNtException(throw_on_error);
         }
+
+        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
+        {
+            return Open(object_attributes, desired_access.ToSpecificAccess<TransactionManagerAccessRights>(), 
+                null, null, TransactionManagerOpenOptions.None, throw_on_error).Cast<NtObject>();
+        }
+
         #endregion
 
         #region Public Properties
