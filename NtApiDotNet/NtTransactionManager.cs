@@ -79,7 +79,7 @@ namespace NtApiDotNet
         public Guid LogIdentity;
     }
 
-    [StructLayout(LayoutKind.Sequential), DataStart("LogPath")]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), DataStart("LogPath")]
     public struct TransactionLogPathInformation
     {
         public int LogPathLength;
