@@ -1504,7 +1504,7 @@ namespace NtApiDotNet
         {
             IoStatus io_status = new IoStatus();
             return NtSystemCalls.NtCreateNamedPipeFile(out SafeKernelObjectHandle handle, desired_access, obj_attributes, io_status, share_access, disposition, open_options,
-                pipe_type, read_mode, completion_mode, maximum_instances, input_quota, output_quota, default_timeout.Timeout)
+                pipe_type, read_mode, completion_mode, maximum_instances, input_quota, output_quota, default_timeout.ToLargeInteger())
                 .CreateResult(throw_on_error, () => new NtNamedPipeFile(handle, io_status));
         }
 
@@ -1657,7 +1657,7 @@ namespace NtApiDotNet
         {
             SafeKernelObjectHandle handle;
             IoStatus io_status = new IoStatus();
-            LargeInteger timeout = default_timeout < 0 ? new LargeInteger(-1) : NtWaitTimeout.FromMilliseconds(default_timeout).Timeout;
+            LargeInteger timeout = default_timeout < 0 ? new LargeInteger(-1) : NtWaitTimeout.FromMilliseconds(default_timeout).ToLargeInteger();
             NtSystemCalls.NtCreateMailslotFile(out handle, desired_access, obj_attributes, io_status, open_options, mailslot_quota, maximum_message_size, timeout);
             return new NtFile(handle, io_status);
         }

@@ -1113,7 +1113,7 @@ namespace NtApiDotNet
         /// <returns>True if the thread was alerted before the delay expired.</returns>
         public static bool Sleep(bool alertable, NtWaitTimeout delay)
         {
-            return Sleep(alertable, delay.Timeout.QuadPart);
+            return Sleep(alertable, delay.Timeout);
         }
 
         /// <summary>

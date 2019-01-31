@@ -283,7 +283,7 @@ namespace NtApiDotNet
             IntPtr key_context;
             IntPtr apc_context;
             IoStatus io_status = new IoStatus();
-            NtStatus status = NtSystemCalls.NtRemoveIoCompletion(Handle, out key_context, out apc_context, io_status, timeout.Timeout).ToNtException();
+            NtStatus status = NtSystemCalls.NtRemoveIoCompletion(Handle, out key_context, out apc_context, io_status, timeout.ToLargeInteger()).ToNtException();
             if (status != NtStatus.STATUS_SUCCESS)
             {
                 throw new NtException(status);
@@ -305,7 +305,7 @@ namespace NtApiDotNet
             int result_count = 0;
 
             NtStatus status = NtSystemCalls.NtRemoveIoCompletionEx(Handle, result, max_count,
-                out result_count, timeout.Timeout, alertable).ToNtException();
+                out result_count, timeout.ToLargeInteger(), alertable).ToNtException();
             if (status == NtStatus.STATUS_SUCCESS)
             {
                 return result.Take(result_count).Select(r => new FileIoCompletionResult(r)).ToArray();

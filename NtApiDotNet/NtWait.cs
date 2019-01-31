@@ -57,7 +57,7 @@ namespace NtApiDotNet
 
         internal NtWaitTimeout(long value)
         {
-            Timeout = new LargeInteger(value);
+            Timeout = value;
         }
 
         /// <summary>
@@ -106,9 +106,9 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// The timeout as a LargeInteger.
+        /// The timeout as a long.
         /// </summary>
-        public LargeInteger Timeout { get; }
+        public long Timeout { get; }
     }
 
     /// <summary>
@@ -195,7 +195,7 @@ namespace NtApiDotNet
         /// <returns>The success status of the wait, such as STATUS_SUCCESS or STATUS_TIMEOUT</returns>
         public static NtStatus Wait(NtObject obj, bool alertable, NtWaitTimeout timeout)
         {
-            return NtSystemCalls.NtWaitForSingleObject(obj.Handle, alertable, timeout.Timeout).ToNtException();
+            return NtSystemCalls.NtWaitForSingleObject(obj.Handle, alertable, timeout.ToLargeInteger()).ToNtException();
         }
 
         /// <summary>
@@ -210,7 +210,7 @@ namespace NtApiDotNet
         {
             IntPtr[] handles = objs.Select(o => o.Handle.DangerousGetHandle()).ToArray();
             return NtSystemCalls.NtWaitForMultipleObjects(handles.Length, handles,
-                wait_all ? WaitType.WaitAll : WaitType.WaitAny, alertable, timeout.Timeout).ToNtException();
+                wait_all ? WaitType.WaitAll : WaitType.WaitAny, alertable, timeout.ToLargeInteger()).ToNtException();
         }
     }
 }

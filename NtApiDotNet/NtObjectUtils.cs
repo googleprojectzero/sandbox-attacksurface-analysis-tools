@@ -576,5 +576,25 @@ namespace NtApiDotNet
         {
             return obj?.Handle ?? SafeKernelObjectHandle.Null;
         }
+
+        internal static UnicodeString ToUnicodeString(this string str)
+        {
+            return str != null ? new UnicodeString(str) : null;
+        }
+
+        internal static OptionalGuid ToOptional(this Guid? guid)
+        {
+            return guid.HasValue ? new OptionalGuid(guid.Value) : null;
+        }
+
+        internal static LargeInteger ToLargeInteger(this long? l)
+        {
+            return l.HasValue ? new LargeInteger(l.Value) : null;
+        }
+
+        internal static LargeInteger ToLargeInteger(this NtWaitTimeout timeout)
+        {
+            return ToLargeInteger(timeout?.Timeout);
+        }
     }
 }
