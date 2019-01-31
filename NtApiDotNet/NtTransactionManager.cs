@@ -154,7 +154,7 @@ namespace NtApiDotNet
     /// Class to represent a kernel transaction.
     /// </summary>
     [NtType("TmTm")]
-    public class NtTransactionManager : NtObjectWithDuplicate<NtTransactionManager, TransactionManagerAccessRights>
+    public class NtTransactionManager : NtObjectWithDuplicate<NtTransactionManager, TransactionManagerAccessRights>, INtObjectInternal<TransactionManagerInformationClass>
     {
         #region Constructors
         internal NtTransactionManager(SafeKernelObjectHandle handle) 
@@ -449,7 +449,8 @@ namespace NtApiDotNet
         /// <summary>
         /// Get Transaction Manager last recovered Log Sequence Number.
         /// </summary>
-        public ulong LastRecoveredLsn => QueryFixed<TransactionManagerRecoveryInformation>(TransactionManagerInformationClass.TransactionManagerRecoveryInformation).LastRecoveredLsn;
+        public ulong LastRecoveredLsn => this.QueryFixed(TransactionManagerInformationClass.TransactionManagerRecoveryInformation, 
+                                            new TransactionManagerRecoveryInformation()).LastRecoveredLsn;
 
         #endregion
 
@@ -535,54 +536,32 @@ namespace NtApiDotNet
 
         private TransactionManagerBasicInformation GetBasicInformation()
         {
-            return QueryFixed<TransactionManagerBasicInformation>(TransactionManagerInformationClass.TransactionManagerBasicInformation);
-        }
-
-        private NtResult<T> QueryFixed<T>(TransactionManagerInformationClass info_class, bool throw_on_error) where T : new()
-        {
-            using (var buffer = new SafeStructureInOutBuffer<T>())
-            {
-                return NtSystemCalls.NtQueryInformationTransactionManager(Handle, info_class, 
-                    buffer, buffer.Length, out int return_length).CreateResult(throw_on_error, () => buffer.Result);
-            }
-        }
-
-        private T QueryFixed<T>(TransactionManagerInformationClass info_class) where T : new()
-        {
-            return QueryFixed<T>(info_class, true).Result;
-        }
-
-        private NtResult<SafeStructureInOutBuffer<T>> Query<T>(TransactionManagerInformationClass info_class, bool throw_on_error) where T : new()
-        {
-            NtStatus status = NtSystemCalls.NtQueryInformationTransactionManager(Handle, info_class, SafeHGlobalBuffer.Null, 0, out int return_length);
-            if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH && status != NtStatus.STATUS_BUFFER_TOO_SMALL)
-            {
-                return status.CreateResultFromError<SafeStructureInOutBuffer<T>>(throw_on_error);
-            }
-
-            using (var buffer = new SafeStructureInOutBuffer<T>(return_length, false))
-            {
-                return NtSystemCalls.NtQueryInformationTransactionManager(Handle, info_class, buffer, 
-                    buffer.Length, out return_length).CreateResult(throw_on_error, () => buffer.Detach());
-            }
-        }
-
-        private SafeStructureInOutBuffer<T> Query<T>(TransactionManagerInformationClass info_class) where T : new()
-        {
-            return Query<T>(info_class, true).Result;
+            return this.QueryFixed(TransactionManagerInformationClass.TransactionManagerBasicInformation, new TransactionManagerBasicInformation());
         }
 
         private NtResult<Guid> GetIdentity(bool throw_on_error)
         {
-            return QueryFixed<TransactionManagerLogInformation>(TransactionManagerInformationClass.TransactionManagerLogInformation, throw_on_error).Map(i => i.LogIdentity);
+            return this.QueryFixed(TransactionManagerInformationClass.TransactionManagerLogInformation, 
+                new TransactionManagerLogInformation(), throw_on_error).Map(i => i.LogIdentity);
         }
 
         private NtResult<string> GetLogPath(bool throw_on_error)
         {
-            using (var buffer = Query<TransactionLogPathInformation>(TransactionManagerInformationClass.TransactionManagerLogPathInformation, throw_on_error))
+            using (var buffer = this.Query(TransactionManagerInformationClass.TransactionManagerLogPathInformation, 
+                new TransactionLogPathInformation(), throw_on_error))
             {
                 return buffer.Map(i => i.Data.ReadUnicodeString(i.Result.LogPathLength / 2));
             }
+        }
+
+        NtStatus INtObjectInternal<TransactionManagerInformationClass>.QueryInformation(TransactionManagerInformationClass info_class, SafeHGlobalBuffer buffer, out int return_length)
+        {
+            return NtSystemCalls.NtQueryInformationTransactionManager(Handle, info_class, buffer, buffer.Length, out return_length);
+        }
+
+        NtStatus INtObjectInternal<TransactionManagerInformationClass>.SetInformation(TransactionManagerInformationClass info_class, SafeHGlobalBuffer buffer)
+        {
+            return NtSystemCalls.NtSetInformationTransactionManager(Handle, info_class, buffer, buffer.Length);
         }
 
         #endregion
