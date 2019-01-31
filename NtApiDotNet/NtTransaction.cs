@@ -240,7 +240,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtTransaction> Create(ObjectAttributes object_attributes, TransactionAccessRights desired_access, bool throw_on_error)
         {
-            return Create(object_attributes, desired_access, null, null, TransactionCreateFlags.None, 0, 0, null, "Flubber", throw_on_error);
+            return Create(object_attributes, desired_access, null, null, TransactionCreateFlags.None, 0, 0, null, null, throw_on_error);
         }
 
         /// <summary>
