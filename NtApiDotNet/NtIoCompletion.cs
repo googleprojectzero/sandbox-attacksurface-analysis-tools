@@ -123,7 +123,7 @@ namespace NtApiDotNet
             IoCompletionInformationClass IoCompletionInformationClass,
             SafeBuffer IoCompletionInformation,
             int IoCompletionInformationLength,
-            OptionalInt32 ReturnLength
+            out int ReturnLength
         );
 
         [DllImport("ntdll.dll")]
@@ -152,12 +152,18 @@ namespace NtApiDotNet
     /// Class representing an NT IO Completion Port object
     /// </summary>
     [NtType("IoCompletion")]
-    public class NtIoCompletion : NtObjectWithDuplicate<NtIoCompletion, IoCompletionAccessRights>
+    public class NtIoCompletion : NtObjectWithDuplicateAndInfo<NtIoCompletion, IoCompletionAccessRights, IoCompletionInformationClass>
     {
+        #region Constructors
+
         internal NtIoCompletion(SafeKernelObjectHandle handle) 
             : base(handle)
         {
         }
+
+        #endregion
+
+        #region Static Methods
 
         /// <summary>
         /// Create an IO Completion Port object
@@ -271,7 +277,9 @@ namespace NtApiDotNet
         {
             return Open(name, null, IoCompletionAccessRights.MaximumAllowed);
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Remove a queued status from the queue.
         /// </summary>
@@ -346,19 +354,31 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Method to query information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to return data in.</param>
+        /// <param name="return_length">Return length from the query.</param>
+        /// <returns>The NT status code for the query.</returns>
+        public override NtStatus QueryInformation(IoCompletionInformationClass info_class, SafeBuffer buffer, out int return_length)
+        {
+            return NtSystemCalls.NtQueryIoCompletion(Handle, info_class,
+                        buffer, (int)buffer.ByteLength, out return_length);
+        }
+
+        #endregion
+
+        #region Public Properties
+        /// <summary>
         /// Get current depth of IO Completion Port
         /// </summary>
         public int Depth
         {
             get
             {
-                using (var buffer = new SafeStructureInOutBuffer<IoCompletionBasicInformation>())
-                {
-                    NtSystemCalls.NtQueryIoCompletion(Handle, IoCompletionInformationClass.IoCompletionBasicInformation,
-                        buffer, buffer.Length, null).ToNtException();
-                    return buffer.Result.Depth;
-                }
+                return Query<IoCompletionBasicInformation>(IoCompletionInformationClass.IoCompletionBasicInformation).Depth;
             }
         }
+        #endregion
     }
 }
