@@ -194,7 +194,7 @@ namespace NtApiDotNet
         /// Method to set information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
-        /// <param name="buffer">The buffer to return data in.</param>
+        /// <param name="buffer">The buffer to set data in.</param>
         /// <returns>The NT status code for the query.</returns>
         public abstract NtStatus SetInformation(I info_class, SafeBuffer buffer);
 

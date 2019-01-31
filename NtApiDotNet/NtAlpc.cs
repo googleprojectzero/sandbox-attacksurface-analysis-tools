@@ -211,7 +211,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtAlpcQueryInformation(
             SafeKernelObjectHandle PortHandle,
             AlpcPortInformationClass PortInformationClass,
-            IntPtr PortInformation,
+            SafeBuffer PortInformation,
             int Length,
             out int ReturnLength
         );
@@ -220,7 +220,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtAlpcSetInformation(
             [In] SafeKernelObjectHandle PortHandle,
             AlpcPortInformationClass PortInformationClass,
-            IntPtr PortInformation,
+            SafeBuffer PortInformation,
             int Length);
 
         [DllImport("ntdll.dll")]
@@ -316,12 +316,20 @@ namespace NtApiDotNet
     /// Class to represent an ALPC port.
     /// </summary>
     [NtType("ALPC Port")]
-    public class NtAlpc : NtObjectWithDuplicate<NtAlpc, AlpcAccessRights>
+    public class NtAlpc : NtObjectWithDuplicateAndInfo<NtAlpc, AlpcAccessRights, AlpcPortInformationClass>
     {
-        internal NtAlpc(SafeKernelObjectHandle handle) : base(handle)
+        #region Constructors
+        internal NtAlpc(SafeKernelObjectHandle handle, bool connected) : base(handle)
         {
+            _connected = connected;
         }
 
+        internal NtAlpc(SafeKernelObjectHandle handle) : this(handle, false)
+        {
+        }
+        #endregion
+
+        #region Static Methods
         /// <summary>
         /// Create an ALPC port.
         /// </summary>
@@ -372,8 +380,36 @@ namespace NtApiDotNet
             AlpcPortAttributes attrs = new AlpcPortAttributes();
             NtSystemCalls.NtAlpcConnectPort(out SafeKernelObjectHandle handle, 
                 new UnicodeString(port_name), null, port_attributes, 0).ToNtException();
-            return new NtAlpc(handle);
+            return new NtAlpc(handle, true);
         }
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Method to query information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to return data in.</param>
+        /// <param name="return_length">Return length from the query.</param>
+        /// <returns>The NT status code for the query.</returns>
+        public override NtStatus QueryInformation(AlpcPortInformationClass info_class, SafeBuffer buffer, out int return_length)
+        {
+            return NtSystemCalls.NtAlpcQueryInformation(Handle, info_class, buffer, (int)buffer.ByteLength, out return_length);
+        }
+
+        /// <summary>
+        /// Method to set information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to set data in.</param>
+        /// <returns>The NT status code for the query.</returns>
+        public override NtStatus SetInformation(AlpcPortInformationClass info_class, SafeBuffer buffer)
+        {
+            return NtSystemCalls.NtAlpcSetInformation(Handle, info_class, buffer, (int)buffer.ByteLength);
+        }
+        #endregion
+
+        #region Protected Members
 
         /// <summary>
         /// Dispose port.
@@ -381,8 +417,19 @@ namespace NtApiDotNet
         /// <param name="disposing">True when disposing, false if finalizing</param>
         protected override void Dispose(bool disposing)
         {
-            NtSystemCalls.NtAlpcDisconnectPort(Handle, 0);
+            if (_connected)
+            {
+                NtSystemCalls.NtAlpcDisconnectPort(Handle, 0);
+            }
             base.Dispose(disposing);
         }
+
+        #endregion
+
+        #region Private Members
+
+        private readonly bool _connected;
+
+        #endregion
     }
 }
