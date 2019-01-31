@@ -100,8 +100,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error</exception>
         public static NtMutant Create(ObjectAttributes object_attributes, bool initial_owner, MutantAccessRights desired_access)
         {
-            SafeKernelObjectHandle handle;
-            NtSystemCalls.NtCreateMutant(out handle, desired_access, object_attributes, initial_owner).ToNtException();
+            NtSystemCalls.NtCreateMutant(out SafeKernelObjectHandle handle, desired_access, object_attributes, initial_owner).ToNtException();
             return new NtMutant(handle);
         }
 
@@ -115,8 +114,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtMutant> Create(ObjectAttributes object_attributes, bool initial_owner, MutantAccessRights desired_access, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtCreateMutant(out handle, desired_access, object_attributes, initial_owner).CreateResult(throw_on_error, () => new NtMutant(handle));
+            return NtSystemCalls.NtCreateMutant(out SafeKernelObjectHandle handle, desired_access, object_attributes, initial_owner).CreateResult(throw_on_error, () => new NtMutant(handle));
         }
 
         /// <summary>
@@ -156,8 +154,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error</exception>
         public static NtMutant Open(ObjectAttributes object_attributes, MutantAccessRights desired_access)
         {
-            SafeKernelObjectHandle handle;
-            NtSystemCalls.NtOpenMutant(out handle, desired_access, object_attributes).ToNtException();
+            NtSystemCalls.NtOpenMutant(out SafeKernelObjectHandle handle, desired_access, object_attributes).ToNtException();
             return new NtMutant(handle);
         }
 
@@ -170,8 +167,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtMutant> Open(ObjectAttributes object_attributes, MutantAccessRights desired_access, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtOpenMutant(out handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtMutant(handle));
+            return NtSystemCalls.NtOpenMutant(out SafeKernelObjectHandle handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtMutant(handle));
         }
 
         internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
@@ -199,17 +195,6 @@ namespace NtApiDotNet
         public override NtStatus QueryInformation(MutantInformationClass info_class, SafeBuffer buffer, out int return_length)
         {
             return NtSystemCalls.NtQueryMutant(Handle, info_class, buffer, (int)buffer.ByteLength, out return_length);
-        }
-
-        /// <summary>
-        /// Method to set information for this object type.
-        /// </summary>
-        /// <param name="info_class">The information class.</param>
-        /// <param name="buffer">The buffer to set data from.</param>
-        /// <returns>The NT status code for the set.</returns>
-        public override NtStatus SetInformation(MutantInformationClass info_class, SafeBuffer buffer)
-        {
-            return NtStatus.STATUS_NOT_SUPPORTED;
         }
     }
 }

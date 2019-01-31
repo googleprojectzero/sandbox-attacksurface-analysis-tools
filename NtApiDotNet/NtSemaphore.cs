@@ -62,6 +62,13 @@ namespace NtApiDotNet
            int ReleaseCount,
            out int PreviousCount
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQuerySemaphore(SafeKernelObjectHandle MutantHandle,
+            SemaphoreInformationClass SemaphoreInformationClass,
+            SafeBuffer SemaphoreInformation,
+            int SemaphoreInformationLength,
+            out int ResultLength);
     }
 #pragma warning restore 1591
 
@@ -69,12 +76,15 @@ namespace NtApiDotNet
     /// Class to represent a NT Semaphore object.
     /// </summary>
     [NtType("Semaphore")]
-    public class NtSemaphore : NtObjectWithDuplicate<NtSemaphore, SemaphoreAccessRights>
+    public class NtSemaphore : NtObjectWithDuplicateAndInfo<NtSemaphore, SemaphoreAccessRights, SemaphoreInformationClass>
     {
+        #region Constructors
         internal NtSemaphore(SafeKernelObjectHandle handle) : base(handle)
         {
         }
+        #endregion
 
+        #region Static Methods
         /// <summary>
         /// Create a semaphore object.
         /// </summary>
@@ -86,8 +96,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtSemaphore> Create(ObjectAttributes object_attributes, SemaphoreAccessRights desired_access, int initial_count, int maximum_count, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtCreateSemaphore(out handle, desired_access, object_attributes, initial_count, maximum_count).CreateResult(throw_on_error, () => new NtSemaphore(handle));
+            return NtSystemCalls.NtCreateSemaphore(out SafeKernelObjectHandle handle, desired_access, object_attributes, initial_count, maximum_count).CreateResult(throw_on_error, () => new NtSemaphore(handle));
         }
 
         /// <summary>
@@ -128,8 +137,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtSemaphore> Open(ObjectAttributes object_attributes, SemaphoreAccessRights desired_access, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtOpenSemaphore(out handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtSemaphore(handle));
+            return NtSystemCalls.NtOpenSemaphore(out SafeKernelObjectHandle handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtSemaphore(handle));
         }
 
         internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
@@ -162,7 +170,9 @@ namespace NtApiDotNet
                 return Open(obja, desired_access);
             }
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Release the semaphore
         /// </summary>
@@ -170,9 +180,31 @@ namespace NtApiDotNet
         /// <returns>The previous count</returns>
         public int Release(int count)
         {
-            int previous_count;
-            NtSystemCalls.NtReleaseSemaphore(Handle, count, out previous_count).ToNtException();
-            return previous_count;
+            return Release(count, true).Result;
         }
+
+        /// <summary>
+        /// Release the semaphore
+        /// </summary>
+        /// <param name="count">The release count</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The previous count</returns>
+        public NtResult<int> Release(int count, bool throw_on_error)
+        {
+            return NtSystemCalls.NtReleaseSemaphore(Handle, count, out int previous_count).CreateResult(throw_on_error, () => previous_count);
+        }
+
+        /// <summary>
+        /// Method to query information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to return data in.</param>
+        /// <param name="return_length">Return length from the query.</param>
+        /// <returns>The NT status code for the query.</returns>
+        public override NtStatus QueryInformation(SemaphoreInformationClass info_class, SafeBuffer buffer, out int return_length)
+        {
+            return NtSystemCalls.NtQuerySemaphore(Handle, info_class, buffer, (int)buffer.ByteLength, out return_length);
+        }
+        #endregion
     }
 }
