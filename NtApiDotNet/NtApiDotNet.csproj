@@ -81,6 +81,7 @@
     <Compile Include="Ndr\NdrTypes.cs" />
     <Compile Include="Ndr\NdrRpcServerInterface.cs" />
     <Compile Include="NtGeneric.cs" />
+    <Compile Include="NtObjectWithDuplicate.cs" />
     <Compile Include="NtResult.cs" />
     <Compile Include="NtTransactionManager.cs" />
     <Compile Include="ReparseBuffer.cs" />
