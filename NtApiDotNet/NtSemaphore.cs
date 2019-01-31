@@ -45,6 +45,13 @@ namespace NtApiDotNet
         SemaphoreBasicInformation
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SemaphoreBasicInformation
+    {
+        public int CurrentCount;
+        public int MaximumCount;
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
@@ -82,6 +89,12 @@ namespace NtApiDotNet
         internal NtSemaphore(SafeKernelObjectHandle handle) : base(handle)
         {
         }
+
+        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
+        {
+            return Open(object_attributes, desired_access.ToSpecificAccess<SemaphoreAccessRights>(), throw_on_error).Cast<NtObject>();
+        }
+
         #endregion
 
         #region Static Methods
@@ -138,11 +151,6 @@ namespace NtApiDotNet
         public static NtResult<NtSemaphore> Open(ObjectAttributes object_attributes, SemaphoreAccessRights desired_access, bool throw_on_error)
         {
             return NtSystemCalls.NtOpenSemaphore(out SafeKernelObjectHandle handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtSemaphore(handle));
-        }
-
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, desired_access.ToSpecificAccess<SemaphoreAccessRights>(), throw_on_error).Cast<NtObject>();
         }
 
         /// <summary>
@@ -205,6 +213,19 @@ namespace NtApiDotNet
         {
             return NtSystemCalls.NtQuerySemaphore(Handle, info_class, buffer, (int)buffer.ByteLength, out return_length);
         }
+        #endregion
+
+        #region Public Properties
+
+        /// <summary>
+        /// Current count of the semaphore.
+        /// </summary>
+        public int CurrentCount => Query<SemaphoreBasicInformation>(SemaphoreInformationClass.SemaphoreBasicInformation).CurrentCount;
+
+        /// <summary>
+        /// Maximum count of the semaphore.
+        /// </summary>
+        public int MaximumCount => Query<SemaphoreBasicInformation>(SemaphoreInformationClass.SemaphoreBasicInformation).MaximumCount;
         #endregion
     }
 }
