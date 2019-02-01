@@ -284,21 +284,12 @@ namespace NtApiDotNet
         {
         }
 
-        private static int GetStructDataOffset()
-        {
-            DataStartAttribute attr = typeof(T).GetCustomAttribute<DataStartAttribute>();
-            if (attr != null)
-            {
-                return Marshal.OffsetOf(typeof(T), attr.FieldName).ToInt32();
-            }
-            return Marshal.SizeOf(typeof(T));
-        }
-
         private static int GetTotalLength(int additional_size, bool add_struct_size)
         {
             if (add_struct_size)
             {
-                int data_offset = GetStructDataOffset();
+                int data_offset = BufferUtils.GetIncludeField<T>() 
+                    ? Marshal.SizeOf(typeof(T)) : BufferUtils.GetStructDataOffset<T>();
                 return data_offset + additional_size;
             }
             return additional_size;
@@ -307,10 +298,7 @@ namespace NtApiDotNet
         private static int GetAllocationLength(int length)
         {
             // Always ensure we at least allocate the entire structure length.
-            int struct_length = Marshal.SizeOf(typeof(T));
-            if (length < struct_length)
-                return struct_length;
-            return length;
+            return Math.Max(Marshal.SizeOf(typeof(T)), length);
         }
 
         private SafeStructureInOutBuffer(T value, int total_length) 
@@ -363,7 +351,7 @@ namespace NtApiDotNet
                 if (IsClosed || IsInvalid)
                     throw new ObjectDisposedException("handle");
 
-                int size = GetStructDataOffset();
+                int size = BufferUtils.GetStructDataOffset<T>();
                 int length = Length - size;
                 return new SafeHGlobalBuffer(handle + size, length < 0 ? 0 : length, false);
             }
@@ -791,6 +779,31 @@ namespace NtApiDotNet
         public static SafeArrayBuffer<T> ToArrayBuffer<T>(this T[] value)
         {
             return new SafeArrayBuffer<T>(value);
+        }
+
+        internal static DataStartAttribute GetStructDataAttribute<T>() where T : new()
+        {
+            return typeof(T).GetCustomAttribute<DataStartAttribute>();
+        }
+
+        internal static int GetStructDataOffset<T>() where T : new()
+        {
+            var attr = GetStructDataAttribute<T>();
+            if (attr != null)
+            {
+                return Marshal.OffsetOf(typeof(T), attr.FieldName).ToInt32();
+            }
+            return Marshal.SizeOf(typeof(T));
+        }
+
+        internal static bool GetIncludeField<T>() where T : new()
+        {
+            var attr = GetStructDataAttribute<T>();
+            if (attr != null)
+            {
+                return attr.IncludeDataField;
+            }
+            return true;
         }
     }
 

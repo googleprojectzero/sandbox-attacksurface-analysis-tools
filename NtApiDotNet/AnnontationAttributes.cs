@@ -75,6 +75,10 @@ namespace NtApiDotNet
         /// The field name which indicates the first address of data.
         /// </summary>
         public string FieldName { get; set; }
-    }
 
+        /// <summary>
+        /// When allocating this structure always include the field in the total length calculation.
+        /// </summary>
+        public bool IncludeDataField { get; set; }
+    }
 }
