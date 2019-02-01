@@ -557,6 +557,48 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create a resource manager for this transaction manager.
+        /// </summary>
+        /// <param name="resource_manager_guid">The resource manager GUID to assign.</param>
+        /// <param name="create_options">Creation options.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The resource manager and NT status.</returns>
+        public NtResult<NtResourceManager> CreateResourceManager(Guid resource_manager_guid, ResourceManagerCreateOptions create_options, bool throw_on_error)
+        {
+            return NtResourceManager.Create(null, ResourceManagerAccessRights.MaximumAllowed, this, resource_manager_guid, create_options, null, throw_on_error);
+        }
+
+        /// <summary>
+        /// Create a resource manager for this transaction manager.
+        /// </summary>
+        /// <param name="resource_manager_guid">The resource manager GUID to assign.</param>
+        /// <param name="create_options">Creation options.</param>
+        /// <returns>The resource manager .</returns>
+        public NtResourceManager CreateResourceManager(Guid resource_manager_guid, ResourceManagerCreateOptions create_options)
+        {
+            return CreateResourceManager(resource_manager_guid, create_options, true).Result;
+        }
+
+        /// <summary>
+        /// Create a resource manager for this transaction manager.
+        /// </summary>
+        /// <param name="resource_manager_guid">The resource manager GUID to assign.</param>
+        /// <returns>The resource manager.</returns>
+        public NtResourceManager CreateResourceManagerVolatile(Guid resource_manager_guid)
+        {
+            return CreateResourceManager(resource_manager_guid, ResourceManagerCreateOptions.Volatile, true).Result;
+        }
+
+        /// <summary>
+        /// Create a volatile resource manager for this transaction manager with a auto-generated GUID.
+        /// </summary>
+        /// <returns>The resource manager.</returns>
+        public NtResourceManager CreateResourceManagerVolatile()
+        {
+            return CreateResourceManagerVolatile(Guid.NewGuid());
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>

@@ -78,13 +78,40 @@ namespace NtApiDotNet
         RequestOutcome = 0x20000000,
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [Flags]
+    public enum RegisterProtocolCreateOptions
+    {
+        None = 0,
+        ExplicitMarshalOnly = 1,
+        DynamicMarshalInfo = 2,
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("ArgumentData")]
     public struct TransactionNotificationData
     {
         public IntPtr TransactionKey;
         public TransactionNotifyMask TransactionNotification;
         public LargeIntegerStruct TmVirtualClock;
         public int ArgumentLength;
+        public byte ArgumentData;
+    }
+
+    public class TransactionNotification
+    {
+        public IntPtr Key { get; }
+        public TransactionNotifyMask Mask { get; }
+        public long VirtualClock { get; }
+        public byte[] Argument { get; }
+
+        internal TransactionNotification(SafeStructureInOutBuffer<TransactionNotificationData> buffer)
+        {
+            var result = buffer.Result;
+            Key = result.TransactionKey;
+            Mask = result.TransactionNotification;
+            VirtualClock = result.TmVirtualClock.QuadPart;
+            Argument = new byte[result.ArgumentLength];
+            buffer.Data.ReadArray(0, Argument, 0, Argument.Length);
+        }
     }
 
     public enum ResourceManagerInformationClass
@@ -93,7 +120,8 @@ namespace NtApiDotNet
         ResourceManagerCompletionInformation
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), DataStart("Description")]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), 
+        DataStart("Description", IncludeDataField = true)]
     public struct ResourceManagerBasicInformation
     {
         public Guid ResourceManagerId;
@@ -115,7 +143,7 @@ namespace NtApiDotNet
             out SafeKernelObjectHandle ResourceManagerHandle,
             ResourceManagerAccessRights DesiredAccess,
             SafeKernelObjectHandle TmHandle,
-            OptionalGuid RmGuid,
+            ref Guid RmGuid,
             ObjectAttributes ObjectAttributes,
             ResourceManagerCreateOptions CreateOptions,
             UnicodeString Description
@@ -162,12 +190,40 @@ namespace NtApiDotNet
             int Asynchronous,
             IntPtr AsynchronousContext
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtRegisterProtocolAddressInformation(
+            SafeKernelObjectHandle ResourceManagerHandle,
+            ref Guid ProtocolId,
+            int ProtocolInformationSize,
+            SafeBuffer ProtocolInformation,
+            RegisterProtocolCreateOptions CreateOptions);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtPropagationComplete(
+            SafeKernelObjectHandle ResourceManagerHandle,
+            uint RequestCookie,
+            int BufferLength,
+            SafeBuffer Buffer);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtPropagationFailed(
+            SafeKernelObjectHandle ResourceManagerHandle,
+            uint RequestCookie,
+            NtStatus PropStatus);
+    }
+
+    public static class NtResourceManagerKnownProtocolId
+    {
+        public static readonly Guid PromotingProtocolId = new Guid("AC06CC84-1465-428B-A398-0AAEEFB4599B");
+        public static readonly Guid OleTxProtocolId = new Guid("88288CD9-A6D0-494B-8072-FF9BE190D691");
     }
 
 #pragma warning restore 1591
     /// <summary>
     /// Class to represent a transaction resource manager.
     /// </summary>
+    [NtType("TmRm")]
     public sealed class NtResourceManager : NtObjectWithDuplicateAndInfo<NtResourceManager, ResourceManagerAccessRights, ResourceManagerInformationClass>
     {
         #region Constructors
@@ -186,20 +242,20 @@ namespace NtApiDotNet
         /// <param name="desired_access">Desired access for the handle</param>
         /// <param name="create_options">Creation options flags.</param>
         /// <param name="transaction_manager">Optional transaction manager to assign the resource manager to.</param>
-        /// <param name="resource_manager_guid">Optional resource manager GUID.</param>
+        /// <param name="resource_manager_guid">Resource manager GUID.</param>
         /// <param name="description">Optional description.</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtResourceManager> Create(ObjectAttributes object_attributes,
                 ResourceManagerAccessRights desired_access,
                 NtTransactionManager transaction_manager,
-                Guid? resource_manager_guid,
+                Guid resource_manager_guid,
                 ResourceManagerCreateOptions create_options,
                 string description,
                 bool throw_on_error)
         {
             return NtSystemCalls.NtCreateResourceManager(out SafeKernelObjectHandle handle,
-                desired_access, transaction_manager.GetHandle(), resource_manager_guid.ToOptional(),
+                desired_access, transaction_manager.GetHandle(), ref resource_manager_guid,
                 object_attributes, create_options, description.ToUnicodeString())
                 .CreateResult(throw_on_error, () => new NtResourceManager(handle));
         }
@@ -211,19 +267,149 @@ namespace NtApiDotNet
         /// <param name="desired_access">Desired access for the handle</param>
         /// <param name="create_options">Creation options flags.</param>
         /// <param name="transaction_manager">Optional transaction manager to assign the resource manager to.</param>
-        /// <param name="resource_manager_guid">Optional resource manager GUID.</param>
+        /// <param name="resource_manager_guid">Resource manager GUID.</param>
         /// <param name="description">Optional description.</param>
         /// <returns>The object result.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtResourceManager Create(ObjectAttributes object_attributes,
                 ResourceManagerAccessRights desired_access,
                 NtTransactionManager transaction_manager,
-                Guid? resource_manager_guid,
+                Guid resource_manager_guid,
                 ResourceManagerCreateOptions create_options,
                 string description)
         {
             return Create(object_attributes, desired_access, transaction_manager, 
                 resource_manager_guid, create_options, description, true).Result;
+        }
+
+        /// <summary>
+        /// Create a new resource manager object.
+        /// </summary>
+        /// <param name="path">The path to the resource manager.</param>
+        /// <param name="root">The root if path is relative.</param>
+        /// <param name="desired_access">Desired access for the handle</param>
+        /// <param name="create_options">Creation options flags.</param>
+        /// <param name="transaction_manager">Optional transaction manager to assign the resource manager to.</param>
+        /// <param name="resource_manager_guid">Resource manager GUID.</param>
+        /// <param name="description">Optional description.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtResourceManager> Create(string path,
+                NtObject root,
+                ResourceManagerAccessRights desired_access,
+                NtTransactionManager transaction_manager,
+                Guid resource_manager_guid,
+                ResourceManagerCreateOptions create_options,
+                string description,
+                bool throw_on_error)
+        {
+            using (var obj_attr = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
+            {
+                return Create(obj_attr, desired_access, transaction_manager, 
+                    resource_manager_guid, create_options, description, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Create a new resource manager object.
+        /// </summary>
+        /// <param name="path">The path to the resource manager.</param>
+        /// <param name="root">The root if path is relative.</param>
+        /// <param name="desired_access">Desired access for the handle</param>
+        /// <param name="create_options">Creation options flags.</param>
+        /// <param name="transaction_manager">Optional transaction manager to assign the resource manager to.</param>
+        /// <param name="resource_manager_guid">Resource manager GUID.</param>
+        /// <param name="description">Optional description.</param>
+        /// <returns>The object result.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResourceManager Create(string path,
+                NtObject root,
+                ResourceManagerAccessRights desired_access,
+                NtTransactionManager transaction_manager,
+                Guid resource_manager_guid,
+                ResourceManagerCreateOptions create_options = ResourceManagerCreateOptions.None,
+                string description = null)
+        {
+            return Create(path, root, desired_access, transaction_manager,
+                resource_manager_guid, create_options, description, true).Result;
+        }
+
+        /// <summary>
+        /// Create a new volatile resource manager object.
+        /// </summary>
+        /// <param name="path">The path to the resource manager.</param>
+        /// <param name="root">The root if path is relative.</param>
+        /// <param name="desired_access">Desired access for the handle</param>
+        /// <param name="transaction_manager">Optional transaction manager to assign the resource manager to.</param>
+        /// <param name="resource_manager_guid">Resource manager GUID.</param>
+        /// <returns>The object result.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResourceManager CreateVolatile(string path,
+                NtObject root,
+                ResourceManagerAccessRights desired_access,
+                NtTransactionManager transaction_manager,
+                Guid resource_manager_guid)
+        {
+            return Create(path, root, desired_access, transaction_manager,
+                resource_manager_guid, ResourceManagerCreateOptions.Volatile, null, true).Result;
+        }
+
+        /// <summary>
+        /// Create a new volatile resource manager object.
+        /// </summary>
+        /// <param name="path">The path to the resource manager.</param>
+        /// <param name="root">The root if path is relative.</param>
+        /// <param name="desired_access">Desired access for the handle</param>
+        /// <param name="transaction_manager">Optional transaction manager to assign the resource manager to.</param>
+        /// <returns>The object result.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResourceManager CreateVolatile(string path,
+                NtObject root,
+                ResourceManagerAccessRights desired_access,
+                NtTransactionManager transaction_manager)
+        {
+            return CreateVolatile(path, null, ResourceManagerAccessRights.MaximumAllowed, 
+                transaction_manager, Guid.NewGuid());
+        }
+
+        /// <summary>
+        /// Create a new volatile resource manager object.
+        /// </summary>
+        /// <param name="path">The path to the resource manager.</param>
+        /// <param name="root">The root if path is relative.</param>
+        /// <param name="transaction_manager">Optional transaction manager to assign the resource manager to.</param>
+        /// <returns>The object result.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResourceManager CreateVolatile(string path,
+                NtObject root,
+                NtTransactionManager transaction_manager)
+        {
+            return CreateVolatile(path, null, ResourceManagerAccessRights.MaximumAllowed, transaction_manager);
+        }
+
+
+        /// <summary>
+        /// Create a new volatile resource manager object.
+        /// </summary>
+        /// <param name="path">The path to the resource manager.</param>
+        /// <param name="transaction_manager">Optional transaction manager to assign the resource manager to.</param>
+        /// <returns>The object result.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResourceManager CreateVolatile(string path,
+                NtTransactionManager transaction_manager)
+        {
+            return CreateVolatile(path, null, transaction_manager);
+        }
+
+        /// <summary>
+        /// Create a new volatile resource manager object.
+        /// </summary>
+        /// <param name="transaction_manager">Optional transaction manager to assign the resource manager to.</param>
+        /// <returns>The object result.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResourceManager CreateVolatile(NtTransactionManager transaction_manager)
+        {
+            return CreateVolatile(null, transaction_manager);
         }
 
         /// <summary>
@@ -287,6 +473,141 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Set an IO completion port on the resource manager.
+        /// </summary>
+        /// <param name="io_completion">The IO completion port.</param>
+        /// <param name="completion_key">Associated completion key.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetIoCompletion(NtIoCompletion io_completion, IntPtr completion_key, bool throw_on_error)
+        {
+            return Set(ResourceManagerInformationClass.ResourceManagerCompletionInformation, 
+                new ResourceManagerCompletionInformation() {
+                    IoCompletionPortHandle = io_completion.Handle.DangerousGetHandle(),
+                    CompletionKey = completion_key }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set an IO completion port on the resource manager.
+        /// </summary>
+        /// <param name="io_completion">The IO completion port.</param>
+        /// <param name="completion_key">Associated completion key.</param>
+        public void SetIoCompletion(NtIoCompletion io_completion, IntPtr completion_key)
+        {
+            SetIoCompletion(io_completion, completion_key, true);
+        }
+
+        /// <summary>
+        /// Get a notification synchronously.
+        /// </summary>
+        /// <param name="timeout">Optional timeout for getting the notification.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The transaction notification.</returns>
+        public NtResult<TransactionNotification> GetNotification(NtWaitTimeout timeout, bool throw_on_error)
+        {
+            NtStatus status = NtSystemCalls.NtGetNotificationResourceManager(Handle, 
+                SafeHGlobalBuffer.Null, 0, timeout.ToLargeInteger(), out int return_length, 0, IntPtr.Zero);
+            if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+            {
+                return status.CreateResultFromError<TransactionNotification>(throw_on_error);
+            }
+
+            using (var buffer = new SafeStructureInOutBuffer<TransactionNotificationData>(return_length, false))
+            {
+                return NtSystemCalls.NtGetNotificationResourceManager(Handle,
+                    buffer, buffer.Length, timeout.ToLargeInteger(), out return_length, 0, IntPtr.Zero)
+                    .CreateResult(throw_on_error, () => new TransactionNotification(buffer));
+            }
+        }
+
+        /// <summary>
+        /// Get a notification synchronously.
+        /// </summary>
+        /// <param name="timeout">Optional timeout for getting the notification.</param>
+        /// <returns>The transaction notification.</returns>
+        public TransactionNotification GetNotification(NtWaitTimeout timeout)
+        {
+            return GetNotification(timeout, true).Result;
+        }
+
+        /// <summary>
+        /// Get a notification synchronously waiting indefinetly.
+        /// </summary>
+        /// <returns>The transaction notification.</returns>
+        public TransactionNotification GetNotification()
+        {
+            return GetNotification(NtWaitTimeout.Infinite);
+        }
+
+        /// <summary>
+        /// Register protocol information.
+        /// </summary>
+        /// <param name="protocol_id">The ID of the protocol to register.</param>
+        /// <param name="protocol_information">An opaque protocol buffer.</param>
+        /// <param name="create_options">Optional create options.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus RegisterProtocolAddressInformation(Guid protocol_id,
+            byte[] protocol_information, RegisterProtocolCreateOptions create_options, bool throw_on_error)
+        {
+            using (var buffer = protocol_information.ToBuffer())
+            {
+                return NtSystemCalls.NtRegisterProtocolAddressInformation(Handle,
+                    ref protocol_id, buffer.Length, buffer, create_options).ToNtException(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Register protocol information.
+        /// </summary>
+        /// <param name="protocol_id">The ID of the protocol to register.</param>
+        /// <param name="protocol_information">An opaque protocol buffer.</param>
+        /// <param name="create_options">Optional create options.</param>
+        public void RegisterProtocolAddressInformation(Guid protocol_id,
+            byte[] protocol_information, RegisterProtocolCreateOptions create_options = RegisterProtocolCreateOptions.None)
+        {
+            RegisterProtocolAddressInformation(protocol_id, protocol_information, create_options, true);
+        }
+
+        /// <summary>
+        /// Complete propagation request.
+        /// </summary>
+        /// <param name="request_cookie">The cookie to identify the request.</param>
+        /// <param name="request_buffer">An optional buffer to pass with the request.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus PropagationComplete(uint request_cookie, byte[] request_buffer, bool throw_on_error)
+        {
+            using (var buffer = request_buffer.ToBuffer())
+            {
+                return NtSystemCalls.NtPropagationComplete(Handle, 
+                    request_cookie, buffer.Length, buffer).ToNtException(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Complete propagation request.
+        /// </summary>
+        /// <param name="request_cookie">The cookie to identify the request.</param>
+        /// <param name="request_buffer">An optional buffer to pass with the request.</param>
+        public void PropagationComplete(uint request_cookie, byte[] request_buffer)
+        {
+            PropagationComplete(request_cookie, request_buffer, true);
+        }
+
+        /// <summary>
+        /// Fail propagation request.
+        /// </summary>
+        /// <param name="request_cookie">The cookie to identify the request.</param>
+        /// <param name="prop_status">Optional NT status code for the failure.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus PropagationFailed(uint request_cookie, NtStatus prop_status, bool throw_on_error)
+        {
+            return NtSystemCalls.NtPropagationFailed(Handle, request_cookie, prop_status).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -308,6 +629,42 @@ namespace NtApiDotNet
         {
             return NtSystemCalls.NtSetInformationResourceManager(Handle, info_class, buffer, buffer.GetLength());
         }
+        #endregion
+
+        #region Public Properties
+        /// <summary>
+        /// Get the resource manager ID.
+        /// </summary>
+        public Guid ResourceManagerId => QueryBasicInformation().ResourceManagerId;
+
+        /// <summary>
+        /// Get the description for the resource manager.
+        /// </summary>
+        public string Description => QueryDescription();
+        #endregion
+
+        #region Private Members
+        private SafeStructureInOutBuffer<ResourceManagerBasicInformation> QueryBasicInformationBuffer()
+        {
+            return QueryBuffer<ResourceManagerBasicInformation>(ResourceManagerInformationClass.ResourceManagerBasicInformation);
+        }
+
+        private string QueryDescription()
+        {
+            using (var buffer = QueryBasicInformationBuffer())
+            {
+                return buffer.Data.ReadUnicodeString(buffer.Result.DescriptionLength / 2);
+            }
+        }
+
+        private ResourceManagerBasicInformation QueryBasicInformation()
+        {
+            using (var buffer = QueryBasicInformationBuffer())
+            {
+                return buffer.Result;
+            }
+        }
+
         #endregion
     }
 }
