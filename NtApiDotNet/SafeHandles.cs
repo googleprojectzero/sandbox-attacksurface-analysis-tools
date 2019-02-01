@@ -767,6 +767,10 @@ namespace NtApiDotNet
         /// <returns>The safe buffer.</returns>
         public static SafeHGlobalBuffer ToBuffer(this byte[] value)
         {
+            if (value == null)
+            {
+                return SafeHGlobalBuffer.Null;
+            }
             return new SafeHGlobalBuffer(value);
         }
 
