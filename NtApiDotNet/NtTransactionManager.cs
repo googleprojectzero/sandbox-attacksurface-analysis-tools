@@ -152,7 +152,7 @@ namespace NtApiDotNet
 #pragma warning restore 1591
 
     /// <summary>
-    /// Class to represent a kernel transaction.
+    /// Class to represent a kernel transaction manager.
     /// </summary>
     [NtType("TmTm")]
     public sealed class NtTransactionManager : NtObjectWithDuplicateAndInfo<NtTransactionManager, TransactionManagerAccessRights, TransactionManagerInformationClass>
@@ -424,14 +424,9 @@ namespace NtApiDotNet
         /// <returns>The list of all accessible transaction manager objects.</returns>
         public static IEnumerable<NtTransactionManager> GetAccessibleTransactionManager(TransactionManagerAccessRights desired_access)
         {
-            foreach (Guid id in NtTransactionManagerUtils.EnumerateTransactionObjects(KtmObjectType.TransactionManager))
-            {
-                var result = Open(null, desired_access, null, id, TransactionManagerOpenOptions.None, false);
-                if (result.IsSuccess)
-                {
-                    yield return result.Result;
-                }
-            }
+            return NtTransactionManagerUtils.GetAccessibleTransactionObjects(
+                SafeKernelObjectHandle.Null, KtmObjectType.TransactionManager,
+                id => Open(null, desired_access, null, id, TransactionManagerOpenOptions.None, false));
         }
 
         /// <summary>
@@ -628,14 +623,10 @@ namespace NtApiDotNet
         /// <returns>The list of all accessible transaction objects.</returns>
         public IEnumerable<NtTransaction> GetAccessibleTransaction(TransactionAccessRights desired_access)
         {
-            foreach (Guid id in NtTransactionManagerUtils.EnumerateTransactionObjects(Handle, KtmObjectType.Transaction))
-            {
-                var result = NtTransaction.Open(null, desired_access, id, null, false);
-                if (result.IsSuccess)
-                {
-                    yield return result.Result;
-                }
-            }
+            return NtTransactionManagerUtils.GetAccessibleTransactionObjects(
+                Handle,
+                KtmObjectType.Transaction,
+                id => NtTransaction.Open(null, desired_access, id, null, false));
         }
 
         /// <summary>
@@ -645,6 +636,28 @@ namespace NtApiDotNet
         public IEnumerable<NtTransaction> GetAccessibleTransaction()
         {
             return GetAccessibleTransaction(TransactionAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Get a list of all accessible resource manager objects owned by this transaction manager.
+        /// </summary>
+        /// <param name="desired_access">The access for the resource manager objects.</param>
+        /// <returns>The list of all accessible resource manager objects.</returns>
+        public IEnumerable<NtResourceManager> GetAccessibleResourceManager(ResourceManagerAccessRights desired_access)
+        {
+            return NtTransactionManagerUtils.GetAccessibleTransactionObjects(
+                Handle, 
+                KtmObjectType.ResourceManager, 
+                id => NtResourceManager.Open(null, desired_access, this, id, false));
+        }
+
+        /// <summary>
+        /// Get a list of all accessible resource manager objects owned by this transaction manager.
+        /// </summary>
+        /// <returns>The list of all accessible resource manager objects.</returns>
+        public IEnumerable<NtResourceManager> GetAccessibleResourceManager()
+        {
+            return GetAccessibleResourceManager(ResourceManagerAccessRights.MaximumAllowed);
         }
 
         #endregion

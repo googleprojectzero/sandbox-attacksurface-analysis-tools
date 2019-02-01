@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -49,7 +50,7 @@ namespace NtApiDotNet
     }
 
     [Flags]
-    public enum TransactionNotifyMask : uint
+    public enum TransactionNotificationMask : uint
     {
         PrePrepare = 0x00000001,
         Prepare = 0x00000002,
@@ -90,7 +91,7 @@ namespace NtApiDotNet
     public struct TransactionNotificationData
     {
         public IntPtr TransactionKey;
-        public TransactionNotifyMask TransactionNotification;
+        public TransactionNotificationMask TransactionNotification;
         public LargeIntegerStruct TmVirtualClock;
         public int ArgumentLength;
         public byte ArgumentData;
@@ -99,7 +100,7 @@ namespace NtApiDotNet
     public class TransactionNotification
     {
         public IntPtr Key { get; }
-        public TransactionNotifyMask Mask { get; }
+        public TransactionNotificationMask Mask { get; }
         public long VirtualClock { get; }
         public byte[] Argument { get; }
 
@@ -605,6 +606,88 @@ namespace NtApiDotNet
         public NtStatus PropagationFailed(uint request_cookie, NtStatus prop_status, bool throw_on_error)
         {
             return NtSystemCalls.NtPropagationFailed(Handle, request_cookie, prop_status).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a list of all accessible enlistment objects owned by this resource manager.
+        /// </summary>
+        /// <param name="desired_access">The access for the enlistment objects.</param>
+        /// <returns>The list of all accessible enlistment objects.</returns>
+        public IEnumerable<NtEnlistment> GetAccessibleEnlistment(EnlistmentAccessRights desired_access)
+        {
+            return NtTransactionManagerUtils.GetAccessibleTransactionObjects(
+                Handle,
+                KtmObjectType.Enlistment,
+                id => NtEnlistment.Open(null, desired_access, this, id, false));
+        }
+
+        /// <summary>
+        /// Get a list of all accessible resource manager objects owned by this transaction manager.
+        /// </summary>
+        /// <returns>The list of all accessible resource manager objects.</returns>
+        public IEnumerable<NtEnlistment> GetAccessibleEnlistment()
+        {
+            return GetAccessibleEnlistment(EnlistmentAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Create an enlistment in this resource manager.
+        /// </summary>
+        /// <param name="desired_access">Desired access for the handle</param>
+        /// <param name="transaction">The transaction to enlist.</param>
+        /// <param name="create_options">Optional create options.</param>
+        /// <param name="notification_mask">Notification mask.</param>
+        /// <param name="enlistment_key">Enlistment key returned during notification.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The created enlistment and NT status code.</returns>
+        public NtResult<NtEnlistment> CreateEnlistment(EnlistmentAccessRights desired_access, NtTransaction transaction, 
+            EnlistmentCreateOptions create_options, TransactionNotificationMask notification_mask, IntPtr enlistment_key, bool throw_on_error)
+        {
+            return NtEnlistment.Create(null, desired_access, this, transaction, 
+                create_options, notification_mask, enlistment_key, throw_on_error);
+        }
+
+        /// <summary>
+        /// Create an enlistment in this resource manager.
+        /// </summary>
+        /// <param name="desired_access">Desired access for the handle</param>
+        /// <param name="transaction">The transaction to enlist.</param>
+        /// <param name="create_options">Optional create options.</param>
+        /// <param name="notification_mask">Notification mask.</param>
+        /// <param name="enlistment_key">Enlistment key returned during notification.</param>
+        /// <returns>The created enlistment.</returns>
+        public NtEnlistment CreateEnlistment(EnlistmentAccessRights desired_access, NtTransaction transaction,
+            EnlistmentCreateOptions create_options, TransactionNotificationMask notification_mask, IntPtr enlistment_key)
+        {
+            return CreateEnlistment(desired_access, transaction,
+                create_options, notification_mask, enlistment_key, true).Result;
+        }
+
+        /// <summary>
+        /// Create an enlistment in this resource manager.
+        /// </summary>
+        /// <param name="transaction">The transaction to enlist.</param>
+        /// <param name="notification_mask">Notification mask.</param>
+        /// <param name="enlistment_key">Enlistment key returned during notification.</param>
+        /// <returns>The created enlistment.</returns>
+        public NtEnlistment CreateEnlistment(NtTransaction transaction,
+            TransactionNotificationMask notification_mask, IntPtr enlistment_key)
+        {
+            return CreateEnlistment(EnlistmentAccessRights.MaximumAllowed, transaction,
+                EnlistmentCreateOptions.None, notification_mask, enlistment_key, true).Result;
+        }
+
+        /// <summary>
+        /// Create an enlistment in this resource manager.
+        /// </summary>
+        /// <param name="transaction">The transaction to enlist.</param>
+        /// <param name="enlistment_key">Enlistment key returned during notification.</param>
+        /// <returns>The created enlistment.</returns>
+        public NtEnlistment CreateEnlistment(NtTransaction transaction, IntPtr enlistment_key)
+        {
+            return CreateEnlistment(EnlistmentAccessRights.MaximumAllowed, transaction,
+                EnlistmentCreateOptions.None, NtEnlistment.GetDefaultMaskForCreateOption(EnlistmentCreateOptions.None), 
+                enlistment_key, true).Result;
         }
 
         /// <summary>

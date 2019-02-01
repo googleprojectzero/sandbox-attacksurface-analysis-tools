@@ -489,14 +489,9 @@ namespace NtApiDotNet
         /// <returns>The list of all accessible transaction objects.</returns>
         public static IEnumerable<NtTransaction> GetAccessibleTransaction(TransactionAccessRights desired_access)
         {
-            foreach (Guid id in NtTransactionManagerUtils.EnumerateTransactionObjects(KtmObjectType.Transaction))
-            {
-                var result = Open(null, desired_access, id, null, false);
-                if (result.IsSuccess)
-                {
-                    yield return result.Result;
-                }
-            }
+            return NtTransactionManagerUtils.GetAccessibleTransactionObjects(
+                SafeKernelObjectHandle.Null, KtmObjectType.Transaction,
+                id => Open(null, desired_access, id, null, false));
         }
 
         /// <summary>
