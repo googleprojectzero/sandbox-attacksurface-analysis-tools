@@ -82,6 +82,7 @@
     <Compile Include="NtGeneric.cs" />
     <Compile Include="NtObjectWithDuplicate.cs" />
     <Compile Include="NtObjectWithDuplicateAndInfo.cs" />
+    <Compile Include="NtResourceManager.cs" />
     <Compile Include="NtResult.cs" />
     <Compile Include="NtTransactionManager.cs" />
     <Compile Include="NtTransactionManagerUtils.cs" />
