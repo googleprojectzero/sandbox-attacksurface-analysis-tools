@@ -222,16 +222,34 @@ namespace NtApiDotNet
         /// <summary>
         /// Detaches the current buffer and allocates a new one.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The detached buffer.</returns>
+        /// <remarks>The original buffer will become invalid after this call.</remarks>
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         public SafeHGlobalBuffer Detach()
         {
+            return Detach(Length);
+        }
+
+        /// <summary>
+        /// Detaches the current buffer and allocates a new one.
+        /// </summary>
+        /// <param name="length">Specify a new length for the detached buffer. Must be &lt;= Length.</param>
+        /// <returns>The detached buffer.</returns>
+        /// <remarks>The original buffer will become invalid after this call.</remarks>
+        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
+        public SafeHGlobalBuffer Detach(int length)
+        {
+            if (length > Length)
+            {
+                throw new ArgumentException("Buffer length is smaller than new length");
+            }
+
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 IntPtr handle = DangerousGetHandle();
                 SetHandleAsInvalid();
-                return new SafeHGlobalBuffer(handle, Length, true);
+                return new SafeHGlobalBuffer(handle, length, true);
             }
             finally
             {
@@ -360,7 +378,8 @@ namespace NtApiDotNet
         /// <summary>
         /// Detaches the current buffer and allocates a new one.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The detached buffer.</returns>
+        /// <remarks>The original buffer will become invalid after this call.</remarks>
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         new public SafeStructureInOutBuffer<T> Detach()
         {
