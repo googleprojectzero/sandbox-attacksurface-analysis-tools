@@ -47,6 +47,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="NtPartitionCmdlets.cs" />
+    <Compile Include="NtTransactionCmdlets.cs" />
+    <Compile Include="NtTransactionManagerCmdlets.cs" />
     <Compile Include="PSUtils.cs" />
     <Compile Include="Win32Cmdlets.cs" />
     <Compile Include="CommonAccessBaseCmdlet.cs" />

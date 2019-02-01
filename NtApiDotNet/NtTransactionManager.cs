@@ -19,6 +19,7 @@ using System.Runtime.InteropServices;
 namespace NtApiDotNet
 {
 #pragma warning disable 1591
+    [Flags]
     public enum TransactionManagerAccessRights : uint
     {
         QueryInformation = 1,
@@ -43,9 +44,8 @@ namespace NtApiDotNet
     [Flags]
     public enum TransactionManagerCreateOptions
     {
-        None = 0,
-        Volatile = 0x00000001,
         CommitDefault = 0x00000000,
+        Volatile = 0x00000001,
         CommitSystemVolume = 0x00000002,
         CommitSystemHives = 0x00000004,
         CommitLowest = 0x00000008,
@@ -65,23 +65,6 @@ namespace NtApiDotNet
         TransactionManagerLogInformation,
         TransactionManagerLogPathInformation,
         TransactionManagerRecoveryInformation
-    }
-
-    public enum KtmObjectType
-    {
-        Transaction,
-        TransactionManager,
-        ResourceManager,
-        Enlistment,
-        Invalid
-    }
-
-    [StructLayout(LayoutKind.Sequential), DataStart("ObjectIds")]
-    public struct KtmObjectCursor
-    {
-        public Guid LastQuery;
-        public int ObjectIdCount;
-        public Guid ObjectIds;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -164,15 +147,6 @@ namespace NtApiDotNet
             SafeKernelObjectHandle TmHandle,
             LargeInteger TmVirtualClock
         );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtEnumerateTransactionObject(
-          SafeKernelObjectHandle RootObjectHandle,
-          KtmObjectType QueryType,
-          ref KtmObjectCursor ObjectCursor,
-          int ObjectCursorLength,
-          out int ReturnLength
-        );
     }
 
 #pragma warning restore 1591
@@ -184,7 +158,7 @@ namespace NtApiDotNet
     public sealed class NtTransactionManager : NtObjectWithDuplicateAndInfo<NtTransactionManager, TransactionManagerAccessRights, TransactionManagerInformationClass>
     {
         #region Constructors
-        internal NtTransactionManager(SafeKernelObjectHandle handle) 
+        internal NtTransactionManager(SafeKernelObjectHandle handle)
             : base(handle)
         {
         }
@@ -209,7 +183,7 @@ namespace NtApiDotNet
                                                             bool throw_on_error)
         {
             return NtSystemCalls.NtCreateTransactionManager(out SafeKernelObjectHandle handle, desired_access, object_attributes,
-                log_filename.ToUnicodeString(), 
+                log_filename.ToUnicodeString(),
                 create_options, commit_strength).CreateResult(throw_on_error, () => new NtTransactionManager(handle));
         }
 
@@ -444,31 +418,29 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Enumerate transaction objects of a specific type from a root handle.
+        /// Get a list of all accessible transaction manager objects.
         /// </summary>
-        /// <param name="root_object_handle">The root handle to enumearate from.</param>
-        /// <param name="query_type">The type of object to query.</param>
-        /// <returns>The list of enumerated transaction object GUIDs.</returns>
-        public static IEnumerable<Guid> EnumerateTransactionObjects(SafeKernelObjectHandle root_object_handle, KtmObjectType query_type)
+        /// <param name="desired_access">The access for the transaction manager objects.</param>
+        /// <returns>The list of all accessible transaction manager objects.</returns>
+        public static IEnumerable<NtTransactionManager> GetAccessibleTransactionManager(TransactionManagerAccessRights desired_access)
         {
-            KtmObjectCursor cursor = new KtmObjectCursor();
-            int size = Marshal.SizeOf(cursor);
-            NtStatus status = NtSystemCalls.NtEnumerateTransactionObject(root_object_handle, query_type, ref cursor, size, out int return_length);
-            while (status != NtStatus.STATUS_NO_MORE_ENTRIES)
+            foreach (Guid id in NtTransactionManagerUtils.EnumerateTransactionObjects(KtmObjectType.TransactionManager))
             {
-                yield return cursor.ObjectIds;
-                status = NtSystemCalls.NtEnumerateTransactionObject(root_object_handle, query_type, ref cursor, size, out return_length);
+                var result = Open(null, desired_access, null, id, TransactionManagerOpenOptions.None, false);
+                if (result.IsSuccess)
+                {
+                    yield return result.Result;
+                }
             }
         }
 
         /// <summary>
-        /// Enumerate all transaction objects of a specific type.
+        /// Get a list of all accessible transaction manager objects.
         /// </summary>
-        /// <param name="query_type">The type of object to query.</param>
-        /// <returns>The list of enumerated transaction object GUIDs.</returns>
-        public static IEnumerable<Guid> EnumerateTransactionObjects(KtmObjectType query_type)
+        /// <returns>The list of all accessible transaction manager objects.</returns>
+        public static IEnumerable<NtTransactionManager> GetAccessibleTransactionManager()
         {
-            return EnumerateTransactionObjects(SafeKernelObjectHandle.Null, query_type);
+            return GetAccessibleTransactionManager(TransactionManagerAccessRights.MaximumAllowed);
         }
 
         internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
@@ -605,6 +577,32 @@ namespace NtApiDotNet
         public override NtStatus SetInformation(TransactionManagerInformationClass info_class, SafeBuffer buffer)
         {
             return NtSystemCalls.NtSetInformationTransactionManager(Handle, info_class, buffer, (int)buffer.ByteLength);
+        }
+
+        /// <summary>
+        /// Get a list of all accessible transaction objects owned by this transaction manager.
+        /// </summary>
+        /// <param name="desired_access">The access for the transaction objects.</param>
+        /// <returns>The list of all accessible transaction objects.</returns>
+        public IEnumerable<NtTransaction> GetAccessibleTransaction(TransactionAccessRights desired_access)
+        {
+            foreach (Guid id in NtTransactionManagerUtils.EnumerateTransactionObjects(Handle, KtmObjectType.Transaction))
+            {
+                var result = NtTransaction.Open(null, desired_access, id, null, false);
+                if (result.IsSuccess)
+                {
+                    yield return result.Result;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get a list of all accessible transaction objects owned by this transaction manager.
+        /// </summary>
+        /// <returns>The list of all accessible transaction objects.</returns>
+        public IEnumerable<NtTransaction> GetAccessibleTransaction()
+        {
+            return GetAccessibleTransaction(TransactionAccessRights.MaximumAllowed);
         }
 
         #endregion

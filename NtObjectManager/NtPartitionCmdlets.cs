@@ -50,6 +50,12 @@ namespace NtObjectManager
         }
 
         /// <summary>
+        /// <para type="description">The NT object manager path to the object to use.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true)]
+        public override string Path { get; set; }
+
+        /// <summary>
         /// Method to create an object from a set of object attributes.
         /// </summary>
         /// <param name="obj_attributes">The object attributes to create/open from.</param>
@@ -85,7 +91,7 @@ namespace NtObjectManager
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.New, "NtPartition")]
     [OutputType(typeof(NtPartition))]
-    public sealed class NewNtPartitionCmdlet : GetNtPartitionCmdlet
+    public sealed class NewNtPartitionCmdlet : NtObjectBaseCmdletWithAccess<MemoryPartitionAccessRights>
     {
         /// <summary>
         /// Constructor.
@@ -96,13 +102,24 @@ namespace NtObjectManager
         }
 
         /// <summary>
+        /// Determine if the cmdlet can create objects.
+        /// </summary>
+        /// <returns>True if objects can be created.</returns>
+        protected override bool CanCreateDirectories()
+        {
+            return true;
+        }
+
+        /// <summary>
         /// <para type="description">Specifies the preferred NUMA node, -1 means ideal node.</para>
         /// </summary>
+        [Parameter]
         public int PreferredNode { get; set; }
 
         /// <summary>
         /// <para type="description">Specifies the parent partition. Not specifying means use the system partition.</para>
         /// </summary>
+        [Parameter]
         public NtPartition ParentPartition { get; set; }
 
         /// <summary>

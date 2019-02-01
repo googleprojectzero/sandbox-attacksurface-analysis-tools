@@ -84,6 +84,7 @@
     <Compile Include="NtObjectWithDuplicateAndInfo.cs" />
     <Compile Include="NtResult.cs" />
     <Compile Include="NtTransactionManager.cs" />
+    <Compile Include="NtTransactionManagerUtils.cs" />
     <Compile Include="ReparseBuffer.cs" />
     <Compile Include="NtAlpc.cs" />
     <Compile Include="NtAtom.cs" />

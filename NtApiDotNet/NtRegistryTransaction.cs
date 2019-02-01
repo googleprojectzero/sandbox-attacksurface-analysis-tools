@@ -149,7 +149,8 @@ namespace NtApiDotNet
         public static NtResult<NtRegistryTransaction> Open(ObjectAttributes object_attributes, RegistryTransactionAccessRights desired_access, bool throw_on_error)
         {
             SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtOpenRegistryTransaction(out handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtRegistryTransaction(handle));
+            return NtSystemCalls.NtOpenRegistryTransaction(out handle, 
+                desired_access, object_attributes).CreateResult(throw_on_error, () => new NtRegistryTransaction(handle));
         }
 
         /// <summary>

@@ -13,12 +13,14 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace NtApiDotNet
 {
 #pragma warning disable 1591
+    [Flags]
     public enum TransactionAccessRights : uint
     {
         QueryInformation = 1,
@@ -27,6 +29,7 @@ namespace NtApiDotNet
         Commit = 8,
         Rollback = 0x10,
         Propagate = 0x20,
+        RightReserved1 = 0x40,
         GenericRead = GenericAccessRights.GenericRead,
         GenericWrite = GenericAccessRights.GenericWrite,
         GenericExecute = GenericAccessRights.GenericExecute,
@@ -236,6 +239,33 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="object_attributes">The object attributes</param>
         /// <param name="desired_access">Desired access for the handle</param>
+        /// <param name="create_options">Transaction creation options.</param>
+        /// <param name="description">Optional description of the transaction.</param>
+        /// <param name="isolation_flags">Isolation flags.</param>
+        /// <param name="isolation_level">Isolation level.</param>
+        /// <param name="timeout">Optional transaction timeout.</param>
+        /// <param name="transaction_manager">Optional transaction manager.</param>
+        /// <param name="uow">Optional UOW.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtTransaction Create(ObjectAttributes object_attributes,
+            TransactionAccessRights desired_access,
+            Guid? uow, NtTransactionManager transaction_manager,
+            TransactionCreateFlags create_options,
+            int isolation_level,
+            TransactionIsolationFlags isolation_flags,
+            NtWaitTimeout timeout,
+            string description)
+        {
+            return Create(object_attributes, desired_access, uow,
+                transaction_manager, create_options,
+                isolation_level, isolation_flags, timeout, description, true).Result;
+        }
+
+        /// <summary>
+        /// Create a transaction
+        /// </summary>
+        /// <param name="object_attributes">The object attributes</param>
+        /// <param name="desired_access">Desired access for the handle</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtTransaction> Create(ObjectAttributes object_attributes, TransactionAccessRights desired_access, bool throw_on_error)
@@ -393,12 +423,42 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="object_attributes">The object attributes for the object</param>
         /// <param name="desired_access">The desired access for the object</param>
+        /// <param name="transaction_manager">Optional transaction manager.</param>
+        /// <param name="uow">UOW Guid.</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
-        public static NtResult<NtTransaction> Open(ObjectAttributes object_attributes, TransactionAccessRights desired_access, bool throw_on_error)
+        public static NtResult<NtTransaction> Open(ObjectAttributes object_attributes, TransactionAccessRights desired_access, 
+            Guid? uow, NtTransactionManager transaction_manager, bool throw_on_error)
         {
             return NtSystemCalls.NtOpenTransaction(out SafeKernelObjectHandle handle, desired_access, object_attributes,
-                null, SafeKernelObjectHandle.Null).CreateResult(throw_on_error, () => new NtTransaction(handle));
+                uow.ToOptional(), transaction_manager.GetHandle()).CreateResult(throw_on_error, () => new NtTransaction(handle));
+        }
+
+        /// <summary>
+        /// Open a transaction object.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the object</param>
+        /// <param name="desired_access">The desired access for the object</param>
+        /// <param name="transaction_manager">Optional transaction manager.</param>
+        /// <param name="uow">UOW Guid.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtTransaction Open(ObjectAttributes object_attributes, TransactionAccessRights desired_access,
+            Guid? uow, NtTransactionManager transaction_manager)
+        {
+            return Open(object_attributes, desired_access, uow, transaction_manager, true).Result;
+        }
+
+        /// <summary>
+        /// Open a transaction object.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the object</param>
+        /// <param name="desired_access">The desired access for the object</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtTransaction> Open(ObjectAttributes object_attributes,
+            TransactionAccessRights desired_access, bool throw_on_error)
+        {
+            return Open(object_attributes, desired_access, null, null, throw_on_error);
         }
 
         /// <summary>
@@ -421,6 +481,33 @@ namespace NtApiDotNet
         {
             return Open(path, null, TransactionAccessRights.MaximumAllowed);
         }
+
+        /// <summary>
+        /// Get a list of all accessible transaction objects.
+        /// </summary>
+        /// <param name="desired_access">The access for the transaction objects.</param>
+        /// <returns>The list of all accessible transaction objects.</returns>
+        public static IEnumerable<NtTransaction> GetAccessibleTransaction(TransactionAccessRights desired_access)
+        {
+            foreach (Guid id in NtTransactionManagerUtils.EnumerateTransactionObjects(KtmObjectType.Transaction))
+            {
+                var result = Open(null, desired_access, id, null, false);
+                if (result.IsSuccess)
+                {
+                    yield return result.Result;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get a list of all accessible transaction objects.
+        /// </summary>
+        /// <returns>The list of all accessible transaction objects.</returns>
+        public static IEnumerable<NtTransaction> GetAccessibleTransaction()
+        {
+            return GetAccessibleTransaction(TransactionAccessRights.MaximumAllowed);
+        }
+
 
         internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
         {
@@ -540,6 +627,11 @@ namespace NtApiDotNet
         /// Get the ID of the transaction.
         /// </summary>
         public Guid TransactionId => QueryBasicInformation().TransactionId;
+
+        /// <summary>
+        /// Get the Unit of Work ID of the transaction. Same as transaction ID.
+        /// </summary>
+        public Guid UnitOfWork => TransactionId;
 
         /// <summary>
         /// Get the state of the transaction.

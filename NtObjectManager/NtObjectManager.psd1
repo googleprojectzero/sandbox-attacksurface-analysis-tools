@@ -83,7 +83,8 @@ CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile',
                'Get-AccessibleService', 'Get-AccessibleHandle', 'Remove-NtKey', 'New-NtToken',
                'Remove-NtFile', 'Get-NtDirectoryChild', 'Get-NtKeyChild', 'Add-DosDevice', 
                'Remove-DosDevice', 'Get-NtFileChild', 'Set-NtFileReparsePoint',
-               'Get-NtPartition', 'New-NtPartition'
+               'Get-NtPartition', 'New-NtPartition', 'Get-NtWaitTimeout', 'New-NtTransaction', 
+               'Get-NtTransaction', 'New-NtTransactionManager', 'Get-NtTransactionManager'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @()
