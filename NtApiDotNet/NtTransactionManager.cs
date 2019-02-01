@@ -565,7 +565,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code for the query.</returns>
         public override NtStatus QueryInformation(TransactionManagerInformationClass info_class, SafeBuffer buffer, out int return_length)
         {
-            return NtSystemCalls.NtQueryInformationTransactionManager(Handle, info_class, buffer, (int)buffer.ByteLength, out return_length);
+            return NtSystemCalls.NtQueryInformationTransactionManager(Handle, info_class, buffer, buffer.GetLength(), out return_length);
         }
 
         /// <summary>
@@ -576,7 +576,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code for the set.</returns>
         public override NtStatus SetInformation(TransactionManagerInformationClass info_class, SafeBuffer buffer)
         {
-            return NtSystemCalls.NtSetInformationTransactionManager(Handle, info_class, buffer, (int)buffer.ByteLength);
+            return NtSystemCalls.NtSetInformationTransactionManager(Handle, info_class, buffer, buffer.GetLength());
         }
 
         /// <summary>
