@@ -46,6 +46,15 @@ namespace NtApiDotNet
           int ObjectCursorLength,
           out int ReturnLength
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtFreezeTransactions(
+            LargeInteger FreezeTimeout,
+            LargeInteger ThawTimeout
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtThawTransactions();
     }
 
 #pragma warning restore 1591
@@ -84,6 +93,48 @@ namespace NtApiDotNet
         {
             return EnumerateTransactionObjects(SafeKernelObjectHandle.Null, query_type);
         }
+
+        /// <summary>
+        /// Freeze all transactions. Needs SeRestorePrivilege.
+        /// </summary>
+        /// <param name="freeze_timeout">The freeze wait timeout.</param>
+        /// <param name="thaw_timeout">The thaw wait timeout.</param>
+        /// <param name="throw_on_error">Throw exception on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus FreezeTransactions(NtWaitTimeout freeze_timeout, NtWaitTimeout thaw_timeout, bool throw_on_error)
+        {
+            return NtSystemCalls.NtFreezeTransactions(freeze_timeout.ToLargeInteger(), thaw_timeout.ToLargeInteger()).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Freeze all transactions. Needs SeRestorePrivilege.
+        /// </summary>
+        /// <param name="freeze_timeout">The freeze wait timeout.</param>
+        /// <param name="thaw_timeout">The thaw wait timeout.</param>
+        public static void FreezeTransactions(NtWaitTimeout freeze_timeout, NtWaitTimeout thaw_timeout)
+        {
+            FreezeTransactions(freeze_timeout, thaw_timeout, true);
+        }
+
+        /// <summary>
+        /// Thaw transactions. Needs SeRestorePrivilege.
+        /// </summary>
+        /// <param name="throw_on_error">Throw exception on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus ThawTransactions(bool throw_on_error)
+        {
+            return NtSystemCalls.NtThawTransactions().ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Thaw transactions. Needs SeRestorePrivilege.
+        /// </summary>
+        /// <returns>The NT status code.</returns>
+        public static void ThawTransactions()
+        {
+            ThawTransactions(true);
+        }
+
         #endregion
     }
 }
