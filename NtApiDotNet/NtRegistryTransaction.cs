@@ -12,11 +12,13 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
 #pragma warning disable 1591
+    [Flags]
     public enum RegistryTransactionAccessRights : uint
     {
         QueryInformation = 0x01,
@@ -60,7 +62,7 @@ namespace NtApiDotNet
     /// Class to represent a registry transaction object
     /// </summary>
     [NtType("RegistryTransaction")]
-    public class NtRegistryTransaction : NtObjectWithDuplicate<NtRegistryTransaction, RegistryTransactionAccessRights>, INtTransaction
+    public sealed class NtRegistryTransaction : NtObjectWithDuplicate<NtRegistryTransaction, RegistryTransactionAccessRights>, INtTransaction
     {
         internal NtRegistryTransaction(SafeKernelObjectHandle handle) : base(handle)
         {
