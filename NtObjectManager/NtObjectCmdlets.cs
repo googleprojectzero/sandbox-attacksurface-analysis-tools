@@ -541,7 +541,7 @@ namespace NtObjectManager
         {
             if (!Status.HasValue)
             {
-                WriteObject(Enum.GetValues(typeof(NtStatus)).Cast<NtStatus>().Select(s => new NtStatusResult(s)), false);
+                WriteObject(Enum.GetValues(typeof(NtStatus)).Cast<NtStatus>().Distinct().Select(s => new NtStatusResult(s)), true);
             }
             else
             {
