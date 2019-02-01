@@ -129,6 +129,92 @@ namespace NtApiDotNet
         /// <summary>
         /// Query a variable buffer from the object.
         /// </summary>
+        /// <param name="info_class">The information class to query.</param>
+        /// <param name="init_buffer">A buffer to initialize the initial query. Can be null.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public virtual NtResult<SafeHGlobalBuffer> QueryRawBuffer(I info_class, byte[] init_buffer, bool throw_on_error)
+        {
+            NtStatus status;
+            int return_length;
+            // First try base size before trying to reallocate.
+            using (var buffer = init_buffer.ToBuffer())
+            {
+                status = QueryInformation(info_class, buffer, out return_length);
+                if (status.IsSuccess())
+                {
+                    return status.CreateResult(false, () => buffer.Detach(return_length));
+                }
+            }
+
+            if (!IsInvalidBufferSize(status))
+            {
+                return status.CreateResultFromError<SafeHGlobalBuffer>(throw_on_error);
+            }
+
+            // If the function returned a length then trust it.
+            if (return_length > 0)
+            {
+                using (var buffer = new SafeHGlobalBuffer(return_length))
+                {
+                    return QueryInformation(info_class, buffer, out return_length).CreateResult(throw_on_error, () => buffer.Detach(return_length));
+                }
+            }
+
+            // Function length can't be trusted, we'll need to brute force it.
+            return_length = 256;
+            int max_length = GetMaximumBruteForceLength();
+            while (return_length < max_length)
+            {
+                using (var buffer = new SafeHGlobalBuffer(return_length))
+                {
+                    status = QueryInformation(info_class, buffer, out int dummy_length);
+                    if (status.IsSuccess())
+                    {
+                        if (dummy_length > 0 && dummy_length < return_length)
+                        {
+                            return_length = dummy_length;
+                        }
+                        return status.CreateResult(throw_on_error, () => buffer.Detach(return_length));
+                    }
+                    else if (!IsInvalidBufferSize(status))
+                    {
+                        return status.CreateResultFromError<SafeHGlobalBuffer>(throw_on_error);
+                    }
+                    return_length *= 2;
+                }
+            }
+
+            return NtStatus.STATUS_BUFFER_TOO_SMALL.CreateResultFromError<SafeHGlobalBuffer>(throw_on_error);
+        }
+
+        /// <summary>
+        /// Query a variable buffer from the object.
+        /// </summary>
+        /// <param name="info_class">The information class to query.</param>
+        /// <param name="init_buffer">A buffer to initialize the initial query. Can be null.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public virtual SafeHGlobalBuffer QueryRawBuffer(I info_class, byte[] init_buffer)
+        {
+            return QueryRawBuffer(info_class, init_buffer, true).Result;
+        }
+
+        /// <summary>
+        /// Query a variable buffer from the object.
+        /// </summary>
+        /// <param name="info_class">The information class to query.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public virtual SafeHGlobalBuffer QueryRawBuffer(I info_class)
+        {
+            return QueryRawBuffer(info_class, null);
+        }
+
+        /// <summary>
+        /// Query a variable buffer from the object.
+        /// </summary>
         /// <typeparam name="T">The type of structure to return.</typeparam>
         /// <param name="info_class">The information class to query.</param>
         /// <param name="default_value">A default value for the query.</param>
@@ -177,6 +263,34 @@ namespace NtApiDotNet
         /// <returns>The NT status code of the set.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public void Set<T>(I info_class, T value) where T : new()
+        {
+            Set(info_class, value, true);
+        }
+
+        /// <summary>
+        /// Set a raw value to the object.
+        /// </summary>
+        /// <param name="info_class">The information class to set.</param>
+        /// <param name="value">The raw value to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code of the set.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public virtual NtStatus Set(I info_class, byte[] value, bool throw_on_error)
+        {
+            using (var buffer = value.ToBuffer())
+            {
+                return SetInformation(info_class, buffer).ToNtException(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Set a raw value to the object.
+        /// </summary>
+        /// <param name="info_class">The information class to set.</param>
+        /// <param name="value">The raw value to set.</param>
+        /// <returns>The NT status code of the set.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public virtual void Set(I info_class, byte[] value)
         {
             Set(info_class, value, true);
         }
