@@ -150,7 +150,7 @@ namespace NtApiDotNet
         public TransactionOutcome Outcome;
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), DataStart("Description")]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), DataStart("Description", IncludeDataField = true)]
     public struct TransactionPropertiesInformation
     {
         public int IsolationLevel;
