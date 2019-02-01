@@ -596,5 +596,10 @@ namespace NtApiDotNet
         {
             return ToLargeInteger(timeout?.Timeout);
         }
+
+        internal static int GetLength(this SafeBuffer buffer)
+        {
+            return (int)buffer.ByteLength;
+        }
     }
 }
