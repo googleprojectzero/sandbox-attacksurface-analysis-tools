@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -74,14 +75,16 @@ namespace NtApiDotNet
         /// <returns>The list of enumerated transaction object GUIDs.</returns>
         public static IEnumerable<Guid> EnumerateTransactionObjects(SafeKernelObjectHandle root_object_handle, KtmObjectType query_type)
         {
+            List<Guid> ret = new List<Guid>();
             KtmObjectCursor cursor = new KtmObjectCursor();
             int size = Marshal.SizeOf(cursor);
             NtStatus status = NtSystemCalls.NtEnumerateTransactionObject(root_object_handle, query_type, ref cursor, size, out int return_length);
-            while (status != NtStatus.STATUS_NO_MORE_ENTRIES)
+            while (status == NtStatus.STATUS_SUCCESS)
             {
-                yield return cursor.ObjectIds;
+                ret.Add(cursor.ObjectIds);
                 status = NtSystemCalls.NtEnumerateTransactionObject(root_object_handle, query_type, ref cursor, size, out return_length);
             }
+            return ret.AsReadOnly();
         }
 
         /// <summary>
@@ -133,6 +136,22 @@ namespace NtApiDotNet
         public static void ThawTransactions()
         {
             ThawTransactions(true);
+        }
+
+        #endregion
+
+        #region Internal Static Methods
+
+        internal static IEnumerable<T> GetAccessibleTransactionObjects<T>(
+            SafeKernelObjectHandle handle,
+            KtmObjectType object_type,
+            Func<Guid, NtResult<T>> open_func)
+        {
+            return EnumerateTransactionObjects(handle, object_type)
+                .Select(open_func)
+                .Where(r => r.IsSuccess)
+                .Select(r => r.Result)
+                .ToList().AsReadOnly();
         }
 
         #endregion
