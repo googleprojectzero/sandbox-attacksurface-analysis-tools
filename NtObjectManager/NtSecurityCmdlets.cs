@@ -299,6 +299,13 @@ namespace NtApiDotNet
         Token,
         TmTx,
         WindowStation,
+        TmRm,
+        TmEn,
+        TmTm,
+        Transaction,
+        ResourceManager,
+        Enlistment,
+        TransactionManager,
     }
 #pragma warning restore 1591
 
@@ -332,14 +339,21 @@ namespace NtApiDotNet
     {
         private static NtType GetTypeObject(SpecificAccessType type)
         {
-            if (type == SpecificAccessType.ALPCPort)
+            switch (type)
             {
-                return NtType.GetTypeByType<NtAlpc>();
+                case SpecificAccessType.Transaction:
+                    return NtType.GetTypeByType<NtTransaction>();
+                case SpecificAccessType.TransactionManager:
+                    return NtType.GetTypeByType<NtTransactionManager>();
+                case SpecificAccessType.ResourceManager:
+                    return NtType.GetTypeByType<NtResourceManager>();
+                case SpecificAccessType.Enlistment:
+                    return NtType.GetTypeByType<NtEnlistment>();
+                case SpecificAccessType.ALPCPort:
+                    return NtType.GetTypeByType<NtAlpc>();
             }
-            else
-            {
-                return NtType.GetTypeByName(type.ToString(), false);
-            }
+
+            return NtType.GetTypeByName(type.ToString(), false);
         }
 
         private AccessMask MapGeneric(SpecificAccessType specific_type, AccessMask access_mask)
@@ -449,6 +463,26 @@ namespace NtApiDotNet
         [Parameter(ParameterSetName = "FromProcess", Mandatory = true)]
         public ProcessAccessRights ProcessAccess { get; set; }
         /// <summary>
+        /// <para type="description">Specify transaction access rights.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromTransaction", Mandatory = true)]
+        public TransactionAccessRights TransactionAccess { get; set; }
+        /// <summary>
+        /// <para type="description">Specify transaction manager access rights.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromTransactionManager", Mandatory = true)]
+        public TransactionManagerAccessRights TransactionManagerAccess { get; set; }
+        /// <summary>
+        /// <para type="description">Specify resource manager access rights.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromResourceManager", Mandatory = true)]
+        public ResourceManagerAccessRights ResourceManagerAccess { get; set; }
+        /// <summary>
+        /// <para type="description">Specify enlistment access rights.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromEnlistment", Mandatory = true)]
+        public EnlistmentAccessRights EnlistmentAccess { get; set; }
+        /// <summary>
         /// <para type="description">Specify mandatory label policy.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromMandatoryLabel", Mandatory = true)]
@@ -524,6 +558,10 @@ namespace NtApiDotNet
                     mask |= MapGeneric(SpecificAccessType.DebugObject, DebugObjectAccess);
                     mask |= MapGeneric(SpecificAccessType.Job, JobAccess);
                     mask |= MapGeneric(SpecificAccessType.Process, ProcessAccess);
+                    mask |= MapGeneric(SpecificAccessType.Transaction, TransactionAccess);
+                    mask |= MapGeneric(SpecificAccessType.TransactionManager, TransactionManagerAccess);
+                    mask |= MapGeneric(SpecificAccessType.ResourceManager, ResourceManagerAccess);
+                    mask |= MapGeneric(SpecificAccessType.Enlistment, EnlistmentAccess);
                     mask |= (uint)ManadatoryLabelPolicy;
                     break;
             }
