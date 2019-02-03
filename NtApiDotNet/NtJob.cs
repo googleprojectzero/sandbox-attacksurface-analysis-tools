@@ -255,12 +255,15 @@ namespace NtApiDotNet
     /// Class representing a NT Job object
     /// </summary>
     [NtType("Job")]
-    public class NtJob : NtObjectWithDuplicate<NtJob, JobAccessRights>
+    public class NtJob : NtObjectWithDuplicateAndInfo<NtJob, JobAccessRights, JobObjectInformationClass, JobObjectInformationClass>
     {
+        #region Constructors
         internal NtJob(SafeKernelObjectHandle handle) : base(handle)
         {
         }
+        #endregion
 
+        #region Static Methods
         /// <summary>
         /// Create a job object
         /// </summary>
@@ -321,15 +324,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Convert Job object into a Silo
-        /// </summary>
-        public void CreateSilo()
-        {
-            NtSystemCalls.NtSetInformationJobObject(Handle, JobObjectInformationClass.JobObjectCreateSilo, 
-                SafeHGlobalBuffer.Null, 0).ToNtException();
-        }
-
-        /// <summary>
         /// Open a job object
         /// </summary>
         /// <param name="object_attributes">The object attributes</param>
@@ -383,6 +377,17 @@ namespace NtApiDotNet
         {
             return Open(path, root, JobAccessRights.MaximumAllowed);
         }
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Convert Job object into a Silo
+        /// </summary>
+        public void CreateSilo()
+        {
+            NtSystemCalls.NtSetInformationJobObject(Handle, JobObjectInformationClass.JobObjectCreateSilo, 
+                SafeHGlobalBuffer.Null, 0).ToNtException();
+        }
 
         /// <summary>
         /// Assign a process to this job object.
@@ -401,24 +406,6 @@ namespace NtApiDotNet
             AssignProcess(NtProcess.FromHandle(new SafeKernelObjectHandle(new IntPtr(-7), false)));
         }
 
-        private void SetInfo<T>(JobObjectInformationClass info_class, T value) where T : new()
-        {
-            using (var buffer = value.ToBuffer())
-            {
-                NtSystemCalls.NtSetInformationJobObject(Handle, info_class, buffer, buffer.Length).ToNtException();
-            }
-        }
-
-        private T QueryInfoFixed<T>(JobObjectInformationClass info_class) where T : new()
-        {
-            using (var buffer = new SafeStructureInOutBuffer<T>())
-            {
-                int ret_length;
-                NtSystemCalls.NtQueryInformationJobObject(Handle, info_class, buffer, buffer.Length, out ret_length).ToNtException();
-                return buffer.Result;
-            }
-        }
-
         /// <summary>
         /// Associate a completion port with the job.
         /// </summary>
@@ -431,27 +418,7 @@ namespace NtApiDotNet
                 CompletionKey = key,
                 CompletionPort = port.Handle.DangerousGetHandle()
             };
-            SetInfo(JobObjectInformationClass.JobObjectAssociateCompletionPortInformation, info);
-        }
-        
-        /// <summary>
-        /// Get or set completion filter for job object.
-        /// </summary>
-        public JobObjectCompletionPortMessageFilters CompletionFilter
-        {
-            get
-            {
-                int mask = ((int)JobObjectCompletionPortMessageFilters.MaxMessage - 1) - 1;
-                int result = QueryInfoFixed<int>(JobObjectInformationClass.JobObjectCompletionFilter);
-
-                return (JobObjectCompletionPortMessageFilters)(~result & mask);
-            }
-
-            set
-            {
-                int filter = (int)value;
-                SetInfo(JobObjectInformationClass.JobObjectCompletionFilter, filter);
-            }
+            Set(JobObjectInformationClass.JobObjectAssociateCompletionPortInformation, info);
         }
 
         /// <summary>
@@ -473,51 +440,70 @@ namespace NtApiDotNet
             {
                 JobObjectExtendedExtendedLimitInformation info = new JobObjectExtendedExtendedLimitInformation();
                 info.ExtendedLimitInformation.BasicLimitInformation.LimitFlags = flags;
-                SetInfo(JobObjectInformationClass.JobObjectExtendedLimitInformation, info);
+                Set(JobObjectInformationClass.JobObjectExtendedLimitInformation, info);
             }
             else
             {
                 JobObjectExtendedLimitInformation info = new JobObjectExtendedLimitInformation();
                 info.BasicLimitInformation.LimitFlags = flags;
-                SetInfo(JobObjectInformationClass.JobObjectExtendedLimitInformation, info);
+                Set(JobObjectInformationClass.JobObjectExtendedLimitInformation, info);
             }
         }
 
-        private JobObjectNetRateControlInformation GetNetRateControlInformation()
+        /// <summary>
+        /// Set the Silo system root directory.
+        /// </summary>
+        /// <param name="system_root">The absolute path to the system root directory.</param>
+        /// <remarks>The system_root path must start with a capital drive letter and not end with a backslash.</remarks>
+        public void SetSiloSystemRoot(string system_root)
         {
-            return QueryInfoFixed<JobObjectNetRateControlInformation>(JobObjectInformationClass.JobObjectNetRateControlInformation);
+            Set(JobObjectInformationClass.JobObjectSiloSystemRoot, new UnicodeString(system_root));
         }
 
-        private T? GetNetRateValue<T>(JobObjectNetRateControlFlags enable_flag, 
-            Func<JobObjectNetRateControlInformation, T> callback) where T : struct
+        /// <summary>
+        /// Method to query information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to return data in.</param>
+        /// <param name="return_length">Return length from the query.</param>
+        /// <returns>The NT status code for the query.</returns>
+        public override NtStatus QueryInformation(JobObjectInformationClass info_class, SafeBuffer buffer, out int return_length)
         {
-            var result = GetNetRateControlInformation();
-            if (result.ControlFlags.HasFlag(JobObjectNetRateControlFlags.Enable)
-                && result.ControlFlags.HasFlag(enable_flag))
-            {
-                return callback(result);
-            }
-            return null;
+            return NtSystemCalls.NtQueryInformationJobObject(Handle, info_class, buffer, buffer.GetLength(), out return_length);
         }
 
-        private void SetNetRateValue<T>(T? value, JobObjectNetRateControlFlags enable_flag, 
-            Func<T, JobObjectNetRateControlInformation, JobObjectNetRateControlInformation> update_func) where T : struct
+        /// <summary>
+        /// Method to set information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to set data from.</param>
+        /// <returns>The NT status code for the set.</returns>
+        public override NtStatus SetInformation(JobObjectInformationClass info_class, SafeBuffer buffer)
         {
-            var result = GetNetRateControlInformation();
-            if (value.HasValue)
+            return NtSystemCalls.NtSetInformationJobObject(Handle, info_class, buffer, buffer.GetLength());
+        }
+
+        #endregion
+
+        #region Public Properties
+        /// <summary>
+        /// Get or set completion filter for job object.
+        /// </summary>
+        public JobObjectCompletionPortMessageFilters CompletionFilter
+        {
+            get
             {
-                result = update_func(value.Value, result);
-                result.ControlFlags |= JobObjectNetRateControlFlags.Enable | enable_flag;
+                int mask = ((int)JobObjectCompletionPortMessageFilters.MaxMessage - 1) - 1;
+                int result = Query<int>(JobObjectInformationClass.JobObjectCompletionFilter);
+
+                return (JobObjectCompletionPortMessageFilters)(~result & mask);
             }
-            else
+
+            set
             {
-                result.ControlFlags &= ~enable_flag;
-                if (result.ControlFlags == JobObjectNetRateControlFlags.Enable)
-                {
-                    result.ControlFlags = JobObjectNetRateControlFlags.None;
-                }
+                int filter = (int)value;
+                Set(JobObjectInformationClass.JobObjectCompletionFilter, filter);
             }
-            SetInfo(JobObjectInformationClass.JobObjectNetRateControlInformation, result);
         }
 
         /// <summary>
@@ -552,14 +538,45 @@ namespace NtApiDotNet
             }
         }
 
-        /// <summary>
-        /// Set the Silo system root directory.
-        /// </summary>
-        /// <param name="system_root">The absolute path to the system root directory.</param>
-        /// <remarks>The system_root path must start with a capital drive letter and not end with a backslash.</remarks>
-        public void SetSiloSystemRoot(string system_root)
+        #endregion
+
+        #region Private Members
+        private JobObjectNetRateControlInformation GetNetRateControlInformation()
         {
-            SetInfo(JobObjectInformationClass.JobObjectSiloSystemRoot, new UnicodeString(system_root));
+            return Query<JobObjectNetRateControlInformation>(JobObjectInformationClass.JobObjectNetRateControlInformation);
         }
+
+        private T? GetNetRateValue<T>(JobObjectNetRateControlFlags enable_flag, 
+            Func<JobObjectNetRateControlInformation, T> callback) where T : struct
+        {
+            var result = GetNetRateControlInformation();
+            if (result.ControlFlags.HasFlag(JobObjectNetRateControlFlags.Enable)
+                && result.ControlFlags.HasFlag(enable_flag))
+            {
+                return callback(result);
+            }
+            return null;
+        }
+
+        private void SetNetRateValue<T>(T? value, JobObjectNetRateControlFlags enable_flag, 
+            Func<T, JobObjectNetRateControlInformation, JobObjectNetRateControlInformation> update_func) where T : struct
+        {
+            var result = GetNetRateControlInformation();
+            if (value.HasValue)
+            {
+                result = update_func(value.Value, result);
+                result.ControlFlags |= JobObjectNetRateControlFlags.Enable | enable_flag;
+            }
+            else
+            {
+                result.ControlFlags &= ~enable_flag;
+                if (result.ControlFlags == JobObjectNetRateControlFlags.Enable)
+                {
+                    result.ControlFlags = JobObjectNetRateControlFlags.None;
+                }
+            }
+            Set(JobObjectInformationClass.JobObjectNetRateControlInformation, result);
+        }
+        #endregion
     }
 }
