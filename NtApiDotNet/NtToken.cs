@@ -518,6 +518,14 @@ namespace NtApiDotNet
           out int ReturnLength);
 
         [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQueryInformationToken(
+          SafeKernelObjectHandle TokenHandle,
+          TokenInformationClass TokenInformationClass,
+          SafeBuffer TokenInformation,
+          int TokenInformationLength,
+          out int ReturnLength);
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus NtAdjustPrivilegesToken(
            SafeHandle TokenHandle,
            bool DisableAllPrivileges,
@@ -1056,41 +1064,10 @@ namespace NtApiDotNet
     /// Class representing a Token object
     /// </summary>
     [NtType("Token")]
-    public sealed class NtToken : NtObjectWithDuplicate<NtToken, TokenAccessRights>
+    public sealed class NtToken : NtObjectWithDuplicateAndInfo<NtToken, TokenAccessRights, TokenInformationClass>
     {
         internal NtToken(SafeKernelObjectHandle handle) : base(handle)
         {
-        }
-        
-        private SafeStructureInOutBuffer<T> QueryToken<T>(TokenInformationClass token_info) where T : new()
-        {
-            SafeStructureInOutBuffer<T> ret = null;
-            NtStatus status = NtStatus.STATUS_BUFFER_TOO_SMALL;
-            try
-            {
-                status = NtSystemCalls.NtQueryInformationToken(Handle, token_info, IntPtr.Zero, 0, out int return_length);
-                if ((status != NtStatus.STATUS_BUFFER_TOO_SMALL) && (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH))
-                    throw new NtException(status);
-                ret = new SafeStructureInOutBuffer<T>(return_length, false);
-                status = NtSystemCalls.NtQueryInformationToken(Handle, token_info, ret.DangerousGetHandle(), ret.Length, out return_length).ToNtException();
-            }
-            finally
-            {
-                if (ret != null && !status.IsSuccess())
-                {
-                    ret.Close();
-                    ret = null;
-                }
-            }
-            return ret;
-        }
-
-        private void SetToken<T>(TokenInformationClass token_info, T value) where T : new()
-        {
-            using (var buffer = value.ToBuffer())
-            {
-                NtSystemCalls.NtSetInformationToken(Handle, token_info, buffer, buffer.Length).ToNtException();
-            }
         }
 
         /// <summary>
@@ -1345,7 +1322,7 @@ namespace NtApiDotNet
 
         /// <summary>
         /// Open the process token of the current process
-        /// </summary>        
+        /// </summary>
         /// <param name="duplicate">True to duplicate the token before returning</param>
         /// <param name="desired_access">The desired access for the token</param>
         /// <returns>The opened token</returns>
@@ -1818,7 +1795,7 @@ namespace NtApiDotNet
         /// <param name="session_id">The session ID</param>
         public void SetSessionId(int session_id)
         {
-            SetToken(TokenInformationClass.TokenSessionId, session_id);
+            Set(TokenInformationClass.TokenSessionId, session_id);
         }
 
         private UserGroup _user;
@@ -1832,7 +1809,7 @@ namespace NtApiDotNet
             {
                 if (_user == null)
                 {
-                    using (var user = QueryToken<TokenUser>(TokenInformationClass.TokenUser))
+                    using (var user = QueryBuffer<TokenUser>(TokenInformationClass.TokenUser))
                     {
                         Interlocked.CompareExchange(ref _user, user.Result.User.ToUserGroup(), null);
                     }
@@ -1843,7 +1820,7 @@ namespace NtApiDotNet
 
         private UserGroup[] QueryGroups(TokenInformationClass info_class)
         {
-            using (var groups = QueryToken<TokenGroups>(info_class))
+            using (var groups = QueryBuffer<TokenGroups>(info_class))
             {
                 TokenGroups result = groups.Result;
                 SidAndAttributes[] sids = new SidAndAttributes[result.GroupCount];
@@ -1913,7 +1890,7 @@ namespace NtApiDotNet
         {
             if (_token_stats == null)
             {
-                using (var stats = QueryToken<TokenStatistics>(TokenInformationClass.TokenStatistics))
+                using (var stats = QueryBuffer<TokenStatistics>(TokenInformationClass.TokenStatistics))
                 {
                     Interlocked.CompareExchange(ref _token_stats, stats.Result, null);
                 }
@@ -1983,7 +1960,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var owner_buf = QueryToken<TokenOwner>(TokenInformationClass.TokenOwner))
+                using (var owner_buf = QueryBuffer<TokenOwner>(TokenInformationClass.TokenOwner))
                 {
                     return new Sid(owner_buf.Result.Owner);
                 }
@@ -1993,7 +1970,7 @@ namespace NtApiDotNet
             {
                 using (var sid_buffer = value.ToSafeBuffer())
                 {
-                    SetToken(TokenInformationClass.TokenOwner, new TokenOwner() { Owner = sid_buffer.DangerousGetHandle() });
+                    Set(TokenInformationClass.TokenOwner, new TokenOwner() { Owner = sid_buffer.DangerousGetHandle() });
                 }
             }
         }
@@ -2005,7 +1982,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var owner_buf = QueryToken<TokenPrimaryGroup>(TokenInformationClass.TokenPrimaryGroup))
+                using (var owner_buf = QueryBuffer<TokenPrimaryGroup>(TokenInformationClass.TokenPrimaryGroup))
                 {
                     return new Sid(owner_buf.Result.PrimaryGroup);
                 }
@@ -2014,7 +1991,7 @@ namespace NtApiDotNet
             {
                 using (var sid_buffer = value.ToSafeBuffer())
                 {
-                    SetToken(TokenInformationClass.TokenPrimaryGroup, new TokenPrimaryGroup() { PrimaryGroup = sid_buffer.DangerousGetHandle() });
+                    Set(TokenInformationClass.TokenPrimaryGroup, new TokenPrimaryGroup() { PrimaryGroup = sid_buffer.DangerousGetHandle() });
                 }
             }
         }
@@ -2026,7 +2003,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var dacl_buf = QueryToken<TokenDefaultDacl>(TokenInformationClass.TokenDefaultDacl))
+                using (var dacl_buf = QueryBuffer<TokenDefaultDacl>(TokenInformationClass.TokenDefaultDacl))
                 {
                     return new Acl(dacl_buf.Result.DefaultDacl, false);
                 }
@@ -2049,7 +2026,7 @@ namespace NtApiDotNet
                 {
                     DefaultDacl = dacl_buf.DangerousGetHandle()
                 };
-                SetToken(TokenInformationClass.TokenDefaultDacl, default_dacl);
+                Set(TokenInformationClass.TokenDefaultDacl, default_dacl);
             }
         }
 
@@ -2064,7 +2041,7 @@ namespace NtApiDotNet
             {
                 if (_source == null)
                 {
-                    using (var source_buf = QueryToken<TokenSource>(TokenInformationClass.TokenSource))
+                    using (var source_buf = QueryBuffer<TokenSource>(TokenInformationClass.TokenSource))
                     {
                         Interlocked.CompareExchange(ref _source, source_buf.Result, null);
                     }
@@ -2110,10 +2087,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buf = QueryToken<int>(TokenInformationClass.TokenSessionId))
-                {
-                    return buf.Result;
-                }
+                return Query<int>(TokenInformationClass.TokenSessionId);
             }
 
             set
@@ -2129,10 +2103,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buf = QueryToken<int>(TokenInformationClass.TokenSandBoxInert))
-                {
-                    return buf.Result != 0;
-                }
+                return Query<int>(TokenInformationClass.TokenSandBoxInert) != 0;
             }
         }
 
@@ -2143,10 +2114,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buf = QueryToken<Luid>(TokenInformationClass.TokenOrigin))
-                {
-                    return buf.Result;
-                }
+                return Query<Luid>(TokenInformationClass.TokenOrigin);
             }
 
             set
@@ -2161,7 +2129,7 @@ namespace NtApiDotNet
         /// <param name="origin">The origin logon session ID.</param>
         public void SetOrigin(Luid origin)
         {
-            SetToken(TokenInformationClass.TokenOrigin, origin);
+            Set(TokenInformationClass.TokenOrigin, origin);
         }
 
         /// <summary>
@@ -2171,10 +2139,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buf = QueryToken<int>(TokenInformationClass.TokenElevationType))
-                {
-                    return (TokenElevationType)buf.Result;
-                }
+                return (TokenElevationType)Query<int>(TokenInformationClass.TokenElevationType);
             }
         }
 
@@ -2185,10 +2150,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buf = QueryToken<int>(TokenInformationClass.TokenElevation))
-                {
-                    return buf.Result != 0;
-                }
+                return Query<int>(TokenInformationClass.TokenElevation) != 0;
             }
         }
 
@@ -2199,10 +2161,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buf = QueryToken<int>(TokenInformationClass.TokenHasRestrictions))
-                {
-                    return buf.Result != 0;
-                }
+                return Query<int>(TokenInformationClass.TokenHasRestrictions) != 0;
             }
         }
 
@@ -2213,10 +2172,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buf = QueryToken<int>(TokenInformationClass.TokenUIAccess))
-                {
-                    return buf.Result != 0;
-                }
+                return Query<int>(TokenInformationClass.TokenUIAccess) != 0;
             }
             set
             {
@@ -2231,10 +2187,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buf = QueryToken<int>(TokenInformationClass.TokenVirtualizationAllowed))
-                {
-                    return buf.Result != 0;
-                }
+                return Query<int>(TokenInformationClass.TokenVirtualizationAllowed) != 0;
             }
         }
 
@@ -2245,10 +2198,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buf = QueryToken<int>(TokenInformationClass.TokenVirtualizationEnabled))
-                {
-                    return buf.Result != 0;
-                }
+                return Query<int>(TokenInformationClass.TokenVirtualizationEnabled) != 0;
             }
             set
             {
@@ -2262,7 +2212,7 @@ namespace NtApiDotNet
         /// <param name="enable">True to enable virtualization</param>
         public void SetVirtualizationEnabled(bool enable)
         {
-            SetToken(TokenInformationClass.TokenVirtualizationEnabled, enable ? 1 : 0);
+            Set(TokenInformationClass.TokenVirtualizationEnabled, enable ? 1 : 0);
         }
 
         /// <summary>
@@ -2271,7 +2221,7 @@ namespace NtApiDotNet
         /// <param name="enable">True to enable UI Access.</param>
         public void SetUIAccess(bool enable)
         {
-            SetToken(TokenInformationClass.TokenUIAccess, enable ? 1 : 0);
+            Set(TokenInformationClass.TokenUIAccess, enable ? 1 : 0);
         }
 
         /// <summary>
@@ -2291,10 +2241,8 @@ namespace NtApiDotNet
         /// <returns>The linked token</returns>
         public NtToken GetLinkedToken()
         {
-            using (var buf = QueryToken<IntPtr>(TokenInformationClass.TokenLinkedToken))
-            {
-                return new NtToken(new SafeKernelObjectHandle(buf.Result, true));
-            }
+            IntPtr linked_token = Query<IntPtr>(TokenInformationClass.TokenLinkedToken);
+            return new NtToken(new SafeKernelObjectHandle(linked_token, true));
         }
 
         /// <summary>
@@ -2315,10 +2263,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buf = QueryToken<int>(TokenInformationClass.TokenMandatoryPolicy))
-                {
-                    return (TokenMandatoryPolicy)buf.Result;
-                }
+                return (TokenMandatoryPolicy)Query<int>(TokenInformationClass.TokenMandatoryPolicy);
             }
         }
 
@@ -2416,6 +2361,29 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Method to query information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to return data in.</param>
+        /// <param name="return_length">Return length from the query.</param>
+        /// <returns>The NT status code for the query.</returns>
+        public override NtStatus QueryInformation(TokenInformationClass info_class, SafeBuffer buffer, out int return_length)
+        {
+            return NtSystemCalls.NtQueryInformationToken(Handle, info_class, buffer, buffer.GetLength(), out return_length);
+        }
+
+        /// <summary>
+        /// Method to set information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to set data from.</param>
+        /// <returns>The NT status code for the set.</returns>
+        public override NtStatus SetInformation(TokenInformationClass info_class, SafeBuffer buffer)
+        {
+            return NtSystemCalls.NtSetInformationToken(Handle, info_class, buffer, buffer.GetLength());
+        }
+
+        /// <summary>
         /// Impersonate another process' token
         /// </summary>
         /// <param name="impersonation_level">The impersonation level</param>
@@ -2440,7 +2408,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var label = QueryToken<TokenMandatoryLabel>(TokenInformationClass.TokenIntegrityLevel))
+                using (var label = QueryBuffer<TokenMandatoryLabel>(TokenInformationClass.TokenIntegrityLevel))
                 {
                     return label.Result.Label.ToUserGroup();
                 }
@@ -2459,10 +2427,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buf = QueryToken<int>(TokenInformationClass.TokenAppContainerNumber))
-                {
-                    return buf.Result;
-                }
+                return Query<int>(TokenInformationClass.TokenAppContainerNumber);
             }
         }
 
@@ -2491,7 +2456,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buf = QueryToken<ClaimSecurityAttributesInformation>(TokenInformationClass.TokenSecurityAttributes))
+                using (var buf = QueryBuffer<ClaimSecurityAttributesInformation>(TokenInformationClass.TokenSecurityAttributes))
                 {
                     ClaimSecurityAttributesInformation r = buf.Result;
                     List<ClaimSecurityAttribute> attributes = new List<ClaimSecurityAttribute>();
@@ -2543,7 +2508,7 @@ namespace NtApiDotNet
             {                
                 TokenMandatoryLabel label = new TokenMandatoryLabel();
                 label.Label.Sid = sid_buffer.DangerousGetHandle();
-                SetToken(TokenInformationClass.TokenIntegrityLevel, label);
+                Set(TokenInformationClass.TokenIntegrityLevel, label);
             }
         }
 
@@ -2578,7 +2543,7 @@ namespace NtApiDotNet
                 }
 
                 using (var appcontainer 
-                    = QueryToken<uint>(TokenInformationClass.TokenIsAppContainer))
+                    = QueryBuffer<uint>(TokenInformationClass.TokenIsAppContainer))
                 {
                     return appcontainer.Result != 0;
                 }
@@ -2623,7 +2588,7 @@ namespace NtApiDotNet
 
                 if (_app_container_sid == null)
                 {
-                    using (var acsid = QueryToken<TokenAppContainerInformation>(TokenInformationClass.TokenAppContainerSid))
+                    using (var acsid = QueryBuffer<TokenAppContainerInformation>(TokenInformationClass.TokenAppContainerSid))
                     {
                         Interlocked.CompareExchange(ref _app_container_sid, new Sid(acsid.Result.TokenAppContainer), null);
                     }
@@ -2687,7 +2652,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buffer = QueryToken<TokenPrivileges>(TokenInformationClass.TokenPrivileges))
+                using (var buffer = QueryBuffer<TokenPrivileges>(TokenInformationClass.TokenPrivileges))
                 {
                     int count = buffer.Result.PrivilegeCount;
                     LuidAndAttributes[] attrs = new LuidAndAttributes[count];
@@ -2760,7 +2725,7 @@ namespace NtApiDotNet
             {
                 try
                 {
-                    using (var buffer = QueryToken<TokenProcessTrustLevel>(TokenInformationClass.TokenProcessTrustLevel))
+                    using (var buffer = QueryBuffer<TokenProcessTrustLevel>(TokenInformationClass.TokenProcessTrustLevel))
                     {
                         if (buffer.Length > IntPtr.Size)
                         {
@@ -3022,7 +2987,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buffer = QueryToken<TokenBnoIsolationInformation>(TokenInformationClass.TokenBnoIsolation))
+                using (var buffer = QueryBuffer<TokenBnoIsolationInformation>(TokenInformationClass.TokenBnoIsolation))
                 {
                     var result = buffer.Result;
                     if (!result.IsolationEnabled && result.IsolationPrefix != IntPtr.Zero)
