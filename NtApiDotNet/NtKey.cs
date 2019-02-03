@@ -1432,45 +1432,6 @@ namespace NtApiDotNet
             }
         }
 
-        //private SafeStructureInOutBuffer<T> QueryKey<T>(KeyInformationClass info_class) where T : new()
-        //{
-        //    NtStatus status = NtSystemCalls.NtQueryKey(Handle, info_class, SafeHGlobalBuffer.Null, 0, out int return_length);
-        //    if (status != NtStatus.STATUS_BUFFER_OVERFLOW && status != NtStatus.STATUS_INFO_LENGTH_MISMATCH && status != NtStatus.STATUS_BUFFER_TOO_SMALL)
-        //    {
-        //        status.ToNtException();
-        //    }
-        //    SafeStructureInOutBuffer<T> buffer = new SafeStructureInOutBuffer<T>(return_length, false);
-        //    try
-        //    {
-        //        NtSystemCalls.NtQueryKey(Handle, info_class, buffer, buffer.Length, out return_length).ToNtException();
-        //        return Interlocked.Exchange(ref buffer, null);
-        //    }
-        //    finally
-        //    {
-        //        if (buffer != null)
-        //        {
-        //            buffer.Close();
-        //        }
-        //    }
-        //}
-
-        //private T QueryKeyFixed<T>(KeyInformationClass info_class) where T : new()
-        //{
-        //    using (var buffer = default(T).ToBuffer())
-        //    {
-        //        NtSystemCalls.NtQueryKey(Handle, info_class, buffer, buffer.Length, out int return_length).ToNtException();
-        //        return buffer.Result;
-        //    }
-        //}
-
-        //private void SetKey<T>(KeySetInformationClass info_class, T value) where T : new()
-        //{
-        //    using (var buffer = value.ToBuffer())
-        //    {
-        //        NtSystemCalls.NtSetInformationKey(Handle, info_class, buffer, buffer.Length).ToNtException();
-        //    }
-        //}
-
         private Tuple<KeyFullInformation, string> GetFullInfo()
         {
             using (var buffer = QueryBuffer<KeyFullInformation>(KeyInformationClass.KeyFullInformation))
