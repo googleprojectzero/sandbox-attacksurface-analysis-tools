@@ -601,7 +601,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code for the query.</returns>
         public override NtStatus QueryInformation(TransactionInformationClass info_class, SafeBuffer buffer, out int return_length)
         {
-            return NtSystemCalls.NtQueryInformationTransaction(Handle, info_class, buffer, (int)buffer.ByteLength, out return_length);
+            return NtSystemCalls.NtQueryInformationTransaction(Handle, info_class, buffer, buffer.GetLength(), out return_length);
         }
 
         /// <summary>
@@ -612,7 +612,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code for the set.</returns>
         public override NtStatus SetInformation(TransactionInformationClass info_class, SafeBuffer buffer)
         {
-            return NtSystemCalls.NtSetInformationTransaction(Handle, info_class, buffer, (int)buffer.ByteLength);
+            return NtSystemCalls.NtSetInformationTransaction(Handle, info_class, buffer, buffer.GetLength());
         }
 
         #endregion
