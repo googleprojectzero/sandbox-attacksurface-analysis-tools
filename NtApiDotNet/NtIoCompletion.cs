@@ -152,7 +152,7 @@ namespace NtApiDotNet
     /// Class representing an NT IO Completion Port object
     /// </summary>
     [NtType("IoCompletion")]
-    public class NtIoCompletion : NtObjectWithDuplicateAndInfo<NtIoCompletion, IoCompletionAccessRights, IoCompletionInformationClass>
+    public class NtIoCompletion : NtObjectWithDuplicateAndInfo<NtIoCompletion, IoCompletionAccessRights, IoCompletionInformationClass, IoCompletionInformationClass>
     {
         #region Constructors
 

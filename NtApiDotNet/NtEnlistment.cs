@@ -183,7 +183,7 @@ namespace NtApiDotNet
     /// Class to represent a kernel transaction enlistment.
     /// </summary>
     [NtType("TmEn")]
-    public class NtEnlistment : NtObjectWithDuplicateAndInfo<NtEnlistment, EnlistmentAccessRights, EnlistmentInformationClass>
+    public class NtEnlistment : NtObjectWithDuplicateAndInfo<NtEnlistment, EnlistmentAccessRights, EnlistmentInformationClass, EnlistmentInformationClass>
     {
         #region Constructors
         internal NtEnlistment(SafeKernelObjectHandle handle) : base(handle)

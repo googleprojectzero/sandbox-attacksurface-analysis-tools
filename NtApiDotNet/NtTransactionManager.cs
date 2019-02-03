@@ -155,7 +155,8 @@ namespace NtApiDotNet
     /// Class to represent a kernel transaction manager.
     /// </summary>
     [NtType("TmTm")]
-    public sealed class NtTransactionManager : NtObjectWithDuplicateAndInfo<NtTransactionManager, TransactionManagerAccessRights, TransactionManagerInformationClass>
+    public sealed class NtTransactionManager : NtObjectWithDuplicateAndInfo<NtTransactionManager, TransactionManagerAccessRights, 
+        TransactionManagerInformationClass, TransactionManagerInformationClass>
     {
         #region Constructors
         internal NtTransactionManager(SafeKernelObjectHandle handle)

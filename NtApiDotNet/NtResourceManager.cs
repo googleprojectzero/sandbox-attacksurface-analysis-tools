@@ -225,7 +225,8 @@ namespace NtApiDotNet
     /// Class to represent a transaction resource manager.
     /// </summary>
     [NtType("TmRm")]
-    public sealed class NtResourceManager : NtObjectWithDuplicateAndInfo<NtResourceManager, ResourceManagerAccessRights, ResourceManagerInformationClass>
+    public sealed class NtResourceManager : NtObjectWithDuplicateAndInfo<NtResourceManager, ResourceManagerAccessRights, 
+                                    ResourceManagerInformationClass, ResourceManagerInformationClass>
     {
         #region Constructors
         internal NtResourceManager(SafeKernelObjectHandle handle) 

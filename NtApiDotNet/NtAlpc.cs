@@ -316,7 +316,7 @@ namespace NtApiDotNet
     /// Class to represent an ALPC port.
     /// </summary>
     [NtType("ALPC Port")]
-    public class NtAlpc : NtObjectWithDuplicateAndInfo<NtAlpc, AlpcAccessRights, AlpcPortInformationClass>
+    public class NtAlpc : NtObjectWithDuplicateAndInfo<NtAlpc, AlpcAccessRights, AlpcPortInformationClass, AlpcPortInformationClass>
     {
         #region Constructors
         internal NtAlpc(SafeKernelObjectHandle handle, bool connected) : base(handle)

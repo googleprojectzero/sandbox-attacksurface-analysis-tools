@@ -68,7 +68,7 @@ namespace NtApiDotNet
     /// Class representing a NT Mutant object
     /// </summary>
     [NtType("Mutant")]
-    public class NtMutant : NtObjectWithDuplicateAndInfo<NtMutant, MutantAccessRights, MutantInformationClass>
+    public class NtMutant : NtObjectWithDuplicateAndInfo<NtMutant, MutantAccessRights, MutantInformationClass, MutantInformationClass>
     {
         internal NtMutant(SafeKernelObjectHandle handle) : base(handle)
         {

@@ -380,7 +380,7 @@ namespace NtApiDotNet
     /// Class to represent a NT Section object
     /// </summary>
     [NtType("Section")]
-    public sealed class NtSection : NtObjectWithDuplicateAndInfo<NtSection, SectionAccessRights, SectionInformationClass>
+    public sealed class NtSection : NtObjectWithDuplicateAndInfo<NtSection, SectionAccessRights, SectionInformationClass, SectionInformationClass>
     {
         #region Constructors
         internal NtSection(SafeKernelObjectHandle handle, SectionAttributes attributes, MemoryAllocationProtect protection, LargeInteger size) : base(handle)

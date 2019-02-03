@@ -104,7 +104,7 @@ namespace NtApiDotNet
         public NtTypeFactory(Type object_type)
         {
             Type base_type = object_type.BaseType; // GetBaseType(object_type);
-            if (base_type.GetGenericTypeDefinition() == typeof(NtObjectWithDuplicateAndInfo<,,>))
+            if (base_type.GetGenericTypeDefinition() == typeof(NtObjectWithDuplicateAndInfo<,,,>))
             {
                 base_type = base_type.BaseType;
             }

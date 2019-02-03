@@ -194,7 +194,7 @@ namespace NtApiDotNet
     /// Class to represent a kernel transaction.
     /// </summary>
     [NtType("TmTx")]
-    public class NtTransaction : NtObjectWithDuplicateAndInfo<NtTransaction, TransactionAccessRights, TransactionInformationClass>, INtTransaction
+    public class NtTransaction : NtObjectWithDuplicateAndInfo<NtTransaction, TransactionAccessRights, TransactionInformationClass, TransactionInformationClass>, INtTransaction
     {
         #region Constructors
         internal NtTransaction(SafeKernelObjectHandle handle) : base(handle)

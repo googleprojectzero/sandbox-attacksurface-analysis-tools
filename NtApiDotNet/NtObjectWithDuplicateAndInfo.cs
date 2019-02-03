@@ -1,9 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿//  Copyright 2019 Google Inc. All Rights Reserved.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
+using System;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NtApiDotNet
 {
@@ -12,13 +22,14 @@ namespace NtApiDotNet
     /// </summary>
     /// <typeparam name="O">The derived type to use as return values</typeparam>
     /// <typeparam name="A">An enum which represents the access mask values for the type</typeparam>
-    /// <typeparam name="I">An enum which represents the information class for query/set.</typeparam>
-    public abstract class NtObjectWithDuplicateAndInfo<O, A, I> : NtObjectWithDuplicate<O, A> where O : NtObject where A : struct, IConvertible where I : struct
+    /// <typeparam name="Q">An enum which represents the information class for query.</typeparam>
+    /// <typeparam name="S">An enum which represents the information class for set.</typeparam>
+    public abstract class NtObjectWithDuplicateAndInfo<O, A, Q, S> : NtObjectWithDuplicate<O, A> where O : NtObject where A : struct, IConvertible where Q : struct where S : struct
     {
         #region Constructors
         internal NtObjectWithDuplicateAndInfo(SafeKernelObjectHandle handle) : base(handle)
         {
-            System.Diagnostics.Debug.Assert(typeof(I).IsEnum);
+            System.Diagnostics.Debug.Assert(typeof(Q).IsEnum && typeof(S).IsEnum);
         }
         #endregion
 
@@ -33,7 +44,7 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The result of the query.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public virtual NtResult<T> Query<T>(I info_class, T default_value, bool throw_on_error) where T : new()
+        public virtual NtResult<T> Query<T>(Q info_class, T default_value, bool throw_on_error) where T : new()
         {
             using (var buffer = new SafeStructureInOutBuffer<T>(default_value))
             {
@@ -49,7 +60,7 @@ namespace NtApiDotNet
         /// <param name="default_value">A default value for the query.</param>
         /// <returns>The result of the query.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public T Query<T>(I info_class, T default_value) where T : new()
+        public T Query<T>(Q info_class, T default_value) where T : new()
         {
             return Query(info_class, default_value, true).Result;
         }
@@ -61,7 +72,7 @@ namespace NtApiDotNet
         /// <param name="info_class">The information class to query.</param>
         /// <returns>The result of the query.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public T Query<T>(I info_class) where T : new()
+        public T Query<T>(Q info_class) where T : new()
         {
             return Query(info_class, new T());
         }
@@ -75,7 +86,7 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The result of the query.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public virtual NtResult<SafeStructureInOutBuffer<T>> QueryBuffer<T>(I info_class, T default_value, bool throw_on_error) where T : new()
+        public virtual NtResult<SafeStructureInOutBuffer<T>> QueryBuffer<T>(Q info_class, T default_value, bool throw_on_error) where T : new()
         {
             NtStatus status;
             int return_length;
@@ -89,7 +100,7 @@ namespace NtApiDotNet
                 }
             }
 
-            if (!IsInvalidBufferSize(status))
+            if (!IsInvalidBufferStatus(status))
             {
                 return status.CreateResultFromError<SafeStructureInOutBuffer<T>>(throw_on_error);
             }
@@ -115,7 +126,7 @@ namespace NtApiDotNet
                     {
                         return status.CreateResult(throw_on_error, () => buffer.Detach());
                     }
-                    else if (!IsInvalidBufferSize(status))
+                    else if (!IsInvalidBufferStatus(status))
                     {
                         return status.CreateResultFromError<SafeStructureInOutBuffer<T>>(throw_on_error);
                     }
@@ -134,7 +145,7 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The result of the query.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public virtual NtResult<SafeHGlobalBuffer> QueryRawBuffer(I info_class, byte[] init_buffer, bool throw_on_error)
+        public virtual NtResult<SafeHGlobalBuffer> QueryRawBuffer(Q info_class, byte[] init_buffer, bool throw_on_error)
         {
             NtStatus status;
             int return_length;
@@ -148,7 +159,7 @@ namespace NtApiDotNet
                 }
             }
 
-            if (!IsInvalidBufferSize(status))
+            if (!IsInvalidBufferStatus(status))
             {
                 return status.CreateResultFromError<SafeHGlobalBuffer>(throw_on_error);
             }
@@ -178,7 +189,7 @@ namespace NtApiDotNet
                         }
                         return status.CreateResult(throw_on_error, () => buffer.Detach(return_length));
                     }
-                    else if (!IsInvalidBufferSize(status))
+                    else if (!IsInvalidBufferStatus(status))
                     {
                         return status.CreateResultFromError<SafeHGlobalBuffer>(throw_on_error);
                     }
@@ -196,7 +207,7 @@ namespace NtApiDotNet
         /// <param name="init_buffer">A buffer to initialize the initial query. Can be null.</param>
         /// <returns>The result of the query.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public virtual SafeHGlobalBuffer QueryRawBuffer(I info_class, byte[] init_buffer)
+        public virtual SafeHGlobalBuffer QueryRawBuffer(Q info_class, byte[] init_buffer)
         {
             return QueryRawBuffer(info_class, init_buffer, true).Result;
         }
@@ -207,7 +218,7 @@ namespace NtApiDotNet
         /// <param name="info_class">The information class to query.</param>
         /// <returns>The result of the query.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public virtual SafeHGlobalBuffer QueryRawBuffer(I info_class)
+        public virtual SafeHGlobalBuffer QueryRawBuffer(Q info_class)
         {
             return QueryRawBuffer(info_class, null);
         }
@@ -220,7 +231,7 @@ namespace NtApiDotNet
         /// <param name="default_value">A default value for the query.</param>
         /// <returns>The result of the query.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public virtual SafeStructureInOutBuffer<T> QueryBuffer<T>(I info_class, T default_value) where T : new()
+        public virtual SafeStructureInOutBuffer<T> QueryBuffer<T>(Q info_class, T default_value) where T : new()
         {
             return QueryBuffer(info_class, default_value, true).Result;
         }
@@ -232,7 +243,7 @@ namespace NtApiDotNet
         /// <param name="info_class">The information class to query.</param>
         /// <returns>The result of the query.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public SafeStructureInOutBuffer<T> QueryBuffer<T>(I info_class) where T : new()
+        public SafeStructureInOutBuffer<T> QueryBuffer<T>(Q info_class) where T : new()
         {
             return QueryBuffer(info_class, new T(), true).Result;
         }
@@ -246,7 +257,7 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code of the set.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public virtual NtStatus Set<T>(I info_class, T value, bool throw_on_error) where T : new()
+        public virtual NtStatus Set<T>(S info_class, T value, bool throw_on_error) where T : new()
         {
             using (var buffer = value.ToBuffer())
             {
@@ -262,7 +273,7 @@ namespace NtApiDotNet
         /// <param name="value">The value to set.</param>
         /// <returns>The NT status code of the set.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public void Set<T>(I info_class, T value) where T : new()
+        public void Set<T>(S info_class, T value) where T : new()
         {
             Set(info_class, value, true);
         }
@@ -275,7 +286,7 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code of the set.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public virtual NtStatus Set(I info_class, byte[] value, bool throw_on_error)
+        public virtual NtStatus Set(S info_class, byte[] value, bool throw_on_error)
         {
             using (var buffer = value.ToBuffer())
             {
@@ -290,7 +301,7 @@ namespace NtApiDotNet
         /// <param name="value">The raw value to set.</param>
         /// <returns>The NT status code of the set.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public virtual void Set(I info_class, byte[] value)
+        public virtual void Set(S info_class, byte[] value)
         {
             Set(info_class, value, true);
         }
@@ -302,7 +313,7 @@ namespace NtApiDotNet
         /// <param name="buffer">The buffer to return data in.</param>
         /// <param name="return_length">Return length from the query.</param>
         /// <returns>The NT status code for the query.</returns>
-        public virtual NtStatus QueryInformation(I info_class, SafeBuffer buffer, out int return_length)
+        public virtual NtStatus QueryInformation(Q info_class, SafeBuffer buffer, out int return_length)
         {
             return_length = 0;
             return NtStatus.STATUS_NOT_SUPPORTED;
@@ -314,7 +325,7 @@ namespace NtApiDotNet
         /// <param name="info_class">The information class.</param>
         /// <param name="buffer">The buffer to set data from.</param>
         /// <returns>The NT status code for the set.</returns>
-        public virtual NtStatus SetInformation(I info_class, SafeBuffer buffer)
+        public virtual NtStatus SetInformation(S info_class, SafeBuffer buffer)
         {
             return NtStatus.STATUS_NOT_SUPPORTED;
         }
@@ -333,7 +344,7 @@ namespace NtApiDotNet
         #endregion
 
         #region Private Members
-        private static bool IsInvalidBufferSize(NtStatus status)
+        private static bool IsInvalidBufferStatus(NtStatus status)
         {
             return status == NtStatus.STATUS_INFO_LENGTH_MISMATCH || status == NtStatus.STATUS_BUFFER_TOO_SMALL || status == NtStatus.STATUS_BUFFER_OVERFLOW;
         }

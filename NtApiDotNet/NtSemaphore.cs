@@ -83,7 +83,7 @@ namespace NtApiDotNet
     /// Class to represent a NT Semaphore object.
     /// </summary>
     [NtType("Semaphore")]
-    public class NtSemaphore : NtObjectWithDuplicateAndInfo<NtSemaphore, SemaphoreAccessRights, SemaphoreInformationClass>
+    public class NtSemaphore : NtObjectWithDuplicateAndInfo<NtSemaphore, SemaphoreAccessRights, SemaphoreInformationClass, SemaphoreInformationClass>
     {
         #region Constructors
         internal NtSemaphore(SafeKernelObjectHandle handle) : base(handle)
