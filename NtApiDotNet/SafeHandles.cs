@@ -589,6 +589,15 @@ namespace NtApiDotNet
                 return _type_name;
             }
         }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The handle as a string.</returns>
+        public override string ToString()
+        {
+            return $"0x{DangerousGetHandle().ToInt64():X}";
+        }
     }
 
     public sealed class SafeHandleListHandle : SafeHGlobalBuffer
