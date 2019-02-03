@@ -551,7 +551,7 @@ namespace NtApiDotNet
     /// Class to represent an NT Key object
     /// </summary>
     [NtType("Key")]
-    public class NtKey : NtObjectWithDuplicate<NtKey, KeyAccessRights>
+    public class NtKey : NtObjectWithDuplicateAndInfo<NtKey, KeyAccessRights, KeyInformationClass, KeySetInformationClass>
     {
         internal NtKey(SafeKernelObjectHandle handle, KeyDisposition disposition, bool predefined_handle) : base(handle)
         {
@@ -1377,6 +1377,29 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Method to query information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to return data in.</param>
+        /// <param name="return_length">Return length from the query.</param>
+        /// <returns>The NT status code for the query.</returns>
+        public override NtStatus QueryInformation(KeyInformationClass info_class, SafeBuffer buffer, out int return_length)
+        {
+            return NtSystemCalls.NtQueryKey(Handle, info_class, buffer, buffer.GetLength(), out return_length);
+        }
+
+        /// <summary>
+        /// Method to set information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to set data from.</param>
+        /// <returns>The NT status code for the set.</returns>
+        public override NtStatus SetInformation(KeySetInformationClass info_class, SafeBuffer buffer)
+        {
+            return NtSystemCalls.NtSetInformationKey(Handle, info_class, buffer, buffer.GetLength());
+        }
+
+        /// <summary>
         /// Wait for a change on thie registry key.
         /// </summary>
         /// <param name="completion_filter">Specify what changes will be notified.</param>
@@ -1409,48 +1432,48 @@ namespace NtApiDotNet
             }
         }
 
-        private SafeStructureInOutBuffer<T> QueryKey<T>(KeyInformationClass info_class) where T : new()
-        {
-            NtStatus status = NtSystemCalls.NtQueryKey(Handle, info_class, SafeHGlobalBuffer.Null, 0, out int return_length);
-            if (status != NtStatus.STATUS_BUFFER_OVERFLOW && status != NtStatus.STATUS_INFO_LENGTH_MISMATCH && status != NtStatus.STATUS_BUFFER_TOO_SMALL)
-            {
-                status.ToNtException();
-            }
-            SafeStructureInOutBuffer<T> buffer = new SafeStructureInOutBuffer<T>(return_length, false);
-            try
-            {
-                NtSystemCalls.NtQueryKey(Handle, info_class, buffer, buffer.Length, out return_length).ToNtException();
-                return Interlocked.Exchange(ref buffer, null);
-            }
-            finally
-            {
-                if (buffer != null)
-                {
-                    buffer.Close();
-                }
-            }
-        }
+        //private SafeStructureInOutBuffer<T> QueryKey<T>(KeyInformationClass info_class) where T : new()
+        //{
+        //    NtStatus status = NtSystemCalls.NtQueryKey(Handle, info_class, SafeHGlobalBuffer.Null, 0, out int return_length);
+        //    if (status != NtStatus.STATUS_BUFFER_OVERFLOW && status != NtStatus.STATUS_INFO_LENGTH_MISMATCH && status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+        //    {
+        //        status.ToNtException();
+        //    }
+        //    SafeStructureInOutBuffer<T> buffer = new SafeStructureInOutBuffer<T>(return_length, false);
+        //    try
+        //    {
+        //        NtSystemCalls.NtQueryKey(Handle, info_class, buffer, buffer.Length, out return_length).ToNtException();
+        //        return Interlocked.Exchange(ref buffer, null);
+        //    }
+        //    finally
+        //    {
+        //        if (buffer != null)
+        //        {
+        //            buffer.Close();
+        //        }
+        //    }
+        //}
 
-        private T QueryKeyFixed<T>(KeyInformationClass info_class) where T : new()
-        {
-            using (var buffer = default(T).ToBuffer())
-            {
-                NtSystemCalls.NtQueryKey(Handle, info_class, buffer, buffer.Length, out int return_length).ToNtException();
-                return buffer.Result;
-            }
-        }
+        //private T QueryKeyFixed<T>(KeyInformationClass info_class) where T : new()
+        //{
+        //    using (var buffer = default(T).ToBuffer())
+        //    {
+        //        NtSystemCalls.NtQueryKey(Handle, info_class, buffer, buffer.Length, out int return_length).ToNtException();
+        //        return buffer.Result;
+        //    }
+        //}
 
-        private void SetKey<T>(KeySetInformationClass info_class, T value) where T : new()
-        {
-            using (var buffer = value.ToBuffer())
-            {
-                NtSystemCalls.NtSetInformationKey(Handle, info_class, buffer, buffer.Length).ToNtException();
-            }
-        }
+        //private void SetKey<T>(KeySetInformationClass info_class, T value) where T : new()
+        //{
+        //    using (var buffer = value.ToBuffer())
+        //    {
+        //        NtSystemCalls.NtSetInformationKey(Handle, info_class, buffer, buffer.Length).ToNtException();
+        //    }
+        //}
 
         private Tuple<KeyFullInformation, string> GetFullInfo()
         {
-            using (var buffer = QueryKey<KeyFullInformation>(KeyInformationClass.KeyFullInformation))
+            using (var buffer = QueryBuffer<KeyFullInformation>(KeyInformationClass.KeyFullInformation))
             {
                 KeyFullInformation ret = buffer.Result;
                 byte[] class_name = new byte[ret.ClassLength];
@@ -1614,11 +1637,11 @@ namespace NtApiDotNet
         {
             get
             {
-                return (KeyVirtualizationFlags)QueryKeyFixed<int>(KeyInformationClass.KeyVirtualizationInformation);
+                return (KeyVirtualizationFlags)Query<int>(KeyInformationClass.KeyVirtualizationInformation);
             }
             set
             {
-                SetKey(KeySetInformationClass.KeySetVirtualizationInformation, (int)value);
+                Set(KeySetInformationClass.KeySetVirtualizationInformation, (int)value);
             }
         }
 
@@ -1629,14 +1652,14 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryKeyFixed<KeyFlags>(KeyInformationClass.KeyFlagsInformation).ControlFlags;
+                return Query<KeyFlags>(KeyInformationClass.KeyFlagsInformation).ControlFlags;
             }
 
             set
             {
                 using (var buffer = value.ToBuffer())
                 {
-                    SetKey(KeySetInformationClass.KeyControlFlagsInformation, (int)value);
+                    Set(KeySetInformationClass.KeyControlFlagsInformation, (int)value);
                 }
             }
         }
@@ -1648,14 +1671,14 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryKeyFixed<KeyFlags>(KeyInformationClass.KeyFlagsInformation).Wow64Flags;
+                return Query<KeyFlags>(KeyInformationClass.KeyFlagsInformation).Wow64Flags;
             }
 
             set
             {
                 using (var buffer = value.ToBuffer())
                 {
-                    SetKey(KeySetInformationClass.KeyWow64FlagsInformation, value);
+                    Set(KeySetInformationClass.KeyWow64FlagsInformation, value);
                 }
             }
         }
@@ -1667,7 +1690,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryKeyFixed<KeyTrustInformation>(KeyInformationClass.KeyTrustInformation).TrustedKey;
+                return Query<KeyTrustInformation>(KeyInformationClass.KeyTrustInformation).TrustedKey;
             }
         }
 
