@@ -194,7 +194,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code for the query.</returns>
         public override NtStatus QueryInformation(MutantInformationClass info_class, SafeBuffer buffer, out int return_length)
         {
-            return NtSystemCalls.NtQueryMutant(Handle, info_class, buffer, (int)buffer.ByteLength, out return_length);
+            return NtSystemCalls.NtQueryMutant(Handle, info_class, buffer, buffer.GetLength(), out return_length);
         }
     }
 }
