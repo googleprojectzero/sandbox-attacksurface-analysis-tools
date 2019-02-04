@@ -103,6 +103,56 @@ namespace NtApiDotNet
             return (int)status >= 0;
         }
 
+        /// <summary>
+        /// Get the severity of the NTSTATUS.
+        /// </summary>
+        /// <param name="status">The NtStatus value</param>
+        /// <returns>The severity.</returns>
+        public static NtStatusSeverity GetSeverity(this NtStatus status)
+        {
+            return (NtStatusSeverity)((uint)status >> 30);
+        }
+
+        /// <summary>
+        /// Get the facility of the NTSTATUS.
+        /// </summary>
+        /// <param name="status">The NtStatus value</param>
+        /// <returns>The facility.</returns>
+        public static NtStatusFacility GetFacility(this NtStatus status)
+        {
+            return (NtStatusFacility)(((uint)status >> 16) & 0xFFF);
+        }
+
+        /// <summary>
+        /// Get the status code of the NTSTATUS.
+        /// </summary>
+        /// <param name="status">The NtStatus value.</param>
+        /// <returns>The static code.</returns>
+        public static int GetStatusCode(this NtStatus status)
+        {
+            return (int)((uint)status & 0xFFFF);
+        }
+
+        /// <summary>
+        /// Is an NTSTATUS a customer code.
+        /// </summary>
+        /// <param name="status">The NtStatus value</param>
+        /// <returns>True if is a customer code.</returns>
+        public static bool IsCustomerCode(this NtStatus status)
+        {
+            return (((uint)status >> 29) & 1) != 0;
+        }
+
+        /// <summary>
+        /// Is an NTSTATUS reserved.
+        /// </summary>
+        /// <param name="status">The NtStatus value</param>
+        /// <returns>True if reserved.</returns>
+        public static bool IsReserved(this NtStatus status)
+        {
+            return (((uint)status >> 28) & 1) != 0;
+        }
+
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern IntPtr GetModuleHandle(string modulename);
 

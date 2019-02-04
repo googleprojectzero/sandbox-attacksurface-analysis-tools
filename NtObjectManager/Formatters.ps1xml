@@ -1083,5 +1083,46 @@
             </TableRowEntries>
         </TableControl>
     </View>
+    <View>
+        <Name>NtKeyValue</Name>
+        <ViewSelectedBy>
+            <TypeName>NtObjectManager.NtStatusResult</TypeName>
+        </ViewSelectedBy>
+        <TableControl>
+            <TableHeaders>
+                <TableColumnHeader>
+                    <Label>Status</Label>
+                    <Width>10</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>StatusName</Label>
+                    <Width>30</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>Message</Label>
+                    <Width>40</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+            </TableHeaders>
+            <TableRowEntries>
+                <TableRowEntry>
+                    <TableColumnItems>
+                        <TableColumnItem>
+                            <PropertyName>Status</PropertyName>
+                            <FormatString>X08</FormatString>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>StatusName</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>Message</PropertyName>
+                        </TableColumnItem>
+                    </TableColumnItems>
+                </TableRowEntry>
+            </TableRowEntries>
+        </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>

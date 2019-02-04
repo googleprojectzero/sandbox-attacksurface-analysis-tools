@@ -478,24 +478,44 @@ namespace NtObjectManager
     /// <summary>
     /// The result of an NTSTATUS code lookup.
     /// </summary>
-    public class NtStatusResult
+    public sealed class NtStatusResult
     {
         /// <summary>
         /// The numeric value of the status code.
         /// </summary>
-        public uint Status { get; private set; }
+        public uint Status { get; }
         /// <summary>
         /// The name of the status code if known.
         /// </summary>
-        public string StatusName { get; private set; }
+        public string StatusName { get; }
         /// <summary>
         /// Corresponding message text.
         /// </summary>
-        public string Message { get; private set; }
+        public string Message { get; }
         /// <summary>
         /// Win32 error code.
         /// </summary>
-        public int Win32Error { get; private set; }
+        public int Win32Error { get; }
+        /// <summary>
+        /// The status code.
+        /// </summary>
+        public int Code { get; }
+        /// <summary>
+        /// True if a customer code.
+        /// </summary>
+        public bool CustomerCode { get; }
+        /// <summary>
+        /// True if reserved.
+        /// </summary>
+        public bool Reserved { get; }
+        /// <summary>
+        /// The status facility.
+        /// </summary>
+        public NtStatusFacility Facility { get; }
+        /// <summary>
+        /// The status severity.
+        /// </summary>
+        public NtStatusSeverity Severity { get; }
 
         internal NtStatusResult(NtStatus status)
         {
@@ -503,6 +523,11 @@ namespace NtObjectManager
             Message = NtObjectUtils.GetNtStatusMessage(status);
             Win32Error = NtObjectUtils.MapNtStatusToDosError(status);
             StatusName = status.ToString();
+            Code = status.GetStatusCode();
+            CustomerCode = status.IsCustomerCode();
+            Reserved = status.IsReserved();
+            Facility = status.GetFacility();
+            Severity = status.GetSeverity();
         }
 
         internal NtStatusResult(int status) 
