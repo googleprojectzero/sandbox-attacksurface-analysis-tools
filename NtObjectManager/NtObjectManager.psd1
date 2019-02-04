@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.17'
+ModuleVersion = '1.1.18'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -33,7 +33,7 @@ Author = 'James Forshaw'
 CompanyName = 'Google Inc.'
 
 # Copyright statement for this module
-Copyright = '(c) 2016, 2017, 2018 Google Inc. All rights reserved.'
+Copyright = '(c) 2016, 2017, 2018, 2019 Google Inc. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = 'This module adds a provider and cmdlets to access the NT object manager namespace.'
@@ -104,21 +104,18 @@ PrivateData = @{
         ProjectUri = 'https://github.com/google/sandbox-attacksurface-analysis-tools'
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.17
+        ReleaseNotes = '1.1.18
 ------
-* Added methods to get AppModel policy from a token.
-* Added Start-Win32ChildProcess
-* Default to a version of DbgHelp if installed to the NtObjectManager directory under x86 or x64.
-* Added some setters to token properties.
-* Added a fix for a memory corruption issue in getting NT type information on 32 bit platforms (from 1orenz0).
-* Added option to parse out RPC clients in Get-RpcServer.
-* Fixed performance issue with section viewer and the corrupter.
-* Added a valid length property to NtMappedSection.
-* Added Get-NtObjectFromHandle cmdlet.
-* Added Copy-NtToken function.
-* Added enumeration for device characteristics.
-* Fixed path resolving for file paths.
-* Added Get-RpcAlpcServer cmdlet.
+* Added better support for transaction objects including some cmdlets.
+* Added general QueryInformation and SetInformation methods to a number of objects.
+* Added side channel isolation mitigation policy.
+* Added more FS volume information classes.
+* Added extended section/memory functions.
+* Added a few missing NDR type formats.
+* Added BNO isolation process attribute.
+* Added new types to separate out named pipes from normal files.
+* Added Start-NtFileOplock.
+* Added support for absolute security descriptors.
 '
 
         # External dependent modules of this module

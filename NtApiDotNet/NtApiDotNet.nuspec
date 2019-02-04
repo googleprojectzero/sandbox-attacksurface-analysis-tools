@@ -6,7 +6,7 @@
     <title>NtApiDotNet</title>
     <authors>James Forshaw</authors>
     <owners>James Forshaw</owners>
-    <licenseUrl>https://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+    <license type="expression">Apache-2.0</license>
     <projectUrl>https://github.com/google/sandbox-attacksurface-analysis-tools</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A .NET class library to access native NT API system calls</description>

@@ -21,6 +21,19 @@ with .NET Core 2.0 by building the specific project files.
 
 Release Notes:
 
+1.1.18
+------
+* Added better support for transaction objects including some cmdlets.
+* Added general QueryInformation and SetInformation methods to a number of objects.
+* Added side channel isolation mitigation policy.
+* Added more FS volume information classes.
+* Added extended section/memory functions.
+* Added a few missing NDR type formats.
+* Added BNO isolation process attribute.
+* Added new types to separate out named pipes from normal files.
+* Added Start-NtFileOplock.
+* Added support for absolute security descriptors.
+
 1.1.17
 ------
 * Added methods to get AppModel policy from a token.
