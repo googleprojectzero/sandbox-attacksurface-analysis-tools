@@ -460,7 +460,7 @@ namespace NtApiDotNet
             SafeKernelObjectHandle ThreadHandle,
             ThreadInformationClass ThreadInformationClass,
             SafeBuffer ThreadInformation,
-            int ThreadInformationLength            
+            int ThreadInformationLength
         );
 
         [DllImport("ntdll.dll")]
@@ -538,7 +538,7 @@ namespace NtApiDotNet
     /// Class to represent a NT Thread object
     /// </summary>
     [NtType("Thread")]
-    public class NtThread : NtObjectWithDuplicate<NtThread, ThreadAccessRights>
+    public class NtThread : NtObjectWithDuplicateAndInfo<NtThread, ThreadAccessRights, ThreadInformationClass, ThreadInformationClass>
     {
         private int? _tid;
         private int? _pid;
@@ -555,8 +555,7 @@ namespace NtApiDotNet
         /// <returns>The suspend count</returns>
         public int Resume()
         {
-            int suspend_count;
-            NtSystemCalls.NtResumeThread(Handle, out suspend_count).ToNtException();
+            NtSystemCalls.NtResumeThread(Handle, out int suspend_count).ToNtException();
             return suspend_count;
         }
 
@@ -566,8 +565,7 @@ namespace NtApiDotNet
         /// <returns>The suspend count</returns>
         public int Suspend()
         {
-            int suspend_count;
-            NtSystemCalls.NtSuspendThread(Handle, out suspend_count).ToNtException();
+            NtSystemCalls.NtSuspendThread(Handle, out int suspend_count).ToNtException();
             return suspend_count;
         }
 
@@ -589,8 +587,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtThread> Open(int thread_id, ThreadAccessRights desired_access, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtOpenThread(out handle, desired_access, new ObjectAttributes(), 
+            return NtSystemCalls.NtOpenThread(out SafeKernelObjectHandle handle, desired_access, new ObjectAttributes(),
                 new ClientId() { UniqueThread = new IntPtr(thread_id) }).CreateResult(throw_on_error, () => new NtThread(handle) { _tid = thread_id });
         }
 
@@ -613,49 +610,6 @@ namespace NtApiDotNet
         public static NtThread Open(int thread_id, ThreadAccessRights desired_access)
         {
             return Open(thread_id, desired_access, true).Result;
-        }
-
-        private SafeStructureInOutBuffer<T> QueryBuffer<T>(ThreadInformationClass info_class) where T : new()
-        {
-            SafeStructureInOutBuffer<T> info = new SafeStructureInOutBuffer<T>();
-            try
-            {
-                NtStatus status = NtSystemCalls.NtQueryInformationThread(Handle, info_class,
-                  info, info.Length, out int return_length);
-                if (status == NtStatus.STATUS_INFO_LENGTH_MISMATCH || status == NtStatus.STATUS_BUFFER_TOO_SMALL)
-                {
-                    using (SafeBuffer to_close = info)
-                    {
-                        info = new SafeStructureInOutBuffer<T>(return_length, false);
-                    }
-                    status = NtSystemCalls.NtQueryInformationThread(Handle, info_class,
-                                            info, info.Length, out return_length);
-                }
-
-                status.ToNtException();
-                return info;
-            }
-            catch
-            {
-                info.Close();
-                throw;
-            }
-        }
-
-        private T Query<T>(ThreadInformationClass info_class) where T : new()
-        {
-            using (SafeStructureInOutBuffer<T> info = QueryBuffer<T>(info_class))
-            {
-                return info.Result;
-            }
-        }
-
-        private void Set<T>(ThreadInformationClass info_class, T value) where T : new()
-        {
-            using (var buffer = value.ToBuffer())
-            {
-                NtSystemCalls.NtSetInformationThread(Handle, info_class, buffer, buffer.Length);
-            }
         }
 
         private ThreadBasicInformation QueryBasicInformation()
@@ -932,22 +886,19 @@ namespace NtApiDotNet
         {
             get
             {
-                try
+                using (var buffer = QueryBuffer(ThreadInformationClass.ThreadDescription, new UnicodeStringOut(), false))
                 {
-                    using (var buffer = QueryBuffer<UnicodeStringOut>(ThreadInformationClass.ThreadDescription))
+                    if (buffer.IsSuccess)
                     {
-                        return buffer.Result.ToString();
+                        return buffer.Result.Result.ToString();
                     }
-                }
-                catch
-                {
-                    return String.Empty;
+                    return string.Empty;
                 }
             }
 
             set
             {
-                Set(ThreadInformationClass.ThreadDescription, new UnicodeString(value));
+                Set(ThreadInformationClass.ThreadDescription, new UnicodeStringIn(value));
             }
         }
         
@@ -1114,6 +1065,29 @@ namespace NtApiDotNet
         public static bool Sleep(bool alertable, NtWaitTimeout delay)
         {
             return Sleep(alertable, delay.Timeout);
+        }
+
+        /// <summary>
+        /// Method to query information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to return data in.</param>
+        /// <param name="return_length">Return length from the query.</param>
+        /// <returns>The NT status code for the query.</returns>
+        public override NtStatus QueryInformation(ThreadInformationClass info_class, SafeBuffer buffer, out int return_length)
+        {
+            return NtSystemCalls.NtQueryInformationThread(Handle, info_class, buffer, buffer.GetLength(), out return_length);
+        }
+
+        /// <summary>
+        /// Method to set information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to set data from.</param>
+        /// <returns>The NT status code for the set.</returns>
+        public override NtStatus SetInformation(ThreadInformationClass info_class, SafeBuffer buffer)
+        {
+            return NtSystemCalls.NtSetInformationThread(Handle, info_class, buffer, buffer.GetLength());
         }
 
         /// <summary>
