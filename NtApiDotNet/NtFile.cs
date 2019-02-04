@@ -3672,7 +3672,7 @@ namespace NtApiDotNet
         {
             get
             {
-                var result = Query<int>(FileInformationClass.FileCaseSensitiveInformation, 0, false);
+                var result = Query(FileInformationClass.FileCaseSensitiveInformation, 0, false);
                 if (!result.IsSuccess)
                 {
                     return false;
