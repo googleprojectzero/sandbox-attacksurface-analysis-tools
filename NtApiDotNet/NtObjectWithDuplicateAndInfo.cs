@@ -224,6 +224,45 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Query a variable buffer from the object and return as bytes.
+        /// </summary>
+        /// <param name="info_class">The information class to query.</param>
+        /// <param name="init_buffer">A buffer to initialize the initial query. Can be null.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public virtual NtResult<byte[]> QueryRawBytes(Q info_class, byte[] init_buffer, bool throw_on_error)
+        {
+            using (var buffer = QueryRawBuffer(info_class, init_buffer, throw_on_error))
+            {
+                return buffer.Map(b => b.ToArray());
+            }
+        }
+
+        /// <summary>
+        /// Query a variable buffer from the object and return as bytes.
+        /// </summary>
+        /// <param name="info_class">The information class to query.</param>
+        /// <param name="init_buffer">A buffer to initialize the initial query. Can be null.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public virtual byte[] QueryRawBytes(Q info_class, byte[] init_buffer)
+        {
+            return QueryRawBytes(info_class, init_buffer, true).Result;
+        }
+
+        /// <summary>
+        /// Query a variable buffer from the object and return as bytes.
+        /// </summary>
+        /// <param name="info_class">The information class to query.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public virtual byte[] QueryRawBytes(Q info_class)
+        {
+            return QueryRawBytes(info_class, null);
+        }
+
+        /// <summary>
         /// Query a variable buffer from the object.
         /// </summary>
         /// <typeparam name="T">The type of structure to return.</typeparam>
@@ -253,11 +292,11 @@ namespace NtApiDotNet
         /// </summary>
         /// <typeparam name="T">The type of structure to set.</typeparam>
         /// <param name="info_class">The information class to set.</param>
-        /// <param name="value">The value to set.</param>
+        /// <param name="value">The value to set. If you specify a SafeBuffer then it'll be passed directly.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code of the set.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public virtual NtStatus Set<T>(S info_class, T value, bool throw_on_error) where T : new()
+        public virtual NtStatus Set<T>(S info_class, T value, bool throw_on_error) where T : struct
         {
             using (var buffer = value.ToBuffer())
             {
@@ -273,9 +312,34 @@ namespace NtApiDotNet
         /// <param name="value">The value to set.</param>
         /// <returns>The NT status code of the set.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public void Set<T>(S info_class, T value) where T : new()
+        public void Set<T>(S info_class, T value) where T : struct
         {
             Set(info_class, value, true);
+        }
+
+        /// <summary>
+        /// Set a value to the object from a buffer.
+        /// </summary>
+        /// <param name="info_class">The information class to set.</param>
+        /// <param name="buffer">The value to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code of the set.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public virtual NtStatus SetBuffer(S info_class, SafeBuffer buffer, bool throw_on_error)
+        {
+            return SetInformation(info_class, buffer).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a value to the object from a buffer..
+        /// </summary>
+        /// <param name="info_class">The information class to set.</param>
+        /// <param name="buffer">The value to set.</param>
+        /// <returns>The NT status code of the set.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void SetBuffer(S info_class, SafeBuffer buffer)
+        {
+            SetBuffer(info_class, buffer, true);
         }
 
         /// <summary>
@@ -286,7 +350,7 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code of the set.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public virtual NtStatus Set(S info_class, byte[] value, bool throw_on_error)
+        public virtual NtStatus SetBytes(S info_class, byte[] value, bool throw_on_error)
         {
             using (var buffer = value.ToBuffer())
             {
@@ -301,9 +365,9 @@ namespace NtApiDotNet
         /// <param name="value">The raw value to set.</param>
         /// <returns>The NT status code of the set.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public virtual void Set(S info_class, byte[] value)
+        public virtual void SetBytes(S info_class, byte[] value)
         {
-            Set(info_class, value, true);
+            SetBytes(info_class, value, true);
         }
 
         /// <summary>

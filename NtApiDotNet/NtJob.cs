@@ -457,7 +457,7 @@ namespace NtApiDotNet
         /// <remarks>The system_root path must start with a capital drive letter and not end with a backslash.</remarks>
         public void SetSiloSystemRoot(string system_root)
         {
-            Set(JobObjectInformationClass.JobObjectSiloSystemRoot, new UnicodeString(system_root));
+            Set(JobObjectInformationClass.JobObjectSiloSystemRoot, new UnicodeStringIn(system_root));
         }
 
         /// <summary>

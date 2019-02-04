@@ -603,7 +603,7 @@ namespace NtApiDotNet
             }
             set
             {
-                Set(EnlistmentInformationClass.EnlistmentRecoveryInformation, value);
+                SetBytes(EnlistmentInformationClass.EnlistmentRecoveryInformation, value);
             }
         }
 

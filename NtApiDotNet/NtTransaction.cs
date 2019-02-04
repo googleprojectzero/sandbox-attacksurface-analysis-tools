@@ -713,7 +713,7 @@ namespace NtApiDotNet
             using (var buffer = new SafeStructureInOutBuffer<TransactionPropertiesInformation>(init_value, str.Length, true))
             {
                 buffer.Data.WriteBytes(str);
-                SetInformation(TransactionInformationClass.TransactionPropertiesInformation, buffer).ToNtException();
+                SetBuffer(TransactionInformationClass.TransactionPropertiesInformation, buffer);
             }
         }
 
@@ -737,7 +737,7 @@ namespace NtApiDotNet
                 }
 
                 buffer.Write(0, init_value);
-                SetInformation(TransactionInformationClass.TransactionPropertiesInformation, buffer).ToNtException();
+                SetBuffer(TransactionInformationClass.TransactionPropertiesInformation, buffer);
             }
         }
 

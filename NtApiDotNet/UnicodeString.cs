@@ -77,6 +77,14 @@ namespace NtApiDotNet
         [MarshalAs(UnmanagedType.LPWStr)]
         string Buffer;
 
+        public UnicodeStringIn(string str)
+        {
+            Length = 0;
+            MaximumLength = 0;
+            Buffer = null;
+            SetString(str);
+        }
+
         public void SetString(string str)
         {
             if (str.Length > ushort.MaxValue / 2)
