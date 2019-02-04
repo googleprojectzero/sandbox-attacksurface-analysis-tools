@@ -44,7 +44,7 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The result of the query.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public virtual NtResult<T> Query<T>(Q info_class, T default_value, bool throw_on_error) where T : new()
+        public virtual NtResult<T> Query<T>(Q info_class, T default_value, bool throw_on_error) where T : struct
         {
             using (var buffer = new SafeStructureInOutBuffer<T>(default_value))
             {
@@ -60,7 +60,7 @@ namespace NtApiDotNet
         /// <param name="default_value">A default value for the query.</param>
         /// <returns>The result of the query.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public T Query<T>(Q info_class, T default_value) where T : new()
+        public T Query<T>(Q info_class, T default_value) where T : struct
         {
             return Query(info_class, default_value, true).Result;
         }
@@ -72,7 +72,7 @@ namespace NtApiDotNet
         /// <param name="info_class">The information class to query.</param>
         /// <returns>The result of the query.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public T Query<T>(Q info_class) where T : new()
+        public T Query<T>(Q info_class) where T : struct
         {
             return Query(info_class, new T());
         }
