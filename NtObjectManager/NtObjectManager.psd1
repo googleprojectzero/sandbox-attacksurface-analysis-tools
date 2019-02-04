@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.18'
+ModuleVersion = '1.1.19'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -104,7 +104,17 @@ PrivateData = @{
         ProjectUri = 'https://github.com/google/sandbox-attacksurface-analysis-tools'
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.18
+        ReleaseNotes = '1.1.19
+--------
+* Fix for bug in NtWaitTimeout not creating infinite waits.
+* Added some new NTSTATUS codes and break apart the status.
+* Added some new FSCTL codes.
+
+1.1.18.1
+--------
+* Added missing release notes.
+
+1.1.18
 ------
 * Added better support for transaction objects including some cmdlets.
 * Added general QueryInformation and SetInformation methods to a number of objects.

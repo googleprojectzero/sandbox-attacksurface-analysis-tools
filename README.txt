@@ -21,6 +21,16 @@ with .NET Core 2.0 by building the specific project files.
 
 Release Notes:
 
+1.1.19
+--------
+* Fix for bug in NtWaitTimeout not creating infinite waits.
+* Added some new NTSTATUS codes and break apart the status.
+* Added some new FSCTL codes.
+
+1.1.18.1
+--------
+* Added missing release notes.
+
 1.1.18
 ------
 * Added better support for transaction objects including some cmdlets.

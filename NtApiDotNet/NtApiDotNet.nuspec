@@ -11,21 +11,28 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A .NET class library to access native NT API system calls</description>
     <releaseNotes>
-1.1.17
+1.1.19
+--------
+* Fix for bug in NtWaitTimeout not creating infinite waits.
+* Added some new NTSTATUS codes and break apart the status.
+* Added some new FSCTL codes.
+
+1.1.18.1
+--------
+* Added missing release notes.
+
+1.1.18
 ------
-* Added methods to get AppModel policy from a token.
-* Added Start-Win32ChildProcess
-* Default to a version of DbgHelp if installed to the NtObjectManager directory under x86 or x64.
-* Added some setters to token properties.
-* Added a fix for a memory corruption issue in getting NT type information on 32 bit platforms (from 1orenz0).
-* Added option to parse out RPC clients in Get-RpcServer.
-* Fixed performance issue with section viewer and the corrupter.
-* Added a valid length property to NtMappedSection.
-* Added Get-NtObjectFromHandle cmdlet.
-* Added Copy-NtToken function.
-* Added enumeration for device characteristics.
-* Fixed path resolving for file paths.
-* Added Get-RpcAlpcServer cmdlet.
+* Added better support for transaction objects including some cmdlets.
+* Added general QueryInformation and SetInformation methods to a number of objects.
+* Added side channel isolation mitigation policy.
+* Added more FS volume information classes.
+* Added extended section/memory functions.
+* Added a few missing NDR type formats.
+* Added BNO isolation process attribute.
+* Added new types to separate out named pipes from normal files.
+* Added Start-NtFileOplock.
+* Added support for absolute security descriptors.
 </releaseNotes>
     <copyright>Copyright Google Inc. 2017</copyright>
     <tags>syscalls</tags>
