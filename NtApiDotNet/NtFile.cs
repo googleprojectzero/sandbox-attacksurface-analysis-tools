@@ -794,14 +794,14 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential), DataStart("Name")]
-    public class FileNameInformation
+    public struct FileNameInformation
     {
         public int NameLength;
         public char Name;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public class FileBasicInformation
+    public struct FileBasicInformation
     {
         public LargeIntegerStruct CreationTime;
         public LargeIntegerStruct LastAccessTime;
@@ -811,13 +811,13 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public class FileEndOfFileInformation
+    public struct FileEndOfFileInformation
     {
         public LargeIntegerStruct EndOfFile;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public class FileValidDataLengthInformation
+    public struct FileValidDataLengthInformation
     {
         public LargeIntegerStruct ValidDataLength;
     }
@@ -1362,7 +1362,7 @@ namespace NtApiDotNet
     /// Class representing a NT File object
     /// </summary>
     [NtType("File"), NtType("Device")]
-    public class NtFile : NtObjectWithDuplicate<NtFile, FileAccessRights>
+    public class NtFile : NtObjectWithDuplicateAndInfo<NtFile, FileAccessRights, FileInformationClass, FileInformationClass>
     {
         // Cancellation source for stopping pending IO on close.
         private CancellationTokenSource _cts;
@@ -2102,7 +2102,7 @@ namespace NtApiDotNet
         {
             get
             {
-                var internal_info = QueryFileFixed<FileInternalInformation>(FileInformationClass.FileInternalInformation);
+                var internal_info = Query<FileInternalInformation>(FileInformationClass.FileInternalInformation);
                 return NtFileUtils.FileIdToString(internal_info.IndexNumber.QuadPart);
             }
         }
@@ -2116,12 +2116,12 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFileFixed<FileBasicInformation>(FileInformationClass.FileBasicInformation).FileAttributes;
+                return Query<FileBasicInformation>(FileInformationClass.FileBasicInformation).FileAttributes;
             }
             set
             {
                 var basic_info = new FileBasicInformation() { FileAttributes = value };
-                SetFileFixed(basic_info, FileInformationClass.FileBasicInformation);
+                Set(FileInformationClass.FileBasicInformation, basic_info);
             }
         }
 
@@ -2218,7 +2218,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public void Delete()
         {
-            SetFileFixed(new FileDispositionInformation() { DeleteFile = true }, FileInformationClass.FileDispositionInformation);
+            Set(FileInformationClass.FileDispositionInformation, new FileDispositionInformation() { DeleteFile = true });
         }
 
         /// <summary>
@@ -2259,38 +2259,38 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public void DeleteEx(FileDispositionInformationExFlags flags)
         {
-            SetFileFixed(new FileDispositionInformationEx() { Flags = flags }, FileInformationClass.FileDispositionInformationEx);
+            Set(FileInformationClass.FileDispositionInformationEx, new FileDispositionInformationEx() { Flags = flags });
         }
 
         private void DoRenameEx(string filename, NtFile root, FileRenameInformationExFlags flags)
         {
-            FileRenameInformationEx information = new FileRenameInformationEx();
-            information.Flags = flags;
-            information.RootDirectory = root != null ? root.Handle.DangerousGetHandle() : IntPtr.Zero;
+            FileRenameInformationEx information = new FileRenameInformationEx
+            {
+                Flags = flags,
+                RootDirectory = root.GetHandle().DangerousGetHandle()
+            };
             char[] chars = filename.ToCharArray();
             information.FileNameLength = chars.Length * 2;
             using (var buffer = information.ToBuffer(information.FileNameLength, true))
             {
-                IoStatus iostatus = new IoStatus();
                 buffer.Data.WriteArray(0, chars, 0, chars.Length);
-                NtSystemCalls.NtSetInformationFile(Handle, iostatus, buffer,
-                        buffer.Length, FileInformationClass.FileRenameInformationEx).ToNtException();
+                SetBuffer(FileInformationClass.FileRenameInformationEx, buffer);
             }
         }
 
         private void DoLinkRename(FileInformationClass file_info, string linkname, NtFile root, bool replace_if_exists)
         {
-            FileLinkRenameInformation link = new FileLinkRenameInformation();
-            link.ReplaceIfExists = replace_if_exists;
-            link.RootDirectory = root != null ? root.Handle.DangerousGetHandle() : IntPtr.Zero;
+            FileLinkRenameInformation link = new FileLinkRenameInformation
+            {
+                ReplaceIfExists = replace_if_exists,
+                RootDirectory = root.GetHandle().DangerousGetHandle()
+            };
             char[] chars = linkname.ToCharArray();
             link.FileNameLength = chars.Length * 2;
             using (var buffer = link.ToBuffer(link.FileNameLength, true))
             {
-                IoStatus iostatus = new IoStatus();
                 buffer.Data.WriteArray(0, chars, 0, chars.Length);
-                NtSystemCalls.NtSetInformationFile(Handle, iostatus, buffer,
-                        buffer.Length, file_info).ToNtException();
+                SetBuffer(file_info, buffer);
             }
         }
 
@@ -2899,7 +2899,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFileFixed<FilePositionInformation>(FileInformationClass.FilePositionInformation).CurrentByteOffset.QuadPart;
+                return Query<FilePositionInformation>(FileInformationClass.FilePositionInformation).CurrentByteOffset.QuadPart;
             }
 
             set
@@ -2907,7 +2907,7 @@ namespace NtApiDotNet
                 var position = new FilePositionInformation();
                 position.CurrentByteOffset.QuadPart = value;
 
-                SetFileFixed(position, FileInformationClass.FilePositionInformation);
+                Set(FileInformationClass.FilePositionInformation, position);
             }
         }
 
@@ -2918,7 +2918,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFileFixed<FileStandardInformation>(FileInformationClass.FileStandardInformation).EndOfFile.QuadPart;
+                return Query<FileStandardInformation>(FileInformationClass.FileStandardInformation).EndOfFile.QuadPart;
             }
 
             set
@@ -3056,36 +3056,6 @@ namespace NtApiDotNet
             return ret;
         }
 
-        private T QueryFileFixed<T>(FileInformationClass info_class) where T : new()
-        {
-            return QueryFileFixed<T>(info_class, true).Result;
-        }
-
-        private NtResult<T> QueryFileFixed<T>(FileInformationClass info_class, bool throw_on_error) where T : new()
-        {
-            using (var buffer = new SafeStructureInOutBuffer<T>())
-            {
-                IoStatus status = new IoStatus();
-                return NtSystemCalls.NtQueryInformationFile(Handle, status, buffer,
-                    buffer.Length, info_class).CreateResult(throw_on_error, () => buffer.Result);
-            }
-        }
-
-        private void SetFileFixed<T>(T value, FileInformationClass info_class) where T : new()
-        {
-            SetFileFixed(value, info_class, true);
-        }
-
-        private NtStatus SetFileFixed<T>(T value, FileInformationClass info_class, bool throw_on_error) where T : new()
-        {
-            using (var buffer = value.ToBuffer())
-            {
-                IoStatus io_status = new IoStatus();
-                return NtSystemCalls.NtSetInformationFile(Handle, io_status,
-                    buffer, buffer.Length, info_class).ToNtException(throw_on_error);
-            }
-        }
-
         /// <summary>
         /// Get the low-level device type of the file.
         /// </summary>
@@ -3131,9 +3101,7 @@ namespace NtApiDotNet
             using (var buffer = new SafeStructureInOutBuffer<FileNameInformation>(info, data.Length, true))
             {
                 buffer.Data.WriteBytes(data);
-                IoStatus status = new IoStatus();
-                NtSystemCalls.NtSetInformationFile(Handle,
-                    status, buffer, buffer.Length, info_class).ToNtException();
+                SetBuffer(info_class, buffer);
             }
         }
 
@@ -3444,7 +3412,7 @@ namespace NtApiDotNet
             info.CompletionPort = completion_port.Handle.DangerousGetHandle();
             info.Key = key;
 
-            SetFileFixed(info, FileInformationClass.FileCompletionInformation);
+            Set(FileInformationClass.FileCompletionInformation, info);
         }
 
         /// <summary>
@@ -3517,7 +3485,7 @@ namespace NtApiDotNet
         {
             FileEndOfFileInformation eof = new FileEndOfFileInformation();
             eof.EndOfFile.QuadPart = offset;
-            SetFileFixed(eof, FileInformationClass.FileEndOfFileInformation);
+            Set(FileInformationClass.FileEndOfFileInformation, eof);
         }
 
         /// <summary>
@@ -3528,7 +3496,7 @@ namespace NtApiDotNet
         {
             FileValidDataLengthInformation data_length = new FileValidDataLengthInformation();
             data_length.ValidDataLength.QuadPart = length;
-            SetFileFixed(data_length, FileInformationClass.FileValidDataLengthInformation);
+            Set(FileInformationClass.FileValidDataLengthInformation, data_length);
         }
 
         /// <summary>
@@ -3653,7 +3621,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return (FileOpenOptions)QueryFileFixed<int>(FileInformationClass.FileModeInformation);
+                return (FileOpenOptions)Query<int>(FileInformationClass.FileModeInformation);
             }
         }
 
@@ -3664,7 +3632,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFileFixed<AccessMask>(FileInformationClass.FileAccessInformation);
+                return Query<AccessMask>(FileInformationClass.FileAccessInformation);
             }
         }
 
@@ -3693,7 +3661,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFileFixed<bool>(FileInformationClass.FileIsRemoteDeviceInformation);
+                return Query<bool>(FileInformationClass.FileIsRemoteDeviceInformation);
             }
         }
 
@@ -3704,7 +3672,7 @@ namespace NtApiDotNet
         {
             get
             {
-                var result = QueryFileFixed<int>(FileInformationClass.FileCaseSensitiveInformation, false);
+                var result = Query<int>(FileInformationClass.FileCaseSensitiveInformation, 0, false);
                 if (!result.IsSuccess)
                 {
                     return false;
@@ -3715,7 +3683,7 @@ namespace NtApiDotNet
 
             set
             {
-                SetFileFixed(value ? 1 : 0, FileInformationClass.FileCaseSensitiveInformation);
+                Set(FileInformationClass.FileCaseSensitiveInformation, value ? 1 : 0);
             }
         }
 
@@ -3921,6 +3889,33 @@ namespace NtApiDotNet
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Method to query information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to return data in.</param>
+        /// <param name="return_length">Return length from the query.</param>
+        /// <returns>The NT status code for the query.</returns>
+        public override NtStatus QueryInformation(FileInformationClass info_class, SafeBuffer buffer, out int return_length)
+        {
+            IoStatus io_status = new IoStatus();
+            NtStatus status = NtSystemCalls.NtQueryInformationFile(Handle, io_status,buffer, buffer.GetLength(), info_class);
+            return_length = io_status.Information32;
+            return status;
+        }
+
+        /// <summary>
+        /// Method to set information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to set data from.</param>
+        /// <returns>The NT status code for the set.</returns>
+        public override NtStatus SetInformation(FileInformationClass info_class, SafeBuffer buffer)
+        {
+            IoStatus io_status = new IoStatus();
+            return NtSystemCalls.NtSetInformationFile(Handle, io_status, buffer, buffer.GetLength(), info_class);
         }
 
         /// <summary>
