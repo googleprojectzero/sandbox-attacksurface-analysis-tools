@@ -733,7 +733,7 @@ namespace NtApiDotNet
                 }
                 if (timeout != null)
                 {
-                    init_value.Timeout = new LargeIntegerStruct() { QuadPart = timeout.Timeout };
+                    init_value.Timeout = new LargeIntegerStruct() { QuadPart = timeout.Timeout.QuadPart };
                 }
 
                 buffer.Write(0, init_value);

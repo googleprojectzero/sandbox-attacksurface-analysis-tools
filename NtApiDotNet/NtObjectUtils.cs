@@ -644,7 +644,7 @@ namespace NtApiDotNet
 
         internal static LargeInteger ToLargeInteger(this NtWaitTimeout timeout)
         {
-            return ToLargeInteger(timeout?.Timeout);
+            return timeout?.Timeout;
         }
 
         internal static int GetLength(this SafeBuffer buffer)

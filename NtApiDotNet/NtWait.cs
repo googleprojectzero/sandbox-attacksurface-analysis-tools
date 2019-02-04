@@ -57,13 +57,13 @@ namespace NtApiDotNet
 
         internal NtWaitTimeout(long value)
         {
-            Timeout = value;
+            Timeout = new LargeInteger(value);
         }
 
         /// <summary>
         /// Get a timeout which will wait indefinitely.
         /// </summary>
-        public static NtWaitTimeout Infinite { get { return new NtWaitTimeout(); } }
+        public static NtWaitTimeout Infinite => new NtWaitTimeout();
         
         /// <summary>
         /// Get a relative timeout in seconds.
@@ -108,7 +108,7 @@ namespace NtApiDotNet
         /// <summary>
         /// The timeout as a long.
         /// </summary>
-        public long Timeout { get; }
+        public LargeInteger Timeout { get; }
 
         /// <summary>
         /// Overridden ToString method.
@@ -116,15 +116,16 @@ namespace NtApiDotNet
         /// <returns>The timeout as a string.</returns>
         public override string ToString()
         {
-            if (Timeout < 0)
+            if (Timeout == null)
             {
-                return $"Relative: {-Timeout}";
+                return "Infinite";
             }
-            else if (Timeout > 0)
+
+            if (Timeout.QuadPart <= 0)
             {
-                return $"Absolute: {Timeout}";
+                return $"Relative: {-Timeout.QuadPart}";
             }
-            return "Infinite";
+            return $"Absolute: {Timeout.QuadPart}";
         }
     }
 

@@ -1045,9 +1045,9 @@ namespace NtApiDotNet
         /// <param name="alertable">Set if the thread should be alertable</param>
         /// <param name="delay">The delay, negative values indicate relative times.</param>
         /// <returns>True if the thread was alerted before the delay expired.</returns>
-        public static bool Sleep(bool alertable, long delay)
+        public static bool Sleep(bool alertable, NtWaitTimeout delay)
         {
-            NtStatus status = NtSystemCalls.NtDelayExecution(alertable, new LargeInteger(delay));
+            NtStatus status = NtSystemCalls.NtDelayExecution(alertable, delay?.Timeout);
             if (!status.IsSuccess())
             {
                 throw new NtException(status);
@@ -1062,9 +1062,9 @@ namespace NtApiDotNet
         /// <param name="alertable">Set if the thread should be alertable</param>
         /// <param name="delay">The delay, negative values indicate relative times.</param>
         /// <returns>True if the thread was alerted before the delay expired.</returns>
-        public static bool Sleep(bool alertable, NtWaitTimeout delay)
+        public static bool Sleep(bool alertable, long delay)
         {
-            return Sleep(alertable, delay.Timeout);
+            return Sleep(alertable, new NtWaitTimeout(delay));
         }
 
         /// <summary>
