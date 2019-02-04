@@ -191,7 +191,7 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public class SectionImageInformation
+    public struct SectionImageInformation
     {
         public IntPtr TransferAddress;
         public uint ZeroBits;
@@ -234,17 +234,13 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public class PsProtection
+    public struct PsProtection
     {
         private byte level;
 
         public PsProtection(PsProtectedType type, PsProtectedSigner signer, bool audit)
         {
             level = (byte)((int)type | (audit ? 0x8 : 0) | ((int)signer << 4));
-        }
-
-        public PsProtection()
-        {
         }
 
         public PsProtectedType Type { get { return (PsProtectedType)(level & 0x7); } }
@@ -375,13 +371,13 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public class ProcessSessionInformation
+    public struct ProcessSessionInformation
     {
         public int SessionId;
     }
 
     [StructLayout(LayoutKind.Sequential), DataStart("WindowTitle")]
-    public class ProcessWindowInformation
+    public struct ProcessWindowInformation
     {
         public uint WindowFlags;
         public ushort WindowTitleLength;
@@ -389,14 +385,14 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public class ProcessChildProcessRestricted
+    public struct ProcessChildProcessRestricted
     {
         public byte IsNoChildProcessRestricted;
         public byte EnableAutomaticOverride;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public class ProcessChildProcessRestricted1709
+    public struct ProcessChildProcessRestricted1709
     {
         public byte IsNoChildProcessRestricted;
         public byte EnableAutomaticOverride;
@@ -587,17 +583,19 @@ namespace NtApiDotNet
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtQueryInformationProcess(SafeKernelObjectHandle ProcessHandle,
-          ProcessInformationClass ProcessInformationClass,
-          SafeHGlobalBuffer ProcessInformation,
-          int ProcessInformationLength,
-          [Out] out int ReturnLength
-          );
+        public static extern NtStatus NtQueryInformationProcess(
+            SafeKernelObjectHandle ProcessHandle,
+            ProcessInformationClass ProcessInformationClass,
+            SafeBuffer ProcessInformation,
+            int ProcessInformationLength,
+            out int ReturnLength
+         );
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtSetInformationProcess(SafeKernelObjectHandle ProcessHandle,
+        public static extern NtStatus NtSetInformationProcess(
+            SafeKernelObjectHandle ProcessHandle,
             ProcessInformationClass ProcessInformationClass,
-            SafeHGlobalBuffer ProcessInformation,
+            SafeBuffer ProcessInformation,
             int ProcessInformationLength);
 
         [DllImport("ntdll.dll")]
@@ -916,7 +914,7 @@ namespace NtApiDotNet
     /// Class representing a NT Process object.
     /// </summary>
     [NtType("Process")]
-    public class NtProcess : NtObjectWithDuplicate<NtProcess, ProcessAccessRights>
+    public class NtProcess : NtObjectWithDuplicateAndInfo<NtProcess, ProcessAccessRights, ProcessInformationClass, ProcessInformationClass>
     {
         private int? _pid;
         private ProcessExtendedBasicInformation _extended_info;
@@ -933,17 +931,20 @@ namespace NtApiDotNet
                 }
                 else
                 {
-                    try
+                    using (var buffer = Query(ProcessInformationClass.ProcessBasicInformation, new ProcessExtendedBasicInformation(), false))
                     {
-                        _extended_info = QueryFixed<ProcessExtendedBasicInformation>(ProcessInformationClass.ProcessBasicInformation);
-                    }
-                    catch (NtException)
-                    {
-                        ProcessExtendedBasicInformation result = new ProcessExtendedBasicInformation
+                        if (buffer.IsSuccess)
                         {
-                            BasicInfo = QueryFixed<ProcessBasicInformation>(ProcessInformationClass.ProcessBasicInformation)
-                        };
-                        _extended_info = result;
+                            _extended_info = buffer.Result;
+                        }
+                        else
+                        {
+                            ProcessExtendedBasicInformation result = new ProcessExtendedBasicInformation
+                            {
+                                BasicInfo = Query<ProcessBasicInformation>(ProcessInformationClass.ProcessBasicInformation)
+                            };
+                            _extended_info = result;
+                        }
                     }
                 }
             }
@@ -954,50 +955,6 @@ namespace NtApiDotNet
         private ProcessBasicInformation GetBasicInfo()
         {
             return GetExtendedBasicInfo(true).BasicInfo;
-        }
-
-        private NtStatus Query<T>(ProcessInformationClass info_class, out SafeStructureInOutBuffer<T> buffer) where T : new()
-        {
-            buffer = null;
-
-            NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, info_class, SafeHGlobalBuffer.Null, 0, out int return_length);
-            if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH && status != NtStatus.STATUS_BUFFER_TOO_SMALL)
-            {
-                return status;
-            }
-
-            SafeStructureInOutBuffer<T> temp_buffer = new SafeStructureInOutBuffer<T>(return_length, false);
-            status = NtSystemCalls.NtQueryInformationProcess(Handle, info_class, temp_buffer, temp_buffer.Length, out return_length);
-            if (status.IsSuccess())
-            {
-                buffer = temp_buffer;
-            }
-            else
-            {
-                temp_buffer.Close();
-            }
-
-            return status;
-        }
-
-        private SafeStructureInOutBuffer<T> Query<T>(ProcessInformationClass info_class) where T : new()
-        {
-            Query(info_class, out SafeStructureInOutBuffer<T> buffer).ToNtException();
-            return buffer;
-        }
-
-        private T QueryFixed<T>(ProcessInformationClass info_class) where T : new()
-        {
-            return QueryFixed<T>(info_class, true).Result;
-        }
-
-        private NtResult<T> QueryFixed<T>(ProcessInformationClass info_class, bool throw_on_error) where T : new()
-        {
-            using (var buffer = new SafeStructureInOutBuffer<T>())
-            {
-                return NtSystemCalls.NtQueryInformationProcess(Handle, info_class, buffer, buffer.Length, 
-                    out int return_length).CreateResult(throw_on_error, () => buffer.Result);
-            }
         }
 
         internal NtProcess(SafeKernelObjectHandle handle) : base(handle)
@@ -1156,12 +1113,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (SafeStructureInOutBuffer<ProcessSessionInformation> session_info = new SafeStructureInOutBuffer<ProcessSessionInformation>())
-                {
-                    NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInformationClass.ProcessSessionInformation,
-                      session_info, session_info.Length, out int return_length).ToNtException();
-                    return session_info.Result.SessionId;
-                }
+                return Query<ProcessSessionInformation>(ProcessInformationClass.ProcessSessionInformation).SessionId;
             }
         }
 
@@ -1214,7 +1166,7 @@ namespace NtApiDotNet
                 {
                     return PebAddress;
                 }
-                return QueryFixed<IntPtr>(ProcessInformationClass.ProcessWow64Information);
+                return Query<IntPtr>(ProcessInformationClass.ProcessWow64Information);
             }
         }
 
@@ -1271,21 +1223,17 @@ namespace NtApiDotNet
         {
             get
             {
-                NtStatus status = Query(ProcessInformationClass.ProcessCommandLineInformation, out SafeStructureInOutBuffer<UnicodeStringOut> buffer);
-                using (buffer)
+                using (var result = QueryBuffer(ProcessInformationClass.ProcessCommandLineInformation, new UnicodeStringOut(), false))
                 {
                     // This will fail if process is being torn down, just return an empty string.
-                    if (status == NtStatus.STATUS_PROCESS_IS_TERMINATING 
-                        || status == NtStatus.STATUS_PARTIAL_COPY 
-                        || status == NtStatus.STATUS_NOT_FOUND)
+                    if (result.Status == NtStatus.STATUS_PROCESS_IS_TERMINATING
+                        || result.Status == NtStatus.STATUS_PARTIAL_COPY
+                        || result.Status == NtStatus.STATUS_NOT_FOUND)
                     {
-                        return String.Empty;
+                        return string.Empty;
                     }
-                    else if (!status.IsSuccess())
-                    {
-                        throw new NtException(status);
-                    }
-                    return buffer.Result.ToString();
+
+                    return result.GetResultOrThrow().Result.ToString();
                 }
             }
         }
@@ -1369,18 +1317,26 @@ namespace NtApiDotNet
         /// Get process image file path
         /// </summary>
         /// <param name="native">True to return the native image path, false for a Win32 style path</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The process image file path</returns>
+        public NtResult<string> GetImageFilePath(bool native, bool throw_on_error)
+        {
+            ProcessInformationClass info_class = native ? ProcessInformationClass.ProcessImageFileName : ProcessInformationClass.ProcessImageFileNameWin32;
+
+            using (var result = QueryBuffer(info_class, new UnicodeStringOut(), throw_on_error))
+            {
+                return result.Map(s => s.Result.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Get process image file path
+        /// </summary>
+        /// <param name="native">True to return the native image path, false for a Win32 style path</param>
         /// <returns>The process image file path</returns>
         public string GetImageFilePath(bool native)
         {
-            ProcessInformationClass info_class = native ? ProcessInformationClass.ProcessImageFileName : ProcessInformationClass.ProcessImageFileNameWin32;
-            NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, info_class, SafeHGlobalBuffer.Null, 0, out int return_length);
-            if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
-                status.ToNtException();
-            using (SafeStructureInOutBuffer<UnicodeStringOut> buf = new SafeStructureInOutBuffer<UnicodeStringOut>(return_length, false))
-            {
-                NtSystemCalls.NtQueryInformationProcess(Handle, info_class, buf, buf.Length, out return_length).ToNtException();
-                return buf.Result.ToString();
-            }
+            return GetImageFilePath(native, true).Result;
         }
 
         /// <summary>
@@ -1390,29 +1346,25 @@ namespace NtApiDotNet
         {
             get
             {
-                try
+                var result = GetImageFilePath(true, false);
+                if (result.IsSuccess)
                 {
-                    return GetImageFilePath(true);
+                    return result.Result;
                 }
-                catch (NtException)
+                if (_pid.HasValue || IsAccessGranted(ProcessAccessRights.QueryLimitedInformation))
                 {
-                    if (_pid.HasValue || IsAccessGranted(ProcessAccessRights.QueryLimitedInformation))
+                    switch (ProcessId)
                     {
-                        switch (ProcessId)
-                        {
-                            case 0:
-                                return "Idle";
-                            case 4:
-                                return "System";
-                            default:
-                                return $"process:{ProcessId}";
-                        }
-                    }
-                    else
-                    {
-                        return String.Empty;
+                        case 0:
+                            return "Idle";
+                        case 4:
+                            return "System";
+                        default:
+                            return $"process:{ProcessId}";
                     }
                 }
+
+                return string.Empty;
             }
         }
 
@@ -1435,21 +1387,20 @@ namespace NtApiDotNet
                 Policy = policy
             };
 
-            using (var buffer = p.ToBuffer())
+            var result = Query(ProcessInformationClass.ProcessMitigationPolicy, p, false);
+            NtStatus status = result.Status;
+            if (!status.IsSuccess())
             {
-                NtStatus status = NtSystemCalls.NtQueryInformationProcess(Handle, ProcessInformationClass.ProcessMitigationPolicy, buffer, buffer.Length, out int return_length);
-                if (!status.IsSuccess())
+                if (status != NtStatus.STATUS_INVALID_PARAMETER
+                    && status != NtStatus.STATUS_NOT_SUPPORTED
+                    && status != NtStatus.STATUS_PROCESS_IS_TERMINATING)
                 {
-                    if (status != NtStatus.STATUS_INVALID_PARAMETER
-                     && status != NtStatus.STATUS_NOT_SUPPORTED
-                     && status != NtStatus.STATUS_PROCESS_IS_TERMINATING)
-                    {
-                        status.ToNtException();
-                    }
-                    return 0;
+                    status.ToNtException();
                 }
-                return buffer.Result.Result;
+                return 0;
             }
+
+            return result.Result.Result;
         }
 
         /// <summary>
@@ -1472,10 +1423,7 @@ namespace NtApiDotNet
                 Result = value
             };
 
-            using (var buffer = p.ToBuffer())
-            {
-                NtSystemCalls.NtSetInformationProcess(Handle, ProcessInformationClass.ProcessMitigationPolicy, buffer, buffer.Length).ToNtException();
-            }
+            Set(ProcessInformationClass.ProcessMitigationPolicy, p);
         }
 
         /// <summary>
@@ -1567,12 +1515,11 @@ namespace NtApiDotNet
         /// <param name="token">The token to set.</param>
         public void SetToken(NtToken token)
         {
-            ProcessAccessToken proc_token = new ProcessAccessToken();
-            proc_token.AccessToken = token.Handle.DangerousGetHandle();
-            using (var buffer = proc_token.ToBuffer())
+            ProcessAccessToken proc_token = new ProcessAccessToken
             {
-                NtSystemCalls.NtSetInformationProcess(Handle, ProcessInformationClass.ProcessAccessToken, buffer, buffer.Length).ToNtException();
-            }
+                AccessToken = token.Handle.DangerousGetHandle()
+            };
+            Set(ProcessInformationClass.ProcessAccessToken, proc_token);
         }
 
         /// <summary>
@@ -1877,10 +1824,7 @@ namespace NtApiDotNet
                 DirectoryHandle = device_map.Handle.DangerousGetHandle()
             };
 
-            using (var buffer = device_map_set.ToBuffer())
-            {
-                NtSystemCalls.NtSetInformationProcess(Handle, ProcessInformationClass.ProcessDeviceMap, buffer, buffer.Length).ToNtException();
-            }
+            Set(ProcessInformationClass.ProcessDeviceMap, device_map_set);
         }
 
         /// <summary>
@@ -1891,7 +1835,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFixed<IntPtr>(ProcessInformationClass.ProcessDebugPort) != IntPtr.Zero;
+                return Query<IntPtr>(ProcessInformationClass.ProcessDebugPort) != IntPtr.Zero;
             }
         }
 
@@ -1901,7 +1845,7 @@ namespace NtApiDotNet
         /// <returns>The process' debug object.</returns>
         public NtDebug OpenDebugObject()
         {
-            return new NtDebug(new SafeKernelObjectHandle(QueryFixed<IntPtr>(ProcessInformationClass.ProcessDebugObjectHandle), true));
+            return new NtDebug(new SafeKernelObjectHandle(Query<IntPtr>(ProcessInformationClass.ProcessDebugObjectHandle), true));
         }
 
         /// <summary>
@@ -1912,7 +1856,7 @@ namespace NtApiDotNet
             get
             {
                 // Weirdly if you query for 8 bytes it just returns count in upper and lower bits.
-                return QueryFixed<int>(ProcessInformationClass.ProcessHandleCount);
+                return Query<int>(ProcessInformationClass.ProcessHandleCount);
             }
         }
 
@@ -1923,7 +1867,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFixed<int>(ProcessInformationClass.ProcessBreakOnTermination) != 0;
+                return Query<int>(ProcessInformationClass.ProcessBreakOnTermination) != 0;
             }
         }
 
@@ -1934,7 +1878,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFixed<int>(ProcessInformationClass.ProcessDebugFlags);
+                return Query<int>(ProcessInformationClass.ProcessDebugFlags);
             }
         }
 
@@ -1945,7 +1889,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFixed<int>(ProcessInformationClass.ProcessExecuteFlags);
+                return Query<int>(ProcessInformationClass.ProcessExecuteFlags);
             }
         }
 
@@ -1956,7 +1900,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFixed<int>(ProcessInformationClass.ProcessIoPriority);
+                return Query<int>(ProcessInformationClass.ProcessIoPriority);
             }
         }
 
@@ -1967,7 +1911,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFixed<int>(ProcessInformationClass.ProcessCookie);
+                return Query<int>(ProcessInformationClass.ProcessCookie);
             }
         }
 
@@ -1978,12 +1922,7 @@ namespace NtApiDotNet
         /// <returns>True if the process is created from the image file.</returns>
         public bool IsImageFile(NtFile file)
         {
-            using (var buf = file.Handle.DangerousGetHandle().ToBuffer())
-            {
-                int return_length;
-                return NtSystemCalls.NtQueryInformationProcess(Handle,
-                    ProcessInformationClass.ProcessImageFileMapping, buf, buf.Length, out return_length).IsSuccess();
-            }
+            return Query(ProcessInformationClass.ProcessImageFileMapping, file.Handle.DangerousGetHandle(), false).IsSuccess;
         }
 
         /// <summary>
@@ -1993,7 +1932,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFixed<IntPtr>(ProcessInformationClass.ProcessConsoleHostProcess).ToInt32();
+                return Query<IntPtr>(ProcessInformationClass.ProcessConsoleHostProcess).ToInt32();
             }
         }
 
@@ -2046,7 +1985,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buf = Query<ProcessWindowInformation>(ProcessInformationClass.ProcessWindowInformation))
+                using (var buf = QueryBuffer<ProcessWindowInformation>(ProcessInformationClass.ProcessWindowInformation))
                 {
                     ProcessWindowInformation window_info = buf.Result;
                     return buf.Data.ReadUnicodeString(window_info.WindowTitleLength / 2);
@@ -2061,7 +2000,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buf = Query<ProcessWindowInformation>(ProcessInformationClass.ProcessWindowInformation))
+                using (var buf = QueryBuffer<ProcessWindowInformation>(ProcessInformationClass.ProcessWindowInformation))
                 {
                     return buf.Result.WindowFlags;
                 }
@@ -2075,7 +2014,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return (ProcessSubsystemInformationType)QueryFixed<int>(ProcessInformationClass.ProcessSubsystemInformation);
+                return (ProcessSubsystemInformationType)Query<int>(ProcessInformationClass.ProcessSubsystemInformation);
             }
         }
 
@@ -2088,7 +2027,7 @@ namespace NtApiDotNet
             {
                 if (!_wow64.HasValue)
                 {
-                    _wow64 = QueryFixed<IntPtr>(ProcessInformationClass.ProcessWow64Information) != IntPtr.Zero;
+                    _wow64 = Query<IntPtr>(ProcessInformationClass.ProcessWow64Information) != IntPtr.Zero;
                 }
                 return _wow64.Value;
             }
@@ -2210,12 +2149,12 @@ namespace NtApiDotNet
                     return (policy & 1) == 1;
                 }
 
-                var result = QueryFixed<ProcessChildProcessRestricted>(ProcessInformationClass.ProcessChildProcessInformation, false);
+                var result = Query(ProcessInformationClass.ProcessChildProcessInformation, new ProcessChildProcessRestricted(), false);
                 if (result.IsSuccess)
                 {
                     return result.Result.IsNoChildProcessRestricted != 0;
                 }
-                var result_1709 = QueryFixed<ProcessChildProcessRestricted1709>(ProcessInformationClass.ProcessChildProcessInformation, false);
+                var result_1709 = Query(ProcessInformationClass.ProcessChildProcessInformation, new ProcessChildProcessRestricted1709(), false);
                 if (result_1709.IsSuccess)
                 {
                     return result_1709.Result.IsNoChildProcessRestricted != 0;
@@ -2239,7 +2178,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFixed<PsProtection>(ProcessInformationClass.ProcessProtectionInformation);
+                return Query<PsProtection>(ProcessInformationClass.ProcessProtectionInformation);
             }
         }
 
@@ -2250,7 +2189,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFixed<SectionImageInformation>(ProcessInformationClass.ProcessImageInformation);
+                return Query<SectionImageInformation>(ProcessInformationClass.ProcessImageInformation);
             }
         }
 
@@ -2261,7 +2200,7 @@ namespace NtApiDotNet
         /// <remarks>Should only work on the pseudo process handle.</remarks>
         public NtSection OpenImageSection()
         {
-            return NtSection.FromHandle(new SafeKernelObjectHandle(QueryFixed<IntPtr>(ProcessInformationClass.ProcessImageSection), true));
+            return NtSection.FromHandle(new SafeKernelObjectHandle(Query<IntPtr>(ProcessInformationClass.ProcessImageSection), true));
         }
 
         /// <summary>
@@ -2271,7 +2210,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryFixed<int>(ProcessInformationClass.ProcessLUIDDeviceMapsEnabled) != 0;
+                return Query<int>(ProcessInformationClass.ProcessLUIDDeviceMapsEnabled) != 0;
             }
         }
 
@@ -2294,7 +2233,7 @@ namespace NtApiDotNet
         {
             get
             {
-                var result = QueryFixed<int>(ProcessInformationClass.ProcessDefaultHardErrorMode, false);
+                var result = Query(ProcessInformationClass.ProcessDefaultHardErrorMode, 0, false);
                 if (result.IsSuccess)
                 {
                     return result.Result;
@@ -2304,11 +2243,31 @@ namespace NtApiDotNet
 
             set
             {
-                using (var buffer = value.ToBuffer())
-                {
-                    NtSystemCalls.NtSetInformationProcess(Handle, ProcessInformationClass.ProcessDefaultHardErrorMode, buffer, buffer.Length).ToNtException();
-                }
+                Set(ProcessInformationClass.ProcessDefaultHardErrorMode, value);
             }
+        }
+
+        /// <summary>
+        /// Method to query information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to return data in.</param>
+        /// <param name="return_length">Return length from the query.</param>
+        /// <returns>The NT status code for the query.</returns>
+        public override NtStatus QueryInformation(ProcessInformationClass info_class, SafeBuffer buffer, out int return_length)
+        {
+            return NtSystemCalls.NtQueryInformationProcess(Handle, info_class, buffer, buffer.GetLength(), out return_length);
+        }
+
+        /// <summary>
+        /// Method to set information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to set data from.</param>
+        /// <returns>The NT status code for the set.</returns>
+        public override NtStatus SetInformation(ProcessInformationClass info_class, SafeBuffer buffer)
+        {
+            return NtSystemCalls.NtSetInformationProcess(Handle, info_class, buffer, buffer.GetLength());
         }
     }
 }
