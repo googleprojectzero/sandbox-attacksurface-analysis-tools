@@ -1105,18 +1105,18 @@ namespace NtApiDotNet
         {
             get
             {
-                try
+                var result = Query(ThreadInformationClass.ThreadLastSystemCall, new ThreadLastSystemCallExtendedInformation(), false);
+                if (result.IsSuccess)
                 {
-                    return new ThreadLastSystemCall(Query<ThreadLastSystemCallExtendedInformation>(ThreadInformationClass.ThreadLastSystemCall));
+                    return new ThreadLastSystemCall(result.Result);
                 }
-                catch(NtException ex)
+
+                if (result.Status == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
                 {
-                    if (ex.Status == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
-                    {
-                        return new ThreadLastSystemCall(Query<ThreadLastSystemCallInformation>(ThreadInformationClass.ThreadLastSystemCall));
-                    }
-                    throw;
+                    return new ThreadLastSystemCall(Query<ThreadLastSystemCallInformation>(ThreadInformationClass.ThreadLastSystemCall));
                 }
+
+                throw new NtException(result.Status);
             }
         }
     }
