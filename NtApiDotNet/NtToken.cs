@@ -2990,7 +2990,7 @@ namespace NtApiDotNet
                 using (var buffer = QueryBuffer<TokenBnoIsolationInformation>(TokenInformationClass.TokenBnoIsolation))
                 {
                     var result = buffer.Result;
-                    if (!result.IsolationEnabled && result.IsolationPrefix != IntPtr.Zero)
+                    if (!result.IsolationEnabled || result.IsolationPrefix == IntPtr.Zero)
                         return string.Empty;
 
                     return Marshal.PtrToStringUni(result.IsolationPrefix);
