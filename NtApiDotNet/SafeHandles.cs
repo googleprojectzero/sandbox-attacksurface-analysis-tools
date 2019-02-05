@@ -139,18 +139,7 @@ namespace NtApiDotNet
         /// <returns>The string read from the buffer without the NUL terminator</returns>
         public string ReadNulTerminatedUnicodeString(ulong byte_offset)
         {
-            List<char> chars = new List<char>();
-            while (byte_offset < ByteLength)
-            {
-                char c = Read<char>(byte_offset);
-                if (c == 0)
-                {
-                    break;
-                }
-                chars.Add(c);
-                byte_offset += 2;
-            }
-            return new string(chars.ToArray());
+            return BufferUtils.ReadNulTerminatedUnicodeString(this, byte_offset);
         }
 
         /// <summary>
@@ -164,9 +153,7 @@ namespace NtApiDotNet
 
         public string ReadUnicodeString(ulong byte_offset, int count)
         {
-            char[] ret = new char[count];
-            ReadArray(byte_offset, ret, 0, count);
-            return new string(ret);
+            return BufferUtils.ReadUnicodeString(this, byte_offset, count);
         }
 
         public string ReadUnicodeString(int count)
@@ -176,8 +163,7 @@ namespace NtApiDotNet
 
         public void WriteUnicodeString(ulong byte_offset, string value)
         {
-            char[] chars = value.ToCharArray();
-            WriteArray(byte_offset, chars, 0, chars.Length);
+            BufferUtils.WriteUnicodeString(this, byte_offset, value);
         }
 
         public void WriteUnicodeString(string value)
@@ -187,9 +173,7 @@ namespace NtApiDotNet
 
         public byte[] ReadBytes(ulong byte_offset, int count)
         {
-            byte[] ret = new byte[count];
-            ReadArray(byte_offset, ret, 0, count);
-            return ret;
+            return BufferUtils.ReadBytes(this, byte_offset, count);
         }
 
         public byte[] ReadBytes(int count)
@@ -199,7 +183,7 @@ namespace NtApiDotNet
 
         public void WriteBytes(ulong byte_offset, byte[] data)
         {
-            WriteArray(byte_offset, data, 0, data.Length);
+            BufferUtils.WriteBytes(this, byte_offset, data);
         }
 
         public void WriteBytes(byte[] data)
@@ -209,14 +193,7 @@ namespace NtApiDotNet
 
         public SafeStructureInOutBuffer<T> GetStructAtOffset<T>(int offset) where T : new()
         {
-            int length_left = Length - offset;
-            int struct_size = Marshal.SizeOf(typeof(T));
-            if (length_left < struct_size)
-            {
-                throw new ArgumentException("Invalid length for structure");
-            }
-
-            return new SafeStructureInOutBuffer<T>(handle + offset, length_left, false);
+            return BufferUtils.GetStructAtOffset<T>(this, offset);
         }
 
         /// <summary>
@@ -836,6 +813,99 @@ namespace NtApiDotNet
                 return attr.IncludeDataField;
             }
             return true;
+        }
+
+        /// <summary>
+        /// Read a NUL terminated string for the byte offset.
+        /// </summary>
+        /// <param name="buffer">The buffer to read from.</param>
+        /// <param name="byte_offset">The byte offset to read from.</param>
+        /// <returns>The string read from the buffer without the NUL terminator</returns>
+        public static string ReadNulTerminatedUnicodeString(SafeBuffer buffer, ulong byte_offset)
+        {
+            List<char> chars = new List<char>();
+            while (byte_offset < buffer.ByteLength)
+            {
+                char c = buffer.Read<char>(byte_offset);
+                if (c == 0)
+                {
+                    break;
+                }
+                chars.Add(c);
+                byte_offset += 2;
+            }
+            return new string(chars.ToArray());
+        }
+
+        /// <summary>
+        /// Read a Unicode string string with length.
+        /// </summary>
+        /// <param name="buffer">The buffer to read from.</param>
+        /// <param name="count">The number of characters to read.</param>
+        /// <param name="byte_offset">The byte offset to read from.</param>
+        /// <returns>The string read from the buffer without the NUL terminator</returns>
+        public static string ReadUnicodeString(SafeBuffer buffer, ulong byte_offset, int count)
+        {
+            char[] ret = new char[count];
+            buffer.ReadArray(byte_offset, ret, 0, count);
+            return new string(ret);
+        }
+
+        /// <summary>
+        /// Write unicode string.
+        /// </summary>
+        /// <param name="buffer">The buffer to write to.</param>
+        /// <param name="byte_offset">The byte offset to write to.</param>
+        /// <param name="value">The string value to write.</param>
+        public static void WriteUnicodeString(SafeBuffer buffer, ulong byte_offset, string value)
+        {
+            char[] chars = value.ToCharArray();
+            buffer.WriteArray(byte_offset, chars, 0, chars.Length);
+        }
+
+        /// <summary>
+        /// Read bytes from buffer.
+        /// </summary>
+        /// <param name="buffer">The buffer to read from.</param>
+        /// <param name="byte_offset">The byte offset to read from.</param>
+        /// <param name="count">The number of bytes to read.</param>
+        /// <returns>The byte array.</returns>
+        public static byte[] ReadBytes(SafeBuffer buffer, ulong byte_offset, int count)
+        {
+            byte[] ret = new byte[count];
+            buffer.ReadArray(byte_offset, ret, 0, count);
+            return ret;
+        }
+
+        /// <summary>
+        /// Write bytes to a buffer.
+        /// </summary>
+        /// <param name="buffer">The buffer to write to.</param>
+        /// <param name="byte_offset">The byte offset to write to.</param>
+        /// <param name="data">The data to write.</param>
+        public static void WriteBytes(SafeBuffer buffer, ulong byte_offset, byte[] data)
+        {
+            buffer.WriteArray(byte_offset, data, 0, data.Length);
+        }
+
+        /// <summary>
+        /// Get a structure buffer at a specific offset.
+        /// </summary>
+        /// <typeparam name="T">The type of structure.</typeparam>
+        /// <param name="buffer">The buffer to map.</param>
+        /// <param name="offset">The offset into the buffer.</param>
+        /// <returns>The structure buffer.</returns>
+        /// <remarks>The returned buffer is not owned, therefore you need to maintain the original buffer while operating on this buffer.</remarks>
+        public static SafeStructureInOutBuffer<T> GetStructAtOffset<T>(SafeBuffer buffer, int offset) where T : new()
+        {
+            int length_left = (int)buffer.ByteLength - offset;
+            int struct_size = Marshal.SizeOf(typeof(T));
+            if (length_left < struct_size)
+            {
+                throw new ArgumentException("Invalid length for structure");
+            }
+
+            return new SafeStructureInOutBuffer<T>(buffer.DangerousGetHandle() + offset, length_left, false);
         }
     }
 
