@@ -28,6 +28,22 @@ using System.Threading;
 namespace NtApiDotNet
 {
 #pragma warning disable 1591
+    public static partial class NtRtl
+    {
+        [DllImport("ntdll.dll")]
+        public static extern void RtlZeroMemory(
+            IntPtr Destination,
+            IntPtr Length
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern void RtlFillMemory(
+            IntPtr Destination,
+            IntPtr Length,
+            byte Fill
+        );
+    }
+
     /// <summary>
     /// A safe handle to an allocated global buffer.
     /// </summary>
@@ -189,6 +205,23 @@ namespace NtApiDotNet
         public void WriteBytes(byte[] data)
         {
             WriteBytes(0, data);
+        }
+
+        /// <summary>
+        /// Zero an entire buffer.
+        /// </summary>
+        public void ZeroBuffer()
+        {
+            BufferUtils.ZeroBuffer(this);
+        }
+
+        /// <summary>
+        /// Fill an entire buffer with a specific byte value.
+        /// </summary>
+        /// <param name="fill">The fill value.</param>
+        public void FillBuffer(byte fill)
+        {
+            BufferUtils.FillBuffer(this, fill);
         }
 
         public SafeStructureInOutBuffer<T> GetStructAtOffset<T>(int offset) where T : new()
@@ -978,6 +1011,25 @@ namespace NtApiDotNet
             }
 
             return new SafeHGlobalBuffer(buffer.DangerousGetHandle() + offset, length, false);
+        }
+
+        /// <summary>
+        /// Zero an entire buffer.
+        /// </summary>
+        /// <param name="buffer">The buffer to zero.</param>
+        public static void ZeroBuffer(SafeBuffer buffer)
+        {
+            NtRtl.RtlZeroMemory(buffer.DangerousGetHandle(), new IntPtr(buffer.GetLength()));
+        }
+
+        /// <summary>
+        /// Fill an entire buffer with a specific byte value.
+        /// </summary>
+        /// <param name="buffer">The buffer to full.</param>
+        /// <param name="fill">The fill value.</param>
+        public static void FillBuffer(SafeBuffer buffer, byte fill)
+        {
+            NtRtl.RtlFillMemory(buffer.DangerousGetHandle(), new IntPtr(buffer.GetLength()), fill);
         }
     }
 
