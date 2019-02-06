@@ -2662,17 +2662,46 @@ namespace NtApiDotNet
             }
         }
 
-        private byte[] Read(int length, LargeInteger position)
+        /// <summary>
+        /// Read data from a file with a length and position.
+        /// </summary>
+        /// <param name="buffer">The buffer to read to.</param>
+        /// <param name="position">The position in the file to read. The position is optional.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The length of bytes read into the buffer.</returns>
+        public NtResult<int> Read(SafeBuffer buffer, long? position, bool throw_on_error)
+        {
+            using (NtAsyncResult result = new NtAsyncResult(this))
+            {
+                return result.CompleteCall(NtSystemCalls.NtReadFile(Handle, result.EventHandle, IntPtr.Zero,
+                    IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.GetLength(), position.ToLargeInteger(), IntPtr.Zero))
+                    .CreateResult(throw_on_error, () => result.Information32);
+            }
+        }
+
+        /// <summary>
+        /// Read data from a file with a length and position.
+        /// </summary>
+        /// <param name="buffer">The buffer to read to.</param>
+        /// <param name="position">The position in the file to read. The position is optional.</param>
+        /// <returns>The length of bytes read into the buffer.</returns>
+        public int Read(SafeBuffer buffer, long? position)
+        {
+            return Read(buffer, position, true).Result;
+        }
+
+        /// <summary>
+        /// Read data from a file with a length and position.
+        /// </summary>
+        /// <param name="length">The length of the read</param>
+        /// <param name="position">The position in the file to read. The position is optional.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The read bytes, this can be smaller than length.</returns>
+        public NtResult<byte[]> Read(int length, long? position, bool throw_on_error)
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(length))
             {
-                using (NtAsyncResult result = new NtAsyncResult(this))
-                {
-                    NtStatus status = result.CompleteCall(NtSystemCalls.NtReadFile(Handle, result.EventHandle, IntPtr.Zero,
-                        IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero)).ToNtException();
-
-                    return buffer.ReadBytes(result.Information32);
-                }
+                return Read(buffer, position, throw_on_error).Map(len => buffer.ReadBytes(len));
             }
         }
 
@@ -2684,7 +2713,7 @@ namespace NtApiDotNet
         /// <returns>The read bytes, this can be smaller than length.</returns>
         public byte[] Read(int length, long position)
         {
-            return Read(length, new LargeInteger(position));
+            return Read(length, position, true).Result;
         }
 
         /// <summary>
@@ -2694,33 +2723,69 @@ namespace NtApiDotNet
         /// <returns>The read bytes, this can be smaller than length.</returns>
         public byte[] Read(int length)
         {
-            return Read(length, null);
+            return Read(length, null, true).Result;
         }
 
-        private async Task<byte[]> ReadAsync(int length, LargeInteger position, CancellationToken token)
+        /// <summary>
+        /// Read data from a file with a length and position asynchronously.
+        /// </summary>
+        /// <param name="buffer">The buffer to read to.</param>
+        /// <param name="position">The position in the file to read. The position is optional.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The length of bytes read into the buffer.</returns>
+        public async Task<NtResult<int>> ReadAsync(SafeBuffer buffer, long position, CancellationToken token, bool throw_on_error)
+        {
+            var status = await RunFileCallAsync(result => NtSystemCalls.NtReadFile(Handle, result.EventHandle, IntPtr.Zero,
+                        IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.GetLength(), new LargeInteger(position), IntPtr.Zero), token, throw_on_error);
+            return status.Map(r => r.Information32);
+        }
+
+        /// <summary>
+        /// Read data from a file with a length and position asynchronously.
+        /// </summary>
+        /// <param name="buffer">The buffer to read to.</param>
+        /// <param name="position">The position in the file to read. The position is optional.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <returns>The length of bytes read into the buffer.</returns>
+        public async Task<int> ReadAsync(SafeBuffer buffer, long position, CancellationToken token)
+        {
+            var result = await ReadAsync(buffer, position, token, true);
+            return result.Result;
+        }
+
+        /// <summary>
+        /// Read data from a file with a length and position asynchronously.
+        /// </summary>
+        /// <param name="length">The length of the read</param>
+        /// <param name="position">The position in the file to read. The position is optional.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The length of bytes read into the buffer.</returns>
+        public async Task<NtResult<byte[]>> ReadAsync(int length, long position, CancellationToken token, bool throw_on_error)
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(length))
             {
-                IoStatus io_status = await RunFileCallAsync(result => NtSystemCalls.NtReadFile(Handle, result.EventHandle, IntPtr.Zero,
-                            IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero), token);
-                return buffer.ReadBytes(io_status.Information32);
+                var result = await ReadAsync(buffer, position, token, true);
+                return result.Map(r => buffer.ReadBytes(r));
             }
         }
 
         /// <summary>
-        /// Read data from a file with a length and position.
+        /// Read data from a file with a length and position asynchronously..
         /// </summary>
         /// <param name="length">The length of the read</param>
         /// <param name="position">The position in the file to read</param>
         /// <param name="token">Cancellation token to cancel async operation.</param>
         /// <returns>The read bytes, this can be smaller than length.</returns>
-        public Task<byte[]> ReadAsync(int length, long position, CancellationToken token)
+        public async Task<byte[]> ReadAsync(int length, long position, CancellationToken token)
         {
-            return ReadAsync(length, new LargeInteger(position), token);
+            var result = await ReadAsync(length, position, token, true);
+            return result.Result;
         }
 
         /// <summary>
-        /// Read data from a file with a length and position.
+        /// Read data from a file with a length and position asynchronously..
         /// </summary>
         /// <param name="length">The length of the read</param>
         /// <param name="position">The position in the file to read</param>
@@ -2740,6 +2805,23 @@ namespace NtApiDotNet
                         IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero)).ToNtException();
 
                     return result.Information32;
+                }
+            }
+        }
+
+        private async Task<NtResult<IoStatus>> RunFileCallAsync(Func<NtAsyncResult, NtStatus> func, CancellationToken token, bool throw_on_error)
+        {
+            using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
+            {
+                using (NtAsyncResult result = new NtAsyncResult(this))
+                {
+                    NtStatus status = await result.CompleteCallAsync(func(result), linked_cts.Token);
+                    if (status == NtStatus.STATUS_PENDING)
+                    {
+                        result.Cancel();
+                        return NtStatus.STATUS_CANCELLED.CreateResultFromError<IoStatus>(throw_on_error);
+                    }
+                    return status.CreateResult(throw_on_error, () => result.Result);
                 }
             }
         }
