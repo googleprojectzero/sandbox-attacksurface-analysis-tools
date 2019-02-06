@@ -713,6 +713,58 @@ namespace NtApiDotNet
     }
 
     /// <summary>
+    /// Safe SID buffer.
+    /// </summary>
+    /// <remarks>This is used to return values from the RTL apis which need to be freed using RtlFreeSid</remarks>
+    public sealed class SafeSidBufferHandle : SafeHandleZeroOrMinusOneIsInvalid
+    {
+        public SafeSidBufferHandle(IntPtr sid, bool owns_handle) : base(owns_handle)
+        {
+            SetHandle(sid);
+        }
+
+        public SafeSidBufferHandle() : base(true)
+        {
+        }
+
+        public static SafeSidBufferHandle Null { get
+            { return new SafeSidBufferHandle(IntPtr.Zero, false); }
+        }
+
+        public int Length
+        {
+            get { return NtRtl.RtlLengthSid(handle); }
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            if (!IsInvalid)
+            {
+                NtRtl.RtlFreeSid(handle);
+                handle = IntPtr.Zero;
+            }
+            return true;
+        }
+    }
+
+    public class SafeSecurityObjectBuffer : SafeBuffer
+    {
+        public SafeSecurityObjectBuffer() : base(true)
+        {
+            Initialize(0);
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            return NtRtl.RtlDeleteSecurityObject(ref handle).IsSuccess();
+        }
+    }
+
+    public class SafeIoStatusBuffer : SafeStructureInOutBuffer<IoStatus>
+    {
+    }
+
+    /// <summary>
     /// Some simple utilities to create structure buffers.
     /// </summary>
     public static class BufferUtils
@@ -907,59 +959,26 @@ namespace NtApiDotNet
 
             return new SafeStructureInOutBuffer<T>(buffer.DangerousGetHandle() + offset, length_left, false);
         }
-    }
 
-    /// <summary>
-    /// Safe SID buffer.
-    /// </summary>
-    /// <remarks>This is used to return values from the RTL apis which need to be freed using RtlFreeSid</remarks>
-    public sealed class SafeSidBufferHandle : SafeHandleZeroOrMinusOneIsInvalid
-    {
-        public SafeSidBufferHandle(IntPtr sid, bool owns_handle) : base(owns_handle)
+        /// <summary>
+        /// Creates a view of an existing safe buffer.
+        /// </summary>
+        /// <param name="buffer">The buffer to create a view on.</param>
+        /// <param name="offset">The offset from the start of the buffer.</param>
+        /// <param name="length">The length of the view.</param>
+        /// <returns>The buffer view.</returns>
+        /// <remarks>Note that the returned buffer doesn't own the memory, therefore the original buffer
+        /// must be maintained for the lifetime of this buffer.</remarks>
+        public static SafeBuffer CreateBufferView(SafeBuffer buffer, int offset, int length)
         {
-            SetHandle(sid);
-        }
-
-        public SafeSidBufferHandle() : base(true)
-        {
-        }
-
-        public static SafeSidBufferHandle Null { get
-            { return new SafeSidBufferHandle(IntPtr.Zero, false); }
-        }
-
-        public int Length
-        {
-            get { return NtRtl.RtlLengthSid(handle); }
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            if (!IsInvalid)
+            long total_length = (long)buffer.ByteLength;
+            if (offset + length > total_length)
             {
-                NtRtl.RtlFreeSid(handle);
-                handle = IntPtr.Zero;
+                throw new ArgumentException("Offset and length is larger than the existing buffer");
             }
-            return true;
+
+            return new SafeHGlobalBuffer(buffer.DangerousGetHandle() + offset, length, false);
         }
-    }
-
-
-    public class SafeSecurityObjectBuffer : SafeBuffer
-    {
-        public SafeSecurityObjectBuffer() : base(true)
-        {
-            Initialize(0);
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            return NtRtl.RtlDeleteSecurityObject(ref handle).IsSuccess();
-        }
-    }
-
-    public class SafeIoStatusBuffer : SafeStructureInOutBuffer<IoStatus>
-    {
     }
 
 #pragma warning restore 1591
