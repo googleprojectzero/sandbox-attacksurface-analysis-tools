@@ -2795,20 +2795,6 @@ namespace NtApiDotNet
             return ReadAsync(length, position, CancellationToken.None);
         }
 
-        private int Write(byte[] data, LargeInteger position)
-        {
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(data))
-            {
-                using (NtAsyncResult result = new NtAsyncResult(this))
-                {
-                    NtStatus status = result.CompleteCall(NtSystemCalls.NtWriteFile(Handle, result.EventHandle, IntPtr.Zero,
-                        IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero)).ToNtException();
-
-                    return result.Information32;
-                }
-            }
-        }
-
         private async Task<NtResult<IoStatus>> RunFileCallAsync(Func<NtAsyncResult, NtStatus> func, CancellationToken token, bool throw_on_error)
         {
             using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
@@ -2844,13 +2830,75 @@ namespace NtApiDotNet
             }
         }
 
-        private async Task<int> WriteAsync(byte[] data, LargeInteger position, CancellationToken token)
+        /// <summary>
+        /// Write data to a file at a specific position asynchronously.
+        /// </summary>
+        /// <param name="data">The data to write as a buffer.</param>
+        /// <param name="position">The position to write to.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The number of bytes written</returns>
+        public async Task<NtResult<int>> WriteAsync(SafeBuffer data, long position, CancellationToken token, bool throw_on_error)
         {
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(data))
+            var result = await RunFileCallAsync(r => NtSystemCalls.NtWriteFile(Handle, r.EventHandle, IntPtr.Zero,
+                        IntPtr.Zero, r.IoStatusBuffer, data, data.GetLength(), new LargeInteger(position), IntPtr.Zero), token,
+                        throw_on_error);
+            return result.Map(r => r.Information32);
+        }
+
+        /// <summary>
+        /// Write data to a file at a specific position asynchronously.
+        /// </summary>
+        /// <param name="data">The data to write as a buffer.</param>
+        /// <param name="position">The position to write to.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <returns>The number of bytes written</returns>
+        public async Task<int> WriteAsync(SafeBuffer data, long position, CancellationToken token)
+        {
+            var result = await WriteAsync(data, position, token, true);
+            return result.Result;
+        }
+
+        /// <summary>
+        /// Write data to a file at a specific position.
+        /// </summary>
+        /// <param name="data">The data to write</param>
+        /// <param name="position">The position to write to. Optional</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The number of bytes written.</returns>
+        public NtResult<int> Write(SafeBuffer data, long? position, bool throw_on_error)
+        {
+            using (NtAsyncResult result = new NtAsyncResult(this))
             {
-                IoStatus io_status = await RunFileCallAsync(result => NtSystemCalls.NtWriteFile(Handle, result.EventHandle, IntPtr.Zero,
-                            IntPtr.Zero, result.IoStatusBuffer, buffer, buffer.Length, position, IntPtr.Zero), token);
-                return io_status.Information32;
+                return result.CompleteCall(NtSystemCalls.NtWriteFile(Handle, result.EventHandle, IntPtr.Zero,
+                    IntPtr.Zero, result.IoStatusBuffer, data, data.GetLength(), position.ToLargeInteger(), IntPtr.Zero))
+                    .CreateResult(throw_on_error, () => result.Information32);
+            }
+        }
+
+        /// <summary>
+        /// Write data to a file at a specific position.
+        /// </summary>
+        /// <param name="data">The data to write</param>
+        /// <param name="position">The position to write to. Optional</param>
+        /// <returns>The number of bytes written.</returns>
+        public int Write(SafeBuffer data, long? position)
+        {
+            return Write(data, position, true).Result;
+        }
+
+        /// <summary>
+        /// Write data to a file at a specific position.
+        /// </summary>
+        /// <param name="data">The data to write</param>
+        /// <param name="position">The position to write to. Optional</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The number of bytes written.</returns>
+        public NtResult<int> Write(byte[] data, long? position, bool throw_on_error)
+        {
+            using (var buffer = data.ToBuffer())
+            {
+                return Write(buffer, position, throw_on_error);
             }
         }
 
@@ -2862,7 +2910,7 @@ namespace NtApiDotNet
         /// <returns>The number of bytes written</returns>
         public int Write(byte[] data, long position)
         {
-            return Write(data, new LargeInteger(position));
+            return Write(data, position, true).Result;
         }
 
         /// <summary>
@@ -2872,7 +2920,7 @@ namespace NtApiDotNet
         /// <returns>The number of bytes written</returns>
         public int Write(byte[] data)
         {
-            return Write(data, null);
+            return Write(data, null, true).Result;
         }
 
         /// <summary>
@@ -2892,10 +2940,27 @@ namespace NtApiDotNet
         /// <param name="data">The data to write.</param>
         /// <param name="position">The position to write to.</param>
         /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The number of bytes written</returns>
-        public Task<int> WriteAsync(byte[] data, long position, CancellationToken token)
+        public async Task<NtResult<int>> WriteAsync(byte[] data, long position, CancellationToken token, bool throw_on_error)
         {
-            return WriteAsync(data, new LargeInteger(position), token);
+            using (var buffer = data.ToBuffer())
+            {
+                return await WriteAsync(buffer, position, token, true);
+            }
+        }
+
+        /// <summary>
+        /// Write data to a file at a specific position asynchronously.
+        /// </summary>
+        /// <param name="data">The data to write.</param>
+        /// <param name="position">The position to write to.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <returns>The number of bytes written</returns>
+        public async Task<int> WriteAsync(byte[] data, long position, CancellationToken token)
+        {
+            var result = await WriteAsync(data, position, token, true);
+            return result.Result;
         }
 
         /// <summary>
