@@ -2002,7 +2002,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Open a file
         /// </summary>
-        /// <param name="obj_attributes">The object attributes</param>
+        /// <param name="obj_attributes">The object attributes</param>f
         /// <param name="desired_access">The desired access for the file handle</param>
         /// <param name="share_access">The file share access</param>
         /// <param name="open_options">File open options</param>
@@ -2812,24 +2812,6 @@ namespace NtApiDotNet
             }
         }
 
-        private async Task<IoStatus> RunFileCallAsync(Func<NtAsyncResult, NtStatus> func, CancellationToken token)
-        {
-            using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
-            {
-                using (NtAsyncResult result = new NtAsyncResult(this))
-                {
-                    NtStatus status = await result.CompleteCallAsync(func(result), linked_cts.Token);
-                    if (status == NtStatus.STATUS_PENDING)
-                    {
-                        result.Cancel();
-                        throw new NtException(NtStatus.STATUS_CANCELLED);
-                    }
-                    status.ToNtException();
-                    return result.Result;
-                }
-            }
-        }
-
         /// <summary>
         /// Write data to a file at a specific position asynchronously.
         /// </summary>
@@ -2970,14 +2952,28 @@ namespace NtApiDotNet
         /// <param name="size">The number of bytes to lock</param>
         /// <param name="fail_immediately">True to fail immediately if the lock can't be taken</param>
         /// <param name="exclusive">True to do an exclusive lock</param>
-        public void Lock(long offset, long size, bool fail_immediately, bool exclusive)
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus Lock(long offset, long size, bool fail_immediately, bool exclusive, bool throw_on_error)
         {
             using (NtAsyncResult result = new NtAsyncResult(this))
             {
-                result.CompleteCall(NtSystemCalls.NtLockFile(Handle, result.EventHandle, IntPtr.Zero,
+                return result.CompleteCall(NtSystemCalls.NtLockFile(Handle, result.EventHandle, IntPtr.Zero,
                     IntPtr.Zero, result.IoStatusBuffer, new LargeInteger(offset),
-                    new LargeInteger(size), 0, fail_immediately, exclusive)).ToNtException();
+                    new LargeInteger(size), 0, fail_immediately, exclusive)).ToNtException(throw_on_error);
             }
+        }
+
+        /// <summary>
+        /// Lock part of a file.
+        /// </summary>
+        /// <param name="offset">The offset into the file to lock</param>
+        /// <param name="size">The number of bytes to lock</param>
+        /// <param name="fail_immediately">True to fail immediately if the lock can't be taken</param>
+        /// <param name="exclusive">True to do an exclusive lock</param>
+        public void Lock(long offset, long size, bool fail_immediately, bool exclusive)
+        {
+            Lock(offset, size, fail_immediately, exclusive, true);
         }
 
         /// <summary>
@@ -2998,11 +2994,29 @@ namespace NtApiDotNet
         /// <param name="fail_immediately">True to fail immediately if the lock can't be taken</param>
         /// <param name="exclusive">True to do an exclusive lock</param>
         /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public async Task<NtStatus> LockAsync(long offset, long size, bool fail_immediately, 
+            bool exclusive, CancellationToken token, bool throw_on_error)
+        {
+            var result = await RunFileCallAsync(r => NtSystemCalls.NtLockFile(Handle, r.EventHandle, IntPtr.Zero,
+                                                                     IntPtr.Zero, r.IoStatusBuffer, new LargeInteger(offset),
+                                                                     new LargeInteger(size), 0, fail_immediately, exclusive), 
+                                                                     token, throw_on_error);
+            return result.Status;
+        }
+
+        /// <summary>
+        /// Lock part of a file asynchronously.
+        /// </summary>
+        /// <param name="offset">The offset into the file to lock</param>
+        /// <param name="size">The number of bytes to lock</param>
+        /// <param name="fail_immediately">True to fail immediately if the lock can't be taken</param>
+        /// <param name="exclusive">True to do an exclusive lock</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
         public async Task LockAsync(long offset, long size, bool fail_immediately, bool exclusive, CancellationToken token)
         {
-            await RunFileCallAsync(result => NtSystemCalls.NtLockFile(Handle, result.EventHandle, IntPtr.Zero,
-                                                                     IntPtr.Zero, result.IoStatusBuffer, new LargeInteger(offset),
-                                                                     new LargeInteger(size), 0, fail_immediately, exclusive), token);
+            await LockAsync(offset, size, fail_immediately, exclusive, token, true);
         }
 
         /// <summary>
