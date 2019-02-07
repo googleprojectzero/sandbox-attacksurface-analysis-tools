@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Linq;
 using NtApiDotNet.Win32;
+using System.Threading.Tasks;
 
 namespace NtApiDotNet
 {
@@ -470,7 +471,7 @@ namespace NtApiDotNet
         /// Create an NT result object. If status is successful then call function otherwise use default value.
         /// </summary>
         /// <typeparam name="T">The result type.</typeparam>
-        /// <param name="status">The associated status case.</param>
+        /// <param name="status">The associated status code.</param>
         /// <param name="throw_on_error">Throw an exception on error.</param>
         /// <param name="create_func">Function to call to create an instance of the result</param>
         /// <returns>The created result.</returns>
@@ -494,7 +495,7 @@ namespace NtApiDotNet
         /// Create an NT result object. If status is successful then call function otherwise use default value.
         /// </summary>
         /// <typeparam name="T">The result type.</typeparam>
-        /// <param name="status">The associated status case.</param>
+        /// <param name="status">The associated status code.</param>
         /// <param name="throw_on_error">Throw an exception on error.</param>
         /// <param name="create_func">Function to call to create an instance of the result</param>
         /// <param name="error_func">Function to call on error.</param>
@@ -519,7 +520,7 @@ namespace NtApiDotNet
         /// Create an NT result object. If status is successful then call function otherwise use default value.
         /// </summary>
         /// <typeparam name="T">The result type.</typeparam>
-        /// <param name="status">The associated status case.</param>
+        /// <param name="status">The associated status code.</param>
         /// <param name="throw_on_error">Throw an exception on error.</param>
         /// <param name="create_func">Function to call to create an instance of the result</param>
         /// <returns>The created result.</returns>
@@ -636,6 +637,17 @@ namespace NtApiDotNet
         internal static int GetLength(this SafeBuffer buffer)
         {
             return (int)buffer.ByteLength;
+        }
+
+        internal static T UnwrapNtResult<T>(this NtResult<T> result)
+        {
+            return result.Result;
+        }
+
+        internal static Task<T> UnwrapNtResultAsync<T>(this Task<NtResult<T>> task)
+        {
+            return task.ContinueWith(t => t.Result.UnwrapNtResult(), 
+                TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion);
         }
     }
 }
