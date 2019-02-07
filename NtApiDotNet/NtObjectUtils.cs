@@ -153,6 +153,26 @@ namespace NtApiDotNet
             return (((uint)status >> 28) & 1) != 0;
         }
 
+        /// <summary>
+        /// Build a status from it's component parts.
+        /// </summary>
+        /// <param name="severity">The severity of the status code.</param>
+        /// <param name="is_customer_code">Is this a customer code?</param>
+        /// <param name="is_reserved">Is this a reserved code?</param>
+        /// <param name="facility">The facility.</param>
+        /// <param name="code">The status code.</param>
+        /// <returns></returns>
+        public static NtStatus BuildStatus(NtStatusSeverity severity, bool is_customer_code, 
+            bool is_reserved, NtStatusFacility facility, int code)
+        {
+            uint status = (uint)code |
+                ((uint)facility << 16) |
+                (is_reserved ? (1U << 28) : 0U) |
+                (is_customer_code ? (1U << 29) : 0U) |
+                ((uint)severity << 30);
+            return (NtStatus)status;
+        }
+
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern IntPtr GetModuleHandle(string modulename);
 
