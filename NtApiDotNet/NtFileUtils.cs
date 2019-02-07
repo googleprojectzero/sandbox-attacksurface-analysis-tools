@@ -186,5 +186,27 @@ namespace NtApiDotNet
             AccessMask mask = access;
             return mask.ToSpecificAccess<FileDirectoryAccessRights>();
         }
+
+        /// <summary>
+        /// Enable or disable Wow64 FS redirection.
+        /// </summary>
+        /// <param name="enable">True to enable FS redirection.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The old enable state.</returns>
+        public static NtResult<bool> Wow64EnableFsRedirection(bool enable, bool throw_on_error)
+        {
+            return NtRtl.RtlWow64EnableFsRedirectionEx(new IntPtr(enable ? 0 : 1), out IntPtr old_state)
+                .CreateResult(throw_on_error, () => old_state.ToInt32() == 0);
+        }
+
+        /// <summary>
+        /// Enable or disable Wow64 FS redirection.
+        /// </summary>
+        /// <param name="enable">True to enable FS redirection.</param>
+        /// <returns>The old enable state.</returns>
+        public static bool Wow64EnableFsRedirection(bool enable)
+        {
+            return Wow64EnableFsRedirection(enable, true).Result;
+        }
     }
 }
