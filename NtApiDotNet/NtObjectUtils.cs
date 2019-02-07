@@ -205,10 +205,10 @@ namespace NtApiDotNet
         {
             IntPtr module_handle = IntPtr.Zero;
             uint message_id = (uint)status;
-            if ((message_id & 0xFFFF0000) == DosErrorStatusCode)
+            if (status.GetFacility() == NtStatusFacility.FACILITY_NTWIN32)
             {
-                message_id &= 0xFFFF;
                 module_handle = GetModuleHandle("kernel32.dll");
+                message_id = (uint)status.GetStatusCode();
             }
             else
             {
@@ -471,12 +471,10 @@ namespace NtApiDotNet
             }
         }
 
-        // A special "fake" status code to map DOS errors to NTSTATUS.
-        private const uint DosErrorStatusCode = 0xF00D0000;
-
         internal static NtStatus MapDosErrorToStatus(int dos_error)
         {
-            return (NtStatus)(DosErrorStatusCode | dos_error);
+            return BuildStatus(NtStatusSeverity.STATUS_SEVERITY_WARNING, false, false, 
+                NtStatusFacility.FACILITY_NTWIN32, dos_error);
         }
 
         internal static NtStatus MapDosErrorToStatus()
@@ -485,17 +483,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Map a status to a DOS error code. Takes into account the fake
+        /// Map a status to a DOS error code. Takes into account NTWIN32
         /// status codes.
         /// </summary>
         /// <param name="status">The status code.</param>
         /// <returns>The mapped DOS error.</returns>
         public static int MapNtStatusToDosError(NtStatus status)
         {
-            uint value = (uint)status;
-            if ((value & 0xFFFF0000) == DosErrorStatusCode)
+            if (status.GetFacility() == NtStatusFacility.FACILITY_NTWIN32)
             {
-                return (int)(value & 0xFFFF);
+                return status.GetStatusCode();
             }
             return NtRtl.RtlNtStatusToDosError(status);
         }
