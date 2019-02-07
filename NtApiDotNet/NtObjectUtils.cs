@@ -639,15 +639,16 @@ namespace NtApiDotNet
             return (int)buffer.ByteLength;
         }
 
-        internal static T UnwrapNtResult<T>(this NtResult<T> result)
+        internal static async Task<T> UnwrapNtResultAsync<T>(this Task<NtResult<T>> task)
         {
+            var result = await task;
             return result.Result;
         }
 
-        internal static Task<T> UnwrapNtResultAsync<T>(this Task<NtResult<T>> task)
+        internal static async Task<NtStatus> UnwrapNtStatusAsync<T>(this Task<NtResult<T>> task)
         {
-            return task.ContinueWith(t => t.Result.UnwrapNtResult(), 
-                TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion);
+            var result = await task;
+            return result.Status;
         }
     }
 }
