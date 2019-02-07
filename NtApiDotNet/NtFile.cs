@@ -3625,6 +3625,44 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Wait for an oplock break to complete.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus NotifyOplockBreak(bool throw_on_error)
+        {
+            return FsControl(NtWellKnownIoControlCodes.FSCTL_OPLOCK_BREAK_NOTIFY, null, null, throw_on_error).Status;
+        }
+
+        /// <summary>
+        /// Wait for an oplock break to complete.
+        /// </summary>
+        /// <returns>The NT status code.</returns>
+        public void NotifyOplockBreak()
+        {
+            NotifyOplockBreak(true);
+        }
+
+        /// <summary>
+        /// Wait for an oplock break to complete.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public Task<NtStatus> NotifyOplockBreakAsync(bool throw_on_error)
+        {
+            return FsControlAsync(NtWellKnownIoControlCodes.FSCTL_OPLOCK_BREAK_NOTIFY, null, null, throw_on_error).UnwrapNtStatusAsync();
+        }
+
+        /// <summary>
+        /// Wait for an oplock break to complete.
+        /// </summary>
+        /// <returns>The NT status code.</returns>
+        public Task NotifyOplockBreakAsync()
+        {
+            return NotifyOplockBreakAsync(true);
+        }
+
+        /// <summary>
         /// Dispose.
         /// </summary>
         /// <param name="disposing">True is disposing.</param>
