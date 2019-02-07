@@ -3358,20 +3358,52 @@ namespace NtApiDotNet
         /// <param name="flags">The flags for the oplock.</param>
         /// <param name="token">Cancellation token to cancel async operation.</param>
         /// <returns>The request of the oplock request.</returns>
-        public async Task<RequestOplockOutputBuffer> RequestOplockAsync(OplockLevelCache requested_oplock_level, RequestOplockInputFlag flags, CancellationToken token)
+        public Task<RequestOplockOutputBuffer> RequestOplockAsync(OplockLevelCache requested_oplock_level, RequestOplockInputFlag flags, CancellationToken token)
+        {
+            return RequestOplockAsync(requested_oplock_level, flags, token, true).UnwrapNtResultAsync();
+        }
+
+        /// <summary>
+        /// Oplock the file with a specific level and flags.
+        /// </summary>
+        /// <param name="requested_oplock_level">The oplock level.</param>
+        /// <param name="flags">The flags for the oplock.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The request of the oplock request.</returns>
+        public async Task<NtResult<RequestOplockOutputBuffer>> RequestOplockAsync(OplockLevelCache requested_oplock_level, 
+            RequestOplockInputFlag flags, CancellationToken token, bool throw_on_error)
         {
             using (var input_buffer = new RequestOplockInputBuffer(requested_oplock_level, flags).ToBuffer())
             {
                 using (var output_buffer = new SafeStructureInOutBuffer<RequestOplockOutputBuffer>())
                 {
-                    int size = await FsControlAsync(NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK, input_buffer, output_buffer, token);
-                    if (size != output_buffer.Length)
+                    var result = await FsControlAsync(NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK, 
+                        input_buffer, output_buffer, token, throw_on_error);
+                    if (!result.IsSuccess)
                     {
-                        throw new NtException(NtStatus.STATUS_BUFFER_TOO_SMALL);
+                        return result.Status.CreateResultFromError<RequestOplockOutputBuffer>(throw_on_error);
                     }
-                    return output_buffer.Result;
+                    if (result.Result != output_buffer.Length)
+                    {
+                        return NtStatus.STATUS_BUFFER_TOO_SMALL.CreateResultFromError<RequestOplockOutputBuffer>(throw_on_error);
+                    }
+                    return result.Map(i => output_buffer.Result);
                 }
             }
+        }
+
+        /// <summary>
+        /// Oplock the file with a specific level and flags.
+        /// </summary>
+        /// <param name="requested_oplock_level">The oplock level.</param>
+        /// <param name="flags">The flags for the oplock.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The request of the oplock request.</returns>
+        public Task<NtResult<RequestOplockOutputBuffer>> RequestOplockAsync(OplockLevelCache requested_oplock_level,
+            RequestOplockInputFlag flags, bool throw_on_error)
+        {
+            return RequestOplockAsync(requested_oplock_level, flags, CancellationToken.None, throw_on_error);
         }
 
         /// <summary>
