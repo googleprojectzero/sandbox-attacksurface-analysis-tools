@@ -650,5 +650,11 @@ namespace NtApiDotNet
             var result = await task;
             return result.Status;
         }
+
+        internal static async Task<NtResult<S>> MapAsync<T, S>(this Task<NtResult<T>> task, Func<T, S> map)
+        {
+            var result = await task;
+            return result.Map(map);
+        }
     }
 }

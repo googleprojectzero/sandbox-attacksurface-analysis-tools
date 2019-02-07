@@ -1201,7 +1201,21 @@ namespace NtApiDotNet
         Level1,
         Level2,
         Batch,
-        Filter
+        Filter,
+    }
+
+    public enum OplockResponseLevel
+    {
+        BrokenToLevel2 = 0x7,
+        BrokenToNone = 0x8,
+    }
+
+    public enum OplockAcknowledgeLevel
+    {
+        Acknowledge,
+        ClosePending,
+        No2,
+        Notify
     }
 
     [StructLayout(LayoutKind.Sequential), DataStart("Sid")]
@@ -1662,6 +1676,23 @@ namespace NtApiDotNet
                     return NtWellKnownIoControlCodes.FSCTL_REQUEST_FILTER_OPLOCK;
                 default:
                     throw new ArgumentException("Invalid oplock request level", "level");
+            }
+        }
+
+        private static NtIoControlCode GetOplockAckFsctl(OplockAcknowledgeLevel level)
+        {
+            switch (level)
+            {
+                case OplockAcknowledgeLevel.Acknowledge:
+                    return NtWellKnownIoControlCodes.FSCTL_OPLOCK_BREAK_ACKNOWLEDGE;
+                case OplockAcknowledgeLevel.ClosePending:
+                    return NtWellKnownIoControlCodes.FSCTL_OPBATCH_ACK_CLOSE_PENDING;
+                case OplockAcknowledgeLevel.No2:
+                    return NtWellKnownIoControlCodes.FSCTL_OPLOCK_BREAK_ACK_NO_2;
+                case OplockAcknowledgeLevel.Notify:
+                    return NtWellKnownIoControlCodes.FSCTL_OPLOCK_BREAK_NOTIFY;
+                default:
+                    throw new ArgumentException("Invalid oplock acknowledge level", "level");
             }
         }
 
@@ -3285,18 +3316,20 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="level">The level of oplock to set.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
-        public NtStatus RequestOplock(OplockRequestLevel level, bool throw_on_error)
+        /// <returns>The oplock response level.</returns>
+        public NtResult<OplockResponseLevel> RequestOplock(OplockRequestLevel level, bool throw_on_error)
         {
-            return FsControl(GetOplockFsctl(level), null, null, throw_on_error).Status;
+            return FsControl(GetOplockFsctl(level), null, null, throw_on_error).Map(r => (OplockResponseLevel)r);
         }
 
         /// <summary>
         /// Oplock the file with a specific level.
         /// </summary>
         /// <param name="level">The level of oplock to set.</param>
-        public void RequestOplock(OplockRequestLevel level)
+        /// <returns>The oplock response level.</returns>
+        public OplockResponseLevel RequestOplock(OplockRequestLevel level)
         {
-            RequestOplock(level, true);
+            return RequestOplock(level, true).Result;
         }
 
         /// <summary>
@@ -3305,9 +3338,10 @@ namespace NtApiDotNet
         /// <param name="level">The level of oplock to set.</param>
         /// <param name="token">Cancellation token to cancel async operation.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
-        public Task<NtStatus> RequestOplockAsync(OplockRequestLevel level, CancellationToken token, bool throw_on_error)
+        /// <returns>The oplock response level.</returns>
+        public Task<NtResult<OplockResponseLevel>> RequestOplockAsync(OplockRequestLevel level, CancellationToken token, bool throw_on_error)
         {
-            return FsControlAsync(GetOplockFsctl(level), null, null, token, throw_on_error).UnwrapNtStatusAsync();
+            return FsControlAsync(GetOplockFsctl(level), null, null, token, throw_on_error).MapAsync(r => (OplockResponseLevel)r);
         }
 
         /// <summary>
@@ -3315,7 +3349,8 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="level">The level of oplock to set.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
-        public Task<NtStatus> RequestOplockAsync(OplockRequestLevel level, bool throw_on_error)
+        /// <returns>The oplock response level.</returns>
+        public Task<NtResult<OplockResponseLevel>> RequestOplockAsync(OplockRequestLevel level, bool throw_on_error)
         {
             return RequestOplockAsync(level, CancellationToken.None, true);
         }
@@ -3325,29 +3360,46 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="level">The level of oplock to set.</param>
         /// <param name="token">Cancellation token to cancel async operation.</param>
-        public Task RequestOplockAsync(OplockRequestLevel level, CancellationToken token)
+        /// <returns>The oplock response level.</returns>
+        public Task<OplockResponseLevel> RequestOplockAsync(OplockRequestLevel level, CancellationToken token)
         {
-            return RequestOplockAsync(level, token, true);
+            return RequestOplockAsync(level, token, true).UnwrapNtResultAsync();
         }
 
         /// <summary>
         /// Oplock the file with a specific level.
         /// </summary>
         /// <param name="level">The level of oplock to set.</param>
-        public Task RequestOplockAsync(OplockRequestLevel level)
+        /// <returns>The oplock response level.</returns>
+        public Task<OplockResponseLevel> RequestOplockAsync(OplockRequestLevel level)
         {
             return RequestOplockAsync(level, CancellationToken.None);
         }
 
         /// <summary>
-        /// Oplock the file with a specific level and flags.
+        /// Acknowledge an oplock break.
         /// </summary>
-        /// <param name="requested_oplock_level">The oplock level.</param>
-        /// <param name="flags">The flags for the oplock.</param>
-        /// <returns>The request of the oplock request.</returns>
-        public RequestOplockOutputBuffer RequestOplock(OplockLevelCache requested_oplock_level, RequestOplockInputFlag flags)
+        /// <param name="level">The acknowledgment level.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <remarks>Oplock break acknowledgement returns STATUS_PENDING.</remarks>
+        public NtStatus AcknowledgeOplock(OplockAcknowledgeLevel level, bool throw_on_error)
         {
-            return RequestOplock(requested_oplock_level, flags, true).Result;
+            using (var io_status = new SafeIoStatusBuffer())
+            {
+                return NtSystemCalls.NtFsControlFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero, io_status,
+                    GetOplockAckFsctl(level).ToInt32(), IntPtr.Zero, 0, IntPtr.Zero, 0).ToNtException(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Acknowledge an oplock break.
+        /// </summary>
+        /// <param name="level">The acknowledgment level.</param>
+        /// <returns>The NT status code.</returns>
+        public void AcknowledgeOplock(OplockAcknowledgeLevel level)
+        {
+            AcknowledgeOplock(level, true);
         }
 
         /// <summary>
@@ -3355,11 +3407,37 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="requested_oplock_level">The oplock level.</param>
         /// <param name="flags">The flags for the oplock.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The request of the oplock request.</returns>
-        public NtResult<RequestOplockOutputBuffer> RequestOplock(OplockLevelCache requested_oplock_level, RequestOplockInputFlag flags, bool throw_on_error)
+        /// <returns>The result of the oplock request.</returns>
+        [Obsolete("Use RequestOplockLease and AcknowledgeOplockLease")]
+        public RequestOplockOutputBuffer RequestOplock(OplockLevelCache requested_oplock_level, RequestOplockInputFlag flags)
         {
-            using (var input_buffer = new RequestOplockInputBuffer(requested_oplock_level, flags).ToBuffer())
+            if (flags != RequestOplockInputFlag.Request)
+            {
+                throw new ArgumentException("Can only use Request as a valid flag", nameof(flags));
+            }
+
+            return RequestOplockLease(requested_oplock_level, true).Result;
+        }
+
+        /// <summary>
+        /// Oplock the file with a specific lease level and flags.
+        /// </summary>
+        /// <param name="requested_oplock_level">The oplock lease level.</param>
+        /// <returns>The result of the oplock request.</returns>
+        public RequestOplockOutputBuffer RequestOplockLease(OplockLevelCache requested_oplock_level)
+        {
+            return RequestOplockLease(requested_oplock_level, true).Result;
+        }
+
+        /// <summary>
+        /// Oplock the file with a specific level.
+        /// </summary>
+        /// <param name="requested_oplock_level">The oplock cache level.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The result of the oplock request.</returns>
+        public NtResult<RequestOplockOutputBuffer> RequestOplockLease(OplockLevelCache requested_oplock_level, bool throw_on_error)
+        {
+            using (var input_buffer = new RequestOplockInputBuffer(requested_oplock_level, RequestOplockInputFlag.Request).ToBuffer())
             {
                 using (var output_buffer = new SafeStructureInOutBuffer<RequestOplockOutputBuffer>())
                 {
@@ -3381,26 +3459,13 @@ namespace NtApiDotNet
         /// Oplock the file with a specific level and flags.
         /// </summary>
         /// <param name="requested_oplock_level">The oplock level.</param>
-        /// <param name="flags">The flags for the oplock.</param>
-        /// <param name="token">Cancellation token to cancel async operation.</param>
-        /// <returns>The request of the oplock request.</returns>
-        public Task<RequestOplockOutputBuffer> RequestOplockAsync(OplockLevelCache requested_oplock_level, RequestOplockInputFlag flags, CancellationToken token)
-        {
-            return RequestOplockAsync(requested_oplock_level, flags, token, true).UnwrapNtResultAsync();
-        }
-
-        /// <summary>
-        /// Oplock the file with a specific level and flags.
-        /// </summary>
-        /// <param name="requested_oplock_level">The oplock level.</param>
-        /// <param name="flags">The flags for the oplock.</param>
         /// <param name="token">Cancellation token to cancel async operation.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The request of the oplock request.</returns>
         public async Task<NtResult<RequestOplockOutputBuffer>> RequestOplockAsync(OplockLevelCache requested_oplock_level, 
-            RequestOplockInputFlag flags, CancellationToken token, bool throw_on_error)
+            CancellationToken token, bool throw_on_error)
         {
-            using (var input_buffer = new RequestOplockInputBuffer(requested_oplock_level, flags).ToBuffer())
+            using (var input_buffer = new RequestOplockInputBuffer(requested_oplock_level, RequestOplockInputFlag.Request).ToBuffer())
             {
                 using (var output_buffer = new SafeStructureInOutBuffer<RequestOplockOutputBuffer>())
                 {
@@ -3424,12 +3489,39 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="requested_oplock_level">The oplock level.</param>
         /// <param name="flags">The flags for the oplock.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <returns>The request of the oplock request.</returns>
+        [Obsolete("Use RequestOplockLeaseAsync and AcknowledgeOplockLease")]
+        public Task<RequestOplockOutputBuffer> RequestOplockAsync(OplockLevelCache requested_oplock_level, RequestOplockInputFlag flags, CancellationToken token)
+        {
+            if (flags != RequestOplockInputFlag.Request)
+            {
+                throw new ArgumentException("Can only use Request as a valid flag", nameof(flags));
+            }
+
+            return RequestOplockAsync(requested_oplock_level, token, true).UnwrapNtResultAsync();
+        }
+
+        /// <summary>
+        /// Oplock the file with a specific level and flags.
+        /// </summary>
+        /// <param name="requested_oplock_level">The oplock level.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <returns>The request of the oplock request.</returns>
+        public Task<RequestOplockOutputBuffer> RequestOplockLeaseAsync(OplockLevelCache requested_oplock_level, CancellationToken token)
+        {
+            return RequestOplockAsync(requested_oplock_level, token, true).UnwrapNtResultAsync();
+        }
+
+        /// <summary>
+        /// Oplock the file with a specific level and flags.
+        /// </summary>
+        /// <param name="requested_oplock_level">The oplock level.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The request of the oplock request.</returns>
-        public Task<NtResult<RequestOplockOutputBuffer>> RequestOplockAsync(OplockLevelCache requested_oplock_level,
-            RequestOplockInputFlag flags, bool throw_on_error)
+        public Task<NtResult<RequestOplockOutputBuffer>> RequestOplockLeaseAsync(OplockLevelCache requested_oplock_level, bool throw_on_error)
         {
-            return RequestOplockAsync(requested_oplock_level, flags, CancellationToken.None, throw_on_error);
+            return RequestOplockAsync(requested_oplock_level, CancellationToken.None, throw_on_error);
         }
 
         /// <summary>
@@ -3437,18 +3529,72 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="requested_oplock_level">The oplock level.</param>
         /// <param name="flags">The flags for the oplock.</param>
-        /// <returns>The request of the oplock request.</returns>
+        /// <returns>The response of the oplock request.</returns>
+        [Obsolete("Use RequestOplockLeaseAsync and AcknowledgeOplockLease")]
         public Task<RequestOplockOutputBuffer> RequestOplockAsync(OplockLevelCache requested_oplock_level, RequestOplockInputFlag flags)
         {
             return RequestOplockAsync(requested_oplock_level, flags, CancellationToken.None);
         }
 
         /// <summary>
+        /// Oplock the file with a specific level and flags.
+        /// </summary>
+        /// <param name="requested_oplock_level">The oplock level.</param>
+        /// <returns>The response of the oplock request.</returns>
+        public Task<RequestOplockOutputBuffer> RequestOplockLeaseAsync(OplockLevelCache requested_oplock_level)
+        {
+            return RequestOplockLeaseAsync(requested_oplock_level, true).UnwrapNtResultAsync();
+        }
+
+        /// <summary>
+        /// Acknowledge a lease oplock started with RequestOplockLease.
+        /// </summary>
+        /// <param name="acknowledge_oplock_level">The acknowledgement level.</param>
+        /// <param name="complete_on_close">True to complete acknowledgement on close.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code. Acknowledging an oplock returns STATUS_PENDING on success.</returns>
+        public NtStatus AcknowledgeOplockLease(OplockLevelCache acknowledge_oplock_level, bool complete_on_close, bool throw_on_error)
+        {
+            using (var input_buffer = new RequestOplockInputBuffer(acknowledge_oplock_level, 
+                complete_on_close ? RequestOplockInputFlag.CompleteAckOnClose : RequestOplockInputFlag.Ack).ToBuffer())
+            {
+                using (var output_buffer = new SafeStructureInOutBuffer<RequestOplockOutputBuffer>())
+                {
+                    using (var io_status = new SafeIoStatusBuffer())
+                    {
+                        return NtSystemCalls.NtFsControlFile(Handle, SafeKernelObjectHandle.Null, IntPtr.Zero, IntPtr.Zero,
+                            io_status, NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK.ToInt32(), input_buffer.DangerousGetHandle(), input_buffer.Length,
+                            output_buffer.DangerousGetHandle(), output_buffer.Length).ToNtException(throw_on_error);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Acknowledge a lease oplock started with RequestOplockLease.
+        /// </summary>
+        /// <param name="acknowledge_oplock_level">The acknowledgement level.</param>
+        /// <param name="complete_on_close">True to complete acknowledgement on close.</param>
+        public void AcknowledgeOplockLease(OplockLevelCache acknowledge_oplock_level, bool complete_on_close)
+        {
+            AcknowledgeOplockLease(acknowledge_oplock_level, complete_on_close, true);
+        }
+
+        /// <summary>
+        /// Acknowledge a lease oplock started with RequestOplockLease.
+        /// </summary>
+        /// <param name="acknowledge_oplock_level">The acknowledgement level.</param>
+        public void AcknowledgeOplockLease(OplockLevelCache acknowledge_oplock_level)
+        {
+            AcknowledgeOplockLease(acknowledge_oplock_level, false);
+        }
+
+        /// <summary>
         /// Oplock the file exclusively (no other users can access the file).
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The NT status code.</returns>
-        public NtStatus OplockExclusive(bool throw_on_error)
+        /// <returns>The oplock response level.</returns>
+        public NtResult<OplockResponseLevel> OplockExclusive(bool throw_on_error)
         {
             return RequestOplock(OplockRequestLevel.Level1, throw_on_error);
         }
@@ -3456,16 +3602,18 @@ namespace NtApiDotNet
         /// <summary>
         /// Oplock the file exclusively (no other users can access the file).
         /// </summary>
-        public void OplockExclusive()
+        /// <returns>The oplock response level.</returns>
+        public OplockResponseLevel OplockExclusive()
         {
-            RequestOplock(OplockRequestLevel.Level1);
+            return RequestOplock(OplockRequestLevel.Level1);
         }
 
         /// <summary>
         /// Oplock the file exclusively (no other users can access the file).
         /// </summary>
         /// <param name="token">Cancellation token to cancel async operation.</param>
-        public Task OplockExclusiveAsync(CancellationToken token)
+        /// <returns>The oplock response level.</returns>
+        public Task<OplockResponseLevel> OplockExclusiveAsync(CancellationToken token)
         {
             return RequestOplockAsync(OplockRequestLevel.Level1, token);
         }
@@ -3473,7 +3621,8 @@ namespace NtApiDotNet
         /// <summary>
         /// Oplock the file exclusively (no other users can access the file).
         /// </summary>
-        public Task OplockExclusiveAsync()
+        /// <returns>The oplock response level.</returns>
+        public Task<OplockResponseLevel> OplockExclusiveAsync()
         {
             return OplockExclusiveAsync(CancellationToken.None);
         }

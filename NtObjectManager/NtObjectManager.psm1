@@ -3317,6 +3317,8 @@ This cmdlet starts a file oplock with a specific level.
 The file to oplock on.
 .PARAMETER Level
 The oplock level to start.
+.PARAMETER LeaseLevel
+The oplock lease level to start.
 .INPUTS
 None
 .OUTPUTS
@@ -3341,9 +3343,7 @@ function Start-NtFileOplock {
         [parameter(Mandatory, Position = 1, ParameterSetName = "OplockLevel")]
         [NtApiDotNet.OplockRequestLevel]$Level,
         [parameter(Mandatory, ParameterSetName = "OplockLease")]
-        [NtApiDotNet.OplockLevelCache]$LeaseLevel,
-        [parameter(ParameterSetName = "OplockLease")]
-        [NtApiDotNet.RequestOplockInputFlag]$Flags = "Request"
+        [NtApiDotNet.OplockLevelCache]$LeaseLevel
     )
 
     switch($PSCmdlet.ParameterSetName) {
@@ -3354,7 +3354,7 @@ function Start-NtFileOplock {
             $File.RequestOplock($Level)
         }
         "OplockLease" {
-            $File.RequestOplock($LeaseLevel, $Flags)
+            $File.RequestOplockLease($LeaseLevel)
         }
     }
 }
