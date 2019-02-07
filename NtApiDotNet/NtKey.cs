@@ -229,6 +229,7 @@ namespace NtApiDotNet
     [Flags]
     public enum KeyVirtualizationFlags
     {
+        None = 0,
         VirtualizationCandidate = 1,
         VirtualizationEnabled = 2,
         VirtualTarget = 4,
@@ -253,18 +254,18 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct KeyFlags
+    public struct KeyFlagsInformation
     {
         public int Wow64Flags;
-        public int Unknown4;
+        public int KeyFlags;
         public KeyControlFlags ControlFlags;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct KeyTrustInformation
     {
-        private int _flags;
-        public bool TrustedKey { get { return (_flags & 1) == 1; } }
+        public int Flags;
+        public bool TrustedKey => Flags.GetBit(0);
     }
 
     public static partial class NtSystemCalls
@@ -553,6 +554,7 @@ namespace NtApiDotNet
     [NtType("Key")]
     public class NtKey : NtObjectWithDuplicateAndInfo<NtKey, KeyAccessRights, KeyInformationClass, KeySetInformationClass>
     {
+        #region Constructors
         internal NtKey(SafeKernelObjectHandle handle, KeyDisposition disposition, bool predefined_handle) : base(handle)
         {
             Disposition = disposition;
@@ -562,7 +564,9 @@ namespace NtApiDotNet
         internal NtKey(SafeKernelObjectHandle handle) : this(handle, KeyDisposition.OpenedExistingKey, false)
         {
         }
+        #endregion
 
+        #region Static Methods
         /// <summary>
         /// Load a new hive
         /// </summary>
@@ -746,30 +750,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Create a new Key
-        /// </summary>
-        /// <param name="key_name">Path to the key to create</param>
-        /// <returns>The opened key</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public NtKey Create(string key_name)
-        {
-            return Create(key_name, this, KeyAccessRights.MaximumAllowed, KeyCreateOptions.NonVolatile);
-        }
-
-        /// <summary>
-        /// Create a new Key
-        /// </summary>
-        /// <param name="key_name">Path to the key to create</param>
-        /// <param name="desired_access">Desired access for the root key</param>
-        /// <param name="options">Create options</param>
-        /// <returns>The opened key</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public NtKey Create(string key_name, KeyAccessRights desired_access, KeyCreateOptions options)
-        {
-            return Create(key_name, this, desired_access, options);
-        }
-
-        /// <summary>
         /// Try and open a Key
         /// </summary>
         /// <param name="obj_attributes">Object attributes for the key name</param>
@@ -852,6 +832,150 @@ namespace NtApiDotNet
             {
                 return Open(obja, desired_access, 0);
             }
+        }
+
+        /// <summary>
+        /// Query a license value. While technically not directly a registry key
+        /// it has many of the same properties such as using the same registry
+        /// value types.
+        /// </summary>
+        /// <param name="name">The name of the license value.</param>
+        /// <param name="throw_on_error">True to throw an exception on error</param>
+        /// <returns>The license value key</returns>
+        public static NtResult<NtKeyValue> QueryLicenseValue(string name, bool throw_on_error)
+        {
+            UnicodeString name_string = new UnicodeString(name);
+            NtStatus status = NtSystemCalls.NtQueryLicenseValue(name_string, out RegistryValueType type, SafeHGlobalBuffer.Null, 0, out int ret_length);
+            if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+            {
+                return status.CreateResultFromError<NtKeyValue>(throw_on_error);
+            }
+
+            using (var buffer = new SafeHGlobalBuffer(ret_length))
+            {
+                return NtSystemCalls.NtQueryLicenseValue(name_string, out type, buffer, buffer.Length, out ret_length)
+                    .CreateResult(throw_on_error, () => new NtKeyValue(name, type, buffer.ToArray(), 0));
+            }
+        }
+
+        /// <summary>
+        /// Query a license value. While technically not directly a registry key
+        /// it has many of the same properties such as using the same registry
+        /// value types.
+        /// </summary>
+        /// <param name="name">The name of the license value.</param>
+        /// <returns>The license value key</returns>
+        public static NtKeyValue QueryLicenseValue(string name)
+        {
+            return QueryLicenseValue(name, true).Result;
+        }
+
+        /// <summary>
+        /// Create a registry key symbolic link
+        /// </summary>
+        /// <param name="rootkey">Root key if path is relative</param>
+        /// <param name="path">Path to the key to create</param>
+        /// <param name="target">Target resistry path</param>
+        /// <returns>The created symbolic link key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtKey CreateSymbolicLink(string path, NtKey rootkey, string target)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(path,
+                AttributeFlags.CaseInsensitive | AttributeFlags.OpenIf | AttributeFlags.OpenLink, rootkey))
+            {
+                using (NtKey key = Create(obja, KeyAccessRights.MaximumAllowed, KeyCreateOptions.CreateLink))
+                {
+                    try
+                    {
+                        key.SetSymbolicLinkTarget(target);
+                        return key.Duplicate();
+                    }
+                    catch
+                    {
+                        key.Delete();
+                        throw;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Open the machine key
+        /// </summary>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtKey GetMachineKey()
+        {
+            return Open(@"\Registry\Machine", null, KeyAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Open the user key
+        /// </summary>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtKey GetUserKey()
+        {
+            return Open(@"\Registry\User", null, KeyAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Open a specific user key
+        /// </summary>
+        /// <param name="sid">The SID fo the user to open</param>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtKey GetUserKey(Sid sid)
+        {
+            return Open(@"\Registry\User\" + sid.ToString(), null, KeyAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Open the current user key
+        /// </summary>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtKey GetCurrentUserKey()
+        {
+            return GetUserKey(NtToken.CurrentUser.Sid);
+        }
+
+        /// <summary>
+        /// Open the root key
+        /// </summary>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtKey GetRootKey()
+        {
+            return Open(@"\Registry", null, KeyAccessRights.MaximumAllowed);
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Create a new Key
+        /// </summary>
+        /// <param name="key_name">Path to the key to create</param>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtKey Create(string key_name)
+        {
+            return Create(key_name, this, KeyAccessRights.MaximumAllowed, KeyCreateOptions.NonVolatile);
+        }
+
+        /// <summary>
+        /// Create a new Key
+        /// </summary>
+        /// <param name="key_name">Path to the key to create</param>
+        /// <param name="desired_access">Desired access for the root key</param>
+        /// <param name="options">Create options</param>
+        /// <returns>The opened key</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtKey Create(string key_name, KeyAccessRights desired_access, KeyCreateOptions options)
+        {
+            return Create(key_name, this, desired_access, options);
         }
 
         /// <summary>
@@ -976,9 +1100,8 @@ namespace NtApiDotNet
             {
                 while (true)
                 {
-                    int result_length;
                     NtStatus status = NtSystemCalls.NtEnumerateValueKey(Handle, index, KeyValueInformationClass.KeyValueFullInformation,
-                        value_info, value_info.Length, out result_length);
+                        value_info, value_info.Length, out int result_length);
                     if (status == NtStatus.STATUS_BUFFER_OVERFLOW || status == NtStatus.STATUS_BUFFER_TOO_SMALL)
                     {
                         value_info.Resize(result_length);
@@ -998,44 +1121,6 @@ namespace NtApiDotNet
                     yield return new NtKeyValue(name, res.Type, data_buffer, res.TitleIndex);
                 }
             }
-        }
-
-        /// <summary>
-        /// Query a license value. While technically not directly a registry key
-        /// it has many of the same properties such as using the same registry
-        /// value types.
-        /// </summary>
-        /// <param name="name">The name of the license value.</param>
-        /// <param name="throw_on_error">True to throw an exception on error</param>
-        /// <returns>The license value key</returns>
-        public static NtResult<NtKeyValue> QueryLicenseValue(string name, bool throw_on_error)
-        {
-            RegistryValueType type;
-            int ret_length;
-            UnicodeString name_string = new UnicodeString(name);
-            NtStatus status = NtSystemCalls.NtQueryLicenseValue(name_string, out type, SafeHGlobalBuffer.Null, 0, out ret_length);
-            if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
-            {
-                return status.CreateResultFromError<NtKeyValue>(throw_on_error);
-            }
-
-            using (var buffer = new SafeHGlobalBuffer(ret_length))
-            {
-                return NtSystemCalls.NtQueryLicenseValue(name_string, out type, buffer, buffer.Length, out ret_length)
-                    .CreateResult(throw_on_error, () => new NtKeyValue(name, type, buffer.ToArray(), 0));
-            }
-        }
-
-        /// <summary>
-        /// Query a license value. While technically not directly a registry key
-        /// it has many of the same properties such as using the same registry
-        /// value types.
-        /// </summary>
-        /// <param name="name">The name of the license value.</param>
-        /// <returns>The license value key</returns>
-        public static NtKeyValue QueryLicenseValue(string name)
-        {
-            return QueryLicenseValue(name, true).Result;
         }
 
         /// <summary>
@@ -1070,32 +1155,6 @@ namespace NtApiDotNet
             }
         }
 
-        private IEnumerable<NtKey> QueryAccessibleKeys(KeyAccessRights desired_access, bool open_link, bool open_for_backup, bool ignore_predefined_keys)
-        {
-            List<NtKey> ret = new List<NtKey>();
-            AttributeFlags flags = AttributeFlags.CaseInsensitive;
-            if (open_link)
-            {
-                flags |= AttributeFlags.OpenLink;
-            }
-
-            if (IsAccessGranted(KeyAccessRights.EnumerateSubKeys))
-            {
-                foreach (string name in QueryKeys())
-                {
-                    using (ObjectAttributes obja = new ObjectAttributes(name, flags, this))
-                    {
-                        var result = Open(obja, desired_access, open_for_backup ? KeyCreateOptions.BackupRestore : 0, false);
-                        if (result.IsSuccess && (!ignore_predefined_keys || result.Status != NtStatus.STATUS_PREDEFINED_HANDLE))
-                        {
-                            ret.Add(result.Result);
-                        }
-                    }
-                }
-            }
-            return ret;
-        }
-
         /// <summary>
         /// Return a list of subkeys which can be accessed.
         /// </summary>
@@ -1127,35 +1186,6 @@ namespace NtApiDotNet
         public void SetSymbolicLinkTarget(string target)
         {
             SetValue("SymbolicLinkValue", RegistryValueType.Link, Encoding.Unicode.GetBytes(target));
-        }
-
-        /// <summary>
-        /// Create a registry key symbolic link
-        /// </summary>
-        /// <param name="rootkey">Root key if path is relative</param>
-        /// <param name="path">Path to the key to create</param>
-        /// <param name="target">Target resistry path</param>
-        /// <returns>The created symbolic link key</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtKey CreateSymbolicLink(string path, NtKey rootkey, string target)
-        {
-            using (ObjectAttributes obja = new ObjectAttributes(path,
-                AttributeFlags.CaseInsensitive | AttributeFlags.OpenIf | AttributeFlags.OpenLink, rootkey))
-            {
-                using (NtKey key = Create(obja, KeyAccessRights.MaximumAllowed, KeyCreateOptions.CreateLink))
-                {
-                    try
-                    {
-                        key.SetSymbolicLinkTarget(target);
-                        return key.Duplicate();
-                    }
-                    catch
-                    {
-                        key.Delete();
-                        throw;
-                    }
-                }
-            }
         }
 
         /// <summary>
@@ -1218,67 +1248,6 @@ namespace NtApiDotNet
         public NtKey ReOpen(KeyAccessRights desired_access, KeyCreateOptions options)
         {
             return ReOpen(desired_access, options, true).Result;
-        }
-
-        /// <summary>
-        /// Open the machine key
-        /// </summary>
-        /// <returns>The opened key</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtKey GetMachineKey()
-        {
-            return Open(@"\Registry\Machine", null, KeyAccessRights.MaximumAllowed);
-        }
-
-        /// <summary>
-        /// Open the user key
-        /// </summary>
-        /// <returns>The opened key</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtKey GetUserKey()
-        {
-            return Open(@"\Registry\User", null, KeyAccessRights.MaximumAllowed);
-        }
-
-        /// <summary>
-        /// Open a specific user key
-        /// </summary>
-        /// <param name="sid">The SID fo the user to open</param>
-        /// <returns>The opened key</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtKey GetUserKey(Sid sid)
-        {
-            return Open(@"\Registry\User\" + sid.ToString(), null, KeyAccessRights.MaximumAllowed);
-        }
-
-        /// <summary>
-        /// Open the current user key
-        /// </summary>
-        /// <returns>The opened key</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtKey GetCurrentUserKey()
-        {
-            return GetUserKey(NtToken.CurrentUser.Sid);
-        }
-
-        /// <summary>
-        /// Open the root key
-        /// </summary>
-        /// <returns>The opened key</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtKey GetRootKey()
-        {
-            return Open(@"\Registry", null, KeyAccessRights.MaximumAllowed);
-        }
-
-        private static SafeRegistryHandle DuplicateAsRegistry(SafeKernelObjectHandle handle)
-        {
-            using (var dup_handle = DuplicateHandle(handle))
-            {
-                SafeRegistryHandle ret = new SafeRegistryHandle(dup_handle.DangerousGetHandle(), true);
-                dup_handle.SetHandleAsInvalid();
-                return ret;
-            }
         }
 
         /// <summary>
@@ -1377,29 +1346,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Method to query information for this object type.
-        /// </summary>
-        /// <param name="info_class">The information class.</param>
-        /// <param name="buffer">The buffer to return data in.</param>
-        /// <param name="return_length">Return length from the query.</param>
-        /// <returns>The NT status code for the query.</returns>
-        public override NtStatus QueryInformation(KeyInformationClass info_class, SafeBuffer buffer, out int return_length)
-        {
-            return NtSystemCalls.NtQueryKey(Handle, info_class, buffer, buffer.GetLength(), out return_length);
-        }
-
-        /// <summary>
-        /// Method to set information for this object type.
-        /// </summary>
-        /// <param name="info_class">The information class.</param>
-        /// <param name="buffer">The buffer to set data from.</param>
-        /// <returns>The NT status code for the set.</returns>
-        public override NtStatus SetInformation(KeySetInformationClass info_class, SafeBuffer buffer)
-        {
-            return NtSystemCalls.NtSetInformationKey(Handle, info_class, buffer, buffer.GetLength());
-        }
-
-        /// <summary>
         /// Wait for a change on thie registry key.
         /// </summary>
         /// <param name="completion_filter">Specify what changes will be notified.</param>
@@ -1432,19 +1378,113 @@ namespace NtApiDotNet
             }
         }
 
-        private Tuple<KeyFullInformation, string> GetFullInfo()
+        /// <summary>
+        /// Visit all accessible keys under this one.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible key. Return true to continue enumeration.</param>
+        /// <param name="desired_access">Specify the desired access for the keys.</param>
+        /// <param name="recurse">True to recurse into sub keys.</param>
+        /// <param name="max_depth">Specify max recursive depth. -1 to not set a limit.</param>
+        /// <param name="open_for_backup">Open the key using backup privileges.</param>
+        public bool VisitAccessibleKeys(Func<NtKey, bool> visitor, KeyAccessRights desired_access, bool open_for_backup, bool recurse, int max_depth)
         {
-            using (var buffer = QueryBuffer<KeyFullInformation>(KeyInformationClass.KeyFullInformation))
+            if (max_depth == 0)
             {
-                KeyFullInformation ret = buffer.Result;
-                byte[] class_name = new byte[ret.ClassLength];
-                if ((class_name.Length > 0) && (ret.ClassOffset > 0))
-                {
-                    buffer.ReadArray((ulong)ret.ClassOffset, class_name, 0, class_name.Length);
-                }
-                return new Tuple<KeyFullInformation, string>(ret, Encoding.Unicode.GetString(class_name));
+                return true;
             }
+
+            using (var for_enum = GetKeyForEnumeration(open_for_backup))
+            {
+                if (!for_enum.IsSuccess)
+                {
+                    return true;
+                }
+
+                using (var keys = for_enum.Result.QueryAccessibleKeys(desired_access, true, open_for_backup, true).ToDisposableList())
+                {
+                    if (max_depth > 0)
+                    {
+                        max_depth--;
+                    }
+
+                    foreach (var key in keys)
+                    {
+                        if (!visitor(key))
+                        {
+                            return false;
+                        }
+
+                        if (recurse)
+                        {
+                            if (!key.VisitAccessibleKeys(visitor, desired_access, open_for_backup, recurse, max_depth))
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return true;
         }
+
+        /// <summary>
+        /// Visit all accessible directories under this one.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
+        public void VisitAccessibleKeys(Func<NtKey, bool> visitor)
+        {
+            VisitAccessibleKeys(visitor, false);
+        }
+
+        /// <summary>
+        /// Visit all accessible directories under this one.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
+        /// <param name="recurse">True to recurse into sub directories.</param>
+        public void VisitAccessibleKeys(Func<NtKey, bool> visitor, bool recurse)
+        {
+            VisitAccessibleKeys(visitor, KeyAccessRights.MaximumAllowed, false, recurse);
+        }
+
+        /// <summary>
+        /// Visit all accessible directories under this one.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
+        /// <param name="desired_access">Specify the desired access for the directory</param>
+        /// <param name="recurse">True to recurse into sub directories.</param>
+        /// <param name="open_for_backup">Open the key using backup privileges.</param>
+        public void VisitAccessibleKeys(Func<NtKey, bool> visitor, KeyAccessRights desired_access, bool open_for_backup, bool recurse)
+        {
+            VisitAccessibleKeys(visitor, desired_access, open_for_backup, recurse, -1);
+        }
+
+        /// <summary>
+        /// Method to query information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to return data in.</param>
+        /// <param name="return_length">Return length from the query.</param>
+        /// <returns>The NT status code for the query.</returns>
+        public override NtStatus QueryInformation(KeyInformationClass info_class, SafeBuffer buffer, out int return_length)
+        {
+            return NtSystemCalls.NtQueryKey(Handle, info_class, buffer, buffer.GetLength(), out return_length);
+        }
+
+        /// <summary>
+        /// Method to set information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to set data from.</param>
+        /// <returns>The NT status code for the set.</returns>
+        public override NtStatus SetInformation(KeySetInformationClass info_class, SafeBuffer buffer)
+        {
+            return NtSystemCalls.NtSetInformationKey(Handle, info_class, buffer, buffer.GetLength());
+        }
+
+        #endregion
+
+        #region Public Properties
 
         /// <summary>
         /// Get key last write time
@@ -1578,18 +1618,12 @@ namespace NtApiDotNet
         /// <summary>
         /// The disposition when the key was created.
         /// </summary>
-        public KeyDisposition Disposition
-        {
-            get; private set;
-        }
+        public KeyDisposition Disposition { get; }
 
         /// <summary>
         /// Indicates the handle is a special pre-defined one by the kernel.
         /// </summary>
-        public bool PredefinedHandle
-        {
-            get; private set;
-        }
+        public bool PredefinedHandle { get; }
 
         /// <summary>
         /// Get or set virtualization flags.
@@ -1613,7 +1647,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return Query<KeyFlags>(KeyInformationClass.KeyFlagsInformation).ControlFlags;
+                return Query<KeyFlagsInformation>(KeyInformationClass.KeyFlagsInformation).ControlFlags;
             }
 
             set
@@ -1632,7 +1666,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return Query<KeyFlags>(KeyInformationClass.KeyFlagsInformation).Wow64Flags;
+                return Query<KeyFlagsInformation>(KeyInformationClass.KeyFlagsInformation).Wow64Flags;
             }
 
             set
@@ -1655,6 +1689,9 @@ namespace NtApiDotNet
             }
         }
 
+        #endregion
+
+        #region Private Members
         private NtResult<NtKey> GetKeyForEnumeration(bool open_for_backup)
         {
             if (IsAccessGranted(KeyAccessRights.EnumerateSubKeys))
@@ -1668,86 +1705,58 @@ namespace NtApiDotNet
             }
         }
 
-        /// <summary>
-        /// Visit all accessible keys under this one.
-        /// </summary>
-        /// <param name="visitor">A function to be called on every accessible key. Return true to continue enumeration.</param>
-        /// <param name="desired_access">Specify the desired access for the keys.</param>
-        /// <param name="recurse">True to recurse into sub keys.</param>
-        /// <param name="max_depth">Specify max recursive depth. -1 to not set a limit.</param>
-        /// <param name="open_for_backup">Open the key using backup privileges.</param>
-        public bool VisitAccessibleKeys(Func<NtKey, bool> visitor, KeyAccessRights desired_access, bool open_for_backup, bool recurse, int max_depth)
+        private IEnumerable<NtKey> QueryAccessibleKeys(KeyAccessRights desired_access, bool open_link, bool open_for_backup, bool ignore_predefined_keys)
         {
-            if (max_depth == 0)
+            List<NtKey> ret = new List<NtKey>();
+            AttributeFlags flags = AttributeFlags.CaseInsensitive;
+            if (open_link)
             {
-                return true;
+                flags |= AttributeFlags.OpenLink;
             }
 
-            using (var for_enum = GetKeyForEnumeration(open_for_backup))
+            if (IsAccessGranted(KeyAccessRights.EnumerateSubKeys))
             {
-                if (!for_enum.IsSuccess)
+                foreach (string name in QueryKeys())
                 {
-                    return true;
-                }
-
-                using (var keys = for_enum.Result.QueryAccessibleKeys(desired_access, true, open_for_backup, true).ToDisposableList())
-                {
-                    if (max_depth > 0)
+                    using (ObjectAttributes obja = new ObjectAttributes(name, flags, this))
                     {
-                        max_depth--;
-                    }
-
-                    foreach (var key in keys)
-                    {
-                        if (!visitor(key))
+                        var result = Open(obja, desired_access, open_for_backup ? KeyCreateOptions.BackupRestore : 0, false);
+                        if (result.IsSuccess && (!ignore_predefined_keys || result.Status != NtStatus.STATUS_PREDEFINED_HANDLE))
                         {
-                            return false;
-                        }
-
-                        if (recurse)
-                        {
-                            if (!key.VisitAccessibleKeys(visitor, desired_access, open_for_backup, recurse, max_depth))
-                            {
-                                return false;
-                            }
+                            ret.Add(result.Result);
                         }
                     }
                 }
             }
-
-            return true;
+            return ret;
         }
 
-        /// <summary>
-        /// Visit all accessible directories under this one.
-        /// </summary>
-        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
-        public void VisitAccessibleKeys(Func<NtKey, bool> visitor)
+        private static SafeRegistryHandle DuplicateAsRegistry(SafeKernelObjectHandle handle)
         {
-            VisitAccessibleKeys(visitor, false);
+            using (var dup_handle = DuplicateHandle(handle))
+            {
+                SafeRegistryHandle ret = new SafeRegistryHandle(dup_handle.DangerousGetHandle(), true);
+                dup_handle.SetHandleAsInvalid();
+                return ret;
+            }
         }
 
-        /// <summary>
-        /// Visit all accessible directories under this one.
-        /// </summary>
-        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
-        /// <param name="recurse">True to recurse into sub directories.</param>
-        public void VisitAccessibleKeys(Func<NtKey, bool> visitor, bool recurse)
+
+        private Tuple<KeyFullInformation, string> GetFullInfo()
         {
-            VisitAccessibleKeys(visitor, KeyAccessRights.MaximumAllowed, false, recurse);
+            using (var buffer = QueryBuffer<KeyFullInformation>(KeyInformationClass.KeyFullInformation))
+            {
+                KeyFullInformation ret = buffer.Result;
+                byte[] class_name = new byte[ret.ClassLength];
+                if ((class_name.Length > 0) && (ret.ClassOffset > 0))
+                {
+                    buffer.ReadArray((ulong)ret.ClassOffset, class_name, 0, class_name.Length);
+                }
+                return new Tuple<KeyFullInformation, string>(ret, Encoding.Unicode.GetString(class_name));
+            }
         }
 
-        /// <summary>
-        /// Visit all accessible directories under this one.
-        /// </summary>
-        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
-        /// <param name="desired_access">Specify the desired access for the directory</param>
-        /// <param name="recurse">True to recurse into sub directories.</param>
-        /// <param name="open_for_backup">Open the key using backup privileges.</param>
-        public void VisitAccessibleKeys(Func<NtKey, bool> visitor, KeyAccessRights desired_access, bool open_for_backup, bool recurse)
-        {
-            VisitAccessibleKeys(visitor, desired_access, open_for_backup, recurse, -1);
-        }
+        #endregion
     }
 
     /// <summary>
