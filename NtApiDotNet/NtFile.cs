@@ -3284,9 +3284,19 @@ namespace NtApiDotNet
         /// Oplock the file with a specific level.
         /// </summary>
         /// <param name="level">The level of oplock to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        public NtStatus RequestOplock(OplockRequestLevel level, bool throw_on_error)
+        {
+            return FsControl(GetOplockFsctl(level), null, null, throw_on_error).Status;
+        }
+
+        /// <summary>
+        /// Oplock the file with a specific level.
+        /// </summary>
+        /// <param name="level">The level of oplock to set.</param>
         public void RequestOplock(OplockRequestLevel level)
         {
-            FsControl(GetOplockFsctl(level), null, null);
+            RequestOplock(level, true);
         }
 
         /// <summary>
@@ -3337,16 +3347,32 @@ namespace NtApiDotNet
         /// <returns>The request of the oplock request.</returns>
         public RequestOplockOutputBuffer RequestOplock(OplockLevelCache requested_oplock_level, RequestOplockInputFlag flags)
         {
+            return RequestOplock(requested_oplock_level, flags, true).Result;
+        }
+
+        /// <summary>
+        /// Oplock the file with a specific level and flags.
+        /// </summary>
+        /// <param name="requested_oplock_level">The oplock level.</param>
+        /// <param name="flags">The flags for the oplock.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The request of the oplock request.</returns>
+        public NtResult<RequestOplockOutputBuffer> RequestOplock(OplockLevelCache requested_oplock_level, RequestOplockInputFlag flags, bool throw_on_error)
+        {
             using (var input_buffer = new RequestOplockInputBuffer(requested_oplock_level, flags).ToBuffer())
             {
                 using (var output_buffer = new SafeStructureInOutBuffer<RequestOplockOutputBuffer>())
                 {
-                    int size = FsControl(NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK, input_buffer, output_buffer);
-                    if (size != output_buffer.Length)
+                    var result = FsControl(NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK, input_buffer, output_buffer, throw_on_error);
+                    if (!result.IsSuccess)
                     {
-                        throw new NtException(NtStatus.STATUS_BUFFER_TOO_SMALL);
+                        return result.Status.CreateResultFromError<RequestOplockOutputBuffer>(throw_on_error);
                     }
-                    return output_buffer.Result;
+                    if (result.Result != output_buffer.Length)
+                    {
+                        return NtStatus.STATUS_BUFFER_TOO_SMALL.CreateResultFromError<RequestOplockOutputBuffer>(throw_on_error);
+                    }
+                    return result.Map(i => output_buffer.Result);
                 }
             }
         }
@@ -3415,6 +3441,16 @@ namespace NtApiDotNet
         public Task<RequestOplockOutputBuffer> RequestOplockAsync(OplockLevelCache requested_oplock_level, RequestOplockInputFlag flags)
         {
             return RequestOplockAsync(requested_oplock_level, flags, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Oplock the file exclusively (no other users can access the file).
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus OplockExclusive(bool throw_on_error)
+        {
+            return RequestOplock(OplockRequestLevel.Level1, throw_on_error);
         }
 
         /// <summary>
