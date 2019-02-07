@@ -3155,7 +3155,7 @@ namespace NtApiDotNet
         /// <param name="flags">The flags to determine what path information to get.</param>
         /// <returns>The path.</returns>
         /// <exception cref="NtException">Throw on error.</exception>
-        public string GetWin32PathName(Win32PathName flags)
+        public string GetWin32PathName(Win32PathNameFlags flags)
         {
             return GetWin32PathName(flags, true).Result;
         }
@@ -3166,7 +3166,7 @@ namespace NtApiDotNet
         /// <param name="flags">The flags to determine what path information to get.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The path.</returns>
-        public NtResult<string> GetWin32PathName(Win32PathName flags, bool throw_on_error)
+        public NtResult<string> GetWin32PathName(Win32PathNameFlags flags, bool throw_on_error)
         {
             return Win32Utils.GetWin32PathName(this, flags, true);
         }
@@ -3937,7 +3937,7 @@ namespace NtApiDotNet
         {
             get
             {
-                var result = GetWin32PathName(Win32.Win32PathName.None, false);
+                var result = GetWin32PathName(Win32.Win32PathNameFlags.None, false);
                 if (!result.IsSuccess)
                 {
                     return string.Empty;

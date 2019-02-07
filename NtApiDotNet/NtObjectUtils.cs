@@ -17,6 +17,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Linq;
+using NtApiDotNet.Win32;
 
 namespace NtApiDotNet
 {
@@ -173,29 +174,6 @@ namespace NtApiDotNet
             return (NtStatus)status;
         }
 
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern IntPtr GetModuleHandle(string modulename);
-
-        [Flags]
-        enum FormatFlags
-        {
-            AllocateBuffer = 0x00000100,
-            FromHModule = 0x00000800,
-            FromSystem = 0x00001000,
-            IgnoreInserts = 0x00000200
-        }
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern int FormatMessage(
-          FormatFlags dwFlags,
-          IntPtr lpSource,
-          uint dwMessageId,
-          int dwLanguageId,
-          out SafeLocalAllocHandle lpBuffer,
-          int nSize,
-          IntPtr Arguments
-        );
-
         /// <summary>
         /// Convert an NTSTATUS to a message description.
         /// </summary>
@@ -203,28 +181,19 @@ namespace NtApiDotNet
         /// <returns>The message description, or an empty string if not found.</returns>
         public static string GetNtStatusMessage(NtStatus status)
         {
-            IntPtr module_handle = IntPtr.Zero;
+            SafeLoadLibraryHandle module = SafeLoadLibraryHandle.Null;
             uint message_id = (uint)status;
             if (status.GetFacility() == NtStatusFacility.FACILITY_NTWIN32)
             {
-                module_handle = GetModuleHandle("kernel32.dll");
+                module = SafeLoadLibraryHandle.GetModuleHandleNoThrow("kernel32.dll");
                 message_id = (uint)status.GetStatusCode();
             }
             else
             {
-                module_handle = GetModuleHandle("ntdll.dll");
+                module = SafeLoadLibraryHandle.GetModuleHandleNoThrow("ntdll.dll");
             }
 
-            if (FormatMessage(FormatFlags.AllocateBuffer | FormatFlags.FromHModule
-                | FormatFlags.FromSystem | FormatFlags.IgnoreInserts,
-                module_handle, message_id, 0, out SafeLocalAllocHandle buffer, 0, IntPtr.Zero) > 0)
-            {
-                using (buffer)
-                {
-                    return Marshal.PtrToStringUni(buffer.DangerousGetHandle()).Trim();
-                }
-            }
-            return string.Empty;
+            return Win32Utils.FormatMessage(module, message_id);
         }
 
         /// <summary>

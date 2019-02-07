@@ -475,6 +475,20 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Get the handle to an existing loading library by name.
+        /// </summary>
+        /// <param name="name">The name of the module.</param>
+        /// <returns>The handle to the loaded library. Returns Null if not found.</returns>
+        public static SafeLoadLibraryHandle GetModuleHandleNoThrow(string name)
+        {
+            if (Win32NativeMethods.GetModuleHandleEx(0, name, out SafeLoadLibraryHandle ret))
+            {
+                return ret;
+            }
+            return Null;
+        }
+
+        /// <summary>
         /// Get the handle to an existing loading library by an address in the module.
         /// </summary>
         /// <param name="address">An address inside the module.</param>
@@ -737,5 +751,10 @@ namespace NtApiDotNet.Win32
                 return _dll_characteristics;
             }
         }
+
+        /// <summary>
+        /// NULL load library handle.
+        /// </summary>
+        public static SafeLoadLibraryHandle Null => new SafeLoadLibraryHandle(IntPtr.Zero, false);
     }
 }

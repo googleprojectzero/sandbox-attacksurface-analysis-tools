@@ -87,10 +87,10 @@ namespace NtApiDotNet.Win32
 
 
     /// <summary>
-    /// Flags for GetFinalPathNameByHandle.
+    /// Flags for GetWin32PathName.
     /// </summary>
     [Flags]
-    public enum Win32PathName
+    public enum Win32PathNameFlags
     {
         /// <summary>
         /// No flags.
@@ -112,6 +112,15 @@ namespace NtApiDotNet.Win32
         /// Opened file name.
         /// </summary>
         Opened = 8,
+    }
+
+    [Flags]
+    internal enum FormatFlags
+    {
+        AllocateBuffer = 0x00000100,
+        FromHModule = 0x00000800,
+        FromSystem = 0x00001000,
+        IgnoreInserts = 0x00000200
     }
 
     internal static class Win32NativeMethods
@@ -279,7 +288,19 @@ namespace NtApiDotNet.Win32
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern int GetFinalPathNameByHandle(SafeKernelObjectHandle hFile, StringBuilder lpszFilePath,
-            int cchFilePath, Win32PathName dwFlags);
+            int cchFilePath, Win32PathNameFlags dwFlags);
 
+
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern int FormatMessage(
+          FormatFlags dwFlags,
+          IntPtr lpSource,
+          uint dwMessageId,
+          int dwLanguageId,
+          out SafeLocalAllocHandle lpBuffer,
+          int nSize,
+          IntPtr Arguments
+        );
     }
 }

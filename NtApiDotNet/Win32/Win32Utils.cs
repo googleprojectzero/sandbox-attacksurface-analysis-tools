@@ -205,7 +205,7 @@ namespace NtApiDotNet.Win32
         /// <param name="flags">Flags for the path to return.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The win32 path.</returns>
-        public static NtResult<string> GetWin32PathName(NtFile file, Win32PathName flags, bool throw_on_error)
+        public static NtResult<string> GetWin32PathName(NtFile file, Win32PathNameFlags flags, bool throw_on_error)
         {
             StringBuilder builder = new StringBuilder(1000);
             if (Win32NativeMethods.GetFinalPathNameByHandle(file.Handle, builder, builder.Capacity, flags) == 0)
@@ -221,9 +221,39 @@ namespace NtApiDotNet.Win32
         /// <param name="file">The file to get the path from.</param>
         /// <param name="flags">Flags for the path to return.</param>
         /// <returns>The win32 path.</returns>
-        public static string GetWin32PathName(NtFile file, Win32PathName flags)
+        public static string GetWin32PathName(NtFile file, Win32PathNameFlags flags)
         {
             return GetWin32PathName(file, flags, true).Result;
+        }
+
+        /// <summary>
+        /// Format a message.
+        /// </summary>
+        /// <param name="module">The module containing the message.</param>
+        /// <param name="message_id">The ID of the message.</param>
+        /// <returns>The message. Empty string on error.</returns>
+        public static string FormatMessage(SafeLoadLibraryHandle module, uint message_id)
+        {
+            if (Win32NativeMethods.FormatMessage(FormatFlags.AllocateBuffer | FormatFlags.FromHModule
+                | FormatFlags.FromSystem | FormatFlags.IgnoreInserts,
+                module.DangerousGetHandle(), message_id, 0, out SafeLocalAllocHandle buffer, 0, IntPtr.Zero) > 0)
+            {
+                using (buffer)
+                {
+                    return Marshal.PtrToStringUni(buffer.DangerousGetHandle()).Trim();
+                }
+            }
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Format a message.
+        /// </summary>
+        /// <param name="message_id">The ID of the message.</param>
+        /// <returns>The message. Empty string on error.</returns>
+        public static string FormatMessage(uint message_id)
+        {
+            return FormatMessage(SafeLoadLibraryHandle.Null, message_id);
         }
     }
 }
