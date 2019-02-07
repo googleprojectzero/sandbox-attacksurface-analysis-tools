@@ -197,5 +197,33 @@ namespace NtApiDotNet.Win32
 
             return command_line;
         }
+
+        /// <summary>
+        /// Get Win32 path name for a file.
+        /// </summary>
+        /// <param name="file">The file to get the path from.</param>
+        /// <param name="flags">Flags for the path to return.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The win32 path.</returns>
+        public static NtResult<string> GetWin32PathName(NtFile file, Win32PathName flags, bool throw_on_error)
+        {
+            StringBuilder builder = new StringBuilder(1000);
+            if (Win32NativeMethods.GetFinalPathNameByHandle(file.Handle, builder, builder.Capacity, flags) == 0)
+            {
+                return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<string>(throw_on_error);
+            }
+            return NtStatus.STATUS_SUCCESS.CreateResult(throw_on_error, () => builder.ToString());
+        }
+
+        /// <summary>
+        /// Get Win32 path name for a file.
+        /// </summary>
+        /// <param name="file">The file to get the path from.</param>
+        /// <param name="flags">Flags for the path to return.</param>
+        /// <returns>The win32 path.</returns>
+        public static string GetWin32PathName(NtFile file, Win32PathName flags)
+        {
+            return GetWin32PathName(file, flags, true).Result;
+        }
     }
 }

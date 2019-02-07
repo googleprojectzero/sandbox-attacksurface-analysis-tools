@@ -236,6 +236,16 @@ namespace NtApiDotNet
             UnicodeString SpareInstancePath, uint Flags);
     }
 
+    public static partial class NtRtl
+    {
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlWow64EnableFsRedirection(bool Wow64FsEnableRedirection);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlWow64EnableFsRedirectionEx(IntPtr DisableFsRedirection, 
+            out IntPtr OldFsRedirectionLevel);
+    }
+
     [Flags]
     public enum NamedPipeType
     {
@@ -1364,9 +1374,7 @@ namespace NtApiDotNet
     [NtType("File"), NtType("Device")]
     public class NtFile : NtObjectWithDuplicateAndInfo<NtFile, FileAccessRights, FileInformationClass, FileInformationClass>
     {
-        // Cancellation source for stopping pending IO on close.
-        private CancellationTokenSource _cts;
-        private bool? _is_directory;
+        #region Constructors
 
         internal NtFile(SafeKernelObjectHandle handle, IoStatus io_status) : base(handle)
         {
@@ -1378,6 +1386,13 @@ namespace NtApiDotNet
             : this(handle, null)
         {
         }
+
+        #endregion
+
+        #region Private Members
+        // Cancellation source for stopping pending IO on close.
+        private CancellationTokenSource _cts;
+        private bool? _is_directory;
 
         private static FileDeviceType GetDeviceType(SafeKernelObjectHandle handle)
         {
@@ -1403,6 +1418,259 @@ namespace NtApiDotNet
             return new NtFile(handle, io_status);
         }
 
+        private static IntPtr GetSafePointer(SafeBuffer buffer)
+        {
+            return buffer != null ? buffer.DangerousGetHandle() : IntPtr.Zero;
+        }
+
+        private static int GetSafeLength(SafeBuffer buffer)
+        {
+            return buffer != null ? (int)buffer.ByteLength : 0;
+        }
+
+        private delegate NtStatus IoControlFunction(SafeKernelObjectHandle FileHandle,
+                                                    SafeKernelObjectHandle Event,
+                                                    IntPtr ApcRoutine,
+                                                    IntPtr ApcContext,
+                                                    SafeIoStatusBuffer IoStatusBlock,
+                                                    int IoControlCode,
+                                                    IntPtr InputBuffer,
+                                                    int InputBufferLength,
+                                                    IntPtr OutputBuffer,
+                                                    int OutputBufferLength);
+
+        private async Task<int> IoControlGenericAsync(IoControlFunction func,
+                        NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, CancellationToken token)
+        {
+            using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
+            {
+                using (NtAsyncResult result = new NtAsyncResult(this))
+                {
+                    NtStatus status = await result.CompleteCallAsync(func(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
+                        control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer),
+                        GetSafePointer(output_buffer), GetSafeLength(output_buffer)), linked_cts.Token);
+                    if (status == NtStatus.STATUS_PENDING)
+                    {
+                        result.Cancel();
+                        throw new NtException(NtStatus.STATUS_CANCELLED);
+                    }
+                    status.ToNtException();
+                    return result.Information32;
+                }
+            }
+        }
+
+        private async Task<byte[]> IoControlGenericAsync(IoControlFunction func, NtIoControlCode control_code, byte[] input_buffer, int max_output, CancellationToken token)
+        {
+            using (SafeHGlobalBuffer input = input_buffer != null ? new SafeHGlobalBuffer(input_buffer) : null)
+            {
+                using (SafeHGlobalBuffer output = max_output > 0 ? new SafeHGlobalBuffer(max_output) : null)
+                {
+                    int output_length = await IoControlGenericAsync(func, control_code, input, output, token);
+                    if (output != null)
+                    {
+                        return output.ReadBytes(output_length);
+                    }
+                    return new byte[0];
+                }
+            }
+        }
+
+        private NtResult<int> IoControlGeneric(IoControlFunction func, NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, bool throw_on_error)
+        {
+            using (NtAsyncResult result = new NtAsyncResult(this))
+            {
+                return result.CompleteCall(func(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
+                    control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer),
+                    GetSafeLength(output_buffer))).CreateResult(throw_on_error, () => result.Information32);
+            }
+        }
+
+        private NtResult<byte[]> IoControlGeneric(IoControlFunction func, NtIoControlCode control_code, byte[] input_buffer, int max_output, bool throw_on_error)
+        {
+            using (SafeHGlobalBuffer input = input_buffer != null ? new SafeHGlobalBuffer(input_buffer) : null)
+            {
+                using (SafeHGlobalBuffer output = max_output > 0 ? new SafeHGlobalBuffer(max_output) : null)
+                {
+                    var result = IoControlGeneric(func, control_code, input, output, throw_on_error);
+                    if (result.IsSuccess && output != null)
+                    {
+                        return new NtResult<byte[]>(result.Status, output.ReadBytes(result.Result));
+                    }
+                    return new NtResult<byte[]>(result.Status, new byte[0]);
+                }
+            }
+        }
+
+        private void DoRenameEx(string filename, NtFile root, FileRenameInformationExFlags flags)
+        {
+            FileRenameInformationEx information = new FileRenameInformationEx
+            {
+                Flags = flags,
+                RootDirectory = root.GetHandle().DangerousGetHandle()
+            };
+            char[] chars = filename.ToCharArray();
+            information.FileNameLength = chars.Length * 2;
+            using (var buffer = information.ToBuffer(information.FileNameLength, true))
+            {
+                buffer.Data.WriteArray(0, chars, 0, chars.Length);
+                SetBuffer(FileInformationClass.FileRenameInformationEx, buffer);
+            }
+        }
+
+        private void DoLinkRename(FileInformationClass file_info, string linkname, NtFile root, bool replace_if_exists)
+        {
+            FileLinkRenameInformation link = new FileLinkRenameInformation
+            {
+                ReplaceIfExists = replace_if_exists,
+                RootDirectory = root.GetHandle().DangerousGetHandle()
+            };
+            char[] chars = linkname.ToCharArray();
+            link.FileNameLength = chars.Length * 2;
+            using (var buffer = link.ToBuffer(link.FileNameLength, true))
+            {
+                buffer.Data.WriteArray(0, chars, 0, chars.Length);
+                SetBuffer(file_info, buffer);
+            }
+        }
+
+        private void DoLinkRename(FileInformationClass file_info, string linkname, NtFile root)
+        {
+            DoLinkRename(file_info, linkname, root, true);
+        }
+
+        private async Task<NtResult<IoStatus>> RunFileCallAsync(Func<NtAsyncResult, NtStatus> func, CancellationToken token, bool throw_on_error)
+        {
+            using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
+            {
+                using (NtAsyncResult result = new NtAsyncResult(this))
+                {
+                    NtStatus status = await result.CompleteCallAsync(func(result), linked_cts.Token);
+                    if (status == NtStatus.STATUS_PENDING)
+                    {
+                        result.Cancel();
+                        return NtStatus.STATUS_CANCELLED.CreateResultFromError<IoStatus>(throw_on_error);
+                    }
+                    return status.CreateResult(throw_on_error, () => result.Result);
+                }
+            }
+        }
+
+        private bool VisitFileEntry(string filename, bool directory, Func<NtFile, bool> visitor, FileAccessRights desired_access,
+                                    FileShareMode share_access, FileOpenOptions open_options)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(filename, AttributeFlags.CaseInsensitive, this))
+            {
+                using (var result = Open(obja, desired_access, share_access, open_options, false))
+                {
+                    if (!result.IsSuccess)
+                    {
+                        return true;
+                    }
+
+                    result.Result._is_directory = directory;
+                    return visitor(result.Result);
+                }
+            }
+        }
+
+        private T QueryVolumeFixed<T>(FsInformationClass info_class) where T : new()
+        {
+            using (var buffer = new SafeStructureInOutBuffer<T>())
+            {
+                IoStatus status = new IoStatus();
+                NtSystemCalls.NtQueryVolumeInformationFile(Handle, status, buffer,
+                    buffer.Length, info_class).ToNtException();
+                return buffer.Result;
+            }
+        }
+
+        private SafeStructureInOutBuffer<T> QueryVolume<T>(FsInformationClass info_class) where T : new()
+        {
+            SafeStructureInOutBuffer<T> ret = null;
+            NtStatus status = NtStatus.STATUS_BUFFER_TOO_SMALL;
+            try
+            {
+                int length = Marshal.SizeOf(typeof(T)) + 128;
+                while (true)
+                {
+                    ret = new SafeStructureInOutBuffer<T>(length, false);
+                    IoStatus io_status = new IoStatus();
+                    status = NtSystemCalls.NtQueryVolumeInformationFile(Handle, io_status, ret, ret.Length, info_class);
+                    if (status.IsSuccess())
+                        break;
+
+                    if ((status != NtStatus.STATUS_BUFFER_OVERFLOW) && (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH))
+                        throw new NtException(status);
+                    ret.Close();
+                    length *= 2;
+                }
+            }
+            finally
+            {
+                if (ret != null && !status.IsSuccess())
+                {
+                    ret.Close();
+                    ret = null;
+                }
+            }
+            return ret;
+        }
+
+        private static SafeFileHandle DuplicateAsFile(SafeKernelObjectHandle handle)
+        {
+            using (SafeKernelObjectHandle dup_handle = DuplicateHandle(handle))
+            {
+                SafeFileHandle ret = new SafeFileHandle(dup_handle.DangerousGetHandle(), true);
+                dup_handle.SetHandleAsInvalid();
+                return ret;
+            }
+        }
+
+        private string TryGetName(FileInformationClass info_class)
+        {
+            using (var buffer = new SafeStructureInOutBuffer<FileNameInformation>(32 * 1024, true))
+            {
+                IoStatus status = new IoStatus();
+                NtSystemCalls.NtQueryInformationFile(Handle,
+                    status, buffer, buffer.Length, info_class).ToNtException();
+                char[] result = new char[buffer.Result.NameLength / 2];
+                buffer.Data.ReadArray(0, result, 0, result.Length);
+                return new string(result);
+            }
+        }
+
+        private void SetName(FileInformationClass info_class, string name)
+        {
+            byte[] data = Encoding.Unicode.GetBytes(name);
+            FileNameInformation info = new FileNameInformation() { NameLength = data.Length };
+            using (var buffer = new SafeStructureInOutBuffer<FileNameInformation>(info, data.Length, true))
+            {
+                buffer.Data.WriteBytes(data);
+                SetBuffer(info_class, buffer);
+            }
+        }
+
+        private static NtIoControlCode GetOplockFsctl(OplockRequestLevel level)
+        {
+            switch (level)
+            {
+                case OplockRequestLevel.Level1:
+                    return NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK_LEVEL_1;
+                case OplockRequestLevel.Level2:
+                    return NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK_LEVEL_2;
+                case OplockRequestLevel.Batch:
+                    return NtWellKnownIoControlCodes.FSCTL_REQUEST_BATCH_OPLOCK;
+                case OplockRequestLevel.Filter:
+                    return NtWellKnownIoControlCodes.FSCTL_REQUEST_FILTER_OPLOCK;
+                default:
+                    throw new ArgumentException("Invalid oplock request level", "level");
+            }
+        }
+
+        #endregion
+
+        #region Static Methods
         /// <summary>
         /// Create a new file
         /// </summary>
@@ -1655,10 +1923,9 @@ namespace NtApiDotNet
             FileOpenOptions open_options, int maximum_message_size, int mailslot_quota,
             long default_timeout)
         {
-            SafeKernelObjectHandle handle;
             IoStatus io_status = new IoStatus();
             LargeInteger timeout = default_timeout < 0 ? new LargeInteger(-1) : NtWaitTimeout.FromMilliseconds(default_timeout).ToLargeInteger();
-            NtSystemCalls.NtCreateMailslotFile(out handle, desired_access, obj_attributes, io_status, open_options, mailslot_quota, maximum_message_size, timeout);
+            NtSystemCalls.NtCreateMailslotFile(out SafeKernelObjectHandle handle, desired_access, obj_attributes, io_status, open_options, mailslot_quota, maximum_message_size, timeout);
             return new NtFile(handle, io_status);
         }
 
@@ -1684,63 +1951,273 @@ namespace NtApiDotNet
             }
         }
 
-        static IntPtr GetSafePointer(SafeBuffer buffer)
+        /// <summary>
+        /// Open a file
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes</param>
+        /// <param name="desired_access">The desired access for the file handle</param>
+        /// <param name="share_access">The file share access</param>
+        /// <param name="open_options">File open options</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtFile> Open(ObjectAttributes obj_attributes, FileAccessRights desired_access,
+            FileShareMode share_access, FileOpenOptions open_options, bool throw_on_error)
         {
-            return buffer != null ? buffer.DangerousGetHandle() : IntPtr.Zero;
+            IoStatus iostatus = new IoStatus();
+            return NtSystemCalls.NtOpenFile(out SafeKernelObjectHandle handle, desired_access, obj_attributes, iostatus, share_access, open_options)
+                .CreateResult(throw_on_error, () => CreateFileObject(handle, iostatus));
         }
 
-        static int GetSafeLength(SafeBuffer buffer)
+        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
         {
-            return buffer != null ? (int)buffer.ByteLength : 0;
+            return Open(object_attributes, desired_access.ToSpecificAccess<FileAccessRights>(), FileShareMode.Read | FileShareMode.Delete,
+                FileOpenOptions.None, throw_on_error).Cast<NtObject>();
         }
 
-        private delegate NtStatus IoControlFunction(SafeKernelObjectHandle FileHandle,
-                                                    SafeKernelObjectHandle Event,
-                                                    IntPtr ApcRoutine,
-                                                    IntPtr ApcContext,
-                                                    SafeIoStatusBuffer IoStatusBlock,
-                                                    int IoControlCode,
-                                                    IntPtr InputBuffer,
-                                                    int InputBufferLength,
-                                                    IntPtr OutputBuffer,
-                                                    int OutputBufferLength);
-
-        private async Task<int> IoControlGenericAsync(IoControlFunction func,
-                        NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, CancellationToken token)
+        /// <summary>
+        /// Open a file
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes</param>f
+        /// <param name="desired_access">The desired access for the file handle</param>
+        /// <param name="share_access">The file share access</param>
+        /// <param name="open_options">File open options</param>
+        /// <returns>The opened file</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtFile Open(ObjectAttributes obj_attributes, FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options)
         {
-            using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
+            return Open(obj_attributes, desired_access, share_access, open_options, true).Result;
+        }
+
+        /// <summary>
+        /// Open a file
+        /// </summary>
+        /// <param name="path">The path to the file</param>
+        /// <param name="root">The root directory if path is relative.</param>
+        /// <param name="desired_access">The desired access for the file handle</param>
+        /// <param name="shared_access">The file share access</param>
+        /// <param name="open_options">File open options</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The opened file</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<NtFile> Open(string path, NtObject root, FileAccessRights desired_access,
+            FileShareMode shared_access, FileOpenOptions open_options, bool throw_on_error)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
-                using (NtAsyncResult result = new NtAsyncResult(this))
-                {
-                    NtStatus status = await result.CompleteCallAsync(func(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
-                        control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer),
-                        GetSafePointer(output_buffer), GetSafeLength(output_buffer)), linked_cts.Token);
-                    if (status == NtStatus.STATUS_PENDING)
-                    {
-                        result.Cancel();
-                        throw new NtException(NtStatus.STATUS_CANCELLED);
-                    }
-                    status.ToNtException();
-                    return result.Information32;
-                }
+                return Open(obja, desired_access, shared_access, open_options, throw_on_error);
             }
         }
 
-        private async Task<byte[]> IoControlGenericAsync(IoControlFunction func, NtIoControlCode control_code, byte[] input_buffer, int max_output, CancellationToken token)
+        /// <summary>
+        /// Open a file
+        /// </summary>
+        /// <param name="path">The path to the file</param>
+        /// <param name="root">The root directory if path is relative.</param>
+        /// <param name="desired_access">The desired access for the file handle</param>
+        /// <param name="shared_access">The file share access</param>
+        /// <param name="open_options">File open options</param>
+        /// <returns>The opened file</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtFile Open(string path, NtObject root, FileAccessRights desired_access,
+            FileShareMode shared_access, FileOpenOptions open_options)
         {
-            using (SafeHGlobalBuffer input = input_buffer != null ? new SafeHGlobalBuffer(input_buffer) : null)
+            return Open(path, root, desired_access, shared_access, open_options, true).Result;
+        }
+
+        /// <summary>
+        /// Open a file
+        /// </summary>
+        /// <param name="path">The path to the file</param>
+        /// <param name="root">The root directory if path is relative.</param>
+        /// <param name="desired_access">The desired access for the file handle</param>
+        /// <returns>The opened file</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtFile Open(string path, NtObject root, FileAccessRights desired_access)
+        {
+            return Open(path, root, desired_access,
+                FileShareMode.Read | FileShareMode.Delete, FileOpenOptions.None);
+        }
+
+        /// <summary>
+        /// Get the object ID of a file as a string
+        /// </summary>
+        /// <param name="path">The path to the file</param>
+        /// <returns>The object ID as a string</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static string GetFileId(string path)
+        {
+            using (NtFile file = Open(path, null, FileAccessRights.MaximumAllowed, FileShareMode.None, FileOpenOptions.None))
             {
-                using (SafeHGlobalBuffer output = max_output > 0 ? new SafeHGlobalBuffer(max_output) : null)
-                {
-                    int output_length = await IoControlGenericAsync(func, control_code, input, output, token);
-                    if (output != null)
-                    {
-                        return output.ReadBytes(output_length);
-                    }
-                    return new byte[0];
-                }
+                return file.FileId;
             }
         }
+
+        /// <summary>
+        /// Open a file by its object ID
+        /// </summary>
+        /// <param name="volume">A handle to the volume on which the file resides.</param>
+        /// <param name="id">The object ID as a binary string</param>
+        /// <param name="desired_access">The desired access for the file</param>
+        /// <param name="share_access">File share access</param>
+        /// <param name="open_options">Open options.</param>
+        /// <param name="throw_on_error">True to throw on error</param>
+        /// <returns>The opened file object</returns>
+        public static NtResult<NtFile> OpenFileById(NtFile volume, string id,
+            FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options, bool throw_on_error)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(id, AttributeFlags.CaseInsensitive, volume, null, null))
+            {
+                IoStatus iostatus = new IoStatus();
+                return NtSystemCalls.NtOpenFile(out SafeKernelObjectHandle handle, desired_access, obja,
+                    iostatus, share_access, open_options | FileOpenOptions.OpenByFileId)
+                    .CreateResult(throw_on_error, () => new NtFile(handle, iostatus));
+            }
+        }
+
+        /// <summary>
+        /// Open a file by its object ID
+        /// </summary>
+        /// <param name="volume">A handle to the volume on which the file resides.</param>
+        /// <param name="id">The object ID as a binary string</param>
+        /// <param name="desired_access">The desired access for the file</param>
+        /// <param name="share_access">File share access</param>
+        /// <param name="open_options">Open options.</param>
+        /// <returns>The opened file object</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtFile OpenFileById(NtFile volume, string id,
+            FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options)
+        {
+            return OpenFileById(volume, id, desired_access, share_access, open_options, true).Result;
+        }
+
+        /// <summary>
+        /// Delete a file
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes for the file.</param>
+        /// <param name="throw_on_error">True to throw an exception on error</param>
+        /// <returns>The status result of the delete</returns>
+        public static NtStatus Delete(ObjectAttributes obj_attributes, bool throw_on_error)
+        {
+            return NtSystemCalls.NtDeleteFile(obj_attributes).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Delete a file
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes for the file.</param>
+        public static void Delete(ObjectAttributes obj_attributes)
+        {
+            Delete(obj_attributes, true);
+        }
+
+        /// <summary>
+        /// Delete a file
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        public static void Delete(string path)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(path))
+            {
+                Delete(obja);
+            }
+        }
+
+        /// <summary>
+        /// Rename file.
+        /// </summary>
+        /// <param name="path">The file to rename.</param>
+        /// <param name="new_name">The target NT path.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static void Rename(string path, string new_name)
+        {
+            using (NtFile file = Open(path, null, FileAccessRights.Delete,
+                FileShareMode.Read | FileShareMode.Delete, FileOpenOptions.None))
+            {
+                file.Rename(new_name);
+            }
+        }
+
+        /// <summary>
+        /// Create a hardlink to another file.
+        /// </summary>
+        /// <param name="path">The file to hardlink to.</param>
+        /// <param name="linkname">The desintation hardlink path.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static void CreateHardlink(string path, string linkname)
+        {
+            using (NtFile file = Open(path, null, FileAccessRights.MaximumAllowed,
+                FileShareMode.Read, FileOpenOptions.NonDirectoryFile))
+            {
+                file.CreateHardlink(linkname);
+            }
+        }
+
+        /// <summary>
+        /// Create a mount point.
+        /// </summary>
+        /// <param name="path">The path to the mount point to create.</param>
+        /// <param name="substitute_name">The substitute name to reparse to.</param>
+        /// <param name="print_name">The print name to display (can be null).</param>
+        public static void CreateMountPoint(string path, string substitute_name, string print_name)
+        {
+            using (NtFile file = Create(path, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
+                FileShareMode.None, FileOpenOptions.DirectoryFile | FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint,
+                FileDisposition.OpenIf, null))
+            {
+                file.SetMountPoint(substitute_name, print_name);
+            }
+        }
+
+        /// <summary>
+        /// Create a symlink.
+        /// </summary>
+        /// <param name="path">The path to the mount point to create.</param>
+        /// <param name="directory">True to create a directory symlink, false for a file.</param>
+        /// <param name="substitute_name">The substitute name to reparse to.</param>
+        /// <param name="print_name">The print name to display.</param>
+        /// <param name="flags">Additional flags for the symlink.</param>
+        public static void CreateSymlink(string path, bool directory, string substitute_name, string print_name, SymlinkReparseBufferFlags flags)
+        {
+            using (NtFile file = Create(path, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
+                FileShareMode.None, (directory ? FileOpenOptions.DirectoryFile : FileOpenOptions.NonDirectoryFile)
+                | FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint,
+                FileDisposition.OpenIf, null))
+            {
+                file.SetSymlink(substitute_name, print_name, flags);
+            }
+        }
+
+        /// <summary>
+        /// Get the reparse point buffer for the file.
+        /// </summary>
+        /// <param name="path">The path to the reparse point.</param>
+        /// <returns>The reparse point buffer.</returns>
+        public static ReparseBuffer GetReparsePoint(string path)
+        {
+            using (NtFile file = Open(path, null, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
+                FileShareMode.None, FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint))
+            {
+                return file.GetReparsePoint();
+            }
+        }
+
+        /// <summary>
+        /// Delete the reparse point buffer.
+        /// </summary>
+        /// <param name="path">The path to the reparse point.</param>
+        /// <returns>The original reparse buffer.</returns>
+        public static ReparseBuffer DeleteReparsePoint(string path)
+        {
+            using (NtFile file = Open(path, null, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
+                FileShareMode.None, FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint))
+            {
+                return file.DeleteReparsePoint();
+            }
+        }
+
+        #endregion
+
+        #region Public Methods
 
         /// <summary>
         /// Send a Device IO Control code to the file driver
@@ -1844,32 +2321,6 @@ namespace NtApiDotNet
         public Task<byte[]> FsControlAsync(NtIoControlCode control_code, byte[] input_buffer, int max_output)
         {
             return FsControlAsync(control_code, input_buffer, max_output, CancellationToken.None);
-        }
-
-        private NtResult<int> IoControlGeneric(IoControlFunction func, NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, bool throw_on_error)
-        {
-            using (NtAsyncResult result = new NtAsyncResult(this))
-            {
-                return result.CompleteCall(func(Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
-                    control_code.ToInt32(), GetSafePointer(input_buffer), GetSafeLength(input_buffer), GetSafePointer(output_buffer),
-                    GetSafeLength(output_buffer))).CreateResult(throw_on_error, () => result.Information32);
-            }
-        }
-
-        private NtResult<byte[]> IoControlGeneric(IoControlFunction func, NtIoControlCode control_code, byte[] input_buffer, int max_output, bool throw_on_error)
-        {
-            using (SafeHGlobalBuffer input = input_buffer != null ? new SafeHGlobalBuffer(input_buffer) : null)
-            {
-                using (SafeHGlobalBuffer output = max_output > 0 ? new SafeHGlobalBuffer(max_output) : null)
-                {
-                    var result = IoControlGeneric(func, control_code, input, output, throw_on_error);
-                    if (result.IsSuccess && output != null)
-                    {
-                        return new NtResult<byte[]>(result.Status, output.ReadBytes(result.Result));
-                    }
-                    return new NtResult<byte[]>(result.Status, new byte[0]);
-                }
-            }
         }
 
         /// <summary>
@@ -1977,93 +2428,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Open a file
-        /// </summary>
-        /// <param name="obj_attributes">The object attributes</param>
-        /// <param name="desired_access">The desired access for the file handle</param>
-        /// <param name="share_access">The file share access</param>
-        /// <param name="open_options">File open options</param>
-        /// <param name="throw_on_error">True to throw an exception on error.</param>
-        /// <returns>The NT status code and object result.</returns>
-        public static NtResult<NtFile> Open(ObjectAttributes obj_attributes, FileAccessRights desired_access,
-            FileShareMode share_access, FileOpenOptions open_options, bool throw_on_error)
-        {
-            IoStatus iostatus = new IoStatus();
-            return NtSystemCalls.NtOpenFile(out SafeKernelObjectHandle handle, desired_access, obj_attributes, iostatus, share_access, open_options)
-                .CreateResult(throw_on_error, () => CreateFileObject(handle, iostatus));
-        }
-
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, desired_access.ToSpecificAccess<FileAccessRights>(), FileShareMode.Read | FileShareMode.Delete,
-                FileOpenOptions.None, throw_on_error).Cast<NtObject>();
-        }
-
-        /// <summary>
-        /// Open a file
-        /// </summary>
-        /// <param name="obj_attributes">The object attributes</param>f
-        /// <param name="desired_access">The desired access for the file handle</param>
-        /// <param name="share_access">The file share access</param>
-        /// <param name="open_options">File open options</param>
-        /// <returns>The opened file</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtFile Open(ObjectAttributes obj_attributes, FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options)
-        {
-            return Open(obj_attributes, desired_access, share_access, open_options, true).Result;
-        }
-
-        /// <summary>
-        /// Open a file
-        /// </summary>
-        /// <param name="path">The path to the file</param>
-        /// <param name="root">The root directory if path is relative.</param>
-        /// <param name="desired_access">The desired access for the file handle</param>
-        /// <param name="shared_access">The file share access</param>
-        /// <param name="open_options">File open options</param>
-        /// <param name="throw_on_error">True to throw an exception on error.</param>
-        /// <returns>The opened file</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtResult<NtFile> Open(string path, NtObject root, FileAccessRights desired_access,
-            FileShareMode shared_access, FileOpenOptions open_options, bool throw_on_error)
-        {
-            using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
-            {
-                return Open(obja, desired_access, shared_access, open_options, throw_on_error);
-            }
-        }
-
-        /// <summary>
-        /// Open a file
-        /// </summary>
-        /// <param name="path">The path to the file</param>
-        /// <param name="root">The root directory if path is relative.</param>
-        /// <param name="desired_access">The desired access for the file handle</param>
-        /// <param name="shared_access">The file share access</param>
-        /// <param name="open_options">File open options</param>
-        /// <returns>The opened file</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtFile Open(string path, NtObject root, FileAccessRights desired_access,
-            FileShareMode shared_access, FileOpenOptions open_options)
-        {
-            return Open(path, root, desired_access, shared_access, open_options, true).Result;
-        }
-
-        /// <summary>
-        /// Open a file
-        /// </summary>
-        /// <param name="path">The path to the file</param>
-        /// <param name="root">The root directory if path is relative.</param>
-        /// <param name="desired_access">The desired access for the file handle</param>
-        /// <returns>The opened file</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtFile Open(string path, NtObject root, FileAccessRights desired_access)
-        {
-            return Open(path, root, desired_access,
-                FileShareMode.Read | FileShareMode.Delete, FileOpenOptions.None);
-        }
-
-        /// <summary>
         /// Re-open an existing file for different access.
         /// </summary>
         /// <param name="desired_access">The desired access for the file handle</param>
@@ -2094,125 +2458,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get object ID for current file
-        /// </summary>
-        /// <returns>The object ID as a string</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public string FileId
-        {
-            get
-            {
-                var internal_info = Query<FileInternalInformation>(FileInformationClass.FileInternalInformation);
-                return NtFileUtils.FileIdToString(internal_info.IndexNumber.QuadPart);
-            }
-        }
-
-        /// <summary>
-        /// Get or set the attributes of a file.
-        /// </summary>
-        /// <returns>The file attributes</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public FileAttributes FileAttributes
-        {
-            get
-            {
-                return Query<FileBasicInformation>(FileInformationClass.FileBasicInformation).FileAttributes;
-            }
-            set
-            {
-                var basic_info = new FileBasicInformation() { FileAttributes = value };
-                Set(FileInformationClass.FileBasicInformation, basic_info);
-            }
-        }
-
-        /// <summary>
-        /// Get whether this file represents a directory.
-        /// </summary>
-        public bool IsDirectory
-        {
-            get
-            {
-                if (!_is_directory.HasValue)
-                {
-                    _is_directory = (FileAttributes & FileAttributes.Directory) == FileAttributes.Directory;
-                }
-                return _is_directory.Value;
-            }
-        }
-
-        /// <summary>
-        /// Get whether this file repsents a reparse point.
-        /// </summary>
-        public bool IsReparsePoint
-        {
-            get
-            {
-                return (FileAttributes & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint;
-            }
-        }
-
-        /// <summary>
-        /// The result of opening the file, whether it was created, overwritten etc.
-        /// </summary>
-        public FileOpenResult OpenResult
-        {
-            get; private set;
-        }
-
-        /// <summary>
-        /// Get the object ID of a file as a string
-        /// </summary>
-        /// <param name="path">The path to the file</param>
-        /// <returns>The object ID as a string</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public static string GetFileId(string path)
-        {
-            using (NtFile file = Open(path, null, FileAccessRights.MaximumAllowed, FileShareMode.None, FileOpenOptions.None))
-            {
-                return file.FileId;
-            }
-        }
-
-        /// <summary>
-        /// Open a file by its object ID
-        /// </summary>
-        /// <param name="volume">A handle to the volume on which the file resides.</param>
-        /// <param name="id">The object ID as a binary string</param>
-        /// <param name="desired_access">The desired access for the file</param>
-        /// <param name="share_access">File share access</param>
-        /// <param name="open_options">Open options.</param>
-        /// <param name="throw_on_error">True to throw on error</param>
-        /// <returns>The opened file object</returns>
-        public static NtResult<NtFile> OpenFileById(NtFile volume, string id,
-            FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options, bool throw_on_error)
-        {
-            using (ObjectAttributes obja = new ObjectAttributes(id, AttributeFlags.CaseInsensitive, volume, null, null))
-            {
-                SafeKernelObjectHandle handle;
-                IoStatus iostatus = new IoStatus();
-                return NtSystemCalls.NtOpenFile(out handle, desired_access, obja,
-                    iostatus, share_access, open_options | FileOpenOptions.OpenByFileId)
-                    .CreateResult(throw_on_error, () => new NtFile(handle, iostatus));
-            }
-        }
-
-        /// <summary>
-        /// Open a file by its object ID
-        /// </summary>
-        /// <param name="volume">A handle to the volume on which the file resides.</param>
-        /// <param name="id">The object ID as a binary string</param>
-        /// <param name="desired_access">The desired access for the file</param>
-        /// <param name="share_access">File share access</param>
-        /// <param name="open_options">Open options.</param>
-        /// <returns>The opened file object</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtFile OpenFileById(NtFile volume, string id,
-            FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options)
-        {
-            return OpenFileById(volume, id, desired_access, share_access, open_options, true).Result;
-        }
-
-        /// <summary>
         /// Delete the file. Must have been opened with DELETE access.
         /// </summary>
         /// <exception cref="NtException">Thrown on error.</exception>
@@ -2222,81 +2467,12 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Delete a file
-        /// </summary>
-        /// <param name="obj_attributes">The object attributes for the file.</param>
-        /// <param name="throw_on_error">True to throw an exception on error</param>
-        /// <returns>The status result of the delete</returns>
-        public static NtStatus Delete(ObjectAttributes obj_attributes, bool throw_on_error)
-        {
-            return NtSystemCalls.NtDeleteFile(obj_attributes).ToNtException(throw_on_error);
-        }
-
-        /// <summary>
-        /// Delete a file
-        /// </summary>
-        /// <param name="obj_attributes">The object attributes for the file.</param>
-        public static void Delete(ObjectAttributes obj_attributes)
-        {
-            Delete(obj_attributes, true);
-        }
-
-        /// <summary>
-        /// Delete a file
-        /// </summary>
-        /// <param name="path">The path to the file.</param>
-        public static void Delete(string path)
-        {
-            using (ObjectAttributes obja = new ObjectAttributes(path))
-            {
-                Delete(obja);
-            }
-        }
-
-        /// <summary>
         /// Delete the file (extended Windows version). Must have been opened with DELETE access.
         /// </summary>
         /// <exception cref="NtException">Thrown on error.</exception>
         public void DeleteEx(FileDispositionInformationExFlags flags)
         {
             Set(FileInformationClass.FileDispositionInformationEx, new FileDispositionInformationEx() { Flags = flags });
-        }
-
-        private void DoRenameEx(string filename, NtFile root, FileRenameInformationExFlags flags)
-        {
-            FileRenameInformationEx information = new FileRenameInformationEx
-            {
-                Flags = flags,
-                RootDirectory = root.GetHandle().DangerousGetHandle()
-            };
-            char[] chars = filename.ToCharArray();
-            information.FileNameLength = chars.Length * 2;
-            using (var buffer = information.ToBuffer(information.FileNameLength, true))
-            {
-                buffer.Data.WriteArray(0, chars, 0, chars.Length);
-                SetBuffer(FileInformationClass.FileRenameInformationEx, buffer);
-            }
-        }
-
-        private void DoLinkRename(FileInformationClass file_info, string linkname, NtFile root, bool replace_if_exists)
-        {
-            FileLinkRenameInformation link = new FileLinkRenameInformation
-            {
-                ReplaceIfExists = replace_if_exists,
-                RootDirectory = root.GetHandle().DangerousGetHandle()
-            };
-            char[] chars = linkname.ToCharArray();
-            link.FileNameLength = chars.Length * 2;
-            using (var buffer = link.ToBuffer(link.FileNameLength, true))
-            {
-                buffer.Data.WriteArray(0, chars, 0, chars.Length);
-                SetBuffer(file_info, buffer);
-            }
-        }
-
-        private void DoLinkRename(FileInformationClass file_info, string linkname, NtFile root)
-        {
-            DoLinkRename(file_info, linkname, root, true);
         }
 
         /// <summary>
@@ -2318,21 +2494,6 @@ namespace NtApiDotNet
         public void CreateHardlink(string linkname)
         {
             DoLinkRename(FileInformationClass.FileLinkInformation, linkname, null);
-        }
-
-        /// <summary>
-        /// Create a hardlink to another file.
-        /// </summary>
-        /// <param name="path">The file to hardlink to.</param>
-        /// <param name="linkname">The desintation hardlink path.</param>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public static void CreateHardlink(string path, string linkname)
-        {
-            using (NtFile file = Open(path, null, FileAccessRights.MaximumAllowed,
-                FileShareMode.Read, FileOpenOptions.NonDirectoryFile))
-            {
-                file.CreateHardlink(linkname);
-            }
         }
 
         /// <summary>
@@ -2380,21 +2541,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Rename file.
-        /// </summary>
-        /// <param name="path">The file to rename.</param>
-        /// <param name="new_name">The target NT path.</param>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public static void Rename(string path, string new_name)
-        {
-            using (NtFile file = Open(path, null, FileAccessRights.Delete,
-                FileShareMode.Read | FileShareMode.Delete, FileOpenOptions.None))
-            {
-                file.Rename(new_name);
-            }
-        }
-
-        /// <summary>
         /// Rename (extended Windows version) this file with an absolute path.
         /// </summary>
         /// <param name="new_name">The target absolute NT path.</param>
@@ -2439,41 +2585,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Create a mount point.
-        /// </summary>
-        /// <param name="path">The path to the mount point to create.</param>
-        /// <param name="substitute_name">The substitute name to reparse to.</param>
-        /// <param name="print_name">The print name to display (can be null).</param>
-        public static void CreateMountPoint(string path, string substitute_name, string print_name)
-        {
-            using (NtFile file = Create(path, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
-                FileShareMode.None, FileOpenOptions.DirectoryFile | FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint,
-                FileDisposition.OpenIf, null))
-            {
-                file.SetMountPoint(substitute_name, print_name);
-            }
-        }
-
-        /// <summary>
-        /// Create a symlink.
-        /// </summary>
-        /// <param name="path">The path to the mount point to create.</param>
-        /// <param name="directory">True to create a directory symlink, false for a file.</param>
-        /// <param name="substitute_name">The substitute name to reparse to.</param>
-        /// <param name="print_name">The print name to display.</param>
-        /// <param name="flags">Additional flags for the symlink.</param>
-        public static void CreateSymlink(string path, bool directory, string substitute_name, string print_name, SymlinkReparseBufferFlags flags)
-        {
-            using (NtFile file = Create(path, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
-                FileShareMode.None, (directory ? FileOpenOptions.DirectoryFile : FileOpenOptions.NonDirectoryFile)
-                | FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint,
-                FileDisposition.OpenIf, null))
-            {
-                file.SetSymlink(substitute_name, print_name, flags);
-            }
-        }
-
-        /// <summary>
         /// Get the reparse point buffer for the file.
         /// </summary>
         /// <param name="opaque_buffer">If the reparse tag isn't known 
@@ -2499,20 +2610,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get the reparse point buffer for the file.
-        /// </summary>
-        /// <param name="path">The path to the reparse point.</param>
-        /// <returns>The reparse point buffer.</returns>
-        public static ReparseBuffer GetReparsePoint(string path)
-        {
-            using (NtFile file = Open(path, null, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
-                FileShareMode.None, FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint))
-            {
-                return file.GetReparsePoint();
-            }
-        }
-
-        /// <summary>
         /// Delete the reparse point buffer
         /// </summary>
         /// <returns>The original reparse buffer.</returns>
@@ -2524,20 +2621,6 @@ namespace NtApiDotNet
                 FsControl(NtWellKnownIoControlCodes.FSCTL_DELETE_REPARSE_POINT, buffer, null);
             }
             return reparse;
-        }
-
-        /// <summary>
-        /// Delete the reparse point buffer.
-        /// </summary>
-        /// <param name="path">The path to the reparse point.</param>
-        /// <returns>The original reparse buffer.</returns>
-        public static ReparseBuffer DeleteReparsePoint(string path)
-        {
-            using (NtFile file = Open(path, null, FileAccessRights.Synchronize | FileAccessRights.MaximumAllowed,
-                FileShareMode.None, FileOpenOptions.SynchronousIoNonAlert | FileOpenOptions.OpenReparsePoint))
-            {
-                return file.DeleteReparsePoint();
-            }
         }
 
         /// <summary>
@@ -2795,23 +2878,6 @@ namespace NtApiDotNet
             return ReadAsync(length, position, CancellationToken.None);
         }
 
-        private async Task<NtResult<IoStatus>> RunFileCallAsync(Func<NtAsyncResult, NtStatus> func, CancellationToken token, bool throw_on_error)
-        {
-            using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
-            {
-                using (NtAsyncResult result = new NtAsyncResult(this))
-                {
-                    NtStatus status = await result.CompleteCallAsync(func(result), linked_cts.Token);
-                    if (status == NtStatus.STATUS_PENDING)
-                    {
-                        result.Cancel();
-                        return NtStatus.STATUS_CANCELLED.CreateResultFromError<IoStatus>(throw_on_error);
-                    }
-                    return status.CreateResult(throw_on_error, () => result.Result);
-                }
-            }
-        }
-
         /// <summary>
         /// Write data to a file at a specific position asynchronously.
         /// </summary>
@@ -2996,12 +3062,12 @@ namespace NtApiDotNet
         /// <param name="token">Cancellation token to cancel async operation.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
-        public async Task<NtStatus> LockAsync(long offset, long size, bool fail_immediately, 
+        public async Task<NtStatus> LockAsync(long offset, long size, bool fail_immediately,
             bool exclusive, CancellationToken token, bool throw_on_error)
         {
             var result = await RunFileCallAsync(r => NtSystemCalls.NtLockFile(Handle, r.EventHandle, IntPtr.Zero,
                                                                      IntPtr.Zero, r.IoStatusBuffer, new LargeInteger(offset),
-                                                                     new LargeInteger(size), 0, fail_immediately, exclusive), 
+                                                                     new LargeInteger(size), 0, fail_immediately, exclusive),
                                                                      token, throw_on_error);
             return result.Status;
         }
@@ -3046,56 +3112,24 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="offset">The offset into the file to unlock</param>
         /// <param name="size">The number of bytes to unlock</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public void Unlock(long offset, long size)
         {
+            Unlock(offset, size, true);
+        }
+
+        /// <summary>
+        /// Unlock part of a file previously locked with Lock
+        /// </summary>
+        /// <param name="offset">The offset into the file to unlock</param>
+        /// <param name="size">The number of bytes to unlock</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus Unlock(long offset, long size, bool throw_on_error)
+        {
             IoStatus io_status = new IoStatus();
-            NtSystemCalls.NtUnlockFile(Handle, io_status,
-                new LargeInteger(offset), new LargeInteger(size), 0).ToNtException();
-        }
-
-        /// <summary>
-        /// Get or set the current file position.
-        /// </summary>
-        public long Position
-        {
-            get
-            {
-                return Query<FilePositionInformation>(FileInformationClass.FilePositionInformation).CurrentByteOffset.QuadPart;
-            }
-
-            set
-            {
-                var position = new FilePositionInformation();
-                position.CurrentByteOffset.QuadPart = value;
-
-                Set(FileInformationClass.FilePositionInformation, position);
-            }
-        }
-
-        /// <summary>
-        /// Get or sets the file's length
-        /// </summary>
-        public long Length
-        {
-            get
-            {
-                return Query<FileStandardInformation>(FileInformationClass.FileStandardInformation).EndOfFile.QuadPart;
-            }
-
-            set
-            {
-                SetEndOfFile(value);
-            }
-        }
-
-        private static SafeFileHandle DuplicateAsFile(SafeKernelObjectHandle handle)
-        {
-            using (SafeKernelObjectHandle dup_handle = DuplicateHandle(handle))
-            {
-                SafeFileHandle ret = new SafeFileHandle(dup_handle.DangerousGetHandle(), true);
-                dup_handle.SetHandleAsInvalid();
-                return ret;
-            }
+            return NtSystemCalls.NtUnlockFile(Handle, io_status,
+                new LargeInteger(offset), new LargeInteger(size), 0).ToNtException(throw_on_error);
         }
 
         /// <summary>
@@ -3115,217 +3149,26 @@ namespace NtApiDotNet
             return new FileStream(DuplicateAsFile(Handle), access);
         }
 
-        [Flags]
-        enum FinalPathNameFlags
+        /// <summary>
+        /// Get the Win32 path name for the file.
+        /// </summary>
+        /// <param name="flags">The flags to determine what path information to get.</param>
+        /// <returns>The path.</returns>
+        /// <exception cref="NtException">Throw on error.</exception>
+        public string GetWin32PathName(Win32PathName flags)
         {
-            None = 0,
-            NameGuid = 1,
-            NameNt = 2,
-            NameNone = 4,
-            Opened = 8,
-        }
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern int GetFinalPathNameByHandle(SafeKernelObjectHandle hFile, StringBuilder lpszFilePath,
-            int cchFilePath, FinalPathNameFlags dwFlags);
-
-        private string GetPathNameInternal(FinalPathNameFlags flags)
-        {
-            StringBuilder builder = new StringBuilder(1000);
-            if (GetFinalPathNameByHandle(Handle, builder, builder.Capacity, flags) == 0)
-            {
-                throw new SafeWin32Exception();
-            }
-            return builder.ToString();
+            return GetWin32PathName(flags, true).Result;
         }
 
         /// <summary>
         /// Get the Win32 path name for the file.
         /// </summary>
-        /// <returns>The path, String.Empty on error.</returns>
-        public string Win32PathName
+        /// <param name="flags">The flags to determine what path information to get.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The path.</returns>
+        public NtResult<string> GetWin32PathName(Win32PathName flags, bool throw_on_error)
         {
-            get
-            {
-                try
-                {
-                    string ret = GetPathNameInternal(FinalPathNameFlags.None);
-                    if (ret.StartsWith(@"\\?\"))
-                    {
-                        if (ret.StartsWith(@"\\?\GLOBALROOT\", StringComparison.OrdinalIgnoreCase))
-                        {
-                            return ret;
-                        }
-                        else if (ret.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase))
-                        {
-                            return @"\\" + ret.Substring(8);
-                        }
-                        else
-                        {
-                            return ret.Substring(4);
-                        }
-                    }
-                    return ret;
-                }
-                catch (Win32Exception)
-                {
-                    return String.Empty;
-                }
-            }
-        }
-
-        private T QueryVolumeFixed<T>(FsInformationClass info_class) where T : new()
-        {
-            using (var buffer = new SafeStructureInOutBuffer<T>())
-            {
-                IoStatus status = new IoStatus();
-                NtSystemCalls.NtQueryVolumeInformationFile(Handle, status, buffer,
-                    buffer.Length, info_class).ToNtException();
-                return buffer.Result;
-            }
-        }
-
-        private SafeStructureInOutBuffer<T> QueryVolume<T>(FsInformationClass info_class) where T : new()
-        {
-            SafeStructureInOutBuffer<T> ret = null;
-            NtStatus status = NtStatus.STATUS_BUFFER_TOO_SMALL;
-            try
-            {
-                int length = Marshal.SizeOf(typeof(T)) + 128;
-                while (true)
-                {
-                    ret = new SafeStructureInOutBuffer<T>(length, false);
-                    IoStatus io_status = new IoStatus();
-                    status = NtSystemCalls.NtQueryVolumeInformationFile(Handle, io_status, ret, ret.Length, info_class);
-                    if (status.IsSuccess())
-                        break;
-
-                    if ((status != NtStatus.STATUS_BUFFER_OVERFLOW) && (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH))
-                        throw new NtException(status);
-                    ret.Close();
-                    length *= 2;
-                }
-            }
-            finally
-            {
-                if (ret != null && !status.IsSuccess())
-                {
-                    ret.Close();
-                    ret = null;
-                }
-            }
-            return ret;
-        }
-
-        /// <summary>
-        /// Get the low-level device type of the file.
-        /// </summary>
-        /// <returns>The file device type.</returns>
-        public FileDeviceType DeviceType
-        {
-            get
-            {
-                return QueryVolumeFixed<FileFsDeviceInformation>(FsInformationClass.FileFsDeviceInformation).DeviceType;
-            }
-        }
-
-
-        /// <summary>
-        /// Get the low-level device characteristics of the file.
-        /// </summary>
-        /// <returns>The file device characteristics.</returns>
-        public FileDeviceCharacteristics Characteristics
-        {
-            get
-            {
-                return QueryVolumeFixed<FileFsDeviceInformation>(FsInformationClass.FileFsDeviceInformation).Characteristics;
-            }
-        }
-
-        private string TryGetName(FileInformationClass info_class)
-        {
-            using (var buffer = new SafeStructureInOutBuffer<FileNameInformation>(32 * 1024, true))
-            {
-                IoStatus status = new IoStatus();
-                NtSystemCalls.NtQueryInformationFile(Handle,
-                    status, buffer, buffer.Length, info_class).ToNtException();
-                char[] result = new char[buffer.Result.NameLength / 2];
-                buffer.Data.ReadArray(0, result, 0, result.Length);
-                return new string(result);
-            }
-        }
-
-        private void SetName(FileInformationClass info_class, string name)
-        {
-            byte[] data = Encoding.Unicode.GetBytes(name);
-            FileNameInformation info = new FileNameInformation() { NameLength = data.Length };
-            using (var buffer = new SafeStructureInOutBuffer<FileNameInformation>(info, data.Length, true))
-            {
-                buffer.Data.WriteBytes(data);
-                SetBuffer(info_class, buffer);
-            }
-        }
-
-        /// <summary>
-        /// Get the filename with the volume path.
-        /// </summary>
-        public string FileName
-        {
-            get
-            {
-                return TryGetName(FileInformationClass.FileNameInformation);
-            }
-        }
-
-        /// <summary>
-        /// Get the associated short filename
-        /// </summary>
-        public string FileShortName
-        {
-            get
-            {
-                return TryGetName(FileInformationClass.FileAlternateNameInformation);
-            }
-            set
-            {
-                SetName(FileInformationClass.FileShortNameInformation, value);
-            }
-        }
-
-        /// <summary>
-        /// Get the name of the file.
-        /// </summary>
-        /// <returns>The name of the file.</returns>
-        public override string FullPath
-        {
-            get
-            {
-                if (DeviceType != FileDeviceType.NAMED_PIPE)
-                {
-                    return base.FullPath;
-                }
-                else
-                {
-                    return base.FullPath;
-                }
-            }
-        }
-
-        private static NtIoControlCode GetOplockFsctl(OplockRequestLevel level)
-        {
-            switch (level)
-            {
-                case OplockRequestLevel.Level1:
-                    return NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK_LEVEL_1;
-                case OplockRequestLevel.Level2:
-                    return NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK_LEVEL_2;
-                case OplockRequestLevel.Batch:
-                    return NtWellKnownIoControlCodes.FSCTL_REQUEST_BATCH_OPLOCK;
-                case OplockRequestLevel.Filter:
-                    return NtWellKnownIoControlCodes.FSCTL_REQUEST_FILTER_OPLOCK;
-                default:
-                    throw new ArgumentException("Invalid oplock request level", "level");
-            }
+            return Win32Utils.GetWin32PathName(this, flags, true);
         }
 
         /// <summary>
@@ -3776,28 +3619,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get the file mode.
-        /// </summary>
-        public FileOpenOptions Mode
-        {
-            get
-            {
-                return (FileOpenOptions)Query<int>(FileInformationClass.FileModeInformation);
-            }
-        }
-
-        /// <summary>
-        /// Get file access information.
-        /// </summary>
-        public AccessMask Access
-        {
-            get
-            {
-                return Query<AccessMask>(FileInformationClass.FileAccessInformation);
-            }
-        }
-
-        /// <summary>
         /// Get list of process ids using this file.
         /// </summary>
         /// <returns>The list of process ids.</returns>
@@ -3812,57 +3633,6 @@ namespace NtApiDotNet
                 IntPtr[] pids = new IntPtr[result.NumberOfProcessIdsInList];
                 buffer.Data.ReadArray(0, pids, 0, result.NumberOfProcessIdsInList);
                 return pids.Select(p => p.ToInt32());
-            }
-        }
-
-        /// <summary>
-        /// Gets whether the file is on a remote file system.
-        /// </summary>
-        public bool IsRemote
-        {
-            get
-            {
-                return Query<bool>(FileInformationClass.FileIsRemoteDeviceInformation);
-            }
-        }
-
-        /// <summary>
-        /// Get or set whether this file/directory is case sensitive.
-        /// </summary>
-        public bool CaseSensitive
-        {
-            get
-            {
-                var result = Query(FileInformationClass.FileCaseSensitiveInformation, 0, false);
-                if (!result.IsSuccess)
-                {
-                    return false;
-                }
-
-                return (result.Result & 1) == 1;
-            }
-
-            set
-            {
-                Set(FileInformationClass.FileCaseSensitiveInformation, value ? 1 : 0);
-            }
-        }
-
-        private bool VisitFileEntry(string filename, bool directory, Func<NtFile, bool> visitor, FileAccessRights desired_access,
-            FileShareMode share_access, FileOpenOptions open_options)
-        {
-            using (ObjectAttributes obja = new ObjectAttributes(filename, AttributeFlags.CaseInsensitive, this))
-            {
-                using (var result = Open(obja, desired_access, share_access, open_options, false))
-                {
-                    if (!result.IsSuccess)
-                    {
-                        return true;
-                    }
-
-                    result.Result._is_directory = directory;
-                    return visitor(result.Result);
-                }
             }
         }
 
@@ -3976,28 +3746,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get or set the file's compression format.
-        /// </summary>
-        public CompressionFormat CompressionFormat
-        {
-            get
-            {
-                using (var buffer = new SafeStructureInOutBuffer<int>())
-                {
-                    FsControl(NtWellKnownIoControlCodes.FSCTL_GET_COMPRESSION, SafeHGlobalBuffer.Null, buffer);
-                    return (CompressionFormat)buffer.Result;
-                }
-            }
-            set
-            {
-                using (var buffer = ((int)value).ToBuffer())
-                {
-                    FsControl(NtWellKnownIoControlCodes.FSCTL_SET_COMPRESSION, buffer, SafeHGlobalBuffer.Null);
-                }
-            }
-        }
-
-        /// <summary>
         /// Find files in a directory by the owner SID.
         /// </summary>
         /// <param name="sid">The owner SID.</param>
@@ -4062,7 +3810,7 @@ namespace NtApiDotNet
         public override NtStatus QueryInformation(FileInformationClass info_class, SafeBuffer buffer, out int return_length)
         {
             IoStatus io_status = new IoStatus();
-            NtStatus status = NtSystemCalls.NtQueryInformationFile(Handle, io_status,buffer, buffer.GetLength(), info_class);
+            NtStatus status = NtSystemCalls.NtQueryInformationFile(Handle, io_status, buffer, buffer.GetLength(), info_class);
             return_length = io_status.Information32;
             return status;
         }
@@ -4077,6 +3825,167 @@ namespace NtApiDotNet
         {
             IoStatus io_status = new IoStatus();
             return NtSystemCalls.NtSetInformationFile(Handle, io_status, buffer, buffer.GetLength(), info_class);
+        }
+
+        #endregion
+
+        #region Public Properties
+
+        /// <summary>
+        /// Get object ID for current file
+        /// </summary>
+        /// <returns>The object ID as a string</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public string FileId
+        {
+            get
+            {
+                var internal_info = Query<FileInternalInformation>(FileInformationClass.FileInternalInformation);
+                return NtFileUtils.FileIdToString(internal_info.IndexNumber.QuadPart);
+            }
+        }
+
+        /// <summary>
+        /// Get or set the attributes of a file.
+        /// </summary>
+        /// <returns>The file attributes</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public FileAttributes FileAttributes
+        {
+            get
+            {
+                return Query<FileBasicInformation>(FileInformationClass.FileBasicInformation).FileAttributes;
+            }
+            set
+            {
+                var basic_info = new FileBasicInformation() { FileAttributes = value };
+                Set(FileInformationClass.FileBasicInformation, basic_info);
+            }
+        }
+
+        /// <summary>
+        /// Get whether this file represents a directory.
+        /// </summary>
+        public bool IsDirectory
+        {
+            get
+            {
+                if (!_is_directory.HasValue)
+                {
+                    _is_directory = (FileAttributes & FileAttributes.Directory) == FileAttributes.Directory;
+                }
+                return _is_directory.Value;
+            }
+        }
+
+        /// <summary>
+        /// Get whether this file repsents a reparse point.
+        /// </summary>
+        public bool IsReparsePoint
+        {
+            get
+            {
+                return (FileAttributes & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint;
+            }
+        }
+
+        /// <summary>
+        /// The result of opening the file, whether it was created, overwritten etc.
+        /// </summary>
+        public FileOpenResult OpenResult { get; }
+
+        /// <summary>
+        /// Get or set the current file position.
+        /// </summary>
+        public long Position
+        {
+            get
+            {
+                return Query<FilePositionInformation>(FileInformationClass.FilePositionInformation).CurrentByteOffset.QuadPart;
+            }
+
+            set
+            {
+                var position = new FilePositionInformation();
+                position.CurrentByteOffset.QuadPart = value;
+
+                Set(FileInformationClass.FilePositionInformation, position);
+            }
+        }
+
+        /// <summary>
+        /// Get or sets the file's length
+        /// </summary>
+        public long Length
+        {
+            get
+            {
+                return Query<FileStandardInformation>(FileInformationClass.FileStandardInformation).EndOfFile.QuadPart;
+            }
+
+            set
+            {
+                SetEndOfFile(value);
+            }
+        }
+
+        /// <summary>
+        /// Get the Win32 path name for the file.
+        /// </summary>
+        /// <returns>The path, String.Empty on error.</returns>
+        public string Win32PathName
+        {
+            get
+            {
+                var result = GetWin32PathName(Win32.Win32PathName.None, false);
+                if (!result.IsSuccess)
+                {
+                    return string.Empty;
+                }
+
+                var ret = result.Result;
+
+                if (ret.StartsWith(@"\\?\"))
+                {
+                    if (ret.StartsWith(@"\\?\GLOBALROOT\", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return ret;
+                    }
+                    else if (ret.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return @"\\" + ret.Substring(8);
+                    }
+                    else
+                    {
+                        return ret.Substring(4);
+                    }
+                }
+                return ret;
+            }
+        }
+
+        /// <summary>
+        /// Get the low-level device type of the file.
+        /// </summary>
+        /// <returns>The file device type.</returns>
+        public FileDeviceType DeviceType
+        {
+            get
+            {
+                return QueryVolumeFixed<FileFsDeviceInformation>(FsInformationClass.FileFsDeviceInformation).DeviceType;
+            }
+        }
+
+        /// <summary>
+        /// Get the low-level device characteristics of the file.
+        /// </summary>
+        /// <returns>The file device characteristics.</returns>
+        public FileDeviceCharacteristics Characteristics
+        {
+            get
+            {
+                return QueryVolumeFixed<FileFsDeviceInformation>(FsInformationClass.FileFsDeviceInformation).Characteristics;
+            }
         }
 
         /// <summary>
@@ -4095,5 +4004,131 @@ namespace NtApiDotNet
                 }
             }
         }
+
+        /// <summary>
+        /// Get or set the file's compression format.
+        /// </summary>
+        public CompressionFormat CompressionFormat
+        {
+            get
+            {
+                using (var buffer = new SafeStructureInOutBuffer<int>())
+                {
+                    FsControl(NtWellKnownIoControlCodes.FSCTL_GET_COMPRESSION, SafeHGlobalBuffer.Null, buffer);
+                    return (CompressionFormat)buffer.Result;
+                }
+            }
+            set
+            {
+                using (var buffer = ((int)value).ToBuffer())
+                {
+                    FsControl(NtWellKnownIoControlCodes.FSCTL_SET_COMPRESSION, buffer, SafeHGlobalBuffer.Null);
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Gets whether the file is on a remote file system.
+        /// </summary>
+        public bool IsRemote
+        {
+            get
+            {
+                return Query<bool>(FileInformationClass.FileIsRemoteDeviceInformation);
+            }
+        }
+
+        /// <summary>
+        /// Get or set whether this file/directory is case sensitive.
+        /// </summary>
+        public bool CaseSensitive
+        {
+            get
+            {
+                var result = Query(FileInformationClass.FileCaseSensitiveInformation, 0, false);
+                if (!result.IsSuccess)
+                {
+                    return false;
+                }
+
+                return (result.Result & 1) == 1;
+            }
+
+            set
+            {
+                Set(FileInformationClass.FileCaseSensitiveInformation, value ? 1 : 0);
+            }
+        }
+
+
+        /// <summary>
+        /// Get the file mode.
+        /// </summary>
+        public FileOpenOptions Mode
+        {
+            get
+            {
+                return (FileOpenOptions)Query<int>(FileInformationClass.FileModeInformation);
+            }
+        }
+
+        /// <summary>
+        /// Get file access information.
+        /// </summary>
+        public AccessMask Access
+        {
+            get
+            {
+                return Query<AccessMask>(FileInformationClass.FileAccessInformation);
+            }
+        }
+
+        /// <summary>
+        /// Get the filename with the volume path.
+        /// </summary>
+        public string FileName
+        {
+            get
+            {
+                return TryGetName(FileInformationClass.FileNameInformation);
+            }
+        }
+
+        /// <summary>
+        /// Get the associated short filename
+        /// </summary>
+        public string FileShortName
+        {
+            get
+            {
+                return TryGetName(FileInformationClass.FileAlternateNameInformation);
+            }
+            set
+            {
+                SetName(FileInformationClass.FileShortNameInformation, value);
+            }
+        }
+
+        /// <summary>
+        /// Get the name of the file.
+        /// </summary>
+        /// <returns>The name of the file.</returns>
+        public override string FullPath
+        {
+            get
+            {
+                if (DeviceType != FileDeviceType.NAMED_PIPE)
+                {
+                    return base.FullPath;
+                }
+                else
+                {
+                    return base.FullPath;
+                }
+            }
+        }
+
+        #endregion
     }
 }

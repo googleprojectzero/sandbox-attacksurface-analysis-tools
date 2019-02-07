@@ -85,6 +85,35 @@ namespace NtApiDotNet.Win32
         public WTS_CONNECTSTATE_CLASS State;
     }
 
+
+    /// <summary>
+    /// Flags for GetFinalPathNameByHandle.
+    /// </summary>
+    [Flags]
+    public enum Win32PathName
+    {
+        /// <summary>
+        /// No flags.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// GUID format.
+        /// </summary>
+        NameGuid = 1,
+        /// <summary>
+        /// NT format.
+        /// </summary>
+        NameNt = 2,
+        /// <summary>
+        /// No specific format.
+        /// </summary>
+        NameNone = 4,
+        /// <summary>
+        /// Opened file name.
+        /// </summary>
+        Opened = 8,
+    }
+
     internal static class Win32NativeMethods
     {
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -247,5 +276,10 @@ namespace NtApiDotNet.Win32
 
         [DllImport("wtsapi32.dll", SetLastError = true)]
         internal static extern void WTSFreeMemory(IntPtr memory);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern int GetFinalPathNameByHandle(SafeKernelObjectHandle hFile, StringBuilder lpszFilePath,
+            int cchFilePath, Win32PathName dwFlags);
+
     }
 }
