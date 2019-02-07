@@ -1214,8 +1214,7 @@ namespace NtApiDotNet
     {
         Acknowledge,
         ClosePending,
-        No2,
-        Notify
+        No2
     }
 
     [StructLayout(LayoutKind.Sequential), DataStart("Sid")]
@@ -1689,8 +1688,6 @@ namespace NtApiDotNet
                     return NtWellKnownIoControlCodes.FSCTL_OPBATCH_ACK_CLOSE_PENDING;
                 case OplockAcknowledgeLevel.No2:
                     return NtWellKnownIoControlCodes.FSCTL_OPLOCK_BREAK_ACK_NO_2;
-                case OplockAcknowledgeLevel.Notify:
-                    return NtWellKnownIoControlCodes.FSCTL_OPLOCK_BREAK_NOTIFY;
                 default:
                     throw new ArgumentException("Invalid oplock acknowledge level", "level");
             }
