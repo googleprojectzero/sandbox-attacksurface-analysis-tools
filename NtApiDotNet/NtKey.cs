@@ -435,8 +435,8 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtNotifyChangeMultipleKeys(
           SafeKernelObjectHandle MasterKeyHandle,
-          int Flags,
-          ObjectAttributes KeyObjectAttributes,
+          int Count,    // Can only be 1.
+          ObjectAttributes SubordinateObjects,
           SafeKernelObjectHandle Event,
           IntPtr ApcRoutine,
           IntPtr ApcContext,
