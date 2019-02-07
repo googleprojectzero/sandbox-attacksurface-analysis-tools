@@ -1438,8 +1438,10 @@ namespace NtApiDotNet
                                                     IntPtr OutputBuffer,
                                                     int OutputBufferLength);
 
-        private async Task<int> IoControlGenericAsync(IoControlFunction func,
-                        NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, CancellationToken token)
+        private async Task<NtResult<int>> IoControlGenericAsync(IoControlFunction func,
+                        NtIoControlCode control_code, SafeBuffer input_buffer, 
+                        SafeBuffer output_buffer, CancellationToken token,
+                        bool throw_on_error)
         {
             using (var linked_cts = CancellationTokenSource.CreateLinkedTokenSource(token, _cts.Token))
             {
@@ -1451,26 +1453,22 @@ namespace NtApiDotNet
                     if (status == NtStatus.STATUS_PENDING)
                     {
                         result.Cancel();
-                        throw new NtException(NtStatus.STATUS_CANCELLED);
+                        return NtStatus.STATUS_CANCELLED.CreateResultFromError<int>(throw_on_error);
                     }
-                    status.ToNtException();
-                    return result.Information32;
+                    return status.CreateResult(throw_on_error, () => result.Information32);
                 }
             }
         }
 
-        private async Task<byte[]> IoControlGenericAsync(IoControlFunction func, NtIoControlCode control_code, byte[] input_buffer, int max_output, CancellationToken token)
+        private async Task<NtResult<byte[]>> IoControlGenericAsync(IoControlFunction func, NtIoControlCode control_code, 
+            byte[] input_buffer, int max_output, CancellationToken token, bool throw_on_error)
         {
             using (SafeHGlobalBuffer input = input_buffer != null ? new SafeHGlobalBuffer(input_buffer) : null)
             {
                 using (SafeHGlobalBuffer output = max_output > 0 ? new SafeHGlobalBuffer(max_output) : null)
                 {
-                    int output_length = await IoControlGenericAsync(func, control_code, input, output, token);
-                    if (output != null)
-                    {
-                        return output.ReadBytes(output_length);
-                    }
-                    return new byte[0];
+                    var result = await IoControlGenericAsync(func, control_code, input, output, token, true);
+                    return result.Map(r => output != null ? output.ReadBytes(r) : new byte[0]);
                 }
             }
         }
@@ -2225,11 +2223,40 @@ namespace NtApiDotNet
         /// <param name="input_buffer">Input buffer can be null</param>
         /// <param name="output_buffer">Output buffer can be null</param>
         /// <param name="token">Cancellation token to cancel the async operation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <returns>The length of output bytes returned.</returns>
+        public Task<NtResult<int>> DeviceIoControlAsync(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, CancellationToken token, bool throw_on_error)
+        {
+            return IoControlGenericAsync(NtSystemCalls.NtDeviceIoControlFile, control_code, input_buffer, output_buffer, token, throw_on_error);
+        }
+
+        /// <summary>
+        /// Send a Device IO Control code to the file driver.
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="max_output">Maximum output buffer size</param>
+        /// <param name="token">Cancellation token to cancel the async operation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The output buffer returned by the kernel.</returns>
+        public Task<NtResult<byte[]>> DeviceIoControlAsync(NtIoControlCode control_code, byte[] input_buffer, int max_output, CancellationToken token, bool throw_on_error)
+        {
+            return IoControlGenericAsync(NtSystemCalls.NtDeviceIoControlFile, control_code, input_buffer, max_output, token, throw_on_error);
+        }
+
+        /// <summary>
+        /// Send a Device IO Control code to the file driver
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="output_buffer">Output buffer can be null</param>
+        /// <param name="token">Cancellation token to cancel the async operation.</param>
         /// <exception cref="NtException">Thrown on error.</exception>
         /// <returns>The length of output bytes returned.</returns>
         public Task<int> DeviceIoControlAsync(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, CancellationToken token)
         {
-            return IoControlGenericAsync(NtSystemCalls.NtDeviceIoControlFile, control_code, input_buffer, output_buffer, token);
+            return DeviceIoControlAsync(control_code, input_buffer, output_buffer, token, true).UnwrapNtResultAsync();
         }
 
         /// <summary>
@@ -2242,7 +2269,36 @@ namespace NtApiDotNet
         /// <returns>The output buffer returned by the kernel.</returns>
         public Task<byte[]> DeviceIoControlAsync(NtIoControlCode control_code, byte[] input_buffer, int max_output, CancellationToken token)
         {
-            return IoControlGenericAsync(NtSystemCalls.NtDeviceIoControlFile, control_code, input_buffer, max_output, token);
+            return DeviceIoControlAsync(control_code, input_buffer, max_output, token, true).UnwrapNtResultAsync();
+        }
+
+        /// <summary>
+        /// Send a File System Control code to the file driver
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="output_buffer">Output buffer can be null</param>
+        /// <param name="token">Cancellation token to cancel the async operation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <returns>The length of output bytes returned.</returns>
+        public Task<NtResult<int>> FsControlAsync(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, CancellationToken token, bool throw_on_error)
+        {
+            return IoControlGenericAsync(NtSystemCalls.NtFsControlFile, control_code, input_buffer, output_buffer, token, throw_on_error);
+        }
+
+        /// <summary>
+        /// Send a File System Control code to the file driver.
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="max_output">Maximum output buffer size</param>
+        /// <param name="token">Cancellation token to cancel the async operation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The output buffer returned by the kernel.</returns>
+        public Task<NtResult<byte[]>> FsControlAsync(NtIoControlCode control_code, byte[] input_buffer, int max_output, CancellationToken token, bool throw_on_error)
+        {
+            return IoControlGenericAsync(NtSystemCalls.NtFsControlFile, control_code, input_buffer, max_output, token, throw_on_error);
         }
 
         /// <summary>
@@ -2256,7 +2312,7 @@ namespace NtApiDotNet
         /// <returns>The length of output bytes returned.</returns>
         public Task<int> FsControlAsync(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, CancellationToken token)
         {
-            return IoControlGenericAsync(NtSystemCalls.NtFsControlFile, control_code, input_buffer, output_buffer, token);
+            return FsControlAsync(control_code, input_buffer, output_buffer, token, true).UnwrapNtResultAsync();
         }
 
         /// <summary>
@@ -2269,7 +2325,7 @@ namespace NtApiDotNet
         /// <returns>The output buffer returned by the kernel.</returns>
         public Task<byte[]> FsControlAsync(NtIoControlCode control_code, byte[] input_buffer, int max_output, CancellationToken token)
         {
-            return IoControlGenericAsync(NtSystemCalls.NtFsControlFile, control_code, input_buffer, max_output, token);
+            return FsControlAsync(control_code, input_buffer, max_output, token, true).UnwrapNtResultAsync();
         }
 
         /// <summary>
@@ -2320,6 +2376,60 @@ namespace NtApiDotNet
         public Task<byte[]> FsControlAsync(NtIoControlCode control_code, byte[] input_buffer, int max_output)
         {
             return FsControlAsync(control_code, input_buffer, max_output, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Send a Device IO Control code to the file driver
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="output_buffer">Output buffer can be null</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <returns>The length of output bytes returned.</returns>
+        public Task<NtResult<int>> DeviceIoControlAsync(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, bool throw_on_error)
+        {
+            return DeviceIoControlAsync(control_code, input_buffer, output_buffer, CancellationToken.None, throw_on_error);
+        }
+
+        /// <summary>
+        /// Send a Device IO Control code to the file driver.
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="max_output">Maximum output buffer size</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The output buffer returned by the kernel.</returns>
+        public Task<NtResult<byte[]>> DeviceIoControlAsync(NtIoControlCode control_code, byte[] input_buffer, int max_output, bool throw_on_error)
+        {
+            return DeviceIoControlAsync(control_code, input_buffer, max_output, CancellationToken.None, throw_on_error);
+        }
+
+        /// <summary>
+        /// Send a File System Control code to the file driver
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="output_buffer">Output buffer can be null</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <returns>The length of output bytes returned.</returns>
+        public Task<NtResult<int>> FsControlAsync(NtIoControlCode control_code, SafeBuffer input_buffer, SafeBuffer output_buffer, bool throw_on_error)
+        {
+            return FsControlAsync(control_code, input_buffer, output_buffer, CancellationToken.None, throw_on_error);
+        }
+
+        /// <summary>
+        /// Send a File System Control code to the file driver.
+        /// </summary>
+        /// <param name="control_code">The control code</param>
+        /// <param name="input_buffer">Input buffer can be null</param>
+        /// <param name="max_output">Maximum output buffer size</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The output buffer returned by the kernel.</returns>
+        public Task<NtResult<byte[]>> FsControlAsync(NtIoControlCode control_code, byte[] input_buffer, int max_output, bool throw_on_error)
+        {
+            return FsControlAsync(control_code, input_buffer, max_output, CancellationToken.None, throw_on_error);
         }
 
         /// <summary>
@@ -3184,9 +3294,30 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="level">The level of oplock to set.</param>
         /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        public Task<NtStatus> RequestOplockAsync(OplockRequestLevel level, CancellationToken token, bool throw_on_error)
+        {
+            return FsControlAsync(GetOplockFsctl(level), null, null, token, throw_on_error).UnwrapNtStatusAsync();
+        }
+
+        /// <summary>
+        /// Oplock the file with a specific level.
+        /// </summary>
+        /// <param name="level">The level of oplock to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        public Task<NtStatus> RequestOplockAsync(OplockRequestLevel level, bool throw_on_error)
+        {
+            return RequestOplockAsync(level, CancellationToken.None, true);
+        }
+
+        /// <summary>
+        /// Oplock the file with a specific level.
+        /// </summary>
+        /// <param name="level">The level of oplock to set.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
         public Task RequestOplockAsync(OplockRequestLevel level, CancellationToken token)
         {
-            return FsControlAsync(GetOplockFsctl(level), null, null, token);
+            return RequestOplockAsync(level, token, true);
         }
 
         /// <summary>
