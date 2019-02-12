@@ -151,7 +151,8 @@ namespace NtApiDotNet
         System = 0x4000,
     };
 
-    public enum TokenElevationType {
+    public enum TokenElevationType
+    {
         Default = 1,
         Full,
         Limited
@@ -274,7 +275,7 @@ namespace NtApiDotNet
         {
             return $"{HighPart:X08}-{LowPart:X08}";
         }
-        
+
         public override bool Equals(object obj)
         {
             if (obj is Luid luid)
@@ -409,7 +410,7 @@ namespace NtApiDotNet
         public ClaimSecurityFlags Flags;
         public int ValueCount;
         public IntPtr Values;
-    }    
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     public class ClaimSecurityAttributesInformation
@@ -466,7 +467,7 @@ namespace NtApiDotNet
     public struct TokenBnoIsolationInformation
     {
         public IntPtr IsolationPrefix;
-        public bool   IsolationEnabled;
+        public bool IsolationEnabled;
     }
 
     public static partial class NtSystemCalls
@@ -627,7 +628,7 @@ namespace NtApiDotNet
 
     public class SafeTokenPrivilegesBuffer : SafeStructureInOutBuffer<TokenPrivileges>
     {
-        public SafeTokenPrivilegesBuffer(LuidAndAttributes[] privs) 
+        public SafeTokenPrivilegesBuffer(LuidAndAttributes[] privs)
             : base(new TokenPrivileges() { PrivilegeCount = privs.Length },
                   Marshal.SizeOf(typeof(LuidAndAttributes)) * privs.Length, true)
         {
@@ -651,8 +652,8 @@ namespace NtApiDotNet
     public class SafeTokenGroupsBuffer : SafeStructureInOutBuffer<TokenGroups>
     {
         SafeHandleList _sids;
-        public SafeTokenGroupsBuffer(SidAndAttributes[] sid_and_attr, SafeHandleList sids) 
-            : base(new TokenGroups() { GroupCount = sids.Count }, 
+        public SafeTokenGroupsBuffer(SidAndAttributes[] sid_and_attr, SafeHandleList sids)
+            : base(new TokenGroups() { GroupCount = sids.Count },
                   Marshal.SizeOf(typeof(SidAndAttributes)) * sids.Count, true)
         {
             _sids = sids;
@@ -804,7 +805,7 @@ namespace NtApiDotNet
     /// </summary>
     public class TokenPrivilege
     {
-        [DllImport("Advapi32.dll", CharSet=CharSet.Unicode, SetLastError =true)]
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static extern bool LookupPrivilegeName(
            string lpSystemName,
            ref Luid lpLuid,
@@ -924,7 +925,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="value">The privilege value</param>
         /// <param name="attribute">The privilege attributes</param>
-        public TokenPrivilege(TokenPrivilegeValue value, PrivilegeAttributes attribute) 
+        public TokenPrivilege(TokenPrivilegeValue value, PrivilegeAttributes attribute)
             : this(new Luid((uint)value, 0), attribute)
         {
         }
@@ -934,7 +935,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="name">The privilege name.</param>
         /// <param name="attribute">The privilege attributes</param>
-        public TokenPrivilege(string name, PrivilegeAttributes attribute) 
+        public TokenPrivilege(string name, PrivilegeAttributes attribute)
             : this(LookupPrivilegeLuid(name), attribute)
         {
         }
@@ -1021,7 +1022,7 @@ namespace NtApiDotNet
         /// Constructor from a SID.
         /// </summary>
         /// <param name="sid">The SID</param>
-        public UserGroup(Sid sid) 
+        public UserGroup(Sid sid)
             : this(sid, GroupAttributes.None)
         {
         }
@@ -1042,7 +1043,7 @@ namespace NtApiDotNet
         /// Constructor from a SID or account name.
         /// </summary>
         /// <param name="name">The SID or account name.</param>
-        public UserGroup(string name) 
+        public UserGroup(string name)
             : this(LookupAccountSid(name))
         {
         }
@@ -1063,7 +1064,7 @@ namespace NtApiDotNet
             }
 
             return ret ?? Sid.ToString();
-        }        
+        }
     }
 
     /// <summary>
@@ -2924,7 +2925,7 @@ namespace NtApiDotNet
         {
             using (var priv_buffer = tp.ToBuffer())
             {
-                NtStatus status = NtSystemCalls.NtAdjustPrivilegesToken(Handle, false, 
+                NtStatus status = NtSystemCalls.NtAdjustPrivilegesToken(Handle, false,
                     priv_buffer, priv_buffer.Length, IntPtr.Zero, IntPtr.Zero).ToNtException();
                 if (status == NtStatus.STATUS_NOT_ALL_ASSIGNED)
                     return false;
