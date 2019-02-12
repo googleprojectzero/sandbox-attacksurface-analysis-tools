@@ -1512,7 +1512,7 @@ namespace NtApiDotNet
             }
         }
 
-        private void DoRenameEx(string filename, NtFile root, FileRenameInformationExFlags flags)
+        private NtStatus DoRenameEx(string filename, NtFile root, FileRenameInformationExFlags flags, bool throw_on_error)
         {
             FileRenameInformationEx information = new FileRenameInformationEx
             {
@@ -1524,11 +1524,11 @@ namespace NtApiDotNet
             using (var buffer = information.ToBuffer(information.FileNameLength, true))
             {
                 buffer.Data.WriteArray(0, chars, 0, chars.Length);
-                SetBuffer(FileInformationClass.FileRenameInformationEx, buffer);
+                return SetBuffer(FileInformationClass.FileRenameInformationEx, buffer, throw_on_error);
             }
         }
 
-        private void DoLinkRename(FileInformationClass file_info, string linkname, NtFile root, bool replace_if_exists)
+        private NtStatus DoLinkRename(FileInformationClass file_info, string linkname, NtFile root, bool replace_if_exists, bool throw_on_error)
         {
             FileLinkRenameInformation link = new FileLinkRenameInformation
             {
@@ -1540,13 +1540,8 @@ namespace NtApiDotNet
             using (var buffer = link.ToBuffer(link.FileNameLength, true))
             {
                 buffer.Data.WriteArray(0, chars, 0, chars.Length);
-                SetBuffer(file_info, buffer);
+                return SetBuffer(file_info, buffer, throw_on_error);
             }
-        }
-
-        private void DoLinkRename(FileInformationClass file_info, string linkname, NtFile root)
-        {
-            DoLinkRename(file_info, linkname, root, true);
         }
 
         private async Task<NtResult<IoStatus>> RunFileCallAsync(Func<NtAsyncResult, NtStatus> func, CancellationToken token, bool throw_on_error)
@@ -2620,7 +2615,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public void CreateHardlink(string linkname, NtFile root)
         {
-            DoLinkRename(FileInformationClass.FileLinkInformation, linkname, root);
+            DoLinkRename(FileInformationClass.FileLinkInformation, linkname, root, true, true);
         }
 
         /// <summary>
@@ -2630,7 +2625,35 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public void CreateHardlink(string linkname)
         {
-            DoLinkRename(FileInformationClass.FileLinkInformation, linkname, null);
+            DoLinkRename(FileInformationClass.FileLinkInformation, linkname, null, true, true);
+        }
+
+        /// <summary>
+        /// Create a new hardlink to this file.
+        /// </summary>
+        /// <param name="linkname">The target NT path.</param>
+        /// <param name="root">The root directory if linkname is relative</param>
+        /// <param name="replace_if_exists">If TRUE, replaces the target file if it exists. If FALSE, fails if the target file already exists.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus CreateHardlink(string linkname, NtFile root, bool replace_if_exists, bool throw_on_error)
+        {
+            return DoLinkRename(FileInformationClass.FileLinkInformation, linkname, root, replace_if_exists, throw_on_error);
+        }
+
+        /// <summary>
+        /// Rename file.
+        /// </summary>
+        /// <param name="new_name">The target NT path.</param>
+        /// <param name="root">The root directory if new_name is relative</param>
+        /// <param name="replace_if_exists">If TRUE, replaces the target file if it exists. If FALSE, fails if the target file already exists.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus Rename(string new_name, NtFile root, bool replace_if_exists, bool throw_on_error)
+        {
+            return DoLinkRename(FileInformationClass.FileRenameInformation, new_name, root, replace_if_exists, true);
         }
 
         /// <summary>
@@ -2642,7 +2665,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public void Rename(string new_name, NtFile root, bool replace_if_exists)
         {
-            DoLinkRename(FileInformationClass.FileRenameInformation, new_name, root, replace_if_exists);
+            DoLinkRename(FileInformationClass.FileRenameInformation, new_name, root, replace_if_exists, true);
         }
 
         /// <summary>
@@ -2664,7 +2687,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public void Rename(string new_name, bool replace_if_exists)
         {
-            DoLinkRename(FileInformationClass.FileRenameInformation, new_name, null, replace_if_exists);
+            DoLinkRename(FileInformationClass.FileRenameInformation, new_name, null, replace_if_exists, true);
         }
 
         /// <summary>
@@ -2681,11 +2704,37 @@ namespace NtApiDotNet
         /// Rename (extended Windows version) this file with an absolute path.
         /// </summary>
         /// <param name="new_name">The target absolute NT path.</param>
+        /// <param name="root">The root directory if new_name is relative</param>
+        /// <param name="flags">The flags associated to FileRenameInformationEx.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus RenameEx(string new_name, NtFile root, FileRenameInformationExFlags flags, bool throw_on_error)
+        {
+            return DoRenameEx(new_name, root, flags, throw_on_error);
+        }
+
+        /// <summary>
+        /// Rename (extended Windows version) this file with an absolute path.
+        /// </summary>
+        /// <param name="new_name">The target absolute NT path.</param>
+        /// <param name="root">The root directory if new_name is relative</param>
+        /// <param name="flags">The flags associated to FileRenameInformationEx.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void RenameEx(string new_name, NtFile root, FileRenameInformationExFlags flags)
+        {
+            DoRenameEx(new_name, root, flags, true);
+        }
+
+        /// <summary>
+        /// Rename (extended Windows version) this file with an absolute path.
+        /// </summary>
+        /// <param name="new_name">The target absolute NT path.</param>
         /// <param name="flags">The flags associated to FileRenameInformationEx.</param>
         /// <exception cref="NtException">Thrown on error.</exception>
         public void RenameEx(string new_name, FileRenameInformationExFlags flags)
         {
-            DoRenameEx(new_name, null, flags);
+            RenameEx(new_name, null, flags);
         }
 
         /// <summary>
