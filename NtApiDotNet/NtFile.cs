@@ -2592,19 +2592,45 @@ namespace NtApiDotNet
         /// <summary>
         /// Delete the file. Must have been opened with DELETE access.
         /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus Delete(bool throw_on_error)
+        {
+            return Set(FileInformationClass.FileDispositionInformation, 
+                new FileDispositionInformation() { DeleteFile = true }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Delete the file. Must have been opened with DELETE access.
+        /// </summary>
         /// <exception cref="NtException">Thrown on error.</exception>
         public void Delete()
         {
-            Set(FileInformationClass.FileDispositionInformation, new FileDispositionInformation() { DeleteFile = true });
+            Delete(true);
         }
 
         /// <summary>
         /// Delete the file (extended Windows version). Must have been opened with DELETE access.
         /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <param name="flags">Flags for DeleteEx call.</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus DeleteEx(FileDispositionInformationExFlags flags, bool throw_on_error)
+        {
+            return Set(FileInformationClass.FileDispositionInformationEx, 
+                new FileDispositionInformationEx() { Flags = flags }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Delete the file (extended Windows version). Must have been opened with DELETE access.
+        /// </summary>
+        /// <param name="flags">Flags for DeleteEx call.</param>
         /// <exception cref="NtException">Thrown on error.</exception>
         public void DeleteEx(FileDispositionInformationExFlags flags)
         {
-            Set(FileInformationClass.FileDispositionInformationEx, new FileDispositionInformationEx() { Flags = flags });
+            DeleteEx(flags, true);
         }
 
         /// <summary>
