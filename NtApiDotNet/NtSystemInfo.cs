@@ -73,6 +73,17 @@ namespace NtApiDotNet
         public static extern NtStatus NtAllocateLocallyUniqueId(out Luid Luid);
     }
 
+    public static partial class NtRtl
+    {
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlGetNativeSystemInformation(
+          SystemInformationClass SystemInformationClass,
+          SafeBuffer SystemInformation,
+          int SystemInformationLength,
+          out int ReturnLength
+        );
+    }
+
     [Flags]
     public enum SystemEnvironmentValueAttribute
     {
@@ -444,6 +455,22 @@ namespace NtApiDotNet
         public IntPtr Image;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemBasicInformation 
+    {
+        public int Reserved;
+        public int TimerResolution;
+        public int PageSize;
+        public int NumberOfPhysicalPages;
+        public int LowestPhysicalPageNumber;
+        public int HighestPhysicalPageNumber;
+        public int AllocationGranularity;
+        public UIntPtr MinimumUserModeAddress;
+        public UIntPtr MaximumUserModeAddress;
+        public UIntPtr ActiveProcessorsAffinityMask;
+        public sbyte NumberOfProcessors;
+    }
+
     public enum SystemInformationClass
     {
         SystemBasicInformation = 0,
@@ -650,8 +677,10 @@ namespace NtApiDotNet
         SystemSpeculationControlInformation = 201,
         SystemDmaGuardPolicyInformation = 202,
         SystemEnclaveLaunchControlInformation = 203,
-        SystemCodeIntegrityLockdownInformation = 205,
-        MaxSystemInfoClass
+        SystemWorkloadAllowedCpuSetsInformation = 204,
+        SystemCodeIntegrityUnlockModeInformation = 205,
+        SystemLeapSecondInformation = 206,
+        SystemFlags2Information = 207,
     }
 
     public class NtThreadInformation
@@ -945,6 +974,20 @@ namespace NtApiDotNet
     /// </summary>
     public static class NtSystemInfo
     {
+        #region Private Members
+
+        private static readonly Lazy<SystemBasicInformation> _basic_info = new Lazy<SystemBasicInformation>(GetBasicInformation);
+
+        private static SystemKernelDebuggerInformation GetKernelDebuggerInformation()
+        {
+            using (var info = new SafeStructureInOutBuffer<SystemKernelDebuggerInformation>())
+            {
+                NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemKernelDebuggerInformation,
+                    info, info.Length, out int return_length).ToNtException();
+                return info.Result;
+            }
+        }
+
         private static SafeStructureInOutBuffer<T> QuerySystemInfoVariable<T>(SystemInformationClass info_class) where T : new()
         {
             bool free_buffer = true;
@@ -973,8 +1016,80 @@ namespace NtApiDotNet
                     buffer.Dispose();
                 }
             }
-            
         }
+
+        private static T QueryNativeSystemInfo<T>(T data, SystemInformationClass info_class) where T : struct
+        {
+            using (var buffer = data.ToBuffer())
+            {
+                NtRtl.RtlGetNativeSystemInformation(info_class, buffer,
+                    buffer.Length, out int ret_length).ToNtException();
+                return buffer.Result;
+            }
+        }
+
+        private static T QuerySystemInfo<T>(T data, SystemInformationClass info_class) where T : struct
+        {
+            using (var buffer = data.ToBuffer())
+            {
+                NtSystemCalls.NtQuerySystemInformation(info_class, buffer,
+                    buffer.Length, out int ret_length).ToNtException();
+                return buffer.Result;
+            }
+        }
+
+        private static T QuerySystemInfo<T>(SystemInformationClass info_class) where T : struct
+        {
+            return QuerySystemInfo<T>(new T(), info_class);
+        }
+
+        private static byte[] QueryBlob(SystemInformationClass info_class)
+        {
+            NtStatus status = NtSystemCalls.NtQuerySystemInformation(info_class, SafeHGlobalBuffer.Null, 0, out int ret_length);
+            if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
+            {
+                if (status.IsSuccess())
+                {
+                    return new byte[0];
+                }
+                throw new NtException(status);
+            }
+            using (var buffer = new SafeHGlobalBuffer(ret_length))
+            {
+                NtSystemCalls.NtQuerySystemInformation(info_class, buffer, buffer.Length, out ret_length).ToNtException();
+                return buffer.ToArray();
+            }
+        }
+
+        private static SafeHGlobalBuffer EnumEnvironmentValues(SystemEnvironmentValueInformationClass info_class)
+        {
+            int ret_length = 0;
+            NtStatus status = NtSystemCalls.NtEnumerateSystemEnvironmentValuesEx(info_class, SafeHGlobalBuffer.Null, ref ret_length);
+            if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+            {
+                throw new NtException(status);
+            }
+            var buffer = new SafeHGlobalBuffer(ret_length);
+            try
+            {
+                ret_length = buffer.Length;
+                NtSystemCalls.NtEnumerateSystemEnvironmentValuesEx(info_class,
+                    buffer, ref ret_length).ToNtException();
+                return buffer;
+            }
+            catch
+            {
+                buffer.Dispose();
+                throw;
+            }
+        }
+
+        private static SystemBasicInformation GetBasicInformation()
+        {
+            return QuerySystemInfo(new SystemBasicInformation(), SystemInformationClass.SystemBasicInformation);
+        }
+
+        #endregion
 
         /// <summary>
         /// Get a list of handles
@@ -1082,17 +1197,6 @@ namespace NtApiDotNet
             }
         }
 
-        private static SystemKernelDebuggerInformation GetKernelDebuggerInformation()
-        {
-            using (var info = new SafeStructureInOutBuffer<SystemKernelDebuggerInformation>())
-            {
-                int return_length;
-                NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemKernelDebuggerInformation,
-                    info, info.Length, out return_length).ToNtException();
-                return info.Result;
-            }
-        }
-
         /// <summary>
         /// Get whether the kernel debugger is enabled.
         /// </summary>
@@ -1115,22 +1219,6 @@ namespace NtApiDotNet
             }
         }
 
-        private static T QuerySystemInfo<T>(T data, SystemInformationClass info_class) where T : struct
-        {
-            using (var buffer = data.ToBuffer())
-            {
-                int ret_length;
-                NtSystemCalls.NtQuerySystemInformation(info_class, buffer,
-                    buffer.Length, out ret_length).ToNtException();
-                return buffer.Result;
-            }
-        }
-
-        private static T QuerySystemInfo<T>(SystemInformationClass info_class) where T : struct
-        {
-            return QuerySystemInfo<T>(new T(), info_class);
-        }
-
         /// <summary>
         /// Get current code integrity option settings.
         /// </summary>
@@ -1143,25 +1231,6 @@ namespace NtApiDotNet
             }
         }
 
-        private static byte[] QueryBlob(SystemInformationClass info_class)
-        {
-            int ret_length;
-            NtStatus status = NtSystemCalls.NtQuerySystemInformation(info_class, SafeHGlobalBuffer.Null, 0, out ret_length);
-            if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
-            {
-                if (status.IsSuccess())
-                {
-                    return new byte[0];
-                }
-                throw new NtException(status);
-            }
-            using (var buffer = new SafeHGlobalBuffer(ret_length))
-            {
-                NtSystemCalls.NtQuerySystemInformation(info_class, buffer, buffer.Length, out ret_length).ToNtException();
-                return buffer.ToArray();
-            }
-        }
-
         /// <summary>
         /// Get code integrity policy.
         /// </summary>
@@ -1171,9 +1240,8 @@ namespace NtApiDotNet
             {
                 using (var buffer = new SafeStructureInOutBuffer<SystemCodeIntegrityPolicy>())
                 {
-                    int ret_length;
                     NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityPolicyInformation,
-                        buffer, buffer.Length, out ret_length).ToNtException();
+                        buffer, buffer.Length, out int ret_length).ToNtException();
                     return buffer.Result;
                 }
             }
@@ -1252,9 +1320,8 @@ namespace NtApiDotNet
                     PageFlags = page_flags
                 }.ToBuffer())
                 {
-                    int ret_length;
                     NtSystemCalls.NtSystemDebugControl(SystemDebugControlCode.KernelCrashDump, buffer, buffer.Length,
-                        SafeHGlobalBuffer.Null, 0, out ret_length).ToNtException();
+                        SafeHGlobalBuffer.Null, 0, out int ret_length).ToNtException();
                 }
             }
         }
@@ -1288,9 +1355,8 @@ namespace NtApiDotNet
         {
             get
             {
-                int ret_length;
                 NtStatus status = NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemSecureBootPolicyFullInformation,
-                    SafeHGlobalBuffer.Null, 0, out ret_length);
+                    SafeHGlobalBuffer.Null, 0, out int ret_length);
                 if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
                 {
                     throw new NtException(status);
@@ -1302,29 +1368,6 @@ namespace NtApiDotNet
                         buffer, buffer.Length, out ret_length).ToNtException();
                     return new SecureBootPolicy(buffer);
                 }
-            }
-        }
-
-        private static SafeHGlobalBuffer EnumEnvironmentValues(SystemEnvironmentValueInformationClass info_class)
-        {
-            int ret_length = 0;
-            NtStatus status = NtSystemCalls.NtEnumerateSystemEnvironmentValuesEx(info_class, SafeHGlobalBuffer.Null, ref ret_length);
-            if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
-            {
-                throw new NtException(status);
-            }
-            var buffer = new SafeHGlobalBuffer(ret_length);
-            try
-            {
-                ret_length = buffer.Length;
-                NtSystemCalls.NtEnumerateSystemEnvironmentValuesEx(info_class,
-                    buffer, ref ret_length).ToNtException();
-                return buffer;
-            }
-            catch
-            {
-                buffer.Dispose();
-                throw;
             }
         }
 
@@ -1563,5 +1606,46 @@ namespace NtApiDotNet
                     buffer.Length);
             }
         }
+
+        /// <summary>
+        /// Get system timer resolution.
+        /// </summary>
+        public static int TimerResolution => _basic_info.Value.TimerResolution;
+        /// <summary>
+        /// Get system page size.
+        /// </summary>
+        public static int PageSize => _basic_info.Value.PageSize;
+        /// <summary>
+        /// Get number of physical pages.
+        /// </summary>
+        public static int NumberOfPhysicalPages => _basic_info.Value.NumberOfPhysicalPages;
+        /// <summary>
+        /// Get lowest page number.
+        /// </summary>
+        public static int LowestPhysicalPageNumber => _basic_info.Value.LowestPhysicalPageNumber;
+        /// <summary>
+        /// Get highest page number.
+        /// </summary>
+        public static int HighestPhysicalPageNumber => _basic_info.Value.HighestPhysicalPageNumber;
+        /// <summary>
+        /// Get allocation granularity.
+        /// </summary>
+        public static int AllocationGranularity => _basic_info.Value.AllocationGranularity;
+        /// <summary>
+        /// Get minimum user mode address.
+        /// </summary>
+        public static ulong MinimumUserModeAddress => _basic_info.Value.MinimumUserModeAddress.ToUInt64();
+        /// <summary>
+        /// Get maximum user mode address.
+        /// </summary>
+        public static ulong MaximumUserModeAddress => _basic_info.Value.MaximumUserModeAddress.ToUInt64();
+        /// <summary>
+        /// Get active processor affinity mask.
+        /// </summary>
+        public static ulong ActiveProcessorsAffinityMask => _basic_info.Value.ActiveProcessorsAffinityMask.ToUInt64();
+        /// <summary>
+        /// Get number of processors.
+        /// </summary>
+        public static int NumberOfProcessors => _basic_info.Value.NumberOfProcessors;
     }
 }
