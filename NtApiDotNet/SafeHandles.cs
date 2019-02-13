@@ -255,7 +255,7 @@ namespace NtApiDotNet
             }
 
             RuntimeHelpers.PrepareConstrainedRegions();
-            try
+            try // Needed for constrained region.
             {
                 IntPtr handle = DangerousGetHandle();
                 SetHandleAsInvalid();
@@ -393,12 +393,29 @@ namespace NtApiDotNet
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         new public SafeStructureInOutBuffer<T> Detach()
         {
+            return Detach(Length);
+        }
+
+        /// <summary>
+        /// Detaches the current buffer and allocates a new one.
+        /// </summary>
+        /// <param name="length">Specify a new length for the detached buffer. Must be &lt;= Length.</param>
+        /// <returns>The detached buffer.</returns>
+        /// <remarks>The original buffer will become invalid after this call.</remarks>
+        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
+        new public SafeStructureInOutBuffer<T> Detach(int length)
+        {
+            if (length > Length)
+            {
+                throw new ArgumentException("Buffer length is smaller than new length");
+            }
+
             RuntimeHelpers.PrepareConstrainedRegions();
-            try
+            try // Needed for constrained region.
             {
                 IntPtr handle = DangerousGetHandle();
                 SetHandleAsInvalid();
-                return new SafeStructureInOutBuffer<T>(handle, Length, true);
+                return new SafeStructureInOutBuffer<T>(handle, length, true);
             }
             finally
             {
