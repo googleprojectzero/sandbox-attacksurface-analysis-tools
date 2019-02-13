@@ -1996,7 +1996,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return RestrictedSidsCount > 0;
+                return Query<int>(TokenInformationClass.TokenIsRestricted) != 0;
             }
         }
 
