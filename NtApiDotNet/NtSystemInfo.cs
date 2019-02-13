@@ -924,48 +924,62 @@ namespace NtApiDotNet
         /// <summary>
         /// Get handle into the current process
         /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The handle to the object</returns>
+        public NtResult<NtObject> GetObject(bool throw_on_error)
+        {
+            NtToken.EnableDebugPrivilege();
+            using (var result = NtGeneric.DuplicateFrom(ProcessId, new IntPtr(Handle), 0,
+                DuplicateObjectOptions.SameAccess | DuplicateObjectOptions.SameAttributes, throw_on_error))
+            {
+                if (!result.IsSuccess)
+                {
+                    return result.Cast<NtObject>();
+                }
+
+                NtGeneric generic = result.Result;
+
+                // Ensure that we get the actual type from the handle.
+                NtType = generic.NtType;
+                return generic.ToTypedObject(throw_on_error).Cast<NtObject>();
+            }
+        }
+
+        /// <summary>
+        /// Get handle into the current process
+        /// </summary>
         /// <returns>The handle to the object</returns>
         public NtObject GetObject()
         {
-            NtToken.EnableDebugPrivilege();
-            try
-            {
-                using (NtGeneric generic = NtGeneric.DuplicateFrom(ProcessId, new IntPtr(Handle)))
-                {
-                    // Ensure that we get the actual type from the handle.
-                    NtType = generic.NtType;
-                    return generic.ToTypedObject();
-                }
-            }
-            catch
-            {
-            }
-            return null;
+            return GetObject(true).Result;
         }
 
         private string GetName(NtGeneric obj)
         {
             if (obj == null)
             {
-                return String.Empty;
+                return string.Empty;
             }
             return obj.FullPath;
         }
 
         private SecurityDescriptor GetSecurityDescriptor(NtGeneric obj)
         {
-            try
+            if (obj != null)
             {
-                if (obj != null)
+                using (var dup = obj.Duplicate(GenericAccessRights.ReadControl, false))
                 {
-                    using (NtGeneric dup = obj.Duplicate(GenericAccessRights.ReadControl))
+                    if (!dup.IsSuccess)
                     {
-                        return dup.SecurityDescriptor;
+                        return null;
                     }
+                    var sd = dup.Result.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
+                    if (!sd.IsSuccess)
+                    {
+                        return null;
+                    }
+                    return sd.Result;
                 }
-            }
-            catch
-            {
             }
             return null;
         }

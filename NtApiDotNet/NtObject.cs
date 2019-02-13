@@ -388,6 +388,19 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Duplicate a handle from and to the current process to a new handle with the same access rights.
+        /// </summary>
+        /// <param name="src_handle">The source handle to duplicate</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The duplicated handle.</returns>
+        internal static NtResult<SafeKernelObjectHandle> DuplicateHandle(
+            SafeKernelObjectHandle src_handle, bool throw_on_error)
+        {
+            return DuplicateHandle(NtProcess.Current, src_handle, NtProcess.Current, 0, 0, 
+                DuplicateObjectOptions.SameAccess | DuplicateObjectOptions.SameAttributes, throw_on_error);
+        }
+
+        /// <summary>
         /// Duplicate a handle from and to the current process to a new handle with new access rights.
         /// </summary>
         /// <param name="src_handle">The source handle to duplicate</param>
