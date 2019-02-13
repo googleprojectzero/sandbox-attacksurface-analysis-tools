@@ -574,7 +574,7 @@ namespace NtApiDotNet
         /// <param name="name">The name of the fake type. Informational only.</param>
         /// <param name="generic_mapping">The GENERIC_MAPPING for security checking.</param>
         /// <param name="access_rights_type">The access rights enumeration type.</param>
-        /// <returns></returns>
+        /// <returns>The fake NT type object.</returns>
         public static NtType GetFakeType(string name, GenericMapping generic_mapping, Type access_rights_type)
         {
             return new NtType(name, generic_mapping, access_rights_type);
@@ -590,7 +590,7 @@ namespace NtApiDotNet
         /// <param name="generic_exec">The GENERIC_EXECUTE for security checking.</param>
         /// <param name="generic_all">The GENERIC_ALL for security checking.</param>
         /// <param name="access_rights_type">The access rights enumeration type.</param>
-        /// <returns></returns>
+        /// <returns>The fake NT type object.</returns>
         public static NtType GetFakeType(string name, AccessMask generic_read, AccessMask generic_write, 
             AccessMask generic_exec, AccessMask generic_all, Type access_rights_type)
         {
