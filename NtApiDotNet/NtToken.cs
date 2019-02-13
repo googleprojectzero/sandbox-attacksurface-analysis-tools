@@ -1990,7 +1990,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get whether token is stricted
+        /// Get whether token is restricted
         /// </summary>
         public bool Restricted
         {
@@ -2001,7 +2001,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get token capacilities
+        /// Get token capabilities.
         /// </summary>
         public UserGroup[] Capabilities
         {
