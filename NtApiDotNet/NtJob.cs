@@ -261,6 +261,20 @@ namespace NtApiDotNet
         internal NtJob(SafeKernelObjectHandle handle) : base(handle)
         {
         }
+
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(true)
+            {
+            }
+
+            protected override sealed NtResult<NtJob> OpenInternal(ObjectAttributes obj_attributes,
+                JobAccessRights desired_access, bool throw_on_error)
+            {
+                return NtJob.Open(obj_attributes, desired_access, throw_on_error);
+            }
+        }
+
         #endregion
 
         #region Static Methods
@@ -273,8 +287,8 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtJob> Create(ObjectAttributes object_attributes, JobAccessRights desired_access, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtCreateJobObject(out handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtJob(handle));
+            return NtSystemCalls.NtCreateJobObject(out SafeKernelObjectHandle handle, desired_access, object_attributes)
+                .CreateResult(throw_on_error, () => new NtJob(handle));
         }
 
         /// <summary>
@@ -334,11 +348,6 @@ namespace NtApiDotNet
         {
             SafeKernelObjectHandle handle;
             return NtSystemCalls.NtOpenJobObject(out handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtJob(handle));
-        }
-
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, desired_access.ToSpecificAccess<JobAccessRights>(), throw_on_error).Cast<NtObject>();
         }
 
         /// <summary>

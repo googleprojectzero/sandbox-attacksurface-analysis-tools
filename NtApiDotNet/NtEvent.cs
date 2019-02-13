@@ -104,6 +104,20 @@ namespace NtApiDotNet
             : base(handle)
         {
         }
+
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(true)
+            {
+            }
+
+            protected override sealed NtResult<NtEvent> OpenInternal(ObjectAttributes obj_attributes,
+                EventAccessRights desired_access, bool throw_on_error)
+            {
+                return NtEvent.Open(obj_attributes, desired_access, throw_on_error);
+            }
+        }
+
         #endregion
 
         #region Static Methods
@@ -200,11 +214,6 @@ namespace NtApiDotNet
         {
             SafeKernelObjectHandle handle;
             return NtSystemCalls.NtOpenEvent(out handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtEvent(handle));
-        }
-
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, desired_access.ToSpecificAccess<EventAccessRights>(), throw_on_error).Cast<NtObject>();
         }
 
         /// <summary>

@@ -55,6 +55,19 @@ namespace NtApiDotNet
         {
         }
 
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(true)
+            {
+            }
+
+            protected override sealed NtResult<NtSession> OpenInternal(ObjectAttributes obj_attributes,
+                SessionAccessRights desired_access, bool throw_on_error)
+            {
+                return NtSession.Open(obj_attributes, desired_access, throw_on_error);
+            }
+        }
+
         /// <summary>
         /// Open a session object.
         /// </summary>
@@ -92,11 +105,6 @@ namespace NtApiDotNet
             {
                 return Open(obja, desired_access);
             }
-        }
-
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, desired_access.ToSpecificAccess<SessionAccessRights>(), throw_on_error).Cast<NtObject>();
         }
     }
 }

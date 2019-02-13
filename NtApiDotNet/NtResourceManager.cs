@@ -229,10 +229,19 @@ namespace NtApiDotNet
                                     ResourceManagerInformationClass, ResourceManagerInformationClass>
     {
         #region Constructors
+
         internal NtResourceManager(SafeKernelObjectHandle handle) 
             : base(handle)
         {
         }
+
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(false)
+            {
+            }
+        }
+
         #endregion
 
         #region Static Methods

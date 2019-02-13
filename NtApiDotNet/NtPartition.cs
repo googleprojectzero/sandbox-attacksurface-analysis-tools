@@ -84,6 +84,19 @@ namespace NtApiDotNet
         {
         }
 
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(true)
+            {
+            }
+
+            protected override sealed NtResult<NtPartition> OpenInternal(ObjectAttributes obj_attributes,
+                MemoryPartitionAccessRights desired_access, bool throw_on_error)
+            {
+                return NtPartition.Open(obj_attributes, desired_access, throw_on_error);
+            }
+        }
+
         /// <summary>
         /// Create a partition object
         /// </summary>
@@ -133,11 +146,6 @@ namespace NtApiDotNet
         public static NtPartition Open(ObjectAttributes object_attributes, MemoryPartitionAccessRights desired_access)
         {
             return Open(object_attributes, desired_access, true).Result;
-        }
-
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, desired_access.ToSpecificAccess<MemoryPartitionAccessRights>(), throw_on_error).Cast<NtObject>();
         }
     }
 }

@@ -66,6 +66,19 @@ namespace NtApiDotNet
         {
         }
 
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(true)
+            {
+            }
+
+            protected override sealed NtResult<NtDebug> OpenInternal(ObjectAttributes obj_attributes,
+                DebugAccessRights desired_access, bool throw_on_error)
+            {
+                return NtDebug.Open(obj_attributes, desired_access, throw_on_error);
+            }
+        }
+
         /// <summary>
         /// Create a debug object
         /// </summary>
@@ -152,11 +165,6 @@ namespace NtApiDotNet
         public static NtResult<NtDebug> Open(ObjectAttributes object_attributes, DebugAccessRights desired_access, bool throw_on_error)
         {
             return Create(object_attributes, DebugAccessRights.MaximumAllowed, DebugObjectFlags.None, throw_on_error);
-        }
-
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, desired_access.ToSpecificAccess<DebugAccessRights>(), throw_on_error).Cast<NtObject>();
         }
     }
 }

@@ -77,6 +77,19 @@ namespace NtApiDotNet
         {
         }
 
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(true)
+            {
+            }
+
+            protected override sealed NtResult<NtDesktop> OpenInternal(ObjectAttributes obj_attributes,
+                DesktopAccessRights desired_access, bool throw_on_error)
+            {
+                return NtDesktop.Open(obj_attributes, CreateDesktopFlags.None, desired_access, throw_on_error);
+            }
+        }
+
         /// <summary>
         /// Open a desktop by name.
         /// </summary>
@@ -171,11 +184,6 @@ namespace NtApiDotNet
         public static NtDesktop Create(string desktop_name)
         {
             return Create(desktop_name, null);
-        }
-
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, 0, desired_access.ToSpecificAccess<DesktopAccessRights>(), throw_on_error).Cast<NtObject>();
         }
     }
 }

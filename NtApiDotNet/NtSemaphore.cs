@@ -90,9 +90,17 @@ namespace NtApiDotNet
         {
         }
 
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
         {
-            return Open(object_attributes, desired_access.ToSpecificAccess<SemaphoreAccessRights>(), throw_on_error).Cast<NtObject>();
+            public NtTypeFactoryImpl() : base(true)
+            {
+            }
+
+            protected override sealed NtResult<NtSemaphore> OpenInternal(ObjectAttributes obj_attributes,
+                SemaphoreAccessRights desired_access, bool throw_on_error)
+            {
+                return NtSemaphore.Open(obj_attributes, desired_access, throw_on_error);
+            }
         }
 
         #endregion

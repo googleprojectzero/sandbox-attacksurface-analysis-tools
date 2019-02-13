@@ -2665,8 +2665,7 @@ function Add-NtSecurityDescriptorDaclAce {
 .SYNOPSIS
 Creates a new "fake" NT type object.
 .DESCRIPTION
-This cmdlet creates a new "fake" NT type object which can be used to do access checking for objects which aren't 
-real NT types.
+This cmdlet creates a new "fake" NT type object which can be used to do access checking for objects which aren't real NT types.
 .PARAMETER Name
 The name of the "fake" type.
 .PARAMETER GenericRead

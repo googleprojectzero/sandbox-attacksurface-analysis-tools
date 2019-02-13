@@ -65,7 +65,7 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class NtType
     {
-        private static NtTypeFactory _generic_factory = new NtTypeFactory(typeof(NtGeneric));
+        private static NtTypeFactory _generic_factory = new NtGeneric.NtTypeFactoryImpl();
         private NtTypeFactory _type_factory;
 
         /// <summary>
@@ -403,7 +403,7 @@ namespace NtApiDotNet
             {
                 throw new ArgumentException("Specify an enumerated type", "access_rights_type");
             }
-            _type_factory = new NtTypeFactory(access_rights_type, typeof(object));
+            _type_factory = new NtTypeFactory(access_rights_type, typeof(object), false);
             Name = name;
             GenericMapping = generic_mapping;
             GenericRead = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericRead, GenericMapping, access_rights_type, false);

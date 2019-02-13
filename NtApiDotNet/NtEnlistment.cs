@@ -189,6 +189,14 @@ namespace NtApiDotNet
         internal NtEnlistment(SafeKernelObjectHandle handle) : base(handle)
         {
         }
+
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(false)
+            {
+            }
+        }
+
         #endregion
 
         #region Static Methods

@@ -29,68 +29,29 @@ namespace NtApiDotNet
         }
     }
 
-    internal sealed class NtTypeFactory
+    internal class NtTypeFactory
     {
-        private Func<SafeKernelObjectHandle, NtObject> _from_handle_method;
-        private Func<ObjectAttributes, AccessMask, bool, NtResult<NtObject>> _from_name_method;
-        public Type ObjectType { get; private set; }
-        public Type AccessRightsType { get; private set; }
-        public bool CanOpen { get { return _from_name_method != null; } }
+        private const string FACTORY_TYPE_NAME = "NtTypeFactoryImpl";
 
-        public NtObject FromHandle(SafeKernelObjectHandle handle)
+        public Type ObjectType { get; }
+        public Type AccessRightsType { get; }
+        public bool CanOpen { get; }
+
+        public virtual NtObject FromHandle(SafeKernelObjectHandle handle)
         {
-            return _from_handle_method(handle);
+            throw new NotImplementedException();
         }
 
-        public NtResult<NtObject> Open(ObjectAttributes obj_attributes, AccessMask desired_access, bool throw_on_error)
+        public virtual NtResult<NtObject> Open(ObjectAttributes obj_attributes, AccessMask desired_access, bool throw_on_error)
         {
-            try
-            {
-                System.Diagnostics.Debug.Assert(_from_name_method != null);
-                return _from_name_method(obj_attributes, desired_access, throw_on_error);
-            }
-            catch (TargetInvocationException ex)
-            {
-                throw ex.InnerException;
-            }
+            return NtStatus.STATUS_NOT_IMPLEMENTED.CreateResultFromError<NtObject>(throw_on_error);
         }
 
-        internal NtTypeFactory(Type access_rights_type, Type object_type)
+        internal NtTypeFactory(Type access_rights_type, Type object_type, bool can_open)
         {
             AccessRightsType = access_rights_type;
             ObjectType = object_type;
-            _from_handle_method = h => throw new NotImplementedException();
-        }
-
-        public NtTypeFactory(Type object_type)
-        {
-            Type base_type = object_type.BaseType; // GetBaseType(object_type);
-            if (base_type.GetGenericTypeDefinition() == typeof(NtObjectWithDuplicateAndInfo<,,,>))
-            {
-                base_type = base_type.BaseType;
-            }
-            System.Diagnostics.Debug.Assert(base_type.GetGenericTypeDefinition() == typeof(NtObjectWithDuplicate<,>));
-            ObjectType = object_type;
-
-            MethodInfo from_handle_method = base_type.GetMethod("FromHandle",
-                BindingFlags.Public | BindingFlags.Static,
-                null, new Type[] { typeof(SafeKernelObjectHandle) }, null);
-            _from_handle_method = (Func<SafeKernelObjectHandle, NtObject>)Delegate.CreateDelegate(typeof(Func<SafeKernelObjectHandle, NtObject>), from_handle_method);
-
-            AccessRightsType = base_type.GetGenericArguments()[1];
-
-            MethodInfo from_name_method = object_type.GetMethod("FromName",
-                BindingFlags.NonPublic | BindingFlags.Static, null,
-                new Type[] { typeof(ObjectAttributes), typeof(AccessMask), typeof(bool) }, null);
-            if (from_name_method == null)
-            {
-                System.Diagnostics.Debug.WriteLine($"Type {object_type} doesn't have a FromName method");
-            }
-            else
-            {
-                _from_name_method = (Func<ObjectAttributes, AccessMask, bool, NtResult<NtObject>>)
-                    Delegate.CreateDelegate(typeof(Func<ObjectAttributes, AccessMask, bool, NtResult<NtObject>>), from_name_method);
-            }
+            CanOpen = can_open;
         }
 
         public static Dictionary<string, NtTypeFactory> GetAssemblyNtTypeFactories(Assembly assembly)
@@ -102,7 +63,9 @@ namespace NtApiDotNet
                 foreach (NtTypeAttribute attr in attrs)
                 {
                     System.Diagnostics.Debug.Assert(!_factories.ContainsKey(attr.TypeName));
-                    _factories.Add(attr.TypeName, new NtTypeFactory(type));
+                    TypeInfo factory_type = type.GetTypeInfo().GetDeclaredNestedType(FACTORY_TYPE_NAME);
+                    System.Diagnostics.Debug.Assert(factory_type != null);
+                    _factories.Add(attr.TypeName, (NtTypeFactory)Activator.CreateInstance(factory_type));
                 }
             }
             return _factories;

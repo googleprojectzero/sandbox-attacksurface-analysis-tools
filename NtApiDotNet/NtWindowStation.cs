@@ -69,6 +69,19 @@ namespace NtApiDotNet
         {
         }
 
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(true)
+            {
+            }
+
+            protected override sealed NtResult<NtWindowStation> OpenInternal(ObjectAttributes obj_attributes,
+                WindowStationAccessRights desired_access, bool throw_on_error)
+            {
+                return NtWindowStation.Open(obj_attributes, desired_access, throw_on_error);
+            }
+        }
+
         /// <summary>
         /// Open a window station by name.
         /// </summary>
@@ -112,11 +125,6 @@ namespace NtApiDotNet
         public static NtWindowStation Open(string winsta_name)
         {
             return Open(winsta_name, null);
-        }
-
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, desired_access.ToSpecificAccess<WindowStationAccessRights>(), throw_on_error).Cast<NtObject>();
         }
 
         /// <summary>

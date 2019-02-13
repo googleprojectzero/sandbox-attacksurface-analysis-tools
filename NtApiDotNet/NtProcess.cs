@@ -961,6 +961,13 @@ namespace NtApiDotNet
         {
         }
 
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(false)
+            {
+            }
+        }
+
         /// <summary>
         /// Gets all accessible processes on the system.
         /// </summary>

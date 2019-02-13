@@ -163,6 +163,21 @@ namespace NtApiDotNet
             : base(handle)
         {
         }
+
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(true)
+            {
+            }
+
+            protected override sealed NtResult<NtTransactionManager> OpenInternal(ObjectAttributes obj_attributes,
+                TransactionManagerAccessRights desired_access, bool throw_on_error)
+            {
+                return NtTransactionManager.Open(obj_attributes, desired_access,
+                    null, null, TransactionManagerOpenOptions.None, throw_on_error);
+            }
+        }
+
         #endregion
 
         #region Static Methods
@@ -438,13 +453,6 @@ namespace NtApiDotNet
         {
             return GetAccessibleTransactionManager(TransactionManagerAccessRights.MaximumAllowed);
         }
-
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, desired_access.ToSpecificAccess<TransactionManagerAccessRights>(), 
-                null, null, TransactionManagerOpenOptions.None, throw_on_error).Cast<NtObject>();
-        }
-
         #endregion
 
         #region Public Properties

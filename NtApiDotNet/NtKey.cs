@@ -564,6 +564,20 @@ namespace NtApiDotNet
         internal NtKey(SafeKernelObjectHandle handle) : this(handle, KeyDisposition.OpenedExistingKey, false)
         {
         }
+
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(true)
+            {
+            }
+
+            protected override sealed NtResult<NtKey> OpenInternal(ObjectAttributes obj_attributes,
+                KeyAccessRights desired_access, bool throw_on_error)
+            {
+                return NtKey.Open(obj_attributes, desired_access, 0, throw_on_error);
+            }
+        }
+
         #endregion
 
         #region Static Methods
@@ -784,11 +798,6 @@ namespace NtApiDotNet
         public static NtResult<NtKey> Open(ObjectAttributes obj_attributes, KeyAccessRights desired_access, KeyCreateOptions open_options, bool throw_on_error)
         {
             return Open(obj_attributes, desired_access, open_options, null, throw_on_error);
-        }
-
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, desired_access.ToSpecificAccess<KeyAccessRights>(), 0, throw_on_error).Cast<NtObject>();
         }
 
         /// <summary>

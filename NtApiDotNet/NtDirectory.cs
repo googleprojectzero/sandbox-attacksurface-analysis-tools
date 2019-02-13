@@ -248,7 +248,7 @@ namespace NtApiDotNet
             using (SafeSidBufferHandle sid_buffer = sid.ToSafeBuffer())
             {
                 NtRtl.RtlAddSIDToBoundaryDescriptor(ref _boundary_descriptor, sid_buffer).ToNtException();
-            }            
+            }
         }
 
         private void AddIntegrityLevel(Sid sid)
@@ -324,7 +324,7 @@ namespace NtApiDotNet
         }
 
         #region IDisposable Support
-    private bool disposedValue = false; // To detect redundant calls
+        private bool disposedValue = false; // To detect redundant calls
 
         void Dispose(bool disposing)
         {
@@ -363,6 +363,19 @@ namespace NtApiDotNet
     {
         internal NtDirectory(SafeKernelObjectHandle handle) : base(handle)
         {
+        }
+
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(true)
+            {
+            }
+
+            protected override sealed NtResult<NtDirectory> OpenInternal(ObjectAttributes obj_attributes, 
+                DirectoryAccessRights desired_access, bool throw_on_error)
+            {
+                return NtDirectory.Open(obj_attributes, desired_access, throw_on_error);
+            }
         }
 
         /// <summary>
@@ -431,11 +444,6 @@ namespace NtApiDotNet
         public static NtDirectory Open(string name)
         {
             return Open(name, null, DirectoryAccessRights.MaximumAllowed);
-        }
-
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, desired_access.ToSpecificAccess<DirectoryAccessRights>(), throw_on_error).Cast<NtObject>();
         }
 
         /// <summary>

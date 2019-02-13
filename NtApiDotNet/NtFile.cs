@@ -1191,6 +1191,21 @@ namespace NtApiDotNet
         {
         }
 
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(true)
+            {
+            }
+
+            protected override sealed NtResult<NtFile> OpenInternal(ObjectAttributes obj_attributes,
+                FileAccessRights desired_access, bool throw_on_error)
+            {
+                return NtFile.Open(obj_attributes, desired_access,
+                    FileShareMode.Read | FileShareMode.Delete,
+                    FileOpenOptions.None, throw_on_error);
+            }
+        }
+
         #endregion
 
         #region Private Members
@@ -1778,12 +1793,6 @@ namespace NtApiDotNet
             IoStatus iostatus = new IoStatus();
             return NtSystemCalls.NtOpenFile(out SafeKernelObjectHandle handle, desired_access, obj_attributes, iostatus, share_access, open_options)
                 .CreateResult(throw_on_error, () => CreateFileObject(handle, iostatus));
-        }
-
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, desired_access.ToSpecificAccess<FileAccessRights>(), FileShareMode.Read | FileShareMode.Delete,
-                FileOpenOptions.None, throw_on_error).Cast<NtObject>();
         }
 
         /// <summary>

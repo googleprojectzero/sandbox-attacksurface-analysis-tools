@@ -24,6 +24,34 @@ namespace NtApiDotNet
     /// <typeparam name="A">An enum which represents the access mask values for the type</typeparam>
     public abstract class NtObjectWithDuplicate<O, A> : NtObject where O : NtObject where A : struct, IConvertible
     {
+        internal abstract class NtTypeFactoryImplBase : NtTypeFactory
+        {
+            protected NtTypeFactoryImplBase(bool can_open) 
+                : base(typeof(A), typeof(O), can_open)
+            {
+            }
+
+            protected NtTypeFactoryImplBase()
+                :  this(false)
+            {
+            }
+
+            protected virtual NtResult<O> OpenInternal(ObjectAttributes obj_attributes, A desired_access, bool throw_on_error)
+            {
+                return NtStatus.STATUS_NOT_IMPLEMENTED.CreateResultFromError<O>(throw_on_error);
+            }
+
+            public sealed override NtResult<NtObject> Open(ObjectAttributes obj_attributes, AccessMask desired_access, bool throw_on_error)
+            {
+                return OpenInternal(obj_attributes, desired_access.ToSpecificAccess<A>(), throw_on_error).Cast<NtObject>();
+            }
+
+            public sealed override NtObject FromHandle(SafeKernelObjectHandle handle)
+            {
+                return NtObjectWithDuplicate<O, A>.FromHandle(handle);
+            }
+        }
+
         internal NtObjectWithDuplicate(SafeKernelObjectHandle handle) : base(handle)
         {
             System.Diagnostics.Debug.Assert(typeof(A).IsEnum);

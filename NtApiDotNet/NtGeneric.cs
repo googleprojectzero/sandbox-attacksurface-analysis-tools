@@ -24,6 +24,13 @@ namespace NtApiDotNet
         {
         }
 
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(false)
+            {
+            }
+        }
+
         /// <summary>
         /// Convert the generic object to the best typed object.
         /// </summary>

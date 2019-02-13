@@ -72,6 +72,19 @@ namespace NtApiDotNet
         {
         }
 
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(true)
+            {
+            }
+
+            protected override sealed NtResult<NtSymbolicLink> OpenInternal(ObjectAttributes obj_attributes,
+                SymbolicLinkAccessRights desired_access, bool throw_on_error)
+            {
+                return NtSymbolicLink.Open(obj_attributes, desired_access, throw_on_error);
+            }
+        }
+
         /// <summary>
         /// Create a symbolic link object.
         /// </summary>
@@ -165,11 +178,6 @@ namespace NtApiDotNet
             SafeKernelObjectHandle handle;
             return NtSystemCalls.NtOpenSymbolicLinkObject(out handle,
                 desired_access, object_attributes).CreateResult(throw_on_error, () => new NtSymbolicLink(handle));
-        }
-
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, desired_access.ToSpecificAccess<SymbolicLinkAccessRights>(), throw_on_error).Cast<NtObject>();
         }
 
         /// <summary>
