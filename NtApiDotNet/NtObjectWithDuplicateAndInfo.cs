@@ -106,7 +106,7 @@ namespace NtApiDotNet
             }
 
             // If the function returned a length then trust it.
-            if (return_length > 0)
+            if (return_length > 0 && GetTrustReturnLength(info_class))
             {
                 using (var buffer = new SafeStructureInOutBuffer<T>(default_value, return_length, false))
                 {
@@ -116,7 +116,7 @@ namespace NtApiDotNet
 
             // Function length can't be trusted, we'll need to brute force it.
             return_length = GetSmallestPower2(Marshal.SizeOf(typeof(T)));
-            int max_length = GetMaximumBruteForceLength();
+            int max_length = GetMaximumBruteForceLength(info_class);
             while (return_length < max_length)
             {
                 using (var buffer = new SafeStructureInOutBuffer<T>(default_value, return_length, false))
@@ -165,7 +165,7 @@ namespace NtApiDotNet
             }
 
             // If the function returned a length then trust it.
-            if (return_length > 0)
+            if (return_length > 0 && GetTrustReturnLength(info_class))
             {
                 using (var buffer = new SafeHGlobalBuffer(return_length))
                 {
@@ -175,8 +175,8 @@ namespace NtApiDotNet
 
             // Function length can't be trusted, we'll need to brute force it.
             return_length = 256;
-            int max_length = GetMaximumBruteForceLength();
-            while (return_length < max_length)
+            int max_length = GetMaximumBruteForceLength(info_class);
+            while (return_length <= max_length)
             {
                 using (var buffer = new SafeHGlobalBuffer(return_length))
                 {
@@ -193,6 +193,7 @@ namespace NtApiDotNet
                     {
                         return status.CreateResultFromError<SafeHGlobalBuffer>(throw_on_error);
                     }
+
                     return_length *= 2;
                 }
             }
@@ -400,11 +401,23 @@ namespace NtApiDotNet
         /// <summary>
         /// Overriddable method to determine the maximum brute force length for query.
         /// </summary>
+        /// <param name="info_class">Information class to key on if needs to return different sizes.</param>
         /// <returns>The maximum bytes to brute force. Returning 0 will disable brute force.</returns>
-        protected virtual int GetMaximumBruteForceLength()
+        protected virtual int GetMaximumBruteForceLength(Q info_class)
         {
             return 16 * 1024;
         }
+
+        /// <summary>
+        /// Overridable method to determine if the return length shouldn't be trusted for this info class when querying a variable buffer.
+        /// </summary>
+        /// <param name="info_class">Information class to key on.</param>
+        /// <returns>True to trust the return length when querying a variable buffer.</returns>
+        protected virtual bool GetTrustReturnLength(Q info_class)
+        {
+            return true;
+        }
+
         #endregion
 
         #region Private Members
