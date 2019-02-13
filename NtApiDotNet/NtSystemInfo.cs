@@ -322,6 +322,13 @@ namespace NtApiDotNet
         public byte Policy;
     }
 
+    [StructLayout(LayoutKind.Sequential), DataStart("SiloIdList")]
+    public struct SystemRootSiloInformation
+    {
+        public int NumberOfSilos;
+        public int SiloIdList;
+    }
+
     public class SecureBootPolicy
     {
         public Guid PolicyPublisher { get; private set; }
@@ -988,32 +995,29 @@ namespace NtApiDotNet
             }
         }
 
+        private static bool IsBufferShort(this NtStatus status)
+        {
+            return status == NtStatus.STATUS_INFO_LENGTH_MISMATCH || status == NtStatus.STATUS_BUFFER_TOO_SMALL;
+        }
+
         private static SafeStructureInOutBuffer<T> QuerySystemInfoVariable<T>(SystemInformationClass info_class) where T : new()
         {
-            bool free_buffer = true;
-            SafeStructureInOutBuffer<T> buffer = new SafeStructureInOutBuffer<T>(0x1000, true);
-            try
+            int length = 0x1000;
+            while (true)
             {
-                NtStatus status = 0;
-                int return_length = 0;
-                while ((status = NtSystemCalls.NtQuerySystemInformation(info_class,
-                                                         buffer,
-                                                         buffer.Length,
-                                                         out return_length)) == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
+                using (var buffer = new SafeStructureInOutBuffer<T>(length, true))
                 {
-                    int length = buffer.Length * 2;
-                    buffer.Dispose();
-                    buffer = new SafeStructureInOutBuffer<T>(length, true);
-                }
-                status.ToNtException();
-                free_buffer = false;
-                return buffer;
-            }
-            finally
-            {
-                if (free_buffer)
-                {
-                    buffer.Dispose();
+                    NtStatus status = NtSystemCalls.NtQuerySystemInformation(info_class,
+                                                                            buffer,
+                                                                            buffer.Length,
+                                                                            out int return_length);
+                    if (status.IsBufferShort())
+                    {
+                        length *= 2;
+                        continue;
+                    }
+                    status.ToNtException();
+                    return buffer.Detach();
                 }
             }
         }
@@ -1647,5 +1651,20 @@ namespace NtApiDotNet
         /// Get number of processors.
         /// </summary>
         public static int NumberOfProcessors => _basic_info.Value.NumberOfProcessors;
+
+        /// <summary>
+        /// Get list of root silos.
+        /// </summary>
+        /// <returns>The list of root silos.</returns>
+        public static IReadOnlyCollection<int> GetRootSilos()
+        {
+            using (var buffer = QuerySystemInfoVariable<SystemRootSiloInformation>(SystemInformationClass.SystemRootSiloInformation))
+            {
+                var result = buffer.Result;
+                int[] silos = new int[result.NumberOfSilos];
+                buffer.Data.ReadArray(0, silos, 0, silos.Length);
+                return silos.ToList().AsReadOnly();
+            }
+        }
     }
 }

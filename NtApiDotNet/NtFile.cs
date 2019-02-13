@@ -133,6 +133,18 @@ namespace NtApiDotNet
         );
 
         [DllImport("ntdll.dll")]
+        public static extern NtStatus NtReadFileScatter(
+          SafeKernelObjectHandle FileHandle,
+          SafeKernelObjectHandle Event,
+          IntPtr ApcRoutine,
+          IntPtr ApcContext,
+          SafeIoStatusBuffer IoStatusBlock,
+          [MarshalAs(UnmanagedType.LPArray), In] FileSegmentElement[] SegmentArray,
+          int Length,
+          [In] LargeInteger ByteOffset,
+          IntPtr Key);
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus NtWriteFile(
           SafeKernelObjectHandle FileHandle,
           SafeKernelObjectHandle Event,
@@ -144,6 +156,18 @@ namespace NtApiDotNet
           [In] LargeInteger ByteOffset,
           IntPtr Key
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtWriteFileGather(
+            SafeKernelObjectHandle FileHandle,
+            SafeKernelObjectHandle Event,
+            IntPtr ApcRoutine,
+            IntPtr ApcContext,
+            SafeIoStatusBuffer IoStatusBlock,
+            [MarshalAs(UnmanagedType.LPArray), In] FileSegmentElement[] SegmentArray,
+            int Length,
+            [In] LargeInteger ByteOffset,
+            IntPtr Key);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtLockFile(
@@ -243,6 +267,12 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus RtlWow64EnableFsRedirectionEx(IntPtr DisableFsRedirection, 
             out IntPtr OldFsRedirectionLevel);
+    }
+
+    [StructLayout(LayoutKind.Sequential, Size = 8)]
+    public struct FileSegmentElement
+    {
+        public IntPtr Buffer;
     }
 
     [Flags]
