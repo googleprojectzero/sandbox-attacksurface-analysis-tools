@@ -478,6 +478,19 @@ namespace NtApiDotNet
         public sbyte NumberOfProcessors;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemElamCertificateInformation
+    {
+        public IntPtr ElamDriverFile;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemCodeIntegrityCertificateInformation
+    {
+        public IntPtr ImageFile;
+        public int Type;
+    }
+
     public enum SystemInformationClass
     {
         SystemBasicInformation = 0,
@@ -1014,7 +1027,7 @@ namespace NtApiDotNet
             return status == NtStatus.STATUS_INFO_LENGTH_MISMATCH || status == NtStatus.STATUS_BUFFER_TOO_SMALL;
         }
 
-        private static SafeStructureInOutBuffer<T> QuerySystemInfoVariable<T>(SystemInformationClass info_class) where T : new()
+        private static SafeStructureInOutBuffer<T> QueryBuffer<T>(SystemInformationClass info_class) where T : new()
         {
             int length = 0x1000;
             while (true)
@@ -1031,7 +1044,7 @@ namespace NtApiDotNet
                         continue;
                     }
                     status.ToNtException();
-                    return buffer.Detach();
+                    return buffer.Detach(return_length);
                 }
             }
         }
@@ -1046,14 +1059,18 @@ namespace NtApiDotNet
             }
         }
 
-        private static T QuerySystemInfo<T>(T data, SystemInformationClass info_class) where T : struct
+        private static NtResult<T> QuerySystemInfo<T>(T data, SystemInformationClass info_class, bool throw_on_error) where T : struct
         {
             using (var buffer = data.ToBuffer())
             {
-                NtSystemCalls.NtQuerySystemInformation(info_class, buffer,
-                    buffer.Length, out int ret_length).ToNtException();
-                return buffer.Result;
+                return NtSystemCalls.NtQuerySystemInformation(info_class, buffer,
+                    buffer.Length, out int ret_length).CreateResult(throw_on_error, () => buffer.Result);
             }
+        }
+
+        private static T QuerySystemInfo<T>(T data, SystemInformationClass info_class) where T : struct
+        {
+            return QuerySystemInfo(data, info_class, true).Result;
         }
 
         private static T QuerySystemInfo<T>(SystemInformationClass info_class) where T : struct
@@ -1107,7 +1124,17 @@ namespace NtApiDotNet
             return QuerySystemInfo(new SystemBasicInformation(), SystemInformationClass.SystemBasicInformation);
         }
 
+        private static NtStatus Set<T>(SystemInformationClass info_class, T value) where T : new()
+        {
+            using (var buffer = value.ToBuffer())
+            {
+                return NtSystemCalls.NtSetSystemInformation(info_class, buffer, buffer.Length);
+            }
+        }
+
         #endregion
+
+        #region Static Methods
 
         /// <summary>
         /// Get a list of handles
@@ -1117,7 +1144,7 @@ namespace NtApiDotNet
         /// <returns>The list of handles</returns>
         public static IEnumerable<NtHandle> GetHandles(int pid, bool allow_query)
         {
-            using (var buffer = QuerySystemInfoVariable<SystemHandleInformationEx>(SystemInformationClass.SystemExtendedHandleInformation))
+            using (var buffer = QueryBuffer<SystemHandleInformationEx>(SystemInformationClass.SystemExtendedHandleInformation))
             {
                 var handle_info = buffer.Result;
                 int handle_count = handle_info.NumberOfHandles.ToInt32();
@@ -1171,7 +1198,7 @@ namespace NtApiDotNet
         /// <returns>The list of process information.</returns>
         public static IEnumerable<NtProcessInformation> GetProcessInformation()
         {
-            using (var process_info = QuerySystemInfoVariable<SystemProcessInformation>(SystemInformationClass.SystemProcessInformation))
+            using (var process_info = QueryBuffer<SystemProcessInformation>(SystemInformationClass.SystemProcessInformation))
             {
                 int offset = 0;
                 while (true)
@@ -1199,7 +1226,7 @@ namespace NtApiDotNet
         /// <returns>The list of page file names.</returns>
         public static IEnumerable<string> GetPageFileNames()
         {
-            using (var buffer = QuerySystemInfoVariable<SystemPageFileInformation>(SystemInformationClass.SystemPageFileInformation))
+            using (var buffer = QueryBuffer<SystemPageFileInformation>(SystemInformationClass.SystemPageFileInformation))
             {
                 int offset = 0;
                 while (true)
@@ -1212,109 +1239,6 @@ namespace NtApiDotNet
                     }
                     offset += pagefile_info.NextEntryOffset;
                 }
-            }
-        }
-
-        /// <summary>
-        /// Get whether the kernel debugger is enabled.
-        /// </summary>
-        public static bool KernelDebuggerEnabled
-        {
-            get
-            {
-                return GetKernelDebuggerInformation().KernelDebuggerEnabled;
-            }
-        }
-
-        /// <summary>
-        /// Get whether the kernel debugger is not present.
-        /// </summary>
-        public static bool KernelDebuggerNotPresent
-        {
-            get
-            {
-                return GetKernelDebuggerInformation().KernelDebuggerNotPresent;
-            }
-        }
-
-        /// <summary>
-        /// Get current code integrity option settings.
-        /// </summary>
-        public static CodeIntegrityOptions CodeIntegrityOptions
-        {
-            get
-            {
-                return QuerySystemInfo(new SystemCodeIntegrityInformation() { Length = Marshal.SizeOf(typeof(SystemCodeIntegrityInformation)) },
-                    SystemInformationClass.SystemCodeIntegrityInformation).CodeIntegrityOptions;
-            }
-        }
-
-        /// <summary>
-        /// Get code integrity policy.
-        /// </summary>
-        public static SystemCodeIntegrityPolicy CodeIntegrityPolicy
-        {
-            get
-            {
-                using (var buffer = new SafeStructureInOutBuffer<SystemCodeIntegrityPolicy>())
-                {
-                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityPolicyInformation,
-                        buffer, buffer.Length, out int ret_length).ToNtException();
-                    return buffer.Result;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Get code integrity unlock information.
-        /// </summary>
-        public static int CodeIntegrityUnlock
-        {
-            get
-            {
-                using (var buffer = new SafeStructureInOutBuffer<int>())
-                {
-                    int ret_length;
-                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityUnlockInformation,
-                        buffer, buffer.Length, out ret_length).ToNtException();
-                    return buffer.Result;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Get all code integrity policies.
-        /// </summary>
-        public static IEnumerable<CodeIntegrityPolicy> CodeIntegrityFullPolicy
-        {
-            get
-            {
-                List<CodeIntegrityPolicy> policies = new List<CodeIntegrityPolicy>();
-                try
-                {
-                    MemoryStream stm = new MemoryStream(QueryBlob(SystemInformationClass.SystemCodeIntegrityPoliciesFullInformation));
-                    if (stm.Length > 0)
-                    {
-                        BinaryReader reader = new BinaryReader(stm);
-                        int header_size = reader.ReadInt32();
-                        int total_policies = reader.ReadInt32();
-                        reader.ReadBytes(8 - header_size);
-                        for (int i = 0; i < total_policies; ++i)
-                        {
-                            policies.Add(new CodeIntegrityPolicy(reader));
-                        }
-                    }
-                }
-                catch (NtException)
-                {
-                    byte[] policy = QueryBlob(SystemInformationClass.SystemCodeIntegrityPolicyFullInformation);
-                    if (policy.Length > 0)
-                    {
-                        policies.Add(new CodeIntegrityPolicy(policy));
-                    }
-                }
-
-                return policies.AsReadOnly();
             }
         }
 
@@ -1340,51 +1264,6 @@ namespace NtApiDotNet
                 {
                     NtSystemCalls.NtSystemDebugControl(SystemDebugControlCode.KernelCrashDump, buffer, buffer.Length,
                         SafeHGlobalBuffer.Null, 0, out int ret_length).ToNtException();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Get whether secure boot is enabled.
-        /// </summary>
-        public static bool SecureBootEnabled
-        {
-            get
-            {
-                return QuerySystemInfo<SystemSecurebootInformation>(SystemInformationClass.SystemSecureBootInformation).SecureBootEnabled;
-            }
-        }
-
-        /// <summary>
-        /// Get whether system supports secure boot.
-        /// </summary>
-        public static bool SecureBootCapable
-        {
-            get
-            {
-                return QuerySystemInfo<SystemSecurebootInformation>(SystemInformationClass.SystemSecureBootInformation).SecureBootCapable;
-            }
-        }
-
-        /// <summary>
-        /// Extract the secure boot policy.
-        /// </summary>
-        public static SecureBootPolicy SecureBootPolicy
-        {
-            get
-            {
-                NtStatus status = NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemSecureBootPolicyFullInformation,
-                    SafeHGlobalBuffer.Null, 0, out int ret_length);
-                if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
-                {
-                    throw new NtException(status);
-                }
-
-                using (var buffer = new SafeStructureInOutBuffer<SystemSecurebootPolicyFullInformation>(ret_length, true))
-                {
-                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemSecureBootPolicyFullInformation,
-                        buffer, buffer.Length, out ret_length).ToNtException();
-                    return new SecureBootPolicy(buffer);
                 }
             }
         }
@@ -1618,13 +1497,203 @@ namespace NtApiDotNet
                 FileHandle = handle.DangerousGetHandle()
             };
 
-            using (var buffer = info.ToBuffer())
+            return Set(SystemInformationClass.SystemCodeIntegrityVerificationInformation, info);
+        }
+
+        /// <summary>
+        /// Get list of root silos.
+        /// </summary>
+        /// <returns>The list of root silos.</returns>
+        public static IReadOnlyCollection<int> GetRootSilos()
+        {
+            using (var buffer = QueryBuffer<SystemRootSiloInformation>(SystemInformationClass.SystemRootSiloInformation))
             {
-                return NtSystemCalls.NtSetSystemInformation(SystemInformationClass.SystemCodeIntegrityVerificationInformation, buffer,
-                    buffer.Length);
+                var result = buffer.Result;
+                int[] silos = new int[result.NumberOfSilos];
+                buffer.Data.ReadArray(0, silos, 0, silos.Length);
+                return silos.ToList().AsReadOnly();
             }
         }
 
+        /// <summary>
+        /// Set the ELAM certificate information.
+        /// </summary>
+        /// <param name="image_file">The signed file containing an ELAM certificate resource.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetElamCertificate(NtFile image_file)
+        {
+            SystemElamCertificateInformation info = new SystemElamCertificateInformation()
+            { ElamDriverFile = image_file.Handle.DangerousGetHandle() };
+            return Set(SystemInformationClass.SystemElamCertificateInformation, info);
+        }
+
+        /// <summary>
+        /// Query code integrity certificate information.
+        /// </summary>
+        /// <param name="image_file">The image file.</param>
+        /// <param name="type">The type of check to make.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus QueryCodeIntegrityCertificateInfo(NtFile image_file, int type)
+        {
+            SystemCodeIntegrityCertificateInformation info = new SystemCodeIntegrityCertificateInformation()
+            {
+                ImageFile = image_file.Handle.DangerousGetHandle(),
+                Type = type
+            };
+
+            return QuerySystemInfo(info, SystemInformationClass.SystemCodeIntegrityCertificateInformation, false).Status;
+        }
+
+        #endregion
+
+        #region Static Properties
+        /// <summary>
+        /// Get whether the kernel debugger is enabled.
+        /// </summary>
+        public static bool KernelDebuggerEnabled
+        {
+            get
+            {
+                return GetKernelDebuggerInformation().KernelDebuggerEnabled;
+            }
+        }
+
+        /// <summary>
+        /// Get whether the kernel debugger is not present.
+        /// </summary>
+        public static bool KernelDebuggerNotPresent
+        {
+            get
+            {
+                return GetKernelDebuggerInformation().KernelDebuggerNotPresent;
+            }
+        }
+
+        /// <summary>
+        /// Get current code integrity option settings.
+        /// </summary>
+        public static CodeIntegrityOptions CodeIntegrityOptions
+        {
+            get
+            {
+                return QuerySystemInfo(new SystemCodeIntegrityInformation() { Length = Marshal.SizeOf(typeof(SystemCodeIntegrityInformation)) },
+                    SystemInformationClass.SystemCodeIntegrityInformation).CodeIntegrityOptions;
+            }
+        }
+
+        /// <summary>
+        /// Get code integrity policy.
+        /// </summary>
+        public static SystemCodeIntegrityPolicy CodeIntegrityPolicy
+        {
+            get
+            {
+                using (var buffer = new SafeStructureInOutBuffer<SystemCodeIntegrityPolicy>())
+                {
+                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityPolicyInformation,
+                        buffer, buffer.Length, out int ret_length).ToNtException();
+                    return buffer.Result;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get code integrity unlock information.
+        /// </summary>
+        public static int CodeIntegrityUnlock
+        {
+            get
+            {
+                using (var buffer = new SafeStructureInOutBuffer<int>())
+                {
+                    int ret_length;
+                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityUnlockInformation,
+                        buffer, buffer.Length, out ret_length).ToNtException();
+                    return buffer.Result;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get all code integrity policies.
+        /// </summary>
+        public static IEnumerable<CodeIntegrityPolicy> CodeIntegrityFullPolicy
+        {
+            get
+            {
+                List<CodeIntegrityPolicy> policies = new List<CodeIntegrityPolicy>();
+                try
+                {
+                    MemoryStream stm = new MemoryStream(QueryBlob(SystemInformationClass.SystemCodeIntegrityPoliciesFullInformation));
+                    if (stm.Length > 0)
+                    {
+                        BinaryReader reader = new BinaryReader(stm);
+                        int header_size = reader.ReadInt32();
+                        int total_policies = reader.ReadInt32();
+                        reader.ReadBytes(8 - header_size);
+                        for (int i = 0; i < total_policies; ++i)
+                        {
+                            policies.Add(new CodeIntegrityPolicy(reader));
+                        }
+                    }
+                }
+                catch (NtException)
+                {
+                    byte[] policy = QueryBlob(SystemInformationClass.SystemCodeIntegrityPolicyFullInformation);
+                    if (policy.Length > 0)
+                    {
+                        policies.Add(new CodeIntegrityPolicy(policy));
+                    }
+                }
+
+                return policies.AsReadOnly();
+            }
+        }
+
+        /// <summary>
+        /// Get whether secure boot is enabled.
+        /// </summary>
+        public static bool SecureBootEnabled
+        {
+            get
+            {
+                return QuerySystemInfo<SystemSecurebootInformation>(SystemInformationClass.SystemSecureBootInformation).SecureBootEnabled;
+            }
+        }
+
+        /// <summary>
+        /// Get whether system supports secure boot.
+        /// </summary>
+        public static bool SecureBootCapable
+        {
+            get
+            {
+                return QuerySystemInfo<SystemSecurebootInformation>(SystemInformationClass.SystemSecureBootInformation).SecureBootCapable;
+            }
+        }
+
+        /// <summary>
+        /// Extract the secure boot policy.
+        /// </summary>
+        public static SecureBootPolicy SecureBootPolicy
+        {
+            get
+            {
+                NtStatus status = NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemSecureBootPolicyFullInformation,
+                    SafeHGlobalBuffer.Null, 0, out int ret_length);
+                if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
+                {
+                    throw new NtException(status);
+                }
+
+                using (var buffer = new SafeStructureInOutBuffer<SystemSecurebootPolicyFullInformation>(ret_length, true))
+                {
+                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemSecureBootPolicyFullInformation,
+                        buffer, buffer.Length, out ret_length).ToNtException();
+                    return new SecureBootPolicy(buffer);
+                }
+            }
+        }
         /// <summary>
         /// Get system timer resolution.
         /// </summary>
@@ -1666,19 +1735,6 @@ namespace NtApiDotNet
         /// </summary>
         public static int NumberOfProcessors => _basic_info.Value.NumberOfProcessors;
 
-        /// <summary>
-        /// Get list of root silos.
-        /// </summary>
-        /// <returns>The list of root silos.</returns>
-        public static IReadOnlyCollection<int> GetRootSilos()
-        {
-            using (var buffer = QuerySystemInfoVariable<SystemRootSiloInformation>(SystemInformationClass.SystemRootSiloInformation))
-            {
-                var result = buffer.Result;
-                int[] silos = new int[result.NumberOfSilos];
-                buffer.Data.ReadArray(0, silos, 0, silos.Length);
-                return silos.ToList().AsReadOnly();
-            }
-        }
+        #endregion
     }
 }
