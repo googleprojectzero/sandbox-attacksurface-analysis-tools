@@ -44,6 +44,7 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BufferUtils.cs" />
     <Compile Include="CachedEnumerable.cs" />
     <Compile Include="CreateUserProcess.cs" />
     <Compile Include="CreateUserProcessResult.cs" />
@@ -133,8 +134,10 @@
     <Compile Include="NtProcessMitigations.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AnnontationAttributes.cs" />
+    <Compile Include="SafeBuffers.cs" />
     <Compile Include="SafeHandles.cs" />
     <Compile Include="NtSecurity.cs" />
+    <Compile Include="SafeKernelObjectHandle.cs" />
     <Compile Include="SecurityCapabilities.cs" />
     <Compile Include="SecurityDescriptor.cs" />
     <Compile Include="SecurityQualityOfService.cs" />

@@ -571,7 +571,7 @@ namespace NtApiDotNet
         /// <typeparam name="T">Type of structure to write.</typeparam>
         public static void WriteMemoryArray<T>(SafeKernelObjectHandle process, long base_address, T[] data) where T : new()
         {
-            using (var buffer = data.ToArrayBuffer())
+            using (var buffer = data.ToBuffer())
             {
                 NtSystemCalls.NtWriteVirtualMemory(process,
                     new IntPtr(base_address), buffer, buffer.Length, out int return_length).ToNtException();
