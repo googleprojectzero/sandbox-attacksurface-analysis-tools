@@ -255,5 +255,10 @@ namespace NtApiDotNet.Win32
         {
             return FormatMessage(SafeLoadLibraryHandle.Null, message_id);
         }
+
+        internal static Win32Error GetLastWin32Error()
+        {
+            return (Win32Error)Marshal.GetLastWin32Error();
+        }
     }
 }

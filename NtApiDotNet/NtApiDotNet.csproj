@@ -135,7 +135,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AnnontationAttributes.cs" />
     <Compile Include="SafeBuffers.cs" />
-    <Compile Include="SafeHandles.cs" />
+    <Compile Include="SafeSidBufferHandle.cs" />
     <Compile Include="NtSecurity.cs" />
     <Compile Include="SafeKernelObjectHandle.cs" />
     <Compile Include="SecurityCapabilities.cs" />
@@ -152,7 +152,9 @@
     <Compile Include="Win32\RpcEndpointMapper.cs" />
     <Compile Include="Win32\RpcAlpcServer.cs" />
     <Compile Include="Win32\RpcServer.cs" />
+    <Compile Include="Win32\SafeLocalAllocHandle.cs" />
     <Compile Include="Win32\SymbolResolver.cs" />
+    <Compile Include="Win32\Win32Error.cs" />
     <Compile Include="Win32\Win32Utils.cs" />
     <Compile Include="Win32\Win32NativeMethods.cs" />
     <Compile Include="Win32\SafeLoadLibraryHandle.cs" />

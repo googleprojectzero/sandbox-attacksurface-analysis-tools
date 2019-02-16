@@ -431,41 +431,17 @@ public enum ProtectionLevel
     {
         private DisposableList<IDisposable> _values = new DisposableList<IDisposable>();
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool InitializeProcThreadAttributeList(
-            IntPtr lpAttributeList,
-            int dwAttributeCount,
-            int dwFlags,
-            ref IntPtr lpSize
-        );
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool UpdateProcThreadAttribute(
-            IntPtr lpAttributeList,
-            int dwFlags,
-            IntPtr Attribute,
-            IntPtr lpValue,
-            IntPtr cbSize,
-            IntPtr lpPreviousValue,
-            IntPtr lpReturnSize
-        );
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool DeleteProcThreadAttributeList(
-            IntPtr lpAttributeList
-        );
-
         private static int GetAttributeListSize(int count)
         {
             IntPtr size = IntPtr.Zero;
-            InitializeProcThreadAttributeList(IntPtr.Zero, count, 0, ref size);
+            Win32NativeMethods.InitializeProcThreadAttributeList(IntPtr.Zero, count, 0, ref size);
             return size.ToInt32();
         }
 
         public SafeProcThreadAttributeListBuffer(int count) : base(GetAttributeListSize(count))
         {
             IntPtr size = new IntPtr(Length);
-            if (!InitializeProcThreadAttributeList(handle, count, 0, ref size))
+            if (!Win32NativeMethods.InitializeProcThreadAttributeList(handle, count, 0, ref size))
             {
                 throw new SafeWin32Exception();
             }
@@ -483,7 +459,7 @@ public enum ProtectionLevel
 
         public void AddAttributeBuffer(IntPtr attribute, SafeHGlobalBuffer value)
         {
-            if (!UpdateProcThreadAttribute(handle, 0, attribute, value.DangerousGetHandle(), 
+            if (!Win32NativeMethods.UpdateProcThreadAttribute(handle, 0, attribute, value.DangerousGetHandle(), 
                 new IntPtr(value.Length), IntPtr.Zero, IntPtr.Zero))
             {
                 throw new SafeWin32Exception();
@@ -495,7 +471,7 @@ public enum ProtectionLevel
             _values?.Dispose();
             if (!IsInvalid)
             {
-                bool ret = DeleteProcThreadAttributeList(handle);
+                bool ret = Win32NativeMethods.DeleteProcThreadAttributeList(handle);
                 return base.ReleaseHandle() && ret;
             }
 
@@ -1001,68 +977,6 @@ public enum ProtectionLevel
     /// </summary>
     public sealed class Win32Process : IDisposable
     {
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct PROCESS_INFORMATION
-        {
-            public IntPtr hProcess;
-            public IntPtr hThread;
-            public int dwProcessId;
-            public int dwThreadId;
-        }
-
-        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        static extern bool CreateProcessAsUser(
-          SafeKernelObjectHandle hToken,
-          string lpApplicationName,
-          string lpCommandLine,
-          SECURITY_ATTRIBUTES lpProcessAttributes,
-          SECURITY_ATTRIBUTES lpThreadAttributes,
-          bool bInheritHandles,
-          CreateProcessFlags dwCreationFlags,
-          byte[] lpEnvironment,
-          string lpCurrentDirectory,
-          [In] STARTUPINFOEX lpStartupInfo,
-          out PROCESS_INFORMATION lpProcessInformation);
-
-        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        static extern bool CreateProcessWithTokenW(
-          SafeKernelObjectHandle hToken,
-          CreateProcessLogonFlags dwLogonFlags,
-          string lpApplicationName,
-          string lpCommandLine,
-          CreateProcessFlags dwCreationFlags,
-          [In] byte[] lpEnvironment,
-          string lpCurrentDirectory,
-          ref STARTUPINFO lpStartupInfo,
-          out PROCESS_INFORMATION lpProcessInformation);
-
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        static extern bool CreateProcess(
-          string lpApplicationName,
-          string lpCommandLine,
-          [In] SECURITY_ATTRIBUTES lpProcessAttributes,
-          [In] SECURITY_ATTRIBUTES lpThreadAttributes,
-          bool bInheritHandles,
-          CreateProcessFlags dwCreationFlags,
-          [In] byte[] lpEnvironment,
-          string lpCurrentDirectory,
-          [In] STARTUPINFOEX lpStartupInfo,
-          out PROCESS_INFORMATION lpProcessInformation);
-
-        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        static extern bool CreateProcessWithLogonW(
-          string lpUsername,
-          string lpDomain,
-          string lpPassword,
-          CreateProcessLogonFlags dwLogonFlags,
-          string lpApplicationName,
-          string lpCommandLine,
-          CreateProcessFlags dwCreationFlags,
-          [In] byte[] lpEnvironment,
-          string lpCurrentDirectory,
-          ref STARTUPINFO lpStartupInfo,
-          out PROCESS_INFORMATION lpProcessInformation);
-
         /// <summary>
         /// Create process with a token.
         /// </summary>
@@ -1078,12 +992,12 @@ public enum ProtectionLevel
                 SECURITY_ATTRIBUTES proc_attr = config.ProcessSecurityAttributes(resources);
                 SECURITY_ATTRIBUTES thread_attr = config.ThreadSecurityAttributes(resources);
                 
-                if (!CreateProcessAsUser(token.Handle, config.ApplicationName, config.CommandLine,
+                if (!Win32NativeMethods.CreateProcessAsUser(token.Handle, config.ApplicationName, config.CommandLine,
                         proc_attr, thread_attr, config.InheritHandles, config.CreationFlags 
                         | CreateProcessFlags.ExtendedStartupInfoPresent, config.Environment, 
                         config.CurrentDirectory, start_info, out proc_info))
                 {
-                    if (!CreateProcessWithTokenW(token.Handle, 0, config.ApplicationName, config.CommandLine,
+                    if (!Win32NativeMethods.CreateProcessWithTokenW(token.Handle, 0, config.ApplicationName, config.CommandLine,
                         config.CreationFlags, config.Environment, config.CurrentDirectory, 
                         ref start_info.StartupInfo, out proc_info))
                     {
@@ -1132,7 +1046,7 @@ public enum ProtectionLevel
             STARTUPINFO start_info = config.ToStartupInfo();
             PROCESS_INFORMATION proc_info = new PROCESS_INFORMATION();
 
-            if (!CreateProcessWithLogonW(username, domain, password, logon_flags, 
+            if (!Win32NativeMethods.CreateProcessWithLogonW(username, domain, password, logon_flags, 
                 config.ApplicationName, config.CommandLine, config.CreationFlags,
                 config.Environment, config.CurrentDirectory, ref start_info, out proc_info))
             {
@@ -1187,7 +1101,7 @@ public enum ProtectionLevel
                 SECURITY_ATTRIBUTES proc_attr = config.ProcessSecurityAttributes(resources);
                 SECURITY_ATTRIBUTES thread_attr = config.ThreadSecurityAttributes(resources);
 
-                if (!CreateProcess(config.ApplicationName, config.CommandLine, proc_attr, thread_attr, config.InheritHandles,
+                if (!Win32NativeMethods.CreateProcess(config.ApplicationName, config.CommandLine, proc_attr, thread_attr, config.InheritHandles,
                         config.CreationFlags | CreateProcessFlags.ExtendedStartupInfoPresent, 
                         config.Environment, config.CurrentDirectory, config.ToStartupInfoEx(resources), out proc_info))
                 {

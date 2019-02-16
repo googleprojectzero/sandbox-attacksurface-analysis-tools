@@ -122,16 +122,13 @@ namespace NtApiDotNet.Win32
 
     internal class SafeServiceHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        [DllImport("Advapi32.dll", SetLastError = true)]
-        static extern bool CloseServiceHandle(IntPtr hSCObject);
-
         public SafeServiceHandle() : base(true)
         {
         }
 
         protected override bool ReleaseHandle()
         {
-            return CloseServiceHandle(handle);
+            return Win32NativeMethods.CloseServiceHandle(handle);
         }
     }
 
@@ -565,65 +562,6 @@ namespace NtApiDotNet.Win32
     {
         const int SERVICE_CONFIG_TRIGGER_INFO = 8;
 
-        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern SafeServiceHandle OpenSCManager(string lpMachineName, string lpDatabaseName, ServiceControlManagerAccessRights dwDesiredAccess);
-
-        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern SafeServiceHandle OpenService(
-              SafeServiceHandle hSCManager,
-              string lpServiceName,
-              ServiceAccessRights dwDesiredAccess
-            );
-
-        [DllImport("Advapi32.dll", SetLastError = true)]
-        static extern bool QueryServiceObjectSecurity(SafeServiceHandle hService,
-            SecurityInformation dwSecurityInformation,
-            [Out] byte[] lpSecurityDescriptor,
-            int cbBufSize,
-            out int pcbBytesNeeded);
-
-        [DllImport("Advapi32.dll", SetLastError = true)]
-        static extern bool QueryServiceConfig2(
-          SafeServiceHandle hService,
-          int dwInfoLevel,
-          SafeBuffer lpBuffer,
-          int cbBufSize,
-          out int pcbBytesNeeded
-        );
-
-        [DllImport("Advapi32.dll", SetLastError = true)]
-        static extern bool QueryServiceStatusEx(
-          SafeServiceHandle hService,
-          SC_STATUS_TYPE InfoLevel,
-          SafeBuffer lpBuffer,
-          int cbBufSize,
-          out int pcbBytesNeeded
-        );
-
-        [Flags]
-        enum SERVICE_STATE
-        {
-            SERVICE_ACTIVE = 1,
-            SERVICE_INACTIVE = 2,
-            SERVICE_STATE_ALL = SERVICE_ACTIVE | SERVICE_INACTIVE
-        }
-
-        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        static extern bool EnumServicesStatusEx(
-              SafeServiceHandle hSCManager,
-              SC_ENUM_TYPE InfoLevel,
-              ServiceType dwServiceType,
-              SERVICE_STATE dwServiceState,
-              SafeHGlobalBuffer lpServices,
-              int cbBufSize,
-              out int pcbBytesNeeded,
-              out int lpServicesReturned,
-              ref int lpResumeHandle,
-              string pszGroupName
-            );
-
-        const int ERROR_MORE_DATA = 234;
-
         /// <summary>
         /// Get the generic mapping for the SCM.
         /// </summary>
@@ -664,7 +602,7 @@ namespace NtApiDotNet.Win32
         /// <returns></returns>
         public static SecurityDescriptor GetScmSecurityDescriptor()
         {
-            using (SafeServiceHandle scm = OpenSCManager(null, null,
+            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
                             ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.ReadControl))
             {
                 return GetServiceSecurityDescriptor(scm);
@@ -675,7 +613,7 @@ namespace NtApiDotNet.Win32
         {
             int required = 0;
             byte[] sd = new byte[8192];
-            if (!QueryServiceObjectSecurity(handle, SecurityInformation.Dacl 
+            if (!Win32NativeMethods.QueryServiceObjectSecurity(handle, SecurityInformation.Dacl 
                 | SecurityInformation.Owner 
                 | SecurityInformation.Label 
                 | SecurityInformation.Group, sd, sd.Length, out required))
@@ -692,7 +630,7 @@ namespace NtApiDotNet.Win32
             using (var buf = new SafeStructureInOutBuffer<SERVICE_TRIGGER_INFO>(8192, false))
             {
                 int required = 0;
-                if (!QueryServiceConfig2(service, SERVICE_CONFIG_TRIGGER_INFO, buf, 8192, out required))
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_TRIGGER_INFO, buf, 8192, out required))
                 {
                     return triggers.AsReadOnly();
                 }
@@ -721,7 +659,7 @@ namespace NtApiDotNet.Win32
 
         private static ServiceInformation GetServiceSecurityInformation(SafeServiceHandle scm, string name)
         {
-            using (SafeServiceHandle service = OpenService(scm, name, ServiceAccessRights.QueryConfig | ServiceAccessRights.ReadControl))
+            using (SafeServiceHandle service = Win32NativeMethods.OpenService(scm, name, ServiceAccessRights.QueryConfig | ServiceAccessRights.ReadControl))
             {
                 if (service.IsInvalid)
                 {
@@ -739,7 +677,7 @@ namespace NtApiDotNet.Win32
         /// <returns>The servicec information.</returns>
         public static ServiceInformation GetServiceInformation(string name)
         {
-            using (SafeServiceHandle scm = OpenSCManager(null, null,
+            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
                             ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.ReadControl))
             {
                 if (scm.IsInvalid)
@@ -755,7 +693,7 @@ namespace NtApiDotNet.Win32
         {
             using (var buffer = new SafeStructureInOutBuffer<SERVICE_STATUS_PROCESS>())
             {
-                if (!QueryServiceStatusEx(service, SC_STATUS_TYPE.SC_STATUS_PROCESS_INFO, buffer, buffer.Length, out int length))
+                if (!Win32NativeMethods.QueryServiceStatusEx(service, SC_STATUS_TYPE.SC_STATUS_PROCESS_INFO, buffer, buffer.Length, out int length))
                 {
                     throw new SafeWin32Exception();
                 }
@@ -765,7 +703,7 @@ namespace NtApiDotNet.Win32
 
         private static int GetServiceProcessId(SafeServiceHandle scm, string name)
         {
-            using (SafeServiceHandle service = OpenService(scm, name, ServiceAccessRights.QueryStatus))
+            using (SafeServiceHandle service = Win32NativeMethods.OpenService(scm, name, ServiceAccessRights.QueryStatus))
             {
                 if (service.IsInvalid)
                 {
@@ -784,7 +722,7 @@ namespace NtApiDotNet.Win32
         /// <exception cref="SafeWin32Exception">Thrown on error.</exception>
         public static int GetServiceProcessId(string name)
         {
-            using (SafeServiceHandle scm = OpenSCManager(null, null,
+            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
                             ServiceControlManagerAccessRights.Connect))
             {
                 if (scm.IsInvalid)
@@ -805,7 +743,7 @@ namespace NtApiDotNet.Win32
         public static IDictionary<string, int> GetServiceProcessIds(IEnumerable<string> names)
         {
             Dictionary<string, int> result = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            using (SafeServiceHandle scm = OpenSCManager(null, null,
+            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
                             ServiceControlManagerAccessRights.Connect))
             {
                 if (scm.IsInvalid)
@@ -830,7 +768,7 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of running services with process IDs.</returns>
         private static IEnumerable<RunningService> GetServices(SERVICE_STATE service_state)
         {
-            using (SafeServiceHandle scm = OpenSCManager(null, null,
+            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
                             ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.EnumerateService))
             {
                 if (scm.IsInvalid)
@@ -850,10 +788,10 @@ namespace NtApiDotNet.Win32
                     int resume_handle = 0;
                     while (true)
                     {
-                        bool ret = EnumServicesStatusEx(scm, SC_ENUM_TYPE.SC_ENUM_PROCESS_INFO, service_types, service_state, buffer,
+                        bool ret = Win32NativeMethods.EnumServicesStatusEx(scm, SC_ENUM_TYPE.SC_ENUM_PROCESS_INFO, service_types, service_state, buffer,
                             buffer.Length, out int bytes_needed, out int services_returned, ref resume_handle, null);
-                        int error = Marshal.GetLastWin32Error();
-                        if (!ret && error != ERROR_MORE_DATA)
+                        Win32Error error = Win32Utils.GetLastWin32Error();
+                        if (!ret && error != Win32Error.ERROR_MORE_DATA)
                         {
                             throw new SafeWin32Exception(error);
                         }

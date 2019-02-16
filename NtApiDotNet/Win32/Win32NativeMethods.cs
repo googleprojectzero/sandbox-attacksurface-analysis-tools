@@ -85,6 +85,19 @@ namespace NtApiDotNet.Win32
         public WTS_CONNECTSTATE_CLASS State;
     }
 
+    internal enum SidNameUse
+    {
+        SidTypeUser = 1,
+        SidTypeGroup,
+        SidTypeDomain,
+        SidTypeAlias,
+        SidTypeWellKnownGroup,
+        SidTypeDeletedAccount,
+        SidTypeInvalid,
+        SidTypeUnknown,
+        SidTypeComputer,
+        SidTypeLabel
+    }
 
     /// <summary>
     /// Flags for GetWin32PathName.
@@ -122,6 +135,29 @@ namespace NtApiDotNet.Win32
         FromSystem = 0x00001000,
         IgnoreInserts = 0x00000200
     }
+
+    [Flags]
+    internal enum SERVICE_STATE
+    {
+        SERVICE_ACTIVE = 1,
+        SERVICE_INACTIVE = 2,
+        SERVICE_STATE_ALL = SERVICE_ACTIVE | SERVICE_INACTIVE
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PROCESS_INFORMATION
+    {
+        public IntPtr hProcess;
+        public IntPtr hThread;
+        public int dwProcessId;
+        public int dwThreadId;
+    }
+
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    internal delegate bool EnumResTypeProc(IntPtr hModule, IntPtr lpszType, IntPtr lParam);
+
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    internal delegate bool EnumResNameProcDelegate(IntPtr hModule, IntPtr lpszType, IntPtr lpszName, IntPtr lParam);
 
     internal static class Win32NativeMethods
     {
@@ -290,8 +326,6 @@ namespace NtApiDotNet.Win32
         internal static extern int GetFinalPathNameByHandle(SafeKernelObjectHandle hFile, StringBuilder lpszFilePath,
             int cchFilePath, Win32PathNameFlags dwFlags);
 
-
-
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern int FormatMessage(
           FormatFlags dwFlags,
@@ -302,5 +336,265 @@ namespace NtApiDotNet.Win32
           int nSize,
           IntPtr Arguments
         );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool ConvertSecurityDescriptorToStringSecurityDescriptor(
+            byte[] SecurityDescriptor,
+            int RequestedStringSDRevision,
+            SecurityInformation SecurityInformation,
+            out SafeLocalAllocHandle StringSecurityDescriptor,
+            out int StringSecurityDescriptorLen);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool ConvertStringSecurityDescriptorToSecurityDescriptor(
+            string StringSecurityDescriptor,
+            int StringSDRevision,
+            out SafeLocalAllocHandle SecurityDescriptor,
+            out int SecurityDescriptorSize);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool ConvertStringSidToSid(
+            string StringSid,
+            out SafeLocalAllocHandle Sid);
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool LookupAccountSid(string lpSystemName, SafeSidBufferHandle lpSid, StringBuilder lpName,
+               ref int cchName, StringBuilder lpReferencedDomainName, ref int cchReferencedDomainName, out SidNameUse peUse);
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool LookupAccountName(string lpSystemName, string lpAccountName,
+            SafeBuffer Sid,
+            ref int cbSid,
+            SafeBuffer ReferencedDomainName,
+            ref int cchReferencedDomainName,
+            out SidNameUse peUse
+        );
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool LookupPrivilegeName(
+           string lpSystemName,
+           ref Luid lpLuid,
+           [Out] StringBuilder lpName,
+           ref int cchName);
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool LookupPrivilegeDisplayName(
+          string lpSystemName,
+          string lpName,
+          StringBuilder lpDisplayName,
+          ref int cchDisplayName,
+          out int lpLanguageId
+        );
+
+        // Don't think there's a direct NT equivalent as this talks to LSASS.
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool LookupPrivilegeValue(
+          string lpSystemName,
+          string lpName,
+          out Luid lpLuid
+        );
+
+        [DllImport("kernel32.dll")]
+        internal static extern IntPtr LocalAlloc(int flags, IntPtr size);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        internal static extern IntPtr LocalFree(IntPtr hMem);
+
+        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        internal static extern bool EnumResourceTypes(IntPtr hModule, EnumResTypeProc lpEnumFunc, IntPtr lParam);
+
+        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        internal static extern bool EnumResourceNames(SafeLoadLibraryHandle hModule, IntPtr lpszType,
+            EnumResNameProcDelegate lpEnumFunc, IntPtr lParam);
+
+        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        internal static extern IntPtr LoadResource(SafeLoadLibraryHandle hModule, IntPtr hResInfo);
+
+        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        internal static extern IntPtr LockResource(IntPtr hResData);
+
+        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        internal static extern int SizeofResource(SafeLoadLibraryHandle hModule, IntPtr hResInfo);
+
+        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        internal static extern IntPtr FindResource(SafeLoadLibraryHandle hModule, IntPtr lpName, IntPtr lpType);
+
+        [DllImport("Secur32.dll")]
+        internal static extern NtStatus LsaConnectUntrusted(out SafeLsaHandle handle);
+
+        [DllImport("Secur32.dll")]
+        internal static extern NtStatus LsaLookupAuthenticationPackage(SafeLsaHandle LsaHandle, LsaString PackageName, out uint AuthenticationPackage);
+
+        [DllImport("Secur32.dll")]
+        internal static extern NtStatus LsaLogonUser(SafeLsaHandle LsaHandle, LsaString OriginName, SecurityLogonType LogonType, uint AuthenticationPackage,
+            SafeBuffer AuthenticationInformation,
+            int AuthenticationInformationLength,
+            IntPtr LocalGroups,
+            TOKEN_SOURCE SourceContext,
+            out IntPtr ProfileBuffer,
+            out int ProfileBufferLength,
+            out Luid LogonId,
+            out SafeKernelObjectHandle Token,
+            QUOTA_LIMITS Quotas,
+            out NtStatus SubStatus
+        );
+
+        [DllImport("Secur32.dll")]
+        internal static extern NtStatus LsaFreeReturnBuffer(IntPtr Buffer);
+
+        [DllImport("Advapi32.dll")]
+        internal static extern bool AllocateLocallyUniqueId(out Luid Luid);
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool LogonUser(string lpszUsername, string lpszDomain, string lpszPassword, SecurityLogonType dwLogonType,
+            int dwLogonProvider, out SafeKernelObjectHandle phToken);
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool LogonUserExExW(
+              string lpszUsername,
+              string lpszDomain,
+              string lpszPassword,
+              SecurityLogonType dwLogonType,
+              int dwLogonProvider,
+              SafeTokenGroupsBuffer pTokenGroups,
+              out SafeKernelObjectHandle phToken,
+              [Out] OptionalPointer ppLogonSid,
+              [Out] OptionalPointer ppProfileBuffer,
+              [Out] OptionalPointer pdwProfileLength,
+              [Out] QUOTA_LIMITS pQuotaLimits
+            );
+
+        [DllImport("Advapi32.dll")]
+        internal static extern NtStatus LsaClose(IntPtr handle);
+
+        [DllImport("Advapi32.dll", SetLastError = true)]
+        internal static extern bool CloseServiceHandle(IntPtr hSCObject);
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern SafeServiceHandle OpenSCManager(string lpMachineName, string lpDatabaseName, ServiceControlManagerAccessRights dwDesiredAccess);
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern SafeServiceHandle OpenService(
+              SafeServiceHandle hSCManager,
+              string lpServiceName,
+              ServiceAccessRights dwDesiredAccess
+            );
+
+        [DllImport("Advapi32.dll", SetLastError = true)]
+        internal static extern bool QueryServiceObjectSecurity(SafeServiceHandle hService,
+            SecurityInformation dwSecurityInformation,
+            [Out] byte[] lpSecurityDescriptor,
+            int cbBufSize,
+            out int pcbBytesNeeded);
+
+        [DllImport("Advapi32.dll", SetLastError = true)]
+        internal static extern bool QueryServiceConfig2(
+          SafeServiceHandle hService,
+          int dwInfoLevel,
+          SafeBuffer lpBuffer,
+          int cbBufSize,
+          out int pcbBytesNeeded
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true)]
+        internal static extern bool QueryServiceStatusEx(
+          SafeServiceHandle hService,
+          SC_STATUS_TYPE InfoLevel,
+          SafeBuffer lpBuffer,
+          int cbBufSize,
+          out int pcbBytesNeeded
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool EnumServicesStatusEx(
+              SafeServiceHandle hSCManager,
+              SC_ENUM_TYPE InfoLevel,
+              ServiceType dwServiceType,
+              SERVICE_STATE dwServiceState,
+              SafeHGlobalBuffer lpServices,
+              int cbBufSize,
+              out int pcbBytesNeeded,
+              out int lpServicesReturned,
+              ref int lpResumeHandle,
+              string pszGroupName
+            );
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        internal static extern bool InitializeProcThreadAttributeList(
+            IntPtr lpAttributeList,
+            int dwAttributeCount,
+            int dwFlags,
+            ref IntPtr lpSize
+        );
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        internal static extern bool UpdateProcThreadAttribute(
+            IntPtr lpAttributeList,
+            int dwFlags,
+            IntPtr Attribute,
+            IntPtr lpValue,
+            IntPtr cbSize,
+            IntPtr lpPreviousValue,
+            IntPtr lpReturnSize
+        );
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        internal static extern bool DeleteProcThreadAttributeList(
+            IntPtr lpAttributeList
+        );
+
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool CreateProcessAsUser(
+          SafeKernelObjectHandle hToken,
+          string lpApplicationName,
+          string lpCommandLine,
+          SECURITY_ATTRIBUTES lpProcessAttributes,
+          SECURITY_ATTRIBUTES lpThreadAttributes,
+          bool bInheritHandles,
+          CreateProcessFlags dwCreationFlags,
+          byte[] lpEnvironment,
+          string lpCurrentDirectory,
+          [In] STARTUPINFOEX lpStartupInfo,
+          out PROCESS_INFORMATION lpProcessInformation);
+
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool CreateProcessWithTokenW(
+          SafeKernelObjectHandle hToken,
+          CreateProcessLogonFlags dwLogonFlags,
+          string lpApplicationName,
+          string lpCommandLine,
+          CreateProcessFlags dwCreationFlags,
+          [In] byte[] lpEnvironment,
+          string lpCurrentDirectory,
+          ref STARTUPINFO lpStartupInfo,
+          out PROCESS_INFORMATION lpProcessInformation);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool CreateProcess(
+          string lpApplicationName,
+          string lpCommandLine,
+          [In] SECURITY_ATTRIBUTES lpProcessAttributes,
+          [In] SECURITY_ATTRIBUTES lpThreadAttributes,
+          bool bInheritHandles,
+          CreateProcessFlags dwCreationFlags,
+          [In] byte[] lpEnvironment,
+          string lpCurrentDirectory,
+          [In] STARTUPINFOEX lpStartupInfo,
+          out PROCESS_INFORMATION lpProcessInformation);
+
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool CreateProcessWithLogonW(
+          string lpUsername,
+          string lpDomain,
+          string lpPassword,
+          CreateProcessLogonFlags dwLogonFlags,
+          string lpApplicationName,
+          string lpCommandLine,
+          CreateProcessFlags dwCreationFlags,
+          [In] byte[] lpEnvironment,
+          string lpCurrentDirectory,
+          ref STARTUPINFO lpStartupInfo,
+          out PROCESS_INFORMATION lpProcessInformation);
     }
 }

@@ -190,14 +190,11 @@ namespace NtApiDotNet.Win32
             Marshal.StructureToPtr(object_info, pObjectInfo, false);
         }
 
-        [DllImport("kernel32.dll")]
-        private static extern IntPtr LocalAlloc(int flags, IntPtr size);        
-
         public void GetSecurity(SecurityInformation RequestedInformation, 
             out IntPtr ppSecurityDescriptor, [MarshalAs(UnmanagedType.Bool)] bool fDefault)
         {
             byte[] raw_sd = _sd ?? _handle.GetSecurityDescriptorBytes(RequestedInformation);
-            IntPtr ret = LocalAlloc(0, new IntPtr(raw_sd.Length));
+            IntPtr ret = Win32NativeMethods.LocalAlloc(0, new IntPtr(raw_sd.Length));
             Marshal.Copy(raw_sd, 0, ret, raw_sd.Length);
             ppSecurityDescriptor = ret;
         }

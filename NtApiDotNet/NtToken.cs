@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -805,34 +806,9 @@ namespace NtApiDotNet
     /// </summary>
     public class TokenPrivilege
     {
-        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern bool LookupPrivilegeName(
-           string lpSystemName,
-           ref Luid lpLuid,
-           [Out] StringBuilder lpName,
-           ref int cchName);
-
-        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern bool LookupPrivilegeDisplayName(
-          string lpSystemName,
-          string lpName,
-          StringBuilder lpDisplayName,
-          ref int cchDisplayName,
-          out int lpLanguageId
-        );
-
-        // Don't think there's a direct NT equivalent as this talks to LSASS.
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool LookupPrivilegeValue(
-          string lpSystemName,
-          string lpName,
-          out Luid lpLuid
-        );
-
         private static Luid LookupPrivilegeLuid(string name)
         {
-            if (!LookupPrivilegeValue(".", name, out Luid luid))
+            if (!Win32NativeMethods.LookupPrivilegeValue(".", name, out Luid luid))
             {
                 throw new NtException(NtStatus.STATUS_NO_SUCH_PRIVILEGE);
             }
@@ -866,7 +842,7 @@ namespace NtApiDotNet
                     Luid luid = Luid;
                     StringBuilder builder = new StringBuilder(256);
                     int name_length = 256;
-                    if (LookupPrivilegeName(null, ref luid, builder, ref name_length))
+                    if (Win32NativeMethods.LookupPrivilegeName(null, ref luid, builder, ref name_length))
                     {
                         return builder.ToString();
                     }
@@ -885,19 +861,19 @@ namespace NtApiDotNet
             {
                 int name_length = 0;
                 string name = Name;
-                LookupPrivilegeDisplayName(null, name, null, ref name_length, out int lang_id);
+                Win32NativeMethods.LookupPrivilegeDisplayName(null, name, null, ref name_length, out int lang_id);
                 if (name_length <= 0)
                 {
-                    return String.Empty;
+                    return string.Empty;
                 }
 
                 StringBuilder builder = new StringBuilder(name_length + 1);
                 name_length = builder.Capacity;
-                if (LookupPrivilegeDisplayName(null, name, builder, ref name_length, out lang_id))
+                if (Win32NativeMethods.LookupPrivilegeDisplayName(null, name, builder, ref name_length, out lang_id))
                 {
                     return builder.ToString();
                 }
-                return String.Empty;
+                return string.Empty;
             }
         }
 

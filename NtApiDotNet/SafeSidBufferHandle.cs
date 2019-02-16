@@ -14,39 +14,10 @@
 
 using Microsoft.Win32.SafeHandles;
 using System;
-using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
 #pragma warning disable 1591
-    public sealed class SafeLocalAllocHandle : SafeHandle
-    {
-        [DllImport("kernel32.dll", SetLastError =true)]
-        static extern IntPtr LocalFree(IntPtr hMem);
-
-        protected override bool ReleaseHandle()
-        {
-            return LocalFree(handle) == IntPtr.Zero;
-        }
-
-        public SafeLocalAllocHandle(IntPtr handle, bool owns_handle) : base(IntPtr.Zero, owns_handle)
-        {
-            SetHandle(handle);
-        }
-
-        public SafeLocalAllocHandle() : base(IntPtr.Zero, true)
-        {
-        }
-
-        public override bool IsInvalid
-        {
-            get
-            {
-                return handle == IntPtr.Zero;
-            }
-        }
-    }
-
     /// <summary>
     /// Safe SID buffer.
     /// </summary>

@@ -30,15 +30,6 @@ namespace NtApiDotNet.Win32
         const string MANIFEST_ASMV1_NS = "urn:schemas-microsoft-com:asm.v1";
         const string MANIFEST_ASMV3_NS = "urn:schemas-microsoft-com:asm.v3";
         const string MANIFEST_WS_NS = "http://schemas.microsoft.com/SMI/2005/WindowsSettings";
-        
-        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-        private static extern bool EnumResourceTypes(IntPtr hModule, EnumResTypeProc lpEnumFunc, IntPtr lParam);
-
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        private delegate bool EnumResTypeProc(IntPtr hModule, IntPtr lpszType, IntPtr lParam);
-
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        private delegate bool EnumResNameProcDelegate(IntPtr hModule, IntPtr lpszType, IntPtr lpszName, IntPtr lParam);
 
         enum ResType
         {
@@ -64,22 +55,6 @@ namespace NtApiDotNet.Win32
             HTML = 23,
             MANIFEST = 24
         }
-
-        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-        private static extern bool EnumResourceNames(SafeLoadLibraryHandle hModule, IntPtr lpszType, 
-            EnumResNameProcDelegate lpEnumFunc, IntPtr lParam);
-
-        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-        private static extern IntPtr LoadResource(SafeLoadLibraryHandle hModule, IntPtr hResInfo);
-
-        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-        private static extern IntPtr LockResource(IntPtr hResData);
-
-        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-        private static extern int SizeofResource(SafeLoadLibraryHandle hModule, IntPtr hResInfo);
-
-        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-        private static extern IntPtr FindResource(SafeLoadLibraryHandle hModule, IntPtr lpName, IntPtr lpType);
 
         private static string FormatTypeName(IntPtr p)
         {
@@ -165,15 +140,15 @@ namespace NtApiDotNet.Win32
         {
             FullPath = fullpath;
 
-            IntPtr hResHandle = FindResource(hModule, hName, new IntPtr((int)ResType.MANIFEST));
+            IntPtr hResHandle = Win32NativeMethods.FindResource(hModule, hName, new IntPtr((int)ResType.MANIFEST));
             if (hResHandle == IntPtr.Zero)
             {
                 throw new ArgumentException("Can't find manifest resource");
             }
 
-            IntPtr hResource = LoadResource(hModule, hResHandle);
-            IntPtr buf = LockResource(hResource);
-            int size = SizeofResource(hModule, hResHandle);
+            IntPtr hResource = Win32NativeMethods.LoadResource(hModule, hResHandle);
+            IntPtr buf = Win32NativeMethods.LockResource(hResource);
+            int size = Win32NativeMethods.SizeofResource(hModule, hResHandle);
 
             if (size <= 0)
             {
@@ -262,7 +237,7 @@ namespace NtApiDotNet.Win32
             {
                 List<ExecutableManifest> manifests = new List<ExecutableManifest>();
 
-                EnumResourceNames(library, new IntPtr((int)ResType.MANIFEST), (a, b, c, d) =>
+                Win32NativeMethods.EnumResourceNames(library, new IntPtr((int)ResType.MANIFEST), (a, b, c, d) =>
                 {
                     try
                     {

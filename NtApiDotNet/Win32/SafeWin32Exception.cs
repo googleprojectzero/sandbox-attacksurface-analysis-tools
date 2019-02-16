@@ -38,6 +38,11 @@ namespace NtApiDotNet.Win32
         {
         }
 
+        internal SafeWin32Exception(Win32Error error) 
+            : this((int)error)
+        {
+        }
+
         /// <summary>
         /// The message for the exception.
         /// </summary>
