@@ -590,17 +590,40 @@ namespace NtApiDotNet
         /// <param name="region_size">The region size to allocate.</param>
         /// <param name="allocation_type">The type of allocation.</param>
         /// <param name="protect">The allocation protection.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The address of the allocated region.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static long AllocateMemory(SafeKernelObjectHandle process, long base_address, 
+        public static NtResult<long> AllocateMemory(SafeKernelObjectHandle process, long base_address, 
+            long region_size, MemoryAllocationType allocation_type, MemoryAllocationProtect protect,
+            bool throw_on_error)
+        {
+            IntPtr base_address_ptr = new IntPtr(base_address);
+            IntPtr region_size_ptr = new IntPtr(region_size);
+            return NtSystemCalls.NtAllocateVirtualMemory(process, ref base_address_ptr,
+                IntPtr.Zero, ref region_size_ptr, allocation_type, protect)
+                .CreateResult(throw_on_error, () => base_address_ptr.ToInt64());
+        }
+
+        /// <summary>
+        /// Allocate virtual memory in a process.
+        /// </summary>
+        /// <param name="process">The process to allocate in.</param>
+        /// <param name="base_address">Optional base address, if 0 will automatically select a base.</param>
+        /// <param name="region_size">The region size to allocate.</param>
+        /// <param name="allocation_type">The type of allocation.</param>
+        /// <param name="protect">The allocation protection.</param>
+        /// <returns>The address of the allocated region.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static long AllocateMemory(SafeKernelObjectHandle process, long base_address,
             long region_size, MemoryAllocationType allocation_type, MemoryAllocationProtect protect)
         {
             IntPtr base_address_ptr = new IntPtr(base_address);
             IntPtr region_size_ptr = new IntPtr(region_size);
-            NtSystemCalls.NtAllocateVirtualMemory(process, ref base_address_ptr, 
+            NtSystemCalls.NtAllocateVirtualMemory(process, ref base_address_ptr,
                 IntPtr.Zero, ref region_size_ptr, allocation_type, protect).ToNtException();
             return base_address_ptr.ToInt64();
         }
+
 
         /// <summary>
         /// Free virtual emmory in a process.
@@ -610,12 +633,30 @@ namespace NtApiDotNet
         /// <param name="region_size">The size of the region.</param>
         /// <param name="free_type">The type to free.</param>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static void FreeMemory(SafeKernelObjectHandle process, long base_address, long region_size, MemoryFreeType free_type)
+        public static void FreeMemory(SafeKernelObjectHandle process, 
+            long base_address, long region_size, MemoryFreeType free_type)
+        {
+            FreeMemory(process, base_address, region_size, free_type, true);
+        }
+
+        /// <summary>
+        /// Free virtual emmory in a process.
+        /// </summary>
+        /// <param name="process">The process to free in.</param>
+        /// <param name="base_address">Base address of region to free</param>
+        /// <param name="region_size">The size of the region.</param>
+        /// <param name="free_type">The type to free.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtStatus FreeMemory(SafeKernelObjectHandle process,
+            long base_address, long region_size, MemoryFreeType free_type,
+            bool throw_on_error)
         {
             IntPtr base_address_ptr = new IntPtr(base_address);
             IntPtr region_size_ptr = new IntPtr(region_size);
 
-            NtSystemCalls.NtFreeVirtualMemory(process, ref base_address_ptr, ref region_size_ptr, free_type).ToNtException();
+            return NtSystemCalls.NtFreeVirtualMemory(process, ref base_address_ptr,
+                ref region_size_ptr, free_type).ToNtException(throw_on_error);
         }
 
         /// <summary>
@@ -630,12 +671,28 @@ namespace NtApiDotNet
         public static MemoryAllocationProtect ProtectMemory(SafeKernelObjectHandle process, 
             long base_address, long region_size, MemoryAllocationProtect new_protect)
         {
+            return ProtectMemory(process, base_address, region_size, new_protect, true).Result;
+        }
+
+        /// <summary>
+        /// Change protection on a region of memory.
+        /// </summary>
+        /// <param name="process">The process to change memory protection</param>
+        /// <param name="base_address">The base address</param>
+        /// <param name="region_size">The size of the memory region.</param>
+        /// <param name="new_protect">The new protection type.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The old protection for the region.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<MemoryAllocationProtect> ProtectMemory(SafeKernelObjectHandle process,
+            long base_address, long region_size, MemoryAllocationProtect new_protect, bool throw_on_error)
+        {
             IntPtr base_address_ptr = new IntPtr(base_address);
             IntPtr region_size_ptr = new IntPtr(region_size);
 
-            NtSystemCalls.NtProtectVirtualMemory(process, ref base_address_ptr,
-                ref region_size_ptr, new_protect, out MemoryAllocationProtect old_protect).ToNtException();
-            return old_protect;
+            return NtSystemCalls.NtProtectVirtualMemory(process, ref base_address_ptr,
+                ref region_size_ptr, new_protect, out MemoryAllocationProtect old_protect)
+                .CreateResult(throw_on_error, () => old_protect);
         }
 
         /// <summary>
