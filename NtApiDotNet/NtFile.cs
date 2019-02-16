@@ -1736,10 +1736,9 @@ namespace NtApiDotNet
         /// <param name="position">The position in the file to read. The position is optional.</param>
         /// <param name="token">Cancellation token to cancel async operation.</param>
         /// <returns>The length of bytes read into the buffer.</returns>
-        public async Task<int> ReadAsync(SafeBuffer buffer, long position, CancellationToken token)
+        public Task<int> ReadAsync(SafeBuffer buffer, long position, CancellationToken token)
         {
-            var result = await ReadAsync(buffer, position, token, true);
-            return result.Result;
+            return ReadAsync(buffer, position, token, true).UnwrapNtResultAsync();
         }
 
         /// <summary>
@@ -1766,10 +1765,9 @@ namespace NtApiDotNet
         /// <param name="position">The position in the file to read</param>
         /// <param name="token">Cancellation token to cancel async operation.</param>
         /// <returns>The read bytes, this can be smaller than length.</returns>
-        public async Task<byte[]> ReadAsync(int length, long position, CancellationToken token)
+        public Task<byte[]> ReadAsync(int length, long position, CancellationToken token)
         {
-            var result = await ReadAsync(length, position, token, true);
-            return result.Result;
+            return ReadAsync(length, position, token, true).UnwrapNtResultAsync();
         }
 
         /// <summary>
@@ -1822,10 +1820,9 @@ namespace NtApiDotNet
         /// <param name="position">The position in the file to read.</param>
         /// <param name="token">Cancellation token to cancel async operation.</param>
         /// <returns>The length of bytes read into the buffer.</returns>
-        public async Task<int> ReadScatterAsync(IEnumerable<long> pages, int length, long position, CancellationToken token)
+        public Task<int> ReadScatterAsync(IEnumerable<long> pages, int length, long position, CancellationToken token)
         {
-            var result = await ReadScatterAsync(pages, length, position, token, true);
-            return result.Result;
+            return ReadScatterAsync(pages, length, position, token, true).UnwrapNtResultAsync();
         }
 
         /// <summary>
@@ -1863,10 +1860,48 @@ namespace NtApiDotNet
         /// <param name="position">The position to write to.</param>
         /// <param name="token">Cancellation token to cancel async operation.</param>
         /// <returns>The number of bytes written</returns>
-        public async Task<int> WriteAsync(SafeBuffer data, long position, CancellationToken token)
+        public Task<int> WriteAsync(SafeBuffer data, long position, CancellationToken token)
         {
-            var result = await WriteAsync(data, position, token, true);
-            return result.Result;
+            return WriteAsync(data, position, token, true).UnwrapNtResultAsync();
+        }
+
+        /// <summary>
+        /// Write data to a file at a specific position asynchronously.
+        /// </summary>
+        /// <param name="data">The data to write.</param>
+        /// <param name="position">The position to write to.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <returns>The number of bytes written</returns>
+        public Task<int> WriteAsync(byte[] data, long position, CancellationToken token)
+        {
+            return WriteAsync(data, position, token, true).UnwrapNtResultAsync();
+        }
+
+        /// <summary>
+        /// Write data to a file at a specific position asynchronously.
+        /// </summary>
+        /// <param name="data">The data to write</param>
+        /// <param name="position">The position to write to</param>
+        /// <returns>The number of bytes written</returns>
+        public Task<int> WriteAsync(byte[] data, long position)
+        {
+            return WriteAsync(data, position, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Write data to a file at a specific position asynchronously.
+        /// </summary>
+        /// <param name="data">The data to write.</param>
+        /// <param name="position">The position to write to.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The number of bytes written</returns>
+        public async Task<NtResult<int>> WriteAsync(byte[] data, long position, CancellationToken token, bool throw_on_error)
+        {
+            using (var buffer = data.ToBuffer())
+            {
+                return await WriteAsync(buffer, position, token, true);
+            }
         }
 
         /// <summary>
@@ -1934,43 +1969,90 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Write data to a file at a specific position asynchronously.
+        /// Write data to a file at a specific position gathered from a list of pages.
         /// </summary>
-        /// <param name="data">The data to write</param>
-        /// <param name="position">The position to write to</param>
-        /// <returns>The number of bytes written</returns>
-        public Task<int> WriteAsync(byte[] data, long position)
-        {
-            return WriteAsync(data, position, CancellationToken.None);
-        }
-
-        /// <summary>
-        /// Write data to a file at a specific position asynchronously.
-        /// </summary>
-        /// <param name="data">The data to write.</param>
+        /// <param name="pages">List of pages to write. These pages must be page size aligned.</param>
+        /// <param name="length">The length of the write.</param>
         /// <param name="position">The position to write to.</param>
-        /// <param name="token">Cancellation token to cancel async operation.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The number of bytes written</returns>
-        public async Task<NtResult<int>> WriteAsync(byte[] data, long position, CancellationToken token, bool throw_on_error)
+        /// <returns>The number of bytes written.</returns>
+        public NtResult<int> WriteGather(IEnumerable<long> pages, int length, long position, bool throw_on_error)
         {
-            using (var buffer = data.ToBuffer())
+            var segments = PageListToSegments(pages);
+            using (NtAsyncResult result = new NtAsyncResult(this))
             {
-                return await WriteAsync(buffer, position, token, true);
+                return result.CompleteCall(NtSystemCalls.NtWriteFileGather(Handle, result.EventHandle, IntPtr.Zero,
+                    IntPtr.Zero, result.IoStatusBuffer, segments, length, new LargeInteger(position), IntPtr.Zero))
+                    .CreateResult(throw_on_error, () => result.Information32);
             }
         }
 
         /// <summary>
-        /// Write data to a file at a specific position asynchronously.
+        /// Write data to a file at a specific position gathered from a list of pages.
         /// </summary>
-        /// <param name="data">The data to write.</param>
+        /// <param name="pages">List of pages to write. These pages must be page size aligned.</param>
+        /// <param name="length">The length of the write.</param>
+        /// <param name="position">The position to write to.</param>
+        /// <returns>The number of bytes written.</returns>
+        public int WriteGather(IEnumerable<long> pages, int length, long position)
+        {
+            return WriteGather(pages, length, position, true).Result;
+        }
+
+        /// <summary>
+        /// Write data to a file at a specific position asynchronously from a list of pages.
+        /// </summary>
+        /// <param name="pages">List of pages to write. These pages must be page size aligned.</param>
+        /// <param name="length">The length of the write.</param>
+        /// <param name="position">The position to write to.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The number of bytes written</returns>
+        public async Task<NtResult<int>> WriteGatherAsync(IEnumerable<long> pages, int length, long position, CancellationToken token, bool throw_on_error)
+        {
+            var segments = PageListToSegments(pages);
+            var result = await RunFileCallAsync(r => NtSystemCalls.NtWriteFileGather(Handle, r.EventHandle, IntPtr.Zero,
+                        IntPtr.Zero, r.IoStatusBuffer, segments, length, new LargeInteger(position), IntPtr.Zero), token,
+                        throw_on_error);
+            return result.Map(r => r.Information32);
+        }
+
+        /// <summary>
+        /// Write data to a file at a specific position asynchronously from a list of pages.
+        /// </summary>
+        /// <param name="pages">List of pages to write. These pages must be page size aligned.</param>
+        /// <param name="length">The length of the write.</param>
+        /// <param name="position">The position to write to.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The number of bytes written</returns>
+        public Task<NtResult<int>> WriteGatherAsync(IEnumerable<long> pages, int length, long position, bool throw_on_error)
+        {
+            return WriteGatherAsync(pages, length, position, CancellationToken.None, throw_on_error);
+        }
+
+        /// <summary>
+        /// Write data to a file at a specific position asynchronously from a list of pages.
+        /// </summary>
+        /// <param name="pages">List of pages to write. These pages must be page size aligned.</param>
+        /// <param name="length">The length of the write.</param>
         /// <param name="position">The position to write to.</param>
         /// <param name="token">Cancellation token to cancel async operation.</param>
         /// <returns>The number of bytes written</returns>
-        public async Task<int> WriteAsync(byte[] data, long position, CancellationToken token)
+        public Task<int> WriteGatherAsync(IEnumerable<long> pages, int length, long position, CancellationToken token)
         {
-            var result = await WriteAsync(data, position, token, true);
-            return result.Result;
+            return WriteGatherAsync(pages, length, position, token, true).UnwrapNtResultAsync();
+        }
+
+        /// <summary>
+        /// Write data to a file at a specific position asynchronously from a list of pages.
+        /// </summary>
+        /// <param name="pages">List of pages to write. These pages must be page size aligned.</param>
+        /// <param name="length">The length of the write.</param>
+        /// <param name="position">The position to write to.</param>
+        /// <returns>The number of bytes written</returns>
+        public Task<int> WriteGatherAsync(IEnumerable<long> pages, int length, long position)
+        {
+            return WriteGatherAsync(pages, length, position, CancellationToken.None);
         }
 
         /// <summary>
