@@ -114,7 +114,7 @@ namespace NtApiDotNet
                                                     int OutputBufferLength);
 
         private async Task<NtResult<int>> IoControlGenericAsync(IoControlFunction func,
-                        NtIoControlCode control_code, SafeBuffer input_buffer, 
+                        NtIoControlCode control_code, SafeBuffer input_buffer,
                         SafeBuffer output_buffer, CancellationToken token,
                         bool throw_on_error)
         {
@@ -135,7 +135,7 @@ namespace NtApiDotNet
             }
         }
 
-        private async Task<NtResult<byte[]>> IoControlGenericAsync(IoControlFunction func, NtIoControlCode control_code, 
+        private async Task<NtResult<byte[]>> IoControlGenericAsync(IoControlFunction func, NtIoControlCode control_code,
             byte[] input_buffer, int max_output, CancellationToken token, bool throw_on_error)
         {
             using (SafeHGlobalBuffer input = input_buffer != null ? new SafeHGlobalBuffer(input_buffer) : null)
@@ -348,6 +348,11 @@ namespace NtApiDotNet
                 default:
                     throw new ArgumentException("Invalid oplock acknowledge level", "level");
             }
+        }
+
+        private static FileSegmentElement[] PageListToSegments(IEnumerable<long> pages)
+        {
+            return pages.Select(p => new FileSegmentElement() { Buffer = new IntPtr(p) }).Concat(new[] { new FileSegmentElement() }).ToArray();
         }
 
         #endregion
@@ -1253,7 +1258,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public NtStatus Delete(bool throw_on_error)
         {
-            return Set(FileInformationClass.FileDispositionInformation, 
+            return Set(FileInformationClass.FileDispositionInformation,
                 new FileDispositionInformation() { DeleteFile = true }, throw_on_error);
         }
 
@@ -1275,7 +1280,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public NtStatus DeleteEx(FileDispositionInformationExFlags flags, bool throw_on_error)
         {
-            return Set(FileInformationClass.FileDispositionInformationEx, 
+            return Set(FileInformationClass.FileDispositionInformationEx,
                 new FileDispositionInformationEx() { Flags = flags }, throw_on_error);
         }
 
@@ -1678,6 +1683,38 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Read data from a file with a length over a scatter set of pages.
+        /// </summary>
+        /// <param name="pages">List of pages to read into. These pages must be Page Size aligned.</param>
+        /// <param name="length">The length of the read</param>
+        /// <param name="position">The position in the file to read.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The length of bytes read.</returns>
+        public NtResult<int> ReadScatter(IEnumerable<long> pages, int length, long position, bool throw_on_error)
+        {
+            FileSegmentElement[] segments = PageListToSegments(pages);
+
+            using (NtAsyncResult result = new NtAsyncResult(this))
+            {
+                return result.CompleteCall(NtSystemCalls.NtReadFileScatter(Handle, result.EventHandle, IntPtr.Zero,
+                    IntPtr.Zero, result.IoStatusBuffer, segments, length, new LargeInteger(position), IntPtr.Zero))
+                    .CreateResult(throw_on_error, () => result.Information32);
+            }
+        }
+
+        /// <summary>
+        /// Read data from a file with a length over a scatter set of pages.
+        /// </summary>
+        /// <param name="pages">List of pages to read into. These pages must be Page Size aligned.</param>
+        /// <param name="length">The length of the read</param>
+        /// <param name="position">The position in the file to read.</param>
+        /// <returns>The length of bytes read.</returns>
+        public int ReadScatter(IEnumerable<long> pages, int length, long position)
+        {
+            return ReadScatter(pages, length, position, true).Result;
+        }
+
+        /// <summary>
         /// Read data from a file with a length and position asynchronously.
         /// </summary>
         /// <param name="buffer">The buffer to read to.</param>
@@ -1744,6 +1781,63 @@ namespace NtApiDotNet
         public Task<byte[]> ReadAsync(int length, long position)
         {
             return ReadAsync(length, position, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Read data from a file with a length and position asynchronously.
+        /// </summary>
+        /// <param name="pages">List of pages to read into. These pages must be Page Size aligned.</param>
+        /// <param name="length">The length of the read</param>
+        /// <param name="position">The position in the file to read.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The length of bytes read into the buffer.</returns>
+        public async Task<NtResult<int>> ReadScatterAsync(IEnumerable<long> pages, int length, long position, CancellationToken token, bool throw_on_error)
+        {
+            FileSegmentElement[] segments = PageListToSegments(pages);
+
+            var status = await RunFileCallAsync(result => NtSystemCalls.NtReadFileScatter(Handle, result.EventHandle, IntPtr.Zero,
+                        IntPtr.Zero, result.IoStatusBuffer, segments, length, new LargeInteger(position), IntPtr.Zero), token, throw_on_error);
+            return status.Map(r => r.Information32);
+        }
+
+        /// <summary>
+        /// Read data from a file with a length and position asynchronously.
+        /// </summary>
+        /// <param name="pages">List of pages to read into. These pages must be Page Size aligned.</param>
+        /// <param name="length">The length of the read</param>
+        /// <param name="position">The position in the file to read.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The length of bytes read into the buffer.</returns>
+        public Task<NtResult<int>> ReadScatterAsync(IEnumerable<long> pages, int length, long position, bool throw_on_error)
+        {
+            return ReadScatterAsync(pages, length, position, CancellationToken.None, throw_on_error);
+        }
+
+        /// <summary>
+        /// Read data from a file with a length and position asynchronously.
+        /// </summary>
+        /// <param name="pages">List of pages to read into. These pages must be Page Size aligned.</param>
+        /// <param name="length">The length of the read</param>
+        /// <param name="position">The position in the file to read.</param>
+        /// <param name="token">Cancellation token to cancel async operation.</param>
+        /// <returns>The length of bytes read into the buffer.</returns>
+        public async Task<int> ReadScatterAsync(IEnumerable<long> pages, int length, long position, CancellationToken token)
+        {
+            var result = await ReadScatterAsync(pages, length, position, token, true);
+            return result.Result;
+        }
+
+        /// <summary>
+        /// Read data from a file with a length and position asynchronously.
+        /// </summary>
+        /// <param name="pages">List of pages to read into. These pages must be Page Size aligned.</param>
+        /// <param name="length">The length of the read</param>
+        /// <param name="position">The position in the file to read.</param>
+        /// <returns>The length of bytes read into the buffer.</returns>
+        public Task<int> ReadScatterAsync(IEnumerable<long> pages, int length, long position)
+        {
+            return ReadScatterAsync(pages, length, position, CancellationToken.None);
         }
 
         /// <summary>
@@ -2190,14 +2284,14 @@ namespace NtApiDotNet
         /// <param name="token">Cancellation token to cancel async operation.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The request of the oplock request.</returns>
-        public async Task<NtResult<RequestOplockOutputBuffer>> RequestOplockAsync(OplockLevelCache requested_oplock_level, 
+        public async Task<NtResult<RequestOplockOutputBuffer>> RequestOplockAsync(OplockLevelCache requested_oplock_level,
             CancellationToken token, bool throw_on_error)
         {
             using (var input_buffer = new RequestOplockInputBuffer(requested_oplock_level, RequestOplockInputFlag.Request).ToBuffer())
             {
                 using (var output_buffer = new SafeStructureInOutBuffer<RequestOplockOutputBuffer>())
                 {
-                    var result = await FsControlAsync(NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK, 
+                    var result = await FsControlAsync(NtWellKnownIoControlCodes.FSCTL_REQUEST_OPLOCK,
                         input_buffer, output_buffer, token, throw_on_error);
                     if (!result.IsSuccess)
                     {
@@ -2283,7 +2377,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code. Acknowledging an oplock returns STATUS_PENDING on success.</returns>
         public NtStatus AcknowledgeOplockLease(OplockLevelCache acknowledge_oplock_level, bool complete_on_close, bool throw_on_error)
         {
-            using (var input_buffer = new RequestOplockInputBuffer(acknowledge_oplock_level, 
+            using (var input_buffer = new RequestOplockInputBuffer(acknowledge_oplock_level,
                 complete_on_close ? RequestOplockInputFlag.CompleteAckOnClose : RequestOplockInputFlag.Ack).ToBuffer())
             {
                 using (var output_buffer = new SafeStructureInOutBuffer<RequestOplockOutputBuffer>())
