@@ -415,6 +415,10 @@ namespace NtApiDotNet
         ReplaceIfExists = 0x00000001,
         PosixSemantics = 0x00000002,
         SuppressPinStateInheritance = 0x00000004,
+        SupressStorageReserveInheritance = 0x00000008,
+        NoIncreaseAvailableSpace = 0x00000010,
+        NoDecreaseAvailableSpace = 0x00000020,
+        IgnoreReadOnlyAttribute = 0x00000040,
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -1160,6 +1164,30 @@ namespace NtApiDotNet
             SupportsObjects = vol_info_res.SupportsObjects;
             Label = vol_info.Data.ReadUnicodeString(vol_info_res.VolumeLabelLength / 2);
         }
+    }
+
+    public enum StorageReserveId
+    {
+        None,
+        Hard,
+        Soft
+    }
+
+    public struct FileStorageReserveIdInformation
+    {
+        public StorageReserveId StorageReserveId;
+    }
+
+    [Flags]
+    public enum FileCaseSensitiveFlags
+    {
+        None = 0,
+        CaseSensitiveDir = 1,
+    }
+
+    public struct FileCaseSensitiveInformation
+    {
+        public FileCaseSensitiveFlags Flags;
     }
 
 #pragma warning restore 1591

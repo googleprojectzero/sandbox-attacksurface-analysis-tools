@@ -3335,21 +3335,56 @@ namespace NtApiDotNet
         {
             get
             {
-                var result = Query(FileInformationClass.FileCaseSensitiveInformation, 0, false);
-                if (!result.IsSuccess)
-                {
-                    return false;
-                }
-
-                return (result.Result & 1) == 1;
+                return (CaseSensitiveFlags & FileCaseSensitiveFlags.CaseSensitiveDir) != 0;
             }
 
             set
             {
-                Set(FileInformationClass.FileCaseSensitiveInformation, value ? 1 : 0);
+                var flags = CaseSensitiveFlags;
+                if (value)
+                {
+                    flags |= FileCaseSensitiveFlags.CaseSensitiveDir;
+                }
+                else
+                {
+                    flags &= ~FileCaseSensitiveFlags.CaseSensitiveDir;
+                }
+
+                var info = new FileCaseSensitiveInformation()
+                {
+                    Flags = flags
+                };
+
+                Set(FileInformationClass.FileCaseSensitiveInformation, info);
             }
         }
 
+        /// <summary>
+        /// Get or set whether this file/directory is case sensitive.
+        /// </summary>
+        public FileCaseSensitiveFlags CaseSensitiveFlags
+        {
+            get
+            {
+                var result = Query(FileInformationClass.FileCaseSensitiveInformation, new FileCaseSensitiveInformation(), false);
+                if (!result.IsSuccess)
+                {
+                    return FileCaseSensitiveFlags.None;
+                }
+
+                return result.Result.Flags;
+            }
+
+            set
+            {
+                var info = new FileCaseSensitiveInformation()
+                {
+                    Flags = value
+                };
+
+                Set(FileInformationClass.FileCaseSensitiveInformation, info);
+            }
+        }
 
         /// <summary>
         /// Get the file mode.
@@ -3415,6 +3450,21 @@ namespace NtApiDotNet
                 {
                     return base.FullPath;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Get or set the storage reserve ID.
+        /// </summary>
+        public StorageReserveId StorageReserveId
+        {
+            get
+            {
+                return Query<FileStorageReserveIdInformation>(FileInformationClass.FileStorageReserveIdInformation).StorageReserveId;
+            }
+            set
+            {
+                Set(FileInformationClass.FileStorageReserveIdInformation, new FileStorageReserveIdInformation() { StorageReserveId = value });
             }
         }
 
