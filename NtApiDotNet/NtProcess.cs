@@ -759,6 +759,19 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Free virtual emmory in a process.
+        /// </summary>
+        /// <param name="base_address">Base address of region to free</param>
+        /// <param name="region_size">The size of the region.</param>
+        /// <param name="free_type">The type to free.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus FreeMemory(long base_address, long region_size, MemoryFreeType free_type, bool throw_on_error)
+        {
+            return NtVirtualMemory.FreeMemory(Handle, base_address, region_size, free_type, throw_on_error);
+        }
+
+        /// <summary>
         /// Change protection on a region of memory.
         /// </summary>
         /// <param name="base_address">The base address</param>
