@@ -67,7 +67,7 @@ namespace NtApiDotNet
         ThreadAmILastThread = 12,
         ThreadIdealProcessor = 13,
         ThreadPriorityBoost = 14,
-        ThreadSetTlsArrayAddress = 15,   // Obsolete
+        ThreadSetTlsArrayAddress = 15,
         ThreadIsIoPending = 16,
         ThreadHideFromDebugger = 17,
         ThreadBreakOnTermination = 18,
@@ -79,18 +79,30 @@ namespace NtApiDotNet
         ThreadPagePriority = 24,
         ThreadActualBasePriority = 25,
         ThreadTebInformation = 26,
-        ThreadCSwitchMon = 27,   // Obsolete
+        ThreadCSwitchMon = 27,
         ThreadCSwitchPmu = 28,
         ThreadWow64Context = 29,
         ThreadGroupInformation = 30,
-        ThreadUmsInformation = 31,   // UMS
+        ThreadUmsInformation = 31,
         ThreadCounterProfiling = 32,
         ThreadIdealProcessorEx = 33,
         ThreadCpuAccountingInformation = 34,
         ThreadSuspendCount = 35,
-        ThreadDescription = 38,
+        ThreadHeterogeneousCpuPolicy = 36,
+        ThreadContainerId = 37,
+        ThreadNameInformation = 38,
+        ThreadSelectedCpuSets = 39,
+        ThreadSystemThreadInformation = 40,
         ThreadActualGroupAffinity = 41,
-        ThreadDynamicCodePolicy = 42,
+        ThreadDynamicCodePolicyInfo = 42,
+        ThreadExplicitCaseSensitivity = 43,
+        ThreadWorkOnBehalfTicket = 44,
+        ThreadSubsystemInformation = 45,
+        ThreadDbgkWerReportActive = 46,
+        ThreadAttachContainer = 47,
+        ThreadManageWritesToExecutableMemory = 48,
+        ThreadPowerThrottlingState = 49,
+        ThreadWorkloadClass = 50,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -719,7 +731,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return Query<int>(ThreadInformationClass.ThreadDynamicCodePolicy) != 0;
+                return Query<int>(ThreadInformationClass.ThreadDynamicCodePolicyInfo) != 0;
             }
         }
 
@@ -893,7 +905,7 @@ namespace NtApiDotNet
         {
             get
             {
-                using (var buffer = QueryBuffer(ThreadInformationClass.ThreadDescription, new UnicodeStringOut(), false))
+                using (var buffer = QueryBuffer(ThreadInformationClass.ThreadNameInformation, new UnicodeStringOut(), false))
                 {
                     if (buffer.IsSuccess)
                     {
@@ -905,7 +917,7 @@ namespace NtApiDotNet
 
             set
             {
-                Set(ThreadInformationClass.ThreadDescription, new UnicodeStringIn(value));
+                Set(ThreadInformationClass.ThreadNameInformation, new UnicodeStringIn(value));
             }
         }
         
