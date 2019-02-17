@@ -1352,6 +1352,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+
     public class NdrPipeTypeReference : NdrBaseTypeReference
     {
         // IDL is typedef pipe TYPE CHAR_PIPE_TYPE;
@@ -1379,14 +1380,17 @@ namespace NtApiDotNet.Ndr
 
     public class NdrBlkHoleTypeReference : NdrBaseTypeReference
     {
+        public NdrBlackholeFlags Flags { get; }
+
         internal NdrBlkHoleTypeReference(NdrParseContext context, BinaryReader reader)
             : base(NdrFormatCharacter.FC_BLKHOLE)
         {
+            Flags = (NdrBlackholeFlags)reader.ReadByte();
         }
 
         internal override string FormatType(NdrFormatter context)
         {
-            return $"{context.FormatComment("FC_BLKHOLE")} {new NdrPointerTypeReference(new NdrBaseTypeReference(NdrFormatCharacter.FC_BYTE)).FormatType(context)}";
+            return $"{context.FormatComment($"FC_BLKHOLE {Flags}")} void";
         }
 
         public override int GetSize()
