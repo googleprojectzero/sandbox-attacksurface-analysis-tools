@@ -297,7 +297,7 @@
           <ListEntry>
             <ListItems>
               <ListItem>
-                <PropertyName>Name</PropertyName>                
+                <PropertyName>Name</PropertyName>
               </ListItem>
               <ListItem>
                 <PropertyName>Luid</PropertyName>
@@ -1118,6 +1118,62 @@
                         </TableColumnItem>
                         <TableColumnItem>
                             <PropertyName>Message</PropertyName>
+                        </TableColumnItem>
+                    </TableColumnItems>
+                </TableRowEntry>
+            </TableRowEntries>
+        </TableControl>
+    </View>
+    <View>
+        <Name>NtIoControlCode</Name>
+        <ViewSelectedBy>
+            <TypeName>NtApiDotNet.NtIoControlCode</TypeName>
+        </ViewSelectedBy>
+        <TableControl>
+            <TableHeaders>
+                <TableColumnHeader>
+                    <Label>DeviceType</Label>
+                    <Width>20</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>Function</Label>
+                    <Width>8</Width>
+                    <Alignment>Right</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>Method</Label>
+                    <Width>10</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>Access</Label>
+                    <Width>12</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+                <TableColumnHeader>
+                    <Label>Name</Label>
+                    <Width>40</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+            </TableHeaders>
+            <TableRowEntries>
+                <TableRowEntry>
+                    <TableColumnItems>
+                        <TableColumnItem>
+                            <PropertyName>DeviceType</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>Function</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>Method</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>Access</PropertyName>
+                        </TableColumnItem>
+                        <TableColumnItem>
+                            <PropertyName>Name</PropertyName>
                         </TableColumnItem>
                     </TableColumnItems>
                 </TableRowEntry>

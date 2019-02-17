@@ -304,7 +304,7 @@ namespace NtApiDotNet
             return result;
         }
 
-        private static Dictionary<NtIoControlCode, string> _control_code_to_name = BuildControlCodeToName();
+        private static Lazy<Dictionary<NtIoControlCode, string>> _control_code_to_name = new Lazy<Dictionary<NtIoControlCode, string>>(BuildControlCodeToName);
 
         /// <summary>
         /// Convert a control code to a known name.
@@ -313,9 +313,9 @@ namespace NtApiDotNet
         /// <returns>The known name, or an empty string.</returns>
         public static string KnownControlCodeToName(NtIoControlCode control_code)
         {
-            if (_control_code_to_name.ContainsKey(control_code))
+            if (_control_code_to_name.Value.ContainsKey(control_code))
             {
-                return _control_code_to_name[control_code];
+                return _control_code_to_name.Value[control_code];
             }
             return string.Empty;
         }
@@ -326,7 +326,7 @@ namespace NtApiDotNet
         /// <returns>The list of known control codes.</returns>
         public static IEnumerable<NtIoControlCode> GetKnownControlCodes()
         {
-            return _control_code_to_name.Keys;
+            return _control_code_to_name.Value.Keys;
         }
     }
 #pragma warning restore 1591
@@ -335,7 +335,7 @@ namespace NtApiDotNet
     /// Represents a NT file IO control code.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public struct NtIoControlCode
+    public struct NtIoControlCode : IFormattable
     {
         private int _control_code;
 
@@ -379,6 +379,22 @@ namespace NtApiDotNet
             get
             {
                 return (FileControlAccess)((_control_code >> 14) & 3);
+            }
+        }
+
+        /// <summary>
+        /// Get a known name associated with this IO control code.
+        /// </summary>
+        public string Name
+        {
+            get
+            {
+                string result = NtWellKnownIoControlCodes.KnownControlCodeToName(this);
+                if (string.IsNullOrWhiteSpace(result))
+                {
+                    return ToString("X", null);
+                }
+                return result;
             }
         }
 
@@ -457,6 +473,27 @@ namespace NtApiDotNet
                 return result;
             }
             return $"DeviceType: {DeviceType} Function: {Function} Method: {Method} Access: {Access}";
+        }
+
+        /// <summary>
+        /// Format IO control code with an format specifier.
+        /// </summary>
+        /// <param name="format">The format specified. For example use X to format as a hexadecimal number.</param>
+        /// <returns>The formatted string.</returns>
+        public string ToString(string format)
+        {
+            return ToString(format, null);
+        }
+
+        /// <summary>
+        /// Format the underlying IO control code with an format specifier.
+        /// </summary>
+        /// <param name="format">The format specified. For example use X to format as a hexadecimal number.</param>
+        /// <param name="formatProvider">Format provider.</param>
+        /// <returns>The formatted string.</returns>
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            return _control_code.ToString(format, formatProvider);
         }
     }
 }

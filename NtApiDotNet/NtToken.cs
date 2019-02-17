@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -151,7 +152,8 @@ namespace NtApiDotNet
         System = 0x4000,
     };
 
-    public enum TokenElevationType {
+    public enum TokenElevationType
+    {
         Default = 1,
         Full,
         Limited
@@ -245,6 +247,13 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    public struct TokenAuditPolicy
+    {
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 30)]
+        public byte[] PerUserPolicy;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public struct Luid
     {
         public uint LowPart;
@@ -267,7 +276,7 @@ namespace NtApiDotNet
         {
             return $"{HighPart:X08}-{LowPart:X08}";
         }
-        
+
         public override bool Equals(object obj)
         {
             if (obj is Luid luid)
@@ -288,7 +297,7 @@ namespace NtApiDotNet
             li.LowPart = LowPart;
             li.HighPart = HighPart;
             return li.QuadPart;
-        }        
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -402,7 +411,7 @@ namespace NtApiDotNet
         public ClaimSecurityFlags Flags;
         public int ValueCount;
         public IntPtr Values;
-    }    
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     public class ClaimSecurityAttributesInformation
@@ -459,7 +468,7 @@ namespace NtApiDotNet
     public struct TokenBnoIsolationInformation
     {
         public IntPtr IsolationPrefix;
-        public bool   IsolationEnabled;
+        public bool IsolationEnabled;
     }
 
     public static partial class NtSystemCalls
@@ -572,7 +581,6 @@ namespace NtApiDotNet
         );
     }
 
-
     internal class TokenPrivilegesBuilder
     {
         private List<LuidAndAttributes> _privs;
@@ -621,7 +629,7 @@ namespace NtApiDotNet
 
     public class SafeTokenPrivilegesBuffer : SafeStructureInOutBuffer<TokenPrivileges>
     {
-        public SafeTokenPrivilegesBuffer(LuidAndAttributes[] privs) 
+        public SafeTokenPrivilegesBuffer(LuidAndAttributes[] privs)
             : base(new TokenPrivileges() { PrivilegeCount = privs.Length },
                   Marshal.SizeOf(typeof(LuidAndAttributes)) * privs.Length, true)
         {
@@ -645,8 +653,8 @@ namespace NtApiDotNet
     public class SafeTokenGroupsBuffer : SafeStructureInOutBuffer<TokenGroups>
     {
         SafeHandleList _sids;
-        public SafeTokenGroupsBuffer(SidAndAttributes[] sid_and_attr, SafeHandleList sids) 
-            : base(new TokenGroups() { GroupCount = sids.Count }, 
+        public SafeTokenGroupsBuffer(SidAndAttributes[] sid_and_attr, SafeHandleList sids)
+            : base(new TokenGroups() { GroupCount = sids.Count },
                   Marshal.SizeOf(typeof(SidAndAttributes)) * sids.Count, true)
         {
             _sids = sids;
@@ -798,34 +806,9 @@ namespace NtApiDotNet
     /// </summary>
     public class TokenPrivilege
     {
-        [DllImport("Advapi32.dll", CharSet=CharSet.Unicode, SetLastError =true)]
-        static extern bool LookupPrivilegeName(
-           string lpSystemName,
-           ref Luid lpLuid,
-           [Out] StringBuilder lpName,
-           ref int cchName);
-
-        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern bool LookupPrivilegeDisplayName(
-          string lpSystemName,
-          string lpName,
-          StringBuilder lpDisplayName,
-          ref int cchDisplayName,
-          out int lpLanguageId
-        );
-
-        // Don't think there's a direct NT equivalent as this talks to LSASS.
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool LookupPrivilegeValue(
-          string lpSystemName,
-          string lpName,
-          out Luid lpLuid
-        );
-
         private static Luid LookupPrivilegeLuid(string name)
         {
-            if (!LookupPrivilegeValue(".", name, out Luid luid))
+            if (!Win32NativeMethods.LookupPrivilegeValue(".", name, out Luid luid))
             {
                 throw new NtException(NtStatus.STATUS_NO_SUCH_PRIVILEGE);
             }
@@ -859,7 +842,7 @@ namespace NtApiDotNet
                     Luid luid = Luid;
                     StringBuilder builder = new StringBuilder(256);
                     int name_length = 256;
-                    if (LookupPrivilegeName(null, ref luid, builder, ref name_length))
+                    if (Win32NativeMethods.LookupPrivilegeName(null, ref luid, builder, ref name_length))
                     {
                         return builder.ToString();
                     }
@@ -878,19 +861,19 @@ namespace NtApiDotNet
             {
                 int name_length = 0;
                 string name = Name;
-                LookupPrivilegeDisplayName(null, name, null, ref name_length, out int lang_id);
+                Win32NativeMethods.LookupPrivilegeDisplayName(null, name, null, ref name_length, out int lang_id);
                 if (name_length <= 0)
                 {
-                    return String.Empty;
+                    return string.Empty;
                 }
 
                 StringBuilder builder = new StringBuilder(name_length + 1);
                 name_length = builder.Capacity;
-                if (LookupPrivilegeDisplayName(null, name, builder, ref name_length, out lang_id))
+                if (Win32NativeMethods.LookupPrivilegeDisplayName(null, name, builder, ref name_length, out lang_id))
                 {
                     return builder.ToString();
                 }
-                return String.Empty;
+                return string.Empty;
             }
         }
 
@@ -918,7 +901,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="value">The privilege value</param>
         /// <param name="attribute">The privilege attributes</param>
-        public TokenPrivilege(TokenPrivilegeValue value, PrivilegeAttributes attribute) 
+        public TokenPrivilege(TokenPrivilegeValue value, PrivilegeAttributes attribute)
             : this(new Luid((uint)value, 0), attribute)
         {
         }
@@ -928,7 +911,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="name">The privilege name.</param>
         /// <param name="attribute">The privilege attributes</param>
-        public TokenPrivilege(string name, PrivilegeAttributes attribute) 
+        public TokenPrivilege(string name, PrivilegeAttributes attribute)
             : this(LookupPrivilegeLuid(name), attribute)
         {
         }
@@ -1015,7 +998,7 @@ namespace NtApiDotNet
         /// Constructor from a SID.
         /// </summary>
         /// <param name="sid">The SID</param>
-        public UserGroup(Sid sid) 
+        public UserGroup(Sid sid)
             : this(sid, GroupAttributes.None)
         {
         }
@@ -1036,7 +1019,7 @@ namespace NtApiDotNet
         /// Constructor from a SID or account name.
         /// </summary>
         /// <param name="name">The SID or account name.</param>
-        public UserGroup(string name) 
+        public UserGroup(string name)
             : this(LookupAccountSid(name))
         {
         }
@@ -1057,7 +1040,7 @@ namespace NtApiDotNet
             }
 
             return ret ?? Sid.ToString();
-        }        
+        }
     }
 
     /// <summary>
@@ -1066,10 +1049,22 @@ namespace NtApiDotNet
     [NtType("Token")]
     public sealed class NtToken : NtObjectWithDuplicateAndInfo<NtToken, TokenAccessRights, TokenInformationClass, TokenInformationClass>
     {
+        #region Constructors
+
         internal NtToken(SafeKernelObjectHandle handle) : base(handle)
         {
         }
 
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(false)
+            {
+            }
+        }
+
+        #endregion
+
+        #region Public Methods
         /// <summary>
         /// Duplicate token as specific type.
         /// </summary>
@@ -1135,18 +1130,6 @@ namespace NtApiDotNet
         {
             return DuplicateToken(TokenType.Impersonation, level, TokenAccessRights.MaximumAllowed);
         }
-        
-        private bool SetPrivileges(TokenPrivilegesBuilder tp)
-        {
-            using (var priv_buffer = tp.ToBuffer())
-            {
-                NtStatus status = NtSystemCalls.NtAdjustPrivilegesToken(Handle, false, 
-                    priv_buffer, priv_buffer.Length, IntPtr.Zero, IntPtr.Zero).ToNtException();
-                if (status == NtStatus.STATUS_NOT_ALL_ASSIGNED)
-                    return false;
-                return true;
-            }
-        }
 
         /// <summary>
         /// Set a privilege state
@@ -1208,6 +1191,1220 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create a LowBox token from the current token.
+        /// </summary>
+        /// <param name="package_sid">The package SID</param>
+        /// <returns>The created LowBox token.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtToken CreateLowBoxToken(Sid package_sid)
+        {
+            return CreateLowBoxToken(package_sid, new NtObject[0]);
+        }
+
+        /// <summary>
+        /// Create a LowBox token from the current token.
+        /// </summary>
+        /// <param name="package_sid">The package SID</param>
+        /// <param name="handles">List of handles to capture with the token</param>
+        /// <returns>The created LowBox token.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtToken CreateLowBoxToken(Sid package_sid, params NtObject[] handles)
+        {
+            return CreateLowBoxToken(package_sid, new Sid[0], handles, TokenAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Create a LowBox token from the current token.
+        /// </summary>
+        /// <param name="package_sid">The package SID</param>
+        /// <param name="handles">List of handles to capture with the token</param>
+        /// <param name="capability_sids">List of capability sids to add.</param>
+        /// <param name="desired_access">Desired token access.</param>
+        /// <returns>The created LowBox token.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtToken CreateLowBoxToken(Sid package_sid, IEnumerable<Sid> capability_sids,
+            IEnumerable<NtObject> handles, TokenAccessRights desired_access)
+        {
+            SafeKernelObjectHandle token;
+
+            IntPtr[] handle_array = handles.Select(h => h.Handle.DangerousGetHandle()).ToArray();
+
+            using (var sids = new DisposableList<SafeSidBufferHandle>())
+            {
+                SidAndAttributes[] capabilities = capability_sids.Select(s =>
+                {
+                    SafeSidBufferHandle sid = s.ToSafeBuffer();
+                    sids.Add(sid);
+                    return new SidAndAttributes() { Sid = sid.DangerousGetHandle(), Attributes = GroupAttributes.Enabled };
+                }
+                    ).ToArray();
+                NtSystemCalls.NtCreateLowBoxToken(out token,
+                    Handle, TokenAccessRights.MaximumAllowed,
+                  new ObjectAttributes(), package_sid.ToArray(), capabilities.Length,
+                  capabilities.Length == 0 ? null : capabilities,
+                  handle_array.Length, handle_array.Length == 0 ? null : handle_array).ToNtException();
+            }
+            return new NtToken(token);
+        }
+
+        /// <summary>
+        /// Filter a token to remove groups/privileges and add restricted SIDs
+        /// </summary>
+        /// <param name="flags">Filter token flags</param>
+        /// <param name="sids_to_disable">List of SIDs to disable</param>
+        /// <param name="privileges_to_delete">List of privileges to delete</param>
+        /// <param name="restricted_sids">List of restricted SIDs to add</param>
+        /// <returns>The new token.</returns>
+        public NtToken Filter(FilterTokenFlags flags, IEnumerable<Sid> sids_to_disable, IEnumerable<TokenPrivilegeValue> privileges_to_delete, IEnumerable<Sid> restricted_sids)
+        {
+            return Filter(flags, sids_to_disable, privileges_to_delete.Select(p => new Luid((uint)p, 0)), restricted_sids);
+        }
+
+        /// <summary>
+        /// Filter a token to remove groups/privileges and add restricted SIDs
+        /// </summary>
+        /// <param name="flags">Filter token flags</param>
+        /// <param name="sids_to_disable">List of SIDs to disable</param>
+        /// <param name="privileges_to_delete">List of privileges to delete</param>
+        /// <param name="restricted_sids">List of restricted SIDs to add</param>
+        /// <returns>The new token.</returns>
+        public NtToken Filter(FilterTokenFlags flags, IEnumerable<Sid> sids_to_disable, IEnumerable<Luid> privileges_to_delete, IEnumerable<Sid> restricted_sids)
+        {
+            SafeTokenGroupsBuffer sids_to_disable_buffer = SafeTokenGroupsBuffer.Null;
+            SafeTokenGroupsBuffer restricted_sids_buffer = SafeTokenGroupsBuffer.Null;
+            SafeTokenPrivilegesBuffer privileges_to_delete_buffer = SafeTokenPrivilegesBuffer.Null;
+
+            try
+            {
+                if (sids_to_disable != null && sids_to_disable.Any())
+                {
+                    sids_to_disable_buffer = BuildGroups(sids_to_disable, GroupAttributes.None);
+                }
+                if (restricted_sids != null && restricted_sids.Any())
+                {
+                    restricted_sids_buffer = BuildGroups(restricted_sids, GroupAttributes.None);
+                }
+                if (privileges_to_delete != null && privileges_to_delete.Any())
+                {
+                    TokenPrivilegesBuilder builder = new TokenPrivilegesBuilder();
+                    foreach (Luid priv in privileges_to_delete)
+                    {
+                        builder.AddPrivilege(priv, PrivilegeAttributes.Disabled);
+                    }
+                    privileges_to_delete_buffer = builder.ToBuffer();
+                }
+
+                NtSystemCalls.NtFilterToken(Handle, flags, sids_to_disable_buffer, privileges_to_delete_buffer,
+                    restricted_sids_buffer, out SafeKernelObjectHandle handle).ToNtException();
+                return new NtToken(handle);
+            }
+            finally
+            {
+                sids_to_disable_buffer.Close();
+                restricted_sids_buffer.Close();
+                privileges_to_delete_buffer.Close();
+            }
+        }
+
+        /// <summary>
+        /// Filter a token to remove privileges and groups.
+        /// </summary>
+        /// <param name="flags">Filter token flags</param>
+        /// <returns>The new filtered token.</returns>
+        public NtToken Filter(FilterTokenFlags flags)
+        {
+            return Filter(flags, null, (IEnumerable<Luid>)null, null);
+        }
+
+        /// <summary>
+        /// Set the state of a group
+        /// </summary>
+        /// <param name="group">The group SID to set</param>
+        /// <param name="attributes">The attributes to set</param>
+        public void SetGroup(Sid group, GroupAttributes attributes)
+        {
+            using (var buffer = BuildGroups(new Sid[] { group }, attributes))
+            {
+                NtSystemCalls.NtAdjustGroupsToken(Handle, false, buffer, 0, IntPtr.Zero, IntPtr.Zero).ToNtException();
+            }
+        }
+
+        /// <summary>
+        /// Set the session ID of a token
+        /// </summary>
+        /// <param name="session_id">The session ID</param>
+        public void SetSessionId(int session_id)
+        {
+            Set(TokenInformationClass.TokenSessionId, session_id);
+        }
+
+        /// <summary>
+        /// Set a token's default DACL
+        /// </summary>
+        /// <param name="dacl">The DACL to set.</param>
+        public void SetDefaultDacl(Acl dacl)
+        {
+            using (var dacl_buf = dacl.ToSafeBuffer())
+            {
+                TokenDefaultDacl default_dacl = new TokenDefaultDacl
+                {
+                    DefaultDacl = dacl_buf.DangerousGetHandle()
+                };
+                Set(TokenInformationClass.TokenDefaultDacl, default_dacl);
+            }
+        }
+
+        /// <summary>
+        /// Set the origin logon session ID.
+        /// </summary>
+        /// <param name="origin">The origin logon session ID.</param>
+        public void SetOrigin(Luid origin)
+        {
+            Set(TokenInformationClass.TokenOrigin, origin);
+        }
+
+        /// <summary>
+        /// Set virtualization enabled
+        /// </summary>
+        /// <param name="enable">True to enable virtualization</param>
+        public void SetVirtualizationEnabled(bool enable)
+        {
+            Set(TokenInformationClass.TokenVirtualizationEnabled, enable ? 1 : 0);
+        }
+
+        /// <summary>
+        /// Set UI Access flag.
+        /// </summary>
+        /// <param name="enable">True to enable UI Access.</param>
+        public void SetUIAccess(bool enable)
+        {
+            Set(TokenInformationClass.TokenUIAccess, enable ? 1 : 0);
+        }
+
+        /// <summary>
+        /// Get the linked token 
+        /// </summary>
+        /// <returns>The linked token</returns>
+        public NtToken GetLinkedToken()
+        {
+            IntPtr linked_token = Query<IntPtr>(TokenInformationClass.TokenLinkedToken);
+            return new NtToken(new SafeKernelObjectHandle(linked_token, true));
+        }
+
+        /// <summary>
+        /// Set the linked token.
+        /// </summary>
+        /// <param name="token">The token to set.</param>
+        /// <remarks>Requires SeCreateTokenPrivilege.</remarks>
+        public void SetLinkedToken(NtToken token)
+        {
+            Set(TokenInformationClass.TokenLinkedToken, token.Handle.DangerousGetHandle());
+        }
+
+        /// <summary>
+        /// Impersonate the token.
+        /// </summary>
+        /// <returns>An impersonation context, dispose to revert to process token</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public ThreadImpersonationContext Impersonate()
+        {
+            return NtThread.Current.Impersonate(this);
+        }
+
+        /// <summary>
+        /// Impersonate the token.
+        /// </summary>
+        /// <param name="impersonation_level">Impersonation level for token.</param>
+        /// <returns>An impersonation context, dispose to revert to process token</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public ThreadImpersonationContext Impersonate(SecurityImpersonationLevel impersonation_level)
+        {
+            using (NtToken token = DuplicateToken(impersonation_level))
+            {
+                return NtThread.Current.Impersonate(token);
+            }
+        }
+
+        /// <summary>
+        /// Run a function under impersonation.
+        /// </summary>
+        /// <typeparam name="T">The return type.</typeparam>
+        /// <param name="callback">The callback to run.</param>
+        /// <returns>The return value from the callback.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public T RunUnderImpersonate<T>(Func<T> callback)
+        {
+            using (Impersonate())
+            {
+                return callback();
+            }
+        }
+
+        /// <summary>
+        /// Run an action under impersonation.
+        /// </summary>
+        /// <param name="callback">The callback to run.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void RunUnderImpersonate(Action callback)
+        {
+            using (Impersonate())
+            {
+                callback();
+            }
+        }
+
+        /// <summary>
+        /// Run a function under impersonation.
+        /// </summary>
+        /// <typeparam name="T">The return type.</typeparam>
+        /// <param name="callback">The callback to run.</param>
+        /// <param name="impersonation_level">Impersonation level for token.</param>
+        /// <returns>The return value from the callback.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public T RunUnderImpersonate<T>(Func<T> callback, SecurityImpersonationLevel impersonation_level)
+        {
+            using (Impersonate(impersonation_level))
+            {
+                return callback();
+            }
+        }
+
+        /// <summary>
+        /// Run an action under impersonation.
+        /// </summary>
+        /// <param name="callback">The callback to run.</param>
+        /// <param name="impersonation_level">Impersonation level for token.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void RunUnderImpersonate(Action callback, SecurityImpersonationLevel impersonation_level)
+        {
+            using (Impersonate(impersonation_level))
+            {
+                callback();
+            }
+        }
+
+        /// <summary>
+        /// Get a security attribute by name.
+        /// </summary>
+        /// <param name="name">The name of the security attribute, such as WIN://PKG</param>
+        /// <param name="type">The expected type of the security attribute. If None return ignore type check.</param>
+        /// <returns>The security attribute or null if not found.</returns>
+        public ClaimSecurityAttribute GetSecurityAttributeByName(string name, ClaimSecurityValueType type)
+        {
+            IEnumerable<ClaimSecurityAttribute> ret = SecurityAttributes.Where(a => a.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (type != ClaimSecurityValueType.None)
+            {
+                ret = ret.Where(a => a.ValueType == type);
+            }
+            return ret.FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Get a security attribute by name.
+        /// </summary>
+        /// <param name="name">The name of the security attribute, such as WIN://PKG</param>
+        /// <returns>The security attribute or null if not found.</returns>
+        public ClaimSecurityAttribute GetSecurityAttributeByName(string name)
+        {
+            return GetSecurityAttributeByName(name, ClaimSecurityValueType.None);
+        }
+
+        private void SetIntegrityLevelSid(Sid sid)
+        {
+            using (SafeSidBufferHandle sid_buffer = sid.ToSafeBuffer())
+            {
+                TokenMandatoryLabel label = new TokenMandatoryLabel();
+                label.Label.Sid = sid_buffer.DangerousGetHandle();
+                Set(TokenInformationClass.TokenIntegrityLevel, label);
+            }
+        }
+
+        /// <summary>
+        /// Set the token's integrity level.
+        /// </summary>
+        /// <param name="level">The level to set.</param>
+        public void SetIntegrityLevelRaw(int level)
+        {
+            SetIntegrityLevelSid(NtSecurity.GetIntegritySidRaw(level));
+        }
+
+        /// <summary>
+        /// Set the token's integrity level.
+        /// </summary>
+        /// <param name="level">The level to set.</param>
+        public void SetIntegrityLevel(TokenIntegrityLevel level)
+        {
+            SetIntegrityLevelSid(NtSecurity.GetIntegritySid(level));
+        }
+        /// <summary>
+        /// Get the state of a privilege.
+        /// </summary>
+        /// <param name="privilege">The privilege to get the state of.</param>
+        /// <returns>The privilege, or null if it can't be found</returns>
+        /// <exception cref="NtException">Thrown if can't query privileges</exception>
+        public TokenPrivilege GetPrivilege(TokenPrivilegeValue privilege)
+        {
+            Luid priv_value = new Luid((uint)privilege, 0);
+            foreach (TokenPrivilege priv in Privileges)
+            {
+                if (priv.Luid.Equals(priv_value))
+                {
+                    return priv;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Compare two tokens.
+        /// </summary>
+        /// <param name="token">The other token to compare.</param>
+        /// <returns>True if tokens are equal.</returns>
+        public bool Compare(NtToken token)
+        {
+            NtSystemCalls.NtCompareTokens(Handle, token.Handle, out bool equal).ToNtException();
+            return equal;
+        }
+
+        /// <summary>
+        /// Get the App Policy for this token.
+        /// </summary>
+        /// <param name="policy_type">The type of app policy.</param>
+        /// <returns>The policy value.</returns>
+        public AppModelPolicy_PolicyValue GetAppModelPolicy(AppModelPolicy_Type policy_type)
+        {
+            OptionalInt64 attributes_present_obj = new OptionalInt64(0);
+            PsPkgClaim pkg_claim = new PsPkgClaim();
+
+            if (!NtRtl.RtlQueryPackageClaims(Handle, null, null, null, null, null,
+                pkg_claim, attributes_present_obj).IsSuccess())
+            {
+                return AppModelPolicy_PolicyValue.None;
+            }
+
+            return GetAppPolicy(policy_type, attributes_present_obj.Value, pkg_claim.Flags);
+        }
+
+        /// <summary>
+        /// Disable No Child process policy on the token.
+        /// </summary>
+        /// <remarks>Needs SeTcbPrivilege.</remarks>
+        public void DisableNoChildProcess()
+        {
+            Set(TokenInformationClass.TokenChildProcessFlags, 0);
+        }
+
+        /// <summary>
+        /// Method to query information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to return data in.</param>
+        /// <param name="return_length">Return length from the query.</param>
+        /// <returns>The NT status code for the query.</returns>
+        public override NtStatus QueryInformation(TokenInformationClass info_class, SafeBuffer buffer, out int return_length)
+        {
+            return NtSystemCalls.NtQueryInformationToken(Handle, info_class, buffer, buffer.GetLength(), out return_length);
+        }
+
+        /// <summary>
+        /// Method to set information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to set data from.</param>
+        /// <returns>The NT status code for the set.</returns>
+        public override NtStatus SetInformation(TokenInformationClass info_class, SafeBuffer buffer)
+        {
+            return NtSystemCalls.NtSetInformationToken(Handle, info_class, buffer, buffer.GetLength());
+        }
+
+        #endregion
+
+        #region Public Properties
+
+        /// <summary>
+        /// Get token user
+        /// </summary>
+        public UserGroup User
+        {
+            get
+            {
+                if (_user == null)
+                {
+                    using (var user = QueryBuffer<TokenUser>(TokenInformationClass.TokenUser))
+                    {
+                        Interlocked.CompareExchange(ref _user, user.Result.User.ToUserGroup(), null);
+                    }
+                }
+                return _user;
+            }
+        }
+
+        /// <summary>
+        /// Get token groups
+        /// </summary>
+        public UserGroup[] Groups
+        {
+            get
+            {
+                return QueryGroups(TokenInformationClass.TokenGroups);
+            }
+        }
+
+        /// <summary>
+        /// Get list of enabled groups.
+        /// </summary>
+        public IEnumerable<UserGroup> EnabledGroups
+        {
+            get
+            {
+                return Groups.Where(g => g.Enabled);
+            }
+        }
+
+        /// <summary>
+        /// Get list of deny only groups.
+        /// </summary>
+        public IEnumerable<UserGroup> DenyOnlyGroups
+        {
+            get
+            {
+                return Groups.Where(g => g.DenyOnly);
+            }
+        }
+
+        /// <summary>
+        /// Get count of groups in this token.
+        /// </summary>
+        public int GroupCount
+        {
+            get { return Groups.Length; }
+        }
+
+        /// <summary>
+        /// Get the authentication ID for the token
+        /// </summary>
+        public Luid AuthenticationId
+        {
+            get
+            {
+                return GetTokenStats().AuthenticationId;
+            }
+        }
+
+        /// <summary>
+        /// Get the token's type
+        /// </summary>
+        public TokenType TokenType
+        {
+            get
+            {
+                return GetTokenStats().TokenType;
+            }
+        }
+
+        /// <summary>
+        /// Get the token's expiration time.
+        /// </summary>
+        public long ExpirationTime
+        {
+            get
+            {
+                return GetTokenStats().ExpirationTime.QuadPart;
+            }
+        }
+
+        /// <summary>
+        /// Get the Token's Id
+        /// </summary>
+        public Luid Id
+        {
+            get
+            {
+                return GetTokenStats().TokenId;
+            }
+        }
+
+        /// <summary>
+        /// Get the Toen's modified Id.
+        /// </summary>
+        public Luid ModifiedId
+        {
+            get
+            {
+                return GetTokenStats().ModifiedId;
+            }
+        }
+
+        /// <summary>
+        /// Get/set the token's owner.
+        /// </summary>
+        public Sid Owner
+        {
+            get
+            {
+                using (var owner_buf = QueryBuffer<TokenOwner>(TokenInformationClass.TokenOwner))
+                {
+                    return new Sid(owner_buf.Result.Owner);
+                }
+            }
+
+            set
+            {
+                using (var sid_buffer = value.ToSafeBuffer())
+                {
+                    Set(TokenInformationClass.TokenOwner, new TokenOwner() { Owner = sid_buffer.DangerousGetHandle() });
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get/set the token's primary group
+        /// </summary>
+        public Sid PrimaryGroup
+        {
+            get
+            {
+                using (var owner_buf = QueryBuffer<TokenPrimaryGroup>(TokenInformationClass.TokenPrimaryGroup))
+                {
+                    return new Sid(owner_buf.Result.PrimaryGroup);
+                }
+            }
+            set
+            {
+                using (var sid_buffer = value.ToSafeBuffer())
+                {
+                    Set(TokenInformationClass.TokenPrimaryGroup, new TokenPrimaryGroup() { PrimaryGroup = sid_buffer.DangerousGetHandle() });
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get/set the token's default DACL
+        /// </summary>
+        public Acl DefaultDacl
+        {
+            get
+            {
+                using (var dacl_buf = QueryBuffer<TokenDefaultDacl>(TokenInformationClass.TokenDefaultDacl))
+                {
+                    return new Acl(dacl_buf.Result.DefaultDacl, false);
+                }
+            }
+            set
+            {
+                SetDefaultDacl(value);
+            }
+        }
+
+        /// <summary>
+        /// Get the token's source
+        /// </summary>
+        public TokenSource Source
+        {
+            get
+            {
+                if (_source == null)
+                {
+                    using (var source_buf = QueryBuffer<TokenSource>(TokenInformationClass.TokenSource))
+                    {
+                        Interlocked.CompareExchange(ref _source, source_buf.Result, null);
+                    }
+                }
+                return _source;
+            }
+        }
+
+        /// <summary>
+        /// Get token's restricted sids
+        /// </summary>
+        public UserGroup[] RestrictedSids
+        {
+            get
+            {
+                return QueryGroups(TokenInformationClass.TokenRestrictedSids);
+            }
+        }
+
+        /// <summary>
+        /// Get count of restricted sids
+        /// </summary>
+        public int RestrictedSidsCount
+        {
+            get { return RestrictedSids.Length; }
+        }
+
+        /// <summary>
+        /// Get token's impersonation level
+        /// </summary>
+        public SecurityImpersonationLevel ImpersonationLevel
+        {
+            get
+            {
+                return GetTokenStats().ImpersonationLevel;
+            }
+        }
+
+        /// <summary>
+        /// Get/set token's session ID
+        /// </summary>
+        public int SessionId
+        {
+            get
+            {
+                return Query<int>(TokenInformationClass.TokenSessionId);
+            }
+
+            set
+            {
+                SetSessionId(value);
+            }
+        }
+
+        /// <summary>
+        /// Get whether token has sandbox inert flag set.
+        /// </summary>
+        public bool SandboxInert
+        {
+            get
+            {
+                return Query<int>(TokenInformationClass.TokenSandBoxInert) != 0;
+            }
+        }
+
+        /// <summary>
+        /// Get/set token's origin
+        /// </summary>
+        public Luid Origin
+        {
+            get
+            {
+                return Query<Luid>(TokenInformationClass.TokenOrigin);
+            }
+
+            set
+            {
+                SetOrigin(value);
+            }
+        }
+
+        /// <summary>
+        /// Get token's elevation type
+        /// </summary>
+        public TokenElevationType ElevationType
+        {
+            get
+            {
+                return (TokenElevationType)Query<int>(TokenInformationClass.TokenElevationType);
+            }
+        }
+
+        /// <summary>
+        /// Get whether token is elevated
+        /// </summary>
+        public bool Elevated
+        {
+            get
+            {
+                return Query<int>(TokenInformationClass.TokenElevation) != 0;
+            }
+        }
+
+        /// <summary>
+        /// Get whether token has restrictions
+        /// </summary>
+        public bool HasRestrictions
+        {
+            get
+            {
+                return Query<int>(TokenInformationClass.TokenHasRestrictions) != 0;
+            }
+        }
+
+        /// <summary>
+        /// Get/set token UI access flag
+        /// </summary>
+        public bool UIAccess
+        {
+            get
+            {
+                return Query<int>(TokenInformationClass.TokenUIAccess) != 0;
+            }
+            set
+            {
+                SetUIAccess(value);
+            }
+        }
+
+        /// <summary>
+        /// Get or set whether virtualization is allowed
+        /// </summary>
+        public bool VirtualizationAllowed
+        {
+            get
+            {
+                return Query<int>(TokenInformationClass.TokenVirtualizationAllowed) != 0;
+            }
+            set
+            {
+                Set(TokenInformationClass.TokenVirtualizationAllowed, value ? 1 : 0);
+            }
+        }
+
+        /// <summary>
+        /// Get/set whether virtualization is enabled
+        /// </summary>
+        public bool VirtualizationEnabled
+        {
+            get
+            {
+                return Query<int>(TokenInformationClass.TokenVirtualizationEnabled) != 0;
+            }
+            set
+            {
+                SetVirtualizationEnabled(value);
+            }
+        }
+
+        /// <summary>
+        /// Get whether token is restricted
+        /// </summary>
+        public bool Restricted
+        {
+            get
+            {
+                return Query<int>(TokenInformationClass.TokenIsRestricted) != 0;
+            }
+        }
+
+        /// <summary>
+        /// Get token capabilities.
+        /// </summary>
+        public UserGroup[] Capabilities
+        {
+            get
+            {
+                return QueryGroups(TokenInformationClass.TokenCapabilities);
+            }
+        }
+
+        /// <summary>
+        /// Get or set the token mandatory policy
+        /// </summary>
+        public TokenMandatoryPolicy MandatoryPolicy
+        {
+            get
+            {
+                return (TokenMandatoryPolicy)Query<int>(TokenInformationClass.TokenMandatoryPolicy);
+            }
+            set
+            {
+                Set(TokenInformationClass.TokenMandatoryPolicy, (int)value);
+            }
+        }
+
+        /// <summary>
+        /// Get token logon sid
+        /// </summary>
+        public UserGroup LogonSid
+        {
+            get
+            {
+                return QueryGroups(TokenInformationClass.TokenLogonSid).FirstOrDefault();
+            }
+        }
+
+        /// <summary>
+        /// Get token's integrity level sid
+        /// </summary>
+        public UserGroup IntegrityLevelSid
+        {
+            get
+            {
+                using (var label = QueryBuffer<TokenMandatoryLabel>(TokenInformationClass.TokenIntegrityLevel))
+                {
+                    return label.Result.Label.ToUserGroup();
+                }
+            }
+
+            set
+            {
+                SetIntegrityLevelSid(value.Sid);
+            }
+        }
+
+        /// <summary>
+        /// Get token's App Container number.
+        /// </summary>
+        public int AppContainerNumber
+        {
+            get
+            {
+                return Query<int>(TokenInformationClass.TokenAppContainerNumber);
+            }
+        }
+
+        /// <summary>
+        /// Get or set token's integrity level.
+        /// </summary>
+        public TokenIntegrityLevel IntegrityLevel
+        {
+            get
+            {
+                UserGroup group = IntegrityLevelSid;
+                string[] parts = group.Sid.ToString().Split('-');
+                return (TokenIntegrityLevel)int.Parse(parts[parts.Length - 1]);
+            }
+
+            set
+            {
+                SetIntegrityLevel(value);
+            }
+        }
+
+        /// <summary>
+        /// Get token's security attributes
+        /// </summary>
+        public ClaimSecurityAttribute[] SecurityAttributes
+        {
+            get
+            {
+                using (var buf = QueryBuffer<ClaimSecurityAttributesInformation>(TokenInformationClass.TokenSecurityAttributes))
+                {
+                    ClaimSecurityAttributesInformation r = buf.Result;
+                    List<ClaimSecurityAttribute> attributes = new List<ClaimSecurityAttribute>();
+                    if (r.AttributeCount > 0)
+                    {
+                        int count = r.AttributeCount;
+                        IntPtr buffer = r.pAttributeV1;
+                        while (count > 0)
+                        {
+                            attributes.Add(new ClaimSecurityAttribute(buffer));
+                            count--;
+                            buffer += Marshal.SizeOf(typeof(ClaimSecurityAttributeV1_NT));
+                        }
+                    }
+                    return attributes.ToArray();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get whether a token is an AppContainer token
+        /// </summary>
+        public bool AppContainer
+        {
+            get
+            {
+                if (NtObjectUtils.IsWindows7OrLess)
+                {
+                    return false;
+                }
+
+                using (var appcontainer
+                    = QueryBuffer<uint>(TokenInformationClass.TokenIsAppContainer))
+                {
+                    return appcontainer.Result != 0;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get whether the token is configured for low privilege.
+        /// </summary>
+        public bool LowPrivilegeAppContainer
+        {
+            get
+            {
+                if (!AppContainer)
+                {
+                    return false;
+                }
+
+                ClaimSecurityAttribute attribute = GetSecurityAttributeByName("WIN://NOALLAPPPKG", ClaimSecurityValueType.UInt64);
+                if (attribute != null)
+                {
+                    return (ulong)attribute.Values.First() != 0;
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Get token's AppContainer sid
+        /// </summary>
+        public Sid AppContainerSid
+        {
+            get
+            {
+                if (!AppContainer)
+                {
+                    return null;
+                }
+
+                if (_app_container_sid == null)
+                {
+                    using (var acsid = QueryBuffer<TokenAppContainerInformation>(TokenInformationClass.TokenAppContainerSid))
+                    {
+                        Interlocked.CompareExchange(ref _app_container_sid, new Sid(acsid.Result.TokenAppContainer), null);
+                    }
+                }
+
+                return _app_container_sid;
+            }
+        }
+
+        /// <summary>
+        /// Get token's AppContainer package name (if available). 
+        /// Returns an empty string if not an AppContainer.
+        /// </summary>
+        public string PackageName
+        {
+            get
+            {
+                if (!AppContainer)
+                {
+                    return String.Empty;
+                }
+
+                ClaimSecurityAttribute attribute = GetSecurityAttributeByName("WIN://SYSAPPID", ClaimSecurityValueType.String);
+                if (attribute == null)
+                {
+                    return String.Empty;
+                }
+
+                return (string)attribute.Values.First();
+            }
+        }
+
+        /// <summary>
+        /// Get token's device groups
+        /// </summary>
+        public UserGroup[] DeviceGroups
+        {
+            get
+            {
+                return QueryGroups(TokenInformationClass.TokenDeviceGroups);
+            }
+        }
+
+        /// <summary>
+        /// Get token's restricted device groups.
+        /// </summary>
+        public UserGroup[] RestrictedDeviceGroups
+        {
+            get
+            {
+                return QueryGroups(TokenInformationClass.TokenRestrictedDeviceGroups);
+            }
+        }
+
+        /// <summary>
+        /// Get list of privileges for token
+        /// </summary>
+        /// <returns>The list of privileges</returns>
+        /// <exception cref="NtException">Thrown if can't query privileges</exception>
+        public TokenPrivilege[] Privileges
+        {
+            get
+            {
+                using (var buffer = QueryBuffer<TokenPrivileges>(TokenInformationClass.TokenPrivileges))
+                {
+                    int count = buffer.Result.PrivilegeCount;
+                    LuidAndAttributes[] attrs = new LuidAndAttributes[count];
+                    buffer.Data.ReadArray(0, attrs, 0, count);
+                    return attrs.Select(a => new TokenPrivilege(a.Luid, (PrivilegeAttributes)a.Attributes)).ToArray();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get full path to token
+        /// </summary>
+        public override string FullPath
+        {
+            get
+            {
+                try
+                {
+                    return $"{User.Sid.Name} - {AuthenticationId}";
+                }
+                catch
+                {
+                    return string.Empty;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get the token's trust level. Will be null if no trust level present.
+        /// </summary>
+        public Sid TrustLevel
+        {
+            get
+            {
+                try
+                {
+                    using (var buffer = QueryBuffer<TokenProcessTrustLevel>(TokenInformationClass.TokenProcessTrustLevel))
+                    {
+                        if (buffer.Length > IntPtr.Size)
+                        {
+                            return new Sid(buffer.Data.DangerousGetHandle());
+                        }
+                    }
+                }
+                catch (NtException)
+                {
+                }
+
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Returns true if this is a pseudo token.
+        /// </summary>
+        public bool IsPseudoToken { get; private set; }
+
+        /// <summary>
+        /// Get whether this token is a sandboxed token.
+        /// </summary>
+        public bool IsSandbox
+        {
+            get
+            {
+                try
+                {
+                    if (TokenType == TokenType.Primary)
+                    {
+                        return DuplicateToken(SecurityImpersonationLevel.Identification)
+                            .RunAndDispose(token => token.IsSandbox);
+                    }
+
+                    if (NtRtl.RtlCheckSandboxedToken(Handle, out bool is_sandboxed).IsSuccess())
+                    {
+                        return is_sandboxed;
+                    }
+                }
+                catch
+                {
+                }
+
+                // Default to not using the RTL version.
+                return AppContainer || Restricted || IntegrityLevel < TokenIntegrityLevel.Medium;
+            }
+        }
+
+        /// <summary>
+        /// Query the token's full package name.
+        /// </summary>
+        public string PackageFullName
+        {
+            get
+            {
+                byte[] package_name = new byte[1024];
+                OptionalLength package_length = new OptionalLength(package_name.Length);
+                if (NtRtl.RtlQueryPackageClaims(Handle, package_name, package_length, null, null, null, null, null).IsSuccess())
+                {
+                    return Encoding.Unicode.GetString(package_name, 0, package_length.Length.ToInt32()).TrimEnd('\0');
+                }
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Query the token's appid.
+        /// </summary>
+        public string AppId
+        {
+            get
+            {
+                byte[] app_id = new byte[1024];
+                OptionalLength app_id_length = new OptionalLength(app_id.Length);
+                if (NtRtl.RtlQueryPackageClaims(Handle, null, null, app_id, app_id_length, null, null, null).IsSuccess())
+                {
+                    return Encoding.Unicode.GetString(app_id, 0, app_id_length.Length.ToInt32()).TrimEnd('\0');
+                }
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Get the list of policies for this App.
+        /// </summary>
+        public IEnumerable<AppModelPolicy_PolicyValue> AppModelPolicies
+        {
+            get
+            {
+                OptionalInt64 attributes_present_obj = new OptionalInt64(0);
+                PsPkgClaim pkg_claim = new PsPkgClaim();
+
+                if (!NtRtl.RtlQueryPackageClaims(Handle, null, null, null, null, null,
+                    pkg_claim, attributes_present_obj).IsSuccess())
+                {
+                    return Enumerable.Empty<AppModelPolicy_PolicyValue>();
+                }
+
+                return Enum.GetValues(typeof(AppModelPolicy_Type)).Cast<AppModelPolicy_Type>().Select(p => GetAppPolicy(p, attributes_present_obj.Value, pkg_claim.Flags));
+            }
+        }
+
+        /// <summary>
+        /// Get the BaseNamedObjects isolation prefix if enabled.
+        /// </summary>
+        public string BnoIsolationPrefix
+        {
+            get
+            {
+                using (var buffer = QueryBuffer<TokenBnoIsolationInformation>(TokenInformationClass.TokenBnoIsolation))
+                {
+                    var result = buffer.Result;
+                    if (!result.IsolationEnabled || result.IsolationPrefix == IntPtr.Zero)
+                        return string.Empty;
+
+                    return Marshal.PtrToStringUni(result.IsolationPrefix);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get or set the token audit policy.
+        /// </summary>
+        /// <remarks>Needs SeSecurityPrivilege to query and SeTcbPrivilege to set.</remarks>
+        public byte[] AuditPolicy
+        {
+            get
+            {
+                return Query<TokenAuditPolicy>(TokenInformationClass.TokenAuditPolicy).PerUserPolicy;
+            }
+
+            set
+            {
+                byte[] audit_policy = new byte[30];
+                Array.Copy(value, audit_policy, Math.Min(value.Length, audit_policy.Length));
+                Set(TokenInformationClass.TokenAuditPolicy, new TokenAuditPolicy() { PerUserPolicy = audit_policy });
+            }
+        }
+
+        /// <summary>
+        /// Get or set if token is in a private namespace.
+        /// </summary>
+        public bool PrivateNamespace
+        {
+            get => Query<int>(TokenInformationClass.TokenPrivateNameSpace) != 0;
+            set => Set(TokenInformationClass.TokenPrivateNameSpace, value ? 1 : 0);
+        }
+
+        /// <summary>
+        /// Get if the token is restricted.
+        /// </summary>
+        public bool IsRestricted => Query<int>(TokenInformationClass.TokenIsRestricted) != 0;
+
+        #endregion
+
+        #region Static Methods
+
+        /// <summary>
         /// Enable debug privilege for the current process token.
         /// </summary>
         /// <returns>True if set the debug privilege</returns>
@@ -1249,9 +2446,8 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtResult<NtToken> OpenProcessToken(NtProcess process, TokenAccessRights desired_access, bool throw_on_error)
         {
-            SafeKernelObjectHandle new_token;
             return NtSystemCalls.NtOpenProcessTokenEx(process.Handle,
-              desired_access, AttributeFlags.None, out new_token)
+              desired_access, AttributeFlags.None, out SafeKernelObjectHandle new_token)
               .CreateResult(throw_on_error, () => new NtToken(new_token));
         }
 
@@ -1311,7 +2507,7 @@ namespace NtApiDotNet
 
         /// <summary>
         /// Open the process token of the current process
-        /// </summary>        
+        /// </summary>
         /// <param name="duplicate">True to duplicate the token before returning</param>
         /// <returns>The opened token</returns>
         /// <exception cref="NtException">Thrown if cannot open token</exception>
@@ -1331,7 +2527,6 @@ namespace NtApiDotNet
         {
             return OpenProcessToken(NtProcess.Current, duplicate, desired_access);
         }
-
 
         /// <summary>
         /// Open the process token of another process
@@ -1383,9 +2578,8 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtResult<NtToken> OpenThreadToken(NtThread thread, bool open_as_self, TokenAccessRights desired_access, bool throw_on_error)
         {
-            SafeKernelObjectHandle new_token;
             return NtSystemCalls.NtOpenThreadTokenEx(thread.Handle,
-              desired_access, open_as_self, AttributeFlags.None, out new_token).CreateResult(throw_on_error, () => new NtToken(new_token));
+              desired_access, open_as_self, AttributeFlags.None, out SafeKernelObjectHandle new_token).CreateResult(throw_on_error, () => new NtToken(new_token));
         }
 
         /// <summary>
@@ -1507,147 +2701,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Create a LowBox token from the current token.
-        /// </summary>
-        /// <param name="package_sid">The package SID</param>
-        /// <returns>The created LowBox token.</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public NtToken CreateLowBoxToken(Sid package_sid)
-        {
-            return CreateLowBoxToken(package_sid, new NtObject[0]);
-        }
-
-        /// <summary>
-        /// Create a LowBox token from the current token.
-        /// </summary>
-        /// <param name="package_sid">The package SID</param>
-        /// <param name="handles">List of handles to capture with the token</param>
-        /// <returns>The created LowBox token.</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public NtToken CreateLowBoxToken(Sid package_sid, params NtObject[] handles)
-        {
-            return CreateLowBoxToken(package_sid, new Sid[0], handles, TokenAccessRights.MaximumAllowed);
-        }
-
-        /// <summary>
-        /// Create a LowBox token from the current token.
-        /// </summary>
-        /// <param name="package_sid">The package SID</param>
-        /// <param name="handles">List of handles to capture with the token</param>
-        /// <param name="capability_sids">List of capability sids to add.</param>
-        /// <param name="desired_access">Desired token access.</param>
-        /// <returns>The created LowBox token.</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public NtToken CreateLowBoxToken(Sid package_sid, IEnumerable<Sid> capability_sids,
-            IEnumerable<NtObject> handles, TokenAccessRights desired_access)
-        {
-            SafeKernelObjectHandle token;
-
-            IntPtr[] handle_array = handles.Select(h => h.Handle.DangerousGetHandle()).ToArray();
-
-            using (var sids = new DisposableList<SafeSidBufferHandle>())
-            {
-                SidAndAttributes[] capabilities = capability_sids.Select(s =>
-                    {
-                        SafeSidBufferHandle sid = s.ToSafeBuffer();
-                        sids.Add(sid);
-                        return new SidAndAttributes() { Sid = sid.DangerousGetHandle(), Attributes = GroupAttributes.Enabled };
-                    }
-                    ).ToArray();
-                NtSystemCalls.NtCreateLowBoxToken(out token,
-                    Handle, TokenAccessRights.MaximumAllowed,
-                  new ObjectAttributes(), package_sid.ToArray(), capabilities.Length,
-                  capabilities.Length == 0 ? null : capabilities, 
-                  handle_array.Length, handle_array.Length == 0 ? null : handle_array).ToNtException();
-            }
-            return new NtToken(token);
-        }
-
-        private static SafeTokenGroupsBuffer BuildGroups(IEnumerable<Sid> sids, GroupAttributes attributes)
-        {
-            return BuildGroups(sids.Select(s => new UserGroup(s, attributes)));
-        }
-
-        private static SafeTokenGroupsBuffer BuildGroups(IEnumerable<UserGroup> groups)
-        {
-            TokenGroupsBuilder builder = new TokenGroupsBuilder();
-            foreach (UserGroup group in groups)
-            {
-                builder.AddGroup(group);
-            }
-            return builder.ToBuffer();
-        }
-
-        /// <summary>
-        /// Filter a token to remove groups/privileges and add restricted SIDs
-        /// </summary>
-        /// <param name="flags">Filter token flags</param>
-        /// <param name="sids_to_disable">List of SIDs to disable</param>
-        /// <param name="privileges_to_delete">List of privileges to delete</param>
-        /// <param name="restricted_sids">List of restricted SIDs to add</param>
-        /// <returns>The new token.</returns>
-        public NtToken Filter(FilterTokenFlags flags, IEnumerable<Sid> sids_to_disable, IEnumerable<TokenPrivilegeValue> privileges_to_delete, IEnumerable<Sid> restricted_sids)
-        {
-            return Filter(flags, sids_to_disable, privileges_to_delete.Select(p => new Luid((uint)p, 0)), restricted_sids);
-        }
-
-        /// <summary>
-        /// Filter a token to remove groups/privileges and add restricted SIDs
-        /// </summary>
-        /// <param name="flags">Filter token flags</param>
-        /// <param name="sids_to_disable">List of SIDs to disable</param>
-        /// <param name="privileges_to_delete">List of privileges to delete</param>
-        /// <param name="restricted_sids">List of restricted SIDs to add</param>
-        /// <returns>The new token.</returns>
-        public NtToken Filter(FilterTokenFlags flags, IEnumerable<Sid> sids_to_disable, IEnumerable<Luid> privileges_to_delete, IEnumerable<Sid> restricted_sids)
-        {
-            SafeTokenGroupsBuffer sids_to_disable_buffer = SafeTokenGroupsBuffer.Null;
-            SafeTokenGroupsBuffer restricted_sids_buffer = SafeTokenGroupsBuffer.Null;
-            SafeTokenPrivilegesBuffer privileges_to_delete_buffer = SafeTokenPrivilegesBuffer.Null;
-
-            try
-            {
-                if (sids_to_disable != null && sids_to_disable.Any())
-                {
-                    sids_to_disable_buffer = BuildGroups(sids_to_disable, GroupAttributes.None);
-                }
-                if (restricted_sids != null && restricted_sids.Any())
-                {
-                    restricted_sids_buffer = BuildGroups(restricted_sids, GroupAttributes.None);
-                }
-                if (privileges_to_delete != null && privileges_to_delete.Any())
-                {
-                    TokenPrivilegesBuilder builder = new TokenPrivilegesBuilder();
-                    foreach (Luid priv in privileges_to_delete)
-                    {
-                        builder.AddPrivilege(priv, PrivilegeAttributes.Disabled);
-                    }
-                    privileges_to_delete_buffer = builder.ToBuffer();
-                }
-
-                SafeKernelObjectHandle handle;
-                NtSystemCalls.NtFilterToken(Handle, flags, sids_to_disable_buffer, privileges_to_delete_buffer, restricted_sids_buffer, out handle).ToNtException();
-                return new NtToken(handle);
-            }
-            finally
-            {
-                sids_to_disable_buffer.Close();
-                restricted_sids_buffer.Close();
-                privileges_to_delete_buffer.Close();
-            }
-        }
-
-        /// <summary>
-        /// Filter a token to remove privileges and groups.
-        /// </summary>
-        /// <param name="flags">Filter token flags</param>
-        /// <returns>The new filtered token.</returns>
-        public NtToken Filter(FilterTokenFlags flags)
-        {
-            return Filter(flags, null, (IEnumerable<Luid>)null, null);
-        }
-
-        /// <summary>
         /// Create a token. Needs SeCreateTokenPrivilege.
         /// </summary>
         /// <param name="desired_access">The desired access for the token.</param>
@@ -1665,7 +2718,7 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The token object.</returns>
         public static NtResult<NtToken> Create(
-                    TokenAccessRights desired_access, 
+                    TokenAccessRights desired_access,
                     ObjectAttributes object_attributes,
                     TokenType token_type,
                     Luid authentication_id,
@@ -1707,7 +2760,7 @@ namespace NtApiDotNet
 
                 return NtSystemCalls.NtCreateToken(out SafeKernelObjectHandle handle, desired_access, object_attributes,
                     token_type, ref authentication_id, new LargeInteger(expiration_time),
-                    ref user, groups, privileges, ref owner, ref primary_group, ref dacl, 
+                    ref user, groups, privileges, ref owner, ref primary_group, ref dacl,
                     new TokenSource(token_source)).CreateResult(throw_on_error, () => new NtToken(handle));
             }
         }
@@ -1742,7 +2795,7 @@ namespace NtApiDotNet
                     Acl token_default_dacl,
                     string token_source)
         {
-            return Create(desired_access, object_attributes, token_type, authentication_id, expiration_time, token_user, 
+            return Create(desired_access, object_attributes, token_type, authentication_id, expiration_time, token_user,
                 token_groups, token_privileges, token_owner, token_primary_group, token_default_dacl, token_source, true).Result;
         }
 
@@ -1777,613 +2830,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Set the state of a group
-        /// </summary>
-        /// <param name="group">The group SID to set</param>
-        /// <param name="attributes">The attributes to set</param>
-        public void SetGroup(Sid group, GroupAttributes attributes)
-        {
-            using (var buffer = BuildGroups(new Sid[] { group }, attributes))
-            {
-                NtSystemCalls.NtAdjustGroupsToken(Handle, false, buffer, 0, IntPtr.Zero, IntPtr.Zero).ToNtException();
-            }
-        }
-        
-        /// <summary>
-        /// Set the session ID of a token
-        /// </summary>
-        /// <param name="session_id">The session ID</param>
-        public void SetSessionId(int session_id)
-        {
-            Set(TokenInformationClass.TokenSessionId, session_id);
-        }
-
-        private UserGroup _user;
-
-        /// <summary>
-        /// Get token user
-        /// </summary>
-        public UserGroup User
-        {
-            get
-            {
-                if (_user == null)
-                {
-                    using (var user = QueryBuffer<TokenUser>(TokenInformationClass.TokenUser))
-                    {
-                        Interlocked.CompareExchange(ref _user, user.Result.User.ToUserGroup(), null);
-                    }
-                }
-                return _user;
-            }
-        }
-
-        private UserGroup[] QueryGroups(TokenInformationClass info_class)
-        {
-            using (var groups = QueryBuffer<TokenGroups>(info_class))
-            {
-                TokenGroups result = groups.Result;
-                SidAndAttributes[] sids = new SidAndAttributes[result.GroupCount];
-                groups.Data.ReadArray(0, sids, 0, result.GroupCount);
-                return sids.Select(s => s.ToUserGroup()).ToArray();
-            }
-        }
-
-        /// <summary>
-        /// Get token groups
-        /// </summary>
-        public UserGroup[] Groups
-        {
-            get
-            {
-                return QueryGroups(TokenInformationClass.TokenGroups);
-            }
-        }
-
-        /// <summary>
-        /// Get list of enabled groups.
-        /// </summary>
-        public IEnumerable<UserGroup> EnabledGroups
-        {
-            get
-            {
-                return Groups.Where(g => g.Enabled);
-            }
-        }
-
-        /// <summary>
-        /// Get list of deny only groups.
-        /// </summary>
-        public IEnumerable<UserGroup> DenyOnlyGroups
-        {
-            get
-            {
-                return Groups.Where(g => g.DenyOnly);
-            }
-        }
-
-        /// <summary>
-        /// Get count of groups in this token.
-        /// </summary>
-        public int GroupCount
-        {
-            get { return Groups.Length; }
-        }
-
-        /// <summary>
-        /// Get the current user.
-        /// </summary>
-        public static UserGroup CurrentUser
-        {
-            get
-            {
-                using (NtToken token = OpenEffectiveToken())
-                {
-                    return token.User;
-                }
-            }
-        }
-
-        private TokenStatistics _token_stats;
-
-        private TokenStatistics GetTokenStats()
-        {
-            if (_token_stats == null)
-            {
-                using (var stats = QueryBuffer<TokenStatistics>(TokenInformationClass.TokenStatistics))
-                {
-                    Interlocked.CompareExchange(ref _token_stats, stats.Result, null);
-                }
-            }
-            return _token_stats;
-        }
-    
-        /// <summary>
-        /// Get the authentication ID for the token
-        /// </summary>
-        public Luid AuthenticationId
-        {
-            get
-            {
-                return GetTokenStats().AuthenticationId;
-            }
-        }
-
-        /// <summary>
-        /// Get the token's type
-        /// </summary>
-        public TokenType TokenType
-        {
-            get
-            {
-                return GetTokenStats().TokenType;
-            }
-        }
-
-        /// <summary>
-        /// Get the token's expiration time.
-        /// </summary>
-        public long ExpirationTime
-        {
-            get
-            {
-                return GetTokenStats().ExpirationTime.QuadPart;
-            }
-        }
-
-        /// <summary>
-        /// Get the Token's Id
-        /// </summary>
-        public Luid Id
-        {
-            get
-            {
-                return GetTokenStats().TokenId;
-            }
-        }
-
-        /// <summary>
-        /// Get the Toen's modified Id.
-        /// </summary>
-        public Luid ModifiedId
-        {
-            get
-            {
-                return GetTokenStats().ModifiedId;
-            }
-        }
-
-        /// <summary>
-        /// Get/set the token's owner.
-        /// </summary>
-        public Sid Owner
-        {
-            get
-            {
-                using (var owner_buf = QueryBuffer<TokenOwner>(TokenInformationClass.TokenOwner))
-                {
-                    return new Sid(owner_buf.Result.Owner);
-                }
-            }
-
-            set
-            {
-                using (var sid_buffer = value.ToSafeBuffer())
-                {
-                    Set(TokenInformationClass.TokenOwner, new TokenOwner() { Owner = sid_buffer.DangerousGetHandle() });
-                }
-            }
-        }
-
-        /// <summary>
-        /// Get/set the token's primary group
-        /// </summary>
-        public Sid PrimaryGroup
-        {
-            get
-            {
-                using (var owner_buf = QueryBuffer<TokenPrimaryGroup>(TokenInformationClass.TokenPrimaryGroup))
-                {
-                    return new Sid(owner_buf.Result.PrimaryGroup);
-                }
-            }
-            set
-            {
-                using (var sid_buffer = value.ToSafeBuffer())
-                {
-                    Set(TokenInformationClass.TokenPrimaryGroup, new TokenPrimaryGroup() { PrimaryGroup = sid_buffer.DangerousGetHandle() });
-                }
-            }
-        }
-
-        /// <summary>
-        /// Get/set the token's default DACL
-        /// </summary>
-        public Acl DefaultDacl
-        {
-            get
-            {
-                using (var dacl_buf = QueryBuffer<TokenDefaultDacl>(TokenInformationClass.TokenDefaultDacl))
-                {
-                    return new Acl(dacl_buf.Result.DefaultDacl, false);
-                }
-            }
-            set
-            {
-                SetDefaultDacl(value);
-            }
-        }
-
-        /// <summary>
-        /// Set a token's default DACL
-        /// </summary>
-        /// <param name="dacl">The DACL to set.</param>
-        public void SetDefaultDacl(Acl dacl)
-        {
-            using (var dacl_buf = dacl.ToSafeBuffer())
-            {
-                TokenDefaultDacl default_dacl = new TokenDefaultDacl
-                {
-                    DefaultDacl = dacl_buf.DangerousGetHandle()
-                };
-                Set(TokenInformationClass.TokenDefaultDacl, default_dacl);
-            }
-        }
-
-        private TokenSource _source;
-
-        /// <summary>
-        /// Get the token's source
-        /// </summary>
-        public TokenSource Source
-        {
-            get
-            {
-                if (_source == null)
-                {
-                    using (var source_buf = QueryBuffer<TokenSource>(TokenInformationClass.TokenSource))
-                    {
-                        Interlocked.CompareExchange(ref _source, source_buf.Result, null);
-                    }
-                }
-                return _source;
-            }
-        }
-
-        /// <summary>
-        /// Get token's restricted sids
-        /// </summary>
-        public UserGroup[] RestrictedSids
-        {
-            get
-            {
-                return QueryGroups(TokenInformationClass.TokenRestrictedSids);
-            }
-        }
-
-        /// <summary>
-        /// Get count of restricted sids
-        /// </summary>
-        public int RestrictedSidsCount
-        {
-            get { return RestrictedSids.Length; }
-        }
-
-        /// <summary>
-        /// Get token's impersonation level
-        /// </summary>
-        public SecurityImpersonationLevel ImpersonationLevel
-        {
-            get
-            {
-                return GetTokenStats().ImpersonationLevel;
-            }
-        }
-
-        /// <summary>
-        /// Get/set token's session ID
-        /// </summary>
-        public int SessionId
-        {
-            get
-            {
-                return Query<int>(TokenInformationClass.TokenSessionId);
-            }
-
-            set
-            {
-                SetSessionId(value);
-            }
-        }
-
-        /// <summary>
-        /// Get whether token has sandbox inert flag set.
-        /// </summary>
-        public bool SandboxInert
-        {
-            get
-            {
-                return Query<int>(TokenInformationClass.TokenSandBoxInert) != 0;
-            }
-        }
-
-        /// <summary>
-        /// Get/set token's origin
-        /// </summary>
-        public Luid Origin
-        {
-            get
-            {
-                return Query<Luid>(TokenInformationClass.TokenOrigin);
-            }
-
-            set
-            {
-                SetOrigin(value);
-            }
-        }
-
-        /// <summary>
-        /// Set the origin logon session ID.
-        /// </summary>
-        /// <param name="origin">The origin logon session ID.</param>
-        public void SetOrigin(Luid origin)
-        {
-            Set(TokenInformationClass.TokenOrigin, origin);
-        }
-
-        /// <summary>
-        /// Get token's elevation type
-        /// </summary>
-        public TokenElevationType ElevationType
-        {
-            get
-            {
-                return (TokenElevationType)Query<int>(TokenInformationClass.TokenElevationType);
-            }
-        }
-
-        /// <summary>
-        /// Get whether token is elevated
-        /// </summary>
-        public bool Elevated
-        {
-            get
-            {
-                return Query<int>(TokenInformationClass.TokenElevation) != 0;
-            }
-        }
-
-        /// <summary>
-        /// Get whether token has restrictions
-        /// </summary>
-        public bool HasRestrictions
-        {
-            get
-            {
-                return Query<int>(TokenInformationClass.TokenHasRestrictions) != 0;
-            }
-        }
-
-        /// <summary>
-        /// Get/set token UI access flag
-        /// </summary>
-        public bool UIAccess
-        {
-            get
-            {
-                return Query<int>(TokenInformationClass.TokenUIAccess) != 0;
-            }
-            set
-            {
-                SetUIAccess(value);
-            }
-        }
-
-        /// <summary>
-        /// Get whether virtualization is allowed
-        /// </summary>
-        public bool VirtualizationAllowed
-        {
-            get
-            {
-                return Query<int>(TokenInformationClass.TokenVirtualizationAllowed) != 0;
-            }
-        }
-
-        /// <summary>
-        /// Get/set whether virtualization is enabled
-        /// </summary>
-        public bool VirtualizationEnabled
-        {
-            get
-            {
-                return Query<int>(TokenInformationClass.TokenVirtualizationEnabled) != 0;
-            }
-            set
-            {
-                SetVirtualizationEnabled(value);
-            }
-        }
-
-        /// <summary>
-        /// Set virtualization enabled
-        /// </summary>
-        /// <param name="enable">True to enable virtualization</param>
-        public void SetVirtualizationEnabled(bool enable)
-        {
-            Set(TokenInformationClass.TokenVirtualizationEnabled, enable ? 1 : 0);
-        }
-
-        /// <summary>
-        /// Set UI Access flag.
-        /// </summary>
-        /// <param name="enable">True to enable UI Access.</param>
-        public void SetUIAccess(bool enable)
-        {
-            Set(TokenInformationClass.TokenUIAccess, enable ? 1 : 0);
-        }
-
-        /// <summary>
-        /// Get whether token is stricted
-        /// </summary>
-        public bool Restricted
-        {
-            get
-            {
-                return RestrictedSidsCount > 0;
-            }
-        }
-
-        /// <summary>
-        /// Get the linked token 
-        /// </summary>
-        /// <returns>The linked token</returns>
-        public NtToken GetLinkedToken()
-        {
-            IntPtr linked_token = Query<IntPtr>(TokenInformationClass.TokenLinkedToken);
-            return new NtToken(new SafeKernelObjectHandle(linked_token, true));
-        }
-
-        /// <summary>
-        /// Get token capacilities
-        /// </summary>
-        public UserGroup[] Capabilities
-        {
-            get
-            {
-                return QueryGroups(TokenInformationClass.TokenCapabilities);
-            }
-        }
-
-        /// <summary>
-        /// Get token mandatory policy
-        /// </summary>
-        public TokenMandatoryPolicy MandatoryPolicy
-        {
-            get
-            {
-                return (TokenMandatoryPolicy)Query<int>(TokenInformationClass.TokenMandatoryPolicy);
-            }
-        }
-
-        /// <summary>
-        /// Get token logon sid
-        /// </summary>
-        public UserGroup LogonSid
-        {
-            get
-            {
-                return QueryGroups(TokenInformationClass.TokenLogonSid).FirstOrDefault();
-            }
-        }
-
-        /// <summary>
-        /// Impersonate the token.
-        /// </summary>
-        /// <returns>An impersonation context, dispose to revert to process token</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public ThreadImpersonationContext Impersonate()
-        {
-            return NtThread.Current.Impersonate(this);
-        }
-
-        /// <summary>
-        /// Impersonate the token.
-        /// </summary>
-        /// <param name="impersonation_level">Impersonation level for token.</param>
-        /// <returns>An impersonation context, dispose to revert to process token</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public ThreadImpersonationContext Impersonate(SecurityImpersonationLevel impersonation_level)
-        {
-            using (NtToken token = DuplicateToken(impersonation_level))
-            {
-                return NtThread.Current.Impersonate(token);
-            }
-        }
-
-        /// <summary>
-        /// Run a function under impersonation.
-        /// </summary>
-        /// <typeparam name="T">The return type.</typeparam>
-        /// <param name="callback">The callback to run.</param>
-        /// <returns>The return value from the callback.</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public T RunUnderImpersonate<T>(Func<T> callback)
-        {
-            using (Impersonate())
-            {
-                return callback();
-            }
-        }
-
-        /// <summary>
-        /// Run an action under impersonation.
-        /// </summary>
-        /// <param name="callback">The callback to run.</param>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public void RunUnderImpersonate(Action callback)
-        {
-            using (Impersonate())
-            {
-                callback();
-            }
-        }
-
-        /// <summary>
-        /// Run a function under impersonation.
-        /// </summary>
-        /// <typeparam name="T">The return type.</typeparam>
-        /// <param name="callback">The callback to run.</param>
-        /// <param name="impersonation_level">Impersonation level for token.</param>
-        /// <returns>The return value from the callback.</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public T RunUnderImpersonate<T>(Func<T> callback, SecurityImpersonationLevel impersonation_level)
-        {
-            using (Impersonate(impersonation_level))
-            {
-                return callback();
-            }
-        }
-
-        /// <summary>
-        /// Run an action under impersonation.
-        /// </summary>
-        /// <param name="callback">The callback to run.</param>
-        /// <param name="impersonation_level">Impersonation level for token.</param>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public void RunUnderImpersonate(Action callback, SecurityImpersonationLevel impersonation_level)
-        {
-            using (Impersonate(impersonation_level))
-            {
-                callback();
-            }
-        }
-
-        /// <summary>
-        /// Method to query information for this object type.
-        /// </summary>
-        /// <param name="info_class">The information class.</param>
-        /// <param name="buffer">The buffer to return data in.</param>
-        /// <param name="return_length">Return length from the query.</param>
-        /// <returns>The NT status code for the query.</returns>
-        public override NtStatus QueryInformation(TokenInformationClass info_class, SafeBuffer buffer, out int return_length)
-        {
-            return NtSystemCalls.NtQueryInformationToken(Handle, info_class, buffer, buffer.GetLength(), out return_length);
-        }
-
-        /// <summary>
-        /// Method to set information for this object type.
-        /// </summary>
-        /// <param name="info_class">The information class.</param>
-        /// <param name="buffer">The buffer to set data from.</param>
-        /// <returns>The NT status code for the set.</returns>
-        public override NtStatus SetInformation(TokenInformationClass info_class, SafeBuffer buffer)
-        {
-            return NtSystemCalls.NtSetInformationToken(Handle, info_class, buffer, buffer.GetLength());
-        }
-
-        /// <summary>
         /// Impersonate another process' token
         /// </summary>
         /// <param name="impersonation_level">The impersonation level</param>
@@ -2400,285 +2846,22 @@ namespace NtApiDotNet
             }
         }
 
+        #endregion
+
+        #region Static Properties
 
         /// <summary>
-        /// Get token's integrity level sid
+        /// Get the current user.
         /// </summary>
-        public UserGroup IntegrityLevelSid
+        public static UserGroup CurrentUser
         {
             get
             {
-                using (var label = QueryBuffer<TokenMandatoryLabel>(TokenInformationClass.TokenIntegrityLevel))
+                using (NtToken token = OpenEffectiveToken())
                 {
-                    return label.Result.Label.ToUserGroup();
+                    return token.User;
                 }
             }
-
-            set
-            {
-                SetIntegrityLevelSid(value.Sid);
-            }
-        }
-
-        /// <summary>
-        /// Get token's App Container number.
-        /// </summary>
-        public int AppContainerNumber
-        {
-            get
-            {
-                return Query<int>(TokenInformationClass.TokenAppContainerNumber);
-            }
-        }
-
-        /// <summary>
-        /// Get or set token's integrity level.
-        /// </summary>
-        public TokenIntegrityLevel IntegrityLevel
-        {
-            get
-            {
-                UserGroup group = IntegrityLevelSid;
-                string[] parts = group.Sid.ToString().Split('-');
-                return (TokenIntegrityLevel)int.Parse(parts[parts.Length - 1]);
-            }
-
-            set
-            {
-                SetIntegrityLevel(value);
-            }
-        }
-
-        /// <summary>
-        /// Get token's security attributes
-        /// </summary>
-        public ClaimSecurityAttribute[] SecurityAttributes
-        {
-            get
-            {
-                using (var buf = QueryBuffer<ClaimSecurityAttributesInformation>(TokenInformationClass.TokenSecurityAttributes))
-                {
-                    ClaimSecurityAttributesInformation r = buf.Result;
-                    List<ClaimSecurityAttribute> attributes = new List<ClaimSecurityAttribute>();
-                    if (r.AttributeCount > 0)
-                    {
-                        int count = r.AttributeCount;
-                        IntPtr buffer = r.pAttributeV1;
-                        while (count > 0)
-                        {
-                            attributes.Add(new ClaimSecurityAttribute(buffer));
-                            count--;
-                            buffer += Marshal.SizeOf(typeof(ClaimSecurityAttributeV1_NT));
-                        }
-                    }
-                    return attributes.ToArray();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Get a security attribute by name.
-        /// </summary>
-        /// <param name="name">The name of the security attribute, such as WIN://PKG</param>
-        /// <param name="type">The expected type of the security attribute. If None return ignore type check.</param>
-        /// <returns>The security attribute or null if not found.</returns>
-        public ClaimSecurityAttribute GetSecurityAttributeByName(string name, ClaimSecurityValueType type)
-        {
-            IEnumerable<ClaimSecurityAttribute> ret = SecurityAttributes.Where(a => a.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-            if (type != ClaimSecurityValueType.None)
-            {
-                ret = ret.Where(a => a.ValueType == type);
-            }
-            return ret.FirstOrDefault();
-        }
-
-        /// <summary>
-        /// Get a security attribute by name.
-        /// </summary>
-        /// <param name="name">The name of the security attribute, such as WIN://PKG</param>
-        /// <returns>The security attribute or null if not found.</returns>
-        public ClaimSecurityAttribute GetSecurityAttributeByName(string name)
-        {
-            return GetSecurityAttributeByName(name, ClaimSecurityValueType.None);
-        }
-
-        private void SetIntegrityLevelSid(Sid sid)
-        {
-            using (SafeSidBufferHandle sid_buffer = sid.ToSafeBuffer())
-            {                
-                TokenMandatoryLabel label = new TokenMandatoryLabel();
-                label.Label.Sid = sid_buffer.DangerousGetHandle();
-                Set(TokenInformationClass.TokenIntegrityLevel, label);
-            }
-        }
-
-        /// <summary>
-        /// Set the token's integrity level.
-        /// </summary>
-        /// <param name="level">The level to set.</param>
-        public void SetIntegrityLevelRaw(int level)
-        {
-            SetIntegrityLevelSid(NtSecurity.GetIntegritySidRaw(level));
-        }
-
-        /// <summary>
-        /// Set the token's integrity level.
-        /// </summary>
-        /// <param name="level">The level to set.</param>
-        public void SetIntegrityLevel(TokenIntegrityLevel level)
-        {
-            SetIntegrityLevelSid(NtSecurity.GetIntegritySid(level));
-        }
-
-        /// <summary>
-        /// Get whether a token is an AppContainer token
-        /// </summary>
-        public bool AppContainer
-        {
-            get
-            {
-                if (NtObjectUtils.IsWindows7OrLess)
-                {
-                    return false;
-                }
-
-                using (var appcontainer 
-                    = QueryBuffer<uint>(TokenInformationClass.TokenIsAppContainer))
-                {
-                    return appcontainer.Result != 0;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Get whether the token is configured for low privilege.
-        /// </summary>
-        public bool LowPrivilegeAppContainer
-        {
-            get
-            {
-                if (!AppContainer)
-                {
-                    return false;
-                }
-
-                ClaimSecurityAttribute attribute = GetSecurityAttributeByName("WIN://NOALLAPPPKG", ClaimSecurityValueType.UInt64);
-                if (attribute != null)
-                {
-                    return (ulong)attribute.Values.First() != 0;
-                }
-
-                return false;
-            }
-        }
-
-        private Sid _app_container_sid;
-
-        /// <summary>
-        /// Get token's AppContainer sid
-        /// </summary>
-        public Sid AppContainerSid
-        {
-            get
-            {
-                if (!AppContainer)
-                {
-                    return null;
-                }
-
-                if (_app_container_sid == null)
-                {
-                    using (var acsid = QueryBuffer<TokenAppContainerInformation>(TokenInformationClass.TokenAppContainerSid))
-                    {
-                        Interlocked.CompareExchange(ref _app_container_sid, new Sid(acsid.Result.TokenAppContainer), null);
-                    }
-                }
-
-                return _app_container_sid;
-            }
-        }
-
-        /// <summary>
-        /// Get token's AppContainer package name (if available). 
-        /// Returns an empty string if not an AppContainer.
-        /// </summary>
-        public string PackageName
-        {
-            get
-            {
-                if (!AppContainer)
-                {
-                    return String.Empty;
-                }
-
-                ClaimSecurityAttribute attribute = GetSecurityAttributeByName("WIN://SYSAPPID", ClaimSecurityValueType.String);
-                if (attribute == null)
-                {
-                    return String.Empty;
-                }
-
-                return (string)attribute.Values.First();
-            }
-        }
-
-        /// <summary>
-        /// Get token's device groups
-        /// </summary>
-        public UserGroup[] DeviceGroups
-        {
-            get
-            {
-                return QueryGroups(TokenInformationClass.TokenDeviceGroups);
-            }
-        }
-
-        /// <summary>
-        /// Get token's restricted device groups.
-        /// </summary>
-        public UserGroup[] RestrictedDeviceGroups
-        {
-            get
-            {
-                return QueryGroups(TokenInformationClass.TokenRestrictedDeviceGroups);
-            }
-        }
-
-        /// <summary>
-        /// Get list of privileges for token
-        /// </summary>
-        /// <returns>The list of privileges</returns>
-        /// <exception cref="NtException">Thrown if can't query privileges</exception>
-        public TokenPrivilege[] Privileges
-        {
-            get
-            {
-                using (var buffer = QueryBuffer<TokenPrivileges>(TokenInformationClass.TokenPrivileges))
-                {
-                    int count = buffer.Result.PrivilegeCount;
-                    LuidAndAttributes[] attrs = new LuidAndAttributes[count];
-                    buffer.Data.ReadArray(0, attrs, 0, count);
-                    return attrs.Select(a => new TokenPrivilege(a.Luid, (PrivilegeAttributes)a.Attributes)).ToArray();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Get the state of a privilege.
-        /// </summary>
-        /// <param name="privilege">The privilege to get the state of.</param>
-        /// <returns>The privilege, or null if it can't be found</returns>
-        /// <exception cref="NtException">Thrown if can't query privileges</exception>
-        public TokenPrivilege GetPrivilege(TokenPrivilegeValue privilege)
-        {
-            Luid priv_value = new Luid((uint)privilege, 0);
-            foreach (TokenPrivilege priv in Privileges)
-            {
-                if (priv.Luid.Equals(priv_value))
-                {
-                    return priv;
-                }
-            }
-            return null;
         }
 
         /// <summary>
@@ -2699,73 +2882,6 @@ namespace NtApiDotNet
         public static Luid AnonymousAuthId { get { return new Luid(0x3e6, 0); } }
 
         /// <summary>
-        /// Get full path to token
-        /// </summary>
-        public override string FullPath
-        {
-            get
-            {
-                try
-                {
-                    return $"{User.Sid.Name} - {AuthenticationId}";
-                }
-                catch
-                {
-                    return string.Empty;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Get the token's trust level. Will be null if no trust level present.
-        /// </summary>
-        public Sid TrustLevel
-        {
-            get
-            {
-                try
-                {
-                    using (var buffer = QueryBuffer<TokenProcessTrustLevel>(TokenInformationClass.TokenProcessTrustLevel))
-                    {
-                        if (buffer.Length > IntPtr.Size)
-                        {
-                            return new Sid(buffer.Data.DangerousGetHandle());
-                        }
-                    }
-                }
-                catch (NtException)
-                {
-                }
-
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Compare two tokens.
-        /// </summary>
-        /// <param name="token">The other token to compare.</param>
-        /// <returns>True if tokens are equal.</returns>
-        public bool Compare(NtToken token)
-        {
-            NtSystemCalls.NtCompareTokens(Handle, token.Handle, out bool equal).ToNtException();
-            return equal;
-        }
-
-        private static NtToken GetPseudoToken(int handle)
-        {
-            return new NtToken(new SafeKernelObjectHandle(new IntPtr(handle), false))
-            {
-                IsPseudoToken = true
-            };
-        }
-
-        /// <summary>
-        /// Returns true if this is a pseudo token.
-        /// </summary>
-        public bool IsPseudoToken { get; private set; }
-
-        /// <summary>
         /// Get a pseudo handle to the primary token.
         /// </summary>
         /// <remarks>Only useful for querying information.</remarks>
@@ -2781,67 +2897,71 @@ namespace NtApiDotNet
         /// <remarks>Only useful for querying information.</remarks>
         public static NtToken PseudoEffectiveToken { get { return GetPseudoToken(-6); } }
 
-        /// <summary>
-        /// Get whether this token is a sandboxed token.
-        /// </summary>
-        public bool IsSandbox
+        #endregion
+
+        #region Private Members
+
+        private UserGroup _user;
+        private TokenStatistics _token_stats;
+        private TokenSource _source;
+        private Sid _app_container_sid;
+
+        private bool SetPrivileges(TokenPrivilegesBuilder tp)
         {
-            get
+            using (var priv_buffer = tp.ToBuffer())
             {
-                try
-                {
-                    if (TokenType == TokenType.Primary)
-                    {
-                        return DuplicateToken(SecurityImpersonationLevel.Identification)
-                            .RunAndDispose(token => token.IsSandbox);
-                    }
-
-                    if (NtRtl.RtlCheckSandboxedToken(Handle, out bool is_sandboxed).IsSuccess())
-                    {
-                        return is_sandboxed;
-                    }
-                }
-                catch
-                {
-                }
-
-                // Default to not using the RTL version.
-                return AppContainer || Restricted || IntegrityLevel < TokenIntegrityLevel.Medium;
+                NtStatus status = NtSystemCalls.NtAdjustPrivilegesToken(Handle, false,
+                    priv_buffer, priv_buffer.Length, IntPtr.Zero, IntPtr.Zero).ToNtException();
+                if (status == NtStatus.STATUS_NOT_ALL_ASSIGNED)
+                    return false;
+                return true;
             }
         }
 
-        /// <summary>
-        /// Query the token's full package name.
-        /// </summary>
-        public string PackageFullName
+        private static SafeTokenGroupsBuffer BuildGroups(IEnumerable<Sid> sids, GroupAttributes attributes)
         {
-            get
+            return BuildGroups(sids.Select(s => new UserGroup(s, attributes)));
+        }
+
+        private static SafeTokenGroupsBuffer BuildGroups(IEnumerable<UserGroup> groups)
+        {
+            TokenGroupsBuilder builder = new TokenGroupsBuilder();
+            foreach (UserGroup group in groups)
             {
-                byte[] package_name = new byte[1024];
-                OptionalLength package_length = new OptionalLength(package_name.Length);
-                if (NtRtl.RtlQueryPackageClaims(Handle, package_name, package_length, null, null, null, null, null).IsSuccess())
-                {
-                    return Encoding.Unicode.GetString(package_name, 0, package_length.Length.ToInt32()).TrimEnd('\0');
-                }
-                return string.Empty;
+                builder.AddGroup(group);
+            }
+            return builder.ToBuffer();
+        }
+
+        private UserGroup[] QueryGroups(TokenInformationClass info_class)
+        {
+            using (var groups = QueryBuffer<TokenGroups>(info_class))
+            {
+                TokenGroups result = groups.Result;
+                SidAndAttributes[] sids = new SidAndAttributes[result.GroupCount];
+                groups.Data.ReadArray(0, sids, 0, result.GroupCount);
+                return sids.Select(s => s.ToUserGroup()).ToArray();
             }
         }
 
-        /// <summary>
-        /// Query the token's appid.
-        /// </summary>
-        public string AppId
+        private TokenStatistics GetTokenStats()
         {
-            get
+            if (_token_stats == null)
             {
-                byte[] app_id = new byte[1024];
-                OptionalLength app_id_length = new OptionalLength(app_id.Length);
-                if(NtRtl.RtlQueryPackageClaims(Handle, null, null, app_id, app_id_length, null, null, null).IsSuccess())
+                using (var stats = QueryBuffer<TokenStatistics>(TokenInformationClass.TokenStatistics))
                 {
-                    return Encoding.Unicode.GetString(app_id, 0, app_id_length.Length.ToInt32()).TrimEnd('\0');
+                    Interlocked.CompareExchange(ref _token_stats, stats.Result, null);
                 }
-                return string.Empty;
             }
+            return _token_stats;
+        }
+
+        private static NtToken GetPseudoToken(int handle)
+        {
+            return new NtToken(new SafeKernelObjectHandle(new IntPtr(handle), false))
+            {
+                IsPseudoToken = true
+            };
         }
 
         private static readonly AppModelPolicy_PolicyValue[] _policy_lookup_table = {
@@ -2926,7 +3046,7 @@ namespace NtApiDotNet
                 }
                 return 7;
             }
-            
+
             return 0;
         }
 
@@ -2941,61 +3061,6 @@ namespace NtApiDotNet
             return _policy_lookup_table[8 * ((int)policy_type - 1) + offset.Value];
         }
 
-        /// <summary>
-        /// Get the App Policy for this token.
-        /// </summary>
-        /// <param name="policy_type">The type of app policy.</param>
-        /// <returns>The policy value.</returns>
-        public AppModelPolicy_PolicyValue GetAppModelPolicy(AppModelPolicy_Type policy_type)
-        {
-            OptionalInt64 attributes_present_obj = new OptionalInt64(0);
-            PsPkgClaim pkg_claim = new PsPkgClaim();
-
-            if (!NtRtl.RtlQueryPackageClaims(Handle, null, null, null, null, null, 
-                pkg_claim, attributes_present_obj).IsSuccess())
-            {
-                return AppModelPolicy_PolicyValue.None;
-            }
-
-            return GetAppPolicy(policy_type, attributes_present_obj.Value, pkg_claim.Flags);
-        }
-
-        /// <summary>
-        /// Get the list of policies for this App.
-        /// </summary>
-        public IEnumerable<AppModelPolicy_PolicyValue> AppModelPolicies
-        {
-            get
-            {
-                OptionalInt64 attributes_present_obj = new OptionalInt64(0);
-                PsPkgClaim pkg_claim = new PsPkgClaim();
-
-                if (!NtRtl.RtlQueryPackageClaims(Handle, null, null, null, null, null,
-                    pkg_claim, attributes_present_obj).IsSuccess())
-                {
-                    return Enumerable.Empty<AppModelPolicy_PolicyValue>();
-                }
-
-                return Enum.GetValues(typeof(AppModelPolicy_Type)).Cast<AppModelPolicy_Type>().Select(p => GetAppPolicy(p, attributes_present_obj.Value, pkg_claim.Flags));
-            }
-        }
-
-        /// <summary>
-        /// Get the BaseNamedObjects isolation prefix if enabled.
-        /// </summary>
-        public string BnoIsolationPrefix
-        {
-            get
-            {
-                using (var buffer = QueryBuffer<TokenBnoIsolationInformation>(TokenInformationClass.TokenBnoIsolation))
-                {
-                    var result = buffer.Result;
-                    if (!result.IsolationEnabled || result.IsolationPrefix == IntPtr.Zero)
-                        return string.Empty;
-
-                    return Marshal.PtrToStringUni(result.IsolationPrefix);
-                }
-            }
-        }
+        #endregion
     }
 }

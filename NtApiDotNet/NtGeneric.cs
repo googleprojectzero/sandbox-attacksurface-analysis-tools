@@ -24,13 +24,30 @@ namespace NtApiDotNet
         {
         }
 
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(false)
+            {
+            }
+        }
+
         /// <summary>
         /// Convert the generic object to the best typed object.
         /// </summary>
         /// <returns>The typed object. Can be NtGeneric if no better type is known.</returns>
         public NtObject ToTypedObject()
         {
-            return NtType.FromHandle(DuplicateHandle(Handle));
+            return ToTypedObject(true).Result;
+        }
+
+        /// <summary>
+        /// Convert the generic object to the best typed object.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The typed object. Can be NtGeneric if no better type is known.</returns>
+        public NtResult<NtObject> ToTypedObject(bool throw_on_error)
+        {
+            return DuplicateHandle(Handle, throw_on_error).Map(h => NtType.FromHandle(h));
         }
     }
 }

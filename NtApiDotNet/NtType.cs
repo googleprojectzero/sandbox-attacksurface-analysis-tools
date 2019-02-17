@@ -58,96 +58,6 @@ namespace NtApiDotNet
         //ObjectTypeInformation TypeInformation; // Type Info list
     }
 
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-    internal sealed class NtTypeAttribute : Attribute
-    {
-        public string TypeName { get; private set; }
-        public NtTypeAttribute(string type_name)
-        {
-            TypeName = type_name;
-        }
-    }
-
-    internal sealed class NtTypeFactory
-    {
-        private Func<SafeKernelObjectHandle, NtObject> _from_handle_method;
-        private Func<ObjectAttributes, AccessMask, bool, NtResult<NtObject>> _from_name_method;
-        public Type ObjectType { get; private set; }
-        public Type AccessRightsType { get; private set; }
-        public bool CanOpen { get { return _from_name_method != null; } }
-
-        public NtObject FromHandle(SafeKernelObjectHandle handle)
-        {
-            return _from_handle_method(handle);
-        }
-
-        public NtResult<NtObject> Open(ObjectAttributes obj_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            try
-            {
-                System.Diagnostics.Debug.Assert(_from_name_method != null);
-                return _from_name_method(obj_attributes, desired_access, throw_on_error);
-            }
-            catch (TargetInvocationException ex)
-            {
-                throw ex.InnerException;
-            }
-        }
-
-        internal NtTypeFactory(Type access_rights_type, Type object_type)
-        {
-            AccessRightsType = access_rights_type;
-            ObjectType = object_type;
-            _from_handle_method = h => throw new NotImplementedException();
-        }
-
-        public NtTypeFactory(Type object_type)
-        {
-            Type base_type = object_type.BaseType; // GetBaseType(object_type);
-            if (base_type.GetGenericTypeDefinition() == typeof(NtObjectWithDuplicateAndInfo<,,,>))
-            {
-                base_type = base_type.BaseType;
-            }
-            System.Diagnostics.Debug.Assert(base_type.GetGenericTypeDefinition() == typeof(NtObjectWithDuplicate<,>));
-            ObjectType = object_type;
-
-            MethodInfo from_handle_method = base_type.GetMethod("FromHandle", 
-                BindingFlags.Public | BindingFlags.Static, 
-                null, new Type[] { typeof(SafeKernelObjectHandle) }, null);
-            _from_handle_method = (Func<SafeKernelObjectHandle, NtObject>)Delegate.CreateDelegate(typeof(Func<SafeKernelObjectHandle, NtObject>), from_handle_method);
-
-            AccessRightsType = base_type.GetGenericArguments()[1];
-
-            MethodInfo from_name_method = object_type.GetMethod("FromName", 
-                BindingFlags.NonPublic | BindingFlags.Static, null, 
-                new Type[] { typeof(ObjectAttributes), typeof(AccessMask), typeof(bool) }, null);
-            if (from_name_method == null)
-            {
-                System.Diagnostics.Debug.WriteLine($"Type {object_type} doesn't have a FromName method");
-            }
-            else
-            {
-                _from_name_method = (Func<ObjectAttributes, AccessMask, bool, NtResult<NtObject>>)
-                    Delegate.CreateDelegate(typeof(Func<ObjectAttributes, AccessMask, bool, NtResult<NtObject>>), from_name_method);
-            }
-        }
-
-        public static Dictionary<string, NtTypeFactory> GetAssemblyNtTypeFactories(Assembly assembly)
-        {
-            Dictionary<string, NtTypeFactory> _factories = new Dictionary<string, NtTypeFactory>(StringComparer.OrdinalIgnoreCase);
-            foreach (Type type in assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && typeof(NtObject).IsAssignableFrom(t)))
-            {
-                IEnumerable<NtTypeAttribute> attrs = type.GetCustomAttributes<NtTypeAttribute>(false);
-                foreach (NtTypeAttribute attr in attrs)
-                {
-                    System.Diagnostics.Debug.Assert(!_factories.ContainsKey(attr.TypeName));
-                    _factories.Add(attr.TypeName, new NtTypeFactory(type));
-                }
-            }
-            return _factories;
-        }
-    }
-
 #pragma warning restore 1591
 
     /// <summary>
@@ -155,7 +65,7 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class NtType
     {
-        private static NtTypeFactory _generic_factory = new NtTypeFactory(typeof(NtGeneric));
+        private static NtTypeFactory _generic_factory = new NtGeneric.NtTypeFactoryImpl();
         private NtTypeFactory _type_factory;
 
         /// <summary>
@@ -493,7 +403,7 @@ namespace NtApiDotNet
             {
                 throw new ArgumentException("Specify an enumerated type", "access_rights_type");
             }
-            _type_factory = new NtTypeFactory(access_rights_type, typeof(object));
+            _type_factory = new NtTypeFactory(access_rights_type, typeof(object), false);
             Name = name;
             GenericMapping = generic_mapping;
             GenericRead = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericRead, GenericMapping, access_rights_type, false);
@@ -664,7 +574,7 @@ namespace NtApiDotNet
         /// <param name="name">The name of the fake type. Informational only.</param>
         /// <param name="generic_mapping">The GENERIC_MAPPING for security checking.</param>
         /// <param name="access_rights_type">The access rights enumeration type.</param>
-        /// <returns></returns>
+        /// <returns>The fake NT type object.</returns>
         public static NtType GetFakeType(string name, GenericMapping generic_mapping, Type access_rights_type)
         {
             return new NtType(name, generic_mapping, access_rights_type);
@@ -680,7 +590,7 @@ namespace NtApiDotNet
         /// <param name="generic_exec">The GENERIC_EXECUTE for security checking.</param>
         /// <param name="generic_all">The GENERIC_ALL for security checking.</param>
         /// <param name="access_rights_type">The access rights enumeration type.</param>
-        /// <returns></returns>
+        /// <returns>The fake NT type object.</returns>
         public static NtType GetFakeType(string name, AccessMask generic_read, AccessMask generic_write, 
             AccessMask generic_exec, AccessMask generic_all, Type access_rights_type)
         {

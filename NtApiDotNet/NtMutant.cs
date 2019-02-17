@@ -74,6 +74,19 @@ namespace NtApiDotNet
         {
         }
 
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(true)
+            {
+            }
+
+            protected override sealed NtResult<NtMutant> OpenInternal(ObjectAttributes obj_attributes,
+                MutantAccessRights desired_access, bool throw_on_error)
+            {
+                return NtMutant.Open(obj_attributes, desired_access, throw_on_error);
+            }
+        }
+
         /// <summary>
         /// Create a new mutant
         /// </summary>
@@ -168,11 +181,6 @@ namespace NtApiDotNet
         public static NtResult<NtMutant> Open(ObjectAttributes object_attributes, MutantAccessRights desired_access, bool throw_on_error)
         {
             return NtSystemCalls.NtOpenMutant(out SafeKernelObjectHandle handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtMutant(handle));
-        }
-
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, desired_access.ToSpecificAccess<MutantAccessRights>(), throw_on_error).Cast<NtObject>();
         }
 
         /// <summary>

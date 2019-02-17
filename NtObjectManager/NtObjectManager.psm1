@@ -1137,6 +1137,8 @@ Specify the control method component.
 Specify the access component.
 .PARAMETER LookupName
 Specify to try and lookup a known name for the IO control code. If no name found will just return an empty string.
+.PARAMETER All
+Specify to return all known IO control codes with names.
 .OUTPUTS
 NtApiDotNet.NtIoControlCode
 .EXAMPLE
@@ -1154,7 +1156,7 @@ Get the IO control code structure from component parts and lookup its name (if k
 #>
 function Get-NtIoControlCode
 {
-  [CmdletBinding(DefaultParameterSetName = "FromCode")]
+    [CmdletBinding(DefaultParameterSetName = "FromCode")]
     Param(
     [Parameter(Position = 0, ParameterSetName = "FromCode", Mandatory = $true)]
     [int]$ControlCode,
@@ -1166,21 +1168,28 @@ function Get-NtIoControlCode
     [NtApiDotNet.FileControlMethod]$Method,
     [Parameter(ParameterSetName = "FromParts", Mandatory = $true)]
     [NtApiDotNet.FileControlAccess]$Access,
-    [switch]$LookupName
+    [Parameter(ParameterSetName = "FromParts")]
+    [Parameter(ParameterSetName = "FromCode")]
+    [switch]$LookupName,
+    [Parameter(ParameterSetName = "FromAll", Mandatory = $true)]
+    [switch]$All
     )
-  $control_code = switch ($PsCmdlet.ParameterSetName) {
+  $result = switch ($PsCmdlet.ParameterSetName) {
     "FromCode" {
-      [NtApiDotNet.NtIoControlCode]::new($ControlCode)
+        [NtApiDotNet.NtIoControlCode]::new($ControlCode)
     }
     "FromParts" {
-      [NtApiDotNet.NtIoControlCode]::new($DeviceType, $Function, $Method, $Access)
+        [NtApiDotNet.NtIoControlCode]::new($DeviceType, $Function, $Method, $Access)
+    }
+    "FromAll" {
+        [NtApiDotNet.NtWellKnownIoControlCodes]::GetKnownControlCodes()
     }
   }
 
   if ($LookupName) {
-    return [NtApiDotNet.NtWellKnownIoControlCodes]::KnownControlCodeToName($control_code)
+    return [NtApiDotNet.NtWellKnownIoControlCodes]::KnownControlCodeToName($result)
   }
-  $control_code
+  $result
 }
 
 <#
@@ -2665,8 +2674,7 @@ function Add-NtSecurityDescriptorDaclAce {
 .SYNOPSIS
 Creates a new "fake" NT type object.
 .DESCRIPTION
-This cmdlet creates a new "fake" NT type object which can be used to do access checking for objects which aren't 
-real NT types.
+This cmdlet creates a new "fake" NT type object which can be used to do access checking for objects which aren't real NT types.
 .PARAMETER Name
 The name of the "fake" type.
 .PARAMETER GenericRead
@@ -3317,6 +3325,8 @@ This cmdlet starts a file oplock with a specific level.
 The file to oplock on.
 .PARAMETER Level
 The oplock level to start.
+.PARAMETER LeaseLevel
+The oplock lease level to start.
 .INPUTS
 None
 .OUTPUTS
@@ -3341,9 +3351,7 @@ function Start-NtFileOplock {
         [parameter(Mandatory, Position = 1, ParameterSetName = "OplockLevel")]
         [NtApiDotNet.OplockRequestLevel]$Level,
         [parameter(Mandatory, ParameterSetName = "OplockLease")]
-        [NtApiDotNet.OplockLevelCache]$LeaseLevel,
-        [parameter(ParameterSetName = "OplockLease")]
-        [NtApiDotNet.RequestOplockInputFlag]$Flags = "Request"
+        [NtApiDotNet.OplockLevelCache]$LeaseLevel
     )
 
     switch($PSCmdlet.ParameterSetName) {
@@ -3354,7 +3362,7 @@ function Start-NtFileOplock {
             $File.RequestOplock($Level)
         }
         "OplockLease" {
-            $File.RequestOplock($LeaseLevel, $Flags)
+            $File.RequestOplockLease($LeaseLevel)
         }
     }
 }

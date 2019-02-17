@@ -549,6 +549,13 @@ namespace NtApiDotNet
         {
         }
 
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(false)
+            {
+            }
+        }
+
         /// <summary>
         /// Resume the thread.
         /// </summary>

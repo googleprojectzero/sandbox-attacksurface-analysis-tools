@@ -68,6 +68,19 @@ namespace NtApiDotNet
         {
         }
 
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(true)
+            {
+            }
+
+            protected override sealed NtResult<NtRegistryTransaction> OpenInternal(ObjectAttributes obj_attributes,
+                RegistryTransactionAccessRights desired_access, bool throw_on_error)
+            {
+                return NtRegistryTransaction.Open(obj_attributes, desired_access, throw_on_error);
+            }
+        }
+
         /// <summary>
         /// Create a transaction
         /// </summary>
@@ -164,11 +177,6 @@ namespace NtApiDotNet
         public static NtRegistryTransaction Open(ObjectAttributes object_attributes, RegistryTransactionAccessRights desired_access)
         {
             return Open(object_attributes, desired_access, true).Result;
-        }
-
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, desired_access.ToSpecificAccess<RegistryTransactionAccessRights>(), throw_on_error).Cast<NtObject>();
         }
 
         /// <summary>

@@ -501,6 +501,20 @@ namespace NtApiDotNet
         internal NtSection(SafeKernelObjectHandle handle) : base(handle)
         {
         }
+
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(true)
+            {
+            }
+
+            protected override sealed NtResult<NtSection> OpenInternal(ObjectAttributes obj_attributes,
+                SectionAccessRights desired_access, bool throw_on_error)
+            {
+                return NtSection.Open(obj_attributes, desired_access, throw_on_error);
+            }
+        }
+
         #endregion
 
         #region Static Methods
@@ -681,11 +695,6 @@ namespace NtApiDotNet
             {
                 return Open(obja, desired_access);
             }
-        }
-
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, desired_access.ToSpecificAccess<SectionAccessRights>(), throw_on_error).Cast<NtObject>();
         }
         #endregion
 

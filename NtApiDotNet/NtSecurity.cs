@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -1949,33 +1950,6 @@ namespace NtApiDotNet
     /// </summary>
     public static class NtSecurity
     {
-        enum SidNameUse
-        {
-            SidTypeUser = 1,
-            SidTypeGroup,
-            SidTypeDomain,
-            SidTypeAlias,
-            SidTypeWellKnownGroup,
-            SidTypeDeletedAccount,
-            SidTypeInvalid,
-            SidTypeUnknown,
-            SidTypeComputer,
-            SidTypeLabel
-        }
-
-        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern bool LookupAccountSid(string lpSystemName, SafeSidBufferHandle lpSid, StringBuilder lpName,
-                ref int cchName, StringBuilder lpReferencedDomainName, ref int cchReferencedDomainName, out SidNameUse peUse);
-
-        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern bool LookupAccountName(string lpSystemName, string lpAccountName,
-            SafeBuffer Sid,
-            ref int cbSid,
-            SafeBuffer ReferencedDomainName,
-            ref int cchReferencedDomainName,
-            out SidNameUse peUse
-        );
-
         /// <summary>
         /// Looks up the account name of a SID. 
         /// </summary>
@@ -1989,7 +1963,8 @@ namespace NtApiDotNet
                 int length = name.Capacity;
                 StringBuilder domain = new StringBuilder(1024);
                 int domain_length = domain.Capacity;
-                if (!LookupAccountSid(null, sid_buffer, name, ref length, domain, ref domain_length, out SidNameUse name_use))
+                if (!Win32NativeMethods.LookupAccountSid(null, sid_buffer, name, 
+                    ref length, domain, ref domain_length, out SidNameUse name_use))
                 {
                     return null;
                 }
@@ -2055,7 +2030,7 @@ namespace NtApiDotNet
         {
             int sid_length = 0;
             int domain_length = 0;
-            if (!LookupAccountName(null, username, SafeHGlobalBuffer.Null, ref sid_length,
+            if (!Win32NativeMethods.LookupAccountName(null, username, SafeHGlobalBuffer.Null, ref sid_length,
                 SafeHGlobalBuffer.Null, ref domain_length, out SidNameUse name))
             {
                 if (sid_length <= 0)
@@ -2066,7 +2041,7 @@ namespace NtApiDotNet
 
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(sid_length), domain = new SafeHGlobalBuffer(domain_length * 2))
             {
-                if (!LookupAccountName(null, username, buffer, ref sid_length, domain, ref domain_length, out name))
+                if (!Win32NativeMethods.LookupAccountName(null, username, buffer, ref sid_length, domain, ref domain_length, out name))
                 {
                     throw new NtException(NtStatus.STATUS_INVALID_USER_PRINCIPAL_NAME);
                 }
@@ -2309,14 +2284,6 @@ namespace NtApiDotNet
             return null;
         }
 
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern bool ConvertSecurityDescriptorToStringSecurityDescriptor(
-            byte[] SecurityDescriptor,
-            int RequestedStringSDRevision,
-            SecurityInformation SecurityInformation,
-            out SafeLocalAllocHandle StringSecurityDescriptor,
-            out int StringSecurityDescriptorLen);
-
         /// <summary>
         /// Convert a security descriptor to SDDL string
         /// </summary>
@@ -2326,9 +2293,8 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown if cannot convert to a SDDL string.</exception>
         public static string SecurityDescriptorToSddl(byte[] sd, SecurityInformation security_information)
         {
-            SafeLocalAllocHandle handle;
-            int return_length;
-            if (!ConvertSecurityDescriptorToStringSecurityDescriptor(sd, 1, security_information, out handle, out return_length))
+            if (!Win32NativeMethods.ConvertSecurityDescriptorToStringSecurityDescriptor(sd,
+                1, security_information, out SafeLocalAllocHandle handle, out int return_length))
             {
                 throw new NtException(NtStatus.STATUS_INVALID_SID);
             }
@@ -2339,13 +2305,6 @@ namespace NtApiDotNet
             }
         }
 
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern bool ConvertStringSecurityDescriptorToSecurityDescriptor(
-            string StringSecurityDescriptor,
-            int StringSDRevision,
-            out SafeLocalAllocHandle SecurityDescriptor,
-            out int SecurityDescriptorSize);
-
         /// <summary>
         /// Convert an SDDL string to a binary security descriptor
         /// </summary>
@@ -2354,9 +2313,8 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown if cannot convert from a SDDL string.</exception>
         public static byte[] SddlToSecurityDescriptor(string sddl)
         {
-            SafeLocalAllocHandle handle;
-            int return_length;
-            if (!ConvertStringSecurityDescriptorToSecurityDescriptor(sddl, 1, out handle, out return_length))
+            if (!Win32NativeMethods.ConvertStringSecurityDescriptorToSecurityDescriptor(sddl, 1, 
+                out SafeLocalAllocHandle handle, out int return_length))
             {
                 throw new NtException(NtStatus.STATUS_INVALID_SID);
             }
@@ -2369,11 +2327,6 @@ namespace NtApiDotNet
             }
         }
 
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern bool ConvertStringSidToSid(
-            string StringSid,
-            out SafeLocalAllocHandle Sid);
-
         /// <summary>
         /// Convert an SDDL SID string to a Sid
         /// </summary>
@@ -2382,8 +2335,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown if cannot convert from a SDDL string.</exception>
         public static Sid SidFromSddl(string sddl)
         {
-            SafeLocalAllocHandle handle;
-            if (!ConvertStringSidToSid(sddl, out handle))
+            if (!Win32NativeMethods.ConvertStringSidToSid(sddl, out SafeLocalAllocHandle handle))
             {
                 throw new NtException(NtStatus.STATUS_INVALID_SID);
             }

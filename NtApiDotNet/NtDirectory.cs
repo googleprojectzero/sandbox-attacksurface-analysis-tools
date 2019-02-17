@@ -211,7 +211,7 @@ namespace NtApiDotNet
 
     /// <summary>
     /// Class which represents a private namespace boundary descriptor
-    /// </summary>    
+    /// </summary>
     public sealed class BoundaryDescriptor : IDisposable
     {
         private IntPtr _boundary_descriptor;
@@ -234,7 +234,8 @@ namespace NtApiDotNet
         /// Constructor
         /// </summary>
         /// <param name="name">The name of the boundary</param>
-        public BoundaryDescriptor(string name) : this(name, BoundaryDescriptorFlags.None)
+        public BoundaryDescriptor(string name) 
+            : this(name, BoundaryDescriptorFlags.None)
         {
         }
 
@@ -248,7 +249,7 @@ namespace NtApiDotNet
             using (SafeSidBufferHandle sid_buffer = sid.ToSafeBuffer())
             {
                 NtRtl.RtlAddSIDToBoundaryDescriptor(ref _boundary_descriptor, sid_buffer).ToNtException();
-            }            
+            }
         }
 
         private void AddIntegrityLevel(Sid sid)
@@ -324,7 +325,7 @@ namespace NtApiDotNet
         }
 
         #region IDisposable Support
-    private bool disposedValue = false; // To detect redundant calls
+        private bool disposedValue = false; // To detect redundant calls
 
         void Dispose(bool disposing)
         {
@@ -361,9 +362,26 @@ namespace NtApiDotNet
     [NtType("Directory")]
     public class NtDirectory : NtObjectWithDuplicate<NtDirectory, DirectoryAccessRights>
     {
+        #region Constructors
         internal NtDirectory(SafeKernelObjectHandle handle) : base(handle)
         {
         }
+
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(true)
+            {
+            }
+
+            protected override sealed NtResult<NtDirectory> OpenInternal(ObjectAttributes obj_attributes, 
+                DirectoryAccessRights desired_access, bool throw_on_error)
+            {
+                return NtDirectory.Open(obj_attributes, desired_access, throw_on_error);
+            }
+        }
+        #endregion
+
+        #region Static Methods
 
         /// <summary>
         /// Open a directory object
@@ -375,8 +393,8 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error and throw_on_error is true.</exception>
         public static NtResult<NtDirectory> Open(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtOpenDirectoryObject(out handle, desired_access, obj_attributes).CreateResult(throw_on_error, () => new NtDirectory(handle));
+            return NtSystemCalls.NtOpenDirectoryObject(out SafeKernelObjectHandle handle, 
+                desired_access, obj_attributes).CreateResult(throw_on_error, () => new NtDirectory(handle));
         }
 
         /// <summary>
@@ -416,7 +434,7 @@ namespace NtApiDotNet
         public static NtResult<NtDirectory> Open(string name, NtObject root, 
             DirectoryAccessRights desired_access, bool throw_on_error)
         {
-            using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
+            using (var obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
                 return Open(obja, desired_access, throw_on_error);
             }
@@ -433,11 +451,6 @@ namespace NtApiDotNet
             return Open(name, null, DirectoryAccessRights.MaximumAllowed);
         }
 
-        internal static NtResult<NtObject> FromName(ObjectAttributes object_attributes, AccessMask desired_access, bool throw_on_error)
-        {
-            return Open(object_attributes, desired_access.ToSpecificAccess<DirectoryAccessRights>(), throw_on_error).Cast<NtObject>();
-        }
-
         /// <summary>
         /// Create a directory object with a shadow
         /// </summary>
@@ -448,7 +461,8 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
         /// <exception cref="NtException">Thrown on error and throw_on_error is true.</exception>
-        public static NtResult<NtDirectory> Create(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access, NtDirectory shadow_dir, DirectoryCreateFlags flags, bool throw_on_error)
+        public static NtResult<NtDirectory> Create(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access, 
+            NtDirectory shadow_dir, DirectoryCreateFlags flags, bool throw_on_error)
         {
             SafeKernelObjectHandle handle;
             NtStatus status;
@@ -473,7 +487,8 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
         /// <exception cref="NtException">Thrown on error and throw_on_error is true.</exception>
-        public static NtResult<NtDirectory> Create(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access, NtDirectory shadow_dir, bool throw_on_error)
+        public static NtResult<NtDirectory> Create(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access, 
+            NtDirectory shadow_dir, bool throw_on_error)
         {
             return Create(obj_attributes, desired_access, shadow_dir, DirectoryCreateFlags.None, throw_on_error);
         }
@@ -487,7 +502,8 @@ namespace NtApiDotNet
         /// <param name="flags">Flags for creation.</param>
         /// <returns>The directory object</returns>
         /// <exception cref="NtException">Thrown on error</exception>
-        public static NtDirectory Create(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access, NtDirectory shadow_dir, DirectoryCreateFlags flags)
+        public static NtDirectory Create(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access, 
+            NtDirectory shadow_dir, DirectoryCreateFlags flags)
         {
             return Create(obj_attributes, desired_access, shadow_dir, flags, true).Result;
         }
@@ -513,7 +529,8 @@ namespace NtApiDotNet
         /// <param name="root">Root directory from where to start the creation operation</param>
         /// <returns>The directory object</returns>
         /// <exception cref="NtException">Thrown on error</exception>
-        public static NtDirectory Create(string name, NtObject root, DirectoryAccessRights desired_access)
+        public static NtDirectory Create(string name, NtObject root, 
+            DirectoryAccessRights desired_access)
         {
             return Create(name, root, desired_access, null);
         }
@@ -527,7 +544,8 @@ namespace NtApiDotNet
         /// <param name="shadow_dir">The shadow directory</param>
         /// <returns>The directory object</returns>
         /// <exception cref="NtException">Thrown on error</exception>
-        public static NtDirectory Create(string name, NtObject root, DirectoryAccessRights desired_access, NtDirectory shadow_dir)
+        public static NtDirectory Create(string name, NtObject root, 
+            DirectoryAccessRights desired_access, NtDirectory shadow_dir)
         {
             using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
             {
@@ -544,137 +562,6 @@ namespace NtApiDotNet
         public static NtDirectory Create(string name)
         {
             return Create(name, null, DirectoryAccessRights.MaximumAllowed);
-        }
-
-        /// <summary>
-        /// Query the directory for a list of entries.
-        /// </summary>
-        /// <returns>The list of entries.</returns>
-        /// <exception cref="NtException">Thrown on error</exception>
-        public IEnumerable<ObjectDirectoryInformation> Query()
-        {
-            string base_path = FullPath.TrimEnd('\\');
-            using (SafeStructureInOutBuffer<OBJECT_DIRECTORY_INFORMATION> buffer
-                = new SafeStructureInOutBuffer<OBJECT_DIRECTORY_INFORMATION>(2048, true))
-            {
-                NtStatus status;
-                int context = 0;
-                int return_length = 0;
-                while ((status = NtSystemCalls.NtQueryDirectoryObject(Handle, buffer, buffer.Length, false,
-                    true, ref context, out return_length)) == NtStatus.STATUS_MORE_ENTRIES)
-                {
-                    buffer.Resize(buffer.Length * 2);
-                }
-
-                if (status == NtStatus.STATUS_NO_MORE_ENTRIES)
-                {
-                    yield break;
-                }
-
-                status.ToNtException();
-                IntPtr current = buffer.DangerousGetHandle();
-                string name = String.Empty;
-                while (true)
-                {
-                    OBJECT_DIRECTORY_INFORMATION dir_info = (OBJECT_DIRECTORY_INFORMATION)Marshal.PtrToStructure(current, typeof(OBJECT_DIRECTORY_INFORMATION));
-                    name = dir_info.Name.ToString();
-                    if (name.Length == 0)
-                    {
-                        break;
-                    }
-                    yield return new ObjectDirectoryInformation(this, base_path, dir_info);
-                    current += Marshal.SizeOf(dir_info);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Visit all accessible directories under this one.
-        /// </summary>
-        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
-        /// <param name="desired_access">Specify the desired access for the directory</param>
-        /// <param name="recurse">True to recurse into sub directories.</param>
-        /// <param name="max_depth">Specify max recursive depth. -1 to not set a limit.</param>
-        /// <returns>True if all children were visited.</returns>
-        public bool VisitAccessibleDirectories(Func<NtDirectory, bool> visitor, DirectoryAccessRights desired_access, bool recurse, int max_depth)
-        {
-            if (max_depth == 0)
-            {
-                return true;
-            }
-
-            using (var for_query = Duplicate(DirectoryAccessRights.Query, AttributeFlags.None, DuplicateObjectOptions.SameAttributes, false))
-            {
-                if (!for_query.IsSuccess)
-                {
-                    return true;
-                }
-
-                ObjectDirectoryInformation[] entries = for_query.Result.Query().Where(e => e.IsDirectory).ToArray();
-                if (max_depth > 0)
-                {
-                    max_depth--;
-                }
-
-                foreach (var entry in entries)
-                {
-                    using (var obj_attr = new ObjectAttributes(entry.Name, AttributeFlags.CaseInsensitive, this))
-                    {
-                        using (var directory = NtDirectory.Open(obj_attr, desired_access, false))
-                        {
-                            if (!directory.IsSuccess)
-                            {
-                                continue;
-                            }
-
-                            if (!visitor(directory.Result))
-                            {
-                                return false;
-                            }
-
-                            if (recurse)
-                            {
-                                if (!directory.Result.VisitAccessibleDirectories(visitor, desired_access, recurse, max_depth))
-                                {
-                                    return false;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Visit all accessible directories under this one.
-        /// </summary>
-        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
-        public void VisitAccessibleDirectories(Func<NtDirectory, bool> visitor)
-        {
-            VisitAccessibleDirectories(visitor, false);
-        }
-
-        /// <summary>
-        /// Visit all accessible directories under this one.
-        /// </summary>
-        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
-        /// <param name="recurse">True to recurse into sub directories.</param>
-        public void VisitAccessibleDirectories(Func<NtDirectory, bool> visitor, bool recurse)
-        {
-            VisitAccessibleDirectories(visitor, DirectoryAccessRights.MaximumAllowed, recurse);
-        }
-
-        /// <summary>
-        /// Visit all accessible directories under this one.
-        /// </summary>
-        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
-        /// <param name="desired_access">Specify the desired access for the directory</param>
-        /// <param name="recurse">True to recurse into sub directories.</param>
-        public void VisitAccessibleDirectories(Func<NtDirectory, bool> visitor, DirectoryAccessRights desired_access, bool recurse)
-        {
-            VisitAccessibleDirectories(visitor, desired_access, recurse, -1);
         }
 
         /// <summary>
@@ -846,8 +733,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error</exception>
         public static NtDirectory CreatePrivateNamespace(ObjectAttributes obj_attributes, BoundaryDescriptor boundary_descriptor, DirectoryAccessRights desired_access)
         {
-            SafeKernelObjectHandle handle;
-            NtSystemCalls.NtCreatePrivateNamespace(out handle, desired_access, obj_attributes, boundary_descriptor.Handle).ToNtException();
+            NtSystemCalls.NtCreatePrivateNamespace(out SafeKernelObjectHandle handle, desired_access, obj_attributes, boundary_descriptor.Handle).ToNtException();
             NtDirectory ret = new NtDirectory(handle)
             {
                 _private_namespace = true
@@ -879,8 +765,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error</exception>
         public static NtDirectory OpenPrivateNamespace(ObjectAttributes obj_attributes, BoundaryDescriptor boundary_descriptor, DirectoryAccessRights desired_access)
         {
-            SafeKernelObjectHandle handle;
-            NtSystemCalls.NtOpenPrivateNamespace(out handle, desired_access, obj_attributes, boundary_descriptor.Handle).ToNtException();
+            NtSystemCalls.NtOpenPrivateNamespace(out SafeKernelObjectHandle handle, desired_access, obj_attributes, boundary_descriptor.Handle).ToNtException();
             NtDirectory ret = new NtDirectory(handle)
             {
                 _private_namespace = true
@@ -900,6 +785,188 @@ namespace NtApiDotNet
             {
                 return OpenPrivateNamespace(obja, boundary_descriptor, DirectoryAccessRights.MaximumAllowed);
             }
+        }
+
+        /// <summary>
+        /// Returns whether a directory exists for this path.
+        /// </summary>
+        /// <param name="path">The path to the entry.</param>
+        /// <param name="root">The root directory.</param>
+        /// <returns>True if the directory exists for the specified path.</returns>
+        public static bool DirectoryExists(string path, NtDirectory root)
+        {
+            using (var dir = Open(path, root, DirectoryAccessRights.MaximumAllowed, false))
+            {
+                return dir.IsSuccess;
+            }
+        }
+
+        /// <summary>
+        /// Get the type of a directory entry by path.
+        /// </summary>
+        /// <param name="path">The path to the directory entry</param>
+        /// <param name="root">The root object to look up if path is relative</param>
+        /// <returns>The type name, or null if it can't be found.</returns>
+        public static string GetDirectoryEntryType(string path, NtObject root)
+        {
+            if (root == null && path == @"\")
+            {
+                return "Directory";
+            }
+
+            string dir_name = GetDirectoryName(path);
+            if (dir_name == string.Empty && root == null)
+            {
+                dir_name = @"\";
+            }
+            using (var dir = Open(dir_name, root, DirectoryAccessRights.Query, false))
+            {
+                if (dir.IsSuccess)
+                {
+                    ObjectDirectoryInformation dir_info = dir.Result.GetDirectoryEntry(GetFileName(path));
+                    if (dir_info != null)
+                    {
+                        return dir_info.NtTypeName;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Query the directory for a list of entries.
+        /// </summary>
+        /// <returns>The list of entries.</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public IEnumerable<ObjectDirectoryInformation> Query()
+        {
+            string base_path = FullPath.TrimEnd('\\');
+            using (SafeStructureInOutBuffer<OBJECT_DIRECTORY_INFORMATION> buffer
+                = new SafeStructureInOutBuffer<OBJECT_DIRECTORY_INFORMATION>(2048, true))
+            {
+                NtStatus status;
+                int context = 0;
+                int return_length = 0;
+                while ((status = NtSystemCalls.NtQueryDirectoryObject(Handle, buffer, buffer.Length, false,
+                    true, ref context, out return_length)) == NtStatus.STATUS_MORE_ENTRIES)
+                {
+                    buffer.Resize(buffer.Length * 2);
+                }
+
+                if (status == NtStatus.STATUS_NO_MORE_ENTRIES)
+                {
+                    yield break;
+                }
+
+                status.ToNtException();
+                IntPtr current = buffer.DangerousGetHandle();
+                string name = String.Empty;
+                while (true)
+                {
+                    OBJECT_DIRECTORY_INFORMATION dir_info = (OBJECT_DIRECTORY_INFORMATION)Marshal.PtrToStructure(current, typeof(OBJECT_DIRECTORY_INFORMATION));
+                    name = dir_info.Name.ToString();
+                    if (name.Length == 0)
+                    {
+                        break;
+                    }
+                    yield return new ObjectDirectoryInformation(this, base_path, dir_info);
+                    current += Marshal.SizeOf(dir_info);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Visit all accessible directories under this one.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
+        /// <param name="desired_access">Specify the desired access for the directory</param>
+        /// <param name="recurse">True to recurse into sub directories.</param>
+        /// <param name="max_depth">Specify max recursive depth. -1 to not set a limit.</param>
+        /// <returns>True if all children were visited.</returns>
+        public bool VisitAccessibleDirectories(Func<NtDirectory, bool> visitor, DirectoryAccessRights desired_access, bool recurse, int max_depth)
+        {
+            if (max_depth == 0)
+            {
+                return true;
+            }
+
+            using (var for_query = Duplicate(DirectoryAccessRights.Query, AttributeFlags.None, DuplicateObjectOptions.SameAttributes, false))
+            {
+                if (!for_query.IsSuccess)
+                {
+                    return true;
+                }
+
+                ObjectDirectoryInformation[] entries = for_query.Result.Query().Where(e => e.IsDirectory).ToArray();
+                if (max_depth > 0)
+                {
+                    max_depth--;
+                }
+
+                foreach (var entry in entries)
+                {
+                    using (var obj_attr = new ObjectAttributes(entry.Name, AttributeFlags.CaseInsensitive, this))
+                    {
+                        using (var directory = NtDirectory.Open(obj_attr, desired_access, false))
+                        {
+                            if (!directory.IsSuccess)
+                            {
+                                continue;
+                            }
+
+                            if (!visitor(directory.Result))
+                            {
+                                return false;
+                            }
+
+                            if (recurse)
+                            {
+                                if (!directory.Result.VisitAccessibleDirectories(visitor, desired_access, recurse, max_depth))
+                                {
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Visit all accessible directories under this one.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
+        public void VisitAccessibleDirectories(Func<NtDirectory, bool> visitor)
+        {
+            VisitAccessibleDirectories(visitor, false);
+        }
+
+        /// <summary>
+        /// Visit all accessible directories under this one.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
+        /// <param name="recurse">True to recurse into sub directories.</param>
+        public void VisitAccessibleDirectories(Func<NtDirectory, bool> visitor, bool recurse)
+        {
+            VisitAccessibleDirectories(visitor, DirectoryAccessRights.MaximumAllowed, recurse);
+        }
+
+        /// <summary>
+        /// Visit all accessible directories under this one.
+        /// </summary>
+        /// <param name="visitor">A function to be called on every accessible directory. Return true to continue enumeration.</param>
+        /// <param name="desired_access">Specify the desired access for the directory</param>
+        /// <param name="recurse">True to recurse into sub directories.</param>
+        public void VisitAccessibleDirectories(Func<NtDirectory, bool> visitor, DirectoryAccessRights desired_access, bool recurse)
+        {
+            VisitAccessibleDirectories(visitor, desired_access, recurse, -1);
         }
 
         /// <summary>
@@ -951,25 +1018,48 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Returns whether a directory exists for this path.
+        /// Check whether a directory is exists relative to the current directory.
         /// </summary>
-        /// <param name="path">The path to the entry.</param>
-        /// <param name="root">The root directory.</param>
-        /// <returns>True if the directory exists for the specified path.</returns>
-        public static bool DirectoryExists(string path, NtDirectory root)
+        /// <param name="relative_path">Relative path to directory</param>
+        /// <returns>True if the directory exists.</returns>
+        public bool DirectoryExists(string relative_path)
         {
-            try
-            {
-                using (NtDirectory dir = NtDirectory.Open(path, root, DirectoryAccessRights.MaximumAllowed))
-                {
-                    return true;
-                }
-            }
-            catch (NtException)
-            {
-                return false;
-            }
+            return DirectoryExists(relative_path, this);
         }
+
+        /// <summary>
+        /// Set the session ID for this directory to the current session.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <remarks>Needs SeTcbPrivilege.</remarks>
+        public NtStatus SetCurrentSessionId(bool throw_on_error = true)
+        {
+            return NtSystemCalls.NtSetInformationObject(Handle, 
+                ObjectInformationClass.ObjectSessionInformation, 
+                SafeHGlobalBuffer.Null, 0).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the session object for this directory to the current session.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <remarks>Needs SeTcbPrivilege.</remarks>
+        public NtStatus SetCurrentSessionObject(bool throw_on_error = true)
+        {
+            return NtSystemCalls.NtSetInformationObject(Handle,
+                ObjectInformationClass.ObjectSessionObjectInformation,
+                SafeHGlobalBuffer.Null, 0).ToNtException(throw_on_error);
+        }
+
+        #endregion
+
+        #region Private Members
+
+        private bool _private_namespace;
 
         private static string GetDirectoryName(string path)
         {
@@ -997,49 +1087,6 @@ namespace NtApiDotNet
             }
         }
 
-        /// <summary>
-        /// Get the type of a directory entry by path.
-        /// </summary>
-        /// <param name="path">The path to the directory entry</param>
-        /// <param name="root">The root object to look up if path is relative</param>
-        /// <returns>The type name, or null if it can't be found.</returns>
-        public static string GetDirectoryEntryType(string path, NtObject root)
-        {
-            if (root == null && path == @"\")
-            {
-                return "Directory";
-            }
-
-            string dir_name = GetDirectoryName(path);
-            if (dir_name == string.Empty && root == null)
-            {
-                dir_name = @"\";
-            }
-            using (var dir = Open(dir_name, root, DirectoryAccessRights.Query, false))
-            {
-                if (dir.IsSuccess)
-                {
-                    ObjectDirectoryInformation dir_info = dir.Result.GetDirectoryEntry(GetFileName(path));
-                    if (dir_info != null)
-                    {
-                        return dir_info.NtTypeName;
-                    }
-                }
-            }
-            
-            return null;
-        }
-
-        /// <summary>
-        /// Check whether a directory is exists relative to the current directory.
-        /// </summary>
-        /// <param name="relative_path">Relative path to directory</param>
-        /// <returns>True if the directory exists.</returns>
-        public bool DirectoryExists(string relative_path)
-        {
-            return DirectoryExists(relative_path, this);
-        }
-
-        private bool _private_namespace;
+        #endregion
     }
 }

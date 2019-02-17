@@ -319,6 +319,7 @@ namespace NtApiDotNet
     public class NtAlpc : NtObjectWithDuplicateAndInfo<NtAlpc, AlpcAccessRights, AlpcPortInformationClass, AlpcPortInformationClass>
     {
         #region Constructors
+
         internal NtAlpc(SafeKernelObjectHandle handle, bool connected) : base(handle)
         {
             _connected = connected;
@@ -327,6 +328,14 @@ namespace NtApiDotNet
         internal NtAlpc(SafeKernelObjectHandle handle) : this(handle, false)
         {
         }
+
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(false)
+            {
+            }
+        }
+
         #endregion
 
         #region Static Methods

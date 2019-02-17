@@ -14,7 +14,6 @@
 
 using Microsoft.Win32.SafeHandles;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -132,11 +131,8 @@ namespace NtApiDotNet.Win32
         NewCredentials,
     }
 
-    class SafeLsaHandle : SafeHandleZeroOrMinusOneIsInvalid
+    internal class SafeLsaHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        [DllImport("Advapi32.dll")]
-        static extern NtStatus LsaClose(IntPtr handle);
-
         public SafeLsaHandle(IntPtr handle, bool ownsHandle) : base(ownsHandle)
         {
             SetHandle(handle);
@@ -148,7 +144,7 @@ namespace NtApiDotNet.Win32
 
         protected override bool ReleaseHandle()
         {
-            return LsaClose(handle).IsSuccess();
+            return Win32NativeMethods.LsaClose(handle).IsSuccess();
         }
     }
 
@@ -157,49 +153,6 @@ namespace NtApiDotNet.Win32
     /// </summary>
     public static class LogonUtils
     {
-        [DllImport("Secur32.dll")]
-        static extern NtStatus LsaConnectUntrusted(out SafeLsaHandle handle);
-        [DllImport("Secur32.dll")]
-        static extern NtStatus LsaLookupAuthenticationPackage(SafeLsaHandle LsaHandle, LsaString PackageName, out uint AuthenticationPackage);
-        [DllImport("Secur32.dll")]
-        static extern NtStatus LsaLogonUser(SafeLsaHandle LsaHandle, LsaString OriginName, SecurityLogonType LogonType, uint AuthenticationPackage,
-            SafeBuffer AuthenticationInformation,
-            int AuthenticationInformationLength,
-            IntPtr LocalGroups,
-            TOKEN_SOURCE SourceContext,
-            out IntPtr ProfileBuffer,
-            out int ProfileBufferLength,
-            out Luid LogonId,
-            out SafeKernelObjectHandle Token,
-            QUOTA_LIMITS Quotas,
-            out NtStatus SubStatus
-        );
-
-        [DllImport("Secur32.dll")]
-        static extern NtStatus LsaFreeReturnBuffer(IntPtr Buffer);
-
-        [DllImport("Advapi32.dll")]
-        static extern bool AllocateLocallyUniqueId(out Luid Luid);
-
-        [DllImport("Advapi32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
-        static extern bool LogonUser(string lpszUsername, string lpszDomain, string lpszPassword, SecurityLogonType dwLogonType,
-            int dwLogonProvider, out SafeKernelObjectHandle phToken);
-
-        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern bool LogonUserExExW(
-              string lpszUsername,
-              string lpszDomain,
-              string lpszPassword,
-              SecurityLogonType dwLogonType,
-              int dwLogonProvider,
-              SafeTokenGroupsBuffer pTokenGroups,
-              out SafeKernelObjectHandle phToken,
-              [Out] OptionalPointer ppLogonSid,
-              [Out] OptionalPointer ppProfileBuffer,
-              [Out] OptionalPointer pdwProfileLength,
-              [Out] QUOTA_LIMITS pQuotaLimits
-            );
-
         /// <summary>
         /// Logon a user with a username and password.
         /// </summary>
@@ -210,7 +163,7 @@ namespace NtApiDotNet.Win32
         /// <returns>The logged on token.</returns>
         public static NtToken Logon(string user, string domain, string password, SecurityLogonType type)
         {
-            if (!LogonUser(user, domain, password, type, 0, out SafeKernelObjectHandle handle))
+            if (!Win32NativeMethods.LogonUser(user, domain, password, type, 0, out SafeKernelObjectHandle handle))
             {
                 throw new SafeWin32Exception();
             }
@@ -236,7 +189,7 @@ namespace NtApiDotNet.Win32
 
             using (var group_buffer = builder.ToBuffer())
             {
-                if (!LogonUserExExW(user, domain, password, type, 0, group_buffer, 
+                if (!Win32NativeMethods.LogonUserExExW(user, domain, password, type, 0, group_buffer, 
                     out SafeKernelObjectHandle token, null, null, null, null))
                 {
                     throw new SafeWin32Exception();
@@ -256,11 +209,11 @@ namespace NtApiDotNet.Win32
         {
             LsaString pkgName = new LsaString("Negotiate");
 
-            LsaConnectUntrusted(out SafeLsaHandle hlsa).ToNtException();
+            Win32NativeMethods.LsaConnectUntrusted(out SafeLsaHandle hlsa).ToNtException();
             using (hlsa)
             {
                 uint authnPkg;
-                LsaLookupAuthenticationPackage(hlsa, pkgName, out authnPkg).ToNtException();
+                Win32NativeMethods.LsaLookupAuthenticationPackage(hlsa, pkgName, out authnPkg).ToNtException();
                 byte[] user_bytes = Encoding.Unicode.GetBytes(user);
                 byte[] realm_bytes = Encoding.Unicode.GetBytes(realm);
 
@@ -285,16 +238,16 @@ namespace NtApiDotNet.Win32
                     Marshal.StructureToPtr(logon_struct, buffer.DangerousGetHandle(), false);
 
                     TOKEN_SOURCE tokenSource = new TOKEN_SOURCE("NtLmSsp");
-                    AllocateLocallyUniqueId(out tokenSource.SourceIdentifier);
+                    Win32NativeMethods.AllocateLocallyUniqueId(out tokenSource.SourceIdentifier);
 
                     LsaString originName = new LsaString("S4U");
                     QUOTA_LIMITS quota_limits = new QUOTA_LIMITS();
 
-                    LsaLogonUser(hlsa, originName, type, authnPkg,
+                    Win32NativeMethods.LsaLogonUser(hlsa, originName, type, authnPkg,
                         buffer, buffer.Length, IntPtr.Zero,
                         tokenSource, out IntPtr profile, out int cbProfile, out Luid logon_id, out SafeKernelObjectHandle token_handle,
                         quota_limits, out NtStatus subStatus).ToNtException();
-                    LsaFreeReturnBuffer(profile);
+                    Win32NativeMethods.LsaFreeReturnBuffer(profile);
                     return NtToken.FromHandle(token_handle);
                 }
             }

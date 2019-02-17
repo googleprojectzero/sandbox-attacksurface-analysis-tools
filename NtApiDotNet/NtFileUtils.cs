@@ -13,6 +13,9 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace NtApiDotNet
@@ -185,6 +188,61 @@ namespace NtApiDotNet
         {
             AccessMask mask = access;
             return mask.ToSpecificAccess<FileDirectoryAccessRights>();
+        }
+
+        /// <summary>
+        /// Enable or disable Wow64 FS redirection.
+        /// </summary>
+        /// <param name="enable">True to enable FS redirection.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The old enable state.</returns>
+        public static NtResult<bool> Wow64EnableFsRedirection(bool enable, bool throw_on_error)
+        {
+            return NtRtl.RtlWow64EnableFsRedirectionEx(new IntPtr(enable ? 0 : 1), out IntPtr old_state)
+                .CreateResult(throw_on_error, () => old_state.ToInt32() == 0);
+        }
+
+        /// <summary>
+        /// Enable or disable Wow64 FS redirection.
+        /// </summary>
+        /// <param name="enable">True to enable FS redirection.</param>
+        /// <returns>The old enable state.</returns>
+        public static bool Wow64EnableFsRedirection(bool enable)
+        {
+            return Wow64EnableFsRedirection(enable, true).Result;
+        }
+
+        /// <summary>
+        /// Split an allocated address into a list of pages. This can be used to pass to
+        /// ReadScatter or WriteGather file APIs.
+        /// </summary>
+        /// <param name="address">The base address to split. The address should be page aligned.</param>
+        /// <param name="length">The length of bytes to split into pages. This will be rounded up to the next page boundary.</param>
+        /// <returns>The list of pages.</returns>
+        public static IEnumerable<long> SplitAddressToPages(long address, int length)
+        {
+            int page_size = NtSystemInfo.PageSize;
+            int page_mask = page_size - 1;
+
+            if ((address & page_mask) != 0)
+            {
+                throw new ArgumentException("Base address must be aligned to a page boundary.", nameof(address));
+            }
+
+            int page_count = (length + page_mask) / page_size;
+            return Enumerable.Range(0, page_count).Select(i => address + (i * page_size)).ToArray();
+        }
+
+        /// <summary>
+        /// Split an allocated address into a list of pages. This can be used to pass to
+        /// ReadScatter or WriteGather file APIs.
+        /// </summary>
+        /// <param name="buffer">The allocated buffer to split. The address should be page aligned.</param>
+        /// <remarks>The buffer will be split up based on its length. Note that the length will be rounded up.</remarks>
+        /// <returns>The list of pages.</returns>
+        public static IEnumerable<long> SplitAddressToPages(SafeBuffer buffer)
+        {
+            return SplitAddressToPages(buffer.DangerousGetHandle().ToInt64(), buffer.GetLength());
         }
     }
 }

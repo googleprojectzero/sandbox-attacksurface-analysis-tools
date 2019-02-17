@@ -73,6 +73,17 @@ namespace NtApiDotNet
         public static extern NtStatus NtAllocateLocallyUniqueId(out Luid Luid);
     }
 
+    public static partial class NtRtl
+    {
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlGetNativeSystemInformation(
+          SystemInformationClass SystemInformationClass,
+          SafeBuffer SystemInformation,
+          int SystemInformationLength,
+          out int ReturnLength
+        );
+    }
+
     [Flags]
     public enum SystemEnvironmentValueAttribute
     {
@@ -311,6 +322,13 @@ namespace NtApiDotNet
         public byte Policy;
     }
 
+    [StructLayout(LayoutKind.Sequential), DataStart("SiloIdList")]
+    public struct SystemRootSiloInformation
+    {
+        public int NumberOfSilos;
+        public int SiloIdList;
+    }
+
     public class SecureBootPolicy
     {
         public Guid PolicyPublisher { get; private set; }
@@ -442,6 +460,35 @@ namespace NtApiDotNet
         public IntPtr FileHandle;
         public int ImageSize;
         public IntPtr Image;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemBasicInformation 
+    {
+        public int Reserved;
+        public int TimerResolution;
+        public int PageSize;
+        public int NumberOfPhysicalPages;
+        public int LowestPhysicalPageNumber;
+        public int HighestPhysicalPageNumber;
+        public int AllocationGranularity;
+        public UIntPtr MinimumUserModeAddress;
+        public UIntPtr MaximumUserModeAddress;
+        public UIntPtr ActiveProcessorsAffinityMask;
+        public sbyte NumberOfProcessors;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemElamCertificateInformation
+    {
+        public IntPtr ElamDriverFile;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemCodeIntegrityCertificateInformation
+    {
+        public IntPtr ImageFile;
+        public int Type;
     }
 
     public enum SystemInformationClass
@@ -650,8 +697,10 @@ namespace NtApiDotNet
         SystemSpeculationControlInformation = 201,
         SystemDmaGuardPolicyInformation = 202,
         SystemEnclaveLaunchControlInformation = 203,
-        SystemCodeIntegrityLockdownInformation = 205,
-        MaxSystemInfoClass
+        SystemWorkloadAllowedCpuSetsInformation = 204,
+        SystemCodeIntegrityUnlockModeInformation = 205,
+        SystemLeapSecondInformation = 206,
+        SystemFlags2Information = 207,
     }
 
     public class NtThreadInformation
@@ -888,48 +937,62 @@ namespace NtApiDotNet
         /// <summary>
         /// Get handle into the current process
         /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The handle to the object</returns>
+        public NtResult<NtObject> GetObject(bool throw_on_error)
+        {
+            NtToken.EnableDebugPrivilege();
+            using (var result = NtGeneric.DuplicateFrom(ProcessId, new IntPtr(Handle), 0,
+                DuplicateObjectOptions.SameAccess | DuplicateObjectOptions.SameAttributes, throw_on_error))
+            {
+                if (!result.IsSuccess)
+                {
+                    return result.Cast<NtObject>();
+                }
+
+                NtGeneric generic = result.Result;
+
+                // Ensure that we get the actual type from the handle.
+                NtType = generic.NtType;
+                return generic.ToTypedObject(throw_on_error).Cast<NtObject>();
+            }
+        }
+
+        /// <summary>
+        /// Get handle into the current process
+        /// </summary>
         /// <returns>The handle to the object</returns>
         public NtObject GetObject()
         {
-            NtToken.EnableDebugPrivilege();
-            try
-            {
-                using (NtGeneric generic = NtGeneric.DuplicateFrom(ProcessId, new IntPtr(Handle)))
-                {
-                    // Ensure that we get the actual type from the handle.
-                    NtType = generic.NtType;
-                    return generic.ToTypedObject();
-                }
-            }
-            catch
-            {
-            }
-            return null;
+            return GetObject(true).Result;
         }
 
         private string GetName(NtGeneric obj)
         {
             if (obj == null)
             {
-                return String.Empty;
+                return string.Empty;
             }
             return obj.FullPath;
         }
 
         private SecurityDescriptor GetSecurityDescriptor(NtGeneric obj)
         {
-            try
+            if (obj != null)
             {
-                if (obj != null)
+                using (var dup = obj.Duplicate(GenericAccessRights.ReadControl, false))
                 {
-                    using (NtGeneric dup = obj.Duplicate(GenericAccessRights.ReadControl))
+                    if (!dup.IsSuccess)
                     {
-                        return dup.SecurityDescriptor;
+                        return null;
                     }
+                    var sd = dup.Result.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
+                    if (!sd.IsSuccess)
+                    {
+                        return null;
+                    }
+                    return sd.Result;
                 }
-            }
-            catch
-            {
             }
             return null;
         }
@@ -945,36 +1008,75 @@ namespace NtApiDotNet
     /// </summary>
     public static class NtSystemInfo
     {
-        private static SafeStructureInOutBuffer<T> QuerySystemInfoVariable<T>(SystemInformationClass info_class) where T : new()
+        #region Private Members
+
+        // A dummy system info object to repurpose the query/set methods.
+        private class NtSystemInfoObject : NtObjectWithDuplicateAndInfo<NtGeneric, GenericAccessRights, SystemInformationClass, SystemInformationClass>
         {
-            bool free_buffer = true;
-            SafeStructureInOutBuffer<T> buffer = new SafeStructureInOutBuffer<T>(0x1000, true);
+            public NtSystemInfoObject() : base(SafeKernelObjectHandle.Null)
+            {
+            }
+
+            protected override int GetMaximumBruteForceLength(SystemInformationClass info_class)
+            {
+                return 16 * 1024 * 1024;
+            }
+
+            protected override bool GetTrustReturnLength(SystemInformationClass info_class)
+            {
+                return false;
+            }
+
+            public override NtStatus QueryInformation(SystemInformationClass info_class, SafeBuffer buffer, out int return_length)
+            {
+                return NtSystemCalls.NtQuerySystemInformation(info_class, buffer, buffer.GetLength(), out return_length);
+            }
+
+            public override NtStatus SetInformation(SystemInformationClass info_class, SafeBuffer buffer)
+            {
+                return NtSystemCalls.NtSetSystemInformation(info_class, buffer, buffer.GetLength());
+            }
+        }
+
+        private static readonly Lazy<SystemBasicInformation> _basic_info = new Lazy<SystemBasicInformation>(GetBasicInformation);
+        private static readonly NtSystemInfoObject _system_info_object = new NtSystemInfoObject();
+
+        private static SystemKernelDebuggerInformation GetKernelDebuggerInformation()
+        {
+            return Query<SystemKernelDebuggerInformation>(SystemInformationClass.SystemKernelDebuggerInformation);
+        }
+
+        private static SafeHGlobalBuffer EnumEnvironmentValues(SystemEnvironmentValueInformationClass info_class)
+        {
+            int ret_length = 0;
+            NtStatus status = NtSystemCalls.NtEnumerateSystemEnvironmentValuesEx(info_class, SafeHGlobalBuffer.Null, ref ret_length);
+            if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+            {
+                throw new NtException(status);
+            }
+            var buffer = new SafeHGlobalBuffer(ret_length);
             try
             {
-                NtStatus status = 0;
-                int return_length = 0;
-                while ((status = NtSystemCalls.NtQuerySystemInformation(info_class,
-                                                         buffer,
-                                                         buffer.Length,
-                                                         out return_length)) == NtStatus.STATUS_INFO_LENGTH_MISMATCH)
-                {
-                    int length = buffer.Length * 2;
-                    buffer.Dispose();
-                    buffer = new SafeStructureInOutBuffer<T>(length, true);
-                }
-                status.ToNtException();
-                free_buffer = false;
+                ret_length = buffer.Length;
+                NtSystemCalls.NtEnumerateSystemEnvironmentValuesEx(info_class,
+                    buffer, ref ret_length).ToNtException();
                 return buffer;
             }
-            finally
+            catch
             {
-                if (free_buffer)
-                {
-                    buffer.Dispose();
-                }
+                buffer.Dispose();
+                throw;
             }
-            
         }
+
+        private static SystemBasicInformation GetBasicInformation()
+        {
+            return Query<SystemBasicInformation>(SystemInformationClass.SystemBasicInformation);
+        }
+
+        #endregion
+
+        #region Static Methods
 
         /// <summary>
         /// Get a list of handles
@@ -984,7 +1086,7 @@ namespace NtApiDotNet
         /// <returns>The list of handles</returns>
         public static IEnumerable<NtHandle> GetHandles(int pid, bool allow_query)
         {
-            using (var buffer = QuerySystemInfoVariable<SystemHandleInformationEx>(SystemInformationClass.SystemExtendedHandleInformation))
+            using (var buffer = QueryBuffer<SystemHandleInformationEx>(SystemInformationClass.SystemExtendedHandleInformation))
             {
                 var handle_info = buffer.Result;
                 int handle_count = handle_info.NumberOfHandles.ToInt32();
@@ -1038,7 +1140,7 @@ namespace NtApiDotNet
         /// <returns>The list of process information.</returns>
         public static IEnumerable<NtProcessInformation> GetProcessInformation()
         {
-            using (var process_info = QuerySystemInfoVariable<SystemProcessInformation>(SystemInformationClass.SystemProcessInformation))
+            using (var process_info = QueryBuffer<SystemProcessInformation>(SystemInformationClass.SystemProcessInformation))
             {
                 int offset = 0;
                 while (true)
@@ -1066,7 +1168,7 @@ namespace NtApiDotNet
         /// <returns>The list of page file names.</returns>
         public static IEnumerable<string> GetPageFileNames()
         {
-            using (var buffer = QuerySystemInfoVariable<SystemPageFileInformation>(SystemInformationClass.SystemPageFileInformation))
+            using (var buffer = QueryBuffer<SystemPageFileInformation>(SystemInformationClass.SystemPageFileInformation))
             {
                 int offset = 0;
                 while (true)
@@ -1079,156 +1181,6 @@ namespace NtApiDotNet
                     }
                     offset += pagefile_info.NextEntryOffset;
                 }
-            }
-        }
-
-        private static SystemKernelDebuggerInformation GetKernelDebuggerInformation()
-        {
-            using (var info = new SafeStructureInOutBuffer<SystemKernelDebuggerInformation>())
-            {
-                int return_length;
-                NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemKernelDebuggerInformation,
-                    info, info.Length, out return_length).ToNtException();
-                return info.Result;
-            }
-        }
-
-        /// <summary>
-        /// Get whether the kernel debugger is enabled.
-        /// </summary>
-        public static bool KernelDebuggerEnabled
-        {
-            get
-            {
-                return GetKernelDebuggerInformation().KernelDebuggerEnabled;
-            }
-        }
-
-        /// <summary>
-        /// Get whether the kernel debugger is not present.
-        /// </summary>
-        public static bool KernelDebuggerNotPresent
-        {
-            get
-            {
-                return GetKernelDebuggerInformation().KernelDebuggerNotPresent;
-            }
-        }
-
-        private static T QuerySystemInfo<T>(T data, SystemInformationClass info_class) where T : struct
-        {
-            using (var buffer = data.ToBuffer())
-            {
-                int ret_length;
-                NtSystemCalls.NtQuerySystemInformation(info_class, buffer,
-                    buffer.Length, out ret_length).ToNtException();
-                return buffer.Result;
-            }
-        }
-
-        private static T QuerySystemInfo<T>(SystemInformationClass info_class) where T : struct
-        {
-            return QuerySystemInfo<T>(new T(), info_class);
-        }
-
-        /// <summary>
-        /// Get current code integrity option settings.
-        /// </summary>
-        public static CodeIntegrityOptions CodeIntegrityOptions
-        {
-            get
-            {
-                return QuerySystemInfo(new SystemCodeIntegrityInformation() { Length = Marshal.SizeOf(typeof(SystemCodeIntegrityInformation)) },
-                    SystemInformationClass.SystemCodeIntegrityInformation).CodeIntegrityOptions;
-            }
-        }
-
-        private static byte[] QueryBlob(SystemInformationClass info_class)
-        {
-            int ret_length;
-            NtStatus status = NtSystemCalls.NtQuerySystemInformation(info_class, SafeHGlobalBuffer.Null, 0, out ret_length);
-            if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
-            {
-                if (status.IsSuccess())
-                {
-                    return new byte[0];
-                }
-                throw new NtException(status);
-            }
-            using (var buffer = new SafeHGlobalBuffer(ret_length))
-            {
-                NtSystemCalls.NtQuerySystemInformation(info_class, buffer, buffer.Length, out ret_length).ToNtException();
-                return buffer.ToArray();
-            }
-        }
-
-        /// <summary>
-        /// Get code integrity policy.
-        /// </summary>
-        public static SystemCodeIntegrityPolicy CodeIntegrityPolicy
-        {
-            get
-            {
-                using (var buffer = new SafeStructureInOutBuffer<SystemCodeIntegrityPolicy>())
-                {
-                    int ret_length;
-                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityPolicyInformation,
-                        buffer, buffer.Length, out ret_length).ToNtException();
-                    return buffer.Result;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Get code integrity unlock information.
-        /// </summary>
-        public static int CodeIntegrityUnlock
-        {
-            get
-            {
-                using (var buffer = new SafeStructureInOutBuffer<int>())
-                {
-                    int ret_length;
-                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityUnlockInformation,
-                        buffer, buffer.Length, out ret_length).ToNtException();
-                    return buffer.Result;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Get all code integrity policies.
-        /// </summary>
-        public static IEnumerable<CodeIntegrityPolicy> CodeIntegrityFullPolicy
-        {
-            get
-            {
-                List<CodeIntegrityPolicy> policies = new List<CodeIntegrityPolicy>();
-                try
-                {
-                    MemoryStream stm = new MemoryStream(QueryBlob(SystemInformationClass.SystemCodeIntegrityPoliciesFullInformation));
-                    if (stm.Length > 0)
-                    {
-                        BinaryReader reader = new BinaryReader(stm);
-                        int header_size = reader.ReadInt32();
-                        int total_policies = reader.ReadInt32();
-                        reader.ReadBytes(8 - header_size);
-                        for (int i = 0; i < total_policies; ++i)
-                        {
-                            policies.Add(new CodeIntegrityPolicy(reader));
-                        }
-                    }
-                }
-                catch (NtException)
-                {
-                    byte[] policy = QueryBlob(SystemInformationClass.SystemCodeIntegrityPolicyFullInformation);
-                    if (policy.Length > 0)
-                    {
-                        policies.Add(new CodeIntegrityPolicy(policy));
-                    }
-                }
-
-                return policies.AsReadOnly();
             }
         }
 
@@ -1252,79 +1204,9 @@ namespace NtApiDotNet
                     PageFlags = page_flags
                 }.ToBuffer())
                 {
-                    int ret_length;
                     NtSystemCalls.NtSystemDebugControl(SystemDebugControlCode.KernelCrashDump, buffer, buffer.Length,
-                        SafeHGlobalBuffer.Null, 0, out ret_length).ToNtException();
+                        SafeHGlobalBuffer.Null, 0, out int ret_length).ToNtException();
                 }
-            }
-        }
-
-        /// <summary>
-        /// Get whether secure boot is enabled.
-        /// </summary>
-        public static bool SecureBootEnabled
-        {
-            get
-            {
-                return QuerySystemInfo<SystemSecurebootInformation>(SystemInformationClass.SystemSecureBootInformation).SecureBootEnabled;
-            }
-        }
-
-        /// <summary>
-        /// Get whether system supports secure boot.
-        /// </summary>
-        public static bool SecureBootCapable
-        {
-            get
-            {
-                return QuerySystemInfo<SystemSecurebootInformation>(SystemInformationClass.SystemSecureBootInformation).SecureBootCapable;
-            }
-        }
-
-        /// <summary>
-        /// Extract the secure boot policy.
-        /// </summary>
-        public static SecureBootPolicy SecureBootPolicy
-        {
-            get
-            {
-                int ret_length;
-                NtStatus status = NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemSecureBootPolicyFullInformation,
-                    SafeHGlobalBuffer.Null, 0, out ret_length);
-                if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
-                {
-                    throw new NtException(status);
-                }
-
-                using (var buffer = new SafeStructureInOutBuffer<SystemSecurebootPolicyFullInformation>(ret_length, true))
-                {
-                    NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemSecureBootPolicyFullInformation,
-                        buffer, buffer.Length, out ret_length).ToNtException();
-                    return new SecureBootPolicy(buffer);
-                }
-            }
-        }
-
-        private static SafeHGlobalBuffer EnumEnvironmentValues(SystemEnvironmentValueInformationClass info_class)
-        {
-            int ret_length = 0;
-            NtStatus status = NtSystemCalls.NtEnumerateSystemEnvironmentValuesEx(info_class, SafeHGlobalBuffer.Null, ref ret_length);
-            if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
-            {
-                throw new NtException(status);
-            }
-            var buffer = new SafeHGlobalBuffer(ret_length);
-            try
-            {
-                ret_length = buffer.Length;
-                NtSystemCalls.NtEnumerateSystemEnvironmentValuesEx(info_class,
-                    buffer, ref ret_length).ToNtException();
-                return buffer;
-            }
-            catch
-            {
-                buffer.Dispose();
-                throw;
             }
         }
 
@@ -1511,11 +1393,7 @@ namespace NtApiDotNet
                 ImageSize = image_size
             };
 
-            using (var buffer = info.ToBuffer())
-            {
-                return NtSystemCalls.NtQuerySystemInformation(SystemInformationClass.SystemCodeIntegrityVerificationInformation, buffer,
-                    buffer.Length, out int ret_length);
-            }
+            return Query(SystemInformationClass.SystemCodeIntegrityVerificationInformation, info, false).Status;
         }
 
         /// <summary>
@@ -1557,11 +1435,451 @@ namespace NtApiDotNet
                 FileHandle = handle.DangerousGetHandle()
             };
 
-            using (var buffer = info.ToBuffer())
+            return Set(SystemInformationClass.SystemCodeIntegrityVerificationInformation, info, false);
+        }
+
+        /// <summary>
+        /// Get list of root silos.
+        /// </summary>
+        /// <returns>The list of root silos.</returns>
+        public static IReadOnlyCollection<int> GetRootSilos()
+        {
+            using (var buffer = QueryBuffer<SystemRootSiloInformation>(SystemInformationClass.SystemRootSiloInformation))
             {
-                return NtSystemCalls.NtSetSystemInformation(SystemInformationClass.SystemCodeIntegrityVerificationInformation, buffer,
-                    buffer.Length);
+                var result = buffer.Result;
+                int[] silos = new int[result.NumberOfSilos];
+                buffer.Data.ReadArray(0, silos, 0, silos.Length);
+                return silos.ToList().AsReadOnly();
             }
         }
+
+        /// <summary>
+        /// Set the ELAM certificate information.
+        /// </summary>
+        /// <param name="image_file">The signed file containing an ELAM certificate resource.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus SetElamCertificate(NtFile image_file)
+        {
+            SystemElamCertificateInformation info = new SystemElamCertificateInformation()
+            { ElamDriverFile = image_file.Handle.DangerousGetHandle() };
+            return Set(SystemInformationClass.SystemElamCertificateInformation, info, false);
+        }
+
+        /// <summary>
+        /// Query code integrity certificate information.
+        /// </summary>
+        /// <param name="image_file">The image file.</param>
+        /// <param name="type">The type of check to make.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus QueryCodeIntegrityCertificateInfo(NtFile image_file, int type)
+        {
+            SystemCodeIntegrityCertificateInformation info = new SystemCodeIntegrityCertificateInformation()
+            {
+                ImageFile = image_file.Handle.DangerousGetHandle(),
+                Type = type
+            };
+
+            return Query(SystemInformationClass.SystemCodeIntegrityCertificateInformation, info, false).Status;
+        }
+
+        /// <summary>
+        /// Query a fixed structure from the object.
+        /// </summary>
+        /// <typeparam name="T">The type of structure to return.</typeparam>
+        /// <param name="info_class">The information class to query.</param>
+        /// <param name="default_value">A default value for the query.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<T> Query<T>(SystemInformationClass info_class, T default_value, bool throw_on_error) where T : new()
+        {
+            return _system_info_object.Query(info_class, default_value, throw_on_error);
+        }
+
+        /// <summary>
+        /// Query a fixed structure from the object.
+        /// </summary>
+        /// <typeparam name="T">The type of structure to return.</typeparam>
+        /// <param name="info_class">The information class to query.</param>
+        /// <param name="default_value">A default value for the query.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static T Query<T>(SystemInformationClass info_class, T default_value) where T : new()
+        {
+            return _system_info_object.Query(info_class, default_value);
+        }
+
+        /// <summary>
+        /// Query a fixed structure from the object.
+        /// </summary>
+        /// <typeparam name="T">The type of structure to return.</typeparam>
+        /// <param name="info_class">The information class to query.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static T Query<T>(SystemInformationClass info_class) where T : new()
+        {
+            return _system_info_object.Query<T>(info_class);
+        }
+
+        /// <summary>
+        /// Query a variable buffer from the object.
+        /// </summary>
+        /// <typeparam name="T">The type of structure to return.</typeparam>
+        /// <param name="info_class">The information class to query.</param>
+        /// <param name="default_value">A default value for the query.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<SafeStructureInOutBuffer<T>> QueryBuffer<T>(SystemInformationClass info_class, T default_value, bool throw_on_error) where T : new()
+        {
+            return _system_info_object.QueryBuffer(info_class, default_value, throw_on_error);
+        }
+
+        /// <summary>
+        /// Query a variable buffer from the object.
+        /// </summary>
+        /// <param name="info_class">The information class to query.</param>
+        /// <param name="init_buffer">A buffer to initialize the initial query. Can be null.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<SafeHGlobalBuffer> QueryRawBuffer(SystemInformationClass info_class, byte[] init_buffer, bool throw_on_error)
+        {
+            return _system_info_object.QueryRawBuffer(info_class, init_buffer, throw_on_error);
+        }
+
+        /// <summary>
+        /// Query a variable buffer from the object.
+        /// </summary>
+        /// <param name="info_class">The information class to query.</param>
+        /// <param name="init_buffer">A buffer to initialize the initial query. Can be null.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static SafeHGlobalBuffer QueryRawBuffer(SystemInformationClass info_class, byte[] init_buffer)
+        {
+            return _system_info_object.QueryRawBuffer(info_class, init_buffer);
+        }
+
+        /// <summary>
+        /// Query a variable buffer from the object.
+        /// </summary>
+        /// <param name="info_class">The information class to query.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static SafeHGlobalBuffer QueryRawBuffer(SystemInformationClass info_class)
+        {
+            return _system_info_object.QueryRawBuffer(info_class);
+        }
+
+        /// <summary>
+        /// Query a variable buffer from the object and return as bytes.
+        /// </summary>
+        /// <param name="info_class">The information class to query.</param>
+        /// <param name="init_buffer">A buffer to initialize the initial query. Can be null.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<byte[]> QueryRawBytes(SystemInformationClass info_class, byte[] init_buffer, bool throw_on_error)
+        {
+            return _system_info_object.QueryRawBytes(info_class, init_buffer, throw_on_error);
+        }
+
+        /// <summary>
+        /// Query a variable buffer from the object and return as bytes.
+        /// </summary>
+        /// <param name="info_class">The information class to query.</param>
+        /// <param name="init_buffer">A buffer to initialize the initial query. Can be null.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static byte[] QueryRawBytes(SystemInformationClass info_class, byte[] init_buffer)
+        {
+            return _system_info_object.QueryRawBytes(info_class, init_buffer);
+        }
+
+        /// <summary>
+        /// Query a variable buffer from the object and return as bytes.
+        /// </summary>
+        /// <param name="info_class">The information class to query.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static byte[] QueryRawBytes(SystemInformationClass info_class)
+        {
+            return _system_info_object.QueryRawBytes(info_class);
+        }
+
+        /// <summary>
+        /// Query a variable buffer from the object.
+        /// </summary>
+        /// <typeparam name="T">The type of structure to return.</typeparam>
+        /// <param name="info_class">The information class to query.</param>
+        /// <param name="default_value">A default value for the query.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static SafeStructureInOutBuffer<T> QueryBuffer<T>(SystemInformationClass info_class, T default_value) where T : new()
+        {
+            return _system_info_object.QueryBuffer(info_class, default_value);
+        }
+
+        /// <summary>
+        /// Query a variable buffer from the object.
+        /// </summary>
+        /// <typeparam name="T">The type of structure to return.</typeparam>
+        /// <param name="info_class">The information class to query.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static SafeStructureInOutBuffer<T> QueryBuffer<T>(SystemInformationClass info_class) where T : new()
+        {
+            return _system_info_object.QueryBuffer<T>(info_class);
+        }
+
+        /// <summary>
+        /// Set a value to the object.
+        /// </summary>
+        /// <typeparam name="T">The type of structure to set.</typeparam>
+        /// <param name="info_class">The information class to set.</param>
+        /// <param name="value">The value to set. If you specify a SafeBuffer then it'll be passed directly.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code of the set.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtStatus Set<T>(SystemInformationClass info_class, T value, bool throw_on_error) where T : struct
+        {
+            return _system_info_object.Set(info_class, value, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a value to the object.
+        /// </summary>
+        /// <typeparam name="T">The type of structure to set.</typeparam>
+        /// <param name="info_class">The information class to set.</param>
+        /// <param name="value">The value to set.</param>
+        /// <returns>The NT status code of the set.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static void Set<T>(SystemInformationClass info_class, T value) where T : struct
+        {
+            _system_info_object.Set(info_class, value);
+        }
+
+        /// <summary>
+        /// Set a value to the object from a buffer.
+        /// </summary>
+        /// <param name="info_class">The information class to set.</param>
+        /// <param name="buffer">The value to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code of the set.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtStatus SetBuffer(SystemInformationClass info_class, SafeBuffer buffer, bool throw_on_error)
+        {
+            return _system_info_object.SetBuffer(info_class, buffer, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a value to the object from a buffer..
+        /// </summary>
+        /// <param name="info_class">The information class to set.</param>
+        /// <param name="buffer">The value to set.</param>
+        /// <returns>The NT status code of the set.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static void SetBuffer(SystemInformationClass info_class, SafeBuffer buffer)
+        {
+            _system_info_object.SetBuffer(info_class, buffer);
+        }
+
+        /// <summary>
+        /// Set a raw value to the object.
+        /// </summary>
+        /// <param name="info_class">The information class to set.</param>
+        /// <param name="value">The raw value to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code of the set.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtStatus SetBytes(SystemInformationClass info_class, byte[] value, bool throw_on_error)
+        {
+            return _system_info_object.SetBytes(info_class, value, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a raw value to the object.
+        /// </summary>
+        /// <param name="info_class">The information class to set.</param>
+        /// <param name="value">The raw value to set.</param>
+        /// <returns>The NT status code of the set.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static void SetBytes(SystemInformationClass info_class, byte[] value)
+        {
+            _system_info_object.SetBytes(info_class, value);
+        }
+
+        #endregion
+
+        #region Static Properties
+        /// <summary>
+        /// Get whether the kernel debugger is enabled.
+        /// </summary>
+        public static bool KernelDebuggerEnabled
+        {
+            get
+            {
+                return GetKernelDebuggerInformation().KernelDebuggerEnabled;
+            }
+        }
+
+        /// <summary>
+        /// Get whether the kernel debugger is not present.
+        /// </summary>
+        public static bool KernelDebuggerNotPresent
+        {
+            get
+            {
+                return GetKernelDebuggerInformation().KernelDebuggerNotPresent;
+            }
+        }
+
+        /// <summary>
+        /// Get current code integrity option settings.
+        /// </summary>
+        public static CodeIntegrityOptions CodeIntegrityOptions
+        {
+            get
+            {
+                return Query(SystemInformationClass.SystemCodeIntegrityInformation, 
+                    new SystemCodeIntegrityInformation() { Length = Marshal.SizeOf(typeof(SystemCodeIntegrityInformation)) }).CodeIntegrityOptions;
+            }
+        }
+
+        /// <summary>
+        /// Get code integrity policy.
+        /// </summary>
+        public static SystemCodeIntegrityPolicy CodeIntegrityPolicy
+        {
+            get
+            {
+                return Query<SystemCodeIntegrityPolicy>(SystemInformationClass.SystemCodeIntegrityPolicyInformation);
+            }
+        }
+
+        /// <summary>
+        /// Get code integrity unlock information.
+        /// </summary>
+        public static int CodeIntegrityUnlock
+        {
+            get
+            {
+                return Query<int>(SystemInformationClass.SystemCodeIntegrityUnlockInformation);
+            }
+        }
+
+        /// <summary>
+        /// Get all code integrity policies.
+        /// </summary>
+        public static IEnumerable<CodeIntegrityPolicy> CodeIntegrityFullPolicy
+        {
+            get
+            {
+                List<CodeIntegrityPolicy> policies = new List<CodeIntegrityPolicy>();
+                try
+                {
+                    MemoryStream stm = new MemoryStream(QueryRawBytes(SystemInformationClass.SystemCodeIntegrityPoliciesFullInformation));
+                    if (stm.Length > 0)
+                    {
+                        BinaryReader reader = new BinaryReader(stm);
+                        int header_size = reader.ReadInt32();
+                        int total_policies = reader.ReadInt32();
+                        reader.ReadBytes(8 - header_size);
+                        for (int i = 0; i < total_policies; ++i)
+                        {
+                            policies.Add(new CodeIntegrityPolicy(reader));
+                        }
+                    }
+                }
+                catch (NtException)
+                {
+                    byte[] policy = QueryRawBytes(SystemInformationClass.SystemCodeIntegrityPolicyFullInformation);
+                    if (policy.Length > 0)
+                    {
+                        policies.Add(new CodeIntegrityPolicy(policy));
+                    }
+                }
+
+                return policies.AsReadOnly();
+            }
+        }
+
+        /// <summary>
+        /// Get whether secure boot is enabled.
+        /// </summary>
+        public static bool SecureBootEnabled
+        {
+            get
+            {
+                return Query<SystemSecurebootInformation>(SystemInformationClass.SystemSecureBootInformation).SecureBootEnabled;
+            }
+        }
+
+        /// <summary>
+        /// Get whether system supports secure boot.
+        /// </summary>
+        public static bool SecureBootCapable
+        {
+            get
+            {
+                return Query<SystemSecurebootInformation>(SystemInformationClass.SystemSecureBootInformation).SecureBootCapable;
+            }
+        }
+
+        /// <summary>
+        /// Extract the secure boot policy.
+        /// </summary>
+        public static SecureBootPolicy SecureBootPolicy
+        {
+            get
+            {
+                using (var buffer = QueryBuffer<SystemSecurebootPolicyFullInformation>(SystemInformationClass.SystemSecureBootPolicyFullInformation))
+                {
+                    return new SecureBootPolicy(buffer);
+                }
+            }
+        }
+        /// <summary>
+        /// Get system timer resolution.
+        /// </summary>
+        public static int TimerResolution => _basic_info.Value.TimerResolution;
+        /// <summary>
+        /// Get system page size.
+        /// </summary>
+        public static int PageSize => _basic_info.Value.PageSize;
+        /// <summary>
+        /// Get number of physical pages.
+        /// </summary>
+        public static int NumberOfPhysicalPages => _basic_info.Value.NumberOfPhysicalPages;
+        /// <summary>
+        /// Get lowest page number.
+        /// </summary>
+        public static int LowestPhysicalPageNumber => _basic_info.Value.LowestPhysicalPageNumber;
+        /// <summary>
+        /// Get highest page number.
+        /// </summary>
+        public static int HighestPhysicalPageNumber => _basic_info.Value.HighestPhysicalPageNumber;
+        /// <summary>
+        /// Get allocation granularity.
+        /// </summary>
+        public static int AllocationGranularity => _basic_info.Value.AllocationGranularity;
+        /// <summary>
+        /// Get minimum user mode address.
+        /// </summary>
+        public static ulong MinimumUserModeAddress => _basic_info.Value.MinimumUserModeAddress.ToUInt64();
+        /// <summary>
+        /// Get maximum user mode address.
+        /// </summary>
+        public static ulong MaximumUserModeAddress => _basic_info.Value.MaximumUserModeAddress.ToUInt64();
+        /// <summary>
+        /// Get active processor affinity mask.
+        /// </summary>
+        public static ulong ActiveProcessorsAffinityMask => _basic_info.Value.ActiveProcessorsAffinityMask.ToUInt64();
+        /// <summary>
+        /// Get number of processors.
+        /// </summary>
+        public static int NumberOfProcessors => _basic_info.Value.NumberOfProcessors;
+
+        #endregion
     }
 }
