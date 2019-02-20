@@ -86,10 +86,24 @@ namespace NtApiDotNet.Win32
         public static AppContainerProfile Create(
                 string appcontainer_name,
                 string display_name = "DisplayName",
-                string description = "",
+                string description = "Description",
                 IEnumerable<Sid> capabilities = null)
         {
             return Create(appcontainer_name, display_name, description, capabilities, true).Result;
+        }
+
+        /// <summary>
+        /// Create a temporary AppContainer profile.
+        /// </summary>
+        /// <returns>The created AppContainer profile.</returns>
+        /// <remarks>The profile will be marked to DeleteOnClose. In order to not leak the profile you
+        /// should wait till the process has exited and dispose this profile.</remarks>
+        public static AppContainerProfile CreateTemporary()
+        {
+            string name = "tmp_" + Guid.NewGuid().ToString("N");
+            var profile = Create(name);
+            profile.DeleteOnClose = true;
+            return profile;
         }
 
         /// <summary>
