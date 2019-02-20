@@ -144,8 +144,7 @@ namespace NtApiDotNet
         KeySetVirtualizationInformation,
         KeySetDebugInformation,
         KeySetHandleTagsInformation,
-        KeySetLayerInformation,
-        MaxKeySetInfoClass
+        KeySetLayerInformation
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -235,6 +234,15 @@ namespace NtApiDotNet
         VirtualTarget = 4,
         VirtualStore = 8,
         VirtualSource = 0x10,
+    }
+
+    [Flags]
+    public enum KeySetVirtualizationFlags
+    {
+        None = 0,
+        VirtualTarget = 1,
+        VirtualStore = 2,
+        VirtualSource = 4,
     }
 
     [Flags]
@@ -1645,7 +1653,22 @@ namespace NtApiDotNet
             }
             set
             {
-                Set(KeySetInformationClass.KeySetVirtualizationInformation, (int)value);
+                // Map value to set virtualization flags.
+                KeySetVirtualizationFlags flags = KeySetVirtualizationFlags.None;
+                if (value.HasFlag(KeyVirtualizationFlags.VirtualSource))
+                {
+                    flags |= KeySetVirtualizationFlags.VirtualSource;
+                }
+                if (value.HasFlag(KeyVirtualizationFlags.VirtualStore))
+                {
+                    flags |= KeySetVirtualizationFlags.VirtualStore;
+                }
+                if (value.HasFlag(KeyVirtualizationFlags.VirtualTarget))
+                {
+                    flags |= KeySetVirtualizationFlags.VirtualTarget;
+                }
+
+                Set(KeySetInformationClass.KeySetVirtualizationInformation, (int)flags);
             }
         }
 
