@@ -84,6 +84,9 @@
     <Compile Include="NtEnlistment.cs" />
     <Compile Include="NtFileNative.cs" />
     <Compile Include="NtGeneric.cs" />
+    <Compile Include="NtKeyNative.cs" />
+    <Compile Include="NtKeyUtils.cs" />
+    <Compile Include="NtKeyValue.cs" />
     <Compile Include="NtObjectWithDuplicate.cs" />
     <Compile Include="NtObjectWithDuplicateAndInfo.cs" />
     <Compile Include="NtProcessNative.cs" />
