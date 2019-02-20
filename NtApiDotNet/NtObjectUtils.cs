@@ -441,6 +441,11 @@ namespace NtApiDotNet
             }
         }
 
+        internal static NtStatus MapDosErrorToStatus(Win32Error dos_error)
+        {
+            return MapDosErrorToStatus((int)dos_error);
+        }
+
         internal static NtStatus MapDosErrorToStatus(int dos_error)
         {
             return BuildStatus(NtStatusSeverity.STATUS_SEVERITY_WARNING, false, false, 

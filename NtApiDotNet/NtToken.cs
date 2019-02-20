@@ -1229,15 +1229,9 @@ namespace NtApiDotNet
 
             IntPtr[] handle_array = handles.Select(h => h.Handle.DangerousGetHandle()).ToArray();
 
-            using (var sids = new DisposableList<SafeSidBufferHandle>())
+            using (var sids = new DisposableList())
             {
-                SidAndAttributes[] capabilities = capability_sids.Select(s =>
-                {
-                    SafeSidBufferHandle sid = s.ToSafeBuffer();
-                    sids.Add(sid);
-                    return new SidAndAttributes() { Sid = sid.DangerousGetHandle(), Attributes = GroupAttributes.Enabled };
-                }
-                    ).ToArray();
+                SidAndAttributes[] capabilities = sids.CreateSidAndAttributes(capability_sids);
                 NtSystemCalls.NtCreateLowBoxToken(out token,
                     Handle, TokenAccessRights.MaximumAllowed,
                   new ObjectAttributes(), package_sid.ToArray(), capabilities.Length,

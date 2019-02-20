@@ -151,12 +151,14 @@
     <Compile Include="UnicodeString.cs" />
     <Compile Include="NtObjectUtils.cs" />
     <Compile Include="NtIoControlCode.cs" />
+    <Compile Include="Win32\AppContainerProfile.cs" />
     <Compile Include="Win32\ExecutableManifest.cs" />
     <Compile Include="Win32\LogonUtils.cs" />
     <Compile Include="Win32\RpcEndpoint.cs" />
     <Compile Include="Win32\RpcEndpointMapper.cs" />
     <Compile Include="Win32\RpcAlpcServer.cs" />
     <Compile Include="Win32\RpcServer.cs" />
+    <Compile Include="Win32\SafeCoTaskMemHandle.cs" />
     <Compile Include="Win32\SafeLocalAllocHandle.cs" />
     <Compile Include="Win32\SymbolResolver.cs" />
     <Compile Include="Win32\Win32Error.cs" />

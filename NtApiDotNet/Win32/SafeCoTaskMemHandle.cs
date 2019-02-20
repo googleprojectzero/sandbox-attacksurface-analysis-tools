@@ -12,12 +12,35 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+using System.Runtime.InteropServices;
+
 namespace NtApiDotNet.Win32
 {
-    internal enum Win32Error
+    internal sealed class SafeCoTaskMemHandle : SafeHandle
     {
-        SUCCESS = 0,
-        ERROR_ALREADY_EXISTS = 183,
-        ERROR_MORE_DATA = 234
+        protected override bool ReleaseHandle()
+        {
+            Marshal.FreeCoTaskMem(handle);
+            return true;
+        }
+
+        public SafeCoTaskMemHandle(IntPtr handle, bool owns_handle) : base(IntPtr.Zero, owns_handle)
+        {
+            SetHandle(handle);
+        }
+
+        public SafeCoTaskMemHandle() 
+            : base(IntPtr.Zero, true)
+        {
+        }
+
+        public override bool IsInvalid
+        {
+            get
+            {
+                return handle == IntPtr.Zero;
+            }
+        }
     }
 }

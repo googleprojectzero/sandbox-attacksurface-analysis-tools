@@ -42,6 +42,11 @@ namespace NtApiDotNet
             get { return NtRtl.RtlLengthSid(handle); }
         }
 
+        public Sid ToSid()
+        {
+            return new Sid(DangerousGetHandle());
+        }
+
         protected override bool ReleaseHandle()
         {
             if (!IsInvalid)

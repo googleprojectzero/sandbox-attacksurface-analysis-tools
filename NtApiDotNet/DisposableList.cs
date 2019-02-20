@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 
@@ -113,6 +114,18 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class DisposableList : DisposableList<IDisposable>
     {
+        internal SidAndAttributes[] CreateSidAndAttributes(IEnumerable<Sid> sids)
+        {
+            if (sids == null)
+            {
+                return new SidAndAttributes[0];
+            }
+            return sids.Select(s => new SidAndAttributes()
+            {
+                Sid = AddResource(s.ToSafeBuffer()).DangerousGetHandle(),
+                Attributes = GroupAttributes.Enabled
+            }).ToArray();
+        }
     }
 
     /// <summary>

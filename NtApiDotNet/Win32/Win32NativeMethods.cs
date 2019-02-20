@@ -596,5 +596,26 @@ namespace NtApiDotNet.Win32
           string lpCurrentDirectory,
           ref STARTUPINFO lpStartupInfo,
           out PROCESS_INFORMATION lpProcessInformation);
+
+        [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus CreateAppContainerProfile(
+          string pszAppContainerName,
+          string pszDisplayName,
+          string pszDescription,
+          SidAndAttributes[] pCapabilities,
+          int dwCapabilityCount,
+          out SafeSidBufferHandle ppSidAppContainerSid
+        );
+
+        [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus DeleteAppContainerProfile(
+            string pszAppContainerName
+        );
+
+        [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus GetAppContainerFolderPath(
+          string pszAppContainerSid,
+          out SafeCoTaskMemHandle ppszPath
+        );
     }
 }

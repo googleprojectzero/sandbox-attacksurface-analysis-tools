@@ -225,10 +225,10 @@ namespace NtApiDotNet.Win32
         public string IsolationPrefix;
     }
 
-/// <summary>
-/// Specify PPL level.
-/// </summary>
-public enum ProtectionLevel
+    /// <summary>
+    /// Specify PPL level.
+    /// </summary>
+    public enum ProtectionLevel
     {
         /// <summary>
         /// None
