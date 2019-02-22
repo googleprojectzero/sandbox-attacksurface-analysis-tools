@@ -584,7 +584,10 @@ namespace NtApiDotNet
         FileFsObjectIdInformation = 8,
         FileFsDriverPathInformation = 9,
         FileFsVolumeFlagsInformation = 10,
-        FileFsSectorSizeInformation = 11
+        FileFsSectorSizeInformation = 11,
+        FileFsDataCopyInformation = 12,
+        FileFsMetadataSizeInformation = 13,
+        FileFsFullSizeInformationEx = 14
     }
 
     public enum FileDeviceType
