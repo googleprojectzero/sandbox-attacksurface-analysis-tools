@@ -3463,3 +3463,172 @@ function Set-NtObjectInformation {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Get a specified mitigation policy value for a process.
+.DESCRIPTION
+This cmdlet queries for a specific mitigation policy value from a process. The result is an enumeration or a raw value depending on the request.
+.PARAMETER Process
+Specify the process to query. Defaults to the current process.
+.PARAMETER Policy
+Specify the mitigation policy.
+.PARAMETER AsRaw
+Specify the query the policy as a raw integer.
+.INPUTS
+None
+.OUTPUTS
+An enumerated value or an integer.
+.EXAMPLE
+Get-NtProcessMitigationPolicy Signature
+Query the signature mitigation policy for the current process.
+.EXAMPLE
+Get-NtProcessMitigationPolicy Signature -Process $p
+Query the signature mitigation policy for a specified process.
+.EXAMPLE
+Get-NtProcessMitigationPolicy Signature -Process-AsRaw
+Query the signature mitigation policy for the current process as a raw integer.
+#>
+function Get-NtProcessMitigationPolicy {
+  [CmdletBinding()]
+  Param(
+    [parameter(Mandatory, Position = 0)]
+    [NtApiDotNet.ProcessMitigationPolicy]$Policy,
+    [parameter(ValueFromPipeline)]
+    [NtApiDotNet.NtProcess]$Process,
+    [switch]$AsRaw
+    )
+
+    PROCESS {
+        if ($null -eq $Process) {
+            $Process = Get-NtProcess -Current
+        }
+        if ($AsRaw) {
+            $Process.GetRawMitigationPolicy($Policy) | Write-Output
+        } else {
+            $Process.GetMitigationPolicy($Policy) | Write-Output
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Set a specified mitigation policy value for a process.
+.DESCRIPTION
+This cmdlet sets a specific mitigation policy value for a process. The policy value can either be an explicit enumeration or a raw value.
+.PARAMETER Process
+Specify the process to set. Defaults to the current process and the majority of policies can't be set externally.
+.PARAMETER Policy
+Specify the mitigation policy when setting a raw value.
+.PARAMETER RawValue
+Specify the raw value to set.
+.PARAMETER ImageLoad,
+Specify policy flags for image load mitigation.
+.PARAMETER Signature,
+Specify policy flags for signature mitigation policy.
+.PARAMETER SystemCallDisable,
+Specify policy flags for system call disable mitigation policy.
+.PARAMETER DynamicCode,
+Specify policy flags for dynamic code mitigation policy.
+.PARAMETER ExtensionPointDisable,
+Specify policy flags for extension point disable mitigation policy.
+.PARAMETER FontDisable,
+Specify policy flags for font disable mitigation policy.
+.PARAMETER ControlFlowGuard,
+Specify policy flags for control flow guard mitigation policy.
+.PARAMETER StrictHandleCheck,
+Specify policy flags for strict handle check mitigation policy.
+.PARAMETER ChildProcess,
+Specify policy flags for child process mitigation policy.
+.PARAMETER PayloadRestriction,
+Specify policy flags for payload restrictions mitigation policy.
+.PARAMETER SystemCallFilter,
+Specify policy flags for system call filter mitigation policy.
+.PARAMETER SideChannelIsolation,
+Specify policy flags for side channel isolation mitigation policy.
+.PARAMETER Aslr
+Specify policy flags for ASLR mitigation policy.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Set-NtProcessMitigationPolicy -Policy Signature -RawValue 1
+Set the signature mitigation policy for the current process with a raw value of 1.
+.EXAMPLE
+Set-NtProcessMitigationPolicy -Signature MicrosoftSignedOnly
+Set mitigation signed only signature policy for the current process.
+.EXAMPLE
+Set-NtProcessMitigationPolicy -Signature MicrosoftSignedOnly -Process $p
+Set mitigation signed only signature policy for a specified process.
+#>
+function Set-NtProcessMitigationPolicy {
+  [CmdletBinding()]
+  Param(
+    [parameter(ValueFromPipeline)]
+    [NtApiDotNet.NtProcess]$Process,
+    [parameter(Mandatory, ParameterSetName="FromRaw")]
+    [int]$RawValue,
+    [parameter(Mandatory, ParameterSetName="FromRaw")]
+    [NtApiDotNet.ProcessMitigationPolicy]$Policy,
+    [parameter(Mandatory, ParameterSetName="FromImageLoad")]
+    [NtApiDotNet.ProcessMitigationImageLoadPolicy]$ImageLoad,
+    [parameter(Mandatory, ParameterSetName="FromSignature")]
+    [NtApiDotNet.ProcessMitigationBinarySignaturePolicy]$Signature,
+    [parameter(Mandatory, ParameterSetName="FromSystemCallDisable")]
+    [NtApiDotNet.ProcessMitigationSystemCallDisablePolicy]$SystemCallDisable,
+    [parameter(Mandatory, ParameterSetName="FromDynamicCode")]
+    [NtApiDotNet.ProcessMitigationDynamicCodePolicy]$DynamicCode,
+    [parameter(Mandatory, ParameterSetName="FromExtensionPointDisable")]
+    [NtApiDotNet.ProcessMitigationExtensionPointDisablePolicy]$ExtensionPointDisable,
+    [parameter(Mandatory, ParameterSetName="FromFontDisable")]
+    [NtApiDotNet.ProcessMitigationFontDisablePolicy]$FontDisable,
+    [parameter(Mandatory, ParameterSetName="FromControlFlowGuard")]
+    [NtApiDotNet.ProcessMitigationControlFlowGuardPolicy]$ControlFlowGuard,
+    [parameter(Mandatory, ParameterSetName="FromStrictHandleCheck")]
+    [NtApiDotNet.ProcessMitigationStrictHandleCheckPolicy]$StrictHandleCheck,
+    [parameter(Mandatory, ParameterSetName="FromChildProcess")]
+    [NtApiDotNet.ProcessMitigationChildProcessPolicy]$ChildProcess,
+    [parameter(Mandatory, ParameterSetName="FromPayloadRestriction")]
+    [NtApiDotNet.ProcessMitigationPayloadRestrictionPolicy]$PayloadRestriction,
+    [parameter(Mandatory, ParameterSetName="FromSystemCallFilter")]
+    [NtApiDotNet.ProcessMitigationSystemCallFilterPolicy]$SystemCallFilter,
+    [parameter(Mandatory, ParameterSetName="FromSideChannelIsolation")]
+    [NtApiDotNet.ProcessMitigationSideChannelIsolationPolicy]$SideChannelIsolation,
+    [parameter(Mandatory, ParameterSetName="FromAslr")]
+    [NtApiDotNet.ProcessMitigationAslrPolicy]$Aslr
+    )
+
+    BEGIN {
+        $Value = 0
+        $FromRaw = $false
+        switch($PsCmdlet.ParameterSetName) {
+            "FromRaw" { $Value = $RawValue; $FromRaw = $true }
+            "FromImageLoad" { $Policy = "ImageLoad"; $Value = $ImageLoad }
+            "FromSignature" { $Policy = "Signature"; $Value = $Signature }
+            "FromSystemCallDisable" { $Policy = "SystemCallDisable"; $Value = $SystemCallDisable }
+            "FromDynamicCode" { $Policy = "DynamicCode"; $Value = $DynamicCode }
+            "FromExtensionPointDisable" { $Policy = "ExtensionPointDisable"; $Value = $ExtensionPointDisable }
+            "FromFontDisable" { $Policy = "FontDisable"; $Value = $FontDisable }
+            "FromControlFlowGuard" { $Policy = "ControlFlowGuard"; $Value = $ControlFlowGuard }
+            "FromStrictHandleCheck" { $Policy = "StrictHandleCheck"; $Value = $StrictHandleCheck }
+            "FromChildProcess" { $Policy = "ChildProcess"; $Value = $ChildProcess }
+            "FromPayloadRestriction" { $Policy = "PayloadRestriction"; $Value = $PayloadRestriction }
+            "FromSystemCallFilter" { $Policy = "SystemCallFilter"; $Value = $SystemCallFilter }
+            "FromSideChannelIsolation" { $Policy = "SideChannelIsolation"; $Value = $SideChannelIsolation }
+            "FromAslr" { $Policy = "ASLR"; $Value = $Aslr }
+        }
+    }
+
+    PROCESS {
+        if ($null -eq $Process) {
+            $Process = Get-NtProcess -Current
+        }
+
+        if ($FromRaw) {
+            $Process.SetRawMitigationPolicy($Policy, $Value)
+        } else {
+            $Process.SetMitigationPolicy($Policy, $Value)
+        }
+    }
+}
