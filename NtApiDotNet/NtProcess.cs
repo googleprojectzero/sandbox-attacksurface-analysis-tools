@@ -66,6 +66,42 @@ namespace NtApiDotNet
         {
             return GetExtendedBasicInfo(true).BasicInfo;
         }
+
+        private static Enum ConvertPolicyToEnum(ProcessMitigationPolicy policy, int value)
+        {
+            switch (policy)
+            {
+                case ProcessMitigationPolicy.ImageLoad:
+                    return (ProcessMitigationImageLoadPolicy)value;
+                case ProcessMitigationPolicy.Signature:
+                    return (ProcessMitigationBinarySignaturePolicy)value;
+                case ProcessMitigationPolicy.ControlFlowGuard:
+                    return (ProcessMitigationControlFlowGuardPolicy)value;
+                case ProcessMitigationPolicy.DynamicCode:
+                    return (ProcessMitigationDynamicCodePolicy)value;
+                case ProcessMitigationPolicy.ExtensionPointDisable:
+                    return (ProcessMitigationExtensionPointDisablePolicy)value;
+                case ProcessMitigationPolicy.FontDisable:
+                    return (ProcessMitigationFontDisablePolicy)value;
+                case ProcessMitigationPolicy.StrictHandleCheck:
+                    return (ProcessMitigationStrictHandleCheckPolicy)value;
+                case ProcessMitigationPolicy.SystemCallDisable:
+                    return (ProcessMitigationSystemCallDisablePolicy)value;
+                case ProcessMitigationPolicy.ChildProcess:
+                    return (ProcessMitigationChildProcessPolicy)value;
+                case ProcessMitigationPolicy.PayloadRestriction:
+                    return (ProcessMitigationPayloadRestrictionPolicy)value;
+                case ProcessMitigationPolicy.SystemCallFilter:
+                    return (ProcessMitigationSystemCallFilterPolicy)value;
+                case ProcessMitigationPolicy.SideChannelIsolation:
+                    return (ProcessMitigationSideChannelIsolationPolicy)value;
+                case ProcessMitigationPolicy.ASLR:
+                    return (ProcessMitigationAslrPolicy)value;
+                default:
+                    return (ProcessMitigationUnknownPolicy)value;
+            }
+        }
+
         #endregion
 
         #region Constructors
@@ -373,7 +409,7 @@ namespace NtApiDotNet
         /// <param name="policy">The policy to get</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The raw policy value</returns>
-        public NtResult<int> GetMitigationPolicy(ProcessMitigationPolicy policy, bool throw_on_error)
+        public NtResult<int> GetRawMitigationPolicy(ProcessMitigationPolicy policy, bool throw_on_error)
         {
             switch (policy)
             {
@@ -395,7 +431,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="policy">The policy to get</param>
         /// <returns>The raw policy value</returns>
-        public int GetMitigationPolicy(ProcessMitigationPolicy policy)
+        public int GetRawMitigationPolicy(ProcessMitigationPolicy policy)
         {
             switch (policy)
             {
@@ -409,7 +445,7 @@ namespace NtApiDotNet
                 Policy = policy
             };
 
-            var result = GetMitigationPolicy(policy, false);
+            var result = GetRawMitigationPolicy(policy, false);
             switch (result.Status)
             {
                 case NtStatus.STATUS_INVALID_PARAMETER:
@@ -422,15 +458,36 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get a mitigation policy as an enumeration.
+        /// </summary>
+        /// <param name="policy">The policy to get.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The mitigation policy value</returns>
+        public NtResult<Enum> GetMitigationPolicy(ProcessMitigationPolicy policy, bool throw_on_error)
+        {
+            return GetRawMitigationPolicy(policy, throw_on_error).Map(i => ConvertPolicyToEnum(policy, i));
+        }
+
+        /// <summary>
+        /// Get a mitigation policy as an enumeration.
+        /// </summary>
+        /// <param name="policy">The policy to get.</param>
+        /// <returns>The mitigation policy value</returns>
+        public Enum GetMitigationPolicy(ProcessMitigationPolicy policy)
+        {
+            return GetMitigationPolicy(policy, true).Result;
+        }
+
+        /// <summary>
         /// Get a mitigation policy raw value
         /// </summary>
         /// <param name="policy">The policy to get</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The raw policy value</returns>
-        [Obsolete("Use GetMitigationPolicy")]
+        [Obsolete("Use GetRawMitigationPolicy or GetMitigationPolicy")]
         public NtResult<int> GetProcessMitigationPolicy(ProcessMitigationPolicy policy, bool throw_on_error)
         {
-            return GetMitigationPolicy(policy, throw_on_error);
+            return GetRawMitigationPolicy(policy, throw_on_error);
         }
 
         /// <summary>
@@ -438,10 +495,10 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="policy">The policy to get</param>
         /// <returns>The raw policy value</returns>
-        [Obsolete("Use GetMitigationPolicy")]
+        [Obsolete("Use GetRawMitigationPolicy or GetMitigationPolicy")]
         public int GetProcessMitigationPolicy(ProcessMitigationPolicy policy)
         {
-            return GetMitigationPolicy(policy);
+            return GetRawMitigationPolicy(policy);
         }
 
         /// <summary>
@@ -451,7 +508,7 @@ namespace NtApiDotNet
         /// <param name="value">The value to set</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
-        public NtStatus SetMitigationPolicy(ProcessMitigationPolicy policy, int value, bool throw_on_error)
+        public NtStatus SetRawMitigationPolicy(ProcessMitigationPolicy policy, int value, bool throw_on_error)
         {
             switch (policy)
             {
@@ -474,7 +531,29 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="policy">The policy to set</param>
         /// <param name="value">The value to set</param>
-        public void SetMitigationPolicy(ProcessMitigationPolicy policy, int value)
+        public void SetRawMitigationPolicy(ProcessMitigationPolicy policy, int value)
+        {
+            SetRawMitigationPolicy(policy, value, true);
+        }
+
+        /// <summary>
+        /// Set a mitigation policy value from an enum.
+        /// </summary>
+        /// <param name="policy">The policy to set</param>
+        /// <param name="value">The value to set</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetMitigationPolicy(ProcessMitigationPolicy policy, Enum value, bool throw_on_error)
+        {
+            return SetRawMitigationPolicy(policy, Convert.ToInt32(value), throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a mitigation policy value from an enum.
+        /// </summary>
+        /// <param name="policy">The policy to set</param>
+        /// <param name="value">The value to set</param>
+        public void SetMitigationPolicy(ProcessMitigationPolicy policy, Enum value)
         {
             SetMitigationPolicy(policy, value, true);
         }
@@ -486,10 +565,10 @@ namespace NtApiDotNet
         /// <param name="value">The value to set</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
-        [Obsolete("Use SetMitigationPolicy")]
+        [Obsolete("Use SetMitigationPolicy or SetRawMitigationPolicy")]
         public NtStatus SetProcessMitigationPolicy(ProcessMitigationPolicy policy, int value, bool throw_on_error)
         {
-            return SetMitigationPolicy(policy, value, throw_on_error);
+            return SetRawMitigationPolicy(policy, value, throw_on_error);
         }
 
         /// <summary>
@@ -497,10 +576,10 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="policy">The policy to set</param>
         /// <param name="value">The value to set</param>
-        [Obsolete("Use SetMitigationPolicy")]
+        [Obsolete("Use SetMitigationPolicy or SetRawMitigationPolicy")]
         public void SetProcessMitigationPolicy(ProcessMitigationPolicy policy, int value)
         {
-            SetMitigationPolicy(policy, value);
+            SetRawMitigationPolicy(policy, value);
         }
 
         /// <summary>
@@ -513,7 +592,7 @@ namespace NtApiDotNet
                 throw new InvalidOperationException("Must have Debug privilege to disable code policy");
             }
 
-            SetMitigationPolicy(ProcessMitigationPolicy.DynamicCode, 0);
+            SetRawMitigationPolicy(ProcessMitigationPolicy.DynamicCode, 0);
         }
 
         /// <summary>
@@ -1556,7 +1635,7 @@ namespace NtApiDotNet
         {
             get
             {
-                int policy = GetMitigationPolicy(ProcessMitigationPolicy.ChildProcess);
+                int policy = GetRawMitigationPolicy(ProcessMitigationPolicy.ChildProcess);
                 if (policy != 0)
                 {
                     return (policy & 1) == 1;
