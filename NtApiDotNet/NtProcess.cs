@@ -373,7 +373,7 @@ namespace NtApiDotNet
         /// <param name="policy">The policy to get</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The raw policy value</returns>
-        public NtResult<int> GetProcessMitigationPolicy(ProcessMitigationPolicy policy, bool throw_on_error)
+        public NtResult<int> GetMitigationPolicy(ProcessMitigationPolicy policy, bool throw_on_error)
         {
             switch (policy)
             {
@@ -395,7 +395,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="policy">The policy to get</param>
         /// <returns>The raw policy value</returns>
-        public int GetProcessMitigationPolicy(ProcessMitigationPolicy policy)
+        public int GetMitigationPolicy(ProcessMitigationPolicy policy)
         {
             switch (policy)
             {
@@ -409,7 +409,7 @@ namespace NtApiDotNet
                 Policy = policy
             };
 
-            var result = GetProcessMitigationPolicy(policy, false);
+            var result = GetMitigationPolicy(policy, false);
             switch (result.Status)
             {
                 case NtStatus.STATUS_INVALID_PARAMETER:
@@ -419,6 +419,29 @@ namespace NtApiDotNet
             }
 
             return result.GetResultOrThrow();
+        }
+
+        /// <summary>
+        /// Get a mitigation policy raw value
+        /// </summary>
+        /// <param name="policy">The policy to get</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The raw policy value</returns>
+        [Obsolete("Use GetMitigationPolicy")]
+        public NtResult<int> GetProcessMitigationPolicy(ProcessMitigationPolicy policy, bool throw_on_error)
+        {
+            return GetMitigationPolicy(policy, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a mitigation policy raw value
+        /// </summary>
+        /// <param name="policy">The policy to get</param>
+        /// <returns>The raw policy value</returns>
+        [Obsolete("Use GetMitigationPolicy")]
+        public int GetProcessMitigationPolicy(ProcessMitigationPolicy policy)
+        {
+            return GetMitigationPolicy(policy);
         }
 
         /// <summary>
@@ -1533,7 +1556,7 @@ namespace NtApiDotNet
         {
             get
             {
-                int policy = GetProcessMitigationPolicy(ProcessMitigationPolicy.ChildProcess);
+                int policy = GetMitigationPolicy(ProcessMitigationPolicy.ChildProcess);
                 if (policy != 0)
                 {
                     return (policy & 1) == 1;

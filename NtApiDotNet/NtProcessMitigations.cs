@@ -27,58 +27,58 @@ namespace NtApiDotNet
             DepEnabled = dep_status.Enabled;
             DepPermanent = dep_status.Permanent;
                     
-            int result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ASLR);
+            int result = process.GetMitigationPolicy(ProcessMitigationPolicy.ASLR);
             EnableBottomUpRandomization = result.GetBit(0);
             EnableForceRelocateImages = result.GetBit(1);
             EnableHighEntropy = result.GetBit(2);
             DisallowStrippedImages = result.GetBit(3);
 
-            DisallowWin32kSystemCalls = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.SystemCallDisable).GetBit(0);
-            AuditDisallowWin32kSystemCalls = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.SystemCallDisable).GetBit(1);
+            DisallowWin32kSystemCalls = process.GetMitigationPolicy(ProcessMitigationPolicy.SystemCallDisable).GetBit(0);
+            AuditDisallowWin32kSystemCalls = process.GetMitigationPolicy(ProcessMitigationPolicy.SystemCallDisable).GetBit(1);
 
-            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.StrictHandleCheck);
+            result = process.GetMitigationPolicy(ProcessMitigationPolicy.StrictHandleCheck);
             RaiseExceptionOnInvalidHandleReference = result.GetBit(0);
             HandleExceptionsPermanentlyEnabled = result.GetBit(1);
 
-            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.FontDisable);
+            result = process.GetMitigationPolicy(ProcessMitigationPolicy.FontDisable);
             DisableNonSystemFonts = result.GetBit(0);
             AuditNonSystemFontLoading = result.GetBit(1);
 
-            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.DynamicCode);
+            result = process.GetMitigationPolicy(ProcessMitigationPolicy.DynamicCode);
             ProhibitDynamicCode = result.GetBit(0);
             AllowThreadOptOut = result.GetBit(1);
             AllowRemoteDowngrade = result.GetBit(2);
             AuditProhibitDynamicCode = result.GetBit(3);
 
-            DisableExtensionPoints = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ExtensionPointDisable).GetBit(0);
+            DisableExtensionPoints = process.GetMitigationPolicy(ProcessMitigationPolicy.ExtensionPointDisable).GetBit(0);
 
-            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ControlFlowGuard);
+            result = process.GetMitigationPolicy(ProcessMitigationPolicy.ControlFlowGuard);
             EnabledControlFlowGuard = result.GetBit(0);
             EnableExportSuppression = result.GetBit(1);
             ControlFlowGuardStrictMode = result.GetBit(2);
 
-            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.Signature);
+            result = process.GetMitigationPolicy(ProcessMitigationPolicy.Signature);
             MicrosoftSignedOnly = result.GetBit(0);
             StoreSignedOnly = result.GetBit(1);
             SignedMitigationOptIn = result.GetBit(2);
             AuditMicrosoftSignedOnly = result.GetBit(3);
             AuditStoreSignedOnly = result.GetBit(4);
 
-            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ImageLoad);
+            result = process.GetMitigationPolicy(ProcessMitigationPolicy.ImageLoad);
             NoRemoteImages = result.GetBit(0);
             NoLowMandatoryLabelImages = result.GetBit(1);
             PreferSystem32Images = result.GetBit(2);
             AuditNoRemoteImages = result.GetBit(3);
             AuditNoLowMandatoryLabelImages = result.GetBit(4);
 
-            SystemCallFilterId = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.SystemCallFilter) & 0xF;
+            SystemCallFilterId = process.GetMitigationPolicy(ProcessMitigationPolicy.SystemCallFilter) & 0xF;
 
             NoChildProcessCreation = process.IsChildProcessRestricted;
-            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.ChildProcess);
+            result = process.GetMitigationPolicy(ProcessMitigationPolicy.ChildProcess);
             AuditNoChildProcessCreation = result.GetBit(1);
             AllowSecureProcessCreation = result.GetBit(2);
 
-            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.PayloadRestriction);
+            result = process.GetMitigationPolicy(ProcessMitigationPolicy.PayloadRestriction);
             EnableExportAddressFilter     = result.GetBit(0);
             AuditExportAddressFilter      = result.GetBit(1);
             EnableExportAddressFilterPlus = result.GetBit(2);
@@ -92,7 +92,7 @@ namespace NtApiDotNet
             EnableRopSimExec              = result.GetBit(10);
             AuditRopSimExec               = result.GetBit(11);
 
-            result = process.GetProcessMitigationPolicy(ProcessMitigationPolicy.SideChannelIsolation);
+            result = process.GetMitigationPolicy(ProcessMitigationPolicy.SideChannelIsolation);
             SmtBranchTargetIsolation = result.GetBit(0);
             IsolateSecurityDomain = result.GetBit(1);
             DisablePageCombine = result.GetBit(2);
