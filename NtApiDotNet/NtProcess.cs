@@ -428,7 +428,7 @@ namespace NtApiDotNet
         /// <param name="value">The value to set</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
-        public NtStatus SetProcessMitigationPolicy(ProcessMitigationPolicy policy, int value, bool throw_on_error)
+        public NtStatus SetMitigationPolicy(ProcessMitigationPolicy policy, int value, bool throw_on_error)
         {
             switch (policy)
             {
@@ -451,9 +451,33 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="policy">The policy to set</param>
         /// <param name="value">The value to set</param>
+        public void SetMitigationPolicy(ProcessMitigationPolicy policy, int value)
+        {
+            SetMitigationPolicy(policy, value, true);
+        }
+
+        /// <summary>
+        /// Set a mitigation policy raw value
+        /// </summary>
+        /// <param name="policy">The policy to set</param>
+        /// <param name="value">The value to set</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        [Obsolete("Use SetMitigationPolicy")]
+        public NtStatus SetProcessMitigationPolicy(ProcessMitigationPolicy policy, int value, bool throw_on_error)
+        {
+            return SetMitigationPolicy(policy, value, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a mitigation policy raw value
+        /// </summary>
+        /// <param name="policy">The policy to set</param>
+        /// <param name="value">The value to set</param>
+        [Obsolete("Use SetMitigationPolicy")]
         public void SetProcessMitigationPolicy(ProcessMitigationPolicy policy, int value)
         {
-            SetProcessMitigationPolicy(policy, value, true);
+            SetMitigationPolicy(policy, value);
         }
 
         /// <summary>
@@ -466,7 +490,7 @@ namespace NtApiDotNet
                 throw new InvalidOperationException("Must have Debug privilege to disable code policy");
             }
 
-            SetProcessMitigationPolicy(ProcessMitigationPolicy.DynamicCode, 0);
+            SetMitigationPolicy(ProcessMitigationPolicy.DynamicCode, 0);
         }
 
         /// <summary>
@@ -830,9 +854,9 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="device_map">The device map directory to set.</param>
         /// <remarks>Note that due to a bug in the Wow64 layer this won't work in a 32 bit process on a 64 bit system.</remarks>
-        public void SetProcessDeviceMap(NtDirectory device_map)
+        public void SetDeviceMap(NtDirectory device_map)
         {
-            SetProcessDeviceMap(device_map, true);
+            SetDeviceMap(device_map, true);
         }
 
         /// <summary>
@@ -841,7 +865,7 @@ namespace NtApiDotNet
         /// <param name="device_map">The device map directory to set.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <remarks>Note that due to a bug in the Wow64 layer this won't work in a 32 bit process on a 64 bit system.</remarks>
-        public NtStatus SetProcessDeviceMap(NtDirectory device_map, bool throw_on_error)
+        public NtStatus SetDeviceMap(NtDirectory device_map, bool throw_on_error)
         {
             var device_map_set = new ProcessDeviceMapInformationSet
             {
@@ -849,6 +873,29 @@ namespace NtApiDotNet
             };
 
             return Set(ProcessInformationClass.ProcessDeviceMap, device_map_set, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the process device map.
+        /// </summary>
+        /// <param name="device_map">The device map directory to set.</param>
+        /// <remarks>Note that due to a bug in the Wow64 layer this won't work in a 32 bit process on a 64 bit system.</remarks>
+        [Obsolete("Use SetDeviceMap")]
+        public void SetProcessDeviceMap(NtDirectory device_map)
+        {
+            SetDeviceMap(device_map);
+        }
+
+        /// <summary>
+        /// Set the process device map.
+        /// </summary>
+        /// <param name="device_map">The device map directory to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <remarks>Note that due to a bug in the Wow64 layer this won't work in a 32 bit process on a 64 bit system.</remarks>
+        [Obsolete("Use SetDeviceMap")]
+        public NtStatus SetProcessDeviceMap(NtDirectory device_map, bool throw_on_error)
+        {
+            return SetDeviceMap(device_map, throw_on_error);
         }
 
         /// <summary>
