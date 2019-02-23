@@ -529,6 +529,13 @@ namespace NtApiDotNet
         public int Type;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemProcessIdInformation
+    {
+        public IntPtr ProcessId;
+        public UnicodeStringOut ImageName;
+    };
+
     public enum SystemInformationClass
     {
         SystemBasicInformation = 0,
@@ -1458,7 +1465,7 @@ namespace NtApiDotNet
         {
             using (var buffer = image.ToBuffer())
             {
-                return QueryDynamicCodeTrust(SafeKernelObjectHandle.Null, 
+                return QueryDynamicCodeTrust(SafeKernelObjectHandle.Null,
                     buffer.DangerousGetHandle(), buffer.Length);
             }
         }
@@ -1532,6 +1539,33 @@ namespace NtApiDotNet
             };
 
             return Query(SystemInformationClass.SystemCodeIntegrityCertificateInformation, info, false).Status;
+        }
+
+        /// <summary>
+        /// Query the image path from a process ID.
+        /// </summary>
+        /// <param name="pid">The ID of the process.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The image path.</returns>
+        /// <remarks>This method can be called without any permissions on the process.</remarks>
+        public static NtResult<string> GetProcessIdImagePath(int pid, bool throw_on_error)
+        {
+            using (var str = new UnicodeStringAllocated(32 * 1024))
+            {
+                var info = new SystemProcessIdInformation() { ProcessId = new IntPtr(pid), ImageName = str.String };
+                return Query(SystemInformationClass.SystemProcessIdInformation, info, throw_on_error).Map(r => r.ImageName.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Query the image path from a process ID.
+        /// </summary>
+        /// <param name="pid">The ID of the process.</param>
+        /// <returns>The image path.</returns>
+        /// <remarks>This method can be called without any permissions on the process.</remarks>
+        public static string GetProcessIdImagePath(int pid)
+        {
+            return GetProcessIdImagePath(pid, true).Result;
         }
 
         /// <summary>

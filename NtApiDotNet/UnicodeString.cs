@@ -121,7 +121,7 @@ namespace NtApiDotNet
 
         public override string ToString()
         {
-            return String.ToString();        
+            return String.ToString();
         }
 
         private void DisposeUnmanaged()
