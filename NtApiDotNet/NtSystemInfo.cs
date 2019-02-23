@@ -793,6 +793,7 @@ namespace NtApiDotNet
         public int ParentProcessId { get; }
         public IEnumerable<NtThreadInformation> Threads { get; }
         public string ImageName { get; }
+        public string ImagePath { get; }
         public int SessionId { get; }
         public long WorkingSetPrivateSize { get; }
         public uint HardFaultCount { get; }
@@ -858,6 +859,7 @@ namespace NtApiDotNet
             ReadTransferCount = process_info.ReadTransferCount.QuadPart;
             WriteTransferCount = process_info.WriteTransferCount.QuadPart;
             OtherTransferCount = process_info.OtherTransferCount.QuadPart;
+            ImagePath = NtSystemInfo.GetProcessIdImagePath(ProcessId, false).GetResultOrDefault(string.Empty);
         }
     }
 
@@ -1550,10 +1552,27 @@ namespace NtApiDotNet
         /// <remarks>This method can be called without any permissions on the process.</remarks>
         public static NtResult<string> GetProcessIdImagePath(int pid, bool throw_on_error)
         {
-            using (var str = new UnicodeStringAllocated(32 * 1024))
+            var info = new SystemProcessIdInformation() { ProcessId = new IntPtr(pid) };
+            using (var buffer = info.ToBuffer())
             {
-                var info = new SystemProcessIdInformation() { ProcessId = new IntPtr(pid), ImageName = str.String };
-                return Query(SystemInformationClass.SystemProcessIdInformation, info, throw_on_error).Map(r => r.ImageName.ToString());
+                NtStatus status = _system_info_object.QueryInformation(
+                    SystemInformationClass.SystemProcessIdInformation, 
+                    buffer, out int length);
+                if (status.IsSuccess())
+                {
+                    return new NtResult<string>(NtStatus.STATUS_SUCCESS, string.Empty);
+                }
+                if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
+                {
+                    return status.CreateResultFromError<string>(throw_on_error);
+                }
+
+                using (var str = new UnicodeStringAllocated(buffer.Result.ImageName.MaximumLength))
+                {
+                    info = new SystemProcessIdInformation() { ProcessId = new IntPtr(pid), ImageName = str.String };
+                    return Query(SystemInformationClass.SystemProcessIdInformation, 
+                        info, throw_on_error).Map(r => r.ImageName.ToString());
+                }
             }
         }
 
