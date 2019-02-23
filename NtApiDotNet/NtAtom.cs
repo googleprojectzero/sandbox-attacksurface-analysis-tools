@@ -23,7 +23,7 @@ namespace NtApiDotNet
     {
         AtomBasicInformation,
         AtomTableInformation
-    }    
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     public class AtomBasicInformation
@@ -69,7 +69,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class to handle NT atoms
     /// </summary>
-    public class NtAtom
+    public sealed class NtAtom
     {
         /// <summary>
         /// The atom value
@@ -88,8 +88,7 @@ namespace NtApiDotNet
         /// <returns>A reference to the atom</returns>
         public static NtAtom Add(string name)
         {
-            ushort atom;
-            NtSystemCalls.NtAddAtom(name + "\0", (name.Length + 1) * 2, out atom).ToNtException();
+            NtSystemCalls.NtAddAtom(name + "\0", (name.Length + 1) * 2, out ushort atom).ToNtException();
             return new NtAtom(atom);
         }
 
@@ -103,9 +102,8 @@ namespace NtApiDotNet
             {
                 using (SafeStructureInOutBuffer<AtomBasicInformation> buffer = new SafeStructureInOutBuffer<AtomBasicInformation>(2048, false))
                 {
-                    int return_length;
                     NtSystemCalls.NtQueryInformationAtom(Atom, AtomInformationClass.AtomBasicInformation,
-                         buffer, buffer.Length, out return_length).ToNtException();
+                         buffer, buffer.Length, out int return_length).ToNtException();
                     AtomBasicInformation basic_info = buffer.Result;
 
                     return Marshal.PtrToStringUni(buffer.Data.DangerousGetHandle(), basic_info.NameLength / 2);
@@ -124,8 +122,7 @@ namespace NtApiDotNet
             {
                 using (SafeStructureInOutBuffer<AtomTableInformation> buffer = new SafeStructureInOutBuffer<AtomTableInformation>(size, true))
                 {
-                    int return_length;
-                    NtStatus status = NtSystemCalls.NtQueryInformationAtom(0, AtomInformationClass.AtomTableInformation, buffer, buffer.Length, out return_length);
+                    NtStatus status = NtSystemCalls.NtQueryInformationAtom(0, AtomInformationClass.AtomTableInformation, buffer, buffer.Length, out int return_length);
                     if (status.IsSuccess())
                     {
                         AtomTableInformation table = buffer.Result;
@@ -146,6 +143,5 @@ namespace NtApiDotNet
                 }
             }
         }
-        
     }
 }

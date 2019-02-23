@@ -123,7 +123,8 @@ namespace NtApiDotNet
         /// Constructor
         /// </summary>
         /// <param name="object_name">The name of the object</param>
-        public ObjectAttributes(string object_name) : this(object_name, AttributeFlags.CaseInsensitive, SafeKernelObjectHandle.Null, null, null)
+        public ObjectAttributes(string object_name) 
+            : this(object_name, AttributeFlags.CaseInsensitive, SafeKernelObjectHandle.Null, null, null)
         {
         }
 
