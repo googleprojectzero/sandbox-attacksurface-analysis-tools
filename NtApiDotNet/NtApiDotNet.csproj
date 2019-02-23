@@ -84,6 +84,7 @@
     <Compile Include="NtEnlistment.cs" />
     <Compile Include="NtFileNative.cs" />
     <Compile Include="NtGeneric.cs" />
+    <Compile Include="NtHandle.cs" />
     <Compile Include="NtKeyNative.cs" />
     <Compile Include="NtKeyUtils.cs" />
     <Compile Include="NtKeyValue.cs" />
@@ -92,6 +93,7 @@
     <Compile Include="NtProcessNative.cs" />
     <Compile Include="NtResourceManager.cs" />
     <Compile Include="NtResult.cs" />
+    <Compile Include="NtSystemInfoNative.cs" />
     <Compile Include="NtTransactionManager.cs" />
     <Compile Include="NtTransactionManagerUtils.cs" />
     <Compile Include="NtTypeFactory.cs" />
