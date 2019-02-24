@@ -400,7 +400,29 @@ namespace NtApiDotNet
         /// <summary>
         /// Create a new file
         /// </summary>
-        /// <param name="name">The path to the file</param>
+        /// <param name="path">The path to the file</param>
+        /// <param name="root">A root object to parse relative filenames</param>
+        /// <param name="desired_access">Desired access for the file</param>
+        /// <param name="file_attributes">Attributes for the file</param>
+        /// <param name="share_access">Share access for the file</param>
+        /// <param name="open_options">Open options for file</param>
+        /// <param name="disposition">Disposition when opening the file</param>
+        /// <param name="ea_buffer">Extended Attributes buffer</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The created/opened file object.</returns>
+        public static NtResult<NtFile> Create(string path, NtObject root, FileAccessRights desired_access, FileAttributes file_attributes, FileShareMode share_access,
+            FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer, bool throw_on_error)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
+            {
+                return Create(obja, desired_access, file_attributes, share_access, open_options, disposition, ea_buffer, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Create a new file
+        /// </summary>
+        /// <param name="path">The path to the file</param>
         /// <param name="root">A root object to parse relative filenames</param>
         /// <param name="desired_access">Desired access for the file</param>
         /// <param name="file_attributes">Attributes for the file</param>
@@ -409,29 +431,26 @@ namespace NtApiDotNet
         /// <param name="disposition">Disposition when opening the file</param>
         /// <param name="ea_buffer">Extended Attributes buffer</param>
         /// <returns>The created/opened file object.</returns>
-        public static NtFile Create(string name, NtObject root, FileAccessRights desired_access, FileAttributes file_attributes, FileShareMode share_access,
+        public static NtFile Create(string path, NtObject root, FileAccessRights desired_access, FileAttributes file_attributes, FileShareMode share_access,
             FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer)
         {
-            using (ObjectAttributes obja = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
-            {
-                return Create(obja, desired_access, file_attributes, share_access, open_options, disposition, ea_buffer);
-            }
+            return Create(path, root, desired_access, file_attributes, share_access, open_options, disposition, ea_buffer, true).Result;
         }
 
         /// <summary>
         /// Create a new file
         /// </summary>
-        /// <param name="name">The path to the file</param>
+        /// <param name="path">The path to the file</param>
         /// <param name="desired_access">Desired access for the file</param>
         /// <param name="share_access">Share access for the file</param>
         /// <param name="open_options">Open options for file</param>
         /// <param name="disposition">Disposition when opening the file</param>
         /// <param name="ea_buffer">Extended Attributes buffer</param>
         /// <returns>The created/opened file object.</returns>
-        public static NtFile Create(string name, FileAccessRights desired_access, FileShareMode share_access,
+        public static NtFile Create(string path, FileAccessRights desired_access, FileShareMode share_access,
             FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer)
         {
-            return Create(name, null, desired_access, FileAttributes.Normal, share_access, open_options, disposition, ea_buffer);
+            return Create(path, null, desired_access, FileAttributes.Normal, share_access, open_options, disposition, ea_buffer);
         }
 
         /// <summary>
@@ -492,7 +511,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Create a new named pipe file
         /// </summary>
-        /// <param name="name">The path to the pipe file</param>
+        /// <param name="path">The path to the pipe file</param>
         /// <param name="root">A root object to parse relative filenames</param>
         /// <param name="desired_access">Desired access for the file</param>
         /// <param name="share_access">Share access for the file</param>
@@ -508,12 +527,12 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The file instance for the pipe.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtResult<NtNamedPipeFile> CreateNamedPipe(string name, NtObject root, FileAccessRights desired_access,
+        public static NtResult<NtNamedPipeFile> CreateNamedPipe(string path, NtObject root, FileAccessRights desired_access,
             FileShareMode share_access, FileOpenOptions open_options, FileDisposition disposition, NamedPipeType pipe_type,
             NamedPipeReadMode read_mode, NamedPipeCompletionMode completion_mode, int maximum_instances, int input_quota,
             int output_quota, NtWaitTimeout default_timeout, bool throw_on_error)
         {
-            using (ObjectAttributes obj_attributes = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
+            using (ObjectAttributes obj_attributes = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
                 return CreateNamedPipe(obj_attributes, desired_access, share_access, open_options, disposition, pipe_type,
                     read_mode, completion_mode, maximum_instances, input_quota, output_quota, default_timeout, throw_on_error);
@@ -523,7 +542,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Create a new named pipe file
         /// </summary>
-        /// <param name="name">The path to the pipe file</param>
+        /// <param name="path">The path to the pipe file</param>
         /// <param name="root">A root object to parse relative filenames</param>
         /// <param name="desired_access">Desired access for the file</param>
         /// <param name="share_access">Share access for the file</param>
@@ -538,12 +557,12 @@ namespace NtApiDotNet
         /// <param name="read_mode">Pipe read mode</param>
         /// <returns>The file instance for the pipe.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtNamedPipeFile CreateNamedPipe(string name, NtObject root, FileAccessRights desired_access,
+        public static NtNamedPipeFile CreateNamedPipe(string path, NtObject root, FileAccessRights desired_access,
             FileShareMode share_access, FileOpenOptions open_options, FileDisposition disposition, NamedPipeType pipe_type,
             NamedPipeReadMode read_mode, NamedPipeCompletionMode completion_mode, int maximum_instances, int input_quota,
             int output_quota, NtWaitTimeout default_timeout)
         {
-            return CreateNamedPipe(name, root, desired_access, share_access, open_options, disposition, pipe_type,
+            return CreateNamedPipe(path, root, desired_access, share_access, open_options, disposition, pipe_type,
                   read_mode, completion_mode, maximum_instances, input_quota, output_quota, default_timeout, true).Result;
         }
 
@@ -619,7 +638,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Create a new named mailslot file
         /// </summary>
-        /// <param name="name">The path to the mailslot file</param>
+        /// <param name="path">The path to the mailslot file</param>
         /// <param name="root">A root object to parse relative filenames</param>
         /// <param name="desired_access">Desired access for the file</param>
         /// <param name="open_options">Open options for file</param>
@@ -628,11 +647,11 @@ namespace NtApiDotNet
         /// <param name="default_timeout">Timeout in MS ( &lt;0 is infinite)</param>
         /// <returns>The file instance for the mailslot.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static NtFile CreateMailslot(string name, NtObject root, FileAccessRights desired_access,
+        public static NtFile CreateMailslot(string path, NtObject root, FileAccessRights desired_access,
             FileOpenOptions open_options, int maximum_message_size, int mailslot_quota,
             long default_timeout)
         {
-            using (ObjectAttributes obj_attributes = new ObjectAttributes(name, AttributeFlags.CaseInsensitive, root))
+            using (ObjectAttributes obj_attributes = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
                 return CreateMailslot(obj_attributes, desired_access, open_options, maximum_message_size, mailslot_quota, default_timeout);
             }
