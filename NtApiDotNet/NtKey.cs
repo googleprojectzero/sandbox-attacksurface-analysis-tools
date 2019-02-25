@@ -477,11 +477,52 @@ namespace NtApiDotNet
         /// <param name="value_name">The name of the value</param>
         /// <param name="type">The type of the value</param>
         /// <param name="data">The raw value data</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetValue(string value_name, RegistryValueType type, byte[] data, bool throw_on_error)
+        {
+            return NtSystemCalls.NtSetValueKey(Handle, new UnicodeString(value_name ?? string.Empty),
+                0, type, data, data.Length).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a resistry value
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <param name="type">The type of the value</param>
+        /// <param name="data">The raw value data</param>
         /// <exception cref="NtException">Thrown on error.</exception>
         public void SetValue(string value_name, RegistryValueType type, byte[] data)
         {
-            NtSystemCalls.NtSetValueKey(Handle, new UnicodeString(value_name ?? String.Empty),
-                0, type, data, data.Length).ToNtException();
+            SetValue(value_name, type, data);
+        }
+
+        /// <summary>
+        /// Set a string resistry value
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <param name="type">The type of the value</param>
+        /// <param name="data">The value data</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetValue(string value_name, RegistryValueType type, string data, bool throw_on_error)
+        {
+            return SetValue(value_name, type, Encoding.Unicode.GetBytes(data), throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a string resistry value as REG_SZ.
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <param name="data">The value data</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetValue(string value_name, string data, bool throw_on_error)
+        {
+            return SetValue(value_name, RegistryValueType.String, data, throw_on_error);
         }
 
         /// <summary>
@@ -493,7 +534,70 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public void SetValue(string value_name, RegistryValueType type, string data)
         {
-            SetValue(value_name, type, Encoding.Unicode.GetBytes(data));
+            SetValue(value_name, type, data, true);
+        }
+
+        /// <summary>
+        /// Set a string resistry value as REG_SZ.
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <param name="data">The value data</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void SetValue(string value_name, string data)
+        {
+            SetValue(value_name, data, true);
+        }
+
+        /// <summary>
+        /// Set a list of strings as a resistry value.
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <param name="data">The list of strings to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetValue(string value_name, IEnumerable<string> data, bool throw_on_error)
+        {
+            string value = string.Join("\0", data) + "\0";
+
+            return SetValue(value_name, RegistryValueType.MultiString, value, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a list of strings as a resistry value.
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <param name="data">The list of strings to set.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void SetValue(string value_name, IEnumerable<string> data)
+        {
+            SetValue(value_name, data, true);
+        }
+
+        /// <summary>
+        /// Set a DWORD resistry value
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <param name="data">The value data</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetValue(string value_name, uint data, bool throw_on_error)
+        {
+            return SetValue(value_name, RegistryValueType.Dword, BitConverter.GetBytes(data), throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a QWORD resistry value
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <param name="data">The value data</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetValue(string value_name, ulong data, bool throw_on_error)
+        {
+            return SetValue(value_name, RegistryValueType.Qword, BitConverter.GetBytes(data), throw_on_error);
         }
 
         /// <summary>
@@ -504,7 +608,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public void SetValue(string value_name, uint data)
         {
-            SetValue(value_name, RegistryValueType.Dword, BitConverter.GetBytes(data));
+            SetValue(value_name, data, true);
         }
 
         /// <summary>
@@ -515,7 +619,19 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public void SetValue(string value_name, ulong data)
         {
-            SetValue(value_name, RegistryValueType.Qword, BitConverter.GetBytes(data));
+            SetValue(value_name, data, true);
+        }
+
+        /// <summary>
+        /// Delete a registry value
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <returns>The NT status code.</returns>
+        public NtStatus DeleteValue(string value_name, bool throw_on_error)
+        {
+            return NtSystemCalls.NtDeleteValueKey(Handle, new UnicodeString(value_name ?? string.Empty)).ToNtException(throw_on_error);
         }
 
         /// <summary>
@@ -525,7 +641,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public void DeleteValue(string value_name)
         {
-            NtSystemCalls.NtDeleteValueKey(Handle, new UnicodeString(value_name ?? String.Empty)).ToNtException();
+            DeleteValue(value_name, true);
         }
 
         /// <summary>
@@ -668,9 +784,22 @@ namespace NtApiDotNet
         /// appropriate create flags)
         /// </summary>
         /// <param name="target">The symbolic link target.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus SetSymbolicLinkTarget(string target, bool throw_on_error)
+        {
+            return SetValue("SymbolicLinkValue", RegistryValueType.Link, Encoding.Unicode.GetBytes(target), throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a symbolic link target for this key (must have been created with
+        /// appropriate create flags)
+        /// </summary>
+        /// <param name="target">The symbolic link target.</param>
         public void SetSymbolicLinkTarget(string target)
         {
-            SetValue("SymbolicLinkValue", RegistryValueType.Link, Encoding.Unicode.GetBytes(target));
+            SetSymbolicLinkTarget(target, true);
         }
 
         /// <summary>
@@ -748,9 +877,36 @@ namespace NtApiDotNet
         /// Rename key.
         /// </summary>
         /// <param name="new_name">The new name for the key.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus Rename(string new_name, bool throw_on_error)
+        {
+            return NtSystemCalls.NtRenameKey(Handle, new UnicodeString(new_name)).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Rename key.
+        /// </summary>
+        /// <param name="new_name">The new name for the key.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
         public void Rename(string new_name)
         {
-            NtSystemCalls.NtRenameKey(Handle, new UnicodeString(new_name)).ToNtException();
+            Rename(new_name, true);
+        }
+
+        /// <summary>
+        /// Save the opened key into a file.
+        /// </summary>
+        /// <param name="file">The file to save to.</param>
+        /// <param name="flags">Save key flags</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus Save(NtFile file, SaveKeyFlags flags, bool throw_on_error)
+        {
+            return NtSystemCalls.NtSaveKeyEx(Handle, file.Handle,
+                flags).ToNtException(throw_on_error);
         }
 
         /// <summary>
@@ -760,8 +916,29 @@ namespace NtApiDotNet
         /// <param name="flags">Save key flags</param>
         public void Save(NtFile file, SaveKeyFlags flags)
         {
-            NtSystemCalls.NtSaveKeyEx(Handle, file.Handle,
-                flags).ToNtException();
+            Save(file, flags, true);
+        }
+
+        /// <summary>
+        /// Save the opened key into a file.
+        /// </summary>
+        /// <param name="path">The file path to save to.</param>
+        /// <param name="flags">Save key flags</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus Save(string path, SaveKeyFlags flags, bool throw_on_error)
+        {
+            using (var file = NtFile.Create(path, null, FileAccessRights.GenericWrite | FileAccessRights.Synchronize,
+                FileAttributes.Normal, FileShareMode.None, FileOpenOptions.SynchronousIoNonAlert, FileDisposition.Create, null, throw_on_error))
+            {
+                if (!file.IsSuccess)
+                {
+                    return file.Status;
+                }
+
+                return Save(file.Result, flags, throw_on_error);
+            }
         }
 
         /// <summary>
@@ -771,11 +948,7 @@ namespace NtApiDotNet
         /// <param name="flags">Save key flags</param>
         public void Save(string path, SaveKeyFlags flags)
         {
-            using (NtFile file = NtFile.Create(path, null, FileAccessRights.GenericWrite | FileAccessRights.Synchronize,
-                FileAttributes.Normal, FileShareMode.None, FileOpenOptions.SynchronousIoNonAlert, FileDisposition.Create, null))
-            {
-                Save(file, flags);
-            }
+            Save(path, flags, true);
         }
 
         /// <summary>
@@ -792,9 +965,43 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="file">The file to restore from</param>
         /// <param name="flags">Restore key flags</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus Restore(NtFile file, RestoreKeyFlags flags, bool throw_on_error)
+        {
+            return NtSystemCalls.NtRestoreKey(Handle, file.Handle, flags).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Restore key from a file.
+        /// </summary>
+        /// <param name="file">The file to restore from</param>
+        /// <param name="flags">Restore key flags</param>
         public void Restore(NtFile file, RestoreKeyFlags flags)
         {
-            NtSystemCalls.NtRestoreKey(Handle, file.Handle, flags).ToNtException();
+            Restore(file, flags, true);
+        }
+
+        /// <summary>
+        /// Restore key from a file.
+        /// </summary>
+        /// <param name="path">The file path to restore from</param>
+        /// <param name="flags">Restore key flags</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus Restore(string path, RestoreKeyFlags flags, bool throw_on_error)
+        {
+            using (var file = NtFile.Open(path, null, FileAccessRights.GenericRead | FileAccessRights.Synchronize,
+                    FileShareMode.Read, FileOpenOptions.SynchronousIoNonAlert, throw_on_error))
+            {
+                if (!file.IsSuccess)
+                {
+                    return file.Status;
+                }
+                return Restore(file.Result, flags, throw_on_error);
+            }
         }
 
         /// <summary>
@@ -831,7 +1038,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Wait for a change on thie registry key.
+        /// Wait for a change on the registry key.
         /// </summary>
         /// <param name="completion_filter">Specify what changes will be notified.</param>
         /// <param name="watch_tree">True to watch the entire tree.</param>
