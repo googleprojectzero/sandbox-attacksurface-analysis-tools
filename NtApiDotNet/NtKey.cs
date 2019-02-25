@@ -1396,6 +1396,11 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Returns whether this object is a container.
+        /// </summary>
+        public override bool IsContainer => true;
+
         #endregion
 
         #region Private Members

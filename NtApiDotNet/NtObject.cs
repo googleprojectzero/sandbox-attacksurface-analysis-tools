@@ -971,6 +971,11 @@ namespace NtApiDotNet
         /// <remarks>As getting the address is expensive you need to pass the object to NtSystemInfo::ResolveObjectAddress to intialize.</remarks>
         public ulong Address { get; internal set; }
 
+        /// <summary>
+        /// Returns whether this object is a container.
+        /// </summary>
+        public virtual bool IsContainer => false;
+
         #region IDisposable Support
         private bool disposedValue = false;
 

@@ -355,6 +355,11 @@ namespace NtApiDotNet
             return pages.Select(p => new FileSegmentElement() { Buffer = new IntPtr(p) }).Concat(new[] { new FileSegmentElement() }).ToArray();
         }
 
+        private NtResult<FileBasicInformation> QueryBasicInformation(bool throw_on_error)
+        {
+            return Query(FileInformationClass.FileBasicInformation, new FileBasicInformation(), throw_on_error);
+        }
+
         #endregion
 
         #region Static Methods
@@ -3180,7 +3185,14 @@ namespace NtApiDotNet
             {
                 if (!_is_directory.HasValue)
                 {
-                    _is_directory = (FileAttributes & FileAttributes.Directory) == FileAttributes.Directory;
+                    if (IsAccessGranted(FileAccessRights.ReadAttributes))
+                    {
+                        _is_directory = (FileAttributes & FileAttributes.Directory) == FileAttributes.Directory;
+                    }
+                    else
+                    {
+                        _is_directory = false;
+                    }
                 }
                 return _is_directory.Value;
             }
@@ -3486,6 +3498,11 @@ namespace NtApiDotNet
                 Set(FileInformationClass.FileStorageReserveIdInformation, new FileStorageReserveIdInformation() { StorageReserveId = value });
             }
         }
+
+        /// <summary>
+        /// Returns whether this object is a container.
+        /// </summary>
+        public override bool IsContainer => IsDirectory;
 
         #endregion
     }
