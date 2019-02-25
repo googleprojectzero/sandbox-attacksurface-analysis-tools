@@ -14,201 +14,15 @@
 
 using System;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
-#pragma warning disable 1591
-    /// <summary>
-    /// Generic access rights.
-    /// </summary>
-    [Flags]
-    public enum GenericAccessRights : uint
-    {
-        None = 0,
-        Access0 = 0x00000001,
-        Access1 = 0x00000002,
-        Access2 = 0x00000004,
-        Access3 = 0x00000008,
-        Access4 = 0x00000010,
-        Access5 = 0x00000020,
-        Access6 = 0x00000040,
-        Access7 = 0x00000080,
-        Access8 = 0x00000100,
-        Access9 = 0x00000200,
-        Access10 = 0x00000400,
-        Access11 = 0x00000800,
-        Access12 = 0x00001000,
-        Access13 = 0x00002000,
-        Access14 = 0x00004000,
-        Access15 = 0x00008000,
-        Delete = 0x00010000,
-        ReadControl = 0x00020000,
-        WriteDac = 0x00040000,
-        WriteOwner = 0x00080000,
-        Synchronize = 0x00100000,
-        AccessSystemSecurity = 0x01000000,
-        MaximumAllowed = 0x02000000,
-        GenericAll = 0x10000000,
-        GenericExecute = 0x20000000,
-        GenericWrite = 0x40000000,
-        GenericRead = 0x80000000,
-    };
-
-    /// <summary>
-    /// Options for duplicating objects.
-    /// </summary>
-    [Flags]
-    public enum DuplicateObjectOptions
-    {
-        None = 0,
-        /// <summary>
-        /// Close the original handle.
-        /// </summary>
-        CloseSource = 1,
-        /// <summary>
-        /// Duplicate with the same access.
-        /// </summary>
-        SameAccess = 2,
-        /// <summary>
-        /// Duplicate with the same handle attributes.
-        /// </summary>
-        SameAttributes = 4,
-    }
-
-    /// <summary>
-    /// Information class for NtQueryObject
-    /// </summary>
-    /// <see cref="NtSystemCalls.NtQueryObject(SafeHandle, ObjectInformationClass, SafeBuffer, int, out int)"/>
-    public enum ObjectInformationClass
-    {
-        ObjectBasicInformation,
-        ObjectNameInformation,
-        ObjectTypeInformation,
-        ObjectTypesInformation,
-        ObjectHandleFlagInformation,
-        ObjectSessionInformation,
-        ObjectSessionObjectInformation
-    }
-
-    /// <summary>
-    /// Structure to return Object Name
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
-    public class ObjectNameInformation
-    {
-        public UnicodeStringOut Name;
-    }
-
-    /// <summary>
-    /// Structure to return Object basic information
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
-    public struct ObjectBasicInformation
-    {
-        public AttributeFlags Attributes;
-        public uint DesiredAccess;
-        public int HandleCount;
-        public int ReferenceCount;
-        public int PagedPoolUsage;
-        public int NonPagedPoolUsage;
-        public int Reserved0;
-        public int Reserved1;
-        public int Reserved2;
-        public int NameInformationLength;
-        public int TypeInformationLength;
-        public int SecurityDescriptorLength;
-        public LargeIntegerStruct CreationTime;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct ObjectHandleInformation
-    {
-        [MarshalAs(UnmanagedType.U1)]
-        public bool Inherit;
-        [MarshalAs(UnmanagedType.U1)]
-        public bool ProtectFromClose;
-    }
-
-    /// <summary>
-    /// Type of kernel pool used for object allocation
-    /// </summary>
-    public enum PoolType
-    {
-        NonPagedPool,
-        PagedPool,
-        NonPagedPoolMustSucceed,
-        DontUseThisType,
-        NonPagedPoolCacheAligned,
-        PagedPoolCacheAligned,
-        NonPagedPoolCacheAlignedMustS
-    }
-
-    public static partial class NtSystemCalls
-    {
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtClose(IntPtr handle);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtDuplicateObject(
-          SafeHandle SourceProcessHandle,
-          IntPtr SourceHandle,
-          SafeHandle TargetProcessHandle,
-          out IntPtr TargetHandle,
-          AccessMask DesiredAccess,
-          AttributeFlags HandleAttributes,
-          DuplicateObjectOptions Options
-        );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtQueryObject(
-            SafeHandle ObjectHandle,
-            ObjectInformationClass ObjectInformationClass,
-            SafeBuffer ObjectInformation,
-            int ObjectInformationLength,
-            out int ReturnLength
-        );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtSetInformationObject(
-            SafeHandle ObjectHandle,
-            ObjectInformationClass ObjectInformationClass,
-            SafeBuffer ObjectInformation,
-            int ObjectInformationLength
-        );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtQuerySecurityObject(
-            SafeHandle Handle,
-            SecurityInformation SecurityInformation,
-            [Out] byte[] SecurityDescriptor,
-            int SecurityDescriptorLength,
-            out int ReturnLength
-            );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtSetSecurityObject(
-            SafeHandle Handle,
-            SecurityInformation SecurityInformation,
-            [In] byte[] SecurityDescriptor
-        );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtMakeTemporaryObject(SafeKernelObjectHandle Handle);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtMakePermanentObject(SafeKernelObjectHandle Handle);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCompareObjects(SafeKernelObjectHandle Object1, SafeKernelObjectHandle Object2);
-    }
-#pragma warning restore 1591
-
     /// <summary>
     /// Base class for all NtObject types we handle
     /// </summary>
     public abstract class NtObject : IDisposable
     {
+        #region Private Members
         private ObjectBasicInformation _basic_information;
 
         /// <summary>
@@ -226,34 +40,7 @@ namespace NtApiDotNet
             return new ObjectBasicInformation();
         }
 
-        /// <summary>
-        /// Base constructor
-        /// </summary>
-        /// <param name="handle">Handle to the object</param>
-        protected NtObject(SafeKernelObjectHandle handle)
-        {
-            SetHandle(handle, true);
-        }
-
-        internal void SetHandle(SafeKernelObjectHandle handle, bool query_basic_info)
-        {
-            Handle = handle;
-            if (query_basic_info)
-            {
-                try
-                {
-                    // Query basic information which shouldn't change.
-                    _basic_information = QueryBasicInformation(handle);
-                    CanSynchronize = IsAccessMaskGranted(GenericAccessRights.Synchronize);
-                }
-                catch (NtException)
-                {
-                    // Shouldn't fail here but just in case.
-                }
-            }
-        }
-
-        private static NtResult<SafeStructureInOutBuffer<T>> QueryObject<T>(SafeKernelObjectHandle handle, 
+        private static NtResult<SafeStructureInOutBuffer<T>> QueryObject<T>(SafeKernelObjectHandle handle,
             ObjectInformationClass object_info, bool throw_on_error) where T : new()
         {
             SafeStructureInOutBuffer<T> ret = null;
@@ -281,46 +68,48 @@ namespace NtApiDotNet
             }
         }
 
-        /// <summary>
-        /// Duplicate a handle to a new handle, potentially in a different process.
-        /// </summary>
-        /// <param name="flags">Attribute flags for new handle</param>
-        /// <param name="src_handle">The source handle to duplicate</param>
-        /// <param name="src_process">The source process to duplicate from</param>
-        /// <param name="dest_process">The desination process for the handle</param>
-        /// <param name="options">Duplicate handle options</param>
-        /// <param name="access_rights">The access rights for the new handle</param>
-        /// <param name="throw_on_error">True to throw an exception on error.</param>
-        /// <returns>The NT status code and object result.</returns>
-        public static NtResult<IntPtr> DuplicateHandle(
-            NtProcess src_process, IntPtr src_handle,
-            NtProcess dest_process, AccessMask access_rights,
-            AttributeFlags flags, DuplicateObjectOptions options,
-            bool throw_on_error)
+        private static string GetName(SafeKernelObjectHandle handle)
         {
-            return NtSystemCalls.NtDuplicateObject(src_process.Handle, src_handle,
-                dest_process.Handle, out IntPtr external_handle, access_rights, flags,
-                options).CreateResult(throw_on_error, () => external_handle);
+            // TODO: Might need to do this async for file objects, they have a habit of sticking.
+            using (var name = QueryObject<ObjectNameInformation>(handle, ObjectInformationClass.ObjectNameInformation, false))
+            {
+                if (name.IsSuccess)
+                    return name.Result.Result.Name.ToString();
+            }
+            return string.Empty;
         }
 
+        #endregion
+
+        #region Constructors
         /// <summary>
-        /// Duplicate a handle to a new handle, potentially in a different process.
+        /// Base constructor
         /// </summary>
-        /// <param name="flags">Attribute flags for new handle</param>
-        /// <param name="src_handle">The source handle to duplicate</param>
-        /// <param name="src_process">The source process to duplicate from</param>
-        /// <param name="dest_process">The desination process for the handle</param>
-        /// <param name="options">Duplicate handle options</param>
-        /// <param name="access_rights">The access rights for the new handle</param>
-        /// <returns>The NT status code and object result.</returns>
-        public static IntPtr DuplicateHandle(
-            NtProcess src_process, IntPtr src_handle,
-            NtProcess dest_process, AccessMask access_rights,
-            AttributeFlags flags, DuplicateObjectOptions options)
+        /// <param name="handle">Handle to the object</param>
+        protected NtObject(SafeKernelObjectHandle handle)
         {
-            return DuplicateHandle(src_process, src_handle,
-                dest_process, access_rights, flags,
-                options, true).Result;
+            SetHandle(handle, true);
+        }
+        #endregion
+
+        #region Internal Members
+
+        internal void SetHandle(SafeKernelObjectHandle handle, bool query_basic_info)
+        {
+            Handle = handle;
+            if (query_basic_info)
+            {
+                try
+                {
+                    // Query basic information which shouldn't change.
+                    _basic_information = QueryBasicInformation(handle);
+                    CanSynchronize = IsAccessMaskGranted(GenericAccessRights.Synchronize);
+                }
+                catch (NtException)
+                {
+                    // Shouldn't fail here but just in case.
+                }
+            }
         }
 
         /// <summary>
@@ -395,7 +184,7 @@ namespace NtApiDotNet
         internal static NtResult<SafeKernelObjectHandle> DuplicateHandle(
             SafeKernelObjectHandle src_handle, bool throw_on_error)
         {
-            return DuplicateHandle(NtProcess.Current, src_handle, NtProcess.Current, 0, 0, 
+            return DuplicateHandle(NtProcess.Current, src_handle, NtProcess.Current, 0, 0,
                 DuplicateObjectOptions.SameAccess | DuplicateObjectOptions.SameAttributes, throw_on_error);
         }
 
@@ -410,6 +199,152 @@ namespace NtApiDotNet
             return DuplicateHandle(src_handle, NtProcess.Current, access_rights, DuplicateObjectOptions.None);
         }
 
+        #endregion
+
+        #region Static Methods
+
+
+        /// <summary>
+        /// Indicates whether a specific type of kernel object can be opened.
+        /// </summary>
+        /// <param name="typename">The kernel typename to check.</param>
+        /// <returns>True if this type of object can be opened.</returns>
+        public static bool CanOpenType(string typename)
+        {
+            NtType type = NtType.GetTypeByName(typename, false);
+            if (type == null)
+            {
+                return false;
+            }
+            return type.CanOpen;
+        }
+
+        /// <summary>
+        /// Open an NT object with a specified type.
+        /// </summary>
+        /// <param name="typename">The name of the type to open (e.g. Event). If null the method will try and lookup the appropriate type.</param>
+        /// <param name="path">The path to the object to open.</param>
+        /// <param name="root">A root directory to open from.</param>
+        /// <param name="access">Generic access rights to the object.</param>
+        /// <param name="attributes">Attributes to open the object.</param>
+        /// <param name="security_quality_of_service">Security quality of service.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened object.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred opening the object.</exception>
+        public static NtResult<NtObject> OpenWithType(string typename, string path, NtObject root,
+            AttributeFlags attributes, AccessMask access, SecurityQualityOfService security_quality_of_service, bool throw_on_error)
+        {
+            using (var obj_attr = new ObjectAttributes(path, attributes, root, security_quality_of_service, null))
+            {
+                if (typename == null)
+                {
+                    typename = NtDirectory.GetDirectoryEntryType(path, root);
+                }
+
+                // Brute force the open.
+                if (typename == null)
+                {
+                    foreach (var nttype in NtType.GetTypes().Where(t => t.CanOpen))
+                    {
+                        var result = nttype.Open(obj_attr, access, false);
+                        if (result.IsSuccess)
+                        {
+                            return result;
+                        }
+                    }
+
+                    return NtStatus.STATUS_OBJECT_TYPE_MISMATCH.CreateResultFromError<NtObject>(true);
+                }
+
+                NtType type = NtType.GetTypeByName(typename, false);
+                if (type != null && type.CanOpen)
+                {
+                    return type.Open(obj_attr, access, throw_on_error);
+                }
+                else
+                {
+                    return NtStatus.STATUS_OBJECT_TYPE_MISMATCH.CreateResultFromError<NtObject>(true);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Open an NT object with a specified type.
+        /// </summary>
+        /// <param name="typename">The name of the type to open (e.g. Event). If null the method will try and lookup the appropriate type.</param>
+        /// <param name="path">The path to the object to open.</param>
+        /// <param name="root">A root directory to open from.</param>
+        /// <param name="access">Generic access rights to the object.</param>
+        /// <param name="attributes">Attributes to open the object.</param>
+        /// <param name="security_quality_of_service">Security quality of service.</param>
+        /// <returns>The opened object.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred opening the object.</exception>
+        public static NtObject OpenWithType(string typename, string path, NtObject root,
+            AttributeFlags attributes, AccessMask access, SecurityQualityOfService security_quality_of_service)
+        {
+            return OpenWithType(typename, path, root, attributes, access, security_quality_of_service, true).Result;
+        }
+
+        /// <summary>
+        /// Open an NT object with a specified type.
+        /// </summary>
+        /// <param name="typename">The name of the type to open (e.g. Event). If null the method will try and lookup the appropriate type.</param>
+        /// <param name="path">The path to the object to open.</param>
+        /// <param name="root">A root directory to open from.</param>
+        /// <param name="access">Generic access rights to the object.</param>
+        /// <returns>The opened object.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred opening the object.</exception>
+        /// <exception cref="ArgumentException">Thrown if type of resource couldn't be found.</exception>
+        public static NtObject OpenWithType(string typename, string path, NtObject root, AccessMask access)
+        {
+            return OpenWithType(typename, path, root, AttributeFlags.CaseInsensitive, access, null, true).Result;
+        }
+
+        /// <summary>
+        /// Duplicate a handle to a new handle, potentially in a different process.
+        /// </summary>
+        /// <param name="flags">Attribute flags for new handle</param>
+        /// <param name="src_handle">The source handle to duplicate</param>
+        /// <param name="src_process">The source process to duplicate from</param>
+        /// <param name="dest_process">The desination process for the handle</param>
+        /// <param name="options">Duplicate handle options</param>
+        /// <param name="access_rights">The access rights for the new handle</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<IntPtr> DuplicateHandle(
+            NtProcess src_process, IntPtr src_handle,
+            NtProcess dest_process, AccessMask access_rights,
+            AttributeFlags flags, DuplicateObjectOptions options,
+            bool throw_on_error)
+        {
+            return NtSystemCalls.NtDuplicateObject(src_process.Handle, src_handle,
+                dest_process.Handle, out IntPtr external_handle, access_rights, flags,
+                options).CreateResult(throw_on_error, () => external_handle);
+        }
+
+        /// <summary>
+        /// Duplicate a handle to a new handle, potentially in a different process.
+        /// </summary>
+        /// <param name="flags">Attribute flags for new handle</param>
+        /// <param name="src_handle">The source handle to duplicate</param>
+        /// <param name="src_process">The source process to duplicate from</param>
+        /// <param name="dest_process">The desination process for the handle</param>
+        /// <param name="options">Duplicate handle options</param>
+        /// <param name="access_rights">The access rights for the new handle</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static IntPtr DuplicateHandle(
+            NtProcess src_process, IntPtr src_handle,
+            NtProcess dest_process, AccessMask access_rights,
+            AttributeFlags flags, DuplicateObjectOptions options)
+        {
+            return DuplicateHandle(src_process, src_handle,
+                dest_process, access_rights, flags,
+                options, true).Result;
+        }
+
+        #endregion
+
+        #region Public Methods
         /// <summary>
         /// Duplicate object.
         /// </summary>
@@ -439,17 +374,6 @@ namespace NtApiDotNet
             return DuplicateObject(0, AttributeFlags.None, DuplicateObjectOptions.SameAccess, true).Result;
         }
 
-        private static string GetName(SafeKernelObjectHandle handle)
-        {
-            // TODO: Might need to do this async for file objects, they have a habit of sticking.
-            using (var name = QueryObject<ObjectNameInformation>(handle, ObjectInformationClass.ObjectNameInformation, false))
-            {
-                if (name.IsSuccess)
-                    return name.Result.Result.Name.ToString();
-            }
-            return string.Empty;
-        }
-
         /// <summary>
         /// Duplicate the object handle as a WaitHandle.
         /// </summary>
@@ -457,28 +381,6 @@ namespace NtApiDotNet
         public NtWaitHandle DuplicateAsWaitHandle()
         {
             return new NtWaitHandle(this);
-        }
-
-        /// <summary>
-        /// Get full path to the object
-        /// </summary>
-        public virtual string FullPath
-        {
-            get
-            {
-                return GetName(Handle);
-            }
-        }
-
-        /// <summary>
-        /// Get the granted access as an unsigned integer
-        /// </summary>
-        public AccessMask GrantedAccessMask
-        {
-            get
-            {
-                return _basic_information.DesiredAccess;
-            }
         }
 
         /// <summary>
@@ -516,8 +418,7 @@ namespace NtApiDotNet
                 return NtStatus.STATUS_ACCESS_DENIED.CreateResultFromError<byte[]>(throw_on_error);
             }
 
-            int return_length;
-            NtStatus status = NtSystemCalls.NtQuerySecurityObject(Handle, security_information, null, 0, out return_length);
+            NtStatus status = NtSystemCalls.NtQuerySecurityObject(Handle, security_information, null, 0, out int return_length);
             if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
             {
                 return status.CreateResult(throw_on_error, () => new byte[0]);
@@ -603,17 +504,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get the security descriptor, with Dacl, Owner, Group and Label
-        /// </summary>
-        public SecurityDescriptor SecurityDescriptor
-        {
-            get
-            {
-                return GetSecurityDescriptor(SecurityInformation.AllBasic);
-            }
-        }
-
-        /// <summary>
         /// Get the security descriptor as an SDDL string
         /// </summary>
         /// <returns>The security descriptor as an SDDL string</returns>
@@ -621,20 +511,6 @@ namespace NtApiDotNet
         {
             return SecurityDescriptor.ToSddl();
         }
-
-        /// <summary>
-        /// Get the security descriptor as an SDDL string
-        /// </summary>
-        /// <returns>The security descriptor as an SDDL string</returns>
-        public string Sddl
-        {
-            get { return GetSddl(); }
-        }
-
-        /// <summary>
-        /// The low-level handle to the object.
-        /// </summary>
-        public SafeKernelObjectHandle Handle { get; private set; }
 
         /// <summary>
         /// Make the object a temporary object
@@ -709,100 +585,100 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Indicates whether a specific type of kernel object can be opened.
+        /// Convert an enumerable access rights to a string
         /// </summary>
-        /// <param name="typename">The kernel typename to check.</param>
-        /// <returns>True if this type of object can be opened.</returns>        
-        public static bool CanOpenType(string typename)
+        /// <param name="map_to_generic">True to try and convert to generic rights where possible.</param>
+        /// <returns>The string format of the access rights</returns>
+        public string GrantedAccessAsString(bool map_to_generic)
         {
-            NtType type = NtType.GetTypeByName(typename, false);
-            if (type == null)
+            return NtType.AccessMaskToString(GrantedAccessMask, map_to_generic);
+        }
+
+        /// <summary>
+        /// Convert an enumerable access rights to a string
+        /// </summary>
+        /// <returns>The string format of the access rights</returns>
+        public string GrantedAccessAsString()
+        {
+            return GrantedAccessAsString(false);
+        }
+
+        /// <summary>
+        /// Check if this object is exactly the same as another.
+        /// </summary>
+        /// <param name="obj">The object to compare against.</param>
+        /// <returns>True if this is the same object.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public bool SameObject(NtObject obj)
+        {
+            NtStatus status = NtSystemCalls.NtCompareObjects(Handle, obj.Handle);
+            if (status == NtStatus.STATUS_NOT_SAME_OBJECT)
             {
                 return false;
             }
-            return type.CanOpen;
+            status.ToNtException();
+            return true;
         }
 
         /// <summary>
-        /// Open an NT object with a specified type.
+        /// Convert to a string
         /// </summary>
-        /// <param name="typename">The name of the type to open (e.g. Event). If null the method will try and lookup the appropriate type.</param>
-        /// <param name="path">The path to the object to open.</param>
-        /// <param name="root">A root directory to open from.</param>
-        /// <param name="access">Generic access rights to the object.</param>
-        /// <param name="attributes">Attributes to open the object.</param>
-        /// <param name="security_quality_of_service">Security quality of service.</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The opened object.</returns>
-        /// <exception cref="NtException">Thrown if an error occurred opening the object.</exception>
-        public static NtResult<NtObject> OpenWithType(string typename, string path, NtObject root, 
-            AttributeFlags attributes, AccessMask access, SecurityQualityOfService security_quality_of_service, bool throw_on_error)
+        /// <returns>The string form of the object</returns>
+        public override string ToString()
         {
-            using (var obj_attr = new ObjectAttributes(path, attributes, root, security_quality_of_service, null))
+            return Name;
+        }
+
+        #endregion
+
+        #region Public Properties
+
+        /// <summary>
+        /// Get full path to the object
+        /// </summary>
+        public virtual string FullPath
+        {
+            get
             {
-                if (typename == null)
-                {
-                    typename = NtDirectory.GetDirectoryEntryType(path, root);
-                }
-
-                // Brute force the open.
-                if (typename == null)
-                {
-                    foreach (var nttype in NtType.GetTypes().Where(t => t.CanOpen))
-                    {
-                        var result = nttype.Open(obj_attr, access, false);
-                        if (result.IsSuccess)
-                        {
-                            return result;
-                        }
-                    }
-
-                    return NtStatus.STATUS_OBJECT_TYPE_MISMATCH.CreateResultFromError<NtObject>(true);
-                }
-
-                NtType type = NtType.GetTypeByName(typename, false);
-                if (type != null && type.CanOpen)
-                {
-                    return type.Open(obj_attr, access, throw_on_error);
-                }
-                else
-                {
-                    return NtStatus.STATUS_OBJECT_TYPE_MISMATCH.CreateResultFromError<NtObject>(true);
-                }
+                return GetName(Handle);
             }
         }
 
         /// <summary>
-        /// Open an NT object with a specified type.
+        /// Get the granted access as an unsigned integer
         /// </summary>
-        /// <param name="typename">The name of the type to open (e.g. Event). If null the method will try and lookup the appropriate type.</param>
-        /// <param name="path">The path to the object to open.</param>
-        /// <param name="root">A root directory to open from.</param>
-        /// <param name="access">Generic access rights to the object.</param>
-        /// <param name="attributes">Attributes to open the object.</param>
-        /// <param name="security_quality_of_service">Security quality of service.</param>
-        /// <returns>The opened object.</returns>
-        /// <exception cref="NtException">Thrown if an error occurred opening the object.</exception>
-        public static NtObject OpenWithType(string typename, string path, NtObject root,
-            AttributeFlags attributes, AccessMask access, SecurityQualityOfService security_quality_of_service)
+        public AccessMask GrantedAccessMask
         {
-            return OpenWithType(typename, path, root, attributes, access, security_quality_of_service, true).Result;
+            get
+            {
+                return _basic_information.DesiredAccess;
+            }
         }
 
         /// <summary>
-        /// Open an NT object with a specified type.
+        /// Get the security descriptor, with Dacl, Owner, Group and Label
         /// </summary>
-        /// <param name="typename">The name of the type to open (e.g. Event). If null the method will try and lookup the appropriate type.</param>
-        /// <param name="path">The path to the object to open.</param>
-        /// <param name="root">A root directory to open from.</param>
-        /// <param name="access">Generic access rights to the object.</param>
-        /// <returns>The opened object.</returns>
-        /// <exception cref="NtException">Thrown if an error occurred opening the object.</exception>
-        /// <exception cref="ArgumentException">Thrown if type of resource couldn't be found.</exception>
-        public static NtObject OpenWithType(string typename, string path, NtObject root, AccessMask access)
+        public SecurityDescriptor SecurityDescriptor
         {
-            return OpenWithType(typename, path, root, AttributeFlags.CaseInsensitive, access, null, true).Result;
+            get
+            {
+                return GetSecurityDescriptor(SecurityInformation.AllBasic);
+            }
         }
+
+        /// <summary>
+        /// Get the security descriptor as an SDDL string
+        /// </summary>
+        /// <returns>The security descriptor as an SDDL string</returns>
+        public string Sddl
+        {
+            get { return GetSddl(); }
+        }
+
+        /// <summary>
+        /// The low-level handle to the object.
+        /// </summary>
+        public SafeKernelObjectHandle Handle { get; private set; }
 
         /// <summary>
         /// Get the NT type name for this object.
@@ -829,25 +705,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Convert an enumerable access rights to a string
-        /// </summary>
-        /// <param name="map_to_generic">True to try and convert to generic rights where possible.</param>
-        /// <returns>The string format of the access rights</returns>
-        public string GrantedAccessAsString(bool map_to_generic)
-        {
-            return NtType.AccessMaskToString(GrantedAccessMask, map_to_generic);
-        }
-
-        /// <summary>
-        /// Convert an enumerable access rights to a string
-        /// </summary>
-        /// <returns>The string format of the access rights</returns>
-        public string GrantedAccessAsString()
-        {
-            return GrantedAccessAsString(false);
-        }
-
-        /// <summary>
         /// Get the name of the object
         /// </summary>
         public string Name
@@ -856,32 +713,6 @@ namespace NtApiDotNet
             {
                 return NtObjectUtils.GetFileName(FullPath);
             }
-        }
-
-        /// <summary>
-        /// Convert to a string
-        /// </summary>
-        /// <returns>The string form of the object</returns>
-        public override string ToString()
-        {
-            return Name;
-        }
-
-        /// <summary>
-        /// Check if this object is exactly the same as another.
-        /// </summary>
-        /// <param name="obj">The object to compare against.</param>
-        /// <returns>True if this is the same object.</returns>
-        /// <exception cref="NtException">Thrown on error.</exception>
-        public bool SameObject(NtObject obj)
-        {
-            NtStatus status = NtSystemCalls.NtCompareObjects(Handle, obj.Handle);
-            if (status == NtStatus.STATUS_NOT_SAME_OBJECT)
-            {
-                return false;
-            }
-            status.ToNtException();
-            return true;
         }
 
         /// <summary>
@@ -975,6 +806,8 @@ namespace NtApiDotNet
         /// Returns whether this object is a container.
         /// </summary>
         public virtual bool IsContainer => false;
+
+        #endregion
 
         #region IDisposable Support
         private bool disposedValue = false;
