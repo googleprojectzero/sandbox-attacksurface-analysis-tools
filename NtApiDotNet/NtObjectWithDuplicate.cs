@@ -26,8 +26,13 @@ namespace NtApiDotNet
     {
         internal abstract class NtTypeFactoryImplBase : NtTypeFactory
         {
-            protected NtTypeFactoryImplBase(bool can_open) 
-                : base(typeof(A), typeof(O), can_open)
+            protected NtTypeFactoryImplBase(Type container_access_rights_type, bool can_open) 
+                : base(typeof(A), container_access_rights_type, typeof(O), can_open)
+            {
+            }
+
+            protected NtTypeFactoryImplBase(bool can_open)
+                : this(typeof(A), can_open)
             {
             }
 

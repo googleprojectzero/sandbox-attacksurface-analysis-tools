@@ -48,7 +48,7 @@ namespace NtApiDotNet
 
         internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
         {
-            public NtTypeFactoryImpl() : base(true)
+            public NtTypeFactoryImpl() : base(typeof(FileDirectoryAccessRights), true)
             {
             }
 
