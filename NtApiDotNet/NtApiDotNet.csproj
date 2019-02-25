@@ -44,6 +44,7 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BoundaryDescriptor.cs" />
     <Compile Include="BufferUtils.cs" />
     <Compile Include="CachedEnumerable.cs" />
     <Compile Include="CreateUserProcess.cs" />
@@ -81,6 +82,7 @@
     <Compile Include="Ndr\NdrTypes.cs" />
     <Compile Include="Ndr\NdrRpcServerInterface.cs" />
     <Compile Include="NtAsyncResult.cs" />
+    <Compile Include="NtDirectoryNative.cs" />
     <Compile Include="NtEnlistment.cs" />
     <Compile Include="NtFileNative.cs" />
     <Compile Include="NtGeneric.cs" />
