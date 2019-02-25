@@ -28,7 +28,7 @@ namespace NtApiDotNet.Forms
     /// </summary>
     public partial class SecurityDescriptorViewerControl : UserControl
     {
-        private void AddAclTab(TabPage tab_page, AclViewerControl control, Acl acl, Type access_type, GenericMapping mapping, AccessMask valid_access)
+        private void AddAclTab(TabPage tab_page, AclViewerControl control, Acl acl, Type access_type, GenericMapping mapping, AccessMask valid_access, bool is_container)
         {
             if (acl == null)
             {
@@ -43,7 +43,7 @@ namespace NtApiDotNet.Forms
                 }
                 else
                 {
-                    control.SetAcl(acl, access_type, mapping, valid_access);
+                    control.SetAcl(acl, access_type, mapping, valid_access, is_container);
                 }
             }
         }
@@ -66,9 +66,22 @@ namespace NtApiDotNet.Forms
         /// <param name="security_descriptor">Security descriptor to view.</param>
         /// <param name="type">NT type for view.</param>
         /// <param name="valid_access">The valid bit mask for access for this type.</param>
+        /// <param name="is_container">True to indicate this object is a container.</param>
+        public void SetSecurityDescriptor(SecurityDescriptor security_descriptor, NtType type, AccessMask valid_access, bool is_container)
+        {
+            SetSecurityDescriptor(security_descriptor, is_container ? type.ContainerAccessRightsType : type.AccessRightsType, 
+                type.GenericMapping, valid_access, is_container);
+        }
+
+        /// <summary>
+        /// Set the security descriptor for the control.
+        /// </summary>
+        /// <param name="security_descriptor">Security descriptor to view.</param>
+        /// <param name="type">NT type for view.</param>
+        /// <param name="valid_access">The valid bit mask for access for this type.</param>
         public void SetSecurityDescriptor(SecurityDescriptor security_descriptor, NtType type, AccessMask valid_access)
         {
-            SetSecurityDescriptor(security_descriptor, type.AccessRightsType, type.GenericMapping, valid_access);
+            SetSecurityDescriptor(security_descriptor, type, valid_access, false);
         }
 
         /// <summary>
@@ -78,10 +91,11 @@ namespace NtApiDotNet.Forms
         /// <param name="access_type">The enum type for the view.</param>
         /// <param name="mapping">Generic mapping for the type.</param>
         /// <param name="valid_access">The valid bit mask for access for this type.</param>
-        public void SetSecurityDescriptor(SecurityDescriptor security_descriptor, Type access_type, GenericMapping mapping, AccessMask valid_access)
+        /// <param name="is_container">True to indicate this object is a container.</param>
+        public void SetSecurityDescriptor(SecurityDescriptor security_descriptor, Type access_type, GenericMapping mapping, AccessMask valid_access, bool is_container)
         {
-            AddAclTab(tabPageDACL, aclViewerControlDacl, security_descriptor.Dacl, access_type, mapping, valid_access);
-            AddAclTab(tabPageSACL, aclViewerControlSacl, security_descriptor.Sacl, access_type, mapping, valid_access);
+            AddAclTab(tabPageDACL, aclViewerControlDacl, security_descriptor.Dacl, access_type, mapping, valid_access, is_container);
+            AddAclTab(tabPageSACL, aclViewerControlSacl, security_descriptor.Sacl, access_type, mapping, valid_access, is_container);
             SetSidLabel(lblOwnerValue, security_descriptor.Owner);
             SetSidLabel(lblGroupValue, security_descriptor.Group);
             if (security_descriptor.Sacl != null && !security_descriptor.Sacl.NullAcl 
@@ -93,6 +107,18 @@ namespace NtApiDotNet.Forms
             {
                 lblIntegrityValue.Text = "N/A";
             }
+        }
+
+        /// <summary>
+        /// Set the security descriptor for the control.
+        /// </summary>
+        /// <param name="security_descriptor">Security descriptor to view.</param>
+        /// <param name="access_type">The enum type for the view.</param>
+        /// <param name="mapping">Generic mapping for the type.</param>
+        /// <param name="valid_access">The valid bit mask for access for this type.</param>
+        public void SetSecurityDescriptor(SecurityDescriptor security_descriptor, Type access_type, GenericMapping mapping, AccessMask valid_access)
+        {
+            SetSecurityDescriptor(security_descriptor, access_type, mapping, valid_access, false);
         }
 
         /// <summary>

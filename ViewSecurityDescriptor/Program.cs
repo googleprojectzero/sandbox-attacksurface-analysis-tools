@@ -14,7 +14,6 @@
 
 using NtApiDotNet;
 using NtApiDotNet.Forms;
-using NtApiDotNet.Win32;
 using System;
 using System.Windows.Forms;
 

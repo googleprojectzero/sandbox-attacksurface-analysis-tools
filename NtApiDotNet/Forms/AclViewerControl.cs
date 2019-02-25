@@ -35,6 +35,7 @@ namespace NtApiDotNet.Forms
         private Type _access_type;
         private GenericMapping _mapping;
         private AccessMask _valid_access;
+        private bool _is_container;
         private Type _current_access_type;
         private bool _read_only_checks;
 
@@ -55,10 +56,24 @@ namespace NtApiDotNet.Forms
         /// <param name="valid_access">The valid bit mask for access for this type.</param>
         public void SetAcl(Acl acl, Type access_type, GenericMapping mapping, AccessMask valid_access)
         {
+            SetAcl(acl, access_type, mapping, valid_access, false);
+        }
+
+        /// <summary>
+        /// Set ACL for control.
+        /// </summary>
+        /// <param name="acl">The ACL to view.</param>
+        /// <param name="access_type">The enum type for the view.</param>
+        /// <param name="mapping">Generic mapping for the type.</param>
+        /// <param name="valid_access">The valid bit mask for access for this type.</param>
+        /// <param name="is_container">True to indicate this object is a container.</param>
+        public void SetAcl(Acl acl, Type access_type, GenericMapping mapping, AccessMask valid_access, bool is_container)
+        {
             _acl = acl;
             _access_type = access_type;
             _mapping = mapping;
             _valid_access = valid_access;
+            _is_container = is_container;
 
             if (!acl.HasConditionalAce)
             {
@@ -110,6 +125,12 @@ namespace NtApiDotNet.Forms
                         break;
                     case AceType.MandatoryLabel:
                         item.BackColor = Color.LightGoldenrodYellow;
+                        break;
+                    case AceType.Audit:
+                    case AceType.AuditCallback:
+                    case AceType.AuditCallbackObject:
+                    case AceType.AuditObject:
+                        item.BackColor = Color.LightCoral;
                         break;
                 }
             }
