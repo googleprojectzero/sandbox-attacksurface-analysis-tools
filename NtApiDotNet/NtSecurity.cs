@@ -718,7 +718,7 @@ namespace NtApiDotNet
         Allowed = 0x0,
         Denied = 0x1,
         Audit = 0x2,
-        Alerm = 0x3,
+        Alarm = 0x3,
         AllowedCompound = 0x4,
         AllowedObject = 0x5,
         DeniedObject = 0x6,
