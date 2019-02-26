@@ -718,7 +718,10 @@ namespace NtApiDotNet
                     value_info.Data.ReadArray(0, name_buffer, 0, name_buffer.Length);
                     string name = new string(name_buffer);
                     byte[] data_buffer = new byte[res.DataLength];
-                    value_info.ReadArray((ulong)res.DataOffset, data_buffer, 0, data_buffer.Length);
+                    if (res.DataLength > 0)
+                    {
+                        value_info.ReadArray((ulong)res.DataOffset, data_buffer, 0, data_buffer.Length);
+                    }
                     yield return new NtKeyValue(name, res.Type, data_buffer, res.TitleIndex);
                 }
             }
@@ -736,8 +739,7 @@ namespace NtApiDotNet
             {
                 while (true)
                 {
-                    int result_length;
-                    NtStatus status = NtSystemCalls.NtEnumerateKey(Handle, index, KeyInformationClass.KeyBasicInformation, name_info, name_info.Length, out result_length);
+                    NtStatus status = NtSystemCalls.NtEnumerateKey(Handle, index, KeyInformationClass.KeyBasicInformation, name_info, name_info.Length, out int result_length);
                     if (status == NtStatus.STATUS_BUFFER_OVERFLOW || status == NtStatus.STATUS_BUFFER_TOO_SMALL)
                     {
                         name_info.Resize(result_length);
