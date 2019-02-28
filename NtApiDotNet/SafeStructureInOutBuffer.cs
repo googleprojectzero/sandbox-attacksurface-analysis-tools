@@ -121,7 +121,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Convert the buffer back to a structure.
+        /// Get or set the result structure in the memory buffer.
         /// </summary>
         public virtual T Result
         {
@@ -131,6 +131,14 @@ namespace NtApiDotNet
                     throw new ObjectDisposedException("handle");
 
                 return (T)Marshal.PtrToStructure(handle, typeof(T));
+            }
+
+            set
+            {
+                if (IsClosed || IsInvalid)
+                    throw new ObjectDisposedException("handle");
+
+                Marshal.StructureToPtr(value, handle, true);
             }
         }
 
