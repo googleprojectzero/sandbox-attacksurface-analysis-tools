@@ -255,12 +255,6 @@ namespace NtApiDotNet
             SafeKernelObjectHandle SectionHandle,
             [In, Out] LargeInteger SectionSize
         );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtAreMappedFilesTheSame(
-            IntPtr Mapped1,
-            IntPtr Mapped2
-        );
     }
 #pragma warning restore 1591
 
@@ -482,6 +476,27 @@ namespace NtApiDotNet
         public SafeStructureInOutBuffer<T> GetStructAtOffset<T>(int offset) where T : new()
         {
             return BufferUtils.GetStructAtOffset<T>(this, offset);
+        }
+
+        /// <summary>
+        /// Checks if this mapped view represents the same file.
+        /// </summary>
+        /// <param name="address">The address to check.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True if the mapped view represents the same file.</returns>
+        public NtResult<bool> IsSameMapping(long address, bool throw_on_error)
+        {
+            return NtVirtualMemory.AreMappedFilesTheSame(DangerousGetHandle().ToInt64(), address, throw_on_error);
+        }
+
+        /// <summary>
+        /// Checks if this mapped view represents the same file.
+        /// </summary>
+        /// <param name="address">The address to check.</param>
+        /// <returns>True if the mapped view represents the same file.</returns>
+        public bool IsSameMapping(long address)
+        {
+            return NtVirtualMemory.AreMappedFilesTheSame(DangerousGetHandle().ToInt64(), address);
         }
 
         private readonly bool _writable;

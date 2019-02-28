@@ -85,6 +85,12 @@ namespace NtApiDotNet
             MemoryAllocationProtect NewProtect,
             out MemoryAllocationProtect OldProtect
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAreMappedFilesTheSame(
+            IntPtr Mapped1,
+            IntPtr Mapped2
+        );
     }
 
     [Flags]
@@ -753,6 +759,35 @@ namespace NtApiDotNet
         public static MemoryImageInformation QueryImageInformation(SafeKernelObjectHandle process, long base_address)
         {
             return QueryImageInformation(process, base_address, true).Result;
+        }
+
+        /// <summary>
+        /// Determine if two addresses are the same mapped file.
+        /// </summary>
+        /// <param name="address_1">The first address.</param>
+        /// <param name="address_2">The second address.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True if the mapped memory is the same file.</returns>
+        public static NtResult<bool> AreMappedFilesTheSame(long address_1, long address_2, bool throw_on_error)
+        {
+            NtStatus status = NtSystemCalls.NtAreMappedFilesTheSame(new IntPtr(address_1),
+                new IntPtr(address_2));
+            if (status == NtStatus.STATUS_NOT_SAME_DEVICE)
+            {
+                return false.CreateResult();
+            }
+            return status.CreateResult(throw_on_error, () => true);
+        }
+
+        /// <summary>
+        /// Determine if two addresses are the same mapped file.
+        /// </summary>
+        /// <param name="address_1">The first address.</param>
+        /// <param name="address_2">The second address.</param>
+        /// <returns>True if the mapped memory is the same file.</returns>
+        public static bool AreMappedFilesTheSame(long address_1, long address_2)
+        {
+            return AreMappedFilesTheSame(address_1, address_2, true).Result;
         }
     }
 }
