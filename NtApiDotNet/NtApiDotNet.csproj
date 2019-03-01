@@ -44,6 +44,8 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AlpcMessage.cs" />
+    <Compile Include="AlpcMessageAttributeSet.cs" />
     <Compile Include="BoundaryDescriptor.cs" />
     <Compile Include="BufferUtils.cs" />
     <Compile Include="CachedEnumerable.cs" />
@@ -81,6 +83,8 @@
     <Compile Include="Ndr\NdrStringBuilder.cs" />
     <Compile Include="Ndr\NdrTypes.cs" />
     <Compile Include="Ndr\NdrRpcServerInterface.cs" />
+    <Compile Include="NtAlpcNative.cs" />
+    <Compile Include="NtAlpcUtils.cs" />
     <Compile Include="NtAsyncResult.cs" />
     <Compile Include="NtDirectoryNative.cs" />
     <Compile Include="NtEnlistment.cs" />

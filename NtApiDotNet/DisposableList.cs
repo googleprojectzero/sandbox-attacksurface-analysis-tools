@@ -106,7 +106,6 @@ namespace NtApiDotNet
             }
         }
         #endregion
-
     }
 
     /// <summary>
@@ -125,6 +124,27 @@ namespace NtApiDotNet
                 Sid = AddResource(s.ToSafeBuffer()).DangerousGetHandle(),
                 Attributes = GroupAttributes.Enabled
             }).ToArray();
+        }
+    }
+
+    internal static class DisposableListUtils
+    {
+        internal static SafeSidBufferHandle AddSid(this DisposableList list, Sid sid)
+        {
+            if (sid == null)
+            {
+                return SafeSidBufferHandle.Null;
+            }
+            return list.AddResource(sid.ToSafeBuffer());
+        }
+
+        internal static SafeStructureInOutBuffer<T> AddStructure<T>(this DisposableList list, T value) where T : class, new()
+        {
+            if (value == null)
+            {
+                return SafeStructureInOutBuffer<T>.Null;
+            }
+            return list.AddResource(new SafeStructureInOutBuffer<T>(value));
         }
     }
 
