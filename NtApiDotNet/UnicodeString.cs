@@ -50,6 +50,37 @@ namespace NtApiDotNet
     }
 
     /// <summary>
+    /// Standard ANSI_STRING class
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    public sealed class AnsiString
+    {
+        private readonly ushort Length;
+        private readonly ushort MaximumLength;
+        [MarshalAs(UnmanagedType.LPStr)]
+        private readonly string Buffer;
+
+        public AnsiString(string str)
+        {
+            Length = (ushort)str.Length;
+            MaximumLength = (ushort)(str.Length + 1);
+            Buffer = str;
+        }
+
+        public AnsiString()
+        {
+            Length = 0;
+            MaximumLength = 0;
+            Buffer = null;
+        }
+
+        public override string ToString()
+        {
+            return Buffer;
+        }
+    }
+
+    /// <summary>
     /// This class is used when the UNICODE_STRING is an output parameter.
     /// The allocatation of the buffer is handled elsewhere.
     /// </summary>
