@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -77,23 +78,28 @@ namespace NtApiDotNet
     {
         #region Constructors
 
+        private AlpcMessage(SafeAlpcPortMessageBuffer buffer)
+        {
+            Buffer = buffer;
+        }
+
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="data_length">The length of allocated memory.</param>
         /// <param name="initialize">Indicate whether to initialize the message headers.</param>
-        protected AlpcMessage(int data_length, bool initialize)
+        protected AlpcMessage(int data_length, bool initialize) 
+            : this(SafeAlpcPortMessageBuffer.Create(data_length, initialize))
         {
-            Buffer = SafeAlpcPortMessageBuffer.Create(data_length, initialize);
         }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="data">The raw bytes which represents the message.</param>
-        protected AlpcMessage(byte[] data)
+        protected AlpcMessage(byte[] data) 
+            : this(SafeAlpcPortMessageBuffer.Create(data))
         {
-            Buffer = SafeAlpcPortMessageBuffer.Create(data);
         }
 
         #endregion
@@ -125,9 +131,27 @@ namespace NtApiDotNet
         public int MessageId => Buffer.Result.MessageId;
 
         /// <summary>
+        /// Get or set the message data.
+        /// </summary>
+        /// <remarks>When you set the data it'll update the DataLength and TotalLength fields.\</remarks>
+        public byte[] Data
+        {
+            get => Buffer.Data.ReadBytes(DataLength);
+            set
+            {
+                Buffer.Data.WriteBytes(value);
+                var result = Buffer.Result;
+                result.u1.TotalLength = (short)Buffer.Length;
+                result.u1.DataLength = (short)value.Length;
+                Buffer.Result = result;
+            }
+        }
+
+        /// <summary>
         /// Get underlying buffer.
         /// </summary>
-        public SafeAlpcPortMessageBuffer Buffer { get; }
+        public SafeAlpcPortMessageBuffer Buffer { get; private set; }
+
         #endregion
 
         #region Static Methods
@@ -176,13 +200,24 @@ namespace NtApiDotNet
         #endregion
 
         #region Public Methods
+        /// <summary>
+        /// Detaches the message and allocates a new one.
+        /// </summary>
+        /// <returns>The detached buffer.</returns>
+        /// <remarks>The original buffer will become invalid after this call.</remarks>
+        public AlpcMessage Detach()
+        {
+            var buffer = Buffer;
+            Buffer = null;
+            return new AlpcMessage(buffer);
+        }
 
         /// <summary>
         /// Virtual Dispose method.
         /// </summary>
         public virtual void Dispose()
         {
-            Buffer.Dispose();
+            Buffer?.Dispose();
         }
 
         #endregion

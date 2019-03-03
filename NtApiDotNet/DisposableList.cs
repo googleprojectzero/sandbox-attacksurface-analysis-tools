@@ -146,6 +146,15 @@ namespace NtApiDotNet
             }
             return list.AddResource(new SafeStructureInOutBuffer<T>(value));
         }
+
+        internal static SafeBuffer AddSecurityDescriptor(this DisposableList list, SecurityDescriptor sd)
+        {
+            if (sd == null)
+            {
+                return SafeHGlobalBuffer.Null;
+            }
+            return list.AddResource(sd.ToSafeBuffer());
+        }
     }
 
     /// <summary>

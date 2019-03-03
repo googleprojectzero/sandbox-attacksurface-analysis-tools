@@ -106,8 +106,6 @@ namespace NtApiDotNet
         public PortMessageUnion3 u3;
     }
 
-    
-
     [Flags]
     public enum AlpcPortAttributeFlags
     {
@@ -116,8 +114,12 @@ namespace NtApiDotNet
         Unknown10000 = 0x10000,
         AllowLpcRequests = 0x20000,
         WaitablePort = 0x40000,
-        Unknown80000 = 0x80000,
-        SystemProcess = 0x100000 // Not accessible outside the kernel.
+        AllowDupObject = 0x80000,
+        SystemProcess = 0x100000, // Not accessible outside the kernel.
+        LrpcWakePolicy1 = 0x200000,
+        LrpcWakePolicy2 = 0x400000,
+        LrpcWakePolicy3 = 0x800000,
+        NoCompleteDupObject = 0x2000000, // If not set then object duplication won't complete.
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -131,8 +133,20 @@ namespace NtApiDotNet
         public IntPtr MaxSectionSize;
         public IntPtr MaxViewSize;
         public IntPtr MaxTotalSectionSize;
-        public uint DupObjectTypes;
-        public uint Reserved; // Only Win64?
+        public AlpcHandleObjectType DupObjectTypes;
+        public int Reserved;
+
+        public static AlpcPortAttributes CreateDefault()
+        {
+            return new AlpcPortAttributes()
+            {
+                Flags = AlpcPortAttributeFlags.None,
+                SecurityQos = new SecurityQualityOfServiceStruct(SecurityImpersonationLevel.Impersonation,
+                                                            SecurityContextTrackingMode.Static, false),
+                MaxMessageLength = new IntPtr(short.MaxValue),
+                DupObjectTypes = AlpcHandleObjectType.AllObjects
+            };
+        }
     }
 
     [Flags]
@@ -143,21 +157,25 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public class AlpcSecurityAttribute
+    public struct AlpcHandle
     {
-        public AlpcSecurityAttributeFlags Flags;
-        public IntPtr QoS;
-        public IntPtr ContextHandle;
-    }
+        private IntPtr _value;
 
-    [StructLayout(LayoutKind.Sequential)]
-    public class AlpcContextAttribute
-    {
-        public IntPtr PortContext;
-        public IntPtr MessageContext;
-        public uint Sequence;
-        public uint MessageId;
-        public uint CallbackId;
+        public long Value
+        {
+            get => _value.ToInt64();
+            set => _value = new IntPtr(value);
+        }
+
+        public AlpcHandle(long value)
+        {
+            _value = new IntPtr(value);
+        }
+        
+        public static implicit operator AlpcHandle(long value)
+        {
+            return new AlpcHandle(value);
+        }
     }
 
     [Flags]
@@ -184,7 +202,7 @@ namespace NtApiDotNet
     {
         public AlpcSecurityAttrFlags Flags;
         public IntPtr QoS; // struct _SECURITY_QUALITY_OF_SERVICE
-        public IntPtr ContextHandle;
+        public AlpcHandle ContextHandle;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -234,12 +252,31 @@ namespace NtApiDotNet
         Inherit = 0x80000
     }
 
+    [Flags]
+    public enum AlpcHandleObjectType
+    {
+        None = 0,
+        File = 0x0001,
+        Unknown0002 = 0x0002,
+        Thread = 0x0004,
+        Semaphore = 0x0008,
+        Event = 0x0010,
+        Process = 0x0020,
+        Mutex = 0x0040,
+        Section = 0x0080,
+        RegKey = 0x0100,
+        Token = 0x0200,
+        Composition = 0x0400,
+        Job = 0x0800,
+        AllObjects = 0xFFD,
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct AlpcHandleAttr
     {
         public AlpcHandleAttrFlags Flags;
         public IntPtr Handle; // Also ALPC_HANDLE_ATTR32* HandleAttrArray;
-        public int ObjectType; // Also HandleCount;
+        public AlpcHandleObjectType ObjectType; // Also HandleCount;
         public AccessMask DesiredAccess; // Also GrantedAccess
     }
 
@@ -248,7 +285,7 @@ namespace NtApiDotNet
     {
         public AlpcHandleAttrFlags Flags;
         public int Handle;
-        public int ObjectType;
+        public AlpcHandleObjectType ObjectType;
         public AccessMask DesiredAccess;
     }
 
@@ -263,7 +300,7 @@ namespace NtApiDotNet
     public struct AlpcDataViewAttr
     {
         public AlpcDataViewAttrFlags Flags;
-        public IntPtr SectionHandle;            // ALPC_HANDLE.
+        public AlpcHandle SectionHandle;
         public IntPtr ViewBase;
         public long ViewSize;
     }
@@ -295,6 +332,72 @@ namespace NtApiDotNet
         Wow64Call = 0x80000000
     }
 
+    [Flags]
+    public enum AlpcCancelMessageFlags
+    {
+        None = 0,
+        TryCancel = 1,
+        Unknown2 = 2,
+        Unknown4 = 4,
+        NoContextCheck = 8
+    }
+
+    [Flags]
+    public enum AlpcImpersonationFlags
+    {
+        None = 0,
+        AnonymousFallback = 1,
+        RequireImpersonationLevel = 2,
+        // From bit 2 on it's the impersonation level required.
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct AlpcBasicInformation
+    {
+        public int Flags;
+        public int SequenceNo;
+        public IntPtr PortContext;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct AlpcPortAssociateCompletionPort
+    {
+        public IntPtr CompletionKey;
+        public SafeKernelObjectHandle CompletionPort;
+    }
+
+    public struct AlpcServerInformationOut
+    {
+        public bool ThreadBlocked;
+        public IntPtr ConnectedProcessId;
+        public UnicodeStringOut ConnectionPortName;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public struct AlpcServerInformation
+    {
+        [FieldOffset(0)]
+        public IntPtr ThreadHandle;
+        [FieldOffset(0)]
+        public AlpcServerInformationOut Out;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct AlpcPortMessageZoneInformation
+    {
+        public IntPtr Buffer;
+        public int Size;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct AlpcPortCompletionListInformation
+    {
+        public IntPtr Buffer; // PALPC_COMPLETION_LIST_HEADER
+        public int Size;
+        public int ConcurrencyCount;
+        public int AttributeFlags;
+    }
+
     public static class NtAlpcNativeMethods
     {
         [DllImport("ntdll.dll")]
@@ -306,14 +409,14 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus AlpcInitializeMessageAttribute(
             AlpcMessageAttributeFlags AttributeFlags,
-            SafeAlpcMessageAttributesBuffer Buffer, // PALPC_MESSAGE_ATTRIBUTES 
+            SafeAlpcMessageAttributesBuffer Buffer,
             int BufferSize,
             out int RequiredBufferSize
         );
 
         [DllImport("ntdll.dll")]
         public static extern IntPtr AlpcGetMessageAttribute(
-            SafeAlpcMessageAttributesBuffer Buffer, // PALPC_MESSAGE_ATTRIBUTES
+            SafeAlpcMessageAttributesBuffer Buffer,
             AlpcMessageAttributeFlags AttributeFlag
         );
     }
@@ -358,7 +461,7 @@ namespace NtApiDotNet
             AlpcMessageFlags Flags,
             [In] SafeSidBufferHandle RequiredServerSid,
             [In, Out] SafeAlpcPortMessageBuffer ConnectionMessage,
-            [In, Out] OptionalInt32 BufferLength,
+            [In, Out] OptionalLength BufferLength,
             [In, Out] SafeAlpcMessageAttributesBuffer OutMessageAttributes,
             [In, Out] SafeAlpcMessageAttributesBuffer InMessageAttributes,
             [In] LargeInteger Timeout
@@ -394,14 +497,14 @@ namespace NtApiDotNet
         public static extern NtStatus NtAlpcCancelMessage(
             [In] SafeKernelObjectHandle PortHandle,
             uint Flags,
-            [In] AlpcContextAttribute MessageContext
+            ref AlpcContextAttr MessageContext
            );
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcImpersonateClientOfPort(
                 [In] SafeKernelObjectHandle PortHandle,
                 [In] SafeAlpcPortMessageBuffer PortMessage,
-                uint Flags
+                AlpcImpersonationFlags Flags
         );
 
         [DllImport("ntdll.dll")]
@@ -409,45 +512,27 @@ namespace NtApiDotNet
         public static extern NtStatus NtAlpcImpersonateClientContainerOfPort(
             [In] SafeKernelObjectHandle PortHandle,
             [In] SafeAlpcPortMessageBuffer PortMessage,
-            uint Flags
+            int Flags
         );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtAlpcOpenSenderProcess(
-            out SafeKernelObjectHandle ProcessHandle,
-            [In] SafeKernelObjectHandle PortHandle,
-            [In] SafeAlpcPortMessageBuffer PortMessage,
-            uint Flags,
-            ProcessAccessRights DesiredAccess,
-            [In] ObjectAttributes ObjectAttributes);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtAlpcOpenSenderThread(
-            out SafeKernelObjectHandle ThreadHandle,
-            [In] SafeKernelObjectHandle PortHandle,
-            [In] SafeAlpcPortMessageBuffer PortMessage,
-            uint Flags,
-            ProcessAccessRights DesiredAccess,
-            [In] ObjectAttributes ObjectAttributes);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcCreateSecurityContext(
             SafeKernelObjectHandle PortHandle,
             int Flags,
-            [In, Out] AlpcSecurityAttribute SecurityAttribute);
+            ref AlpcSecurityAttr SecurityAttribute);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcDeleteSecurityContext(
             SafeKernelObjectHandle PortHandle,
             int Flags,
-            IntPtr ContextHandle
+            AlpcHandle ContextHandle
         );
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcRevokeSecurityContext(
             SafeKernelObjectHandle PortHandle,
             int Flags,
-            IntPtr ContextHandle
+            AlpcHandle ContextHandle
         );
 
         [DllImport("ntdll.dll")]
@@ -466,7 +551,7 @@ namespace NtApiDotNet
             AlpcDataViewAttrFlags Flags,
             SafeKernelObjectHandle SectionHandle,
             IntPtr SectionSize,
-            out IntPtr AlpcSectionHandle,
+            out AlpcHandle AlpcSectionHandle,
             out IntPtr ActualSectionSize
         );
 
@@ -474,7 +559,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtAlpcDeletePortSection(
             SafeKernelObjectHandle PortHandle,
             int Flags,
-            IntPtr SectionHandle
+            AlpcHandle SectionHandle
         );
 
         [DllImport("ntdll.dll")]
@@ -482,14 +567,14 @@ namespace NtApiDotNet
             SafeKernelObjectHandle PortHandle,
             int Flags,
             IntPtr MessageSize,
-            out IntPtr ResourceId
+            out AlpcHandle ResourceId
         );
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcDeleteResourceReserve(
             SafeKernelObjectHandle PortHandle,
             int Flags,
-            IntPtr ResourceId
+            AlpcHandle ResourceId
         );
 
         [DllImport("ntdll.dll")]
@@ -504,6 +589,46 @@ namespace NtApiDotNet
             SafeKernelObjectHandle PortHandle,
             int Flags,
             IntPtr ViewBase
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAlpcAcceptConnectPort(
+            out SafeKernelObjectHandle PortHandle,
+            SafeKernelObjectHandle ConnectionPortHandle,
+            AlpcMessageFlags Flags,
+            ObjectAttributes ObjectAttributes,
+            AlpcPortAttributes PortAttributes,
+            IntPtr PortContext,
+            SafeAlpcPortMessageBuffer ConnectionRequest,
+            SafeAlpcMessageAttributesBuffer ConnectionMessageAttributes,
+            bool AcceptConnection
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAlpcOpenSenderProcess(
+            out SafeKernelObjectHandle ProcessHandle,
+            SafeKernelObjectHandle PortHandle,
+            SafeAlpcPortMessageBuffer PortMessage,
+            int Flags,
+            ProcessAccessRights DesiredAccess,
+            ObjectAttributes ObjectAttributes
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAlpcOpenSenderThread(
+            out SafeKernelObjectHandle ThreadHandle,
+            SafeKernelObjectHandle PortHandle,
+            SafeAlpcPortMessageBuffer PortMessage,
+            int Flags,
+            ThreadAccessRights DesiredAccess,
+            ObjectAttributes ObjectAttributes
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAlpcCancelMessage(
+            SafeKernelObjectHandle PortHandle,
+            AlpcCancelMessageFlags Flags,
+            ref AlpcContextAttr MessageContext
         );
     }
 #pragma warning restore 1591

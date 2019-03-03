@@ -67,6 +67,15 @@ namespace NtApiDotNet
         public SecurityContextTrackingMode ContextTrackingMode;
         [MarshalAs(UnmanagedType.U1)]
         public bool EffectiveOnly;
+
+        public SecurityQualityOfServiceStruct(SecurityImpersonationLevel impersonation_level,
+            SecurityContextTrackingMode context_tracking_mode, bool effective_only)
+        {
+            Length = Marshal.SizeOf(typeof(SecurityQualityOfServiceStruct));
+            ImpersonationLevel = impersonation_level;
+            ContextTrackingMode = context_tracking_mode;
+            EffectiveOnly = effective_only;
+        }
     }
 #pragma warning restore 1591
 }
