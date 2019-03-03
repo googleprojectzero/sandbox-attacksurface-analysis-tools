@@ -46,6 +46,7 @@
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="NtAlpcCmdlets.cs" />
     <Compile Include="NtPartitionCmdlets.cs" />
     <Compile Include="NtTransactionCmdlets.cs" />
     <Compile Include="NtTransactionManagerCmdlets.cs" />
