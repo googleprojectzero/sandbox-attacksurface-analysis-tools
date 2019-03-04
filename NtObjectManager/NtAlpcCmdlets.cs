@@ -108,6 +108,86 @@ namespace NtObjectManager
     }
 
     /// <summary>
+    /// <para type="synopsis">Accepts a connection on an ALPC server port.</para>
+    /// <para type="description">This cmdlet accepts a connection on an ALPC server port and returns the new server port to communicate with the client.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>$conn = Connect-NtAlpcServer -Port $port -ConnectionRequest $msg</code>
+    ///   <para>Accepts a connection on an ALPC server port.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$conn = Connect-NtAlpcServer -Port $port  -ConnectionRequest $msg -Reject</code>
+    ///   <para>Reject a connection on an ALPC server port.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet("Connect", "NtAlpcServer")]
+    [OutputType(typeof(NtAlpcServer))]
+    public class ConnectNtAlpcServer : NtObjectBaseCmdlet
+    {
+        /// <summary>
+        /// Determine if the cmdlet can create objects.
+        /// </summary>
+        /// <returns>True if objects can be created.</returns>
+        protected override bool CanCreateDirectories()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Method to create an object from a set of object attributes.
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes to create/open from.</param>
+        /// <returns>The newly created object.</returns>
+        protected override object CreateObject(ObjectAttributes obj_attributes)
+        {
+            return Port.AcceptConnectPort(Flags, obj_attributes, PortAttributes, 
+                PortContext, ConnectionMessage, ConnectionAttributes, !Reject);
+        }
+
+        /// <summary>
+        /// <para type="description">The server port to accept the connection.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 0)]
+        public NtAlpcServer Port { get; set; }
+
+        /// <summary>
+        /// <para type="description">Initial connection message from the initial receive call.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 1)]
+        public AlpcMessage ConnectionMessage { get; set; }
+
+        /// <summary>
+        /// <para type="description">Optional context value for the new port.</para>
+        /// </summary>
+        [Parameter]
+        public IntPtr PortContext { get; set; }
+
+        /// <summary>
+        /// <para type="description">Optional port attributes.</para>
+        /// </summary>
+        [Parameter]
+        public AlpcPortAttributes PortAttributes { get; set; }
+
+        /// <summary>
+        /// <para type="description">Flags for sending the initial message.</para>
+        /// </summary>
+        [Parameter]
+        public AlpcMessageFlags Flags { get; set; }
+
+        /// <summary>
+        /// <para type="description">Optional connection message attributes.</para>
+        /// </summary>
+        [Parameter]
+        public AlpcMessageAttributeSet ConnectionAttributes { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to reject the client connection.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter Reject { get; set; }
+    }
+
+    /// <summary>
     /// <para type="synopsis">Creates a new ALPC server by path.</para>
     /// <para type="description">This cmdlet creates a new NT ALPC server. The absolute path to the object in the NT object manager name space must be specified.
     /// </para>
@@ -315,6 +395,185 @@ namespace NtObjectManager
             {
                 WriteObject(AlpcMessage.Create(Length, Initialize));
             }
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Sends a message on an ALPC port and optionally receives one as well.</para>
+    /// <para type="description">This cmdlet sends a message on an ALPC port and optionally receives ones.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>Send-NtAlpcMessage -Port $port -Message $msg</code>
+    ///   <para>Send a message on a port.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$recv_msg = Send-NtAlpcMessage -Port $port -Message $msg -ReceiveLength 80 -Flags SyncMessage</code>
+    ///   <para>Send a message on a port and waits for a message of up to 80 bytes.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Send-NtAlpcMessage -Port $port -Bytes @(0, 1, 2, 3)</code>
+    ///   <para>Send a message on a port from a byte array.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet("Send", "NtAlpcMessage", DefaultParameterSetName = "FromMsg")]
+    [OutputType(typeof(AlpcMessage))]
+    public class SendNtAlpcMessage : PSCmdlet
+    {
+        /// <summary>
+        /// <para type="description">Specify the port to send the message on.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true)]
+        public NtAlpc Port { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify message to send from a byte array.</para>
+        /// </summary>
+        [Parameter(Position = 1, Mandatory = true, ParameterSetName = "FromBytes")]
+        public byte[] Bytes { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify message to send.</para>
+        /// </summary>
+        [Parameter(Position = 1, Mandatory = true, ParameterSetName = "FromMsg")]
+        public AlpcMessage Message { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify send flags.</para>
+        /// </summary>
+        [Parameter]
+        public AlpcMessageFlags Flags { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify send attributes.</para>
+        /// </summary>
+        [Parameter]
+        public AlpcMessageAttributeSet SendAttributes { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify optional timeout in MS.</para>
+        /// </summary>
+        [Parameter]
+        public long? TimeoutMs { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify optional length of message to receive.</para>
+        /// </summary>
+        [Parameter]
+        public int? ReceiveLength { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify receive attributes.</para>
+        /// </summary>
+        [Parameter]
+        public AlpcMessageAttributeSet ReceiveAttributes { get; set; }
+
+        private AlpcMessage CreateReceiveMessage()
+        {
+            if (ReceiveLength.HasValue)
+            {
+                return AlpcMessage.Create(ReceiveLength.Value, false);
+            }
+            return null;
+        }
+
+        private AlpcMessage Send(AlpcMessage msg)
+        {
+            NtWaitTimeout timeout = TimeoutMs.HasValue
+                ? NtWaitTimeout.FromMilliseconds(TimeoutMs.Value) : NtWaitTimeout.Infinite;
+            using (var recv_message = CreateReceiveMessage())
+            {
+                Port.SendReceive(Flags, msg, SendAttributes, recv_message, recv_message != null ? ReceiveAttributes : null, timeout);
+                return recv_message?.Detach();
+            }
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public SendNtAlpcMessage()
+        {
+            Flags = AlpcMessageFlags.ReleaseMessage;
+        }
+
+        /// <summary>
+        /// Process record.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            if (ParameterSetName == "FromBytes")
+            {
+                using (var msg = AlpcMessage.Create(Bytes))
+                {
+                    WriteObject(Send(msg));
+                }
+            }
+            else
+            {
+                WriteObject(Send(Message));
+            }
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Receives a message on an ALPC port.</para>
+    /// <para type="description">This cmdlet receives a message on an ALPC port.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>$recv_msg = Receive-NtAlpcMessage -Port $port -ReceiveLength 80</code>
+    ///   <para>Receive a message of up to 80 bytes.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet("Receive", "NtAlpcMessage")]
+    public class ReceiveNtAlpcMessage : PSCmdlet
+    {
+        /// <summary>
+        /// <para type="description">Specify the port to send the message on.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true)]
+        public NtAlpc Port { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify send flags.</para>
+        /// </summary>
+        [Parameter]
+        public AlpcMessageFlags Flags { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify optional timeout in MS.</para>
+        /// </summary>
+        [Parameter]
+        public long? TimeoutMs { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the length of message to receive.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 1)]
+        public int ReceiveLength { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify receive attributes.</para>
+        /// </summary>
+        [Parameter]
+        public AlpcMessageAttributeSet ReceiveAttributes { get; set; }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public ReceiveNtAlpcMessage()
+        {
+            Flags = AlpcMessageFlags.ReleaseMessage;
+        }
+
+        /// <summary>
+        /// Process record.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            NtWaitTimeout timeout = TimeoutMs.HasValue
+                ? NtWaitTimeout.FromMilliseconds(TimeoutMs.Value) : NtWaitTimeout.Infinite;
+
+            var msg = Port.Receive(Flags, ReceiveLength, ReceiveAttributes, timeout);
+            WriteObject(msg);
         }
     }
 }
