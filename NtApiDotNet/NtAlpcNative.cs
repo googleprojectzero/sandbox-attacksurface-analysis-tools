@@ -111,7 +111,7 @@ namespace NtApiDotNet
     {
         None = 0,
         LpcPort = 0x1000, // Not accessible outside the kernel.
-        Unknown10000 = 0x10000,
+        AllowImpersonation = 0x10000,
         AllowLpcRequests = 0x20000,
         WaitablePort = 0x40000,
         AllowDupObject = 0x80000,
@@ -119,7 +119,12 @@ namespace NtApiDotNet
         LrpcWakePolicy1 = 0x200000,
         LrpcWakePolicy2 = 0x400000,
         LrpcWakePolicy3 = 0x800000,
-        NoCompleteDupObject = 0x2000000, // If not set then object duplication won't complete.
+        Unknown1000000 = 0x1000000,
+        /// <summary>
+        /// If set then object duplication won't complete. Used by RPC to ensure
+        /// multi-handle attributes don't fail when receiving.
+        /// </summary>
+        NoCompleteDupObject = 0x2000000,
     }
 
     [StructLayout(LayoutKind.Sequential)]
