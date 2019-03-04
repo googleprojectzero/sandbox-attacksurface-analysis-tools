@@ -24,76 +24,85 @@ namespace NtApiDotNet
     /// <summary>
     /// Class to represent a set of ALPC message attributes.
     /// </summary>
-    public sealed class AlpcMessageAttributeSet : IDisposable
+    public sealed class AlpcMessageAttributeSet : Dictionary<AlpcMessageAttributeFlags, AlpcMessageAttribute>, IDisposable
     {
-        private Dictionary<AlpcMessageAttributeFlags, AlpcMessageAttribute> _attrs;
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public AlpcMessageAttributeSet()
+        {
+        }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="attrs">List of attributes to build the buffer from.</param>
-        /// <param name="initialize">True to initialize the buffer with the attribute values.</param>
-        public AlpcMessageAttributeSet(IEnumerable<AlpcMessageAttribute> attrs, bool initialize)
+        public AlpcMessageAttributeSet(IEnumerable<AlpcMessageAttribute> attrs) 
+            : base(attrs.ToDictionary(a => a.AttributeFlag, a => a))
         {
-            _attrs = attrs.ToDictionary(a => a.AttributeFlag, a => a);
-            if (_attrs.Count == 0)
-            {
-                Buffer = SafeAlpcMessageAttributesBuffer.Null;
-                return;
-            }
-
-            AlpcMessageAttributeFlags flags = AlpcMessageAttributeFlags.None;
-            foreach (var flag in _attrs.Keys)
-            {
-                flags |= flag;
-            }
-
-            using (var buffer = SafeAlpcMessageAttributesBuffer.Create(flags))
-            {
-                if (initialize)
-                {
-                    foreach (var attr in attrs)
-                    {
-                        attr.Initialize(buffer);
-                    }
-                }
-                Buffer = buffer.Detach();
-            }
         }
-
-        /// <summary>
-        /// The memory buffer for the attributes.
-        /// </summary>
-        public SafeAlpcMessageAttributesBuffer Buffer { get; private set; }
 
         /// <summary>
         /// Dispose method.
         /// </summary>
         public void Dispose()
         {
-            Buffer.Dispose();
-        }
-
-        /// <summary>
-        /// Re-populate the set based on the results of a request.
-        /// </summary>
-        internal void Rebuild()
-        {
-            foreach (var attr in _attrs.Values)
+            foreach (var attr in Values)
             {
-                attr.Rebuild(Buffer);
+                attr.Dispose();
             }
         }
 
         /// <summary>
-        /// Release the attribute resources.
+        /// Add an attribute object.
         /// </summary>
-        /// <param name="port">The ALPC port associated with the attributes.</param>
-        public void Release(NtAlpc port)
+        /// <param name="attribute">The attribute to add.</param>
+        public void Add(AlpcMessageAttribute attribute)
         {
-            foreach (var attr in _attrs.Values)
+            Add(attribute.AttributeFlag, attribute);
+        }
+
+        /// <summary>
+        /// Remove an attribute object.
+        /// </summary>
+        /// <param name="attribute">The attribute to remove.</param>
+        public void Remove(AlpcMessageAttribute attribute)
+        {
+            Remove(attribute.AttributeFlag);
+        }
+
+        /// <summary>
+        /// Convert the set to a safe buffer.
+        /// </summary>
+        /// <returns>The converted safe buffer.</returns>
+        public SafeAlpcMessageAttributesBuffer ToSafeBuffer()
+        {
+            if (Count == 0)
             {
-                attr.Release(port);
+                return SafeAlpcMessageAttributesBuffer.Null;
+            }
+
+            AlpcMessageAttributeFlags flags = AlpcMessageAttributeFlags.None;
+            foreach (var flag in Keys)
+            {
+                flags |= flag;
+            }
+
+            using (var buffer = SafeAlpcMessageAttributesBuffer.Create(flags))
+            {
+                foreach (var attr in Values)
+                {
+                    attr.ToSafeBuffer(buffer);
+                }
+                return buffer.Detach();
+            }
+        }
+
+        internal void FromSafeBuffer(SafeAlpcMessageAttributesBuffer buffer, NtAlpc port)
+        {
+            foreach (var attr in Values)
+            {
+                attr.FromSafeBuffer(buffer, port);
             }
         }
     }
@@ -101,7 +110,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Base class to represent a message attribute.
     /// </summary>
-    public abstract class AlpcMessageAttribute
+    public abstract class AlpcMessageAttribute : IDisposable
     {
         /// <summary>
         /// The flag for this attribute.
@@ -117,15 +126,16 @@ namespace NtApiDotNet
             AttributeFlag = attribute_flag;
         }
 
-        internal abstract void Initialize(SafeAlpcMessageAttributesBuffer buffer);
+        internal abstract void ToSafeBuffer(SafeAlpcMessageAttributesBuffer buffer);
 
-        internal abstract void Rebuild(SafeAlpcMessageAttributesBuffer buffer);
+        internal abstract void FromSafeBuffer(SafeAlpcMessageAttributesBuffer buffer, NtAlpc port);
 
         /// <summary>
-        /// Release the message attribute.
+        /// Dispose this message attribute.
         /// </summary>
-        /// <param name="port">The ALPC port associated with this attribute.</param>
-        public abstract void Release(NtAlpc port);
+        public virtual void Dispose()
+        {
+        }
     }
 
     /// <summary>
@@ -156,30 +166,51 @@ namespace NtApiDotNet
         /// </summary>
         public long ContextHandle { get; set; }
 
-        /// <summary>
-        /// Method to add the attribute to a buffer.
-        /// </summary>
-        /// <param name="buffer">The buffer to add the attribute to.</param>
-        internal override void Initialize(SafeAlpcMessageAttributesBuffer buffer)
+        internal override void ToSafeBuffer(SafeAlpcMessageAttributesBuffer buffer)
         {
             buffer.SetSecurityAttribute(this);
         }
 
-        /// <summary>
-        /// Method to initialize this attribute from a value in a safe buffer.
-        /// </summary>
-        /// <param name="buffer">The safe buffer to initialize from.</param>
-        internal override void Rebuild(SafeAlpcMessageAttributesBuffer buffer)
+        internal override void FromSafeBuffer(SafeAlpcMessageAttributesBuffer buffer, NtAlpc port)
         {
             buffer.GetSecurityAttribute(this);
         }
+    }
+
+    /// <summary>
+    /// Class representing a security message attribute.
+    /// </summary>
+    public sealed class AlpcTokenMessageAttribute : AlpcMessageAttribute
+    {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public AlpcTokenMessageAttribute()
+            : base(AlpcMessageAttributeFlags.Token)
+        {
+        }
 
         /// <summary>
-        /// Release the message attribute.
+        /// Token ID of token.
         /// </summary>
-        /// <param name="port">The ALPC port associated with this attribute.</param>
-        public override void Release(NtAlpc port)
+        public Luid TokenId { get; set; }
+        /// <summary>
+        /// Authentication ID of token.
+        /// </summary>
+        public Luid AuthenticationId { get; set; }
+        /// <summary>
+        /// Modified ID of token
+        /// </summary>
+        public Luid ModifiedId { get; set; }
+        
+        internal override void ToSafeBuffer(SafeAlpcMessageAttributesBuffer buffer)
         {
+            buffer.SetTokenAttribute(this);
+        }
+
+        internal override void FromSafeBuffer(SafeAlpcMessageAttributesBuffer buffer, NtAlpc port)
+        {
+            buffer.GetTokenAttribute(this);
         }
     }
 
@@ -255,7 +286,7 @@ namespace NtApiDotNet
         /// Set the security attribute.
         /// </summary>
         /// <param name="security_attribute">The security attribute.</param>
-        /// <remarks>The security attribute must have allocated otherwise this will throw an exception.</remarks>
+        /// <remarks>The attribute must have allocated otherwise this will throw an exception.</remarks>
         public void SetSecurityAttribute(AlpcSecurityMessageAttribute security_attribute)
         {
             var attr = GetAttribute<AlpcSecurityAttr>(AlpcMessageAttributeFlags.Security);
@@ -267,24 +298,51 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Set the token attribute.
+        /// </summary>
+        /// <param name="token_attribute">The token attribute.</param>
+        /// <remarks>The attribute must have allocated otherwise this will throw an exception.</remarks>
+        public void SetTokenAttribute(AlpcTokenMessageAttribute token_attribute)
+        {
+            var attr = GetAttribute<AlpcTokenAttr>(AlpcMessageAttributeFlags.Token);
+            attr.Result = new AlpcTokenAttr()
+            {
+                TokenId = token_attribute.TokenId,
+                AuthenticationId = token_attribute.AuthenticationId,
+                ModifiedId = token_attribute.ModifiedId
+            };
+        }
+
+        /// <summary>
         /// Get the security attribute.
         /// </summary>
-        /// <param name="security_attribute">The security attribute to populate</param>
-        /// <remarks>The security attribute must have allocated otherwise this will throw an exception.</remarks>
-        public void GetSecurityAttribute(AlpcSecurityMessageAttribute security_attribute)
+        /// <param name="attribute">The attribute to populate</param>
+        public void GetSecurityAttribute(AlpcSecurityMessageAttribute attribute)
         {
             var attr = GetAttribute<AlpcSecurityAttr>(AlpcMessageAttributeFlags.Security).Result;
-            security_attribute.Flags = attr.Flags;
-            security_attribute.ContextHandle = attr.ContextHandle.Value;
+            attribute.Flags = attr.Flags;
+            attribute.ContextHandle = attr.ContextHandle.Value;
             if (attr.QoS != IntPtr.Zero)
             {
-                security_attribute.SecurityQoS = (SecurityQualityOfService)Marshal.PtrToStructure(attr.QoS,
+                attribute.SecurityQoS = (SecurityQualityOfService)Marshal.PtrToStructure(attr.QoS,
                                                 typeof(SecurityQualityOfService));
             }
             else
             {
-                security_attribute.SecurityQoS = null;
+                attribute.SecurityQoS = null;
             }
+        }
+
+        /// <summary>
+        /// Get the token attribute.
+        /// </summary>
+        /// <param name="attribute">The attribute to populate</param>
+        public void GetTokenAttribute(AlpcTokenMessageAttribute attribute)
+        {
+            var attr = GetAttribute<AlpcTokenAttr>(AlpcMessageAttributeFlags.Token).Result;
+            attribute.TokenId = attr.TokenId;
+            attribute.ModifiedId = attr.ModifiedId;
+            attribute.AuthenticationId = attr.AuthenticationId;
         }
 
         /// <summary>

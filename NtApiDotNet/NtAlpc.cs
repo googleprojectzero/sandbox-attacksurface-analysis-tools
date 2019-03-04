@@ -90,15 +90,15 @@ namespace NtApiDotNet
         {
             using (var list = new DisposableList())
             {
-                var send_msg = list.AddMessage(send_message);
-                var recv_msg = list.AddMessage(receive_message);
-                var send_attr = send_attributes.GetAttributes();
-                var recv_attr = receive_attributes.GetAttributes();
+                var send_msg = list.GetMessageBuffer(send_message);
+                var recv_msg = list.GetMessageBuffer(receive_message);
+                var send_attr = list.GetAttributesBuffer(send_attributes);
+                var recv_attr = list.GetAttributesBuffer(receive_attributes);
                 NtStatus status = NtSystemCalls.NtAlpcSendWaitReceivePort(Handle, flags, send_msg,
                     send_attr, recv_msg, recv_msg.GetOptionalLength(), recv_attr, timeout?.Timeout).ToNtException(throw_on_error);
                 if (status.IsSuccess())
                 {
-                    receive_attributes?.Rebuild();
+                    receive_attributes?.FromSafeBuffer(recv_attr, this);
                     receive_message?.FromSafeBuffer(recv_msg, this);
                     send_message?.FromSafeBuffer(send_msg, this);
                 }
@@ -422,9 +422,9 @@ namespace NtApiDotNet
             {
                 var sid = list.AddSid(required_server_sid);
                 var sd = list.AddSecurityDescriptor(server_security_requirements);
-                var message = list.AddMessage(connection_message);
-                var out_attr = out_message_attributes.GetAttributes();
-                var in_attr = in_message_attributes.GetAttributes();
+                var message = list.GetMessageBuffer(connection_message);
+                var out_attr = list.GetAttributesBuffer(out_message_attributes);
+                var in_attr = list.GetAttributesBuffer(in_message_attributes);
 
                 SafeKernelObjectHandle handle;
                 NtStatus status;
@@ -443,8 +443,8 @@ namespace NtApiDotNet
                 }
                 return status.CreateResult(throw_on_error, () =>
                 {
-                    in_message_attributes?.Rebuild();
                     var client = new NtAlpcClient(handle);
+                    in_message_attributes?.FromSafeBuffer(in_attr, client);
                     connection_message?.FromSafeBuffer(message, client);
                     return client;
                 });
@@ -709,7 +709,7 @@ namespace NtApiDotNet
                 var message = connection_request.ToSafeBuffer();
                 return NtSystemCalls.NtAlpcAcceptConnectPort(out SafeKernelObjectHandle handle,
                     Handle, flags, object_attributes, port_attributes, port_context, message,
-                    connection_message_attributes.GetAttributes(), accept_connection)
+                    list.GetAttributesBuffer(connection_message_attributes), accept_connection)
                     .CreateResult(throw_on_error, () => new NtAlpcServer(handle));
             }
         }
