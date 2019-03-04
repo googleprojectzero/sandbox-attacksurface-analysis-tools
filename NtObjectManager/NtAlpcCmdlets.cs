@@ -53,6 +53,14 @@ namespace NtObjectManager
         }
 
         /// <summary>
+        /// Constructor.
+        /// </summary>
+        public ConnectNtAlpcClient()
+        {
+            Flags = AlpcMessageFlags.SyncRequest;
+        }
+
+        /// <summary>
         /// <para type="description">Optional object attributes for the handle.</para>
         /// </summary>
         [Parameter]

@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -301,7 +300,7 @@ namespace NtApiDotNet
         public NtProcess OpenSenderProcess(AlpcMessage message, ProcessAccessRights desired_access)
         {
             return OpenSenderProcess(message, AlpcOpenSenderProcessFlags.None, 
-                desired_access, null);
+                desired_access, new ObjectAttributes());
         }
 
         /// <summary>
@@ -354,7 +353,7 @@ namespace NtApiDotNet
         public NtThread OpenSenderThread(AlpcMessage message, ThreadAccessRights desired_access)
         {
             return OpenSenderThread(message, AlpcOpenSenderThreadFlags.None,
-                desired_access, null);
+                desired_access, new ObjectAttributes());
         }
 
         /// <summary>
@@ -389,6 +388,7 @@ namespace NtApiDotNet
         {
             return NtSystemCalls.NtAlpcSetInformation(Handle, info_class, buffer, (int)buffer.ByteLength);
         }
+
         #endregion
 
         #region Private Members

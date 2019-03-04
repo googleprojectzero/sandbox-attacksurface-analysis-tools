@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using System;
-using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -131,6 +130,11 @@ namespace NtApiDotNet
         public int MessageId => Buffer.Result.MessageId;
 
         /// <summary>
+        /// Get the callback ID.
+        /// </summary>
+        public int CallbackId => Buffer.Result.u3.CallbackId;
+
+        /// <summary>
         /// Get or set the message data.
         /// </summary>
         /// <remarks>When you set the data it'll update the DataLength and TotalLength fields.\</remarks>
@@ -213,11 +217,85 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Method to query information for a message.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="port">The port which has processed the message.</param>
+        /// <param name="buffer">The buffer to return data in.</param>
+        /// <param name="return_length">Return length from the query.</param>
+        /// <returns>The NT status code for the query.</returns>
+        public NtStatus QueryInformation(NtAlpc port, AlpcMessageInformationClass info_class,
+            SafeBuffer buffer, out int return_length)
+        {
+            return NtSystemCalls.NtAlpcQueryInformationMessage(port.Handle, Buffer,
+                info_class, buffer, buffer.GetLength(), out return_length);
+        }
+
+        /// <summary>
+        /// Query a fixed structure from the object.
+        /// </summary>
+        /// <typeparam name="T">The type of structure to return.</typeparam>
+        /// <param name="info_class">The information class to query.</param>
+        /// <param name="port">The port which has processed the message.</param>
+        /// <param name="default_value">A default value for the query.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public virtual NtResult<T> Query<T>(NtAlpc port, AlpcMessageInformationClass info_class, 
+            T default_value, bool throw_on_error) where T : new()
+        {
+            using (var buffer = new SafeStructureInOutBuffer<T>(default_value))
+            {
+                return QueryInformation(port, info_class, 
+                    buffer, out int return_length).CreateResult(throw_on_error, () => buffer.Result);
+            }
+        }
+
+        /// <summary>
+        /// Query a fixed structure from the object.
+        /// </summary>
+        /// <typeparam name="T">The type of structure to return.</typeparam>
+        /// <param name="port">The port which has processed the message.</param>
+        /// <param name="info_class">The information class to query.</param>
+        /// <param name="default_value">A default value for the query.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public T Query<T>(NtAlpc port, AlpcMessageInformationClass info_class, T default_value) where T : new()
+        {
+            return Query(port, info_class, default_value, true).Result;
+        }
+
+        /// <summary>
+        /// Query a fixed structure from the object.
+        /// </summary>
+        /// <typeparam name="T">The type of structure to return.</typeparam>
+        /// <param name="port">The port which has processed the message.</param>
+        /// <param name="info_class">The information class to query.</param>
+        /// <returns>The result of the query.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public T Query<T>(NtAlpc port, AlpcMessageInformationClass info_class) where T : new()
+        {
+            return Query(port, info_class, new T());
+        }
+
+        /// <summary>
         /// Virtual Dispose method.
         /// </summary>
         public virtual void Dispose()
         {
             Buffer?.Dispose();
+        }
+
+        /// <summary>
+        /// Get direct status for the message.
+        /// </summary>
+        /// <param name="port">The ALPC port associated with the status.</param>
+        /// <returns>The direct status for the message. Returns STATUS_PENDING if the message is yet to be processed.</returns>
+        public NtStatus GetDirectStatus(NtAlpc port)
+        {
+            return NtSystemCalls.NtAlpcQueryInformationMessage(port.Handle, Buffer,
+                AlpcMessageInformationClass.AlpcMessageDirectStatusInformation,
+                IntPtr.Zero, 0, IntPtr.Zero);
         }
 
         #endregion

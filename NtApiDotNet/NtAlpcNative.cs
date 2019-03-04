@@ -76,7 +76,7 @@ namespace NtApiDotNet
             [FieldOffset(2)]
             public short TotalLength;
             [FieldOffset(0)]
-            public uint Length;
+            public int Length;
         }
         public PortMessageUnion1 u1;
 
@@ -88,7 +88,7 @@ namespace NtApiDotNet
             [FieldOffset(2)]
             public short DataInfoOffset;
             [FieldOffset(0)]
-            public uint ZeroInit;
+            public int ZeroInit;
         }
         public PortMessageUnion2 u2;
 
@@ -101,7 +101,7 @@ namespace NtApiDotNet
             [FieldOffset(0)]
             public IntPtr ClientViewSize;
             [FieldOffset(0)]
-            public uint CallbackId;
+            public int CallbackId;
         }
         public PortMessageUnion3 u3;
     }
@@ -560,6 +560,17 @@ namespace NtApiDotNet
             SafeBuffer MessageInformation,
             int Length,
             out int ReturnLength
+        );
+
+        // Version to support AlpcMessageDirectStatusInformation which needs ReturnLength == NULL.
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAlpcQueryInformationMessage(
+            SafeKernelObjectHandle PortHandle,
+            SafeAlpcPortMessageBuffer PortMessage,
+            AlpcMessageInformationClass MessageInformationClass,
+            IntPtr MessageInformation,
+            int Length,
+            IntPtr ReturnLength
         );
 
         [DllImport("ntdll.dll")]
