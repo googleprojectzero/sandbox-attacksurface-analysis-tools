@@ -627,7 +627,7 @@ namespace NtApiDotNet
             ObjectAttributes ObjectAttributes,
             AlpcPortAttributes PortAttributes,
             IntPtr PortContext,
-            AlpcPortMessage ConnectionRequest,
+            SafeAlpcPortMessageBuffer ConnectionRequest,
             SafeAlpcMessageAttributesBuffer ConnectionMessageAttributes,
             bool AcceptConnection
         );

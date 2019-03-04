@@ -700,10 +700,15 @@ namespace NtApiDotNet
             bool accept_connection,
             bool throw_on_error)
         {
+            if (connection_request == null)
+            {
+                throw new ArgumentNullException("Must specify a connection request message");
+            }
             using (var list = new DisposableList())
             {
+                var message = connection_request.ToSafeBuffer();
                 return NtSystemCalls.NtAlpcAcceptConnectPort(out SafeKernelObjectHandle handle,
-                    Handle, flags, object_attributes, port_attributes, port_context, connection_request.Header,
+                    Handle, flags, object_attributes, port_attributes, port_context, message,
                     connection_message_attributes.GetAttributes(), accept_connection)
                     .CreateResult(throw_on_error, () => new NtAlpcServer(handle));
             }
