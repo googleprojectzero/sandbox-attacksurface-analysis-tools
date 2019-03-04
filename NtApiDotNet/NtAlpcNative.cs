@@ -124,7 +124,7 @@ namespace NtApiDotNet
         /// If set then object duplication won't complete. Used by RPC to ensure
         /// multi-handle attributes don't fail when receiving.
         /// </summary>
-        NoCompleteDupObject = 0x2000000,
+        SupportMultiHandleAttribute = 0x2000000,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -262,7 +262,7 @@ namespace NtApiDotNet
     {
         None = 0,
         File = 0x0001,
-        Unknown0002 = 0x0002,
+        Invalid0002 = 0x0002,
         Thread = 0x0004,
         Semaphore = 0x0008,
         Event = 0x0010,
@@ -273,16 +273,26 @@ namespace NtApiDotNet
         Token = 0x0200,
         Composition = 0x0400,
         Job = 0x0800,
-        AllObjects = 0xFFD,
+        AllObjects = File | Thread | Semaphore | Event
+            | Process | Mutex | Section | RegKey | Token
+            | Composition | Job
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct AlpcHandleAttr
     {
         public AlpcHandleAttrFlags Flags;
-        public IntPtr Handle; // Also ALPC_HANDLE_ATTR32* HandleAttrArray;
-        public AlpcHandleObjectType ObjectType; // Also HandleCount;
-        public AccessMask DesiredAccess; // Also GrantedAccess
+        public IntPtr Handle;
+        public AlpcHandleObjectType ObjectType;
+        public AccessMask DesiredAccess;
+    }
+
+    public struct AlpcHandleAttrIndirect
+    {
+        public AlpcHandleAttrFlags Flags;
+        public IntPtr HandleAttrArray;
+        public int HandleCount;
+        public AccessMask GrantedAccess;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -307,7 +317,7 @@ namespace NtApiDotNet
         public AlpcDataViewAttrFlags Flags;
         public AlpcHandle SectionHandle;
         public IntPtr ViewBase;
-        public long ViewSize;
+        public IntPtr ViewSize;
     }
 
     [StructLayout(LayoutKind.Sequential)]

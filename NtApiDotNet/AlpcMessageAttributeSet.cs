@@ -24,6 +24,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class to represent a set of ALPC message attributes.
     /// </summary>
+    /// <remarks>This class is used both as an input and out for many calls to ALPC APIs.</remarks>
     public sealed class AlpcMessageAttributeSet : Dictionary<AlpcMessageAttributeFlags, AlpcMessageAttribute>, IDisposable
     {
         /// <summary>
@@ -215,6 +216,176 @@ namespace NtApiDotNet
     }
 
     /// <summary>
+    /// Class representing a security message attribute.
+    /// </summary>
+    public sealed class AlpcContextMessageAttribute : AlpcMessageAttribute
+    {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public AlpcContextMessageAttribute()
+            : base(AlpcMessageAttributeFlags.Context)
+        {
+        }
+
+        /// <summary>
+        /// Port context.
+        /// </summary>
+        public long PortContext { get; set; }
+        /// <summary>
+        /// Message context.
+        /// </summary>
+        public long MessageContext { get; set; }
+        /// <summary>
+        /// Sequence number.
+        /// </summary>
+        public int Sequence { get; set; }
+        /// <summary>
+        /// Message ID.
+        /// </summary>
+        public int MessageId { get; set; }
+        /// <summary>
+        /// Callback ID.
+        /// </summary>
+        public int CallbackId { get; set; }
+
+        internal override void ToSafeBuffer(SafeAlpcMessageAttributesBuffer buffer)
+        {
+            buffer.SetContextAttribute(this);
+        }
+
+        internal override void FromSafeBuffer(SafeAlpcMessageAttributesBuffer buffer, NtAlpc port)
+        {
+            buffer.GetContextAttribute(this);
+        }
+    }
+
+    /// <summary>
+    /// Class representing a data view message attribute.
+    /// </summary>
+    public sealed class AlpcViewMessageAttribute : AlpcMessageAttribute
+    {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public AlpcViewMessageAttribute()
+            : base(AlpcMessageAttributeFlags.View)
+        {
+        }
+
+        /// <summary>
+        /// View flags.
+        /// </summary>
+        public AlpcDataViewAttrFlags Flags { get; set; }
+        /// <summary>
+        /// Handle to section.
+        /// </summary>
+        public long SectionHandle { get; set; }
+        /// <summary>
+        /// View base.
+        /// </summary>
+        public long ViewBase { get; set; }
+        /// <summary>
+        /// View size.
+        /// </summary>
+        public long ViewSize { get; set; }
+
+        internal override void ToSafeBuffer(SafeAlpcMessageAttributesBuffer buffer)
+        {
+            buffer.SetViewAttribute(this);
+        }
+
+        internal override void FromSafeBuffer(SafeAlpcMessageAttributesBuffer buffer, NtAlpc port)
+        {
+            buffer.GetViewAttribute(this);
+        }
+    }
+
+    /// <summary>
+    /// Handle attribute entry.
+    /// </summary>
+    public class AlpcHandleEntry
+    {
+        /// <summary>
+        /// Handle flags.
+        /// </summary>
+        public AlpcHandleAttrFlags Flags { get; set; }
+        /// <summary>
+        /// The handle value.
+        /// </summary>
+        public int Handle { get; set; }
+        /// <summary>
+        /// The object type for the handle.
+        /// </summary>
+        public AlpcHandleObjectType ObjectType { get; set; }
+        /// <summary>
+        /// Desired access for the handle.
+        /// </summary>
+        public AccessMask DesiredAccess { get; set; }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="attr">Handle attribute to initialize from.</param>
+        public AlpcHandleEntry(AlpcHandleAttr attr)
+        {
+            Flags = attr.Flags;
+            Handle = attr.Handle.ToInt32();
+            ObjectType = attr.ObjectType;
+            DesiredAccess = attr.DesiredAccess;
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="attr">Handle attribute to initialize from.</param>
+        public AlpcHandleEntry(AlpcHandleAttr32 attr)
+        {
+            Flags = attr.Flags;
+            Handle = attr.Handle;
+            ObjectType = attr.ObjectType;
+            DesiredAccess = attr.DesiredAccess;
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public AlpcHandleEntry()
+        {
+        }
+    }
+
+    /// <summary>
+    /// Class representing a handle message attribute.
+    /// </summary>
+    public sealed class AlpcHandleMessageAttribute : AlpcMessageAttribute
+    {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public AlpcHandleMessageAttribute() 
+            : base(AlpcMessageAttributeFlags.Handle)
+        {
+            Handles = new List<AlpcHandleEntry>();
+        }
+
+        /// <summary>
+        /// List of handles in this attribute.
+        /// </summary>
+        public IList<AlpcHandleEntry> Handles { get; }
+
+        internal override void FromSafeBuffer(SafeAlpcMessageAttributesBuffer buffer, NtAlpc port)
+        {
+            buffer.GetHandleAttribute(this);
+        }
+
+        internal override void ToSafeBuffer(SafeAlpcMessageAttributesBuffer buffer)
+        {
+            buffer.SetHandleAttribute(this);
+        }
+    }
+
+    /// <summary>
     /// Safe buffer to store an allocated set of ALPC atributes.
     /// </summary>
     public sealed class SafeAlpcMessageAttributesBuffer : SafeStructureInOutBuffer<AlpcMessageAttributes>
@@ -282,12 +453,7 @@ namespace NtApiDotNet
             return buffer;
         }
 
-        /// <summary>
-        /// Set the security attribute.
-        /// </summary>
-        /// <param name="security_attribute">The security attribute.</param>
-        /// <remarks>The attribute must have allocated otherwise this will throw an exception.</remarks>
-        public void SetSecurityAttribute(AlpcSecurityMessageAttribute security_attribute)
+        internal void SetSecurityAttribute(AlpcSecurityMessageAttribute security_attribute)
         {
             var attr = GetAttribute<AlpcSecurityAttr>(AlpcMessageAttributeFlags.Security);
             var qos = _resources.AddStructure(security_attribute.SecurityQoS);
@@ -297,12 +463,7 @@ namespace NtApiDotNet
             };
         }
 
-        /// <summary>
-        /// Set the token attribute.
-        /// </summary>
-        /// <param name="token_attribute">The token attribute.</param>
-        /// <remarks>The attribute must have allocated otherwise this will throw an exception.</remarks>
-        public void SetTokenAttribute(AlpcTokenMessageAttribute token_attribute)
+        internal void SetTokenAttribute(AlpcTokenMessageAttribute token_attribute)
         {
             var attr = GetAttribute<AlpcTokenAttr>(AlpcMessageAttributeFlags.Token);
             attr.Result = new AlpcTokenAttr()
@@ -313,11 +474,7 @@ namespace NtApiDotNet
             };
         }
 
-        /// <summary>
-        /// Get the security attribute.
-        /// </summary>
-        /// <param name="attribute">The attribute to populate</param>
-        public void GetSecurityAttribute(AlpcSecurityMessageAttribute attribute)
+        internal void GetSecurityAttribute(AlpcSecurityMessageAttribute attribute)
         {
             var attr = GetAttribute<AlpcSecurityAttr>(AlpcMessageAttributeFlags.Security).Result;
             attribute.Flags = attr.Flags;
@@ -333,16 +490,108 @@ namespace NtApiDotNet
             }
         }
 
-        /// <summary>
-        /// Get the token attribute.
-        /// </summary>
-        /// <param name="attribute">The attribute to populate</param>
-        public void GetTokenAttribute(AlpcTokenMessageAttribute attribute)
+        internal void GetTokenAttribute(AlpcTokenMessageAttribute attribute)
         {
             var attr = GetAttribute<AlpcTokenAttr>(AlpcMessageAttributeFlags.Token).Result;
             attribute.TokenId = attr.TokenId;
             attribute.ModifiedId = attr.ModifiedId;
             attribute.AuthenticationId = attr.AuthenticationId;
+        }
+
+        internal void GetContextAttribute(AlpcContextMessageAttribute attribute)
+        {
+            var attr = GetAttribute<AlpcContextAttr>(AlpcMessageAttributeFlags.Context).Result;
+            attribute.PortContext = attr.PortContext.ToInt64();
+            attribute.MessageContext = attr.MessageContext.ToInt64();
+            attribute.MessageId = attr.MessageId;
+            attribute.Sequence = attr.Sequence;
+            attribute.CallbackId = attr.CallbackId;
+        }
+
+        internal void SetContextAttribute(AlpcContextMessageAttribute attribute)
+        {
+            var attr = GetAttribute<AlpcContextAttr>(AlpcMessageAttributeFlags.Context);
+            attr.Result = new AlpcContextAttr()
+            {
+                PortContext = new IntPtr(attribute.PortContext),
+                MessageContext = new IntPtr(attribute.MessageContext),
+                MessageId = attribute.MessageId,
+                Sequence = attribute.Sequence,
+                CallbackId = attribute.CallbackId,
+            };
+        }
+
+        internal void GetViewAttribute(AlpcViewMessageAttribute attribute)
+        {
+            var attr = GetAttribute<AlpcDataViewAttr>(AlpcMessageAttributeFlags.View).Result;
+            attribute.Flags = attr.Flags;
+            attribute.SectionHandle = attr.SectionHandle.Value;
+            attribute.ViewBase = attr.ViewBase.ToInt64();
+            attribute.ViewSize = attr.ViewSize.ToInt64();
+        }
+
+        internal void SetViewAttribute(AlpcViewMessageAttribute attribute)
+        {
+            var attr = GetAttribute<AlpcDataViewAttr>(AlpcMessageAttributeFlags.View);
+            attr.Result = new AlpcDataViewAttr()
+            {
+                Flags = attribute.Flags,
+                SectionHandle = attribute.SectionHandle,
+                ViewBase = new IntPtr(attribute.ViewBase),
+                ViewSize = new IntPtr(attribute.ViewSize)
+            };
+        }
+
+        internal void GetHandleAttribute(AlpcHandleMessageAttribute attribute)
+        {
+            var attr = GetAttribute<AlpcHandleAttr>(AlpcMessageAttributeFlags.Handle).Result;
+            if ((attr.Flags & AlpcHandleAttrFlags.Indirect) == AlpcHandleAttrFlags.Indirect)
+            {
+                throw new ArgumentException("Can't read an indirect handle attribute.", nameof(attribute));
+            }
+
+            attribute.Handles.Clear();
+            attribute.Handles.Add(new AlpcHandleEntry(attr));
+        }
+
+        internal void SetHandleAttribute(AlpcHandleMessageAttribute attribute)
+        {
+            if (attribute.Handles.Count == 0)
+            {
+                throw new ArgumentException("Handle attribute must contain at least one handle", nameof(attribute));
+            }
+
+            if (attribute.Handles.Count > 1)
+            {
+                var attr = GetAttribute<AlpcHandleAttrIndirect>(AlpcMessageAttributeFlags.Handle);
+                var handles = attribute.Handles.Select(h => new AlpcHandleAttr32()
+                {
+                    Handle = h.Handle,
+                    ObjectType = h.ObjectType,
+                    Flags = h.Flags,
+                    DesiredAccess = h.DesiredAccess
+                }
+                );
+                var handle_buffer = _resources.AddResource(handles.ToArray().ToBuffer());
+                attr.Result = new AlpcHandleAttrIndirect()
+                {
+                    HandleAttrArray = handle_buffer.DangerousGetHandle(),
+                    HandleCount = attribute.Handles.Count,
+                    Flags = AlpcHandleAttrFlags.Indirect
+                };
+            }
+            else
+            {
+                var attr = GetAttribute<AlpcHandleAttr>(AlpcMessageAttributeFlags.Handle);
+                AlpcHandleEntry handle = attribute.Handles[0];
+                attr.Result = new AlpcHandleAttr()
+                {
+                    Flags = handle.Flags,
+                    ObjectType = handle.ObjectType,
+                    Handle = new IntPtr(handle.Handle),
+                    DesiredAccess = handle.DesiredAccess
+                };
+            }
         }
 
         /// <summary>
