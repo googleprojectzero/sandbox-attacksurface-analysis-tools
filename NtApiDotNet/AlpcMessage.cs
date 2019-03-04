@@ -227,7 +227,7 @@ namespace NtApiDotNet
         public NtStatus QueryInformation(NtAlpc port, AlpcMessageInformationClass info_class,
             SafeBuffer buffer, out int return_length)
         {
-            return NtSystemCalls.NtAlpcQueryInformationMessage(port.Handle, Buffer,
+            return NtSystemCalls.NtAlpcQueryInformationMessage(port.Handle, Buffer.Result,
                 info_class, buffer, buffer.GetLength(), out return_length);
         }
 
@@ -293,7 +293,7 @@ namespace NtApiDotNet
         /// <returns>The direct status for the message. Returns STATUS_PENDING if the message is yet to be processed.</returns>
         public NtStatus GetDirectStatus(NtAlpc port)
         {
-            return NtSystemCalls.NtAlpcQueryInformationMessage(port.Handle, Buffer,
+            return NtSystemCalls.NtAlpcQueryInformationMessage(port.Handle, Buffer.Result,
                 AlpcMessageInformationClass.AlpcMessageDirectStatusInformation,
                 IntPtr.Zero, 0, IntPtr.Zero);
         }

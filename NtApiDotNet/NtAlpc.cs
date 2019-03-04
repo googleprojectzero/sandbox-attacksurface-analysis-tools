@@ -274,7 +274,7 @@ namespace NtApiDotNet
         public NtResult<NtProcess> OpenSenderProcess(AlpcMessage message, AlpcOpenSenderProcessFlags flags, ProcessAccessRights desired_access, ObjectAttributes object_attributes, bool throw_on_error)
         {
             return NtSystemCalls.NtAlpcOpenSenderProcess(out SafeKernelObjectHandle handle, Handle, 
-                message.Buffer, flags, desired_access, object_attributes)
+                message.Buffer.Result, flags, desired_access, object_attributes)
                 .CreateResult(throw_on_error, () => new NtProcess(handle));
         }
 
@@ -326,7 +326,7 @@ namespace NtApiDotNet
             ThreadAccessRights desired_access, ObjectAttributes object_attributes, bool throw_on_error)
         {
             return NtSystemCalls.NtAlpcOpenSenderThread(out SafeKernelObjectHandle handle, Handle,
-                message.Buffer, flags, desired_access, object_attributes)
+                message.Buffer.Result, flags, desired_access, object_attributes)
                 .CreateResult(throw_on_error, () => new NtThread(handle));
         }
 
@@ -704,7 +704,7 @@ namespace NtApiDotNet
             using (var list = new DisposableList())
             {
                 return NtSystemCalls.NtAlpcAcceptConnectPort(out SafeKernelObjectHandle handle,
-                    Handle, flags, object_attributes, port_attributes, port_context, connection_request.GetMessage(),
+                    Handle, flags, object_attributes, port_attributes, port_context, connection_request.GetMessage().Result,
                     connection_message_attributes.GetAttributes(), accept_connection)
                     .CreateResult(throw_on_error, () => new NtAlpcServer(handle));
             }

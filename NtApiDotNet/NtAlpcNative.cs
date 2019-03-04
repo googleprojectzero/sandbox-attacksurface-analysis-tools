@@ -555,7 +555,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcQueryInformationMessage(
             SafeKernelObjectHandle PortHandle,
-            SafeAlpcPortMessageBuffer PortMessage,
+            AlpcPortMessage PortMessage,
             AlpcMessageInformationClass MessageInformationClass,
             SafeBuffer MessageInformation,
             int Length,
@@ -566,7 +566,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcQueryInformationMessage(
             SafeKernelObjectHandle PortHandle,
-            SafeAlpcPortMessageBuffer PortMessage,
+            AlpcPortMessage PortMessage,
             AlpcMessageInformationClass MessageInformationClass,
             IntPtr MessageInformation,
             int Length,
@@ -627,7 +627,7 @@ namespace NtApiDotNet
             ObjectAttributes ObjectAttributes,
             AlpcPortAttributes PortAttributes,
             IntPtr PortContext,
-            SafeAlpcPortMessageBuffer ConnectionRequest,
+            AlpcPortMessage ConnectionRequest,
             SafeAlpcMessageAttributesBuffer ConnectionMessageAttributes,
             bool AcceptConnection
         );
@@ -636,7 +636,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtAlpcOpenSenderProcess(
             out SafeKernelObjectHandle ProcessHandle,
             SafeKernelObjectHandle PortHandle,
-            SafeAlpcPortMessageBuffer PortMessage,
+            AlpcPortMessage PortMessage,
             AlpcOpenSenderProcessFlags Flags,
             ProcessAccessRights DesiredAccess,
             ObjectAttributes ObjectAttributes
@@ -646,7 +646,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtAlpcOpenSenderThread(
             out SafeKernelObjectHandle ThreadHandle,
             SafeKernelObjectHandle PortHandle,
-            SafeAlpcPortMessageBuffer PortMessage,
+            AlpcPortMessage PortMessage,
             AlpcOpenSenderThreadFlags Flags,
             ThreadAccessRights DesiredAccess,
             ObjectAttributes ObjectAttributes
