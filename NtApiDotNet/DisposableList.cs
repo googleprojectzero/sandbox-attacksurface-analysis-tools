@@ -155,6 +155,15 @@ namespace NtApiDotNet
             }
             return list.AddResource(sd.ToSafeBuffer());
         }
+
+        internal static SafeAlpcPortMessageBuffer AddMessage(this DisposableList list, AlpcMessage message)
+        {
+            if (message == null)
+            {
+                return SafeAlpcPortMessageBuffer.Null;
+            }
+            return list.AddResource(message.ToSafeBuffer());
+        }
     }
 
     /// <summary>

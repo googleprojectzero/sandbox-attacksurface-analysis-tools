@@ -520,7 +520,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcImpersonateClientOfPort(
                 [In] SafeKernelObjectHandle PortHandle,
-                [In] SafeAlpcPortMessageBuffer PortMessage,
+                [In] AlpcPortMessage PortMessage,
                 AlpcImpersonationFlags Flags
         );
 
@@ -528,7 +528,7 @@ namespace NtApiDotNet
         [SupportedVersion(SupportedVersion.Windows10_TH2)]
         public static extern NtStatus NtAlpcImpersonateClientContainerOfPort(
             [In] SafeKernelObjectHandle PortHandle,
-            [In] SafeAlpcPortMessageBuffer PortMessage,
+            [In] AlpcPortMessage PortMessage,
             int Flags
         );
 

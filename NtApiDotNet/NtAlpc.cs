@@ -90,16 +90,17 @@ namespace NtApiDotNet
         {
             using (var list = new DisposableList())
             {
-                var send_msg = send_message == null ? SafeAlpcPortMessageBuffer.Null : send_message.Buffer;
-                var recv_msg = receive_message == null ? SafeAlpcPortMessageBuffer.Null : receive_message.Buffer;
-                var recv_length = receive_message == null ? null : new OptionalLength(receive_message.Buffer.Length);
+                var send_msg = list.AddMessage(send_message);
+                var recv_msg = list.AddMessage(receive_message);
                 var send_attr = send_attributes.GetAttributes();
                 var recv_attr = receive_attributes.GetAttributes();
                 NtStatus status = NtSystemCalls.NtAlpcSendWaitReceivePort(Handle, flags, send_msg,
-                    send_attr, recv_msg, recv_length, recv_attr, timeout?.Timeout).ToNtException(throw_on_error);
+                    send_attr, recv_msg, recv_msg.GetOptionalLength(), recv_attr, timeout?.Timeout).ToNtException(throw_on_error);
                 if (status.IsSuccess())
                 {
                     receive_attributes?.Rebuild();
+                    receive_message?.FromSafeBuffer(recv_msg, this);
+                    send_message?.FromSafeBuffer(send_msg, this);
                 }
                 return status;
             }
@@ -174,11 +175,9 @@ namespace NtApiDotNet
         public NtResult<AlpcMessage> Receive(AlpcMessageFlags flags, int receive_length,
             AlpcMessageAttributeSet receive_attributes, NtWaitTimeout timeout, bool throw_on_error)
         {
-            using (var msg = AlpcMessage.Create(receive_length, false))
-            {
-                return SendReceive(flags, null, null, msg, receive_attributes, 
-                    timeout, false).CreateResult(throw_on_error, () => msg.Detach());
-            }
+            var msg = new AlpcMessage(receive_length, false);
+            return SendReceive(flags, null, null, msg, receive_attributes, 
+                timeout, false).CreateResult(throw_on_error, () => msg);
         }
 
         /// <summary>
@@ -235,7 +234,7 @@ namespace NtApiDotNet
             bool throw_on_error)
         {
             int full_flags = (int)flags | (((int)required_impersonation_level) << 2);
-            return NtSystemCalls.NtAlpcImpersonateClientOfPort(Handle, message.GetMessage(), (AlpcImpersonationFlags)full_flags)
+            return NtSystemCalls.NtAlpcImpersonateClientOfPort(Handle, message.Header, (AlpcImpersonationFlags)full_flags)
                 .CreateResult(throw_on_error, () => new ThreadImpersonationContext(NtThread.Current.Duplicate()));
         }
 
@@ -274,7 +273,7 @@ namespace NtApiDotNet
         public NtResult<NtProcess> OpenSenderProcess(AlpcMessage message, AlpcOpenSenderProcessFlags flags, ProcessAccessRights desired_access, ObjectAttributes object_attributes, bool throw_on_error)
         {
             return NtSystemCalls.NtAlpcOpenSenderProcess(out SafeKernelObjectHandle handle, Handle, 
-                message.Buffer.Result, flags, desired_access, object_attributes)
+                message.Header, flags, desired_access, object_attributes)
                 .CreateResult(throw_on_error, () => new NtProcess(handle));
         }
 
@@ -326,7 +325,7 @@ namespace NtApiDotNet
             ThreadAccessRights desired_access, ObjectAttributes object_attributes, bool throw_on_error)
         {
             return NtSystemCalls.NtAlpcOpenSenderThread(out SafeKernelObjectHandle handle, Handle,
-                message.Buffer.Result, flags, desired_access, object_attributes)
+                message.Header, flags, desired_access, object_attributes)
                 .CreateResult(throw_on_error, () => new NtThread(handle));
         }
 
@@ -423,9 +422,7 @@ namespace NtApiDotNet
             {
                 var sid = list.AddSid(required_server_sid);
                 var sd = list.AddSecurityDescriptor(server_security_requirements);
-                var message = connection_message == null ? SafeAlpcPortMessageBuffer.Null :
-                                    connection_message.Buffer;
-                var message_length = connection_message == null ? null : new OptionalLength(connection_message.TotalLength);
+                var message = list.AddMessage(connection_message);
                 var out_attr = out_message_attributes.GetAttributes();
                 var in_attr = in_message_attributes.GetAttributes();
 
@@ -436,18 +433,20 @@ namespace NtApiDotNet
                 {
                     status = NtSystemCalls.NtAlpcConnectPortEx(out handle,
                         port_object_attributes, object_attributes, port_attributes,
-                        flags, sd, message, message_length, out_attr, in_attr, timeout?.Timeout);
+                        flags, sd, message, message.GetOptionalLength(), out_attr, in_attr, timeout?.Timeout);
                 }
                 else
                 {
                     status = NtSystemCalls.NtAlpcConnectPort(out handle,
                         new UnicodeString(port_name), object_attributes, port_attributes,
-                        flags, sid, message, message_length, out_attr, in_attr, timeout?.Timeout);
+                        flags, sid, message, message.GetOptionalLength(), out_attr, in_attr, timeout?.Timeout);
                 }
                 return status.CreateResult(throw_on_error, () =>
                 {
                     in_message_attributes?.Rebuild();
-                    return new NtAlpcClient(handle);
+                    var client = new NtAlpcClient(handle);
+                    connection_message?.FromSafeBuffer(message, client);
+                    return client;
                 });
             }
         }
@@ -704,7 +703,7 @@ namespace NtApiDotNet
             using (var list = new DisposableList())
             {
                 return NtSystemCalls.NtAlpcAcceptConnectPort(out SafeKernelObjectHandle handle,
-                    Handle, flags, object_attributes, port_attributes, port_context, connection_request.GetMessage().Result,
+                    Handle, flags, object_attributes, port_attributes, port_context, connection_request.Header,
                     connection_message_attributes.GetAttributes(), accept_connection)
                     .CreateResult(throw_on_error, () => new NtAlpcServer(handle));
             }

@@ -644,6 +644,24 @@ namespace NtApiDotNet
             return (int)buffer.ByteLength;
         }
 
+        internal static OptionalInt32 GetOptionalInt32(this SafeBuffer buffer)
+        {
+            if (buffer == null)
+            {
+                return null;
+            }
+            return new OptionalInt32(buffer.GetLength());
+        }
+
+        internal static OptionalLength GetOptionalLength(this SafeBuffer buffer)
+        {
+            if (buffer == null)
+            {
+                return null;
+            }
+            return new OptionalLength(buffer.GetLength());
+        }
+
         internal static async Task<T> UnwrapNtResultAsync<T>(this Task<NtResult<T>> task)
         {
             var result = await task;

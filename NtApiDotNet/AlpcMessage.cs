@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -22,13 +24,43 @@ namespace NtApiDotNet
     /// </summary>
     public class SafeAlpcPortMessageBuffer : SafeStructureInOutBuffer<AlpcPortMessage>
     {
-        private SafeAlpcPortMessageBuffer(int data_length)
-            : base(data_length, true)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="header">The port message header.</param>
+        /// <param name="data">The trailing data.</param>
+        public SafeAlpcPortMessageBuffer(AlpcPortMessage header, byte[] data)
+            : base(header, data.Length, true)
         {
-            BufferUtils.ZeroBuffer(this);
+            Data.WriteBytes(data);
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="header">The port message header.</param>
+        /// <param name="data_length">The trailing data to initialize.</param>
+        public SafeAlpcPortMessageBuffer(AlpcPortMessage header, int data_length)
+            : base(header, data_length, true)
+        {
+            Data.ZeroBuffer();
+        }
+
+        /// <summary>
+        /// Constructor. Creates a receive buffer with a set length.
+        /// </summary>
+        /// <param name="data_length">The trailing data to initialize.</param>
+        public SafeAlpcPortMessageBuffer(int data_length)
+            : this(new AlpcPortMessage(), data_length)
+        {
         }
 
         internal SafeAlpcPortMessageBuffer() : base(IntPtr.Zero, 0, false)
+        {
+        }
+
+        internal SafeAlpcPortMessageBuffer(IntPtr buffer, int length) 
+            : base(buffer, length, true)
         {
         }
 
@@ -38,148 +70,165 @@ namespace NtApiDotNet
         new public static SafeAlpcPortMessageBuffer Null => new SafeAlpcPortMessageBuffer();
 
         /// <summary>
-        /// Create a new safe buffer from a byte array.
+        /// Detaches the current buffer and allocates a new one.
         /// </summary>
-        /// <param name="data">The raw bytes which represents the message.</param>
-        /// <returns>The created safe buffer.</returns>
-        public static SafeAlpcPortMessageBuffer Create(byte[] data)
+        /// <returns>The detached buffer.</returns>
+        /// <remarks>The original buffer will become invalid after this call.</remarks>
+        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
+        new public SafeAlpcPortMessageBuffer Detach()
         {
-            SafeAlpcPortMessageBuffer buffer = Create(data.Length, true);
-            buffer.Data.WriteBytes(data);
-            return buffer;
-        }
-
-        /// <summary>
-        /// Create a new safe buffer with a specified size.
-        /// </summary>
-        /// <param name="data_length">The length of allocated memory.</param>
-        /// <param name="initialize">Indicate whether to initialize the message headers.</param>
-        /// <returns>The created safe buffer.</returns>
-        public static SafeAlpcPortMessageBuffer Create(int data_length, bool initialize)
-        {
-            var buffer = new SafeAlpcPortMessageBuffer(data_length);
-            if (initialize)
+            RuntimeHelpers.PrepareConstrainedRegions();
+            try // Needed for constrained region.
             {
-                buffer.Result = new AlpcPortMessage()
-                {
-                    u1 = new AlpcPortMessage.PortMessageUnion1()
-                    { TotalLength = (short)buffer.Length, DataLength = (short)data_length }
-                };
+                IntPtr handle = DangerousGetHandle();
+                SetHandleAsInvalid();
+                return new SafeAlpcPortMessageBuffer(handle, Length);
             }
-            return buffer;
+            finally
+            {
+            }
         }
     }
 
     /// <summary>
     /// Base class to represent an ALPC message.
     /// </summary>
-    public class AlpcMessage : IDisposable
+    public class AlpcMessage
     {
+        #region Private Members
+        private byte[] _data;
+        private NtAlpc _port;
+        #endregion
+
         #region Constructors
 
-        private AlpcMessage(SafeAlpcPortMessageBuffer buffer)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="header">The port message header.</param>
+        /// <param name="data">The data to allocate.</param>
+        /// <param name="initialize">True to initialize the header length fields</param>
+        public AlpcMessage(AlpcPortMessage header, byte[] data, bool initialize)
         {
-            Buffer = buffer;
+            Header = header;
+            _data = data;
+            if (initialize)
+            {
+                UpdateHeaderLength();
+            }
         }
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="data_length">The length of allocated memory.</param>
-        /// <param name="initialize">Indicate whether to initialize the message headers.</param>
-        protected AlpcMessage(int data_length, bool initialize) 
-            : this(SafeAlpcPortMessageBuffer.Create(data_length, initialize))
+        /// <param name="data">The data to allocate.</param>
+        public AlpcMessage(byte[] data) 
+            : this(new AlpcPortMessage(), data, true)
         {
         }
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="data">The raw bytes which represents the message.</param>
-        protected AlpcMessage(byte[] data) 
-            : this(SafeAlpcPortMessageBuffer.Create(data))
+        /// <param name="data_length">The length of data to allocate.</param>
+        /// <param name="initialize">True to initialize the header length fields</param>
+        public AlpcMessage(int data_length, bool initialize)
+            : this(new AlpcPortMessage(), new byte[data_length], initialize)
         {
+        }
+
+        /// <summary>
+        /// Constructor from a safe buffer.
+        /// </summary>
+        /// <param name="buffer">The safe buffer to initialize from.</param>
+        /// <param name="port">Port associated with this message. Optional.</param>
+        /// <remarks>Note that the port object is not referenced, however the message becomes invalid once
+        /// the port closes so this isn't a major concern.</remarks>
+        public AlpcMessage(SafeAlpcPortMessageBuffer buffer, NtAlpc port)
+        {
+            FromSafeBuffer(buffer, port);
+        }
+
+        private void UpdateHeaderLength()
+        {
+            Header.u1.TotalLength = (short)(Marshal.SizeOf(typeof(AlpcPortMessage)) + _data.Length);
+            Header.u1.DataLength = (short)_data.Length;
         }
 
         #endregion
 
         #region Public Properties
+
+        /// <summary>
+        /// Get or set the header.
+        /// </summary>
+        public AlpcPortMessage Header { get; set; }
+
         /// <summary>
         /// The process ID of the sender.
         /// </summary>
-        public int ProcessId => Buffer.Result.ClientId.UniqueProcess.ToInt32();
+        public int ProcessId => Header.ClientId.UniqueProcess.ToInt32();
 
         /// <summary>
         /// The thread ID of the sender.
         /// </summary>
-        public int ThreadId => Buffer.Result.ClientId.UniqueThread.ToInt32();
+        public int ThreadId => Header.ClientId.UniqueThread.ToInt32();
 
         /// <summary>
         /// Get total length of the message.
         /// </summary>
-        public int TotalLength => Buffer.Result.u1.TotalLength;
+        public int TotalLength => Header.u1.TotalLength;
 
         /// <summary>
         /// Get data length of the message.
         /// </summary>
-        public int DataLength => Buffer.Result.u1.DataLength;
+        public int DataLength => Header.u1.DataLength;
 
         /// <summary>
         /// Get the message ID.
         /// </summary>
-        public int MessageId => Buffer.Result.MessageId;
+        public int MessageId => Header.MessageId;
 
         /// <summary>
         /// Get the callback ID.
         /// </summary>
-        public int CallbackId => Buffer.Result.u3.CallbackId;
+        public int CallbackId => Header.u3.CallbackId;
 
         /// <summary>
         /// Get or set the message data.
         /// </summary>
-        /// <remarks>When you set the data it'll update the DataLength and TotalLength fields.\</remarks>
+        /// <remarks>When you set the data it'll update the DataLength and TotalLength fields.</remarks>
         public byte[] Data
         {
-            get => Buffer.Data.ReadBytes(DataLength);
+            get => _data;
             set
             {
-                Buffer.Data.WriteBytes(value);
-                var result = Buffer.Result;
-                result.u1.TotalLength = (short)Buffer.Length;
-                result.u1.DataLength = (short)value.Length;
-                Buffer.Result = result;
+                _data = value;
+                UpdateHeaderLength();
             }
         }
 
         /// <summary>
-        /// Get underlying buffer.
+        /// Get direct status for the message.
         /// </summary>
-        public SafeAlpcPortMessageBuffer Buffer { get; private set; }
+        /// <returns>The direct status for the message. Returns STATUS_PENDING if the message is yet to be processed.</returns>
+        public NtStatus DirectStatus
+        {
+            get
+            {
+                if (_port == null)
+                {
+                    throw new ArgumentNullException("Message must be associated with a port");
+                }
+                return NtSystemCalls.NtAlpcQueryInformationMessage(_port.Handle, Header,
+                    AlpcMessageInformationClass.AlpcMessageDirectStatusInformation,
+                    IntPtr.Zero, 0, IntPtr.Zero);
+            }
+        }
 
         #endregion
 
         #region Static Methods
-        /// <summary>
-        /// Create an ALPC message from raw bytes.
-        /// </summary>
-        /// <param name="data">The raw bytes which represents the message.</param>
-        /// <returns>The created ALPC message.</returns>
-        public static AlpcMessage Create(byte[] data)
-        {
-            return new AlpcMessage(data);
-        }
-
-        /// <summary>
-        /// Create an ALPC message from raw bytes.
-        /// </summary>
-        /// <param name="data_length">The length of allocated memory.</param>
-        /// <param name="initialize">Indicate whether to initialize the message headers.</param>
-        /// <returns>The created ALPC message.</returns>
-        public static AlpcMessage Create(int data_length, bool initialize)
-        {
-            return new AlpcMessage(data_length, initialize);
-        }
-
         /// <summary>
         /// Create a typed ALPC message.
         /// </summary>
@@ -204,16 +253,21 @@ namespace NtApiDotNet
         #endregion
 
         #region Public Methods
+
         /// <summary>
-        /// Detaches the message and allocates a new one.
+        /// Create a safe buffer for this message.
         /// </summary>
-        /// <returns>The detached buffer.</returns>
-        /// <remarks>The original buffer will become invalid after this call.</remarks>
-        public AlpcMessage Detach()
+        /// <returns>The safe buffer.</returns>
+        public virtual SafeAlpcPortMessageBuffer ToSafeBuffer()
         {
-            var buffer = Buffer;
-            Buffer = null;
-            return new AlpcMessage(buffer);
+            return new SafeAlpcPortMessageBuffer(Header, Data);
+        }
+
+        internal virtual void FromSafeBuffer(SafeAlpcPortMessageBuffer buffer, NtAlpc port)
+        {
+            Header = buffer.Result;
+            _data = buffer.Data.ReadBytes(Header.u1.DataLength);
+            _port = port;
         }
 
         /// <summary>
@@ -227,7 +281,11 @@ namespace NtApiDotNet
         public NtStatus QueryInformation(NtAlpc port, AlpcMessageInformationClass info_class,
             SafeBuffer buffer, out int return_length)
         {
-            return NtSystemCalls.NtAlpcQueryInformationMessage(port.Handle, Buffer.Result,
+            if (_port == null)
+            {
+                throw new ArgumentNullException("Message must be associated with a port");
+            }
+            return NtSystemCalls.NtAlpcQueryInformationMessage(port.Handle, Header,
                 info_class, buffer, buffer.GetLength(), out return_length);
         }
 
@@ -278,26 +336,6 @@ namespace NtApiDotNet
             return Query(port, info_class, new T());
         }
 
-        /// <summary>
-        /// Virtual Dispose method.
-        /// </summary>
-        public virtual void Dispose()
-        {
-            Buffer?.Dispose();
-        }
-
-        /// <summary>
-        /// Get direct status for the message.
-        /// </summary>
-        /// <param name="port">The ALPC port associated with the status.</param>
-        /// <returns>The direct status for the message. Returns STATUS_PENDING if the message is yet to be processed.</returns>
-        public NtStatus GetDirectStatus(NtAlpc port)
-        {
-            return NtSystemCalls.NtAlpcQueryInformationMessage(port.Handle, Buffer.Result,
-                AlpcMessageInformationClass.AlpcMessageDirectStatusInformation,
-                IntPtr.Zero, 0, IntPtr.Zero);
-        }
-
         #endregion
     }
 
@@ -315,6 +353,7 @@ namespace NtApiDotNet
         internal AlpcMessage(bool initialize) 
             : base(Marshal.SizeOf(typeof(T)), initialize)
         {
+            Value = new T();
         }
 
         /// <summary>
@@ -323,18 +362,39 @@ namespace NtApiDotNet
         /// <param name="value">The initial value to set..</param>
         internal AlpcMessage(T value) : this(true)
         {
-            Result = value;
+            Value = value;
         }
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Create a safe buffer for this message.
+        /// </summary>
+        /// <returns>The safe buffer.</returns>
+        public override SafeAlpcPortMessageBuffer ToSafeBuffer()
+        {
+            using (var buffer = base.ToSafeBuffer())
+            {
+                buffer.Data.Write(0, Value);
+                return buffer.Detach();
+            }
+        }
+
         #endregion
 
         #region Public Properties
         /// <summary>
         /// Get or set the type in the buffer.
         /// </summary>
-        public T Result
+        public T Value { get; set; }
+        #endregion
+
+        #region Internal Members
+        internal override void FromSafeBuffer(SafeAlpcPortMessageBuffer buffer, NtAlpc port)
         {
-            get => Buffer.Data.Read<T>(0);
-            set => Buffer.Data.Write(0, value);
+            base.FromSafeBuffer(buffer, port);
+            Value = buffer.Data.Read<T>(0);
         }
         #endregion
     }

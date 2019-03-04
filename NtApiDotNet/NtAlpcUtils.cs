@@ -20,11 +20,6 @@ namespace NtApiDotNet
     /// </summary>
     internal static class NtAlpcUtils
     {
-        internal static SafeAlpcPortMessageBuffer GetMessage(this AlpcMessage msg)
-        {
-            return msg == null ? SafeAlpcPortMessageBuffer.Null : msg.Buffer;
-        }
-
         internal static SafeAlpcMessageAttributesBuffer GetAttributes(this AlpcMessageAttributeSet attrs)
         {
             return attrs == null ? SafeAlpcMessageAttributesBuffer.Null : attrs.Buffer;

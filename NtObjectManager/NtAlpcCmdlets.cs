@@ -397,11 +397,11 @@ namespace NtObjectManager
         {
             if (ParameterSetName == "FromBytes")
             {
-                WriteObject(AlpcMessage.Create(Bytes));
+                WriteObject(new AlpcMessage(Bytes));
             }
             else
             {
-                WriteObject(AlpcMessage.Create(Length, Initialize));
+                WriteObject(new AlpcMessage(Length, Initialize));
             }
         }
     }
@@ -479,7 +479,7 @@ namespace NtObjectManager
         {
             if (ReceiveLength.HasValue)
             {
-                return AlpcMessage.Create(ReceiveLength.Value, false);
+                return new AlpcMessage(ReceiveLength.Value, false);
             }
             return null;
         }
@@ -488,11 +488,9 @@ namespace NtObjectManager
         {
             NtWaitTimeout timeout = TimeoutMs.HasValue
                 ? NtWaitTimeout.FromMilliseconds(TimeoutMs.Value) : NtWaitTimeout.Infinite;
-            using (var recv_message = CreateReceiveMessage())
-            {
-                Port.SendReceive(Flags, msg, SendAttributes, recv_message, recv_message != null ? ReceiveAttributes : null, timeout);
-                return recv_message?.Detach();
-            }
+            var recv_message = CreateReceiveMessage();
+            Port.SendReceive(Flags, msg, SendAttributes, recv_message, recv_message != null ? ReceiveAttributes : null, timeout);
+            return recv_message;
         }
 
         /// <summary>
@@ -510,10 +508,7 @@ namespace NtObjectManager
         {
             if (ParameterSetName == "FromBytes")
             {
-                using (var msg = AlpcMessage.Create(Bytes))
-                {
-                    WriteObject(Send(msg));
-                }
+                WriteObject(Send(new AlpcMessage(Bytes)));
             }
             else
             {
