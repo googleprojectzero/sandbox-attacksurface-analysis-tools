@@ -1136,12 +1136,38 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="privilege">The name of the privilege (e.g. SeDebugPrivilege)</param>
         /// <param name="enable">True to enable the privilege, false to disable</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>True if successfully changed the state of the privilege</returns>
-        public bool SetPrivilege(string privilege, bool enable)
+        public NtResult<bool> SetPrivilege(string privilege, bool enable, bool throw_on_error)
         {
             TokenPrivilegesBuilder tp = new TokenPrivilegesBuilder();
             tp.AddPrivilege(privilege, enable);
-            return SetPrivileges(tp);
+            return SetPrivileges(tp, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set a privilege state
+        /// </summary>
+        /// <param name="privilege">The name of the privilege (e.g. SeDebugPrivilege)</param>
+        /// <param name="enable">True to enable the privilege, false to disable</param>
+        /// <returns>True if successfully changed the state of the privilege</returns>
+        public bool SetPrivilege(string privilege, bool enable)
+        {
+            return SetPrivilege(privilege, enable, true).Result;
+        }
+
+        /// <summary>
+        /// Set a privilege state
+        /// </summary>
+        /// <param name="luid">The luid of the privilege</param>
+        /// <param name="attributes">The privilege attributes to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True if successfully changed the state of the privilege</returns>
+        public NtResult<bool> SetPrivilege(Luid luid, PrivilegeAttributes attributes, bool throw_on_error)
+        {
+            TokenPrivilegesBuilder tp = new TokenPrivilegesBuilder();
+            tp.AddPrivilege(luid, attributes);
+            return SetPrivileges(tp, throw_on_error);
         }
 
         /// <summary>
@@ -1152,9 +1178,21 @@ namespace NtApiDotNet
         /// <returns>True if successfully changed the state of the privilege</returns>
         public bool SetPrivilege(Luid luid, PrivilegeAttributes attributes)
         {
+            return SetPrivilege(luid, attributes, true).Result;
+        }
+
+        /// <summary>
+        /// Set a privilege state
+        /// </summary>
+        /// <param name="privilege">The value of the privilege</param>
+        /// <param name="attributes">The privilege attributes to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True if successfully changed the state of the privilege</returns>
+        public NtResult<bool> SetPrivilege(TokenPrivilegeValue privilege, PrivilegeAttributes attributes, bool throw_on_error)
+        {
             TokenPrivilegesBuilder tp = new TokenPrivilegesBuilder();
-            tp.AddPrivilege(luid, attributes);
-            return SetPrivileges(tp);
+            tp.AddPrivilege(privilege, attributes);
+            return SetPrivileges(tp, throw_on_error);
         }
 
         /// <summary>
@@ -1165,9 +1203,7 @@ namespace NtApiDotNet
         /// <returns>True if successfully changed the state of the privilege</returns>
         public bool SetPrivilege(TokenPrivilegeValue privilege, PrivilegeAttributes attributes)
         {
-            TokenPrivilegesBuilder tp = new TokenPrivilegesBuilder();
-            tp.AddPrivilege(privilege, attributes);
-            return SetPrivileges(tp);
+            return SetPrivilege(privilege, attributes, true).Result;
         }
 
         /// <summary>
@@ -2900,15 +2936,13 @@ namespace NtApiDotNet
         private TokenSource _source;
         private Sid _app_container_sid;
 
-        private bool SetPrivileges(TokenPrivilegesBuilder tp)
+        private NtResult<bool> SetPrivileges(TokenPrivilegesBuilder tp, bool throw_on_error)
         {
             using (var priv_buffer = tp.ToBuffer())
             {
-                NtStatus status = NtSystemCalls.NtAdjustPrivilegesToken(Handle, false,
-                    priv_buffer, priv_buffer.Length, IntPtr.Zero, IntPtr.Zero).ToNtException();
-                if (status == NtStatus.STATUS_NOT_ALL_ASSIGNED)
-                    return false;
-                return true;
+                return NtSystemCalls.NtAdjustPrivilegesToken(Handle, false,
+                    priv_buffer, priv_buffer.Length, IntPtr.Zero, IntPtr.Zero)
+                    .CreateResult(throw_on_error, s => !(s == NtStatus.STATUS_NOT_ALL_ASSIGNED));
             }
         }
 
