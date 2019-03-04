@@ -264,6 +264,110 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Open the process of the message sender.
+        /// </summary>
+        /// <param name="message">The sent message.</param>
+        /// <param name="flags">Optional flags. Currently none defined.</param>
+        /// <param name="desired_access">The desired access for the process.</param>
+        /// <param name="object_attributes">Optional object attributes.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened process object.</returns>
+        public NtResult<NtProcess> OpenSenderProcess(AlpcMessage message, AlpcOpenSenderProcessFlags flags, ProcessAccessRights desired_access, ObjectAttributes object_attributes, bool throw_on_error)
+        {
+            return NtSystemCalls.NtAlpcOpenSenderProcess(out SafeKernelObjectHandle handle, Handle, 
+                message.Buffer, flags, desired_access, object_attributes)
+                .CreateResult(throw_on_error, () => new NtProcess(handle));
+        }
+
+        /// <summary>
+        /// Open the process of the message sender.
+        /// </summary>
+        /// <param name="message">The sent message.</param>
+        /// <param name="flags">Optional flags. Currently none defined.</param>
+        /// <param name="desired_access">The desired access for the process.</param>
+        /// <param name="object_attributes">Optional object attributes.</param>
+        /// <returns>The opened process object.</returns>
+        public NtProcess OpenSenderProcess(AlpcMessage message, AlpcOpenSenderProcessFlags flags, ProcessAccessRights desired_access, ObjectAttributes object_attributes)
+        {
+            return OpenSenderProcess(message, flags, desired_access, object_attributes, true).Result;
+        }
+
+        /// <summary>
+        /// Open the process of the message sender.
+        /// </summary>
+        /// <param name="message">The sent message.</param>
+        /// <param name="desired_access">The desired access for the process.</param>
+        /// <returns>The opened process object.</returns>
+        public NtProcess OpenSenderProcess(AlpcMessage message, ProcessAccessRights desired_access)
+        {
+            return OpenSenderProcess(message, AlpcOpenSenderProcessFlags.None, 
+                desired_access, null);
+        }
+
+        /// <summary>
+        /// Open the process of the message sender with maximum privileges.
+        /// </summary>
+        /// <param name="message">The sent message.</param>
+        /// <returns>The opened process object.</returns>
+        public NtProcess OpenSenderProcess(AlpcMessage message)
+        {
+            return OpenSenderProcess(message, ProcessAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
+        /// Open the thread of the message sender.
+        /// </summary>
+        /// <param name="message">The sent message.</param>
+        /// <param name="flags">Optional flags. Currently none defined.</param>
+        /// <param name="desired_access">The desired access for the thread.</param>
+        /// <param name="object_attributes">Optional object attributes.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened thread object.</returns>
+        public NtResult<NtThread> OpenSenderThread(AlpcMessage message, AlpcOpenSenderThreadFlags flags, 
+            ThreadAccessRights desired_access, ObjectAttributes object_attributes, bool throw_on_error)
+        {
+            return NtSystemCalls.NtAlpcOpenSenderThread(out SafeKernelObjectHandle handle, Handle,
+                message.Buffer, flags, desired_access, object_attributes)
+                .CreateResult(throw_on_error, () => new NtThread(handle));
+        }
+
+        /// <summary>
+        /// Open the thread of the message sender.
+        /// </summary>
+        /// <param name="message">The sent message.</param>
+        /// <param name="flags">Optional flags. Currently none defined.</param>
+        /// <param name="desired_access">The desired access for the thread.</param>
+        /// <param name="object_attributes">Optional object attributes.</param>
+        /// <returns>The opened thread object.</returns>
+        public NtThread OpenSenderThread(AlpcMessage message, AlpcOpenSenderThreadFlags flags, 
+            ThreadAccessRights desired_access, ObjectAttributes object_attributes)
+        {
+            return OpenSenderThread(message, flags, desired_access, object_attributes, true).Result;
+        }
+
+        /// <summary>
+        /// Open the thread of the message sender.
+        /// </summary>
+        /// <param name="message">The sent message.</param>
+        /// <param name="desired_access">The desired access for the thread.</param>
+        /// <returns>The opened thread object.</returns>
+        public NtThread OpenSenderThread(AlpcMessage message, ThreadAccessRights desired_access)
+        {
+            return OpenSenderThread(message, AlpcOpenSenderThreadFlags.None,
+                desired_access, null);
+        }
+
+        /// <summary>
+        /// Open the thread of the message sender with maximum privileges.
+        /// </summary>
+        /// <param name="message">The sent message.</param>
+        /// <returns>The opened thread object.</returns>
+        public NtThread OpenSenderThread(AlpcMessage message)
+        {
+            return OpenSenderThread(message, ThreadAccessRights.MaximumAllowed);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>

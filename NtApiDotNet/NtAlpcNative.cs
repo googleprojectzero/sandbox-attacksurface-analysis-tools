@@ -403,6 +403,18 @@ namespace NtApiDotNet
         public int AttributeFlags;
     }
 
+    [Flags]
+    public enum AlpcOpenSenderProcessFlags
+    {
+        None = 0,
+    }
+
+    [Flags]
+    public enum AlpcOpenSenderThreadFlags
+    {
+        None = 0,
+    }
+
     public static class NtAlpcNativeMethods
     {
         [DllImport("ntdll.dll")]
@@ -614,7 +626,7 @@ namespace NtApiDotNet
             out SafeKernelObjectHandle ProcessHandle,
             SafeKernelObjectHandle PortHandle,
             SafeAlpcPortMessageBuffer PortMessage,
-            int Flags,
+            AlpcOpenSenderProcessFlags Flags,
             ProcessAccessRights DesiredAccess,
             ObjectAttributes ObjectAttributes
         );
@@ -624,7 +636,7 @@ namespace NtApiDotNet
             out SafeKernelObjectHandle ThreadHandle,
             SafeKernelObjectHandle PortHandle,
             SafeAlpcPortMessageBuffer PortMessage,
-            int Flags,
+            AlpcOpenSenderThreadFlags Flags,
             ThreadAccessRights DesiredAccess,
             ObjectAttributes ObjectAttributes
         );
