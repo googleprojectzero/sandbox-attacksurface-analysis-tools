@@ -65,6 +65,21 @@ namespace NtApiDotNet
         AlpcMessageHandleInformation,
     }
 
+    public enum AlpcMessageType
+    {
+        None = 0,
+        Request = 1,
+        Reply = 2,
+        Datagram = 3,
+        LostReply = 4,
+        PortClosed = 5,
+        ClientDied = 6,
+        Exception = 7,
+        DebugEvent = 8,
+        ErrorEvent = 9,
+        ConnectionRequest = 10,
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public class AlpcPortMessage
     {
@@ -124,7 +139,7 @@ namespace NtApiDotNet
         /// If set then object duplication won't complete. Used by RPC to ensure
         /// multi-handle attributes don't fail when receiving.
         /// </summary>
-        SupportMultiHandleAttribute = 0x2000000,
+        AllowMultiHandleAttribute = 0x2000000,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -369,7 +384,7 @@ namespace NtApiDotNet
     [StructLayout(LayoutKind.Sequential)]
     public struct AlpcBasicInformation
     {
-        public int Flags;
+        public AlpcPortAttributeFlags Flags;
         public int SequenceNo;
         public IntPtr PortContext;
     }
@@ -378,7 +393,7 @@ namespace NtApiDotNet
     public struct AlpcPortAssociateCompletionPort
     {
         public IntPtr CompletionKey;
-        public SafeKernelObjectHandle CompletionPort;
+        public IntPtr CompletionPort;
     }
 
     public struct AlpcServerInformationOut

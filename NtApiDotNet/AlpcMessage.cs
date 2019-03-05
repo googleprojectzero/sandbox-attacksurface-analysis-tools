@@ -195,6 +195,11 @@ namespace NtApiDotNet
         public int CallbackId => Header.u3.CallbackId;
 
         /// <summary>
+        /// Get the message type.
+        /// </summary>
+        public AlpcMessageType MessageType => (AlpcMessageType)(Header.u2.Type & 0xFF);
+
+        /// <summary>
         /// Get or set the message data.
         /// </summary>
         /// <remarks>When you set the data it'll update the DataLength and TotalLength fields.</remarks>
@@ -218,7 +223,7 @@ namespace NtApiDotNet
             {
                 if (_port == null)
                 {
-                    throw new ArgumentNullException("Message must be associated with a port");
+                    return NtStatus.STATUS_INVALID_PORT_HANDLE;
                 }
                 return NtSystemCalls.NtAlpcQueryInformationMessage(_port.Handle, Header,
                     AlpcMessageInformationClass.AlpcMessageDirectStatusInformation,

@@ -366,6 +366,34 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Associate an IO completion port with this ALPC port.
+        /// </summary>
+        /// <param name="io_completion">The IO completion object.</param>
+        /// <param name="completion_key">Optional completion key.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus AssociateCompletionPort(NtIoCompletion io_completion, IntPtr completion_key, bool throw_on_error)
+        {
+            AlpcPortAssociateCompletionPort info = new AlpcPortAssociateCompletionPort()
+            {
+                CompletionPort = io_completion.Handle.DangerousGetHandle(),
+                CompletionKey = completion_key
+            };
+            return Set(AlpcPortInformationClass.AlpcAssociateCompletionPortInformation, info, throw_on_error);
+        }
+
+        /// <summary>
+        /// Associate an IO completion port with this ALPC port.
+        /// </summary>
+        /// <param name="io_completion">The IO completion object.</param>
+        /// <param name="completion_key">Optional completion key.</param>
+        /// <returns>The NT status code.</returns>
+        public void AssociateCompletionPort(NtIoCompletion io_completion, IntPtr completion_key)
+        {
+            AssociateCompletionPort(io_completion, completion_key, true);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -387,6 +415,25 @@ namespace NtApiDotNet
         {
             return NtSystemCalls.NtAlpcSetInformation(Handle, info_class, buffer, (int)buffer.ByteLength);
         }
+
+        #endregion
+
+        #region Public Properties
+
+        /// <summary>
+        /// Port flags.
+        /// </summary>
+        public AlpcPortAttributeFlags Flags => Query<AlpcBasicInformation>(AlpcPortInformationClass.AlpcBasicInformation).Flags;
+
+        /// <summary>
+        /// Port sequence number.
+        /// </summary>
+        public int SequenceNumber => Query<AlpcBasicInformation>(AlpcPortInformationClass.AlpcBasicInformation).SequenceNo;
+
+        /// <summary>
+        /// Port context.
+        /// </summary>
+        public long PortContext => Query<AlpcBasicInformation>(AlpcPortInformationClass.AlpcBasicInformation).PortContext.ToInt64();
 
         #endregion
 
@@ -632,11 +679,14 @@ namespace NtApiDotNet
     /// </summary>
     public class NtAlpcServer : NtAlpc
     {
+        #region Constructors
         internal NtAlpcServer(SafeKernelObjectHandle handle) 
             : base(handle, false)
         {
         }
+        #endregion
 
+        #region Static Methods
         /// <summary>
         /// Create an ALPC port.
         /// </summary>
@@ -677,7 +727,9 @@ namespace NtApiDotNet
                 return Create(obj_attr, port_attributes);
             }
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Accept a new connection on a port.
         /// </summary>
@@ -755,5 +807,6 @@ namespace NtApiDotNet
             return AcceptConnectPort(flags, null, null, IntPtr.Zero, connection_request, 
                 connection_message_attributes, accept_connection);
         }
+        #endregion
     }
 }
