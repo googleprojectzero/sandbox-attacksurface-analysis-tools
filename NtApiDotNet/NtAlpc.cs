@@ -394,6 +394,35 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Check if the current SID matches the connected SID.
+        /// </summary>
+        /// <param name="sid">The SID to compare.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True if the connected SID matches the specified SID.</returns>
+        public NtResult<bool> IsConnectedSid(Sid sid, bool throw_on_error)
+        {
+            using (var buffer = sid.ToArray().ToBuffer())
+            {
+                NtStatus status = QueryInformation(AlpcPortInformationClass.AlpcConnectedSIDInformation, buffer, out int return_length);
+                if (status == NtStatus.STATUS_SERVER_SID_MISMATCH)
+                {
+                    return false.CreateResult();
+                }
+                return status.CreateResult(throw_on_error, () => true);
+            }
+        }
+
+        /// <summary>
+        /// Check if the current SID matches the connected SID.
+        /// </summary>
+        /// <param name="sid">The SID to compare.</param>
+        /// <returns>True if the connected SID matches the specified SID.</returns>
+        public bool IsConnectedSid(Sid sid)
+        {
+            return IsConnectedSid(sid, true).Result;
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
