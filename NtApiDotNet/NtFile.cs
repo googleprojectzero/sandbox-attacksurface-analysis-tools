@@ -363,6 +363,48 @@ namespace NtApiDotNet
         #endregion
 
         #region Static Methods
+
+        /// <summary>
+        /// Create a new file
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes</param>
+        /// <param name="desired_access">Desired access for the file</param>
+        /// <param name="file_attributes">Attributes for the file</param>
+        /// <param name="share_access">Share access for the file</param>
+        /// <param name="open_options">Open options for file</param>
+        /// <param name="disposition">Disposition when opening the file</param>
+        /// <param name="ea_buffer">Extended Attributes buffer</param>
+        /// <param name="allocation_size">Optional allocation size.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtFile> Create(ObjectAttributes obj_attributes, FileAccessRights desired_access, FileAttributes file_attributes, FileShareMode share_access,
+            FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer, long? allocation_size, bool throw_on_error)
+        {
+            IoStatus iostatus = new IoStatus();
+            byte[] buffer = ea_buffer?.ToByteArray();
+            return NtSystemCalls.NtCreateFile(out SafeKernelObjectHandle handle, desired_access, obj_attributes, iostatus, allocation_size.ToLargeInteger(), FileAttributes.Normal,
+                share_access, disposition, open_options,
+                buffer, buffer != null ? buffer.Length : 0).CreateResult(throw_on_error, () => CreateFileObject(handle, iostatus));
+        }
+
+        /// <summary>
+        /// Create a new file
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes</param>
+        /// <param name="desired_access">Desired access for the file</param>
+        /// <param name="file_attributes">Attributes for the file</param>
+        /// <param name="share_access">Share access for the file</param>
+        /// <param name="open_options">Open options for file</param>
+        /// <param name="disposition">Disposition when opening the file</param>
+        /// <param name="ea_buffer">Extended Attributes buffer</param>
+        /// <param name="allocation_size">Optional allocation size.</param>
+        /// <returns>The created/opened file object.</returns>
+        public static NtFile Create(ObjectAttributes obj_attributes, FileAccessRights desired_access, FileAttributes file_attributes, FileShareMode share_access,
+            FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer, long? allocation_size)
+        {
+            return Create(obj_attributes, desired_access, file_attributes, share_access, open_options, disposition, ea_buffer, allocation_size, true).Result;
+        }
+
         /// <summary>
         /// Create a new file
         /// </summary>
@@ -378,11 +420,8 @@ namespace NtApiDotNet
         public static NtResult<NtFile> Create(ObjectAttributes obj_attributes, FileAccessRights desired_access, FileAttributes file_attributes, FileShareMode share_access,
             FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer, bool throw_on_error)
         {
-            IoStatus iostatus = new IoStatus();
-            byte[] buffer = ea_buffer?.ToByteArray();
-            return NtSystemCalls.NtCreateFile(out SafeKernelObjectHandle handle, desired_access, obj_attributes, iostatus, null, FileAttributes.Normal,
-                share_access, disposition, open_options,
-                buffer, buffer != null ? buffer.Length : 0).CreateResult(throw_on_error, () => CreateFileObject(handle, iostatus));
+            return Create(obj_attributes, desired_access, file_attributes, 
+                share_access, open_options, disposition, ea_buffer, null, throw_on_error);
         }
 
         /// <summary>
@@ -399,7 +438,7 @@ namespace NtApiDotNet
         public static NtFile Create(ObjectAttributes obj_attributes, FileAccessRights desired_access, FileAttributes file_attributes, FileShareMode share_access,
             FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer)
         {
-            return Create(obj_attributes, desired_access, file_attributes, share_access, open_options, disposition, ea_buffer, true).Result;
+            return Create(obj_attributes, desired_access, file_attributes, share_access, open_options, disposition, ea_buffer, null);
         }
 
         /// <summary>
