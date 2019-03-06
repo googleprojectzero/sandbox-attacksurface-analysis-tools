@@ -655,7 +655,7 @@ namespace NtApiDotNet
 
         internal static OptionalLength GetOptionalLength(this SafeBuffer buffer)
         {
-            if (buffer == null)
+            if (buffer == null || buffer.IsInvalid)
             {
                 return null;
             }
