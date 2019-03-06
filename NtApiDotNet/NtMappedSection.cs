@@ -108,7 +108,7 @@ namespace NtApiDotNet
             {
                 using (Process)
                 {
-                    ret = NtSystemCalls.NtUnmapViewOfSection(Process.Handle, handle).IsSuccess();
+                    ret = NtSection.Unmap(Process, handle, false).IsSuccess();
                 }
             }
             handle = IntPtr.Zero;

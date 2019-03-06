@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -227,6 +226,49 @@ namespace NtApiDotNet
                 return Open(obja, desired_access);
             }
         }
+
+        /// <summary>
+        /// Unmap a section in a specified process.
+        /// </summary>
+        /// <param name="process">The process to unmap the section.</param>
+        /// <param name="base_address">The base address to unmap.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus Unmap(NtProcess process, IntPtr base_address, bool throw_on_error)
+        {
+            return NtSystemCalls.NtUnmapViewOfSection(process.Handle, base_address).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Unmap a section in the current process.
+        /// </summary>
+        /// <param name="base_address">The base address to unmap.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus Unmap(IntPtr base_address, bool throw_on_error)
+        {
+            return Unmap(NtProcess.Current, base_address, throw_on_error);
+        }
+
+        /// <summary>
+        /// Unmap a section in a specified process.
+        /// </summary>
+        /// <param name="process">The process to unmap the section.</param>
+        /// <param name="base_address">The base address to unmap.</param>
+        public static void Unmap(NtProcess process, IntPtr base_address)
+        {
+            Unmap(process, base_address, true);
+        }
+
+        /// <summary>
+        /// Unmap a section in the current process.
+        /// </summary>
+        /// <param name="base_address">The base address to unmap.</param>
+        public static void Unmap(IntPtr base_address)
+        {
+            Unmap(base_address, true);
+        }
+
         #endregion
 
         #region Public Methods
