@@ -119,6 +119,11 @@ namespace NtApiDotNet
             public int CallbackId;
         }
         public PortMessageUnion3 u3;
+
+        internal AlpcPortMessage Clone()
+        {
+            return (AlpcPortMessage)MemberwiseClone();
+        }
     }
 
     [Flags]

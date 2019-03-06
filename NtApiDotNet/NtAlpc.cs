@@ -204,10 +204,10 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The received message.</returns>
         /// <remarks>The attribute parameters will be repopulated with the attribute results.</remarks>
-        public NtResult<AlpcMessage> Receive(AlpcMessageFlags flags, int receive_length,
+        public NtResult<AlpcMessageRaw> Receive(AlpcMessageFlags flags, int receive_length,
             AlpcMessageAttributeSet receive_attributes, NtWaitTimeout timeout, bool throw_on_error)
         {
-            var msg = new AlpcMessage(receive_length, false);
+            var msg = new AlpcMessageRaw(receive_length);
             return SendReceive(flags, null, null, msg, receive_attributes, 
                 timeout, false).CreateResult(throw_on_error, () => msg);
         }
@@ -221,7 +221,7 @@ namespace NtApiDotNet
         /// <param name="timeout">Time out for the send/receive.</param>
         /// <returns>The received message.</returns>
         /// <remarks>The attribute parameters will be repopulated with the attribute results.</remarks>
-        public AlpcMessage Receive(AlpcMessageFlags flags, int receive_length,
+        public AlpcMessageRaw Receive(AlpcMessageFlags flags, int receive_length,
             AlpcMessageAttributeSet receive_attributes, NtWaitTimeout timeout)
         {
             return Receive(flags, receive_length, receive_attributes, timeout, true).Result;
@@ -235,7 +235,7 @@ namespace NtApiDotNet
         /// <param name="receive_attributes">The attributes to receive with the message. Optional.</param>
         /// <returns>The received message.</returns>
         /// <remarks>The attribute parameters will be repopulated with the attribute results.</remarks>
-        public AlpcMessage Receive(AlpcMessageFlags flags, int receive_length,
+        public AlpcMessageRaw Receive(AlpcMessageFlags flags, int receive_length,
             AlpcMessageAttributeSet receive_attributes)
         {
             return Receive(flags, receive_length, receive_attributes, NtWaitTimeout.Infinite);
@@ -248,9 +248,65 @@ namespace NtApiDotNet
         /// <param name="receive_length">The maximum length to receive.</param>
         /// <returns>The received message.</returns>
         /// <remarks>The attribute parameters will be repopulated with the attribute results.</remarks>
-        public AlpcMessage Receive(AlpcMessageFlags flags, int receive_length)
+        public AlpcMessageRaw Receive(AlpcMessageFlags flags, int receive_length)
         {
             return Receive(flags, receive_length, null);
+        }
+
+        /// <summary>
+        /// Receive a message on an ALPC port.
+        /// </summary>
+        /// <param name="flags">Receive flags.</param>
+        /// <param name="receive_attributes">The attributes to receive with the message. Optional.</param>
+        /// <param name="timeout">Time out for the send/receive.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The received message.</returns>
+        /// <remarks>The attribute parameters will be repopulated with the attribute results.</remarks>
+        /// <typeparam name="T">The type of structure to receive.</typeparam>
+        public NtResult<AlpcMessageType<T>> Receive<T>(AlpcMessageFlags flags,
+            AlpcMessageAttributeSet receive_attributes, NtWaitTimeout timeout,
+            bool throw_on_error) where T : struct
+        {
+            var msg = new AlpcMessageType<T>();
+            return SendReceive(flags, null, null, msg, receive_attributes,
+                timeout, false).CreateResult(throw_on_error, () => msg);
+        }
+
+        /// <summary>
+        /// Receive a message on an ALPC port.
+        /// </summary>
+        /// <param name="flags">Receive flags.</param>
+        /// <param name="receive_attributes">The attributes to receive with the message. Optional.</param>
+        /// <param name="timeout">Time out for the send/receive.</param>
+        /// <remarks>The attribute parameters will be repopulated with the attribute results.</remarks>
+        /// <typeparam name="T">The type of structure to receive.</typeparam>
+        public AlpcMessageType<T> Receive<T>(AlpcMessageFlags flags,
+            AlpcMessageAttributeSet receive_attributes, NtWaitTimeout timeout) where T : struct
+        {
+            return Receive<T>(flags, receive_attributes, timeout, true).Result;
+        }
+
+        /// <summary>
+        /// Receive a message on an ALPC port.
+        /// </summary>
+        /// <param name="flags">Receive flags.</param>
+        /// <param name="receive_attributes">The attributes to receive with the message. Optional.</param>
+        /// <remarks>The attribute parameters will be repopulated with the attribute results.</remarks>
+        /// <typeparam name="T">The type of structure to receive.</typeparam>
+        public AlpcMessageType<T> Receive<T>(AlpcMessageFlags flags,
+            AlpcMessageAttributeSet receive_attributes) where T : struct
+        {
+            return Receive<T>(flags, receive_attributes, NtWaitTimeout.Infinite);
+        }
+
+        /// <summary>
+        /// Receive a message on an ALPC port.
+        /// </summary>
+        /// <param name="flags">Receive flags.</param>
+        /// <typeparam name="T">The type of structure to receive.</typeparam>
+        public AlpcMessageType<T> Receive<T>(AlpcMessageFlags flags) where T : struct
+        {
+            return Receive<T>(flags, null);
         }
 
         /// <summary>

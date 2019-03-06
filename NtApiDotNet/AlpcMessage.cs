@@ -28,20 +28,8 @@ namespace NtApiDotNet
         /// Constructor.
         /// </summary>
         /// <param name="header">The port message header.</param>
-        /// <param name="data">The trailing data.</param>
-        public SafeAlpcPortMessageBuffer(AlpcPortMessage header, byte[] data)
-            : base(header, data.Length, true)
-        {
-            Data.WriteBytes(data);
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="header">The port message header.</param>
-        /// <param name="data_length">The trailing data to initialize.</param>
-        public SafeAlpcPortMessageBuffer(AlpcPortMessage header, int data_length)
-            : base(header, data_length, true)
+        /// <param name="allocated_data_length">The total length of allocated memory excluding the header.</param>
+        public SafeAlpcPortMessageBuffer(AlpcPortMessage header, int allocated_data_length) : base(header, allocated_data_length, true)
         {
             Data.ZeroBuffer();
         }
@@ -49,9 +37,9 @@ namespace NtApiDotNet
         /// <summary>
         /// Constructor. Creates a receive buffer with a set length.
         /// </summary>
-        /// <param name="data_length">The trailing data to initialize.</param>
-        public SafeAlpcPortMessageBuffer(int data_length)
-            : this(new AlpcPortMessage(), data_length)
+        /// <param name="allocated_data_length">The total length of allocated memory excluding the header.</param>
+        public SafeAlpcPortMessageBuffer(int allocated_data_length)
+            : this(new AlpcPortMessage(), allocated_data_length)
         {
         }
 
@@ -93,14 +81,13 @@ namespace NtApiDotNet
     /// <summary>
     /// Base class to represent an ALPC message.
     /// </summary>
-    public class AlpcMessage
+    public abstract class AlpcMessage
     {
         #region Private Members
 
         static readonly int _header_size = Marshal.SizeOf(typeof(AlpcPortMessage));
-
-        private byte[] _data;
         private NtAlpc _port;
+
         #endregion
 
         #region Constructors
@@ -109,90 +96,56 @@ namespace NtApiDotNet
         /// Constructor.
         /// </summary>
         /// <param name="header">The port message header.</param>
-        /// <param name="data">The data to allocate.</param>
-        /// <param name="initialize">True to initialize the header length fields</param>
-        public AlpcMessage(AlpcPortMessage header, byte[] data, bool initialize)
+        protected AlpcMessage(AlpcPortMessage header)
         {
             Header = header;
-            _data = data;
-            if (initialize)
-            {
-                UpdateHeaderLength();
-            }
         }
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="data">The data to allocate.</param>
-        public AlpcMessage(byte[] data) 
-            : this(new AlpcPortMessage(), data, true)
+        protected AlpcMessage() : this(new AlpcPortMessage())
         {
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="data_length">The length of data to allocate.</param>
-        /// <param name="initialize">True to initialize the header length fields</param>
-        public AlpcMessage(int data_length, bool initialize)
-            : this(new AlpcPortMessage(), new byte[data_length], initialize)
-        {
-        }
-
-        /// <summary>
-        /// Constructor from a safe buffer.
-        /// </summary>
-        /// <param name="buffer">The safe buffer to initialize from.</param>
-        /// <param name="port">Port associated with this message. Optional.</param>
-        /// <remarks>Note that the port object is not referenced, however the message becomes invalid once
-        /// the port closes so this isn't a major concern.</remarks>
-        public AlpcMessage(SafeAlpcPortMessageBuffer buffer, NtAlpc port)
-        {
-            FromSafeBuffer(buffer, port);
         }
 
         #endregion
 
-        #region Private Members
-
-        private void UpdateHeaderLength()
-        {
-            Header.u1.TotalLength = (short)(_header_size + _data.Length);
-            Header.u1.DataLength = (short)_data.Length;
-        }
-
-        #endregion
-
-        #region Public Properties
+        #region Protected Members
 
         /// <summary>
-        /// Resize the buffer to a new size.
+        /// Update the header length fields.
         /// </summary>
-        /// <param name="new_size">The new size of the buffer including the header.</param>
-        /// <param name="update_header">True to update the header length fields.</param>
-        public void Resize(int new_size, bool update_header)
+        /// <param name="data_length">The length of the valid data.</param>
+        /// <param name="allocated_data_length">The maximum data length supported by the packet.</param>
+        protected void UpdateHeaderLength(int data_length, int allocated_data_length)
         {
-            if (new_size < _header_size)
+            if (data_length > allocated_data_length)
             {
-                throw new ArgumentException("Size must include header size", nameof(new_size));
+                throw new ArgumentException("Data length is larger than allocated total length", nameof(allocated_data_length));
             }
 
-            Array.Resize(ref _data, new_size - _header_size);
-            if (update_header)
+            if (allocated_data_length > MaximumDataLength)
             {
-                UpdateHeaderLength();
+                throw new ArgumentException("Total length is larger than maximum allowed length.", nameof(allocated_data_length));
             }
+
+            AllocatedDataLength = allocated_data_length;
+            Header.u1.TotalLength = (short)(_header_size + data_length);
+            Header.u1.DataLength = (short)data_length;
         }
 
         /// <summary>
-        /// Resize the buffer to a new size and update header.
+        /// Method to handle when ToSafeBuffer is called.
         /// </summary>
-        /// <param name="new_size">The new size of the buffer including the header.</param>
-        public void Resize(int new_size)
-        {
-            Resize(new_size, true);
-        }
+        /// <param name="buffer">The message buffer being created.</param>
+        protected abstract void OnToSafeBuffer(SafeAlpcPortMessageBuffer buffer);
+
+        /// <summary>
+        /// Method to handle when FromSafeBuffer is called.
+        /// </summary>
+        /// <param name="buffer">The message buffer to initialize from..</param>
+        /// <param name="port">The ALPC port associated with this message.</param>
+        protected abstract void OnFromSafeBuffer(SafeAlpcPortMessageBuffer buffer, NtAlpc port);
 
         #endregion
 
@@ -219,6 +172,11 @@ namespace NtApiDotNet
         public int TotalLength => Header.u1.TotalLength;
 
         /// <summary>
+        /// Get the allocated data length for the message.
+        /// </summary>
+        public int AllocatedDataLength { get; private set; }
+
+        /// <summary>
         /// Get data length of the message.
         /// </summary>
         public int DataLength => Header.u1.DataLength;
@@ -237,20 +195,6 @@ namespace NtApiDotNet
         /// Get the message type.
         /// </summary>
         public AlpcMessageType MessageType => (AlpcMessageType)(Header.u2.Type & 0xFF);
-
-        /// <summary>
-        /// Get or set the message data.
-        /// </summary>
-        /// <remarks>When you set the data it'll update the DataLength and TotalLength fields.</remarks>
-        public byte[] Data
-        {
-            get => _data;
-            set
-            {
-                _data = value;
-                UpdateHeaderLength();
-            }
-        }
 
         /// <summary>
         /// Get direct status for the message.
@@ -272,28 +216,13 @@ namespace NtApiDotNet
 
         #endregion
 
-        #region Static Methods
-        /// <summary>
-        /// Create a typed ALPC message.
-        /// </summary>
-        /// <typeparam name="T">The type representing the data.</typeparam>
-        /// <param name="value">A value to initialize the buffer.</param>
-        /// <returns>The ALPC message.</returns>
-        public static AlpcMessage<T> Create<T>(T value) where T : struct
-        {
-            return new AlpcMessage<T>(value);
-        }
+        #region Static Properties
 
         /// <summary>
-        /// Create a typed ALPC message.
+        /// Get the maximum size of a message minus the header size.
         /// </summary>
-        /// <typeparam name="T">The type representing the data.</typeparam>
-        /// <returns>The ALPC message.</returns>
-        /// <remarks>Note that the size fields in the header will not be initialized.</remarks>
-        public static AlpcMessage<T> Create<T>() where T : struct
-        {
-            return new AlpcMessage<T>(false);
-        }
+        public static int MaximumDataLength => short.MaxValue - _header_size;
+
         #endregion
 
         #region Public Methods
@@ -302,15 +231,20 @@ namespace NtApiDotNet
         /// Create a safe buffer for this message.
         /// </summary>
         /// <returns>The safe buffer.</returns>
-        public virtual SafeAlpcPortMessageBuffer ToSafeBuffer()
+        public SafeAlpcPortMessageBuffer ToSafeBuffer()
         {
-            return new SafeAlpcPortMessageBuffer(Header, Data);
+            using (SafeAlpcPortMessageBuffer buffer = new SafeAlpcPortMessageBuffer(Header, AllocatedDataLength))
+            {
+                OnToSafeBuffer(buffer);
+                return buffer.Detach();
+            }
         }
 
-        internal virtual void FromSafeBuffer(SafeAlpcPortMessageBuffer buffer, NtAlpc port)
+        internal void FromSafeBuffer(SafeAlpcPortMessageBuffer buffer, NtAlpc port)
         {
             Header = buffer.Result;
-            _data = buffer.Data.ReadBytes(Header.u1.DataLength);
+            AllocatedDataLength = buffer.Length - _header_size;
+            OnFromSafeBuffer(buffer, port);
             _port = port;
         }
 
@@ -343,7 +277,7 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The result of the query.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public virtual NtResult<T> Query<T>(NtAlpc port, AlpcMessageInformationClass info_class, 
+        public NtResult<T> Query<T>(NtAlpc port, AlpcMessageInformationClass info_class, 
             T default_value, bool throw_on_error) where T : new()
         {
             using (var buffer = new SafeStructureInOutBuffer<T>(default_value))
@@ -384,47 +318,115 @@ namespace NtApiDotNet
     }
 
     /// <summary>
-    /// An ALPC message which holds a specific type.
+    /// An ALPC message which holds a raw set of bytes.
     /// </summary>
-    /// <typeparam name="T">The type representing the data.</typeparam>
-    public sealed class AlpcMessage<T> : AlpcMessage where T : struct
+    public sealed class AlpcMessageRaw : AlpcMessage
     {
+        #region Private Members
+        private byte[] _data;
+        #endregion
+
         #region Constructors
+
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="initialize">Indicate whether to initialize the message headers.</param>
-        internal AlpcMessage(bool initialize) 
-            : base(Marshal.SizeOf(typeof(T)), initialize)
+        /// <param name="data">Data to initialize the message with.</param>
+        /// <param name="allocated_data_length">Maximum length of the message buffer.</param>
+        public AlpcMessageRaw(byte[] data, int allocated_data_length)
         {
-            Value = new T();
+            _data = (byte[])data.Clone();
+            UpdateHeaderLength(_data.Length, allocated_data_length);
         }
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="value">The initial value to set..</param>
-        internal AlpcMessage(T value) : this(true)
+        /// <param name="data">Data to initialize the message with.</param>
+        public AlpcMessageRaw(byte[] data) : this(data, data.Length)
         {
-            Value = value;
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="allocated_data_length">Total allocated length of the message buffer.</param>
+        public AlpcMessageRaw(int allocated_data_length) 
+            : this(new byte[0], allocated_data_length)
+        {
+        }
+
+        #endregion
+
+        #region Public Properties
+        /// <summary>
+        /// Get or set the message data.
+        /// </summary>
+        /// <remarks>When you set the data it'll update the DataLength and TotalLength fields.</remarks>
+        public byte[] Data
+        {
+            get => _data;
+            set
+            {
+                UpdateHeaderLength(value.Length, Math.Max(value.Length, AllocatedDataLength));
+                _data = value;
+            }
         }
         #endregion
 
-        #region Public Methods
+        #region Protected Members
 
         /// <summary>
-        /// Create a safe buffer for this message.
+        /// Method to handle when FromSafeBuffer is called.
         /// </summary>
-        /// <returns>The safe buffer.</returns>
-        public override SafeAlpcPortMessageBuffer ToSafeBuffer()
+        /// <param name="buffer">The message buffer to initialize from..</param>
+        /// <param name="port">The ALPC port associated with this message.</param>
+        protected override void OnFromSafeBuffer(SafeAlpcPortMessageBuffer buffer, NtAlpc port)
         {
-            using (var buffer = base.ToSafeBuffer())
-            {
-                buffer.Data.Write(0, Value);
-                return buffer.Detach();
-            }
+            _data = buffer.Data.ReadBytes(DataLength);
         }
 
+        /// <summary>
+        /// Method to handle when ToSafeBuffer is called.
+        /// </summary>
+        /// <param name="buffer">The message buffer being created.</param>
+        protected override void OnToSafeBuffer(SafeAlpcPortMessageBuffer buffer)
+        {
+            buffer.Data.WriteBytes(_data);
+        }
+
+        #endregion
+
+    }
+
+    /// <summary>
+    /// An ALPC message which holds a specific type.
+    /// </summary>
+    /// <typeparam name="T">The type representing the data.</typeparam>
+    public sealed class AlpcMessageType<T> : AlpcMessage where T : struct
+    {
+        #region Constructors
+        private AlpcMessageType(bool receive_buffer)
+        {
+            int length = Marshal.SizeOf(typeof(T));
+            UpdateHeaderLength(receive_buffer ? 0 : length, length);
+        }
+
+        /// <summary>
+        /// Constructor for a receive buffer.
+        /// </summary>
+        public AlpcMessageType() : this(true)
+        {
+        }
+
+        /// <summary>
+        /// Constructor for a send/receive buffer.
+        /// </summary>
+        /// <param name="value">The initial value to set.</param>
+        public AlpcMessageType(T value) : this(false)
+        {
+            Value = value;
+        }
         #endregion
 
         #region Public Properties
@@ -434,12 +436,27 @@ namespace NtApiDotNet
         public T Value { get; set; }
         #endregion
 
-        #region Internal Members
-        internal override void FromSafeBuffer(SafeAlpcPortMessageBuffer buffer, NtAlpc port)
+        #region Protected Members
+
+        /// <summary>
+        /// Method to handle when FromSafeBuffer is called.
+        /// </summary>
+        /// <param name="buffer">The message buffer to initialize from..</param>
+        /// <param name="port">The ALPC port associated with this message.</param>
+        protected override void OnFromSafeBuffer(SafeAlpcPortMessageBuffer buffer, NtAlpc port)
         {
-            base.FromSafeBuffer(buffer, port);
             Value = buffer.Data.Read<T>(0);
         }
+
+        /// <summary>
+        /// Method to handle when ToSafeBuffer is called.
+        /// </summary>
+        /// <param name="buffer">The message buffer being created.</param>
+        protected override void OnToSafeBuffer(SafeAlpcPortMessageBuffer buffer)
+        {
+            buffer.Data.Write(0, Value);
+        }
+
         #endregion
     }
 }

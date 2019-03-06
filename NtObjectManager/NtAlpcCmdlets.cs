@@ -40,7 +40,7 @@ namespace NtObjectManager
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            if (ParameterSetName == "CheckSid")
+            if (ParameterSetName == "SidCheck")
             {
                 return NtAlpcClient.Connect(Path, HandleObjectAttributes, PortAttributes, Flags, RequiredServerSid, ConnectionMessage,
                     OutMessageAttributes, InMessageAttributes, Timeout);
@@ -379,16 +379,21 @@ namespace NtObjectManager
         /// </summary>
         [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromBytes")]
         public byte[] Bytes { get; set; }
+
         /// <summary>
-        /// <para type="description">Create the message with an allocated length.</para>
+        /// <para type="description">Specify the message with allocated length.</para>
         /// </summary>
-        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromLength")]
-        public int Length { get; set; }
+        [Parameter(Position = 0, ParameterSetName = "FromLength")]
+        [Parameter(Position = 1, ParameterSetName = "FromBytes")]
+        public int AllocatedDataLength { get; set; }
+
         /// <summary>
-        /// <para type="description">Initialize the message headers for the allocated length.</para>
+        /// Constructor.
         /// </summary>
-        [Parameter(ParameterSetName = "FromLength")]
-        public SwitchParameter Initialize { get; set; }
+        public NewNtAlpcMessage()
+        {
+            AllocatedDataLength = AlpcMessage.MaximumDataLength;
+        }
 
         /// <summary>
         /// Process record.
@@ -397,11 +402,11 @@ namespace NtObjectManager
         {
             if (ParameterSetName == "FromBytes")
             {
-                WriteObject(new AlpcMessage(Bytes));
+                WriteObject(new AlpcMessageRaw(Bytes, AllocatedDataLength));
             }
             else
             {
-                WriteObject(new AlpcMessage(Length, Initialize));
+                WriteObject(new AlpcMessageRaw(AllocatedDataLength));
             }
         }
     }
@@ -479,7 +484,7 @@ namespace NtObjectManager
         {
             if (ReceiveLength.HasValue)
             {
-                return new AlpcMessage(ReceiveLength.Value, false);
+                return new AlpcMessageRaw(ReceiveLength.Value);
             }
             return null;
         }
@@ -508,7 +513,7 @@ namespace NtObjectManager
         {
             if (ParameterSetName == "FromBytes")
             {
-                WriteObject(Send(new AlpcMessage(Bytes)));
+                WriteObject(Send(new AlpcMessageRaw(Bytes)));
             }
             else
             {
@@ -548,9 +553,9 @@ namespace NtObjectManager
         public long? TimeoutMs { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify the length of message to receive.</para>
+        /// <para type="description">Specify the maximum length of message to receive.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 1)]
+        [Parameter(Position = 1)]
         public int ReceiveLength { get; set; }
 
         /// <summary>
@@ -565,6 +570,7 @@ namespace NtObjectManager
         public ReceiveNtAlpcMessage()
         {
             Flags = AlpcMessageFlags.ReleaseMessage;
+            ReceiveLength = AlpcMessage.MaximumDataLength;
         }
 
         /// <summary>

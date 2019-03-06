@@ -25,7 +25,6 @@ namespace NtApiDotNet
             return attrs == null ? SafeAlpcMessageAttributesBuffer.Null : list.AddResource(attrs.ToSafeBuffer());
         }
 
-
         internal static SafeAlpcPortMessageBuffer GetMessageBuffer(this DisposableList list, AlpcMessage message)
         {
             if (message == null)
