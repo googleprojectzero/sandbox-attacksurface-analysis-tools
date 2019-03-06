@@ -96,6 +96,9 @@ namespace NtApiDotNet
     public class AlpcMessage
     {
         #region Private Members
+
+        static readonly int _header_size = Marshal.SizeOf(typeof(AlpcPortMessage));
+
         private byte[] _data;
         private NtAlpc _port;
         #endregion
@@ -149,10 +152,46 @@ namespace NtApiDotNet
             FromSafeBuffer(buffer, port);
         }
 
+        #endregion
+
+        #region Private Members
+
         private void UpdateHeaderLength()
         {
-            Header.u1.TotalLength = (short)(Marshal.SizeOf(typeof(AlpcPortMessage)) + _data.Length);
+            Header.u1.TotalLength = (short)(_header_size + _data.Length);
             Header.u1.DataLength = (short)_data.Length;
+        }
+
+        #endregion
+
+        #region Public Properties
+
+        /// <summary>
+        /// Resize the buffer to a new size.
+        /// </summary>
+        /// <param name="new_size">The new size of the buffer including the header.</param>
+        /// <param name="update_header">True to update the header length fields.</param>
+        public void Resize(int new_size, bool update_header)
+        {
+            if (new_size < _header_size)
+            {
+                throw new ArgumentException("Size must include header size", nameof(new_size));
+            }
+
+            Array.Resize(ref _data, new_size - _header_size);
+            if (update_header)
+            {
+                UpdateHeaderLength();
+            }
+        }
+
+        /// <summary>
+        /// Resize the buffer to a new size and update header.
+        /// </summary>
+        /// <param name="new_size">The new size of the buffer including the header.</param>
+        public void Resize(int new_size)
+        {
+            Resize(new_size, true);
         }
 
         #endregion
