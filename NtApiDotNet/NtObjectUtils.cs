@@ -646,7 +646,7 @@ namespace NtApiDotNet
 
         internal static OptionalInt32 GetOptionalInt32(this SafeBuffer buffer)
         {
-            if (buffer == null)
+            if (buffer == null || buffer.IsInvalid)
             {
                 return null;
             }
