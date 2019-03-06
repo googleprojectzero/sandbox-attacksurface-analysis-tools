@@ -258,6 +258,18 @@ namespace NtApiDotNet
         {
             buffer.GetContextAttribute(this);
         }
+
+        internal AlpcContextAttr ToStruct()
+        {
+            return new AlpcContextAttr()
+            {
+                PortContext = new IntPtr(PortContext),
+                MessageContext = new IntPtr(MessageContext),
+                MessageId = MessageId,
+                Sequence = Sequence,
+                CallbackId = CallbackId,
+            };
+        }
     }
 
     /// <summary>
@@ -511,14 +523,7 @@ namespace NtApiDotNet
         internal void SetContextAttribute(AlpcContextMessageAttribute attribute)
         {
             var attr = GetAttribute<AlpcContextAttr>(AlpcMessageAttributeFlags.Context);
-            attr.Result = new AlpcContextAttr()
-            {
-                PortContext = new IntPtr(attribute.PortContext),
-                MessageContext = new IntPtr(attribute.MessageContext),
-                MessageId = attribute.MessageId,
-                Sequence = attribute.Sequence,
-                CallbackId = attribute.CallbackId,
-            };
+            attr.Result = attribute.ToStruct();
         }
 
         internal void GetViewAttribute(AlpcViewMessageAttribute attribute)

@@ -74,6 +74,38 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Cancel a message based on a context attribute.
+        /// </summary>
+        /// <param name="flags">Cancellation flags.</param>
+        /// <param name="context">The context attributes.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus CancelMessage(AlpcCancelMessageFlags flags, AlpcContextMessageAttribute context, bool throw_on_error)
+        {
+            var attr = context.ToStruct();
+            return NtSystemCalls.NtAlpcCancelMessage(Handle, flags, ref attr).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Cancel a message based on a context attribute.
+        /// </summary>
+        /// <param name="flags">Cancellation flags.</param>
+        /// <param name="context">The context attributes.</param>
+        public void CancelMessage(AlpcCancelMessageFlags flags, AlpcContextMessageAttribute context)
+        {
+            CancelMessage(flags, context, true);
+        }
+
+        /// <summary>
+        /// Cancel a message based on a context attribute.
+        /// </summary>
+        /// <param name="context">The context attributes.</param>
+        public void CancelMessage(AlpcContextMessageAttribute context)
+        {
+            CancelMessage(AlpcCancelMessageFlags.None, context);
+        }
+
+        /// <summary>
         /// Send and receive messages on an ALPC port.
         /// </summary>
         /// <param name="flags">Send/Receive flags.</param>
@@ -787,11 +819,10 @@ namespace NtApiDotNet
             }
             using (var list = new DisposableList())
             {
-                var message = connection_request.ToSafeBuffer();
                 return NtSystemCalls.NtAlpcAcceptConnectPort(out SafeKernelObjectHandle handle,
-                    Handle, flags, object_attributes, port_attributes, port_context, message,
-                    list.GetAttributesBuffer(connection_message_attributes), accept_connection)
-                    .CreateResult(throw_on_error, () => new NtAlpcServer(handle));
+                    Handle, flags, object_attributes, port_attributes, port_context, 
+                    list.GetMessageBuffer(connection_request), list.GetAttributesBuffer(connection_message_attributes), 
+                    accept_connection).CreateResult(throw_on_error, () => new NtAlpcServer(handle));
             }
         }
 
