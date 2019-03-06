@@ -535,6 +535,21 @@ namespace NtApiDotNet
             SafeKernelObjectHandle ThreadHandle,
             SafeBuffer ThreadContext);
     }
+
+    public class ThreadAlpcServerInformation
+    {
+        public bool ThreadBlocked { get; }
+        public int ConnectedProcessId { get; }
+        public string ConnectionPortName { get; }
+
+        internal ThreadAlpcServerInformation(AlpcServerInformationOut info)
+        {
+            ThreadBlocked = info.ThreadBlocked != 0;
+            ConnectedProcessId = info.ConnectedProcessId.ToInt32();
+            ConnectionPortName = info.ConnectionPortName.ToString();
+        }
+    }
+
 #pragma warning restore 1591
 
     /// <summary>
@@ -1137,6 +1152,30 @@ namespace NtApiDotNet
 
                 throw new NtException(result.Status);
             }
+        }
+
+        /// <summary>
+        /// Get current waiting server information.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The thread ALPC server information.</returns>
+        public NtResult<ThreadAlpcServerInformation> GetAlpcServerInformation(bool throw_on_error)
+        {
+            AlpcServerInformation info = new AlpcServerInformation() { ThreadHandle = Handle.DangerousGetHandle() };
+            using (var buffer = info.ToBuffer(1024, true))
+            {
+                return NtSystemCalls.NtAlpcQueryInformation(SafeKernelObjectHandle.Null, AlpcPortInformationClass.AlpcServerInformation, 
+                    buffer, buffer.Length, out int return_length).CreateResult(throw_on_error, () => new ThreadAlpcServerInformation(buffer.Result.Out));
+            }
+        }
+
+        /// <summary>
+        /// Get current waiting server information.
+        /// </summary>
+        /// <returns>The thread ALPC server information.</returns>
+        public ThreadAlpcServerInformation GetAlpcServerInformation()
+        {
+            return GetAlpcServerInformation(true).Result;
         }
     }
 }

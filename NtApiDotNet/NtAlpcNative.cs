@@ -396,9 +396,10 @@ namespace NtApiDotNet
         public IntPtr CompletionPort;
     }
 
+    // Output structure for server information. You need to specif
     public struct AlpcServerInformationOut
     {
-        public bool ThreadBlocked;
+        public byte ThreadBlocked;
         public IntPtr ConnectedProcessId;
         public UnicodeStringOut ConnectionPortName;
     }
