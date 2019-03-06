@@ -96,12 +96,14 @@
     <Compile Include="NtKeyValue.cs" />
     <Compile Include="NtLdr.cs" />
     <Compile Include="NtLdrNative.cs" />
+    <Compile Include="NtMappedSection.cs" />
     <Compile Include="NtObjectNative.cs" />
     <Compile Include="NtObjectWithDuplicate.cs" />
     <Compile Include="NtObjectWithDuplicateAndInfo.cs" />
     <Compile Include="NtProcessNative.cs" />
     <Compile Include="NtResourceManager.cs" />
     <Compile Include="NtResult.cs" />
+    <Compile Include="NtSectionNative.cs" />
     <Compile Include="NtSystemInfoNative.cs" />
     <Compile Include="NtTransactionManager.cs" />
     <Compile Include="NtTransactionManagerUtils.cs" />
