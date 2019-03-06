@@ -246,7 +246,7 @@ namespace NtApiDotNet
         public static extern NtStatus NtUnmapViewOfSectionEx(
             SafeKernelObjectHandle ProcessHandle,
             IntPtr BaseAddress,
-            MemUnmapFlags Flas
+            MemUnmapFlags Flags
         );
 
         [DllImport("ntdll.dll")]

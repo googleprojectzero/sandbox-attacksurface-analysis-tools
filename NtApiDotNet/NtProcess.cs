@@ -1209,6 +1209,48 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Unmap a section.
+        /// </summary>
+        /// <param name="base_address">The base address to unmap.</param>
+        /// <param name="flags">Flags for unmapping memory.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus Unmap(IntPtr base_address, MemUnmapFlags flags, bool throw_on_error)
+        {
+            return NtSection.Unmap(this, base_address, flags, throw_on_error);
+        }
+
+        /// <summary>
+        /// Unmap a section.
+        /// </summary>
+        /// <param name="base_address">The base address to unmap.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus Unmap(IntPtr base_address, bool throw_on_error)
+        {
+            return Unmap(base_address, MemUnmapFlags.None, throw_on_error);
+        }
+
+        /// <summary>
+        /// Unmap a section.
+        /// </summary>
+        /// <param name="base_address">The base address to unmap.</param>
+        /// <param name="flags">Flags for unmapping memory.</param>
+        public void Unmap(IntPtr base_address, MemUnmapFlags flags)
+        {
+            Unmap(base_address, flags, true);
+        }
+
+        /// <summary>
+        /// Unmap a section.
+        /// </summary>
+        /// <param name="base_address">The base address to unmap.</param>
+        public void Unmap(IntPtr base_address)
+        {
+            Unmap(base_address, true);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>

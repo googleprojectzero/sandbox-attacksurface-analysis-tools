@@ -232,11 +232,29 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="process">The process to unmap the section.</param>
         /// <param name="base_address">The base address to unmap.</param>
+        /// <param name="flags">Flags for unmapping memory.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus Unmap(NtProcess process, IntPtr base_address, MemUnmapFlags flags, bool throw_on_error)
+        {
+            if (flags == MemUnmapFlags.None)
+            {
+                return NtSystemCalls.NtUnmapViewOfSection(process.Handle, base_address).ToNtException(throw_on_error);
+            }
+            
+            return NtSystemCalls.NtUnmapViewOfSectionEx(process.Handle, base_address, flags).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Unmap a section in a specified process.
+        /// </summary>
+        /// <param name="process">The process to unmap the section.</param>
+        /// <param name="base_address">The base address to unmap.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
         public static NtStatus Unmap(NtProcess process, IntPtr base_address, bool throw_on_error)
         {
-            return NtSystemCalls.NtUnmapViewOfSection(process.Handle, base_address).ToNtException(throw_on_error);
+            return Unmap(process, base_address, MemUnmapFlags.None, throw_on_error);
         }
 
         /// <summary>
@@ -248,6 +266,17 @@ namespace NtApiDotNet
         public static NtStatus Unmap(IntPtr base_address, bool throw_on_error)
         {
             return Unmap(NtProcess.Current, base_address, throw_on_error);
+        }
+
+        /// <summary>
+        /// Unmap a section in a specified process.
+        /// </summary>
+        /// <param name="process">The process to unmap the section.</param>
+        /// <param name="base_address">The base address to unmap.</param>
+        /// <param name="flags">Flags for unmapping memory.</param>
+        public static void Unmap(NtProcess process, IntPtr base_address, MemUnmapFlags flags)
+        {
+            Unmap(process, base_address, flags, true);
         }
 
         /// <summary>
