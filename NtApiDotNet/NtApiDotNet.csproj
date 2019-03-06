@@ -148,6 +148,7 @@
     <Compile Include="NtProcessMitigations.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AnnontationAttributes.cs" />
+    <Compile Include="SafeBufferGeneric.cs" />
     <Compile Include="SafeBuffers.cs" />
     <Compile Include="SafeHGlobalBuffer.cs" />
     <Compile Include="SafeSidBufferHandle.cs" />

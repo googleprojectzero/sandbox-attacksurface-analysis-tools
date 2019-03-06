@@ -261,17 +261,12 @@ namespace NtApiDotNet
     /// <summary>
     /// Class representing a mapped section
     /// </summary>
-    public sealed class NtMappedSection : SafeBuffer
+    public sealed class NtMappedSection : SafeBufferGeneric
     {
         /// <summary>
         /// The process which the section is mapped into
         /// </summary>
         public NtProcess Process { get; private set; }
-
-        /// <summary>
-        /// The length of the mapped section
-        /// </summary>
-        public long Length { get; private set; }
 
         /// <summary>
         /// The valid length of the mapped section from the current position.
@@ -322,11 +317,9 @@ namespace NtApiDotNet
         /// </summary>
         public SigningLevel ImageSigningLevel => NtVirtualMemory.QueryImageInformation(Process.Handle, DangerousGetHandle().ToInt64()).ImageSigningLevel;
 
-        internal NtMappedSection(IntPtr pointer, long size, NtProcess process, bool writable) : base(true)
+        internal NtMappedSection(IntPtr pointer, long size, NtProcess process, bool writable) 
+            : base(pointer, size, true, writable)
         {
-            SetHandle(pointer); 
-            Initialize((ulong)size);
-            Length = size;
             if (process.Handle.IsInvalid)
             {
                 // No point duplicating an invalid handle. 
@@ -337,7 +330,6 @@ namespace NtApiDotNet
             {
                 Process = process.Duplicate();
             }
-            _writable = writable;
         }
 
         /// <summary>
@@ -356,126 +348,6 @@ namespace NtApiDotNet
             }
             handle = IntPtr.Zero;
             return ret;
-        }
-
-        /// <summary>
-        /// Get the mapped section as a memory stream
-        /// </summary>
-        /// <returns></returns>
-        public UnmanagedMemoryStream GetStream()
-        {
-            return new UnmanagedMemoryStream(this, 0, (long)ByteLength, _writable ? FileAccess.ReadWrite : FileAccess.Read);
-        }
-
-        /// <summary>
-        /// Read a NUL terminated string for the byte offset.
-        /// </summary>
-        /// <param name="byte_offset">The byte offset to read from.</param>
-        /// <returns>The string read from the buffer without the NUL terminator</returns>
-        public string ReadNulTerminatedUnicodeString(ulong byte_offset)
-        {
-            return BufferUtils.ReadNulTerminatedUnicodeString(this, byte_offset);
-        }
-
-        /// <summary>
-        /// Read a NUL terminated string
-        /// </summary>
-        /// <returns>The string read from the buffer without the NUL terminator</returns>
-        public string ReadNulTerminatedUnicodeString()
-        {
-            return ReadNulTerminatedUnicodeString(0);
-        }
-
-        /// <summary>
-        /// Read a Unicode string string with length.
-        /// </summary>
-        /// <param name="count">The number of characters to read.</param>
-        /// <param name="byte_offset">The byte offset to read from.</param>
-        /// <returns>The string read from the buffer without the NUL terminator</returns>
-        public string ReadUnicodeString(ulong byte_offset, int count)
-        {
-            return BufferUtils.ReadUnicodeString(this, byte_offset, count);
-        }
-
-        /// <summary>
-        /// Read a Unicode string string with length.
-        /// </summary>
-        /// <param name="count">The number of characters to read.</param>
-        /// <returns>The string read from the buffer without the NUL terminator</returns>
-        public string ReadUnicodeString(int count)
-        {
-            return ReadUnicodeString(0, count);
-        }
-
-        /// <summary>
-        /// Write unicode string.
-        /// </summary>
-        /// <param name="byte_offset">The byte offset to write to.</param>
-        /// <param name="value">The string value to write.</param>
-        public void WriteUnicodeString(ulong byte_offset, string value)
-        {
-            BufferUtils.WriteUnicodeString(this, byte_offset, value);
-        }
-
-        /// <summary>
-        /// Write unicode string.
-        /// </summary>
-        /// <param name="value">The string value to write.</param>
-        public void WriteUnicodeString(string value)
-        {
-            WriteUnicodeString(0, value);
-        }
-
-        /// <summary>
-        /// Read bytes from buffer.
-        /// </summary>
-        /// <param name="byte_offset">The byte offset to read from.</param>
-        /// <param name="count">The number of bytes to read.</param>
-        /// <returns>The byte array.</returns>
-        public byte[] ReadBytes(ulong byte_offset, int count)
-        {
-            return BufferUtils.ReadBytes(this, byte_offset, count);
-        }
-
-        /// <summary>
-        /// Read bytes from buffer.
-        /// </summary>
-        /// <param name="count">The number of bytes to read.</param>
-        /// <returns>The byte array.</returns>
-        public byte[] ReadBytes(int count)
-        {
-            return ReadBytes(0, count);
-        }
-
-        /// <summary>
-        /// Write bytes to a buffer.
-        /// </summary>
-        /// <param name="byte_offset">The byte offset to write to.</param>
-        /// <param name="data">The data to write.</param>
-        public void WriteBytes(ulong byte_offset, byte[] data)
-        {
-            BufferUtils.WriteBytes(this, byte_offset, data);
-        }
-
-        /// <summary>
-        /// Write bytes to a buffer.
-        /// </summary>
-        /// <param name="data">The data to write.</param>
-        public void WriteBytes(byte[] data)
-        {
-            WriteBytes(0, data);
-        }
-
-        /// <summary>
-        /// Get a structure buffer at a specific offset.
-        /// </summary>
-        /// <typeparam name="T">The type of structure.</typeparam>
-        /// <param name="offset">The offset into the buffer.</param>
-        /// <returns>The structure buffer.</returns>
-        /// <remarks>The returned buffer is not owned, therefore you need to maintain the original buffer while operating on this buffer.</remarks>
-        public SafeStructureInOutBuffer<T> GetStructAtOffset<T>(int offset) where T : new()
-        {
-            return BufferUtils.GetStructAtOffset<T>(this, offset);
         }
 
         /// <summary>
@@ -498,8 +370,6 @@ namespace NtApiDotNet
         {
             return NtVirtualMemory.AreMappedFilesTheSame(DangerousGetHandle().ToInt64(), address);
         }
-
-        private readonly bool _writable;
     }
 
     /// <summary>

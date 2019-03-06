@@ -23,7 +23,7 @@ namespace NtApiDotNet
     /// <summary>
     /// A safe handle to an allocated global buffer.
     /// </summary>
-    public class SafeHGlobalBuffer : SafeBuffer
+    public class SafeHGlobalBuffer : SafeBufferGeneric
     {
         /// <summary>
         /// Constructor
@@ -51,11 +51,8 @@ namespace NtApiDotNet
         /// <param name="buffer">An existing pointer to an existing HGLOBAL allocated buffer.</param>
         /// <param name="owns_handle">Specify whether safe handle owns the buffer.</param>
         public SafeHGlobalBuffer(IntPtr buffer, int length, bool owns_handle)
-          : base(owns_handle)
+          : base(buffer, length, owns_handle)
         {
-            Length = length;
-            Initialize((ulong)length);
-            SetHandle(buffer);
         }
 
         /// <summary>
@@ -79,7 +76,7 @@ namespace NtApiDotNet
                 free_handle = Marshal.AllocHGlobal(new_length);
                 Marshal.Copy(old_data, 0, free_handle, Math.Min(new_length, Length));
                 free_handle = Interlocked.Exchange(ref handle, free_handle);
-                Length = new_length;
+                LongLength = new_length;
                 Initialize((ulong)new_length);
             }
             finally
@@ -101,22 +98,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Length of the allocation.
-        /// </summary>
-        public int Length
-        {
-            get; private set;
-        }
-
-        /// <summary>
-        /// Get the length as an IntPtr
-        /// </summary>
-        public IntPtr LengthIntPtr
-        {
-            get { return new IntPtr(Length); }
-        }
-
-        /// <summary>
         /// Overridden ReleaseHandle method.
         /// </summary>
         /// <returns>True if successfully released the memory.</returns>
@@ -128,142 +109,6 @@ namespace NtApiDotNet
                 handle = IntPtr.Zero;
             }
             return true;
-        }
-
-        /// <summary>
-        /// Convert the safe handle to an array of bytes.
-        /// </summary>
-        /// <returns>The data contained in the allocaiton.</returns>
-        public byte[] ToArray()
-        {
-            return ReadBytes(Length);
-        }
-
-        /// <summary>
-        /// Read a NUL terminated string for the byte offset.
-        /// </summary>
-        /// <param name="byte_offset">The byte offset to read from.</param>
-        /// <returns>The string read from the buffer without the NUL terminator</returns>
-        public string ReadNulTerminatedUnicodeString(ulong byte_offset)
-        {
-            return BufferUtils.ReadNulTerminatedUnicodeString(this, byte_offset);
-        }
-
-        /// <summary>
-        /// Read a NUL terminated string
-        /// </summary>
-        /// <returns>The string read from the buffer without the NUL terminator</returns>
-        public string ReadNulTerminatedUnicodeString()
-        {
-            return ReadNulTerminatedUnicodeString(0);
-        }
-
-        /// <summary>
-        /// Read a unicode string from the buffer.
-        /// </summary>
-        /// <param name="byte_offset">The offset into the buffer to read.</param>
-        /// <param name="count">The number of characters to read.</param>
-        /// <returns>The read unicode string.</returns>
-        public string ReadUnicodeString(ulong byte_offset, int count)
-        {
-            return BufferUtils.ReadUnicodeString(this, byte_offset, count);
-        }
-
-        /// <summary>
-        /// Read a unicode string from the buffer.
-        /// </summary>
-        /// <param name="count">The number of characters to read.</param>
-        /// <returns>The read unicode string.</returns>
-        public string ReadUnicodeString(int count)
-        {
-            return ReadUnicodeString(0, count);
-        }
-
-        /// <summary>
-        /// Write a unicode string to the buffer.
-        /// </summary>
-        /// <param name="byte_offset">The offset into the buffer to write.</param>
-        /// <param name="value">The value to write.</param>
-        public void WriteUnicodeString(ulong byte_offset, string value)
-        {
-            BufferUtils.WriteUnicodeString(this, byte_offset, value);
-        }
-
-        /// <summary>
-        /// Write a unicode string to the buffer.
-        /// </summary>
-        /// <param name="value">The value to write.</param>
-        public void WriteUnicodeString(string value)
-        {
-            WriteUnicodeString(0, value);
-        }
-
-        /// <summary>
-        /// Read an array of bytes from the buffer.
-        /// </summary>
-        /// <param name="byte_offset">The offset into the buffer.</param>
-        /// <param name="count">The number of bytes to read.</param>
-        /// <returns>The read bytes.</returns>
-        public byte[] ReadBytes(ulong byte_offset, int count)
-        {
-            return BufferUtils.ReadBytes(this, byte_offset, count);
-        }
-
-        /// <summary>
-        /// Read an array of bytes from the buffer.
-        /// </summary>
-        /// <param name="count">The number of bytes to read.</param>
-        /// <returns>The read bytes.</returns>
-        public byte[] ReadBytes(int count)
-        {
-            return ReadBytes(0, count);
-        }
-
-        /// <summary>
-        /// Write an array of bytes to the buffer.
-        /// </summary>
-        /// <param name="byte_offset">The offset into the buffer.</param>
-        /// <param name="data">The bytes to write.</param>
-        public void WriteBytes(ulong byte_offset, byte[] data)
-        {
-            BufferUtils.WriteBytes(this, byte_offset, data);
-        }
-
-        /// <summary>
-        /// Write an array of bytes to the buffer.
-        /// </summary>
-        /// <param name="data">The bytes to write.</param>
-        public void WriteBytes(byte[] data)
-        {
-            WriteBytes(0, data);
-        }
-
-        /// <summary>
-        /// Zero an entire buffer.
-        /// </summary>
-        public void ZeroBuffer()
-        {
-            BufferUtils.ZeroBuffer(this);
-        }
-
-        /// <summary>
-        /// Fill an entire buffer with a specific byte value.
-        /// </summary>
-        /// <param name="fill">The fill value.</param>
-        public void FillBuffer(byte fill)
-        {
-            BufferUtils.FillBuffer(this, fill);
-        }
-
-        /// <summary>
-        /// Get a structured buffer object at a specified offset.
-        /// </summary>
-        /// <typeparam name="T">The type of structure.</typeparam>
-        /// <param name="offset">The offset into the buffer.</param>
-        /// <returns>The structured buffer object.</returns>
-        public SafeStructureInOutBuffer<T> GetStructAtOffset<T>(int offset) where T : new()
-        {
-            return BufferUtils.GetStructAtOffset<T>(this, offset);
         }
 
         /// <summary>

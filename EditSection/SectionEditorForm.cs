@@ -148,7 +148,7 @@ namespace EditSection
         }
 
         public SectionEditorForm(NtMappedSection map, NtHandle handle, bool readOnly)
-            : this(map, handle, readOnly, map.Length)
+            : this(map, handle, readOnly, map.LongLength)
         {
         }
 
@@ -160,7 +160,7 @@ namespace EditSection
         }
 
         public SectionEditorForm(NtMappedSection map, string name, bool readOnly)
-            : this(map, name, readOnly, map.Length)
+            : this(map, name, readOnly, map.LongLength)
         {
         }
 
