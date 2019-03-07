@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
 
 namespace NtApiDotNet
 {
@@ -56,7 +58,7 @@ namespace NtApiDotNet
                 {
                     return name.Result;
                 }
-                return String.Empty;
+                return string.Empty;
             }
         }
 
@@ -93,6 +95,16 @@ namespace NtApiDotNet
                 Process = process.Duplicate();
             }
         }
+
+        internal NtMappedSection(IntPtr pointer, long length, bool owns_handle) 
+            : base(pointer, length, owns_handle)
+        {
+        }
+
+        internal NtMappedSection() : base(IntPtr.Zero, 0, false)
+        {
+        }
+
         #endregion
 
         #region Protected Methods
@@ -137,6 +149,27 @@ namespace NtApiDotNet
         public bool IsSameMapping(long address)
         {
             return NtVirtualMemory.AreMappedFilesTheSame(DangerousGetHandle().ToInt64(), address);
+        }
+
+        /// <summary>
+        /// Detaches the current buffer and allocates a new one.
+        /// </summary>
+        /// <param name="length">Specify a new length for the detached buffer. Must be &lt;= Length.</param>
+        /// <returns>The detached buffer.</returns>
+        /// <remarks>The original buffer will become invalid after this call.</remarks>
+        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
+        public NtMappedSection Detach(int length)
+        {
+            RuntimeHelpers.PrepareConstrainedRegions();
+            try // Needed for constrained region.
+            {
+                IntPtr handle = DangerousGetHandle();
+                SetHandleAsInvalid();
+                return new NtMappedSection(handle, length, true);
+            }
+            finally
+            {
+            }
         }
 
         #endregion
