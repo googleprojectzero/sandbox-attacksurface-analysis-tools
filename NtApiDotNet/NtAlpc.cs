@@ -25,12 +25,7 @@ namespace NtApiDotNet
     {
         #region Constructors
 
-        internal NtAlpc(SafeKernelObjectHandle handle, bool connected) : base(handle)
-        {
-            _connected = connected;
-        }
-
-        internal NtAlpc(SafeKernelObjectHandle handle) : this(handle, false)
+        internal NtAlpc(SafeKernelObjectHandle handle) : base(handle)
         {
         }
 
@@ -130,8 +125,8 @@ namespace NtApiDotNet
                     send_attr, recv_msg, recv_msg.GetOptionalLength(), recv_attr, timeout?.Timeout).ToNtException(throw_on_error);
                 if (status.IsSuccess())
                 {
-                    receive_attributes?.FromSafeBuffer(recv_attr, this);
                     receive_message?.FromSafeBuffer(recv_msg, this);
+                    receive_attributes?.FromSafeBuffer(recv_attr, this, receive_message);
                     send_message?.FromSafeBuffer(send_msg, this);
                 }
                 return status;
@@ -318,11 +313,11 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>Thread impersonation context.</returns>
         public NtResult<ThreadImpersonationContext> ImpersonateClientOfPort(AlpcMessage message, 
-            AlpcImpersonationFlags flags, SecurityImpersonationLevel required_impersonation_level,
+            AlpcImpersonationClientOfPortFlags flags, SecurityImpersonationLevel required_impersonation_level,
             bool throw_on_error)
         {
             int full_flags = (int)flags | (((int)required_impersonation_level) << 2);
-            return NtSystemCalls.NtAlpcImpersonateClientOfPort(Handle, message.Header, (AlpcImpersonationFlags)full_flags)
+            return NtSystemCalls.NtAlpcImpersonateClientOfPort(Handle, message.Header, (AlpcImpersonationClientOfPortFlags)full_flags)
                 .CreateResult(throw_on_error, () => new ThreadImpersonationContext(NtThread.Current.Duplicate()));
         }
 
@@ -334,7 +329,7 @@ namespace NtApiDotNet
         /// <param name="required_impersonation_level">Required impersonation level. Need to set RequiredImpersonationLevel flag as well.</param>
         /// <returns>Thread impersonation context.</returns>
         public ThreadImpersonationContext ImpersonateClientOfPort(AlpcMessage message,
-            AlpcImpersonationFlags flags, SecurityImpersonationLevel required_impersonation_level)
+            AlpcImpersonationClientOfPortFlags flags, SecurityImpersonationLevel required_impersonation_level)
         {
             return ImpersonateClientOfPort(message, flags, required_impersonation_level, true).Result;
         }
@@ -346,7 +341,43 @@ namespace NtApiDotNet
         /// <returns>Thread impersonation context.</returns>
         public ThreadImpersonationContext ImpersonateClientOfPort(AlpcMessage message)
         {
-            return ImpersonateClientOfPort(message, AlpcImpersonationFlags.None, SecurityImpersonationLevel.Anonymous);
+            return ImpersonateClientOfPort(message, AlpcImpersonationClientOfPortFlags.None, SecurityImpersonationLevel.Anonymous);
+        }
+
+        /// <summary>
+        /// Impersonate client container of port for a message.
+        /// </summary>
+        /// <param name="message">The message send by the client.</param>
+        /// <param name="flags">Impersonation flags.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>Thread impersonation context.</returns>
+        public NtResult<ThreadImpersonationContext> ImpersonateClientContainerOfPort(AlpcMessage message,
+            AlpcImpersonateClientContainerOfPortFlags flags, bool throw_on_error)
+        {
+            return NtSystemCalls.NtAlpcImpersonateClientContainerOfPort(Handle, message.Header, flags)
+                .CreateResult(throw_on_error, () => new ThreadImpersonationContext(NtThread.Current.Duplicate()));
+        }
+
+        /// <summary>
+        /// Impersonate client container of port for a message.
+        /// </summary>
+        /// <param name="message">The message send by the client.</param>
+        /// <param name="flags">Impersonation flags.</param>
+        /// <returns>Thread impersonation context.</returns>
+        public ThreadImpersonationContext ImpersonateClientContainerOfPort(AlpcMessage message,
+            AlpcImpersonateClientContainerOfPortFlags flags)
+        {
+            return ImpersonateClientContainerOfPort(message, flags, true).Result;
+        }
+
+        /// <summary>
+        /// Impersonate client container of port for a message.
+        /// </summary>
+        /// <param name="message">The message send by the client.</param>
+        /// <returns>Thread impersonation context.</returns>
+        public ThreadImpersonationContext ImpersonateClientContainerOfPort(AlpcMessage message)
+        {
+            return ImpersonateClientContainerOfPort(message, AlpcImpersonateClientContainerOfPortFlags.None);
         }
 
         /// <summary>
@@ -558,6 +589,30 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get a handle entry for a message.
+        /// </summary>
+        /// <param name="index">The handle index to get.</param>
+        /// <param name="message">The associated message.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The ALPC handle entry.</returns>
+        public NtResult<AlpcHandleEntry> GetHandleInformation(AlpcMessage message, int index, bool throw_on_error)
+        {
+            return message.Query(this, AlpcMessageInformationClass.AlpcMessageHandleInformation, 
+                new AlpcMessageHandleInformation() { Index = index }, throw_on_error).Map(s => new AlpcHandleEntry(s));
+        }
+
+        /// <summary>
+        /// Get a handle entry for a message.
+        /// </summary>
+        /// <param name="index">The handle index to get.</param>
+        /// <param name="message">The associated message.</param>
+        /// <returns>The ALPC handle entry.</returns>
+        public AlpcHandleEntry GetHandleInformation(AlpcMessage message, int index)
+        {
+            return GetHandleInformation(message, index, true).Result;
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -598,12 +653,6 @@ namespace NtApiDotNet
         /// Port context.
         /// </summary>
         public long PortContext => Query<AlpcBasicInformation>(AlpcPortInformationClass.AlpcBasicInformation).PortContext.ToInt64();
-
-        #endregion
-
-        #region Private Members
-
-        private readonly bool _connected;
 
         #endregion
     }
@@ -655,8 +704,8 @@ namespace NtApiDotNet
                 return status.CreateResult(throw_on_error, () =>
                 {
                     var client = new NtAlpcClient(handle);
-                    in_message_attributes?.FromSafeBuffer(in_attr, client);
                     connection_message?.FromSafeBuffer(message, client);
+                    in_message_attributes?.FromSafeBuffer(in_attr, client, connection_message);
                     return client;
                 });
             }
@@ -666,7 +715,7 @@ namespace NtApiDotNet
         #region Constructors
 
         internal NtAlpcClient(SafeKernelObjectHandle handle)
-    :       base(handle, true)
+    :       base(handle)
         {
         }
 
@@ -822,20 +871,6 @@ namespace NtApiDotNet
         }
 
         #endregion
-
-        #region Protected Members
-
-        /// <summary>
-        /// Dispose port.
-        /// </summary>
-        /// <param name="disposing">True when disposing, false if finalizing</param>
-        protected override void Dispose(bool disposing)
-        {
-            Disconnect(AlpcDisconnectPortFlags.None, false);
-            base.Dispose(disposing);
-        }
-
-        #endregion
     }
 
     /// <summary>
@@ -845,7 +880,7 @@ namespace NtApiDotNet
     {
         #region Constructors
         internal NtAlpcServer(SafeKernelObjectHandle handle) 
-            : base(handle, false)
+            : base(handle)
         {
         }
         #endregion

@@ -247,16 +247,10 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct AlpcWorkOnBehalfTicket
+    public struct AlpcWorkOnBehalfAttr
     {
         public int ThreadId;
         public int ThreadCreationTimeLow;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct AlpcWorkOnBehalfAttr
-    {
-        public AlpcWorkOnBehalfTicket Ticket;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -324,6 +318,16 @@ namespace NtApiDotNet
         public AccessMask DesiredAccess;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct AlpcMessageHandleInformation
+    {
+        public int Index;
+        public AlpcHandleAttrFlags Flags;
+        public int Handle;
+        public AlpcHandleObjectType ObjectType;
+        public AccessMask GrantedAccess;
+    }
+
     [Flags]
     public enum AlpcDataViewAttrFlags
     {
@@ -342,6 +346,29 @@ namespace NtApiDotNet
     public enum AlpcDeletePortSectionFlags
     {
         None = 0
+    }
+
+    [Flags]
+    public enum AlpcCreateSectionViewFlags
+    {
+        None = 0,
+    }
+
+    [Flags]
+    public enum AlpcCreateResourceReserveFlags
+    {
+        None = 0,
+    }
+
+    [Flags]
+    public enum AlpcDeleteResourceReserveFlags
+    {
+        None = 0,
+    }
+
+    [Flags]
+    public enum AlpcDeleteSectionViewFlags
+    {
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -391,12 +418,36 @@ namespace NtApiDotNet
     }
 
     [Flags]
-    public enum AlpcImpersonationFlags
+    public enum AlpcImpersonationClientOfPortFlags
     {
         None = 0,
         AnonymousFallback = 1,
         RequireImpersonationLevel = 2,
         // From bit 2 on it's the impersonation level required.
+    }
+
+    [Flags]
+    public enum AlpcImpersonateClientContainerOfPortFlags
+    {
+        None = 0,
+    }
+
+    [Flags]
+    public enum AlpcCreateSecurityContextFlags
+    {
+        None = 0,
+    }
+
+    [Flags]
+    public enum AlpcDeleteSecurityContextFlags
+    {
+        None = 0,
+    }
+
+    [Flags]
+    public enum AlpcRevokeSecurityContextFlags
+    {
+        None = 0,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -555,17 +606,10 @@ namespace NtApiDotNet
             [In] LargeInteger Timeout);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtAlpcCancelMessage(
-            [In] SafeKernelObjectHandle PortHandle,
-            uint Flags,
-            ref AlpcContextAttr MessageContext
-           );
-
-        [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcImpersonateClientOfPort(
                 [In] SafeKernelObjectHandle PortHandle,
                 [In] AlpcPortMessage PortMessage,
-                AlpcImpersonationFlags Flags
+                AlpcImpersonationClientOfPortFlags Flags
         );
 
         [DllImport("ntdll.dll")]
@@ -573,26 +617,26 @@ namespace NtApiDotNet
         public static extern NtStatus NtAlpcImpersonateClientContainerOfPort(
             [In] SafeKernelObjectHandle PortHandle,
             [In] AlpcPortMessage PortMessage,
-            int Flags
+            AlpcImpersonateClientContainerOfPortFlags Flags
         );
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcCreateSecurityContext(
             SafeKernelObjectHandle PortHandle,
-            int Flags,
+            AlpcCreateSecurityContextFlags Flags,
             ref AlpcSecurityAttr SecurityAttribute);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcDeleteSecurityContext(
             SafeKernelObjectHandle PortHandle,
-            int Flags,
+            AlpcDeleteSecurityContextFlags Flags,
             AlpcHandle ContextHandle
         );
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcRevokeSecurityContext(
             SafeKernelObjectHandle PortHandle,
-            int Flags,
+            AlpcRevokeSecurityContextFlags Flags,
             AlpcHandle ContextHandle
         );
 
@@ -637,7 +681,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcCreateResourceReserve(
             SafeKernelObjectHandle PortHandle,
-            int Flags,
+            AlpcCreateResourceReserveFlags Flags,
             IntPtr MessageSize,
             out AlpcHandle ResourceId
         );
@@ -645,21 +689,21 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcDeleteResourceReserve(
             SafeKernelObjectHandle PortHandle,
-            int Flags,
+            AlpcDeleteResourceReserveFlags Flags,
             AlpcHandle ResourceId
         );
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcCreateSectionView(
             SafeKernelObjectHandle PortHandle,
-            int Flags,
+            AlpcCreateSectionViewFlags Flags,
             ref AlpcDataViewAttr ViewAttributes
         );
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcDeleteSectionView(
             SafeKernelObjectHandle PortHandle,
-            int Flags,
+            AlpcDeleteSectionViewFlags Flags,
             IntPtr ViewBase
         );
 
