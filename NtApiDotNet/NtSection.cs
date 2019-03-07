@@ -486,6 +486,11 @@ namespace NtApiDotNet
         /// </summary>
         public SectionImageInformation ImageInformation => Query<SectionImageInformation>(SectionInformationClass.SectionImageInformation);
 
+        /// <summary>
+        /// Get original section base address.
+        /// </summary>
+        public long OriginalBase => Query<IntPtr>(SectionInformationClass.SectionOriginalBaseInformation).ToInt64();
+
         #endregion
     }
 }
