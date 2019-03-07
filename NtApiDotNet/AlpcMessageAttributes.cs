@@ -300,7 +300,7 @@ namespace NtApiDotNet
             if (valid_attrs.HasFlag(AlpcMessageAttributeFlags.View))
             {
                 var attr = AddAttribute<AlpcDataViewMessageAttribute>(buffer, port, message);
-                DataView = new NtMappedSection(new IntPtr(attr.ViewBase), attr.ViewSize, NtProcess.Current, false);
+                DataView = new NtMappedSection(new IntPtr(attr.ViewBase), attr.ViewSize, false);
             }
             if (valid_attrs.HasFlag(AlpcMessageAttributeFlags.WorkOnBehalfOf))
             {
