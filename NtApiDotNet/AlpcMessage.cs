@@ -130,8 +130,8 @@ namespace NtApiDotNet
             }
 
             AllocatedDataLength = allocated_data_length;
-            Header.u1.TotalLength = (short)(_header_size + data_length);
-            Header.u1.DataLength = (short)data_length;
+            Header.u1.TotalLength = (ushort)(_header_size + data_length);
+            Header.u1.DataLength = (ushort)data_length;
         }
 
         /// <summary>
@@ -221,7 +221,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the maximum size of a message minus the header size.
         /// </summary>
-        public static int MaximumDataLength => short.MaxValue - _header_size;
+        public static int MaximumDataLength => NtAlpcNativeMethods.AlpcMaxAllowedMessageLength() - _header_size;
 
         #endregion
 

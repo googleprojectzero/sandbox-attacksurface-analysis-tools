@@ -87,9 +87,9 @@ namespace NtApiDotNet
         public struct PortMessageUnion1
         {
             [FieldOffset(0)]
-            public short DataLength;
+            public ushort DataLength;
             [FieldOffset(2)]
-            public short TotalLength;
+            public ushort TotalLength;
             [FieldOffset(0)]
             public int Length;
         }

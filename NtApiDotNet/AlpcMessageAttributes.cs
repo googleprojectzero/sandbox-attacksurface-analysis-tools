@@ -126,6 +126,22 @@ namespace NtApiDotNet
             AddHandles(new AlpcHandleMessageAttributeEntry[] { handle });
         }
 
+        /// <summary>
+        /// Get the allocated attributes.
+        /// </summary>
+        public AlpcMessageAttributeFlags AllocatedAttributes
+        {
+            get
+            {
+                AlpcMessageAttributeFlags flags = AlpcMessageAttributeFlags.None;
+                foreach (var flag in _attributes.Keys)
+                {
+                    flags |= flag;
+                }
+                return flags;
+            }
+        }
+
         SafeAlpcMessageAttributesBuffer IMessageAttributes.ToSafeBuffer()
         {
             if (_attributes.Count == 0)
@@ -133,11 +149,7 @@ namespace NtApiDotNet
                 return SafeAlpcMessageAttributesBuffer.Null;
             }
 
-            AlpcMessageAttributeFlags flags = AlpcMessageAttributeFlags.None;
-            foreach (var flag in _attributes.Keys)
-            {
-                flags |= flag;
-            }
+            AlpcMessageAttributeFlags flags = AllocatedAttributes;
 
             using (var buffer = SafeAlpcMessageAttributesBuffer.Create(flags))
             {
@@ -288,7 +300,7 @@ namespace NtApiDotNet
             if (valid_attrs.HasFlag(AlpcMessageAttributeFlags.View))
             {
                 var attr = AddAttribute<AlpcDataViewMessageAttribute>(buffer, port, message);
-                DataView = new NtMappedSection(new IntPtr(attr.ViewBase), attr.ViewSize, NtProcess.Current, true);
+                DataView = new NtMappedSection(new IntPtr(attr.ViewBase), attr.ViewSize, NtProcess.Current, false);
             }
             if (valid_attrs.HasFlag(AlpcMessageAttributeFlags.WorkOnBehalfOf))
             {
