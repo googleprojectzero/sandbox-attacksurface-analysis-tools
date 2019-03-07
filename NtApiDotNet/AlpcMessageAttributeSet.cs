@@ -275,14 +275,22 @@ namespace NtApiDotNet
     /// <summary>
     /// Class representing a data view message attribute.
     /// </summary>
-    public sealed class AlpcViewMessageAttribute : AlpcMessageAttribute
+    public sealed class AlpcDataViewMessageAttribute : AlpcMessageAttribute
     {
+        private NtAlpc _port;
+
         /// <summary>
         /// Constructor.
         /// </summary>
-        public AlpcViewMessageAttribute()
+        public AlpcDataViewMessageAttribute()
             : base(AlpcMessageAttributeFlags.View)
         {
+        }
+
+        internal AlpcDataViewMessageAttribute(AlpcDataViewAttr attr, NtAlpc port) : this()
+        {
+            FromAttribute(attr);
+            _port = port;
         }
 
         /// <summary>
@@ -310,6 +318,27 @@ namespace NtApiDotNet
         internal override void FromSafeBuffer(SafeAlpcMessageAttributesBuffer buffer, NtAlpc port)
         {
             buffer.GetViewAttribute(this);
+            _port = port;
+        }
+
+        internal void FromAttribute(AlpcDataViewAttr attr)
+        {
+            Flags = attr.Flags;
+            SectionHandle = attr.SectionHandle.Value;
+            ViewBase = attr.ViewBase.ToInt64();
+            ViewSize = attr.ViewSize.ToInt64();
+        }
+
+        /// <summary>
+        /// Dispose the attribute.
+        /// </summary>
+        public override void Dispose()
+        {
+            if (_port != null && !_port.Handle.IsClosed)
+            {
+                NtSystemCalls.NtAlpcDeleteSectionView(_port.Handle, 0, new IntPtr(ViewBase));
+            }
+            base.Dispose();
         }
     }
 
@@ -526,16 +555,13 @@ namespace NtApiDotNet
             attr.Result = attribute.ToStruct();
         }
 
-        internal void GetViewAttribute(AlpcViewMessageAttribute attribute)
+        internal void GetViewAttribute(AlpcDataViewMessageAttribute attribute)
         {
             var attr = GetAttribute<AlpcDataViewAttr>(AlpcMessageAttributeFlags.View).Result;
-            attribute.Flags = attr.Flags;
-            attribute.SectionHandle = attr.SectionHandle.Value;
-            attribute.ViewBase = attr.ViewBase.ToInt64();
-            attribute.ViewSize = attr.ViewSize.ToInt64();
+            attribute.FromAttribute(attr);
         }
 
-        internal void SetViewAttribute(AlpcViewMessageAttribute attribute)
+        internal void SetViewAttribute(AlpcDataViewMessageAttribute attribute)
         {
             var attr = GetAttribute<AlpcDataViewAttr>(AlpcMessageAttributeFlags.View);
             attr.Result = new AlpcDataViewAttr()

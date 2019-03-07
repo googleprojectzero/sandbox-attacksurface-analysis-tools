@@ -328,7 +328,20 @@ namespace NtApiDotNet
     public enum AlpcDataViewAttrFlags
     {
         None = 0,
-        NotSecure = 0x40000
+        Secure = 0x40000
+    }
+
+    [Flags]
+    public enum AlpcCreatePortSectionFlags
+    {
+        None = 0,
+        Secure = 0x40000
+    }
+
+    [Flags]
+    public enum AlpcDeletePortSectionFlags
+    {
+        None = 0
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -607,7 +620,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcCreatePortSection(
             SafeKernelObjectHandle PortHandle,
-            AlpcDataViewAttrFlags Flags,
+            AlpcCreatePortSectionFlags Flags,
             SafeKernelObjectHandle SectionHandle,
             IntPtr SectionSize,
             out AlpcHandle AlpcSectionHandle,
@@ -617,7 +630,7 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAlpcDeletePortSection(
             SafeKernelObjectHandle PortHandle,
-            int Flags,
+            AlpcDeletePortSectionFlags Flags,
             AlpcHandle SectionHandle
         );
 

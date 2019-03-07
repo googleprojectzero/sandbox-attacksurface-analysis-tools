@@ -511,6 +511,53 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create a new port section.
+        /// </summary>
+        /// <param name="flags">Flags for the port section.</param>
+        /// <param name="section">Optional backing section.</param>
+        /// <param name="section_size">Size of the section to create.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The created port section.</returns>
+        public NtResult<AlpcPortSection> CreatePortSection(AlpcCreatePortSectionFlags flags, NtSection section, long section_size, bool throw_on_error)
+        {
+            return NtSystemCalls.NtAlpcCreatePortSection(Handle, flags, section.GetHandle(), new IntPtr(section_size), 
+                out AlpcHandle handle, out IntPtr actual_section_size).CreateResult(throw_on_error, () => new AlpcPortSection(handle, actual_section_size, this));
+        }
+
+        /// <summary>
+        /// Create a new port section.
+        /// </summary>
+        /// <param name="flags">Flags for the port section.</param>
+        /// <param name="section">Optional backing section.</param>
+        /// <param name="section_size">Size of the section to create.</param>
+        /// <returns>The created port section.</returns>
+        public AlpcPortSection CreatePortSection(AlpcCreatePortSectionFlags flags, NtSection section, long section_size)
+        {
+            return CreatePortSection(flags, section, section_size, true).Result;
+        }
+
+        /// <summary>
+        /// Create a new port section.
+        /// </summary>
+        /// <param name="flags">Flags for the port section.</param>
+        /// <param name="section_size">Size of the section to create.</param>
+        /// <returns>The created port section.</returns>
+        public AlpcPortSection CreatePortSection(AlpcCreatePortSectionFlags flags, long section_size)
+        {
+            return CreatePortSection(flags, null, section_size);
+        }
+
+        /// <summary>
+        /// Create a new port section.
+        /// </summary>
+        /// <param name="section_size">Size of the section to create.</param>
+        /// <returns>The created port section.</returns>
+        public AlpcPortSection CreatePortSection(long section_size)
+        {
+            return CreatePortSection(AlpcCreatePortSectionFlags.None, section_size);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
