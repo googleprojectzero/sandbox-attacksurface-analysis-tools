@@ -615,4 +615,44 @@ namespace NtObjectManager
             WriteObject(msg);
         }
     }
+
+    /// <summary>
+    /// <para type="synopsis">Creates a new receive attributes buffer.</para>
+    /// <para type="description">This cmdlet creates a new receive attributes buffer for the specified set of attributes. This defaults to all known attributes.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>$attrs = New-NtAlpcReceiveAttributes</code>
+    ///   <para>Create a new receive attributes buffer with space for all known attributes..</para>
+    /// </example>
+    /// <example>
+    ///   <code>$attrs = New-NtAlpcReceiveAttributes -Attributes View, Context</code>
+    ///   <para>Create a new receive attributes buffer with space for only View and Context attributes.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet(VerbsCommon.New, "NtAlpcReceiveAttributes")]
+    [OutputType(typeof(AlpcReceiveMessageAttributes))]
+    public class NewNtAlpcReceiveAttributes : PSCmdlet
+    {
+        /// <summary>
+        /// <para type="description">Create the message from a byte array.</para>
+        /// </summary>
+        [Parameter(Position = 0)]
+        public AlpcMessageAttributeFlags Attributes { get; set; }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public NewNtAlpcReceiveAttributes()
+        {
+            Attributes = AlpcMessageAttributeFlags.AllAttributes;
+        }
+
+        /// <summary>
+        /// Process record.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            WriteObject(new AlpcReceiveMessageAttributes(Attributes));
+        }
+    }
 }
