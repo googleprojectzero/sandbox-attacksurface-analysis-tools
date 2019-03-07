@@ -45,7 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AlpcMessage.cs" />
-    <Compile Include="AlpcMessageAttributeSet.cs" />
+    <Compile Include="AlpcMessageAttributes.cs" />
     <Compile Include="AlpcPortSection.cs" />
     <Compile Include="BoundaryDescriptor.cs" />
     <Compile Include="BufferUtils.cs" />

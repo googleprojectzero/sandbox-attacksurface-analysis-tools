@@ -20,7 +20,7 @@ namespace NtApiDotNet
     /// </summary>
     internal static class NtAlpcUtils
     {
-        internal static SafeAlpcMessageAttributesBuffer GetAttributesBuffer(this DisposableList list, AlpcMessageAttributeSet attrs)
+        internal static SafeAlpcMessageAttributesBuffer GetAttributesBuffer(this DisposableList list, IMessageAttributes attrs)
         {
             return attrs == null ? SafeAlpcMessageAttributesBuffer.Null : list.AddResource(attrs.ToSafeBuffer());
         }

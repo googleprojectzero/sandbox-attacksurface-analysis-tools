@@ -112,8 +112,8 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
         /// <remarks>The attribute parameters will be repopulated with the attribute results.</remarks>
-        public NtStatus SendReceive(AlpcMessageFlags flags, AlpcMessage send_message, AlpcMessageAttributeSet send_attributes,
-            AlpcMessage receive_message, AlpcMessageAttributeSet receive_attributes, NtWaitTimeout timeout, bool throw_on_error)
+        public NtStatus SendReceive(AlpcMessageFlags flags, AlpcMessage send_message, AlpcSendMessageAttributes send_attributes,
+            AlpcMessage receive_message, AlpcReceiveMessageAttributes receive_attributes, NtWaitTimeout timeout, bool throw_on_error)
         {
             using (var list = new DisposableList())
             {
@@ -142,8 +142,8 @@ namespace NtApiDotNet
         /// <param name="receive_message">The message to receive. Optional.</param>
         /// <param name="receive_attributes">The attributes to receive with the message. Optional.</param>
         /// <param name="timeout">Time out for the send/receive.</param>
-        public void SendReceive(AlpcMessageFlags flags, AlpcMessage send_message, AlpcMessageAttributeSet send_attributes,
-            AlpcMessage receive_message, AlpcMessageAttributeSet receive_attributes, NtWaitTimeout timeout)
+        public void SendReceive(AlpcMessageFlags flags, AlpcMessage send_message, AlpcSendMessageAttributes send_attributes,
+            AlpcMessage receive_message, AlpcReceiveMessageAttributes receive_attributes, NtWaitTimeout timeout)
         {
             SendReceive(flags, send_message, send_attributes, receive_message, receive_attributes, timeout, true);
         }
@@ -158,7 +158,7 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
         /// <remarks>The attribute parameters will be repopulated with the attribute results.</remarks>
-        public NtStatus Send(AlpcMessageFlags flags, AlpcMessage send_message, AlpcMessageAttributeSet send_attributes,
+        public NtStatus Send(AlpcMessageFlags flags, AlpcMessage send_message, AlpcSendMessageAttributes send_attributes,
                             NtWaitTimeout timeout, bool throw_on_error)
         {
             return SendReceive(flags, send_message, send_attributes, null, null, timeout, throw_on_error);
@@ -172,7 +172,7 @@ namespace NtApiDotNet
         /// <param name="send_attributes">The attributes to send with the message. Optional.</param>
         /// <param name="timeout">Time out for the send/receive.</param>
         /// <remarks>The attribute parameters will be repopulated with the attribute results.</remarks>
-        public void Send(AlpcMessageFlags flags, AlpcMessage send_message, AlpcMessageAttributeSet send_attributes,
+        public void Send(AlpcMessageFlags flags, AlpcMessage send_message, AlpcSendMessageAttributes send_attributes,
                             NtWaitTimeout timeout)
         {
             Send(flags, send_message, send_attributes, timeout, true);
@@ -200,7 +200,7 @@ namespace NtApiDotNet
         /// <returns>The received message.</returns>
         /// <remarks>The attribute parameters will be repopulated with the attribute results.</remarks>
         public NtResult<AlpcMessageRaw> Receive(AlpcMessageFlags flags, int receive_length,
-            AlpcMessageAttributeSet receive_attributes, NtWaitTimeout timeout, bool throw_on_error)
+            AlpcReceiveMessageAttributes receive_attributes, NtWaitTimeout timeout, bool throw_on_error)
         {
             var msg = new AlpcMessageRaw(receive_length);
             return SendReceive(flags, null, null, msg, receive_attributes, 
@@ -217,7 +217,7 @@ namespace NtApiDotNet
         /// <returns>The received message.</returns>
         /// <remarks>The attribute parameters will be repopulated with the attribute results.</remarks>
         public AlpcMessageRaw Receive(AlpcMessageFlags flags, int receive_length,
-            AlpcMessageAttributeSet receive_attributes, NtWaitTimeout timeout)
+            AlpcReceiveMessageAttributes receive_attributes, NtWaitTimeout timeout)
         {
             return Receive(flags, receive_length, receive_attributes, timeout, true).Result;
         }
@@ -231,7 +231,7 @@ namespace NtApiDotNet
         /// <returns>The received message.</returns>
         /// <remarks>The attribute parameters will be repopulated with the attribute results.</remarks>
         public AlpcMessageRaw Receive(AlpcMessageFlags flags, int receive_length,
-            AlpcMessageAttributeSet receive_attributes)
+            AlpcReceiveMessageAttributes receive_attributes)
         {
             return Receive(flags, receive_length, receive_attributes, NtWaitTimeout.Infinite);
         }
@@ -259,7 +259,7 @@ namespace NtApiDotNet
         /// <remarks>The attribute parameters will be repopulated with the attribute results.</remarks>
         /// <typeparam name="T">The type of structure to receive.</typeparam>
         public NtResult<AlpcMessageType<T>> Receive<T>(AlpcMessageFlags flags,
-            AlpcMessageAttributeSet receive_attributes, NtWaitTimeout timeout,
+            AlpcReceiveMessageAttributes receive_attributes, NtWaitTimeout timeout,
             bool throw_on_error) where T : struct
         {
             var msg = new AlpcMessageType<T>();
@@ -276,7 +276,7 @@ namespace NtApiDotNet
         /// <remarks>The attribute parameters will be repopulated with the attribute results.</remarks>
         /// <typeparam name="T">The type of structure to receive.</typeparam>
         public AlpcMessageType<T> Receive<T>(AlpcMessageFlags flags,
-            AlpcMessageAttributeSet receive_attributes, NtWaitTimeout timeout) where T : struct
+            AlpcReceiveMessageAttributes receive_attributes, NtWaitTimeout timeout) where T : struct
         {
             return Receive<T>(flags, receive_attributes, timeout, true).Result;
         }
@@ -289,7 +289,7 @@ namespace NtApiDotNet
         /// <remarks>The attribute parameters will be repopulated with the attribute results.</remarks>
         /// <typeparam name="T">The type of structure to receive.</typeparam>
         public AlpcMessageType<T> Receive<T>(AlpcMessageFlags flags,
-            AlpcMessageAttributeSet receive_attributes) where T : struct
+            AlpcReceiveMessageAttributes receive_attributes) where T : struct
         {
             return Receive<T>(flags, receive_attributes, NtWaitTimeout.Infinite);
         }
@@ -595,10 +595,10 @@ namespace NtApiDotNet
         /// <param name="message">The associated message.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The ALPC handle entry.</returns>
-        public NtResult<AlpcHandleEntry> GetHandleInformation(AlpcMessage message, int index, bool throw_on_error)
+        public NtResult<AlpcHandleMessageAttributeEntry> GetHandleInformation(AlpcMessage message, int index, bool throw_on_error)
         {
             return message.Query(this, AlpcMessageInformationClass.AlpcMessageHandleInformation, 
-                new AlpcMessageHandleInformation() { Index = index }, throw_on_error).Map(s => new AlpcHandleEntry(s));
+                new AlpcMessageHandleInformation() { Index = index }, throw_on_error).Map(s => new AlpcHandleMessageAttributeEntry(s));
         }
 
         /// <summary>
@@ -607,7 +607,7 @@ namespace NtApiDotNet
         /// <param name="index">The handle index to get.</param>
         /// <param name="message">The associated message.</param>
         /// <returns>The ALPC handle entry.</returns>
-        public AlpcHandleEntry GetHandleInformation(AlpcMessage message, int index)
+        public AlpcHandleMessageAttributeEntry GetHandleInformation(AlpcMessage message, int index)
         {
             return GetHandleInformation(message, index, true).Result;
         }
@@ -673,8 +673,8 @@ namespace NtApiDotNet
             Sid required_server_sid,
             SecurityDescriptor server_security_requirements,
             AlpcMessage connection_message,
-            AlpcMessageAttributeSet out_message_attributes,
-            AlpcMessageAttributeSet in_message_attributes,
+            AlpcSendMessageAttributes out_message_attributes,
+            AlpcReceiveMessageAttributes in_message_attributes,
             NtWaitTimeout timeout,
             bool throw_on_error)
         {
@@ -744,8 +744,8 @@ namespace NtApiDotNet
             AlpcMessageFlags flags,
             Sid required_server_sid,
             AlpcMessage connection_message,
-            AlpcMessageAttributeSet out_message_attributes,
-            AlpcMessageAttributeSet in_message_attributes,
+            AlpcSendMessageAttributes out_message_attributes,
+            AlpcReceiveMessageAttributes in_message_attributes,
             NtWaitTimeout timeout,
             bool throw_on_error)
         {
@@ -775,8 +775,8 @@ namespace NtApiDotNet
             AlpcMessageFlags flags,
             Sid required_server_sid,
             AlpcMessage connection_message,
-            AlpcMessageAttributeSet out_message_attributes,
-            AlpcMessageAttributeSet in_message_attributes,
+            AlpcSendMessageAttributes out_message_attributes,
+            AlpcReceiveMessageAttributes in_message_attributes,
             NtWaitTimeout timeout)
         {
             return Connect(port_name, object_attributes, port_attributes, flags, required_server_sid,
@@ -818,8 +818,8 @@ namespace NtApiDotNet
             AlpcMessageFlags flags,
             SecurityDescriptor server_security_requirements,
             AlpcMessage connection_message,
-            AlpcMessageAttributeSet out_message_attributes,
-            AlpcMessageAttributeSet in_message_attributes,
+            AlpcSendMessageAttributes out_message_attributes,
+            AlpcReceiveMessageAttributes in_message_attributes,
             NtWaitTimeout timeout,
             bool throw_on_error)
         {
@@ -850,8 +850,8 @@ namespace NtApiDotNet
             AlpcMessageFlags flags,
             SecurityDescriptor server_security_requirements,
             AlpcMessage connection_message,
-            AlpcMessageAttributeSet out_message_attributes,
-            AlpcMessageAttributeSet in_message_attributes,
+            AlpcSendMessageAttributes out_message_attributes,
+            AlpcReceiveMessageAttributes in_message_attributes,
             NtWaitTimeout timeout)
         {
             return Connect(port_object_attributes, object_attributes, port_attributes, flags, server_security_requirements,
@@ -947,7 +947,7 @@ namespace NtApiDotNet
             AlpcPortAttributes port_attributes,
             IntPtr port_context,
             AlpcMessage connection_request,
-            AlpcMessageAttributeSet connection_message_attributes,
+            AlpcSendMessageAttributes connection_message_attributes,
             bool accept_connection,
             bool throw_on_error)
         {
@@ -981,7 +981,7 @@ namespace NtApiDotNet
             AlpcPortAttributes port_attributes,
             IntPtr port_context,
             AlpcMessage connection_request,
-            AlpcMessageAttributeSet connection_message_attributes,
+            AlpcSendMessageAttributes connection_message_attributes,
             bool accept_connection)
         {
             return AcceptConnectPort(flags, object_attributes, port_attributes, port_context, 
@@ -999,7 +999,7 @@ namespace NtApiDotNet
         public NtAlpcServer AcceptConnectPort(
             AlpcMessageFlags flags,
             AlpcMessage connection_request,
-            AlpcMessageAttributeSet connection_message_attributes,
+            AlpcSendMessageAttributes connection_message_attributes,
             bool accept_connection)
         {
             return AcceptConnectPort(flags, null, null, IntPtr.Zero, connection_request, 

@@ -214,6 +214,7 @@ namespace NtApiDotNet
         Context = 0x20000000,
         View = 0x40000000,
         Security = 0x80000000,
+        AllAttributes = WorkOnBehalfOf | Direct | Token | Handle | Context | View | Security
     }
 
     public enum AlpcSecurityAttrFlags

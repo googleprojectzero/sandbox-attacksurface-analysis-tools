@@ -21,37 +21,44 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
-    /// <summary>
-    /// Class to represent a set of ALPC message attributes.
-    /// </summary>
-    /// <remarks>This class is used both as an input and out for many calls to ALPC APIs.</remarks>
-    public sealed class AlpcMessageAttributeSet : Dictionary<AlpcMessageAttributeFlags, AlpcMessageAttribute>, IDisposable
+    internal interface IMessageAttributes
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public AlpcMessageAttributeSet()
-        {
-        }
+        SafeAlpcMessageAttributesBuffer ToSafeBuffer();
+    }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="attrs">List of attributes to build the buffer from.</param>
-        public AlpcMessageAttributeSet(IEnumerable<AlpcMessageAttribute> attrs) 
-            : base(attrs.ToDictionary(a => a.AttributeFlag, a => a))
-        {
-        }
+    /// <summary>
+    /// Class to represent a set of sending attributes.
+    /// </summary>
+    public sealed class AlpcSendMessageAttributes : IMessageAttributes
+    {
+        #region Private Members
+        private Dictionary<AlpcMessageAttributeFlags, AlpcMessageAttribute> _attributes;
 
-        /// <summary>
-        /// Dispose method.
-        /// </summary>
-        public void Dispose()
+        private AlpcHandleMessageAttribute GetHandleAttribute()
         {
-            foreach (var attr in Values)
+            if (!_attributes.ContainsKey(AlpcMessageAttributeFlags.Handle))
             {
-                attr.Dispose();
+                _attributes[AlpcMessageAttributeFlags.Handle] = new AlpcHandleMessageAttribute();
             }
+            return (AlpcHandleMessageAttribute)_attributes[AlpcMessageAttributeFlags.Handle];
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public AlpcSendMessageAttributes() : this(new AlpcMessageAttribute[0])
+        {
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="attributes">List of attributes to send.</param>
+        public AlpcSendMessageAttributes(IEnumerable<AlpcMessageAttribute> attributes)
+        {
+            _attributes = new Dictionary<AlpcMessageAttributeFlags, AlpcMessageAttribute>(attributes.ToDictionary(a => a.AttributeFlag, a => a));
         }
 
         /// <summary>
@@ -60,7 +67,16 @@ namespace NtApiDotNet
         /// <param name="attribute">The attribute to add.</param>
         public void Add(AlpcMessageAttribute attribute)
         {
-            Add(attribute.AttributeFlag, attribute);
+            _attributes.Add(attribute.AttributeFlag, attribute);
+        }
+
+        /// <summary>
+        /// Remove an attribute object.
+        /// </summary>
+        /// <param name="flag">The attribute flag to remove.</param>
+        public void Remove(AlpcMessageAttributeFlags flag)
+        {
+            _attributes.Remove(flag);
         }
 
         /// <summary>
@@ -69,44 +85,63 @@ namespace NtApiDotNet
         /// <param name="attribute">The attribute to remove.</param>
         public void Remove(AlpcMessageAttribute attribute)
         {
-            Remove(attribute.AttributeFlag);
+            _attributes.Remove(attribute.AttributeFlag);
         }
-
-        public AlpcMessageAttributeFlags AllocatedAttributes
-        {
-            get
-            {
-                AlpcMessageAttributeFlags flags = AlpcMessageAttributeFlags.None;
-                foreach (var flag in Keys)
-                {
-                    flags |= flag;
-                }
-                return flags;
-            }
-        }
-
-        public AlpcMessageAttributeFlags ValidAttributes { get; private set;  }
 
         /// <summary>
-        /// Convert the set to a safe buffer.
+        /// Add a list of handles to the send attributes.
         /// </summary>
-        /// <returns>The converted safe buffer.</returns>
-        public SafeAlpcMessageAttributesBuffer ToSafeBuffer()
+        /// <param name="objects">The list of objects.</param>
+        /// <remarks>This method doesn't maintain a reference to the objects. You need to keep them alive elsewhere.</remarks>
+        public void AddHandles(IEnumerable<NtObject> objects)
         {
-            if (Count == 0)
+            AddHandles(objects.Select(h => new AlpcHandleMessageAttributeEntry(h)));
+        }
+
+        /// <summary>
+        /// Add a list of handles to the send attributes.
+        /// </summary>
+        /// <param name="handles">The list of handles.</param>
+        public void AddHandles(IEnumerable<AlpcHandleMessageAttributeEntry> handles)
+        {
+            GetHandleAttribute().AddHandles(handles);
+        }
+
+        /// <summary>
+        /// Add a list of handles to the send attributes.
+        /// </summary>
+        /// <param name="handle">The handle to add.</param>
+        /// <remarks>This method doesn't maintain a reference to the objects. You need to keep them alive elsewhere.</remarks>
+        public void AddHandle(NtObject handle)
+        {
+            AddHandles(new NtObject[] { handle });
+        }
+
+        /// <summary>
+        /// Add a list of handles to the send attributes.
+        /// </summary>
+        /// <param name="handle">The handle to add.</param>
+        public void AddHandle(AlpcHandleMessageAttributeEntry handle)
+        {
+            AddHandles(new AlpcHandleMessageAttributeEntry[] { handle });
+        }
+
+        SafeAlpcMessageAttributesBuffer IMessageAttributes.ToSafeBuffer()
+        {
+            if (_attributes.Count == 0)
             {
                 return SafeAlpcMessageAttributesBuffer.Null;
             }
 
             AlpcMessageAttributeFlags flags = AlpcMessageAttributeFlags.None;
-            foreach (var flag in Keys)
+            foreach (var flag in _attributes.Keys)
             {
                 flags |= flag;
             }
 
             using (var buffer = SafeAlpcMessageAttributesBuffer.Create(flags))
             {
-                foreach (var attr in Values)
+                foreach (var attr in _attributes.Values)
                 {
                     attr.ToSafeBuffer(buffer);
                 }
@@ -117,17 +152,147 @@ namespace NtApiDotNet
                 return buffer.Detach();
             }
         }
+    }
+
+    /// <summary>
+    /// Class to represent a set of received attributes.
+    /// </summary>
+    public sealed class AlpcReceiveMessageAttributes : IDisposable, IMessageAttributes
+    {
+        private Dictionary<AlpcMessageAttributeFlags, AlpcMessageAttribute> _attributes;
+        private DisposableList<NtObject> _handles;
+
+        /// <summary>
+        /// Constructor. Allocated space for all known attributes.
+        /// </summary>
+        public AlpcReceiveMessageAttributes() 
+            : this(AlpcMessageAttributeFlags.AllAttributes)
+        {
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public AlpcReceiveMessageAttributes(AlpcMessageAttributeFlags allocated_attributes)
+        {
+            AllocatedAttributes = allocated_attributes;
+            _attributes = new Dictionary<AlpcMessageAttributeFlags, AlpcMessageAttribute>();
+            _handles = new DisposableList<NtObject>();
+            DataView = new NtMappedSection();
+        }
+
+        /// <summary>
+        /// Get the allocated attributes.
+        /// </summary>
+        public AlpcMessageAttributeFlags AllocatedAttributes { get; set; }
+
+        /// <summary>
+        /// Get the list of valid attributes.
+        /// </summary>
+        public AlpcMessageAttributeFlags ValidAttributes { get; private set; }
+
+        /// <summary>
+        /// Get a list of the valid attributes.
+        /// </summary>
+        public IEnumerable<AlpcMessageAttribute> Attributes => _attributes.Values;
+
+        /// <summary>
+        /// Dispose method.
+        /// </summary>
+        public void Dispose()
+        {
+            foreach (var attr in _attributes.Values)
+            {
+                attr.Dispose();
+            }
+            _handles.Dispose();
+            DataView.Dispose();
+        }
+
+        /// <summary>
+        /// Get a typed attribute.
+        /// </summary>
+        /// <typeparam name="T">The type of attribute to get.</typeparam>
+        /// <returns>The attribute. Returns a default initialized object if not valid.</returns>
+        public T GetAttribute<T>() where T : AlpcMessageAttribute, new()
+        {
+            T result = new T();
+            if (_attributes.ContainsKey(result.AttributeFlag))
+            {
+                return (T)_attributes[result.AttributeFlag];
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Get an attribute.
+        /// </summary>
+        /// <param name="flag">The attribute flag to get.</param>
+        /// <returns>The attribute. Returns null if not found.</returns>
+        public AlpcMessageAttribute GetAttribute(AlpcMessageAttributeFlags flag)
+        {
+            if (_attributes.ContainsKey(flag))
+            {
+                return _attributes[flag];
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Get list of passed handles.
+        /// </summary>
+        public IEnumerable<NtObject> Handles => _handles.AsReadOnly();
+
+        /// <summary>
+        /// Get the mapped data view. If not view sent this property is invalid.
+        /// </summary>
+        public NtMappedSection DataView { get; private set; }
+
+        SafeAlpcMessageAttributesBuffer IMessageAttributes.ToSafeBuffer()
+        {
+            return SafeAlpcMessageAttributesBuffer.Create(AllocatedAttributes);
+        }
+
+        internal T AddAttribute<T>(SafeAlpcMessageAttributesBuffer buffer, 
+            NtAlpc port, AlpcMessage message) where T : AlpcMessageAttribute, new()
+        {
+            T attribute = new T();
+            attribute.FromSafeBuffer(buffer, port, message);
+            _attributes.Add(attribute.AttributeFlag, attribute);
+            ValidAttributes |= attribute.AttributeFlag;
+            return attribute;
+        }
 
         internal void FromSafeBuffer(SafeAlpcMessageAttributesBuffer buffer, NtAlpc port, AlpcMessage message)
         {
             var result = buffer.Result;
-            foreach (var attr in Values)
+            var valid_attrs = result.ValidAttributes;
+
+            if (valid_attrs.HasFlag(AlpcMessageAttributeFlags.Token))
             {
-                if ((result.ValidAttributes & attr.AttributeFlag) == attr.AttributeFlag)
-                {
-                    attr.FromSafeBuffer(buffer, port, message);
-                }
-                ValidAttributes = result.ValidAttributes;
+                AddAttribute<AlpcTokenMessageAttribute>(buffer, port, message);
+            }
+            if (valid_attrs.HasFlag(AlpcMessageAttributeFlags.Context))
+            {
+                AddAttribute<AlpcContextMessageAttribute>(buffer, port, message);
+            }
+            if (valid_attrs.HasFlag(AlpcMessageAttributeFlags.Handle))
+            {
+                var attribute = AddAttribute<AlpcHandleMessageAttribute>(buffer, port, message);
+                _handles.AddRange(attribute.Handles.Select(h => NtObjectUtils.FromHandle(h.Handle, true)));
+            }
+            if (valid_attrs.HasFlag(AlpcMessageAttributeFlags.Security))
+            {
+                AddAttribute<AlpcSecurityMessageAttribute>(buffer, port, message);
+            }
+            if (valid_attrs.HasFlag(AlpcMessageAttributeFlags.View))
+            {
+                var attr = AddAttribute<AlpcDataViewMessageAttribute>(buffer, port, message);
+                DataView = new NtMappedSection(new IntPtr(attr.ViewBase), attr.ViewSize, NtProcess.Current, true);
+            }
+            if (valid_attrs.HasFlag(AlpcMessageAttributeFlags.WorkOnBehalfOf))
+            {
+                AddAttribute<AlpcWorkOnBehalfMessageAttribute>(buffer, port, message);
             }
         }
     }
@@ -417,7 +582,8 @@ namespace NtApiDotNet
         {
             if (_port != null && !_port.Handle.IsClosed)
             {
-                NtSystemCalls.NtAlpcDeleteSectionView(_port.Handle, 0, new IntPtr(ViewBase));
+                NtStatus status = NtSystemCalls.NtAlpcDeleteSectionView(_port.Handle, 0, new IntPtr(ViewBase));
+                System.Diagnostics.Debug.WriteLine("Section View Delete Status: {0}", status);
             }
             base.Dispose();
         }
@@ -426,7 +592,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Handle attribute entry.
     /// </summary>
-    public class AlpcHandleEntry : IDisposable
+    public class AlpcHandleMessageAttributeEntry
     {
         /// <summary>
         /// Handle flags.
@@ -435,7 +601,7 @@ namespace NtApiDotNet
         /// <summary>
         /// The NT object.
         /// </summary>
-        public NtObject Object { get; set; }
+        public int Handle { get; set; }
         /// <summary>
         /// The object type for the handle.
         /// </summary>
@@ -449,10 +615,10 @@ namespace NtApiDotNet
         /// Constructor.
         /// </summary>
         /// <param name="attr">Handle attribute to initialize from.</param>
-        public AlpcHandleEntry(AlpcHandleAttr attr)
+        public AlpcHandleMessageAttributeEntry(AlpcHandleAttr attr)
         {
             Flags = attr.Flags;
-            Object = NtObjectUtils.FromHandle(attr.Handle, false);
+            Handle = attr.Handle.ToInt32();
             ObjectType = attr.ObjectType;
             DesiredAccess = attr.DesiredAccess;
         }
@@ -461,10 +627,10 @@ namespace NtApiDotNet
         /// Constructor.
         /// </summary>
         /// <param name="attr">Handle attribute to initialize from.</param>
-        public AlpcHandleEntry(AlpcHandleAttr32 attr)
+        public AlpcHandleMessageAttributeEntry(AlpcHandleAttr32 attr)
         {
             Flags = attr.Flags;
-            Object = NtObjectUtils.FromHandle(new IntPtr(attr.Handle), false);
+            Handle = attr.Handle;
             ObjectType = attr.ObjectType;
             DesiredAccess = attr.DesiredAccess;
         }
@@ -473,10 +639,10 @@ namespace NtApiDotNet
         /// Constructor.
         /// </summary>
         /// <param name="info">Information structure to initialize from.</param>
-        public AlpcHandleEntry(AlpcMessageHandleInformation info)
+        public AlpcHandleMessageAttributeEntry(AlpcMessageHandleInformation info)
         {
             Flags = info.Flags;
-            Object = NtObjectUtils.FromHandle(new IntPtr(info.Handle), false);
+            Handle = info.Handle;
             ObjectType = info.ObjectType;
             DesiredAccess = info.GrantedAccess;
         }
@@ -484,7 +650,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Constructor.
         /// </summary>
-        public AlpcHandleEntry()
+        public AlpcHandleMessageAttributeEntry()
         {
         }
 
@@ -492,19 +658,10 @@ namespace NtApiDotNet
         /// Constructor.
         /// </summary>
         /// <param name="obj">The object to construct the entry from. Will take a copy of the handle.</param>
-        public AlpcHandleEntry(NtObject obj)
+        public AlpcHandleMessageAttributeEntry(NtObject obj)
         {
             Flags = AlpcHandleAttrFlags.SameAccess | AlpcHandleAttrFlags.SameAttributes;
-            Object = obj.DuplicateObject();
-            DesiredAccess = 0;
-        }
-
-        /// <summary>
-        /// Dispose the handle entry.
-        /// </summary>
-        public void Dispose()
-        {
-            ((IDisposable)Object).Dispose();
+            Handle = obj.Handle.DangerousGetHandle().ToInt32();
         }
     }
 
@@ -513,13 +670,13 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class AlpcHandleMessageAttribute : AlpcMessageAttribute
     {
-        private readonly DisposableList<AlpcHandleEntry> _handles = new DisposableList<AlpcHandleEntry>();
+        private readonly List<AlpcHandleMessageAttributeEntry> _handles;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         public AlpcHandleMessageAttribute()
-            : this(new AlpcHandleEntry[0])
+            : this(new AlpcHandleMessageAttributeEntry[0])
         {
         }
 
@@ -527,18 +684,18 @@ namespace NtApiDotNet
         /// Constructor.
         /// </summary>
         /// <param name="handles">List of handle entries.</param>
-        public AlpcHandleMessageAttribute(IEnumerable<AlpcHandleEntry> handles)
+        public AlpcHandleMessageAttribute(IEnumerable<AlpcHandleMessageAttributeEntry> handles)
             : base(AlpcMessageAttributeFlags.Handle)
         {
-            _handles = new DisposableList<AlpcHandleEntry>(handles);
+            _handles = new List<AlpcHandleMessageAttributeEntry>(handles);
         }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="handle">The handle entry.</param>
-        public AlpcHandleMessageAttribute(AlpcHandleEntry handle)
-            : this(new AlpcHandleEntry[] { handle })
+        public AlpcHandleMessageAttribute(AlpcHandleMessageAttributeEntry handle)
+            : this(new AlpcHandleMessageAttributeEntry[] { handle })
         {
         }
 
@@ -548,7 +705,7 @@ namespace NtApiDotNet
         /// <param name="objs">List of objects to create the handle entries.</param>
         /// <remarks>This constructor takes copies of the objects.</remarks>
         public AlpcHandleMessageAttribute(IEnumerable<NtObject> objs)
-            : this(objs.Select(o => new AlpcHandleEntry(o)))
+            : this(objs.Select(o => new AlpcHandleMessageAttributeEntry(o)))
         {
         }
 
@@ -565,7 +722,7 @@ namespace NtApiDotNet
         /// <summary>
         /// List of handles in this attribute.
         /// </summary>
-        public IEnumerable<AlpcHandleEntry> Handles => _handles.AsReadOnly();
+        public IEnumerable<AlpcHandleMessageAttributeEntry> Handles => _handles.AsReadOnly();
 
         internal override void FromSafeBuffer(SafeAlpcMessageAttributesBuffer buffer, NtAlpc port, AlpcMessage message)
         {
@@ -577,20 +734,46 @@ namespace NtApiDotNet
             buffer.SetHandleAttribute(this);
         }
 
-        /// <summary>
-        /// Dispose this attribute.
-        /// </summary>
-        public override void Dispose()
+        internal void SetHandles(IEnumerable<AlpcHandleMessageAttributeEntry> handles)
         {
-            _handles.Dispose();
-            base.Dispose();
-        }
-
-        internal void SetHandles(IEnumerable<AlpcHandleEntry> handles)
-        {
-            _handles.Dispose();
             _handles.Clear();
             _handles.AddRange(handles);
+        }
+
+        internal void AddHandles(IEnumerable<AlpcHandleMessageAttributeEntry> handles)
+        {
+            _handles.AddRange(handles);
+        }
+    }
+
+    /// <summary>
+    /// Class representing a direct message attribute.
+    /// </summary>
+    public sealed class AlpcDirectMessageAttribute : AlpcMessageAttribute, IDisposable
+    {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="event_object">The event object.</param>
+        public AlpcDirectMessageAttribute(NtEvent event_object) 
+            : base(AlpcMessageAttributeFlags.Direct)
+        {
+            Event = event_object.Duplicate();
+        }
+
+        /// <summary>
+        /// The event object.
+        /// </summary>
+        public NtEvent Event { get; private set; }
+
+        internal override void FromSafeBuffer(SafeAlpcMessageAttributesBuffer buffer, NtAlpc port, AlpcMessage message)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal override void ToSafeBuffer(SafeAlpcMessageAttributesBuffer buffer)
+        {
+            buffer.SetDirectAttribute(this);
         }
     }
 
@@ -779,11 +962,11 @@ namespace NtApiDotNet
             }
             else if (attr.Handle != IntPtr.Zero)
             {
-                attribute.SetHandles(new AlpcHandleEntry[] { new AlpcHandleEntry(attr) });
+                attribute.SetHandles(new AlpcHandleMessageAttributeEntry[] { new AlpcHandleMessageAttributeEntry(attr) });
             }
             else
             {
-                attribute.SetHandles(new AlpcHandleEntry[0]);
+                attribute.SetHandles(new AlpcHandleMessageAttributeEntry[0]);
             }
         }
 
@@ -804,6 +987,15 @@ namespace NtApiDotNet
             };
         }
 
+        internal void SetDirectAttribute(AlpcDirectMessageAttribute attribute)
+        {
+            var attr = GetAttribute<AlpcDirectAttr>(AlpcMessageAttributeFlags.Direct);
+            attr.Result = new AlpcDirectAttr()
+            {
+                Event = attribute.Event.Handle.DangerousGetHandle()
+            };
+        }
+
         internal void SetHandleAttribute(AlpcHandleMessageAttribute attribute)
         {
             // If not handle attributes then just leave as is.
@@ -819,7 +1011,7 @@ namespace NtApiDotNet
                 var attr = GetAttribute<AlpcHandleAttrIndirect>(AlpcMessageAttributeFlags.Handle);
                 var handles = attribute.Handles.Select(h => new AlpcHandleAttr32()
                 {
-                    Handle = h.Object.Handle.DangerousGetHandle().ToInt32(),
+                    Handle = h.Handle,
                     ObjectType = h.ObjectType,
                     Flags = h.Flags,
                     DesiredAccess = h.DesiredAccess
@@ -836,12 +1028,12 @@ namespace NtApiDotNet
             else
             {
                 var attr = GetAttribute<AlpcHandleAttr>(AlpcMessageAttributeFlags.Handle);
-                AlpcHandleEntry handle = attribute.Handles.First();
+                AlpcHandleMessageAttributeEntry handle = attribute.Handles.First();
                 attr.Result = new AlpcHandleAttr()
                 {
                     Flags = handle.Flags,
                     ObjectType = handle.ObjectType,
-                    Handle =  handle.Object.Handle.DangerousGetHandle(),
+                    Handle =  new IntPtr(handle.Handle),
                     DesiredAccess = handle.DesiredAccess
                 };
             }

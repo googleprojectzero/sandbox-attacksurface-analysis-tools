@@ -114,13 +114,13 @@ namespace NtObjectManager
         /// <para type="description">Optional outbound message attributes.</para>
         /// </summary>
         [Parameter]
-        public AlpcMessageAttributeSet OutMessageAttributes { get; set; }
+        public AlpcSendMessageAttributes OutMessageAttributes { get; set; }
 
         /// <summary>
         /// <para type="description">Optional inbound message attributes.</para>
         /// </summary>
         [Parameter]
-        public AlpcMessageAttributeSet InMessageAttributes { get; set; }
+        public AlpcReceiveMessageAttributes InMessageAttributes { get; set; }
 
         /// <summary>
         /// <para type="description">Optional connection timeout.</para>
@@ -200,7 +200,7 @@ namespace NtObjectManager
         /// <para type="description">Optional connection message attributes.</para>
         /// </summary>
         [Parameter]
-        public AlpcMessageAttributeSet ConnectionAttributes { get; set; }
+        public AlpcSendMessageAttributes ConnectionAttributes { get; set; }
 
         /// <summary>
         /// <para type="description">Specify to reject the client connection.</para>
@@ -474,7 +474,7 @@ namespace NtObjectManager
         /// <para type="description">Specify send attributes.</para>
         /// </summary>
         [Parameter]
-        public AlpcMessageAttributeSet SendAttributes { get; set; }
+        public AlpcSendMessageAttributes SendAttributes { get; set; }
 
         /// <summary>
         /// <para type="description">Specify optional timeout in MS.</para>
@@ -492,7 +492,7 @@ namespace NtObjectManager
         /// <para type="description">Specify receive attributes.</para>
         /// </summary>
         [Parameter]
-        public AlpcMessageAttributeSet ReceiveAttributes { get; set; }
+        public AlpcReceiveMessageAttributes ReceiveAttributes { get; set; }
 
         private AlpcMessage CreateReceiveMessage()
         {
@@ -576,7 +576,7 @@ namespace NtObjectManager
         /// <para type="description">Specify receive attributes.</para>
         /// </summary>
         [Parameter]
-        public AlpcMessageAttributeSet ReceiveAttributes { get; set; }
+        public AlpcReceiveMessageAttributes ReceiveAttributes { get; set; }
 
         /// <summary>
         /// Constructor.
