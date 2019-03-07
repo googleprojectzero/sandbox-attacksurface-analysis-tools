@@ -489,7 +489,12 @@ namespace NtApiDotNet
         /// <summary>
         /// Get original section base address.
         /// </summary>
-        public long OriginalBase => Query<IntPtr>(SectionInformationClass.SectionOriginalBaseInformation).ToInt64();
+        public long OriginalBaseAddress => Query<IntPtr>(SectionInformationClass.SectionOriginalBaseInformation).ToInt64();
+
+        /// <summary>
+        /// Get relocation address.
+        /// </summary>
+        public long RelocationAddress => Query<IntPtr>(SectionInformationClass.SectionRelocationInformation).ToInt64();
 
         #endregion
     }
