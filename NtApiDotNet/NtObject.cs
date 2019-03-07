@@ -366,7 +366,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Duplicate object with sane access rights.
+        /// Duplicate object with same access rights.
         /// </summary>
         /// <returns>The duplicated object.</returns>
         public NtObject DuplicateObject()
