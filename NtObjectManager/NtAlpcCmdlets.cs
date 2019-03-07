@@ -15,6 +15,7 @@
 using NtApiDotNet;
 using System;
 using System.Management.Automation;
+using System.Text;
 
 namespace NtObjectManager
 {
@@ -376,12 +377,16 @@ namespace NtObjectManager
     ///   <para>Create a new message from a byte array.</para>
     /// </example>
     /// <example>
-    ///   <code>$msg = New-NtAlpcMessage -Length 1000</code>
-    ///   <para>Create a new message with length 1000.</para>
+    ///   <code>$msg = New-NtAlpcMessage -Bytes @(0, 1, 2, 3) -AllocatedDataLength 1000</code>
+    ///   <para>Create a new message from a byte array with an allocated length of 1000 bytes.</para>
     /// </example>
     /// <example>
-    ///   <code>$msg = New-NtAlpcMessage -Length 1000 -Initialize</code>
-    ///   <para>Create a new message with length 1000 and initialize the header.</para>
+    ///   <code>$msg = New-NtAlpcMessage -AllocatedDataLength 1000</code>
+    ///   <para>Create a new message with an allocated length of 1000 bytes.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$msg = New-NtAlpcMessage -String "Hello World!"</code>
+    ///   <para>Create a new message from a unicode string.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.New, "NtAlpcMessage", DefaultParameterSetName = "FromLength")]
@@ -395,10 +400,17 @@ namespace NtObjectManager
         public byte[] Bytes { get; set; }
 
         /// <summary>
+        /// <para type="description">Create the message from a string.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromString")]
+        public string String { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify the message with allocated length.</para>
         /// </summary>
         [Parameter(Position = 0, ParameterSetName = "FromLength")]
         [Parameter(Position = 1, ParameterSetName = "FromBytes")]
+        [Parameter(Position = 1, ParameterSetName = "FromString")]
         public int AllocatedDataLength { get; set; }
 
         /// <summary>
@@ -417,6 +429,10 @@ namespace NtObjectManager
             if (ParameterSetName == "FromBytes")
             {
                 WriteObject(new AlpcMessageRaw(Bytes, AllocatedDataLength));
+            }
+            else if (ParameterSetName == "FromString")
+            {
+                WriteObject(new AlpcMessageRaw(Encoding.Unicode.GetBytes(String), AllocatedDataLength));
             }
             else
             {
