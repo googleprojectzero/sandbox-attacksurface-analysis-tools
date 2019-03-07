@@ -517,7 +517,7 @@ namespace NtApiDotNet
         public static extern int AlpcMaxAllowedMessageLength();
 
         [DllImport("ntdll.dll")]
-        public static extern int AlpcGetHeaderSize(int Flags);
+        public static extern int AlpcGetHeaderSize(AlpcMessageAttributeFlags Flags);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus AlpcInitializeMessageAttribute(
