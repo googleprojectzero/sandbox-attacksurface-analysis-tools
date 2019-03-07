@@ -441,6 +441,38 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Convert a handle to a known object type.
+        /// </summary>
+        /// <param name="handle">The handle.</param>
+        /// <returns>The object type.</returns>
+        public static NtObject FromHandle(SafeKernelObjectHandle handle)
+        {
+            return NtType.GetTypeByName(handle.NtTypeName, true).FromHandle(handle);
+        }
+
+        /// <summary>
+        /// Convert a handle to a known object type.
+        /// </summary>
+        /// <param name="handle">The handle.</param>
+        /// <param name="owns_handle">True to own the handle.</param>
+        /// <returns>The object type.</returns>
+        public static NtObject FromHandle(IntPtr handle, bool owns_handle)
+        {
+            return FromHandle(new SafeKernelObjectHandle(handle, owns_handle));
+        }
+
+        /// <summary>
+        /// Convert a handle to a known object type.
+        /// </summary>
+        /// <param name="handle">The handle.</param>
+        /// <param name="owns_handle">True to own the handle.</param>
+        /// <returns>The object type.</returns>
+        public static NtObject FromHandle(int handle, bool owns_handle)
+        {
+            return FromHandle(new IntPtr(handle), owns_handle);
+        }
+
         internal static NtStatus MapDosErrorToStatus(Win32Error dos_error)
         {
             return MapDosErrorToStatus((int)dos_error);
