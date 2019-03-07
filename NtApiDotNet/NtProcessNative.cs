@@ -179,40 +179,6 @@ namespace NtApiDotNet
         public RtlDriveLetterCurDir[] DLCurrentDirectory;
     }
 
-    [Flags]
-    public enum SectionImageFlags : byte
-    {
-        ComPlusNativeReady = 1,
-        ComPlusILOnly = 2,
-        ImageDynamicallyRelocated = 4,
-        ImageMappedFlat = 8,
-        BaseBelow4gb = 16,
-        ComPlusPrefer32bit = 32
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SectionImageInformation
-    {
-        public IntPtr TransferAddress;
-        public uint ZeroBits;
-        public IntPtr MaximumStackSize;
-        public IntPtr CommittedStackSize;
-        public uint SubSystemType;
-        public ushort SubSystemMinorVersion;
-        public ushort SubSystemMajorVersion;
-        public uint GpValue;
-        public ushort ImageCharacteristics;
-        public ushort DllCharacteristics;
-        public ushort Machine;
-        [MarshalAs(UnmanagedType.U1)]
-        public bool ImageContainsCode;
-        [MarshalAs(UnmanagedType.U1)]
-        public SectionImageFlags ImageFlags;
-        public uint LoaderFlags;
-        public uint ImageFileSize;
-        public uint CheckSum;
-    };
-
     public enum PsProtectedType
     {
         None,

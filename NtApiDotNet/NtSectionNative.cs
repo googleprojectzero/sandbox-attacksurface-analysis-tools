@@ -129,6 +129,107 @@ namespace NtApiDotNet
         public LargeIntegerStruct Size;
     }
 
+    [Flags]
+    public enum SectionImageFlags : byte
+    {
+        ComPlusNativeReady = 1,
+        ComPlusILOnly = 2,
+        ImageDynamicallyRelocated = 4,
+        ImageMappedFlat = 8,
+        BaseBelow4gb = 16,
+        ComPlusPrefer32bit = 32
+    }
+
+    public enum DllMachineType : ushort
+    {
+        UNKNOWN = 0x0,
+        AM33 = 0x13,
+        AMD64 = 0x8664,
+        ARM = 0x1C0,
+        ARMV7 = 0x1C4,
+        EBC = 0xEBC,
+        I386 = 0x14C,
+        IA64 = 0x200,
+        M32R = 0x9041,
+        MIPS16 = 0x266,
+        MIPSFPU = 0x366,
+        MIPSFPU16 = 0x466,
+        POWERPC = 0x1F0,
+        POWERPCFP = 0x1F1,
+        R4000 = 0x166,
+        SH3 = 0x1A2,
+        SH3DSP = 0x1A3,
+        SH4 = 0x1A6,
+        SH5 = 0x1A8,
+        THUMB = 0x1C2,
+        WCEMIPSV2 = 0x169,
+        ARM64 = 0xAA64,
+    }
+
+    [Flags]
+    public enum DllCharacteristics : ushort
+    {
+        None = 0,
+        Reserved0001 = 0x0001,
+        Reserved0002 = 0x0002,
+        Reserved0004 = 0x0004,
+        Reserved0008 = 0x0008,
+        Reserved0010 = 0x0010,
+        HighEntropyVA = 0x0020,
+        DynamicBase = 0x0040,
+        ForceIntegrity = 0x0080,
+        NXCompat = 0x0100,
+        NoIsolation = 0x0200,
+        NoSEH = 0x0400,
+        NoBind = 0x0800,
+        AppContainer = 0x1000,
+        WDMDriver = 0x2000,
+        GuardCF = 0x4000,
+        TerminalServerAware = 0x8000,
+    }
+
+    public enum ImageSubsystemType
+    {
+        Unknown = 0,
+        Native = 1,
+        WindowsGUI = 2,
+        WindowsCUI = 3,
+        OS2CUI = 5,
+        POSIXCUI = 7,
+        NativeWindows = 8,
+        WindowsCEGUI = 9,
+        EFIApplication = 10,
+        EFIBootServiceDriver = 11,
+        EFIRuntimeDriver = 12,
+        EFIRom = 13,
+        XBOX = 14,
+        WindowsBootApplication = 16
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SectionImageInformation
+    {
+        public IntPtr TransferAddress;
+        public uint ZeroBits;
+        public IntPtr MaximumStackSize;
+        public IntPtr CommittedStackSize;
+        public ImageSubsystemType SubSystemType;
+        public ushort SubSystemMinorVersion;
+        public ushort SubSystemMajorVersion;
+        public ushort MajorOperatingSystemVersion;
+        public ushort MinorOperatingSystemVersion;
+        public ImageCharacteristics ImageCharacteristics;
+        public DllCharacteristics DllCharacteristics;
+        public DllMachineType Machine;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool ImageContainsCode;
+        [MarshalAs(UnmanagedType.U1)]
+        public SectionImageFlags ImageFlags;
+        public uint LoaderFlags;
+        public uint ImageFileSize;
+        public uint CheckSum;
+    }
+
     public enum MemExtendedParameterType : long
     {
         MemExtendedParameterInvalidType,

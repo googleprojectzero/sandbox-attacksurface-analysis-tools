@@ -423,13 +423,24 @@ namespace NtApiDotNet
         /// Extend the section to a new size.
         /// </summary>
         /// <param name="new_size">The new size to extend to.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The new size.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtResult<long> Extend(long new_size, bool throw_on_error)
+        {
+            LargeInteger size = new LargeInteger(new_size);
+            return NtSystemCalls.NtExtendSection(Handle, size).CreateResult(throw_on_error, () => size.QuadPart);
+        }
+
+        /// <summary>
+        /// Extend the section to a new size.
+        /// </summary>
+        /// <param name="new_size">The new size to extend to.</param>
         /// <returns>The new size.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public long Extend(long new_size)
         {
-            LargeInteger size = new LargeInteger(new_size);
-            NtSystemCalls.NtExtendSection(Handle, size).ToNtException();
-            return size.QuadPart;
+            return Extend(new_size, true).Result;
         }
 
         /// <summary>
@@ -449,7 +460,6 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the size of the section
         /// </summary>
-        /// <returns>The size</returns>
         public long Size
         {
             get
@@ -462,7 +472,6 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the attributes of the section
         /// </summary>
-        /// <returns>The section attributes</returns>
         public SectionAttributes Attributes
         {
             get
@@ -471,6 +480,12 @@ namespace NtApiDotNet
                 return info.Attributes;
             }
         }
+
+        /// <summary>
+        /// Get section image information.
+        /// </summary>
+        public SectionImageInformation ImageInformation => Query<SectionImageInformation>(SectionInformationClass.SectionImageInformation);
+
         #endregion
     }
 }
