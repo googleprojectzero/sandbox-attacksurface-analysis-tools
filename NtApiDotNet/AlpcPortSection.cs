@@ -51,14 +51,14 @@ namespace NtApiDotNet
         #endregion
 
         #region Public Methods
-
         /// <summary>
         /// Create a new section view attribute.
         /// </summary>
+        /// <param name="flags">Specify the flags for the data view attribute.</param>
         /// <param name="view_size">The section view size.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The section view attribute.</returns>
-        public NtResult<AlpcDataViewMessageAttribute> CreateSectionView(long view_size, bool throw_on_error)
+        public NtResult<AlpcDataViewMessageAttribute> CreateSectionView(AlpcDataViewAttrFlags flags, long view_size, bool throw_on_error)
         {
             AlpcDataViewAttr attr = new AlpcDataViewAttr()
             {
@@ -66,7 +66,7 @@ namespace NtApiDotNet
                 ViewSize = new IntPtr(view_size)
             };
             return NtSystemCalls.NtAlpcCreateSectionView(_port.Handle, 0, ref attr).CreateResult(throw_on_error, 
-                () => new AlpcDataViewMessageAttribute(attr, _port));
+                () => new AlpcDataViewMessageAttribute(attr, flags, _port));
         }
 
         /// <summary>
@@ -76,17 +76,18 @@ namespace NtApiDotNet
         /// <returns>The section view attribute.</returns>
         public NtResult<AlpcDataViewMessageAttribute> CreateSectionView(bool throw_on_error)
         {
-            return CreateSectionView(Size, throw_on_error);
+            return CreateSectionView(AlpcDataViewAttrFlags.None, Size, throw_on_error);
         }
 
         /// <summary>
         /// Create a new section view attribute.
         /// </summary>
+        /// <param name="flags">Specify the flags for the data view attribute.</param>
         /// <param name="view_size">The section view size.</param>
         /// <returns>The section view attribute.</returns>
-        public AlpcDataViewMessageAttribute CreateSectionView(long view_size)
+        public AlpcDataViewMessageAttribute CreateSectionView(AlpcDataViewAttrFlags flags, long view_size)
         {
-            return CreateSectionView(view_size, true).Result;
+            return CreateSectionView(flags, view_size, true).Result;
         }
 
         /// <summary>
@@ -95,7 +96,7 @@ namespace NtApiDotNet
         /// <returns>The section view attribute.</returns>
         public AlpcDataViewMessageAttribute CreateSectionView()
         {
-            return CreateSectionView(Size);
+            return CreateSectionView(AlpcDataViewAttrFlags.None, Size);
         }
 
         /// <summary>

@@ -678,8 +678,8 @@ namespace NtObjectManager
     ///   <para>Create a new send attributes buffer with a Work on Behalf of attribute.</para>
     /// </example>
     /// <example>
-    ///   <code>$attrs = New-NtAlpcSendAttributes -PortSection $section</code>
-    ///   <para>Create a new send attributes buffer with data view from an allocated port section.</para>
+    ///   <code>$attrs = New-NtAlpcSendAttributes -DataView $dataview</code>
+    ///   <para>Create a new send attributes buffer with data view.</para>
     /// </example>
     [Cmdlet(VerbsCommon.New, "NtAlpcSendAttributes", DefaultParameterSetName = "FromAttributes")]
     [OutputType(typeof(AlpcSendMessageAttributes))]
@@ -710,10 +710,10 @@ namespace NtObjectManager
         public SwitchParameter WorkOnBehalfOf { get; set; }
 
         /// <summary>
-        /// <para type="description">Add a data view from an allocated port section.</para>
+        /// <para type="description">Add a data view attribute.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromParts")]
-        public AlpcPortSection PortSection { get; set; }
+        public AlpcDataViewMessageAttribute DataView { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -743,9 +743,9 @@ namespace NtObjectManager
                 attrs.Add(new AlpcWorkOnBehalfMessageAttribute());
             }
 
-            if (PortSection != null)
+            if (DataView != null)
             {
-                attrs.Add(PortSection.CreateSectionView());
+                attrs.Add(DataView);
             }
 
             return attrs;
@@ -832,6 +832,50 @@ namespace NtObjectManager
                     WriteObject(Port.CreatePortSection(AlpcCreatePortSectionFlags.None, Section, Size == 0 ? Section.Size : Size));
                     break;
             }
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Creates a new data view from a port section.</para>
+    /// <para type="description">This cmdlet creates a new data view from a port section specified size and flags.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>$s = New-NtAlpcDataView -Section $section -Size 10000</code>
+    ///   <para>Create a new data view with size 10000.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$s = New-NtAlpcDataView -Size 10000 -Flags Secure</code>
+    ///   <para>Create a new secure data view section of size 10000.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet(VerbsCommon.New, "NtAlpcDataView")]
+    [OutputType(typeof(AlpcDataViewMessageAttribute))]
+    public class NewNtAlpcDataView : PSCmdlet
+    {
+        /// <summary>
+        /// <para type="description">Specify the port to create the port section from.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true)]
+        public AlpcPortSection Section { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the size of the data view. This will be rounded up to the nearest allocation boundary.</para>
+        /// </summary>
+        [Parameter(Position = 1)]
+        public long Size { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify data view attribute flags.</para>
+        /// </summary>
+        [Parameter]
+        public AlpcDataViewAttrFlags Flags { get; set; }
+
+        /// <summary>
+        /// Process record.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            WriteObject(Section.CreateSectionView(Flags, Size == 0 ? Section.Size : Size));
         }
     }
 }

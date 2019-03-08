@@ -300,7 +300,7 @@ namespace NtApiDotNet
             if (valid_attrs.HasFlag(AlpcMessageAttributeFlags.View))
             {
                 var attr = AddAttribute<AlpcDataViewMessageAttribute>(buffer, port, message);
-                DataView = new NtMappedSection(new IntPtr(attr.ViewBase), attr.ViewSize, false);
+                DataView = attr.DataView;
             }
             if (valid_attrs.HasFlag(AlpcMessageAttributeFlags.WorkOnBehalfOf))
             {
@@ -534,9 +534,10 @@ namespace NtApiDotNet
         {
         }
 
-        internal AlpcDataViewMessageAttribute(AlpcDataViewAttr attr, NtAlpc port) : this()
+        internal AlpcDataViewMessageAttribute(AlpcDataViewAttr attr, AlpcDataViewAttrFlags flags, NtAlpc port) : this()
         {
             FromStruct(attr);
+            Flags = flags;
             _port = port;
         }
 
@@ -556,6 +557,10 @@ namespace NtApiDotNet
         /// View size.
         /// </summary>
         public long ViewSize { get; set; }
+        /// <summary>
+        /// The data view as a mapped section.
+        /// </summary>
+        public NtMappedSection DataView => new NtMappedSection(new IntPtr(ViewBase), ViewSize, false);
 
         internal override void ToSafeBuffer(SafeAlpcMessageAttributesBuffer buffer)
         {

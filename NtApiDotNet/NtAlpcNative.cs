@@ -333,6 +333,8 @@ namespace NtApiDotNet
     public enum AlpcDataViewAttrFlags
     {
         None = 0,
+        Unknown10000 = 0x10000, // Mabe autorelease and unmap existing?
+        Unknown20000 = 0x20000,
         Secure = 0x40000
     }
 

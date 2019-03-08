@@ -97,8 +97,9 @@ namespace NtApiDotNet
         }
 
         internal NtMappedSection(IntPtr pointer, long length, bool owns_handle) 
-            : base(pointer, length, owns_handle)
+            : base(pointer, length, owns_handle, true)
         {
+            Process = NtProcess.Current;
         }
 
         internal NtMappedSection() : base(IntPtr.Zero, 0, false)
