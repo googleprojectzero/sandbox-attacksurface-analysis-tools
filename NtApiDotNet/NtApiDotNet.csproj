@@ -94,6 +94,7 @@
     <Compile Include="NtAsyncResult.cs" />
     <Compile Include="NtDirectoryNative.cs" />
     <Compile Include="NtEnlistment.cs" />
+    <Compile Include="NtEventNative.cs" />
     <Compile Include="NtFileNative.cs" />
     <Compile Include="NtGeneric.cs" />
     <Compile Include="NtHandle.cs" />
