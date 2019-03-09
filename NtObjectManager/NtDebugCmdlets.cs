@@ -125,6 +125,7 @@ namespace NtObjectManager
         /// <para type="description">Specify a process ID to attach to after creation.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "AttachPid")]
+        [Alias("pid")]
         public int ProcessId { get; set; }
 
         /// <summary>
@@ -183,8 +184,16 @@ namespace NtObjectManager
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet("Start", "NtDebugWait")]
     [OutputType(typeof(DebugEvent))]
-    public class StartNtDebugWait : GetNtWaitTimeout
+    public sealed class StartNtDebugWait : GetNtWaitTimeout
     {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public StartNtDebugWait()
+        {
+            ContinueStatus = NtStatus.DBG_CONTINUE;
+        }
+
         /// <summary>
         /// <para type="description">Specify the debug object to wait on.</para>
         /// </summary>
@@ -198,10 +207,26 @@ namespace NtObjectManager
         public SwitchParameter Alertable { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify an event to continue before waiting.</para>
+        /// </summary>
+        [Parameter]
+        public DebugEvent ContinueEvent { get; set; }
+
+        /// <summary>
+        /// <para type="description">If continue event specified then this is the status to use.</para>
+        /// </summary>
+        [Parameter]
+        public NtStatus ContinueStatus { get; set; }
+
+        /// <summary>
         /// Overridden ProcessRecord method.
         /// </summary>
         protected override void ProcessRecord()
         {
+            if (ContinueEvent != null)
+            {
+                DebugObject.Continue(ContinueEvent.ProcessId, ContinueEvent.ThreadId, ContinueStatus);
+            }
             WriteObject(DebugObject.WaitForDebugEvent(Alertable, GetTimeout()));
         }
     }
@@ -220,7 +245,7 @@ namespace NtObjectManager
     ///   <para>Attach a process object to the debug object..</para>
     /// </example>
     [Cmdlet(VerbsCommon.Add, "NtDebugProcess")]
-    public class AddNtDebugProcess : PSCmdlet
+    public sealed class AddNtDebugProcess : PSCmdlet
     {
         /// <summary>
         /// <para type="description">Specify the debug object to attach the process to.</para>
@@ -232,6 +257,7 @@ namespace NtObjectManager
         /// <para type="description">Specify a process ID to attach to .</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "AttachPid")]
+        [Alias("pid")]
         public int ProcessId { get; set; }
 
         /// <summary>
@@ -270,7 +296,7 @@ namespace NtObjectManager
     ///   <para>Detach process object from the debug object..</para>
     /// </example>
     [Cmdlet(VerbsCommon.Remove, "NtDebugProcess")]
-    public class RemoveNtDebugProcess : PSCmdlet
+    public sealed class RemoveNtDebugProcess : PSCmdlet
     {
         /// <summary>
         /// <para type="description">Specify the debug object to debug the process from.</para>
@@ -282,6 +308,7 @@ namespace NtObjectManager
         /// <para type="description">Specify a process ID to detach.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "DetachPid")]
+        [Alias("pid")]
         public int ProcessId { get; set; }
 
         /// <summary>
