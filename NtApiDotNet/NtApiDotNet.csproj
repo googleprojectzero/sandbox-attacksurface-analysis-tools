@@ -118,6 +118,8 @@
     <Compile Include="NtResult.cs" />
     <Compile Include="NtSectionNative.cs" />
     <Compile Include="NtSecurityNative.cs" />
+    <Compile Include="NtSemaphoreNative.cs" />
+    <Compile Include="NtSymbolicLinkNative.cs" />
     <Compile Include="NtSystemInfoNative.cs" />
     <Compile Include="NtTransactionManager.cs" />
     <Compile Include="NtTransactionManagerUtils.cs" />

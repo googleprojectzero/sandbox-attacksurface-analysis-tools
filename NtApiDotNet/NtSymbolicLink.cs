@@ -12,62 +12,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System;
-using System.Runtime.InteropServices;
-
 namespace NtApiDotNet
 {
-#pragma warning disable 1591
-    [Flags]
-    public enum SymbolicLinkAccessRights : uint
-    {
-        Query = 1,
-        // Not accessible from user mode.
-        Set = 2,
-        GenericRead = GenericAccessRights.GenericRead,
-        GenericWrite = GenericAccessRights.GenericWrite,
-        GenericExecute = GenericAccessRights.GenericExecute,
-        GenericAll = GenericAccessRights.GenericAll,
-        Delete = GenericAccessRights.Delete,
-        ReadControl = GenericAccessRights.ReadControl,
-        WriteDac = GenericAccessRights.WriteDac,
-        WriteOwner = GenericAccessRights.WriteOwner,
-        Synchronize = GenericAccessRights.Synchronize,
-        MaximumAllowed = GenericAccessRights.MaximumAllowed,
-    }
-
-    public static partial class NtSystemCalls
-    {
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCreateSymbolicLinkObject(
-            out SafeKernelObjectHandle LinkHandle,
-            SymbolicLinkAccessRights DesiredAccess,
-            ObjectAttributes ObjectAttributes,
-            UnicodeString DestinationName
-        );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtOpenSymbolicLinkObject(
-            out SafeKernelObjectHandle LinkHandle,
-            SymbolicLinkAccessRights DesiredAccess,
-            ObjectAttributes ObjectAttributes
-        );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtQuerySymbolicLinkObject(
-            SafeHandle LinkHandle,
-            [In, Out] UnicodeStringAllocated LinkTarget,
-            out int ReturnedLength
-        );
-    }
-#pragma warning restore 1591
-
     /// <summary>
     /// Class representing a NT SymbolicLink object
     /// </summary>
     [NtType("SymbolicLink")]
     public class NtSymbolicLink : NtObjectWithDuplicate<NtSymbolicLink, SymbolicLinkAccessRights>
     {
+        #region Constructors
         internal NtSymbolicLink(SafeKernelObjectHandle handle) : base(handle)
         {
         }
@@ -84,6 +37,9 @@ namespace NtApiDotNet
                 return NtSymbolicLink.Open(obj_attributes, desired_access, throw_on_error);
             }
         }
+        #endregion
+
+        #region Static Methods
 
         /// <summary>
         /// Create a symbolic link object.
@@ -111,8 +67,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtSymbolicLink> Create(ObjectAttributes object_attributes, SymbolicLinkAccessRights desired_access, string target, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtCreateSymbolicLinkObject(out handle,
+            return NtSystemCalls.NtCreateSymbolicLinkObject(out SafeKernelObjectHandle handle,
                 desired_access, object_attributes, new UnicodeString(target)).CreateResult(throw_on_error, () => new NtSymbolicLink(handle));
         }
 
@@ -175,8 +130,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtSymbolicLink> Open(ObjectAttributes object_attributes, SymbolicLinkAccessRights desired_access, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtOpenSymbolicLinkObject(out handle,
+            return NtSystemCalls.NtOpenSymbolicLinkObject(out SafeKernelObjectHandle handle,
                 desired_access, object_attributes).CreateResult(throw_on_error, () => new NtSymbolicLink(handle));
         }
 
@@ -212,6 +166,9 @@ namespace NtApiDotNet
             return Open(path, null);
         }
 
+        #endregion
+
+        #region Public Properties
         /// <summary>
         /// Get the symbolic link target.
         /// </summary>
@@ -221,11 +178,12 @@ namespace NtApiDotNet
             {
                 using (UnicodeStringAllocated ustr = new UnicodeStringAllocated())
                 {
-                    int return_length;
-                    NtSystemCalls.NtQuerySymbolicLinkObject(Handle, ustr, out return_length).ToNtException();
+                    NtSystemCalls.NtQuerySymbolicLinkObject(Handle, ustr, 
+                        out int return_length).ToNtException();
                     return ustr.ToString();
                 }
             }
         }
+        #endregion
     }
 }
