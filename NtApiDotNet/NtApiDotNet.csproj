@@ -135,6 +135,7 @@
     <Compile Include="NtTransactionNative.cs" />
     <Compile Include="NtTypeFactory.cs" />
     <Compile Include="NtVirtualMemoryNative.cs" />
+    <Compile Include="NtWnfNative.cs" />
     <Compile Include="ReparseBuffer.cs" />
     <Compile Include="NtAlpc.cs" />
     <Compile Include="NtAtom.cs" />

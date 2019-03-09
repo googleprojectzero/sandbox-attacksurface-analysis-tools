@@ -143,6 +143,43 @@ namespace NtApiDotNet
         NonPagedPoolCacheAlignedMustS
     }
 
+    /// <summary>
+    /// Native structure used for getting type information.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ObjectTypeInformation
+    {
+        public UnicodeStringOut Name;
+        public uint TotalNumberOfObjects;
+        public uint TotalNumberOfHandles;
+        public uint TotalPagedPoolUsage;
+        public uint TotalNonPagedPoolUsage;
+        public uint TotalNamePoolUsage;
+        public uint TotalHandleTableUsage;
+        public uint HighWaterNumberOfObjects;
+        public uint HighWaterNumberOfHandles;
+        public uint HighWaterPagedPoolUsage;
+        public uint HighWaterNonPagedPoolUsage;
+        public uint HighWaterNamePoolUsage;
+        public uint HighWaterHandleTableUsage;
+        public AttributeFlags InvalidAttributes;
+        public GenericMapping GenericMapping;
+        public uint ValidAccess;
+        public byte SecurityRequired;
+        public byte MaintainHandleCount;
+        public ushort MaintainTypeList;
+        public PoolType PoolType;
+        public uint PagedPoolUsage;
+        public uint NonPagedPoolUsage;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ObjectAllTypesInformation
+    {
+        public int NumberOfTypes;
+        //ObjectTypeInformation TypeInformation; // Type Info list
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
