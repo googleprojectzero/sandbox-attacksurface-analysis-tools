@@ -17,10 +17,10 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
     /// <summary>
     /// Access rights for ALPC
     /// </summary>
-#pragma warning disable 1591
     [Flags]
     public enum AlpcAccessRights : uint
     {
@@ -80,6 +80,16 @@ namespace NtApiDotNet
         ConnectionRequest = 10,
     }
 
+    [Flags]
+    public enum AlpcMessageTypeFlags
+    {
+        None = 0,
+        Unknown1000 = 0x1000,
+        RequiresReply = 0x2000,
+        Unknown4000 = 0x4000,
+        Unknown8000 = 0x8000,
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public class AlpcPortMessage
     {
@@ -99,9 +109,9 @@ namespace NtApiDotNet
         public struct PortMessageUnion2
         {
             [FieldOffset(0)]
-            public short Type;
+            public ushort Type;
             [FieldOffset(2)]
-            public short DataInfoOffset;
+            public ushort DataInfoOffset;
             [FieldOffset(0)]
             public int ZeroInit;
         }
@@ -407,6 +417,7 @@ namespace NtApiDotNet
         SyncRequest = 0x20000,
         WaitUserMode = 0x100000,
         WaitAlertable = 0x200000,
+        Unknown40000000 = 0x40000000,
         Wow64Call = 0x80000000
     }
 

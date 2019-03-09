@@ -197,6 +197,16 @@ namespace NtApiDotNet
         public AlpcMessageType MessageType => (AlpcMessageType)(Header.u2.Type & 0xFF);
 
         /// <summary>
+        /// Get additional flags on message type.
+        /// </summary>
+        public AlpcMessageTypeFlags MessageTypeFlags => (AlpcMessageTypeFlags)(Header.u2.Type & 0xFF00);
+
+        /// <summary>
+        /// Indicates that the message requires a reply (otherwise things can leak).
+        /// </summary>
+        public bool RequiresReply => (MessageTypeFlags & AlpcMessageTypeFlags.RequiresReply) != 0;
+
+        /// <summary>
         /// Get direct status for the message.
         /// </summary>
         /// <returns>The direct status for the message. Returns STATUS_PENDING if the message is yet to be processed.</returns>
