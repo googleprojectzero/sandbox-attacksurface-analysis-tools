@@ -44,6 +44,9 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AccessMask.cs" />
+    <Compile Include="Ace.cs" />
+    <Compile Include="Acl.cs" />
     <Compile Include="AlpcMessage.cs" />
     <Compile Include="AlpcMessageAttributes.cs" />
     <Compile Include="AlpcPortSection.cs" />
@@ -72,6 +75,8 @@
     <Compile Include="Forms\SecurityDescriptorViewerForm.Designer.cs">
       <DependentUpon>SecurityDescriptorViewerForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="GenericMapping.cs" />
+    <Compile Include="MandatoryLabelAce.cs" />
     <Compile Include="Ndr\IMemoryReader.cs" />
     <Compile Include="Ndr\NdrComProxyDefinition.cs" />
     <Compile Include="Ndr\NdrFormatter.cs" />
@@ -106,6 +111,7 @@
     <Compile Include="NtResourceManager.cs" />
     <Compile Include="NtResult.cs" />
     <Compile Include="NtSectionNative.cs" />
+    <Compile Include="NtSecurityNative.cs" />
     <Compile Include="NtSystemInfoNative.cs" />
     <Compile Include="NtTransactionManager.cs" />
     <Compile Include="NtTransactionManagerUtils.cs" />
