@@ -184,13 +184,6 @@ namespace NtApiDotNet
         }
     }
 
-    [Flags]
-    public enum AlpcSecurityAttributeFlags
-    {
-        None = 0,
-        CreateHandle = 0x20000,
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     public struct AlpcHandle
     {
@@ -227,9 +220,11 @@ namespace NtApiDotNet
         AllAttributes = WorkOnBehalfOf | Direct | Token | Handle | Context | View | Security
     }
 
+    [Flags]
     public enum AlpcSecurityAttrFlags
     {
         None = 0,
+        ReleaseHandle = 0x10000,
         CreateHandle = 0x20000
     }
 
@@ -343,8 +338,17 @@ namespace NtApiDotNet
     public enum AlpcDataViewAttrFlags
     {
         None = 0,
-        Unknown10000 = 0x10000, // Mabe autorelease and unmap existing?
-        Unknown20000 = 0x20000,
+        /// <summary>
+        /// Use in a reply to release the view.
+        /// </summary>
+        ReleaseView = 0x10000,
+        /// <summary>
+        /// Automatically release the view once it's passed to the receiver. 
+        /// </summary>
+        AutoRelease = 0x20000,
+        /// <summary>
+        /// Make the data view secure.
+        /// </summary>
         Secure = 0x40000
     }
 
