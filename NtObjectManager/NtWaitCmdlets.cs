@@ -32,7 +32,7 @@ namespace NtObjectManager
     ///   <code>$to = Get-NtWaitTimeout Infinite</code>
     ///   <para>Get a wait timeout representing infinity.</para>
     /// </example>
-    [Cmdlet("Get", "NtWaitTimeout")]
+    [Cmdlet(VerbsCommon.Get, "NtWaitTimeout")]
     [OutputType(typeof(NtStatus))]
     public class GetNtWaitTimeout : Cmdlet
     {

@@ -100,7 +100,7 @@ namespace NtObjectManager
     ///   </para>
     /// </example>
     /// <example>
-    ///   <code>$mutant = New-NtEvent -InitialState $true</code>
+    ///   <code>$obj = New-NtEvent -InitialState $true</code>
     ///   <para>Create a new anonymous event object with it initially set.</para>
     /// </example>
     /// <example>
