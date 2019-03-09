@@ -77,7 +77,10 @@
       <DependentUpon>SecurityDescriptorViewerForm.cs</DependentUpon>
     </Compile>
     <Compile Include="GenericMapping.cs" />
+    <Compile Include="INtTransaction.cs" />
     <Compile Include="MandatoryLabelAce.cs" />
+    <Compile Include="MappedFile.cs" />
+    <Compile Include="MemoryInformation.cs" />
     <Compile Include="Ndr\IMemoryReader.cs" />
     <Compile Include="Ndr\NdrComProxyDefinition.cs" />
     <Compile Include="Ndr\NdrFormatter.cs" />
@@ -97,17 +100,20 @@
     <Compile Include="NtDebugNative.cs" />
     <Compile Include="NtDirectoryNative.cs" />
     <Compile Include="NtEnlistment.cs" />
+    <Compile Include="NtEnlistmentNative.cs" />
     <Compile Include="NtEventNative.cs" />
     <Compile Include="NtFileNative.cs" />
     <Compile Include="NtGeneric.cs" />
     <Compile Include="NtHandle.cs" />
     <Compile Include="NtIoCompletionNative.cs" />
+    <Compile Include="NtJobNative.cs" />
     <Compile Include="NtKeyNative.cs" />
     <Compile Include="NtKeyUtils.cs" />
     <Compile Include="NtKeyValue.cs" />
     <Compile Include="NtLdr.cs" />
     <Compile Include="NtLdrNative.cs" />
     <Compile Include="NtMappedSection.cs" />
+    <Compile Include="NtMutantNative.cs" />
     <Compile Include="NtObjectNative.cs" />
     <Compile Include="NtObjectWithDuplicate.cs" />
     <Compile Include="NtObjectWithDuplicateAndInfo.cs" />
@@ -115,15 +121,20 @@
     <Compile Include="NtProcessNative.cs" />
     <Compile Include="NtRegistryTransactionNative.cs" />
     <Compile Include="NtResourceManager.cs" />
+    <Compile Include="NtResourceManagerNative.cs" />
     <Compile Include="NtResult.cs" />
     <Compile Include="NtSectionNative.cs" />
     <Compile Include="NtSecurityNative.cs" />
     <Compile Include="NtSemaphoreNative.cs" />
     <Compile Include="NtSymbolicLinkNative.cs" />
     <Compile Include="NtSystemInfoNative.cs" />
+    <Compile Include="NtTokenNative.cs" />
     <Compile Include="NtTransactionManager.cs" />
+    <Compile Include="NtTransactionManagerNative.cs" />
     <Compile Include="NtTransactionManagerUtils.cs" />
+    <Compile Include="NtTransactionNative.cs" />
     <Compile Include="NtTypeFactory.cs" />
+    <Compile Include="NtVirtualMemoryNative.cs" />
     <Compile Include="ReparseBuffer.cs" />
     <Compile Include="NtAlpc.cs" />
     <Compile Include="NtAtom.cs" />
@@ -181,9 +192,11 @@
     <Compile Include="SecurityQualityOfService.cs" />
     <Compile Include="Sid.cs" />
     <Compile Include="ThreadImpersonationContext.cs" />
+    <Compile Include="TokenPrivilege.cs" />
     <Compile Include="UnicodeString.cs" />
     <Compile Include="NtObjectUtils.cs" />
     <Compile Include="NtIoControlCode.cs" />
+    <Compile Include="UserGroup.cs" />
     <Compile Include="Win32\AppContainerProfile.cs" />
     <Compile Include="Win32\ExecutableManifest.cs" />
     <Compile Include="Win32\LogonUtils.cs" />
