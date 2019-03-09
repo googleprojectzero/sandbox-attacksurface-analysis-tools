@@ -101,6 +101,7 @@
     <Compile Include="NtFileNative.cs" />
     <Compile Include="NtGeneric.cs" />
     <Compile Include="NtHandle.cs" />
+    <Compile Include="NtIoCompletionNative.cs" />
     <Compile Include="NtKeyNative.cs" />
     <Compile Include="NtKeyUtils.cs" />
     <Compile Include="NtKeyValue.cs" />
