@@ -177,7 +177,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the owner of the mutant.
         /// </summary>
-        public ClientIdStruct Owner => Query<MutantOwnerInformation>(MutantInformationClass.MutantOwnerInformation).ClientId;
+        public ClientId Owner => new ClientId(Query<MutantOwnerInformation>(MutantInformationClass.MutantOwnerInformation).ClientId);
         /// <summary>
         /// Get current count.
         /// </summary>

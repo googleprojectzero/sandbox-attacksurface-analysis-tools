@@ -512,6 +512,17 @@ namespace NtApiDotNet
             UniqueProcess = new IntPtr(pid);
             UniqueThread = new IntPtr(tid);
         }
+
+        public ClientId(ClientIdStruct cid)
+        {
+            UniqueProcess = cid.UniqueProcess;
+            UniqueThread = cid.UniqueThread;
+        }
+
+        public override string ToString()
+        {
+            return $"PID: {UniqueProcess.ToInt32()} - TID: {UniqueThread.ToInt32()}";
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
