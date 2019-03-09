@@ -92,6 +92,7 @@
     <Compile Include="NtAlpcNative.cs" />
     <Compile Include="NtAlpcUtils.cs" />
     <Compile Include="NtAsyncResult.cs" />
+    <Compile Include="NtAtomNative.cs" />
     <Compile Include="NtDirectoryNative.cs" />
     <Compile Include="NtEnlistment.cs" />
     <Compile Include="NtEventNative.cs" />
