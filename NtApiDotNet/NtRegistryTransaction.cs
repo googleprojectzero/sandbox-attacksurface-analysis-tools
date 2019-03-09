@@ -12,58 +12,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System;
-using System.Runtime.InteropServices;
-
 namespace NtApiDotNet
 {
-#pragma warning disable 1591
-    [Flags]
-    public enum RegistryTransactionAccessRights : uint
-    {
-        QueryInformation = 0x01,
-        SetInformation = 0x02,
-        Enlist = 0x04,
-        Commit = 0x08,
-        Rollback = 0x10,
-        Propagate = 0x20,
-        GenericRead = GenericAccessRights.GenericRead,
-        GenericWrite = GenericAccessRights.GenericWrite,
-        GenericExecute = GenericAccessRights.GenericExecute,
-        GenericAll = GenericAccessRights.GenericAll,
-        Delete = GenericAccessRights.Delete,
-        ReadControl = GenericAccessRights.ReadControl,
-        WriteDac = GenericAccessRights.WriteDac,
-        WriteOwner = GenericAccessRights.WriteOwner,
-        Synchronize = GenericAccessRights.Synchronize,
-        MaximumAllowed = GenericAccessRights.MaximumAllowed,
-        AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
-    }
-
-    public static partial class NtSystemCalls
-    {        
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCreateRegistryTransaction(out SafeKernelObjectHandle Handle, RegistryTransactionAccessRights DesiredAccess,
-            ObjectAttributes ObjectAttributes, int Flags);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtOpenRegistryTransaction(out SafeKernelObjectHandle Handle, RegistryTransactionAccessRights DesiredAccess,
-            ObjectAttributes ObjectAttributes);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCommitRegistryTransaction(SafeKernelObjectHandle Handle, bool Wait);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtRollbackRegistryTransaction(SafeKernelObjectHandle Handle, bool Wait);
-    }
-#pragma warning restore 1591
-
     /// <summary>
     /// Class to represent a registry transaction object
     /// </summary>
     [NtType("RegistryTransaction")]
     public sealed class NtRegistryTransaction : NtObjectWithDuplicate<NtRegistryTransaction, RegistryTransactionAccessRights>, INtTransaction
     {
+        #region Constructors
         internal NtRegistryTransaction(SafeKernelObjectHandle handle) : base(handle)
         {
         }
@@ -80,7 +37,9 @@ namespace NtApiDotNet
                 return NtRegistryTransaction.Open(obj_attributes, desired_access, throw_on_error);
             }
         }
+        #endregion
 
+        #region Static Methods
         /// <summary>
         /// Create a transaction
         /// </summary>
@@ -90,8 +49,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtRegistryTransaction> Create(ObjectAttributes object_attributes, RegistryTransactionAccessRights desired_access, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtCreateRegistryTransaction(out handle,
+            return NtSystemCalls.NtCreateRegistryTransaction(out SafeKernelObjectHandle handle,
                 desired_access, object_attributes, 0).CreateResult(throw_on_error, () => new NtRegistryTransaction(handle));
         }
 
@@ -163,8 +121,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtRegistryTransaction> Open(ObjectAttributes object_attributes, RegistryTransactionAccessRights desired_access, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtOpenRegistryTransaction(out handle, 
+            return NtSystemCalls.NtOpenRegistryTransaction(out SafeKernelObjectHandle handle,
                 desired_access, object_attributes).CreateResult(throw_on_error, () => new NtRegistryTransaction(handle));
         }
 
@@ -188,6 +145,10 @@ namespace NtApiDotNet
         {
             return Open(path, null, RegistryTransactionAccessRights.MaximumAllowed);
         }
+
+        #endregion
+
+        #region Public Methods
 
         /// <summary>
         /// Commit the transaction
@@ -213,6 +174,7 @@ namespace NtApiDotNet
         {
             return new TransactionContext(Handle);
         }
-    }
 
+        #endregion
+    }
 }

@@ -112,6 +112,7 @@
     <Compile Include="NtObjectWithDuplicateAndInfo.cs" />
     <Compile Include="NtPartitionNative.cs" />
     <Compile Include="NtProcessNative.cs" />
+    <Compile Include="NtRegistryTransactionNative.cs" />
     <Compile Include="NtResourceManager.cs" />
     <Compile Include="NtResult.cs" />
     <Compile Include="NtSectionNative.cs" />
