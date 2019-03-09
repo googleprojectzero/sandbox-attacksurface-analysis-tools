@@ -29,7 +29,14 @@ namespace NtApiDotNet
             // If creating a secure buffer then touch all pages. This is IMHO incredibly unintuitive.
             if (Flags.HasFlag(AlpcDataViewAttrFlags.Secure))
             {
-                FillBuffer(0);
+                int page_size = NtSystemInfo.PageSize;
+                long page_count = (view_size + page_size - 1) / page_size;
+                ulong offset = 0;
+                for (long i = 0; i < page_count; ++i)
+                {
+                    Write(offset, Read<byte>(offset));
+                    offset += (uint)page_size;
+                }
             }
             SectionHandle = section_handle;
         }
