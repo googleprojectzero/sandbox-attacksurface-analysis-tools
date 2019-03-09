@@ -55,6 +55,7 @@
     <Compile Include="CachedEnumerable.cs" />
     <Compile Include="CreateUserProcess.cs" />
     <Compile Include="CreateUserProcessResult.cs" />
+    <Compile Include="DebugEvent.cs" />
     <Compile Include="DisposableList.cs" />
     <Compile Include="EaBuffer.cs" />
     <Compile Include="Forms\AclViewerControl.cs">
@@ -93,6 +94,7 @@
     <Compile Include="NtAlpcUtils.cs" />
     <Compile Include="NtAsyncResult.cs" />
     <Compile Include="NtAtomNative.cs" />
+    <Compile Include="NtDebugNative.cs" />
     <Compile Include="NtDirectoryNative.cs" />
     <Compile Include="NtEnlistment.cs" />
     <Compile Include="NtEventNative.cs" />
@@ -188,6 +190,7 @@
     <Compile Include="Win32\SafeCoTaskMemHandle.cs" />
     <Compile Include="Win32\SafeLocalAllocHandle.cs" />
     <Compile Include="Win32\SymbolResolver.cs" />
+    <Compile Include="Win32\Win32Debug.cs" />
     <Compile Include="Win32\Win32Error.cs" />
     <Compile Include="Win32\Win32Utils.cs" />
     <Compile Include="Win32\Win32NativeMethods.cs" />

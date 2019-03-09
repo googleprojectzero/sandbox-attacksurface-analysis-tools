@@ -12,58 +12,18 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System;
-using System.Runtime.InteropServices;
-
 namespace NtApiDotNet
 {
-#pragma warning disable 1591
-    [Flags]
-    public enum DebugAccessRights : uint
-    {
-        ReadEvent = 0x1,
-        ProcessAssign = 0x2,
-        SetInformation = 0x4,
-        QueryInformation = 0x8,
-        GenericRead = GenericAccessRights.GenericRead,
-        GenericWrite = GenericAccessRights.GenericWrite,
-        GenericExecute = GenericAccessRights.GenericExecute,
-        GenericAll = GenericAccessRights.GenericAll,
-        Delete = GenericAccessRights.Delete,
-        ReadControl = GenericAccessRights.ReadControl,
-        WriteDac = GenericAccessRights.WriteDac,
-        WriteOwner = GenericAccessRights.WriteOwner,
-        Synchronize = GenericAccessRights.Synchronize,
-        MaximumAllowed = GenericAccessRights.MaximumAllowed,
-        AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
-    }
-
-    [Flags]
-    public enum DebugObjectFlags
-    {
-        None = 0,
-        Unknown1 = 1,
-    }
-
-    public static partial class NtSystemCalls
-    {
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtDebugActiveProcess(SafeKernelObjectHandle ProcessHandle, SafeKernelObjectHandle DebugHandle);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCreateDebugObject(out SafeKernelObjectHandle DebugHandle, 
-            DebugAccessRights DesiredAccess, [In] ObjectAttributes ObjectAttributes, DebugObjectFlags Flags);
-    }
-#pragma warning restore 1591
-
     /// <summary>
     /// Class representing a NT Debug object
     /// </summary>
     [NtType("DebugObject")]
     public class NtDebug : NtObjectWithDuplicate<NtDebug, DebugAccessRights>
     {
+        #region Constructors
         internal NtDebug(SafeKernelObjectHandle handle) : base(handle)
         {
+            System.Console.WriteLine(System.Runtime.InteropServices.Marshal.SizeOf(typeof(DbgUiWaitStatusChange)));
         }
 
         internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
@@ -78,7 +38,9 @@ namespace NtApiDotNet
                 return NtDebug.Open(obj_attributes, desired_access, throw_on_error);
             }
         }
+        #endregion
 
+        #region Static Methods
         /// <summary>
         /// Create a debug object
         /// </summary>
@@ -116,8 +78,7 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtDebug> Create(ObjectAttributes object_attributes, DebugAccessRights desired_access, DebugObjectFlags flags, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtCreateDebugObject(out handle, desired_access, object_attributes, flags).CreateResult(throw_on_error, () => new NtDebug(handle));
+            return NtSystemCalls.NtCreateDebugObject(out SafeKernelObjectHandle handle, desired_access, object_attributes, flags).CreateResult(throw_on_error, () => new NtDebug(handle));
         }
 
         /// <summary>
@@ -166,5 +127,243 @@ namespace NtApiDotNet
         {
             return Create(object_attributes, DebugAccessRights.MaximumAllowed, DebugObjectFlags.None, throw_on_error);
         }
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Attach to an active process.
+        /// </summary>
+        /// <param name="process">The process to debug.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus Attach(NtProcess process, bool throw_on_error)
+        {
+            return NtSystemCalls.NtDebugActiveProcess(process.Handle, Handle).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Attach to an active process.
+        /// </summary>
+        /// <param name="pid">The process ID to debug.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus Attach(int pid, bool throw_on_error)
+        {
+            using (var process = NtProcess.Open(pid, ProcessAccessRights.SuspendResume, throw_on_error))
+            {
+                if (!process.IsSuccess)
+                {
+                    return process.Status;
+                }
+
+                return Attach(process.Result, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Attach to an active process.
+        /// </summary>
+        /// <param name="process">The process to debug.</param>
+        public void Attach(NtProcess process)
+        {
+            Attach(process, true);
+        }
+
+        /// <summary>
+        /// Attach to an active process.
+        /// </summary>
+        /// <param name="pid">The process ID to debug.</param>
+        public void Attach(int pid)
+        {
+            Attach(pid, true);
+        }
+
+        /// <summary>
+        /// Detach a process from this debug object.
+        /// </summary>
+        /// <param name="process">The process to remove.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus Detach(NtProcess process, bool throw_on_error)
+        {
+            return NtSystemCalls.NtRemoveProcessDebug(process.Handle, Handle).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Detach a process from this debug object.
+        /// </summary>
+        /// <param name="process">The process to remove.</param>
+        public void Detach(NtProcess process)
+        {
+            Detach(process, true);
+        }
+
+        /// <summary>
+        /// Detach a process from this debug object.
+        /// </summary>
+        /// <param name="pid">The process ID to remove.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus Detach(int pid, bool throw_on_error)
+        {
+            using (var process = NtProcess.Open(pid, ProcessAccessRights.SuspendResume, throw_on_error))
+            {
+                if (!process.IsSuccess)
+                {
+                    return process.Status;
+                }
+
+                return Detach(process.Result, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Detach a process from this debug object.
+        /// </summary>
+        /// <param name="pid">The process ID to remove.</param>
+        public void Detach(int pid)
+        {
+            Detach(pid, true);
+        }
+
+        /// <summary>
+        /// Set kill process on close flag.
+        /// </summary>
+        /// <param name="kill_on_close">The flag state.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetKillOnClose(bool kill_on_close, bool throw_on_error)
+        {
+            DebugObjectFlags flags = kill_on_close ? DebugObjectFlags.KillOnClose : DebugObjectFlags.None;
+            using (var buffer = ((int)flags).ToBuffer())
+            {
+                return NtSystemCalls.NtSetInformationDebugObject(Handle, DebugObjectInformationClass.DebugObjectKillProcessOnExitInformation,
+                    buffer, buffer.Length, out int return_length).ToNtException(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Set kill process on close flag.
+        /// </summary>
+        /// <param name="kill_on_close">The flag state.</param>
+        public void SetKillOnClose(bool kill_on_close)
+        {
+            SetKillOnClose(kill_on_close, true);
+        }
+
+        /// <summary>
+        /// Continue the debugged process.
+        /// </summary>
+        /// <param name="client_id">The client ID for the process and thread IDs.</param>
+        /// <param name="continue_status">The continue status code.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus Continue(ClientId client_id, NtStatus continue_status, bool throw_on_error)
+        {
+            return NtSystemCalls.NtDebugContinue(Handle, client_id, continue_status).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Continue the debugged process.
+        /// </summary>
+        /// <param name="pid">The process ID to continue.</param>
+        /// <param name="tid">The thread ID to continue.</param>
+        /// <param name="continue_status">The continue status code.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus Continue(int pid, int tid, NtStatus continue_status, bool throw_on_error)
+        {
+            return Continue(new ClientId(pid, tid), continue_status, throw_on_error);
+        }
+
+        /// <summary>
+        /// Continue the debugged process.
+        /// </summary>
+        /// <param name="client_id">The client ID for the process and thread IDs.</param>
+        /// <param name="continue_status">The continue status code.</param>
+        public void Continue(ClientId client_id, NtStatus continue_status)
+        {
+            Continue(client_id, continue_status, true);
+        }
+
+        /// <summary>
+        /// Continue the debugged process.
+        /// </summary>
+        /// <param name="pid">The process ID to continue.</param>
+        /// <param name="tid">The thread ID to continue.</param>
+        /// <param name="continue_status">The continue status code.</param>
+        public void Continue(int pid, int tid, NtStatus continue_status)
+        {
+            Continue(pid, tid, continue_status, true);
+        }
+
+        /// <summary>
+        /// Continue the debugged process with a success code.
+        /// </summary>
+        /// <param name="pid">The process ID to continue.</param>
+        /// <param name="tid">The thread ID to continue.</param>
+        public void Continue(int pid, int tid)
+        {
+            Continue(pid, tid, NtStatus.DBG_CONTINUE);
+        }
+
+        /// <summary>
+        /// Wait for a debug event.
+        /// </summary>
+        /// <param name="alertable">True to set the thread as alertable.</param>
+        /// <param name="timeout">Wait timeout.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The debug event.</returns>
+        public NtResult<DebugEvent> WaitForDebugEvent(bool alertable, NtWaitTimeout timeout, bool throw_on_error)
+        {
+            using (var buffer = new SafeStructureInOutBuffer<DbgUiWaitStatusChange>())
+            {
+                return NtSystemCalls.NtWaitForDebugEvent(Handle, alertable, timeout.ToLargeInteger(), buffer)
+                    .CreateResult(throw_on_error, () => DebugEvent.FromDebugEvent(buffer.Result, this));
+            }
+        }
+
+        /// <summary>
+        /// Wait for a debug event.
+        /// </summary>
+        /// <param name="alertable">True to set the thread as alertable.</param>
+        /// <param name="timeout">Wait timeout.</param>
+        /// <returns>The debug event.</returns>
+        public DebugEvent WaitForDebugEvent(bool alertable, NtWaitTimeout timeout)
+        {
+            return WaitForDebugEvent(alertable, timeout, true).Result;
+        }
+
+        /// <summary>
+        /// Wait for a debug event.
+        /// </summary>
+        /// <param name="timeout">Wait timeout.</param>
+        /// <returns>The debug event.</returns>
+        public DebugEvent WaitForDebugEvent(NtWaitTimeout timeout)
+        {
+            return WaitForDebugEvent(false, timeout);
+        }
+
+        /// <summary>
+        /// Wait for a debug event.
+        /// </summary>
+        /// <param name="timeout_ms">Wait timeout in milliseconds.</param>
+        /// <returns>The debug event.</returns>
+        public DebugEvent WaitForDebugEvent(long timeout_ms)
+        {
+            return WaitForDebugEvent(false, NtWaitTimeout.FromMilliseconds(timeout_ms));
+        }
+
+        /// <summary>
+        /// Wait for a debug event.
+        /// </summary>
+        /// <returns>The debug event.</returns>
+        public DebugEvent WaitForDebugEvent()
+        {
+            return WaitForDebugEvent(false, NtWaitTimeout.Infinite);
+        }
+
+        #endregion
     }
 }

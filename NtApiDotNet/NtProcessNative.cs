@@ -502,6 +502,16 @@ namespace NtApiDotNet
     {
         public IntPtr UniqueProcess;
         public IntPtr UniqueThread;
+
+        public ClientId()
+        {
+        }
+
+        public ClientId(int pid, int tid)
+        {
+            UniqueProcess = new IntPtr(pid);
+            UniqueThread = new IntPtr(tid);
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
