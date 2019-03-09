@@ -12,64 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
-#pragma warning disable 1591
-    [Flags]
-    public enum MutantAccessRights : uint
-    {
-        None = 0,
-        QueryState = 1,
-        GenericRead = GenericAccessRights.GenericRead,
-        GenericWrite = GenericAccessRights.GenericWrite,
-        GenericExecute = GenericAccessRights.GenericExecute,
-        GenericAll = GenericAccessRights.GenericAll,
-        Delete = GenericAccessRights.Delete,
-        ReadControl = GenericAccessRights.ReadControl,
-        WriteDac = GenericAccessRights.WriteDac,
-        WriteOwner = GenericAccessRights.WriteOwner,
-        Synchronize = GenericAccessRights.Synchronize,
-        MaximumAllowed = GenericAccessRights.MaximumAllowed,
-        AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
-    }
-
-    public enum MutantInformationClass
-    {
-        MutantBasicInformation,
-        MutantOwnerInformation
-    }
-
-    public static partial class NtSystemCalls
-    {
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCreateMutant(out SafeKernelObjectHandle MutantHandle, MutantAccessRights DesiredAccess, 
-            ObjectAttributes ObjectAttributes, bool InitialOwner);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtOpenMutant(out SafeKernelObjectHandle MutantHandle, MutantAccessRights DesiredAccess, 
-            ObjectAttributes ObjectAttributes);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtReleaseMutant(SafeKernelObjectHandle MutantHandle, out uint PreviousState);
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtQueryMutant(SafeKernelObjectHandle MutantHandle, 
-            MutantInformationClass MutantInformationClass, 
-            SafeBuffer MutantInformation, 
-            int MutantInformationLength, 
-            out int ResultLength);
-    }
-#pragma warning restore 1591
-
     /// <summary>
     /// Class representing a NT Mutant object
     /// </summary>
     [NtType("Mutant")]
     public class NtMutant : NtObjectWithDuplicateAndInfo<NtMutant, MutantAccessRights, MutantInformationClass, MutantInformationClass>
     {
+        #region Constructors
         internal NtMutant(SafeKernelObjectHandle handle) : base(handle)
         {
         }
@@ -86,7 +39,9 @@ namespace NtApiDotNet
                 return NtMutant.Open(obj_attributes, desired_access, throw_on_error);
             }
         }
+        #endregion
 
+        #region Static Methods
         /// <summary>
         /// Create a new mutant
         /// </summary>
@@ -182,15 +137,26 @@ namespace NtApiDotNet
         {
             return NtSystemCalls.NtOpenMutant(out SafeKernelObjectHandle handle, desired_access, object_attributes).CreateResult(throw_on_error, () => new NtMutant(handle));
         }
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Release the mutant
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The previous release count</returns>
+        public NtResult<int> Release(bool throw_on_error)
+        {
+            return NtSystemCalls.NtReleaseMutant(Handle, out int ret).CreateResult(throw_on_error, () => ret);
+        }
 
         /// <summary>
         /// Release the mutant
         /// </summary>
         /// <returns>The previous release count</returns>
-        public uint Release()
+        public int Release()
         {
-            NtSystemCalls.NtReleaseMutant(Handle, out uint ret).ToNtException();
-            return ret;
+            return Release(true).Result;
         }
 
         /// <summary>
@@ -204,5 +170,27 @@ namespace NtApiDotNet
         {
             return NtSystemCalls.NtQueryMutant(Handle, info_class, buffer, buffer.GetLength(), out return_length);
         }
+        #endregion
+
+        #region Public Properties
+
+        /// <summary>
+        /// Get the owner of the mutant.
+        /// </summary>
+        public ClientIdStruct Owner => Query<MutantOwnerInformation>(MutantInformationClass.MutantOwnerInformation).ClientId;
+        /// <summary>
+        /// Get current count.
+        /// </summary>
+        public int CurrentCount => Query<MutantBasicInformation>(MutantInformationClass.MutantBasicInformation).CurrentCount;
+        /// <summary>
+        /// Get wether mutant owned by current thread.
+        /// </summary>
+        public bool OwnedByCaller => Query<MutantBasicInformation>(MutantInformationClass.MutantBasicInformation).OwnedByCaller != 0;
+        /// <summary>
+        /// Get whether mutant is abandoned.
+        /// </summary>
+        public bool AbandonedState => Query<MutantBasicInformation>(MutantInformationClass.MutantBasicInformation).AbandonedState != 0;
+
+        #endregion
     }
 }
