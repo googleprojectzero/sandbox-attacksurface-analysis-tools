@@ -97,7 +97,9 @@ namespace NtApiDotNet
                     return new CreateProcessDebugEvent(debug_event, debug);
                 case DbgState.CreateThreadStateChange:
                     return new CreateThreadDebugEvent(debug_event, debug);
+                case DbgState.BreakpointStateChange:
                 case DbgState.ExceptionStateChange:
+                case DbgState.SingleStepStateChange:
                     return new ExceptionDebugEvent(debug_event, debug);
                 case DbgState.ExitProcessStateChange:
                     return new ExitProcessDebugEvent(debug_event, debug);
