@@ -245,18 +245,34 @@ namespace NtApiDotNet
         /// </summary>
         public static AccessMask Empty { get { return new AccessMask(); } }
 
-        string IFormattable.ToString(string format, IFormatProvider formatProvider)
-        {
-            return Access.ToString(format, formatProvider);
-        }
-
         /// <summary>
         /// Overridden ToString method.
         /// </summary>
         /// <returns>The access mask.</returns>
         public override string ToString()
         {
-            return $"{Access:X08}";
+            return ToString("X08");
+        }
+
+        /// <summary>
+        /// ToString method.
+        /// </summary>
+        /// <param name="format">Format code for the access mask.</param>
+        /// <returns>The formatting string.</returns>
+        public string ToString(string format)
+        {
+            return ToString(format, null);
+        }
+
+        /// <summary>
+        /// ToString method.
+        /// </summary>
+        /// <param name="format">Format code for the access mask.</param>
+        /// <param name="formatProvider">The format provider.</param>
+        /// <returns>The formatting string.</returns>
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            return Access.ToString(format, formatProvider);
         }
 
         bool IEquatable<AccessMask>.Equals(AccessMask other)
