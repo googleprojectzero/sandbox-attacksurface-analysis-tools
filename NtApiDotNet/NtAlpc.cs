@@ -614,6 +614,61 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create a security context.
+        /// </summary>
+        /// <param name="flags">Flags for the creation.</param>
+        /// <param name="security_quality_of_service">Security quality of service.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The created security context.</returns>
+        public NtResult<SafeAlpcSecurityContextHandle> CreateSecurityContext(AlpcCreateSecurityContextFlags flags, 
+            SecurityQualityOfService security_quality_of_service, bool throw_on_error)
+        {
+            using (var list = new DisposableList())
+            {
+                var sqos = security_quality_of_service == null ? SafeHGlobalBuffer.Null : list.AddResource(security_quality_of_service.ToBuffer());
+                AlpcSecurityAttr attr = new AlpcSecurityAttr()
+                {
+                    QoS = sqos.DangerousGetHandle()
+                };
+                return NtSystemCalls.NtAlpcCreateSecurityContext(Handle, flags, ref attr)
+                    .CreateResult(throw_on_error, ()
+                            => new SafeAlpcSecurityContextHandle(attr.ContextHandle,
+                            true, this, AlpcSecurityAttrFlags.None, security_quality_of_service));
+            }
+        }
+
+        /// <summary>
+        /// Create a security context.
+        /// </summary>
+        /// <param name="flags">Flags for the creation.</param>
+        /// <param name="security_quality_of_service">Security quality of service.</param>
+        /// <returns>The created security context.</returns>
+        public SafeAlpcSecurityContextHandle CreateSecurityContext(AlpcCreateSecurityContextFlags flags,
+            SecurityQualityOfService security_quality_of_service)
+        {
+            return CreateSecurityContext(flags, security_quality_of_service, true).Result;
+        }
+
+        /// <summary>
+        /// Create a security context.
+        /// </summary>
+        /// <param name="security_quality_of_service">Security quality of service.</param>
+        /// <returns>The created security context.</returns>
+        public SafeAlpcSecurityContextHandle CreateSecurityContext(SecurityQualityOfService security_quality_of_service)
+        {
+            return CreateSecurityContext(AlpcCreateSecurityContextFlags.None, security_quality_of_service);
+        }
+
+        /// <summary>
+        /// Create a security context.
+        /// </summary>
+        /// <returns>The created security context.</returns>
+        public SafeAlpcSecurityContextHandle CreateSecurityContext()
+        {
+            return CreateSecurityContext(new SecurityQualityOfService(SecurityImpersonationLevel.Impersonation, SecurityContextTrackingMode.Static, false));
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>

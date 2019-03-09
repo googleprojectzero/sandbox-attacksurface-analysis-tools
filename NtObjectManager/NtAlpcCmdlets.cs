@@ -694,12 +694,14 @@ namespace NtObjectManager
         /// <para type="description">Create a handle attribute from a list of objects.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromParts")]
+        [Alias("os")]
         public NtObject[] Object { get; set; }
 
         /// <summary>
         /// <para type="description">Create a handle attribute from a list of handle entries.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromParts")]
+        [Alias("hs")]
         public AlpcHandleMessageAttributeEntry[] Handle { get; set; }
 
         /// <summary>
@@ -712,7 +714,15 @@ namespace NtObjectManager
         /// <para type="description">Add a data view attribute.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromParts")]
+        [Alias("dv")]
         public SafeAlpcDataViewBuffer DataView { get; set; }
+
+        /// <summary>
+        /// <para type="description">Automatically create a security context attribute with a specified security quality of service.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromParts")]
+        [Alias("sqos")]
+        public SecurityQualityOfService SecurityQualityOfService { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -745,6 +755,11 @@ namespace NtObjectManager
             if (DataView != null)
             {
                 attrs.Add(DataView.ToMessageAttribute());
+            }
+
+            if (SecurityQualityOfService != null)
+            {
+                attrs.Add(AlpcSecurityMessageAttribute.CreateHandleAttribute(SecurityQualityOfService));
             }
 
             return attrs;

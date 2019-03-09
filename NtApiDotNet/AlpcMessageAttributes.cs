@@ -191,6 +191,7 @@ namespace NtApiDotNet
             _attributes = new Dictionary<AlpcMessageAttributeFlags, AlpcMessageAttribute>();
             _handles = new DisposableList<NtObject>();
             DataView = new SafeAlpcDataViewBuffer();
+            SecurityContext = new SafeAlpcSecurityContextHandle();
         }
 
         /// <summary>
@@ -213,12 +214,9 @@ namespace NtApiDotNet
         /// </summary>
         public void Dispose()
         {
-            foreach (var attr in _attributes.Values)
-            {
-                attr.Dispose();
-            }
             _handles.Dispose();
             DataView.Dispose();
+            SecurityContext.Dispose();
         }
 
         /// <summary>
@@ -269,6 +267,11 @@ namespace NtApiDotNet
         /// </summary>
         public SafeAlpcDataViewBuffer DataView { get; private set; }
 
+        /// <summary>
+        /// Get the security context. If no security context this property is invalid.
+        /// </summary>
+        public SafeAlpcSecurityContextHandle SecurityContext { get; private set; }
+
         SafeAlpcMessageAttributesBuffer IMessageAttributes.ToSafeBuffer()
         {
             return SafeAlpcMessageAttributesBuffer.Create(AllocatedAttributes);
@@ -304,7 +307,8 @@ namespace NtApiDotNet
             }
             if (valid_attrs.HasFlag(AlpcMessageAttributeFlags.Security))
             {
-                AddAttribute<AlpcSecurityMessageAttribute>(buffer, port, message);
+                var attr = AddAttribute<AlpcSecurityMessageAttribute>(buffer, port, message);
+                SecurityContext = new SafeAlpcSecurityContextHandle(attr.ContextHandle, true, port, attr.Flags, attr.SecurityQoS);
             }
             if (valid_attrs.HasFlag(AlpcMessageAttributeFlags.View))
             {
@@ -322,7 +326,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Base class to represent a message attribute.
     /// </summary>
-    public abstract class AlpcMessageAttribute : IDisposable
+    public abstract class AlpcMessageAttribute
     {
         /// <summary>
         /// The flag for this attribute.
@@ -341,13 +345,6 @@ namespace NtApiDotNet
         internal abstract void ToSafeBuffer(SafeAlpcMessageAttributesBuffer buffer);
 
         internal abstract void FromSafeBuffer(SafeAlpcMessageAttributesBuffer buffer, NtAlpc port, AlpcMessage message);
-
-        /// <summary>
-        /// Dispose this message attribute.
-        /// </summary>
-        public virtual void Dispose()
-        {
-        }
     }
 
     /// <summary>
@@ -355,8 +352,6 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class AlpcSecurityMessageAttribute : AlpcMessageAttribute
     {
-        private NtAlpc _port;
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -365,10 +360,9 @@ namespace NtApiDotNet
         {
         }
 
-        internal AlpcSecurityMessageAttribute(AlpcSecurityAttr attr, NtAlpc port) : this()
+        internal AlpcSecurityMessageAttribute(AlpcSecurityAttr attr) : this()
         {
             FromStruct(attr);
-            _port = port;
         }
 
         /// <summary>
@@ -387,25 +381,18 @@ namespace NtApiDotNet
         public long ContextHandle { get; set; }
 
         /// <summary>
-        /// Dispose this message attribute.
+        /// Create an attribute which with create a handle automatically.
         /// </summary>
-        public override void Dispose()
+        /// <param name="security_quality_of_service">The security quality of service.</param>
+        /// <returns>The security message attribute.</returns>
+        public static AlpcSecurityMessageAttribute CreateHandleAttribute(SecurityQualityOfService security_quality_of_service)
         {
-            if (_port != null && !_port.Handle.IsClosed)
+            return new AlpcSecurityMessageAttribute()
             {
-                NtSystemCalls.NtAlpcDeleteSecurityContext(_port.Handle, AlpcDeleteSecurityContextFlags.None, ContextHandle);
-            }
-        }
-
-        /// <summary>
-        /// Revoke the security context attribute.
-        /// </summary>
-        public void Revoke()
-        {
-            if (_port != null && !_port.Handle.IsClosed)
-            {
-                NtSystemCalls.NtAlpcRevokeSecurityContext(_port.Handle, AlpcRevokeSecurityContextFlags.None, ContextHandle);
-            }
+                Flags = AlpcSecurityAttrFlags.CreateHandle,
+                SecurityQoS = security_quality_of_service,
+                ContextHandle = -2
+            };
         }
 
         internal void FromStruct(AlpcSecurityAttr attr)
@@ -430,7 +417,6 @@ namespace NtApiDotNet
 
         internal override void FromSafeBuffer(SafeAlpcMessageAttributesBuffer buffer, NtAlpc port, AlpcMessage message)
         {
-            _port = port;
             buffer.GetSecurityAttribute(this);
         }
     }
@@ -758,7 +744,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class representing a direct message attribute.
     /// </summary>
-    public sealed class AlpcDirectMessageAttribute : AlpcMessageAttribute, IDisposable
+    public sealed class AlpcDirectMessageAttribute : AlpcMessageAttribute
     {
         /// <summary>
         /// Constructor.

@@ -153,6 +153,7 @@
     <Compile Include="AnnontationAttributes.cs" />
     <Compile Include="SafeAlpcDataViewBuffer.cs" />
     <Compile Include="SafeAlpcPortSectionHandle.cs" />
+    <Compile Include="SafeAlpcSecurityContextHandle.cs" />
     <Compile Include="SafeBufferGeneric.cs" />
     <Compile Include="SafeBuffers.cs" />
     <Compile Include="SafeHGlobalBuffer.cs" />
