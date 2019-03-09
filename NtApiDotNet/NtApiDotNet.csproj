@@ -101,6 +101,7 @@
     <Compile Include="NtObjectNative.cs" />
     <Compile Include="NtObjectWithDuplicate.cs" />
     <Compile Include="NtObjectWithDuplicateAndInfo.cs" />
+    <Compile Include="NtPartitionNative.cs" />
     <Compile Include="NtProcessNative.cs" />
     <Compile Include="NtResourceManager.cs" />
     <Compile Include="NtResult.cs" />

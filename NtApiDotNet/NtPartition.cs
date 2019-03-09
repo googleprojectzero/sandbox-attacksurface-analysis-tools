@@ -12,74 +12,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System;
-using System.Runtime.InteropServices;
-
 namespace NtApiDotNet
 {
-#pragma warning disable 1591
-    [Flags]
-    public enum MemoryPartitionAccessRights : uint
-    {
-        None = 0,
-        Query = 1,
-        Modify = 2,
-        GenericRead = GenericAccessRights.GenericRead,
-        GenericWrite = GenericAccessRights.GenericWrite,
-        GenericExecute = GenericAccessRights.GenericExecute,
-        GenericAll = GenericAccessRights.GenericAll,
-        Delete = GenericAccessRights.Delete,
-        ReadControl = GenericAccessRights.ReadControl,
-        WriteDac = GenericAccessRights.WriteDac,
-        WriteOwner = GenericAccessRights.WriteOwner,
-        Synchronize = GenericAccessRights.Synchronize,
-        MaximumAllowed = GenericAccessRights.MaximumAllowed,
-        AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
-    }
-
-    public enum MemoryPartitionInformationClass
-    {
-        SystemMemoryPartitionInformation,
-        SystemMemoryPartitionMoveMemory,
-        SystemMemoryPartitionAddPagefile,
-        SystemMemoryPartitionCombineMemory,
-        SystemMemoryPartitionInitialAddMemory,
-        SystemMemoryPartitionGetMemoryEvents
-    }
-
-    public static partial class NtSystemCalls
-    {
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtCreatePartition(
-            SafeKernelObjectHandle ParentPartitionHandle,
-            out SafeKernelObjectHandle PartitionHandle,
-            AccessMask DesiredAccess,
-            [In] ObjectAttributes ObjectAttributes,
-            int PreferredNode
-            );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtOpenPartition(
-            out SafeKernelObjectHandle PartitionHandle,
-            AccessMask DesiredAccess,
-            [In] ObjectAttributes ObjectAttributes
-        );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtManagePartition(
-            MemoryPartitionInformationClass PartitionInformationClass,
-            SafeBuffer PartitionInformation,
-            int PartitionInformationLength
-            );
-    }
-#pragma warning restore 1591
-
     /// <summary>
     /// Class representing a NT Partition object
     /// </summary>
     [NtType("Partition")]
     public class NtPartition : NtObjectWithDuplicate<NtPartition, MemoryPartitionAccessRights>
     {
+        #region Constructors
         internal NtPartition(SafeKernelObjectHandle handle) : base(handle)
         {
         }
@@ -96,6 +37,9 @@ namespace NtApiDotNet
                 return NtPartition.Open(obj_attributes, desired_access, throw_on_error);
             }
         }
+        #endregion
+
+        #region Static Methods
 
         /// <summary>
         /// Create a partition object
@@ -147,5 +91,7 @@ namespace NtApiDotNet
         {
             return Open(object_attributes, desired_access, true).Result;
         }
+
+        #endregion
     }
 }

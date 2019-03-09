@@ -202,7 +202,7 @@ namespace NtApiDotNet
     [StructLayout(LayoutKind.Sequential)]
     public struct PsProtection
     {
-        private byte level;
+        private readonly byte level;
 
         public PsProtection(PsProtectedType type, PsProtectedSigner signer, bool audit)
         {
