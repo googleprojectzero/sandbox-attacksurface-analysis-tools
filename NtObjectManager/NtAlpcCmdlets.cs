@@ -14,7 +14,6 @@
 
 using NtApiDotNet;
 using System;
-using System.Collections;
 using System.Management.Automation;
 using System.Text;
 
@@ -713,7 +712,7 @@ namespace NtObjectManager
         /// <para type="description">Add a data view attribute.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromParts")]
-        public AlpcDataViewMessageAttribute DataView { get; set; }
+        public SafeAlpcDataViewBuffer DataView { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -745,7 +744,7 @@ namespace NtObjectManager
 
             if (DataView != null)
             {
-                attrs.Add(DataView);
+                attrs.Add(DataView.ToMessageAttribute());
             }
 
             return attrs;
@@ -849,7 +848,7 @@ namespace NtObjectManager
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.New, "NtAlpcDataView")]
-    [OutputType(typeof(AlpcDataViewMessageAttribute))]
+    [OutputType(typeof(SafeAlpcDataViewBuffer))]
     public class NewNtAlpcDataView : PSCmdlet
     {
         /// <summary>
