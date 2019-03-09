@@ -21,31 +21,32 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class AlpcPortSection : IDisposable
     {
-        #region Private Members
-        private readonly NtAlpc _port;
-        #endregion
-
         #region Public Properties
 
         /// <summary>
         /// Handle to the port section.
         /// </summary>
-        public long Handle { get; private set; }
+        public SafeAlpcPortSectionHandle Handle { get; private set; }
 
         /// <summary>
         /// Size of the port section.
         /// </summary>
         public long Size { get; }
 
+        /// <summary>
+        ///The actual section size.
+        /// </summary>
+        public long ActualSectionSize { get; }
+
         #endregion
 
         #region Constructors
 
-        internal AlpcPortSection(AlpcHandle handle, IntPtr size, NtAlpc port)
+        internal AlpcPortSection(AlpcHandle handle, IntPtr size, IntPtr actual_section_size, NtAlpc port)
         {
-            Handle = handle.Value;
+            Handle = new SafeAlpcPortSectionHandle(handle, true, port);
             Size = size.ToInt64();
-            _port = port;
+            ActualSectionSize = actual_section_size.ToInt64();
         }
 
         #endregion
@@ -58,15 +59,15 @@ namespace NtApiDotNet
         /// <param name="view_size">The section view size.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The section view attribute.</returns>
-        public NtResult<AlpcDataViewMessageAttribute> CreateSectionView(AlpcDataViewAttrFlags flags, long view_size, bool throw_on_error)
+        public NtResult<SafeAlpcDataViewBuffer> CreateSectionView(AlpcDataViewAttrFlags flags, long view_size, bool throw_on_error)
         {
             AlpcDataViewAttr attr = new AlpcDataViewAttr()
             {
-                SectionHandle = Handle,
+                SectionHandle = Handle.DangerousGetHandle().ToInt64(),
                 ViewSize = new IntPtr(view_size)
             };
-            return NtSystemCalls.NtAlpcCreateSectionView(_port.Handle, 0, ref attr).CreateResult(throw_on_error, 
-                () => new AlpcDataViewMessageAttribute(attr, flags, _port));
+            return NtSystemCalls.NtAlpcCreateSectionView(Handle.Port.Handle, 0, ref attr).CreateResult(throw_on_error,
+                () => new SafeAlpcDataViewBuffer(attr.ViewBase, view_size, Handle, flags, true));
         }
 
         /// <summary>
@@ -74,7 +75,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The section view attribute.</returns>
-        public NtResult<AlpcDataViewMessageAttribute> CreateSectionView(bool throw_on_error)
+        public NtResult<SafeAlpcDataViewBuffer> CreateSectionView(bool throw_on_error)
         {
             return CreateSectionView(AlpcDataViewAttrFlags.None, Size, throw_on_error);
         }
@@ -85,7 +86,7 @@ namespace NtApiDotNet
         /// <param name="flags">Specify the flags for the data view attribute.</param>
         /// <param name="view_size">The section view size.</param>
         /// <returns>The section view attribute.</returns>
-        public AlpcDataViewMessageAttribute CreateSectionView(AlpcDataViewAttrFlags flags, long view_size)
+        public SafeAlpcDataViewBuffer CreateSectionView(AlpcDataViewAttrFlags flags, long view_size)
         {
             return CreateSectionView(flags, view_size, true).Result;
         }
@@ -94,7 +95,7 @@ namespace NtApiDotNet
         /// Create a new section view attribute.
         /// </summary>
         /// <returns>The section view attribute.</returns>
-        public AlpcDataViewMessageAttribute CreateSectionView()
+        public SafeAlpcDataViewBuffer CreateSectionView()
         {
             return CreateSectionView(AlpcDataViewAttrFlags.None, Size);
         }
@@ -104,11 +105,7 @@ namespace NtApiDotNet
         /// </summary>
         public void Dispose()
         {
-            if (!_port.Handle.IsClosed)
-            {
-                NtSystemCalls.NtAlpcDeletePortSection(_port.Handle, AlpcDeletePortSectionFlags.None, Handle);
-                Handle = 0;
-            }
+            Handle.Dispose();
         }
 
         #endregion

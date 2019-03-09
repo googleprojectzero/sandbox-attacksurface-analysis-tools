@@ -552,7 +552,8 @@ namespace NtApiDotNet
         public NtResult<AlpcPortSection> CreatePortSection(AlpcCreatePortSectionFlags flags, NtSection section, long section_size, bool throw_on_error)
         {
             return NtSystemCalls.NtAlpcCreatePortSection(Handle, flags, section.GetHandle(), new IntPtr(section_size), 
-                out AlpcHandle handle, out IntPtr actual_section_size).CreateResult(throw_on_error, () => new AlpcPortSection(handle, actual_section_size, this));
+                out AlpcHandle handle, out IntPtr actual_section_size).CreateResult(throw_on_error, () 
+                    => new AlpcPortSection(handle, new IntPtr(section_size), actual_section_size, this));
         }
 
         /// <summary>

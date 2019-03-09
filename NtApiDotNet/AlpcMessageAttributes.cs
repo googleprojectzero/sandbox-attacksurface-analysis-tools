@@ -190,7 +190,7 @@ namespace NtApiDotNet
             AllocatedAttributes = allocated_attributes;
             _attributes = new Dictionary<AlpcMessageAttributeFlags, AlpcMessageAttribute>();
             _handles = new DisposableList<NtObject>();
-            DataView = new NtMappedSection();
+            DataView = new SafeAlpcDataViewBuffer();
         }
 
         /// <summary>
@@ -251,14 +251,23 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Convert this set of attributes to a buffer to send.
+        /// </summary>
+        /// <returns>The send attributes.</returns>
+        public AlpcSendMessageAttributes ToSendAttributes()
+        {
+            return new AlpcSendMessageAttributes(Attributes);
+        }
+
+        /// <summary>
         /// Get list of passed handles.
         /// </summary>
         public IEnumerable<NtObject> Handles => _handles.AsReadOnly();
 
         /// <summary>
-        /// Get the mapped data view. If not view sent this property is invalid.
+        /// Get the mapped data view. If no view sent this property is invalid.
         /// </summary>
-        public NtMappedSection DataView { get; private set; }
+        public SafeAlpcDataViewBuffer DataView { get; private set; }
 
         SafeAlpcMessageAttributesBuffer IMessageAttributes.ToSafeBuffer()
         {
@@ -300,7 +309,8 @@ namespace NtApiDotNet
             if (valid_attrs.HasFlag(AlpcMessageAttributeFlags.View))
             {
                 var attr = AddAttribute<AlpcDataViewMessageAttribute>(buffer, port, message);
-                DataView = attr.DataView;
+                DataView = new SafeAlpcDataViewBuffer(new IntPtr(attr.ViewBase), attr.ViewSize,
+                    new SafeAlpcPortSectionHandle(attr.SectionHandle, true, port), attr.Flags, true);
             }
             if (valid_attrs.HasFlag(AlpcMessageAttributeFlags.WorkOnBehalfOf))
             {
@@ -524,8 +534,6 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class AlpcDataViewMessageAttribute : AlpcMessageAttribute
     {
-        private NtAlpc _port;
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -534,11 +542,13 @@ namespace NtApiDotNet
         {
         }
 
-        internal AlpcDataViewMessageAttribute(AlpcDataViewAttr attr, AlpcDataViewAttrFlags flags, NtAlpc port) : this()
+        internal AlpcDataViewMessageAttribute(long view_base, long view_size, long section_handle, 
+            AlpcDataViewAttrFlags flags) : this()
         {
-            FromStruct(attr);
             Flags = flags;
-            _port = port;
+            ViewBase = view_base;
+            ViewSize = view_size;
+            SectionHandle = section_handle;
         }
 
         /// <summary>
@@ -557,10 +567,6 @@ namespace NtApiDotNet
         /// View size.
         /// </summary>
         public long ViewSize { get; set; }
-        /// <summary>
-        /// The data view as a mapped section.
-        /// </summary>
-        public NtMappedSection DataView => new NtMappedSection(new IntPtr(ViewBase), ViewSize, false);
 
         internal override void ToSafeBuffer(SafeAlpcMessageAttributesBuffer buffer)
         {
@@ -570,7 +576,6 @@ namespace NtApiDotNet
         internal override void FromSafeBuffer(SafeAlpcMessageAttributesBuffer buffer, NtAlpc port, AlpcMessage message)
         {
             buffer.GetViewAttribute(this);
-            _port = port;
         }
 
         internal void FromStruct(AlpcDataViewAttr attr)
@@ -590,19 +595,6 @@ namespace NtApiDotNet
                 ViewBase = new IntPtr(ViewBase),
                 ViewSize = new IntPtr(ViewSize)
             };
-        }
-
-        /// <summary>
-        /// Dispose the attribute.
-        /// </summary>
-        public override void Dispose()
-        {
-            if (_port != null && !_port.Handle.IsClosed)
-            {
-                NtStatus status = NtSystemCalls.NtAlpcDeleteSectionView(_port.Handle, 0, new IntPtr(ViewBase));
-                System.Diagnostics.Debug.WriteLine("Section View Delete Status: {0}", status);
-            }
-            base.Dispose();
         }
     }
 
