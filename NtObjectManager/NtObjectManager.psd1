@@ -18,10 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.19'
-
-# Supported PSEditions
-# CompatiblePSEditions = @()
+ModuleVersion = '1.1.20'
 
 # ID used to uniquely identify this module
 GUID = 'ac251c97-67a6-4bc4-bb8a-5ae300e93030'
@@ -108,31 +105,28 @@ PrivateData = @{
         LicenseUri = 'http://www.apache.org/licenses/LICENSE-2.0.html'
 
         # A URL to the main website for this project.
-        ProjectUri = 'https://github.com/google/sandbox-attacksurface-analysis-tools'
+        ProjectUri = 'https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools'
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.19
+        ReleaseNotes = '1.1.20
 --------
-* Fix for bug in NtWaitTimeout not creating infinite waits.
-* Added some new NTSTATUS codes and break apart the status.
-* Added some new FSCTL codes.
-
-1.1.18.1
---------
-* Added missing release notes.
-
-1.1.18
-------
-* Added better support for transaction objects including some cmdlets.
-* Added general QueryInformation and SetInformation methods to a number of objects.
-* Added side channel isolation mitigation policy.
-* Added more FS volume information classes.
-* Added extended section/memory functions.
-* Added a few missing NDR type formats.
-* Added BNO isolation process attribute.
-* Added new types to separate out named pipes from normal files.
-* Added Start-NtFileOplock.
-* Added support for absolute security descriptors.
+* Added basic ALPC support including cmdlets.
+* Added better debug support including cmdlets.
+* Display container access rights in SD GUI and also extract SACL if available.
+* Added Set/Get-NtProcessMitigation policy to get specific policies.
+* Exposed process mitigation policies using flag enums.
+* Added Win32.AppContainerProfile to create and delete AC profiles.
+* Many new non-throwing methods added to objects.
+* Added ReadScatter and WriteGather methods to NtFile.
+* Improved formatting of IO Control Codes.
+* Added ability to acknowledge oplock breaks.
+* Added Wow64 FS redirection support.
+* Use proper WIN32 NT status facility for Win32 errors as status codes.
+* Added read/write to file from safe buffers.
+* Added methods to zero or fill safe buffers using native methods.
+* Fix bug with querying BnoIsolationPrefix which next took into account the enable flag correctly.
+* Fix from diversenok "Improve detection of restricted tokens (#20)"
+* Code cleanups and source code separation.
 '
 
         # External dependent modules of this module

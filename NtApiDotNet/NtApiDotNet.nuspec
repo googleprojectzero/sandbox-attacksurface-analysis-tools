@@ -7,34 +7,31 @@
     <authors>James Forshaw</authors>
     <owners>James Forshaw</owners>
     <license type="expression">Apache-2.0</license>
-    <projectUrl>https://github.com/google/sandbox-attacksurface-analysis-tools</projectUrl>
+    <projectUrl>https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A .NET class library to access native NT API system calls</description>
     <releaseNotes>
-1.1.19
+1.1.20
 --------
-* Fix for bug in NtWaitTimeout not creating infinite waits.
-* Added some new NTSTATUS codes and break apart the status.
-* Added some new FSCTL codes.
-
-1.1.18.1
---------
-* Added missing release notes.
-
-1.1.18
-------
-* Added better support for transaction objects including some cmdlets.
-* Added general QueryInformation and SetInformation methods to a number of objects.
-* Added side channel isolation mitigation policy.
-* Added more FS volume information classes.
-* Added extended section/memory functions.
-* Added a few missing NDR type formats.
-* Added BNO isolation process attribute.
-* Added new types to separate out named pipes from normal files.
-* Added Start-NtFileOplock.
-* Added support for absolute security descriptors.
+* Added basic ALPC support including cmdlets.
+* Added better debug support including cmdlets.
+* Display container access rights in SD GUI and also extract SACL if available.
+* Added Set/Get-NtProcessMitigation policy to get specific policies.
+* Exposed process mitigation policies using flag enums.
+* Added Win32.AppContainerProfile to create and delete AC profiles.
+* Many new non-throwing methods added to objects.
+* Added ReadScatter and WriteGather methods to NtFile.
+* Improved formatting of IO Control Codes.
+* Added ability to acknowledge oplock breaks.
+* Added Wow64 FS redirection support.
+* Use proper WIN32 NT status facility for Win32 errors as status codes.
+* Added read/write to file from safe buffers.
+* Added methods to zero or fill safe buffers using native methods.
+* Fix bug with querying BnoIsolationPrefix which next took into account the enable flag correctly.
+* Fix from diversenok "Improve detection of restricted tokens (#20)"
+* Code cleanups and source code separation.
 </releaseNotes>
-    <copyright>Copyright Google Inc. 2017</copyright>
+    <copyright>Copyright Google Inc. 2017, 2018, 2019</copyright>
     <tags>syscalls</tags>
   </metadata>
 </package>

@@ -1,6 +1,6 @@
 sandbox-attacksurface-analysis-tools
 
-(c) Google Inc. 2015, 2016, 2017, 2018
+(c) Google Inc. 2015, 2016, 2017, 2018, 2019
 Developed by James Forshaw
 
 This is a small suite of tools to test various properties of sandboxes on Windows. Many of the checking
@@ -20,6 +20,26 @@ The tools can be built with Visual Studio 2017. It's possible to also build NtAp
 with .NET Core 2.0 by building the specific project files.
 
 Release Notes:
+
+1.1.20
+--------
+* Added basic ALPC support including cmdlets.
+* Added better debug support including cmdlets.
+* Display container access rights in SD GUI and also extract SACL if available.
+* Added Set/Get-NtProcessMitigation policy to get specific policies.
+* Exposed process mitigation policies using flag enums.
+* Added Win32.AppContainerProfile to create and delete AC profiles.
+* Many new non-throwing methods added to objects.
+* Added ReadScatter and WriteGather methods to NtFile.
+* Improved formatting of IO Control Codes.
+* Added ability to acknowledge oplock breaks.
+* Added Wow64 FS redirection support.
+* Use proper WIN32 NT status facility for Win32 errors as status codes.
+* Added read/write to file from safe buffers.
+* Added methods to zero or fill safe buffers using native methods.
+* Fix bug with querying BnoIsolationPrefix which next took into account the enable flag correctly.
+* Fix from diversenok "Improve detection of restricted tokens (#20)"
+* Code cleanups and source code separation.
 
 1.1.19
 --------

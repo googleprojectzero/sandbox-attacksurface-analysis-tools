@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Google Inc.")]
 [assembly: AssemblyProduct("NtApiDotNet")]
-[assembly: AssemblyCopyright("Copyright © Google Inc. 2016, 2017")]
+[assembly: AssemblyCopyright("Copyright © Google Inc. 2016, 2017, 2018, 2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.1.19")]
-[assembly: AssemblyInformationalVersion("1.1.19")]
+[assembly: AssemblyFileVersion("1.1.20")]
+[assembly: AssemblyInformationalVersion("1.1.20")]
