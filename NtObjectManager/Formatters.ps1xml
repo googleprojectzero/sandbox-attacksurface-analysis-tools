@@ -1180,5 +1180,30 @@
             </TableRowEntries>
         </TableControl>
     </View>
+    <View>
+        <Name>AccessMask</Name>
+        <ViewSelectedBy>
+            <TypeName>NtApiDotNet.AccessMask</TypeName>
+        </ViewSelectedBy>
+        <TableControl>
+            <TableHeaders>
+                <TableColumnHeader>
+                    <Label>Access</Label>
+                    <Width>10</Width>
+                    <Alignment>left</Alignment>
+                </TableColumnHeader>
+            </TableHeaders>
+            <TableRowEntries>
+                <TableRowEntry>
+                    <TableColumnItems>
+                        <TableColumnItem>
+                            <PropertyName>Access</PropertyName>
+                            <FormatString>X08</FormatString>
+                        </TableColumnItem>
+                    </TableColumnItems>
+                </TableRowEntry>
+            </TableRowEntries>
+        </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>
