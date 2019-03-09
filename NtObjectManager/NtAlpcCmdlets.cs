@@ -725,6 +725,13 @@ namespace NtObjectManager
         public SecurityQualityOfService SecurityQualityOfService { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify a security context attribute.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromParts")]
+        [Alias("sctx")]
+        public SafeAlpcSecurityContextHandle SecurityContext { get; set; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public NewNtAlpcSendAttributes()
@@ -760,6 +767,10 @@ namespace NtObjectManager
             if (SecurityQualityOfService != null)
             {
                 attrs.Add(AlpcSecurityMessageAttribute.CreateHandleAttribute(SecurityQualityOfService));
+            }
+            else if (SecurityContext != null)
+            {
+                attrs.Add(SecurityContext.ToMessageAttribute());
             }
 
             return attrs;
@@ -890,6 +901,88 @@ namespace NtObjectManager
         protected override void ProcessRecord()
         {
             WriteObject(Section.CreateSectionView(Flags, Size == 0 ? Section.Size : Size));
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Creates a new ALPC security context.</para>
+    /// <para type="description">This cmdlet creates a new ALPC security context pages of a specified security quality of serice..</para>
+    /// </summary>
+    /// <example>
+    ///   <code>$ctx = New-NtAlpcSecurityContext -Port $port</code>
+    ///   <para>Create a new security context with default values.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$ctx = New-NtAlpcSecurityContext -Port $port -ImpersonationLevel Identification</code>
+    ///   <para>Create a new security context with impersonation level of Identitification.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$ctx = New-NtAlpcSecurityContext -Port $port -SecurityQualityOfService $sqos</code>
+    ///   <para>Create a new security context from a security quality of service.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet(VerbsCommon.New, "NtAlpcSecurityContext", DefaultParameterSetName = "FromParts")]
+    [OutputType(typeof(SafeAlpcSecurityContextHandle))]
+    public class NewNtAlpcSecurityContext : PSCmdlet
+    {
+        /// <summary>
+        /// <para type="description">Specify the port to create the context from.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true)]
+        public NtAlpc Port { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the creation flags.</para>
+        /// </summary>
+        [Parameter]
+        public AlpcCreateSecurityContextFlags Flags { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the impersonation level.</para>
+        /// </summary>
+        [Parameter(Position = 1, ParameterSetName = "FromParts")]
+        [Alias("imp")]
+        public SecurityImpersonationLevel ImpersonationLevel { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the list of attributes for the receive buffer.</para>
+        /// </summary>
+        [Parameter(Position = 2, ParameterSetName = "FromParts")]
+        [Alias("ctx")]
+        public SecurityContextTrackingMode ContextTrackingMode { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the list of attributes for the receive buffer.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromParts")]
+        [Alias("eo")]
+        public SwitchParameter EffectiveOnly { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the list of attributes for the receive buffer.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromSqos")]
+        [Alias("sqos")]
+        public SecurityQualityOfService SecurityQualityOfService { get; set; }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public NewNtAlpcSecurityContext()
+        {
+            ImpersonationLevel = SecurityImpersonationLevel.Impersonation;
+            ContextTrackingMode = SecurityContextTrackingMode.Static;
+        }
+
+        /// <summary>
+        /// Process record.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            SecurityQualityOfService sqos = ParameterSetName == "FromSqos" 
+                ? SecurityQualityOfService 
+                : new SecurityQualityOfService(ImpersonationLevel, ContextTrackingMode, EffectiveOnly);
+            WriteObject(Port.CreateSecurityContext(sqos));
         }
     }
 }
