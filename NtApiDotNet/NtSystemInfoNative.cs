@@ -544,6 +544,36 @@ namespace NtApiDotNet
         public UnicodeStringOut ImageName;
     };
 
+    public enum ProcessorAchitecture : ushort
+    {
+        Intel = 0,
+        MIPS = 1,
+        Alpha = 2,
+        PPC = 3,
+        SHX = 4,
+        ARM = 5,
+        IA64 = 6,
+        Alpha64 = 7,
+        MSIL = 8,
+        AMD64 = 9,
+        IA32OnWin64 = 10,
+        Neutral = 11,
+        ARM64 = 12,
+        ARM32OnWin64 = 13,
+        IA32OnARM64 = 14,
+        Unknonw = 0xFFFF,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemProcessorInformation
+    {
+        public ProcessorAchitecture ProcessorArchitecture;
+        public ushort ProcessorLevel;
+        public ushort ProcessorRevision;
+        public ushort MaximumProcessors;
+        public uint ProcessorFeatureBits;
+    }
+
     public enum SystemInformationClass
     {
         SystemBasicInformation = 0,

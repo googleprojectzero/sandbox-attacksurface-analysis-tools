@@ -56,8 +56,30 @@ namespace NtApiDotNet
             }
         }
 
-        private static readonly Lazy<SystemBasicInformation> _basic_info = new Lazy<SystemBasicInformation>(GetBasicInformation);
+        private static readonly Dictionary<SystemInformationClass, object> _cached_info = new Dictionary<SystemInformationClass, object>();
         private static readonly NtSystemInfoObject _system_info_object = new NtSystemInfoObject();
+
+        private static T QueryCached<T>(SystemInformationClass info_class) where T : new()
+        {
+            if (!_cached_info.ContainsKey(info_class))
+            {
+                var value = Query(info_class, default(T), false);
+                if (value.IsSuccess)
+                {
+                    _cached_info[info_class] = value.Result;
+                }
+                else
+                {
+                    _cached_info[info_class] = default(T);
+                }
+            }
+            return (T)_cached_info[info_class];
+        }
+
+        private static SystemBasicInformation GetBasicInfo()
+        {
+            return QueryCached<SystemBasicInformation>(SystemInformationClass.SystemBasicInformation);
+        }
 
         private static SystemKernelDebuggerInformation GetKernelDebuggerInformation()
         {
@@ -85,11 +107,6 @@ namespace NtApiDotNet
                 buffer.Dispose();
                 throw;
             }
-        }
-
-        private static SystemBasicInformation GetBasicInformation()
-        {
-            return Query<SystemBasicInformation>(SystemInformationClass.SystemBasicInformation);
         }
 
         #endregion
@@ -904,47 +921,55 @@ namespace NtApiDotNet
         /// <summary>
         /// Get system timer resolution.
         /// </summary>
-        public static int TimerResolution => _basic_info.Value.TimerResolution;
+        public static int TimerResolution => GetBasicInfo().TimerResolution;
         /// <summary>
         /// Get system page size.
         /// </summary>
-        public static int PageSize => _basic_info.Value.PageSize;
+        public static int PageSize => GetBasicInfo().PageSize;
         /// <summary>
         /// Get number of physical pages.
         /// </summary>
-        public static int NumberOfPhysicalPages => _basic_info.Value.NumberOfPhysicalPages;
+        public static int NumberOfPhysicalPages => GetBasicInfo().NumberOfPhysicalPages;
         /// <summary>
         /// Get lowest page number.
         /// </summary>
-        public static int LowestPhysicalPageNumber => _basic_info.Value.LowestPhysicalPageNumber;
+        public static int LowestPhysicalPageNumber => GetBasicInfo().LowestPhysicalPageNumber;
         /// <summary>
         /// Get highest page number.
         /// </summary>
-        public static int HighestPhysicalPageNumber => _basic_info.Value.HighestPhysicalPageNumber;
+        public static int HighestPhysicalPageNumber => GetBasicInfo().HighestPhysicalPageNumber;
         /// <summary>
         /// Get allocation granularity.
         /// </summary>
-        public static int AllocationGranularity => _basic_info.Value.AllocationGranularity;
+        public static int AllocationGranularity => GetBasicInfo().AllocationGranularity;
         /// <summary>
         /// Get minimum user mode address.
         /// </summary>
-        public static ulong MinimumUserModeAddress => _basic_info.Value.MinimumUserModeAddress.ToUInt64();
+        public static ulong MinimumUserModeAddress => GetBasicInfo().MinimumUserModeAddress.ToUInt64();
         /// <summary>
         /// Get maximum user mode address.
         /// </summary>
-        public static ulong MaximumUserModeAddress => _basic_info.Value.MaximumUserModeAddress.ToUInt64();
+        public static ulong MaximumUserModeAddress => GetBasicInfo().MaximumUserModeAddress.ToUInt64();
         /// <summary>
         /// Get active processor affinity mask.
         /// </summary>
-        public static ulong ActiveProcessorsAffinityMask => _basic_info.Value.ActiveProcessorsAffinityMask.ToUInt64();
+        public static ulong ActiveProcessorsAffinityMask => GetBasicInfo().ActiveProcessorsAffinityMask.ToUInt64();
         /// <summary>
         /// Get number of processors.
         /// </summary>
-        public static int NumberOfProcessors => _basic_info.Value.NumberOfProcessors;
+        public static int NumberOfProcessors => GetBasicInfo().NumberOfProcessors;
         /// <summary>
         /// Get system device information.
         /// </summary>
         public static SystemDeviceInformation DeviceInformation => Query<SystemDeviceInformation>(SystemInformationClass.SystemDeviceInformation);
+        /// <summary>
+        /// Get the system processor information.
+        /// </summary>
+        public static SystemProcessorInformation ProcessorInformation => QueryCached<SystemProcessorInformation>(SystemInformationClass.SystemProcessorInformation);
+        /// <summary>
+        /// Get the system emulation processor information.
+        /// </summary>
+        public static SystemProcessorInformation EmulationProcessorInformation => QueryCached<SystemProcessorInformation>(SystemInformationClass.SystemEmulationProcessorInformation);
 
         #endregion
     }
