@@ -23,7 +23,6 @@ namespace NtApiDotNet
         #region Constructors
         internal NtDebug(SafeKernelObjectHandle handle) : base(handle)
         {
-            System.Console.WriteLine(System.Runtime.InteropServices.Marshal.SizeOf(typeof(DbgUiWaitStatusChange)));
         }
 
         internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
