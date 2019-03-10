@@ -439,6 +439,10 @@ Specify the filter level for the Win32k filter.
 Specify a token to start the process with.
 .PARAMETER ProtectionLevel
 Specify the protection level when creating a protected process.
+.PARAMETER DebugObject
+Specify a debug object to run the process under. You need to also specify DebugProcess or DebugOnlyThisProcess flags as well.
+.PARAMETER NoTokenFallback
+Specify to not fallback to using CreateProcessWithLogon if CreateProcessAsUser fails.
 .INPUTS
 None
 .OUTPUTS
@@ -466,7 +470,9 @@ function New-Win32ProcessConfig
     [NtApiDotNet.Win32.Win32kFilterFlags]$Win32kFilterFlags = 0,
     [int]$Win32kFilterLevel = 0,
     [NtApiDotNet.NtToken]$Token,
-    [NtApiDotNet.Win32.ProtectionLevel]$ProtectionLevel = "WindowsPPL"
+    [NtApiDotNet.Win32.ProtectionLevel]$ProtectionLevel = "WindowsPPL",
+    [NtApiDotNet.NtDebug]$DebugObject,
+    [switch]$NoTokenFallback
     )
     $config = New-Object NtApiDotNet.Win32.Win32ProcessConfig
     $config.CommandLine = $CommandLine
@@ -500,6 +506,8 @@ function New-Win32ProcessConfig
     $config.Win32kFilterLevel = $Win32kFilterLevel
     $config.Token = $Token
     $config.ProtectionLevel = $ProtectionLevel
+    $config.DebugObject = $DebugObject
+    $config.NoTokenFallback = $NoTokenFallback
     return $config
 }
 
@@ -540,6 +548,10 @@ Switch to specify whether the thread handle is inheritable.
 Specify optional mitigation options.
 .PARAMETER ProtectionLevel
 Specify the protection level when creating a protected process.
+.PARAMETER DebugObject
+Specify a debug object to run the process under. You need to also specify DebugProcess or DebugOnlyThisProcess flags as well.
+.PARAMETER NoTokenFallback
+Specify to not fallback to using CreateProcessWithLogon if CreateProcessAsUser fails.
 .PARAMETER Token
 Specify an explicit token to create the new process with.
 .PARAMETER Config
@@ -587,6 +599,10 @@ function New-Win32Process
     [NtApiDotNet.NtToken]$Token,
     [Parameter(ParameterSetName = "FromArgs")]
     [NtApiDotNet.Win32.ProtectionLevel]$ProtectionLevel = "WindowsPPL",
+    [Parameter(ParameterSetName = "FromArgs")]
+    [NtApiDotNet.NtDebug]$DebugObject,
+    [Parameter(ParameterSetName = "FromArgs")]
+    [switch]$NoTokenFallback,
     [Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromConfig")]
     [NtApiDotNet.Win32.Win32ProcessConfig]$Config
     )
@@ -597,7 +613,8 @@ function New-Win32Process
     -ParentProcess $ParentProcess -CreationFlags $CreationFlags -TerminateOnDispose:$TerminateOnDispose `
     -Environment $Environment -CurrentDirectory $CurrentDirectory -Desktop $Desktop -Title $Title `
     -InheritHandles:$InheritHandles -InheritProcessHandle:$InheritProcessHandle -InheritThreadHandle:$InheritThreadHandle `
-    -MitigationOptions $MitigationOptions -Token $Token -ProtectionLevel $ProtectionLevel
+    -MitigationOptions $MitigationOptions -Token $Token -ProtectionLevel $ProtectionLevel -NoTokenFallback:$NoTokenFallback `
+    -DebugObject $DebugObject
   }
 
   [NtApiDotNet.Win32.Win32Process]::CreateProcess($config)

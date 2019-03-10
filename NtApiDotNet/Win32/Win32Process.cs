@@ -479,6 +479,24 @@ namespace NtApiDotNet.Win32
         }
     }
 
+    internal class ScopedDebugObject : IDisposable
+    {
+        private readonly NtDebug _debug_object;
+        private readonly IntPtr _old_debug_object_handle;
+
+        public ScopedDebugObject(NtDebug debug_object)
+        {
+            _debug_object = debug_object;
+            _old_debug_object_handle = NtDbgUi.DbgUiGetThreadDebugObject();
+            NtDbgUi.DbgUiSetThreadDebugObject(debug_object.Handle.DangerousGetHandle());
+        }
+
+        public void Dispose()
+        {
+            NtDbgUi.DbgUiSetThreadDebugObject(_old_debug_object_handle);
+        }
+    }
+
 #pragma warning disable 1591
     /// <summary>
     /// Process mitigation option flags.
@@ -692,6 +710,14 @@ namespace NtApiDotNet.Win32
         /// Specify the safe open prompt original claim.
         /// </summary>
         public byte[] SafeOpenPromptOriginClaim { get; set; }
+        /// <summary>
+        /// When specifying the debug flags use this debug object instead of the current thread's object.
+        /// </summary>
+        public NtDebug DebugObject { get; set; }
+        /// <summary>
+        /// When specified do not fallback to using CreateProcessWithLogon if CreateProcessWithUser fails.
+        /// </summary>
+        public bool NoTokenFallback { get; set; }
 
         /// <summary>
         /// Add an object's handle to the list of inherited handles. 
@@ -844,9 +870,11 @@ namespace NtApiDotNet.Win32
 
             if (Win32kFilterFlags != Win32kFilterFlags.None)
             {
-                Win32kFilterAttribute filter = new Win32kFilterAttribute();
-                filter.Flags = Win32kFilterFlags;
-                filter.FilterLevel = Win32kFilterLevel;
+                Win32kFilterAttribute filter = new Win32kFilterAttribute
+                {
+                    Flags = Win32kFilterFlags,
+                    FilterLevel = Win32kFilterLevel
+                };
                 attr_list.AddAttributeBuffer(ProcessAttributes.ProcThreadAttributeWin32kFilter, resources.AddResource(filter.ToBuffer()));
             }
 
@@ -953,6 +981,15 @@ namespace NtApiDotNet.Win32
             return CreateSecurityAttributes(ThreadSecurityDescriptor, InheritThreadHandle, resources);
         }
 
+        internal ScopedDebugObject SetDebugObject()
+        {
+            if ((CreationFlags & (CreateProcessFlags.DebugProcess | CreateProcessFlags.DebugOnlyThisProcess)) == 0 || DebugObject == null)
+            {
+                return null;
+            }
+            return new ScopedDebugObject(DebugObject);
+        }
+
         private static SECURITY_ATTRIBUTES CreateSecurityAttributes(SecurityDescriptor sd, 
             bool inherit, DisposableList<IDisposable> resources)
         {
@@ -991,18 +1028,28 @@ namespace NtApiDotNet.Win32
                 STARTUPINFOEX start_info = config.ToStartupInfoEx(resources);
                 SECURITY_ATTRIBUTES proc_attr = config.ProcessSecurityAttributes(resources);
                 SECURITY_ATTRIBUTES thread_attr = config.ThreadSecurityAttributes(resources);
-                
-                if (!Win32NativeMethods.CreateProcessAsUser(token.Handle, config.ApplicationName, config.CommandLine,
-                        proc_attr, thread_attr, config.InheritHandles, config.CreationFlags 
-                        | CreateProcessFlags.ExtendedStartupInfoPresent, config.Environment, 
-                        config.CurrentDirectory, start_info, out proc_info))
+
+                using (var debug_object = config.SetDebugObject())
                 {
-                    if (!Win32NativeMethods.CreateProcessWithTokenW(token.Handle, 0, config.ApplicationName, config.CommandLine,
-                        config.CreationFlags, config.Environment, config.CurrentDirectory, 
-                        ref start_info.StartupInfo, out proc_info))
+                    if (Win32NativeMethods.CreateProcessAsUser(token.Handle, config.ApplicationName, config.CommandLine,
+                            proc_attr, thread_attr, config.InheritHandles, config.CreationFlags
+                            | CreateProcessFlags.ExtendedStartupInfoPresent, config.Environment,
+                            config.CurrentDirectory, start_info, out proc_info))
                     {
-                        throw new SafeWin32Exception();
+                        return new Win32Process(proc_info, config.TerminateOnDispose);
                     }
+                }
+
+                if (config.NoTokenFallback)
+                {
+                    throw new SafeWin32Exception();
+                }
+
+                if (!Win32NativeMethods.CreateProcessWithTokenW(token.Handle, 0, config.ApplicationName, config.CommandLine,
+                    config.CreationFlags, config.Environment, config.CurrentDirectory,
+                    ref start_info.StartupInfo, out proc_info))
+                {
+                    throw new SafeWin32Exception();
                 }
 
                 return new Win32Process(proc_info, config.TerminateOnDispose);
@@ -1101,11 +1148,14 @@ namespace NtApiDotNet.Win32
                 SECURITY_ATTRIBUTES proc_attr = config.ProcessSecurityAttributes(resources);
                 SECURITY_ATTRIBUTES thread_attr = config.ThreadSecurityAttributes(resources);
 
-                if (!Win32NativeMethods.CreateProcess(config.ApplicationName, config.CommandLine, proc_attr, thread_attr, config.InheritHandles,
-                        config.CreationFlags | CreateProcessFlags.ExtendedStartupInfoPresent, 
-                        config.Environment, config.CurrentDirectory, config.ToStartupInfoEx(resources), out proc_info))
+                using (var debug_object = config.SetDebugObject())
                 {
-                    throw new SafeWin32Exception();
+                    if (!Win32NativeMethods.CreateProcess(config.ApplicationName, config.CommandLine, proc_attr, thread_attr, config.InheritHandles,
+                            config.CreationFlags | CreateProcessFlags.ExtendedStartupInfoPresent,
+                            config.Environment, config.CurrentDirectory, config.ToStartupInfoEx(resources), out proc_info))
+                    {
+                        throw new SafeWin32Exception();
+                    }
                 }
 
                 return new Win32Process(proc_info, config.TerminateOnDispose);
