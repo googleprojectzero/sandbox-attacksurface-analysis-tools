@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+
 namespace NtApiDotNet
 {
     /// <summary>
@@ -126,6 +128,32 @@ namespace NtApiDotNet
         {
             return Create(object_attributes, DebugAccessRights.MaximumAllowed, DebugObjectFlags.None, throw_on_error);
         }
+
+        /// <summary>
+        /// Open the current thread's debug object.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened debug object. Returns null if no object exists.</returns>
+        public static NtResult<NtDebug> OpenCurrent(bool throw_on_error)
+        {
+            IntPtr current_debug_object = NtDbgUi.DbgUiGetThreadDebugObject();
+            if (current_debug_object == IntPtr.Zero)
+            {
+                return new NtResult<NtDebug>();
+            }
+            return DuplicateFrom(NtProcess.Current, current_debug_object, 0, 
+                DuplicateObjectOptions.SameAttributes | DuplicateObjectOptions.SameAccess, false);
+        }
+
+        #endregion
+
+        #region Status Properties
+
+        /// <summary>
+        /// Open the current thread's debug object. Returns null if no object exists.
+        /// </summary>
+        public static NtDebug Current => OpenCurrent(true).Result;
+
         #endregion
 
         #region Public Methods

@@ -44,6 +44,11 @@ namespace NtObjectManager
     ///   <para>Get a debug object with a relative path based on the current location.
     ///   </para>
     /// </example>
+    /// <example>
+    ///   <code>Get-NtDebug -Current</code>
+    ///   <para>Get the current debug object.
+    ///   </para>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtDebug")]
     [OutputType(typeof(NtDebug))]
@@ -61,8 +66,14 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">The NT object manager path to the object to use.</para>
         /// </summary>
-        [Parameter(Position = 0, Mandatory = true)]
+        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromPath")]
         public override string Path { get; set; }
+
+        /// <summary>
+        /// <para type="description">Open the current thread's debug object. Most parameters on this cmdlet will be ignored.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromCurrent")]
+        public SwitchParameter Current { get; set; }
 
         /// <summary>
         /// Method to create an object from a set of object attributes.
@@ -71,7 +82,14 @@ namespace NtObjectManager
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            return NtDebug.Open(obj_attributes, Access);
+            if (ParameterSetName == "FromPath")
+            {
+                return NtDebug.Open(obj_attributes, Access);
+            }
+            else
+            {
+                return NtDebug.Current;
+            }
         }
     }
 

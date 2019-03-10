@@ -185,6 +185,15 @@ namespace NtApiDotNet
         public DbgUiStateInfo StateInfo;
     }
 
+    public static class NtDbgUi
+    {
+        [DllImport("ntdll.dll")]
+        public static extern IntPtr DbgUiGetThreadDebugObject();
+
+        [DllImport("ntdll.dll")]
+        public static extern void DbgUiSetThreadDebugObject(IntPtr DebugObjectHandle);
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
