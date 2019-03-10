@@ -128,6 +128,7 @@
     <Compile Include="NtSemaphoreNative.cs" />
     <Compile Include="NtSymbolicLinkNative.cs" />
     <Compile Include="NtSystemInfoNative.cs" />
+    <Compile Include="NtThreadNative.cs" />
     <Compile Include="NtTokenNative.cs" />
     <Compile Include="NtTransactionManager.cs" />
     <Compile Include="NtTransactionManagerNative.cs" />
