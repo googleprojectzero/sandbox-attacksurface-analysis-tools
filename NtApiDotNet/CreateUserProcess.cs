@@ -342,45 +342,46 @@ namespace NtApiDotNet
                     attrs.Add(ProcessAttribute.Token(Token.Handle));
                 }
 
-                ProcessAttributeList attr_list = ProcessAttributeList.Create(attrs);
-
-                create_info.Data.InitFlags = InitFlags | ProcessCreateInitFlag.WriteOutputOnExit;
-                create_info.Data.ProhibitedImageCharacteristics = ProhibitedImageCharacteristics;
-                create_info.Data.AdditionalFileAccess = AdditionalFileAccess;
-
-                using (ObjectAttributes proc_attr = new ObjectAttributes(null, AttributeFlags.None, (NtObject)null, null, ProcessSecurityDescriptor),
-                    thread_attr = new ObjectAttributes(null, AttributeFlags.None, (NtObject)null, null, ThreadSecurityDescriptor))
+                using (ProcessAttributeList attr_list = ProcessAttributeList.Create(attrs))
                 {
-                    NtStatus status = NtSystemCalls.NtCreateUserProcess(
-                      out SafeKernelObjectHandle process_handle, out SafeKernelObjectHandle thread_handle,
-                      ProcessDesiredAccess, ThreadDesiredAccess,
-                      proc_attr, thread_attr, ProcessFlags,
-                      ThreadFlags, process_params, create_info, attr_list);
+                    create_info.Data.InitFlags = InitFlags | ProcessCreateInitFlag.WriteOutputOnExit;
+                    create_info.Data.ProhibitedImageCharacteristics = ProhibitedImageCharacteristics;
+                    create_info.Data.AdditionalFileAccess = AdditionalFileAccess;
 
-                    if (!status.IsSuccess() && !ReturnOnError)
+                    using (ObjectAttributes proc_attr = new ObjectAttributes(null, AttributeFlags.None, (NtObject)null, null, ProcessSecurityDescriptor),
+                        thread_attr = new ObjectAttributes(null, AttributeFlags.None, (NtObject)null, null, ThreadSecurityDescriptor))
                     {
-                        // Close handles which come from errors
-                        switch (create_info.State)
+                        NtStatus status = NtSystemCalls.NtCreateUserProcess(
+                          out SafeKernelObjectHandle process_handle, out SafeKernelObjectHandle thread_handle,
+                          ProcessDesiredAccess, ThreadDesiredAccess,
+                          proc_attr, thread_attr, ProcessFlags,
+                          ThreadFlags, process_params, create_info, attr_list);
+
+                        if (!status.IsSuccess() && !ReturnOnError)
                         {
-                            case ProcessCreateState.FailOnSectionCreate:
-                                NtSystemCalls.NtClose(create_info.Data.FileHandle);
-                                break;
-                            case ProcessCreateState.FailExeName:
-                                NtSystemCalls.NtClose(create_info.Data.IFEOKey);
-                                break;
+                            // Close handles which come from errors
+                            switch (create_info.State)
+                            {
+                                case ProcessCreateState.FailOnSectionCreate:
+                                    NtSystemCalls.NtClose(create_info.Data.FileHandle);
+                                    break;
+                                case ProcessCreateState.FailExeName:
+                                    NtSystemCalls.NtClose(create_info.Data.IFEOKey);
+                                    break;
+                            }
+
+                            status.ToNtException();
                         }
 
-                        status.ToNtException();
-                    }
-
-                    if (create_info.State == ProcessCreateState.Success)
-                    {
-                        return new CreateUserProcessResult(process_handle, thread_handle,
-                          create_info.Data, image_info.Result, client_id.Result, TerminateOnDispose);
-                    }
-                    else
-                    {
-                        return new CreateUserProcessResult(status, create_info.Data, create_info.State);
+                        if (create_info.State == ProcessCreateState.Success)
+                        {
+                            return new CreateUserProcessResult(process_handle, thread_handle,
+                              create_info.Data, image_info.Result, client_id.Result, TerminateOnDispose);
+                        }
+                        else
+                        {
+                            return new CreateUserProcessResult(status, create_info.Data, create_info.State);
+                        }
                     }
                 }
             }

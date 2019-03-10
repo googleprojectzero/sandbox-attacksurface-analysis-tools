@@ -809,16 +809,23 @@ namespace NtApiDotNet
             Data.WriteArray(0, attributes, 0, attributes.Length);
         }
 
+        private ProcessAttributeList(IntPtr buffer, int length, bool owns_handle)
+            : base(buffer, length, owns_handle)
+        {
+        }
+
         public ProcessAttributeList(IEnumerable<ProcessAttribute> attributes)
             : this(attributes.Select(a => a.GetNativeAttribute()).ToArray())
         {
         }
 
+        new public static ProcessAttributeList Null => new ProcessAttributeList(IntPtr.Zero, 0, false);
+
         public static ProcessAttributeList Create(IEnumerable<ProcessAttribute> attributes)
         {
             if (attributes == null || !attributes.Any())
             {
-                return null;
+                return Null;
             }
             return new ProcessAttributeList(attributes);
         }

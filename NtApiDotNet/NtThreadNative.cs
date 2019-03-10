@@ -487,7 +487,7 @@ namespace NtApiDotNet
             SafeKernelObjectHandle ProcessHandle,
             IntPtr StartRoutine,
             IntPtr Argument,
-            ThreadCreateFlags CreateFlags, // THREAD_CREATE_FLAGS_*
+            ThreadCreateFlags CreateFlags,
             IntPtr ZeroBits,
             IntPtr StackSize,
             IntPtr MaximumStackSize,

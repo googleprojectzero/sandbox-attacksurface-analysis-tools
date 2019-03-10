@@ -101,6 +101,115 @@ namespace NtApiDotNet
         #region Static Methods
 
         /// <summary>
+        /// Create a new thread in a process.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the thread object.</param>
+        /// <param name="desired_acccess">Desired access for the handle.</param>
+        /// <param name="process">Process to create the thread in.</param>
+        /// <param name="start_routine">Address of the start routine.</param>
+        /// <param name="argument">Argument to pass to the thread.</param>
+        /// <param name="create_flags">Creation flags.</param>
+        /// <param name="zero_bits">Zero bits for the stack address.</param>
+        /// <param name="stack_size">Size of the committed stack.</param>
+        /// <param name="maximum_stack_size">Maximum reserved stack size.</param>
+        /// <param name="attribute_list">Optional attribute list.</param>
+        /// <param name="throw_on_error">True to throw on error</param>
+        /// <returns>The created thread object.</returns>
+        /// <remarks>This creates a native thread, not a Win32 thread. This might cause unexpected things to fail as they're not initialized.</remarks>
+        public static NtResult<NtThread> Create(
+            ObjectAttributes object_attributes,
+            ThreadAccessRights desired_acccess,
+            NtProcess process,
+            long start_routine,
+            long argument,
+            ThreadCreateFlags create_flags,
+            long zero_bits,
+            long stack_size,
+            long maximum_stack_size,
+            IEnumerable<ProcessAttribute> attribute_list,
+            bool throw_on_error)
+        {
+            using (ProcessAttributeList attr_list = ProcessAttributeList.Create(attribute_list))
+            {
+                return NtSystemCalls.NtCreateThreadEx(out SafeKernelObjectHandle handle, desired_acccess, object_attributes, process.Handle, new IntPtr(start_routine), new IntPtr(argument),
+                    create_flags, new IntPtr(zero_bits), new IntPtr(stack_size), new IntPtr(maximum_stack_size), attr_list).CreateResult(throw_on_error, () => new NtThread(handle));
+            }
+        }
+
+        /// <summary>
+        /// Create a new thread in a process.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the thread object.</param>
+        /// <param name="desired_acccess">Desired access for the handle.</param>
+        /// <param name="process">Process to create the thread in.</param>
+        /// <param name="start_routine">Address of the start routine.</param>
+        /// <param name="argument">Argument to pass to the thread.</param>
+        /// <param name="create_flags">Creation flags.</param>
+        /// <param name="zero_bits">Zero bits for the stack address.</param>
+        /// <param name="stack_size">Size of the committed stack.</param>
+        /// <param name="maximum_stack_size">Maximum reserved stack size.</param>
+        /// <param name="attribute_list">Optional attribute list.</param>
+        /// <returns>The created thread object.</returns>
+        /// <remarks>This creates a native thread, not a Win32 thread. This might cause unexpected things to fail as they're not initialized.</remarks>
+        public static NtThread Create(
+            ObjectAttributes object_attributes,
+            ThreadAccessRights desired_acccess,
+            NtProcess process,
+            long start_routine,
+            long argument,
+            ThreadCreateFlags create_flags,
+            long zero_bits,
+            long stack_size,
+            long maximum_stack_size,
+            IEnumerable<ProcessAttribute> attribute_list)
+        {
+            return Create(object_attributes, desired_acccess, process, start_routine, argument, create_flags, 
+                zero_bits, stack_size, maximum_stack_size, attribute_list, true).Result;
+        }
+
+        /// <summary>
+        /// Create a new thread in a process.
+        /// </summary>
+        /// <param name="process">Process to create the thread in.</param>
+        /// <param name="start_routine">Address of the start routine.</param>
+        /// <param name="argument">Argument to pass to the thread.</param>
+        /// <param name="create_flags">Creation flags.</param>
+        /// <param name="stack_size">Size of the committed stack.</param>
+        /// <param name="throw_on_error">True to throw on error</param>
+        /// <returns>The created thread object.</returns>
+        /// <remarks>This creates a native thread, not a Win32 thread. This might cause unexpected things to fail as they're not initialized.</remarks>
+        public static NtResult<NtThread> Create(
+            NtProcess process,
+            long start_routine,
+            long argument,
+            ThreadCreateFlags create_flags,
+            long stack_size,
+            bool throw_on_error)
+        {
+            return Create(null, ThreadAccessRights.MaximumAllowed, process, start_routine, argument, create_flags, 0, stack_size, 0, null, throw_on_error);
+        }
+
+        /// <summary>
+        /// Create a new thread in a process.
+        /// </summary>
+        /// <param name="process">Process to create the thread in.</param>
+        /// <param name="start_routine">Address of the start routine.</param>
+        /// <param name="argument">Argument to pass to the thread.</param>
+        /// <param name="create_flags">Creation flags.</param>
+        /// <param name="stack_size">Size of the committed stack.</param>
+        /// <returns>The created thread object.</returns>
+        /// <remarks>This creates a native thread, not a Win32 thread. This might cause unexpected things to fail as they're not initialized.</remarks>
+        public static NtThread Create(
+            NtProcess process,
+            long start_routine,
+            long argument,
+            ThreadCreateFlags create_flags,
+            long stack_size)
+        {
+            return Create(process, start_routine, argument, create_flags, stack_size, true).Result;
+        }
+
+        /// <summary>
         /// Open a thread
         /// </summary>
         /// <param name="thread_id">The thread ID to open</param>
