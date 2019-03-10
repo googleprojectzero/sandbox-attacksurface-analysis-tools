@@ -232,6 +232,13 @@ namespace NtApiDotNet
         }
     }
 
+    [StructLayout(LayoutKind.Sequential), DataStart("Attributes")]
+    public struct PsAttributeList
+    {
+        public IntPtr TotalLength;
+        public ProcessAttributeNative Attributes;
+    }
+
     public enum ProcessAttributeNum
     {
         ParentProcess, // in HANDLE
@@ -791,20 +798,29 @@ namespace NtApiDotNet
 
     };
 
-    [StructLayout(LayoutKind.Sequential)]
-    public sealed class ProcessAttributeList
+    public sealed class ProcessAttributeList : SafeStructureInOutBuffer<PsAttributeList>
     {
-        IntPtr TotalLength;
-        // Allocate upto 64 entries.
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
-        ProcessAttributeNative[] Attributes;
+        private ProcessAttributeList(ProcessAttributeNative[] attributes)
+            : base(Marshal.SizeOf(typeof(ProcessAttributeNative)) * attributes.Length, true)
+        {
+            var result = Result;
+            result.TotalLength = new IntPtr(Length);
+            Result = result;
+            Data.WriteArray(0, attributes, 0, attributes.Length);
+        }
 
         public ProcessAttributeList(IEnumerable<ProcessAttribute> attributes)
+            : this(attributes.Select(a => a.GetNativeAttribute()).ToArray())
         {
-            ProcessAttributeNative[] attrs = attributes.Select(a => a.GetNativeAttribute()).ToArray();
-            Attributes = new ProcessAttributeNative[64];
-            Array.Copy(attrs, Attributes, attrs.Length);
-            TotalLength = new IntPtr(IntPtr.Size + Marshal.SizeOf(typeof(ProcessAttributeNative)) * attrs.Length);
+        }
+
+        public static ProcessAttributeList Create(IEnumerable<ProcessAttribute> attributes)
+        {
+            if (attributes == null || !attributes.Any())
+            {
+                return null;
+            }
+            return new ProcessAttributeList(attributes);
         }
     }
 

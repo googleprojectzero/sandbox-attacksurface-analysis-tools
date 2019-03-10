@@ -1037,7 +1037,7 @@ namespace NtApiDotNet.Win32
         }
 
         internal SECURITY_ATTRIBUTES ThreadSecurityAttributes(DisposableList<IDisposable> resources)
-        {            
+        {
             return CreateSecurityAttributes(ThreadSecurityDescriptor, InheritThreadHandle, resources);
         }
 

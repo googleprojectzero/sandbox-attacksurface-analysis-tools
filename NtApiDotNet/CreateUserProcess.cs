@@ -342,7 +342,7 @@ namespace NtApiDotNet
                     attrs.Add(ProcessAttribute.Token(Token.Handle));
                 }
 
-                ProcessAttributeList attr_list = new ProcessAttributeList(attrs);
+                ProcessAttributeList attr_list = ProcessAttributeList.Create(attrs);
 
                 create_info.Data.InitFlags = InitFlags | ProcessCreateInitFlag.WriteOutputOnExit;
                 create_info.Data.ProhibitedImageCharacteristics = ProhibitedImageCharacteristics;
