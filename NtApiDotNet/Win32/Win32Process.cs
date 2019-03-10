@@ -24,40 +24,56 @@ namespace NtApiDotNet.Win32
     /// Flags for create process.
     /// </summary>
     [Flags]
-    public enum CreateProcessFlags
+    public enum CreateProcessFlags : uint
     {
         /// <summary>
         /// No flags.
         /// </summary>
         None = 0,
         /// <summary>
-        /// Breakaway from a job object.
+        /// Debug process.
         /// </summary>
-        BreakawayFromJob = 0x01000000,
+        DebugProcess = 0x00000001,
         /// <summary>
-        /// Default error mode.
+        /// Debug only this process.
         /// </summary>
-        DefaultErrorMode = 0x04000000,
+        DebugOnlyThisProcess = 0x00000002,
+        /// <summary>
+        /// Create suspended.
+        /// </summary>
+        Suspended = 0x00000004,
+        /// <summary>
+        /// Detach process.
+        /// </summary>
+        DetachedProcess = 0x00000008,
         /// <summary>
         /// Create a new console.
         /// </summary>
         NewConsole = 0x00000010,
         /// <summary>
+        /// Normal priority class.
+        /// </summary>
+        NormalPriorityClass = 0x00000020,
+        /// <summary>
+        /// Idle priority class.
+        /// </summary>
+        IdlePriorityClass = 0x00000040,
+        /// <summary>
+        /// High priority class.
+        /// </summary>
+        HighPriorityClass = 0x00000080,
+        /// <summary>
+        /// Realtime priority class.
+        /// </summary>
+        RealtimePriorityClass = 0x00000100,
+        /// <summary>
         /// Create a new process group.
         /// </summary>
         NewProcessGroup = 0x00000200,
         /// <summary>
-        /// No window.
+        /// Create from a unicode environment.
         /// </summary>
-        NoWindow = 0x08000000,
-        /// <summary>
-        /// Create a protected process.
-        /// </summary>
-        ProtectedProcess = 0x00040000,
-        /// <summary>
-        /// Preserve code authz level.
-        /// </summary>
-        PreserveCodeAuthZLevel = 0x02000000,
+        UnicodeEnvironment = 0x00000400,
         /// <summary>
         /// Create a separate WOW VDM.
         /// </summary>
@@ -67,33 +83,77 @@ namespace NtApiDotNet.Win32
         /// </summary>
         SharedWowVdm = 0x00001000,
         /// <summary>
-        /// Create suspended.
+        /// Force DOS process.
         /// </summary>
-        Suspended = 0x00000004,
+        ForceDOS = 0x00002000,
         /// <summary>
-        /// Create from a unicode environment.
+        /// Below normal priority class.
         /// </summary>
-        UnicodeEnvironment = 0x00000400,
+        BelowNormalPriorityClass = 0x00004000,
         /// <summary>
-        /// Debug only this process.
+        /// Above normal priority class.
         /// </summary>
-        DebugOnlyThisProcess = 0x00000002,
+        AboveNormalPriorityClass = 0x00008000,
         /// <summary>
-        /// Debug process.
+        /// Inherit parent affinity.
         /// </summary>
-        DebugProcess = 0x00000001,
+        InheritParentAffinity = 0x00010000,
         /// <summary>
-        /// Detach process.
+        /// Inherit caller priority (deprecated)
         /// </summary>
-        DetachedProcess = 0x00000008,
+        InheritCallerPriority = 0x00020000,
+        /// <summary>
+        /// Create a protected process.
+        /// </summary>
+        ProtectedProcess = 0x00040000,
         /// <summary>
         /// Specify extended startup information is present.
         /// </summary>
         ExtendedStartupInfoPresent = 0x00080000,
         /// <summary>
-        /// Inherit parent affinity.
+        /// Process mode background begin.
         /// </summary>
-        InheritParentAffinity = 0x00010000
+        ModeBackgroundBegin =  0x00100000,
+        /// <summary>
+        /// Process mode background end.
+        /// </summary>
+        ModeBackgroundEnd =  0x00200000,
+        /// <summary>
+        /// Create a secure process.
+        /// </summary>
+        SecureProcess  = 0x00400000,
+        /// <summary>
+        /// Breakaway from a job object.
+        /// </summary>
+        BreakawayFromJob = 0x01000000,
+        /// <summary>
+        /// Preserve code authz level.
+        /// </summary>
+        PreserveCodeAuthZLevel = 0x02000000,
+        /// <summary>
+        /// Default error mode.
+        /// </summary>
+        DefaultErrorMode = 0x04000000,
+        /// <summary>
+        /// No window.
+        /// </summary>
+        NoWindow = 0x08000000,
+        /// <summary>
+        /// Profile user.
+        /// </summary>
+        ProfileUser = 0x10000000,
+        /// <summary>
+        /// Profile kernel.
+        /// </summary>
+        ProfileKernel = 0x20000000,
+        /// <summary>
+        /// Profile server.
+        /// </summary>
+        ProfileServer = 0x40000000,
+        /// <summary>
+        /// Ignore system default.
+        /// </summary>
+        IgnoreSystemDefault = 0x80000000
     }
 
     /// <summary>
