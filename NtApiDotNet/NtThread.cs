@@ -45,29 +45,32 @@ namespace NtApiDotNet
             return Query<ThreadBasicInformation>(ThreadInformationClass.ThreadBasicInformation);
         }
 
-        private IContext GetX86Context(ContextFlags flags)
+        private NtResult<IContext> GetX86Context(ContextFlags flags, bool throw_on_error)
         {
-            var context = new ContextX86();
-            context.ContextFlags = flags;
+            var context = new ContextX86
+            {
+                ContextFlags = flags
+            };
 
             using (var buffer = context.ToBuffer())
             {
-                NtSystemCalls.NtGetContextThread(Handle, buffer).ToNtException();
-                return buffer.Result;
+                return NtSystemCalls.NtGetContextThread(Handle, buffer).CreateResult(throw_on_error, () => buffer.Result).Cast<IContext>();
             }
         }
 
-        private IContext GetAmd64Context(ContextFlags flags)
+        private NtResult<IContext> GetAmd64Context(ContextFlags flags, bool throw_on_error)
         {
-            var context = new ContextAmd64();
-            context.ContextFlags = flags;
+            var context = new ContextAmd64
+            {
+                ContextFlags = flags
+            };
 
             // Buffer needs to be 16 bytes aligned, so allocate some extract space in case.
             using (var buffer = new SafeHGlobalBuffer(Marshal.SizeOf(context) + 16))
             {
                 int write_ofs = 0;
                 long ptr = buffer.DangerousGetHandle().ToInt64();
-                // Almost certainly 8 byte aligned, but just in case.
+                // Almost certainly 16 byte aligned, but just in case.
                 if ((ptr & 0xF) != 0)
                 {
                     write_ofs = (int)(0x10 - (ptr & 0xF));
@@ -75,8 +78,7 @@ namespace NtApiDotNet
 
                 Marshal.StructureToPtr(context, buffer.DangerousGetHandle() + write_ofs, false);
                 var sbuffer = buffer.GetStructAtOffset<ContextAmd64>(write_ofs);
-                NtSystemCalls.NtGetContextThread(Handle, sbuffer).ToNtException();
-                return sbuffer.Result;
+                return NtSystemCalls.NtGetContextThread(Handle, sbuffer).CreateResult(throw_on_error, () => sbuffer.Result).Cast<IContext>();
             }
         }
 
@@ -250,11 +252,30 @@ namespace NtApiDotNet
         /// <summary>
         /// Resume the thread.
         /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The suspend count</returns>
+        public NtResult<int> Resume(bool throw_on_error)
+        {
+            return NtSystemCalls.NtResumeThread(Handle, out int suspend_count).CreateResult(throw_on_error, () => suspend_count);
+        }
+
+        /// <summary>
+        /// Resume the thread.
+        /// </summary>
         /// <returns>The suspend count</returns>
         public int Resume()
         {
-            NtSystemCalls.NtResumeThread(Handle, out int suspend_count).ToNtException();
-            return suspend_count;
+            return Resume(true).Result;
+        }
+
+        /// <summary>
+        /// Suspend the thread.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The suspend count</returns>
+        public NtResult<int> Suspend(bool throw_on_error)
+        {
+            return NtSystemCalls.NtSuspendThread(Handle, out int suspend_count).CreateResult(throw_on_error, () => suspend_count);
         }
 
         /// <summary>
@@ -263,8 +284,18 @@ namespace NtApiDotNet
         /// <returns>The suspend count</returns>
         public int Suspend()
         {
-            NtSystemCalls.NtSuspendThread(Handle, out int suspend_count).ToNtException();
-            return suspend_count;
+            return Suspend(true).Result;
+        }
+
+        /// <summary>
+        /// Terminate the thread
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <param name="status">The thread status exit code</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus Terminate(NtStatus status, bool throw_on_error)
+        {
+            return NtSystemCalls.NtTerminateThread(Handle, status).ToNtException(throw_on_error);
         }
 
         /// <summary>
@@ -273,7 +304,17 @@ namespace NtApiDotNet
         /// <param name="status">The thread status exit code</param>
         public void Terminate(NtStatus status)
         {
-            NtSystemCalls.NtTerminateThread(Handle, status).ToNtException();
+            Terminate(status, true);
+        }
+
+        /// <summary>
+        /// Wake the thread from an alertable state.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus Alert(bool throw_on_error)
+        {
+            return NtSystemCalls.NtAlertThread(Handle).ToNtException(throw_on_error);
         }
 
         /// <summary>
@@ -281,7 +322,18 @@ namespace NtApiDotNet
         /// </summary>
         public void Alert()
         {
-            NtSystemCalls.NtAlertThread(Handle).ToNtException();
+            Alert(true);
+        }
+
+        /// <summary>
+        /// Wake the thread from an alertable state and resume the thread.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The previous suspend count for the thread.</returns>
+        public NtResult<int> AlertResume(bool throw_on_error)
+        {
+            OptionalInt32 suspend_count = new OptionalInt32();
+            return NtSystemCalls.NtAlertResumeThread(Handle, suspend_count).CreateResult(throw_on_error, () => suspend_count.Value);
         }
 
         /// <summary>
@@ -290,9 +342,17 @@ namespace NtApiDotNet
         /// <returns>The previous suspend count for the thread.</returns>
         public int AlertResume()
         {
-            OptionalInt32 suspend_count = new OptionalInt32();
-            NtSystemCalls.NtAlertResumeThread(Handle, suspend_count).ToNtException();
-            return suspend_count.Value;
+            return AlertResume(true).Result;
+        }
+
+        /// <summary>
+        /// Hide the thread from debug events.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus HideFromDebugger(bool throw_on_error)
+        {
+            return SetBuffer(ThreadInformationClass.ThreadHideFromDebugger, SafeHGlobalBuffer.Null, throw_on_error);
         }
 
         /// <summary>
@@ -300,7 +360,23 @@ namespace NtApiDotNet
         /// </summary>
         public void HideFromDebugger()
         {
-            NtSystemCalls.NtSetInformationThread(Handle, ThreadInformationClass.ThreadHideFromDebugger, SafeHGlobalBuffer.Null, 0).ToNtException();
+            HideFromDebugger(true);
+        }
+
+        /// <summary>
+        /// The set the thread's impersonation token
+        /// </summary>
+        /// <param name="token">The impersonation token to set</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetImpersonationToken(NtToken token, bool throw_on_error)
+        {
+            IntPtr handle = token != null ? token.Handle.DangerousGetHandle() : IntPtr.Zero;
+            using (var buf = handle.ToBuffer())
+            {
+                return NtSystemCalls.NtSetInformationThread(Handle, ThreadInformationClass.ThreadImpersonationToken,
+                    buf, buf.Length).ToNtException(throw_on_error);
+            }
         }
 
         /// <summary>
@@ -309,12 +385,18 @@ namespace NtApiDotNet
         /// <param name="token">The impersonation token to set</param>
         public void SetImpersonationToken(NtToken token)
         {
-            IntPtr handle = token != null ? token.Handle.DangerousGetHandle() : IntPtr.Zero;
-            using (var buf = handle.ToBuffer())
-            {
-                NtSystemCalls.NtSetInformationThread(Handle, ThreadInformationClass.ThreadImpersonationToken,
-                    buf, buf.Length).ToNtException();
-            }
+            SetImpersonationToken(token, true);
+        }
+
+        /// <summary>
+        /// Impersonate the anonymous token
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The impersonation context. Dispose to revert to self</returns>
+        public NtResult<ThreadImpersonationContext> ImpersonateAnonymousToken(bool throw_on_error)
+        {
+            return NtSystemCalls.NtImpersonateAnonymousToken(Handle)
+                .CreateResult(throw_on_error, () => new ThreadImpersonationContext(Duplicate()));
         }
 
         /// <summary>
@@ -323,35 +405,82 @@ namespace NtApiDotNet
         /// <returns>The impersonation context. Dispose to revert to self</returns>
         public ThreadImpersonationContext ImpersonateAnonymousToken()
         {
-            NtSystemCalls.NtImpersonateAnonymousToken(Handle).ToNtException();
-            return new ThreadImpersonationContext(Duplicate());
+            return ImpersonateAnonymousToken(true).Result;
         }
 
         /// <summary>
         /// Impersonate a token
         /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <param name="token">The token to impersonate.</param>
+        /// <returns>The impersonation context. Dispose to revert to self</returns>
+        public NtResult<ThreadImpersonationContext> Impersonate(NtToken token, bool throw_on_error)
+        {
+            return SetImpersonationToken(token, false).CreateResult(throw_on_error, () => new ThreadImpersonationContext(Duplicate()));
+        }
+
+        /// <summary>
+        /// Impersonate a token
+        /// </summary>
+        /// <param name="token">The token to impersonate.</param>
         /// <returns>The impersonation context. Dispose to revert to self</returns>
         public ThreadImpersonationContext Impersonate(NtToken token)
         {
-            SetImpersonationToken(token);
-            return new ThreadImpersonationContext(Duplicate());
+            return Impersonate(token, true).Result;
         }
 
         /// <summary>
         /// Impersonate another thread.
         /// </summary>
         /// <param name="thread">The thread to impersonate.</param>
-        /// <param name="impersonation_level">The impersonation level</param>
+        /// <param name="security_quality_of_service">The impersonation security quality of service.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The imperonsation context. Dispose to revert to self.</returns>
-        public ThreadImpersonationContext ImpersonateThread(NtThread thread, SecurityImpersonationLevel impersonation_level)
+        public NtResult<ThreadImpersonationContext> ImpersonateThread(NtThread thread, 
+            SecurityQualityOfService security_quality_of_service, bool throw_on_error)
         {
-            NtSystemCalls.NtImpersonateThread(Handle, thread.Handle,
-                new SecurityQualityOfService(impersonation_level, SecurityContextTrackingMode.Static, false)).ToNtException();
-            return new ThreadImpersonationContext(Duplicate());
+            return NtSystemCalls.NtImpersonateThread(Handle, thread.Handle, security_quality_of_service)
+                .CreateResult(throw_on_error, () => new ThreadImpersonationContext(Duplicate()));
         }
 
         /// <summary>
-        /// Impersonate another thread.
+        /// Impersonate another thread's security context.
+        /// </summary>
+        /// <param name="thread">The thread to impersonate.</param>
+        /// <param name="impersonation_level">The impersonation level for the token.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The imperonsation context. Dispose to revert to self.</returns>
+        public NtResult<ThreadImpersonationContext> ImpersonateThread(NtThread thread,
+            SecurityImpersonationLevel impersonation_level, bool throw_on_error)
+        {
+            return ImpersonateThread(thread, new SecurityQualityOfService(impersonation_level, 
+                SecurityContextTrackingMode.Static, false), throw_on_error);
+        }
+
+        /// <summary>
+        /// Impersonate another thread's security context.
+        /// </summary>
+        /// <param name="thread">The thread to impersonate.</param>
+        /// <param name="impersonation_level">The impersonation level for the token.</param>
+        /// <returns>The imperonsation context. Dispose to revert to self.</returns>
+        public ThreadImpersonationContext ImpersonateThread(NtThread thread, SecurityImpersonationLevel impersonation_level)
+        {
+            return ImpersonateThread(thread, impersonation_level, true).Result;
+        }
+
+        /// <summary>
+        /// Impersonate another thread's security context at impersonation level.
+        /// </summary>
+        /// <param name="thread">The thread to impersonate.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The imperonsation context. Dispose to revert to self.</returns>
+        public NtResult<ThreadImpersonationContext> ImpersonateThread(NtThread thread, bool throw_on_error)
+        {
+            return ImpersonateThread(thread, SecurityImpersonationLevel.Impersonation, throw_on_error);
+        }
+
+        /// <summary>
+        /// Impersonate another thread's security context at impersonation level.
         /// </summary>
         /// <param name="thread">The thread to impersonate.</param>
         /// <returns>The imperonsation context. Dispose to revert to self.</returns>
@@ -376,9 +505,42 @@ namespace NtApiDotNet
         /// <param name="normal_context">Context parameter.</param>
         /// <param name="system_argument1">System argument 1.</param>
         /// <param name="system_argument2">System argument 2.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus QueueUserApc(IntPtr apc_routine, IntPtr normal_context, IntPtr system_argument1, IntPtr system_argument2, bool throw_on_error)
+        {
+            return NtSystemCalls.NtQueueApcThread(Handle, apc_routine, normal_context, system_argument1, system_argument2).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Queue a user APC to the thread.
+        /// </summary>
+        /// <param name="apc_routine">The APC callback pointer.</param>
+        /// <param name="normal_context">Context parameter.</param>
+        /// <param name="system_argument1">System argument 1.</param>
+        /// <param name="system_argument2">System argument 2.</param>
         public void QueueUserApc(IntPtr apc_routine, IntPtr normal_context, IntPtr system_argument1, IntPtr system_argument2)
         {
-            NtSystemCalls.NtQueueApcThread(Handle, apc_routine, normal_context, system_argument1, system_argument2).ToNtException();
+            QueueUserApc(apc_routine, normal_context, system_argument1, system_argument2, true);
+        }
+
+        /// <summary>
+        /// Queue a user APC to the thread.
+        /// </summary>
+        /// <param name="apc_routine">The APC callback delegate.</param>
+        /// <param name="normal_context">Context parameter.</param>
+        /// <param name="system_argument1">System argument 1.</param>
+        /// <param name="system_argument2">System argument 2.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <remarks>This is only for APCs in the current process. You also must ensure the delegate is
+        /// valid at all times as this method doesn't take a reference to the delegate to prevent it being
+        /// garbage collected.</remarks>
+        public NtStatus QueueUserApc(ApcCallback apc_routine, IntPtr normal_context, 
+            IntPtr system_argument1, IntPtr system_argument2, bool throw_on_error)
+        {
+            return QueueUserApc(Marshal.GetFunctionPointerForDelegate(apc_routine),
+                normal_context, system_argument1, system_argument2, throw_on_error);
         }
 
         /// <summary>
@@ -393,8 +555,7 @@ namespace NtApiDotNet
         /// garbage collected.</remarks>
         public void QueueUserApc(ApcCallback apc_routine, IntPtr normal_context, IntPtr system_argument1, IntPtr system_argument2)
         {
-            NtSystemCalls.NtQueueApcThread(Handle, Marshal.GetFunctionPointerForDelegate(apc_routine),
-                normal_context, system_argument1, system_argument2).ToNtException();
+            QueueUserApc(apc_routine, normal_context, system_argument1, system_argument2);
         }
 
         /// <summary>
@@ -419,18 +580,30 @@ namespace NtApiDotNet
         /// Get the thread context.
         /// </summary>
         /// <param name="flags">Flags for context parts to get.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>An instance of an IContext object. Needs to be cast to correct type to access.</returns>
+        public NtResult<IContext> GetContext(ContextFlags flags, bool throw_on_error)
+        {
+            var processor = NtSystemInfo.ProcessorInformation.ProcessorArchitecture;
+            if (processor == ProcessorAchitecture.AMD64 && Environment.Is64BitProcess)
+            {
+                return GetAmd64Context(flags, throw_on_error);
+            }
+            else if (processor == ProcessorAchitecture.Intel)
+            {
+                return GetX86Context(flags, throw_on_error);
+            }
+            throw new InvalidOperationException($"GetContext doesn't support {processor} architecture");
+        }
+
+        /// <summary>
+        /// Get the thread context.
+        /// </summary>
+        /// <param name="flags">Flags for context parts to get.</param>
         /// <returns>An instance of an IContext object. Needs to be cast to correct type to access.</returns>
         public IContext GetContext(ContextFlags flags)
         {
-            // Really needs to support ARM as well.
-            if (Environment.Is64BitProcess)
-            {
-                return GetAmd64Context(flags);
-            }
-            else
-            {
-                return GetX86Context(flags);
-            }
+            return GetContext(flags, true).Result;
         }
 
         /// <summary>
