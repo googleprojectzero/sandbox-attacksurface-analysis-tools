@@ -551,7 +551,7 @@ namespace NtObjectManager
     ///   <para>Gets information about a specific status code.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "NtStatus")]
-    public class GetNtStatusCmdlet : Cmdlet
+    public sealed class GetNtStatusCmdlet : Cmdlet
     {
         /// <summary>
         /// <para type="description">Specify a NTSTATUS code to retrieve.</para>
@@ -571,6 +571,141 @@ namespace NtObjectManager
             else
             {
                 WriteObject(new NtStatusResult(Status.Value));
+            }
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Duplicate an object to a new handle. Optionally specify processes to duplicate to.</para>
+    /// <para type="description">This cmdlet duplicates an object either in the same process or between processes. If you duplicate to another process the cmdlet will return a handle value rather than an object.
+    /// </para>
+    /// </summary>
+    /// <example>
+    ///   <code>Copy-NtObject -Object $obj</code>
+    ///   <para>Duplicate an object to another in the current process with same access rights.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Copy-NtObject -Object $obj -DestinationProcess $proc</code>
+    ///   <para>Duplicate an object to another process. If the desintation process is the current process an object is returned, otherwise a handle is returned.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Copy-NtObject -Handle 1234 -SourceProcess $proc</code>
+    ///   <para>Duplicate an object from another process to the current process.</para>
+    /// </example>
+    [Cmdlet(VerbsCommon.Copy, "NtObject")]
+    [OutputType(typeof(NtObject))]
+    public sealed class CopyNtObjectCmdlet : PSCmdlet
+    {
+        /// <summary>
+        /// <para type="description">Specify the object to duplicate in the current process.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromObject")]
+        public NtObject Object { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the object to duplicate as a handle.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromHandle")]
+        public IntPtr SourceHandle { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the process to duplicate from.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromHandle")]
+        public NtProcess SourceProcess { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the process to duplicate to. Defaults to current process.</para>
+        /// </summary>
+        [Parameter]
+        public NtProcess DestinationProcess { get; set; }
+
+        /// <summary>
+        /// <para type="description">The desired access for the duplication.</para>
+        /// </summary>
+        [Parameter]
+        public GenericAccessRights? DesiredAccess { get; set; }
+
+        /// <summary>
+        /// <para type="description">The desired object attribute flags for the duplication.</para>
+        /// </summary>
+        [Parameter]
+        public AttributeFlags? ObjectAttributes { get; set; }
+
+        /// <summary>
+        /// <para type="description">Close the source handle.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromHandle")]
+        public SwitchParameter CloseSource { get; set; }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public CopyNtObjectCmdlet()
+        {
+            SourceProcess = NtProcess.Current;
+            DestinationProcess = NtProcess.Current;
+        }
+
+        private DuplicateObjectOptions GetOptions()
+        {
+            DuplicateObjectOptions options = DuplicateObjectOptions.None;
+            if (!DesiredAccess.HasValue)
+            {
+                options |= DuplicateObjectOptions.SameAccess;
+            }
+
+            if (!ObjectAttributes.HasValue)
+            {
+                options |= DuplicateObjectOptions.SameAttributes;
+            }
+
+            if (CloseSource)
+            {
+                options |= DuplicateObjectOptions.CloseSource;
+            }
+
+            return options;
+        }
+
+        private NtObject GetObject()
+        {
+            if (ParameterSetName == "FromHandle")
+            {
+                using (var obj = NtGeneric.DuplicateFrom(SourceProcess, SourceHandle, DesiredAccess ?? 0, ObjectAttributes ?? 0, GetOptions()))
+                {
+                    return obj.ToTypedObject();
+                }
+            }
+            else
+            {
+                return Object.DuplicateObject(DesiredAccess ?? 0, ObjectAttributes ?? 0, GetOptions());
+            }
+        }
+
+        private IntPtr GetHandle()
+        {
+            IntPtr handle = SourceHandle;
+            if (ParameterSetName == "FromObject")
+            {
+                handle = Object.Handle.DangerousGetHandle();
+            }
+
+            return NtObject.DuplicateHandle(SourceProcess, handle, DestinationProcess, DesiredAccess ?? 0, ObjectAttributes ?? 0, GetOptions());
+        }
+
+        /// <summary>
+        /// Process record.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            if (DestinationProcess.SameObject(NtProcess.Current))
+            {
+                WriteObject(GetObject());
+            }
+            else
+            {
+                WriteObject(GetHandle());
             }
         }
     }

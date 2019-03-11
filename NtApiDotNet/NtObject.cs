@@ -356,6 +356,18 @@ namespace NtApiDotNet
         public abstract NtResult<NtObject> DuplicateObject(AccessMask access_rights, AttributeFlags flags, DuplicateObjectOptions options, bool throw_on_error);
 
         /// <summary>
+        /// Duplicate object.
+        /// </summary>
+        /// <param name="access_rights">Access rights to duplicate with.</param>
+        /// <param name="flags">Attribute flags.</param>
+        /// <param name="options">Duplicate options</param>
+        /// <returns>The duplicated object.</returns>
+        public NtObject DuplicateObject(AccessMask access_rights, AttributeFlags flags, DuplicateObjectOptions options)
+        {
+            return DuplicateObject(access_rights, flags, options, true).Result;
+        }
+
+        /// <summary>
         /// Duplicate object with specific access rights.
         /// </summary>
         /// <param name="access_rights">Access rights to duplicate with.</param>
