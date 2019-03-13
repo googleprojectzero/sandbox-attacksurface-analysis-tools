@@ -375,7 +375,7 @@ namespace NtApiDotNet
             if (!Win32NativeMethods.ConvertSecurityDescriptorToStringSecurityDescriptor(sd,
                 1, security_information, out SafeLocalAllocHandle handle, out int return_length))
             {
-                throw new NtException(NtStatus.STATUS_INVALID_SID);
+                throw new NtException(NtObjectUtils.MapDosErrorToStatus());
             }
 
             using (handle)
@@ -395,7 +395,7 @@ namespace NtApiDotNet
             if (!Win32NativeMethods.ConvertStringSecurityDescriptorToSecurityDescriptor(sddl, 1, 
                 out SafeLocalAllocHandle handle, out int return_length))
             {
-                throw new NtException(NtStatus.STATUS_INVALID_SID);
+                throw new NtException(NtObjectUtils.MapDosErrorToStatus());
             }
 
             using (handle)
@@ -416,7 +416,7 @@ namespace NtApiDotNet
         {
             if (!Win32NativeMethods.ConvertStringSidToSid(sddl, out SafeLocalAllocHandle handle))
             {
-                throw new NtException(NtStatus.STATUS_INVALID_SID);
+                throw new NtException(NtObjectUtils.MapDosErrorToStatus());
             }
             using (handle)
             {
