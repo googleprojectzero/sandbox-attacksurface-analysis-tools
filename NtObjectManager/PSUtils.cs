@@ -21,9 +21,7 @@ using System.Text;
 
 namespace NtObjectManager
 {
-    /// <summary>
-    /// Text encoding type.
-    /// </summary>
+    /// <para type="description">Enumeration to specify a text encoding.</para>
     public enum TextEncodingType
     {
         /// <summary>
