@@ -25,7 +25,109 @@ namespace NtObjectManager
     /// <summary>
     /// Base object cmdlet.
     /// </summary>
-    public abstract class NtObjectBaseCmdlet : PSCmdlet, IDisposable
+    public abstract class NtObjectBaseNoPathCmdlet : PSCmdlet, IDisposable
+    {
+        /// <summary>
+        /// <para type="description">Object Attribute flags used during Open/Create calls.</para>
+        /// </summary>
+        [Parameter]
+        public AttributeFlags ObjectAttributes { get; set; }
+
+        /// <summary>
+        /// <para type="description">Set to provide an explicit security descriptor to a newly created object.</para>
+        /// </summary>
+        [Parameter]
+        public SecurityDescriptor SecurityDescriptor { get; set; }
+
+        /// <summary>
+        /// <para type="description">Set to provide an explicit security descriptor to a newly created object in SDDL format.</para>
+        /// </summary>
+        [Parameter]
+        public string Sddl
+        {
+            get => SecurityDescriptor?.ToSddl();
+            set => SecurityDescriptor = new SecurityDescriptor(value);
+        }
+
+        /// <summary>
+        /// <para type="description">Set to provide an explicit security quality of service when opening files/namedpipes.</para>
+        /// </summary>
+        [Parameter]
+        public SecurityQualityOfService SecurityQualityOfService { get; set; }
+
+        /// <summary>
+        /// Base constructor.
+        /// </summary>
+        protected NtObjectBaseNoPathCmdlet()
+        {
+            ObjectAttributes = AttributeFlags.CaseInsensitive;
+        }
+
+        /// <summary>
+        /// Method to create an object from a set of object attributes.
+        /// </summary>
+        /// <param name="obj_attributes">The object attributes to create/open from.</param>
+        /// <returns>The newly created object.</returns>
+        protected abstract object CreateObject(ObjectAttributes obj_attributes);
+
+        /// <summary>
+        /// Create object from components.
+        /// </summary>
+        /// <param name="path">The path to the object.</param>
+        /// <param name="attributes">The object attributes.</param>
+        /// <param name="root">The root object.</param>
+        /// <param name="security_quality_of_service">Security quality of service.</param>
+        /// <param name="security_descriptor">Security descriptor.</param>
+        /// <returns>The created object.</returns>
+        protected object CreateObject(string path, AttributeFlags attributes, NtObject root, 
+            SecurityQualityOfService security_quality_of_service, SecurityDescriptor security_descriptor)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(path, attributes, root, 
+                security_quality_of_service, security_descriptor))
+            {
+                return CreateObject(obja);
+            }
+        }
+
+        /// <summary>
+        /// Overridden ProcessRecord method.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            WriteObject(CreateObject(null, ObjectAttributes, null, SecurityQualityOfService, SecurityDescriptor));
+        }
+
+        #region IDisposable Support
+        /// <summary>
+        /// Dispose object.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+        }
+
+        /// <summary>
+        /// Finalizer.
+        /// </summary>
+        ~NtObjectBaseNoPathCmdlet()
+        {
+            Dispose(false);
+        }
+
+        /// <summary>
+        /// Dispose object.
+        /// </summary>
+        void IDisposable.Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion
+    }
+
+    /// <summary>
+    /// Base object cmdlet.
+    /// </summary>
+    public abstract class NtObjectBaseCmdlet : NtObjectBaseNoPathCmdlet
     {
         /// <summary>
         /// <para type="description">The NT object manager path to the object to use.</para>
@@ -46,30 +148,6 @@ namespace NtObjectManager
         public SwitchParameter Win32Path { get; set; }
 
         /// <summary>
-        /// <para type="description">Object Attribute flags used during Open/Create calls.</para>
-        /// </summary>
-        [Parameter]
-        public AttributeFlags ObjectAttributes { get; set; }
-
-        /// <summary>
-        /// <para type="description">Set to provide an explicit security descriptor to a newly created object.</para>
-        /// </summary>
-        [Parameter]
-        public SecurityDescriptor SecurityDescriptor { get; set; }
-
-        /// <summary>
-        /// <para type="description">Set to provide an explicit security descriptor to a newly created object in SDDL format. Overriddes SecurityDescriptor.</para>
-        /// </summary>
-        [Parameter]
-        public string Sddl { get; set; }
-
-        /// <summary>
-        /// <para type="description">Set to provide an explicit security quality of service when opening files/namedpipes.</para>
-        /// </summary>
-        [Parameter]
-        public SecurityQualityOfService SecurityQualityOfService { get; set; }
-
-        /// <summary>
         /// <para type="description">Automatically close the Root object when this cmdlet finishes processing. Useful for pipelines.</para>
         /// </summary>
         [Parameter]
@@ -87,15 +165,7 @@ namespace NtObjectManager
         /// </summary>
         protected NtObjectBaseCmdlet()
         {
-            ObjectAttributes = AttributeFlags.CaseInsensitive;
         }
-
-        /// <summary>
-        /// Method to create an object from a set of object attributes.
-        /// </summary>
-        /// <param name="obj_attributes">The object attributes to create/open from.</param>
-        /// <returns>The newly created object.</returns>
-        protected abstract object CreateObject(ObjectAttributes obj_attributes);
 
         /// <summary>
         /// Verify the parameters, should throw an exception if parameters are invalid.
@@ -207,23 +277,6 @@ namespace NtObjectManager
         /// <returns>True if objects can be created.</returns>
         protected abstract bool CanCreateDirectories();
 
-        private object CreateObject(string path, AttributeFlags attributes, NtObject root, SecurityQualityOfService security_quality_of_service, SecurityDescriptor security_descriptor)
-        {
-            using (ObjectAttributes obja = new ObjectAttributes(path, attributes, root, security_quality_of_service, security_descriptor))
-            {
-                return CreateObject(obja);
-            }
-        }
-
-        private SecurityDescriptor GetSecurityDescriptor()
-        {
-            if (!String.IsNullOrEmpty(Sddl))
-            {
-                return new SecurityDescriptor(Sddl);
-            }
-            return SecurityDescriptor;
-        }
-
         private IEnumerable<NtObject> CreateDirectoriesAndObject()
         {
             DisposableList<NtObject> objects = new DisposableList<NtObject>();
@@ -255,7 +308,7 @@ namespace NtObjectManager
                     }
                     builder.Append(@"\");
                 }
-                objects.Add((NtObject)CreateObject(ResolvePath(), ObjectAttributes, Root, SecurityQualityOfService, GetSecurityDescriptor()));
+                objects.Add((NtObject)CreateObject(ResolvePath(), ObjectAttributes, Root, SecurityQualityOfService, SecurityDescriptor));
                 finished = true;
             }
             finally
@@ -272,12 +325,12 @@ namespace NtObjectManager
         /// <summary>
         /// Overridden ProcessRecord method.
         /// </summary>
-        protected override void ProcessRecord()
+        protected sealed override void ProcessRecord()
         {
             VerifyParameters();
             try
             {
-                WriteObject(CreateObject(ResolvePath(), ObjectAttributes, Root, SecurityQualityOfService, GetSecurityDescriptor()));
+                WriteObject(CreateObject(ResolvePath(), ObjectAttributes, Root, SecurityQualityOfService, SecurityDescriptor));
             }
             catch (NtException ex)
             {
@@ -296,7 +349,7 @@ namespace NtObjectManager
         /// <summary>
         /// Dispose object.
         /// </summary>
-        protected virtual void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
@@ -310,23 +363,28 @@ namespace NtObjectManager
             }
         }
 
+        #endregion
+    }
+
+    /// <summary>
+    /// Base object cmdlet which has an access parameter.
+    /// </summary>
+    /// <typeparam name="T">The access enumeration type.</typeparam>
+    public abstract class NtObjectBaseNoPathCmdletWithAccess<T> : NtObjectBaseNoPathCmdlet where T : struct, IConvertible
+    {
         /// <summary>
-        /// Finalizer.
+        /// <para type="description">Specify the access rights for a new handle when creating/opening an object.</para>
         /// </summary>
-         ~NtObjectBaseCmdlet()
-        {
-            Dispose(false);
-        }
+        [Parameter]
+        public T Access { get; set; }
 
         /// <summary>
-        /// Dispose object.
+        /// Constructor.
         /// </summary>
-        void IDisposable.Dispose()
-        {            
-            Dispose(true);
-            GC.SuppressFinalize(this);
+        protected NtObjectBaseNoPathCmdletWithAccess()
+        {
+            Access = (T)Enum.ToObject(typeof(T), (uint)GenericAccessRights.MaximumAllowed);
         }
-        #endregion
     }
 
     /// <summary>
