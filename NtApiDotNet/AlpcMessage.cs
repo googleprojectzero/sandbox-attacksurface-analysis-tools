@@ -12,10 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Text;
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NtApiDotNet
 {
@@ -343,10 +345,22 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="data">Data to initialize the message with.</param>
         /// <param name="allocated_data_length">Maximum length of the message buffer.</param>
-        public AlpcMessageRaw(byte[] data, int allocated_data_length)
+        /// <param name="encoding">Specify a text encoding for the DataString property.</param>
+        public AlpcMessageRaw(byte[] data, int allocated_data_length, Encoding encoding)
         {
+            Encoding = encoding;
             _data = (byte[])data.Clone();
             UpdateHeaderLength(_data.Length, allocated_data_length);
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="data">Data to initialize the message with.</param>
+        /// <param name="allocated_data_length">Maximum length of the message buffer.</param>
+        public AlpcMessageRaw(byte[] data, int allocated_data_length) 
+            : this(data, allocated_data_length, BinaryEncoding.Instance)
+        {
         }
 
         /// <summary>
@@ -360,9 +374,29 @@ namespace NtApiDotNet
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="data">Data to initialize the message with.</param>
+        /// <param name="encoding">Specify a text encoding for the DataString property.</param>
+        public AlpcMessageRaw(byte[] data, Encoding encoding) 
+            : this(data, data.Length, encoding)
+        {
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         /// <param name="allocated_data_length">Total allocated length of the message buffer.</param>
         public AlpcMessageRaw(int allocated_data_length) 
             : this(new byte[0], allocated_data_length)
+        {
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="allocated_data_length">Total allocated length of the message buffer.</param>
+        /// <param name="encoding">Specify a text encoding for the DataString property.</param>
+        public AlpcMessageRaw(int allocated_data_length, Encoding encoding)
+            : this(new byte[0], allocated_data_length, encoding)
         {
         }
 
@@ -382,6 +416,22 @@ namespace NtApiDotNet
                 _data = value;
             }
         }
+
+        /// <summary>
+        /// Get or set the message data as an encoding string.
+        /// </summary>
+        /// <remarks>When you set the data it'll update the DataLength and TotalLength fields.</remarks>
+        public string DataString
+        {
+            get => Encoding.GetString(Data);
+            set => Data = Encoding.GetBytes(value);
+        }
+
+        /// <summary>
+        /// Get or set the text encoding in this raw message.
+        /// </summary>
+        public Encoding Encoding { get; set; }
+
         #endregion
 
         #region Protected Members
@@ -407,6 +457,8 @@ namespace NtApiDotNet
 
         #endregion
 
+        #region Public Methods
+        #endregion
     }
 
     /// <summary>

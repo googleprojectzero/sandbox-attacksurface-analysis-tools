@@ -135,11 +135,11 @@ namespace NtObjectManager
     /// <para type="description">This cmdlet accepts a connection on an ALPC server port and returns the new server port to communicate with the client.</para>
     /// </summary>
     /// <example>
-    ///   <code>$conn = Connect-NtAlpcServer -Port $port -ConnectionRequest $msg</code>
+    ///   <code>$conn = Connect-NtAlpcServer -Port $port -ConnectionMessage $msg</code>
     ///   <para>Accepts a connection on an ALPC server port.</para>
     /// </example>
     /// <example>
-    ///   <code>$conn = Connect-NtAlpcServer -Port $port  -ConnectionRequest $msg -Reject</code>
+    ///   <code>$conn = Connect-NtAlpcServer -Port $port  -ConnectionMessage $msg -Reject</code>
     ///   <para>Reject a connection on an ALPC server port.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
@@ -370,7 +370,8 @@ namespace NtObjectManager
 
     /// <summary>
     /// <para type="synopsis">Creates a new ALPC message.</para>
-    /// <para type="description">This cmdlet creates a new ALPC message based on a byte array or an length initializer.</para>
+    /// <para type="description">This cmdlet creates a new ALPC message based on a byte array or an length initializer.
+    /// You can also specify a text encoding which allows you to use the DataString property.</para>
     /// </summary>
     /// <example>
     ///   <code>$msg = New-NtAlpcMessage -Bytes @(0, 1, 2, 3)</code>
@@ -385,8 +386,16 @@ namespace NtObjectManager
     ///   <para>Create a new message with an allocated length of 1000 bytes.</para>
     /// </example>
     /// <example>
+    ///   <code>$msg = New-NtAlpcMessage -AllocatedDataLength 1000 -Encoding UTF8</code>
+    ///   <para>Create a new message with an allocated length of 1000 bytes and the message encoding is UTF8.</para>
+    /// </example>
+    /// <example>
     ///   <code>$msg = New-NtAlpcMessage -String "Hello World!"</code>
     ///   <para>Create a new message from a unicode string.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$msg = New-NtAlpcMessage -String "Hello World!" -Encoding UTF8</code>
+    ///   <para>Create a new message from a UTF8 string.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.New, "NtAlpcMessage", DefaultParameterSetName = "FromLength")]
@@ -406,6 +415,14 @@ namespace NtObjectManager
         public string String { get; set; }
 
         /// <summary>
+        /// <para type="description">Get or set the text encoding for this message.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromLength")]
+        [Parameter(ParameterSetName = "FromBytes")]
+        [Parameter(ParameterSetName = "FromString")]
+        public TextEncodingType Encoding { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify the message with allocated length.</para>
         /// </summary>
         [Parameter(Position = 0, ParameterSetName = "FromLength")]
@@ -419,6 +436,7 @@ namespace NtObjectManager
         public NewNtAlpcMessage()
         {
             AllocatedDataLength = AlpcMessage.MaximumDataLength;
+            Encoding = TextEncodingType.Unicode;
         }
 
         /// <summary>
@@ -426,17 +444,18 @@ namespace NtObjectManager
         /// </summary>
         protected override void ProcessRecord()
         {
+            Encoding encoding = PSUtils.GetEncoding(Encoding);
             if (ParameterSetName == "FromBytes")
             {
-                WriteObject(new AlpcMessageRaw(Bytes, AllocatedDataLength));
+                WriteObject(new AlpcMessageRaw(Bytes, AllocatedDataLength, encoding));
             }
             else if (ParameterSetName == "FromString")
             {
-                WriteObject(new AlpcMessageRaw(Encoding.Unicode.GetBytes(String), AllocatedDataLength));
+                WriteObject(new AlpcMessageRaw(encoding.GetBytes(String), AllocatedDataLength, encoding));
             }
             else
             {
-                WriteObject(new AlpcMessageRaw(AllocatedDataLength));
+                WriteObject(new AlpcMessageRaw(AllocatedDataLength, encoding));
             }
         }
     }

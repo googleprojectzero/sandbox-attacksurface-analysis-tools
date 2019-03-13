@@ -12,13 +12,46 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Text;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Management.Automation;
+using System.Text;
 
 namespace NtObjectManager
 {
+    /// <summary>
+    /// Text encoding type.
+    /// </summary>
+    public enum TextEncodingType
+    {
+        /// <summary>
+        /// Binary raw text.
+        /// </summary>
+        Binary,
+        /// <summary>
+        /// 16 bit unicode text.
+        /// </summary>
+        Unicode,
+        /// <summary>
+        /// Big Endian 16 bit unicode text.
+        /// </summary>
+        BigEndianUnicode,
+        /// <summary>
+        /// UTF8
+        /// </summary>
+        UTF8,
+        /// <summary>
+        /// UTF32
+        /// </summary>
+        UTF32,
+        /// <summary>
+        /// UTF7
+        /// </summary>
+        UTF7
+    }
+
     internal static class PSUtils
     {
         internal static T InvokeWithArg<T>(this ScriptBlock script_block, T default_value, params object[] args) 
@@ -60,6 +93,27 @@ namespace NtObjectManager
 #else
             return script_block.InvokeWithContext(null, vars, args);
 #endif
+        }
+
+        internal static Encoding GetEncoding(TextEncodingType encoding)
+        {
+            switch (encoding)
+            {
+                case TextEncodingType.Binary:
+                    return BinaryEncoding.Instance;
+                case TextEncodingType.Unicode:
+                    return Encoding.Unicode;
+                case TextEncodingType.BigEndianUnicode:
+                    return Encoding.BigEndianUnicode;
+                case TextEncodingType.UTF8:
+                    return Encoding.UTF8;
+                case TextEncodingType.UTF32:
+                    return Encoding.UTF32;
+                case TextEncodingType.UTF7:
+                    return Encoding.UTF7;
+                default:
+                    throw new ArgumentException("Unknown text encoding", nameof(encoding));
+            }
         }
     }
 }

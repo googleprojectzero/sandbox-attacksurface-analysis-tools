@@ -199,6 +199,7 @@
     <Compile Include="NtObjectUtils.cs" />
     <Compile Include="NtIoControlCode.cs" />
     <Compile Include="UserGroup.cs" />
+    <Compile Include="Utilities\Text\BinaryEncoding.cs" />
     <Compile Include="Win32\AppContainerProfile.cs" />
     <Compile Include="Win32\ExecutableManifest.cs" />
     <Compile Include="Win32\LogonUtils.cs" />
