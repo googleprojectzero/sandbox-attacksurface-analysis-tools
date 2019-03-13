@@ -145,17 +145,8 @@ namespace NtObjectManager
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet("Connect", "NtAlpcServer")]
     [OutputType(typeof(NtAlpcServer))]
-    public class ConnectNtAlpcServer : NtObjectBaseCmdlet
+    public class ConnectNtAlpcServer : NtObjectBaseNoPathCmdlet
     {
-        /// <summary>
-        /// Determine if the cmdlet can create objects.
-        /// </summary>
-        /// <returns>True if objects can be created.</returns>
-        protected override bool CanCreateDirectories()
-        {
-            return false;
-        }
-
         /// <summary>
         /// Method to create an object from a set of object attributes.
         /// </summary>
