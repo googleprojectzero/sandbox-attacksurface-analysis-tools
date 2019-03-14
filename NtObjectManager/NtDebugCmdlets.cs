@@ -182,11 +182,46 @@ namespace NtObjectManager
     }
 
     /// <summary>
+    /// <para type="description">The allowed set of continue status</para>
+    /// </summary>
+    public enum DbgContinueStatus : uint
+    {
+        /// <summary>
+        /// Exception is handled.
+        /// </summary>
+        DBG_EXCEPTION_HANDLED = NtStatus.DBG_EXCEPTION_HANDLED,
+        /// <summary>
+        /// Continue thread.
+        /// </summary>
+        DBG_CONTINUE = NtStatus.DBG_CONTINUE,
+        /// <summary>
+        /// Exception not handled.
+        /// </summary>
+        DBG_EXCEPTION_NOT_HANDLED = NtStatus.DBG_EXCEPTION_NOT_HANDLED,
+        /// <summary>
+        /// Reply later to the debug event.
+        /// </summary>
+        DBG_REPLY_LATER = NtStatus.DBG_REPLY_LATER,
+        /// <summary>
+        /// Terminate the thread being debugged.
+        /// </summary>
+        DBG_TERMINATE_THREAD = NtStatus.DBG_TERMINATE_THREAD,
+        /// <summary>
+        /// Terminate the process being debugged.
+        /// </summary>
+        DBG_TERMINATE_PROCESS = NtStatus.DBG_TERMINATE_PROCESS
+    }
+
+    /// <summary>
     /// <para type="synopsis">Wait for an event on a debug object.</para>
-    /// <para type="description">This cmdlet allows you to issue a wait for an on a debug object. The timeout
+    /// <para type="description">This cmdlet allows you to issue a wait for on a debug object. The timeout
     /// value is a combination of all the allowed time parameters, e.g. if you specify 1 second and 1000 milliseconds it will
     /// actually wait 2 seconds in total. Specifying -Infinite overrides the time parameters and will wait indefinitely.</para>
     /// </summary>
+    /// <example>
+    ///   <code>$ev = Start-NtDebugWait $dbg</code>
+    ///   <para>Check for a debug event and return immediately.</para>
+    /// </example>
     /// <example>
     ///   <code>$ev = Start-NtDebugWait $dbg -Seconds 10</code>
     ///   <para>Wait for 10 seconds for a debug event to be returned.</para>
@@ -199,17 +234,37 @@ namespace NtObjectManager
     ///   <code>$ev = Start-NtDebugWait $dbg -Infinite -Alterable</code>
     ///   <para>Wait indefinitely for a debug event to be returned in an alertable state.</para>
     /// </example>
+    /// <example>
+    ///   <code>$ev = Start-NtDebugWait $dbg -Infinite -ContinueEvent</code>
+    ///   <para>Continue a previous event with the default continue state for the event and wait indefinitely for a debug event to be returned.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$ev = Start-NtDebugWait $dbg -Infinite -ContinueEvent</code>
+    ///   <para>Continue a previous event with an explicit continue state for the event and wait indefinitely for a debug event to be returned.</para>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet("Start", "NtDebugWait")]
+    [Cmdlet("Start", "NtDebugWait", DefaultParameterSetName = "time")]
     [OutputType(typeof(DebugEvent))]
     public sealed class StartNtDebugWait : GetNtWaitTimeout
     {
+        private static DbgContinueStatus GetDbgContinueStatus(DebugEvent continue_event)
+        {
+            switch (continue_event.State)
+            {
+                case DbgState.BreakpointStateChange:
+                case DbgState.ExceptionStateChange:
+                case DbgState.SingleStepStateChange:
+                    return DbgContinueStatus.DBG_EXCEPTION_NOT_HANDLED;
+                default:
+                    return DbgContinueStatus.DBG_CONTINUE;
+            }
+        }
+
         /// <summary>
         /// Constructor.
         /// </summary>
         public StartNtDebugWait()
         {
-            ContinueStatus = NtStatus.DBG_CONTINUE;
         }
 
         /// <summary>
@@ -234,7 +289,7 @@ namespace NtObjectManager
         /// <para type="description">If continue event specified then this is the status to use.</para>
         /// </summary>
         [Parameter]
-        public NtStatus ContinueStatus { get; set; }
+        public DbgContinueStatus? ContinueStatus { get; set; }
 
         /// <summary>
         /// Overridden ProcessRecord method.
@@ -243,7 +298,8 @@ namespace NtObjectManager
         {
             if (ContinueEvent != null)
             {
-                DebugObject.Continue(ContinueEvent.ProcessId, ContinueEvent.ThreadId, ContinueStatus);
+                DbgContinueStatus status = ContinueStatus ?? GetDbgContinueStatus(ContinueEvent);
+                DebugObject.Continue(ContinueEvent.ProcessId, ContinueEvent.ThreadId, (NtStatus)status);
             }
             WriteObject(DebugObject.WaitForDebugEvent(Alertable, GetTimeout()));
         }
