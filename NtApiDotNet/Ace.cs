@@ -97,6 +97,29 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Check if ACE is an audit ACE.
+        /// </summary>
+        public bool IsAuditAce
+        {
+            get
+            {
+                switch (Type)
+                {
+                    case AceType.Alarm:
+                    case AceType.AlarmCallback:
+                    case AceType.AlarmCallbackObject:
+                    case AceType.AlarmObject:
+                    case AceType.Audit:
+                    case AceType.AuditCallback:
+                    case AceType.AuditCallbackObject:
+                    case AceType.AuditObject:
+                        return true;
+                }
+                return false;
+            }
+        }
+
         internal Ace(AceType type)
         {
             Type = type;
