@@ -356,7 +356,7 @@ namespace NtApiDotNet
                 return "Full Access";
             }
 
-            return NtObjectUtils.AccessRightsToString(enum_type, mapped_access);
+            return AccessRightsToString(enum_type, mapped_access);
         }
 
         /// <summary>

@@ -342,26 +342,30 @@ namespace NtApiDotNet
             return null;
         }
 
-        private Ace FindMandatoryLabel()
+        /// <summary>
+        /// Get the mandatory label. Returns null if it doesn't exist.
+        /// </summary>
+        /// <returns></returns>
+        public Ace GetMandatoryLabel()
         {
             return FindSaclAce(AceType.MandatoryLabel);
         }
 
         /// <summary>
-        /// Get or set mandatory label. Returns a medium label if the it doesn't exist.
+        /// Get or set mandatory label. Returns a medium label if it doesn't exist.
         /// </summary>
         public Ace MandatoryLabel
         {
             get
             {
-                return FindMandatoryLabel() 
+                return GetMandatoryLabel() 
                     ?? new MandatoryLabelAce(AceFlags.None, MandatoryLabelPolicy.NoWriteUp, 
                         TokenIntegrityLevel.Medium);
             }
 
             set
             {
-                Ace label = FindMandatoryLabel();
+                Ace label = GetMandatoryLabel();
                 if (label != null)
                 {
                     Sacl.Remove(label);
