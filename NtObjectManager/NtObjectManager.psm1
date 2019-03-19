@@ -1137,6 +1137,179 @@ function Show-NtSecurityDescriptor {
   }
 }
 
+function Format-NtAce {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline)]
+        [NtApiDotNet.Ace]$Ace,
+        [Parameter(Position = 1, Mandatory = $true)]
+        [NtApiDotNet.NtType]$Type,
+        [switch]$MapGeneric
+    )
+
+    PROCESS {
+        $mask = $ace.Mask
+        if ($MapGeneric) {
+            $mask = $Type.MapGenericRights($mask)
+        }
+
+        $mask_str = if ($ace.Type -eq "MandatoryLabel") {
+            $mask.ToMandatoryLabelPolicy().ToString()
+        } else {
+            $Type.AccessMaskToString($mask)
+        }
+
+        Write-Output " - Type  : $($ace.Type)"
+        Write-Output " - Name  : $($ace.Sid.Name)"
+        Write-Output " - SID   : $($ace.Sid)"
+        Write-Output " - Mask  : 0x$($mask.ToString("X08"))"
+        Write-Output " - Access: $mask_str"
+        Write-Output " - Flags : $($ace.Flags)"
+        if ($ace.IsConditionalAce) {
+            Write-Output " - Condition: $($ace.Condition)"
+        }
+        Write-Output ""
+    }
+}
+
+function Format-NtAcl {
+    Param(
+        [Parameter(Position = 0, Mandatory = $true)]
+        [NtApiDotNet.Acl]$Acl,
+        [Parameter(Position = 1, Mandatory = $true)]
+        [NtApiDotNet.NtType]$Type,
+        [Parameter(Mandatory = $true)]
+        [switch]$MapGeneric,
+        [switch]$AuditOnly
+    )
+
+    if ($Acl.NullAcl) {
+        Write-Output " - <NULL>"
+    } else {
+        if ($AuditOnly) {
+            $Acl | ? IsAuditAce | Format-NtAce -Type $Type -MapGeneric:$MapGeneric
+        } else {
+            $Acl | Format-NtAce -Type $Type -MapGeneric:$MapGeneric
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Formats an object's security descriptor as text.
+.DESCRIPTION
+This cmdlet formats the security descriptor to text for display in the console or piped to a file.
+.PARAMETER Object
+Specify an object to use for the security descriptor.
+.PARAMETER SecurityDescriptor
+Specify a security descriptor.
+.PARAMETER Type
+Specify the NT object type for the security descriptor.
+.PARAMETER Path
+Specify the path to an NT object for the security descriptor.
+.PARAMETER Sacl
+Specify reading the SACL from the object as well as the DACL. Needs SeSecurityPrivilege.
+.PARAMETER MapGeneric
+Specify to map generic access rights for the object type.
+.OUTPUTS
+None
+.EXAMPLE
+Format-NtSecurityDescriptor -Object $obj
+Format the security descriptor of an object.
+.EXAMPLE
+Format-NtSecurityDescriptor -SecurityDescriptor $obj.SecurityDescriptor -Type $obj.NtType
+Format the security descriptor for an object via it's properties.
+.EXAMPLE
+Format-NtSecurityDescriptor -Path \BaseNamedObjects
+Format the security descriptor for an object from a path.
+#>
+function Format-NtSecurityDescriptor {
+    [CmdletBinding(DefaultParameterSetName = "FromObject")]
+    Param(
+        [Parameter(Position = 0, ParameterSetName = "FromObject", Mandatory = $true, ValueFromPipeline)]
+        [NtApiDotNet.NtObject]$Object,
+        [Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true, ValueFromPipeline)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [Parameter(Position = 1, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true)]
+        [NtApiDotNet.NtType]$Type,
+        [Parameter(Position = 0, ParameterSetName = "FromPath", Mandatory = $true, ValueFromPipeline)]
+        [string]$Path,
+        [Parameter(ParameterSetName = "FromPath")]
+        [Parameter(ParameterSetName = "FromObject")]
+        [switch]$Sacl,
+        [switch]$MapGeneric
+    )
+
+    BEGIN {
+        $info = "AllBasic"
+        $access = "ReadControl"
+        if ($Sacl) {
+            $info += ", Sacl"
+            $access += ", Sacl"
+        }
+    }
+
+    PROCESS {
+        try {
+            $sd, $t,$n = switch($PsCmdlet.ParameterSetName) {
+                "FromObject" {
+                    if (!$Object.IsAccessMaskGranted([NtApiDotNet.GenericAccessRights]::ReadControl)) {
+                        Write-Error "Object doesn't have Read Control access."
+                        return
+                    }
+                    ($Object.GetSecurityDescriptor($info), $Object.NtType, $Object.FullPath)
+                }
+                "FromPath" {
+                    Use-NtObject($obj = Get-NtObject -Path $Path -Access $access) {
+                        ($obj.GetSecurityDescriptor($info), $obj.NtType, $obj.FullPath)
+                    }
+                }
+                "FromSecurityDescriptor" {
+                    ($SecurityDescriptor, $Type, "UNKNOWN")
+                }
+            }
+
+            Write-Output "Path: $n"
+            Write-Output "Type: $($t.Name)"
+
+            if ($sd.Owner -ne $null) {
+                Write-Output "<Owner>"
+                Write-Output " - Name     : $($sd.Owner.Sid.Name)"
+                Write-Output " - Sid      : $($sd.Owner.Sid)"
+                Write-Output " - Defaulted: $($sd.Owner.Defaulted)"
+                Write-Output ""
+            }
+            if ($sd.Group -ne $null) {
+                Write-Output "<Group>"
+                Write-Output " - Name     : $($sd.Group.Sid.Name)"
+                Write-Output " - Sid      : $($sd.Group.Sid)"
+                Write-Output " - Defaulted: $($sd.Group.Defaulted)"
+                Write-Output ""
+            }
+            if ($sd.Dacl -ne $null) {
+                Write-Output "<DACL>"
+                Format-NtAcl $sd.Dacl $t -MapGeneric:$MapGeneric
+            }
+            if ($Sacl -and ($sd.Sacl -ne $null)) {
+                Write-Output "<SACL>"
+                Format-NtAcl $sd.Sacl $t -MapGeneric:$MapGeneric -AuditOnly
+            }
+            $label = $sd.GetMandatoryLabel()
+            if ($label -ne $null) {
+                Write-Output "<Mandatory Label>" 
+                Format-NtAce -Ace $label -Type $t
+            }
+            $trust = $sd.ProcessTrustLabel
+            if ($trust -ne $null) {
+                Write-Output "<Process Trust Label>"
+                Format-NtAce -Ace $trust -Type $t
+            }
+        } catch {
+            Write-Error $_
+        }
+    }
+}
+
 <#
 .SYNOPSIS
 Gets an IO control code structure.
@@ -2909,6 +3082,7 @@ function Get-RpcServer {
   [CmdletBinding()]
   Param(
     [parameter(Mandatory=$true, Position=0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [alias("Path")]
     [string]$FullName,
     [string]$DbgHelpPath,
     [string]$SymbolPath,
@@ -2930,15 +3104,20 @@ function Get-RpcServer {
   }
 
   PROCESS {
-    Write-Progress -Activity "Parsing RPC Servers" -CurrentOperation "$FullName"
-    $servers = [NtApiDotNet.Win32.RpcServer]::ParsePeFile($FullName, $DbgHelpPath, $SymbolPath, $ParseClients)
-    if ($AsText) {
-        foreach($server in $servers) {
-            $text = $server.FormatAsText($RemoveComments)
-            Write-Output $text
+    try {
+        $FullName = Resolve-Path -LiteralPath $FullName -ErrorAction Stop
+        Write-Progress -Activity "Parsing RPC Servers" -CurrentOperation "$FullName"
+        $servers = [NtApiDotNet.Win32.RpcServer]::ParsePeFile($FullName, $DbgHelpPath, $SymbolPath, $ParseClients)
+        if ($AsText) {
+            foreach($server in $servers) {
+                $text = $server.FormatAsText($RemoveComments)
+                Write-Output $text
+            }
+        } else {
+            Write-Output $servers
         }
-    } else {
-        Write-Output $servers
+    } catch {
+        Write-Error $_
     }
   }
 }
