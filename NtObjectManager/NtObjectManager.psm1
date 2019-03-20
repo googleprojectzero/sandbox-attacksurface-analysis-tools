@@ -1153,17 +1153,19 @@ function Format-NtAce {
             $mask = $Type.MapGenericRights($mask)
         }
 
+        $access_name = "Access"
         $mask_str = if ($ace.Type -eq "MandatoryLabel") {
             $mask.ToMandatoryLabelPolicy().ToString()
+            $access_name = "Policy"
         } else {
-            $Type.AccessMaskToString($mask)
+            $Type.AccessMaskToString($mask, $MapGeneric)
         }
 
         Write-Output " - Type  : $($ace.Type)"
         Write-Output " - Name  : $($ace.Sid.Name)"
         Write-Output " - SID   : $($ace.Sid)"
         Write-Output " - Mask  : 0x$($mask.ToString("X08"))"
-        Write-Output " - Access: $mask_str"
+        Write-Output " - $($access_name): $mask_str"
         Write-Output " - Flags : $($ace.Flags)"
         if ($ace.IsConditionalAce) {
             Write-Output " - Condition: $($ace.Condition)"
@@ -1207,10 +1209,10 @@ Specify a security descriptor.
 Specify the NT object type for the security descriptor.
 .PARAMETER Path
 Specify the path to an NT object for the security descriptor.
-.PARAMETER Sacl
-Specify reading the SACL from the object as well as the DACL. Needs SeSecurityPrivilege.
+.PARAMETER SecurityInformation
+Specify what parts of the security descriptor to format.
 .PARAMETER MapGeneric
-Specify to map generic access rights for the object type.
+Specify to map access masks back to generic access rights for the object type.
 .OUTPUTS
 None
 .EXAMPLE
@@ -1234,20 +1236,9 @@ function Format-NtSecurityDescriptor {
         [NtApiDotNet.NtType]$Type,
         [Parameter(Position = 0, ParameterSetName = "FromPath", Mandatory = $true, ValueFromPipeline)]
         [string]$Path,
-        [Parameter(ParameterSetName = "FromPath")]
-        [Parameter(ParameterSetName = "FromObject")]
-        [switch]$Sacl,
+        [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
         [switch]$MapGeneric
     )
-
-    BEGIN {
-        $info = "AllBasic"
-        $access = "ReadControl"
-        if ($Sacl) {
-            $info += ", Sacl"
-            $access += ", Sacl"
-        }
-    }
 
     PROCESS {
         try {
@@ -1257,11 +1248,15 @@ function Format-NtSecurityDescriptor {
                         Write-Error "Object doesn't have Read Control access."
                         return
                     }
-                    ($Object.GetSecurityDescriptor($info), $Object.NtType, $Object.FullPath)
+                    ($Object.GetSecurityDescriptor($SecurityInformation), $Object.NtType, $Object.FullPath)
                 }
                 "FromPath" {
+                    $access = "ReadControl"
+                    if (($SecurityInformation -band "Sacl") -ne 0) {
+                        $access += ", AccessSystemSecurity"
+                    }
                     Use-NtObject($obj = Get-NtObject -Path $Path -Access $access) {
-                        ($obj.GetSecurityDescriptor($info), $obj.NtType, $obj.FullPath)
+                        ($obj.GetSecurityDescriptor($SecurityInformation), $obj.NtType, $obj.FullPath)
                     }
                 }
                 "FromSecurityDescriptor" {
@@ -1272,35 +1267,35 @@ function Format-NtSecurityDescriptor {
             Write-Output "Path: $n"
             Write-Output "Type: $($t.Name)"
 
-            if ($sd.Owner -ne $null) {
+            if ($sd.Owner -ne $null -and (($SecurityInformation -band "Owner") -ne 0)) {
                 Write-Output "<Owner>"
                 Write-Output " - Name     : $($sd.Owner.Sid.Name)"
                 Write-Output " - Sid      : $($sd.Owner.Sid)"
                 Write-Output " - Defaulted: $($sd.Owner.Defaulted)"
                 Write-Output ""
             }
-            if ($sd.Group -ne $null) {
+            if ($sd.Group -ne $null -and (($SecurityInformation -band "Group") -ne 0)) {
                 Write-Output "<Group>"
                 Write-Output " - Name     : $($sd.Group.Sid.Name)"
                 Write-Output " - Sid      : $($sd.Group.Sid)"
                 Write-Output " - Defaulted: $($sd.Group.Defaulted)"
                 Write-Output ""
             }
-            if ($sd.Dacl -ne $null) {
+            if ($sd.Dacl -ne $null -and (($SecurityInformation -band "Dacl") -ne 0)) {
                 Write-Output "<DACL>"
                 Format-NtAcl $sd.Dacl $t -MapGeneric:$MapGeneric
             }
-            if ($Sacl -and ($sd.Sacl -ne $null)) {
+            if ($sd.Sacl -ne $null  -and (($SecurityInformation -band "Sacl") -ne 0)) {
                 Write-Output "<SACL>"
                 Format-NtAcl $sd.Sacl $t -MapGeneric:$MapGeneric -AuditOnly
             }
             $label = $sd.GetMandatoryLabel()
-            if ($label -ne $null) {
+            if ($label -ne $null -and (($SecurityInformation -band "Label") -ne 0)) {
                 Write-Output "<Mandatory Label>" 
                 Format-NtAce -Ace $label -Type $t
             }
             $trust = $sd.ProcessTrustLabel
-            if ($trust -ne $null) {
+            if ($trust -ne $null -and (($SecurityInformation -band "ProcessTrustLabel") -ne 0)) {
                 Write-Output "<Process Trust Label>"
                 Format-NtAce -Ace $trust -Type $t
             }
