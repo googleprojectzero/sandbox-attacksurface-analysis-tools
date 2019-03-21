@@ -3285,6 +3285,10 @@ If specified will duplicate the token as an impersonation token.
 If specified will duplicate the token as a primary token.
 .PARAMETER Access
 Specify the access to the new token object.
+.PARAMETER Inherit
+Specify the token handle is inheritable.
+.PARAMETER SecurityDescriptor
+Specify the new token's security descriptor.
 .INPUTS
 None
 .OUTPUTS
@@ -3307,7 +3311,9 @@ function Copy-NtToken {
         [NtApiDotNet.SecurityImpersonationLevel]$ImpersonationLevel,
         [parameter(Mandatory, ParameterSetName="Primary")]
         [switch]$Primary,
-        [NtApiDotNet.TokenAccessRights]$Access = "MaximumAllowed"
+        [NtApiDotNet.TokenAccessRights]$Access = "MaximumAllowed",
+        [switch]$Inherit,
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
     )
 
     switch($PSCmdlet.ParameterSetName) {
@@ -3326,8 +3332,13 @@ function Copy-NtToken {
         $Token = $Token.Duplicate()
     }
 
+    $attributes = "None"
+    if ($Inherit) {
+        $attributes = "Inherit"
+    }
+
     Use-NtObject($Token) {
-        $Token.DuplicateToken($tokentype, $ImpersonationLevel, $Access)
+        $Token.DuplicateToken($tokentype, $ImpersonationLevel, $Access, $attributes, $SecurityDescriptor)
     }
 }
 
