@@ -382,7 +382,7 @@ namespace NtApiDotNet
         {
             IoStatus iostatus = new IoStatus();
             byte[] buffer = ea_buffer?.ToByteArray();
-            return NtSystemCalls.NtCreateFile(out SafeKernelObjectHandle handle, desired_access, obj_attributes, iostatus, allocation_size.ToLargeInteger(), FileAttributes.Normal,
+            return NtSystemCalls.NtCreateFile(out SafeKernelObjectHandle handle, desired_access, obj_attributes, iostatus, allocation_size.ToLargeInteger(), file_attributes,
                 share_access, disposition, open_options,
                 buffer, buffer != null ? buffer.Length : 0).CreateResult(throw_on_error, () => CreateFileObject(handle, iostatus));
         }
@@ -3542,6 +3542,31 @@ namespace NtApiDotNet
         /// Returns whether this object is a container.
         /// </summary>
         public override bool IsContainer => IsDirectory;
+
+        /// <summary>
+        /// Get or set the read only status of the file.
+        /// </summary>
+        public bool ReadOnly
+        {
+            get => (FileAttributes & FileAttributes.ReadOnly) != 0;
+            set
+            {
+                var current_attributes = FileAttributes;
+                if (value)
+                {
+                    current_attributes |= FileAttributes.ReadOnly;
+                }
+                else
+                {
+                    current_attributes &= ~FileAttributes.ReadOnly;
+                    if (current_attributes == 0)
+                    {
+                        current_attributes = FileAttributes.Normal;
+                    }
+                }
+                FileAttributes = current_attributes;
+            }
+        }
 
         #endregion
     }
