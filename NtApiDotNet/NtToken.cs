@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -45,16 +44,20 @@ namespace NtApiDotNet
         #endregion
 
         #region Public Methods
+
         /// <summary>
         /// Duplicate token as specific type.
         /// </summary>
         /// <param name="type">The token type</param>
         /// <param name="level">The impersonation level us type is Impersonation</param>
         /// <param name="desired_access">Open with the desired access.</param>
+        /// <param name="attributes">The object attributes for the token.</param>
+        /// <param name="security_descriptor">The security descriptor for the token.</param>
         /// <param name="throw_on_error">If true then throw an exception on error.</param>
         /// <returns>The new token</returns>
         /// <exception cref="NtException">Thrown on error</exception>
-        public NtResult<NtToken> DuplicateToken(TokenType type, SecurityImpersonationLevel level, TokenAccessRights desired_access, bool throw_on_error)
+        public NtResult<NtToken> DuplicateToken(TokenType type, SecurityImpersonationLevel level, TokenAccessRights desired_access, 
+            AttributeFlags attributes, SecurityDescriptor security_descriptor, bool throw_on_error)
         {
             using (var token = Duplicate(TokenAccessRights.Duplicate, AttributeFlags.None, DuplicateObjectOptions.None, throw_on_error))
             {
@@ -69,12 +72,42 @@ namespace NtApiDotNet
                     sqos = new SecurityQualityOfService(level, SecurityContextTrackingMode.Static, false);
                 }
 
-                using (ObjectAttributes obja = new ObjectAttributes(null, AttributeFlags.None, SafeKernelObjectHandle.Null, sqos, null))
+                using (ObjectAttributes obja = new ObjectAttributes(null, attributes, SafeKernelObjectHandle.Null, sqos, security_descriptor))
                 {
                     return NtSystemCalls.NtDuplicateToken(token.Result.Handle,
                       desired_access, obja, false, type, out SafeKernelObjectHandle new_token).CreateResult(throw_on_error, () => new NtToken(new_token));
                 }
             }
+        }
+
+        /// <summary>
+        /// Duplicate token as specific type.
+        /// </summary>
+        /// <param name="type">The token type</param>
+        /// <param name="level">The impersonation level us type is Impersonation</param>
+        /// <param name="desired_access">Open with the desired access.</param>
+        /// <param name="attributes">The object attributes for the token.</param>
+        /// <param name="security_descriptor">The security descriptor for the token.</param>
+        /// <returns>The new token</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public NtToken DuplicateToken(TokenType type, SecurityImpersonationLevel level, TokenAccessRights desired_access,
+            AttributeFlags attributes, SecurityDescriptor security_descriptor)
+        {
+            return DuplicateToken(type, level, desired_access, attributes, security_descriptor, true).Result;
+        }
+
+        /// <summary>
+        /// Duplicate token as specific type.
+        /// </summary>
+        /// <param name="type">The token type</param>
+        /// <param name="level">The impersonation level us type is Impersonation</param>
+        /// <param name="desired_access">Open with the desired access.</param>
+        /// <param name="throw_on_error">If true then throw an exception on error.</param>
+        /// <returns>The new token</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public NtResult<NtToken> DuplicateToken(TokenType type, SecurityImpersonationLevel level, TokenAccessRights desired_access, bool throw_on_error)
+        {
+            return DuplicateToken(type, level, desired_access, AttributeFlags.None, null, throw_on_error);
         }
 
         /// <summary>
