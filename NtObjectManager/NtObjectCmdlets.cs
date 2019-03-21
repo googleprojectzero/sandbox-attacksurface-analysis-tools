@@ -40,6 +40,12 @@ namespace NtObjectManager
         public SecurityDescriptor SecurityDescriptor { get; set; }
 
         /// <summary>
+        /// <para type="description">Set to mark the new handle as inheritable. Can be used with ObjectAttributes.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter Inherit { get; set; }
+
+        /// <summary>
         /// <para type="description">Set to provide an explicit security descriptor to a newly created object in SDDL format.</para>
         /// </summary>
         [Parameter]
@@ -82,6 +88,10 @@ namespace NtObjectManager
         protected object CreateObject(string path, AttributeFlags attributes, NtObject root, 
             SecurityQualityOfService security_quality_of_service, SecurityDescriptor security_descriptor)
         {
+            if (Inherit)
+            {
+                attributes |= AttributeFlags.Inherit;
+            }
             using (ObjectAttributes obja = new ObjectAttributes(path, attributes, root, 
                 security_quality_of_service, security_descriptor))
             {
