@@ -786,14 +786,51 @@ namespace NtApiDotNet
         SystemFlags2Information = 207,
     }
 
+    public enum ThreadWaitReason
+    {
+        Executive = 0,
+        FreePage = 1,
+        PageIn = 2,
+        PoolAllocation = 3,
+        ExecutionDelay = 4,
+        FreePage2 = 5,
+        PageIn2 = 6,
+        Executive2 = 7,
+        FreePage3 = 8,
+        PageIn3 = 9,
+        PoolAllocation2 = 10,
+        ExecutionDelay2 = 11,
+        FreePage4 = 12,
+        PageIn4 = 13,
+        EventPairHigh = 14,
+        EventPairLow = 15,
+        LPCReceive = 16,
+        LPCReply = 17,
+        VirtualMemory = 18,
+        PageOut = 19,
+        Unknown = 20,
+    }
+
+    public enum ThreadState
+    {
+        Initialized = 0,
+        Ready = 1,
+        Running = 2,
+        Standby = 3,
+        Terminated = 4,
+        Waiting = 5,
+        Transition = 6,
+        Unknown = 7
+    }
+
     public class NtThreadInformation
     {
         public int ThreadId { get; }
         public int ProcessId { get; }
         public string ProcessName { get; }
         public long StartAddress { get; }
-        public uint ThreadState { get; }
-        public int WaitReason { get; }
+        public ThreadState ThreadState { get; }
+        public ThreadWaitReason WaitReason { get; }
         public long KernelTime { get; }
         public long UserTime { get; }
         public long CreateTime { get; }
@@ -808,8 +845,8 @@ namespace NtApiDotNet
             ThreadId = thread_info.ClientId.UniqueThread.ToInt32();
             ProcessId = thread_info.ClientId.UniqueProcess.ToInt32();
             StartAddress = thread_info.StartAddress.ToInt64();
-            ThreadState = thread_info.ThreadState;
-            WaitReason = thread_info.WaitReason;
+            ThreadState = (ThreadState)thread_info.ThreadState;
+            WaitReason = (ThreadWaitReason)thread_info.WaitReason;
             KernelTime = thread_info.KernelTime.QuadPart;
             UserTime = thread_info.UserTime.QuadPart;
             CreateTime = thread_info.CreateTime.QuadPart;

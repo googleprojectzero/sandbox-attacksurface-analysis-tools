@@ -404,6 +404,22 @@ namespace NtApiDotNet
             set => SetWorkOnBehalfThread(value);
         }
 
+        /// <summary>
+        /// Get the work on behalf ticket xor key.
+        /// </summary>
+        public static ulong WorkOnBehalfTicketXor
+        {
+            get
+            {
+                var ticket = Current.Query<RtlWorkOnBehalfTicketEx>(ThreadInformationClass.ThreadWorkOnBehalfTicket).Ticket;
+                uint tid = (uint)Current.ThreadId;
+                uint time = Current.Query<KernelUserTimes>(ThreadInformationClass.ThreadTimes).CreateTime.LowPart;
+                ticket.ThreadId ^= tid;
+                ticket.ThreadCreationTimeLow ^= time;
+                return ticket.WorkOnBehalfTicket;
+            }
+        }
+
         #endregion
 
         #region Public Methods
@@ -1004,6 +1020,39 @@ namespace NtApiDotNet
         /// Get the thread's suspend count.
         /// </summary>
         public int SuspendCount => Query<int>(ThreadInformationClass.ThreadSuspendCount);
+
+        /// <summary>
+        /// Get whether the thread has pending IO.
+        /// </summary>
+        public bool IoPending => Query<int>(ThreadInformationClass.ThreadIsIoPending) != 0;
+
+        /// <summary>
+        /// Get the creation time of the thread.
+        /// </summary>
+        public DateTime CreateTime => DateTime.FromFileTime(Query<KernelUserTimes>(ThreadInformationClass.ThreadTimes).CreateTime.QuadPart);
+        /// <summary>
+        /// Get the exit time of the thread (0 if not exited)
+        /// </summary>
+        public DateTime ExitTime => DateTime.FromFileTime(Query<KernelUserTimes>(ThreadInformationClass.ThreadTimes).ExitTime.QuadPart);
+        /// <summary>
+        /// Get the time spent in the kernel.
+        /// </summary>
+        public long KernelTime => Query<KernelUserTimes>(ThreadInformationClass.ThreadTimes).KernelTime.QuadPart;
+        /// <summary>
+        /// Get the time spent in user mode.
+        /// </summary>
+        public long UserTime => Query<KernelUserTimes>(ThreadInformationClass.ThreadTimes).UserTime.QuadPart;
+
+        /// <summary>
+        /// Get thread information.
+        /// </summary>
+        public NtThreadInformation ThreadInformation
+        {
+            get
+            {
+                return new NtThreadInformation(ProcessName, Query<SystemThreadInformation>(ThreadInformationClass.ThreadSystemThreadInformation));
+            }
+        }
 
         #endregion
     }

@@ -155,6 +155,21 @@ namespace NtApiDotNet
         {
             Ticket = ticket;
         }
+
+        public WorkOnBehalfTicket(int thread_id, int creation_time_low, ulong xor_key)
+        {
+            RtlWorkOnBehalfTicket ticket = new RtlWorkOnBehalfTicket() { ThreadId = (uint)thread_id, ThreadCreationTimeLow = (uint)creation_time_low };
+            Ticket = ticket.WorkOnBehalfTicket ^ xor_key;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct KernelUserTimes
+    {
+        public LargeIntegerStruct CreateTime;
+        public LargeIntegerStruct ExitTime;
+        public LargeIntegerStruct KernelTime;
+        public LargeIntegerStruct UserTime;
     }
 
     [StructLayout(LayoutKind.Sequential)]
