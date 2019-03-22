@@ -343,6 +343,46 @@ namespace NtApiDotNet
             return Current.Duplicate();
         }
 
+        /// <summary>
+        /// Set the work on behalf ticket.
+        /// </summary>
+        /// <param name="ticket">The ticket to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The status code from the set.</returns>
+        public static NtStatus SetWorkOnBehalfThread(ulong ticket, bool throw_on_error)
+        {
+            return SetWorkOnBehalfThread(new WorkOnBehalfTicket(ticket), throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the work on behalf ticket.
+        /// </summary>
+        /// <param name="ticket">The ticket to set.</param>
+        public static void SetWorkOnBehalfThread(ulong ticket)
+        {
+            SetWorkOnBehalfThread(ticket, true);
+        }
+
+        /// <summary>
+        /// Set the work on behalf ticket.
+        /// </summary>
+        /// <param name="ticket">The ticket to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The status code from the set.</returns>
+        public static NtStatus SetWorkOnBehalfThread(WorkOnBehalfTicket ticket, bool throw_on_error)
+        {
+            return Current.Set(ThreadInformationClass.ThreadWorkOnBehalfTicket, new RtlWorkOnBehalfTicket() { WorkOnBehalfTicket  = ticket.Ticket }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the work on behalf ticket.
+        /// </summary>
+        /// <param name="ticket">The ticket to set.</param>
+        public static void SetWorkOnBehalfThread(WorkOnBehalfTicket ticket)
+        {
+            SetWorkOnBehalfThread(ticket, true);
+        }
+
         #endregion
 
         #region Static Properties
@@ -353,6 +393,16 @@ namespace NtApiDotNet
         /// <remarks>This only uses the pseudo handle, for the thread. You can't use it in different threads. If you need to do that use OpenCurrent.</remarks>
         /// <see cref="OpenCurrent"/>
         public static NtThread Current { get { return new NtThread(new SafeKernelObjectHandle(new IntPtr(-2), false)); } }
+
+
+        /// <summary>
+        /// Get or set the work on behalf ticket for the current thread.
+        /// </summary>
+        public static WorkOnBehalfTicket WorkOnBehalfTicket
+        {
+            get => new WorkOnBehalfTicket(Current.Query<RtlWorkOnBehalfTicketEx>(ThreadInformationClass.ThreadWorkOnBehalfTicket));
+            set => SetWorkOnBehalfThread(value);
+        }
 
         #endregion
 
@@ -949,6 +999,11 @@ namespace NtApiDotNet
                 throw new NtException(result.Status);
             }
         }
+
+        /// <summary>
+        /// Get the thread's suspend count.
+        /// </summary>
+        public int SuspendCount => Query<int>(ThreadInformationClass.ThreadSuspendCount);
 
         #endregion
     }

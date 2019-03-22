@@ -114,6 +114,49 @@ namespace NtApiDotNet
         public int BasePriority;
     }
 
+    [Flags]
+    public enum WorkOnBehalfTicketFlags
+    {
+        None = 0,
+        CurrentThread = 1,
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public struct RtlWorkOnBehalfTicket
+    {
+        [FieldOffset(0)]
+        public uint ThreadId;
+        [FieldOffset(4)]
+        public uint ThreadCreationTimeLow;
+        [FieldOffset(0)]
+        public ulong WorkOnBehalfTicket;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RtlWorkOnBehalfTicketEx
+    {
+        public RtlWorkOnBehalfTicket Ticket;
+        public WorkOnBehalfTicketFlags Flags;
+        public int Reserved;
+    }
+
+    public class WorkOnBehalfTicket
+    {
+        public ulong Ticket { get; }
+        public WorkOnBehalfTicketFlags Flags { get; }
+
+        internal WorkOnBehalfTicket(RtlWorkOnBehalfTicketEx ticket) 
+            : this(ticket.Ticket.WorkOnBehalfTicket)
+        {
+            Flags = ticket.Flags;
+        }
+
+        public WorkOnBehalfTicket(ulong ticket)
+        {
+            Ticket = ticket;
+        }
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct M128A
     {
