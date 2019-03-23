@@ -3834,3 +3834,42 @@ function Set-NtProcessMitigationPolicy {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Get an appcontainer profile for a specified package name.
+.DESCRIPTION
+This cmdlet gets an appcontainer profile for a specified package name.
+.PARAMETER Name
+Specify appcontainer name to use for the profile.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.AppContainerProfile
+.EXAMPLE
+Get-AppContainerProfile
+Get appcontainer profiles for all installed packages.
+.EXAMPLE
+Get-AppContainerProfile -Name Package_aslkjdskjds
+Get an appcontainer profile from a package name.
+#>
+function Get-AppContainerProfile {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    Param(
+        [parameter(ParameterSetName="All")]
+        [switch]$AllUsers,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromName", ValueFromPipelineByPropertyName, ValueFromPipeline)]
+        [string]$Name
+    )
+
+    PROCESS {
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
+                Get-AppxPackage | Select @{Name="Name"; Expression = {"$($_.Name)_$($_.PublisherId)"}} | Get-AppContainerProfile
+            }
+            "FromName" {
+                [NtApiDotNet.Win32.AppContainerProfile]::Open($Name) | Write-Output
+            }
+        }
+    }
+}
