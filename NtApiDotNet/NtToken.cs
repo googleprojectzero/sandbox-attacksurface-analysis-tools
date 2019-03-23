@@ -56,7 +56,7 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">If true then throw an exception on error.</param>
         /// <returns>The new token</returns>
         /// <exception cref="NtException">Thrown on error</exception>
-        public NtResult<NtToken> DuplicateToken(TokenType type, SecurityImpersonationLevel level, TokenAccessRights desired_access, 
+        public NtResult<NtToken> DuplicateToken(TokenType type, SecurityImpersonationLevel level, TokenAccessRights desired_access,
             AttributeFlags attributes, SecurityDescriptor security_descriptor, bool throw_on_error)
         {
             using (var token = Duplicate(TokenAccessRights.Duplicate, AttributeFlags.None, DuplicateObjectOptions.None, throw_on_error))
@@ -1015,7 +1015,21 @@ namespace NtApiDotNet
         {
             get
             {
-                return Query<int>(TokenInformationClass.TokenIsRestricted) != 0;
+                var result = Query(TokenInformationClass.TokenIsRestricted, 0, false);
+                if (result.IsSuccess)
+                {
+                    return result.Result != 0;
+                }
+
+                // For some reason on Wow64 processes Windows 10 this info class isn't defined.
+                // Perhaps a bug in Wow64?
+                if (result.Status != NtStatus.STATUS_INVALID_INFO_CLASS)
+                {
+                    result.Status.ToNtException();
+                }
+
+                // Fallback to checking for restricted SIDs.
+                return RestrictedSids.Any();
             }
         }
 
@@ -1441,7 +1455,8 @@ namespace NtApiDotNet
         /// <summary>
         /// Get if the token is restricted.
         /// </summary>
-        public bool IsRestricted => Query<int>(TokenInformationClass.TokenIsRestricted) != 0;
+        [Obsolete("Use Restricted instead")]
+        public bool IsRestricted => Restricted;
 
         #endregion
 
