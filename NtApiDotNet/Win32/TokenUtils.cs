@@ -126,13 +126,27 @@ namespace NtApiDotNet.Win32
 
         private static SafeKernelObjectHandle OpenClipboardToken(TokenAccessRights desired_access)
         {
-            SafeKernelObjectHandle handle;
-            if (!Win32NativeMethods.GetClipboardAccessToken(out handle, desired_access
-                ))
+            if (!Win32NativeMethods.GetClipboardAccessToken(out SafeKernelObjectHandle handle, desired_access))
             {
                 throw new NtException(NtStatus.STATUS_NO_TOKEN);
             }
             return handle;
+        }
+
+        /// <summary>
+        /// Open the current clipboard token.
+        /// </summary>
+        /// <param name="desired_access"></param>
+        /// <param name="throw_on_error"></param>
+        /// <returns></returns>
+        public static NtResult<NtToken> OpenClipboardToken(TokenAccessRights desired_access, bool throw_on_error)
+        {
+            if (Win32NativeMethods.GetClipboardAccessToken(out SafeKernelObjectHandle handle, desired_access))
+            {
+                return NtToken.FromHandle(handle).CreateResult();
+            }
+            
+            return NtStatus.STATUS_NO_TOKEN.CreateResultFromError<NtToken>(throw_on_error);
         }
 
         /// <summary>
@@ -166,6 +180,25 @@ namespace NtApiDotNet.Win32
                 | TokenAccessRights.ReadControl);
         }
 
+        /// <summary>
+        /// Derive a package sid from a name.
+        /// </summary>
+        /// <param name="name">The name of the package.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The derived Sid</returns>
+        public static NtResult<Sid> DerivePackageSidFromName(string name, bool throw_on_error)
+        {
+            int hr = Win32NativeMethods.DeriveAppContainerSidFromAppContainerName(name, out SafeSidBufferHandle sid);
+            if (hr == 0)
+            {
+                using (sid)
+                {
+                    return new Sid(sid).CreateResult();
+                }
+            }
+
+            return ((NtStatus)hr).CreateResultFromError<Sid>(throw_on_error);
+        }
 
         /// <summary>
         /// Derive a package sid from a name.
@@ -174,8 +207,7 @@ namespace NtApiDotNet.Win32
         /// <returns>The derived Sid</returns>
         public static Sid DerivePackageSidFromName(string name)
         {
-            SafeSidBufferHandle sid;
-            int hr = Win32NativeMethods.DeriveAppContainerSidFromAppContainerName(name, out sid);
+            int hr = Win32NativeMethods.DeriveAppContainerSidFromAppContainerName(name, out SafeSidBufferHandle sid);
             if (hr != 0)
             {
                 Marshal.ThrowExceptionForHR(hr);
@@ -197,8 +229,7 @@ namespace NtApiDotNet.Win32
         {
             using (var sid_buf = package_sid.ToSafeBuffer())
             {
-                SafeSidBufferHandle sid;
-                int hr = Win32NativeMethods.DeriveRestrictedAppContainerSidFromAppContainerSidAndRestrictedName(sid_buf, restricted_name, out sid);                
+                int hr = Win32NativeMethods.DeriveRestrictedAppContainerSidFromAppContainerSidAndRestrictedName(sid_buf, restricted_name, out SafeSidBufferHandle sid);
                 if (hr != 0)
                 {
                     Marshal.ThrowExceptionForHR(hr);
@@ -249,9 +280,7 @@ namespace NtApiDotNet.Win32
         /// <returns>The safer token.</returns>
         public static NtToken GetTokenFromSaferLevel(NtToken token, SaferLevel level, bool make_inert)
         {
-            IntPtr level_handle;
-
-            if (!Win32NativeMethods.SaferCreateLevel(SaferScope.User, level, Win32NativeMethods.SAFER_LEVEL_OPEN, out level_handle, IntPtr.Zero))
+            if (!Win32NativeMethods.SaferCreateLevel(SaferScope.User, level, Win32NativeMethods.SAFER_LEVEL_OPEN, out IntPtr level_handle, IntPtr.Zero))
             {
                 throw new SafeWin32Exception();
             }

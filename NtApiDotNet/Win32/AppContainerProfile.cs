@@ -61,7 +61,7 @@ namespace NtApiDotNet.Win32
                     caps.Length > 0 ? caps : null, caps.Length, out SafeSidBufferHandle sid);
                 if (status == NtObjectUtils.MapDosErrorToStatus(Win32Error.ERROR_ALREADY_EXISTS))
                 {
-                    return new NtResult<AppContainerProfile>(NtStatus.STATUS_SUCCESS, new AppContainerProfile(appcontainer_name));
+                    return new AppContainerProfile(appcontainer_name).CreateResult();
                 }
                 resources.AddResource(sid);
                 return status.CreateResult(throw_on_error, () =>
@@ -104,6 +104,24 @@ namespace NtApiDotNet.Win32
             var profile = Create(name);
             profile.DeleteOnClose = true;
             return profile;
+        }
+
+        /// <summary>
+        /// Opens an AppContainerProfile.
+        /// </summary>
+        /// <param name="appcontainer_name">The name of the AppContainer.</param>
+        /// <param name="throw_on_error">True to throw no error.</param>
+        /// <returns>The opened AppContainer profile.</returns>
+        /// <remarks>This method doesn't check the profile exists.</remarks>
+        public static NtResult<AppContainerProfile> Open(
+                string appcontainer_name, bool throw_on_error)
+        {
+            var sid = TokenUtils.DerivePackageSidFromName(appcontainer_name, throw_on_error);
+            if (!sid.IsSuccess)
+            {
+                return sid.Cast<AppContainerProfile>();
+            }
+            return new AppContainerProfile(appcontainer_name, sid.Result).CreateResult();
         }
 
         /// <summary>
