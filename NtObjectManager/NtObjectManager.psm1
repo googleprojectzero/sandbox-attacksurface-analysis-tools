@@ -443,6 +443,8 @@ Specify the protection level when creating a protected process.
 Specify a debug object to run the process under. You need to also specify DebugProcess or DebugOnlyThisProcess flags as well.
 .PARAMETER NoTokenFallback
 Specify to not fallback to using CreateProcessWithLogon if CreateProcessAsUser fails.
+.PARAMETER AppContainerProfile
+Specify an app container profile to use.
 .INPUTS
 None
 .OUTPUTS
@@ -451,28 +453,29 @@ NtApiDotNet.Win32.Win32ProcessConfig
 function New-Win32ProcessConfig
 {
     Param(
-    [Parameter(Mandatory=$true, Position=0)]
-    [string]$CommandLine,
-    [string]$ApplicationName,
-    [NtApiDotNet.SecurityDescriptor]$ProcessSecurityDescriptor,
-    [NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
-    [NtApiDotNet.NtProcess]$ParentProcess,
-    [NtApiDotNet.Win32.CreateProcessFlags]$CreationFlags = 0,
-    [NtApiDotNet.Win32.ProcessMitigationOptions]$MitigationOptions = 0,
-    [switch]$TerminateOnDispose,
-    [byte[]]$Environment,
-    [string]$CurrentDirectory,
-    [string]$Desktop,
-    [string]$Title,
-    [switch]$InheritHandles,
-    [switch]$InheritProcessHandle,
-    [switch]$InheritThreadHandle,
-    [NtApiDotNet.Win32.Win32kFilterFlags]$Win32kFilterFlags = 0,
-    [int]$Win32kFilterLevel = 0,
-    [NtApiDotNet.NtToken]$Token,
-    [NtApiDotNet.Win32.ProtectionLevel]$ProtectionLevel = "WindowsPPL",
-    [NtApiDotNet.NtDebug]$DebugObject,
-    [switch]$NoTokenFallback
+        [Parameter(Mandatory=$true, Position=0)]
+        [string]$CommandLine,
+        [string]$ApplicationName,
+        [NtApiDotNet.SecurityDescriptor]$ProcessSecurityDescriptor,
+        [NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
+        [NtApiDotNet.NtProcess]$ParentProcess,
+        [NtApiDotNet.Win32.CreateProcessFlags]$CreationFlags = 0,
+        [NtApiDotNet.Win32.ProcessMitigationOptions]$MitigationOptions = 0,
+        [switch]$TerminateOnDispose,
+        [byte[]]$Environment,
+        [string]$CurrentDirectory,
+        [string]$Desktop,
+        [string]$Title,
+        [switch]$InheritHandles,
+        [switch]$InheritProcessHandle,
+        [switch]$InheritThreadHandle,
+        [NtApiDotNet.Win32.Win32kFilterFlags]$Win32kFilterFlags = 0,
+        [int]$Win32kFilterLevel = 0,
+        [NtApiDotNet.NtToken]$Token,
+        [NtApiDotNet.Win32.ProtectionLevel]$ProtectionLevel = "WindowsPPL",
+        [NtApiDotNet.NtDebug]$DebugObject,
+        [switch]$NoTokenFallback,
+        [NtApiDotNet.Win32.AppContainerProfile]$AppContainerProfile
     )
     $config = New-Object NtApiDotNet.Win32.Win32ProcessConfig
     $config.CommandLine = $CommandLine
@@ -508,6 +511,9 @@ function New-Win32ProcessConfig
     $config.ProtectionLevel = $ProtectionLevel
     $config.DebugObject = $DebugObject
     $config.NoTokenFallback = $NoTokenFallback
+    if ($AppContainerProfile -ne $null) {
+        $config.AppContainerSid = $AppContainerProfile.Sid
+    }
     return $config
 }
 
@@ -565,46 +571,48 @@ function New-Win32Process
 {
   [CmdletBinding(DefaultParameterSetName = "FromArgs")]
     Param(
-    [Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromArgs")]
-    [string]$CommandLine,
-    [Parameter(ParameterSetName = "FromArgs")]
-    [string]$ApplicationName,
-    [Parameter(ParameterSetName = "FromArgs")]
-    [NtApiDotNet.SecurityDescriptor]$ProcessSecurityDescriptor,
-    [Parameter(ParameterSetName = "FromArgs")]
-    [NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
-    [Parameter(ParameterSetName = "FromArgs")]
-    [NtApiDotNet.NtProcess]$ParentProcess,
-    [Parameter(ParameterSetName = "FromArgs")]
-    [NtApiDotNet.Win32.CreateProcessFlags]$CreationFlags = 0,
-    [Parameter(ParameterSetName = "FromArgs")]
-    [NtApiDotNet.Win32.ProcessMitigationOptions]$MitigationOptions = 0,
-    [Parameter(ParameterSetName = "FromArgs")]
-    [switch]$TerminateOnDispose,
-    [Parameter(ParameterSetName = "FromArgs")]
-    [byte[]]$Environment,
-    [Parameter(ParameterSetName = "FromArgs")]
-    [string]$CurrentDirectory,
-    [Parameter(ParameterSetName = "FromArgs")]
-    [string]$Desktop,
-    [Parameter(ParameterSetName = "FromArgs")]
-    [string]$Title,
-    [Parameter(ParameterSetName = "FromArgs")]
-    [switch]$InheritHandles,
-    [Parameter(ParameterSetName = "FromArgs")]
-    [switch]$InheritProcessHandle,
-    [Parameter(ParameterSetName = "FromArgs")]
-    [switch]$InheritThreadHandle,
-    [Parameter(ParameterSetName = "FromArgs")]
-    [NtApiDotNet.NtToken]$Token,
-    [Parameter(ParameterSetName = "FromArgs")]
-    [NtApiDotNet.Win32.ProtectionLevel]$ProtectionLevel = "WindowsPPL",
-    [Parameter(ParameterSetName = "FromArgs")]
-    [NtApiDotNet.NtDebug]$DebugObject,
-    [Parameter(ParameterSetName = "FromArgs")]
-    [switch]$NoTokenFallback,
-    [Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromConfig")]
-    [NtApiDotNet.Win32.Win32ProcessConfig]$Config
+        [Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromArgs")]
+        [string]$CommandLine,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [string]$ApplicationName,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [NtApiDotNet.SecurityDescriptor]$ProcessSecurityDescriptor,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [NtApiDotNet.SecurityDescriptor]$ThreadSecurityDescriptor,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [NtApiDotNet.NtProcess]$ParentProcess,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [NtApiDotNet.Win32.CreateProcessFlags]$CreationFlags = 0,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [NtApiDotNet.Win32.ProcessMitigationOptions]$MitigationOptions = 0,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [switch]$TerminateOnDispose,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [byte[]]$Environment,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [string]$CurrentDirectory,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [string]$Desktop,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [string]$Title,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [switch]$InheritHandles,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [switch]$InheritProcessHandle,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [switch]$InheritThreadHandle,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [NtApiDotNet.NtToken]$Token,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [NtApiDotNet.Win32.ProtectionLevel]$ProtectionLevel = "WindowsPPL",
+        [Parameter(ParameterSetName = "FromArgs")]
+        [NtApiDotNet.NtDebug]$DebugObject,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [switch]$NoTokenFallback,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [NtApiDotNet.Win32.AppContainerProfile]$AppContainerProfile,
+        [Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromConfig")]
+        [NtApiDotNet.Win32.Win32ProcessConfig]$Config
     )
 
   if ($null -eq $Config) {
@@ -614,7 +622,7 @@ function New-Win32Process
     -Environment $Environment -CurrentDirectory $CurrentDirectory -Desktop $Desktop -Title $Title `
     -InheritHandles:$InheritHandles -InheritProcessHandle:$InheritProcessHandle -InheritThreadHandle:$InheritThreadHandle `
     -MitigationOptions $MitigationOptions -Token $Token -ProtectionLevel $ProtectionLevel -NoTokenFallback:$NoTokenFallback `
-    -DebugObject $DebugObject
+    -DebugObject $DebugObject -AppContainerProfile $AppContainerProfile
   }
 
   [NtApiDotNet.Win32.Win32Process]::CreateProcess($config)
@@ -3870,6 +3878,63 @@ function Get-AppContainerProfile {
             "FromName" {
                 [NtApiDotNet.Win32.AppContainerProfile]::Open($Name) | Write-Output
             }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Create a new appcontainer profile for a specified package name.
+.DESCRIPTION
+This cmdlet create a new appcontainer profile for a specified package name. If the profile already exists it'll open it.
+.PARAMETER Name
+Specify appcontainer name to use for the profile.
+.PARAMETER DisplayName
+Specify the profile display name.
+.PARAMETER Description
+Specify the profile description.
+.PARAMETER DeleteOnClose
+Specify the profile should be deleted when closed.
+.PARAMETER TemporaryProfile
+Specify to create a temporary profile. Close the profile after use to delete it.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.AppContainerProfile
+.EXAMPLE
+New-AppContainerProfile -Name Package_aslkjdskjds
+Create a new AppContainer profile with a specified name.
+.EXAMPLE
+Get-AppContainerProfile -TemporaryProfile
+Create a new temporary profile.
+#>
+function New-AppContainerProfile {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
+        [string]$Name,
+        [parameter(Position = 1, ParameterSetName="FromName")]
+        [string]$DisplayName = "DisplayName",
+        [parameter(Position = 2, ParameterSetName="FromName")]
+        [string]$Description = "Description",
+        [parameter(ParameterSetName="FromName")]
+        [NtApiDotNet.Sid[]]$Capabilities,
+        [parameter(ParameterSetName="FromName")]
+        [switch]$DeleteOnClose,
+        [parameter(ParameterSetName="FromTemp")]
+        [switch]$TemporaryProfile
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromName" {
+            $prof = [NtApiDotNet.Win32.AppContainerProfile]::Create($Name, $DisplayName, $Description, $Capabilities)
+            if ($null -ne $prof) {
+                $prof.DeleteOnClose = $DeleteOnClose
+                Write-Output $prof
+            }
+        }
+        "FromTemp" {
+            [NtApiDotNet.Win32.AppContainerProfile]::CreateTemporary() | Write-Output
         }
     }
 }
