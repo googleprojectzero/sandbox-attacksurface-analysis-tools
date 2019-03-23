@@ -3909,7 +3909,7 @@ Get-AppContainerProfile -TemporaryProfile
 Create a new temporary profile.
 #>
 function New-AppContainerProfile {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromName")]
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName="FromName")]
         [string]$Name,
@@ -3921,7 +3921,7 @@ function New-AppContainerProfile {
         [NtApiDotNet.Sid[]]$Capabilities,
         [parameter(ParameterSetName="FromName")]
         [switch]$DeleteOnClose,
-        [parameter(ParameterSetName="FromTemp")]
+        [parameter(Mandatory, ParameterSetName="FromTemp")]
         [switch]$TemporaryProfile
     )
 
