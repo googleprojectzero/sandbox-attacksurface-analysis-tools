@@ -850,6 +850,7 @@ namespace NtApiDotNet
         PebFlags GetPebFlags();
         IntPtr GetImageBaseAddress();
         IntPtr GetProcessHeap();
+        IntPtr GetProcessParameters();
     }
 
     /// <summary>
@@ -868,6 +869,11 @@ namespace NtApiDotNet
         public IntPtr ProcessParameters; // PRTL_USER_PROCESS_PARAMETERS
         public IntPtr SubSystemData;
         public IntPtr ProcessHeap;
+
+        IntPtr IPeb.GetProcessParameters()
+        {
+            return ProcessParameters;
+        }
 
         IntPtr IPeb.GetImageBaseAddress()
         {
@@ -915,6 +921,11 @@ namespace NtApiDotNet
         IntPtr IPeb.GetProcessHeap()
         {
             return new IntPtr(ProcessHeap);
+        }
+
+        IntPtr IPeb.GetProcessParameters()
+        {
+            return new IntPtr(ProcessParameters);
         }
     }
 
