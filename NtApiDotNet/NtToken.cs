@@ -1215,6 +1215,7 @@ namespace NtApiDotNet
         /// Get token's AppContainer package name (if available). 
         /// Returns an empty string if not an AppContainer.
         /// </summary>
+        [Obsolete("Use PackageFullName")]
         public string PackageName
         {
             get
@@ -1499,14 +1500,53 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="process">The process to open the token for</param>
         /// <param name="desired_access">The desired access for the token</param>
+        /// <param name="attributes">Attribute flags for the handle.</param>
+        /// <param name="throw_on_error">If true then throw an exception on error.</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
+        public static NtResult<NtToken> OpenProcessToken(NtProcess process, TokenAccessRights desired_access, AttributeFlags attributes, bool throw_on_error)
+        {
+            return NtSystemCalls.NtOpenProcessTokenEx(process.Handle,
+              desired_access, attributes, out SafeKernelObjectHandle new_token)
+              .CreateResult(throw_on_error, () => new NtToken(new_token));
+        }
+
+        /// <summary>
+        /// Open the process token of another process
+        /// </summary>
+        /// <param name="process">The process to open the token for</param>
+        /// <param name="desired_access">The desired access for the token</param>
+        /// <param name="attributes">Attribute flags for the handle.</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
+        public static NtToken OpenProcessToken(NtProcess process, TokenAccessRights desired_access, AttributeFlags attributes)
+        {
+            return OpenProcessToken(process, desired_access, attributes, true).Result;
+        }
+
+        /// <summary>
+        /// Open the process token of another process
+        /// </summary>
+        /// <param name="process">The process to open the token for</param>
+        /// <param name="desired_access">The desired access for the token</param>
         /// <param name="throw_on_error">If true then throw an exception on error.</param>
         /// <returns>The opened token</returns>
         /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtResult<NtToken> OpenProcessToken(NtProcess process, TokenAccessRights desired_access, bool throw_on_error)
         {
-            return NtSystemCalls.NtOpenProcessTokenEx(process.Handle,
-              desired_access, AttributeFlags.None, out SafeKernelObjectHandle new_token)
-              .CreateResult(throw_on_error, () => new NtToken(new_token));
+            return OpenProcessToken(process, desired_access, AttributeFlags.None, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open the process token of another process
+        /// </summary>
+        /// <param name="process">The process to open the token for</param>
+        /// <param name="desired_access">The desired access for the token</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
+        public static NtToken OpenProcessToken(NtProcess process, TokenAccessRights desired_access)
+        {
+            return OpenProcessToken(process, desired_access, true).Result;
         }
 
         /// <summary>
