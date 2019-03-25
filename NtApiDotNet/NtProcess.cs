@@ -102,6 +102,21 @@ namespace NtApiDotNet
             }
         }
 
+        private T QueryToken<T>(TokenAccessRights desired_access, Func<NtToken, T> callback, T default_value)
+        {
+            return NtToken.OpenProcessToken(this, desired_access, false).RunAndDispose(callback, default_value);
+        }
+
+        private T QueryToken<T>(Func<NtToken, T> callback, T default_value)
+        {
+            return QueryToken(TokenAccessRights.Query, callback, default_value);
+        }
+
+        private T QueryToken<T>(Func<NtToken, T> callback)
+        {
+            return QueryToken(TokenAccessRights.Query, callback, default(T));
+        }
+
         #endregion
 
         #region Constructors
@@ -1641,8 +1656,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return NtToken.OpenProcessToken(this,
-                    TokenAccessRights.Query, false).RunAndDispose(token => token.IsSandbox);
+                return QueryToken(token => token.IsSandbox);
             }
         }
 
@@ -1766,6 +1780,11 @@ namespace NtApiDotNet
                 return Query<IntPtr>(ProcessInformationClass.ProcessConsoleHostProcess).ToInt32();
             }
         }
+
+        /// <summary>
+        /// Query the process token's full package name.
+        /// </summary>
+        public string PackageFullName => QueryToken(t => t.PackageFullName, string.Empty);
 
         #endregion
 
