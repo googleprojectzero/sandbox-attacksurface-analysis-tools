@@ -203,6 +203,7 @@
     <Compile Include="Win32\AppContainerProfile.cs" />
     <Compile Include="Win32\ExecutableManifest.cs" />
     <Compile Include="Win32\LogonUtils.cs" />
+    <Compile Include="Win32\PackageIdentity.cs" />
     <Compile Include="Win32\RpcEndpoint.cs" />
     <Compile Include="Win32\RpcEndpointMapper.cs" />
     <Compile Include="Win32\RpcAlpcServer.cs" />

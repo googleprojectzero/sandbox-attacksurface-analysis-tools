@@ -144,6 +144,13 @@ namespace NtApiDotNet.Win32
         SERVICE_STATE_ALL = SERVICE_ACTIVE | SERVICE_INACTIVE
     }
 
+    [Flags]
+    internal enum PackageFlags
+    {
+        Basic = 0,
+        Full = 0x00000100
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct PROCESS_INFORMATION
     {
@@ -153,11 +160,35 @@ namespace NtApiDotNet.Win32
         public int dwThreadId;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    struct PACKAGE_VERSION
+    {
+        public ushort Revision;
+        public ushort Build;
+        public ushort Minor;
+        public ushort Major;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PACKAGE_ID
+    {
+        public int reserved;
+        public int processorArchitecture;
+        public PACKAGE_VERSION version;
+        public IntPtr name;
+        public IntPtr publisher;
+        public IntPtr resourceId;
+        public IntPtr publisherId;
+    }
+
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     internal delegate bool EnumResTypeProc(IntPtr hModule, IntPtr lpszType, IntPtr lParam);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     internal delegate bool EnumResNameProcDelegate(IntPtr hModule, IntPtr lpszType, IntPtr lpszName, IntPtr lParam);
+
+    [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+    internal delegate Win32Error GetStagedPackageOrigin(string packageFullName, out PackageOrigin origin);
 
     internal static class Win32NativeMethods
     {
@@ -616,6 +647,27 @@ namespace NtApiDotNet.Win32
         internal static extern NtStatus GetAppContainerFolderPath(
           string pszAppContainerSid,
           out SafeCoTaskMemHandle ppszPath
+        );
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error PackageIdFromFullName(
+          string packageFullName,
+          PackageFlags flags,
+          ref int  bufferLength,
+          SafeBuffer buffer
+        );
+
+        [DllImport("kernelbase.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error GetStagedPackageOrigin(
+          string packageFullName,
+          out PackageOrigin origin
+        );
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error GetStagedPackagePathByFullName(
+            string packageFullName,
+            ref int pathLength,
+            StringBuilder path
         );
     }
 }

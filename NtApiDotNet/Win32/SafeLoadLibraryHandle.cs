@@ -399,8 +399,9 @@ namespace NtApiDotNet.Win32
         /// Get a delegate which points to an unmanaged function.
         /// </summary>
         /// <typeparam name="TDelegate">The delegate type. The name of the delegate is used to lookup the name of the function.</typeparam>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The delegate.</returns>
-        public TDelegate GetFunctionPointer<TDelegate>() where TDelegate : class
+        public TDelegate GetFunctionPointer<TDelegate>(bool throw_on_error) where TDelegate : class
         {
             if (!typeof(TDelegate).IsSubclassOf(typeof(Delegate)) ||
                 typeof(TDelegate).GetCustomAttribute<UnmanagedFunctionPointerAttribute>() == null)
@@ -411,10 +412,24 @@ namespace NtApiDotNet.Win32
             IntPtr proc = GetProcAddress(typeof(TDelegate).Name);
             if (proc == IntPtr.Zero)
             {
-                throw new Win32Exception();
+                if (throw_on_error)
+                {
+                    throw new Win32Exception();
+                }
+                return null;
             }
 
             return (TDelegate)(object)Marshal.GetDelegateForFunctionPointer(proc, typeof(TDelegate));
+        }
+
+        /// <summary>
+        /// Get a delegate which points to an unmanaged function.
+        /// </summary>
+        /// <typeparam name="TDelegate">The delegate type. The name of the delegate is used to lookup the name of the function.</typeparam>
+        /// <returns>The delegate.</returns>
+        public TDelegate GetFunctionPointer<TDelegate>() where TDelegate : class
+        {
+            return GetFunctionPointer<TDelegate>(true);
         }
 
         /// <summary>
