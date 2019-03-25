@@ -377,18 +377,33 @@ namespace NtApiDotNet
         /// <typeparam name="S">The result of the function.</typeparam>
         /// <param name="result">The result.</param>
         /// <param name="func">The function to call.</param>
+        /// <param name="default_value">The default value to return if an error occurred.</param>
+        /// <returns>The result of func.</returns>
+        /// <remarks>If result is not a success then the function is not called.</remarks>
+        public static S RunAndDispose<T, S>(this NtResult<T> result, Func<T, S> func, S default_value) where T : NtObject
+        {
+            using (result)
+            {
+                if (!result.IsSuccess)
+                {
+                    return default_value;
+                }
+                return func(result.Result);
+            }
+        }
+
+        /// <summary>
+        /// Run a function on an NtResult and dispose the result afterwards.
+        /// </summary>
+        /// <typeparam name="T">The underlying result type.</typeparam>
+        /// <typeparam name="S">The result of the function.</typeparam>
+        /// <param name="result">The result.</param>
+        /// <param name="func">The function to call.</param>
         /// <returns>The result of func.</returns>
         /// <remarks>If result is not a success then the function is not called.</remarks>
         public static S RunAndDispose<T, S>(this NtResult<T> result, Func<T, S> func) where T : NtObject
         {
-            if (!result.IsSuccess)
-            {
-                return default(S);
-            }
-            using (result)
-            {
-                return func(result.Result);
-            }
+            return RunAndDispose(result, func, default(S));
         }
 
         /// <summary>
@@ -473,9 +488,14 @@ namespace NtApiDotNet
             return FromHandle(new IntPtr(handle), owns_handle);
         }
 
-        internal static NtStatus MapDosErrorToStatus(Win32Error dos_error)
+        internal static NtStatus MapDosErrorToStatus(this Win32Error dos_error)
         {
             return MapDosErrorToStatus((int)dos_error);
+        }
+
+        internal static void ToNtException(this Win32Error dos_error)
+        {
+            ToNtException(MapDosErrorToStatus((int)dos_error));
         }
 
         internal static NtStatus MapDosErrorToStatus(int dos_error)
@@ -576,7 +596,7 @@ namespace NtApiDotNet
             return new NtResult<T>(status, default(T));
         }
 
-        internal static NtResult<T> CreateResultFromDosError<T>(int error, bool throw_on_error)
+        internal static NtResult<T> CreateResultFromDosError<T>(this Win32Error error, bool throw_on_error)
         {
             NtStatus status = MapDosErrorToStatus(error);
             if (throw_on_error)
@@ -585,6 +605,11 @@ namespace NtApiDotNet
             }
 
             return new NtResult<T>(status, default(T));
+        }
+
+        internal static NtResult<T> CreateResultFromDosError<T>(int error, bool throw_on_error)
+        {
+            return CreateResultFromDosError<T>((Win32Error)error, throw_on_error);
         }
 
         internal static IEnumerable<T> SelectValidResults<T>(this IEnumerable<NtResult<T>> iterator)
