@@ -360,16 +360,16 @@ namespace NtApiDotNet
     [StructLayout(LayoutKind.Sequential)]
     public struct ProcessChildProcessRestricted
     {
-        public byte IsNoChildProcessRestricted;
-        public byte EnableAutomaticOverride;
+        public byte ProhibitChildProcesses;
+        public byte AlwaysAllowSecureChildProcess;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct ProcessChildProcessRestricted1709
     {
-        public byte IsNoChildProcessRestricted;
-        public byte EnableAutomaticOverride;
-        public byte Unknown2;
+        public byte ProhibitChildProcesses;
+        public byte AlwaysAllowSecureChildProcess;
+        public byte AuditProhibitChildProcesses;
     }
 
     public enum ProcessSubsystemInformationType

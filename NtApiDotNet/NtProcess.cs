@@ -1686,12 +1686,12 @@ namespace NtApiDotNet
                 var result = Query(ProcessInformationClass.ProcessChildProcessInformation, new ProcessChildProcessRestricted(), false);
                 if (result.IsSuccess)
                 {
-                    return result.Result.IsNoChildProcessRestricted != 0;
+                    return result.Result.ProhibitChildProcesses != 0;
                 }
                 var result_1709 = Query(ProcessInformationClass.ProcessChildProcessInformation, new ProcessChildProcessRestricted1709(), false);
                 if (result_1709.IsSuccess)
                 {
-                    return result_1709.Result.IsNoChildProcessRestricted != 0;
+                    return result_1709.Result.ProhibitChildProcesses != 0;
                 }
                 return false;
             }
