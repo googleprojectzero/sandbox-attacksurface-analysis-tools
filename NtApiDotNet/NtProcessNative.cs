@@ -470,6 +470,14 @@ namespace NtApiDotNet
         ProcessEnableReadWriteVmLogging, // PROCESS_READWRITEVM_LOGGING_INFORMATION
         ProcessUptimeInformation, // PROCESS_UPTIME_INFORMATION
         ProcessImageSection,
+        ProcessDebugAuthInformation,
+        ProcessSystemResourceManagement,
+        ProcessSequenceNumber,
+        ProcessLoaderDetour,
+        ProcessSecurityDomainInformation,
+        ProcessCombineSecurityDomainsInformation,
+        ProcessEnableLogging,
+        ProcessLeapSecondInformation,
     }
 
     public enum ProcessMitigationPolicy

@@ -25,8 +25,6 @@ using System.Threading.Tasks;
 
 namespace NtApiDotNet
 {
-
-
     /// <summary>
     /// Class representing a NT File object
     /// </summary>
