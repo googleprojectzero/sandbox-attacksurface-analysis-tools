@@ -1221,13 +1221,13 @@ namespace NtApiDotNet
             {
                 if (!AppContainer)
                 {
-                    return String.Empty;
+                    return string.Empty;
                 }
 
                 ClaimSecurityAttribute attribute = GetSecurityAttributeByName("WIN://SYSAPPID", ClaimSecurityValueType.String);
                 if (attribute == null)
                 {
-                    return String.Empty;
+                    return string.Empty;
                 }
 
                 return (string)attribute.Values.First();
