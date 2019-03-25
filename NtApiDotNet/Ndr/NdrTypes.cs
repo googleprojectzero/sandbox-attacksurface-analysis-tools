@@ -1059,7 +1059,7 @@ namespace NtApiDotNet.Ndr
 
         internal override string FormatType(NdrFormatter context)
         {
-            return String.Format("{0} {1}", context.FormatComment("range: {0},{1}", MinValue, MaxValue), RangeType.FormatType(context));
+            return string.Format("{0} {1}", context.FormatComment("range: {0},{1}", MinValue, MaxValue), RangeType.FormatType(context));
         }
 
         public override int GetSize()
@@ -1357,8 +1357,8 @@ namespace NtApiDotNet.Ndr
     {
         // IDL is typedef pipe TYPE CHAR_PIPE_TYPE;
 
-        NdrBaseTypeReference BaseType { get; }
-        public byte Alignment { get; }
+        public NdrBaseTypeReference BaseType { get; private set; }
+        public byte Alignment { get; private set; }
 
         internal NdrPipeTypeReference(NdrParseContext context, BinaryReader reader)
             : base(NdrFormatCharacter.FC_PIPE)
@@ -1380,7 +1380,7 @@ namespace NtApiDotNet.Ndr
 
     public class NdrBlkHoleTypeReference : NdrBaseTypeReference
     {
-        public NdrBlackholeFlags Flags { get; }
+        public NdrBlackholeFlags Flags { get; private set; }
 
         internal NdrBlkHoleTypeReference(NdrParseContext context, BinaryReader reader)
             : base(NdrFormatCharacter.FC_BLKHOLE)
