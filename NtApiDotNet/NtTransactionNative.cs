@@ -159,5 +159,25 @@ namespace NtApiDotNet
         public char Description;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TransactionEnlistmentPair
+    {
+        public Guid EnlistmentId;
+        public Guid ResourceManagerId;
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("EnlistmentPair")]
+    public struct TransactionEnlistmentsInformation
+    {
+        public int NumberOfEnlistments;
+        public TransactionEnlistmentPair EnlistmentPair;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TransactionSuperiorEnlistmentInformation
+    {
+        public TransactionEnlistmentPair SuperiorEnlistmentPair;
+    }
+
 #pragma warning restore 1591
 }

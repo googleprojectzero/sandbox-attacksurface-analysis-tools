@@ -512,6 +512,29 @@ namespace NtApiDotNet
             set => SetProperties(null, null, value);
         }
 
+        /// <summary>
+        /// Query list of enlistments for this transaction.
+        /// </summary>
+        public IEnumerable<TransactionEnlistmentPair> Enlistments
+        {
+            get
+            {
+                using (var buffer = QueryBuffer<TransactionEnlistmentsInformation>(TransactionInformationClass.TransactionEnlistmentInformation))
+                {
+                    int count = buffer.Result.NumberOfEnlistments;
+                    TransactionEnlistmentPair[] pairs = new TransactionEnlistmentPair[count];
+                    buffer.Data.ReadArray(0, pairs, 0, count);
+                    return pairs;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Query the superior enlistment for this transaction.
+        /// </summary>
+        public TransactionEnlistmentPair SuperiorEnlistment => Query<TransactionSuperiorEnlistmentInformation>(
+            TransactionInformationClass.TransactionSuperiorEnlistmentInformation).SuperiorEnlistmentPair;
+
         #endregion
 
         #region Private Members
