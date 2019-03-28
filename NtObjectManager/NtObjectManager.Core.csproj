@@ -17,7 +17,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.4.0" />
-    <PackageReference Include="PowerShellStandard.Library" Version="3.0.0-preview-01" />
+    <PackageReference Include="PowerShellStandard.Library" Version="5.1.0" />
+    <PackageReference Include="System.Security.AccessControl" Version="4.5.0" />
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="4.4.1" />
   </ItemGroup>
 
