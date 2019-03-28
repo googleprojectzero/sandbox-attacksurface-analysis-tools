@@ -445,6 +445,8 @@ Specify a debug object to run the process under. You need to also specify DebugP
 Specify to not fallback to using CreateProcessWithLogon if CreateProcessAsUser fails.
 .PARAMETER AppContainerProfile
 Specify an app container profile to use.
+.PARAMETER ExtendedFlags
+ Specify extended creation flags.
 .INPUTS
 None
 .OUTPUTS
@@ -475,7 +477,8 @@ function New-Win32ProcessConfig
         [NtApiDotNet.Win32.ProtectionLevel]$ProtectionLevel = "WindowsPPL",
         [NtApiDotNet.NtDebug]$DebugObject,
         [switch]$NoTokenFallback,
-        [NtApiDotNet.Win32.AppContainerProfile]$AppContainerProfile
+        [NtApiDotNet.Win32.AppContainerProfile]$AppContainerProfile,
+        [NtApiDotNet.Win32.ProcessExtendedFlags]$ExtendedFlags = 0
     )
     $config = New-Object NtApiDotNet.Win32.Win32ProcessConfig
     $config.CommandLine = $CommandLine
@@ -514,6 +517,7 @@ function New-Win32ProcessConfig
     if ($AppContainerProfile -ne $null) {
         $config.AppContainerSid = $AppContainerProfile.Sid
     }
+    $config.ExtendedFlags = $ExtendedFlags
     return $config
 }
 
@@ -560,6 +564,8 @@ Specify a debug object to run the process under. You need to also specify DebugP
 Specify to not fallback to using CreateProcessWithLogon if CreateProcessAsUser fails.
 .PARAMETER Token
 Specify an explicit token to create the new process with.
+.PARAMETER ExtendedFlags
+ Specify extended creation flags.
 .PARAMETER Config
 Specify the configuration for the new process.
 .INPUTS
@@ -611,6 +617,8 @@ function New-Win32Process
         [switch]$NoTokenFallback,
         [Parameter(ParameterSetName = "FromArgs")]
         [NtApiDotNet.Win32.AppContainerProfile]$AppContainerProfile,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [NtApiDotNet.Win32.ProcessExtendedFlags]$ExtendedFlags = 0,
         [Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromConfig")]
         [NtApiDotNet.Win32.Win32ProcessConfig]$Config
     )
@@ -622,7 +630,7 @@ function New-Win32Process
     -Environment $Environment -CurrentDirectory $CurrentDirectory -Desktop $Desktop -Title $Title `
     -InheritHandles:$InheritHandles -InheritProcessHandle:$InheritProcessHandle -InheritThreadHandle:$InheritThreadHandle `
     -MitigationOptions $MitigationOptions -Token $Token -ProtectionLevel $ProtectionLevel -NoTokenFallback:$NoTokenFallback `
-    -DebugObject $DebugObject -AppContainerProfile $AppContainerProfile
+    -DebugObject $DebugObject -AppContainerProfile $AppContainerProfile -ExtendedFlags $ExtendedFlags
   }
 
   [NtApiDotNet.Win32.Win32Process]::CreateProcess($config)
