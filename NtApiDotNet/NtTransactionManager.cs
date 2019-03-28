@@ -347,7 +347,19 @@ namespace NtApiDotNet
         /// <summary>
         /// Get Transaction Manager last recovered Log Sequence Number.
         /// </summary>
-        public ulong LastRecoveredLsn => Query< TransactionManagerRecoveryInformation>(TransactionManagerInformationClass.TransactionManagerRecoveryInformation).LastRecoveredLsn;
+        public ulong LastRecoveredLsn => Query<TransactionManagerRecoveryInformation>(TransactionManagerInformationClass.TransactionManagerRecoveryInformation).LastRecoveredLsn;
+
+        /// <summary>
+        /// Get whether the transaction manager is volatile.
+        /// </summary>
+        public bool Volatile
+        {
+            get
+            {
+                var log_path = GetLogPath(false);
+                return !log_path.IsSuccess || string.IsNullOrEmpty(log_path.Result);
+            }
+        }
 
         #endregion
 

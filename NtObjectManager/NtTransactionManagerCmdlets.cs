@@ -42,7 +42,7 @@ namespace NtObjectManager
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtTransactionManager")]
-    [OutputType(typeof(NtTransaction))]
+    [OutputType(typeof(NtTransactionManager))]
     public class GetNtTransactionManagerCmdlet : NtObjectBaseCmdletWithAccess<TransactionManagerAccessRights>
     {
         /// <summary>
@@ -114,7 +114,7 @@ namespace NtObjectManager
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.New, "NtTransactionManager")]
-    [OutputType(typeof(NtPartition))]
+    [OutputType(typeof(NtTransactionManager))]
     public sealed class NewNtTransactionManagerCmdlet : NtObjectBaseCmdletWithAccess<TransactionManagerAccessRights>
     {
         /// <summary>
@@ -122,7 +122,6 @@ namespace NtObjectManager
         /// </summary>
         public NewNtTransactionManagerCmdlet()
         {
-            CreateFlags = TransactionManagerCreateOptions.Volatile;
         }
 
         /// <summary>
@@ -159,6 +158,10 @@ namespace NtObjectManager
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
+            if (string.IsNullOrEmpty(LogFileName))
+            {
+                CreateFlags |= TransactionManagerCreateOptions.Volatile;
+            }
             return NtTransactionManager.Create(obj_attributes, Access, 
                 LogFileName, CreateFlags, CommitStrength);
         }

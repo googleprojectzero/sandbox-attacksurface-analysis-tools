@@ -195,7 +195,6 @@ namespace NtApiDotNet
             return CreateVolatile(path, null, ResourceManagerAccessRights.MaximumAllowed, transaction_manager);
         }
 
-
         /// <summary>
         /// Create a new volatile resource manager object.
         /// </summary>
@@ -225,18 +224,18 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="object_attributes">The object attributes</param>
         /// <param name="desired_access">Desired access for the handle</param>
-        /// <param name="transaction_manager">Optional transaction manager which contains the resource manager.</param>
-        /// <param name="resource_manager_guid">Optional resource manager GUID.</param>
+        /// <param name="transaction_manager">Transaction manager which contains the resource manager.</param>
+        /// <param name="resource_manager_guid">Resource manager GUID.</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtResourceManager> Open(ObjectAttributes object_attributes,
                 ResourceManagerAccessRights desired_access,
                 NtTransactionManager transaction_manager,
-                Guid? resource_manager_guid,
+                Guid resource_manager_guid,
                 bool throw_on_error)
         {
             return NtSystemCalls.NtOpenResourceManager(out SafeKernelObjectHandle handle,
-                desired_access, transaction_manager.GetHandle(), resource_manager_guid.ToOptional(),
+                desired_access, transaction_manager.GetHandle(), ref resource_manager_guid,
                 object_attributes).CreateResult(throw_on_error, () => new NtResourceManager(handle));
         }
 
@@ -245,14 +244,14 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="object_attributes">The object attributes</param>
         /// <param name="desired_access">Desired access for the handle</param>
-        /// <param name="transaction_manager">Optional transaction manager which contains the resource manager.</param>
-        /// <param name="resource_manager_guid">Optional resource manager GUID.</param>
+        /// <param name="transaction_manager">Transaction manager which contains the resource manager.</param>
+        /// <param name="resource_manager_guid">Resource manager GUID.</param>
         /// <returns>The object result.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtResourceManager Open(ObjectAttributes object_attributes,
                 ResourceManagerAccessRights desired_access,
                 NtTransactionManager transaction_manager,
-                Guid? resource_manager_guid)
+                Guid resource_manager_guid)
         {
             return Open(object_attributes, desired_access, transaction_manager,
                 resource_manager_guid, true).Result;

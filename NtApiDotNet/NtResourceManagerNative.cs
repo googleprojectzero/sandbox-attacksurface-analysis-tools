@@ -154,7 +154,7 @@ namespace NtApiDotNet
             out SafeKernelObjectHandle ResourceManagerHandle,
             ResourceManagerAccessRights DesiredAccess,
             SafeKernelObjectHandle TmHandle,
-            OptionalGuid ResourceManagerGuid,
+            ref Guid ResourceManagerGuid,
             ObjectAttributes ObjectAttributes
         );
 
