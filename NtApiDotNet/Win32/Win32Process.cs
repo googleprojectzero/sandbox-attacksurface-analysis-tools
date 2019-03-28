@@ -113,15 +113,15 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Process mode background begin.
         /// </summary>
-        ModeBackgroundBegin =  0x00100000,
+        ModeBackgroundBegin = 0x00100000,
         /// <summary>
         /// Process mode background end.
         /// </summary>
-        ModeBackgroundEnd =  0x00200000,
+        ModeBackgroundEnd = 0x00200000,
         /// <summary>
         /// Create a secure process.
         /// </summary>
-        SecureProcess  = 0x00400000,
+        SecureProcess = 0x00400000,
         /// <summary>
         /// Breakaway from a job object.
         /// </summary>
@@ -336,6 +336,30 @@ namespace NtApiDotNet.Win32
         AppPPL = 8
     }
 
+    /// <summary>
+    /// Extended process flags.
+    /// </summary>
+    [Flags]
+    public enum ProcessExtendedFlags
+    {
+        /// <summary>
+        /// No flags.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Log elevation failure.
+        /// </summary>
+        LogElevationFailure = 0x1,
+        /// <summary>
+        /// Ignore elevation requirements.
+        /// </summary>
+        IgnoreElevationCheck = 0x2,
+        /// <summary>
+        /// Force job breakaway (needs TCB privilege).
+        /// </summary>
+        ForceBreakawayJob = 0x4,
+    }
+
     class ProcessAttributes
     {
         const int PROC_THREAD_ATTRIBUTE_THREAD = 0x00010000;
@@ -363,6 +387,7 @@ namespace NtApiDotNet.Win32
         enum PROC_THREAD_ATTRIBUTE_NUM
         {
             ProcThreadAttributeParentProcess = 0,
+            ProcThreadAttributeExtendedFlags = 1,
             ProcThreadAttributeHandleList = 2,
             ProcThreadAttributeGroupAffinity = 3,
             ProcThreadAttributePreferredNode = 4,
@@ -382,109 +407,33 @@ namespace NtApiDotNet.Win32
             ProcThreadAttributePseudoConsole = 22,
         }
 
-        public static IntPtr ProcThreadAttributeParentProcess
-        {
-            get
-            {
-                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeParentProcess, false, true, false);
-            }
-        }
+        public static IntPtr ProcThreadAttributeParentProcess => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeParentProcess, false, true, false);
 
-        public static IntPtr ProcThreadAttributeHandleList
-        {
-            get
-            {
-                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeHandleList, false, true, false);
-            }
-        }
+        public static IntPtr ProcThreadAttributeHandleList => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeHandleList, false, true, false);
 
-        public static IntPtr ProcThreadAttributeMitigationPolicy
-        {
-            get
-            {
-                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeMitigationPolicy, false, true, false);
-            }
-        }
+        public static IntPtr ProcThreadAttributeMitigationPolicy => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeMitigationPolicy, false, true, false);
 
-        public static IntPtr ProcThreadAttributeChildProcessPolicy
-        {
-            get
-            {
-                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeChildProcessPolicy, false, true, false);
-            }
-        }
+        public static IntPtr ProcThreadAttributeChildProcessPolicy => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeChildProcessPolicy, false, true, false);
 
-        public static IntPtr ProcThreadAttributeWin32kFilter
-        {
-            get
-            {
-                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeWin32kFilter, false, true, false);
-            }
-        }
+        public static IntPtr ProcThreadAttributeWin32kFilter => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeWin32kFilter, false, true, false);
 
-        public static IntPtr ProcThreadAttributeAllApplicationPackagesPolicy
-        {
-            get
-            {
-                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeAllApplicationPackagesPolicy, false, true, false);
-            }
-        }
+        public static IntPtr ProcThreadAttributeAllApplicationPackagesPolicy => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeAllApplicationPackagesPolicy, false, true, false);
 
-        public static IntPtr ProcThreadAttributeProtectionLevel
-        {
-            get
-            {
-                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeProtectionLevel, false, true, false);
-            }
-        }
+        public static IntPtr ProcThreadAttributeProtectionLevel => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeProtectionLevel, false, true, false);
 
-        public static IntPtr ProcThreadAttributeSecurityCapabilities
-        {
-            get
-            {
-                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeSecurityCapabilities, false, true, false);
-            }
-        }
+        public static IntPtr ProcThreadAttributeSecurityCapabilities => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeSecurityCapabilities, false, true, false);
 
-        public static IntPtr ProcThreadAttributeDesktopAppPolicy
-        {
-            get
-            {
-                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeDesktopAppPolicy, false, true, false);
-            }
-        }
+        public static IntPtr ProcThreadAttributeDesktopAppPolicy => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeDesktopAppPolicy, false, true, false);
 
-        public static IntPtr ProcThreadAttributePackageName
-        {
-            get
-            {
-                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributePackageName, false, true, false);
-            }
-        }
+        public static IntPtr ProcThreadAttributePackageName => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributePackageName, false, true, false);
 
-        public static IntPtr ProcThreadAttributePseudoConsole
-        {
-            get
-            {
-                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributePseudoConsole, false, true, false);
-            }
-        }
+        public static IntPtr ProcThreadAttributePseudoConsole => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributePseudoConsole, false, true, false);
 
-        public static IntPtr ProcThreadAttributeBnoIsolation
-        {
-            get
-            {
-                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeBnoIsolation, false, true, false);
-            }
-        }
+        public static IntPtr ProcThreadAttributeBnoIsolation => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeBnoIsolation, false, true, false);
 
-        public static IntPtr ProcThreadAttributeSafeOpenPromptOriginClaim
-        {
-            get
-            {
-                return GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeSafeOpenPromptOriginClaim, false, true, false);
-            }
-        }
+        public static IntPtr ProcThreadAttributeSafeOpenPromptOriginClaim => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeSafeOpenPromptOriginClaim, false, true, false);
+
+        public static IntPtr ProcThreadAttributeExtendedFlags => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeExtendedFlags, false, true, true);
     }
 
     class SafeProcThreadAttributeListBuffer : SafeHGlobalBuffer
@@ -778,6 +727,10 @@ namespace NtApiDotNet.Win32
         /// When specified do not fallback to using CreateProcessWithLogon if CreateProcessWithUser fails.
         /// </summary>
         public bool NoTokenFallback { get; set; }
+        /// <summary>
+        /// Specify additional extended flags.
+        /// </summary>
+        public ProcessExtendedFlags ExtendedFlags { get; set; }
 
         /// <summary>
         /// Add an object's handle to the list of inherited handles. 
@@ -893,6 +846,11 @@ namespace NtApiDotNet.Win32
             }
 
             if (SafeOpenPromptOriginClaim != null)
+            {
+                count++;
+            }
+
+            if (ExtendedFlags != ProcessExtendedFlags.None)
             {
                 count++;
             }
@@ -1018,6 +976,11 @@ namespace NtApiDotNet.Win32
                 var bytes = (byte[])SafeOpenPromptOriginClaim.Clone();
                 Array.Resize(ref bytes, 524);
                 attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeSafeOpenPromptOriginClaim, bytes);
+            }
+
+            if (ExtendedFlags != ProcessExtendedFlags.None)
+            {
+                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeExtendedFlags, (int)ExtendedFlags);
             }
 
             return attr_list;
