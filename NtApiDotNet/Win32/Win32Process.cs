@@ -360,7 +360,7 @@ namespace NtApiDotNet.Win32
         ForceBreakawayJob = 0x4,
     }
 
-    class ProcessAttributes
+    class Win32ProcessAttributes
     {
         const int PROC_THREAD_ATTRIBUTE_THREAD = 0x00010000;
         const int PROC_THREAD_ATTRIBUTE_INPUT = 0x00020000;
@@ -869,7 +869,7 @@ namespace NtApiDotNet.Win32
             var attr_list = resources.AddResource(new SafeProcThreadAttributeListBuffer(count));
             if (ParentProcess != null)
             {
-                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeParentProcess, ParentProcess.Handle.DangerousGetHandle());
+                attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeParentProcess, ParentProcess.Handle.DangerousGetHandle());
             }
 
             if (MitigationOptions2 != ProcessMitigationOptions2.None)
@@ -879,11 +879,11 @@ namespace NtApiDotNet.Win32
 
                 writer.Write((ulong)MitigationOptions);
                 writer.Write((ulong)MitigationOptions2);
-                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeMitigationPolicy, stm.ToArray());
+                attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeMitigationPolicy, stm.ToArray());
             }
             else if (MitigationOptions != ProcessMitigationOptions.None)
             {
-                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeMitigationPolicy, (ulong)MitigationOptions);
+                attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeMitigationPolicy, (ulong)MitigationOptions);
             }
 
             if (Win32kFilterFlags != Win32kFilterFlags.None)
@@ -893,12 +893,12 @@ namespace NtApiDotNet.Win32
                     Flags = Win32kFilterFlags,
                     FilterLevel = Win32kFilterLevel
                 };
-                attr_list.AddAttributeBuffer(ProcessAttributes.ProcThreadAttributeWin32kFilter, resources.AddResource(filter.ToBuffer()));
+                attr_list.AddAttributeBuffer(Win32ProcessAttributes.ProcThreadAttributeWin32kFilter, resources.AddResource(filter.ToBuffer()));
             }
 
             if ((CreationFlags & CreateProcessFlags.ProtectedProcess) != 0 && ProtectionLevel != ProtectionLevel.None)
             {
-                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeProtectionLevel, (int)ProtectionLevel);
+                attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeProtectionLevel, (int)ProtectionLevel);
             }
 
             if (InheritHandleList.Count > 0)
@@ -906,7 +906,7 @@ namespace NtApiDotNet.Win32
                 int total_size = IntPtr.Size * InheritHandleList.Count;
                 var handle_list = resources.AddResource(new SafeHGlobalBuffer(total_size));
                 handle_list.WriteArray(0, InheritHandleList.ToArray(), 0, InheritHandleList.Count);
-                attr_list.AddAttributeBuffer(ProcessAttributes.ProcThreadAttributeHandleList, handle_list);
+                attr_list.AddAttributeBuffer(Win32ProcessAttributes.ProcThreadAttributeHandleList, handle_list);
             }
 
             if (AppContainerSid != null)
@@ -932,12 +932,12 @@ namespace NtApiDotNet.Win32
                     caps.Capabilities = cap_buffer.DangerousGetHandle();
                     caps.CapabilityCount = cap_sids.Length;
                 }
-                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeSecurityCapabilities, caps);
+                attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeSecurityCapabilities, caps);
             }
 
             if (LowPrivilegeAppContainer)
             {
-                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeAllApplicationPackagesPolicy, 1);
+                attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeAllApplicationPackagesPolicy, 1);
             }
 
             if (RestrictChildProcessCreation || OverrideChildProcessCreation)
@@ -945,42 +945,42 @@ namespace NtApiDotNet.Win32
                 int flags = RestrictChildProcessCreation ? 1 : 0;
                 flags |= OverrideChildProcessCreation ? 2 : 0;
 
-                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeChildProcessPolicy, flags);
+                attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeChildProcessPolicy, flags);
             }
 
             if (DesktopAppBreakaway != ProcessDesktopAppBreakawayFlags.None)
             {
-                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeDesktopAppPolicy, (int)DesktopAppBreakaway);
+                attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeDesktopAppPolicy, (int)DesktopAppBreakaway);
             }
 
             if (!string.IsNullOrWhiteSpace(PackageName))
             {
                 byte[] str_bytes = Encoding.Unicode.GetBytes(PackageName);
                 var string_buffer = resources.AddResource(new SafeHGlobalBuffer(str_bytes));
-                attr_list.AddAttributeBuffer(ProcessAttributes.ProcThreadAttributePackageName, string_buffer);
+                attr_list.AddAttributeBuffer(Win32ProcessAttributes.ProcThreadAttributePackageName, string_buffer);
             }
 
             if (PseudoConsole != IntPtr.Zero)
             {
-                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributePseudoConsole, PseudoConsole);
+                attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributePseudoConsole, PseudoConsole);
             }
 
             if (!string.IsNullOrEmpty(BnoIsolationPrefix))
             {
                 var prefix = new BnoIsolationAttribute() { IsolationEnabled = 1, IsolationPrefix = BnoIsolationPrefix };
-                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeBnoIsolation, prefix);
+                attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeBnoIsolation, prefix);
             }
 
             if (SafeOpenPromptOriginClaim != null)
             {
                 var bytes = (byte[])SafeOpenPromptOriginClaim.Clone();
                 Array.Resize(ref bytes, 524);
-                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeSafeOpenPromptOriginClaim, bytes);
+                attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeSafeOpenPromptOriginClaim, bytes);
             }
 
             if (ExtendedFlags != ProcessExtendedFlags.None)
             {
-                attr_list.AddAttribute(ProcessAttributes.ProcThreadAttributeExtendedFlags, (int)ExtendedFlags);
+                attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeExtendedFlags, (int)ExtendedFlags);
             }
 
             return attr_list;
