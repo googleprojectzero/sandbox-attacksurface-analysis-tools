@@ -104,7 +104,7 @@ namespace NtObjectManager
         /// </summary>
         protected override void ProcessRecord()
         {
-            WriteObject(CreateObject(null, ObjectAttributes, null, SecurityQualityOfService, SecurityDescriptor));
+            WriteObject(CreateObject(null, ObjectAttributes, null, SecurityQualityOfService, SecurityDescriptor), true);
         }
 
         #region IDisposable Support
@@ -340,7 +340,7 @@ namespace NtObjectManager
             VerifyParameters();
             try
             {
-                WriteObject(CreateObject(ResolvePath(), ObjectAttributes, Root, SecurityQualityOfService, SecurityDescriptor));
+                WriteObject(CreateObject(ResolvePath(), ObjectAttributes, Root, SecurityQualityOfService, SecurityDescriptor), true);
             }
             catch (NtException ex)
             {
