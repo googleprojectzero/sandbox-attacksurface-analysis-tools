@@ -303,13 +303,26 @@ namespace NtApiDotNet
         /// <summary>
         /// Get a list of all accessible transaction manager objects.
         /// </summary>
+        /// <param name="object_attributes">Object attributes for opened handle.</param>
+        /// <param name="desired_access">The access for the transaction manager objects.</param>
+        /// <param name="options">Open options.</param>
+        /// <returns>The list of all accessible transaction manager objects.</returns>
+        public static IEnumerable<NtTransactionManager> GetAccessibleTransactionManager(ObjectAttributes object_attributes, 
+            TransactionManagerAccessRights desired_access, TransactionManagerOpenOptions options)
+        {
+            return NtTransactionManagerUtils.GetAccessibleTransactionObjects(
+                SafeKernelObjectHandle.Null, KtmObjectType.TransactionManager,
+                id => Open(object_attributes, desired_access, null, id, options, false));
+        }
+
+        /// <summary>
+        /// Get a list of all accessible transaction manager objects.
+        /// </summary>
         /// <param name="desired_access">The access for the transaction manager objects.</param>
         /// <returns>The list of all accessible transaction manager objects.</returns>
         public static IEnumerable<NtTransactionManager> GetAccessibleTransactionManager(TransactionManagerAccessRights desired_access)
         {
-            return NtTransactionManagerUtils.GetAccessibleTransactionObjects(
-                SafeKernelObjectHandle.Null, KtmObjectType.TransactionManager,
-                id => Open(null, desired_access, null, id, TransactionManagerOpenOptions.None, false));
+            return GetAccessibleTransactionManager(null, desired_access, TransactionManagerOpenOptions.None);
         }
 
         /// <summary>
