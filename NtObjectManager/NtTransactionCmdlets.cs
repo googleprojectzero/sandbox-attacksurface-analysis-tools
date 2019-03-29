@@ -14,63 +14,47 @@
 
 using NtApiDotNet;
 using System;
+using System.Linq;
 using System.Management.Automation;
 
 namespace NtObjectManager
 {
     /// <summary>
-    /// <para type="synopsis">Open a NT transaction object.</para>
-    /// <para type="description">This cmdlet opens an existing NT transaction object.</para>
+    /// <para type="synopsis">Open a NT transaction object or get all accessible transaction objects.</para>
+    /// <para type="description">This cmdlet opens an existing NT transaction object or can get all accessible transaction objects.</para>
     /// </summary>
     /// <example>
-    ///   <code>$obj = Get-NtTransaction \BaseNamedObjects\ABC</code>
-    ///   <para>Get a transaction object with an absolute path.</para>
+    ///   <code>$obj = Get-NtTransaction</code>
+    ///   <para>Get all accessible transaction objects.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = Get-NtTransaction -TransactionManager $tm</code>
+    ///   <para>Get all accessible transaction objects in a specific transaction manager.</para>
     /// </example>
     /// <example>
     ///   <code>$obj = Get-NtTransaction -UnitOfWork '04422e91-63c2-4025-944d-d66fae133274'</code>
     ///   <para>Get a transaction object from its Unit of Work GUID.</para>
     /// </example>
     /// <example>
-    ///   <code>$root = Get-NtDirectory \BaseNamedObjects&#x0A;$obj = Get-NtTransaction ABC -Root $root</code>
-    ///   <para>Get a transaction object with a relative path.
-    ///   </para>
-    /// </example>
-    /// <example>
-    ///   <code>cd NtObject:\BaseNamedObjects&#x0A;$obj = Get-NtTransaction ABC</code>
-    ///   <para>Get a transaction object with a relative path based on the current location.
-    ///   </para>
+    ///   <code>$obj = Get-NtTransaction -UnitOfWork '04422e91-63c2-4025-944d-d66fae133274' -TransactionManager $tm</code>
+    ///   <para>Get a transaction object from its Unit of Work GUID from a specific transaction manager.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.Get, "NtTransaction")]
+    [Cmdlet(VerbsCommon.Get, "NtTransaction", DefaultParameterSetName = "All")]
     [OutputType(typeof(NtTransaction))]
-    public class GetNtTransactionCmdlet : NtObjectBaseCmdletWithAccess<TransactionAccessRights>
+    public class GetNtTransactionCmdlet : NtObjectBaseNoPathCmdletWithAccess<TransactionAccessRights>
     {
         /// <summary>
-        /// <para type="description">Specify an optional Unit of Work GUID.</para>
+        /// <para type="description">Specify the Unit of Work GUID to open.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "FromPath"), Parameter(ParameterSetName = "FromId")]
-        public Guid? UnitOfWork { get; set; }
+        [Parameter(Mandatory = true, ParameterSetName = "FromId", Position = 0)]
+        public Guid UnitOfWork { get; set; }
 
         /// <summary>
         /// <para type="description">Specify an optional Transaction Manager.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "FromId", Position = 1), Parameter(ParameterSetName = "All")]
         public NtTransactionManager TransactionManager { get; set; }
-
-        /// <summary>
-        /// <para type="description">The NT object manager path to the object to use.</para>
-        /// </summary>
-        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromPath")]
-        public override string Path { get; set; }
-
-        /// <summary>
-        /// Determine if the cmdlet can create objects.
-        /// </summary>
-        /// <returns>True if objects can be created.</returns>
-        protected override bool CanCreateDirectories()
-        {
-            return false;
-        }
 
         /// <summary>
         /// Method to create an object from a set of object attributes.
@@ -79,6 +63,10 @@ namespace NtObjectManager
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
+            if (ParameterSetName == "All")
+            {
+                return NtTransaction.GetAccessibleTransaction(obj_attributes, Access, TransactionManager).ToArray();
+            }
             return NtTransaction.Open(obj_attributes, Access, UnitOfWork, TransactionManager);
         }
     }
