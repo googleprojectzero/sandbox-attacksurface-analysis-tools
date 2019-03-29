@@ -112,13 +112,13 @@ namespace NtApiDotNet
             ObjectAttributes object_attributes,
             EnlistmentAccessRights desired_access,
             NtResourceManager resource_manager,
-            Guid? enlistment_guid,
+            Guid enlistment_guid,
             bool throw_on_error
             )
         {
             return NtSystemCalls.NtOpenEnlistment(out SafeKernelObjectHandle handle,
                 desired_access, resource_manager.GetHandle(),
-                enlistment_guid.ToOptional(), object_attributes).CreateResult(throw_on_error, () => new NtEnlistment(handle));
+                ref enlistment_guid, object_attributes).CreateResult(throw_on_error, () => new NtEnlistment(handle));
         }
 
         /// <summary>
@@ -133,7 +133,7 @@ namespace NtApiDotNet
             ObjectAttributes object_attributes,
             EnlistmentAccessRights desired_access,
             NtResourceManager resource_manager,
-            Guid? enlistment_guid
+            Guid enlistment_guid
             )
         {
             return Open(object_attributes, desired_access, resource_manager, enlistment_guid, true).Result;

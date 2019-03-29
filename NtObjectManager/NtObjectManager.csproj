@@ -48,6 +48,7 @@
   <ItemGroup>
     <Compile Include="NtAlpcCmdlets.cs" />
     <Compile Include="NtDebugCmdlets.cs" />
+    <Compile Include="NtEnlistmentCmdlets.cs" />
     <Compile Include="NtPartitionCmdlets.cs" />
     <Compile Include="NtResourceManagerCmdlets.cs" />
     <Compile Include="NtTransactionCmdlets.cs" />

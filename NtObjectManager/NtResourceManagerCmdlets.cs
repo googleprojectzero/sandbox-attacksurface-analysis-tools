@@ -19,29 +19,34 @@ using System.Management.Automation;
 namespace NtObjectManager
 {
     /// <summary>
-    /// <para type="synopsis">Open a NT Resource Manager object.</para>
+    /// <para type="synopsis">Open a NT Resource Manager object or all from a Transaction Manager..</para>
     /// <para type="description">This cmdlet opens an existing NT Resource Manager object.</para>
     /// </summary>
+    /// <example>
+    ///   <code>$obj = Get-NtTransaction -TransactionManager $tm</code>
+    ///   <para>Get all Resource Manager objects from a Transaction Manager.</para>
+    /// </example>
     /// <example>
     ///   <code>$obj = Get-NtTransaction -ResourceManagerGuid '04422e91-63c2-4025-944d-d66fae133274' -TransactionManager $tm</code>
     ///   <para>Get a Resource Manager object from its GUID and Transaction Manager.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.Get, "NtResourceManager")]
+    [Cmdlet(VerbsCommon.Get, "NtResourceManager", DefaultParameterSetName = "All")]
     [OutputType(typeof(NtResourceManager))]
     public class GetNtResourceManagerCmdlet : NtObjectBaseNoPathCmdletWithAccess<ResourceManagerAccessRights>
     {
         /// <summary>
         /// <para type="description">Specify the Resource Manager GUID to open.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 0)]
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromId")]
         [Alias("rmguid")]
         public Guid ResourceManagerGuid { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the Transaction Manager containing the Resource Manager.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 1)]
+        [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromId"), 
+            Parameter(Mandatory = true, Position = 0, ParameterSetName = "All")]
         public NtTransactionManager TransactionManager { get; set; }
 
         /// <summary>
@@ -51,6 +56,10 @@ namespace NtObjectManager
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
+            if (ParameterSetName == "All")
+            {
+                return TransactionManager.GetAccessibleResourceManager(obj_attributes, Access);
+            }
             return NtResourceManager.Open(obj_attributes, Access, TransactionManager, ResourceManagerGuid);
         }
     }
@@ -60,12 +69,12 @@ namespace NtObjectManager
     /// <para type="description">This cmdlet creates a new NT Resource Manager object.</para>
     /// </summary>
     /// <example>
-    ///   <code>$obj = New-NtResourceManager -ResourceManagerGuid '04422e91-63c2-4025-944d-d66fae133274' -TransactionManager $tm </code>
-    ///   <para>Create a Resource Manager object with a specified GUID..</para>
+    ///   <code>$obj = New-NtResourceManager -TransactionManager $tm </code>
+    ///   <para>Create a Resource Manager object with an auto-generated GUID.</para>
     /// </example>
     /// <example>
-    ///   <code>$obj = New-NtResourceManager -AutoGenerateGuid -TransactionManager $tm </code>
-    ///   <para>Create a Resource Manager object with an auto-generated GUID..</para>
+    ///   <code>$obj = New-NtResourceManager -ResourceManagerGuid '04422e91-63c2-4025-944d-d66fae133274' -TransactionManager $tm </code>
+    ///   <para>Create a Resource Manager object with a specified GUID.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.New, "NtResourceManager", DefaultParameterSetName = "FromGuid")]
@@ -73,23 +82,24 @@ namespace NtObjectManager
     public sealed class NewNtResourceManagerCmdlet : NtObjectBaseCmdletWithAccess<ResourceManagerAccessRights>
     {
         /// <summary>
+        /// Constructor.
+        /// </summary>
+        public NewNtResourceManagerCmdlet()
+        {
+            ResourceManagerGuid = Guid.NewGuid();
+        }
+
+        /// <summary>
         /// <para type="description">Specify the Resource Manager GUID to create.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromGuid")]
+        [Parameter]
         [Alias("rmguid")]
         public Guid ResourceManagerGuid { get; set; }
 
         /// <summary>
-        /// <para type="description">Auto-generate the Resource Manager GUID.</para>
-        /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "FromAutoGen")]
-        public SwitchParameter AutoGenerateGuid { get; set; }
-
-        /// <summary>
         /// <para type="description">Specify the Transaction Manager to contain the Resource Manager.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromGuid")]
-        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromAutoGen")]
+        [Parameter(Mandatory = true, Position = 0)]
         public NtTransactionManager TransactionManager { get; set; }
 
         /// <summary>
@@ -120,17 +130,13 @@ namespace NtObjectManager
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            if (AutoGenerateGuid)
-            {
-                ResourceManagerGuid = Guid.NewGuid();
-            }
-
             if (TransactionManager.Volatile)
             {
                 CreateFlags |= ResourceManagerCreateOptions.Volatile;
             }
 
-            return NtResourceManager.Create(obj_attributes, Access, TransactionManager, ResourceManagerGuid,
+            return NtResourceManager.Create(obj_attributes, Access, 
+                TransactionManager, ResourceManagerGuid,
                 CreateFlags, Description);
         }
     }

@@ -542,14 +542,25 @@ namespace NtApiDotNet
         /// <summary>
         /// Get a list of all accessible resource manager objects owned by this transaction manager.
         /// </summary>
+        /// <param name="object_attributes">Object attributes for opened handle.</param>
+        /// <param name="desired_access">The access for the resource manager objects.</param>
+        /// <returns>The list of all accessible resource manager objects.</returns>
+        public IEnumerable<NtResourceManager> GetAccessibleResourceManager(ObjectAttributes object_attributes, ResourceManagerAccessRights desired_access)
+        {
+            return NtTransactionManagerUtils.GetAccessibleTransactionObjects(
+                Handle,
+                KtmObjectType.ResourceManager,
+                id => NtResourceManager.Open(object_attributes, desired_access, this, id, false));
+        }
+
+        /// <summary>
+        /// Get a list of all accessible resource manager objects owned by this transaction manager.
+        /// </summary>
         /// <param name="desired_access">The access for the resource manager objects.</param>
         /// <returns>The list of all accessible resource manager objects.</returns>
         public IEnumerable<NtResourceManager> GetAccessibleResourceManager(ResourceManagerAccessRights desired_access)
         {
-            return NtTransactionManagerUtils.GetAccessibleTransactionObjects(
-                Handle, 
-                KtmObjectType.ResourceManager, 
-                id => NtResourceManager.Open(null, desired_access, this, id, false));
+            return GetAccessibleResourceManager(null, desired_access);
         }
 
         /// <summary>

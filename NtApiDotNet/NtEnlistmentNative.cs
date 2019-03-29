@@ -89,7 +89,7 @@ namespace NtApiDotNet
             out SafeKernelObjectHandle EnlistmentHandle,
             EnlistmentAccessRights DesiredAccess,
             SafeKernelObjectHandle ResourceManagerHandle,
-            OptionalGuid EnlistmentGuid,
+            ref Guid EnlistmentGuid,
             ObjectAttributes ObjectAttributes
         );
 

@@ -417,14 +417,25 @@ namespace NtApiDotNet
         /// <summary>
         /// Get a list of all accessible enlistment objects owned by this resource manager.
         /// </summary>
+        /// <param name="object_attributes">The object attributes</param>
         /// <param name="desired_access">The access for the enlistment objects.</param>
         /// <returns>The list of all accessible enlistment objects.</returns>
-        public IEnumerable<NtEnlistment> GetAccessibleEnlistment(EnlistmentAccessRights desired_access)
+        public IEnumerable<NtEnlistment> GetAccessibleEnlistment(ObjectAttributes object_attributes, EnlistmentAccessRights desired_access)
         {
             return NtTransactionManagerUtils.GetAccessibleTransactionObjects(
                 Handle,
                 KtmObjectType.Enlistment,
-                id => NtEnlistment.Open(null, desired_access, this, id, false));
+                id => NtEnlistment.Open(object_attributes, desired_access, this, id, false));
+        }
+
+        /// <summary>
+        /// Get a list of all accessible enlistment objects owned by this resource manager.
+        /// </summary>
+        /// <param name="desired_access">The access for the enlistment objects.</param>
+        /// <returns>The list of all accessible enlistment objects.</returns>
+        public IEnumerable<NtEnlistment> GetAccessibleEnlistment(EnlistmentAccessRights desired_access)
+        {
+            return GetAccessibleEnlistment(null, desired_access);
         }
 
         /// <summary>
