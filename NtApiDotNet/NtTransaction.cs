@@ -32,14 +32,8 @@ namespace NtApiDotNet
 
         internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
         {
-            public NtTypeFactoryImpl() : base(true)
+            public NtTypeFactoryImpl() : base(false)
             {
-            }
-
-            protected override sealed NtResult<NtTransaction> OpenInternal(ObjectAttributes obj_attributes,
-                TransactionAccessRights desired_access, bool throw_on_error)
-            {
-                return NtTransaction.Open(obj_attributes, desired_access, throw_on_error);
             }
         }
 
@@ -249,21 +243,6 @@ namespace NtApiDotNet
         /// <summary>
         /// Open a transaction object.
         /// </summary>
-        /// <param name="path">The path to the object</param>
-        /// <param name="root">The root if path is relative</param>
-        /// <param name="desired_access">The desired access for the object</param>
-        /// <returns>The opened object</returns>
-        public static NtTransaction Open(string path, NtObject root, TransactionAccessRights desired_access)
-        {
-            using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
-            {
-                return Open(obja, desired_access);
-            }
-        }
-
-        /// <summary>
-        /// Open a transaction object.
-        /// </summary>
         /// <param name="object_attributes">The object attributes for the object</param>
         /// <param name="desired_access">The desired access for the object</param>
         /// <param name="transaction_manager">Optional transaction manager.</param>
@@ -271,10 +250,10 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtTransaction> Open(ObjectAttributes object_attributes, TransactionAccessRights desired_access, 
-            Guid? uow, NtTransactionManager transaction_manager, bool throw_on_error)
+            Guid uow, NtTransactionManager transaction_manager, bool throw_on_error)
         {
             return NtSystemCalls.NtOpenTransaction(out SafeKernelObjectHandle handle, desired_access, object_attributes,
-                uow.ToOptional(), transaction_manager.GetHandle()).CreateResult(throw_on_error, () => new NtTransaction(handle));
+                ref uow, transaction_manager.GetHandle()).CreateResult(throw_on_error, () => new NtTransaction(handle));
         }
 
         /// <summary>
@@ -284,9 +263,9 @@ namespace NtApiDotNet
         /// <param name="desired_access">The desired access for the object</param>
         /// <param name="transaction_manager">Optional transaction manager.</param>
         /// <param name="uow">UOW Guid.</param>
-        /// <returns>The NT status code and object result.</returns>
+        /// <returns>The object result.</returns>
         public static NtTransaction Open(ObjectAttributes object_attributes, TransactionAccessRights desired_access,
-            Guid? uow, NtTransactionManager transaction_manager)
+            Guid uow, NtTransactionManager transaction_manager)
         {
             return Open(object_attributes, desired_access, uow, transaction_manager, true).Result;
         }
@@ -294,35 +273,50 @@ namespace NtApiDotNet
         /// <summary>
         /// Open a transaction object.
         /// </summary>
-        /// <param name="object_attributes">The object attributes for the object</param>
         /// <param name="desired_access">The desired access for the object</param>
-        /// <param name="throw_on_error">True to throw an exception on error.</param>
-        /// <returns>The NT status code and object result.</returns>
-        public static NtResult<NtTransaction> Open(ObjectAttributes object_attributes,
-            TransactionAccessRights desired_access, bool throw_on_error)
+        /// <param name="transaction_manager">Optional transaction manager.</param>
+        /// <param name="uow">UOW Guid.</param>
+        /// <returns>The object result.</returns>
+        public static NtTransaction Open(TransactionAccessRights desired_access,
+            Guid uow, NtTransactionManager transaction_manager)
         {
-            return Open(object_attributes, desired_access, null, null, throw_on_error);
+            return Open(null, desired_access, uow, transaction_manager);
         }
 
         /// <summary>
         /// Open a transaction object.
         /// </summary>
-        /// <param name="object_attributes">The object attributes for the object</param>
-        /// <param name="desired_access">The desired access for the object</param>
-        /// <returns>The opened object</returns>
-        public static NtTransaction Open(ObjectAttributes object_attributes, TransactionAccessRights desired_access)
+        /// <param name="transaction_manager">Optional transaction manager.</param>
+        /// <param name="uow">UOW Guid.</param>
+        /// <returns>The object result.</returns>
+        public static NtTransaction Open(Guid uow, NtTransactionManager transaction_manager)
         {
-            return Open(object_attributes, desired_access, true).Result;
+            return Open(TransactionAccessRights.MaximumAllowed, uow, transaction_manager);
         }
 
         /// <summary>
         /// Open a transaction object.
         /// </summary>
-        /// <param name="path">The path to the object</param>
-        /// <returns>The opened object</returns>
-        public static NtTransaction Open(string path)
+        /// <param name="uow">UOW Guid.</param>
+        /// <returns>The object result.</returns>
+        public static NtTransaction Open(Guid uow)
         {
-            return Open(path, null, TransactionAccessRights.MaximumAllowed);
+            return Open(uow, null);
+        }
+
+        /// <summary>
+        /// Get a list of all accessible transaction objects.
+        /// </summary>
+        /// <param name="object_attributes">The object attributes for the object</param>
+        /// <param name="transaction_manager">Optional transaction manager.</param>
+        /// <param name="desired_access">The access for the transaction objects.</param>
+        /// <returns>The list of all accessible transaction objects.</returns>
+        public static IEnumerable<NtTransaction> GetAccessibleTransaction(ObjectAttributes object_attributes, 
+            TransactionAccessRights desired_access, NtTransactionManager transaction_manager)
+        {
+            return NtTransactionManagerUtils.GetAccessibleTransactionObjects(
+                transaction_manager.GetHandle(), KtmObjectType.Transaction,
+                id => Open(object_attributes, desired_access, id, transaction_manager, false));
         }
 
         /// <summary>
@@ -332,9 +326,7 @@ namespace NtApiDotNet
         /// <returns>The list of all accessible transaction objects.</returns>
         public static IEnumerable<NtTransaction> GetAccessibleTransaction(TransactionAccessRights desired_access)
         {
-            return NtTransactionManagerUtils.GetAccessibleTransactionObjects(
-                SafeKernelObjectHandle.Null, KtmObjectType.Transaction,
-                id => Open(null, desired_access, id, null, false));
+            return GetAccessibleTransaction(null, desired_access, null);
         }
 
         /// <summary>

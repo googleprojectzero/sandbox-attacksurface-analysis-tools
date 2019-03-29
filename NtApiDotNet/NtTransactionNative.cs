@@ -76,7 +76,7 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtOpenTransaction(out SafeKernelObjectHandle TransactionHandle, TransactionAccessRights DesiredAccess,
-            ObjectAttributes ObjectAttributes, OptionalGuid Uow, SafeKernelObjectHandle TmHandle);
+            ObjectAttributes ObjectAttributes, ref Guid Uow, SafeKernelObjectHandle TmHandle);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtCommitTransaction(SafeKernelObjectHandle TransactionHandle, bool Wait);
