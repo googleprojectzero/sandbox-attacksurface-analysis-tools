@@ -228,9 +228,6 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private static readonly Guid TransferSyntax = new Guid("8A885D04-1CEB-11C9-9FE8-08002B104860");
-        private static readonly Guid TransferSyntax64 = new Guid("71710533-BEBA-4937-8319-B5DBEF9CCC36");
-
         private static Dictionary<string, RunningService> GetExesToServices()
         {
             Dictionary<string, RunningService> services = new Dictionary<string, RunningService>(StringComparer.OrdinalIgnoreCase);
@@ -288,7 +285,7 @@ namespace NtApiDotNet.Win32
         private static IEnumerable<RpcOffset> FindRpcServerInterfaces(ImageSection sect, bool return_clients)
         {
             byte[] rdata = sect.ToArray();
-            foreach (int ofs in FindBytes(rdata, TransferSyntax.ToByteArray()).Concat(FindBytes(rdata, TransferSyntax64.ToByteArray())))
+            foreach (int ofs in FindBytes(rdata, NdrNativeUtils.DCE_TransferSyntax.ToByteArray()).Concat(FindBytes(rdata, NdrNativeUtils.NDR64_TransferSyntax.ToByteArray())))
             {
                 if (ofs < 24)
                 {
