@@ -62,6 +62,7 @@ namespace NtApiDotNet.Ndr
         public NdrBaseTypeReference Type { get; }
         public int ServerAllocSize { get; }
         public int Offset { get; }
+        public string Name { get; set;  }
 
         private const ushort ServerAllocSizeMask = 0xe000;
 
@@ -121,6 +122,15 @@ namespace NtApiDotNet.Ndr
             }
         }
 
+        internal string FormatName(int index)
+        {
+            if (!string.IsNullOrWhiteSpace(Name))
+            {
+                return Name;
+            }
+            return $"p{index}";
+        }
+
         public override string ToString()
         {
             return String.Format("{0} - {1}", Type, Attributes);
@@ -143,7 +153,7 @@ namespace NtApiDotNet.Ndr
 
     public class NdrProcedureDefinition
     {
-        public string Name { get; }
+        public string Name { get; set; }
         public IList<NdrProcedureParameter> Params { get; }
         public NdrProcedureParameter ReturnValue { get; }
         public NdrProcedureHandleParameter Handle { get; }
@@ -170,9 +180,9 @@ namespace NtApiDotNet.Ndr
                 return_value = ReturnValue.Type.FormatType(context);
             }
 
-            return String.Format("{0} {1}({2});", return_value,
-                Name, string.Join(", ", Params.Select((p, i) => String.Format("{0} {1} p{2}", 
-                        context.FormatComment("Stack Offset: {0}", p.Offset), p.Format(context), i))));
+            return string.Format("{0} {1}({2});", return_value,
+                Name, string.Join(", ", Params.Select((p, i) => string.Format("{0} {1} {2}", 
+                        context.FormatComment("Stack Offset: {0}", p.Offset), p.Format(context), p.FormatName(i)))));
         }
 
         internal NdrProcedureDefinition(IMemoryReader mem_reader, NdrTypeCache type_cache, 
