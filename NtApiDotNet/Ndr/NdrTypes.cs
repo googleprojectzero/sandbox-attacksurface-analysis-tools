@@ -320,6 +320,12 @@ namespace NtApiDotNet.Ndr
                 conformance_desc = context.FormatComment(ConformanceDescriptor.ToString());
             }
 
+            if (ConformanceDescriptor == null
+                    || ConformanceDescriptor.CorrelationType == NdrCorrelationType.FC_CONSTANT_CONFORMANCE)
+            {
+                return string.Format("{0}{1}", conformance_desc, base.FormatType(context));
+            }
+
             return string.Format("{0}{1}[{2}]", conformance_desc, base.FormatType(context), GetCharCount());
         }
 
