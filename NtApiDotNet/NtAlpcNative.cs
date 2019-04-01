@@ -424,8 +424,10 @@ namespace NtApiDotNet
         WaitAlertable = 0x200000,
         WaitChargePolicy = 0x400000,
         Unknown1000000 = 0x1000000,
-        Unknown40000000 = 0x40000000,
-        Wow64Call = 0x80000000
+        /// <summary>
+        /// When used all structures passed to kernel need to be 64 bit versions.
+        /// </summary>
+        Wow64Call = 0x40000000,
     }
 
     [Flags]
