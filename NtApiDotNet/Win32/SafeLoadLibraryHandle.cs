@@ -500,6 +500,7 @@ namespace NtApiDotNet.Win32
         /// <param name="name">The name of the module.</param>
         /// <returns>The handle to the loaded library.</returns>
         /// <exception cref="SafeWin32Exception">Thrown if the module can't be found.</exception>
+        /// <remarks>This will take a reference on the library, you should dispose the handle after use.</remarks>
         public static SafeLoadLibraryHandle GetModuleHandle(string name)
         {
             if (Win32NativeMethods.GetModuleHandleEx(0, name, out SafeLoadLibraryHandle ret))
@@ -514,6 +515,7 @@ namespace NtApiDotNet.Win32
         /// </summary>
         /// <param name="name">The name of the module.</param>
         /// <returns>The handle to the loaded library. Returns Null if not found.</returns>
+        /// <remarks>This will take a reference on the library, you should dispose the handle after use.</remarks>
         public static SafeLoadLibraryHandle GetModuleHandleNoThrow(string name)
         {
             if (Win32NativeMethods.GetModuleHandleEx(0, name, out SafeLoadLibraryHandle ret))
@@ -528,6 +530,7 @@ namespace NtApiDotNet.Win32
         /// </summary>
         /// <param name="address">An address inside the module.</param>
         /// <returns>The handle to the loaded library, null if the address isn't inside a valid module.</returns>
+        /// <remarks>This will take a reference on the library, you should dispose the handle after use.</remarks>
         public static SafeLoadLibraryHandle GetModuleHandle(IntPtr address)
         {
             if (Win32NativeMethods.GetModuleHandleEx(Win32NativeMethods.GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, 
@@ -536,6 +539,46 @@ namespace NtApiDotNet.Win32
                 return ret;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Pin the library into memory. This prevents FreeLibrary unloading the library until
+        /// the process exits.
+        /// </summary>
+        public void PinModule()
+        {
+            PinModule(DangerousGetHandle());
+        }
+
+        /// <summary>
+        /// Pin the library into memory. This prevents FreeLibrary unloading the library until
+        /// the process exits.
+        /// </summary>
+        /// <param name="name">The name of the module to pin.</param>
+        public static void PinModule(string name)
+        {
+            if (!Win32NativeMethods.GetModuleHandleEx(
+                Win32NativeMethods.GET_MODULE_HANDLE_EX_FLAG_PIN,
+                name, out SafeLoadLibraryHandle ret))
+            {
+                throw new SafeWin32Exception();
+            }
+        }
+
+        /// <summary>
+        /// Pin the library into memory. This prevents FreeLibrary unloading the library until
+        /// the process exits.
+        /// </summary>
+        /// <param name="address">The address of the module to pin.</param>
+        public static void PinModule(IntPtr address)
+        {
+            if (!Win32NativeMethods.GetModuleHandleEx(
+                           Win32NativeMethods.GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS
+                           | Win32NativeMethods.GET_MODULE_HANDLE_EX_FLAG_PIN,
+                            address, out SafeLoadLibraryHandle ret))
+            {
+                throw new SafeWin32Exception();
+            }
         }
 
         const ushort IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT = 13;
