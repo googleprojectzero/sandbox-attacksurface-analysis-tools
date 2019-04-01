@@ -133,7 +133,7 @@ namespace NtApiDotNet.Ndr
                     return "uint";
             }
 
-            return String.Format("{0}", format);
+            return string.Format("{0}", format);
         }
 
         internal string FormatPointer(string base_type)

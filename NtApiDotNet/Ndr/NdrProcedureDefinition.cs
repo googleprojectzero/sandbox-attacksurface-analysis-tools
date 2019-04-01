@@ -110,11 +110,11 @@ namespace NtApiDotNet.Ndr
             }
 
             string type_format = (Attributes & NdrParamAttributes.IsSimpleRef) == 0
-                ? Type.FormatType(context) : String.Format("{0}*", Type.FormatType(context));
+                ? Type.FormatType(context) : string.Format("{0}*", Type.FormatType(context));
 
             if (attributes.Count > 0)
             {
-                return String.Format("[{0}] {1}", string.Join(", ", attributes), type_format);
+                return string.Format("[{0}] {1}", string.Join(", ", attributes), type_format);
             }
             else
             {
@@ -133,7 +133,7 @@ namespace NtApiDotNet.Ndr
 
         public override string ToString()
         {
-            return String.Format("{0} - {1}", Type, Attributes);
+            return string.Format("{0} - {1}", Type, Attributes);
         }
     }
 

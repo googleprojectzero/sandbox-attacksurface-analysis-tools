@@ -248,7 +248,7 @@ namespace NtApiDotNet.Ndr
             else
             {
                 bool is_unique = Format == NdrFormatCharacter.FC_UP;
-                return String.Format("{0}{1}*", is_unique ? formatter.FormatComment("unique") : "", Type.FormatType(formatter));
+                return string.Format("{0}{1}*", is_unique ? formatter.FormatComment("unique") : "", Type.FormatType(formatter));
             }
         }
 
@@ -277,7 +277,7 @@ namespace NtApiDotNet.Ndr
         {
             if (StringSize > 0)
             {
-                return String.Format("{0}[{1}]", base.FormatType(context), StringSize);
+                return string.Format("{0}[{1}]", base.FormatType(context), StringSize);
             }
             else
             {
@@ -368,7 +368,7 @@ namespace NtApiDotNet.Ndr
 
         internal override string FormatType(NdrFormatter formatter)
         {
-            return String.Format("{0}<{1}>[{2}]", base.FormatType(formatter), ElementSize, NumberOfElements);
+            return string.Format("{0}<{1}>[{2}]", base.FormatType(formatter), ElementSize, NumberOfElements);
         }
     }
 
@@ -539,7 +539,7 @@ namespace NtApiDotNet.Ndr
 
         internal string FormatMember(NdrFormatter context)
         {
-            return String.Format("{0} {1}", context.FormatComment("Offset: {0}", Offset), MemberType.FormatType(context));
+            return string.Format("{0} {1}", context.FormatComment("Offset: {0}", Offset), MemberType.FormatType(context));
         }
 
         internal void FixupLateBoundTypes()
@@ -731,7 +731,7 @@ namespace NtApiDotNet.Ndr
 
         internal override string FormatType(NdrFormatter context)
         {
-            return String.Format("{0}[{1}]", ElementType.FormatType(context), ElementCount == 0 ? String.Empty : ElementCount.ToString());
+            return string.Format("{0}[{1}]", ElementType.FormatType(context), ElementCount == 0 ? string.Empty : ElementCount.ToString());
         }
 
         protected override void OnFixupLateBoundTypes()
@@ -1205,7 +1205,7 @@ namespace NtApiDotNet.Ndr
 
         internal override string FormatType(NdrFormatter context)
         {
-            return String.Format("{0} {1}",
+            return string.Format("{0} {1}",
                  Format == NdrFormatCharacter.FC_NON_ENCAPSULATED_UNION ? "union" : "struct",
                  Name);
         }
@@ -1416,7 +1416,7 @@ namespace NtApiDotNet.Ndr
 
         public override string ToString()
         {
-            return String.Format("{0} - {1}", Format, GetType().Name);
+            return string.Format("{0} - {1}", Format, GetType().Name);
         }
 
         internal virtual string FormatType(NdrFormatter context)
@@ -1464,8 +1464,8 @@ namespace NtApiDotNet.Ndr
 
             public StandardUserMarshaler(SafeLoadLibraryHandle lib, NdrKnownTypes known_type)
             {
-                _size_ptr = lib.GetProcAddress(String.Format("{0}_UserSize", known_type));
-                _size_64_ptr = lib.GetProcAddress(String.Format("{0}_UserSize64", known_type));
+                _size_ptr = lib.GetProcAddress(string.Format("{0}_UserSize", known_type));
+                _size_64_ptr = lib.GetProcAddress(string.Format("{0}_UserSize64", known_type));
                 KnownType = known_type;
             }
 

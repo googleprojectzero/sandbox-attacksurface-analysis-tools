@@ -25,7 +25,7 @@ namespace EditSection
 
         private static string FormatText(NtHandle ent)
         {
-            string size = String.Empty;
+            string size = string.Empty;
             try
             {
                 using (NtSection section = NtSection.DuplicateFrom(ent.ProcessId, new IntPtr(ent.Handle), SectionAccessRights.Query))

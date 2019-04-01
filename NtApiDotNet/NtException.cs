@@ -44,7 +44,7 @@ namespace NtApiDotNet
             get
             {
                 string message = NtObjectUtils.GetNtStatusMessage(Status);
-                if (String.IsNullOrEmpty(message))
+                if (string.IsNullOrEmpty(message))
                 {
                     if (Enum.IsDefined(typeof(NtStatus), Status))
                     {

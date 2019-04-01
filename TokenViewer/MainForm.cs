@@ -139,7 +139,7 @@ namespace TokenViewer
 
         private void RefreshProcessList(string filter, bool hideUnrestricted)
         {
-            bool filter_name = !String.IsNullOrWhiteSpace(filter);
+            bool filter_name = !string.IsNullOrWhiteSpace(filter);
             ClearList(listViewProcesses);
             ClearList(listViewThreads);
 
@@ -302,7 +302,7 @@ namespace TokenViewer
 
         private IEnumerable<UserGroup> GetServiceSids()
         {
-            if (!checkAddServiceSid.Checked || String.IsNullOrWhiteSpace(txtServiceSid.Text))
+            if (!checkAddServiceSid.Checked || string.IsNullOrWhiteSpace(txtServiceSid.Text))
             {
                 return null;
             }

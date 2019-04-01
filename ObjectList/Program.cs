@@ -80,7 +80,7 @@ namespace ObjectList
             catch (NtException)
             {
             }
-            return String.Empty;
+            return string.Empty;
         }
 
         static void OutputDefault(NtDirectory base_dir, IEnumerable<ObjectDirectoryInformation> entries, bool print_sddl, bool print_link)
@@ -201,7 +201,7 @@ namespace ObjectList
 
         static string GetNamesForEnum(Type enumType)
         {
-            return String.Join(",", Enum.GetNames(enumType).Select(s => s.ToLower()));
+            return string.Join(",", Enum.GetNames(enumType).Select(s => s.ToLower()));
         }
 
         static void Main(string[] args)

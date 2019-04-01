@@ -105,7 +105,7 @@ namespace EditSection
 
         private void btnOpen_Click(object sender, EventArgs e)
         {
-            if (String.IsNullOrWhiteSpace(txtObjectName.Text))
+            if (string.IsNullOrWhiteSpace(txtObjectName.Text))
             {
                 MessageBox.Show(this, "Please select a named section", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }

@@ -540,7 +540,7 @@ namespace TokenViewer
         private static bool ParseNum(string str, out uint num)
         {
             num = 0;
-            if (String.IsNullOrWhiteSpace(str))
+            if (string.IsNullOrWhiteSpace(str))
             {
                 return false;
             }

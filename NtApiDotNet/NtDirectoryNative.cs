@@ -49,7 +49,7 @@ namespace NtApiDotNet
                 {
                     if (!IsSymbolicLink)
                     {
-                        _symlink_target = String.Empty;
+                        _symlink_target = string.Empty;
                     }
 
                     try
@@ -61,7 +61,7 @@ namespace NtApiDotNet
                     }
                     catch (NtException)
                     {
-                        _symlink_target = String.Empty;
+                        _symlink_target = string.Empty;
                     }
                 }
                 return _symlink_target;

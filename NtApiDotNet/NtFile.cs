@@ -1292,7 +1292,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public NtResult<NtFile> ReOpen(FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options, bool throw_on_error)
         {
-            using (ObjectAttributes obj_attributes = new ObjectAttributes(String.Empty, AttributeFlags.CaseInsensitive, this))
+            using (ObjectAttributes obj_attributes = new ObjectAttributes(string.Empty, AttributeFlags.CaseInsensitive, this))
             {
                 return Open(obj_attributes, desired_access, share_access, open_options, throw_on_error);
             }
@@ -2884,7 +2884,7 @@ namespace NtApiDotNet
                     {
                         var entry_buffer = buffer.Data.GetStructAtOffset<FileLinkEntryInformation>(ofs);
                         var entry = entry_buffer.Result;
-                        string parent_path = String.Empty;
+                        string parent_path = string.Empty;
 
                         using (var parent = OpenFileById(this, NtFileUtils.FileIdToString(entry.ParentFileId),
                             FileAccessRights.ReadAttributes, FileShareMode.None, FileOpenOptions.None, false))
@@ -3289,7 +3289,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the Win32 path name for the file.
         /// </summary>
-        /// <returns>The path, String.Empty on error.</returns>
+        /// <returns>The path, string.Empty on error.</returns>
         public string Win32PathName
         {
             get

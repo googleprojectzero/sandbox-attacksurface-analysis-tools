@@ -238,7 +238,7 @@ namespace NtApiDotNet
         public static NtDirectory OpenSessionDirectory(int sessionid, string sub_directory, DirectoryAccessRights desired_access)
         {
             string directory = $@"\Sessions\{sessionid}";
-            if (!String.IsNullOrEmpty(sub_directory))
+            if (!string.IsNullOrEmpty(sub_directory))
             {
                 directory = $@"{directory}\{sub_directory}";
             }
@@ -528,7 +528,7 @@ namespace NtApiDotNet
 
                 status.ToNtException();
                 IntPtr current = buffer.DangerousGetHandle();
-                string name = String.Empty;
+                string name = string.Empty;
                 while (true)
                 {
                     OBJECT_DIRECTORY_INFORMATION dir_info = (OBJECT_DIRECTORY_INFORMATION)Marshal.PtrToStructure(current, typeof(OBJECT_DIRECTORY_INFORMATION));
@@ -736,7 +736,7 @@ namespace NtApiDotNet
             int index = path.LastIndexOf('\\');
             if (index < 0)
             {
-                return String.Empty;
+                return string.Empty;
             }
             else
             {

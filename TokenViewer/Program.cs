@@ -94,7 +94,7 @@ namespace TokenViewer
             {
                 int pid = -1;
                 int handle = -1;
-                string text = String.Empty;
+                string text = string.Empty;
                 bool show_help = false;
 
                 OptionSet opts = new OptionSet() {

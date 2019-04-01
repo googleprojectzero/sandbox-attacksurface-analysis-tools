@@ -24,7 +24,7 @@ namespace EditSection
     {
         static string GetName(NtSection section, NtMappedSection map)
         {
-            string name = String.Empty;
+            string name = string.Empty;
             try
             {
                 name = map.FullPath;
@@ -60,7 +60,7 @@ namespace EditSection
                 else
                 {
                     int handle = -1;
-                    string text = String.Empty;
+                    string text = string.Empty;
                     bool read_only = false;
                     bool delete_file = false;
                     string filename = string.Empty;

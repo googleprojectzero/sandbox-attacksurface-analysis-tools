@@ -61,7 +61,7 @@ namespace EditSection
         {
             InitializeComponent();
 
-            if (!String.IsNullOrWhiteSpace(_last_filter))
+            if (!string.IsNullOrWhiteSpace(_last_filter))
             {
                 textBoxFilter.Text = _last_filter;
             }

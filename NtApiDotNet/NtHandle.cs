@@ -79,7 +79,7 @@ namespace NtApiDotNet
             get
             {
                 QueryValues();
-                return _name ?? String.Empty;
+                return _name ?? string.Empty;
             }
         }
 

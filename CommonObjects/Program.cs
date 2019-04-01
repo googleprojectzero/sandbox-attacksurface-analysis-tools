@@ -42,7 +42,7 @@ namespace CommonObjects
                     }
                 }
             }
-            return String.Empty;
+            return string.Empty;
         }
 
         static void Main(string[] args)
@@ -51,20 +51,20 @@ namespace CommonObjects
             {
                 bool show_help = false;
                 string typeFilter = "";
-                bool show_all = false;                
+                bool show_all = false;
 
                 OptionSet p = new OptionSet() {
                         { "t|type=", "An object type to filter on",  v => typeFilter = v.Trim() },
-                        { "a|all", "Show all handles shared by at least one process", v => show_all = v != null },                        
-                        { "h|help",  "show this message and exit", 
+                        { "a|all", "Show all handles shared by at least one process", v => show_all = v != null },
+                        { "h|help",  "show this message and exit",
                            v => show_help = v != null },
                     };
 
                 List<int> pids = p.Parse(args).Select(e => int.Parse(e)).ToList();
 
                 if (show_help || pids.Count < 2)
-                {                    
-                    ShowHelp(p);                    
+                {
+                    ShowHelp(p);
                 }
                 else
                 {
@@ -72,8 +72,8 @@ namespace CommonObjects
                     Dictionary<ulong, List<NtHandle>> entries = new Dictionary<ulong, List<NtHandle>>();
 
                     foreach (int pid in pids)
-                    {                        
-                        foreach(NtHandle entry in NtSystemInfo.GetHandles(pid, true))
+                    {
+                        foreach (NtHandle entry in NtSystemInfo.GetHandles(pid, true))
                         {
                             if (!entries.ContainsKey(entry.Object))
                             {
@@ -89,7 +89,7 @@ namespace CommonObjects
 
                     foreach (KeyValuePair<ulong, List<NtHandle>> pair in output)
                     {
-                        if (String.IsNullOrWhiteSpace(typeFilter) || pair.Value[0].ObjectType.Equals(typeFilter, StringComparison.OrdinalIgnoreCase))
+                        if (string.IsNullOrWhiteSpace(typeFilter) || pair.Value[0].ObjectType.Equals(typeFilter, StringComparison.OrdinalIgnoreCase))
                         {
                             Console.WriteLine("{0:X} {1} {2}", pair.Key, pair.Value[0].ObjectType, GetObjectName(pair.Value));
 
@@ -100,7 +100,7 @@ namespace CommonObjects
                             }
                         }
                     }
-                }                
+                }
             }
             catch (Exception ex)
             {
