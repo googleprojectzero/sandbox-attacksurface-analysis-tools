@@ -149,7 +149,7 @@ namespace NtApiDotNet
         LrpcWakePolicy1 = 0x200000,
         LrpcWakePolicy2 = 0x400000,
         LrpcWakePolicy3 = 0x800000,
-        Unknown1000000 = 0x1000000,
+        DirectMessage = 0x1000000,
         /// <summary>
         /// If set then object duplication won't complete. Used by RPC to ensure
         /// multi-handle attributes don't fail when receiving.
@@ -419,8 +419,11 @@ namespace NtApiDotNet
         LpcMode = 0x2,
         ReleaseMessage = 0x10000,
         SyncRequest = 0x20000,
+        TrackPortReferences = 0x40000,
         WaitUserMode = 0x100000,
         WaitAlertable = 0x200000,
+        WaitChargePolicy = 0x400000,
+        Unknown1000000 = 0x1000000,
         Unknown40000000 = 0x40000000,
         Wow64Call = 0x80000000
     }
