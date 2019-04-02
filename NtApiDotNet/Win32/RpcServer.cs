@@ -17,6 +17,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 
 namespace NtApiDotNet.Win32
@@ -24,6 +27,7 @@ namespace NtApiDotNet.Win32
     /// <summary>
     /// A class to represent an RPC server.
     /// </summary>
+    [Serializable]
     public class RpcServer
     {
         #region Public Methods
@@ -143,6 +147,31 @@ namespace NtApiDotNet.Win32
             return builder.ToString();
         }
 
+        /// <summary>
+        /// Serialize the RPC server to a stream.
+        /// </summary>
+        /// <param name="stm">The stream to hold the serialized server.</param>
+        /// <remarks>Only use the output of this method with the Deserialize method. No guarantees of compatibility is made between
+        /// versions of the library or the specific format used.</remarks>
+        public void Serialize(Stream stm)
+        {
+            BinaryFormatter formatter = new BinaryFormatter();
+            formatter.Serialize(stm, this);
+        }
+
+        /// <summary>
+        /// Serialize the RPC server to a byte array.
+        /// </summary>
+        /// <returns>The serialized data.</returns>
+        /// <remarks>Only use the output of this method with the Deserialize method. No guarantees of compatibility is made between
+        /// versions of the library or the specific format used.</remarks>
+        public byte[] Serialize()
+        {
+            MemoryStream stm = new MemoryStream();
+            Serialize(stm);
+            return stm.ToArray();
+        }
+
         #endregion
 
         #region Public Properties
@@ -215,6 +244,37 @@ namespace NtApiDotNet.Win32
         public bool Client { get; }
         #endregion
 
+        #region Static Methods
+
+        /// <summary>
+        /// Deserialize an RPC server instance from a stream.
+        /// </summary>
+        /// <param name="stm">The stream to deserialize from.</param>
+        /// <returns>The RPC server instance.</returns>
+        /// <remarks>The data used by this method should only use the output from serialize. No guarantees of compatibility is made between
+        /// versions of the library or the specific format used.</remarks>
+        public static RpcServer Deserialize(Stream stm)
+        {
+            BinaryFormatter fmt = new BinaryFormatter();
+            fmt.FilterLevel = TypeFilterLevel.Low;
+            // TODO: Filter types to avoid people complaining.
+            return (RpcServer)fmt.Deserialize(stm);
+        }
+
+        /// <summary>
+        /// Deserialize an RPC server instance from a byte array.
+        /// </summary>
+        /// <param name="ba">The byte array to deserialize from.</param>
+        /// <returns>The RPC server instance.</returns>
+        /// <remarks>The data used by this method should only use the output from serialize. No guarantees of compatibility is made between
+        /// versions of the library or the specific format used.</remarks>
+        public static RpcServer Deserialize(byte[] ba)
+        {
+            return Deserialize(new MemoryStream(ba));
+        }
+
+        #endregion
+
         #region Private Methods
 
         struct RpcOffset
@@ -248,7 +308,7 @@ namespace NtApiDotNet.Win32
         private RpcServer(NdrRpcServerInterface server, IEnumerable<NdrComplexTypeReference> complex_types, string filepath, long offset, bool client)
         {
             Server = server;
-            ComplexTypes = complex_types;
+            ComplexTypes = complex_types.ToList().AsReadOnly();
             FilePath = Path.GetFullPath(filepath);
             Offset = offset;
             var services = _exes_to_service.Value;

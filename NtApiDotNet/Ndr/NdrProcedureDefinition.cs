@@ -27,6 +27,7 @@ namespace NtApiDotNet.Ndr
 {
 #pragma warning disable 1591
     [Flags]
+    [Serializable]
     public enum NdrParamAttributes : ushort
     {
         MustSize = 0x0001,
@@ -56,6 +57,7 @@ namespace NtApiDotNet.Ndr
         NDR_CONTEXT_HANDLE_CANNOT_BE_NULL   = 0x01,
     }
 
+    [Serializable]
     public class NdrProcedureParameter
     {
         public NdrParamAttributes Attributes { get; }
@@ -137,6 +139,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrProcedureHandleParameter : NdrProcedureParameter
     {
         NdrHandleParamFlags Flags { get; }
@@ -151,6 +154,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrProcedureDefinition
     {
         public string Name { get; set; }

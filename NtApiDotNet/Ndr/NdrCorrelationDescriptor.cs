@@ -24,6 +24,7 @@ namespace NtApiDotNet.Ndr
 {
 #pragma warning disable 1591
     [Flags]
+    [Serializable]
     public enum NdrCorrelationType : byte
     {
         FC_NORMAL_CONFORMANCE = 0,
@@ -34,6 +35,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Flags]
+    [Serializable]
     public enum NdrCorrelationFlags : byte
     {
         Early = 0x1,
@@ -42,7 +44,8 @@ namespace NtApiDotNet.Ndr
         DontCheck = 0x8
     }
 
-    public class NdrCorrelationDescriptor
+    [Serializable]
+    public sealed class NdrCorrelationDescriptor
     {
         public NdrCorrelationType CorrelationType { get; private set; }
         public NdrFormatCharacter ValueType { get; private set; }

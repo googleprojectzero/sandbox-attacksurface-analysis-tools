@@ -26,6 +26,7 @@ namespace NtApiDotNet.Ndr
     /// <summary>
     /// Class to represent a single COM proxy definition.
     /// </summary>
+    [Serializable]
     public class NdrComProxyDefinition
     {
         /// <summary>

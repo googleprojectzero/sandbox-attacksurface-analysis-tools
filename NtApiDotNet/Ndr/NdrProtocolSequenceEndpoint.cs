@@ -12,11 +12,14 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+
 namespace NtApiDotNet.Ndr
 {
     /// <summary>
     /// Class respresenting an RPC protocol sequence.
     /// </summary>
+    [Serializable]
     public class NdrProtocolSequenceEndpoint
     {
         /// <summary>

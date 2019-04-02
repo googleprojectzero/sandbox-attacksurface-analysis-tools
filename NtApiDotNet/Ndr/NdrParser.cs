@@ -29,6 +29,7 @@ namespace NtApiDotNet.Ndr
 {
 #pragma warning disable 1591
     [Flags]
+    [Serializable]
     public enum NdrInterpreterOptFlags : byte
     {
         ServerMustSize = 0x01,
@@ -41,6 +42,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Flags]
+    [Serializable]
     public enum NdrInterpreterOptFlags2 : byte
     {
         HasNewCorrDesc = 0x01,

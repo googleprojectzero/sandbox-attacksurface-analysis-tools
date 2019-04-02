@@ -31,6 +31,7 @@ namespace NtApiDotNet.Ndr
     /// <summary>
     /// NDR format character.
     /// </summary>
+    [Serializable]
     public enum NdrFormatCharacter : byte
     {
         FC_ZERO,
@@ -145,6 +146,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Flags]
+    [Serializable]
     public enum NdrBlackholeFlags
     {
         None = 0,
@@ -154,6 +156,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Flags]
+    [Serializable]
     public enum NdrPointerFlags : byte
     {
         FC_ALLOCATE_ALL_NODES = 0x01,
@@ -165,6 +168,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Flags]
+    [Serializable]
     public enum NdrUserMarshalFlags : byte
     {
         USER_MARSHAL_POINTER = 0xc0,
@@ -173,6 +177,7 @@ namespace NtApiDotNet.Ndr
         USER_MARSHAL_IID = 0x20
     }
 
+    [Serializable]
     public class NdrInterfacePointerTypeReference : NdrBaseTypeReference
     {
         public Guid Iid { get; private set; }
@@ -214,6 +219,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrPointerTypeReference : NdrBaseTypeReference
     {
         public NdrBaseTypeReference Type { get; private set; }
@@ -263,6 +269,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrStringTypeReference : NdrBaseTypeReference
     {
         public int StringSize { get; private set; }
@@ -298,6 +305,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrConformantStringTypeReference : NdrBaseTypeReference
     {
         public NdrCorrelationDescriptor ConformanceDescriptor { get; private set; }
@@ -353,6 +361,7 @@ namespace NtApiDotNet.Ndr
 
     }
 
+    [Serializable]
     public class NdrStructureStringTypeReferece : NdrBaseTypeReference
     {
         public int ElementSize { get; private set; }
@@ -372,6 +381,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrUserMarshalTypeReference : NdrBaseTypeReference
     {
         public NdrUserMarshalFlags Flags { get; private set; }
@@ -400,6 +410,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public enum NdrKnownTypes
     {
         None,
@@ -434,6 +445,7 @@ namespace NtApiDotNet.Ndr
         WdtpInterfacePointer,
     }
 
+    [Serializable]
     public class NdrNamedTypeReference : NdrBaseTypeReference
     {
         public string Name { get; private set; }
@@ -456,6 +468,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrKnownTypeReference : NdrBaseTypeReference
     {
         public NdrKnownTypes KnownType { get; private set; }
@@ -509,6 +522,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrUnknownTypeReference : NdrBaseTypeReference
     {
         static HashSet<NdrFormatCharacter> _formats = new HashSet<NdrFormatCharacter>();
@@ -526,6 +540,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrStructureMember
     {
         public NdrBaseTypeReference MemberType { get; private set; }
@@ -548,6 +563,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrBaseStructureTypeReference : NdrComplexTypeReference
     {
         protected List<NdrBaseTypeReference> _members;
@@ -620,6 +636,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrSimpleStructureTypeReference : NdrBaseStructureTypeReference
     {
         internal NdrSimpleStructureTypeReference(NdrParseContext context, BinaryReader reader)
@@ -629,6 +646,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrConformantStructureTypeReference : NdrBaseStructureTypeReference
     {
         internal NdrConformantStructureTypeReference(NdrParseContext context, BinaryReader reader)
@@ -643,6 +661,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrBogusStructureTypeReference : NdrBaseStructureTypeReference
     {
         internal NdrBogusStructureTypeReference(NdrParseContext context, BinaryReader reader)
@@ -670,6 +689,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrHardStructureTypeReference : NdrBaseStructureTypeReference
     {
         public int EnumOffset { get; private set; }
@@ -690,6 +710,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public abstract class NdrBaseArrayTypeReference : NdrBaseTypeReference
     {
         public int Alignment { get; private set; }
@@ -740,6 +761,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrSimpleArrayTypeReference : NdrBaseArrayTypeReference
     {
         public int TotalSize { get; private set; }
@@ -769,6 +791,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrConformantArrayTypeReference : NdrBaseArrayTypeReference
     {
         private int _element_size;
@@ -830,6 +853,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrBogusArrayTypeReference : NdrBaseArrayTypeReference
     {
         public int NumberofElements { get; private set; }
@@ -887,6 +911,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrVaryingArrayTypeReference : NdrBaseArrayTypeReference
     {
         private int _element_size;
@@ -951,6 +976,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrStructurePaddingTypeReference : NdrBaseTypeReference
     {
         internal NdrStructurePaddingTypeReference(NdrFormatCharacter format) : base(format)
@@ -981,6 +1007,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrPointerInfoInstance
     {
         public int OffsetInMemory { get; private set; }
@@ -995,6 +1022,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrPointerInfoTypeReference : NdrBaseTypeReference
     {
         public NdrFormatCharacter BasePointerType { get; private set; }
@@ -1050,6 +1078,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrRangeTypeReference : NdrBaseTypeReference
     {
         public NdrBaseTypeReference RangeType { get; private set; }
@@ -1074,6 +1103,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrIndirectTypeReference : NdrBaseTypeReference
     {
         public NdrBaseTypeReference RefType { get; private set; }
@@ -1103,6 +1133,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public sealed class NdrUnionArm
     {
         public NdrBaseTypeReference ArmType { get; private set; }
@@ -1137,6 +1168,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public sealed class NdrUnionArms
     {
         public int MemorySize { get; private set; }
@@ -1167,6 +1199,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public abstract class NdrComplexTypeReference : NdrBaseTypeReference
     {
         public string Name { get; }
@@ -1178,6 +1211,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public sealed class NdrUnionTypeReference : NdrComplexTypeReference
     {
         public NdrFormatCharacter SwitchType { get; private set; }
@@ -1260,6 +1294,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public enum NdrSystemHandleResource
     {
         File = 0,
@@ -1277,6 +1312,7 @@ namespace NtApiDotNet.Ndr
         Pipe = 12
     }
 
+    [Serializable]
     public sealed class NdrSystemHandleTypeReference : NdrBaseTypeReference
     {
         // IDL is [system_handle(sh_file, 0x1234)]HANDLE
@@ -1345,6 +1381,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrHandleTypeReference : NdrBaseTypeReference
     {
         internal NdrHandleTypeReference(NdrFormatCharacter format) 
@@ -1358,7 +1395,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
-
+    [Serializable]
     public class NdrPipeTypeReference : NdrBaseTypeReference
     {
         // IDL is typedef pipe TYPE CHAR_PIPE_TYPE;
@@ -1384,6 +1421,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrBlkHoleTypeReference : NdrBaseTypeReference
     {
         public NdrBlackholeFlags Flags { get; private set; }
@@ -1405,6 +1443,7 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public class NdrBaseTypeReference
     {
         public NdrFormatCharacter Format { get; private set; }

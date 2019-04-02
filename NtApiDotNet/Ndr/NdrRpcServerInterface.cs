@@ -21,6 +21,7 @@ namespace NtApiDotNet.Ndr
     /// <summary>
     /// A parsed NDR RPC_SERVER_INTERFACE structure.
     /// </summary>
+    [Serializable]
     public class NdrRpcServerInterface
     {
         /// <summary>
