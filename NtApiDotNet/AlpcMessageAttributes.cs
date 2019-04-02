@@ -43,8 +43,32 @@ namespace NtApiDotNet
             return (AlpcHandleMessageAttribute)_attributes[AlpcMessageAttributeFlags.Handle];
         }
 
+        SafeAlpcMessageAttributesBuffer IMessageAttributes.ToSafeBuffer()
+        {
+            if (_attributes.Count == 0)
+            {
+                return SafeAlpcMessageAttributesBuffer.Null;
+            }
+
+            AlpcMessageAttributeFlags flags = AllocatedAttributes;
+
+            using (var buffer = SafeAlpcMessageAttributesBuffer.Create(flags))
+            {
+                foreach (var attr in _attributes.Values)
+                {
+                    attr.ToSafeBuffer(buffer);
+                }
+
+                var result = buffer.Result;
+                result.ValidAttributes = flags;
+                buffer.Result = result;
+                return buffer.Detach();
+            }
+        }
+
         #endregion
 
+        #region Constructors
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -60,7 +84,9 @@ namespace NtApiDotNet
         {
             _attributes = new Dictionary<AlpcMessageAttributeFlags, AlpcMessageAttribute>(attributes.ToDictionary(a => a.AttributeFlag, a => a));
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Add an attribute object.
         /// </summary>
@@ -126,6 +152,9 @@ namespace NtApiDotNet
             AddHandles(new AlpcHandleMessageAttributeEntry[] { handle });
         }
 
+        #endregion
+
+        #region Public Properties
         /// <summary>
         /// Get the allocated attributes.
         /// </summary>
@@ -141,29 +170,7 @@ namespace NtApiDotNet
                 return flags;
             }
         }
-
-        SafeAlpcMessageAttributesBuffer IMessageAttributes.ToSafeBuffer()
-        {
-            if (_attributes.Count == 0)
-            {
-                return SafeAlpcMessageAttributesBuffer.Null;
-            }
-
-            AlpcMessageAttributeFlags flags = AllocatedAttributes;
-
-            using (var buffer = SafeAlpcMessageAttributesBuffer.Create(flags))
-            {
-                foreach (var attr in _attributes.Values)
-                {
-                    attr.ToSafeBuffer(buffer);
-                }
-
-                var result = buffer.Result;
-                result.ValidAttributes = flags;
-                buffer.Result = result;
-                return buffer.Detach();
-            }
-        }
+        #endregion
     }
 
     /// <summary>
@@ -171,9 +178,18 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class AlpcReceiveMessageAttributes : IDisposable, IMessageAttributes
     {
+        #region Private Members
         private Dictionary<AlpcMessageAttributeFlags, AlpcMessageAttribute> _attributes;
         private DisposableList<NtObject> _handles;
 
+        SafeAlpcMessageAttributesBuffer IMessageAttributes.ToSafeBuffer()
+        {
+            return SafeAlpcMessageAttributesBuffer.Create(AllocatedAttributes);
+        }
+
+        #endregion
+
+        #region Constructors
         /// <summary>
         /// Constructor. Allocated space for all known attributes.
         /// </summary>
@@ -193,6 +209,9 @@ namespace NtApiDotNet
             DataView = new SafeAlpcDataViewBuffer();
             SecurityContext = new SafeAlpcSecurityContextHandle();
         }
+        #endregion
+
+        #region Public Properties
 
         /// <summary>
         /// Get the allocated attributes.
@@ -209,6 +228,24 @@ namespace NtApiDotNet
         /// </summary>
         public IEnumerable<AlpcMessageAttribute> Attributes => _attributes.Values;
 
+        /// <summary>
+        /// Get list of passed handles.
+        /// </summary>
+        public IEnumerable<NtObject> Handles => _handles.AsReadOnly();
+
+        /// <summary>
+        /// Get the mapped data view. If no view sent this property is invalid.
+        /// </summary>
+        public SafeAlpcDataViewBuffer DataView { get; private set; }
+
+        /// <summary>
+        /// Get the security context. If no security context this property is invalid.
+        /// </summary>
+        public SafeAlpcSecurityContextHandle SecurityContext { get; private set; }
+
+        #endregion
+
+        #region Public Methods
         /// <summary>
         /// Dispose method.
         /// </summary>
@@ -258,25 +295,18 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get list of passed handles.
+        /// Checks if an attribute flag is valid.
         /// </summary>
-        public IEnumerable<NtObject> Handles => _handles.AsReadOnly();
-
-        /// <summary>
-        /// Get the mapped data view. If no view sent this property is invalid.
-        /// </summary>
-        public SafeAlpcDataViewBuffer DataView { get; private set; }
-
-        /// <summary>
-        /// Get the security context. If no security context this property is invalid.
-        /// </summary>
-        public SafeAlpcSecurityContextHandle SecurityContext { get; private set; }
-
-        SafeAlpcMessageAttributesBuffer IMessageAttributes.ToSafeBuffer()
+        /// <param name="attribute">The attribute to test.</param>
+        /// <returns>True if the attribute is value.</returns>
+        public bool HasValidAttribute(AlpcMessageAttributeFlags attribute)
         {
-            return SafeAlpcMessageAttributesBuffer.Create(AllocatedAttributes);
+            return ValidAttributes.HasFlag(attribute);
         }
 
+        #endregion
+
+        #region Internal Members
         internal T AddAttribute<T>(SafeAlpcMessageAttributesBuffer buffer, 
             NtAlpc port, AlpcMessage message) where T : AlpcMessageAttribute, new()
         {
@@ -321,6 +351,7 @@ namespace NtApiDotNet
                 AddAttribute<AlpcWorkOnBehalfMessageAttribute>(buffer, port, message);
             }
         }
+        #endregion
     }
 
     /// <summary>
