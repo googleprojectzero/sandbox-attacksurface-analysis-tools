@@ -133,7 +133,7 @@ namespace NtApiDotNet.Ndr
         FC_SPLIT_ADD_1,                   // 0x77
         FC_SPLIT_SUB_1,                   // 0x78
         FC_SPLIT_CALLBACK,                // 0x79
-        FC_HARD_STRUCT = 0xb1,      // 0xb1
+        FC_FORCED_BOGUS_STRUCT = 0xb1,      // 0xb1 - Seemed to originally be FC_HARD_STRUCT.
         FC_TRANSMIT_AS_PTR,         // 0xb2
         FC_REPRESENT_AS_PTR,        // 0xb3
         FC_USER_MARSHAL,            // 0xb4
@@ -647,6 +647,21 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
+    public class NdrSimpleStructureWithPointersTypeReference : NdrBaseStructureTypeReference
+    {
+        public NdrPointerInfoTypeReference PointerInfo { get; }
+
+        internal NdrSimpleStructureWithPointersTypeReference(NdrParseContext context, BinaryReader reader)
+            : base(context, NdrFormatCharacter.FC_PSTRUCT, reader)
+        {
+            // Read out FC_PP type.
+            reader.ReadByte();
+            PointerInfo = new NdrPointerInfoTypeReference(context, reader);
+            ReadMemberInfo(context, reader);
+        }
+    }
+
+    [Serializable]
     public class NdrConformantStructureTypeReference : NdrBaseStructureTypeReference
     {
         internal NdrConformantStructureTypeReference(NdrParseContext context, BinaryReader reader)
@@ -664,8 +679,8 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrBogusStructureTypeReference : NdrBaseStructureTypeReference
     {
-        internal NdrBogusStructureTypeReference(NdrParseContext context, BinaryReader reader)
-            : base(context, NdrFormatCharacter.FC_BOGUS_STRUCT, reader)
+        internal NdrBogusStructureTypeReference(NdrParseContext context, NdrFormatCharacter format, BinaryReader reader)
+            : base(context, format, reader)
         {
             NdrBaseTypeReference array = Read(context, ReadTypeOffset(reader));
             int pointer_ofs = ReadTypeOffset(reader);
@@ -686,27 +701,6 @@ namespace NtApiDotNet.Ndr
             {
                 _members.Add(array);
             }
-        }
-    }
-
-    [Serializable]
-    public class NdrHardStructureTypeReference : NdrBaseStructureTypeReference
-    {
-        public int EnumOffset { get; private set; }
-        public int CopySize { get; private set; }
-        public int MemCopyIncr { get; private set; }
-        public int UnionDescOffset { get; private set; }
-
-        internal NdrHardStructureTypeReference(NdrParseContext context, BinaryReader reader)
-            : base(context, NdrFormatCharacter.FC_HARD_STRUCT, reader)
-        {
-            // Reserved.
-            reader.ReadInt32();
-            EnumOffset = reader.ReadInt16();
-            //CopySize = reader.ReadInt16();
-            //MemCopyIncr = reader.ReadInt16();
-            UnionDescOffset = reader.ReadInt16();
-            ReadMemberInfo(context, reader);
         }
     }
 
@@ -1832,12 +1826,14 @@ namespace NtApiDotNet.Ndr
                         return Read(context, ReadTypeOffset(reader));
                     case NdrFormatCharacter.FC_STRUCT:
                         return FixupSimpleStructureType(new NdrSimpleStructureTypeReference(context, reader));
+                    case NdrFormatCharacter.FC_PSTRUCT:
+                        return new NdrSimpleStructureWithPointersTypeReference(context, reader);
                     case NdrFormatCharacter.FC_CSTRUCT:
                         return new NdrConformantStructureTypeReference(context, reader);
                     case NdrFormatCharacter.FC_BOGUS_STRUCT:
-                        return new NdrBogusStructureTypeReference(context, reader);
-                    //case NdrFormatCharacter.FC_HARD_STRUCT:
-                    //    return new NdrHardStructureTypeReference(context, reader);
+                        return new NdrBogusStructureTypeReference(context, format, reader);
+                    case NdrFormatCharacter.FC_FORCED_BOGUS_STRUCT:
+                        return new NdrBogusStructureTypeReference(context, format, reader);
                     case NdrFormatCharacter.FC_PP:
                         return new NdrPointerInfoTypeReference(context, reader);
                     case NdrFormatCharacter.FC_SMFARRAY:
