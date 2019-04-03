@@ -72,20 +72,22 @@ namespace NtApiDotNet.Ndr
 
         private const ushort ServerAllocSizeMask = 0xe000;
 
-        internal NdrProcedureParameter(NdrParamAttributes attributes, int server_alloc_size, NdrBaseTypeReference type, int offset)
+        internal NdrProcedureParameter(NdrParamAttributes attributes, int server_alloc_size, NdrBaseTypeReference type, int offset, string name)
         {
             Attributes = attributes;
             ServerAllocSize = server_alloc_size;
             Type = type;
             Offset = offset;
+            Name = name;
         }
 
-        internal NdrProcedureParameter(NdrParseContext context, BinaryReader reader)
+        internal NdrProcedureParameter(NdrParseContext context, BinaryReader reader, string name)
         {
             ushort attr = reader.ReadUInt16();
             Attributes = (NdrParamAttributes)(attr & ~ServerAllocSizeMask);
             ServerAllocSize = (attr & ServerAllocSizeMask) >> 10;
             Offset = reader.ReadUInt16();
+            Name = name;
             if ((Attributes & NdrParamAttributes.IsBasetype) == 0)
             {
                 int type_ofs = reader.ReadUInt16();
@@ -151,7 +153,7 @@ namespace NtApiDotNet.Ndr
 
         internal NdrProcedureHandleParameter(NdrParamAttributes attributes, 
             NdrBaseTypeReference type, int offset, bool explicit_handle, NdrHandleParamFlags flags) 
-            : base(attributes, 0, type, offset)
+            : base(attributes, 0, type, offset, string.Empty)
         {
             Flags = flags;
             Explicit = explicit_handle;
@@ -301,7 +303,7 @@ namespace NtApiDotNet.Ndr
             int param_count = has_return ? number_of_params - 1 : number_of_params;
             for (int param = 0; param < param_count; ++param)
             {
-                ps.Add(new NdrProcedureParameter(context, reader));
+                ps.Add(new NdrProcedureParameter(context, reader, $"p{param}"));
             }
 
             if (Handle.Explicit)
@@ -322,7 +324,7 @@ namespace NtApiDotNet.Ndr
             Params = ps.AsReadOnly();
             if (has_return)
             {
-                ReturnValue = new NdrProcedureParameter(context, reader);
+                ReturnValue = new NdrProcedureParameter(context, reader, "retval");
             }
             DispatchFunction = dispatch_func;
         }
