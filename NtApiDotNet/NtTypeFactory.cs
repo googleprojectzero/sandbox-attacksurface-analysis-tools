@@ -22,7 +22,7 @@ namespace NtApiDotNet
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     internal sealed class NtTypeAttribute : Attribute
     {
-        public string TypeName { get; private set; }
+        public string TypeName { get; }
         public NtTypeAttribute(string type_name)
         {
             TypeName = type_name;

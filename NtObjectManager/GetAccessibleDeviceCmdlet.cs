@@ -27,17 +27,17 @@ namespace NtObjectManager
         /// <summary>
         /// Indicates this was a namespace open
         /// </summary>
-        public bool NamespacePath { get; private set; }
+        public bool NamespacePath { get; }
 
         /// <summary>
         /// Indicates the type of device.
         /// </summary>
-        public FileDeviceType DeviceType { get; private set; }
+        public FileDeviceType DeviceType { get; }
 
         /// <summary>
         /// Indicates the device characteristics.
         /// </summary>
-        public FileDeviceCharacteristics Characteristics { get; private set; }
+        public FileDeviceCharacteristics Characteristics { get; }
 
         internal DeviceAccessCheckResult(string name, bool namespace_path, FileDeviceType device_type, FileDeviceCharacteristics device_chars,
             AccessMask granted_access, string sddl, TokenInformation token_info) : base(name, "Device",

@@ -31,8 +31,8 @@ namespace NtApiDotNet
         private NtDirectory _root;
         private string _symlink_target;
 
-        public string Name { get; private set; }
-        public string NtTypeName { get; private set; }
+        public string Name { get; }
+        public string NtTypeName { get; }
         public NtType NtType
         {
             get
@@ -40,7 +40,7 @@ namespace NtApiDotNet
                 return NtType.GetTypeByName(NtTypeName, true);
             }
         }
-        public string FullPath { get; private set; }
+        public string FullPath { get; }
         public string SymbolicLinkTarget
         {
             get

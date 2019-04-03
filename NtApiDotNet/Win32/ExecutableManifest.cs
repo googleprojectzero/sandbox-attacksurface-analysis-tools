@@ -185,12 +185,12 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// True if parsing the XML manifest failed.
         /// </summary>
-        public bool ParseError { get; private set; }
+        public bool ParseError { get; }
 
         /// <summary>
         /// Full path to the manifest location.
         /// </summary>
-        public string FullPath { get; private set; }
+        public string FullPath { get; }
 
         /// <summary>
         /// The name of the manifest.
@@ -206,22 +206,22 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// True if the manifest indicates UI access.
         /// </summary>
-        public bool UiAccess { get; private set; }
+        public bool UiAccess { get; }
 
         /// <summary>
         /// The execution level from the manifest.
         /// </summary>
-        public string ExecutionLevel { get; private set; }
+        public string ExecutionLevel { get; }
 
         /// <summary>
         /// True if the manifest indicates auto elevation.
         /// </summary>
-        public bool AutoElevate { get; private set; }
+        public bool AutoElevate { get; }
 
         /// <summary>
         /// The manifest XML.
         /// </summary>
-        public string ManifestXml { get; private set; }
+        public string ManifestXml { get; }
 
         /// <summary>
         /// Get the manifests from a file.

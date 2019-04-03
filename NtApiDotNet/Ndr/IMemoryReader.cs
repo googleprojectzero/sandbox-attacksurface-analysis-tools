@@ -25,7 +25,7 @@ namespace NtApiDotNet.Ndr
     internal class CrossBitnessTypeAttribute : Attribute
     {
         private Lazy<MethodInfo> _base_method;
-        public Type CrossBitnessType { get; private set; }
+        public Type CrossBitnessType { get; }
 
         private static MethodInfo GetMethodInfo(Type cross_bitness_type)
         {
@@ -313,7 +313,7 @@ namespace NtApiDotNet.Ndr
             return builder.ToString();
         }
 
-        public int PointerSize { get; private set; }
+        public int PointerSize { get; }
     }
 
     /// <summary>

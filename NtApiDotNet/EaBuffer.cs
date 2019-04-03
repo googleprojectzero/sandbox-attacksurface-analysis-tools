@@ -44,17 +44,17 @@ namespace NtApiDotNet
         /// <summary>
         /// Name of the entry
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; }
 
         /// <summary>
         /// Data associated with the entry
         /// </summary>
-        public byte[] Data { get; private set; }
+        public byte[] Data { get; }
 
         /// <summary>
         /// Flags
         /// </summary>
-        public EaBufferEntryFlags Flags { get; private set; }
+        public EaBufferEntryFlags Flags { get; }
 
         internal EaBufferEntry Clone()
         {

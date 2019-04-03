@@ -40,28 +40,28 @@ namespace NtObjectManager
         /// <summary>
         /// Specifies the maximum access that can be accessed if the resource was reopened.
         /// </summary>
-        public AccessMask? MaximumAccess { get; private set; }
+        public AccessMask? MaximumAccess { get; }
 
         /// <summary>
         /// Specifies whether the access granted in the handle is different than would
         /// be granted if the resource was reopened.
         /// </summary>
-        public bool DifferentAccess { get; private set; }
+        public bool DifferentAccess { get; }
 
         /// <summary>
         /// Process ID containing the handle.
         /// </summary>
-        public int ProcessId { get; private set; }
+        public int ProcessId { get; }
 
         /// <summary>
         /// The handle value.
         /// </summary>
-        public int Handle { get; private set; }
+        public int Handle { get; }
 
         /// <summary>
         /// The object address.
         /// </summary>
-        public ulong Object { get; private set; }
+        public ulong Object { get; }
 
         internal HandleAccessCheckResult(MaximumAccess maximum_access, NtHandle handle, string name, string type_name, AccessMask granted_access,
             GenericMapping generic_mapping, string sddl, Type enum_type, bool is_directory, TokenInformation token_info) 

@@ -23,12 +23,12 @@ namespace NtApiDotNet
         /// <summary>
         /// The SID of the user group
         /// </summary>
-        public Sid Sid { get; private set; }
+        public Sid Sid { get; }
 
         /// <summary>
         /// The attributes of the user group
         /// </summary>
-        public GroupAttributes Attributes { get; private set; }
+        public GroupAttributes Attributes { get; }
 
         /// <summary>
         /// Get whether the user group is enabled

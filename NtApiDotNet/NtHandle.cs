@@ -24,12 +24,12 @@ namespace NtApiDotNet
         /// <summary>
         /// The ID of the process holding the handle
         /// </summary>
-        public int ProcessId { get; private set; }
+        public int ProcessId { get; }
 
         /// <summary>
         /// The object type index
         /// </summary>
-        public int ObjectTypeIndex { get; private set; }
+        public int ObjectTypeIndex { get; }
 
         /// <summary>
         /// The object type name
@@ -54,22 +54,22 @@ namespace NtApiDotNet
         /// <summary>
         /// The handle attribute flags.
         /// </summary>
-        public AttributeFlags Attributes { get; private set; }
+        public AttributeFlags Attributes { get; }
 
         /// <summary>
         /// The handle value
         /// </summary>
-        public int Handle { get; private set; }
+        public int Handle { get; }
 
         /// <summary>
         /// The address of the object.
         /// </summary>
-        public ulong Object { get; private set; }
+        public ulong Object { get; }
 
         /// <summary>
         /// The granted access mask
         /// </summary>
-        public AccessMask GrantedAccess { get; private set; }
+        public AccessMask GrantedAccess { get; }
 
         /// <summary>
         /// The name of the object (needs to have set query access in constructor)

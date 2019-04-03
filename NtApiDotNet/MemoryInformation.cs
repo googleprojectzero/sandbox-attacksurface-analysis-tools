@@ -22,42 +22,42 @@ namespace NtApiDotNet
         /// <summary>
         /// Base address of memory region.
         /// </summary>
-        public long BaseAddress { get; private set; }
+        public long BaseAddress { get; }
 
         /// <summary>
         /// Allocation base for memory region.
         /// </summary>
-        public long AllocationBase { get; private set; }
+        public long AllocationBase { get; }
 
         /// <summary>
         /// Initial allocation protection.
         /// </summary>
-        public MemoryAllocationProtect AllocationProtect { get; private set; }
+        public MemoryAllocationProtect AllocationProtect { get; }
 
         /// <summary>
         /// Region size.
         /// </summary>
-        public long RegionSize { get; private set; }
+        public long RegionSize { get; }
 
         /// <summary>
         /// Memory state.
         /// </summary>
-        public MemoryState State { get; private set; }
+        public MemoryState State { get; }
 
         /// <summary>
         /// Current memory protection.
         /// </summary>
-        public MemoryAllocationProtect Protect { get; private set; }
+        public MemoryAllocationProtect Protect { get; }
 
         /// <summary>
         /// Memory type.
         /// </summary>
-        public MemoryType Type { get; private set; }
+        public MemoryType Type { get; }
 
         /// <summary>
         /// The mapped image path, if an image.
         /// </summary>
-        public string MappedImagePath { get; private set; }
+        public string MappedImagePath { get; }
 
         internal MemoryInformation(MemoryBasicInformation basic_info, string mapped_image_path)
         {

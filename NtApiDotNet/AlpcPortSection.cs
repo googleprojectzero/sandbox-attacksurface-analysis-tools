@@ -26,7 +26,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Handle to the port section.
         /// </summary>
-        public SafeAlpcPortSectionHandle Handle { get; private set; }
+        public SafeAlpcPortSectionHandle Handle { get; }
 
         /// <summary>
         /// Size of the port section.

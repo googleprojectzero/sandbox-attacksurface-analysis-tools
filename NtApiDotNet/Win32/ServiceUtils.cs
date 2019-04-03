@@ -212,9 +212,9 @@ namespace NtApiDotNet.Win32
 
     public class ServiceTriggerCustomData
     {
-        public ServiceTriggerDataType DataType { get; private set; }
-        public byte[] RawData { get; private set; }
-        public string Data { get; private set; }
+        public ServiceTriggerDataType DataType { get; }
+        public byte[] RawData { get; }
+        public string Data { get; }
 
         private string GetDataString()
         {
@@ -248,7 +248,7 @@ namespace NtApiDotNet.Win32
                     }
                     break;
             }
-            return String.Join(",", RawData.Select(b => $"0x{b:X02}"));
+            return string.Join(",", RawData.Select(b => $"0x{b:X02}"));
         }
 
         internal ServiceTriggerCustomData(SERVICE_TRIGGER_SPECIFIC_DATA_ITEM data_item)
@@ -269,11 +269,11 @@ namespace NtApiDotNet.Win32
 
     public class ServiceTriggerInformation
     {
-        public ServiceTriggerType TriggerType { get; private set; }
-        public ServiceTriggerAction Action { get; private set; }
-        public Guid SubType { get; private set; }
-        public string SubTypeDescription { get; private set; }
-        public IEnumerable<ServiceTriggerCustomData> CustomData { get; private set; }
+        public ServiceTriggerType TriggerType { get; }
+        public ServiceTriggerAction Action { get; }
+        public Guid SubType { get; }
+        public string SubTypeDescription { get; }
+        public IEnumerable<ServiceTriggerCustomData> CustomData { get; }
 
         static Guid NETWORK_MANAGER_FIRST_IP_ADDRESS_ARRIVAL_GUID = new Guid("4f27f2de-14e2-430b-a549-7cd48cbc8245");
         static Guid NETWORK_MANAGER_LAST_IP_ADDRESS_REMOVAL_GUID = new Guid("cc4ba62a-162e-4648-847a-b6bdf993e335");
@@ -392,15 +392,15 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// The name of the service.
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; }
         /// <summary>
         /// The security descriptor of the service.
         /// </summary>
-        public SecurityDescriptor SecurityDescriptor { get; private set; }
+        public SecurityDescriptor SecurityDescriptor { get; }
         /// <summary>
         /// The list of triggers for the service.
         /// </summary>
-        public IEnumerable<ServiceTriggerInformation> Triggers { get; private set; }
+        public IEnumerable<ServiceTriggerInformation> Triggers { get; }
 
         internal ServiceInformation(string name, SecurityDescriptor sd, IEnumerable<ServiceTriggerInformation> triggers)
         {

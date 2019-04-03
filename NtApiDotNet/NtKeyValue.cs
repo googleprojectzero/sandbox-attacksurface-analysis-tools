@@ -65,19 +65,19 @@ namespace NtApiDotNet
         /// <summary>
         /// Name of the value
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; }
         /// <summary>
         /// Type of the value
         /// </summary>
-        public RegistryValueType Type { get; private set; }
+        public RegistryValueType Type { get; }
         /// <summary>
         /// Raw data for the value
         /// </summary>
-        public byte[] Data { get; private set; }
+        public byte[] Data { get; }
         /// <summary>
         /// Title index for the value
         /// </summary>
-        public int TitleIndex { get; private set; }
+        public int TitleIndex { get; }
         /// <summary>
         /// Get the value as an object.
         /// </summary>

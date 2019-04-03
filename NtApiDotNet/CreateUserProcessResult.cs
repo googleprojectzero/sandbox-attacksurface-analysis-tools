@@ -26,17 +26,14 @@ namespace NtApiDotNet
         /// <summary>
         /// Handle to the process
         /// </summary>
-        public NtProcess Process
-        {
-            get; private set;
-        }
+        public NtProcess Process { get; }
 
         /// <summary>
         /// Handle to the initial thread
         /// </summary>
         public NtThread Thread
         {
-            get; private set;
+            get;
         }
 
         /// <summary>
@@ -44,20 +41,20 @@ namespace NtApiDotNet
         /// </summary>
         public NtFile ImageFile
         {
-            get; private set;
+            get;
         }
 
         /// <summary>
         /// Handle to the image section
         /// </summary>
-        public NtSection SectionHandle { get; private set; }
+        public NtSection SectionHandle { get; }
 
         /// <summary>
         /// Handle to the IFEO key (if it exists)
         /// </summary>
         public RegistryKey IFEOKeyHandle
         {
-            get; private set;
+            get;
         }
 
         /// <summary>
@@ -65,7 +62,7 @@ namespace NtApiDotNet
         /// </summary>
         public SectionImageInformation ImageInfo
         {
-            get; private set;
+            get;
         }
 
         /// <summary>
@@ -73,7 +70,7 @@ namespace NtApiDotNet
         /// </summary>
         public ClientId ClientId
         {
-            get; private set;
+            get;
         }
 
         /// <summary>
@@ -103,7 +100,7 @@ namespace NtApiDotNet
         /// </summary>
         public NtStatus Status
         {
-            get; private set;
+            get;
         }
 
         /// <summary>
@@ -122,7 +119,7 @@ namespace NtApiDotNet
         /// </summary>
         public ProcessCreateInfoData CreateInfo
         {
-            get; private set;
+            get;
         }
 
         /// <summary>
@@ -130,7 +127,7 @@ namespace NtApiDotNet
         /// </summary>
         public ProcessCreateState CreateState
         {
-            get; private set;
+            get;
         }
 
         internal CreateUserProcessResult(SafeKernelObjectHandle process_handle, SafeKernelObjectHandle thread_handle,

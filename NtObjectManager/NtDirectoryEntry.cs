@@ -68,27 +68,27 @@ namespace NtObjectManager
         /// <summary>
         /// Get the name of the entry.
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; }
 
         /// <summary>
         /// Get the NT type name of the entry.
         /// </summary>
-        public string TypeName { get; private set; }
+        public string TypeName { get; }
 
         /// <summary>
         /// Indicates if this entry is a directory.
         /// </summary>
-        public bool IsDirectory { get; private set; }
+        public bool IsDirectory { get; }
 
         /// <summary>
         /// Indicates if this entry is a symbolic link.
         /// </summary>
-        public bool IsSymbolicLink { get; private set; }
+        public bool IsSymbolicLink { get; }
 
         /// <summary>
         /// The relative path from the drive base to the entry.
         /// </summary>
-        public string RelativePath { get; private set; }
+        public string RelativePath { get; }
 
         /// <summary>
         /// The security descriptor of the entry. This can be null if caller does not have permission to open the actual object.

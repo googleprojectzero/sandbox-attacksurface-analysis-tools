@@ -27,7 +27,7 @@ namespace NtApiDotNet
         /// <summary>
         /// The process which the section is mapped into
         /// </summary>
-        public NtProcess Process { get; private set; }
+        public NtProcess Process { get; }
 
         /// <summary>
         /// The valid length of the mapped section from the current position.

@@ -28,72 +28,72 @@ namespace NtObjectManager
         /// <summary>
         /// The name of the object which was accessed (depends on the type).
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; }
 
         /// <summary>
         /// Name of the type accessed.
         /// </summary>
-        public string TypeName { get; private set; }
+        public string TypeName { get; }
 
         /// <summary>
         /// Granted access.
         /// </summary>
-        public AccessMask GrantedAccess { get; private set; }
+        public AccessMask GrantedAccess { get; }
 
         /// <summary>
         /// Get granted access as a type specific string
         /// </summary>
-        public string GrantedAccessString { get; private set; }
+        public string GrantedAccessString { get; }
 
         /// <summary>
         /// Get granted access as generic access string.
         /// </summary>
-        public string GrantedGenericAccessString { get; private set; }
+        public string GrantedGenericAccessString { get; }
 
         /// <summary>
         /// The generic mapping associated with this type.
         /// </summary>
-        public GenericMapping GenericMapping { get; private set; }
+        public GenericMapping GenericMapping { get; }
 
         /// <summary>
         /// The security descriptor associated with this access check.
         /// </summary>
-        public string SecurityDescriptor { get; private set; }
+        public string SecurityDescriptor { get; }
 
         /// <summary>
         /// Information the token used in the access check.
         /// </summary>
-        public TokenInformation TokenInfo { get; private set; }
+        public TokenInformation TokenInfo { get; }
 
         /// <summary>
         /// Was read access granted?
         /// </summary>
-        public bool IsRead { get; private set; }
+        public bool IsRead { get; }
 
         /// <summary>
         /// Was write access granted?
         /// </summary>
-        public bool IsWrite { get; private set; }
+        public bool IsWrite { get; }
 
         /// <summary>
         /// Was execute access granted?
         /// </summary>
-        public bool IsExecute { get; private set; }
+        public bool IsExecute { get; }
 
         /// <summary>
         /// Was all access granted?
         /// </summary>
-        public bool IsAll { get; private set; }
+        public bool IsAll { get; }
 
         /// <summary>
         /// Is the resource being access a directory.
         /// </summary>
-        public bool IsDirectory { get; private set; }
+        public bool IsDirectory { get; }
 
         /// <summary>
         /// Unique key for access check result (based on TokenId)
         /// </summary>
-        public long TokenId { get; private set; }
+        public long TokenId { get; }
 
         internal AccessCheckResult(string name, string type_name, AccessMask granted_access,
             GenericMapping generic_mapping, string sddl, Type enum_type, bool is_directory, TokenInformation token_info)
@@ -123,51 +123,51 @@ namespace NtObjectManager
         /// <summary>
         /// Token username
         /// </summary>
-        public Sid UserName { get; private set; }
+        public Sid UserName { get; }
         /// <summary>
         /// Token integrity level
         /// </summary>
-        public TokenIntegrityLevel IntegrityLevel { get; private set; }
+        public TokenIntegrityLevel IntegrityLevel { get; }
         /// <summary>
         /// Token type
         /// </summary>
-        public TokenType TokenType { get; private set; }
+        public TokenType TokenType { get; }
         /// <summary>
         /// Token impersonation level
         /// </summary>
-        public SecurityImpersonationLevel ImpersonationLevel { get; private set; }
+        public SecurityImpersonationLevel ImpersonationLevel { get; }
         /// <summary>
         /// Token ID
         /// </summary>
-        public Luid TokenId { get; private set; }
+        public Luid TokenId { get; }
         /// <summary>
         /// Elevated token
         /// </summary>
-        public bool Elevated { get; private set; }
+        public bool Elevated { get; }
         /// <summary>
         /// Restricted token
         /// </summary>
-        public bool Restricted { get; private set; }
+        public bool Restricted { get; }
         /// <summary>
         /// App container token
         /// </summary>
-        public bool AppContainer { get; private set; }
+        public bool AppContainer { get; }
         /// <summary>
         /// App container SID (if an AppContainer)
         /// </summary>
-        public Sid AppContainerSid { get; private set; }
+        public Sid AppContainerSid { get; }
         /// <summary>
         /// Low privilege AC
         /// </summary>
-        public bool LowPrivilegeAppContainer { get; private set; }
+        public bool LowPrivilegeAppContainer { get; }
         /// <summary>
         /// The session ID of the token.
         /// </summary>
-        public int SessionId { get; private set; }
+        public int SessionId { get; }
         /// <summary>
         /// Additonal information of where the token was sourced from
         /// </summary>
-        public Dictionary<string, object> SourceData { get; private set; }
+        public Dictionary<string, object> SourceData { get; }
 
         /// <summary>
         /// Overridden ToString.

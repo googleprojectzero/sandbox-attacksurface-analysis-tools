@@ -31,111 +31,111 @@ namespace NtApiDotNet
         /// <summary>
         /// The name of the type
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; }
         /// <summary>
         /// The mapping from generic to specific object rights
         /// </summary>
-        public GenericMapping GenericMapping { get; private set; }
+        public GenericMapping GenericMapping { get; }
         /// <summary>
         /// The valid access mask
         /// </summary>
-        public AccessMask ValidAccess { get; private set; }
+        public AccessMask ValidAccess { get; }
         /// <summary>
         /// True if the object needs security even if unnamed
         /// </summary>
-        public bool SecurityRequired { get; private set; }
+        public bool SecurityRequired { get; }
         /// <summary>
         /// Total number of objects (when originally retrieved)
         /// </summary>
-        public uint TotalNumberOfObjects { get; private set; }
+        public uint TotalNumberOfObjects { get; }
         /// <summary>
         /// Total number of handles (when originally retrieved)
         /// </summary>
-        public uint TotalNumberOfHandles { get; private set; }
+        public uint TotalNumberOfHandles { get; }
         /// <summary>
         /// Total paged pool usage (when originally retrieved)
         /// </summary>
-        public uint TotalPagedPoolUsage { get; private set; }
+        public uint TotalPagedPoolUsage { get; }
         /// <summary>
         /// Total non-paged pool usage (when originally retrieved)
         /// </summary>
-        public uint TotalNonPagedPoolUsage { get; private set; }
+        public uint TotalNonPagedPoolUsage { get; }
         /// <summary>
         /// Total name pool usage (when originally retrieved)
         /// </summary>
-        public uint TotalNamePoolUsage { get; private set; }
+        public uint TotalNamePoolUsage { get; }
         /// <summary>
         /// Total handle table usage (when originally retrieved)
         /// </summary>
-        public uint TotalHandleTableUsage { get; private set; }
+        public uint TotalHandleTableUsage { get; }
         /// <summary>
         /// Maximum number of objects (when originally retrieved)
         /// </summary>
-        public uint HighWaterNumberOfObjects { get; private set; }
+        public uint HighWaterNumberOfObjects { get; }
         /// <summary>
         /// Maximum number of handles (when originally retrieved)
         /// </summary>
-        public uint HighWaterNumberOfHandles { get; private set; }
+        public uint HighWaterNumberOfHandles { get; }
         /// <summary>
         /// Maximum paged pool usage (when originally retrieved)
         /// </summary>
-        public uint HighWaterPagedPoolUsage { get; private set; }
+        public uint HighWaterPagedPoolUsage { get; }
         /// <summary>
         /// Maximum non-paged pool usage (when originally retrieved)
         /// </summary>
-        public uint HighWaterNonPagedPoolUsage { get; private set; }
+        public uint HighWaterNonPagedPoolUsage { get; }
         /// <summary>
         /// Maximum name pool usage (when originally retrieved)
         /// </summary>
-        public uint HighWaterNamePoolUsage { get; private set; }
+        public uint HighWaterNamePoolUsage { get; }
         /// <summary>
         /// Maximum handle table usage (when originally retrieved)
         /// </summary>
-        public uint HighWaterHandleTableUsage { get; private set; }
+        public uint HighWaterHandleTableUsage { get; }
         /// <summary>
         /// The attributes flags which are invalid
         /// </summary>
-        public AttributeFlags InvalidAttributes { get; private set; }
+        public AttributeFlags InvalidAttributes { get; }
         /// <summary>
         /// Indicates whether handle count is mainted
         /// </summary>
-        public bool MaintainHandleCount { get; private set; }
+        public bool MaintainHandleCount { get; }
         /// <summary>
         /// Indicates the type list maintained
         /// </summary>
-        public ushort MaintainTypeList { get; private set; }
+        public ushort MaintainTypeList { get; }
         /// <summary>
         /// Indicates the type of pool used in allocations
         /// </summary>
-        public PoolType PoolType { get; private set; }
+        public PoolType PoolType { get; }
         /// <summary>
         /// Current paged pool usage
         /// </summary>
-        public uint PagedPoolUsage { get; private set; }
+        public uint PagedPoolUsage { get; }
         /// <summary>
         /// Current non-pages pool usage
         /// </summary>
-        public uint NonPagedPoolUsage { get; private set; }
+        public uint NonPagedPoolUsage { get; }
         /// <summary>
         /// Type Index
         /// </summary>
-        public int Index { get; private set; }
+        public int Index { get; }
         /// <summary>
         /// Generic Read Access rights
         /// </summary>
-        public string GenericRead { get; private set; }
+        public string GenericRead { get; }
         /// <summary>
         /// Generic Read Access rights
         /// </summary>
-        public string GenericWrite { get; private set; }
+        public string GenericWrite { get; }
         /// <summary>
         /// Generic Read Access rights
         /// </summary>
-        public string GenericExecute { get; private set; }
+        public string GenericExecute { get; }
         /// <summary>
         /// Generic Read Access rights
         /// </summary>
-        public string GenericAll { get; private set; }
+        public string GenericAll { get; }
 
         /// <summary>
         /// Get implemented object type for this NT type.
@@ -310,8 +310,8 @@ namespace NtApiDotNet
         public bool HasWritePermission(AccessMask access_mask)
         {
             // We consider here that Delete, WriteDac and WriteOwner are also write permissions.
-            if ((access_mask & (GenericAccessRights.WriteDac 
-                                | GenericAccessRights.WriteOwner 
+            if ((access_mask & (GenericAccessRights.WriteDac
+                                | GenericAccessRights.WriteOwner
                                 | GenericAccessRights.Delete)).HasAccess)
             {
                 return true;
@@ -596,7 +596,7 @@ namespace NtApiDotNet
         /// <param name="generic_all">The GENERIC_ALL for security checking.</param>
         /// <param name="access_rights_type">The access rights enumeration type.</param>
         /// <returns>The fake NT type object.</returns>
-        public static NtType GetFakeType(string name, AccessMask generic_read, AccessMask generic_write, 
+        public static NtType GetFakeType(string name, AccessMask generic_read, AccessMask generic_write,
             AccessMask generic_exec, AccessMask generic_all, Type access_rights_type)
         {
             return GetFakeType(name, generic_read, generic_write, generic_exec, generic_all, access_rights_type, access_rights_type);
@@ -645,11 +645,11 @@ namespace NtApiDotNet
                             }
 
                             return ret;
-                        
+
                         default:
                             throw new NtException(status);
-                    }    
-                }    
+                    }
+                }
             }
 
             // raise exception if the candidate buffer is over a MB.

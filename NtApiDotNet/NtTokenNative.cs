@@ -368,8 +368,8 @@ namespace NtApiDotNet
 
     public class ClaimSecurityAttributeFqbn
     {
-        public ulong Version { get; private set; }
-        public string Name { get; private set; }
+        public ulong Version { get; }
+        public string Name { get; }
 
         public ClaimSecurityAttributeFqbn(ClaimSecurityAttributeFqbnValue value)
         {

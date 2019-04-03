@@ -54,12 +54,12 @@ namespace NtApiDotNet
         /// <summary>
         /// Flags for the data view.
         /// </summary>
-        public AlpcDataViewAttrFlags Flags { get; private set; }
+        public AlpcDataViewAttrFlags Flags { get; }
 
         /// <summary>
         /// Get the port section handle.
         /// </summary>
-        public SafeAlpcPortSectionHandle SectionHandle { get; private set; }
+        public SafeAlpcPortSectionHandle SectionHandle { get; }
 
         /// <summary>
         /// Convert the section view to a message attribute.

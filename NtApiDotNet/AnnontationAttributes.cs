@@ -44,7 +44,7 @@ namespace NtApiDotNet
         /// <summary>
         /// The supported version.
         /// </summary>
-        public SupportedVersion Version { get; private set; }
+        public SupportedVersion Version { get; }
 
         /// <summary>
         /// Constructor

@@ -29,7 +29,7 @@ namespace NtApiDotNet
         /// <summary>
         /// The NT status code.
         /// </summary>
-        public NtStatus Status { get; private set; }
+        public NtStatus Status { get; }
         /// <summary>
         /// The result of the NT call.
         /// </summary>

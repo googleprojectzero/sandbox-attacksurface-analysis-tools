@@ -879,15 +879,15 @@ namespace NtApiDotNet
 
     public class FileDirectoryEntry
     {
-        public int FileIndex { get; private set; }
-        public DateTime CreationTime { get; private set; }
-        public DateTime LastAccessTime { get; private set; }
-        public DateTime LastWriteTime { get; private set; }
-        public DateTime ChangeTime { get; private set; }
-        public long EndOfFile { get; private set; }
-        public long AllocationSize { get; private set; }
-        public FileAttributes Attributes { get; private set; }
-        public string FileName { get; private set; }
+        public int FileIndex { get; }
+        public DateTime CreationTime { get; }
+        public DateTime LastAccessTime { get; }
+        public DateTime LastWriteTime { get; }
+        public DateTime ChangeTime { get; }
+        public long EndOfFile { get; }
+        public long AllocationSize { get; }
+        public FileAttributes Attributes { get; }
+        public string FileName { get; }
 
         public bool HasAttributes(FileAttributes attributes)
         {
@@ -968,9 +968,9 @@ namespace NtApiDotNet
 
     public class FileStreamEntry
     {
-        public long Size { get; private set; }
-        public long AllocationSize { get; private set; }
-        public string Name { get; private set; }
+        public long Size { get; }
+        public long AllocationSize { get; }
+        public string Name { get; }
 
         internal FileStreamEntry(SafeStructureInOutBuffer<FileStreamInformation> stream)
         {

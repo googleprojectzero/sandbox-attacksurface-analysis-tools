@@ -58,7 +58,7 @@ namespace NtApiDotNet
         /// <summary>
         /// The count of elements of the array.
         /// </summary>
-        public int Count { get; private set; }
+        public int Count { get; }
 
         private static int _element_size = Marshal.SizeOf(typeof(T));
 

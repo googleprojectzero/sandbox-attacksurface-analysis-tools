@@ -35,15 +35,15 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// The name of the module.
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; }
         /// <summary>
         /// The base address of the module.
         /// </summary>
-        public IntPtr BaseAddress { get; private set; }
+        public IntPtr BaseAddress { get; }
         /// <summary>
         /// The image size of the module.
         /// </summary>
-        public int ImageSize { get; private set; }
+        public int ImageSize { get; }
 
         internal SymbolLoadedModule(string name, IntPtr base_address, int image_size)
         {

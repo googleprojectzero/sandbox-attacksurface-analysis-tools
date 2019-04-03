@@ -28,24 +28,24 @@ namespace NtObjectManager
         /// <summary>
         /// Process image path.
         /// </summary>
-        public string ProcessImagePath { get; private set; }
+        public string ProcessImagePath { get; }
         /// <summary>
         /// Process ID of the process.
         /// </summary>
-        public int ProcessId { get; private set; }
+        public int ProcessId { get; }
         /// <summary>
         /// Command line of the process.
         /// </summary>
-        public string ProcessCommandLine { get; private set; }
+        public string ProcessCommandLine { get; }
         /// <summary>
         /// Session ID of the process.
         /// </summary>
-        public int SessionId { get; private set; }
+        public int SessionId { get; }
 
         /// <summary>
         /// Gets whether this is a thread access check result.
         /// </summary>
-        public bool IsThread { get; private set; }
+        public bool IsThread { get; }
 
         internal ProcessAccessCheckResult(string name, string image_path, int process_id, int session_id,
             string command_line, AccessMask granted_access, bool is_thread,
@@ -68,12 +68,12 @@ namespace NtObjectManager
         /// <summary>
         /// Thread ID of the thread.
         /// </summary>
-        public int ThreadId { get; private set; }
+        public int ThreadId { get; }
 
         /// <summary>
         /// Thread description if available.
         /// </summary>
-        public string ThreadDescription { get; private set; }
+        public string ThreadDescription { get; }
 
         internal ThreadAccessCheckResult(string name, string image_path, int thread_id, string thread_description, int process_id, 
             int session_id, string command_line, AccessMask granted_access,

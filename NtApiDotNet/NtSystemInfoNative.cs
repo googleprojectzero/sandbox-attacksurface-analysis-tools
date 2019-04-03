@@ -107,10 +107,10 @@ namespace NtApiDotNet
 
     public sealed class SystemEnvironmentValue
     {
-        public string Name { get; private set; }
-        public Guid VendorGuid { get; private set; }
-        public byte[] Value { get; private set; }
-        public SystemEnvironmentValueAttribute Attributes { get; private set; }
+        public string Name { get; }
+        public Guid VendorGuid { get; }
+        public byte[] Value { get; }
+        public SystemEnvironmentValueAttribute Attributes { get; }
 
         internal SystemEnvironmentValue(SafeStructureInOutBuffer<SystemEnvironmentValueNameAndValue> buffer)
         {
@@ -377,10 +377,10 @@ namespace NtApiDotNet
 
     public class SecureBootPolicy
     {
-        public Guid PolicyPublisher { get; private set; }
-        public int PolicyVersion { get; private set; }
-        public int PolicyOptions { get; private set; }
-        public byte[] Policy { get; private set; }
+        public Guid PolicyPublisher { get; }
+        public int PolicyVersion { get; }
+        public int PolicyOptions { get; }
+        public byte[] Policy { get; }
 
         internal SecureBootPolicy(SafeStructureInOutBuffer<SystemSecurebootPolicyFullInformation> policy)
         {
@@ -423,8 +423,8 @@ namespace NtApiDotNet
 
     public class CodeIntegrityPolicy
     {
-        public int PolicyType { get; private set; }
-        public byte[] Policy { get; private set; }
+        public int PolicyType { get; }
+        public byte[] Policy { get; }
 
         internal CodeIntegrityPolicy(BinaryReader reader)
         {

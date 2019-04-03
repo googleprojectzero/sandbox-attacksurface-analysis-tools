@@ -40,7 +40,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Privilege LUID
         /// </summary>
-        public Luid Luid { get; private set; }
+        public Luid Luid { get; }
 
         /// <summary>
         /// Get the name of the privilege

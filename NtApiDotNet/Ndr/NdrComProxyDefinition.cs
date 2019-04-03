@@ -32,23 +32,23 @@ namespace NtApiDotNet.Ndr
         /// <summary>
         /// The name of the proxy interface.
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; }
         /// <summary>
         /// The IID of the proxy interface.
         /// </summary>
-        public Guid Iid { get; private set; }
+        public Guid Iid { get; }
         /// <summary>
         /// The base IID of the proxy interface.
         /// </summary>
-        public Guid BaseIid { get; private set; }
+        public Guid BaseIid { get; }
         /// <summary>
         /// The number of dispatch methods on the interface.
         /// </summary>
-        public int DispatchCount { get; private set; }
+        public int DispatchCount { get; }
         /// <summary>
         /// List of parsed procedures for the interface.
         /// </summary>
-        public IList<NdrProcedureDefinition> Procedures { get; private set; }
+        public IList<NdrProcedureDefinition> Procedures { get; }
 
         internal NdrComProxyDefinition(string name, Guid iid, Guid base_iid, int dispatch_count, IList<NdrProcedureDefinition> procedures)
         {

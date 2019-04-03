@@ -41,7 +41,7 @@ namespace NtObjectManager
                 DirectoryRoot = root;
             }
 
-            public NtDirectory DirectoryRoot { get; private set; }
+            public NtDirectory DirectoryRoot { get; }
         }
 
         private string GetDrivePath()

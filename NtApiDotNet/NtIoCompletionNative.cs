@@ -51,9 +51,9 @@ namespace NtApiDotNet
 
     public class FileIoCompletionResult
     {
-        public IntPtr KeyContext { get; private set; }
-        public IntPtr ApcContext { get; private set; }
-        public IoStatus IoStatusBlock { get; private set; }
+        public IntPtr KeyContext { get; }
+        public IntPtr ApcContext { get; }
+        public IoStatus IoStatusBlock { get; }
 
         internal FileIoCompletionResult(FileIoCompletionInformation result)
         {

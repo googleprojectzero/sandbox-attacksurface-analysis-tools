@@ -30,7 +30,7 @@ namespace NtObjectManager
         /// <summary>
         /// Service triggers for service.
         /// </summary>
-        public IEnumerable<ServiceTriggerInformation> Triggers { get; private set; }
+        public IEnumerable<ServiceTriggerInformation> Triggers { get; }
 
         internal ServiceAccessCheckResult(string name, AccessMask granted_access, 
             string sddl, TokenInformation token_info,

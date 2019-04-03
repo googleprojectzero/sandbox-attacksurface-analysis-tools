@@ -662,7 +662,7 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Specify list of handles to inherit.
         /// </summary>
-        public List<IntPtr> InheritHandleList { get; private set; }
+        public List<IntPtr> InheritHandleList { get; }
         /// <summary>
         /// Specify the appcontainer Sid.
         /// </summary>
@@ -670,7 +670,7 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Specify the appcontainer capabilities.
         /// </summary>
-        public List<Sid> Capabilities { get; private set; }
+        public List<Sid> Capabilities { get; }
         /// <summary>
         /// Specify LPAC.
         /// </summary>
@@ -1229,19 +1229,19 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// The handle to the process.
         /// </summary>
-        public NtProcess Process { get; private set; }
+        public NtProcess Process { get; }
         /// <summary>
         /// The handle to the initial thread.
         /// </summary>
-        public NtThread Thread { get; private set; }
+        public NtThread Thread { get; }
         /// <summary>
         /// The process ID of the process.
         /// </summary>
-        public int Pid { get; private set; }
+        public int Pid { get; }
         /// <summary>
         /// The thread ID of the initial thread.
         /// </summary>
-        public int Tid { get; private set; }
+        public int Tid { get; }
         /// <summary>
         /// True to terminate process when disposed.
         /// </summary>
