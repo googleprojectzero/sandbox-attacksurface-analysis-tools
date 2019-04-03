@@ -545,11 +545,13 @@ namespace NtApiDotNet.Ndr
     {
         public NdrBaseTypeReference MemberType { get; private set; }
         public int Offset { get; private set; }
+        public string Name { get; set; }
 
-        internal NdrStructureMember(NdrBaseTypeReference member_type, int offset)
+        internal NdrStructureMember(NdrBaseTypeReference member_type, int offset, string name)
         {
             MemberType = member_type;
             Offset = offset;
+            Name = name;
         }
 
         internal string FormatMember(NdrFormatter context)
@@ -566,33 +568,42 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrBaseStructureTypeReference : NdrComplexTypeReference
     {
-        protected List<NdrBaseTypeReference> _members;
+        protected List<NdrBaseTypeReference> _base_members;
+
+        private List<NdrStructureMember> _members;
+
         public int Alignment { get; private set; }
         public int MemorySize { get; private set; }
 
-        private IEnumerable<NdrStructureMember> GetMembers()
+        private List<NdrStructureMember> GetMembers()
         {
-            int current_offset = 0;
-            foreach (var type in _members)
+            if (_members == null)
             {
-                if (!(type is NdrStructurePaddingTypeReference))
+                List<NdrStructureMember> members = new List<NdrStructureMember>();
+                int current_offset = 0;
+                foreach (var type in _base_members)
                 {
-                    yield return new NdrStructureMember(type, current_offset);
+                    if (!(type is NdrStructurePaddingTypeReference))
+                    {
+                        members.Add(new NdrStructureMember(type, current_offset, $"Member{current_offset:X}"));
+                    }
+                    current_offset += type.GetSize();
                 }
-                current_offset += type.GetSize();
+                _members = members;
             }
+            return _members;
         }
 
-        public IEnumerable<NdrBaseTypeReference> MembersTypes { get { return _members.AsReadOnly(); } }
+        public IEnumerable<NdrBaseTypeReference> MembersTypes { get { return _base_members.AsReadOnly(); } }
 
-        public IEnumerable<NdrStructureMember> Members { get { return GetMembers(); } }
+        public IEnumerable<NdrStructureMember> Members => GetMembers().AsReadOnly();
 
         internal NdrBaseStructureTypeReference(NdrParseContext context, NdrFormatCharacter format, BinaryReader reader)
             : base($"Struct_{context.TypeCache.GetNextComplexId()}", format)
         {
             Alignment = reader.ReadByte();
             MemorySize = reader.ReadUInt16();
-            _members = new List<NdrBaseTypeReference>();
+            _base_members = new List<NdrBaseTypeReference>();
         }
 
         internal void ReadMemberInfo(NdrParseContext context, BinaryReader reader)
@@ -600,7 +611,7 @@ namespace NtApiDotNet.Ndr
             NdrBaseTypeReference curr_type;
             while ((curr_type = Read(context, reader)) != null)
             {
-                _members.Add(curr_type);
+                _base_members.Add(curr_type);
             }
         }
 
@@ -614,7 +625,7 @@ namespace NtApiDotNet.Ndr
             StringBuilder builder = new StringBuilder();
             builder.Append(context.FormatComment("Memory Size: {0}", GetSize())).AppendLine();
             builder.Append(FormatType(context)).AppendLine(" {");
-            foreach (var member in Members.Select((m, i) => $"{m.FormatMember(context)} Member{i}"))
+            foreach (var member in Members.Select((m, i) => $"{m.FormatMember(context)} {m.Name}"))
             {
                 builder.Append("    ").Append(member).AppendLine(";");
             }
@@ -629,7 +640,7 @@ namespace NtApiDotNet.Ndr
 
         protected override void OnFixupLateBoundTypes()
         {
-            foreach (var member in _members)
+            foreach (var member in _base_members)
             {
                 member.FixupLateBoundTypes();
             }
@@ -671,7 +682,7 @@ namespace NtApiDotNet.Ndr
             ReadMemberInfo(context, reader);
             if (array != null)
             {
-                _members.Add(array);
+                _base_members.Add(array);
             }
         }
     }
@@ -688,18 +699,18 @@ namespace NtApiDotNet.Ndr
             if (pointer_ofs >= 0)
             {
                 BinaryReader pointer_reader = GetReader(context, pointer_ofs);
-                for (int i = 0; i < _members.Count; ++i)
+                for (int i = 0; i < _base_members.Count; ++i)
                 {
-                    if (_members[i].Format == NdrFormatCharacter.FC_POINTER)
+                    if (_base_members[i].Format == NdrFormatCharacter.FC_POINTER)
                     {
-                        _members[i] = Read(context, reader);
+                        _base_members[i] = Read(context, reader);
                     }
                 }
             }
 
             if (array != null)
             {
-                _members.Add(array);
+                _base_members.Add(array);
             }
         }
     }
@@ -1196,7 +1207,7 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public abstract class NdrComplexTypeReference : NdrBaseTypeReference
     {
-        public string Name { get; }
+        public string Name { get; set; }
         internal abstract string FormatComplexType(NdrFormatter context);
 
         internal NdrComplexTypeReference(string name, NdrFormatCharacter format) : base(format)
