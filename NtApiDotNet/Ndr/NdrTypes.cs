@@ -269,8 +269,17 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    // Marker class for a string type.
     [Serializable]
-    public class NdrStringTypeReference : NdrBaseTypeReference
+    public class NdrBaseStringTypeReference : NdrBaseTypeReference
+    {
+        internal NdrBaseStringTypeReference(NdrFormatCharacter format) : base(format)
+        {
+        }
+    }
+
+    [Serializable]
+    public class NdrStringTypeReference : NdrBaseStringTypeReference
     {
         public int StringSize { get; private set; }
 
@@ -306,7 +315,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrConformantStringTypeReference : NdrBaseTypeReference
+    public class NdrConformantStringTypeReference : NdrBaseStringTypeReference
     {
         public NdrCorrelationDescriptor ConformanceDescriptor { get; private set; }
 
@@ -362,7 +371,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrStructureStringTypeReferece : NdrBaseTypeReference
+    public class NdrStructureStringTypeReferece : NdrBaseStringTypeReference
     {
         public int ElementSize { get; private set; }
         public int NumberOfElements { get; private set; }
