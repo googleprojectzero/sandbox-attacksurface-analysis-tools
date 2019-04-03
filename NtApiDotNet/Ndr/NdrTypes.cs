@@ -180,11 +180,11 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrInterfacePointerTypeReference : NdrBaseTypeReference
     {
-        public Guid Iid { get; private set; }
+        public Guid Iid { get; }
 
-        public bool IsConstant { get; private set; }
+        public bool IsConstant { get; }
 
-        public NdrCorrelationDescriptor IidIsDescriptor { get; private set; }
+        public NdrCorrelationDescriptor IidIsDescriptor { get; }
 
         internal NdrInterfacePointerTypeReference(NdrParseContext context, BinaryReader reader) : base(NdrFormatCharacter.FC_IP)
         {
@@ -223,7 +223,7 @@ namespace NtApiDotNet.Ndr
     public class NdrPointerTypeReference : NdrBaseTypeReference
     {
         public NdrBaseTypeReference Type { get; private set; }
-        public NdrPointerFlags Flags { get; private set; }
+        public NdrPointerFlags Flags { get; }
 
         internal NdrPointerTypeReference(NdrBaseTypeReference type) 
             : base(NdrFormatCharacter.FC_POINTER)
@@ -281,7 +281,7 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrStringTypeReference : NdrBaseStringTypeReference
     {
-        public int StringSize { get; private set; }
+        public int StringSize { get; }
 
         internal NdrStringTypeReference(NdrFormatCharacter format, BinaryReader reader) : base(format)
         {
@@ -317,7 +317,7 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrConformantStringTypeReference : NdrBaseStringTypeReference
     {
-        public NdrCorrelationDescriptor ConformanceDescriptor { get; private set; }
+        public NdrCorrelationDescriptor ConformanceDescriptor { get; }
 
         internal NdrConformantStringTypeReference(NdrParseContext context, 
             NdrFormatCharacter format, BinaryReader reader) : base(format)
@@ -373,8 +373,8 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrStructureStringTypeReferece : NdrBaseStringTypeReference
     {
-        public int ElementSize { get; private set; }
-        public int NumberOfElements { get; private set; }
+        public int ElementSize { get; }
+        public int NumberOfElements { get; }
         internal NdrStructureStringTypeReferece(NdrFormatCharacter format, BinaryReader reader) : base(format)
         {
             ElementSize = reader.ReadByte();
@@ -393,11 +393,11 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrUserMarshalTypeReference : NdrBaseTypeReference
     {
-        public NdrUserMarshalFlags Flags { get; private set; }
-        public int QuadrupleIndex { get; private set; }
-        public int UserTypeMemorySite { get; private set; }
-        public int TransmittedTypeBufferSize { get; private set; }
-        public NdrBaseTypeReference Type { get; private set; }
+        public NdrUserMarshalFlags Flags { get; }
+        public int QuadrupleIndex { get; }
+        public int UserTypeMemorySite { get; }
+        public int TransmittedTypeBufferSize { get; }
+        public NdrBaseTypeReference Type { get; }
 
         internal NdrUserMarshalTypeReference(NdrParseContext context, BinaryReader reader)
             : base(NdrFormatCharacter.FC_USER_MARSHAL)
@@ -457,7 +457,7 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrNamedTypeReference : NdrBaseTypeReference
     {
-        public string Name { get; private set; }
+        public string Name { get; }
 
         public NdrNamedTypeReference(string name)
             : base(NdrFormatCharacter.FC_USER_MARSHAL)
@@ -480,7 +480,7 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrKnownTypeReference : NdrBaseTypeReference
     {
-        public NdrKnownTypes KnownType { get; private set; }
+        public NdrKnownTypes KnownType { get; }
 
         public NdrKnownTypeReference(NdrKnownTypes type)
             : base(NdrFormatCharacter.FC_USER_MARSHAL)
@@ -581,8 +581,8 @@ namespace NtApiDotNet.Ndr
 
         private List<NdrStructureMember> _members;
 
-        public int Alignment { get; private set; }
-        public int MemorySize { get; private set; }
+        public int Alignment { get; }
+        public int MemorySize { get; }
 
         private List<NdrStructureMember> GetMembers()
         {
@@ -727,7 +727,7 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public abstract class NdrBaseArrayTypeReference : NdrBaseTypeReference
     {
-        public int Alignment { get; private set; }
+        public int Alignment { get; }
         public NdrBaseTypeReference ElementType { get; private set; }
         public NdrPointerInfoTypeReference PointerLayout { get; private set; }
         public int ElementCount => GetElementCount();
@@ -778,7 +778,7 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrSimpleArrayTypeReference : NdrBaseArrayTypeReference
     {
-        public int TotalSize { get; private set; }
+        public int TotalSize { get; }
 
         internal NdrSimpleArrayTypeReference(NdrParseContext context, NdrFormatCharacter format, BinaryReader reader) : base(context, format, reader)
         {
@@ -810,8 +810,8 @@ namespace NtApiDotNet.Ndr
     {
         private int _element_size;
 
-        public NdrCorrelationDescriptor ConformanceDescriptor { get; private set; }
-        public NdrCorrelationDescriptor VarianceDescriptor { get; private set; }
+        public NdrCorrelationDescriptor ConformanceDescriptor { get; }
+        public NdrCorrelationDescriptor VarianceDescriptor { get; }
 
         internal NdrConformantArrayTypeReference(NdrFormatCharacter format, NdrParseContext context,
             BinaryReader reader) : base(context, format, reader)
@@ -870,9 +870,9 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrBogusArrayTypeReference : NdrBaseArrayTypeReference
     {
-        public int NumberofElements { get; private set; }
-        public NdrCorrelationDescriptor ConformanceDescriptor { get; private set; }
-        public NdrCorrelationDescriptor VarianceDescriptor { get; private set; }
+        public int NumberofElements { get; }
+        public NdrCorrelationDescriptor ConformanceDescriptor { get; }
+        public NdrCorrelationDescriptor VarianceDescriptor { get; }
 
         internal NdrBogusArrayTypeReference(NdrParseContext context, BinaryReader reader)
             : base(context, NdrFormatCharacter.FC_BOGUS_ARRAY, reader)
@@ -928,11 +928,11 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrVaryingArrayTypeReference : NdrBaseArrayTypeReference
     {
-        private int _element_size;
+        private readonly int _element_size;
 
-        public int TotalSize { get; private set; }
-        public int NumberofElements { get; private set; }
-        public NdrCorrelationDescriptor VarianceDescriptor { get; private set; }
+        public int TotalSize { get; }
+        public int NumberofElements { get; }
+        public NdrCorrelationDescriptor VarianceDescriptor { get; }
 
         internal NdrVaryingArrayTypeReference(NdrParseContext context, NdrFormatCharacter format, BinaryReader reader)
             : base(context, format, reader)
@@ -1024,9 +1024,9 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrPointerInfoInstance
     {
-        public int OffsetInMemory { get; private set; }
-        public int OffsetInBuffer { get; private set; }
-        public NdrPointerTypeReference PointerType { get; private set; }
+        public int OffsetInMemory { get; }
+        public int OffsetInBuffer { get; }
+        public NdrPointerTypeReference PointerType { get; }
 
         internal NdrPointerInfoInstance(NdrParseContext context, BinaryReader reader)
         {
@@ -1039,12 +1039,12 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrPointerInfoTypeReference : NdrBaseTypeReference
     {
-        public NdrFormatCharacter BasePointerType { get; private set; }
-        public NdrFormatCharacter SubPointerType { get; private set; }
+        public NdrFormatCharacter BasePointerType { get; } 
+        public NdrFormatCharacter SubPointerType { get; }
         public int Iterations { get; private set; }
         public int Increment { get; private set; }
         public int OffsetToArray { get; private set; }
-        public IEnumerable<NdrPointerInfoInstance> PointerInstances { get; private set; }
+        public IEnumerable<NdrPointerInfoInstance> PointerInstances { get; }
 
         private IEnumerable<NdrPointerInfoInstance> ReadComplex(NdrParseContext context, BinaryReader reader, bool has_interations)
         {
@@ -1095,9 +1095,9 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrRangeTypeReference : NdrBaseTypeReference
     {
-        public NdrBaseTypeReference RangeType { get; private set; }
-        public int MinValue { get; private set; }
-        public int MaxValue { get; private set; }
+        public NdrBaseTypeReference RangeType { get; }
+        public int MinValue { get; }
+        public int MaxValue { get; }
 
         public NdrRangeTypeReference(BinaryReader reader) : base(NdrFormatCharacter.FC_RANGE)
         {
@@ -1150,8 +1150,8 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public sealed class NdrUnionArm
     {
-        public NdrBaseTypeReference ArmType { get; private set; }
-        public int CaseValue { get; private set; }
+        public NdrBaseTypeReference ArmType { get; }
+        public int CaseValue { get; }
 
         internal NdrUnionArm(NdrParseContext context, BinaryReader reader)
         {
@@ -1185,10 +1185,10 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public sealed class NdrUnionArms
     {
-        public int MemorySize { get; private set; }
-        public IEnumerable<NdrUnionArm> Arms { get; private set; }
-        public NdrBaseTypeReference DefaultArm { get; private set; }
-        public int Alignment { get; private set; }
+        public int MemorySize { get; }
+        public IEnumerable<NdrUnionArm> Arms { get; }
+        public NdrBaseTypeReference DefaultArm { get; }
+        public int Alignment { get; }
 
         internal NdrUnionArms(NdrParseContext context, BinaryReader reader)
         {
@@ -1228,10 +1228,10 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public sealed class NdrUnionTypeReference : NdrComplexTypeReference
     {
-        public NdrFormatCharacter SwitchType { get; private set; }
-        public int SwitchIncrement { get; private set; }
-        public NdrUnionArms Arms { get; private set; }
-        public NdrCorrelationDescriptor Correlation { get; private set; }
+        public NdrFormatCharacter SwitchType { get; }
+        public int SwitchIncrement { get; }
+        public NdrUnionArms Arms { get; }
+        public NdrCorrelationDescriptor Correlation { get; }
 
         internal NdrUnionTypeReference(NdrFormatCharacter format, NdrParseContext context, BinaryReader reader)
             : base($"Union_{context.TypeCache.GetNextComplexId()}", format)
@@ -1414,8 +1414,8 @@ namespace NtApiDotNet.Ndr
     {
         // IDL is typedef pipe TYPE CHAR_PIPE_TYPE;
 
-        public NdrBaseTypeReference BaseType { get; private set; }
-        public byte Alignment { get; private set; }
+        public NdrBaseTypeReference BaseType { get; }
+        public byte Alignment { get; }
 
         internal NdrPipeTypeReference(NdrParseContext context, BinaryReader reader)
             : base(NdrFormatCharacter.FC_PIPE)
@@ -1438,7 +1438,7 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrBlkHoleTypeReference : NdrBaseTypeReference
     {
-        public NdrBlackholeFlags Flags { get; private set; }
+        public NdrBlackholeFlags Flags { get; }
 
         internal NdrBlkHoleTypeReference(NdrParseContext context, BinaryReader reader)
             : base(NdrFormatCharacter.FC_BLKHOLE)
@@ -1460,7 +1460,7 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public abstract class NdrBaseTypeReference
     {
-        public NdrFormatCharacter Format { get; private set; }
+        public NdrFormatCharacter Format { get; }
 
         protected NdrBaseTypeReference(NdrFormatCharacter format)
         {
@@ -1509,7 +1509,7 @@ namespace NtApiDotNet.Ndr
 
         private class StandardUserMarshaler
         {
-            public NdrKnownTypes KnownType { get; private set; }
+            public NdrKnownTypes KnownType { get; }
             public bool IsMatch(IntPtr ptr)
             {
                 return ptr == _size_ptr || ptr == _size_64_ptr;
