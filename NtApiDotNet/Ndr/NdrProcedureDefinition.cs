@@ -64,7 +64,11 @@ namespace NtApiDotNet.Ndr
         public NdrBaseTypeReference Type { get; }
         public int ServerAllocSize { get; }
         public int Offset { get; }
-        public string Name { get; set;  }
+        public string Name { get; set; }
+        public bool IsIn => Attributes.HasFlag(NdrParamAttributes.IsIn);
+        public bool IsOut => Attributes.HasFlag(NdrParamAttributes.IsOut);
+        public bool IsInOut => IsIn && IsOut;
+        public bool IsSimpleRef => Attributes.HasFlag(NdrParamAttributes.IsSimpleRef);
 
         private const ushort ServerAllocSizeMask = 0xe000;
 
