@@ -93,7 +93,7 @@ namespace NtApiDotNet.Ndr
             }
             else
             {
-                Type = new NdrBaseTypeReference((NdrFormatCharacter)reader.ReadByte());
+                Type = new NdrSimpleTypeReference((NdrFormatCharacter)reader.ReadByte());
                 // Remove padding.
                 reader.ReadByte();
             }
@@ -230,7 +230,7 @@ namespace NtApiDotNet.Ndr
                 handle_type = (NdrFormatCharacter)reader.ReadByte();
                 NdrHandleParamFlags flags = (NdrHandleParamFlags)reader.ReadByte();
                 ushort handle_offset = reader.ReadUInt16();
-                NdrBaseTypeReference base_type = new NdrBaseTypeReference(handle_type);
+                NdrBaseTypeReference base_type = new NdrSimpleTypeReference(handle_type);
                 if (handle_type == NdrFormatCharacter.FC_BIND_PRIMITIVE)
                 {
                     flags = flags != 0 ? NdrHandleParamFlags.HANDLE_PARAM_IS_VIA_PTR : 0;
@@ -259,7 +259,7 @@ namespace NtApiDotNet.Ndr
             }
             else
             {
-                Handle = new NdrProcedureHandleParameter(0, new NdrBaseTypeReference(handle_type), 0, false, 0);
+                Handle = new NdrProcedureHandleParameter(0, new NdrSimpleTypeReference(handle_type), 0, false, 0);
             }
 
             ushort constant_client_buffer_size = reader.ReadUInt16();

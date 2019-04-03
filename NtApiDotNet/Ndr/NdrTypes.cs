@@ -237,7 +237,7 @@ namespace NtApiDotNet.Ndr
             Flags = (NdrPointerFlags)reader.ReadByte();
             if ((Flags & NdrPointerFlags.FC_SIMPLE_POINTER) == NdrPointerFlags.FC_SIMPLE_POINTER)
             {
-                Type = new NdrBaseTypeReference(ReadFormat(reader));
+                Type = new NdrSimpleTypeReference(ReadFormat(reader));
             }
             else
             {
@@ -1092,7 +1092,7 @@ namespace NtApiDotNet.Ndr
 
         public NdrRangeTypeReference(BinaryReader reader) : base(NdrFormatCharacter.FC_RANGE)
         {
-            RangeType = new NdrBaseTypeReference((NdrFormatCharacter)reader.ReadByte());
+            RangeType = new NdrSimpleTypeReference((NdrFormatCharacter)reader.ReadByte());
             MinValue = reader.ReadInt32();
             MaxValue = reader.ReadInt32();
         }
@@ -1155,11 +1155,11 @@ namespace NtApiDotNet.Ndr
             ushort type = reader.ReadUInt16();
             if ((type & 0x8F00) == 0x8000)
             {
-                return new NdrBaseTypeReference((NdrFormatCharacter)(type & 0xFF));
+                return new NdrSimpleTypeReference((NdrFormatCharacter)(type & 0xFF));
             }
             else if (type == 0)
             {
-                return new NdrBaseTypeReference(NdrFormatCharacter.FC_ZERO);
+                return new NdrSimpleTypeReference(NdrFormatCharacter.FC_ZERO);
             }
             else if (type == 0xFFFF)
             {
@@ -1258,7 +1258,7 @@ namespace NtApiDotNet.Ndr
 
             if (Format == NdrFormatCharacter.FC_ENCAPSULATED_UNION)
             {
-                builder.Append(' ', indent).AppendFormat("{0} Selector;", new NdrBaseTypeReference(SwitchType).FormatType(context)).AppendLine();
+                builder.Append(' ', indent).AppendFormat("{0} Selector;", new NdrSimpleTypeReference(SwitchType).FormatType(context)).AppendLine();
                 builder.Append(' ', indent).AppendLine("union { ");
                 indent *= 2;
             }
@@ -1279,7 +1279,7 @@ namespace NtApiDotNet.Ndr
                 builder.Append(' ', indent).AppendLine("/* default */");
                 if (Arms.DefaultArm.Format != NdrFormatCharacter.FC_ZERO)
                 {
-                    builder.Append(' ', indent).AppendFormat("{0} Default;", new NdrBaseTypeReference(Arms.DefaultArm.Format).FormatType(context)).AppendLine();
+                    builder.Append(' ', indent).AppendFormat("{0} Default;", new NdrSimpleTypeReference(Arms.DefaultArm.Format).FormatType(context)).AppendLine();
                 }
             }
 
@@ -1449,11 +1449,11 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrBaseTypeReference
+    public abstract class NdrBaseTypeReference
     {
         public NdrFormatCharacter Format { get; private set; }
 
-        protected internal NdrBaseTypeReference(NdrFormatCharacter format)
+        protected NdrBaseTypeReference(NdrFormatCharacter format)
         {
             Format = format;
         }
@@ -1809,7 +1809,7 @@ namespace NtApiDotNet.Ndr
                     case NdrFormatCharacter.FC_ERROR_STATUS_T:
                     case NdrFormatCharacter.FC_INT3264:
                     case NdrFormatCharacter.FC_UINT3264:
-                        return new NdrBaseTypeReference(format);
+                        return new NdrSimpleTypeReference(format);
                     case NdrFormatCharacter.FC_END:
                         return null;
                     case NdrFormatCharacter.FC_OP:
@@ -1923,6 +1923,14 @@ namespace NtApiDotNet.Ndr
             // Replace type cache entry with real value.
             context.TypeCache.Cache[type_ofs] = ret;
             return ret;
+        }
+    }
+
+    public sealed class NdrSimpleTypeReference : NdrBaseTypeReference
+    {
+        internal NdrSimpleTypeReference(NdrFormatCharacter format) 
+            : base(format)
+        {
         }
     }
 
