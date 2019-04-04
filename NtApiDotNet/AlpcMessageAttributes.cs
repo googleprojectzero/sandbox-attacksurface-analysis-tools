@@ -295,6 +295,25 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Convert this set of attributes to one which can be used to free on continuation required.
+        /// </summary>
+        /// <param name="attributes">The attributes to </param>
+        /// <returns>The send attributes.</returns>
+        public AlpcSendMessageAttributes ToContinuationAttributes(AlpcMessageAttributeFlags attributes)
+        {
+            AlpcSendMessageAttributes ret = new AlpcSendMessageAttributes();
+            if ((ValidAttributes & attributes & AlpcMessageAttributeFlags.View) != 0)
+            {
+                ret.Add(new AlpcDataViewMessageAttribute(0, 0, 0, AlpcDataViewAttrFlags.ReleaseView));
+            }
+            if ((ValidAttributes & attributes & AlpcMessageAttributeFlags.Handle) != 0)
+            {
+                ret.Add(new AlpcHandleMessageAttribute());
+            }
+            return ret;
+        }
+
+        /// <summary>
         /// Checks if an attribute flag is valid.
         /// </summary>
         /// <param name="attribute">The attribute to test.</param>
@@ -1024,9 +1043,17 @@ namespace NtApiDotNet
 
         internal void SetHandleAttribute(AlpcHandleMessageAttribute attribute)
         {
-            // If not handle attributes then just leave as is.
+            // If no handle attributes then just zero the buffer.
             if (!attribute.Handles.Any())
             {
+                var attr = GetAttribute<AlpcHandleAttr>(AlpcMessageAttributeFlags.Handle);
+                attr.Result = new AlpcHandleAttr()
+                {
+                    Flags = 0,
+                    ObjectType = 0,
+                    Handle = IntPtr.Zero,
+                    DesiredAccess = 0
+                };
                 return;
             }
 
