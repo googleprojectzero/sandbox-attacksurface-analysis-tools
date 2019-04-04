@@ -206,7 +206,13 @@ namespace NtApiDotNet
         /// <summary>
         /// Indicates that the message requires a reply (otherwise things can leak).
         /// </summary>
-        public bool RequiresReply => (MessageTypeFlags & AlpcMessageTypeFlags.RequiresReply) != 0;
+        public bool ContinuationRequired => (MessageTypeFlags & AlpcMessageTypeFlags.ContinuationRequired) != 0;
+
+        /// <summary>
+        /// Indicates that the message requires a reply (obsolete).
+        /// </summary>
+        [Obsolete("Use ContinuationRequired")]
+        public bool RequiresReply => ContinuationRequired;
 
         /// <summary>
         /// Get direct status for the message.

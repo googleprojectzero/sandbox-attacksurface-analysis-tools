@@ -85,7 +85,7 @@ namespace NtApiDotNet
     {
         None = 0,
         Unknown1000 = 0x1000,
-        RequiresReply = 0x2000,
+        ContinuationRequired = 0x2000,
         Unknown4000 = 0x4000,
         Unknown8000 = 0x8000,
     }
