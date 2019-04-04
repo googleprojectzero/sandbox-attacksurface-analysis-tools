@@ -552,7 +552,7 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrStructureMember
     {
-        public NdrBaseTypeReference MemberType { get; private set; }
+        public NdrBaseTypeReference MemberType { get; internal set; }
         public int Offset { get; private set; }
         public string Name { get; set; }
 
@@ -578,27 +578,31 @@ namespace NtApiDotNet.Ndr
     public class NdrBaseStructureTypeReference : NdrComplexTypeReference
     {
         protected List<NdrBaseTypeReference> _base_members;
-
         private List<NdrStructureMember> _members;
 
         public int Alignment { get; }
         public int MemorySize { get; }
 
+        protected virtual List<NdrStructureMember> PopulateMembers()
+        {
+            List<NdrStructureMember> members = new List<NdrStructureMember>();
+            int current_offset = 0;
+            foreach (var type in _base_members)
+            {
+                if (!(type is NdrStructurePaddingTypeReference))
+                {
+                    members.Add(new NdrStructureMember(type, current_offset, $"Member{current_offset:X}"));
+                }
+                current_offset += type.GetSize();
+            }
+            return members;
+        }
+
         private List<NdrStructureMember> GetMembers()
         {
             if (_members == null)
             {
-                List<NdrStructureMember> members = new List<NdrStructureMember>();
-                int current_offset = 0;
-                foreach (var type in _base_members)
-                {
-                    if (!(type is NdrStructurePaddingTypeReference))
-                    {
-                        members.Add(new NdrStructureMember(type, current_offset, $"Member{current_offset:X}"));
-                    }
-                    current_offset += type.GetSize();
-                }
-                _members = members;
+                _members = PopulateMembers();
             }
             return _members;
         }
@@ -678,6 +682,22 @@ namespace NtApiDotNet.Ndr
             reader.ReadByte();
             PointerInfo = new NdrPointerInfoTypeReference(context, reader);
             ReadMemberInfo(context, reader);
+        }
+
+        protected override List<NdrStructureMember> PopulateMembers()
+        {
+            var members = base.PopulateMembers();
+            var pointer_types = PointerInfo.PointerInstances.ToDictionary(p => p.OffsetInMemory);
+
+            foreach (var member in members)
+            {
+                if (pointer_types.ContainsKey(member.Offset))
+                {
+                    member.MemberType = pointer_types[member.Offset].PointerType;
+                }
+            }
+
+            return members;
         }
     }
 
