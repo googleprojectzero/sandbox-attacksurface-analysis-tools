@@ -49,5 +49,33 @@ namespace NtApiDotNet.Win32.RpcClient
         /// The class name of the client.
         /// </summary>
         public string ClientName { get; set; }
+
+        private Tuple<RpcClientBuilderFlags, string, string> CreateTuple()
+        {
+            return Tuple.Create(Flags, NamespaceName, ClientName);
+        }
+
+        /// <summary>
+        /// GetHashCode implementation.
+        /// </summary>
+        /// <returns>The hash code.</returns>
+        public override int GetHashCode()
+        {
+            return CreateTuple().GetHashCode();
+        }
+
+        /// <summary>
+        /// Equals implementation.
+        /// </summary>
+        /// <param name="obj">The object to compare against.</param>
+        /// <returns>True if the object is equal.</returns>
+        public override bool Equals(object obj)
+        {
+            if (obj is RpcClientBuilderArguments left)
+            {
+                return CreateTuple().Equals(left.CreateTuple());
+            }
+            return false;
+        }
     }
 }

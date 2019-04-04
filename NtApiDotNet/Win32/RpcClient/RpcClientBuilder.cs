@@ -31,7 +31,8 @@ namespace NtApiDotNet.Win32.RpcClient
     public sealed class RpcClientBuilder
     {
         #region Private Members
-        private static readonly Dictionary<RpcServer, Assembly> _compiled_clients = new Dictionary<RpcServer, Assembly>();
+        private static readonly Dictionary<Tuple<RpcServer, RpcClientBuilderArguments>, Assembly> _compiled_clients 
+            = new Dictionary<Tuple<RpcServer, RpcClientBuilderArguments>, Assembly>();
         private readonly Dictionary<NdrBaseTypeReference, RpcTypeDescriptor> _type_descriptors;
         private readonly RpcServer _server;
         private readonly RpcClientBuilderArguments _args;
@@ -563,11 +564,12 @@ namespace NtApiDotNet.Win32.RpcClient
                 return Compile(new RpcClientBuilder(server, args).Generate());
             }
 
-            if (!_compiled_clients.ContainsKey(server))
+            var key = Tuple.Create(server, args);
+            if (!_compiled_clients.ContainsKey(key))
             {
-                _compiled_clients[server] = Compile(new RpcClientBuilder(server, args).Generate());
+                _compiled_clients[key] = Compile(new RpcClientBuilder(server, args).Generate());
             }
-            return _compiled_clients[server];
+            return _compiled_clients[key];
         }
 
         /// <summary>
