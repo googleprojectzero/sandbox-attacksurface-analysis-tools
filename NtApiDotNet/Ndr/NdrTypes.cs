@@ -225,7 +225,7 @@ namespace NtApiDotNet.Ndr
         public NdrBaseTypeReference Type { get; private set; }
         public NdrPointerFlags Flags { get; }
 
-        internal NdrPointerTypeReference(NdrBaseTypeReference type) 
+        internal NdrPointerTypeReference(NdrBaseTypeReference type)
             : base(NdrFormatCharacter.FC_POINTER)
         {
             Type = type;
@@ -319,10 +319,10 @@ namespace NtApiDotNet.Ndr
     {
         public NdrCorrelationDescriptor ConformanceDescriptor { get; }
 
-        internal NdrConformantStringTypeReference(NdrParseContext context, 
+        internal NdrConformantStringTypeReference(NdrParseContext context,
             NdrFormatCharacter format, BinaryReader reader) : base(format)
         {
-            NdrFormatCharacter padding = (NdrFormatCharacter) reader.ReadByte();
+            NdrFormatCharacter padding = (NdrFormatCharacter)reader.ReadByte();
             if (padding == NdrFormatCharacter.FC_STRING_SIZED)
             {
                 ConformanceDescriptor = new NdrCorrelationDescriptor(context, reader);
@@ -1059,7 +1059,7 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrPointerInfoTypeReference : NdrBaseTypeReference
     {
-        public NdrFormatCharacter BasePointerType { get; } 
+        public NdrFormatCharacter BasePointerType { get; }
         public NdrFormatCharacter SubPointerType { get; }
         public int Iterations { get; private set; }
         public int Increment { get; private set; }
@@ -1418,7 +1418,7 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public class NdrHandleTypeReference : NdrBaseTypeReference
     {
-        internal NdrHandleTypeReference(NdrFormatCharacter format) 
+        internal NdrHandleTypeReference(NdrFormatCharacter format)
             : base(format)
         {
         }
@@ -1796,7 +1796,7 @@ namespace NtApiDotNet.Ndr
                 case NdrFormatCharacter.FC_LONG:
                 case NdrFormatCharacter.FC_ULONG:
                 case NdrFormatCharacter.FC_FLOAT:
-                    // ENUM16 is still emitted as a 32 bit value.
+                // ENUM16 is still emitted as a 32 bit value.
                 case NdrFormatCharacter.FC_ENUM16:
                 case NdrFormatCharacter.FC_ENUM32:
                 case NdrFormatCharacter.FC_ERROR_STATUS_T:
@@ -1955,9 +1955,10 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
     public sealed class NdrSimpleTypeReference : NdrBaseTypeReference
     {
-        internal NdrSimpleTypeReference(NdrFormatCharacter format) 
+        internal NdrSimpleTypeReference(NdrFormatCharacter format)
             : base(format)
         {
         }
