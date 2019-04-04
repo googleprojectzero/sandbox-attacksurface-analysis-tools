@@ -4023,19 +4023,16 @@ function New-AppContainerProfile {
 Get an ALPC RPC client object based on a parsed RPC server.
 .DESCRIPTION
 This cmdlet creates a new ALPC RPC client from a parsed RPC server. The client object contains methods
-to call RPC methods. The client is automatically connected.
+to call RPC methods. The client starts off disconnected. You need to pass the client to Connect-RpcAlpcClient to
+connect to the server.
 .PARAMETER Server
 Specify the RPC server to base the client on.
-.PARAMETER AlpcPath
-Specify the path to the ALPC server port. If not specified this will lookup the endpoint from the endpoint mapper.
 .PARAMETER NamespaceName
 Specify the name of the compiled namespace for the client.
 .PARAMETER ClientName
 Specify the class name of the compiled client.
 .PARAMETER IgnoreCache
 Specify to ignore the compiled client cache and regenerate the source code.
-.PARAMETER SecurityQualityOfService
-Specify the security quality of service for the connection.
 .INPUTS
 None
 .OUTPUTS
@@ -4043,20 +4040,15 @@ NtApiDotNet.Win32.RpcAlpcClient
 .EXAMPLE
 Get-RpcAlpcClient -Server $Server
 Create a new RPC ALPC client from a parsed RPC server.
-.EXAMPLE
-Get-RpcAlpcClient -Server $Server -AlpcPath \BaseNamedObjects\RPC_PORT
-Create a new RPC ALPC client from a parsed RPC server and connect to a specified port.
 #>
 function Get-RpcAlpcClient {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0)]
         [NtApiDotNet.Win32.RpcServer]$Server,
-        [string]$AlpcPath,
         [string]$NamespaceName,
         [string]$ClientName,
-        [switch]$IgnoreCache,
-        [NtApiDotNet.SecurityQualityOfService]$SecurityQualityOfService
+        [switch]$IgnoreCache
     )
 
     $args = [NtApiDotNet.Win32.RpcClient.RpcClientBuilderArguments]::new();
@@ -4064,7 +4056,45 @@ function Get-RpcAlpcClient {
     $args.ClientName = $ClientName
     $args.Flags = "GenerateValueConstructors"
 
-    [NtApiDotNet.Win32.RpcClient.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache, $AlpcPath, $SecurityQualityOfService)
+    [NtApiDotNet.Win32.RpcClient.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache)
+}
+
+<#
+.SYNOPSIS
+Connects an ALPC RPC client to an ALPC port.
+.DESCRIPTION
+This cmdlet connects an ALPC RPC client to an ALPC port.
+.PARAMETER Client
+Specify the RPC client to connect.
+.PARAMETER AlpcPath
+Specify the path to the ALPC server port. If not specified this will lookup the endpoint from the endpoint mapper.
+.PARAMETER SecurityQualityOfService
+Specify the security quality of service for the connection.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Connect-RpcAlpcClient -Client $Client
+Connect an RPC ALPC client, looking up the path using the endpoint mapper.
+.EXAMPLE
+Connect-RpcAlpcClient -Client $Client -AlpcPath "\RPC Control\ABC"
+Connect an RPC ALPC client with an explicit path.
+.EXAMPLE
+Connect-RpcAlpcClient -Client $Client -SecurityQualityOfService $(New-NtSecurityQualityOfService -ImpersonationLevel Anonymous)
+Connect an RPC ALPC client with anonymous impersonation level.
+#>
+function Connect-RpcAlpcClient {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.RpcAlpcClient]$Client,
+        [parameter(Position = 1)]
+        [string]$AlpcPath,
+        [NtApiDotNet.SecurityQualityOfService]$SecurityQualityOfService
+    )
+
+    $Client.Connect($AlpcPath, $SecurityQualityOfService)
 }
 
 <#

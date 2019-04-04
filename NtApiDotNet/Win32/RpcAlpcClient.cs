@@ -25,7 +25,9 @@ namespace NtApiDotNet.Win32
     public abstract class RpcAlpcClient : IDisposable
     {
         #region Private Members
-        private readonly NtAlpcClient _client;
+        private readonly Guid _interface_id;
+        private readonly Version _interface_version;
+        private NtAlpcClient _client;
         private int _call_id;
 
         private static AlpcPortAttributes CreatePortAttributes(SecurityQualityOfService sqos)
@@ -44,7 +46,7 @@ namespace NtApiDotNet.Win32
             };
         }
 
-        private static NtAlpcClient Connect(string path, SecurityQualityOfService sqos)
+        private static NtAlpcClient ConnectPort(string path, SecurityQualityOfService sqos)
         {
             AlpcReceiveMessageAttributes in_attr = new AlpcReceiveMessageAttributes();
             return NtAlpcClient.Connect(path, null,
@@ -66,9 +68,9 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private void BindInterface(Guid interface_id, Version interface_version)
+        private void BindInterface()
         {
-            AlpcMessageType<LRPC_BIND_MESSAGE> bind_msg = new AlpcMessageType<LRPC_BIND_MESSAGE>(new LRPC_BIND_MESSAGE(interface_id, interface_version));
+            AlpcMessageType<LRPC_BIND_MESSAGE> bind_msg = new AlpcMessageType<LRPC_BIND_MESSAGE>(new LRPC_BIND_MESSAGE(_interface_id, _interface_version));
             AlpcMessageRaw resp_msg = new AlpcMessageRaw(0x1000);
 
             using (AlpcReceiveMessageAttributes recv_attr = new AlpcReceiveMessageAttributes())
@@ -86,9 +88,9 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private static string LookupEndpoint(Guid interface_id, Version interface_version)
+        private string LookupEndpoint()
         {
-            return RpcEndpointMapper.QueryAlpcEndpoints(interface_id, interface_version).First().EndpointPath;
+            return RpcEndpointMapper.QueryAlpcEndpoints(_interface_id, _interface_version).First().EndpointPath;
         }
 
         private NdrUnmarshalBuffer HandleLargeResponse(AlpcMessageRaw message, SafeStructureInOutBuffer<LRPC_LARGE_RESPONSE_MESSAGE> response, AlpcReceiveMessageAttributes attributes)
@@ -211,49 +213,24 @@ namespace NtApiDotNet.Win32
         /// </summary>
         /// <param name="interface_id">The interface ID.</param>
         /// <param name="interface_version">Version of the interface.</param>
-        /// <param name="sqos">Security quality of service for connection.</param>
-        /// <remarks>The ALPC endpoint will be looked up in the endpoint mapper.</remarks>
-        protected RpcAlpcClient(Guid interface_id, Version interface_version, SecurityQualityOfService sqos) 
-            : this(null, interface_id, interface_version, sqos)
+        protected RpcAlpcClient(Guid interface_id, Version interface_version)
         {
+            _interface_id = interface_id;
+            _interface_version = interface_version;
         }
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="path">Path to the ALPC to connect to. If null then endpoint will be looked up from the endpoint mapper.</param>
-        /// <param name="interface_id">The interface ID.</param>
-        /// <param name="interface_version">Version of the interface.</param>
-        /// <param name="sqos">Security quality of service for connection.</param>
-        protected RpcAlpcClient(string path, Guid interface_id, Version interface_version, SecurityQualityOfService sqos)
-        {
-            if (string.IsNullOrEmpty(path))
-            {
-                path = LookupEndpoint(interface_id, interface_version);
-            }
-            else if (!path.StartsWith(@"\"))
-            {
-                path = $@"\RPC Control\{path}";
-            }
-            _client = Connect(path, sqos);
-            _call_id = 1;
-            BindInterface(interface_id, interface_version);
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="path">Path to the ALPC to connect to. If null then endpoint will be looked up from the endpoint mapper.</param>
-        /// <param name="interface_id">The interface ID.</param>
+        /// <param name="interface_id">The interface ID as a string.</param>
         /// <param name="major">Major version of the interface.</param>
         /// <param name="minor">Minor version of the interface.</param>
-        /// <param name="sqos">Security quality of service for connection.</param>
-        protected RpcAlpcClient(string path, string interface_id, int major, int minor, SecurityQualityOfService sqos) 
-            : this(path, new Guid(interface_id), new Version(major, minor), sqos)
+        protected RpcAlpcClient(string interface_id, int major, int minor) 
+            : this(new Guid(interface_id), new Version(major, minor))
         {
         }
-        #endregion
 
+        #endregion
 
         #region Protected Methods
 
@@ -265,6 +242,11 @@ namespace NtApiDotNet.Win32
         /// <returns>Unmarshal NDR buffer for the result.</returns>
         protected NdrUnmarshalBuffer SendReceive(int proc_num, NdrMarshalBuffer ndr_buffer)
         {
+            if (!Connected)
+            {
+                throw new InvalidOperationException("RPC client is not connected.");
+            }
+
             byte[] buffer = ndr_buffer.ToArray();
             if (buffer.Length > 0xF00)
             {
@@ -275,20 +257,72 @@ namespace NtApiDotNet.Win32
 
         #endregion
 
+        #region Public Properties
+
+        /// <summary>
+        /// Get whether the client is connected or not.
+        /// </summary>
+        public bool Connected => _client != null && !_client.Handle.IsInvalid;
+        #endregion
+
         #region Public Methods
+
+        /// <summary>
+        /// Connect the client to an ALPC port.
+        /// </summary>
+        /// <param name="alpc_path">The path to the ALPC port.</param>
+        /// <param name="security_quality_of_service">The security quality of service for the port.</param>
+        public void Connect(string alpc_path, SecurityQualityOfService security_quality_of_service)
+        {
+            if (Connected)
+            {
+                throw new InvalidOperationException("RPC client is already connected.");
+            }
+
+            if (string.IsNullOrEmpty(alpc_path))
+            {
+                alpc_path = LookupEndpoint();
+            }
+            else if (!alpc_path.StartsWith(@"\"))
+            {
+                alpc_path = $@"\RPC Control\{alpc_path}";
+            }
+            _client = ConnectPort(alpc_path, security_quality_of_service);
+            _call_id = 1;
+            BindInterface();
+        }
+
+        /// <summary>
+        /// Connect the client to an ALPC port.
+        /// </summary>
+        /// <param name="alpc_path">The path to the ALPC port. If an empty string the endpoint will be looked up in the endpoint mapped.</param>
+        public void Connect(string alpc_path)
+        {
+            Connect(alpc_path, null);
+        }
+
+        /// <summary>
+        /// Connect the client to an ALPC port.
+        /// </summary>
+        /// <remarks>The ALPC endpoint will be looked up in the endpoint mapper.</remarks>
+        public void Connect()
+        {
+            Connect(null);
+        }
 
         /// <summary>
         /// Dispose of the client.
         /// </summary>
         public virtual void Dispose()
         {
-            _client.Dispose();
+            _client?.Dispose();
+            _client = null;
         }
 
         /// <summary>
-        /// Close the client.
+        /// Disconnect the client.
         /// </summary>
-        public void Close()
+        public void Disconnect()
         {
             Dispose();
         }

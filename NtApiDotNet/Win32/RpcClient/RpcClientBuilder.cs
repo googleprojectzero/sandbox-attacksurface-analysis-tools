@@ -367,21 +367,9 @@ namespace NtApiDotNet.Win32.RpcClient
             type.BaseTypes.Add(typeof(RpcAlpcClient));
 
             CodeConstructor constructor = type.AddConstructor(MemberAttributes.Public | MemberAttributes.Final);
-            constructor.AddParam(typeof(string), "alpc_path");
-            constructor.AddParam(typeof(SecurityQualityOfService), "sqos");
-            constructor.BaseConstructorArgs.Add(CodeGenUtils.GetVariable("alpc_path"));
             constructor.BaseConstructorArgs.Add(CodeGenUtils.GetPrimitive(_server.InterfaceId.ToString()));
             constructor.BaseConstructorArgs.Add(CodeGenUtils.GetPrimitive(_server.InterfaceVersion.Major));
             constructor.BaseConstructorArgs.Add(CodeGenUtils.GetPrimitive(_server.InterfaceVersion.Minor));
-            constructor.BaseConstructorArgs.Add(CodeGenUtils.GetVariable("sqos"));
-
-            constructor = type.AddConstructor(MemberAttributes.Public | MemberAttributes.Final);
-            constructor.AddParam(typeof(string), "alpc_path");
-            constructor.ChainedConstructorArgs.Add(CodeGenUtils.GetVariable("alpc_path"));
-            constructor.ChainedConstructorArgs.Add(CodeGenUtils.GetPrimitive(null));
-
-            constructor = type.AddConstructor(MemberAttributes.Public | MemberAttributes.Final);
-            constructor.ChainedConstructorArgs.Add(CodeGenUtils.GetPrimitive(null));
 
             foreach (var proc in _server.Procedures)
             {
@@ -389,7 +377,7 @@ namespace NtApiDotNet.Win32.RpcClient
                 RpcTypeDescriptor return_type = GetTypeDescriptor(proc.ReturnValue.Type);
                 if (return_type == null)
                 {
-                    method.ThrowNotImplemented("Return type unsupported");
+                    method.ThrowNotImplemented("Return type unsupported.");
                     continue;
                 }
 
@@ -468,11 +456,13 @@ namespace NtApiDotNet.Win32.RpcClient
         {
             CodeDomProvider provider = new CSharpCodeProvider();
             StringBuilder builder = new StringBuilder();
-            CodeGeneratorOptions options = new CodeGeneratorOptions();
-            options.IndentString = "    ";
-            options.BlankLinesBetweenMembers = false;
-            options.VerbatimOrder = true;
-            options.BracingStyle = "C";
+            CodeGeneratorOptions options = new CodeGeneratorOptions
+            {
+                IndentString = "    ",
+                BlankLinesBetweenMembers = false,
+                VerbatimOrder = true,
+                BracingStyle = "C"
+            };
             TextWriter writer = new StringWriter(builder);
             provider.GenerateCodeFromCompileUnit(unit, writer, options);
             return builder.ToString();
@@ -620,53 +610,25 @@ namespace NtApiDotNet.Win32.RpcClient
         /// </summary>
         /// <param name="server">The RPC server to base the client on.</param>
         /// <param name="ignore_cache">True to ignore cached assemblies.</param>
-        /// <param name="alpc_path">The ALPC path to connect to.</param>
-        /// <param name="args">Additional builder arguments.</param>
-        /// <param name="sqos">Security quality of service for connection.</param>
-        /// <returns>The created RPC client.</returns>
-        /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
-        public static RpcAlpcClient CreateClient(RpcServer server, RpcClientBuilderArguments args, bool ignore_cache, string alpc_path, SecurityQualityOfService sqos)
-        {
-            Type type = BuildAssembly(server, args, ignore_cache).GetTypes().Where(t => typeof(RpcAlpcClient).IsAssignableFrom(t)).First();
-            return (RpcAlpcClient)Activator.CreateInstance(type, alpc_path, sqos);
-        }
-
-        /// <summary>
-        /// Create an instance of an RPC client.
-        /// </summary>
-        /// <param name="server">The RPC server to base the client on.</param>
-        /// <param name="ignore_cache">True to ignore cached assemblies.</param>
         /// <param name="args">Additional builder arguments.</param>
         /// <returns>The created RPC client.</returns>
         /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
         public static RpcAlpcClient CreateClient(RpcServer server, RpcClientBuilderArguments args, bool ignore_cache)
         {
-            return CreateClient(server, args, ignore_cache, null, null);
+            Type type = BuildAssembly(server, args, ignore_cache).GetTypes().Where(t => typeof(RpcAlpcClient).IsAssignableFrom(t)).First();
+            return (RpcAlpcClient)Activator.CreateInstance(type);
         }
 
         /// <summary>
         /// Create an instance of an RPC client.
         /// </summary>
         /// <param name="server">The RPC server to base the client on.</param>
-        /// <param name="alpc_path">The ALPC path to connect to.</param>
         /// <param name="args">Additional builder arguments.</param>
         /// <returns>The created RPC client.</returns>
         /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
-        public static RpcAlpcClient CreateClient(RpcServer server, RpcClientBuilderArguments args, string alpc_path)
+        public static RpcAlpcClient CreateClient(RpcServer server, RpcClientBuilderArguments args)
         {
-            return CreateClient(server, args, false, alpc_path, null);
-        }
-
-        /// <summary>
-        /// Create an instance of an RPC client.
-        /// </summary>
-        /// <param name="server">The RPC server to base the client on.</param>
-        /// <param name="alpc_path">The ALPC path to connect to.</param>
-        /// <returns>The created RPC client.</returns>
-        /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
-        public static RpcAlpcClient CreateClient(RpcServer server, string alpc_path)
-        {
-            return CreateClient(server, new RpcClientBuilderArguments(), false, alpc_path, null);
+            return CreateClient(server, args, false);
         }
 
         /// <summary>
@@ -677,7 +639,7 @@ namespace NtApiDotNet.Win32.RpcClient
         /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
         public static RpcAlpcClient CreateClient(RpcServer server)
         {
-            return CreateClient(server, null);
+            return CreateClient(server, new RpcClientBuilderArguments());
         }
 
         #endregion
