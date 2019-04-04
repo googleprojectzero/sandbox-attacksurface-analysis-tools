@@ -468,22 +468,37 @@ namespace NtApiDotNet
     }
 
     /// <summary>
-    /// An ALPC message which holds a specific type.
+    /// An ALPC message which holds a specific type with optional trailing data.
     /// </summary>
     /// <typeparam name="T">The type representing the data.</typeparam>
     public sealed class AlpcMessageType<T> : AlpcMessage where T : struct
     {
+        #region Private Members
+        private static readonly int _header_size = Marshal.SizeOf(typeof(T));
+        private byte[] _trailing;
+        #endregion
+
         #region Constructors
-        private AlpcMessageType(bool receive_buffer)
+
+        private AlpcMessageType(bool receive_buffer, int total_length)
         {
-            int length = Marshal.SizeOf(typeof(T));
-            UpdateHeaderLength(receive_buffer ? 0 : length, length);
+            // Ensure length is at least the header size.
+            total_length = Math.Max(total_length, _header_size);
+            UpdateHeaderLength(receive_buffer ? 0 : total_length, total_length);
         }
 
         /// <summary>
         /// Constructor for a receive buffer.
         /// </summary>
-        public AlpcMessageType() : this(true)
+        public AlpcMessageType() : this(true, 0)
+        {
+        }
+
+        /// <summary>
+        /// Constructor for a receive buffer.
+        /// </summary>
+        /// <param name="total_length">Length of message. This will be rounded up to at least accomodate the header.</param>
+        public AlpcMessageType(int total_length) : this(true, total_length)
         {
         }
 
@@ -491,17 +506,44 @@ namespace NtApiDotNet
         /// Constructor for a send/receive buffer.
         /// </summary>
         /// <param name="value">The initial value to set.</param>
-        public AlpcMessageType(T value) : this(false)
+        /// <param name="trailing">Trailing data.</param>
+        public AlpcMessageType(T value, byte[] trailing) : this(false, 0)
+        {
+            Value = value;
+            Trailing = trailing;
+        }
+
+        /// <summary>
+        /// Constructor for a send/receive buffer.
+        /// </summary>
+        /// <param name="value">The initial value to set.</param>
+        public AlpcMessageType(T value) : this(false, 0)
         {
             Value = value;
         }
         #endregion
 
         #region Public Properties
+
         /// <summary>
         /// Get or set the type in the buffer.
         /// </summary>
         public T Value { get; set; }
+
+        /// <summary>
+        /// Get or set any trailing data after the value.
+        /// </summary>
+        public byte[] Trailing
+        {
+            get => _trailing;
+            set
+            {
+                _trailing = value;
+                int length = _header_size + _trailing.Length;
+                UpdateHeaderLength(length, length);
+            }
+        }
+
         #endregion
 
         #region Protected Members
@@ -514,6 +556,9 @@ namespace NtApiDotNet
         protected override void OnFromSafeBuffer(SafeAlpcPortMessageBuffer buffer, NtAlpc port)
         {
             Value = buffer.Data.Read<T>(0);
+
+            int trailing_length = buffer.Result.u1.DataLength - _header_size;
+            _trailing = buffer.Data.ReadBytes((ulong)_header_size, trailing_length);
         }
 
         /// <summary>
@@ -523,6 +568,10 @@ namespace NtApiDotNet
         protected override void OnToSafeBuffer(SafeAlpcPortMessageBuffer buffer)
         {
             buffer.Data.Write(0, Value);
+            if (_trailing != null && _trailing.Length > 0)
+            {
+                buffer.Data.WriteBytes((ulong)_header_size, _trailing);
+            }
         }
 
         #endregion
