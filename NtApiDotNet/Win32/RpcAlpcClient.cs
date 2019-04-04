@@ -151,6 +151,12 @@ namespace NtApiDotNet.Win32
                 Flags = LRPC_REQUEST_MESSAGE_FLAGS.ViewPresent
             };
 
+            if (ObjectUuid != Guid.Empty)
+            {
+                req_msg.ObjectUuid = ObjectUuid;
+                req_msg.Flags |= LRPC_REQUEST_MESSAGE_FLAGS.ObjectUuid;
+            }
+
             var send_msg = new AlpcMessageType<LRPC_LARGE_REQUEST_MESSAGE>(req_msg);
             var resp_msg = new AlpcMessageRaw(0x1000);
             AlpcSendMessageAttributes send_attr = new AlpcSendMessageAttributes();
@@ -186,6 +192,12 @@ namespace NtApiDotNet.Win32
                 CallId = _call_id++,
                 ProcNum = proc_num,
             };
+
+            if (ObjectUuid != Guid.Empty)
+            {
+                req_msg.ObjectUuid = ObjectUuid;
+                req_msg.Flags |= LRPC_REQUEST_MESSAGE_FLAGS.ObjectUuid;
+            }
 
             AlpcMessageType<LRPC_IMMEDIATE_REQUEST_MESSAGE> send_msg = new AlpcMessageType<LRPC_IMMEDIATE_REQUEST_MESSAGE>(req_msg, buffer);
             AlpcMessageRaw resp_msg = new AlpcMessageRaw(0x1000);
@@ -273,6 +285,11 @@ namespace NtApiDotNet.Win32
         /// Get the current Call ID.
         /// </summary>
         public int CallId => _call_id;
+
+        /// <summary>
+        /// Get or set the current Object UUID used for calls.
+        /// </summary>
+        public Guid ObjectUuid { get; set; }
 
         #endregion
 

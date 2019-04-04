@@ -454,6 +454,12 @@ namespace NtApiDotNet.Ndr
     {
         public Guid SyntaxGUID;
         public RPC_VERSION SyntaxVersion;
+
+        public RPC_SYNTAX_IDENTIFIER(Guid guid, ushort major, ushort minor)
+        {
+            SyntaxGUID = guid;
+            SyntaxVersion = new RPC_VERSION() { MajorVersion = major, MinorVersion = minor };
+        }
     }
 
     [StructLayout(LayoutKind.Sequential), CrossBitnessType(typeof(RPC_DISPATCH_TABLE32))]

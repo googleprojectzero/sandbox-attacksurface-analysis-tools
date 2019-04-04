@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Ndr;
 using System;
 using System.Runtime.InteropServices;
 
@@ -54,26 +55,6 @@ namespace NtApiDotNet.Win32.RpcClient
         UseDce = 1,
         UseNdr64 = 2,
         UseFakeNdr64 = 4
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct RPC_VERSION
-    {
-        public ushort MajorVersion;
-        public ushort MinorVersion;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct RPC_SYNTAX_IDENTIFIER
-    {
-        public Guid SyntaxGUID;
-        public RPC_VERSION SyntaxVersion;
-
-        public RPC_SYNTAX_IDENTIFIER(Guid guid, ushort major, ushort minor)
-        {
-            SyntaxGUID = guid;
-            SyntaxVersion = new RPC_VERSION() { MajorVersion = major, MinorVersion = minor };
-        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -171,13 +152,7 @@ namespace NtApiDotNet.Win32.RpcClient
         // 11 - 0x2C
         public int Unk2C;
         // 12 - 0x30
-        public int Unk30;
-        // 13 - 0x34
-        public int Unk34;
-        // 14 - 0x38
-        public int Unk38;
-        // 15 - 0x3C
-        public int Unk3C;
+        public Guid ObjectUuid; // Needs ObjectUuid flag set.
         // This is where LARGE_REQUEST starts, for IMMEDIATE_REQUEST this is the start of data.
         // 16 - 0x40
         public int LargeDataSize;
@@ -246,5 +221,4 @@ namespace NtApiDotNet.Win32.RpcClient
         // Trailing data is the Extended Error Info, which is NDR encoded.
         public int ExtendedErrorInfo;
     }
-
 }
