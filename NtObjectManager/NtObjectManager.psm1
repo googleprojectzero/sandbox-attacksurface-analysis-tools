@@ -3069,6 +3069,8 @@ Return the results as text rather than objects.
 When outputing as text remove comments from the output.
 .PARAMETER ParseClients
 Also parse client interface information, otherwise only servers are returned.
+.PARAMETER IgnoreSymbols
+Don't resolve any symbol information.
 .INPUTS
 string[] List of paths to DLLs.
 .OUTPUTS
@@ -3099,7 +3101,8 @@ function Get-RpcServer {
     [string]$SymbolPath,
     [switch]$AsText,
     [switch]$RemoveComments,
-    [switch]$ParseClients
+    [switch]$ParseClients,
+    [switch]$IgnoreSymbols
   )
 
   BEGIN {
@@ -3118,7 +3121,7 @@ function Get-RpcServer {
     try {
         $FullName = Resolve-Path -LiteralPath $FullName -ErrorAction Stop
         Write-Progress -Activity "Parsing RPC Servers" -CurrentOperation "$FullName"
-        $servers = [NtApiDotNet.Win32.RpcServer]::ParsePeFile($FullName, $DbgHelpPath, $SymbolPath, $ParseClients)
+        $servers = [NtApiDotNet.Win32.RpcServer]::ParsePeFile($FullName, $DbgHelpPath, $SymbolPath, $ParseClients, $IgnoreSymbols)
         if ($AsText) {
             foreach($server in $servers) {
                 $text = $server.FormatAsText($RemoveComments)

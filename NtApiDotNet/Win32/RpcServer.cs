@@ -42,7 +42,7 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of parsed RPC server.</returns>
         public static IEnumerable<RpcServer> ParsePeFile(string file, string dbghelp_path, string symbol_path)
         {
-            return ParsePeFile(file, dbghelp_path, symbol_path, false);
+            return ParsePeFile(file, dbghelp_path, symbol_path, false, false);
         }
 
         /// <summary>
@@ -56,6 +56,21 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of parsed RPC server.</returns>
         public static IEnumerable<RpcServer> ParsePeFile(string file, string dbghelp_path, string symbol_path, bool parse_clients)
         {
+            return ParsePeFile(file, dbghelp_path, symbol_path, parse_clients, false);
+        }
+
+        /// <summary>
+        /// Parse all RPC servers from a PE file.
+        /// </summary>
+        /// <param name="file">The PE file to parse.</param>
+        /// <param name="dbghelp_path">Path to a DBGHELP DLL to resolve symbols.</param>
+        /// <param name="symbol_path">Symbol path for DBGHELP</param>
+        /// <param name="parse_clients">True to parse client RPC interfaces.</param>
+        /// <param name="ignore_symbols">Ignore symbol resolving.</param>
+        /// <remarks>This only works for PE files with the same bitness as the current process.</remarks>
+        /// <returns>A list of parsed RPC server.</returns>
+        public static IEnumerable<RpcServer> ParsePeFile(string file, string dbghelp_path, string symbol_path, bool parse_clients, bool ignore_symbols)
+        {
             List<RpcServer> servers = new List<RpcServer>();
             using (var lib = SafeLoadLibraryHandle.LoadLibrary(file, LoadLibraryFlags.DontResolveDllReferences))
             {
@@ -63,8 +78,8 @@ namespace NtApiDotNet.Win32
                 var offsets = sections.SelectMany(s => FindRpcServerInterfaces(s, parse_clients));
                 if (offsets.Any())
                 {
-                    using (var sym_resolver = SymbolResolver.Create(NtProcess.Current,
-                            dbghelp_path, symbol_path))
+                    using (var sym_resolver = !ignore_symbols ? SymbolResolver.Create(NtProcess.Current,
+                            dbghelp_path, symbol_path) : null)
                     {
                         foreach (var offset in offsets)
                         {
