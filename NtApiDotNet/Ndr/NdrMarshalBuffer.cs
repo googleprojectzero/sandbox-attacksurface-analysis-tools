@@ -52,7 +52,8 @@ namespace NtApiDotNet.Ndr
 
         public void Align(int alignment)
         {
-            _stm.Position += CalculateAlignment((int)_stm.Length, alignment);
+            byte[] buffer = new byte[CalculateAlignment((int)_stm.Length, alignment)];
+            _stm.Write(buffer, 0, buffer.Length);
         }
 
         public void Write(byte b)
