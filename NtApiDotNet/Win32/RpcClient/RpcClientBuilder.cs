@@ -31,7 +31,7 @@ namespace NtApiDotNet.Win32.RpcClient
     public sealed class RpcClientBuilder
     {
         #region Private Members
-        private static readonly Dictionary<Tuple<RpcServer, RpcClientBuilderArguments>, Assembly> _compiled_clients 
+        private static readonly Dictionary<Tuple<RpcServer, RpcClientBuilderArguments>, Assembly> _compiled_clients
             = new Dictionary<Tuple<RpcServer, RpcClientBuilderArguments>, Assembly>();
         private readonly Dictionary<NdrBaseTypeReference, RpcTypeDescriptor> _type_descriptors;
         private readonly RpcServer _server;
@@ -202,7 +202,6 @@ namespace NtApiDotNet.Win32.RpcClient
                     case NdrFormatCharacter.FC_BIND_GENERIC:
                         break;
                 }
-
             }
             else if (type is NdrKnownTypeReference known_type)
             {
