@@ -3071,6 +3071,8 @@ When outputing as text remove comments from the output.
 Also parse client interface information, otherwise only servers are returned.
 .PARAMETER IgnoreSymbols
 Don't resolve any symbol information.
+.PARAMETER SerializedPath
+Path to a serialized representation of the RPC servers.
 .INPUTS
 string[] List of paths to DLLs.
 .OUTPUTS
@@ -3090,19 +3092,30 @@ Get the list of RPC servers from rpcss.dll, specifying a different DBGHELP for s
 .EXAMPLE
 Get-RpcServer c:\windows\system32\rpcss.dll -SymbolPath c:\symbols
 Get the list of RPC servers from rpcss.dll, specifying a different symbol path.
+.EXAMPLE
+Get-RpcServer -SerializedPath rpc.bin
+Get the list of RPC servers from the serialized file rpc.bin.
 #>
 function Get-RpcServer {
-  [CmdletBinding()]
+  [CmdletBinding(DefaultParameterSetName="FromDll")]
   Param(
-    [parameter(Mandatory=$true, Position=0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [parameter(Mandatory=$true, Position=0, ValueFromPipeline, ValueFromPipelineByPropertyName, ParameterSetName="FromDll")]
     [alias("Path")]
     [string]$FullName,
+    [parameter(ParameterSetName="FromDll")]
     [string]$DbgHelpPath,
+    [parameter(ParameterSetName="FromDll")]
     [string]$SymbolPath,
+    [parameter(ParameterSetName="FromDll")]
     [switch]$AsText,
+    [parameter(ParameterSetName="FromDll")]
     [switch]$RemoveComments,
+    [parameter(ParameterSetName="FromDll")]
     [switch]$ParseClients,
-    [switch]$IgnoreSymbols
+    [parameter(ParameterSetName="FromDll")]
+    [switch]$IgnoreSymbols,
+    [parameter(Mandatory=$true, ParameterSetName="FromSerialized")]
+    [string]$SerializedPath
   )
 
   BEGIN {
@@ -3119,20 +3132,75 @@ function Get-RpcServer {
 
   PROCESS {
     try {
-        $FullName = Resolve-Path -LiteralPath $FullName -ErrorAction Stop
-        Write-Progress -Activity "Parsing RPC Servers" -CurrentOperation "$FullName"
-        $servers = [NtApiDotNet.Win32.RpcServer]::ParsePeFile($FullName, $DbgHelpPath, $SymbolPath, $ParseClients, $IgnoreSymbols)
-        if ($AsText) {
-            foreach($server in $servers) {
-                $text = $server.FormatAsText($RemoveComments)
-                Write-Output $text
+        if ($PSCmdlet.ParameterSetName -eq "FromDll") {
+            $FullName = Resolve-Path -LiteralPath $FullName -ErrorAction Stop
+            Write-Progress -Activity "Parsing RPC Servers" -CurrentOperation "$FullName"
+            $servers = [NtApiDotNet.Win32.RpcServer]::ParsePeFile($FullName, $DbgHelpPath, $SymbolPath, $ParseClients, $IgnoreSymbols)
+            if ($AsText) {
+                foreach($server in $servers) {
+                    $text = $server.FormatAsText($RemoveComments)
+                    Write-Output $text
+                }
+            } else {
+                Write-Output $servers
             }
         } else {
-            Write-Output $servers
+            $FullName = Resolve-Path -LiteralPath $SerializedPath -ErrorAction Stop
+            Use-NtObject($stm = [System.IO.File]::OpenRead($FullName)) {
+                while($stm.Position -lt $stm.Length) {
+                    [NtApiDotNet.Win32.RpcServer]::Deserialize($stm) | Write-Output
+                }
+            }
         }
     } catch {
         Write-Error $_
     }
+  }
+}
+
+<#
+.SYNOPSIS
+Set a list RPC servers to a file for storage.
+.DESCRIPTION
+This cmdlet serializes a list of RPC servers to a file. This can be restored using Get-RpcServer -SerializedPath.
+.PARAMETER Path
+The path to the output file.
+.PARAMETER Server
+The list of servers to serialize.
+.INPUTS
+RpcServer[] List of paths to DLLs.
+.OUTPUTS
+None
+.EXAMPLE
+Set-RpcServer -Server $server -Path rpc.bin
+Serialize servers to file rpc.bin.
+#>
+function Set-RpcServer {
+  Param(
+    [parameter(Mandatory=$true, Position=0, ValueFromPipeline)]
+    [NtApiDotNet.Win32.RpcServer[]]$Server,
+    [parameter(Mandatory=$true, Position=1)]
+    [string]$Path
+  )
+
+  BEGIN {
+    "" | Set-Content -Path $Path
+    $Path = Resolve-Path -LiteralPath $Path -ErrorAction Stop
+    $stm = [System.IO.File]::Create($Path)
+  }
+
+  PROCESS {
+    try {
+        foreach($s in $Server) {
+            $s.Serialize($stm)
+        }
+    } catch {
+        Write-Error $_
+    }
+  }
+
+  END {
+    $stm.Close()
   }
 }
 
@@ -3946,6 +4014,103 @@ function New-AppContainerProfile {
         }
         "FromTemp" {
             [NtApiDotNet.Win32.AppContainerProfile]::CreateTemporary() | Write-Output
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Get an ALPC RPC client object based on a parsed RPC server.
+.DESCRIPTION
+This cmdlet creates a new ALPC RPC client from a parsed RPC server. The client object contains methods
+to call RPC methods. The client is automatically connected.
+.PARAMETER Server
+Specify the RPC server to base the client on.
+.PARAMETER AlpcPath
+Specify the path to the ALPC server port. If not specified this will lookup the endpoint from the endpoint mapper.
+.PARAMETER NamespaceName
+Specify the name of the compiled namespace for the client.
+.PARAMETER ClientName
+Specify the class name of the compiled client.
+.PARAMETER IgnoreCache
+Specify to ignore the compiled client cache and regenerate the source code.
+.PARAMETER SecurityQualityOfService
+Specify the security quality of service for the connection.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.RpcAlpcClient
+.EXAMPLE
+Get-RpcAlpcClient -Server $Server
+Create a new RPC ALPC client from a parsed RPC server.
+.EXAMPLE
+Get-RpcAlpcClient -Server $Server -AlpcPath \BaseNamedObjects\RPC_PORT
+Create a new RPC ALPC client from a parsed RPC server and connect to a specified port.
+#>
+function Get-RpcAlpcClient {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.Win32.RpcServer]$Server,
+        [string]$AlpcPath,
+        [string]$NamespaceName,
+        [string]$ClientName,
+        [switch]$IgnoreCache,
+        [NtApiDotNet.SecurityQualityOfService]$SecurityQualityOfService
+    )
+
+    $args = [NtApiDotNet.Win32.RpcClient.RpcClientBuilderArguments]::new();
+    $args.NamespaceName = $NamespaceName
+    $args.ClientName = $ClientName
+    $args.Flags = "GenerateValueConstructors"
+
+    [NtApiDotNet.Win32.RpcClient.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache, $AlpcPath, $SecurityQualityOfService)
+}
+
+<#
+.SYNOPSIS
+Get C# source code for an ALPC RPC client object based on a parsed RPC server.
+.DESCRIPTION
+This cmdlet gets C# source code for an ALPC RPC client from a parsed RPC server.
+.PARAMETER Server
+Specify the RPC server to base the client on.
+.PARAMETER NamespaceName
+Specify the name of the compiled namespace for the client.
+.PARAMETER ClientName
+Specify the class name of the compiled client.
+.PARAMETER Flags
+Specify to flags for the source creation.
+.PARAMETER IgnoreCache
+Specify to ignore the compiled client cache and regenerate the source code.
+.INPUTS
+None
+.OUTPUTS
+string
+.EXAMPLE
+Get-RpcAlpcClientSource -Server $Server
+Get the source code for a RPC ALPC client from a parsed RPC server.
+.EXAMPLE
+$servers | Get-RpcAlpcClientSource
+Get the source code for a RPC ALPC client from a list of parsed RPC server.
+#>
+function Get-RpcAlpcClientSource {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [NtApiDotNet.Win32.RpcServer[]]$Server,
+        [string]$NamespaceName,
+        [string]$ClientName,
+        [NtApiDotNet.Win32.RpcClient.RpcClientBuilderFlags]$Flags = 0
+    )
+
+    PROCESS {
+        $args = [NtApiDotNet.Win32.RpcClient.RpcClientBuilderArguments]::new();
+        $args.NamespaceName = $NamespaceName
+        $args.ClientName = $ClientName
+        $args.Flags = $Flags
+
+        foreach($s in $Server) {
+            [NtApiDotNet.Win32.RpcClient.RpcClientBuilder]::BuildSource($s, $args) | Write-Output
         }
     }
 }

@@ -82,9 +82,11 @@
     <Compile Include="MappedFile.cs" />
     <Compile Include="MemoryInformation.cs" />
     <Compile Include="Ndr\IMemoryReader.cs" />
+    <Compile Include="Ndr\INdrStructure.cs" />
     <Compile Include="Ndr\NdrComProxyDefinition.cs" />
     <Compile Include="Ndr\NdrFormatter.cs" />
     <Compile Include="Ndr\NdrCorrelationDescriptor.cs" />
+    <Compile Include="Ndr\NdrMarshalBuffer.cs" />
     <Compile Include="Ndr\NdrNativeUtils.cs" />
     <Compile Include="Ndr\NdrParser.cs" />
     <Compile Include="Ndr\NdrParserException.cs" />
@@ -93,6 +95,7 @@
     <Compile Include="Ndr\NdrStringBuilder.cs" />
     <Compile Include="Ndr\NdrTypes.cs" />
     <Compile Include="Ndr\NdrRpcServerInterface.cs" />
+    <Compile Include="Ndr\NdrUnmarshalBuffer.cs" />
     <Compile Include="NtAlpcNative.cs" />
     <Compile Include="NtAlpcUtils.cs" />
     <Compile Include="NtAsyncResult.cs" />
@@ -204,9 +207,16 @@
     <Compile Include="Win32\ExecutableManifest.cs" />
     <Compile Include="Win32\LogonUtils.cs" />
     <Compile Include="Win32\PackageIdentity.cs" />
+    <Compile Include="Win32\RpcAlpcClient.cs" />
+    <Compile Include="Win32\RpcClient\CodeGenUtils.cs" />
+    <Compile Include="Win32\RpcClient\RpcClientBuilder.cs" />
+    <Compile Include="Win32\RpcClient\RpcClientBuilderArguments.cs" />
+    <Compile Include="Win32\RpcClient\RpcClientInternals.cs" />
+    <Compile Include="Win32\RpcClient\RpcTypeDescriptor.cs" />
     <Compile Include="Win32\RpcEndpoint.cs" />
     <Compile Include="Win32\RpcEndpointMapper.cs" />
     <Compile Include="Win32\RpcAlpcServer.cs" />
+    <Compile Include="Win32\RpcFaultException.cs" />
     <Compile Include="Win32\RpcServer.cs" />
     <Compile Include="Win32\SafeCoTaskMemHandle.cs" />
     <Compile Include="Win32\SafeLocalAllocHandle.cs" />

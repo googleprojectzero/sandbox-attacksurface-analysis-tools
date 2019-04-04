@@ -57,6 +57,11 @@ namespace NtApiDotNet
             _tracking_mode = tracking_mode;
             _effective_only = effective_only;
         }
+
+        internal SecurityQualityOfServiceStruct ToStruct()
+        {
+            return new SecurityQualityOfServiceStruct(ImpersonationLevel, ContextTrackingMode, EffectiveOnly);
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]

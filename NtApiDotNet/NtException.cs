@@ -20,7 +20,7 @@ namespace NtApiDotNet
     /// Exception class representing an NT status error.
     /// </summary>
     [Serializable]
-    public sealed class NtException : ApplicationException
+    public class NtException : ApplicationException
     {
         /// <summary>
         /// Constructor
