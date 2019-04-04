@@ -263,6 +263,17 @@ namespace NtApiDotNet.Win32
         /// Get whether the client is connected or not.
         /// </summary>
         public bool Connected => _client != null && !_client.Handle.IsInvalid;
+
+        /// <summary>
+        /// Get the ALPC port path that we connected to.
+        /// </summary>
+        public string AlpcPath { get; private set; }
+
+        /// <summary>
+        /// Get the current Call ID.
+        /// </summary>
+        public int CallId => _call_id;
+
         #endregion
 
         #region Public Methods
@@ -287,6 +298,7 @@ namespace NtApiDotNet.Win32
             {
                 alpc_path = $@"\RPC Control\{alpc_path}";
             }
+            AlpcPath = alpc_path;
             _client = ConnectPort(alpc_path, security_quality_of_service);
             _call_id = 1;
             BindInterface();
