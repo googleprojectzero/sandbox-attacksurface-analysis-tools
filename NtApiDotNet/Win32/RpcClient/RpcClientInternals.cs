@@ -105,7 +105,7 @@ namespace NtApiDotNet.Win32.RpcClient
     internal enum LRPC_REQUEST_MESSAGE_FLAGS
     {
         None = 0,
-        Unsure = 1,
+        ObjectUuid = 1,
         PartOfFlow = 2,
         ViewPresent = 4,
         Cancel = 8,
@@ -141,13 +141,7 @@ namespace NtApiDotNet.Win32.RpcClient
         // 11 - 0x2C
         public int Unk2C;
         // 12 - 0x30
-        public int Unk30;
-        // 13 - 0x34
-        public int Unk34;
-        // 14 - 0x38
-        public int Unk38;
-        // 15 - 0x3C
-        public int Unk3C;
+        public Guid ObjectUuid; // Needs ObjectUuid flag set.
     }
 
     // Total size is 0x48 for large request, 0x40 for small request.
