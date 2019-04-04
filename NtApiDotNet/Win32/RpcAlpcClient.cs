@@ -90,7 +90,12 @@ namespace NtApiDotNet.Win32
 
         private string LookupEndpoint()
         {
-            return RpcEndpointMapper.QueryAlpcEndpoints(_interface_id, _interface_version).First().EndpointPath;
+            var endpoint = RpcEndpointMapper.MapServerToAlpcEndpoint(_interface_id, _interface_version);
+            if (endpoint == null)
+            {
+                throw new ArgumentException($"Can't find endpoint for {_interface_id} {_interface_version}");
+            }
+            return endpoint.EndpointPath;
         }
 
         private NdrUnmarshalBuffer HandleLargeResponse(AlpcMessageRaw message, SafeStructureInOutBuffer<LRPC_LARGE_RESPONSE_MESSAGE> response, AlpcReceiveMessageAttributes attributes)

@@ -437,6 +437,35 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Resolve the local binding string for this service from the local Endpoint Mapper and return the ALPC port path.
+        /// </summary>
+        /// <param name="interface_id">Interface UUID to lookup.</param>
+        /// <param name="interface_version">Interface version lookup.</param>
+        /// <returns>The mapped endpoint.</returns>
+        /// <remarks>This only will return a valid value if the service is running and registered with the Endpoint Mapper. It can also hang.</remarks>
+        public static RpcEndpoint MapServerToAlpcEndpoint(Guid interface_id, Version interface_version)
+        {
+            string binding = MapServerToBindingString(interface_id, interface_version);
+            if (binding == null)
+            {
+                return null;
+            }
+
+            return new RpcEndpoint(interface_id, interface_version, binding, true);
+        }
+
+        /// <summary>
+        /// Resolve the local binding string for this service from the local Endpoint Mapper and return the ALPC port path.
+        /// </summary>
+        /// <param name="server_interface">The server interface.</param>
+        /// <returns>The mapped endpoint.</returns>
+        /// <remarks>This only will return a valid value if the service is running and registered with the Endpoint Mapper. It can also hang.</remarks>
+        public static RpcEndpoint MapServerToAlpcEndpoint(NdrRpcServerInterface server_interface)
+        {
+            return MapServerToAlpcEndpoint(server_interface.InterfaceId, server_interface.InterfaceVersion);
+        }
+
+        /// <summary>
         /// Resolve the local binding string for this service from the local Endpoint Mapper.
         /// </summary>
         /// <param name="interface_id">Interface UUID to lookup.</param>
