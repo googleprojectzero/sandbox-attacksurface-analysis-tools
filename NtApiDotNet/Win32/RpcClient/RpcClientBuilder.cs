@@ -365,7 +365,7 @@ namespace NtApiDotNet.Win32.RpcClient
             CodeTypeDeclaration type = ns.AddType(name);
             type.IsClass = true;
             type.TypeAttributes = TypeAttributes.Public | TypeAttributes.Sealed;
-            type.BaseTypes.Add(typeof(RpcAlpcClient));
+            type.BaseTypes.Add(typeof(RpcAlpcClientBase));
 
             CodeConstructor constructor = type.AddConstructor(MemberAttributes.Public | MemberAttributes.Final);
             constructor.BaseConstructorArgs.Add(CodeGenUtils.GetPrimitive(_server.InterfaceId.ToString()));
@@ -643,10 +643,10 @@ namespace NtApiDotNet.Win32.RpcClient
         /// <param name="args">Additional builder arguments.</param>
         /// <returns>The created RPC client.</returns>
         /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
-        public static RpcAlpcClient CreateClient(RpcServer server, RpcClientBuilderArguments args, bool ignore_cache)
+        public static RpcAlpcClientBase CreateClient(RpcServer server, RpcClientBuilderArguments args, bool ignore_cache)
         {
-            Type type = BuildAssembly(server, args, ignore_cache).GetTypes().Where(t => typeof(RpcAlpcClient).IsAssignableFrom(t)).First();
-            return (RpcAlpcClient)Activator.CreateInstance(type);
+            Type type = BuildAssembly(server, args, ignore_cache).GetTypes().Where(t => typeof(RpcAlpcClientBase).IsAssignableFrom(t)).First();
+            return (RpcAlpcClientBase)Activator.CreateInstance(type);
         }
 
         /// <summary>
@@ -656,7 +656,7 @@ namespace NtApiDotNet.Win32.RpcClient
         /// <param name="args">Additional builder arguments.</param>
         /// <returns>The created RPC client.</returns>
         /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
-        public static RpcAlpcClient CreateClient(RpcServer server, RpcClientBuilderArguments args)
+        public static RpcAlpcClientBase CreateClient(RpcServer server, RpcClientBuilderArguments args)
         {
             return CreateClient(server, args, false);
         }
@@ -667,7 +667,7 @@ namespace NtApiDotNet.Win32.RpcClient
         /// <param name="server">The RPC server to base the client on.</param>
         /// <returns>The created RPC client.</returns>
         /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
-        public static RpcAlpcClient CreateClient(RpcServer server)
+        public static RpcAlpcClientBase CreateClient(RpcServer server)
         {
             return CreateClient(server, new RpcClientBuilderArguments());
         }

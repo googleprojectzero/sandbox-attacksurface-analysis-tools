@@ -208,6 +208,7 @@
     <Compile Include="Win32\LogonUtils.cs" />
     <Compile Include="Win32\PackageIdentity.cs" />
     <Compile Include="Win32\RpcAlpcClient.cs" />
+    <Compile Include="Win32\RpcClient\RpcAlpcClientBase.cs" />
     <Compile Include="Win32\RpcClient\CodeGenUtils.cs" />
     <Compile Include="Win32\RpcClient\RpcClientBuilder.cs" />
     <Compile Include="Win32\RpcClient\RpcClientBuilderArguments.cs" />
