@@ -397,53 +397,57 @@ namespace NtApiDotNet.Win32.RpcClient
                 method.CreateMarshalObject(MARSHAL_NAME);
                 foreach (var p in proc.Params)
                 {
-                    if (p != proc.Handle)
+                    if (p == proc.Handle)
                     {
-                        RpcTypeDescriptor p_type = GetTypeDescriptor(p.Type);
-                        if (p_type != null)
-                        {
-                            var p_obj = method.AddParam(p_type.CodeType, p.Name);
-                            p_obj.Direction = p.GetDirection();
-                            if (p.IsIn)
-                            {
-                                if (p_type.Pointer)
-                                {
-                                    method.AddWriteReferent(MARSHAL_NAME, p.Name);
-                                }
-                                else if (!p_type.ValueType)
-                                {
-                                    method.AddNullCheck(MARSHAL_NAME, p.Name);
-                                }
-                                method.AddMarshalCall(p_type, MARSHAL_NAME, p.Name);
-                            }
-                        }
-                        else
-                        {
-                            method.ThrowNotImplemented($"Param {p.Name} unsupported type");
-                            continue;
-                        }
+                        continue;
                     }
+                    RpcTypeDescriptor p_type = GetTypeDescriptor(p.Type);
+                    if (p_type == null)
+                    {
+                        method.ThrowNotImplemented($"Param {p.Name} unsupported type");
+                        continue;
+                    }
+
+                    var p_obj = method.AddParam(p_type.CodeType, p.Name);
+                    p_obj.Direction = p.GetDirection();
+                    if (!p.IsIn)
+                    {
+                        continue;
+                    }
+                    if (p_type.Pointer)
+                    {
+                        method.AddWriteReferent(MARSHAL_NAME, p.Name);
+                    }
+                    else if (!p_type.ValueType)
+                    {
+                        method.AddNullCheck(MARSHAL_NAME, p.Name);
+                    }
+                    method.AddMarshalCall(p_type, MARSHAL_NAME, p.Name);
                 }
 
                 method.SendReceive(MARSHAL_NAME, UNMARSHAL_NAME, proc.ProcNum);
 
                 foreach (var p in proc.Params.Where(x => x.IsOut))
                 {
-                    if (p != proc.Handle)
+                    if (p == proc.Handle)
                     {
-                        RpcTypeDescriptor p_type = GetTypeDescriptor(p.Type);
-                        if (p_type != null)
-                        {
-                            if (p_type.Pointer)
-                            {
-                                method.AddReadReferent(UNMARSHAL_NAME, p.Name);
-                                method.AddDeferredUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name);
-                            }
-                            else
-                            {
-                                method.AddUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name);
-                            }
-                        }
+                        continue;
+                    }
+
+                    RpcTypeDescriptor p_type = GetTypeDescriptor(p.Type);
+                    if (p_type == null)
+                    {
+                        continue;
+                    }
+
+                    if (p_type.Pointer)
+                    {
+                        method.AddReadReferent(UNMARSHAL_NAME, p.Name);
+                        method.AddDeferredUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name);
+                    }
+                    else
+                    {
+                        method.AddUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name);
                     }
                 }
 
