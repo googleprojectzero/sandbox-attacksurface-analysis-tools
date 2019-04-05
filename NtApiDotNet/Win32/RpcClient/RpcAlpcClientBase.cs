@@ -23,10 +23,7 @@ namespace NtApiDotNet.Win32.RpcClient
     public abstract class RpcAlpcClientBase : IDisposable
     {
         #region Private Members
-        private readonly Guid _interface_id;
-        private readonly Version _interface_version;
         private NtAlpcClient _client;
-        private int _call_id;
 
         private static AlpcPortAttributes CreatePortAttributes(SecurityQualityOfService sqos)
         {
@@ -74,13 +71,13 @@ namespace NtApiDotNet.Win32.RpcClient
 
         private void BindInterface()
         {
-            AlpcMessageType<LRPC_BIND_MESSAGE> bind_msg = new AlpcMessageType<LRPC_BIND_MESSAGE>(new LRPC_BIND_MESSAGE(_interface_id, _interface_version));
-            AlpcMessageRaw resp_msg = new AlpcMessageRaw(0x1000);
+            var bind_msg = new AlpcMessageType<LRPC_BIND_MESSAGE>(new LRPC_BIND_MESSAGE(InterfaceId, InterfaceVersion));
+            var recv_msg = new AlpcMessageRaw(0x1000);
 
-            using (AlpcReceiveMessageAttributes recv_attr = new AlpcReceiveMessageAttributes())
+            using (var recv_attr = new AlpcReceiveMessageAttributes())
             {
-                _client.SendReceive(AlpcMessageFlags.SyncRequest, bind_msg, null, resp_msg, recv_attr, NtWaitTimeout.Infinite);
-                using (var buffer = resp_msg.Data.ToBuffer())
+                _client.SendReceive(AlpcMessageFlags.SyncRequest, bind_msg, null, recv_msg, recv_attr, NtWaitTimeout.Infinite);
+                using (var buffer = recv_msg.Data.ToBuffer())
                 {
                     CheckForFault(buffer, LRPC_MESSAGE_TYPE.lmtBind);
                     var value = buffer.Read<LRPC_BIND_MESSAGE>(0);
@@ -94,10 +91,10 @@ namespace NtApiDotNet.Win32.RpcClient
 
         private string LookupEndpoint()
         {
-            var endpoint = RpcEndpointMapper.MapServerToAlpcEndpoint(_interface_id, _interface_version);
+            var endpoint = RpcEndpointMapper.MapServerToAlpcEndpoint(InterfaceId, InterfaceVersion);
             if (endpoint == null || string.IsNullOrEmpty(endpoint.EndpointPath))
             {
-                throw new ArgumentException($"Can't find endpoint for {_interface_id} {_interface_version}");
+                throw new ArgumentException($"Can't find endpoint for {InterfaceId} {InterfaceVersion}");
             }
             return endpoint.EndpointPath;
         }
@@ -154,7 +151,7 @@ namespace NtApiDotNet.Win32.RpcClient
             {
                 Header = new LRPC_HEADER(LRPC_MESSAGE_TYPE.lmtRequest),
                 BindingId = 0,
-                CallId = _call_id++,
+                CallId = CallId++,
                 ProcNum = proc_num,
                 LargeDataSize = buffer.Length,
                 Flags = LRPC_REQUEST_MESSAGE_FLAGS.ViewPresent
@@ -167,8 +164,8 @@ namespace NtApiDotNet.Win32.RpcClient
             }
 
             var send_msg = new AlpcMessageType<LRPC_LARGE_REQUEST_MESSAGE>(req_msg);
-            var resp_msg = new AlpcMessageRaw(0x1000);
-            AlpcSendMessageAttributes send_attr = new AlpcSendMessageAttributes();
+            var recv_msg = new AlpcMessageRaw(0x1000);
+            var send_attr = new AlpcSendMessageAttributes();
 
             if (ndr_buffer.Handles.Count > 0)
             {
@@ -183,9 +180,9 @@ namespace NtApiDotNet.Win32.RpcClient
                     send_attr.Add(data_view.ToMessageAttribute());
                     using (var recv_attr = new AlpcReceiveMessageAttributes())
                     {
-                        _client.SendReceive(AlpcMessageFlags.SyncRequest, send_msg, send_attr, resp_msg, recv_attr, NtWaitTimeout.Infinite);
-                        NdrUnmarshalBuffer unmarshal = HandleResponse(resp_msg, recv_attr, req_msg.CallId);
-                        ClearAttributes(resp_msg, recv_attr);
+                        _client.SendReceive(AlpcMessageFlags.SyncRequest, send_msg, send_attr, recv_msg, recv_attr, NtWaitTimeout.Infinite);
+                        NdrUnmarshalBuffer unmarshal = HandleResponse(recv_msg, recv_attr, req_msg.CallId);
+                        ClearAttributes(recv_msg, recv_attr);
                         return unmarshal;
                     }
                 }
@@ -198,7 +195,7 @@ namespace NtApiDotNet.Win32.RpcClient
             {
                 Header = new LRPC_HEADER(LRPC_MESSAGE_TYPE.lmtRequest),
                 BindingId = 0,
-                CallId = _call_id++,
+                CallId = CallId++,
                 ProcNum = proc_num,
             };
 
@@ -236,8 +233,8 @@ namespace NtApiDotNet.Win32.RpcClient
         /// <param name="interface_version">Version of the interface.</param>
         protected RpcAlpcClientBase(Guid interface_id, Version interface_version)
         {
-            _interface_id = interface_id;
-            _interface_version = interface_version;
+            InterfaceId = interface_id;
+            InterfaceVersion = interface_version;
         }
 
         /// <summary>
@@ -293,12 +290,22 @@ namespace NtApiDotNet.Win32.RpcClient
         /// <summary>
         /// Get the current Call ID.
         /// </summary>
-        public int CallId => _call_id;
+        public int CallId { get; private set; }
 
         /// <summary>
         /// Get or set the current Object UUID used for calls.
         /// </summary>
         public Guid ObjectUuid { get; set; }
+
+        /// <summary>
+        /// The RPC interface ID.
+        /// </summary>
+        public Guid InterfaceId { get; }
+
+        /// <summary>
+        /// The RPC interface version.
+        /// </summary>
+        public Version InterfaceVersion { get; }
 
         #endregion
 
@@ -326,7 +333,7 @@ namespace NtApiDotNet.Win32.RpcClient
             }
             AlpcPath = alpc_path;
             _client = ConnectPort(alpc_path, security_quality_of_service);
-            _call_id = 1;
+            CallId = 1;
             BindInterface();
         }
 
