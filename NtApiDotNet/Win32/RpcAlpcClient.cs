@@ -15,7 +15,6 @@
 using NtApiDotNet.Ndr;
 using NtApiDotNet.Win32.RpcClient;
 using System;
-using System.Linq;
 
 namespace NtApiDotNet.Win32
 {
@@ -32,6 +31,12 @@ namespace NtApiDotNet.Win32
 
         private static AlpcPortAttributes CreatePortAttributes(SecurityQualityOfService sqos)
         {
+            AlpcPortAttributeFlags flags = AlpcPortAttributeFlags.AllowDupObject | AlpcPortAttributeFlags.AllowImpersonation | AlpcPortAttributeFlags.WaitablePort;
+            if (!NtObjectUtils.IsWindows81OrLess)
+            {
+                flags |= AlpcPortAttributeFlags.AllowMultiHandleAttribute;
+            }
+
             return new AlpcPortAttributes()
             {
                 DupObjectTypes = AlpcHandleObjectType.AllObjects,
