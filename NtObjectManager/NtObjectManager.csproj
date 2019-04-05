@@ -43,9 +43,12 @@
       <HintPath>..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\WindowsPowerShell\3.0\System.Management.Automation.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceProcess" />
+    <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="NdrNameData.cs" />
     <Compile Include="NtAlpcCmdlets.cs" />
     <Compile Include="NtDebugCmdlets.cs" />
     <Compile Include="NtEnlistmentCmdlets.cs" />
@@ -54,6 +57,7 @@
     <Compile Include="NtTransactionCmdlets.cs" />
     <Compile Include="NtTransactionManagerCmdlets.cs" />
     <Compile Include="PSUtils.cs" />
+    <Compile Include="RpcServerNameCmdlets.cs" />
     <Compile Include="Win32Cmdlets.cs" />
     <Compile Include="CommonAccessBaseCmdlet.cs" />
     <Compile Include="GenericObjectSecurity.cs" />
