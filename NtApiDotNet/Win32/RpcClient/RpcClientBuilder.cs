@@ -36,6 +36,7 @@ namespace NtApiDotNet.Win32.RpcClient
         private readonly Dictionary<NdrBaseTypeReference, RpcTypeDescriptor> _type_descriptors;
         private readonly RpcServer _server;
         private readonly RpcClientBuilderArguments _args;
+        private readonly HashSet<string> _proc_names;
 
         private bool HasFlag(RpcClientBuilderFlags flag)
         {
@@ -373,7 +374,17 @@ namespace NtApiDotNet.Win32.RpcClient
 
             foreach (var proc in _server.Procedures)
             {
-                var method = type.AddMethod(proc.Name, MemberAttributes.Public | MemberAttributes.Final);
+                string proc_name = proc.Name;
+                if(!_proc_names.Add(proc_name))
+                {
+                    proc_name = $"{proc_name}_{proc.ProcNum}";
+                    if (!_proc_names.Add(proc_name))
+                    {
+                        throw new ArgumentException($"Duplicate name {proc.Name}");
+                    }
+                }
+
+                var method = type.AddMethod(proc_name, MemberAttributes.Public | MemberAttributes.Final);
                 RpcTypeDescriptor return_type = GetTypeDescriptor(proc.ReturnValue.Type);
                 if (return_type == null)
                 {
@@ -521,6 +532,7 @@ namespace NtApiDotNet.Win32.RpcClient
             _server = server;
             _type_descriptors = new Dictionary<NdrBaseTypeReference, RpcTypeDescriptor>();
             _args = args;
+            _proc_names = new HashSet<string>();
         }
 
         #endregion
