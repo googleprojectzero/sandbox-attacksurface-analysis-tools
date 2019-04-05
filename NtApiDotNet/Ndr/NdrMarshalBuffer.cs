@@ -248,6 +248,55 @@ namespace NtApiDotNet.Ndr
             structure.Marshal(this);
         }
 
+        public void Write<T>(T? value) where T : struct
+        {
+            if (value.HasValue)
+            {
+                object v = value.Value;
+                if (v is byte b)
+                {
+                    Write(b);
+                }
+                else if (v is short s)
+                {
+                    Write(s);
+                }
+                else if (v is int i)
+                {
+                    Write(i);
+                }
+                else if (v is long l)
+                {
+                    Write(l);
+                }
+                if (v is sbyte sb)
+                {
+                    Write(sb);
+                }
+                else if (v is ushort us)
+                {
+                    Write(us);
+                }
+                else if (v is uint ui)
+                {
+                    Write(ui);
+                }
+                else if (v is ulong ul)
+                {
+                    Write(ul);
+                }
+                else if (v is Guid g)
+                {
+                    Write(g);
+                }
+                else if (v is INdrStructure st)
+                {
+                    Write(st);
+                }
+                throw new ArgumentException($"Unexpected type {v.GetType()}");
+            }
+        }
+
         public void CheckNull<T>(T obj, string name) where T : class
         {
             if (obj == null)

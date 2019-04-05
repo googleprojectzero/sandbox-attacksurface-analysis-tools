@@ -144,6 +144,7 @@ namespace NtApiDotNet.Ndr
 
         public int ReadReferent()
         {
+            // Might need to actually handle referents, guess we'll see.
             return ReadInt32();
         }
 
