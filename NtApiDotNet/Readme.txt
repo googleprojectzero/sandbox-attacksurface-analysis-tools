@@ -1,6 +1,6 @@
 ﻿NtApiDotNet - Managed .NET library for accessing NT API
 
-(c) Google Inc. 2015, 2016, 2017
+(c) Google Inc. 2015, 2016, 2017, 2018, 2019
 Developed by James Forshaw
 
 This library is written entirely in C# to allow managed applications easy access to
@@ -19,6 +19,8 @@ people or resources have proven invaluable in determing API functionality.
 Process Hacker Sources: http://processhacker.sourceforge.net/
 Windows NT/2000 Native API Reference: Gary Nebbett (ISBN 9781578701995)
 Alex Ionescu
+ALPC RPC client code inspired by work by Clement Rouault (@hakril) and Thomas Imbert
+(@masthoon) at PacSec (https://pacsec.jp/psj17/PSJ2017_Rouault_Imbert_alpc_rpc_pacsec.pdf)
 And others I've no doubt forgotten.
 
 NOTE: It's still a work in progress and it's not designed to act as a documentation
