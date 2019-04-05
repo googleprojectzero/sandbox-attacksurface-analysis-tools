@@ -20,8 +20,10 @@ namespace NtApiDotNet.Win32.RpcClient
 {
     internal sealed class RpcTypeDescriptor
     {
-        public string UnmarshalMethod { get; }
-        public string MarshalMethod { get; }
+        private readonly string _unmarshal_method;
+        private readonly string _marshal_method;
+        private readonly bool _unmarshal_generic;
+
         public CodeTypeReference CodeType { get; }
         public Type BuiltinType { get; }
         public NdrBaseTypeReference NdrType { get; }
@@ -29,24 +31,29 @@ namespace NtApiDotNet.Win32.RpcClient
         public bool Pointer { get; }
         public bool ValueType { get; }
 
-        public RpcTypeDescriptor(CodeTypeReference code_type, bool value_type, string unmarshal_method, string marshal_method, NdrBaseTypeReference ndr_type, params CodeExpression[] additional_args)
+        public RpcTypeDescriptor(CodeTypeReference code_type, bool value_type, string unmarshal_method, 
+            bool unmarshal_generic, string marshal_method, NdrBaseTypeReference ndr_type, params CodeExpression[] additional_args)
         {
             CodeType = code_type;
-            UnmarshalMethod = unmarshal_method;
-            MarshalMethod = marshal_method;
+            _unmarshal_method = unmarshal_method;
+            _marshal_method = marshal_method;
+            _unmarshal_generic = unmarshal_generic;
             NdrType = ndr_type;
             AdditionalArgs = additional_args;
             ValueType = value_type;
         }
 
-        public RpcTypeDescriptor(Type code_type, string unmarshal_method, string marshal_method, NdrBaseTypeReference ndr_type, params CodeExpression[] additional_args)
-            : this(new CodeTypeReference(code_type), code_type.IsValueType || typeof(NtObject).IsAssignableFrom(code_type), unmarshal_method, marshal_method, ndr_type, additional_args)
+        public RpcTypeDescriptor(Type code_type, string unmarshal_method, bool unmarshal_generic, 
+            string marshal_method, NdrBaseTypeReference ndr_type, params CodeExpression[] additional_args)
+            : this(new CodeTypeReference(code_type), code_type.IsValueType || typeof(NtObject).IsAssignableFrom(code_type), 
+                  unmarshal_method, unmarshal_generic, marshal_method, ndr_type, additional_args)
         {
             BuiltinType = code_type;
         }
 
-        public RpcTypeDescriptor(string name, bool value_type, string unmarshal_method, string marshal_method, NdrBaseTypeReference ndr_type, params CodeExpression[] additional_args)
-            : this(new CodeTypeReference(name), value_type, unmarshal_method, marshal_method, ndr_type, additional_args)
+        public RpcTypeDescriptor(string name, bool value_type, string unmarshal_method, bool unmarshal_generic, 
+            string marshal_method, NdrBaseTypeReference ndr_type, params CodeExpression[] additional_args)
+            : this(new CodeTypeReference(name), value_type, unmarshal_method, unmarshal_generic, marshal_method, ndr_type, additional_args)
         {
         }
 
@@ -62,10 +69,24 @@ namespace NtApiDotNet.Win32.RpcClient
         }
 
         public RpcTypeDescriptor(RpcTypeDescriptor original_desc, bool pointer)
-            : this(CreateType(original_desc), false, original_desc.UnmarshalMethod,
-            original_desc.MarshalMethod, original_desc.NdrType, original_desc.AdditionalArgs)
+            : this(CreateType(original_desc), false, original_desc._unmarshal_method, original_desc._unmarshal_generic,
+            original_desc._marshal_method, original_desc.NdrType, original_desc.AdditionalArgs)
         {
             Pointer = pointer;
+        }
+
+        public CodeMethodReferenceExpression GetMarshalMethod(CodeExpression target)
+        {
+            return new CodeMethodReferenceExpression(target, _marshal_method);
+        }
+
+        public CodeMethodReferenceExpression GetUnmarshalMethod(CodeExpression target)
+        {
+            if (_unmarshal_generic)
+            {
+                return new CodeMethodReferenceExpression(target, _unmarshal_method, CodeType);
+            }
+            return new CodeMethodReferenceExpression(target, _unmarshal_method);
         }
     }
 }

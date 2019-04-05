@@ -162,37 +162,37 @@ namespace NtApiDotNet.Win32.RpcClient
                 {
                     case NdrFormatCharacter.FC_BYTE:
                     case NdrFormatCharacter.FC_USMALL:
-                        return new RpcTypeDescriptor(builtin_type, "ReadByte", "Write", type);
+                        return new RpcTypeDescriptor(builtin_type, "ReadByte", false, "Write", type);
                     case NdrFormatCharacter.FC_SMALL:
                     case NdrFormatCharacter.FC_CHAR:
-                        return new RpcTypeDescriptor(builtin_type, "ReadSByte", "Write", type);
+                        return new RpcTypeDescriptor(builtin_type, "ReadSByte", false, "Write", type);
                     case NdrFormatCharacter.FC_WCHAR:
-                        return new RpcTypeDescriptor(builtin_type, "ReadChar", "Write", type);
+                        return new RpcTypeDescriptor(builtin_type, "ReadChar", false, "Write", type);
                     case NdrFormatCharacter.FC_SHORT:
-                        return new RpcTypeDescriptor(builtin_type, "ReadInt16", "Write", type);
+                        return new RpcTypeDescriptor(builtin_type, "ReadInt16", false, "Write", type);
                     case NdrFormatCharacter.FC_USHORT:
-                        return new RpcTypeDescriptor(builtin_type, "ReadUInt16", "Write", type);
+                        return new RpcTypeDescriptor(builtin_type, "ReadUInt16", false, "Write", type);
                     case NdrFormatCharacter.FC_LONG:
                     case NdrFormatCharacter.FC_ENUM16:
                     case NdrFormatCharacter.FC_ENUM32:
-                        return new RpcTypeDescriptor(builtin_type, "ReadInt32", "Write", type);
+                        return new RpcTypeDescriptor(builtin_type, "ReadInt32", false, "Write", type);
                     case NdrFormatCharacter.FC_ULONG:
                     case NdrFormatCharacter.FC_ERROR_STATUS_T:
-                        return new RpcTypeDescriptor(builtin_type, "ReadUInt32", "Write", type);
+                        return new RpcTypeDescriptor(builtin_type, "ReadUInt32", false, "Write", type);
                     case NdrFormatCharacter.FC_FLOAT:
-                        return new RpcTypeDescriptor(builtin_type, "ReadFloat", "Write", type);
+                        return new RpcTypeDescriptor(builtin_type, "ReadFloat", false, "Write", type);
                     case NdrFormatCharacter.FC_HYPER:
-                        return new RpcTypeDescriptor(builtin_type, "ReadInt64", "Write", type);
+                        return new RpcTypeDescriptor(builtin_type, "ReadInt64", false, "Write", type);
                     case NdrFormatCharacter.FC_DOUBLE:
-                        return new RpcTypeDescriptor(builtin_type, "ReadDouble", "Write", type);
+                        return new RpcTypeDescriptor(builtin_type, "ReadDouble", false, "Write", type);
                     case NdrFormatCharacter.FC_INT3264:
-                        return new RpcTypeDescriptor(builtin_type, "ReadIntPtr", "Write", type);
+                        return new RpcTypeDescriptor(builtin_type, "ReadIntPtr", false, "Write", type);
                     case NdrFormatCharacter.FC_UINT3264:
-                        return new RpcTypeDescriptor(builtin_type, "ReadUIntPtr", "Write", type);
+                        return new RpcTypeDescriptor(builtin_type, "ReadUIntPtr", false, "Write", type);
                     case NdrFormatCharacter.FC_C_WSTRING:
-                        return new RpcTypeDescriptor(builtin_type, "ReadConformantString", "WriteConformantString", type);
+                        return new RpcTypeDescriptor(builtin_type, "ReadConformantString", false, "WriteConformantString", type);
                     case NdrFormatCharacter.FC_C_CSTRING:
-                        return new RpcTypeDescriptor(builtin_type, "ReadAnsiConformantString", "WriteAnsiConformantString", type);
+                        return new RpcTypeDescriptor(builtin_type, "ReadAnsiConformantString", false, "WriteAnsiConformantString", type);
                     case NdrFormatCharacter.FC_CSTRING:
                     case NdrFormatCharacter.FC_WSTRING:
                         break;
@@ -209,7 +209,7 @@ namespace NtApiDotNet.Win32.RpcClient
                 switch (known_type.KnownType)
                 {
                     case NdrKnownTypes.GUID:
-                        return new RpcTypeDescriptor(typeof(Guid), "ReadGuid", "Write", type);
+                        return new RpcTypeDescriptor(typeof(Guid), "ReadGuid", false, "Write", type);
                     case NdrKnownTypes.BSTR:
                         break;
                     case NdrKnownTypes.HSTRING:
@@ -222,26 +222,26 @@ namespace NtApiDotNet.Win32.RpcClient
                 {
                     if (conformant_str.Format == NdrFormatCharacter.FC_C_CSTRING)
                     {
-                        return new RpcTypeDescriptor(typeof(string), "ReadAnsiConformantString", "WriteAnsiConformantString", type);
+                        return new RpcTypeDescriptor(typeof(string), "ReadAnsiConformantString", false, "WriteAnsiConformantString", type);
                     }
-                    return new RpcTypeDescriptor(typeof(string), "ReadConformantString", "WriteConformantString", type);
+                    return new RpcTypeDescriptor(typeof(string), "ReadConformantString", false, "WriteConformantString", type);
                 }
             }
             else if (type is NdrSystemHandleTypeReference system_handle)
             {
                 Type handle_type = GetSystemHandleType(system_handle);
-                return new RpcTypeDescriptor(handle_type, $"ReadHandle<{handle_type.FullName}>", "Write", type);
+                return new RpcTypeDescriptor(handle_type, "ReadHandle", true, "Write", type);
             }
             else if (type is NdrSimpleArrayTypeReference simple_array)
             {
                 RpcTypeDescriptor element_type = GetTypeDescriptor(simple_array.ElementType);
                 if (element_type.BuiltinType == typeof(char))
                 {
-                    return new RpcTypeDescriptor(typeof(string), "ReadFixedString", "WriteFixedString", type, CodeGenUtils.GetPrimitive(simple_array.ElementCount));
+                    return new RpcTypeDescriptor(typeof(string), "ReadFixedString", false, "WriteFixedString", type, CodeGenUtils.GetPrimitive(simple_array.ElementCount));
                 }
                 else if (element_type.BuiltinType == typeof(byte))
                 {
-                    return new RpcTypeDescriptor(typeof(byte[]), "ReadBytes", "WriteFixedBytes", type, CodeGenUtils.GetPrimitive(simple_array.ElementCount));
+                    return new RpcTypeDescriptor(typeof(byte[]), "ReadBytes", false, "WriteFixedBytes", type, CodeGenUtils.GetPrimitive(simple_array.ElementCount));
                 }
             }
             else if (type is NdrPointerTypeReference pointer)
@@ -290,7 +290,7 @@ namespace NtApiDotNet.Win32.RpcClient
                 if (complex_type is NdrBaseStructureTypeReference struct_type)
                 {
                     _type_descriptors[complex_type] = new RpcTypeDescriptor(complex_type.Name, true,
-                        $"ReadStruct<{CodeGenUtils.MakeIdentifier(complex_type.Name)}>", "Write", complex_type);
+                        "ReadStruct", true, "Write", complex_type);
                 }
             }
 
@@ -467,17 +467,9 @@ namespace NtApiDotNet.Win32.RpcClient
             }
         }
 
-        private static string GenerateSourceCode(CodeCompileUnit unit)
+        private static string GenerateSourceCode(CodeDomProvider provider, CodeGeneratorOptions options, CodeCompileUnit unit)
         {
-            CodeDomProvider provider = new CSharpCodeProvider();
             StringBuilder builder = new StringBuilder();
-            CodeGeneratorOptions options = new CodeGeneratorOptions
-            {
-                IndentString = "    ",
-                BlankLinesBetweenMembers = false,
-                VerbatimOrder = true,
-                BracingStyle = "C"
-            };
             TextWriter writer = new StringWriter(builder);
             provider.GenerateCodeFromCompileUnit(unit, writer, options);
             return builder.ToString();
@@ -544,6 +536,19 @@ namespace NtApiDotNet.Win32.RpcClient
         #region Static Methods
 
         /// <summary>
+        /// Build a source file for the RPC client.
+        /// </summary>
+        /// <param name="server">The RPC server to base the client on.</param>
+        /// <param name="args">Additional builder arguments.</param>
+        /// <param name="options">The code genearation options, can be null.</param>
+        /// <param name="provider">The code dom provider, such as CSharpDomProvider</param>
+        /// <returns>The source code file.</returns>
+        public static string BuildSource(RpcServer server, RpcClientBuilderArguments args, CodeDomProvider provider, CodeGeneratorOptions options)
+        {
+            return GenerateSourceCode(provider, options, new RpcClientBuilder(server, args).Generate());
+        }
+
+        /// <summary>
         /// Build a C# source file for the RPC client.
         /// </summary>
         /// <param name="server">The RPC server to base the client on.</param>
@@ -551,7 +556,15 @@ namespace NtApiDotNet.Win32.RpcClient
         /// <returns>The C# source code file.</returns>
         public static string BuildSource(RpcServer server, RpcClientBuilderArguments args)
         {
-            return GenerateSourceCode(new RpcClientBuilder(server, args).Generate());
+            CodeDomProvider provider = new CSharpCodeProvider();
+            CodeGeneratorOptions options = new CodeGeneratorOptions
+            {
+                IndentString = "    ",
+                BlankLinesBetweenMembers = false,
+                VerbatimOrder = true,
+                BracingStyle = "C"
+            };
+            return BuildSource(server, args, provider, options);
         }
 
         /// <summary>

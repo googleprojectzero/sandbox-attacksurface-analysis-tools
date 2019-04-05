@@ -138,7 +138,7 @@ namespace NtApiDotNet.Win32.RpcClient
             };
             args.AddRange(descriptor.AdditionalArgs);
             args.AddRange(additional_args);
-            CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(GetVariable(marshal_name), descriptor.MarshalMethod, args.ToArray());
+            CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(descriptor.GetMarshalMethod(GetVariable(marshal_name)), args.ToArray());
             method.Statements.Add(invoke);
         }
 
@@ -147,7 +147,8 @@ namespace NtApiDotNet.Win32.RpcClient
             List<CodeExpression> args = new List<CodeExpression>();
             args.AddRange(descriptor.AdditionalArgs);
             args.AddRange(additional_args);
-            CodeAssignStatement assign = new CodeAssignStatement(GetVariable(var_name), new CodeMethodInvokeExpression(GetVariable(unmarshal_name), descriptor.UnmarshalMethod, args.ToArray()));
+
+            CodeAssignStatement assign = new CodeAssignStatement(GetVariable(var_name), new CodeMethodInvokeExpression(descriptor.GetUnmarshalMethod(GetVariable(unmarshal_name)), args.ToArray()));
             method.Statements.Add(assign);
         }
 
@@ -161,7 +162,7 @@ namespace NtApiDotNet.Win32.RpcClient
             List<CodeExpression> args = new List<CodeExpression>();
             args.AddRange(descriptor.AdditionalArgs);
             args.AddRange(additional_args);
-            CodeAssignStatement assign = new CodeAssignStatement(GetVariable(var_name), new CodeMethodInvokeExpression(GetVariable(unmarshal_name), descriptor.UnmarshalMethod, args.ToArray()));
+            CodeAssignStatement assign = new CodeAssignStatement(GetVariable(var_name), new CodeMethodInvokeExpression(descriptor.GetUnmarshalMethod(GetVariable(unmarshal_name)), args.ToArray()));
             CodeAssignStatement assign_null = new CodeAssignStatement(GetVariable(var_name), new CodeDefaultValueExpression(descriptor.CodeType));
 
             CodeConditionStatement if_statement = new CodeConditionStatement(
@@ -189,7 +190,7 @@ namespace NtApiDotNet.Win32.RpcClient
             List<CodeExpression> args = new List<CodeExpression>();
             args.AddRange(descriptor.AdditionalArgs);
             args.AddRange(additional_args);
-            CodeMethodReturnStatement ret = new CodeMethodReturnStatement(new CodeMethodInvokeExpression(GetVariable(unmarshal_name), descriptor.UnmarshalMethod, args.ToArray()));
+            CodeMethodReturnStatement ret = new CodeMethodReturnStatement(new CodeMethodInvokeExpression(descriptor.GetUnmarshalMethod(GetVariable(unmarshal_name)), args.ToArray()));
             method.Statements.Add(ret);
         }
 
