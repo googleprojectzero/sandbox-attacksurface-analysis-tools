@@ -4099,7 +4099,7 @@ function Connect-RpcAlpcClient {
 
 <#
 .SYNOPSIS
-Get C# source code for an ALPC RPC client object based on a parsed RPC server.
+Format an ALPC RPC client as C# source code based on a parsed RPC server.
 .DESCRIPTION
 This cmdlet gets C# source code for an ALPC RPC client from a parsed RPC server.
 .PARAMETER Server
@@ -4117,13 +4117,13 @@ None
 .OUTPUTS
 string
 .EXAMPLE
-Get-RpcAlpcClientSource -Server $Server
+Format-RpcAlpcClient -Server $Server
 Get the source code for a RPC ALPC client from a parsed RPC server.
 .EXAMPLE
-$servers | Get-RpcAlpcClientSource
+$servers | Format-RpcAlpcClient
 Get the source code for a RPC ALPC client from a list of parsed RPC server.
 #>
-function Get-RpcAlpcClientSource {
+function Format-RpcAlpcClient {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0, ValueFromPipeline)]
