@@ -4114,9 +4114,9 @@ function Connect-RpcAlpcClient {
 
 <#
 .SYNOPSIS
-Format an ALPC RPC client as C# source code based on a parsed RPC server.
+Format an ALPC RPC client as source code based on a parsed RPC server.
 .DESCRIPTION
-This cmdlet gets C# source code for an ALPC RPC client from a parsed RPC server.
+This cmdlet gets source code for an ALPC RPC client from a parsed RPC server.
 .PARAMETER Server
 Specify the RPC server to base the client on.
 .PARAMETER NamespaceName
@@ -4127,6 +4127,10 @@ Specify the class name of the compiled client.
 Specify to flags for the source creation.
 .PARAMETER IgnoreCache
 Specify to ignore the compiled client cache and regenerate the source code.
+.PARAMETER Provider
+Specify a Code DOM provider. Defaults to C#.
+.PARAMETER Options
+Specify optional options for the code generation if Provider is also specified.
 .INPUTS
 None
 .OUTPUTS
@@ -4145,7 +4149,9 @@ function Format-RpcAlpcClient {
         [NtApiDotNet.Win32.RpcServer[]]$Server,
         [string]$NamespaceName,
         [string]$ClientName,
-        [NtApiDotNet.Win32.RpcClient.RpcClientBuilderFlags]$Flags = 0
+        [NtApiDotNet.Win32.RpcClient.RpcClientBuilderFlags]$Flags = 0,
+        [System.CodeDom.Compiler.CodeDomProvider]$Provider,
+        [System.CodeDom.Compiler.CodeGeneratorOptions]$Options
     )
 
     PROCESS {
@@ -4155,7 +4161,11 @@ function Format-RpcAlpcClient {
         $args.Flags = $Flags
 
         foreach($s in $Server) {
-            [NtApiDotNet.Win32.RpcClient.RpcClientBuilder]::BuildSource($s, $args) | Write-Output
+            if ($Provider -eq $null) {
+                [NtApiDotNet.Win32.RpcClient.RpcClientBuilder]::BuildSource($s, $args) | Write-Output
+            } else {
+                [NtApiDotNet.Win32.RpcClient.RpcClientBuilder]::BuildSource($s, $args, $Provider, $Options) | Write-Output
+            }
         }
     }
 }
