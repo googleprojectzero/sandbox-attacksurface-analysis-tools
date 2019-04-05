@@ -4024,7 +4024,8 @@ Get an ALPC RPC client object based on a parsed RPC server.
 .DESCRIPTION
 This cmdlet creates a new ALPC RPC client from a parsed RPC server. The client object contains methods
 to call RPC methods. The client starts off disconnected. You need to pass the client to Connect-RpcAlpcClient to
-connect to the server.
+connect to the server. If you specify an interface ID and version then a generic client will be created which 
+allows simple calls to be made without requiring the NDR data.
 .PARAMETER Server
 Specify the RPC server to base the client on.
 .PARAMETER NamespaceName
@@ -4033,30 +4034,44 @@ Specify the name of the compiled namespace for the client.
 Specify the class name of the compiled client.
 .PARAMETER IgnoreCache
 Specify to ignore the compiled client cache and regenerate the source code.
+.PARAMETER InterfaceId
+Specify the interface ID for a generic client.
+.PARAMETER InterfaceVersion
+Specify the interface version for a generic client.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.RpcAlpcClient
+NtApiDotNet.Win32.RpcClient.RpcAlpcClientBase
 .EXAMPLE
 Get-RpcAlpcClient -Server $Server
 Create a new RPC ALPC client from a parsed RPC server.
 #>
 function Get-RpcAlpcClient {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromServer")]
     Param(
-        [parameter(Mandatory, Position = 0)]
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromServer")]
         [NtApiDotNet.Win32.RpcServer]$Server,
+        [parameter(ParameterSetName = "FromServer")]
         [string]$NamespaceName,
+        [parameter(ParameterSetName = "FromServer")]
         [string]$ClientName,
-        [switch]$IgnoreCache
+        [parameter(ParameterSetName = "FromServer")]
+        [switch]$IgnoreCache,
+        [parameter(Mandatory, Position=0, ParameterSetName = "FromIdAndVersion")]
+        [string]$InterfaceId,
+        [parameter(Mandatory, Position=1, ParameterSetName = "FromIdAndVersion")]
+        [Version]$InterfaceVersion
     )
 
-    $args = [NtApiDotNet.Win32.RpcClient.RpcClientBuilderArguments]::new();
-    $args.NamespaceName = $NamespaceName
-    $args.ClientName = $ClientName
-    $args.Flags = "GenerateValueConstructors"
-
-    [NtApiDotNet.Win32.RpcClient.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache)
+    if ($PSCmdlet.ParameterSetName -eq "FromServer") {
+        $args = [NtApiDotNet.Win32.RpcClient.RpcClientBuilderArguments]::new();
+        $args.NamespaceName = $NamespaceName
+        $args.ClientName = $ClientName
+        $args.Flags = "GenerateValueConstructors"
+        [NtApiDotNet.Win32.RpcClient.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache)
+    } else {
+        [NtApiDotNet.Win32.RpcAlpcClient]::new($InterfaceId, $InterfaceVersion)
+    }
 }
 
 <#
