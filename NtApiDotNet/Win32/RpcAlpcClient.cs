@@ -91,7 +91,7 @@ namespace NtApiDotNet.Win32
         private string LookupEndpoint()
         {
             var endpoint = RpcEndpointMapper.MapServerToAlpcEndpoint(_interface_id, _interface_version);
-            if (endpoint == null)
+            if (endpoint == null || string.IsNullOrEmpty(endpoint.EndpointPath))
             {
                 throw new ArgumentException($"Can't find endpoint for {_interface_id} {_interface_version}");
             }
