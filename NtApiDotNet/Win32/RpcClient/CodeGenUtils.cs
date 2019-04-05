@@ -56,7 +56,8 @@ namespace NtApiDotNet.Win32.RpcClient
 
         public static CodeMemberMethod AddMarshalMethod(this CodeTypeDeclaration type, string marshal_name)
         {
-            CodeMemberMethod method = type.AddMethod($"{typeof(INdrStructure).FullName}.Marshal", MemberAttributes.Final);
+            CodeMemberMethod method = type.AddMethod("Marshal", MemberAttributes.Final | MemberAttributes.Private);
+            method.PrivateImplementationType = new CodeTypeReference(typeof(INdrStructure));
             method.AddParam(typeof(NdrMarshalBuffer), marshal_name);
             return method;
         }
@@ -68,7 +69,8 @@ namespace NtApiDotNet.Win32.RpcClient
 
         public static CodeMemberMethod AddUnmarshalMethod(this CodeTypeDeclaration type, string unmarshal_name)
         {
-            CodeMemberMethod method = type.AddMethod($"{typeof(INdrStructure).FullName}.Unmarshal", MemberAttributes.Final);
+            CodeMemberMethod method = type.AddMethod("Unmarshal", MemberAttributes.Final | MemberAttributes.Private);
+            method.PrivateImplementationType = new CodeTypeReference(typeof(INdrStructure));
             method.AddParam(typeof(NdrUnmarshalBuffer), unmarshal_name);
             return method;
         }
