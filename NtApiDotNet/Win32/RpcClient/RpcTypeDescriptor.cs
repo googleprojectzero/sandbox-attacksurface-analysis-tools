@@ -28,7 +28,7 @@ namespace NtApiDotNet.Win32.RpcClient
         public Type BuiltinType { get; }
         public NdrBaseTypeReference NdrType { get; }
         public CodeExpression[] AdditionalArgs { get; }
-        public bool Pointer { get; }
+        public bool UniquePointer { get; }
         public bool ValueType { get; }
 
         public RpcTypeDescriptor(CodeTypeReference code_type, bool value_type, string unmarshal_method, 
@@ -68,11 +68,11 @@ namespace NtApiDotNet.Win32.RpcClient
             return original_desc.CodeType;
         }
 
-        public RpcTypeDescriptor(RpcTypeDescriptor original_desc, bool pointer)
+        public RpcTypeDescriptor(RpcTypeDescriptor original_desc, bool unique_pointer)
             : this(CreateType(original_desc), false, original_desc._unmarshal_method, original_desc._unmarshal_generic,
             original_desc._marshal_method, original_desc.NdrType, original_desc.AdditionalArgs)
         {
-            Pointer = pointer;
+            UniquePointer = unique_pointer;
         }
 
         public CodeMethodReferenceExpression GetMarshalMethod(CodeExpression target)

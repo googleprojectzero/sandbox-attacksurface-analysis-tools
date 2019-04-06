@@ -138,7 +138,7 @@ namespace NtApiDotNet.Ndr
         FC_REPRESENT_AS_PTR,        // 0xb3
         FC_USER_MARSHAL,            // 0xb4
         FC_PIPE,                    // 0xb5
-        FC_BLKHOLE,                 // 0xb6
+        FC_SUPPLEMENT,                 // 0xb6 - Seemed to originally be FC_BLKHOLE.
         FC_RANGE,                   // 0xb7
         FC_INT3264,                 // 0xb8
         FC_UINT3264,                // 0xb9
@@ -1461,14 +1461,55 @@ namespace NtApiDotNet.Ndr
         public NdrBlackholeFlags Flags { get; }
 
         internal NdrBlkHoleTypeReference(NdrParseContext context, BinaryReader reader)
-            : base(NdrFormatCharacter.FC_BLKHOLE)
+            : base(NdrFormatCharacter.FC_SUPPLEMENT)
         {
             Flags = (NdrBlackholeFlags)reader.ReadByte();
         }
 
         internal override string FormatType(NdrFormatter context)
         {
-            return $"{context.FormatComment($"FC_BLKHOLE {Flags}")} void";
+            return $"{context.FormatComment($"FC_SUPPLEMENT {Flags}")} void";
+        }
+
+        public override int GetSize()
+        {
+            return IntPtr.Size;
+        }
+    }
+
+    [Serializable]
+    public class NdrSupplementTypeReference : NdrBaseTypeReference
+    {
+        public NdrFormatCharacter BaseType { get; }
+        public NdrBaseTypeReference SupplementType { get; }
+
+        // Supplementary arguments depend on the type. For bind context this is flags + context id,
+        // for strings it's lower and upper range bounds.
+        public int Argument1 { get; }
+        public int Argument2 { get; }
+
+        internal NdrSupplementTypeReference(NdrParseContext context, BinaryReader reader)
+            : base(NdrFormatCharacter.FC_SUPPLEMENT)
+        {
+            BaseType = ReadFormat(reader);
+            SupplementType = Read(context, ReadTypeOffset(reader));
+            Argument1 = reader.ReadInt32();
+            Argument2 = reader.ReadInt32();
+        }
+
+        internal override string FormatType(NdrFormatter context)
+        {
+            string comment = $"FC_SUPPLEMENT {BaseType}";
+            if (SupplementType is NdrBaseStringTypeReference)
+            {
+                comment = $"{comment} Range({Argument1}, {Argument2})";
+            }
+            else if (SupplementType is NdrHandleTypeReference)
+            {
+                comment = $"{comment} Flags: {Argument1:X} ContextID: {Argument2:X})";
+            }
+
+            return $"{context.FormatComment(comment)} {SupplementType.FormatType(context)}";
         }
 
         public override int GetSize()
@@ -1913,8 +1954,8 @@ namespace NtApiDotNet.Ndr
                         return new NdrHandleTypeReference(format);
                     case NdrFormatCharacter.FC_PIPE:
                         return new NdrPipeTypeReference(context, reader);
-                    case NdrFormatCharacter.FC_BLKHOLE:
-                        return new NdrBlkHoleTypeReference(context, reader);
+                    case NdrFormatCharacter.FC_SUPPLEMENT:
+                        return new NdrSupplementTypeReference(context, reader);
                     default:
                         return new NdrUnknownTypeReference(format);
                 }

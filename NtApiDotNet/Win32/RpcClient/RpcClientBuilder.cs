@@ -124,7 +124,7 @@ namespace NtApiDotNet.Win32.RpcClient
             }
             else if (type is NdrSystemHandleTypeReference system_handle)
             {
-                return new RpcTypeDescriptor(system_handle.GetSystemHandleType(), 
+                return new RpcTypeDescriptor(system_handle.GetSystemHandleType(),
                     "ReadHandle", true, "Write", type);
             }
             else if (type is NdrSimpleArrayTypeReference simple_array)
@@ -142,10 +142,15 @@ namespace NtApiDotNet.Win32.RpcClient
             else if (type is NdrPointerTypeReference pointer)
             {
                 var desc = GetTypeDescriptor(pointer.Type);
-                if (desc != null)
+                if (pointer.Format != NdrFormatCharacter.FC_RP && desc != null)
                 {
                     return new RpcTypeDescriptor(desc, true);
                 }
+                return desc;
+            }
+            else if (type is NdrSupplementTypeReference supp)
+            {
+                return GetTypeDescriptor(supp.SupplementType);
             }
 
             return null;
@@ -206,7 +211,7 @@ namespace NtApiDotNet.Win32.RpcClient
 
 
                     s_type.AddField(f_type.CodeType, member.Name, MemberAttributes.Public);
-                    if (f_type.Pointer)
+                    if (f_type.UniquePointer)
                     {
                         deferred_members = true;
                         marshal_method.AddWriteReferent(MARSHAL_NAME, member.Name);
@@ -228,7 +233,7 @@ namespace NtApiDotNet.Win32.RpcClient
                     foreach (var member in struct_type.Members)
                     {
                         var f_type = GetTypeDescriptor(member.MemberType);
-                        if (f_type != null && f_type.Pointer)
+                        if (f_type != null && f_type.UniquePointer)
                         {
                             marshal_method.AddMarshalCall(f_type, MARSHAL_NAME, member.Name);
                             unmarshal_method.AddDeferredUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name);
@@ -295,7 +300,7 @@ namespace NtApiDotNet.Win32.RpcClient
                     {
                         continue;
                     }
-                    if (p_type.Pointer)
+                    if (p_type.UniquePointer)
                     {
                         method.AddWriteReferent(MARSHAL_NAME, p.Name);
                     }
@@ -321,7 +326,7 @@ namespace NtApiDotNet.Win32.RpcClient
                         continue;
                     }
 
-                    if (p_type.Pointer)
+                    if (p_type.UniquePointer)
                     {
                         method.AddReadReferent(UNMARSHAL_NAME, p.Name);
                         method.AddDeferredUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name);
