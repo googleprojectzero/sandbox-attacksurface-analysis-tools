@@ -159,14 +159,14 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        public void Write(IntPtr p)
+        public void Write(NdrInt3264 p)
         {
-            Write(p.ToInt32());
+            Write(p.Value);
         }
 
-        public void Write(UIntPtr p)
+        public void Write(NdrUInt3264 p)
         {
-            Write(p.ToUInt32());
+            Write(p.Value);
         }
 
         public void Write(NtObject handle)
@@ -289,10 +289,19 @@ namespace NtApiDotNet.Ndr
                 {
                     Write(g);
                 }
+                else if (v is NdrInt3264 ni)
+                {
+                    Write(ni);
+                }
+                else if (v is NdrUInt3264 nu)
+                {
+                    Write(nu);
+                }
                 else if (v is INdrStructure st)
                 {
                     Write(st);
                 }
+
                 throw new ArgumentException($"Unexpected type {v.GetType()}");
             }
         }

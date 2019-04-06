@@ -244,5 +244,110 @@ namespace NtApiDotNet.Win32.RpcClient
 
             return id;
         }
+
+        public static Type GetSystemHandleType(this NdrSystemHandleTypeReference type)
+        {
+            switch (type.Resource)
+            {
+                case NdrSystemHandleResource.File:
+                case NdrSystemHandleResource.Pipe:
+                case NdrSystemHandleResource.Socket:
+                    return typeof(NtFile);
+                case NdrSystemHandleResource.Semaphore:
+                    return typeof(NtSemaphore);
+                case NdrSystemHandleResource.RegKey:
+                    return typeof(NtKey);
+                case NdrSystemHandleResource.Event:
+                    return typeof(NtEvent);
+                case NdrSystemHandleResource.Job:
+                    return typeof(NtJob);
+                case NdrSystemHandleResource.Mutex:
+                    return typeof(NtMutant);
+                case NdrSystemHandleResource.Process:
+                    return typeof(NtProcess);
+                case NdrSystemHandleResource.Section:
+                    return typeof(NtSection);
+                case NdrSystemHandleResource.Thread:
+                    return typeof(NtThread);
+                case NdrSystemHandleResource.Token:
+                    return typeof(NtToken);
+                default:
+                    return typeof(NtObject);
+            }
+        }
+
+        public static Type GetBuiltinType(this NdrBaseTypeReference type)
+        {
+            if (type is NdrSimpleTypeReference)
+            {
+                switch (type.Format)
+                {
+                    case NdrFormatCharacter.FC_BYTE:
+                    case NdrFormatCharacter.FC_USMALL:
+                        return typeof(byte);
+                    case NdrFormatCharacter.FC_SMALL:
+                    case NdrFormatCharacter.FC_CHAR:
+                        return typeof(sbyte);
+                    case NdrFormatCharacter.FC_WCHAR:
+                        return typeof(char);
+                    case NdrFormatCharacter.FC_SHORT:
+                        return typeof(short);
+                    case NdrFormatCharacter.FC_USHORT:
+                        return typeof(ushort);
+                    case NdrFormatCharacter.FC_LONG:
+                        return typeof(int);
+                    case NdrFormatCharacter.FC_ULONG:
+                        return typeof(uint);
+                    case NdrFormatCharacter.FC_FLOAT:
+                        return typeof(float);
+                    case NdrFormatCharacter.FC_HYPER:
+                        return typeof(long);
+                    case NdrFormatCharacter.FC_DOUBLE:
+                        return typeof(double);
+                    case NdrFormatCharacter.FC_INT3264:
+                        return typeof(NdrInt3264);
+                    case NdrFormatCharacter.FC_UINT3264:
+                        return typeof(NdrUInt3264);
+                    case NdrFormatCharacter.FC_C_WSTRING:
+                    case NdrFormatCharacter.FC_WSTRING:
+                    case NdrFormatCharacter.FC_C_CSTRING:
+                    case NdrFormatCharacter.FC_CSTRING:
+                        return typeof(string);
+                    case NdrFormatCharacter.FC_ENUM16:
+                        return typeof(int);
+                    case NdrFormatCharacter.FC_ENUM32:
+                        return typeof(int);
+                    case NdrFormatCharacter.FC_SYSTEM_HANDLE:
+                        return typeof(IntPtr);
+                    case NdrFormatCharacter.FC_AUTO_HANDLE:
+                    case NdrFormatCharacter.FC_CALLBACK_HANDLE:
+                    case NdrFormatCharacter.FC_BIND_CONTEXT:
+                    case NdrFormatCharacter.FC_BIND_PRIMITIVE:
+                    case NdrFormatCharacter.FC_BIND_GENERIC:
+                        return typeof(IntPtr);
+                    case NdrFormatCharacter.FC_ERROR_STATUS_T:
+                        return typeof(uint);
+                }
+
+            }
+            else if (type is NdrKnownTypeReference known_type)
+            {
+                switch (known_type.KnownType)
+                {
+                    case NdrKnownTypes.GUID:
+                        return typeof(Guid);
+                    case NdrKnownTypes.BSTR:
+                        return typeof(string);
+                    case NdrKnownTypes.HSTRING:
+                        return typeof(string);
+                }
+            }
+            else if (type is NdrBaseStringTypeReference)
+            {
+                return typeof(string);
+            }
+
+            return null;
+        }
     }
 }

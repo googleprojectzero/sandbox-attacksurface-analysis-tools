@@ -120,20 +120,20 @@ namespace NtApiDotNet.Ndr
             return _reader.ReadUInt64();
         }
 
-        public IntPtr ReadIntPtr()
-        {
-            return new IntPtr(ReadInt32());
-        }
-
-        public UIntPtr ReadUIntPtr()
-        {
-            return new UIntPtr(ReadUInt32());
-        }
-
         public float ReadFloat()
         {
             Align(4);
             return _reader.ReadSingle();
+        }
+
+        public NdrInt3264 ReadInt3264()
+        {
+            return new NdrInt3264(ReadInt32());
+        }
+
+        public NdrUInt3264 ReadUInt3264()
+        {
+            return new NdrUInt3264(ReadUInt32());
         }
 
         public double ReadDouble()

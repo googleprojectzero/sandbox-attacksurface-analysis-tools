@@ -43,116 +43,11 @@ namespace NtApiDotNet.Win32.RpcClient
             return (_args.Flags & flag) == flag;
         }
 
-        private static Type GetSystemHandleType(NdrSystemHandleTypeReference type)
-        {
-            switch (type.Resource)
-            {
-                case NdrSystemHandleResource.File:
-                case NdrSystemHandleResource.Pipe:
-                case NdrSystemHandleResource.Socket:
-                    return typeof(NtFile);
-                case NdrSystemHandleResource.Semaphore:
-                    return typeof(NtSemaphore);
-                case NdrSystemHandleResource.RegKey:
-                    return typeof(NtKey);
-                case NdrSystemHandleResource.Event:
-                    return typeof(NtEvent);
-                case NdrSystemHandleResource.Job:
-                    return typeof(NtJob);
-                case NdrSystemHandleResource.Mutex:
-                    return typeof(NtMutant);
-                case NdrSystemHandleResource.Process:
-                    return typeof(NtProcess);
-                case NdrSystemHandleResource.Section:
-                    return typeof(NtSection);
-                case NdrSystemHandleResource.Thread:
-                    return typeof(NtThread);
-                case NdrSystemHandleResource.Token:
-                    return typeof(NtToken);
-                default:
-                    return typeof(NtObject);
-            }
-        }
-
-        private static Type GetBuiltinType(NdrBaseTypeReference type)
-        {
-            if (type is NdrSimpleTypeReference)
-            {
-                switch (type.Format)
-                {
-                    case NdrFormatCharacter.FC_BYTE:
-                    case NdrFormatCharacter.FC_USMALL:
-                        return typeof(byte);
-                    case NdrFormatCharacter.FC_SMALL:
-                    case NdrFormatCharacter.FC_CHAR:
-                        return typeof(sbyte);
-                    case NdrFormatCharacter.FC_WCHAR:
-                        return typeof(char);
-                    case NdrFormatCharacter.FC_SHORT:
-                        return typeof(short);
-                    case NdrFormatCharacter.FC_USHORT:
-                        return typeof(ushort);
-                    case NdrFormatCharacter.FC_LONG:
-                        return typeof(int);
-                    case NdrFormatCharacter.FC_ULONG:
-                        return typeof(uint);
-                    case NdrFormatCharacter.FC_FLOAT:
-                        return typeof(float);
-                    case NdrFormatCharacter.FC_HYPER:
-                        return typeof(long);
-                    case NdrFormatCharacter.FC_DOUBLE:
-                        return typeof(double);
-                    case NdrFormatCharacter.FC_INT3264:
-                        return typeof(IntPtr);
-                    case NdrFormatCharacter.FC_UINT3264:
-                        return typeof(UIntPtr);
-                    case NdrFormatCharacter.FC_C_WSTRING:
-                    case NdrFormatCharacter.FC_WSTRING:
-                    case NdrFormatCharacter.FC_C_CSTRING:
-                    case NdrFormatCharacter.FC_CSTRING:
-                        return typeof(string);
-                    case NdrFormatCharacter.FC_ENUM16:
-                        return typeof(int);
-                    case NdrFormatCharacter.FC_ENUM32:
-                        return typeof(int);
-                    case NdrFormatCharacter.FC_SYSTEM_HANDLE:
-                        return typeof(IntPtr);
-                    case NdrFormatCharacter.FC_AUTO_HANDLE:
-                    case NdrFormatCharacter.FC_CALLBACK_HANDLE:
-                    case NdrFormatCharacter.FC_BIND_CONTEXT:
-                    case NdrFormatCharacter.FC_BIND_PRIMITIVE:
-                    case NdrFormatCharacter.FC_BIND_GENERIC:
-                        return typeof(IntPtr);
-                    case NdrFormatCharacter.FC_ERROR_STATUS_T:
-                        return typeof(uint);
-                }
-
-            }
-            else if (type is NdrKnownTypeReference known_type)
-            {
-                switch (known_type.KnownType)
-                {
-                    case NdrKnownTypes.GUID:
-                        return typeof(Guid);
-                    case NdrKnownTypes.BSTR:
-                        return typeof(string);
-                    case NdrKnownTypes.HSTRING:
-                        return typeof(string);
-                }
-            }
-            else if (type is NdrBaseStringTypeReference)
-            {
-                return typeof(string);
-            }
-
-            return null;
-        }
-
         private RpcTypeDescriptor GetTypeDescriptorInternal(NdrBaseTypeReference type)
         {
             if (type is NdrSimpleTypeReference)
             {
-                Type builtin_type = GetBuiltinType(type);
+                Type builtin_type = type.GetBuiltinType();
                 if (builtin_type == null)
                 {
                     return null;
@@ -186,9 +81,9 @@ namespace NtApiDotNet.Win32.RpcClient
                     case NdrFormatCharacter.FC_DOUBLE:
                         return new RpcTypeDescriptor(builtin_type, "ReadDouble", false, "Write", type);
                     case NdrFormatCharacter.FC_INT3264:
-                        return new RpcTypeDescriptor(builtin_type, "ReadIntPtr", false, "Write", type);
+                        return new RpcTypeDescriptor(builtin_type, "ReadInt3264", false, "Write", type);
                     case NdrFormatCharacter.FC_UINT3264:
-                        return new RpcTypeDescriptor(builtin_type, "ReadUIntPtr", false, "Write", type);
+                        return new RpcTypeDescriptor(builtin_type, "ReadUInt3264", false, "Write", type);
                     case NdrFormatCharacter.FC_C_WSTRING:
                         return new RpcTypeDescriptor(builtin_type, "ReadConformantString", false, "WriteConformantString", type);
                     case NdrFormatCharacter.FC_C_CSTRING:
@@ -229,8 +124,8 @@ namespace NtApiDotNet.Win32.RpcClient
             }
             else if (type is NdrSystemHandleTypeReference system_handle)
             {
-                Type handle_type = GetSystemHandleType(system_handle);
-                return new RpcTypeDescriptor(handle_type, "ReadHandle", true, "Write", type);
+                return new RpcTypeDescriptor(system_handle.GetSystemHandleType(), 
+                    "ReadHandle", true, "Write", type);
             }
             else if (type is NdrSimpleArrayTypeReference simple_array)
             {
@@ -266,19 +161,6 @@ namespace NtApiDotNet.Win32.RpcClient
             return _type_descriptors[type];
         }
 
-        private static FieldDirection GetDirection(NdrProcedureParameter p)
-        {
-            if (p.IsInOut)
-            {
-                return FieldDirection.Ref;
-            }
-            else if (p.IsOut)
-            {
-                return FieldDirection.Out;
-            }
-            return FieldDirection.In;
-        }
-
         private const string MARSHAL_NAME = "m";
         private const string UNMARSHAL_NAME = "u";
 
@@ -294,69 +176,68 @@ namespace NtApiDotNet.Win32.RpcClient
                 }
             }
 
-            // Now generate the compelx types.
+            // Now generate the complex types.
             foreach (var complex_type in _server.ComplexTypes)
             {
-                if (complex_type is NdrBaseStructureTypeReference struct_type)
+                if (!(complex_type is NdrBaseStructureTypeReference struct_type))
                 {
-                    var s_type = ns.AddType(complex_type.Name);
-                    s_type.IsStruct = true;
-                    s_type.BaseTypes.Add(new CodeTypeReference(typeof(INdrStructure)));
+                    ns.Comments.Add(new CodeCommentStatement($"Unsupported type {complex_type.GetType()} {complex_type.Name}"));
+                    continue;
+                }
 
-                    var marshal_method = s_type.AddMarshalMethod(MARSHAL_NAME);
-                    marshal_method.AddAlign(MARSHAL_NAME, struct_type.Alignment + 1);
-                    var unmarshal_method = s_type.AddUnmarshalMethod(UNMARSHAL_NAME);
-                    unmarshal_method.AddAlign(UNMARSHAL_NAME, struct_type.Alignment + 1);
-                    bool deferred_members = false;
+                var s_type = ns.AddType(complex_type.Name);
+                s_type.IsStruct = true;
+                s_type.BaseTypes.Add(new CodeTypeReference(typeof(INdrStructure)));
 
+                var marshal_method = s_type.AddMarshalMethod(MARSHAL_NAME);
+                marshal_method.AddAlign(MARSHAL_NAME, struct_type.Alignment + 1);
+                var unmarshal_method = s_type.AddUnmarshalMethod(UNMARSHAL_NAME);
+                unmarshal_method.AddAlign(UNMARSHAL_NAME, struct_type.Alignment + 1);
+                bool deferred_members = false;
+
+                foreach (var member in struct_type.Members)
+                {
+                    var f_type = GetTypeDescriptor(member.MemberType);
+                    if (f_type == null)
+                    {
+                        s_type.Comments.Add(new CodeCommentStatement($"Unsupported type for {member.MemberType} {member.Name}"));
+                        continue;
+                    }
+
+
+                    s_type.AddField(f_type.CodeType, member.Name, MemberAttributes.Public);
+                    if (f_type.Pointer)
+                    {
+                        deferred_members = true;
+                        marshal_method.AddWriteReferent(MARSHAL_NAME, member.Name);
+                        unmarshal_method.AddReadReferent(UNMARSHAL_NAME, member.Name);
+                    }
+                    else
+                    {
+                        if (!f_type.ValueType)
+                        {
+                            marshal_method.AddNullCheck(MARSHAL_NAME, member.Name);
+                        }
+                        marshal_method.AddMarshalCall(f_type, MARSHAL_NAME, member.Name);
+                        unmarshal_method.AddUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name);
+                    }
+                }
+
+                if (deferred_members)
+                {
                     foreach (var member in struct_type.Members)
                     {
                         var f_type = GetTypeDescriptor(member.MemberType);
-                        if (f_type != null)
+                        if (f_type != null && f_type.Pointer)
                         {
-                            s_type.AddField(f_type.CodeType, member.Name, MemberAttributes.Public);
-                            if (f_type.Pointer)
-                            {
-                                deferred_members = true;
-                                marshal_method.AddWriteReferent(MARSHAL_NAME, member.Name);
-                                unmarshal_method.AddReadReferent(UNMARSHAL_NAME, member.Name);
-                            }
-                            else
-                            {
-                                if (!f_type.ValueType)
-                                {
-                                    marshal_method.AddNullCheck(MARSHAL_NAME, member.Name);
-                                }
-                                marshal_method.AddMarshalCall(f_type, MARSHAL_NAME, member.Name);
-                                unmarshal_method.AddUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name);
-                            }
-                        }
-                        else
-                        {
-                            s_type.Comments.Add(new CodeCommentStatement($"Unsupported type for {member.MemberType} {member.Name}"));
+                            marshal_method.AddMarshalCall(f_type, MARSHAL_NAME, member.Name);
+                            unmarshal_method.AddDeferredUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name);
                         }
                     }
-
-                    if (deferred_members)
-                    {
-                        foreach (var member in struct_type.Members)
-                        {
-                            var f_type = GetTypeDescriptor(member.MemberType);
-                            if (f_type != null && f_type.Pointer)
-                            {
-                                marshal_method.AddMarshalCall(f_type, MARSHAL_NAME, member.Name);
-                                unmarshal_method.AddDeferredUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name);
-                            }
-                        }
-                    }
-
-                    marshal_method.AddAlign(MARSHAL_NAME, struct_type.Alignment + 1);
-                    unmarshal_method.AddAlign(UNMARSHAL_NAME, struct_type.Alignment + 1);
                 }
-                else
-                {
-                    ns.Comments.Add(new CodeCommentStatement($"Unsupported type {complex_type.GetType()} {complex_type.Name}"));
-                }
+
+                marshal_method.AddAlign(MARSHAL_NAME, struct_type.Alignment + 1);
+                unmarshal_method.AddAlign(UNMARSHAL_NAME, struct_type.Alignment + 1);
             }
         }
 
