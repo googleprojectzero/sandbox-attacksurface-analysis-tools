@@ -4085,6 +4085,8 @@ Specify the RPC client to connect.
 Specify the path to the ALPC server port. If not specified this will lookup the endpoint from the endpoint mapper.
 .PARAMETER SecurityQualityOfService
 Specify the security quality of service for the connection.
+.PARAMETER PassThru
+Specify to the pass the client object to the output.
 .INPUTS
 None
 .OUTPUTS
@@ -4102,14 +4104,18 @@ Connect an RPC ALPC client with anonymous impersonation level.
 function Connect-RpcAlpcClient {
     [CmdletBinding()]
     Param(
-        [parameter(Mandatory, Position = 0)]
-        [NtApiDotNet.Win32.RpcAlpcClient]$Client,
+        [parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [NtApiDotNet.Win32.RpcClient.RpcAlpcClientBase]$Client,
         [parameter(Position = 1)]
         [string]$AlpcPath,
-        [NtApiDotNet.SecurityQualityOfService]$SecurityQualityOfService
+        [NtApiDotNet.SecurityQualityOfService]$SecurityQualityOfService,
+        [switch]$PassThru
     )
 
     $Client.Connect($AlpcPath, $SecurityQualityOfService)
+    if ($PassThru) {
+        $Client | Write-Output
+    }
 }
 
 <#
