@@ -83,6 +83,7 @@
     <Compile Include="MemoryInformation.cs" />
     <Compile Include="Ndr\IMemoryReader.cs" />
     <Compile Include="Ndr\INdrStructure.cs" />
+    <Compile Include="Ndr\NdrContextHandle.cs" />
     <Compile Include="Ndr\NdrInt3264.cs" />
     <Compile Include="Ndr\NdrComProxyDefinition.cs" />
     <Compile Include="Ndr\NdrFormatter.cs" />

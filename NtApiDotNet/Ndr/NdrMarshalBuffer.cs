@@ -306,6 +306,12 @@ namespace NtApiDotNet.Ndr
             }
         }
 
+        public void Write(NdrContextHandle handle)
+        {
+            Write(handle.Attributes);
+            Write(handle.Uuid);
+        }
+
         public void CheckNull<T>(T obj, string name) where T : class
         {
             if (obj == null)

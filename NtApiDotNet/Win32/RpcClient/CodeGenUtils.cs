@@ -319,12 +319,6 @@ namespace NtApiDotNet.Win32.RpcClient
                         return typeof(int);
                     case NdrFormatCharacter.FC_SYSTEM_HANDLE:
                         return typeof(IntPtr);
-                    case NdrFormatCharacter.FC_AUTO_HANDLE:
-                    case NdrFormatCharacter.FC_CALLBACK_HANDLE:
-                    case NdrFormatCharacter.FC_BIND_CONTEXT:
-                    case NdrFormatCharacter.FC_BIND_PRIMITIVE:
-                    case NdrFormatCharacter.FC_BIND_GENERIC:
-                        return typeof(IntPtr);
                     case NdrFormatCharacter.FC_ERROR_STATUS_T:
                         return typeof(uint);
                 }

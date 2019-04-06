@@ -205,6 +205,13 @@ namespace NtApiDotNet.Ndr
 
             return (T)_handles[index - 1].DuplicateObject();
         }
+
+        public NdrContextHandle ReadContextHandle()
+        {
+            int attributes = ReadInt32();
+            Guid uuid = ReadGuid();
+            return new NdrContextHandle(attributes, uuid);
+        }
     }
 #pragma warning restore 1591
 }

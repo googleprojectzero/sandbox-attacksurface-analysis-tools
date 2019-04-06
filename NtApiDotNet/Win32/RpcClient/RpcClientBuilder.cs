@@ -91,12 +91,6 @@ namespace NtApiDotNet.Win32.RpcClient
                     case NdrFormatCharacter.FC_CSTRING:
                     case NdrFormatCharacter.FC_WSTRING:
                         break;
-                    case NdrFormatCharacter.FC_AUTO_HANDLE:
-                    case NdrFormatCharacter.FC_CALLBACK_HANDLE:
-                    case NdrFormatCharacter.FC_BIND_CONTEXT:
-                    case NdrFormatCharacter.FC_BIND_PRIMITIVE:
-                    case NdrFormatCharacter.FC_BIND_GENERIC:
-                        break;
                 }
             }
             else if (type is NdrKnownTypeReference known_type)
@@ -151,6 +145,13 @@ namespace NtApiDotNet.Win32.RpcClient
             else if (type is NdrSupplementTypeReference supp)
             {
                 return GetTypeDescriptor(supp.SupplementType);
+            }
+            else if (type is NdrHandleTypeReference handle)
+            {
+                if (handle.Format == NdrFormatCharacter.FC_BIND_CONTEXT)
+                {
+                    return new RpcTypeDescriptor(typeof(NdrContextHandle), "ReadContextHandle", false, "Write", type);
+                }
             }
 
             return null;
