@@ -198,6 +198,26 @@ namespace NtApiDotNet.Ndr
             return procs.AsReadOnly();
         }
 
+        private void ReadTypes(IntPtr midl_type_pickling_info_ptr, IntPtr fmt_str_ptr, IEnumerable<int> fmt_offsets)
+        {
+            var pickle_info = _reader.ReadStruct<MIDL_TYPE_PICKLING_INFO>(midl_type_pickling_info_ptr);
+            if (pickle_info.Version != 0x33205054)
+            {
+                throw new ArgumentException($"Unsupported picking type version {pickle_info.Version:X}");
+            }
+            int desc_size = 4;
+            if ((pickle_info.Flags & MidlTypePicklingInfoFlags.NewCorrDesc) != 0)
+            {
+                desc_size = 6;
+                // TODO: Might need to support extended correlation descriptors.
+            }
+            NdrParseContext context = new NdrParseContext(_type_cache, null, new MIDL_STUB_DESC(), fmt_str_ptr, desc_size, _reader, NdrParserFlags.IgnoreUserMarshal);
+            foreach (var i in fmt_offsets)
+            {
+                NdrBaseTypeReference.Read(context, i);
+            }
+        }
+
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         private delegate void GetProxyDllInfo(out IntPtr pInfo, out IntPtr pId);
 
@@ -609,6 +629,45 @@ namespace NtApiDotNet.Ndr
         /// List of parsed complex types from the NDR.
         /// </summary>
         public IEnumerable<NdrComplexTypeReference> ComplexTypes { get { return Types.OfType<NdrComplexTypeReference>(); } }
+
+        #endregion
+
+        #region Static Methods
+        /// <summary>
+        /// Parse NDR complex type information from a pickling structure. Used to extract explicit Encode/Decode method information.
+        /// </summary>
+        /// <param name="process">The process to read from.</param>
+        /// <param name="midl_type_pickling_info">Pointer to the MIDL_TYPE_PICKLING_INFO structure.</param>
+        /// <param name="format_string">The format string to read from.</param>
+        /// <param name="start_offsets">Offsets into the format string to the start of the types.</param>
+        /// <returns>The list of complex types.</returns>
+        /// <remarks>This function is used to extract type information for calls to NdrMesTypeDecode2. MIDL_TYPE_PICKLING_INFO is the second parameter,
+        /// format_string is the third (minus the offset).</remarks>
+        public static IEnumerable<NdrComplexTypeReference> ReadPicklingComplexTypes(NtProcess process, IntPtr midl_type_pickling_info, IntPtr format_string, params int[] start_offsets)
+        {
+            if (start_offsets.Length == 0)
+            {
+                return new NdrComplexTypeReference[0];
+            }
+
+            NdrParser parser = new NdrParser(process, null, NdrParserFlags.IgnoreUserMarshal);
+            parser.ReadTypes(midl_type_pickling_info, format_string, start_offsets);
+            return parser.ComplexTypes;
+        }
+
+        /// <summary>
+        /// Parse NDR complex type information from a pickling structure. Used to extract explicit Encode/Decode method information.
+        /// </summary>
+        /// <param name="midl_type_pickling_info">Pointer to the MIDL_TYPE_PICKLING_INFO structure.</param>
+        /// <param name="format_string">The format string to read from.</param>
+        /// <param name="start_offsets">Offsets into the format string to the start of the types.</param>
+        /// <returns>The list of complex types.</returns>
+        /// <remarks>This function is used to extract type information for calls to NdrMesTypeDecode2. MIDL_TYPE_PICKLING_INFO is the second parameter,
+        /// format_string is the third (minus the offset).</remarks>
+        public static IEnumerable<NdrComplexTypeReference> ReadPicklingComplexTypes(IntPtr midl_type_pickling_info, IntPtr format_string, params int[] start_offsets)
+        {
+            return ReadPicklingComplexTypes(null, midl_type_pickling_info, format_string, start_offsets);
+        }
 
         #endregion
     }

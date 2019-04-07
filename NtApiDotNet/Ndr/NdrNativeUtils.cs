@@ -558,6 +558,22 @@ namespace NtApiDotNet.Ndr
     }
 
     [Flags]
+    internal enum MidlTypePicklingInfoFlags
+    {
+        None = 0,
+        NewCorrDesc = 0x1,
+        Oicf = 0x2,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MIDL_TYPE_PICKLING_INFO
+    {
+        public int Version;
+        public MidlTypePicklingInfoFlags Flags;
+        // UINT_PTR Reserved[3];
+    }
+
+    [Flags]
     enum NdrInterpreterFlags : byte
     {
         FullPtrUsed = 0x01,
