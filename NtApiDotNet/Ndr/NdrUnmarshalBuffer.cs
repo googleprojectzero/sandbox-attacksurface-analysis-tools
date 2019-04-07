@@ -260,6 +260,11 @@ namespace NtApiDotNet.Ndr
             return ReadEmbeddedPointer(() => unmarshal_func(arg, arg2));
         }
 
+        public NdrEmbeddedPointer<T> ReadEmbeddedStructPointer<T>() where T : INdrStructure, new()
+        {
+            return ReadEmbeddedPointer(() => ReadStruct<T>());
+        }
+
         public void PopuluateDeferredPointers()
         {
             foreach (var a in _deferred_reads)

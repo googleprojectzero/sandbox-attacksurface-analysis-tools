@@ -194,7 +194,7 @@ namespace NtApiDotNet.Win32.RpcClient
                 if (complex_type is NdrBaseStructureTypeReference struct_type)
                 {
                     _type_descriptors[complex_type] = new RpcTypeDescriptor(complex_type.Name, true,
-                        "ReadStruct", true, "Write", complex_type);
+                        "ReadStruct", true, "WriteStruct", complex_type);
                 }
             }
 
@@ -292,15 +292,22 @@ namespace NtApiDotNet.Win32.RpcClient
                         continue;
                     }
 
-                    var p_obj = method.AddParam(p_type.CodeType, p.Name);
+                    var p_obj = method.AddParam(p_type.GetParameterType(), p.Name);
                     p_obj.Direction = p.GetDirection();
                     if (!p.IsIn)
                     {
                         continue;
                     }
-                    if (p_type.Pointer && p_type.PointerType != RpcPointerType.Reference)
+                    if (p_type.Pointer)
                     {
-                        method.AddWriteReferent(MARSHAL_NAME, p.Name);
+                        if (p_type.PointerType == RpcPointerType.Reference)
+                        {
+                            method.AddNullCheck(MARSHAL_NAME, p.Name);
+                        }
+                        else
+                        {
+                            method.AddWriteReferent(MARSHAL_NAME, p.Name);
+                        }
                     }
                     else if (!p_type.ValueType)
                     {

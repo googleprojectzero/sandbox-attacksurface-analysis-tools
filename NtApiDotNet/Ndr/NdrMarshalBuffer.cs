@@ -245,7 +245,7 @@ namespace NtApiDotNet.Ndr
             Write(guid.ToByteArray());
         }
 
-        public void Write(INdrStructure structure)
+        public void WriteStruct(INdrStructure structure)
         {
             structure.Marshal(this);
         }
@@ -301,7 +301,7 @@ namespace NtApiDotNet.Ndr
                 }
                 else if (v is INdrStructure st)
                 {
-                    Write(st);
+                    WriteStruct(st);
                 }
 
                 throw new ArgumentException($"Unexpected type {v.GetType()}");
@@ -336,6 +336,11 @@ namespace NtApiDotNet.Ndr
         public void WriteEmbeddedPointer<T, U, V>(NdrEmbeddedPointer<T> pointer, Action<T, U, V> writer, U arg, V arg2)
         {
             WriteEmbeddedPointer(pointer, () => writer(pointer, arg, arg2));
+        }
+
+        public void WriteEmbeddedStructPointer<T>(NdrEmbeddedPointer<T> pointer) where T : INdrStructure, new()
+        {
+            WriteEmbeddedPointer(pointer, () => WriteStruct((T)pointer));
         }
 
         public void FlushDeferredWrites()

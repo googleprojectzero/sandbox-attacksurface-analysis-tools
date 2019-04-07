@@ -150,6 +150,57 @@ namespace NtApiDotNet.Win32.RpcClient
             method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(marshal_name), "FlushDeferredWrites"));
         }
 
+        public static CodeTypeReference CreateActionType(params CodeTypeReference[] args)
+        {
+            CodeTypeReference delegate_type = null;
+            switch(args.Length)
+            {
+                case 0:
+                    delegate_type = new CodeTypeReference(typeof(Action));
+                    break;
+                case 1:
+                    delegate_type = new CodeTypeReference(typeof(Action<>));
+                    break;
+                case 2:
+                    delegate_type = new CodeTypeReference(typeof(Action<,>));
+                    break;
+                case 3:
+                    delegate_type = new CodeTypeReference(typeof(Action<,,>));
+                    break;
+                default:
+                    throw new ArgumentException("Too many delegate arguments");
+            }
+
+            delegate_type.TypeArguments.AddRange(args);
+            return delegate_type;
+        }
+
+        public static CodeTypeReference CreateFunc(CodeTypeReference ret, params CodeTypeReference[] args)
+        {
+            CodeTypeReference delegate_type = null;
+            switch (args.Length)
+            {
+                case 0:
+                    delegate_type = new CodeTypeReference(typeof(Func<>));
+                    break;
+                case 1:
+                    delegate_type = new CodeTypeReference(typeof(Func<,>));
+                    break;
+                case 2:
+                    delegate_type = new CodeTypeReference(typeof(Func<,,>));
+                    break;
+                case 3:
+                    delegate_type = new CodeTypeReference(typeof(Func<,,,>));
+                    break;
+                default:
+                    throw new ArgumentException("Too many delegate arguments");
+            }
+
+            delegate_type.TypeArguments.AddRange(args);
+            delegate_type.TypeArguments.Add(ret);
+            return delegate_type;
+        }
+
         public static void AddDeferredMarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string marshal_name, string var_name, params RpcMarshalArgument[] additional_args)
         {
             List<CodeExpression> args = new List<CodeExpression>
@@ -157,10 +208,22 @@ namespace NtApiDotNet.Win32.RpcClient
                 GetVariable(var_name)
             };
 
-            args.Add(descriptor.GetMarshalMethod(GetVariable(marshal_name)));
-            args.AddRange(descriptor.AdditionalArgs.Select(r => r.Expression));
-            args.AddRange(additional_args.Select(r => r.Expression));
-            CodeMethodReferenceExpression write_pointer = new CodeMethodReferenceExpression(GetVariable(marshal_name), "WriteEmbeddedPointer", descriptor.CodeType);
+            string method_name;
+            if (descriptor.Constructed)
+            {
+                method_name = "WriteEmbeddedStructPointer";
+            }
+            else
+            {
+                method_name = "WriteEmbeddedPointer";
+                var create_delegate = new CodeDelegateCreateExpression(CreateActionType(descriptor.CodeType),
+                    GetVariable(marshal_name), descriptor.MarshalMethod);
+
+                args.Add(create_delegate);
+                args.AddRange(descriptor.AdditionalArgs.Select(r => r.Expression));
+                args.AddRange(additional_args.Select(r => r.Expression));
+            }
+            CodeMethodReferenceExpression write_pointer = new CodeMethodReferenceExpression(GetVariable(marshal_name), method_name, descriptor.CodeType);
             CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(write_pointer, args.ToArray());
             method.Statements.Add(invoke);
         }
@@ -180,13 +243,30 @@ namespace NtApiDotNet.Win32.RpcClient
             return new CodePrimitiveExpression(obj);
         }
 
-        public static void AddDeferredEmbeddedUnmarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name, string var_name, params CodeExpression[] additional_args)
+        public static void AddDeferredEmbeddedUnmarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name, string var_name, params RpcMarshalArgument[] additional_args)
         {
+            string method_name = null;
             List<CodeExpression> args = new List<CodeExpression>();
-            args.Add(descriptor.GetUnmarshalMethod(GetVariable(unmarshal_name)));
+            if (descriptor.Constructed)
+            {
+                method_name = "ReadEmbeddedStructPointer";
+            }
+            else
+            {
+                if (descriptor.UnmarshalGeneric)
+                {
+                    method.ThrowNotImplemented("Can't support generic pointer unmarshal");
+                    return;
+                }
+                method_name = "ReadEmbeddedPointer";
+                var create_delegate = new CodeDelegateCreateExpression(CreateFunc(descriptor.CodeType, additional_args.Select(r => r.CodeType).ToArray()),
+                    GetVariable(unmarshal_name), descriptor.UnmarshalMethod);
+                args.Add(create_delegate);
+            }
+
             args.AddRange(descriptor.AdditionalArgs.Select(r => r.Expression));
-            args.AddRange(additional_args);
-            CodeMethodReferenceExpression read_pointer = new CodeMethodReferenceExpression(GetVariable(unmarshal_name), "ReadEmbeddedPointer", descriptor.CodeType);
+            args.AddRange(additional_args.Select(r => r.Expression));
+            CodeMethodReferenceExpression read_pointer = new CodeMethodReferenceExpression(GetVariable(unmarshal_name), method_name, descriptor.CodeType);
             CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(read_pointer, args.ToArray());
             CodeAssignStatement assign = new CodeAssignStatement(GetVariable(var_name), invoke);
             method.Statements.Add(assign);
