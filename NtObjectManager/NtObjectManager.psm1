@@ -4038,6 +4038,8 @@ Specify to ignore the compiled client cache and regenerate the source code.
 Specify the interface ID for a generic client.
 .PARAMETER InterfaceVersion
 Specify the interface version for a generic client.
+.PARAMETER Provider
+Specify a Code DOM provider. Defaults to C#.
 .INPUTS
 None
 .OUTPUTS
@@ -4060,7 +4062,8 @@ function Get-RpcAlpcClient {
         [parameter(Mandatory, Position=0, ParameterSetName = "FromIdAndVersion")]
         [string]$InterfaceId,
         [parameter(Mandatory, Position=1, ParameterSetName = "FromIdAndVersion")]
-        [Version]$InterfaceVersion
+        [Version]$InterfaceVersion,
+        [System.CodeDom.Compiler.CodeDomProvider]$Provider
     )
 
     if ($PSCmdlet.ParameterSetName -eq "FromServer") {
@@ -4068,7 +4071,7 @@ function Get-RpcAlpcClient {
         $args.NamespaceName = $NamespaceName
         $args.ClientName = $ClientName
         $args.Flags = "GenerateValueConstructors"
-        [NtApiDotNet.Win32.RpcClient.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache)
+        [NtApiDotNet.Win32.RpcClient.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache, $Provider)
     } else {
         [NtApiDotNet.Win32.RpcAlpcClient]::new($InterfaceId, $InterfaceVersion)
     }
