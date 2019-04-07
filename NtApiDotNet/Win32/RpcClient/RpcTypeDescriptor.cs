@@ -74,7 +74,7 @@ namespace NtApiDotNet.Win32.RpcClient
         }
 
         public RpcTypeDescriptor(RpcTypeDescriptor original_desc, RpcPointerType pointer_type)
-            : this(original_desc.CodeType, false, original_desc.UnmarshalMethod, original_desc.UnmarshalGeneric,
+            : this(original_desc.CodeType, original_desc.ValueType, original_desc.UnmarshalMethod, original_desc.UnmarshalGeneric,
             original_desc.MarshalMethod, original_desc.NdrType, original_desc.AdditionalArgs)
         {
             PointerType = pointer_type;
