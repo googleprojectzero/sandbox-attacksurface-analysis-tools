@@ -34,10 +34,6 @@ namespace NtApiDotNet.Win32.RpcClient
 
     internal sealed class RpcTypeDescriptor
     {
-        private readonly string _unmarshal_method;
-        private readonly string _marshal_method;
-        private readonly bool _unmarshal_generic;
-
         public CodeTypeReference CodeType { get; }
         public Type BuiltinType { get; }
         public NdrBaseTypeReference NdrType { get; }
@@ -46,14 +42,17 @@ namespace NtApiDotNet.Win32.RpcClient
         public RpcPointerType PointerType { get; }
         public bool ValueType { get; }
         public bool Constructed { get; }
+        public string UnmarshalMethod { get; }
+        public bool UnmarshalGeneric { get; }
+        public string MarshalMethod { get; }
 
         public RpcTypeDescriptor(CodeTypeReference code_type, bool value_type, string unmarshal_method, 
             bool unmarshal_generic, string marshal_method, NdrBaseTypeReference ndr_type, params RpcMarshalArgument[] additional_args)
         {
             CodeType = code_type;
-            _unmarshal_method = unmarshal_method;
-            _marshal_method = marshal_method;
-            _unmarshal_generic = unmarshal_generic;
+            UnmarshalMethod = unmarshal_method;
+            MarshalMethod = marshal_method;
+            UnmarshalGeneric = unmarshal_generic;
             NdrType = ndr_type;
             AdditionalArgs = additional_args;
             ValueType = value_type;
@@ -74,36 +73,26 @@ namespace NtApiDotNet.Win32.RpcClient
             Constructed = true;
         }
 
-        private static CodeTypeReference CreateType(RpcTypeDescriptor original_desc)
-        {
-            if (original_desc.ValueType)
-            {
-                var ret = new CodeTypeReference(typeof(Nullable<>));
-                ret.TypeArguments.Add(original_desc.CodeType);
-                return ret;
-            }
-            return original_desc.CodeType;
-        }
-
         public RpcTypeDescriptor(RpcTypeDescriptor original_desc, RpcPointerType pointer_type)
-            : this(CreateType(original_desc), false, original_desc._unmarshal_method, original_desc._unmarshal_generic,
-            original_desc._marshal_method, original_desc.NdrType, original_desc.AdditionalArgs)
+            : this(original_desc.CodeType, false, original_desc.UnmarshalMethod, original_desc.UnmarshalGeneric,
+            original_desc.MarshalMethod, original_desc.NdrType, original_desc.AdditionalArgs)
         {
             PointerType = pointer_type;
+            Constructed = original_desc.Constructed;
         }
 
         public CodeMethodReferenceExpression GetMarshalMethod(CodeExpression target)
         {
-            return new CodeMethodReferenceExpression(target, _marshal_method);
+            return new CodeMethodReferenceExpression(target, MarshalMethod);
         }
 
         public CodeMethodReferenceExpression GetUnmarshalMethod(CodeExpression target)
         {
-            if (_unmarshal_generic)
+            if (UnmarshalGeneric)
             {
-                return new CodeMethodReferenceExpression(target, _unmarshal_method, CodeType);
+                return new CodeMethodReferenceExpression(target, UnmarshalMethod, CodeType);
             }
-            return new CodeMethodReferenceExpression(target, _unmarshal_method);
+            return new CodeMethodReferenceExpression(target, UnmarshalMethod);
         }
 
         public CodeTypeReference GetStructureType()
@@ -115,7 +104,17 @@ namespace NtApiDotNet.Win32.RpcClient
                 return ret;
             }
             return CodeType;
+        }
 
+        public CodeTypeReference GetParameterType()
+        {
+            if (Pointer && ValueType)
+            {
+                CodeTypeReference ret = new CodeTypeReference(typeof(Nullable<>));
+                ret.TypeArguments.Add(CodeType);
+                return ret;
+            }
+            return CodeType;
         }
     }
 }
