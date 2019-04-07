@@ -169,6 +169,10 @@ namespace NtApiDotNet.Win32.RpcClient
                     return new RpcTypeDescriptor(typeof(NdrContextHandle), "ReadContextHandle", false, "Write", type);
                 }
             }
+            else if (type is NdrRangeTypeReference range)
+            {
+                return GetTypeDescriptor(range.RangeType);
+            }
 
             return null;
         }
@@ -288,7 +292,8 @@ namespace NtApiDotNet.Win32.RpcClient
                     RpcTypeDescriptor p_type = GetTypeDescriptor(p.Type);
                     if (p_type == null)
                     {
-                        method.ThrowNotImplemented($"Param {p.Name} unsupported type");
+                        System.Diagnostics.Debug.WriteLine($"Param {p.Name} unsupported type - {p.Type}");
+                        method.ThrowNotImplemented($"Param {p.Name} unsupported type - {p.Type}");
                         continue;
                     }
 
@@ -306,6 +311,7 @@ namespace NtApiDotNet.Win32.RpcClient
                         }
                         else
                         {
+                            System.Diagnostics.Debug.WriteLine($"{p.Name} - {p_type.CodeType.BaseType} - {p_type.Constructed} - {p_type.ValueType}");
                             method.AddWriteReferent(MARSHAL_NAME, p.Name);
                         }
                     }
@@ -410,7 +416,7 @@ namespace NtApiDotNet.Win32.RpcClient
             {
                 foreach (CompilerError e in results.Errors)
                 {
-                    System.Diagnostics.Debug.WriteLine($"{e.Line} {e.Column} {e.ErrorText}");
+                    System.Diagnostics.Debug.WriteLine($"{e.Line} {e.Column} {e.FileName} {e.ErrorText}");
                 }
                 throw new InvalidOperationException("Internal error compiling RPC source code");
             }
