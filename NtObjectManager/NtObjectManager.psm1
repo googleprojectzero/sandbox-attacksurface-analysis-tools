@@ -4040,6 +4040,8 @@ Specify the interface ID for a generic client.
 Specify the interface version for a generic client.
 .PARAMETER Provider
 Specify a Code DOM provider. Defaults to C#.
+.PARAMETER EnableDebugging
+Specify to enable debugging of the built client.
 .INPUTS
 None
 .OUTPUTS
@@ -4063,14 +4065,22 @@ function Get-RpcAlpcClient {
         [string]$InterfaceId,
         [parameter(Mandatory, Position=1, ParameterSetName = "FromIdAndVersion")]
         [Version]$InterfaceVersion,
-        [System.CodeDom.Compiler.CodeDomProvider]$Provider
+        [parameter(ParameterSetName = "FromServer")]
+        [System.CodeDom.Compiler.CodeDomProvider]$Provider,
+        [parameter(ParameterSetName = "FromServer")]
+        [switch]$EnableDebugging
     )
 
     if ($PSCmdlet.ParameterSetName -eq "FromServer") {
         $args = [NtApiDotNet.Win32.RpcClient.RpcClientBuilderArguments]::new();
         $args.NamespaceName = $NamespaceName
         $args.ClientName = $ClientName
-        $args.Flags = "GenerateValueConstructors"
+        
+        if ($EnableDebugging) {
+            $args.Flags = "GenerateValueConstructors, EnableDebugging"
+        } else {
+            $args.Flags = "GenerateValueConstructors"
+        }
         [NtApiDotNet.Win32.RpcClient.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache, $Provider)
     } else {
         [NtApiDotNet.Win32.RpcAlpcClient]::new($InterfaceId, $InterfaceVersion)

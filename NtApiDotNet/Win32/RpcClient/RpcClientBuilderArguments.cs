@@ -30,6 +30,10 @@ namespace NtApiDotNet.Win32.RpcClient
         /// Generate public methods to create defined complex types.
         /// </summary>
         GenerateValueConstructors = 1,
+        /// <summary>
+        /// Enable debugging for built clients.
+        /// </summary>
+        EnableDebugging = 2,
     }
 
     /// <summary>

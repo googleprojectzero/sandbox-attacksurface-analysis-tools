@@ -376,18 +376,20 @@ namespace NtApiDotNet.Win32.RpcClient
             return unit;
         }
 
-        private static Assembly Compile(CodeCompileUnit unit, CodeDomProvider provider)
+        private static Assembly Compile(CodeCompileUnit unit, RpcClientBuilderArguments args, CodeDomProvider provider)
         {
-            CompilerParameters compileParams = new CompilerParameters();
-            TempFileCollection tempFiles = new TempFileCollection(Path.GetTempPath());
+            CompilerParameters compile_params = new CompilerParameters();
+            TempFileCollection temp_files = new TempFileCollection(Path.GetTempPath());
 
-            compileParams.GenerateExecutable = false;
-            compileParams.GenerateInMemory = true;
-            compileParams.IncludeDebugInformation = true;
-            compileParams.TempFiles = tempFiles;
-            tempFiles.KeepFiles = false;
-            compileParams.ReferencedAssemblies.Add(typeof(RpcClientBuilder).Assembly.Location);
-            CompilerResults results = provider.CompileAssemblyFromDom(compileParams, unit);
+            bool enable_debugging = args.Flags.HasFlag(RpcClientBuilderFlags.EnableDebugging);
+
+            compile_params.GenerateExecutable = false;
+            compile_params.GenerateInMemory = true;
+            compile_params.IncludeDebugInformation = enable_debugging;
+            compile_params.TempFiles = temp_files;
+            temp_files.KeepFiles = enable_debugging;
+            compile_params.ReferencedAssemblies.Add(typeof(RpcClientBuilder).Assembly.Location);
+            CompilerResults results = provider.CompileAssemblyFromDom(compile_params, unit);
             if (results.Errors.HasErrors)
             {
                 foreach (CompilerError e in results.Errors)
@@ -470,13 +472,13 @@ namespace NtApiDotNet.Win32.RpcClient
         {
             if (ignore_cache)
             {
-                return Compile(new RpcClientBuilder(server, args).Generate(), provider);
+                return Compile(new RpcClientBuilder(server, args).Generate(), args, provider);
             }
 
             var key = Tuple.Create(server, args);
             if (!_compiled_clients.ContainsKey(key))
             {
-                _compiled_clients[key] = Compile(new RpcClientBuilder(server, args).Generate(), provider);
+                _compiled_clients[key] = Compile(new RpcClientBuilder(server, args).Generate(), args, provider);
             }
             return _compiled_clients[key];
         }
