@@ -60,6 +60,15 @@ namespace NtApiDotNet.Ndr
             return _value.ToString();
         }
 
+        /// <summary>
+        /// Get the value from the embedded pointer.
+        /// </summary>
+        /// <returns>The value of the pointer.</returns>
+        public T GetValue()
+        {
+            return _value;
+        }
+
         internal static Tuple<NdrEmbeddedPointer<T>, Action> CreateDeferredReader(Func<T> unmarshal_func)
         {
             NdrEmbeddedPointer<T> ret = new NdrEmbeddedPointer<T>(default(T));
