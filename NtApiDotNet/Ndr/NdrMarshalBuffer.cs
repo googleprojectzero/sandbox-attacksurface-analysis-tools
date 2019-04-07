@@ -153,7 +153,7 @@ namespace NtApiDotNet.Ndr
             WriteFixedChars(str.ToCharArray(), actual_count);
         }
 
-        public void Write<T>(T[] arr) where T : INdrStructure
+        public void WriteArray<T>(T[] arr) where T : INdrStructure
         {
             foreach (var v in arr)
             {
@@ -171,7 +171,7 @@ namespace NtApiDotNet.Ndr
             Write(p.Value);
         }
 
-        public void Write(NtObject handle)
+        public void WriteSystemHandle(NtObject handle)
         {
             _handles.Add(handle);
             Write(_handles.Count);
@@ -239,7 +239,7 @@ namespace NtApiDotNet.Ndr
             Write(values);
         }
 
-        public void Write(Guid guid)
+        public void WriteGuid(Guid guid)
         {
             Align(4);
             Write(guid.ToByteArray());
@@ -289,7 +289,7 @@ namespace NtApiDotNet.Ndr
                 }
                 else if (v is Guid g)
                 {
-                    Write(g);
+                    WriteGuid(g);
                 }
                 else if (v is NdrInt3264 ni)
                 {
@@ -308,10 +308,10 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        public void Write(NdrContextHandle handle)
+        public void WriteContextHandle(NdrContextHandle handle)
         {
             Write(handle.Attributes);
-            Write(handle.Uuid);
+            WriteGuid(handle.Uuid);
         }
 
         private void WriteEmbeddedPointer<T>(NdrEmbeddedPointer<T> pointer, Action writer)

@@ -196,7 +196,7 @@ namespace NtApiDotNet.Ndr
             return ret;
         }
 
-        public T ReadHandle<T>() where T : NtObject
+        public T ReadSystemHandle<T>() where T : NtObject
         {
             int index = ReadInt32();
             if (!NtObjectUtils.IsWindows81OrLess)

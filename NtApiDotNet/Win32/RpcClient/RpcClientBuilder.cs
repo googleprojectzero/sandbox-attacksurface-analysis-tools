@@ -47,47 +47,41 @@ namespace NtApiDotNet.Win32.RpcClient
         {
             if (type is NdrSimpleTypeReference)
             {
-                Type builtin_type = type.GetBuiltinType();
-                if (builtin_type == null)
-                {
-                    return null;
-                }
-
                 switch (type.Format)
                 {
                     case NdrFormatCharacter.FC_BYTE:
                     case NdrFormatCharacter.FC_USMALL:
-                        return new RpcTypeDescriptor(builtin_type, "ReadByte", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(byte), "ReadByte", false, "Write", type);
                     case NdrFormatCharacter.FC_SMALL:
                     case NdrFormatCharacter.FC_CHAR:
-                        return new RpcTypeDescriptor(builtin_type, "ReadSByte", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(sbyte), "ReadSByte", false, "Write", type);
                     case NdrFormatCharacter.FC_WCHAR:
-                        return new RpcTypeDescriptor(builtin_type, "ReadChar", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(char), "ReadChar", false, "Write", type);
                     case NdrFormatCharacter.FC_SHORT:
-                        return new RpcTypeDescriptor(builtin_type, "ReadInt16", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(short), "ReadInt16", false, "Write", type);
                     case NdrFormatCharacter.FC_USHORT:
-                        return new RpcTypeDescriptor(builtin_type, "ReadUInt16", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(ushort), "ReadUInt16", false, "Write", type);
                     case NdrFormatCharacter.FC_LONG:
                     case NdrFormatCharacter.FC_ENUM16:
                     case NdrFormatCharacter.FC_ENUM32:
-                        return new RpcTypeDescriptor(builtin_type, "ReadInt32", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(int), "ReadInt32", false, "Write", type);
                     case NdrFormatCharacter.FC_ULONG:
                     case NdrFormatCharacter.FC_ERROR_STATUS_T:
-                        return new RpcTypeDescriptor(builtin_type, "ReadUInt32", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(uint), "ReadUInt32", false, "Write", type);
                     case NdrFormatCharacter.FC_FLOAT:
-                        return new RpcTypeDescriptor(builtin_type, "ReadFloat", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(float), "ReadFloat", false, "Write", type);
                     case NdrFormatCharacter.FC_HYPER:
-                        return new RpcTypeDescriptor(builtin_type, "ReadInt64", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(long), "ReadInt64", false, "Write", type);
                     case NdrFormatCharacter.FC_DOUBLE:
-                        return new RpcTypeDescriptor(builtin_type, "ReadDouble", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(double), "ReadDouble", false, "Write", type);
                     case NdrFormatCharacter.FC_INT3264:
-                        return new RpcTypeDescriptor(builtin_type, "ReadInt3264", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(NdrInt3264), "ReadInt3264", false, "Write", type);
                     case NdrFormatCharacter.FC_UINT3264:
-                        return new RpcTypeDescriptor(builtin_type, "ReadUInt3264", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(NdrUInt3264), "ReadUInt3264", false, "Write", type);
                     case NdrFormatCharacter.FC_C_WSTRING:
-                        return new RpcTypeDescriptor(builtin_type, "ReadConformantString", false, "WriteConformantString", type);
+                        return new RpcTypeDescriptor(typeof(string), "ReadConformantString", false, "WriteConformantString", type);
                     case NdrFormatCharacter.FC_C_CSTRING:
-                        return new RpcTypeDescriptor(builtin_type, "ReadAnsiConformantString", false, "WriteAnsiConformantString", type);
+                        return new RpcTypeDescriptor(typeof(string), "ReadAnsiConformantString", false, "WriteAnsiConformantString", type);
                     case NdrFormatCharacter.FC_CSTRING:
                     case NdrFormatCharacter.FC_WSTRING:
                         break;
@@ -98,10 +92,10 @@ namespace NtApiDotNet.Win32.RpcClient
                 switch (known_type.KnownType)
                 {
                     case NdrKnownTypes.GUID:
-                        return new RpcTypeDescriptor(typeof(Guid), "ReadGuid", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(Guid), "ReadGuid", false, "WriteGuid", type);
                     case NdrKnownTypes.BSTR:
-                        break;
                     case NdrKnownTypes.HSTRING:
+                        // Implement these custom marshallers.
                         break;
                 }
             }
@@ -119,14 +113,16 @@ namespace NtApiDotNet.Win32.RpcClient
             else if (type is NdrSystemHandleTypeReference system_handle)
             {
                 return new RpcTypeDescriptor(system_handle.GetSystemHandleType(),
-                    "ReadHandle", true, "Write", type);
+                    "ReadSystemHandle", true, "WriteSystemHandle", type);
             }
             else if (type is NdrSimpleArrayTypeReference simple_array)
             {
                 RpcTypeDescriptor element_type = GetTypeDescriptor(simple_array.ElementType);
-                RpcMarshalArgument arg = new RpcMarshalArgument();
-                arg.CodeType = new CodeTypeReference(typeof(int));
-                arg.Expression = CodeGenUtils.GetPrimitive(simple_array.ElementCount);
+                RpcMarshalArgument arg = new RpcMarshalArgument
+                {
+                    CodeType = new CodeTypeReference(typeof(int)),
+                    Expression = CodeGenUtils.GetPrimitive(simple_array.ElementCount)
+                };
                 if (element_type.BuiltinType == typeof(char))
                 {
                     return new RpcTypeDescriptor(typeof(string), "ReadFixedString", false, "WriteFixedString", type, arg);
@@ -166,7 +162,7 @@ namespace NtApiDotNet.Win32.RpcClient
             {
                 if (handle.Format == NdrFormatCharacter.FC_BIND_CONTEXT)
                 {
-                    return new RpcTypeDescriptor(typeof(NdrContextHandle), "ReadContextHandle", false, "Write", type);
+                    return new RpcTypeDescriptor(typeof(NdrContextHandle), "ReadContextHandle", false, "WriteContextHandle", type);
                 }
             }
             else if (type is NdrRangeTypeReference range)
