@@ -265,6 +265,11 @@ namespace NtApiDotNet.Ndr
             return ReadEmbeddedPointer(() => ReadStruct<T>());
         }
 
+        public void WriteUnsupported(NdrUnsupportedType type, string name)
+        {
+            throw new NotImplementedException($"Writing type {name} is unsupported");
+        }
+
         public void PopuluateDeferredPointers()
         {
             foreach (var a in _deferred_reads)

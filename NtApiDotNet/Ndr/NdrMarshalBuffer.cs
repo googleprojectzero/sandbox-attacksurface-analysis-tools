@@ -352,6 +352,11 @@ namespace NtApiDotNet.Ndr
             _deferred_writes.Clear();
         }
 
+        public NdrUnsupportedType ReadUnsupported(string name)
+        {
+            throw new NotImplementedException($"Reading type {name} is unsupported");
+        }
+
         public void CheckNull<T>(T obj, string name) where T : class
         {
             if (obj == null)
