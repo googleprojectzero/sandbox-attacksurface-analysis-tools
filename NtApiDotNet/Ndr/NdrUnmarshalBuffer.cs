@@ -265,6 +265,20 @@ namespace NtApiDotNet.Ndr
             return ReadEmbeddedPointer(() => ReadStruct<T>());
         }
 
+        public T[] ReadVaryingBogusArrayStruct<T>() where T : INdrStructure, new()
+        {
+            // We don't really care about conformance or variance as we're not going to
+            // validate anything.
+            int offset = ReadInt32();
+            int actual_count = ReadInt32();
+            T[] ret = new T[actual_count];
+            for (int i = 0; i < actual_count; ++i)
+            {
+                ret[i] = ReadStruct<T>();
+            }
+            return ret;
+        }
+
         public NdrUnsupported ReadUnsupported(string name)
         {
             throw new NotImplementedException($"Reading type {name} is unsupported");

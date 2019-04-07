@@ -30,6 +30,17 @@ namespace NtApiDotNet.Win32.RpcClient
     {
         public CodeExpression Expression;
         public CodeTypeReference CodeType;
+
+        public RpcMarshalArgument(CodeExpression expression, CodeTypeReference code_type)
+        {
+            Expression = expression;
+            CodeType = code_type;
+        }
+
+        public static RpcMarshalArgument CreateFromPrimitive<T>(T primitive)
+        {
+            return new RpcMarshalArgument(new CodePrimitiveExpression(primitive), new CodeTypeReference(typeof(T)));
+        }
     }
 
     internal sealed class RpcTypeDescriptor
@@ -45,9 +56,13 @@ namespace NtApiDotNet.Win32.RpcClient
         public string UnmarshalMethod { get; }
         public bool UnmarshalGeneric { get; }
         public string MarshalMethod { get; }
+        public NdrCorrelationDescriptor ConformanceDescriptor { get; }
+        public NdrCorrelationDescriptor VarianceDescriptor { get; }
 
         public RpcTypeDescriptor(CodeTypeReference code_type, bool value_type, string unmarshal_method, 
-            bool unmarshal_generic, string marshal_method, NdrBaseTypeReference ndr_type, params RpcMarshalArgument[] additional_args)
+            bool unmarshal_generic, string marshal_method, NdrBaseTypeReference ndr_type,
+            NdrCorrelationDescriptor conformance, NdrCorrelationDescriptor variance,
+            params RpcMarshalArgument[] additional_args)
         {
             CodeType = code_type;
             UnmarshalMethod = unmarshal_method;
@@ -56,26 +71,33 @@ namespace NtApiDotNet.Win32.RpcClient
             NdrType = ndr_type;
             AdditionalArgs = additional_args;
             ValueType = value_type;
+            ConformanceDescriptor = conformance ?? new NdrCorrelationDescriptor();
+            VarianceDescriptor = variance ?? new NdrCorrelationDescriptor();
         }
 
         public RpcTypeDescriptor(Type code_type, string unmarshal_method, bool unmarshal_generic, 
-            string marshal_method, NdrBaseTypeReference ndr_type, params RpcMarshalArgument[] additional_args)
+            string marshal_method, NdrBaseTypeReference ndr_type,
+            NdrCorrelationDescriptor conformance, NdrCorrelationDescriptor variance,
+            params RpcMarshalArgument[] additional_args)
             : this(new CodeTypeReference(code_type), code_type.IsValueType || typeof(NtObject).IsAssignableFrom(code_type), 
-                  unmarshal_method, unmarshal_generic, marshal_method, ndr_type, additional_args)
+                  unmarshal_method, unmarshal_generic, marshal_method, ndr_type, conformance, variance, additional_args)
         {
             BuiltinType = code_type;
         }
 
         public RpcTypeDescriptor(string name, bool value_type, string unmarshal_method, bool unmarshal_generic, 
-            string marshal_method, NdrBaseTypeReference ndr_type, params RpcMarshalArgument[] additional_args)
-            : this(new CodeTypeReference(name), value_type, unmarshal_method, unmarshal_generic, marshal_method, ndr_type, additional_args)
+            string marshal_method, NdrBaseTypeReference ndr_type,
+            NdrCorrelationDescriptor conformance, NdrCorrelationDescriptor variance,
+            params RpcMarshalArgument[] additional_args)
+            : this(new CodeTypeReference(name), value_type, unmarshal_method, unmarshal_generic, marshal_method, ndr_type, 
+                  conformance, variance, additional_args)
         {
             Constructed = true;
         }
 
         public RpcTypeDescriptor(RpcTypeDescriptor original_desc, RpcPointerType pointer_type)
             : this(original_desc.CodeType, original_desc.ValueType, original_desc.UnmarshalMethod, original_desc.UnmarshalGeneric,
-            original_desc.MarshalMethod, original_desc.NdrType, original_desc.AdditionalArgs)
+            original_desc.MarshalMethod, original_desc.NdrType, original_desc.ConformanceDescriptor, original_desc.VarianceDescriptor, original_desc.AdditionalArgs)
         {
             PointerType = pointer_type;
             Constructed = original_desc.Constructed;
@@ -90,7 +112,7 @@ namespace NtApiDotNet.Win32.RpcClient
         {
             if (UnmarshalGeneric)
             {
-                return new CodeMethodReferenceExpression(target, UnmarshalMethod, CodeType);
+                return new CodeMethodReferenceExpression(target, UnmarshalMethod, CodeType.ArrayElementType ?? CodeType);
             }
             return new CodeMethodReferenceExpression(target, UnmarshalMethod);
         }

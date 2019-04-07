@@ -910,14 +910,12 @@ namespace NtApiDotNet.Ndr
                 return NumberofElements;
             }
 
-            if (VarianceDescriptor != null
-                && VarianceDescriptor.CorrelationType == NdrCorrelationType.FC_CONSTANT_CONFORMANCE)
+            if (VarianceDescriptor.IsConstant)
             {
                 return VarianceDescriptor.Offset;
             }
 
-            if (ConformanceDescriptor != null
-                && ConformanceDescriptor.CorrelationType == NdrCorrelationType.FC_CONSTANT_CONFORMANCE)
+            if (ConformanceDescriptor.IsConstant)
             {
                 return ConformanceDescriptor.Offset;
             }

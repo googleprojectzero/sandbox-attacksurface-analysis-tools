@@ -403,6 +403,33 @@ namespace NtApiDotNet.Ndr
             WriteEmbeddedPointer(pointer, () => WriteStruct((T)pointer));
         }
 
+        public void WriteVaryingBogusArrayStruct<T>(T[] array, long variance) where T : INdrStructure, new()
+        {
+            // Offset.
+            WriteInt32(0);
+            // Actual Count
+            WriteInt32((int)variance);
+            if (array == null)
+            {
+                array = new T[0];
+            }
+            for (int i = 0; i < (int)variance; ++i)
+            {
+                if (i < array.Length)
+                {
+                    WriteStruct(array[i]);
+                }
+                else
+                {
+                    WriteStruct(new T());
+                }
+            }
+        }
+
+        public void WriteVaryingBogusArrayStruct<T>(T[] array) where T : INdrStructure, new()
+        {
+        }
+
         public void FlushDeferredWrites()
         {
             foreach (var a in _deferred_writes)
