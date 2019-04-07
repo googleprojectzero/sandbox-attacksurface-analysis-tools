@@ -53,6 +53,12 @@ namespace NtApiDotNet.Ndr
         public int Offset { get; private set; }
         public NdrCorrelationFlags Flags { get; private set; }
         public bool IsValid { get; private set; }
+        public bool IsConstant => CorrelationType == NdrCorrelationType.FC_CONSTANT_CONFORMANCE;
+        public bool IsNormal => CorrelationType == NdrCorrelationType.FC_NORMAL_CONFORMANCE;
+
+        internal NdrCorrelationDescriptor()
+        {
+        }
 
         internal NdrCorrelationDescriptor(NdrParseContext context, BinaryReader reader)
         {
@@ -76,6 +82,7 @@ namespace NtApiDotNet.Ndr
                 ValueType = (NdrFormatCharacter)(type_byte & 0xF);
                 Operator = (NdrFormatCharacter)op_byte;
                 Offset = offset;
+                // TODO: Constant conformance also uses the flag value as an upper byte, maybe merge it in?
                 Flags = (NdrCorrelationFlags)flags;
             }
         }
