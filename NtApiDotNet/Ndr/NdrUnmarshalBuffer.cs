@@ -215,6 +215,26 @@ namespace NtApiDotNet.Ndr
             return new NdrContextHandle(attributes, uuid);
         }
 
+        public T ReadPointer<T>(Func<T> unmarshal_func) where T : class
+        {
+            int referent = ReadReferent();
+            if (referent == 0)
+            {
+                return null;
+            }
+            return unmarshal_func();
+        }
+
+        public T ReadPointer<T, U>(Func<U, T> unmarshal_func, U arg) where T : class
+        {
+            return ReadPointer(() => unmarshal_func(arg));
+        }
+
+        public T ReadPointer<T, U, V>(Func<U, V, T> unmarshal_func, U arg, V arg2) where T : class
+        {
+            return ReadPointer(() => unmarshal_func(arg, arg2));
+        }
+
         public NdrEmbeddedPointer<T> ReadEmbeddedPointer<T>(Func<T> unmarshal_func)
         {
             int referent = ReadReferent();
@@ -240,7 +260,7 @@ namespace NtApiDotNet.Ndr
             return ReadEmbeddedPointer(() => unmarshal_func(arg, arg2));
         }
 
-        public void PopluateDeferredPointers()
+        public void PopuluateDeferredPointers()
         {
             foreach (var a in _deferred_reads)
             {

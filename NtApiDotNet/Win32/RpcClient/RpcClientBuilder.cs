@@ -212,7 +212,6 @@ namespace NtApiDotNet.Win32.RpcClient
                 marshal_method.AddAlign(MARSHAL_NAME, struct_type.Alignment + 1);
                 var unmarshal_method = s_type.AddUnmarshalMethod(UNMARSHAL_NAME);
                 unmarshal_method.AddAlign(UNMARSHAL_NAME, struct_type.Alignment + 1);
-                bool deferred_members = false;
 
                 foreach (var member in struct_type.Members)
                 {
@@ -226,9 +225,8 @@ namespace NtApiDotNet.Win32.RpcClient
                     s_type.AddField(f_type.GetStructureType(), member.Name, MemberAttributes.Public);
                     if (f_type.Pointer)
                     {
-                        deferred_members = true;
                         marshal_method.AddDeferredMarshalCall(f_type, MARSHAL_NAME, member.Name);
-                        unmarshal_method.AddReadReferent(UNMARSHAL_NAME, member.Name);
+                        unmarshal_method.AddDeferredEmbeddedUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name);
                     }
                     else
                     {
@@ -240,21 +238,6 @@ namespace NtApiDotNet.Win32.RpcClient
                         unmarshal_method.AddUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name);
                     }
                 }
-
-                if (deferred_members)
-                {
-                    foreach (var member in struct_type.Members)
-                    {
-                        var f_type = GetTypeDescriptor(member.MemberType);
-                        if (f_type != null && f_type.Pointer)
-                        {
-                            unmarshal_method.AddDeferredUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name);
-                        }
-                    }
-                }
-
-                marshal_method.AddAlign(MARSHAL_NAME, struct_type.Alignment + 1);
-                unmarshal_method.AddAlign(UNMARSHAL_NAME, struct_type.Alignment + 1);
             }
         }
 
@@ -345,12 +328,15 @@ namespace NtApiDotNet.Win32.RpcClient
 
                     if (p_type.Pointer)
                     {
-                        method.AddReadReferent(UNMARSHAL_NAME, p.Name);
-                        method.AddDeferredUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name);
+                        method.AddPointerUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name);
                     }
                     else
                     {
                         method.AddUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name);
+                    }
+                    if (p_type.Constructed)
+                    {
+                        method.AddPopluateDeferredPointers(UNMARSHAL_NAME);
                     }
                 }
 

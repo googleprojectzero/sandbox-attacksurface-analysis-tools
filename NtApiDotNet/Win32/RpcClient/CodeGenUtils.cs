@@ -179,7 +179,19 @@ namespace NtApiDotNet.Win32.RpcClient
             return new CodePrimitiveExpression(obj);
         }
 
-        public static void AddDeferredUnmarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name, string var_name, params CodeExpression[] additional_args)
+        public static void AddDeferredEmbeddedUnmarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name, string var_name, params CodeExpression[] additional_args)
+        {
+            List<CodeExpression> args = new List<CodeExpression>();
+            args.Add(descriptor.GetUnmarshalMethod(GetVariable(unmarshal_name)));
+            args.AddRange(descriptor.AdditionalArgs);
+            args.AddRange(additional_args);
+            CodeMethodReferenceExpression read_pointer = new CodeMethodReferenceExpression(GetVariable(unmarshal_name), "ReadEmbeddedPointer", descriptor.CodeType);
+            CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(read_pointer, args.ToArray());
+            CodeAssignStatement assign = new CodeAssignStatement(GetVariable(var_name), invoke);
+            method.Statements.Add(assign);
+        }
+
+        public static void AddPointerUnmarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name, string var_name, params CodeExpression[] additional_args)
         {
             List<CodeExpression> args = new List<CodeExpression>();
             args.AddRange(descriptor.AdditionalArgs);
@@ -188,23 +200,21 @@ namespace NtApiDotNet.Win32.RpcClient
             CodeAssignStatement assign_null = new CodeAssignStatement(GetVariable(var_name), new CodeDefaultValueExpression(descriptor.CodeType));
 
             CodeConditionStatement if_statement = new CodeConditionStatement(
-                new CodeBinaryOperatorExpression(GetVariable($"{var_name}_referent"), CodeBinaryOperatorType.IdentityInequality, GetPrimitive(0)),
+                new CodeBinaryOperatorExpression(new CodeMethodInvokeExpression(GetVariable(unmarshal_name), "ReadReferent"), CodeBinaryOperatorType.IdentityInequality, GetPrimitive(0)),
                 new CodeStatement[] { assign }, new CodeStatement[] { assign_null });
 
             method.Statements.Add(if_statement);
+        }
+
+        public static void AddPopluateDeferredPointers(this CodeMemberMethod method, string unmarshal_name)
+        {
+            method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(unmarshal_name), "PopuluateDeferredPointers"));
         }
 
         public static void AddWriteReferent(this CodeMemberMethod method, string marshal_name, string var_name)
         {
             CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(GetVariable(marshal_name), "WriteReferent", GetVariable(var_name));
             method.Statements.Add(invoke);
-        }
-
-        public static void AddReadReferent(this CodeMemberMethod method, string unmarshal_name, string var_name)
-        {
-            CodeVariableDeclarationStatement decl = new CodeVariableDeclarationStatement(typeof(int), $"{var_name}_referent",
-                new CodeMethodInvokeExpression(GetVariable(unmarshal_name), "ReadReferent"));
-            method.Statements.Add(decl);
         }
 
         public static void AddUnmarshalReturn(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name, params CodeExpression[] additional_args)
