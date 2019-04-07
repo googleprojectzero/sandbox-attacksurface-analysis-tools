@@ -63,9 +63,25 @@ namespace NtApiDotNet.Ndr
             _writer.Write(b);
         }
 
+        public void WriteByte(byte? b)
+        {
+            if (b.HasValue)
+            {
+                WriteByte(b.Value);
+            }
+        }
+
         public void WriteSByte(sbyte b)
         {
             _writer.Write(b);
+        }
+
+        public void WriteSByte(sbyte? b)
+        {
+            if (b.HasValue)
+            {
+                WriteSByte(b.Value);
+            }
         }
 
         public void WriteInt16(short s)
@@ -74,10 +90,26 @@ namespace NtApiDotNet.Ndr
             _writer.Write(s);
         }
 
+        public void WriteInt16(short? s)
+        {
+            if (s.HasValue)
+            {
+                WriteInt16(s.Value);
+            }
+        }
+
         public void WriteUInt16(ushort s)
         {
             Align(2);
             _writer.Write(s);
+        }
+
+        public void WriteUInt16(ushort? s)
+        {
+            if (s.HasValue)
+            {
+                WriteUInt16(s.Value);
+            }
         }
 
         public void WriteInt32(int i)
@@ -86,10 +118,26 @@ namespace NtApiDotNet.Ndr
             _writer.Write(i);
         }
 
+        public void WriteInt32(int? i)
+        {
+            if (i.HasValue)
+            {
+                WriteInt32(i.Value);
+            }
+        }
+
         public void WriteUInt32(uint i)
         {
             Align(4);
             _writer.Write(i);
+        }
+
+        public void WriteUInt32(uint? i)
+        {
+            if (i.HasValue)
+            {
+                WriteUInt32(i.Value);
+            }
         }
 
         public void WriteInt64(long l)
@@ -98,10 +146,26 @@ namespace NtApiDotNet.Ndr
             _writer.Write(l);
         }
 
+        public void WriteInt64(long? l)
+        {
+            if (l.HasValue)
+            {
+                WriteInt64(l.Value);
+            }
+        }
+
         public void WriteUInt64(ulong l)
         {
             Align(8);
             _writer.Write(l);
+        }
+
+        public void WriteUInt64(ulong? l)
+        {
+            if (l.HasValue)
+            {
+                WriteUInt64(l.Value);
+            }
         }
 
         public void WriteFloat(float f)
@@ -110,16 +174,40 @@ namespace NtApiDotNet.Ndr
             _writer.Write(f);
         }
 
+        public void WriteFloat(float? f)
+        {
+            if (f.HasValue)
+            {
+                WriteFloat(f.Value);
+            }
+        }
+
         public void WriteDouble(double d)
         {
             Align(8);
             _writer.Write(d);
         }
 
+        public void WriteDouble(double? d)
+        {
+            if (d.HasValue)
+            {
+                WriteDouble(d.Value);
+            }
+        }
+
         public void WriteChar(char c)
         {
             Align(2);
             _writer.Write(c);
+        }
+
+        public void WriteChar(char? c)
+        {
+            if (c.HasValue)
+            {
+                WriteChar(c.Value);
+            }
         }
 
         public void Write(byte[] array)
@@ -172,9 +260,25 @@ namespace NtApiDotNet.Ndr
             WriteInt32(p.Value);
         }
 
+        public void WriteInt3264(NdrInt3264? p)
+        {
+            if (p.HasValue)
+            {
+                WriteInt3264(p.Value);
+            }
+        }
+
         public void WriteUInt3264(NdrUInt3264 p)
         {
             WriteUInt32(p.Value);
+        }
+
+        public void WriteUInt3264(NdrUInt3264? p)
+        {
+            if (p.HasValue)
+            {
+                WriteUInt3264(p.Value);
+            }
         }
 
         public void WriteSystemHandle(NtObject handle)
@@ -251,67 +355,17 @@ namespace NtApiDotNet.Ndr
             Write(guid.ToByteArray());
         }
 
+        public void WriteGuid(Guid? guid)
+        {
+            if (guid.HasValue)
+            {
+                WriteGuid(guid.Value);
+            }
+        }
+
         public void WriteStruct(INdrStructure structure)
         {
             structure.Marshal(this);
-        }
-
-        public void Write<T>(T? value) where T : struct
-        {
-            if (value.HasValue)
-            {
-                object v = value.Value;
-                if (v is byte b)
-                {
-                    WriteByte(b);
-                }
-                else if (v is short s)
-                {
-                    WriteInt16(s);
-                }
-                else if (v is int i)
-                {
-                    WriteInt32(i);
-                }
-                else if (v is long l)
-                {
-                    WriteInt64(l);
-                }
-                if (v is sbyte sb)
-                {
-                    WriteSByte(sb);
-                }
-                else if (v is ushort us)
-                {
-                    WriteUInt16(us);
-                }
-                else if (v is uint ui)
-                {
-                    WriteUInt32(ui);
-                }
-                else if (v is ulong ul)
-                {
-                    WriteUInt64(ul);
-                }
-                else if (v is Guid g)
-                {
-                    WriteGuid(g);
-                }
-                else if (v is NdrInt3264 ni)
-                {
-                    WriteInt3264(ni);
-                }
-                else if (v is NdrUInt3264 nu)
-                {
-                    WriteUInt3264(nu);
-                }
-                else if (v is INdrStructure st)
-                {
-                    WriteStruct(st);
-                }
-
-                throw new ArgumentException($"Unexpected type {v.GetType()}");
-            }
         }
 
         public void WriteContextHandle(NdrContextHandle handle)
