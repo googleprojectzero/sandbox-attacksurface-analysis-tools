@@ -385,7 +385,7 @@ namespace NtApiDotNet.Win32.RpcClient
             return unit;
         }
 
-        private static Assembly Compile(CodeCompileUnit unit)
+        private static Assembly Compile(CodeCompileUnit unit, CodeDomProvider provider)
         {
             CompilerParameters compileParams = new CompilerParameters();
             TempFileCollection tempFiles = new TempFileCollection(Path.GetTempPath());
@@ -395,7 +395,6 @@ namespace NtApiDotNet.Win32.RpcClient
             compileParams.IncludeDebugInformation = true;
             compileParams.TempFiles = tempFiles;
             compileParams.ReferencedAssemblies.Add(typeof(RpcClientBuilder).Assembly.Location);
-            CodeDomProvider provider = new CSharpCodeProvider();
             CompilerResults results = provider.CompileAssemblyFromDom(compileParams, unit);
             if (results.Errors.HasErrors)
             {
@@ -472,21 +471,35 @@ namespace NtApiDotNet.Win32.RpcClient
         /// <param name="server">The RPC server to base the client on.</param>
         /// <param name="args">Additional builder arguments.</param>
         /// <param name="ignore_cache">True to ignore cached assemblies.</param>
+        /// <param name="provider">Code DOM provider to compile the assembly.</param>
         /// <returns>The compiled assembly.</returns>
         /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
-        public static Assembly BuildAssembly(RpcServer server, RpcClientBuilderArguments args, bool ignore_cache)
+        public static Assembly BuildAssembly(RpcServer server, RpcClientBuilderArguments args, bool ignore_cache, CodeDomProvider provider)
         {
             if (ignore_cache)
             {
-                return Compile(new RpcClientBuilder(server, args).Generate());
+                return Compile(new RpcClientBuilder(server, args).Generate(), provider);
             }
 
             var key = Tuple.Create(server, args);
             if (!_compiled_clients.ContainsKey(key))
             {
-                _compiled_clients[key] = Compile(new RpcClientBuilder(server, args).Generate());
+                _compiled_clients[key] = Compile(new RpcClientBuilder(server, args).Generate(), provider);
             }
             return _compiled_clients[key];
+        }
+
+        /// <summary>
+        /// Compile an in-memory assembly for the RPC client.
+        /// </summary>
+        /// <param name="server">The RPC server to base the client on.</param>
+        /// <param name="args">Additional builder arguments.</param>
+        /// <param name="ignore_cache">True to ignore cached assemblies.</param>
+        /// <returns>The compiled assembly.</returns>
+        /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
+        public static Assembly BuildAssembly(RpcServer server, RpcClientBuilderArguments args, bool ignore_cache)
+        {
+            return BuildAssembly(server, args, ignore_cache, new CSharpCodeProvider());
         }
 
         /// <summary>
@@ -530,12 +543,26 @@ namespace NtApiDotNet.Win32.RpcClient
         /// <param name="server">The RPC server to base the client on.</param>
         /// <param name="ignore_cache">True to ignore cached assemblies.</param>
         /// <param name="args">Additional builder arguments.</param>
+        /// <param name="provider">Code DOM provider to compile the assembly.</param>
+        /// <returns>The created RPC client.</returns>
+        /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
+        public static RpcAlpcClientBase CreateClient(RpcServer server, RpcClientBuilderArguments args, bool ignore_cache, CodeDomProvider provider)
+        {
+            Type type = BuildAssembly(server, args, ignore_cache, provider ?? new CSharpCodeProvider()).GetTypes().Where(t => typeof(RpcAlpcClientBase).IsAssignableFrom(t)).First();
+            return (RpcAlpcClientBase)Activator.CreateInstance(type);
+        }
+
+        /// <summary>
+        /// Create an instance of an RPC client.
+        /// </summary>
+        /// <param name="server">The RPC server to base the client on.</param>
+        /// <param name="ignore_cache">True to ignore cached assemblies.</param>
+        /// <param name="args">Additional builder arguments.</param>
         /// <returns>The created RPC client.</returns>
         /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
         public static RpcAlpcClientBase CreateClient(RpcServer server, RpcClientBuilderArguments args, bool ignore_cache)
         {
-            Type type = BuildAssembly(server, args, ignore_cache).GetTypes().Where(t => typeof(RpcAlpcClientBase).IsAssignableFrom(t)).First();
-            return (RpcAlpcClientBase)Activator.CreateInstance(type);
+            return CreateClient(server, args, ignore_cache, null);
         }
 
         /// <summary>
