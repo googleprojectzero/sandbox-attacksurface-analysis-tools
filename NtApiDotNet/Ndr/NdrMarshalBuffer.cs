@@ -58,62 +58,68 @@ namespace NtApiDotNet.Ndr
             _stm.Write(buffer, 0, buffer.Length);
         }
 
-        public void Write(byte b)
+        public void WriteByte(byte b)
         {
             _writer.Write(b);
         }
 
-        public void Write(sbyte b)
+        public void WriteSByte(sbyte b)
         {
             _writer.Write(b);
         }
 
-        public void Write(short s)
+        public void WriteInt16(short s)
         {
             Align(2);
             _writer.Write(s);
         }
 
-        public void Write(ushort s)
+        public void WriteUInt16(ushort s)
         {
             Align(2);
             _writer.Write(s);
         }
 
-        public void Write(int i)
+        public void WriteInt32(int i)
         {
             Align(4);
             _writer.Write(i);
         }
 
-        public void Write(uint i)
+        public void WriteUInt32(uint i)
         {
             Align(4);
             _writer.Write(i);
         }
 
-        public void Write(long l)
+        public void WriteInt64(long l)
         {
             Align(8);
             _writer.Write(l);
         }
 
-        public void Write(ulong l)
+        public void WriteUInt64(ulong l)
         {
             Align(8);
             _writer.Write(l);
         }
 
-        public void Write(float f)
+        public void WriteFloat(float f)
         {
             Align(4);
             _writer.Write(f);
         }
 
-        public void Write(double d)
+        public void WriteDouble(double d)
         {
             Align(8);
             _writer.Write(d);
+        }
+
+        public void WriteChar(char c)
+        {
+            Align(2);
+            _writer.Write(c);
         }
 
         public void Write(byte[] array)
@@ -161,23 +167,23 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        public void Write(NdrInt3264 p)
+        public void WriteInt3264(NdrInt3264 p)
         {
-            Write(p.Value);
+            WriteInt32(p.Value);
         }
 
-        public void Write(NdrUInt3264 p)
+        public void WriteUInt3264(NdrUInt3264 p)
         {
-            Write(p.Value);
+            WriteUInt32(p.Value);
         }
 
         public void WriteSystemHandle(NtObject handle)
         {
             _handles.Add(handle);
-            Write(_handles.Count);
+            WriteInt32(_handles.Count);
             if (!NtObjectUtils.IsWindows81OrLess)
             {
-                Write(0);
+                WriteInt32(0);
             }
         }
 
@@ -185,11 +191,11 @@ namespace NtApiDotNet.Ndr
         {
             if (obj == null)
             {
-                Write(0);
+                WriteInt32(0);
             }
             else
             {
-                Write(_referent);
+                WriteInt32(_referent);
                 _referent += 4;
             }
         }
@@ -198,11 +204,11 @@ namespace NtApiDotNet.Ndr
         {
             if (!obj.HasValue)
             {
-                Write(0);
+                WriteInt32(0);
             }
             else
             {
-                Write(_referent++);
+                WriteInt32(_referent++);
             }
         }
 
@@ -214,11 +220,11 @@ namespace NtApiDotNet.Ndr
             }
             char[] values = (str + '\0').ToCharArray();
             // Maximum count.
-            Write(values.Length);
+            WriteInt32(values.Length);
             // Offset.
-            Write(0);
+            WriteInt32(0);
             // Actual count.
-            Write(values.Length);
+            WriteInt32(values.Length);
             Write(values);
         }
 
@@ -231,11 +237,11 @@ namespace NtApiDotNet.Ndr
 
             byte[] values = BinaryEncoding.Instance.GetBytes(str + '\0');
             // Maximum count.
-            Write(values.Length);
+            WriteInt32(values.Length);
             // Offset.
-            Write(0);
+            WriteInt32(0);
             // Actual count.
-            Write(values.Length);
+            WriteInt32(values.Length);
             Write(values);
         }
 
@@ -257,35 +263,35 @@ namespace NtApiDotNet.Ndr
                 object v = value.Value;
                 if (v is byte b)
                 {
-                    Write(b);
+                    WriteByte(b);
                 }
                 else if (v is short s)
                 {
-                    Write(s);
+                    WriteInt16(s);
                 }
                 else if (v is int i)
                 {
-                    Write(i);
+                    WriteInt32(i);
                 }
                 else if (v is long l)
                 {
-                    Write(l);
+                    WriteInt64(l);
                 }
                 if (v is sbyte sb)
                 {
-                    Write(sb);
+                    WriteSByte(sb);
                 }
                 else if (v is ushort us)
                 {
-                    Write(us);
+                    WriteUInt16(us);
                 }
                 else if (v is uint ui)
                 {
-                    Write(ui);
+                    WriteUInt32(ui);
                 }
                 else if (v is ulong ul)
                 {
-                    Write(ul);
+                    WriteUInt64(ul);
                 }
                 else if (v is Guid g)
                 {
@@ -293,11 +299,11 @@ namespace NtApiDotNet.Ndr
                 }
                 else if (v is NdrInt3264 ni)
                 {
-                    Write(ni);
+                    WriteInt3264(ni);
                 }
                 else if (v is NdrUInt3264 nu)
                 {
-                    Write(nu);
+                    WriteUInt3264(nu);
                 }
                 else if (v is INdrStructure st)
                 {
@@ -310,7 +316,7 @@ namespace NtApiDotNet.Ndr
 
         public void WriteContextHandle(NdrContextHandle handle)
         {
-            Write(handle.Attributes);
+            WriteInt32(handle.Attributes);
             WriteGuid(handle.Uuid);
         }
 

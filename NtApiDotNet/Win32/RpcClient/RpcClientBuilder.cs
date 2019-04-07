@@ -51,33 +51,33 @@ namespace NtApiDotNet.Win32.RpcClient
                 {
                     case NdrFormatCharacter.FC_BYTE:
                     case NdrFormatCharacter.FC_USMALL:
-                        return new RpcTypeDescriptor(typeof(byte), "ReadByte", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(byte), "ReadByte", false, "WriteByte", type);
                     case NdrFormatCharacter.FC_SMALL:
                     case NdrFormatCharacter.FC_CHAR:
-                        return new RpcTypeDescriptor(typeof(sbyte), "ReadSByte", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(sbyte), "ReadSByte", false, "WriteSByte", type);
                     case NdrFormatCharacter.FC_WCHAR:
-                        return new RpcTypeDescriptor(typeof(char), "ReadChar", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(char), "ReadChar", false, "WriteChar", type);
                     case NdrFormatCharacter.FC_SHORT:
-                        return new RpcTypeDescriptor(typeof(short), "ReadInt16", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(short), "ReadInt16", false, "WriteInt16", type);
                     case NdrFormatCharacter.FC_USHORT:
-                        return new RpcTypeDescriptor(typeof(ushort), "ReadUInt16", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(ushort), "ReadUInt16", false, "WriteUInt16", type);
                     case NdrFormatCharacter.FC_LONG:
                     case NdrFormatCharacter.FC_ENUM16:
                     case NdrFormatCharacter.FC_ENUM32:
-                        return new RpcTypeDescriptor(typeof(int), "ReadInt32", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(int), "ReadInt32", false, "WriteInt32", type);
                     case NdrFormatCharacter.FC_ULONG:
                     case NdrFormatCharacter.FC_ERROR_STATUS_T:
-                        return new RpcTypeDescriptor(typeof(uint), "ReadUInt32", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(uint), "ReadUInt32", false, "WriteUInt32", type);
                     case NdrFormatCharacter.FC_FLOAT:
-                        return new RpcTypeDescriptor(typeof(float), "ReadFloat", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(float), "ReadFloat", false, "WriteFloat", type);
                     case NdrFormatCharacter.FC_HYPER:
-                        return new RpcTypeDescriptor(typeof(long), "ReadInt64", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(long), "ReadInt64", false, "WriteInt64", type);
                     case NdrFormatCharacter.FC_DOUBLE:
-                        return new RpcTypeDescriptor(typeof(double), "ReadDouble", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(double), "ReadDouble", false, "WriteDouble", type);
                     case NdrFormatCharacter.FC_INT3264:
-                        return new RpcTypeDescriptor(typeof(NdrInt3264), "ReadInt3264", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(NdrInt3264), "ReadInt3264", false, "WriteInt3264", type);
                     case NdrFormatCharacter.FC_UINT3264:
-                        return new RpcTypeDescriptor(typeof(NdrUInt3264), "ReadUInt3264", false, "Write", type);
+                        return new RpcTypeDescriptor(typeof(NdrUInt3264), "ReadUInt3264", false, "WriteUInt3264", type);
                     case NdrFormatCharacter.FC_C_WSTRING:
                         return new RpcTypeDescriptor(typeof(string), "ReadConformantString", false, "WriteConformantString", type);
                     case NdrFormatCharacter.FC_C_CSTRING:
