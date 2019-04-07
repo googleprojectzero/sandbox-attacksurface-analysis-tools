@@ -208,6 +208,11 @@ namespace NtApiDotNet.Win32.RpcClient
                 GetVariable(var_name)
             };
 
+            List<CodeTypeReference> marshal_args = new List<CodeTypeReference>();
+            marshal_args.Add(descriptor.CodeType);
+            marshal_args.AddRange(descriptor.AdditionalArgs.Select(a => a.CodeType));
+            marshal_args.AddRange(additional_args.Select(a => a.CodeType));
+
             string method_name;
             if (descriptor.Constructed)
             {
@@ -216,14 +221,14 @@ namespace NtApiDotNet.Win32.RpcClient
             else
             {
                 method_name = "WriteEmbeddedPointer";
-                var create_delegate = new CodeDelegateCreateExpression(CreateActionType(descriptor.CodeType),
+                var create_delegate = new CodeDelegateCreateExpression(CreateActionType(marshal_args.ToArray()),
                     GetVariable(marshal_name), descriptor.MarshalMethod);
 
                 args.Add(create_delegate);
                 args.AddRange(descriptor.AdditionalArgs.Select(r => r.Expression));
                 args.AddRange(additional_args.Select(r => r.Expression));
             }
-            CodeMethodReferenceExpression write_pointer = new CodeMethodReferenceExpression(GetVariable(marshal_name), method_name, descriptor.CodeType);
+            CodeMethodReferenceExpression write_pointer = new CodeMethodReferenceExpression(GetVariable(marshal_name), method_name, marshal_args.ToArray());
             CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(write_pointer, args.ToArray());
             method.Statements.Add(invoke);
         }
@@ -247,6 +252,12 @@ namespace NtApiDotNet.Win32.RpcClient
         {
             string method_name = null;
             List<CodeExpression> args = new List<CodeExpression>();
+
+            List<CodeTypeReference> marshal_args = new List<CodeTypeReference>();
+            marshal_args.Add(descriptor.CodeType);
+            marshal_args.AddRange(descriptor.AdditionalArgs.Select(a => a.CodeType));
+            marshal_args.AddRange(additional_args.Select(a => a.CodeType));
+
             if (descriptor.Constructed)
             {
                 method_name = "ReadEmbeddedStructPointer";
@@ -259,14 +270,14 @@ namespace NtApiDotNet.Win32.RpcClient
                     return;
                 }
                 method_name = "ReadEmbeddedPointer";
-                var create_delegate = new CodeDelegateCreateExpression(CreateFunc(descriptor.CodeType, additional_args.Select(r => r.CodeType).ToArray()),
+                var create_delegate = new CodeDelegateCreateExpression(CreateFunc(descriptor.CodeType, marshal_args.Skip(1).ToArray()),
                     GetVariable(unmarshal_name), descriptor.UnmarshalMethod);
                 args.Add(create_delegate);
             }
 
             args.AddRange(descriptor.AdditionalArgs.Select(r => r.Expression));
             args.AddRange(additional_args.Select(r => r.Expression));
-            CodeMethodReferenceExpression read_pointer = new CodeMethodReferenceExpression(GetVariable(unmarshal_name), method_name, descriptor.CodeType);
+            CodeMethodReferenceExpression read_pointer = new CodeMethodReferenceExpression(GetVariable(unmarshal_name), method_name, marshal_args.ToArray());
             CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(read_pointer, args.ToArray());
             CodeAssignStatement assign = new CodeAssignStatement(GetVariable(var_name), invoke);
             method.Statements.Add(assign);

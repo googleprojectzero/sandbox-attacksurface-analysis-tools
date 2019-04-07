@@ -135,24 +135,20 @@ namespace NtApiDotNet.Win32.RpcClient
             else if (type is NdrPointerTypeReference pointer)
             {
                 var desc = GetTypeDescriptor(pointer.Type);
-                if (desc != null)
+                RpcPointerType pointer_type = RpcPointerType.None;
+                switch (pointer.Format)
                 {
-                    RpcPointerType pointer_type = RpcPointerType.None;
-                    switch (pointer.Format)
-                    {
-                        case NdrFormatCharacter.FC_UP:
-                            pointer_type = RpcPointerType.Unique;
-                            break;
-                        case NdrFormatCharacter.FC_RP:
-                            pointer_type = RpcPointerType.Reference;
-                            break;
-                        default:
-                            pointer_type = RpcPointerType.Full;
-                            break;
-                    }
-                    return new RpcTypeDescriptor(desc, pointer_type);
+                    case NdrFormatCharacter.FC_UP:
+                        pointer_type = RpcPointerType.Unique;
+                        break;
+                    case NdrFormatCharacter.FC_RP:
+                        pointer_type = RpcPointerType.Reference;
+                        break;
+                    default:
+                        pointer_type = RpcPointerType.Full;
+                        break;
                 }
-                return desc;
+                return new RpcTypeDescriptor(desc, pointer_type);
             }
             else if (type is NdrSupplementTypeReference supp)
             {
@@ -170,7 +166,9 @@ namespace NtApiDotNet.Win32.RpcClient
                 return GetTypeDescriptor(range.RangeType);
             }
 
-            return null;
+            var type_name_arg = new RpcMarshalArgument() { CodeType = new CodeTypeReference(typeof(string)),
+                Expression = new CodePrimitiveExpression(type.Format.ToString()) };
+            return new RpcTypeDescriptor(typeof(NdrUnsupported), "ReadUnsupported", false, "WriteUnsupported", type, type_name_arg);
         }
 
         // Should implement this for each type rather than this.
@@ -219,12 +217,6 @@ namespace NtApiDotNet.Win32.RpcClient
                 foreach (var member in struct_type.Members)
                 {
                     var f_type = GetTypeDescriptor(member.MemberType);
-                    if (f_type == null)
-                    {
-                        s_type.Comments.Add(new CodeCommentStatement($"Unsupported type for {member.MemberType} {member.Name}"));
-                        continue;
-                    }
-
                     s_type.AddField(f_type.GetStructureType(), member.Name, MemberAttributes.Public);
                     if (f_type.Pointer)
                     {
@@ -286,13 +278,6 @@ namespace NtApiDotNet.Win32.RpcClient
                         continue;
                     }
                     RpcTypeDescriptor p_type = GetTypeDescriptor(p.Type);
-                    if (p_type == null)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Param {p.Name} unsupported type - {p.Type}");
-                        method.ThrowNotImplemented($"Param {p.Name} unsupported type - {p.Type}");
-                        continue;
-                    }
-
                     var p_obj = method.AddParam(p_type.GetParameterType(), p.Name);
                     p_obj.Direction = p.GetDirection();
                     if (!p.IsIn)
@@ -307,7 +292,6 @@ namespace NtApiDotNet.Win32.RpcClient
                         }
                         else
                         {
-                            System.Diagnostics.Debug.WriteLine($"{p.Name} - {p_type.CodeType.BaseType} - {p_type.Constructed} - {p_type.ValueType}");
                             method.AddWriteReferent(MARSHAL_NAME, p.Name);
                         }
                     }
@@ -333,11 +317,6 @@ namespace NtApiDotNet.Win32.RpcClient
                     }
 
                     RpcTypeDescriptor p_type = GetTypeDescriptor(p.Type);
-                    if (p_type == null)
-                    {
-                        continue;
-                    }
-
                     if (p_type.Pointer)
                     {
                         method.AddPointerUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name);
@@ -360,7 +339,7 @@ namespace NtApiDotNet.Win32.RpcClient
                 foreach (var complex_type in _server.ComplexTypes)
                 {
                     RpcTypeDescriptor p_type = GetTypeDescriptor(complex_type);
-                    if (p_type != null)
+                    if (p_type.BuiltinType != typeof(NdrUnsupported))
                     {
                         type.AddConstructorMethod(complex_type.Name, p_type);
                     }
@@ -406,13 +385,14 @@ namespace NtApiDotNet.Win32.RpcClient
             compileParams.GenerateInMemory = true;
             compileParams.IncludeDebugInformation = true;
             compileParams.TempFiles = tempFiles;
+            tempFiles.KeepFiles = false;
             compileParams.ReferencedAssemblies.Add(typeof(RpcClientBuilder).Assembly.Location);
             CompilerResults results = provider.CompileAssemblyFromDom(compileParams, unit);
             if (results.Errors.HasErrors)
             {
                 foreach (CompilerError e in results.Errors)
                 {
-                    System.Diagnostics.Debug.WriteLine($"{e.Line} {e.Column} {e.FileName} {e.ErrorText}");
+                    System.Diagnostics.Debug.WriteLine(e.ToString());
                 }
                 throw new InvalidOperationException("Internal error compiling RPC source code");
             }

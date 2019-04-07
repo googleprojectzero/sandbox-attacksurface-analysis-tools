@@ -99,7 +99,7 @@
     <Compile Include="Ndr\NdrTypes.cs" />
     <Compile Include="Ndr\NdrRpcServerInterface.cs" />
     <Compile Include="Ndr\NdrUnmarshalBuffer.cs" />
-    <Compile Include="Ndr\NdrUnsupportedType.cs" />
+    <Compile Include="Ndr\NdrUnsupported.cs" />
     <Compile Include="NtAlpcNative.cs" />
     <Compile Include="NtAlpcUtils.cs" />
     <Compile Include="NtAsyncResult.cs" />

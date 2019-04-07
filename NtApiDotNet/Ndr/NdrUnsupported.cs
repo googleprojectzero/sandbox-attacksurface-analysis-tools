@@ -17,7 +17,10 @@ namespace NtApiDotNet.Ndr
     /// <summary>
     /// Place holder for unsupported types.
     /// </summary>
-    public struct NdrUnsupportedType
+    public class NdrUnsupported
     {
+        private NdrUnsupported()
+        {
+        }
     }
 }
