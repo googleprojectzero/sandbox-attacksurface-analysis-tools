@@ -26,6 +26,12 @@ namespace NtApiDotNet.Win32.RpcClient
         Full
     }
 
+    internal struct RpcMarshalArgument
+    {
+        public CodeExpression Expression;
+        public CodeTypeReference CodeType;
+    }
+
     internal sealed class RpcTypeDescriptor
     {
         private readonly string _unmarshal_method;
@@ -35,14 +41,14 @@ namespace NtApiDotNet.Win32.RpcClient
         public CodeTypeReference CodeType { get; }
         public Type BuiltinType { get; }
         public NdrBaseTypeReference NdrType { get; }
-        public CodeExpression[] AdditionalArgs { get; }
+        public RpcMarshalArgument[] AdditionalArgs { get; }
         public bool Pointer => PointerType != RpcPointerType.None;
         public RpcPointerType PointerType { get; }
         public bool ValueType { get; }
         public bool Constructed { get; }
 
         public RpcTypeDescriptor(CodeTypeReference code_type, bool value_type, string unmarshal_method, 
-            bool unmarshal_generic, string marshal_method, NdrBaseTypeReference ndr_type, params CodeExpression[] additional_args)
+            bool unmarshal_generic, string marshal_method, NdrBaseTypeReference ndr_type, params RpcMarshalArgument[] additional_args)
         {
             CodeType = code_type;
             _unmarshal_method = unmarshal_method;
@@ -54,7 +60,7 @@ namespace NtApiDotNet.Win32.RpcClient
         }
 
         public RpcTypeDescriptor(Type code_type, string unmarshal_method, bool unmarshal_generic, 
-            string marshal_method, NdrBaseTypeReference ndr_type, params CodeExpression[] additional_args)
+            string marshal_method, NdrBaseTypeReference ndr_type, params RpcMarshalArgument[] additional_args)
             : this(new CodeTypeReference(code_type), code_type.IsValueType || typeof(NtObject).IsAssignableFrom(code_type), 
                   unmarshal_method, unmarshal_generic, marshal_method, ndr_type, additional_args)
         {
@@ -62,7 +68,7 @@ namespace NtApiDotNet.Win32.RpcClient
         }
 
         public RpcTypeDescriptor(string name, bool value_type, string unmarshal_method, bool unmarshal_generic, 
-            string marshal_method, NdrBaseTypeReference ndr_type, params CodeExpression[] additional_args)
+            string marshal_method, NdrBaseTypeReference ndr_type, params RpcMarshalArgument[] additional_args)
             : this(new CodeTypeReference(name), value_type, unmarshal_method, unmarshal_generic, marshal_method, ndr_type, additional_args)
         {
             Constructed = true;

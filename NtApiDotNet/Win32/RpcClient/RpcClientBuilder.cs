@@ -124,13 +124,16 @@ namespace NtApiDotNet.Win32.RpcClient
             else if (type is NdrSimpleArrayTypeReference simple_array)
             {
                 RpcTypeDescriptor element_type = GetTypeDescriptor(simple_array.ElementType);
+                RpcMarshalArgument arg = new RpcMarshalArgument();
+                arg.CodeType = new CodeTypeReference(typeof(int));
+                arg.Expression = CodeGenUtils.GetPrimitive(simple_array.ElementCount);
                 if (element_type.BuiltinType == typeof(char))
                 {
-                    return new RpcTypeDescriptor(typeof(string), "ReadFixedString", false, "WriteFixedString", type, CodeGenUtils.GetPrimitive(simple_array.ElementCount));
+                    return new RpcTypeDescriptor(typeof(string), "ReadFixedString", false, "WriteFixedString", type, arg);
                 }
                 else if (element_type.BuiltinType == typeof(byte))
                 {
-                    return new RpcTypeDescriptor(typeof(byte[]), "ReadBytes", false, "WriteFixedBytes", type, CodeGenUtils.GetPrimitive(simple_array.ElementCount));
+                    return new RpcTypeDescriptor(typeof(byte[]), "ReadBytes", false, "WriteFixedBytes", type, arg);
                 }
             }
             else if (type is NdrPointerTypeReference pointer)
