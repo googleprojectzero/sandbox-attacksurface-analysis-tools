@@ -30,6 +30,7 @@ namespace NtApiDotNet.Ndr
         private readonly MemoryStream _stm;
         private readonly BinaryWriter _writer;
         private readonly List<NtObject> _handles;
+        private readonly List<Action> _deferred_writes;
         private int _referent;
 
         private static int CalculateAlignment(int offset, int alignment)
@@ -48,6 +49,7 @@ namespace NtApiDotNet.Ndr
             _writer = new BinaryWriter(_stm, Encoding.Unicode);
             _handles = new List<NtObject>();
             _referent = 0x20000;
+            _deferred_writes = new List<Action>();
         }
 
         public void Align(int alignment)
@@ -310,6 +312,39 @@ namespace NtApiDotNet.Ndr
         {
             Write(handle.Attributes);
             Write(handle.Uuid);
+        }
+
+        private void WriteEmbeddedPointer<T>(NdrEmbeddedPointer<T> pointer, Action writer)
+        {
+            WriteReferent(pointer);
+            if (pointer != null)
+            {
+                _deferred_writes.Add(writer);
+            }
+        }
+
+        public void WriteEmbeddedPointer<T>(NdrEmbeddedPointer<T> pointer, Action<T> writer)
+        {
+            WriteEmbeddedPointer(pointer, () => writer(pointer));
+        }
+
+        public void WriteEmbeddedPointer<T, U>(NdrEmbeddedPointer<T> pointer, Action<T, U> writer, U arg)
+        {
+            WriteEmbeddedPointer(pointer, () => writer(pointer, arg));
+        }
+
+        public void WriteEmbeddedPointer<T, U, V>(NdrEmbeddedPointer<T> pointer, Action<T, U, V> writer, U arg, V arg2)
+        {
+            WriteEmbeddedPointer(pointer, () => writer(pointer, arg, arg2));
+        }
+
+        public void FlushDeferredWrites()
+        {
+            foreach (var a in _deferred_writes)
+            {
+                a();
+            }
+            _deferred_writes.Clear();
         }
 
         public void CheckNull<T>(T obj, string name) where T : class

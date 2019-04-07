@@ -144,6 +144,26 @@ namespace NtApiDotNet.Win32.RpcClient
             method.Statements.Add(invoke);
         }
 
+        public static void AddFlushDeferredWrites(this CodeMemberMethod method, string marshal_name)
+        {
+            method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(marshal_name), "FlushDeferredWrites"));
+        }
+
+        public static void AddDeferredMarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string marshal_name, string var_name, params CodeExpression[] additional_args)
+        {
+            List<CodeExpression> args = new List<CodeExpression>
+            {
+                GetVariable(var_name)
+            };
+
+            args.Add(descriptor.GetMarshalMethod(GetVariable(marshal_name)));
+            args.AddRange(descriptor.AdditionalArgs);
+            args.AddRange(additional_args);
+            CodeMethodReferenceExpression write_pointer = new CodeMethodReferenceExpression(GetVariable(marshal_name), "WriteEmbeddedPointer", descriptor.CodeType);
+            CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(write_pointer, args.ToArray());
+            method.Statements.Add(invoke);
+        }
+
         public static void AddUnmarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name, string var_name, params CodeExpression[] additional_args)
         {
             List<CodeExpression> args = new List<CodeExpression>();

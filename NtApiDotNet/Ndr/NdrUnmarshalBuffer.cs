@@ -31,6 +31,7 @@ namespace NtApiDotNet.Ndr
         private readonly MemoryStream _stm;
         private readonly BinaryReader _reader;
         private readonly List<NtObject> _handles;
+        private readonly List<Action> _deferred_reads;
 
         private static int CaclulateAlignment(int offset, int alignment)
         {
@@ -52,6 +53,7 @@ namespace NtApiDotNet.Ndr
             _stm = new MemoryStream(buffer);
             _reader = new BinaryReader(_stm, Encoding.Unicode);
             _handles = new List<NtObject>(handles.Select(o => o.DuplicateObject()));
+            _deferred_reads = new List<Action>();
         }
 
         public byte ReadByte()
@@ -211,6 +213,40 @@ namespace NtApiDotNet.Ndr
             int attributes = ReadInt32();
             Guid uuid = ReadGuid();
             return new NdrContextHandle(attributes, uuid);
+        }
+
+        public NdrEmbeddedPointer<T> ReadEmbeddedPointer<T>(Func<T> unmarshal_func)
+        {
+            int referent = ReadReferent();
+            if (referent == 0)
+            {
+                return null;
+            }
+
+            // Really should have referents, but I'm not convinced the MSRPC NDR engine uses them.
+            // Perhaps introduce a lazy method to bind it after the fact.
+            var deferred_reader = NdrEmbeddedPointer<T>.CreateDeferredReader(unmarshal_func);
+            _deferred_reads.Add(deferred_reader.Item2);
+            return deferred_reader.Item1;
+        }
+
+        public NdrEmbeddedPointer<T> ReadEmbeddedPointer<T, U>(Func<U, T> unmarshal_func, U arg)
+        {
+            return ReadEmbeddedPointer(() => unmarshal_func(arg));
+        }
+
+        public NdrEmbeddedPointer<T> ReadEmbeddedPointer<T, U, V>(Func<U, V, T> unmarshal_func, U arg, V arg2)
+        {
+            return ReadEmbeddedPointer(() => unmarshal_func(arg, arg2));
+        }
+
+        public void PopluateDeferredPointers()
+        {
+            foreach (var a in _deferred_reads)
+            {
+                a();
+            }
+            _deferred_reads.Clear();
         }
     }
 #pragma warning restore 1591

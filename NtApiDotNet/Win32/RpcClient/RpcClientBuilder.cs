@@ -136,9 +136,22 @@ namespace NtApiDotNet.Win32.RpcClient
             else if (type is NdrPointerTypeReference pointer)
             {
                 var desc = GetTypeDescriptor(pointer.Type);
-                if (pointer.Format != NdrFormatCharacter.FC_RP && desc != null)
+                if (desc != null)
                 {
-                    return new RpcTypeDescriptor(desc, true);
+                    RpcPointerType pointer_type = RpcPointerType.None;
+                    switch (pointer.Format)
+                    {
+                        case NdrFormatCharacter.FC_UP:
+                            pointer_type = RpcPointerType.Unique;
+                            break;
+                        case NdrFormatCharacter.FC_RP:
+                            pointer_type = RpcPointerType.Reference;
+                            break;
+                        default:
+                            pointer_type = RpcPointerType.Full;
+                            break;
+                    }
+                    return new RpcTypeDescriptor(desc, pointer_type);
                 }
                 return desc;
             }
@@ -210,12 +223,11 @@ namespace NtApiDotNet.Win32.RpcClient
                         continue;
                     }
 
-
-                    s_type.AddField(f_type.CodeType, member.Name, MemberAttributes.Public);
-                    if (f_type.UniquePointer)
+                    s_type.AddField(f_type.GetStructureType(), member.Name, MemberAttributes.Public);
+                    if (f_type.Pointer)
                     {
                         deferred_members = true;
-                        marshal_method.AddWriteReferent(MARSHAL_NAME, member.Name);
+                        marshal_method.AddDeferredMarshalCall(f_type, MARSHAL_NAME, member.Name);
                         unmarshal_method.AddReadReferent(UNMARSHAL_NAME, member.Name);
                     }
                     else
@@ -234,9 +246,8 @@ namespace NtApiDotNet.Win32.RpcClient
                     foreach (var member in struct_type.Members)
                     {
                         var f_type = GetTypeDescriptor(member.MemberType);
-                        if (f_type != null && f_type.UniquePointer)
+                        if (f_type != null && f_type.Pointer)
                         {
-                            marshal_method.AddMarshalCall(f_type, MARSHAL_NAME, member.Name);
                             unmarshal_method.AddDeferredUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name);
                         }
                     }
@@ -301,7 +312,7 @@ namespace NtApiDotNet.Win32.RpcClient
                     {
                         continue;
                     }
-                    if (p_type.UniquePointer)
+                    if (p_type.Pointer && p_type.PointerType != RpcPointerType.Reference)
                     {
                         method.AddWriteReferent(MARSHAL_NAME, p.Name);
                     }
@@ -310,6 +321,11 @@ namespace NtApiDotNet.Win32.RpcClient
                         method.AddNullCheck(MARSHAL_NAME, p.Name);
                     }
                     method.AddMarshalCall(p_type, MARSHAL_NAME, p.Name);
+                    // If it's a constructed type then ensure any deferred writes are flushed.
+                    if (p_type.Constructed)
+                    {
+                        method.AddFlushDeferredWrites(MARSHAL_NAME);
+                    }
                 }
 
                 method.SendReceive(MARSHAL_NAME, UNMARSHAL_NAME, proc.ProcNum);
@@ -327,7 +343,7 @@ namespace NtApiDotNet.Win32.RpcClient
                         continue;
                     }
 
-                    if (p_type.UniquePointer)
+                    if (p_type.Pointer)
                     {
                         method.AddReadReferent(UNMARSHAL_NAME, p.Name);
                         method.AddDeferredUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name);
