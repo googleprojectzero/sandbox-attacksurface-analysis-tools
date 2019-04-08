@@ -183,7 +183,7 @@ namespace NtApiDotNet.Win32.RpcClient
             return delegate_type;
         }
 
-        public static CodeTypeReference CreateFunc(CodeTypeReference ret, params CodeTypeReference[] args)
+        public static CodeTypeReference CreateFuncType(CodeTypeReference ret, params CodeTypeReference[] args)
         {
             CodeTypeReference delegate_type = null;
             switch (args.Length)
@@ -278,7 +278,7 @@ namespace NtApiDotNet.Win32.RpcClient
                     return;
                 }
                 method_name = "ReadEmbeddedPointer";
-                var create_delegate = new CodeDelegateCreateExpression(CreateFunc(descriptor.CodeType, marshal_args.Skip(1).ToArray()),
+                var create_delegate = new CodeDelegateCreateExpression(CreateFuncType(descriptor.CodeType, marshal_args.Skip(1).ToArray()),
                     GetVariable(unmarshal_name), descriptor.UnmarshalMethod);
                 args.Add(create_delegate);
             }
@@ -405,7 +405,6 @@ namespace NtApiDotNet.Win32.RpcClient
                     return typeof(NtObject);
             }
         }
-
 
         public static bool ValidateCorrelation(this NdrCorrelationDescriptor correlation)
         {

@@ -426,10 +426,6 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        public void WriteVaryingBogusArrayStruct<T>(T[] array) where T : INdrStructure, new()
-        {
-        }
-
         public void FlushDeferredWrites()
         {
             foreach (var a in _deferred_writes)

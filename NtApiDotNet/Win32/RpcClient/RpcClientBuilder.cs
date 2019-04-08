@@ -243,9 +243,16 @@ namespace NtApiDotNet.Win32.RpcClient
                 {
                     var f_type = GetTypeDescriptor(member.MemberType);
                     s_type.AddField(f_type.GetStructureType(), member.Name, MemberAttributes.Public);
+
+                    List<RpcMarshalArgument> extra_marshal_args = new List<RpcMarshalArgument>();
+                    if (f_type.VarianceDescriptor.IsValid)
+                    {
+                        extra_marshal_args.Add(f_type.VarianceDescriptor.CalculateCorrelationArgument(member.Offset, offset_to_name));
+                    }
+
                     if (f_type.Pointer)
                     {
-                        marshal_method.AddDeferredMarshalCall(f_type, MARSHAL_NAME, member.Name);
+                        marshal_method.AddDeferredMarshalCall(f_type, MARSHAL_NAME, member.Name, extra_marshal_args.ToArray());
                         unmarshal_method.AddDeferredEmbeddedUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name);
                     }
                     else
@@ -253,12 +260,6 @@ namespace NtApiDotNet.Win32.RpcClient
                         if (!f_type.ValueType)
                         {
                             marshal_method.AddNullCheck(MARSHAL_NAME, member.Name);
-                        }
-
-                        List<RpcMarshalArgument> extra_marshal_args = new List<RpcMarshalArgument>();
-                        if (f_type.VarianceDescriptor.IsValid)
-                        {
-                            extra_marshal_args.Add(f_type.VarianceDescriptor.CalculateCorrelationArgument(member.Offset, offset_to_name));
                         }
 
                         marshal_method.AddMarshalCall(f_type, MARSHAL_NAME, member.Name, extra_marshal_args.ToArray());
@@ -300,8 +301,10 @@ namespace NtApiDotNet.Win32.RpcClient
                     continue;
                 }
 
-                method.ReturnType = return_type.CodeType;
+                var offset_to_name =
+                    proc.Params.Select(p => Tuple.Create(p.Offset, p.Name)).ToList();
 
+                method.ReturnType = return_type.CodeType;
                 method.CreateMarshalObject(MARSHAL_NAME);
                 foreach (var p in proc.Params)
                 {
@@ -310,6 +313,13 @@ namespace NtApiDotNet.Win32.RpcClient
                         continue;
                     }
                     RpcTypeDescriptor p_type = GetTypeDescriptor(p.Type);
+
+                    List<RpcMarshalArgument> extra_marshal_args = new List<RpcMarshalArgument>();
+                    if (p_type.VarianceDescriptor.IsValid)
+                    {
+                        extra_marshal_args.Add(p_type.VarianceDescriptor.CalculateCorrelationArgument(p.Offset, offset_to_name));
+                    }
+
                     var p_obj = method.AddParam(p_type.GetParameterType(), p.Name);
                     p_obj.Direction = p.GetDirection();
                     if (!p.IsIn)
@@ -331,7 +341,7 @@ namespace NtApiDotNet.Win32.RpcClient
                     {
                         method.AddNullCheck(MARSHAL_NAME, p.Name);
                     }
-                    method.AddMarshalCall(p_type, MARSHAL_NAME, p.Name);
+                    method.AddMarshalCall(p_type, MARSHAL_NAME, p.Name, extra_marshal_args.ToArray());
                     // If it's a constructed type then ensure any deferred writes are flushed.
                     if (p_type.Constructed)
                     {
@@ -409,12 +419,12 @@ namespace NtApiDotNet.Win32.RpcClient
             return unit;
         }
 
-        private static Assembly Compile(CodeCompileUnit unit, RpcClientBuilderArguments args, CodeDomProvider provider)
+        private Assembly Compile(CodeCompileUnit unit, CodeDomProvider provider)
         {
             CompilerParameters compile_params = new CompilerParameters();
             TempFileCollection temp_files = new TempFileCollection(Path.GetTempPath());
 
-            bool enable_debugging = args.Flags.HasFlag(RpcClientBuilderFlags.EnableDebugging);
+            bool enable_debugging = HasFlag(RpcClientBuilderFlags.EnableDebugging);
 
             compile_params.GenerateExecutable = false;
             compile_params.GenerateInMemory = true;
@@ -503,15 +513,16 @@ namespace NtApiDotNet.Win32.RpcClient
         /// <remarks>This method will cache the results of the compilation against the RpcServer.</remarks>
         public static Assembly BuildAssembly(RpcServer server, RpcClientBuilderArguments args, bool ignore_cache, CodeDomProvider provider)
         {
+            var builder = new RpcClientBuilder(server, args);
             if (ignore_cache)
             {
-                return Compile(new RpcClientBuilder(server, args).Generate(), args, provider);
+                return builder.Compile(builder.Generate(), provider);
             }
 
             var key = Tuple.Create(server, args);
             if (!_compiled_clients.ContainsKey(key))
             {
-                _compiled_clients[key] = Compile(new RpcClientBuilder(server, args).Generate(), args, provider);
+                _compiled_clients[key] = builder.Compile(builder.Generate(), provider);
             }
             return _compiled_clients[key];
         }
