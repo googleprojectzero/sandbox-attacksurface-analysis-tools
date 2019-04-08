@@ -123,9 +123,17 @@ namespace NtApiDotNet.Win32.RpcClient
 
         public static void AddConstructorMethod(this CodeTypeDeclaration type, string name, RpcTypeDescriptor complex_type)
         {
-            CodeMemberMethod method = type.AddMethod($"New{MakeIdentifier(name)}", MemberAttributes.Public | MemberAttributes.Final);
+            CodeMemberMethod method = type.AddMethod($"New_{MakeIdentifier(name)}", MemberAttributes.Public | MemberAttributes.Final);
             method.ReturnType = complex_type.CodeType;
             method.Statements.Add(new CodeMethodReturnStatement(new CodeObjectCreateExpression(complex_type.CodeType)));
+        }
+
+        public static void AddArrayConstructorMethod(this CodeTypeDeclaration type, string name, RpcTypeDescriptor complex_type)
+        {
+            CodeMemberMethod method = type.AddMethod($"New_{MakeIdentifier(name)}_Array", MemberAttributes.Public | MemberAttributes.Final);
+            method.AddParam(new CodeTypeReference(typeof(int)), "size");
+            method.ReturnType = complex_type.GetArrayType();
+            method.Statements.Add(new CodeMethodReturnStatement(new CodeArrayCreateExpression(complex_type.CodeType, GetVariable("size"))));
         }
 
         public static CodeVariableReferenceExpression GetVariable(string var_name)

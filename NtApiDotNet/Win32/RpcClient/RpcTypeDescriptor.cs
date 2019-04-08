@@ -58,6 +58,7 @@ namespace NtApiDotNet.Win32.RpcClient
         public string MarshalMethod { get; }
         public NdrCorrelationDescriptor ConformanceDescriptor { get; }
         public NdrCorrelationDescriptor VarianceDescriptor { get; }
+        public int FixedCount { get; set; }
 
         public RpcTypeDescriptor(CodeTypeReference code_type, bool value_type, string unmarshal_method, 
             bool unmarshal_generic, string marshal_method, NdrBaseTypeReference ndr_type,
@@ -137,6 +138,11 @@ namespace NtApiDotNet.Win32.RpcClient
                 return ret;
             }
             return CodeType;
+        }
+
+        public CodeTypeReference GetArrayType()
+        {
+            return new CodeTypeReference(CodeType, CodeType.ArrayRank + 1);
         }
     }
 }

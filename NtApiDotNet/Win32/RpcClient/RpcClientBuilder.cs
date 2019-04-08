@@ -125,11 +125,17 @@ namespace NtApiDotNet.Win32.RpcClient
                 };
                 if (element_type.BuiltinType == typeof(char))
                 {
-                    return new RpcTypeDescriptor(typeof(string), "ReadFixedString", false, "WriteFixedString", type, null, null, arg);
+                    return new RpcTypeDescriptor(typeof(string), "ReadFixedString", false, "WriteFixedString", type, null, null, arg)
+                    {
+                        FixedCount = simple_array.ElementCount
+                    };
                 }
                 else if (element_type.BuiltinType == typeof(byte))
                 {
-                    return new RpcTypeDescriptor(typeof(byte[]), "ReadBytes", false, "WriteFixedBytes", type, null, null, arg);
+                    return new RpcTypeDescriptor(typeof(byte[]), "ReadBytes", false, "WriteFixedBytes", type, null, null, arg)
+                    {
+                        FixedCount = simple_array.ElementCount
+                    };
                 }
             }
             else if (type is NdrPointerTypeReference pointer)
@@ -173,9 +179,12 @@ namespace NtApiDotNet.Win32.RpcClient
                 {
                     // For now we only support constructed types with variance and no conformance.
                     // The variance also needs to be a constant or a normal correlation.
-                    return new RpcTypeDescriptor(new CodeTypeReference(element_type.CodeType, 1), false, 
+                    return new RpcTypeDescriptor(new CodeTypeReference(element_type.CodeType, 1), false,
                         "ReadVaryingBogusArrayStruct", true, "WriteVaryingBogusArrayStruct",
-                        type, null, bogus_array.VarianceDescriptor);
+                        type, null, bogus_array.VarianceDescriptor)
+                    {
+                        FixedCount = bogus_array.ElementCount
+                    };
                 }
             }
 
@@ -365,6 +374,7 @@ namespace NtApiDotNet.Win32.RpcClient
                     if (p_type.BuiltinType != typeof(NdrUnsupported))
                     {
                         type.AddConstructorMethod(complex_type.Name, p_type);
+                        type.AddArrayConstructorMethod(complex_type.Name, p_type);
                     }
                 }
             }
