@@ -71,8 +71,14 @@ namespace NtApiDotNet.Win32
         public static IEnumerable<RpcServer> ParsePeFile(string file, string dbghelp_path, string symbol_path, bool parse_clients, bool ignore_symbols)
         {
             List<RpcServer> servers = new List<RpcServer>();
-            using (var lib = SafeLoadLibraryHandle.LoadLibrary(file, LoadLibraryFlags.DontResolveDllReferences))
+            using (var result = SafeLoadLibraryHandle.LoadLibrary(file, LoadLibraryFlags.DontResolveDllReferences, false))
             {
+                if (!result.IsSuccess)
+                {
+                    return servers.AsReadOnly();
+                }
+
+                var lib = result.Result;
                 var sections = lib.GetImageSections();
                 var offsets = sections.SelectMany(s => FindRpcServerInterfaces(s, parse_clients));
                 if (offsets.Any())

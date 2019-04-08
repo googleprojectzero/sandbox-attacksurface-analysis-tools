@@ -473,22 +473,38 @@ namespace NtApiDotNet.Win32
         /// </summary>
         /// <param name="name">The path to the library.</param>
         /// <param name="flags">Additonal flags to pass to LoadLibraryEx</param>
-        /// <returns></returns>
-        public static SafeLoadLibraryHandle LoadLibrary(string name, LoadLibraryFlags flags)
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>Handle to the loaded library.</returns>
+        public static NtResult<SafeLoadLibraryHandle> LoadLibrary(string name, LoadLibraryFlags flags, bool throw_on_error)
         {
             SafeLoadLibraryHandle ret = Win32NativeMethods.LoadLibraryEx(name, IntPtr.Zero, flags);
             if (ret.IsInvalid)
             {
-                throw new SafeWin32Exception();
+                if (throw_on_error)
+                {
+                    throw new SafeWin32Exception();
+                }
+                return Win32Utils.GetLastWin32Error().CreateResultFromDosError<SafeLoadLibraryHandle>(false);
             }
-            return ret;
+            return ret.CreateResult();
         }
 
         /// <summary>
         /// Load a library into memory.
         /// </summary>
         /// <param name="name">The path to the library.</param>
-        /// <returns></returns>
+        /// <param name="flags">Additonal flags to pass to LoadLibraryEx</param>
+        /// <returns>Handle to the loaded library.</returns>
+        public static SafeLoadLibraryHandle LoadLibrary(string name, LoadLibraryFlags flags)
+        {
+            return LoadLibrary(name, flags, true).Result;
+        }
+
+        /// <summary>
+        /// Load a library into memory.
+        /// </summary>
+        /// <param name="name">The path to the library.</param>
+        /// <returns>Handle to the loaded library.</returns>
         public static SafeLoadLibraryHandle LoadLibrary(string name)
         {
             return LoadLibrary(name, LoadLibraryFlags.None);
