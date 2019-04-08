@@ -384,6 +384,10 @@ namespace NtApiDotNet.Win32.RpcClient
 
         public static void AddUnmarshalReturn(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name, params RpcMarshalArgument[] additional_args)
         {
+            if (descriptor.BuiltinType == typeof(void))
+            {
+                return;
+            }
             List<CodeExpression> args = new List<CodeExpression>();
             args.AddRange(descriptor.AdditionalArgs.Select(r => r.Expression));
             args.AddRange(additional_args.Select(r => r.Expression));

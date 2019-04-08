@@ -196,6 +196,11 @@ namespace NtApiDotNet.Win32.RpcClient
         // Should implement this for each type rather than this.
         private RpcTypeDescriptor GetTypeDescriptor(NdrBaseTypeReference type)
         {
+            if (type == null)
+            {
+                return new RpcTypeDescriptor(typeof(void), "Unsupported", false, "Unsupported", null, null, null);
+            }
+
             if (!_type_descriptors.ContainsKey(type))
             {
                 _type_descriptors[type] = GetTypeDescriptorInternal(type);
@@ -347,7 +352,7 @@ namespace NtApiDotNet.Win32.RpcClient
                 }
 
                 var method = type.AddMethod(proc_name, MemberAttributes.Public | MemberAttributes.Final);
-                RpcTypeDescriptor return_type = GetTypeDescriptor(proc.ReturnValue.Type);
+                RpcTypeDescriptor return_type = GetTypeDescriptor(proc.ReturnValue?.Type);
                 if (return_type == null)
                 {
                     method.ThrowNotImplemented("Return type unsupported.");
