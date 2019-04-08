@@ -19,6 +19,7 @@ using System.Runtime.InteropServices;
 using System.Linq;
 using NtApiDotNet.Win32;
 using System.Threading.Tasks;
+using System.Reflection;
 
 namespace NtApiDotNet
 {
@@ -653,6 +654,17 @@ namespace NtApiDotNet
             {
                 return Environment.OSVersion.Version < new Version(6, 4);
             }
+        }
+
+        private static Lazy<string> _assembly_version = new Lazy<string>(() =>
+        {
+            Assembly asm = Assembly.GetCallingAssembly();
+            return asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+        });
+
+        internal static string GetVersion()
+        {
+            return _assembly_version.Value;
         }
 
         internal static string GetFileName(string full_path)

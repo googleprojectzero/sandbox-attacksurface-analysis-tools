@@ -471,6 +471,17 @@ namespace NtApiDotNet.Win32.RpcClient
             return builder.ToString();
         }
 
+        private void AddServerComment(CodeCompileUnit unit)
+        {
+            CodeNamespace ns = unit.AddNamespace(string.Empty);
+
+            ns.AddComment($"Source Executable: {_server.FilePath}");
+            ns.AddComment($"Interface ID: {_server.InterfaceId}");
+            ns.AddComment($"Interface Version: {_server.InterfaceVersion}");
+            ns.AddComment($"Client Generated: {DateTime.Now}");
+            ns.AddComment($"NtApiDotNet Version: {NtObjectUtils.GetVersion()}");
+        }
+
         private CodeCompileUnit Generate()
         {
             CodeCompileUnit unit = new CodeCompileUnit();
@@ -484,7 +495,7 @@ namespace NtApiDotNet.Win32.RpcClient
             {
                 name = "Client";
             }
-
+            AddServerComment(unit);
             CodeNamespace ns = unit.AddNamespace(ns_name);
             int complex_type_count = GenerateComplexTypes(ns);
             GenerateClient(name, ns, complex_type_count);

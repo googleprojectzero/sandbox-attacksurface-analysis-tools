@@ -167,6 +167,16 @@ namespace NtApiDotNet.Win32.RpcClient
             }
         }
 
+        public static void AddComment(this CodeCommentStatementCollection comments, string text)
+        {
+            comments.Add(new CodeCommentStatement(text));
+        }
+
+        public static void AddComment(this CodeNamespace ns, string text)
+        {
+            ns.Comments.AddComment(text);
+        }
+
         public static void AddConstructorMethod(this CodeTypeDeclaration type, string name, RpcTypeDescriptor complex_type, IEnumerable<Tuple<CodeTypeReference, string>> parameters)
         {
             if (!parameters.Any())
