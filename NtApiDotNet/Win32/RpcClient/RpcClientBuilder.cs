@@ -227,11 +227,11 @@ namespace NtApiDotNet.Win32.RpcClient
                 return 0;
             }
 
-            bool create_constructors = HasFlag(RpcClientBuilderFlags.GenerateValueConstructors);
+            bool create_constructor_properties = HasFlag(RpcClientBuilderFlags.GenerateConstructorProperties);
             CodeTypeDeclaration constructor_type = null;
             CodeTypeDeclaration array_constructor_type = null;
 
-            if (create_constructors)
+            if (create_constructor_properties)
             {
                 constructor_type = ns.AddType(CONSTRUCTOR_STRUCT_NAME);
                 constructor_type.IsStruct = true;
@@ -296,13 +296,24 @@ namespace NtApiDotNet.Win32.RpcClient
                         {
                             default_initialize_expr.Add(member.Name, new CodeArrayCreateExpression(f_type.CodeType, CodeGenUtils.GetPrimitive(f_type.FixedCount)));
                         }
+                        else if (f_type.BuiltinType == typeof(string) && f_type.FixedCount > 0)
+                        {
+                            default_initialize_expr.Add(member.Name, new CodeObjectCreateExpression(f_type.CodeType, CodeGenUtils.GetPrimitive('\0'), 
+                                CodeGenUtils.GetPrimitive(f_type.FixedCount)));
+                        }
                     }
                 }
 
-                if (create_constructors)
+                var p_type = _type_descriptors[complex_type];
+
+                if (!create_constructor_properties)
                 {
-                    var p_type = _type_descriptors[complex_type];
-                    constructor_type.AddDefaultConstructorMethod(complex_type.Name, p_type, default_initialize_expr);
+                    s_type.AddDefaultConstructorMethod("CreateDefault", MemberAttributes.Public | MemberAttributes.Static, p_type, default_initialize_expr);
+                    s_type.AddConstructorMethod(p_type, member_parameters);
+                }
+                else
+                {
+                    constructor_type.AddDefaultConstructorMethod(complex_type.Name, MemberAttributes.Public | MemberAttributes.Final, p_type, default_initialize_expr);
                     constructor_type.AddConstructorMethod(complex_type.Name, p_type, member_parameters);
                     array_constructor_type.AddArrayConstructorMethod(complex_type.Name, p_type);
                 }
@@ -418,7 +429,7 @@ namespace NtApiDotNet.Win32.RpcClient
                 method.AddUnmarshalReturn(return_type, UNMARSHAL_NAME);
             }
 
-            if (complex_type_count > 0 && HasFlag(RpcClientBuilderFlags.GenerateValueConstructors))
+            if (complex_type_count > 0 && HasFlag(RpcClientBuilderFlags.GenerateConstructorProperties))
             {
                 var constructor_type = new CodeTypeReference(CodeGenUtils.MakeIdentifier(CONSTRUCTOR_STRUCT_NAME));
                 var prop = type.AddProperty("New", constructor_type, MemberAttributes.Public | MemberAttributes.Final,

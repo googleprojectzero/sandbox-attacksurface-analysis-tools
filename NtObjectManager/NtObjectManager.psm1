@@ -4077,9 +4077,9 @@ function Get-RpcAlpcClient {
         $args.ClientName = $ClientName
         
         if ($EnableDebugging) {
-            $args.Flags = "GenerateValueConstructors, EnableDebugging"
+            $args.Flags = "GenerateConstructorProperties, EnableDebugging"
         } else {
-            $args.Flags = "GenerateValueConstructors"
+            $args.Flags = "GenerateConstructorProperties"
         }
         [NtApiDotNet.Win32.RpcClient.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache, $Provider)
     } else {
