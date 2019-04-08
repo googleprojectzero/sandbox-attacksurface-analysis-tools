@@ -431,6 +431,16 @@ namespace NtApiDotNet.Win32.RpcClient
             method.Statements.Add(unmarshal);
         }
 
+        public static void AddStartRegion(this CodeTypeDeclaration type, string text)
+        {
+            type.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, text));
+        }
+
+        public static void AddEndRegion(this CodeTypeDeclaration type)
+        {
+            type.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
+        }
+
         private static Regex _identifier_regex = new Regex(@"[^a-zA-Z0-9_\.]");
 
         public static string MakeIdentifier(string id)

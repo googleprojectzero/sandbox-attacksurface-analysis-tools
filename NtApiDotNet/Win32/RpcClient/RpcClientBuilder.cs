@@ -239,10 +239,15 @@ namespace NtApiDotNet.Win32.RpcClient
             if (create_constructor_properties)
             {
                 constructor_type = ns.AddType(CONSTRUCTOR_STRUCT_NAME);
+                constructor_type.AddStartRegion("Constructors");
                 constructor_type.IsStruct = true;
                 array_constructor_type = ns.AddType(ARRAY_CONSTRUCTOR_STRUCT_NAME);
                 array_constructor_type.IsStruct = true;
+                array_constructor_type.AddEndRegion();
             }
+
+            CodeTypeDeclaration start_type = null;
+            CodeTypeDeclaration end_type = null;
 
             // Now generate the complex types.
             foreach (var complex_type in _server.ComplexTypes)
@@ -254,6 +259,11 @@ namespace NtApiDotNet.Win32.RpcClient
                 }
 
                 var s_type = ns.AddType(complex_type.Name);
+                if (start_type == null)
+                {
+                    start_type = s_type;
+                }
+                end_type = s_type;
                 s_type.IsStruct = true;
                 s_type.BaseTypes.Add(new CodeTypeReference(typeof(INdrStructure)));
 
@@ -324,12 +334,20 @@ namespace NtApiDotNet.Win32.RpcClient
                 }
             }
 
+            if (type_count > 0)
+            {
+                start_type.AddStartRegion("Complex Types");
+                end_type.AddEndRegion();
+            }
+
             return type_count;
         }
 
         private void GenerateClient(string name, CodeNamespace ns, int complex_type_count)
         {
             CodeTypeDeclaration type = ns.AddType(name);
+            type.AddStartRegion("Client Implementation");
+            type.AddEndRegion();
             type.IsClass = true;
             type.TypeAttributes = TypeAttributes.Public | TypeAttributes.Sealed;
             type.BaseTypes.Add(typeof(RpcAlpcClientBase));
