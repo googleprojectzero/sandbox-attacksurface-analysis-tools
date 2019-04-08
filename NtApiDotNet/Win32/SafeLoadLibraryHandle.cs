@@ -693,7 +693,7 @@ namespace NtApiDotNet.Win32
             IntPtr header_ptr = Win32NativeMethods.ImageNtHeader(base_ptr);
             if (header_ptr == IntPtr.Zero)
             {
-                throw new SafeWin32Exception();
+                return IntPtr.Zero;
             }
             return header_ptr;
         }
@@ -749,6 +749,11 @@ namespace NtApiDotNet.Win32
             }
 
             IntPtr header_ptr = GetHeaderPointer(base_ptr);
+            if (header_ptr == IntPtr.Zero)
+            {
+                return;
+            }
+
             ImageNtHeaders header = (ImageNtHeaders)Marshal.PtrToStructure(header_ptr, typeof(ImageNtHeaders));
             var buffer = header_ptr + Marshal.SizeOf(header) + header.FileHeader.SizeOfOptionalHeader;
             ImageSectionHeader[] section_headers = new ImageSectionHeader[header.FileHeader.NumberOfSections];

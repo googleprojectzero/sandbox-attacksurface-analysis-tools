@@ -34,6 +34,13 @@ namespace NtApiDotNet
             IntPtr Length,
             byte Fill
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern IntPtr RtlCompareMemory(
+            IntPtr Source1,
+            IntPtr Source2,
+            IntPtr Length
+        );
     }
 #pragma warning restore 1591
 
@@ -270,6 +277,82 @@ namespace NtApiDotNet
         public static void FillBuffer(SafeBuffer buffer, byte fill)
         {
             NtRtl.RtlFillMemory(buffer.DangerousGetHandle(), new IntPtr(buffer.GetLength()), fill);
+        }
+
+        /// <summary>
+        /// Compare two buffers for equality.
+        /// </summary>
+        /// <param name="left">The left buffer.</param>
+        /// <param name="left_offset">The offset into the left buffer.</param>
+        /// <param name="right">The right buffer.</param>
+        /// <param name="right_offset">The offset into the right buffer.</param>
+        /// <param name="length">The length to compare.</param>
+        /// <returns>True if the buffers are equal.</returns>
+        public static bool EqualBuffer(this SafeBuffer left, int left_offset, SafeBuffer right, int right_offset, int length)
+        {
+            if (length == 0)
+            {
+                return true;
+            }
+
+            long left_length = left.GetLength();
+            long right_length = right.GetLength();
+            if (left_length < (left_offset + length) 
+                || right_length < (right_offset + length))
+            {
+                return false;
+            }
+
+            IntPtr compare_length = new IntPtr(length);
+            return NtRtl.RtlCompareMemory(left.DangerousGetHandle() + left_offset, right.DangerousGetHandle() + right_offset, compare_length) == compare_length;
+        }
+
+        /// <summary>
+        /// Compare a buffer and a byte array for equality.
+        /// </summary>
+        /// <param name="buffer">The buffer.</param>
+        /// <param name="offset">The offset into the left buffer.</param>
+        /// <param name="compare">The compare byte array.</param>
+        /// <returns>True if the buffers are equal.</returns>
+        public static bool EqualBuffer(this SafeBuffer buffer, int offset, byte[] compare)
+        {
+            using (var compare_buffer = compare.ToBuffer())
+            {
+                return buffer.EqualBuffer(offset, compare_buffer, 0, compare.Length);
+            }
+        }
+
+        /// <summary>
+        /// Find a byte array in a buffer. Returns all instances of the compare array.
+        /// </summary>
+        /// <param name="buffer">The buffer to find the data in.</param>
+        /// <param name="start_offset">Start offset in the buffer.</param>
+        /// <param name="compare">The comparison byte array.</param>
+        /// <returns>A list of offsets into the buffer where the compare was found.</returns>
+        public static IEnumerable<int> FindBuffer(this SafeBuffer buffer, int start_offset, byte[] compare)
+        {
+            using (var compare_buffer = compare.ToBuffer())
+            {
+                int max_length = buffer.GetLength() - compare.Length - start_offset;
+                for (int i = 0; i < max_length; ++i)
+                {
+                    if (buffer.EqualBuffer(start_offset + i, compare_buffer, 0, compare.Length))
+                    {
+                        yield return i + start_offset;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Find a byte array in a buffer. Returns all instances of the compare array.
+        /// </summary>
+        /// <param name="buffer">The buffer to find the data in.</param>
+        /// <param name="compare">The comparison byte array.</param>
+        /// <returns>A list of offsets into the buffer where the compare was found.</returns>
+        public static IEnumerable<int> FindBuffer(this SafeBuffer buffer, byte[] compare)
+        {
+            return buffer.FindBuffer(0, compare);
         }
     }
 }
