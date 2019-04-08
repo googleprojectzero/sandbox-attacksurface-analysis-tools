@@ -205,6 +205,14 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public Version InterfaceVersion => Server.InterfaceVersion;
         /// <summary>
+        /// The RPC transfer syntax GUID.
+        /// </summary>
+        public Guid TransferSyntaxId => Server.TransferSyntaxId;
+        /// <summary>
+        /// The RPC transfer syntax version.
+        /// </summary>
+        public Version TransferSyntaxVersion => Server.TransferSyntaxVersion;
+        /// <summary>
         /// The number of RPC procedures.
         /// </summary>
         public int ProcedureCount => Server.Procedures.Count;
