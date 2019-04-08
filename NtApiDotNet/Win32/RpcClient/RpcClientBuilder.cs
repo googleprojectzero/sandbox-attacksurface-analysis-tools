@@ -259,12 +259,14 @@ namespace NtApiDotNet.Win32.RpcClient
 
                 var offset_to_name =
                     struct_type.Members.Select(m => Tuple.Create(m.Offset, m.Name)).ToList();
-                var initialize_expr = new Dictionary<string, CodeExpression>();
+                var default_initialize_expr = new Dictionary<string, CodeExpression>();
+                var member_parameters = new List<Tuple<CodeTypeReference, string>>();
 
                 foreach (var member in struct_type.Members)
                 {
                     var f_type = GetTypeDescriptor(member.MemberType);
                     s_type.AddField(f_type.GetStructureType(), member.Name, MemberAttributes.Public);
+                    member_parameters.Add(Tuple.Create(f_type.GetParameterType(), member.Name));
 
                     List<RpcMarshalArgument> extra_marshal_args = new List<RpcMarshalArgument>();
                     if (f_type.VarianceDescriptor.IsValid)
@@ -288,12 +290,11 @@ namespace NtApiDotNet.Win32.RpcClient
                         unmarshal_method.AddUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name);
                     }
 
-
                     if (!f_type.Pointer || f_type.PointerType == RpcPointerType.Reference)
                     {
                         if (f_type.CodeType.ArrayRank > 0)
                         {
-                            initialize_expr.Add(member.Name, new CodeArrayCreateExpression(f_type.CodeType, CodeGenUtils.GetPrimitive(f_type.FixedCount)));
+                            default_initialize_expr.Add(member.Name, new CodeArrayCreateExpression(f_type.CodeType, CodeGenUtils.GetPrimitive(f_type.FixedCount)));
                         }
                     }
                 }
@@ -301,7 +302,8 @@ namespace NtApiDotNet.Win32.RpcClient
                 if (create_constructors)
                 {
                     var p_type = _type_descriptors[complex_type];
-                    constructor_type.AddConstructorMethod(complex_type.Name, p_type, initialize_expr);
+                    constructor_type.AddDefaultConstructorMethod(complex_type.Name, p_type, default_initialize_expr);
+                    constructor_type.AddConstructorMethod(complex_type.Name, p_type, member_parameters);
                     array_constructor_type.AddArrayConstructorMethod(complex_type.Name, p_type);
                 }
             }

@@ -144,7 +144,7 @@ namespace NtApiDotNet.Win32.RpcClient
             return ret;
         }
 
-        public static void AddConstructorMethod(this CodeTypeDeclaration type, string name, RpcTypeDescriptor complex_type, Dictionary<string, CodeExpression> initialize_expr)
+        public static void AddDefaultConstructorMethod(this CodeTypeDeclaration type, string name, RpcTypeDescriptor complex_type, Dictionary<string, CodeExpression> initialize_expr)
         {
             CodeMemberMethod method = type.AddMethod(name, MemberAttributes.Public | MemberAttributes.Final);
             method.ReturnType = complex_type.CodeType;
@@ -154,6 +154,25 @@ namespace NtApiDotNet.Win32.RpcClient
                 method.Statements.Add(new CodeVariableDeclarationStatement(complex_type.CodeType, "ret", return_value));
                 return_value = GetVariable("ret");
                 method.Statements.AddRange(initialize_expr.Select(p => new CodeAssignStatement(return_value.GetFieldReference(p.Key), p.Value)).ToArray());
+            }
+            method.AddReturn(return_value);
+        }
+
+        public static void AddConstructorMethod(this CodeTypeDeclaration type, string name, RpcTypeDescriptor complex_type, IEnumerable<Tuple<CodeTypeReference, string>> parameters)
+        {
+            if (!parameters.Any())
+            {
+                return;
+            }
+
+            CodeMemberMethod method = type.AddMethod(name, MemberAttributes.Public | MemberAttributes.Final);
+            method.ReturnType = complex_type.CodeType;
+            method.Statements.Add(new CodeVariableDeclarationStatement(complex_type.CodeType, "ret", new CodeObjectCreateExpression(complex_type.CodeType)));
+            CodeExpression return_value = GetVariable("ret");
+            foreach (var p in parameters)
+            {
+                method.AddParam(p.Item1, p.Item2);
+                method.Statements.Add(new CodeAssignStatement(return_value.GetFieldReference(p.Item2), GetVariable(p.Item2)));
             }
             method.AddReturn(return_value);
         }
