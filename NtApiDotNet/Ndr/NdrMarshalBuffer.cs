@@ -247,11 +247,18 @@ namespace NtApiDotNet.Ndr
             WriteFixedChars(str.ToCharArray(), actual_count);
         }
 
-        public void WriteArray<T>(T[] arr) where T : INdrStructure
+        public void WriteFixedStructureArray<T>(T[] arr, int actual_count) where T : INdrStructure, new()
         {
-            foreach (var v in arr)
+            for(int i = 0; i < actual_count; ++i)
             {
-                v.Marshal(this);
+                if (i < arr.Length)
+                {
+                    arr[i].Marshal(this);
+                }
+                else
+                {
+                    new T().Marshal(this);
+                }
             }
         }
 
