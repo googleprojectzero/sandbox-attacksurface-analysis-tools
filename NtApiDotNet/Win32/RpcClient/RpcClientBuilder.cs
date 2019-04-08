@@ -205,9 +205,12 @@ namespace NtApiDotNet.Win32.RpcClient
 
         private const string MARSHAL_NAME = "m";
         private const string UNMARSHAL_NAME = "u";
+        private const string CONSTRUCTOR_STRUCT_NAME = "_Constructors";
+        private const string ARRAY_CONSTRUCTOR_STRUCT_NAME = "_Array_Constructors";
 
-        private void GenerateComplexTypes(CodeNamespace ns)
+        private int GenerateComplexTypes(CodeNamespace ns)
         {
+            int type_count = 0;
             // First populate the type cache.
             foreach (var complex_type in _server.ComplexTypes)
             {
@@ -215,7 +218,25 @@ namespace NtApiDotNet.Win32.RpcClient
                 {
                     _type_descriptors[complex_type] = new RpcTypeDescriptor(complex_type.Name, true,
                         "ReadStruct", true, "WriteStruct", complex_type, null, null);
+                    type_count++;
                 }
+            }
+
+            if (type_count == 0)
+            {
+                return 0;
+            }
+
+            bool create_constructors = HasFlag(RpcClientBuilderFlags.GenerateValueConstructors);
+            CodeTypeDeclaration constructor_type = null;
+            CodeTypeDeclaration array_constructor_type = null;
+
+            if (create_constructors)
+            {
+                constructor_type = ns.AddType(CONSTRUCTOR_STRUCT_NAME);
+                constructor_type.IsStruct = true;
+                array_constructor_type = ns.AddType(ARRAY_CONSTRUCTOR_STRUCT_NAME);
+                array_constructor_type.IsStruct = true;
             }
 
             // Now generate the complex types.
@@ -238,6 +259,7 @@ namespace NtApiDotNet.Win32.RpcClient
 
                 var offset_to_name =
                     struct_type.Members.Select(m => Tuple.Create(m.Offset, m.Name)).ToList();
+                var initialize_expr = new Dictionary<string, CodeExpression>();
 
                 foreach (var member in struct_type.Members)
                 {
@@ -265,11 +287,29 @@ namespace NtApiDotNet.Win32.RpcClient
                         marshal_method.AddMarshalCall(f_type, MARSHAL_NAME, member.Name, extra_marshal_args.ToArray());
                         unmarshal_method.AddUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name);
                     }
+
+
+                    if (!f_type.Pointer || f_type.PointerType == RpcPointerType.Reference)
+                    {
+                        if (f_type.CodeType.ArrayRank > 0)
+                        {
+                            initialize_expr.Add(member.Name, new CodeArrayCreateExpression(f_type.CodeType, CodeGenUtils.GetPrimitive(f_type.FixedCount)));
+                        }
+                    }
+                }
+
+                if (create_constructors)
+                {
+                    var p_type = _type_descriptors[complex_type];
+                    constructor_type.AddConstructorMethod(complex_type.Name, p_type, initialize_expr);
+                    array_constructor_type.AddArrayConstructorMethod(complex_type.Name, p_type);
                 }
             }
+
+            return type_count;
         }
 
-        private void GenerateClient(string name, CodeNamespace ns)
+        private void GenerateClient(string name, CodeNamespace ns, int complex_type_count)
         {
             CodeTypeDeclaration type = ns.AddType(name);
             type.IsClass = true;
@@ -376,17 +416,14 @@ namespace NtApiDotNet.Win32.RpcClient
                 method.AddUnmarshalReturn(return_type, UNMARSHAL_NAME);
             }
 
-            if (HasFlag(RpcClientBuilderFlags.GenerateValueConstructors))
+            if (complex_type_count > 0 && HasFlag(RpcClientBuilderFlags.GenerateValueConstructors))
             {
-                foreach (var complex_type in _server.ComplexTypes)
-                {
-                    RpcTypeDescriptor p_type = GetTypeDescriptor(complex_type);
-                    if (p_type.BuiltinType != typeof(NdrUnsupported))
-                    {
-                        type.AddConstructorMethod(complex_type.Name, p_type);
-                        type.AddArrayConstructorMethod(complex_type.Name, p_type);
-                    }
-                }
+                var constructor_type = new CodeTypeReference(CodeGenUtils.MakeIdentifier(CONSTRUCTOR_STRUCT_NAME));
+                var prop = type.AddProperty("New", constructor_type, MemberAttributes.Public | MemberAttributes.Final,
+                    new CodeMethodReturnStatement(new CodeObjectCreateExpression(constructor_type)));
+                constructor_type = new CodeTypeReference(CodeGenUtils.MakeIdentifier(ARRAY_CONSTRUCTOR_STRUCT_NAME));
+                type.AddProperty("NewArray", constructor_type, MemberAttributes.Public | MemberAttributes.Final, 
+                    new CodeMethodReturnStatement(new CodeObjectCreateExpression(constructor_type)));
             }
         }
 
@@ -413,8 +450,8 @@ namespace NtApiDotNet.Win32.RpcClient
             }
 
             CodeNamespace ns = unit.AddNamespace(ns_name);
-            GenerateComplexTypes(ns);
-            GenerateClient(name, ns);
+            int complex_type_count = GenerateComplexTypes(ns);
+            GenerateClient(name, ns, complex_type_count);
 
             return unit;
         }

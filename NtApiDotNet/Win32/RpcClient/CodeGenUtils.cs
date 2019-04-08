@@ -44,6 +44,17 @@ namespace NtApiDotNet.Win32.RpcClient
             return type;
         }
 
+        public static CodeMemberProperty AddProperty(this CodeTypeDeclaration type, string name, CodeTypeReference prop_type, MemberAttributes attributes, params CodeStatement[] get_statements)
+        {
+            var property = new CodeMemberProperty();
+            property.Name = name;
+            property.Type = prop_type;
+            property.Attributes = attributes;
+            property.GetStatements.AddRange(get_statements);
+            type.Members.Add(property);
+            return property;
+        }
+
         public static CodeMemberMethod AddMethod(this CodeTypeDeclaration type, string name, MemberAttributes attributes)
         {
             CodeMemberMethod method = new CodeMemberMethod
@@ -121,19 +132,38 @@ namespace NtApiDotNet.Win32.RpcClient
             return AddField(type, new CodeTypeReference(builtin_type), name, attributes);
         }
 
-        public static void AddConstructorMethod(this CodeTypeDeclaration type, string name, RpcTypeDescriptor complex_type)
+        public static CodeFieldReferenceExpression GetFieldReference(this CodeExpression target, string name)
         {
-            CodeMemberMethod method = type.AddMethod($"New_{MakeIdentifier(name)}", MemberAttributes.Public | MemberAttributes.Final);
+            return new CodeFieldReferenceExpression(target, name);
+        }
+
+        public static CodeMethodReturnStatement AddReturn(this CodeMemberMethod method, CodeExpression return_expr)
+        {
+            CodeMethodReturnStatement ret = new CodeMethodReturnStatement(return_expr);
+            method.Statements.Add(ret);
+            return ret;
+        }
+
+        public static void AddConstructorMethod(this CodeTypeDeclaration type, string name, RpcTypeDescriptor complex_type, Dictionary<string, CodeExpression> initialize_expr)
+        {
+            CodeMemberMethod method = type.AddMethod(name, MemberAttributes.Public | MemberAttributes.Final);
             method.ReturnType = complex_type.CodeType;
-            method.Statements.Add(new CodeMethodReturnStatement(new CodeObjectCreateExpression(complex_type.CodeType)));
+            CodeExpression return_value = new CodeObjectCreateExpression(complex_type.CodeType);
+            if (initialize_expr.Count > 0)
+            {
+                method.Statements.Add(new CodeVariableDeclarationStatement(complex_type.CodeType, "ret", return_value));
+                return_value = GetVariable("ret");
+                method.Statements.AddRange(initialize_expr.Select(p => new CodeAssignStatement(return_value.GetFieldReference(p.Key), p.Value)).ToArray());
+            }
+            method.AddReturn(return_value);
         }
 
         public static void AddArrayConstructorMethod(this CodeTypeDeclaration type, string name, RpcTypeDescriptor complex_type)
         {
-            CodeMemberMethod method = type.AddMethod($"New_{MakeIdentifier(name)}_Array", MemberAttributes.Public | MemberAttributes.Final);
+            CodeMemberMethod method = type.AddMethod(name, MemberAttributes.Public | MemberAttributes.Final);
             method.AddParam(new CodeTypeReference(typeof(int)), "size");
             method.ReturnType = complex_type.GetArrayType();
-            method.Statements.Add(new CodeMethodReturnStatement(new CodeArrayCreateExpression(complex_type.CodeType, GetVariable("size"))));
+            method.AddReturn(new CodeArrayCreateExpression(complex_type.CodeType, GetVariable("size")));
         }
 
         public static CodeVariableReferenceExpression GetVariable(string var_name)
