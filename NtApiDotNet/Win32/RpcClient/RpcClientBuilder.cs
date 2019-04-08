@@ -58,11 +58,11 @@ namespace NtApiDotNet.Win32.RpcClient
                     case NdrFormatCharacter.FC_WCHAR:
                         return new RpcTypeDescriptor(typeof(char), "ReadChar", false, "WriteChar", type, null, null);
                     case NdrFormatCharacter.FC_SHORT:
+                    case NdrFormatCharacter.FC_ENUM16:
                         return new RpcTypeDescriptor(typeof(short), "ReadInt16", false, "WriteInt16", type, null, null);
                     case NdrFormatCharacter.FC_USHORT:
                         return new RpcTypeDescriptor(typeof(ushort), "ReadUInt16", false, "WriteUInt16", type, null, null);
                     case NdrFormatCharacter.FC_LONG:
-                    case NdrFormatCharacter.FC_ENUM16:
                     case NdrFormatCharacter.FC_ENUM32:
                         return new RpcTypeDescriptor(typeof(int), "ReadInt32", false, "WriteInt32", type, null, null);
                     case NdrFormatCharacter.FC_ULONG:
