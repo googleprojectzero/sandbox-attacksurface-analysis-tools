@@ -68,10 +68,10 @@ namespace NtApiDotNet.Win32.RpcClient
 
         private static void AddMarshalInterfaceMethod(CodeTypeDeclaration type, MarshalHelperBuilder marshal_helper)
         {
-            CodeMemberMethod method = type.AddMethod("Marshal", MemberAttributes.Final | MemberAttributes.Private);
+            CodeMemberMethod method = type.AddMethod(nameof(INdrStructure.Marshal), MemberAttributes.Final | MemberAttributes.Private);
             method.PrivateImplementationType = new CodeTypeReference(typeof(INdrStructure));
             method.AddParam(typeof(NdrMarshalBuffer), "m");
-            method.Statements.Add(new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(null, "Marshal"),
+            method.Statements.Add(new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(null, nameof(INdrStructure.Marshal)),
                 marshal_helper.CastMarshal(GetVariable("m"))));
         }
 
@@ -79,29 +79,29 @@ namespace NtApiDotNet.Win32.RpcClient
         {
             AddMarshalInterfaceMethod(type, marshal_helper);
 
-            CodeMemberMethod method = type.AddMethod("Marshal", MemberAttributes.Final | MemberAttributes.Private);
+            CodeMemberMethod method = type.AddMethod(nameof(INdrStructure.Marshal), MemberAttributes.Final | MemberAttributes.Private);
             method.AddParam(marshal_helper.MarshalHelperType, marshal_name);
             return method;
         }
 
         public static void AddAlign(this CodeMemberMethod method, string marshal_name, int align)
         {
-            method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(marshal_name), "Align", GetPrimitive(align)));
+            method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(marshal_name), nameof(NdrUnmarshalBuffer.Align), GetPrimitive(align)));
         }
 
         private static void AddUnmarshalInterfaceMethod(CodeTypeDeclaration type, MarshalHelperBuilder marshal_helper)
         {
-            CodeMemberMethod method = type.AddMethod("Unmarshal", MemberAttributes.Final | MemberAttributes.Private);
+            CodeMemberMethod method = type.AddMethod(nameof(INdrStructure.Unmarshal), MemberAttributes.Final | MemberAttributes.Private);
             method.PrivateImplementationType = new CodeTypeReference(typeof(INdrStructure));
             method.AddParam(typeof(NdrUnmarshalBuffer), "u");
-            method.Statements.Add(new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(null, "Unmarshal"),
+            method.Statements.Add(new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(null, nameof(INdrStructure.Unmarshal)),
                 marshal_helper.CastUnmarshal(GetVariable("u"))));
         }
 
         public static CodeMemberMethod AddUnmarshalMethod(this CodeTypeDeclaration type, string unmarshal_name, MarshalHelperBuilder marshal_helper)
         {
             AddUnmarshalInterfaceMethod(type, marshal_helper);
-            CodeMemberMethod method = type.AddMethod("Unmarshal", MemberAttributes.Final | MemberAttributes.Private);
+            CodeMemberMethod method = type.AddMethod(nameof(INdrStructure.Unmarshal), MemberAttributes.Final | MemberAttributes.Private);
             method.AddParam(marshal_helper.UnmarshalHelperType, unmarshal_name);
             return method;
         }
@@ -318,7 +318,7 @@ namespace NtApiDotNet.Win32.RpcClient
             marshal_args.AddRange(additional_args.Select(a => a.CodeType));
 
             string method_name;
-            method_name = "WriteEmbeddedPointer";
+            method_name = nameof(NdrMarshalBuffer.WriteEmbeddedPointer);
             var create_delegate = new CodeDelegateCreateExpression(CreateActionType(marshal_args.ToArray()),
                 GetVariable(marshal_name), descriptor.MarshalMethod);
 
@@ -352,7 +352,7 @@ namespace NtApiDotNet.Win32.RpcClient
             marshal_args.Add(descriptor.CodeType);
             marshal_args.AddRange(additional_args.Select(a => a.CodeType));
 
-            method_name = "ReadEmbeddedPointer";
+            method_name = nameof(NdrUnmarshalBuffer.ReadEmbeddedPointer);
             var create_delegate = new CodeDelegateCreateExpression(CreateFuncType(descriptor.CodeType, marshal_args.Skip(1).ToArray()),
                 descriptor.GetUnmarshalTarget(unmarshal_name), descriptor.UnmarshalMethod);
             args.Add(create_delegate);
@@ -372,7 +372,8 @@ namespace NtApiDotNet.Win32.RpcClient
             CodeAssignStatement assign_null = new CodeAssignStatement(GetVariable(var_name), new CodeDefaultValueExpression(descriptor.GetParameterType()));
 
             CodeConditionStatement if_statement = new CodeConditionStatement(
-                new CodeBinaryOperatorExpression(new CodeMethodInvokeExpression(GetVariable(unmarshal_name), "ReadReferent"), CodeBinaryOperatorType.IdentityInequality, GetPrimitive(0)),
+                new CodeBinaryOperatorExpression(new CodeMethodInvokeExpression(GetVariable(unmarshal_name), 
+                nameof(NdrUnmarshalBuffer.ReadReferent)), CodeBinaryOperatorType.IdentityInequality, GetPrimitive(0)),
                 new CodeStatement[] { assign }, new CodeStatement[] { assign_null });
 
             method.Statements.Add(if_statement);
@@ -380,12 +381,12 @@ namespace NtApiDotNet.Win32.RpcClient
 
         public static void AddPopluateDeferredPointers(this CodeMemberMethod method, string unmarshal_name)
         {
-            method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(unmarshal_name), "PopuluateDeferredPointers"));
+            method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(unmarshal_name), nameof(NdrUnmarshalBuffer.PopuluateDeferredPointers)));
         }
 
         public static void AddWriteReferent(this CodeMemberMethod method, string marshal_name, string var_name)
         {
-            CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(GetVariable(marshal_name), "WriteReferent", GetVariable(var_name));
+            CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(GetVariable(marshal_name), nameof(NdrMarshalBuffer.WriteReferent), GetVariable(var_name));
             method.Statements.Add(invoke);
         }
 
@@ -404,7 +405,7 @@ namespace NtApiDotNet.Win32.RpcClient
         public static void AddNullCheck(this CodeMemberMethod method, string marshal_name, string var_name)
         {
             CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(GetVariable(marshal_name),
-                "CheckNull", GetVariable(var_name), GetPrimitive(var_name));
+                nameof(NdrMarshalBuffer.CheckNull), GetVariable(var_name), GetPrimitive(var_name));
             method.Statements.Add(invoke);
         }
 
@@ -432,7 +433,8 @@ namespace NtApiDotNet.Win32.RpcClient
         public static void SendReceive(this CodeMemberMethod method, string marshal_name, string unmarshal_name, int proc_num, MarshalHelperBuilder marshal_helper)
         {
             CodeExpression call_sendrecv = new CodeMethodInvokeExpression(null, "SendReceive",
-                GetPrimitive(proc_num), new CodeMethodInvokeExpression(GetVariable(marshal_name), "ToArray"), new CodePropertyReferenceExpression(GetVariable(marshal_name), "Handles"));
+                GetPrimitive(proc_num), new CodeMethodInvokeExpression(GetVariable(marshal_name), nameof(NdrMarshalBuffer.ToArray)), 
+                new CodePropertyReferenceExpression(GetVariable(marshal_name), nameof(NdrMarshalBuffer.Handles)));
             call_sendrecv = new CodeObjectCreateExpression(marshal_helper.UnmarshalHelperType, call_sendrecv);
             CodeVariableDeclarationStatement unmarshal = new CodeVariableDeclarationStatement(marshal_helper.UnmarshalHelperType, unmarshal_name, call_sendrecv);
             method.Statements.Add(unmarshal);
