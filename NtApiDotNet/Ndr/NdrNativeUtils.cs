@@ -123,6 +123,11 @@ namespace NtApiDotNet.Ndr
             return 0;
         }
 
+        internal static U[] Cast<T, U>(this T[] array)
+        {
+            return (U[])(Array)array;
+        }
+
         internal static readonly Guid IID_IUnknown = new Guid("00000000-0000-0000-C000-000000000046");
         internal static readonly Guid IID_IDispatch = new Guid("00020400-0000-0000-C000-000000000046");
         internal static readonly Guid IID_IPSFactoryBuffer = new Guid("D5F569D0-593B-101A-B569-08002B2DBF7A");

@@ -231,7 +231,7 @@ namespace NtApiDotNet.Ndr
             return ReadFixedPrimitiveArray<T>(max_count);
         }
 
-        public T[] ReadConformantArray<T>(Func<T> reader)
+        public T[] ReadConformantArrayCallback<T>(Func<T> reader)
         {
             int max_count = ReadInt32();
             T[] ret = new T[max_count];
@@ -244,7 +244,33 @@ namespace NtApiDotNet.Ndr
 
         public T[] ReadConformantStructArray<T>() where T : INdrStructure, new()
         {
-            return ReadConformantArray(() => ReadStruct<T>());
+            return ReadConformantArrayCallback(() => ReadStruct<T>());
+        }
+
+        public T[] ReadConformantArray<T>() where T : struct
+        {
+            if (typeof(T) == typeof(byte))
+            {
+                return ReadConformantByteArray().Cast<byte, T>();
+            }
+            else if (typeof(T) == typeof(char))
+            {
+                return ReadConformantCharArray().Cast<char, T>();
+            }
+            else if (typeof(T) == typeof(INdrStructure))
+            {
+                return ReadConformantArrayCallback(() =>
+                {
+                    T t = new T();
+                    ((INdrStructure)t).Unmarshal(this);
+                    return t;
+                });
+            }
+            else if (typeof(T).IsPrimitive)
+            {
+                return ReadConformantPrimitiveArray<T>();
+            }
+            throw new ArgumentException($"Invalid type {typeof(T)} for {nameof(ReadConformantArray)}");
         }
 
         #endregion
@@ -289,7 +315,7 @@ namespace NtApiDotNet.Ndr
             return ret;
         }
 
-        public T[] ReadVaryingArray<T>(Func<T> reader)
+        public T[] ReadVaryingArrayCallback<T>(Func<T> reader)
         {
             int offset = ReadInt32();
             int actual_count = ReadInt32();
@@ -303,7 +329,33 @@ namespace NtApiDotNet.Ndr
 
         public T[] ReadVaryingStructArray<T>() where T : INdrStructure, new()
         {
-            return ReadVaryingArray(() => ReadStruct<T>());
+            return ReadVaryingArrayCallback(() => ReadStruct<T>());
+        }
+
+        public T[] ReadVaryingArray<T>() where T : struct
+        {
+            if (typeof(T) == typeof(byte))
+            {
+                return ReadVaryingByteArray().Cast<byte, T>();
+            }
+            else if (typeof(T) == typeof(char))
+            {
+                return ReadVaryingCharArray().Cast<char, T>();
+            }
+            else if (typeof(T) == typeof(INdrStructure))
+            {
+                return ReadVaryingArrayCallback(() =>
+                {
+                    T t = new T();
+                    ((INdrStructure)t).Unmarshal(this);
+                    return t;
+                });
+            }
+            else if (typeof(T).IsPrimitive)
+            {
+                return ReadVaryingPrimitiveArray<T>();
+            }
+            throw new ArgumentException($"Invalid type {typeof(T)} for {nameof(ReadVaryingArray)}");
         }
 
         #endregion
@@ -359,7 +411,7 @@ namespace NtApiDotNet.Ndr
             return ret;
         }
 
-        public T[] ReadConformantVaryingArray<T>(Func<T> reader)
+        public T[] ReadConformantVaryingArrayCallback<T>(Func<T> reader)
         {
             int max_count = ReadInt32();
             int offset = ReadInt32();
@@ -374,7 +426,7 @@ namespace NtApiDotNet.Ndr
 
         public T[] ReadConformantVaryingStructArray<T>() where T : INdrStructure, new()
         {
-            return ReadConformantVaryingArray(() => ReadStruct<T>());
+            return ReadConformantVaryingArrayCallback(() => ReadStruct<T>());
         }
 
         #endregion

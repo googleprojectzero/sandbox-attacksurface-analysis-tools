@@ -435,28 +435,28 @@ namespace NtApiDotNet.Ndr
             _writer.Write(array);
         }
 
-        public void WriteFixedChars(char[] chars, int actual_count)
+        public void WriteFixedChars(char[] chars, int fixed_count)
         {
             Align(2);
-            if (chars.Length != actual_count)
+            if (chars.Length != fixed_count)
             {
                 chars = (char[])chars.Clone();
-                Array.Resize(ref chars, actual_count);
+                Array.Resize(ref chars, fixed_count);
             }
             _writer.Write(chars);
         }
 
-        public void WriteFixedString(string str, int actual_count)
+        public void WriteFixedString(string str, int fixed_count)
         {
-            WriteFixedChars(str.ToCharArray(), actual_count);
+            WriteFixedChars(str.ToCharArray(), fixed_count);
         }
 
-        public void WriteFixedPrimitiveArray<T>(T[] array, int actual_count) where T : struct
+        public void WriteFixedPrimitiveArray<T>(T[] array, int fixed_count) where T : struct
         {
             int size = NdrNativeUtils.GetPrimitiveTypeSize<T>();
             int actual_size = array.Length * size;
-            byte[] total_buffer = new byte[size * actual_count];
-            Buffer.BlockCopy(array, 0, total_buffer, 0, Math.Min(actual_count, total_buffer.Length));
+            byte[] total_buffer = new byte[size * fixed_count];
+            Buffer.BlockCopy(array, 0, total_buffer, 0, Math.Min(actual_size, total_buffer.Length));
             Align(size);
             WriteFixedByteArray(total_buffer, total_buffer.Length);
         }
@@ -511,12 +511,36 @@ namespace NtApiDotNet.Ndr
             WriteFixedPrimitiveArray<T>(array, var_int);
         }
     
-        public void WriteVaryingStructArray<T>(T[] array, long variance) where T : INdrStructure, new()
+        public void WriteVaryingStructArray<T>(T[] array, long variance) where T : struct, INdrStructure
         {
-            WriteVaryingArray(array, t => WriteStruct(t), variance);
+            WriteVaryingArrayCallback(array, t => WriteStruct(t), variance);
         }
 
-        public void WriteVaryingArray<T>(T[] array, Action<T> writer, long variance) where T : new()
+        public void WriteVaryingArray<T>(T[] array, long variance) where T : struct
+        {
+            if (typeof(T) == typeof(byte))
+            {
+                WriteVaryingByteArray(array.Cast<T, byte>(), variance);
+            }
+            else if (typeof(T) == typeof(char))
+            {
+                WriteVaryingCharArray(array.Cast<T, char>(), variance);
+            }
+            else if (typeof(T) == typeof(INdrStructure))
+            {
+                WriteVaryingArrayCallback(array, p => WriteStruct((INdrStructure)p), variance);
+            }
+            else if (typeof(T).IsPrimitive)
+            {
+                WriteVaryingPrimitiveArray(array, variance);
+            }
+            else
+            {
+                throw new ArgumentException($"Invalid type {typeof(T)} for {nameof(WriteVaryingArray)}");
+            }
+        }
+
+        public void WriteVaryingArrayCallback<T>(T[] array, Action<T> writer, long variance) where T : new()
         {
             // Offset.
             WriteInt32(0);
@@ -563,7 +587,6 @@ namespace NtApiDotNet.Ndr
 
         public void WriteConformantPrimitiveArray<T>(T[] array, long conformance) where T : struct
         {
-
             int var_int = (int)conformance;
             // Max Count
             WriteInt32(var_int);
@@ -572,10 +595,10 @@ namespace NtApiDotNet.Ndr
 
         public void WriteConformantStructArray<T>(T[] array, long conformance) where T : INdrStructure, new()
         {
-            WriteConformantArray(array, t => WriteStruct(t), conformance);
+            WriteConformantArrayCallback(array, t => WriteStruct(t), conformance);
         }
 
-        public void WriteConformantArray<T>(T[] array, Action<T> writer, long conformance) where T : new()
+        public void WriteConformantArrayCallback<T>(T[] array, Action<T> writer, long conformance) where T : new()
         {
             // Max Count
             WriteInt32((int)conformance);
@@ -593,6 +616,30 @@ namespace NtApiDotNet.Ndr
                 {
                     writer(new T());
                 }
+            }
+        }
+
+        public void WriteConformantArray<T>(T[] array, long conformance) where T : struct
+        {
+            if (typeof(T) == typeof(byte))
+            {
+                WriteConformantByteArray(array.Cast<T, byte>(), conformance);
+            }
+            else if (typeof(T) == typeof(char))
+            {
+                WriteConformantCharArray(array.Cast<T, char>(), conformance);
+            }
+            else if (typeof(T) == typeof(INdrStructure))
+            {
+                WriteConformantArrayCallback(array, p => WriteStruct((INdrStructure)p), conformance);
+            }
+            else if (typeof(T).IsPrimitive)
+            {
+                WriteConformantPrimitiveArray(array, conformance);
+            }
+            else
+            {
+                throw new ArgumentException($"Invalid type {typeof(T)} for {nameof(WriteConformantArray)}");
             }
         }
 
@@ -623,14 +670,38 @@ namespace NtApiDotNet.Ndr
 
         public void WriteConformantVaryingStructArray<T>(T[] array, long conformance, long variance) where T : INdrStructure, new()
         {
-            WriteVaryingArray(array, t => WriteStruct(t), variance);
+            WriteVaryingArrayCallback(array, t => WriteStruct(t), variance);
         }
 
-        public void WriteConformantVaryingArray<T>(T[] array, Action<T> writer, long conformance, long variance) where T : new()
+        public void WriteConformantVaryingArrayCallback<T>(T[] array, Action<T> writer, long conformance, long variance) where T : new()
         {
             // Max Count
             WriteInt32((int)conformance);
-            WriteVaryingArray(array, writer, variance);
+            WriteVaryingArrayCallback(array, writer, variance);
+        }
+
+        public void WriteConformantVaryingArray<T>(T[] array, long conformance, long variance) where T : struct
+        {
+            if (typeof(T) == typeof(byte))
+            {
+                WriteConformantVaryingByteArray(array.Cast<T, byte>(), conformance, variance);
+            }
+            else if (typeof(T) == typeof(char))
+            {
+                WriteConformantVaryingCharArray(array.Cast<T, char>(), conformance, variance);
+            }
+            else if (typeof(T) == typeof(INdrStructure))
+            {
+                WriteConformantVaryingArrayCallback(array, p => WriteStruct((INdrStructure)p), conformance, variance);
+            }
+            else if (typeof(T).IsPrimitive)
+            {
+                WriteConformantVaryingPrimitiveArray(array, conformance, variance);
+            }
+            else
+            {
+                throw new ArgumentException($"Invalid type {typeof(T)} for {nameof(WriteConformantVaryingArray)}");
+            }
         }
 
         #endregion

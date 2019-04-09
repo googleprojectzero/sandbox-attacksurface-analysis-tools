@@ -107,6 +107,68 @@ namespace NtApiDotNet.Win32.RpcClient
             return null;
         }
 
+        private RpcTypeDescriptor GetConformantArrayTypeDescriptor(NdrConformantArrayTypeReference conformant_array_type, MarshalHelperBuilder marshal_helper)
+        {
+            RpcTypeDescriptor element_type = GetTypeDescriptor(conformant_array_type.ElementType, marshal_helper);
+            List<CodeTypeReference> marshal_params = new List<CodeTypeReference>();
+            string marshal_name = null;
+            string unmarshal_name = null;
+
+            if (conformant_array_type.VarianceDescriptor.IsValid && conformant_array_type.ConformanceDescriptor.IsValid)
+            {
+                // Check support for this correlation descriptor.
+                if (!conformant_array_type.VarianceDescriptor.ValidateCorrelation() || !conformant_array_type.ConformanceDescriptor.ValidateCorrelation())
+                {
+                    return null;
+                }
+
+                marshal_name = nameof(NdrMarshalBuffer.WriteConformantVaryingArrayCallback);
+                unmarshal_name = nameof(NdrMarshalBuffer.WriteConformantVaryingArrayCallback);
+
+                return null;
+            }
+            else if (conformant_array_type.ConformanceDescriptor.IsValid)
+            {
+                // Check support for this correlation descriptor.
+                if (!conformant_array_type.ConformanceDescriptor.ValidateCorrelation())
+                {
+                    return null;
+                }
+
+                marshal_params.Add(typeof(long).ToRef());
+                marshal_name = nameof(NdrMarshalBuffer.WriteConformantArray);
+                unmarshal_name = nameof(NdrUnmarshalBuffer.ReadConformantArray);
+            }
+            else if (conformant_array_type.VarianceDescriptor.IsValid)
+            {
+                // Check support for this correlation descriptor.
+                if (!conformant_array_type.VarianceDescriptor.ValidateCorrelation())
+                {
+                    return null;
+                }
+
+                marshal_name = nameof(NdrMarshalBuffer.WriteVaryingArray);
+                unmarshal_name = nameof(NdrMarshalBuffer.WriteVaryingArray);
+
+                return null;
+            }
+            else
+            {
+                // Not sure how we got here, one or other of the correlation descriptors should be valid.
+                return null;
+            }
+
+            AdditionalArguments marshal_args = new AdditionalArguments(true, marshal_params.ToArray());
+            AdditionalArguments unmarshal_args = new AdditionalArguments(true);
+            return new RpcTypeDescriptor(element_type.CodeType.ToRefArray(), true, unmarshal_name, marshal_helper, marshal_name, conformant_array_type,
+                conformant_array_type.ConformanceDescriptor, conformant_array_type.VarianceDescriptor, marshal_args, unmarshal_args);
+        }
+
+        private RpcTypeDescriptor GetVaryingArrayTypeDescriptor(NdrVaryingArrayTypeReference conformant_array_type, MarshalHelperBuilder marshal_helper)
+        {
+            return null;
+        }
+
         private RpcTypeDescriptor GetArrayTypeDescriptor(NdrBaseArrayTypeReference array_type, MarshalHelperBuilder marshal_helper)
         {
             if (array_type is NdrSimpleArrayTypeReference simple_array_type)
@@ -116,6 +178,14 @@ namespace NtApiDotNet.Win32.RpcClient
             if (array_type is NdrBogusArrayTypeReference bogus_array_type)
             {
                 return GetBogusArrayTypeDescriptor(bogus_array_type, marshal_helper);
+            }
+            if (array_type is NdrConformantArrayTypeReference conformant_array_type)
+            {
+                return GetConformantArrayTypeDescriptor(conformant_array_type, marshal_helper);
+            }
+            if (array_type is NdrVaryingArrayTypeReference varying_array_type)
+            {
+                return GetVaryingArrayTypeDescriptor(varying_array_type, marshal_helper);
             }
             return null;
         }
@@ -377,6 +447,12 @@ namespace NtApiDotNet.Win32.RpcClient
                     member_parameters.Add(Tuple.Create(f_type.GetParameterType(), member.Name));
 
                     List<RpcMarshalArgument> extra_marshal_args = new List<RpcMarshalArgument>();
+
+                    if (f_type.ConformanceDescriptor.IsValid)
+                    {
+                        extra_marshal_args.Add(f_type.ConformanceDescriptor.CalculateCorrelationArgument(member.Offset, offset_to_name));
+                    }
+
                     if (f_type.VarianceDescriptor.IsValid)
                     {
                         extra_marshal_args.Add(f_type.VarianceDescriptor.CalculateCorrelationArgument(member.Offset, offset_to_name));
@@ -487,6 +563,12 @@ namespace NtApiDotNet.Win32.RpcClient
                     RpcTypeDescriptor p_type = GetTypeDescriptor(p.Type, marshal_helper);
 
                     List<RpcMarshalArgument> extra_marshal_args = new List<RpcMarshalArgument>();
+
+                    if (p_type.ConformanceDescriptor.IsValid)
+                    {
+                        extra_marshal_args.Add(p_type.ConformanceDescriptor.CalculateCorrelationArgument(p.Offset, offset_to_name));
+                    }
+
                     if (p_type.VarianceDescriptor.IsValid)
                     {
                         extra_marshal_args.Add(p_type.VarianceDescriptor.CalculateCorrelationArgument(p.Offset, offset_to_name));
