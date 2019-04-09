@@ -381,7 +381,7 @@ namespace NtApiDotNet.Win32.RpcClient
 
         public static void AddPopluateDeferredPointers(this CodeMemberMethod method, string unmarshal_name)
         {
-            method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(unmarshal_name), nameof(NdrUnmarshalBuffer.PopuluateDeferredPointers)));
+            method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(unmarshal_name), nameof(NdrUnmarshalBuffer.PopulateDeferredPointers)));
         }
 
         public static void AddWriteReferent(this CodeMemberMethod method, string marshal_name, string var_name)
@@ -496,7 +496,8 @@ namespace NtApiDotNet.Win32.RpcClient
 
         public static bool ValidateCorrelation(this NdrCorrelationDescriptor correlation)
         {
-            if (!correlation.IsConstant && !correlation.IsNormal && !correlation.IsTopLevel)
+            if (!correlation.IsConstant && !correlation.IsNormal 
+                && !correlation.IsTopLevel && !correlation.IsPointer)
             {
                 return false;
             }
@@ -524,7 +525,7 @@ namespace NtApiDotNet.Win32.RpcClient
                 return RpcMarshalArgument.CreateFromPrimitive((long)correlation.Offset);
             }
 
-            if (correlation.IsTopLevel)
+            if (correlation.IsTopLevel || correlation.IsPointer)
             {
                 current_offset = 0;
             }

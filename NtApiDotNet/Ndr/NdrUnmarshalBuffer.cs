@@ -525,7 +525,7 @@ namespace NtApiDotNet.Ndr
             return ReadEmbeddedPointer(() => ReadStruct<T>());
         }
 
-        public void PopuluateDeferredPointers()
+        public void PopulateDeferredPointers()
         {
             foreach (var a in _deferred_reads)
             {

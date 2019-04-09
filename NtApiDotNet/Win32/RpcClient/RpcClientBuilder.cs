@@ -66,7 +66,7 @@ namespace NtApiDotNet.Win32.RpcClient
             else if (element_type.BuiltinType != null && element_type.BuiltinType.IsPrimitive)
             {
                 var args = new AdditionalArguments(true, arg);
-                return new RpcTypeDescriptor(element_type.CodeType.ToRefArray(), true,
+                return new RpcTypeDescriptor(element_type.CodeType.ToRefArray(), false,
                     nameof(NdrUnmarshalBuffer.ReadFixedPrimitiveArray), marshal_helper, nameof(NdrMarshalBuffer.WriteFixedPrimitiveArray), simple_array,
                     null, null, args, args)
                 {
@@ -76,7 +76,7 @@ namespace NtApiDotNet.Win32.RpcClient
             else if (element_type.Constructed)
             {
                 var args = new AdditionalArguments(true, arg);
-                return new RpcTypeDescriptor(element_type.CodeType.ToRefArray(), true,
+                return new RpcTypeDescriptor(element_type.CodeType.ToRefArray(), false,
                     nameof(NdrUnmarshalBuffer.ReadFixedStructArray), marshal_helper, nameof(NdrMarshalBuffer.WriteFixedStructArray), simple_array,
                     null, null, args, args)
                 {
@@ -90,21 +90,67 @@ namespace NtApiDotNet.Win32.RpcClient
         private RpcTypeDescriptor GetBogusArrayTypeDescriptor(NdrBogusArrayTypeReference bogus_array_type, MarshalHelperBuilder marshal_helper)
         {
             RpcTypeDescriptor element_type = GetTypeDescriptor(bogus_array_type.ElementType, marshal_helper);
-            if (bogus_array_type.VarianceDescriptor.IsValid && bogus_array_type.VarianceDescriptor.ValidateCorrelation()
-                && !bogus_array_type.ConformanceDescriptor.IsValid && element_type.Constructed)
+            // We only support constructed types for now.
+            if (!element_type.Constructed)
             {
-                // For now we only support constructed types with variance and no conformance.
-                // The variance also needs to be a constant or a normal correlation.
-                return new RpcTypeDescriptor(new CodeTypeReference(element_type.CodeType, 1), false,
-                    nameof(NdrUnmarshalBuffer.ReadVaryingStructArray), marshal_helper, nameof(NdrMarshalBuffer.WriteVaryingStructArray),
-                    bogus_array_type, null, bogus_array_type.VarianceDescriptor, new AdditionalArguments(true, typeof(long).ToRef()),
-                    new AdditionalArguments(true))
-                {
-                    FixedCount = bogus_array_type.ElementCount
-                };
+                return null;
             }
 
-            return null;
+            List<CodeTypeReference> marshal_params = new List<CodeTypeReference>();
+            string marshal_name = null;
+            string unmarshal_name = null;
+
+            if (bogus_array_type.VarianceDescriptor.IsValid && bogus_array_type.ConformanceDescriptor.IsValid)
+            {
+                if (!bogus_array_type.VarianceDescriptor.ValidateCorrelation()
+                 || !bogus_array_type.ConformanceDescriptor.ValidateCorrelation())
+                {
+                    return null;
+                }
+
+                marshal_name = nameof(NdrMarshalBuffer.WriteConformantVaryingStructArray);
+                unmarshal_name = nameof(NdrUnmarshalBuffer.ReadConformantVaryingStructArray);
+                marshal_params.Add(typeof(long).ToRef());
+                marshal_params.Add(typeof(long).ToRef());
+            }
+            else if (bogus_array_type.ConformanceDescriptor.IsValid)
+            {
+                // Check support for this correlation descriptor.
+                if (!bogus_array_type.ConformanceDescriptor.ValidateCorrelation())
+                {
+                    return null;
+                }
+
+                marshal_params.Add(typeof(long).ToRef());
+                marshal_name = nameof(NdrMarshalBuffer.WriteConformantStructArray);
+                unmarshal_name = nameof(NdrUnmarshalBuffer.ReadConformantStructArray);
+            } else if (bogus_array_type.VarianceDescriptor.IsValid)
+            {
+                if (!bogus_array_type.VarianceDescriptor.ValidateCorrelation())
+                {
+                    return null;
+                }
+
+                marshal_params.Add(typeof(long).ToRef());
+                marshal_name = nameof(NdrMarshalBuffer.WriteVaryingStructArray);
+                unmarshal_name = nameof(NdrUnmarshalBuffer.ReadVaryingStructArray);
+            }
+            else
+            {
+                // Not sure how we got here variance descriptors should be valid.
+                return null;
+            }
+
+            // For now we only support constructed types with variance and no conformance.
+            // The variance also needs to be a constant or a normal correlation.
+            return new RpcTypeDescriptor(new CodeTypeReference(element_type.CodeType, 1), false,
+                unmarshal_name, marshal_helper, marshal_name,
+                bogus_array_type, bogus_array_type.ConformanceDescriptor, bogus_array_type.VarianceDescriptor, 
+                new AdditionalArguments(true, marshal_params.ToArray()),
+                new AdditionalArguments(true))
+            {
+                FixedCount = bogus_array_type.ElementCount
+            };
         }
 
         private RpcTypeDescriptor GetConformantArrayTypeDescriptor(NdrConformantArrayTypeReference conformant_array_type, MarshalHelperBuilder marshal_helper)
@@ -147,13 +193,38 @@ namespace NtApiDotNet.Win32.RpcClient
 
             AdditionalArguments marshal_args = new AdditionalArguments(true, marshal_params.ToArray());
             AdditionalArguments unmarshal_args = new AdditionalArguments(true);
-            return new RpcTypeDescriptor(element_type.CodeType.ToRefArray(), true, unmarshal_name, marshal_helper, marshal_name, conformant_array_type,
+            return new RpcTypeDescriptor(element_type.CodeType.ToRefArray(), false, unmarshal_name, marshal_helper, marshal_name, conformant_array_type,
                 conformant_array_type.ConformanceDescriptor, conformant_array_type.VarianceDescriptor, marshal_args, unmarshal_args);
         }
 
-        private RpcTypeDescriptor GetVaryingArrayTypeDescriptor(NdrVaryingArrayTypeReference conformant_array_type, MarshalHelperBuilder marshal_helper)
+        private RpcTypeDescriptor GetVaryingArrayTypeDescriptor(NdrVaryingArrayTypeReference varying_array_type, MarshalHelperBuilder marshal_helper)
         {
-            return null;
+            RpcTypeDescriptor element_type = GetTypeDescriptor(varying_array_type.ElementType, marshal_helper);
+            List<CodeTypeReference> marshal_params = new List<CodeTypeReference>();
+            string marshal_name = null;
+            string unmarshal_name = null;
+
+            if (varying_array_type.VarianceDescriptor.IsValid)
+            {
+                if (!varying_array_type.VarianceDescriptor.ValidateCorrelation())
+                {
+                    return null;
+                }
+
+                marshal_params.Add(typeof(long).ToRef());
+                marshal_name = nameof(NdrMarshalBuffer.WriteVaryingArray);
+                unmarshal_name = nameof(NdrUnmarshalBuffer.ReadVaryingArray);
+            }
+            else
+            {
+                // Not sure how we got here variance descriptors should be valid.
+                return null;
+            }
+
+            AdditionalArguments marshal_args = new AdditionalArguments(true, marshal_params.ToArray());
+            AdditionalArguments unmarshal_args = new AdditionalArguments(true);
+            return new RpcTypeDescriptor(element_type.CodeType.ToRefArray(), false, unmarshal_name, marshal_helper, marshal_name, varying_array_type,
+                null, varying_array_type.VarianceDescriptor, marshal_args, unmarshal_args);
         }
 
         private RpcTypeDescriptor GetArrayTypeDescriptor(NdrBaseArrayTypeReference array_type, MarshalHelperBuilder marshal_helper)
@@ -608,7 +679,8 @@ namespace NtApiDotNet.Win32.RpcClient
                     {
                         method.AddUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name);
                     }
-                    if (p_type.Constructed)
+
+                    if (p_type.Constructed || p_type.CodeType.ArrayRank > 0)
                     {
                         method.AddPopluateDeferredPointers(UNMARSHAL_NAME);
                     }
