@@ -327,6 +327,10 @@ namespace NtApiDotNet.Ndr
             {
                 ConformanceDescriptor = new NdrCorrelationDescriptor(context, reader);
             }
+            else
+            {
+                ConformanceDescriptor = new NdrCorrelationDescriptor();
+            }
         }
 
         internal override string FormatType(NdrFormatter context)
@@ -337,8 +341,7 @@ namespace NtApiDotNet.Ndr
                 conformance_desc = context.FormatComment(ConformanceDescriptor.ToString());
             }
 
-            if (ConformanceDescriptor == null
-                    || ConformanceDescriptor.CorrelationType == NdrCorrelationType.FC_CONSTANT_CONFORMANCE)
+            if (!ConformanceDescriptor.IsValid)
             {
                 return string.Format("{0}{1}", conformance_desc, base.FormatType(context));
             }
@@ -355,7 +358,7 @@ namespace NtApiDotNet.Ndr
 
         private int GetCharCount()
         {
-            if (ConformanceDescriptor != null
+            if (ConformanceDescriptor.IsValid
                 && ConformanceDescriptor.CorrelationType == NdrCorrelationType.FC_CONSTANT_CONFORMANCE)
             {
                 return ConformanceDescriptor.Offset;

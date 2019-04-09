@@ -79,9 +79,9 @@ namespace NtApiDotNet.Win32.RpcClient
                     case NdrFormatCharacter.FC_UINT3264:
                         return new RpcTypeDescriptor(typeof(NdrUInt3264), "ReadUInt3264", "WriteUInt3264", type);
                     case NdrFormatCharacter.FC_C_WSTRING:
-                        return new RpcTypeDescriptor(typeof(string), "ReadConformantString", "WriteConformantString", type);
+                        return new RpcTypeDescriptor(typeof(string), "ReadConformantVaryingString", "WriteTerminatedString", type);
                     case NdrFormatCharacter.FC_C_CSTRING:
-                        return new RpcTypeDescriptor(typeof(string), "ReadAnsiConformantString", "WriteAnsiConformantString", type);
+                        return new RpcTypeDescriptor(typeof(string), "ReadConformantVaryingAnsiString", "WriteTerminatedAnsiString", type);
                     case NdrFormatCharacter.FC_CSTRING:
                     case NdrFormatCharacter.FC_WSTRING:
                         break;
@@ -101,13 +101,13 @@ namespace NtApiDotNet.Win32.RpcClient
             }
             else if (type is NdrBaseStringTypeReference)
             {
-                if (type is NdrConformantStringTypeReference conformant_str)
+                if (type is NdrConformantStringTypeReference conformant_str && !conformant_str.ConformanceDescriptor.IsValid)
                 {
                     if (conformant_str.Format == NdrFormatCharacter.FC_C_CSTRING)
                     {
-                        return new RpcTypeDescriptor(typeof(string), "ReadAnsiConformantString", "WriteAnsiConformantString", type);
+                        return new RpcTypeDescriptor(typeof(string), "ReadConformantVaryingAnsiString", "WriteTerminatedAnsiString", type);
                     }
-                    return new RpcTypeDescriptor(typeof(string), "ReadConformantString", "WriteConformantString", type);
+                    return new RpcTypeDescriptor(typeof(string), "ReadConformantVaryingString", "WriteTerminatedString", type);
                 }
             }
             else if (type is NdrSystemHandleTypeReference system_handle)
@@ -131,7 +131,7 @@ namespace NtApiDotNet.Win32.RpcClient
                 else if (element_type.BuiltinType == typeof(byte))
                 {
                     var args = new AdditionalArguments(false, arg);
-                    return new RpcTypeDescriptor(typeof(byte[]), "ReadBytes", marshal_helper, "WriteFixedBytes", type, null, null, args, args)
+                    return new RpcTypeDescriptor(typeof(byte[]), "ReadFixedByteArray", marshal_helper, "WriteFixedByteArray", type, null, null, args, args)
                     {
                         FixedCount = simple_array.ElementCount
                     };
@@ -139,9 +139,18 @@ namespace NtApiDotNet.Win32.RpcClient
                 else if (element_type.BuiltinType != null && element_type.BuiltinType.IsPrimitive)
                 {
                     var args = new AdditionalArguments(true, arg);
-
                     return new RpcTypeDescriptor(element_type.CodeType.ToRefArray(), true,
-                        "ReadFixedPrimitiveArray", marshal_helper, "WriteFixedPrimitiveArray", type, 
+                        "ReadFixedPrimitiveArray", marshal_helper, "WriteFixedPrimitiveArray", type,
+                        null, null, args, args)
+                    {
+                        FixedCount = simple_array.ElementCount
+                    };
+                }
+                else if (element_type.Constructed)
+                {
+                    var args = new AdditionalArguments(true, arg);
+                    return new RpcTypeDescriptor(element_type.CodeType.ToRefArray(), true,
+                        "ReadFixedStructArray", marshal_helper, "WriteFixedStructArray", type,
                         null, null, args, args)
                     {
                         FixedCount = simple_array.ElementCount
@@ -190,7 +199,7 @@ namespace NtApiDotNet.Win32.RpcClient
                     // For now we only support constructed types with variance and no conformance.
                     // The variance also needs to be a constant or a normal correlation.
                     return new RpcTypeDescriptor(new CodeTypeReference(element_type.CodeType, 1), false,
-                        "ReadVaryingBogusArrayStruct", marshal_helper, "WriteVaryingBogusArrayStruct", 
+                        "ReadVaryingStructArray", marshal_helper, "WriteVaryingStructArray", 
                         type, null, bogus_array.VarianceDescriptor, new AdditionalArguments(true, typeof(long).ToRef()), 
                         new AdditionalArguments(true))
                     {

@@ -27,22 +27,25 @@ namespace NtApiDotNet.Ndr
     /// <remarks>This class is primarily for internal use only.</remarks>
     public class NdrMarshalBuffer
     {
+        #region Private Members
         private readonly MemoryStream _stm;
         private readonly BinaryWriter _writer;
         private readonly List<NtObject> _handles;
         private readonly List<Action> _deferred_writes;
         private int _referent;
 
-        private static int CalculateAlignment(int offset, int alignment)
+        private void WriteEmbeddedPointer<T>(NdrEmbeddedPointer<T> pointer, Action writer)
         {
-            int result = alignment - (offset % alignment);
-            if (result < alignment)
+            WriteReferent(pointer);
+            if (pointer != null)
             {
-                return result;
+                _deferred_writes.Add(writer);
             }
-            return 0;
         }
 
+        #endregion
+
+        #region Constructors
         public NdrMarshalBuffer()
         {
             _stm = new MemoryStream();
@@ -51,13 +54,52 @@ namespace NtApiDotNet.Ndr
             _referent = 0x20000;
             _deferred_writes = new List<Action>();
         }
+        #endregion
 
+        #region Misc Methods
         public void Align(int alignment)
         {
-            byte[] buffer = new byte[CalculateAlignment((int)_stm.Length, alignment)];
+            byte[] buffer = new byte[NdrNativeUtils.CalculateAlignment((int)_stm.Length, alignment)];
             _stm.Write(buffer, 0, buffer.Length);
         }
 
+        public void WriteSystemHandle<T>(T handle) where T : NtObject
+        {
+            _handles.Add(handle);
+            WriteInt32(_handles.Count);
+            if (!NtObjectUtils.IsWindows81OrLess)
+            {
+                WriteInt32(0);
+            }
+        }
+
+        public void WriteUnsupported(NdrUnsupported type, string name)
+        {
+            throw new NotImplementedException($"Writing type {name} is unsupported");
+        }
+
+        public void CheckNull<T>(T obj, string name) where T : class
+        {
+            if (obj == null)
+            {
+                throw new ArgumentNullException(name);
+            }
+        }
+
+        public byte[] ToArray()
+        {
+            byte[] ret = _stm.ToArray();
+            int alignment = NdrNativeUtils.CalculateAlignment(ret.Length, 8);
+            if (alignment > 0)
+            {
+                Array.Resize(ref ret, ret.Length + alignment);
+            }
+            return ret;
+        }
+
+        #endregion
+
+        #region Primitive Types
         public void WriteByte(byte b)
         {
             _writer.Write(b);
@@ -210,18 +252,180 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        public void Write(byte[] array)
+        public void WriteInt3264(NdrInt3264 p)
+        {
+            WriteInt32(p.Value);
+        }
+
+        public void WriteInt3264(NdrInt3264? p)
+        {
+            if (p.HasValue)
+            {
+                WriteInt3264(p.Value);
+            }
+        }
+
+        public void WriteUInt3264(NdrUInt3264 p)
+        {
+            WriteUInt32(p.Value);
+        }
+
+        public void WriteUInt3264(NdrUInt3264? p)
+        {
+            if (p.HasValue)
+            {
+                WriteUInt3264(p.Value);
+            }
+        }
+
+        #endregion
+
+        #region String Types
+        public void WriteTerminatedString(string str)
+        {
+            WriteConformantVaryingString(str, str.Length + 1);
+        }
+
+        public void WriteTerminatedAnsiString(string str)
+        {
+            WriteConformantVaryingAnsiString(str, str.Length + 1);
+        }
+
+        public void WriteConformantVaryingString(string str, long conformance)
+        {
+            if (str == null)
+            {
+                return;
+            }
+
+            char[] values = (str + '\0').ToCharArray();
+            // Maximum count.
+            WriteInt32((int)conformance);
+            // Offset.
+            WriteInt32(0);
+            // Actual count.
+            WriteInt32(values.Length);
+            WriteChars(values);
+        }
+
+        public void WriteConformantVaryingAnsiString(string str, long conformance)
+        {
+            if (str == null)
+            {
+                return;
+            }
+
+            byte[] values = BinaryEncoding.Instance.GetBytes(str + '\0');
+            // Maximum count.
+            WriteInt32((int)conformance);
+            // Offset.
+            WriteInt32(0);
+            // Actual count.
+            WriteInt32(values.Length);
+            WriteBytes(values);
+        }
+
+        #endregion
+
+        #region Structure Types
+
+        public void WriteGuid(Guid guid)
+        {
+            Align(4);
+            WriteBytes(guid.ToByteArray());
+        }
+
+        public void WriteGuid(Guid? guid)
+        {
+            if (guid.HasValue)
+            {
+                WriteGuid(guid.Value);
+            }
+        }
+
+        public void WriteStruct<T>(T structure) where T : INdrStructure
+        {
+            structure.Marshal(this);
+        }
+
+        public void WriteContextHandle(NdrContextHandle handle)
+        {
+            WriteInt32(handle.Attributes);
+            WriteGuid(handle.Uuid);
+        }
+
+        #endregion
+
+        #region Pointer Types
+        public void WriteEmbeddedPointer<T>(NdrEmbeddedPointer<T> pointer, Action<T> writer)
+        {
+            WriteEmbeddedPointer(pointer, () => writer(pointer));
+        }
+
+        public void WriteEmbeddedPointer<T, U>(NdrEmbeddedPointer<T> pointer, Action<T, U> writer, U arg)
+        {
+            WriteEmbeddedPointer(pointer, () => writer(pointer, arg));
+        }
+
+        public void WriteEmbeddedPointer<T, U, V>(NdrEmbeddedPointer<T> pointer, Action<T, U, V> writer, U arg, V arg2)
+        {
+            WriteEmbeddedPointer(pointer, () => writer(pointer, arg, arg2));
+        }
+
+        public void WriteEmbeddedStructPointer<T>(NdrEmbeddedPointer<T> pointer) where T : INdrStructure, new()
+        {
+            WriteEmbeddedPointer(pointer, () => WriteStruct((T)pointer));
+        }
+
+        public void WriteReferent<T>(T obj) where T : class
+        {
+            if (obj == null)
+            {
+                WriteInt32(0);
+            }
+            else
+            {
+                WriteInt32(_referent);
+                _referent += 4;
+            }
+        }
+
+        public void WriteReferent<T>(T? obj) where T : struct
+        {
+            if (!obj.HasValue)
+            {
+                WriteInt32(0);
+            }
+            else
+            {
+                WriteInt32(_referent++);
+            }
+        }
+
+        public void FlushDeferredWrites()
+        {
+            foreach (var a in _deferred_writes)
+            {
+                a();
+            }
+            _deferred_writes.Clear();
+        }
+
+        #endregion
+
+        #region Fixed Array Types
+        public void WriteBytes(byte[] array)
         {
             _writer.Write(array);
         }
 
-        public void Write(char[] chars)
+        public void WriteChars(char[] chars)
         {
             Align(2);
             _writer.Write(chars);
         }
 
-        public void WriteFixedBytes(byte[] array, int actual_count)
+        public void WriteFixedByteArray(byte[] array, int actual_count)
         {
             if (array.Length != actual_count)
             {
@@ -254,12 +458,12 @@ namespace NtApiDotNet.Ndr
             byte[] total_buffer = new byte[size * actual_count];
             Buffer.BlockCopy(array, 0, total_buffer, 0, Math.Min(actual_count, total_buffer.Length));
             Align(size);
-            WriteFixedBytes(total_buffer, total_buffer.Length);
+            WriteFixedByteArray(total_buffer, total_buffer.Length);
         }
 
         public void WriteFixedStructureArray<T>(T[] arr, int actual_count) where T : INdrStructure, new()
         {
-            for(int i = 0; i < actual_count; ++i)
+            for (int i = 0; i < actual_count; ++i)
             {
                 if (i < arr.Length)
                 {
@@ -272,160 +476,47 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        public void WriteInt3264(NdrInt3264 p)
-        {
-            WriteInt32(p.Value);
-        }
+        #endregion
 
-        public void WriteInt3264(NdrInt3264? p)
-        {
-            if (p.HasValue)
-            {
-                WriteInt3264(p.Value);
-            }
-        }
+        #region Varying Array Types
 
-        public void WriteUInt3264(NdrUInt3264 p)
+        public void WriteVaryingByteArray(byte[] array, long variance)
         {
-            WriteUInt32(p.Value);
-        }
-
-        public void WriteUInt3264(NdrUInt3264? p)
-        {
-            if (p.HasValue)
-            {
-                WriteUInt3264(p.Value);
-            }
-        }
-
-        public void WriteSystemHandle<T>(T handle) where T : NtObject
-        {
-            _handles.Add(handle);
-            WriteInt32(_handles.Count);
-            if (!NtObjectUtils.IsWindows81OrLess)
-            {
-                WriteInt32(0);
-            }
-        }
-
-        public void WriteReferent<T>(T obj) where T : class
-        {
-            if (obj == null)
-            {
-                WriteInt32(0);
-            }
-            else
-            {
-                WriteInt32(_referent);
-                _referent += 4;
-            }
-        }
-
-        public void WriteReferent<T>(T? obj) where T : struct
-        {
-            if (!obj.HasValue)
-            {
-                WriteInt32(0);
-            }
-            else
-            {
-                WriteInt32(_referent++);
-            }
-        }
-
-        public void WriteConformantString(string str)
-        {
-            if (str == null)
-            {
-                return;
-            }
-            char[] values = (str + '\0').ToCharArray();
-            // Maximum count.
-            WriteInt32(values.Length);
             // Offset.
             WriteInt32(0);
-            // Actual count.
-            WriteInt32(values.Length);
-            Write(values);
+            int var_int = (int)variance;
+            // Actual Count
+            WriteInt32(var_int);
+            Array.Resize(ref array, var_int);
+            WriteBytes(array);
         }
 
-        public void WriteAnsiConformantString(string str)
+        public void WriteVaryingCharArray(char[] array, long variance)
         {
-            if (str == null)
-            {
-                return;
-            }
-
-            byte[] values = BinaryEncoding.Instance.GetBytes(str + '\0');
-            // Maximum count.
-            WriteInt32(values.Length);
             // Offset.
             WriteInt32(0);
-            // Actual count.
-            WriteInt32(values.Length);
-            Write(values);
+            int var_int = (int)variance;
+            // Actual Count
+            WriteInt32(var_int);
+            Array.Resize(ref array, var_int);
+            WriteChars(array);
         }
 
-        public void WriteGuid(Guid guid)
+        public void WriteVaryingPrimitiveArray<T>(T[] array, long variance) where T : struct
         {
-            Align(4);
-            Write(guid.ToByteArray());
+            WriteInt32(0);
+            int var_int = (int)variance;
+            // Actual Count
+            WriteInt32(var_int);
+            WriteFixedPrimitiveArray<T>(array, var_int);
         }
-
-        public void WriteGuid(Guid? guid)
+    
+        public void WriteVaryingStructArray<T>(T[] array, long variance) where T : INdrStructure, new()
         {
-            if (guid.HasValue)
-            {
-                WriteGuid(guid.Value);
-            }
+            WriteVaryingArray(array, t => WriteStruct(t), variance);
         }
 
-        public void WriteStruct<T>(T structure) where T : INdrStructure
-        {
-            structure.Marshal(this);
-        }
-
-        public void WriteContextHandle(NdrContextHandle handle)
-        {
-            WriteInt32(handle.Attributes);
-            WriteGuid(handle.Uuid);
-        }
-
-        private void WriteEmbeddedPointer<T>(NdrEmbeddedPointer<T> pointer, Action writer)
-        {
-            WriteReferent(pointer);
-            if (pointer != null)
-            {
-                _deferred_writes.Add(writer);
-            }
-        }
-
-        public void WriteEmbeddedPointer<T>(NdrEmbeddedPointer<T> pointer, Action<T> writer)
-        {
-            WriteEmbeddedPointer(pointer, () => writer(pointer));
-        }
-
-        public void WriteEmbeddedPointer<T, U>(NdrEmbeddedPointer<T> pointer, Action<T, U> writer, U arg)
-        {
-            WriteEmbeddedPointer(pointer, () => writer(pointer, arg));
-        }
-
-        public void WriteEmbeddedPointer<T, U, V>(NdrEmbeddedPointer<T> pointer, Action<T, U, V> writer, U arg, V arg2)
-        {
-            WriteEmbeddedPointer(pointer, () => writer(pointer, arg, arg2));
-        }
-
-        public void WriteEmbeddedStructPointer<T>(NdrEmbeddedPointer<T> pointer) where T : INdrStructure, new()
-        {
-            WriteEmbeddedPointer(pointer, () => WriteStruct((T)pointer));
-        }
-
-        public void WriteVaryingBogusArrayStruct<T>(T[] array, long variance) where T : INdrStructure, new()
-        {
-            WriteVaryingBogusArray(array, t => WriteStruct(t), variance);
-        }
-
-        public void WriteVaryingBogusArray<T>(T[] array, Action<T> writer, long variance) where T : new()
+        public void WriteVaryingArray<T>(T[] array, Action<T> writer, long variance) where T : new()
         {
             // Offset.
             WriteInt32(0);
@@ -448,40 +539,105 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        public void FlushDeferredWrites()
+        #endregion
+
+        #region Conformant Array Types
+
+        public void WriteConformantByteArray(byte[] array, long conformance)
         {
-            foreach (var a in _deferred_writes)
+            int var_int = (int)conformance;
+            // Max Count
+            WriteInt32(var_int);
+            Array.Resize(ref array, var_int);
+            WriteBytes(array);
+        }
+
+        public void WriteConformantCharArray(char[] array, long conformance)
+        {
+            int var_int = (int)conformance;
+            // Max Count
+            WriteInt32(var_int);
+            Array.Resize(ref array, var_int);
+            WriteChars(array);
+        }
+
+        public void WriteConformantPrimitiveArray<T>(T[] array, long conformance) where T : struct
+        {
+
+            int var_int = (int)conformance;
+            // Max Count
+            WriteInt32(var_int);
+            WriteFixedPrimitiveArray<T>(array, var_int);
+        }
+
+        public void WriteConformantStructArray<T>(T[] array, long conformance) where T : INdrStructure, new()
+        {
+            WriteConformantArray(array, t => WriteStruct(t), conformance);
+        }
+
+        public void WriteConformantArray<T>(T[] array, Action<T> writer, long conformance) where T : new()
+        {
+            // Max Count
+            WriteInt32((int)conformance);
+            if (array == null)
             {
-                a();
+                array = new T[0];
             }
-            _deferred_writes.Clear();
-        }
-
-        public void WriteUnsupported(NdrUnsupported type, string name)
-        {
-            throw new NotImplementedException($"Writing type {name} is unsupported");
-        }
-
-        public void CheckNull<T>(T obj, string name) where T : class
-        {
-            if (obj == null)
+            for (int i = 0; i < (int)conformance; ++i)
             {
-                throw new ArgumentNullException(name);
+                if (i < array.Length)
+                {
+                    writer(array[i]);
+                }
+                else
+                {
+                    writer(new T());
+                }
             }
         }
 
-        public byte[] ToArray()
+        #endregion
+
+        #region Conformant Varying Array Types
+
+        public void WriteConformantVaryingByteArray(byte[] array, long conformance, long variance)
         {
-            byte[] ret = _stm.ToArray();
-            int alignment = CalculateAlignment(ret.Length, 8);
-            if (alignment > 0)
-            {
-                Array.Resize(ref ret, ret.Length + alignment);
-            }
-            return ret;
+            // Max Count
+            WriteInt32((int)conformance);
+            WriteVaryingByteArray(array, variance);
         }
 
+        public void WriteConformantVaryingCharArray(char[] array, long conformance, long variance)
+        {
+            // Max Count
+            WriteInt32((int)conformance);
+            WriteVaryingCharArray(array, variance);
+        }
+
+        public void WriteConformantVaryingPrimitiveArray<T>(T[] array, long conformance, long variance) where T : struct
+        {
+            // Max Count
+            WriteInt32((int)conformance);
+            WriteVaryingPrimitiveArray(array, variance);
+        }
+
+        public void WriteConformantVaryingStructArray<T>(T[] array, long conformance, long variance) where T : INdrStructure, new()
+        {
+            WriteVaryingArray(array, t => WriteStruct(t), variance);
+        }
+
+        public void WriteConformantVaryingArray<T>(T[] array, Action<T> writer, long conformance, long variance) where T : new()
+        {
+            // Max Count
+            WriteInt32((int)conformance);
+            WriteVaryingArray(array, writer, variance);
+        }
+
+        #endregion
+
+        #region Public Properties
         public List<NtObject> Handles => _handles;
+        #endregion
     }
 #pragma warning restore 1591
 }

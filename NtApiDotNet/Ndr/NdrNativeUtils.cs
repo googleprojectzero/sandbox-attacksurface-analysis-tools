@@ -104,7 +104,23 @@ namespace NtApiDotNet.Ndr
                 throw new ArgumentException($"Type {typeof(T)} not primitive");
             }
 
+            // The "native" size of a char is 1 due to defaulting to ANSI!
+            if (typeof(T) == typeof(char))
+            {
+                return 2;
+            }
+
             return Marshal.SizeOf(typeof(T));
+        }
+
+        internal static int CalculateAlignment(int offset, int alignment)
+        {
+            int result = alignment - (offset % alignment);
+            if (result < alignment)
+            {
+                return result;
+            }
+            return 0;
         }
 
         internal static readonly Guid IID_IUnknown = new Guid("00000000-0000-0000-C000-000000000046");

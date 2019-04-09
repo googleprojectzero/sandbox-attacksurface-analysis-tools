@@ -27,26 +27,16 @@ namespace NtApiDotNet.Ndr
     /// <remarks>This class is primarily for internal use only.</remarks>
     public class NdrUnmarshalBuffer : IDisposable
     {
+        #region Private Members
+
         private readonly MemoryStream _stm;
         private readonly BinaryReader _reader;
         private readonly DisposableList<NtObject> _handles;
         private readonly List<Action> _deferred_reads;
 
-        private static int CaclulateAlignment(int offset, int alignment)
-        {
-            int result = alignment - (offset % alignment);
-            if (result < alignment)
-            {
-                return result;
-            }
-            return 0;
-        }
+        #endregion
 
-        public void Align(int alignment)
-        {
-            _stm.Position += CaclulateAlignment((int)_stm.Position, alignment);
-        }
-
+        #region Constructors
         public NdrUnmarshalBuffer(byte[] buffer, IEnumerable<NtObject> handles)
         {
             _stm = new MemoryStream(buffer);
@@ -55,44 +45,50 @@ namespace NtApiDotNet.Ndr
             _deferred_reads = new List<Action>();
         }
 
-        public NdrUnmarshalBuffer(byte[] buffer) 
-            : this(null, new NtObject[0])
+        public NdrUnmarshalBuffer(byte[] buffer)
+            : this(buffer, new NtObject[0])
         {
         }
+        #endregion
+
+        #region Misc Methods
+
+        public void Align(int alignment)
+        {
+            _stm.Position += NdrNativeUtils.CalculateAlignment((int)_stm.Position, alignment);
+        }
+
+        public T ReadSystemHandle<T>() where T : NtObject
+        {
+            int index = ReadInt32();
+            if (!NtObjectUtils.IsWindows81OrLess)
+            {
+                // Unsure what this is on Windows 10. This isn't used on Windows 8.X.
+                ReadInt32();
+            }
+
+            return (T)_handles[index - 1].DuplicateObject();
+        }
+
+        public NdrContextHandle ReadContextHandle()
+        {
+            int attributes = ReadInt32();
+            Guid uuid = ReadGuid();
+            return new NdrContextHandle(attributes, uuid);
+        }
+
+        public NdrUnsupported ReadUnsupported(string name)
+        {
+            throw new NotImplementedException($"Reading type {name} is unsupported");
+        }
+
+        #endregion
+
+        #region Primitive Types
 
         public byte ReadByte()
         {
             return _reader.ReadByte();
-        }
-
-        public byte[] ReadBytes(int count)
-        {
-            byte[] ret = _reader.ReadBytes(count);
-            if (ret.Length < count)
-            {
-                throw new EndOfStreamException();
-            }
-            return ret;
-        }
-
-        public char[] ReadChars(int count)
-        {
-            char[] chars = _reader.ReadChars(count);
-            if (chars.Length < count)
-            {
-                throw new EndOfStreamException();
-            }
-            return chars;
-        }
-
-        public T[] ReadFixedPrimitiveArray<T>(int actual_count) where T : struct
-        {
-            int size = NdrNativeUtils.GetPrimitiveTypeSize<T>();
-            Align(size);
-            byte[] total_buffer = ReadBytes(size * actual_count);
-            T[] ret = new T[actual_count];
-            Buffer.BlockCopy(total_buffer, 0, ret, 0, total_buffer.Length);
-            return ret;
         }
 
         public sbyte ReadSByte()
@@ -158,34 +154,258 @@ namespace NtApiDotNet.Ndr
             return _reader.ReadDouble();
         }
 
+        public char ReadChar()
+        {
+            Align(2);
+            return _reader.ReadChar();
+        }
+
+        #endregion
+
+        #region Fixed Array Types
+
+        public byte[] ReadFixedByteArray(int count)
+        {
+            byte[] ret = _reader.ReadBytes(count);
+            if (ret.Length < count)
+            {
+                throw new EndOfStreamException();
+            }
+            return ret;
+        }
+
+        public char[] ReadFixedCharArray(int count)
+        {
+            char[] chars = _reader.ReadChars(count);
+            if (chars.Length < count)
+            {
+                throw new EndOfStreamException();
+            }
+            return chars;
+        }
+
+        public T[] ReadFixedPrimitiveArray<T>(int actual_count) where T : struct
+        {
+            int size = NdrNativeUtils.GetPrimitiveTypeSize<T>();
+            Align(size);
+            byte[] total_buffer = ReadFixedByteArray(size * actual_count);
+            T[] ret = new T[actual_count];
+            Buffer.BlockCopy(total_buffer, 0, ret, 0, total_buffer.Length);
+            return ret;
+        }
+
+        public T[] ReadFixedArray<T>(Func<T> reader, int actual_count)
+        {
+            T[] ret = new T[actual_count];
+            for (int i = 0; i < actual_count; ++i)
+            {
+                ret[i] = reader();
+            }
+            return ret;
+        }
+
+        public T[] ReadFixedStructArray<T>(int actual_count) where T : INdrStructure, new()
+        {
+            return ReadFixedArray(() => ReadStruct<T>(), actual_count);
+        }
+
+        #endregion
+
+        #region Conformant Array Types
+
+        public byte[] ReadConformantByteArray()
+        {
+            int max_count = ReadInt32();
+            return ReadFixedByteArray(max_count);
+        }
+
+        public char[] ReadConformantCharArray()
+        {
+            int max_count = ReadInt32();
+            return ReadFixedCharArray(max_count);
+        }
+
+        public T[] ReadConformantPrimitiveArray<T>() where T : struct
+        {
+            int max_count = ReadInt32();
+            return ReadFixedPrimitiveArray<T>(max_count);
+        }
+
+        public T[] ReadConformantArray<T>(Func<T> reader)
+        {
+            int max_count = ReadInt32();
+            T[] ret = new T[max_count];
+            for (int i = 0; i < max_count; ++i)
+            {
+                ret[i] = reader();
+            }
+            return ret;
+        }
+
+        public T[] ReadConformantStructArray<T>() where T : INdrStructure, new()
+        {
+            return ReadConformantArray(() => ReadStruct<T>());
+        }
+
+        #endregion
+
+        #region Varying Array Types
+
+        public byte[] ReadVaryingByteArray()
+        {
+            int offset = ReadInt32();
+            int actual_count = ReadInt32();
+            byte[] ret = new byte[offset + actual_count];
+            if (_stm.Read(ret, offset, actual_count) != actual_count)
+            {
+                throw new EndOfStreamException();
+            }
+
+            return ret;
+        }
+
+        public char[] ReadVaryingCharArray()
+        {
+            int offset = ReadInt32();
+            int actual_count = ReadInt32();
+            if (offset == 0)
+            {
+                return ReadFixedCharArray(actual_count);
+            }
+
+            char[] tmp = ReadFixedCharArray(actual_count);
+            char[] ret = new char[offset + actual_count];
+            Array.Copy(tmp, 0, ret, offset, actual_count);
+            return ret;
+        }
+
+        public T[] ReadVaryingPrimitiveArray<T>() where T : struct
+        {
+            int offset = ReadInt32();
+            int actual_count = ReadInt32();
+            T[] tmp = ReadFixedPrimitiveArray<T>(actual_count);
+            T[] ret = new T[offset + actual_count];
+            Array.Copy(tmp, 0, ret, offset, actual_count);
+            return ret;
+        }
+
+        public T[] ReadVaryingArray<T>(Func<T> reader)
+        {
+            int offset = ReadInt32();
+            int actual_count = ReadInt32();
+            T[] ret = new T[offset + actual_count];
+            for (int i = 0; i < actual_count; ++i)
+            {
+                ret[i + offset] = reader();
+            }
+            return ret;
+        }
+
+        public T[] ReadVaryingStructArray<T>() where T : INdrStructure, new()
+        {
+            return ReadVaryingArray(() => ReadStruct<T>());
+        }
+
+        #endregion
+
+        #region Conformant Varying Array Types
+
+        public byte[] ReadConformantVaryingByteArray()
+        {
+            int max_count = ReadInt32();
+            int offset = ReadInt32();
+            int actual_count = ReadInt32();
+            byte[] ret = new byte[max_count];
+            if (_stm.Read(ret, offset, actual_count) != actual_count)
+            {
+                throw new EndOfStreamException();
+            }
+
+            return ret;
+        }
+
+        public char[] ReadConformantVaryingCharArray()
+        {
+            int max_count = ReadInt32();
+            int offset = ReadInt32();
+            int actual_count = ReadInt32();
+
+            char[] tmp = ReadFixedCharArray(actual_count);
+
+            if (max_count == actual_count && offset == 0)
+            {
+                return tmp;
+            }
+
+            char[] ret = new char[max_count];
+            Array.Copy(tmp, 0, ret, offset, actual_count);
+            return ret;
+        }
+
+        public T[] ReadConformantVaryingPrimitiveArray<T>() where T : struct
+        {
+            int max_count = ReadInt32();
+            int offset = ReadInt32();
+            int actual_count = ReadInt32();
+
+            T[] tmp = ReadFixedPrimitiveArray<T>(actual_count);
+            if (max_count == actual_count && offset == 0)
+            {
+                return tmp;
+            }
+
+            T[] ret = new T[max_count];
+            Array.Copy(tmp, 0, ret, offset, actual_count);
+            return ret;
+        }
+
+        public T[] ReadConformantVaryingArray<T>(Func<T> reader)
+        {
+            int max_count = ReadInt32();
+            int offset = ReadInt32();
+            int actual_count = ReadInt32();
+            T[] ret = new T[offset + actual_count];
+            for (int i = 0; i < actual_count; ++i)
+            {
+                ret[i + offset] = reader();
+            }
+            return ret;
+        }
+
+        public T[] ReadConformantVaryingStructArray<T>() where T : INdrStructure, new()
+        {
+            return ReadConformantVaryingArray(() => ReadStruct<T>());
+        }
+
+        #endregion
+
+        #region String Types
+
+        public string ReadFixedString(int count)
+        {
+            return new string(ReadFixedCharArray(count));
+        }
+
+        public string ReadConformantVaryingAnsiString()
+        {
+            return BinaryEncoding.Instance.GetString(ReadConformantVaryingByteArray()).TrimEnd('\0');
+        }
+
+        public string ReadConformantVaryingString()
+        {
+            return new string(ReadConformantVaryingCharArray()).TrimEnd('\0');
+        }
+
+        #endregion
+
+        #region Pointer Types
+
         public int ReadReferent()
         {
             // Might need to actually handle referents, guess we'll see.
             return ReadInt32();
         }
 
-        public string ReadFixedString(int count)
-        {
-            return new string(ReadChars(count));
-        }
-
-        public string ReadAnsiConformantString()
-        {
-            int max_count = ReadInt32();
-            int offset = ReadInt32();
-            int actual_count = ReadInt32();
-
-            return BinaryEncoding.Instance.GetString(_reader.ReadBytes(actual_count)).TrimEnd('\0');
-        }
-
-        public string ReadConformantString()
-        {
-            int max_count = ReadInt32();
-            int offset = ReadInt32();
-            int actual_count = ReadInt32();
-
-            return new string(_reader.ReadChars(actual_count)).TrimEnd('\0');
-        }
 
         public T ReadUniquePointer<T>(Func<T> read_func) where T : class
         {
@@ -195,38 +415,6 @@ namespace NtApiDotNet.Ndr
                 return null;
             }
             return read_func();
-        }
-
-        public Guid ReadGuid()
-        {
-            Align(4);
-            return new Guid(ReadBytes(16));
-        }
-
-        public T ReadStruct<T>() where T : INdrStructure, new()
-        {
-            T ret = new T();
-            ret.Unmarshal(this);
-            return ret;
-        }
-
-        public T ReadSystemHandle<T>() where T : NtObject
-        {
-            int index = ReadInt32();
-            if (!NtObjectUtils.IsWindows81OrLess)
-            {
-                // Unsure what this is on Windows 10. This isn't used on Windows 8.X.
-                ReadInt32();
-            }
-
-            return (T)_handles[index - 1].DuplicateObject();
-        }
-
-        public NdrContextHandle ReadContextHandle()
-        {
-            int attributes = ReadInt32();
-            Guid uuid = ReadGuid();
-            return new NdrContextHandle(attributes, uuid);
         }
 
         public NdrEmbeddedPointer<T> ReadEmbeddedPointer<T>(Func<T> unmarshal_func)
@@ -259,30 +447,6 @@ namespace NtApiDotNet.Ndr
             return ReadEmbeddedPointer(() => ReadStruct<T>());
         }
 
-        public T[] ReadVaryingBogusArrayStruct<T>() where T : INdrStructure, new()
-        {
-            return ReadVaryingBogusArray(() => ReadStruct<T>());
-        }
-
-        public T[] ReadVaryingBogusArray<T>(Func<T> reader)
-        {
-            // We don't really care about conformance or variance as we're not going to
-            // validate anything.
-            int offset = ReadInt32();
-            int actual_count = ReadInt32();
-            T[] ret = new T[actual_count];
-            for (int i = 0; i < actual_count; ++i)
-            {
-                ret[i] = reader();
-            }
-            return ret;
-        }
-
-        public NdrUnsupported ReadUnsupported(string name)
-        {
-            throw new NotImplementedException($"Reading type {name} is unsupported");
-        }
-
         public void PopuluateDeferredPointers()
         {
             foreach (var a in _deferred_reads)
@@ -292,10 +456,31 @@ namespace NtApiDotNet.Ndr
             _deferred_reads.Clear();
         }
 
+        #endregion
+
+        #region Structure Types
+
+        public Guid ReadGuid()
+        {
+            Align(4);
+            return new Guid(ReadFixedByteArray(16));
+        }
+
+        public T ReadStruct<T>() where T : INdrStructure, new()
+        {
+            T ret = new T();
+            ret.Unmarshal(this);
+            return ret;
+        }
+
+        #endregion
+
+        #region Dispose Support
         public virtual void Dispose()
         {
             _handles.Dispose();
         }
+        #endregion
     }
 #pragma warning restore 1591
 }
