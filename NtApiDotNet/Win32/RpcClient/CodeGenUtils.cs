@@ -86,7 +86,7 @@ namespace NtApiDotNet.Win32.RpcClient
 
         public static void AddAlign(this CodeMemberMethod method, string marshal_name, int align)
         {
-            method.Statements.Add(new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(marshal_name), "Align", GetPrimitive(align)));
+            method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(marshal_name), "Align", GetPrimitive(align)));
         }
 
         private static void AddUnmarshalInterfaceMethod(CodeTypeDeclaration type, MarshalHelperBuilder marshal_helper)
@@ -230,8 +230,12 @@ namespace NtApiDotNet.Win32.RpcClient
             method.AddReturn(new CodeArrayCreateExpression(complex_type.CodeType, GetVariable("size")));
         }
 
-        public static CodeVariableReferenceExpression GetVariable(string var_name)
+        public static CodeExpression GetVariable(string var_name)
         {
+            if (var_name == null)
+            {
+                return new CodeThisReferenceExpression();
+            }
             return new CodeVariableReferenceExpression(MakeIdentifier(var_name));
         }
 
