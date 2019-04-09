@@ -15,6 +15,8 @@
 using NtApiDotNet.Ndr;
 using System;
 using System.CodeDom;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Win32.RpcClient
 {
@@ -59,6 +61,8 @@ namespace NtApiDotNet.Win32.RpcClient
         public NdrCorrelationDescriptor ConformanceDescriptor { get; }
         public NdrCorrelationDescriptor VarianceDescriptor { get; }
         public int FixedCount { get; set; }
+        public CodeTypeReference UnmarshalHelperType { get; set; }
+        public bool UnmarshalHelper => UnmarshalHelperType != null;
 
         public RpcTypeDescriptor(CodeTypeReference code_type, bool value_type, string unmarshal_method, 
             bool unmarshal_generic, string marshal_method, NdrBaseTypeReference ndr_type,
@@ -102,6 +106,8 @@ namespace NtApiDotNet.Win32.RpcClient
         {
             PointerType = pointer_type;
             Constructed = original_desc.Constructed;
+            FixedCount = original_desc.FixedCount;
+            UnmarshalHelperType = original_desc.UnmarshalHelperType;
         }
 
         public CodeMethodReferenceExpression GetMarshalMethod(CodeExpression target)
@@ -109,13 +115,25 @@ namespace NtApiDotNet.Win32.RpcClient
             return new CodeMethodReferenceExpression(target, MarshalMethod);
         }
 
-        public CodeMethodReferenceExpression GetUnmarshalMethod(CodeExpression target)
+        public CodeExpression GetUnmarshalTarget(string unmarshal_name)
         {
+            return CodeGenUtils.GetVariable(unmarshal_name);
+        }
+
+        public CodeMethodInvokeExpression GetUnmarshalMethodInvoke(string unmarshal_name, IEnumerable<CodeExpression> additional_args)
+        {
+            CodeExpression unmarshal_target = GetUnmarshalTarget(unmarshal_name);
+            CodeMethodReferenceExpression unmarshal_method;
             if (UnmarshalGeneric)
             {
-                return new CodeMethodReferenceExpression(target, UnmarshalMethod, CodeType.ArrayElementType ?? CodeType);
+                unmarshal_method = new CodeMethodReferenceExpression(unmarshal_target, UnmarshalMethod, CodeType.ArrayElementType ?? CodeType);
             }
-            return new CodeMethodReferenceExpression(target, UnmarshalMethod);
+            else
+            {
+                unmarshal_method = new CodeMethodReferenceExpression(unmarshal_target, UnmarshalMethod);
+            }
+
+            return new CodeMethodInvokeExpression(unmarshal_method, additional_args.ToArray());
         }
 
         public CodeTypeReference GetStructureType()

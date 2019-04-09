@@ -43,7 +43,7 @@ namespace NtApiDotNet.Win32.RpcClient
             return (_args.Flags & flag) == flag;
         }
 
-        private RpcTypeDescriptor GetTypeDescriptorInternal(NdrBaseTypeReference type)
+        private RpcTypeDescriptor GetTypeDescriptorInternal(NdrBaseTypeReference type, MarshalHelperBuilder marshal_helper)
         {
             if (type is NdrSimpleTypeReference)
             {
@@ -117,7 +117,7 @@ namespace NtApiDotNet.Win32.RpcClient
             }
             else if (type is NdrSimpleArrayTypeReference simple_array)
             {
-                RpcTypeDescriptor element_type = GetTypeDescriptor(simple_array.ElementType);
+                RpcTypeDescriptor element_type = GetTypeDescriptor(simple_array.ElementType, marshal_helper);
                 RpcMarshalArgument arg = new RpcMarshalArgument
                 {
                     CodeType = new CodeTypeReference(typeof(int)),
@@ -140,7 +140,7 @@ namespace NtApiDotNet.Win32.RpcClient
             }
             else if (type is NdrPointerTypeReference pointer)
             {
-                var desc = GetTypeDescriptor(pointer.Type);
+                var desc = GetTypeDescriptor(pointer.Type, marshal_helper);
                 RpcPointerType pointer_type = RpcPointerType.None;
                 switch (pointer.Format)
                 {
@@ -158,7 +158,7 @@ namespace NtApiDotNet.Win32.RpcClient
             }
             else if (type is NdrSupplementTypeReference supp)
             {
-                return GetTypeDescriptor(supp.SupplementType);
+                return GetTypeDescriptor(supp.SupplementType, marshal_helper);
             }
             else if (type is NdrHandleTypeReference handle)
             {
@@ -169,11 +169,11 @@ namespace NtApiDotNet.Win32.RpcClient
             }
             else if (type is NdrRangeTypeReference range)
             {
-                return GetTypeDescriptor(range.RangeType);
+                return GetTypeDescriptor(range.RangeType, marshal_helper);
             }
             else if (type is NdrBogusArrayTypeReference bogus_array)
             {
-                RpcTypeDescriptor element_type = GetTypeDescriptor(bogus_array.ElementType);
+                RpcTypeDescriptor element_type = GetTypeDescriptor(bogus_array.ElementType, marshal_helper);
                 if (bogus_array.VarianceDescriptor.IsValid && bogus_array.VarianceDescriptor.ValidateCorrelation() 
                     && !bogus_array.ConformanceDescriptor.IsValid && element_type.Constructed )
                 {
@@ -194,7 +194,7 @@ namespace NtApiDotNet.Win32.RpcClient
         }
 
         // Should implement this for each type rather than this.
-        private RpcTypeDescriptor GetTypeDescriptor(NdrBaseTypeReference type)
+        private RpcTypeDescriptor GetTypeDescriptor(NdrBaseTypeReference type, MarshalHelperBuilder marshal_helper)
         {
             if (type == null)
             {
@@ -203,7 +203,7 @@ namespace NtApiDotNet.Win32.RpcClient
 
             if (!_type_descriptors.ContainsKey(type))
             {
-                _type_descriptors[type] = GetTypeDescriptorInternal(type);
+                _type_descriptors[type] = GetTypeDescriptorInternal(type, marshal_helper);
             }
             return _type_descriptors[type];
         }
@@ -212,17 +212,26 @@ namespace NtApiDotNet.Win32.RpcClient
         private const string UNMARSHAL_NAME = "u";
         private const string CONSTRUCTOR_STRUCT_NAME = "_Constructors";
         private const string ARRAY_CONSTRUCTOR_STRUCT_NAME = "_Array_Constructors";
+        private const string UNMARSHAL_HELPER_NAME = "_Unmarshal_Helper";
+        private const string MARSHAL_HELPER_NAME = "_Marshal_Helper";
 
-        private int GenerateComplexTypes(CodeNamespace ns)
+        private int GenerateComplexTypes(CodeNamespace ns, MarshalHelperBuilder marshal_helper)
         {
             int type_count = 0;
+
             // First populate the type cache.
             foreach (var complex_type in _server.ComplexTypes)
             {
                 if (complex_type is NdrBaseStructureTypeReference struct_type)
                 {
-                    _type_descriptors[complex_type] = new RpcTypeDescriptor(complex_type.Name, true,
-                        "ReadStruct", true, "WriteStruct", complex_type, null, null);
+                    var method = marshal_helper.AddGenericUnmarshal(complex_type.Name, "ReadStruct");
+                    var type_desc = new RpcTypeDescriptor(complex_type.Name, true,
+                        method.Name, false, "WriteStruct", complex_type, null, null)
+                    {
+                        UnmarshalHelperType = marshal_helper.UnmarshalHelperType
+                    };
+
+                    _type_descriptors[complex_type] = type_desc;
                     type_count++;
                 }
             }
@@ -267,9 +276,12 @@ namespace NtApiDotNet.Win32.RpcClient
                 s_type.IsStruct = true;
                 s_type.BaseTypes.Add(new CodeTypeReference(typeof(INdrStructure)));
 
-                var marshal_method = s_type.AddMarshalMethod(MARSHAL_NAME);
+                s_type.AddMarshalInterfaceMethod(marshal_helper);
+                var marshal_method = s_type.AddMarshalMethod(MARSHAL_NAME, marshal_helper);
                 marshal_method.AddAlign(MARSHAL_NAME, struct_type.Alignment + 1);
-                var unmarshal_method = s_type.AddUnmarshalMethod(UNMARSHAL_NAME);
+                
+                s_type.AddUnmarshalInterfaceMethod(marshal_helper);
+                var unmarshal_method = s_type.AddUnmarshalMethod(UNMARSHAL_NAME, marshal_helper);
                 unmarshal_method.AddAlign(UNMARSHAL_NAME, struct_type.Alignment + 1);
 
                 var offset_to_name =
@@ -279,7 +291,7 @@ namespace NtApiDotNet.Win32.RpcClient
 
                 foreach (var member in struct_type.Members)
                 {
-                    var f_type = GetTypeDescriptor(member.MemberType);
+                    var f_type = GetTypeDescriptor(member.MemberType, marshal_helper);
                     s_type.AddField(f_type.GetStructureType(), member.Name, MemberAttributes.Public);
                     member_parameters.Add(Tuple.Create(f_type.GetParameterType(), member.Name));
 
@@ -343,7 +355,7 @@ namespace NtApiDotNet.Win32.RpcClient
             return type_count;
         }
 
-        private void GenerateClient(string name, CodeNamespace ns, int complex_type_count)
+        private void GenerateClient(string name, CodeNamespace ns, int complex_type_count, MarshalHelperBuilder marshal_helper)
         {
             CodeTypeDeclaration type = ns.AddType(name);
             type.AddStartRegion("Client Implementation");
@@ -356,6 +368,9 @@ namespace NtApiDotNet.Win32.RpcClient
             constructor.BaseConstructorArgs.Add(CodeGenUtils.GetPrimitive(_server.InterfaceId.ToString()));
             constructor.BaseConstructorArgs.Add(CodeGenUtils.GetPrimitive(_server.InterfaceVersion.Major));
             constructor.BaseConstructorArgs.Add(CodeGenUtils.GetPrimitive(_server.InterfaceVersion.Minor));
+
+            CodeTypeReference unmarshal_helper_type = complex_type_count > 0 
+                ? new CodeTypeReference(CodeGenUtils.MakeIdentifier(UNMARSHAL_HELPER_NAME)) : null;
 
             foreach (var proc in _server.Procedures)
             {
@@ -370,7 +385,7 @@ namespace NtApiDotNet.Win32.RpcClient
                 }
 
                 var method = type.AddMethod(proc_name, MemberAttributes.Public | MemberAttributes.Final);
-                RpcTypeDescriptor return_type = GetTypeDescriptor(proc.ReturnValue?.Type);
+                RpcTypeDescriptor return_type = GetTypeDescriptor(proc.ReturnValue?.Type, marshal_helper);
                 if (return_type == null)
                 {
                     method.ThrowNotImplemented("Return type unsupported.");
@@ -381,14 +396,14 @@ namespace NtApiDotNet.Win32.RpcClient
                     proc.Params.Select(p => Tuple.Create(p.Offset, p.Name)).ToList();
 
                 method.ReturnType = return_type.CodeType;
-                method.CreateMarshalObject(MARSHAL_NAME);
+                method.CreateMarshalObject(MARSHAL_NAME, marshal_helper);
                 foreach (var p in proc.Params)
                 {
                     if (p == proc.Handle)
                     {
                         continue;
                     }
-                    RpcTypeDescriptor p_type = GetTypeDescriptor(p.Type);
+                    RpcTypeDescriptor p_type = GetTypeDescriptor(p.Type, marshal_helper);
 
                     List<RpcMarshalArgument> extra_marshal_args = new List<RpcMarshalArgument>();
                     if (p_type.VarianceDescriptor.IsValid)
@@ -425,7 +440,7 @@ namespace NtApiDotNet.Win32.RpcClient
                     }
                 }
 
-                method.SendReceive(MARSHAL_NAME, UNMARSHAL_NAME, proc.ProcNum);
+                method.SendReceive(MARSHAL_NAME, UNMARSHAL_NAME, proc.ProcNum, marshal_helper);
 
                 foreach (var p in proc.Params.Where(x => x.IsOut))
                 {
@@ -434,7 +449,7 @@ namespace NtApiDotNet.Win32.RpcClient
                         continue;
                     }
 
-                    RpcTypeDescriptor p_type = GetTypeDescriptor(p.Type);
+                    RpcTypeDescriptor p_type = GetTypeDescriptor(p.Type, marshal_helper);
                     if (p_type.Pointer)
                     {
                         method.AddPointerUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name);
@@ -497,8 +512,9 @@ namespace NtApiDotNet.Win32.RpcClient
             }
             AddServerComment(unit);
             CodeNamespace ns = unit.AddNamespace(ns_name);
-            int complex_type_count = GenerateComplexTypes(ns);
-            GenerateClient(name, ns, complex_type_count);
+            MarshalHelperBuilder marshal_helper = new MarshalHelperBuilder(ns, MARSHAL_HELPER_NAME, UNMARSHAL_HELPER_NAME);
+            int complex_type_count = GenerateComplexTypes(ns, marshal_helper);
+            GenerateClient(name, ns, complex_type_count, marshal_helper);
 
             return unit;
         }

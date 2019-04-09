@@ -56,6 +56,14 @@ namespace NtApiDotNet.Ndr
             _deferred_reads = new List<Action>();
         }
 
+        protected NdrUnmarshalBuffer(NdrUnmarshalBuffer inner_buffer)
+        {
+            _stm = inner_buffer._stm;
+            _reader = inner_buffer._reader;
+            _handles = inner_buffer._handles;
+            _deferred_reads = inner_buffer._deferred_reads;
+        }
+
         public byte ReadByte()
         {
             return _reader.ReadByte();
