@@ -105,7 +105,7 @@ namespace NtApiDotNet.Win32.RpcClient
                     throw new ArgumentNullException(nameof(marshal_helper));
                 }
 
-                MarshalMethod = marshal_helper.AddGenericMarshal(code_type, marshal_method, additional_marshal_args);
+                MarshalMethod = marshal_helper.AddGenericMarshal(ndr_type, code_type, marshal_method, additional_marshal_args);
             }
             else
             {
@@ -119,7 +119,7 @@ namespace NtApiDotNet.Win32.RpcClient
                     throw new ArgumentNullException(nameof(marshal_helper));
                 }
 
-                UnmarshalMethod = marshal_helper.AddGenericUnmarshal(code_type, unmarshal_method, additional_unmarshal_args ?? new AdditionalArguments());
+                UnmarshalMethod = marshal_helper.AddGenericUnmarshal(ndr_type, code_type, unmarshal_method, additional_unmarshal_args ?? new AdditionalArguments());
             }
             else
             {

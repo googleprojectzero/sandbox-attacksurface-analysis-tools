@@ -41,6 +41,9 @@ namespace NtApiDotNet.Win32.RpcClient
         public CodeTypeReference MarshalHelperType { get;}
         public CodeTypeReference UnmarshalHelperType { get; }
 
+        public Dictionary<NdrBaseTypeReference, CodeMemberMethod> MarshalMethods { get; }
+        public Dictionary<NdrBaseTypeReference, CodeMemberMethod> UnmarshalMethods { get; }
+
         public static CodeTypeDeclaration CreateUnmarshalHelperType(CodeNamespace ns, string name)
         {
             var type = ns.AddType(name);
@@ -72,6 +75,8 @@ namespace NtApiDotNet.Win32.RpcClient
             UnmarshalHelper = CreateUnmarshalHelperType(ns, unmarshal_name);
             UnmarshalHelper.AddEndRegion();
             UnmarshalHelperType = new CodeTypeReference(UnmarshalHelper.Name);
+            MarshalMethods = new Dictionary<NdrBaseTypeReference, CodeMemberMethod>();
+            UnmarshalMethods = new Dictionary<NdrBaseTypeReference, CodeMemberMethod>();
         }
 
         private static CodeExpression AddParam(CodeTypeReference type, int arg_count, CodeMemberMethod method)
@@ -111,24 +116,28 @@ namespace NtApiDotNet.Win32.RpcClient
             return method;
         }
 
-        public string AddGenericUnmarshal(CodeTypeReference type, string name, AdditionalArguments additional_args)
+        public string AddGenericUnmarshal(NdrBaseTypeReference ndr_type, CodeTypeReference type, string name, AdditionalArguments additional_args)
         {
-            return AddMethod(UnmarshalHelper, $"Read_{_current_unmarshal_id++}", additional_args.Generic ? GetBaseType(type) : null, type, name, new CodeTypeReference[0], additional_args).Name;
+            var method = AddMethod(UnmarshalHelper, $"Read_{_current_unmarshal_id++}", additional_args.Generic ? GetBaseType(type) : null, type, name, new CodeTypeReference[0], additional_args);
+            UnmarshalMethods.Add(ndr_type, method);
+            return method.Name;
         }
 
-        public string AddGenericUnmarshal(string type_name, string name, AdditionalArguments additional_args)
+        public string AddGenericUnmarshal(NdrBaseTypeReference ndr_type, string type_name, string name, AdditionalArguments additional_args)
         {
-            return AddGenericUnmarshal(new CodeTypeReference(CodeGenUtils.MakeIdentifier(type_name)), name, additional_args);
+            return AddGenericUnmarshal(ndr_type, new CodeTypeReference(CodeGenUtils.MakeIdentifier(type_name)), name, additional_args);
         }
 
-        public string AddGenericMarshal(CodeTypeReference type, string name, AdditionalArguments additional_args)
+        public string AddGenericMarshal(NdrBaseTypeReference ndr_type, CodeTypeReference type, string name, AdditionalArguments additional_args)
         {
-            return AddMethod(MarshalHelper, $"Write_{_current_marshal_id++}", additional_args.Generic ? GetBaseType(type) : null, null, name, new[] { type }, additional_args).Name;
+            var method = AddMethod(MarshalHelper, $"Write_{_current_marshal_id++}", additional_args.Generic ? GetBaseType(type) : null, null, name, new[] { type }, additional_args);
+            MarshalMethods.Add(ndr_type, method);
+            return method.Name;
         }
 
-        public string AddGenericMarshal(string type_name, string name, AdditionalArguments additional_args)
+        public string AddGenericMarshal(NdrBaseTypeReference ndr_type, string type_name, string name, AdditionalArguments additional_args)
         {
-            return AddGenericMarshal(new CodeTypeReference(CodeGenUtils.MakeIdentifier(type_name)), name, additional_args);
+            return AddGenericMarshal(ndr_type, new CodeTypeReference(CodeGenUtils.MakeIdentifier(type_name)), name, additional_args);
         }
     }
 }
