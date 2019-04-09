@@ -55,6 +55,7 @@ namespace NtApiDotNet.Ndr
         public bool IsValid { get; private set; }
         public bool IsConstant => CorrelationType == NdrCorrelationType.FC_CONSTANT_CONFORMANCE;
         public bool IsNormal => CorrelationType == NdrCorrelationType.FC_NORMAL_CONFORMANCE;
+        public bool IsTopLevel => CorrelationType == NdrCorrelationType.FC_TOP_LEVEL_CONFORMANCE;
 
         internal NdrCorrelationDescriptor()
         {

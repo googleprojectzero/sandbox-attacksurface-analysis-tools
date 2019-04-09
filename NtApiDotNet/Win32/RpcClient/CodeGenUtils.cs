@@ -496,7 +496,7 @@ namespace NtApiDotNet.Win32.RpcClient
 
         public static bool ValidateCorrelation(this NdrCorrelationDescriptor correlation)
         {
-            if (!correlation.IsConstant && !correlation.IsNormal)
+            if (!correlation.IsConstant && !correlation.IsNormal && !correlation.IsTopLevel)
             {
                 return false;
             }
@@ -522,6 +522,11 @@ namespace NtApiDotNet.Win32.RpcClient
             if (correlation.IsConstant)
             {
                 return RpcMarshalArgument.CreateFromPrimitive((long)correlation.Offset);
+            }
+
+            if (correlation.IsTopLevel)
+            {
+                current_offset = 0;
             }
 
             int expected_offset = current_offset + correlation.Offset;
