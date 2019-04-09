@@ -799,7 +799,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrSimpleArrayTypeReference : NdrBaseArrayTypeReference
+    public sealed class NdrSimpleArrayTypeReference : NdrBaseArrayTypeReference
     {
         public int TotalSize { get; }
 
@@ -829,9 +829,9 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrConformantArrayTypeReference : NdrBaseArrayTypeReference
+    public sealed class NdrConformantArrayTypeReference : NdrBaseArrayTypeReference
     {
-        private int _element_size;
+        private readonly int _element_size;
 
         public NdrCorrelationDescriptor ConformanceDescriptor { get; }
         public NdrCorrelationDescriptor VarianceDescriptor { get; }
@@ -891,7 +891,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrBogusArrayTypeReference : NdrBaseArrayTypeReference
+    public sealed class NdrBogusArrayTypeReference : NdrBaseArrayTypeReference
     {
         public int NumberofElements { get; }
         public NdrCorrelationDescriptor ConformanceDescriptor { get; }
@@ -947,7 +947,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrVaryingArrayTypeReference : NdrBaseArrayTypeReference
+    public sealed class NdrVaryingArrayTypeReference : NdrBaseArrayTypeReference
     {
         private readonly int _element_size;
 
