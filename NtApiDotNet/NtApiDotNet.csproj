@@ -218,6 +218,7 @@
     <Compile Include="Win32\RpcClient\RpcClientBuilder.cs" />
     <Compile Include="Win32\RpcClient\RpcClientBuilderArguments.cs" />
     <Compile Include="Win32\RpcClient\RpcClientInternals.cs" />
+    <Compile Include="Win32\RpcClient\RpcClientResponse.cs" />
     <Compile Include="Win32\RpcClient\RpcTypeDescriptor.cs" />
     <Compile Include="Win32\RpcEndpoint.cs" />
     <Compile Include="Win32\RpcEndpointMapper.cs" />

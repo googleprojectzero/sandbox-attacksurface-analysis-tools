@@ -48,9 +48,10 @@ namespace NtApiDotNet.Win32
         /// <param name="proc_num">The procedure number.</param>
         /// <param name="ndr_buffer">Marshal NDR buffer for the call.</param>
         /// <returns>Unmarshal NDR buffer for the result.</returns>
-        new public NdrUnmarshalBuffer SendReceive(int proc_num, NdrMarshalBuffer ndr_buffer)
+        public NdrUnmarshalBuffer SendReceive(int proc_num, NdrMarshalBuffer ndr_buffer)
         {
-            return base.SendReceive(proc_num, ndr_buffer);
+            var response = SendReceive(proc_num, ndr_buffer.ToArray(), ndr_buffer.Handles);
+            return new NdrUnmarshalBuffer(response.NdrBuffer, response.Handles);
         }
     }
 }

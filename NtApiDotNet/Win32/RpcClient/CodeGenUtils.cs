@@ -428,7 +428,7 @@ namespace NtApiDotNet.Win32.RpcClient
         public static void SendReceive(this CodeMemberMethod method, string marshal_name, string unmarshal_name, int proc_num, MarshalHelperBuilder marshal_helper)
         {
             CodeExpression call_sendrecv = new CodeMethodInvokeExpression(null, "SendReceive",
-                GetPrimitive(proc_num), GetVariable(marshal_name));
+                GetPrimitive(proc_num), new CodeMethodInvokeExpression(GetVariable(marshal_name), "ToArray"), new CodePropertyReferenceExpression(GetVariable(marshal_name), "Handles"));
             call_sendrecv = new CodeObjectCreateExpression(marshal_helper.UnmarshalHelperType, call_sendrecv);
             CodeVariableDeclarationStatement unmarshal = new CodeVariableDeclarationStatement(marshal_helper.UnmarshalHelperType, unmarshal_name, call_sendrecv);
             method.Statements.Add(unmarshal);

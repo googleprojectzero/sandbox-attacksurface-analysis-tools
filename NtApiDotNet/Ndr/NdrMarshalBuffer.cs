@@ -466,7 +466,7 @@ namespace NtApiDotNet.Ndr
             return ret;
         }
 
-        internal List<NtObject> Handles => _handles;
+        public List<NtObject> Handles => _handles;
     }
 #pragma warning restore 1591
 }

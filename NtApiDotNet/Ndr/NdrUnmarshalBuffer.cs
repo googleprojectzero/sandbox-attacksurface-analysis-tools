@@ -16,7 +16,6 @@ using NtApiDotNet.Utilities.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace NtApiDotNet.Ndr
@@ -26,11 +25,11 @@ namespace NtApiDotNet.Ndr
     /// A buffer to unmarshal NDR data from.
     /// </summary>
     /// <remarks>This class is primarily for internal use only.</remarks>
-    public class NdrUnmarshalBuffer
+    public class NdrUnmarshalBuffer : IDisposable
     {
         private readonly MemoryStream _stm;
         private readonly BinaryReader _reader;
-        private readonly List<NtObject> _handles;
+        private readonly DisposableList<NtObject> _handles;
         private readonly List<Action> _deferred_reads;
 
         private static int CaclulateAlignment(int offset, int alignment)
@@ -52,16 +51,13 @@ namespace NtApiDotNet.Ndr
         {
             _stm = new MemoryStream(buffer);
             _reader = new BinaryReader(_stm, Encoding.Unicode);
-            _handles = new List<NtObject>(handles.Select(o => o.DuplicateObject()));
+            _handles = new DisposableList<NtObject>(handles);
             _deferred_reads = new List<Action>();
         }
 
-        protected NdrUnmarshalBuffer(NdrUnmarshalBuffer inner_buffer)
+        public NdrUnmarshalBuffer(byte[] buffer) 
+            : this(null, new NtObject[0])
         {
-            _stm = inner_buffer._stm;
-            _reader = inner_buffer._reader;
-            _handles = inner_buffer._handles;
-            _deferred_reads = inner_buffer._deferred_reads;
         }
 
         public byte ReadByte()
@@ -299,6 +295,11 @@ namespace NtApiDotNet.Ndr
                 a();
             }
             _deferred_reads.Clear();
+        }
+
+        public virtual void Dispose()
+        {
+            _handles.Dispose();
         }
     }
 #pragma warning restore 1591

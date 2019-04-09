@@ -43,13 +43,15 @@ namespace NtApiDotNet.Win32.RpcClient
 
         public static CodeTypeDeclaration CreateUnmarshalHelperType(CodeNamespace ns, string name)
         {
-            var unmarshal_type = new CodeTypeReference(typeof(NdrUnmarshalBuffer));
             var type = ns.AddType(name);
             type.TypeAttributes = TypeAttributes.NestedAssembly;
-            type.BaseTypes.Add(unmarshal_type);
+            type.BaseTypes.Add(typeof(NdrUnmarshalBuffer).ToRef());
             var con = type.AddConstructor(MemberAttributes.Public);
-            con.AddParam(unmarshal_type, "u");
-            con.BaseConstructorArgs.Add(CodeGenUtils.GetVariable("u"));
+            con.AddParam(typeof(RpcClientResponse).ToRef(), "r");
+            var param_var = CodeGenUtils.GetVariable("r");
+
+            con.BaseConstructorArgs.Add(new CodePropertyReferenceExpression(param_var, "NdrBuffer"));
+            con.BaseConstructorArgs.Add(new CodePropertyReferenceExpression(param_var, "Handles"));
             return type;
         }
 

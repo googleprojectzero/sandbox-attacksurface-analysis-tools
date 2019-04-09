@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Ndr;
 using System;
+using System.Collections.Generic;
 
 namespace NtApiDotNet.Win32.RpcClient
 {
@@ -99,22 +99,22 @@ namespace NtApiDotNet.Win32.RpcClient
             return endpoint.EndpointPath;
         }
 
-        private NdrUnmarshalBuffer HandleLargeResponse(AlpcMessageRaw message, SafeStructureInOutBuffer<LRPC_LARGE_RESPONSE_MESSAGE> response, AlpcReceiveMessageAttributes attributes)
+        private RpcClientResponse HandleLargeResponse(AlpcMessageRaw message, SafeStructureInOutBuffer<LRPC_LARGE_RESPONSE_MESSAGE> response, AlpcReceiveMessageAttributes attributes)
         {
             if (!attributes.HasValidAttribute(AlpcMessageAttributeFlags.View))
             {
                 throw new ArgumentException("Large response received but no data view available");
             }
 
-            return new NdrUnmarshalBuffer(attributes.DataView.ReadBytes(response.Result.LargeDataSize), attributes.Handles);
+            return new RpcClientResponse(attributes.DataView.ReadBytes(response.Result.LargeDataSize), attributes.Handles);
         }
 
-        private NdrUnmarshalBuffer HandleImmediateResponse(AlpcMessageRaw message, SafeStructureInOutBuffer<LRPC_IMMEDIATE_RESPONSE_MESSAGE> response, AlpcReceiveMessageAttributes attributes, int data_length)
+        private RpcClientResponse HandleImmediateResponse(AlpcMessageRaw message, SafeStructureInOutBuffer<LRPC_IMMEDIATE_RESPONSE_MESSAGE> response, AlpcReceiveMessageAttributes attributes, int data_length)
         {
-            return new NdrUnmarshalBuffer(response.Data.ToArray(), attributes.Handles);
+            return new RpcClientResponse(response.Data.ToArray(), attributes.Handles);
         }
 
-        private NdrUnmarshalBuffer HandleResponse(AlpcMessageRaw message, AlpcReceiveMessageAttributes attributes, int call_id)
+        private RpcClientResponse HandleResponse(AlpcMessageRaw message, AlpcReceiveMessageAttributes attributes, int call_id)
         {
             using (var buffer = message.Data.ToBuffer())
             {
@@ -145,7 +145,7 @@ namespace NtApiDotNet.Win32.RpcClient
             _client.Send(AlpcMessageFlags.None, msg, attributes.ToContinuationAttributes(flags), NtWaitTimeout.Infinite);
         }
 
-        private NdrUnmarshalBuffer SendAndReceiveLarge(int proc_num, NdrMarshalBuffer ndr_buffer, byte[] buffer)
+        private RpcClientResponse SendAndReceiveLarge(int proc_num, byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles)
         {
             LRPC_LARGE_REQUEST_MESSAGE req_msg = new LRPC_LARGE_REQUEST_MESSAGE()
             {
@@ -153,7 +153,7 @@ namespace NtApiDotNet.Win32.RpcClient
                 BindingId = 0,
                 CallId = CallId++,
                 ProcNum = proc_num,
-                LargeDataSize = buffer.Length,
+                LargeDataSize = ndr_buffer.Length,
                 Flags = LRPC_REQUEST_MESSAGE_FLAGS.ViewPresent
             };
 
@@ -167,29 +167,29 @@ namespace NtApiDotNet.Win32.RpcClient
             var recv_msg = new AlpcMessageRaw(0x1000);
             var send_attr = new AlpcSendMessageAttributes();
 
-            if (ndr_buffer.Handles.Count > 0)
+            if (handles.Count > 0)
             {
-                send_attr.AddHandles(ndr_buffer.Handles);
+                send_attr.AddHandles(handles);
             }
 
-            using (var port_section = _client.CreatePortSection(AlpcCreatePortSectionFlags.Secure, buffer.Length))
+            using (var port_section = _client.CreatePortSection(AlpcCreatePortSectionFlags.Secure, ndr_buffer.Length))
             {
-                using (var data_view = port_section.CreateSectionView(AlpcDataViewAttrFlags.Secure | AlpcDataViewAttrFlags.AutoRelease, buffer.Length))
+                using (var data_view = port_section.CreateSectionView(AlpcDataViewAttrFlags.Secure | AlpcDataViewAttrFlags.AutoRelease, ndr_buffer.Length))
                 {
-                    data_view.WriteBytes(buffer);
+                    data_view.WriteBytes(ndr_buffer);
                     send_attr.Add(data_view.ToMessageAttribute());
                     using (var recv_attr = new AlpcReceiveMessageAttributes())
                     {
                         _client.SendReceive(AlpcMessageFlags.SyncRequest, send_msg, send_attr, recv_msg, recv_attr, NtWaitTimeout.Infinite);
-                        NdrUnmarshalBuffer unmarshal = HandleResponse(recv_msg, recv_attr, req_msg.CallId);
+                        RpcClientResponse response = HandleResponse(recv_msg, recv_attr, req_msg.CallId);
                         ClearAttributes(recv_msg, recv_attr);
-                        return unmarshal;
+                        return response;
                     }
                 }
             }
         }
 
-        private NdrUnmarshalBuffer SendAndReceiveImmediate(int proc_num, NdrMarshalBuffer ndr_buffer, byte[] buffer)
+        private RpcClientResponse SendAndReceiveImmediate(int proc_num, byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles)
         {
             LRPC_IMMEDIATE_REQUEST_MESSAGE req_msg = new LRPC_IMMEDIATE_REQUEST_MESSAGE()
             {
@@ -205,20 +205,21 @@ namespace NtApiDotNet.Win32.RpcClient
                 req_msg.Flags |= LRPC_REQUEST_MESSAGE_FLAGS.ObjectUuid;
             }
 
-            AlpcMessageType<LRPC_IMMEDIATE_REQUEST_MESSAGE> send_msg = new AlpcMessageType<LRPC_IMMEDIATE_REQUEST_MESSAGE>(req_msg, buffer);
+            AlpcMessageType<LRPC_IMMEDIATE_REQUEST_MESSAGE> send_msg = new AlpcMessageType<LRPC_IMMEDIATE_REQUEST_MESSAGE>(req_msg, ndr_buffer);
             AlpcMessageRaw resp_msg = new AlpcMessageRaw(0x1000);
             AlpcSendMessageAttributes send_attr = new AlpcSendMessageAttributes();
-            if (ndr_buffer.Handles.Count > 0)
+
+            if (handles.Count > 0)
             {
-                send_attr.AddHandles(ndr_buffer.Handles);
+                send_attr.AddHandles(handles);
             }
 
             using (AlpcReceiveMessageAttributes recv_attr = new AlpcReceiveMessageAttributes())
             {
                 _client.SendReceive(AlpcMessageFlags.SyncRequest, send_msg, send_attr, resp_msg, recv_attr, NtWaitTimeout.Infinite);
-                NdrUnmarshalBuffer unmarshal = HandleResponse(resp_msg, recv_attr, req_msg.CallId);
+                RpcClientResponse response = HandleResponse(resp_msg, recv_attr, req_msg.CallId);
                 ClearAttributes(resp_msg, recv_attr);
-                return unmarshal;
+                return response;
             }
         }
 
@@ -257,20 +258,20 @@ namespace NtApiDotNet.Win32.RpcClient
         /// </summary>
         /// <param name="proc_num">The procedure number.</param>
         /// <param name="ndr_buffer">Marshal NDR buffer for the call.</param>
+        /// <param name="handles">List of handles marshaled into the buffer.</param>
         /// <returns>Unmarshal NDR buffer for the result.</returns>
-        protected NdrUnmarshalBuffer SendReceive(int proc_num, NdrMarshalBuffer ndr_buffer)
+        protected RpcClientResponse SendReceive(int proc_num, byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles)
         {
             if (!Connected)
             {
                 throw new InvalidOperationException("RPC client is not connected.");
             }
 
-            byte[] buffer = ndr_buffer.ToArray();
-            if (buffer.Length > 0xF00)
+            if (ndr_buffer.Length > 0xF00)
             {
-                return SendAndReceiveLarge(proc_num, ndr_buffer, buffer);
+                return SendAndReceiveLarge(proc_num, ndr_buffer, handles);
             }
-            return SendAndReceiveImmediate(proc_num, ndr_buffer, buffer);
+            return SendAndReceiveImmediate(proc_num, ndr_buffer, handles);
         }
 
         #endregion
