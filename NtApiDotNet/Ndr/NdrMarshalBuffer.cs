@@ -288,7 +288,7 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        public void WriteSystemHandle(NtObject handle)
+        public void WriteSystemHandle<T>(T handle) where T : NtObject
         {
             _handles.Add(handle);
             WriteInt32(_handles.Count);
@@ -370,7 +370,7 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        public void WriteStruct(INdrStructure structure)
+        public void WriteStruct<T>(T structure) where T : INdrStructure
         {
             structure.Marshal(this);
         }
