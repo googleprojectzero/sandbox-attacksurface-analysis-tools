@@ -138,21 +138,11 @@ namespace NtApiDotNet.Ndr
         FC_REPRESENT_AS_PTR,        // 0xb3
         FC_USER_MARSHAL,            // 0xb4
         FC_PIPE,                    // 0xb5
-        FC_SUPPLEMENT,                 // 0xb6 - Seemed to originally be FC_BLKHOLE.
+        FC_SUPPLEMENT,              // 0xb6 - Seemed to originally be FC_BLKHOLE.
         FC_RANGE,                   // 0xb7
         FC_INT3264,                 // 0xb8
         FC_UINT3264,                // 0xb9
         FC_END_OF_UNIVERSE          // 0xba
-    }
-
-    [Flags]
-    [Serializable]
-    public enum NdrBlackholeFlags
-    {
-        None = 0,
-        BaseType = 0x1,
-        Function = 0x2,
-        XurType = 0x4,  // Xmit Usermarshal or Represent-as TYPE
     }
 
     [Flags]
@@ -845,6 +835,10 @@ namespace NtApiDotNet.Ndr
             {
                 VarianceDescriptor = new NdrCorrelationDescriptor(context, reader);
             }
+            else
+            {
+                VarianceDescriptor = new NdrCorrelationDescriptor();
+            }
             ReadElementType(context, reader);
         }
 
@@ -855,14 +849,12 @@ namespace NtApiDotNet.Ndr
 
         protected override int GetElementCount()
         {
-            if (VarianceDescriptor != null
-                && VarianceDescriptor.CorrelationType == NdrCorrelationType.FC_CONSTANT_CONFORMANCE)
+            if (VarianceDescriptor.IsValid && VarianceDescriptor.IsConstant)
             {
                 return VarianceDescriptor.Offset;
             }
 
-            if (ConformanceDescriptor != null
-                && ConformanceDescriptor.CorrelationType == NdrCorrelationType.FC_CONSTANT_CONFORMANCE)
+            if (ConformanceDescriptor.IsValid && ConformanceDescriptor.IsConstant)
             {
                 return ConformanceDescriptor.Offset;
             }
@@ -873,11 +865,11 @@ namespace NtApiDotNet.Ndr
         internal override string FormatType(NdrFormatter context)
         {
             StringBuilder builder = new StringBuilder();
-            if (ConformanceDescriptor != null && ConformanceDescriptor.IsValid)
+            if (ConformanceDescriptor.IsValid)
             {
                 builder.AppendFormat("C:{0}", ConformanceDescriptor);
             }
-            if (VarianceDescriptor != null && VarianceDescriptor.IsValid)
+            if (VarianceDescriptor.IsValid)
             {
                 builder.AppendFormat("V:{0}", VarianceDescriptor);
             }
@@ -1012,7 +1004,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrStructurePaddingTypeReference : NdrBaseTypeReference
+    public sealed class NdrStructurePaddingTypeReference : NdrBaseTypeReference
     {
         internal NdrStructurePaddingTypeReference(NdrFormatCharacter format) : base(format)
         {
@@ -1043,7 +1035,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrPointerInfoInstance
+    public sealed class NdrPointerInfoInstance
     {
         public int OffsetInMemory { get; }
         public int OffsetInBuffer { get; }
@@ -1058,7 +1050,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrPointerInfoTypeReference : NdrBaseTypeReference
+    public sealed class NdrPointerInfoTypeReference : NdrBaseTypeReference
     {
         public NdrFormatCharacter BasePointerType { get; }
         public NdrFormatCharacter SubPointerType { get; }
@@ -1114,7 +1106,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrRangeTypeReference : NdrBaseTypeReference
+    public sealed class NdrRangeTypeReference : NdrBaseTypeReference
     {
         public NdrBaseTypeReference RangeType { get; }
         public int MinValue { get; }
@@ -1139,7 +1131,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrIndirectTypeReference : NdrBaseTypeReference
+    public sealed class NdrIndirectTypeReference : NdrBaseTypeReference
     {
         public NdrBaseTypeReference RefType { get; private set; }
 
@@ -1268,6 +1260,7 @@ namespace NtApiDotNet.Ndr
             }
             else
             {
+                Correlation = new NdrCorrelationDescriptor();
                 Arms = new NdrUnionArms(context, reader);
             }
         }
@@ -1431,7 +1424,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrPipeTypeReference : NdrBaseTypeReference
+    public sealed class NdrPipeTypeReference : NdrBaseTypeReference
     {
         // IDL is typedef pipe TYPE CHAR_PIPE_TYPE;
 
@@ -1453,28 +1446,6 @@ namespace NtApiDotNet.Ndr
         public override int GetSize()
         {
             return BaseType.GetSize();
-        }
-    }
-
-    [Serializable]
-    public class NdrBlkHoleTypeReference : NdrBaseTypeReference
-    {
-        public NdrBlackholeFlags Flags { get; }
-
-        internal NdrBlkHoleTypeReference(NdrParseContext context, BinaryReader reader)
-            : base(NdrFormatCharacter.FC_SUPPLEMENT)
-        {
-            Flags = (NdrBlackholeFlags)reader.ReadByte();
-        }
-
-        internal override string FormatType(NdrFormatter context)
-        {
-            return $"{context.FormatComment($"FC_SUPPLEMENT {Flags}")} void";
-        }
-
-        public override int GetSize()
-        {
-            return IntPtr.Size;
         }
     }
 
