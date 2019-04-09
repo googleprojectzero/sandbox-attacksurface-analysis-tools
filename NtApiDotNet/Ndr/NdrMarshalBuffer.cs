@@ -461,7 +461,7 @@ namespace NtApiDotNet.Ndr
             WriteFixedByteArray(total_buffer, total_buffer.Length);
         }
 
-        public void WriteFixedStructureArray<T>(T[] arr, int actual_count) where T : INdrStructure, new()
+        public void WriteFixedStructArray<T>(T[] arr, int actual_count) where T : INdrStructure, new()
         {
             for (int i = 0; i < actual_count; ++i)
             {
