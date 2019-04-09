@@ -412,6 +412,11 @@ namespace NtApiDotNet.Ndr
 
         public void WriteVaryingBogusArrayStruct<T>(T[] array, long variance) where T : INdrStructure, new()
         {
+            WriteVaryingBogusArray(array, t => WriteStruct(t), variance);
+        }
+
+        public void WriteVaryingBogusArray<T>(T[] array, Action<T> writer, long variance) where T : new()
+        {
             // Offset.
             WriteInt32(0);
             // Actual Count
@@ -424,11 +429,11 @@ namespace NtApiDotNet.Ndr
             {
                 if (i < array.Length)
                 {
-                    WriteStruct(array[i]);
+                    writer(array[i]);
                 }
                 else
                 {
-                    WriteStruct(new T());
+                    writer(new T());
                 }
             }
         }

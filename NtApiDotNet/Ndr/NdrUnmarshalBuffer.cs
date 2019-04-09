@@ -271,6 +271,11 @@ namespace NtApiDotNet.Ndr
 
         public T[] ReadVaryingBogusArrayStruct<T>() where T : INdrStructure, new()
         {
+            return ReadVaryingBogusArray(() => ReadStruct<T>());
+        }
+
+        public T[] ReadVaryingBogusArray<T>(Func<T> reader)
+        {
             // We don't really care about conformance or variance as we're not going to
             // validate anything.
             int offset = ReadInt32();
@@ -278,7 +283,7 @@ namespace NtApiDotNet.Ndr
             T[] ret = new T[actual_count];
             for (int i = 0; i < actual_count; ++i)
             {
-                ret[i] = ReadStruct<T>();
+                ret[i] = reader();
             }
             return ret;
         }
