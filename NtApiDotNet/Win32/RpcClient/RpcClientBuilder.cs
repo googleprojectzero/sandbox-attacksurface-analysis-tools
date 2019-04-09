@@ -120,10 +120,9 @@ namespace NtApiDotNet.Win32.RpcClient
             {
                 RpcTypeDescriptor element_type = GetTypeDescriptor(simple_array.ElementType, marshal_helper);
                 CodeExpression arg = CodeGenUtils.GetPrimitive(simple_array.ElementCount);
-                var args = new AdditionalArguments(false, arg);
                 if (element_type.BuiltinType == typeof(char))
                 {
-                    
+                    var args = new AdditionalArguments(false, arg);
                     return new RpcTypeDescriptor(typeof(string), "ReadFixedString", marshal_helper, "WriteFixedString", type, null, null, args, args)
                     {
                         FixedCount = simple_array.ElementCount
@@ -131,7 +130,19 @@ namespace NtApiDotNet.Win32.RpcClient
                 }
                 else if (element_type.BuiltinType == typeof(byte))
                 {
+                    var args = new AdditionalArguments(false, arg);
                     return new RpcTypeDescriptor(typeof(byte[]), "ReadBytes", marshal_helper, "WriteFixedBytes", type, null, null, args, args)
+                    {
+                        FixedCount = simple_array.ElementCount
+                    };
+                }
+                else if (element_type.BuiltinType != null && element_type.BuiltinType.IsPrimitive)
+                {
+                    var args = new AdditionalArguments(true, arg);
+
+                    return new RpcTypeDescriptor(element_type.CodeType.ToRefArray(), true,
+                        "ReadFixedPrimitiveArray", marshal_helper, "WriteFixedPrimitiveArray", type, 
+                        null, null, args, args)
                     {
                         FixedCount = simple_array.ElementCount
                     };

@@ -247,6 +247,16 @@ namespace NtApiDotNet.Ndr
             WriteFixedChars(str.ToCharArray(), actual_count);
         }
 
+        public void WriteFixedPrimitiveArray<T>(T[] array, int actual_count) where T : struct
+        {
+            int size = NdrNativeUtils.GetPrimitiveTypeSize<T>();
+            int actual_size = array.Length * size;
+            byte[] total_buffer = new byte[size * actual_count];
+            Buffer.BlockCopy(array, 0, total_buffer, 0, Math.Min(actual_count, total_buffer.Length));
+            Align(size);
+            WriteFixedBytes(total_buffer, total_buffer.Length);
+        }
+
         public void WriteFixedStructureArray<T>(T[] arr, int actual_count) where T : INdrStructure, new()
         {
             for(int i = 0; i < actual_count; ++i)

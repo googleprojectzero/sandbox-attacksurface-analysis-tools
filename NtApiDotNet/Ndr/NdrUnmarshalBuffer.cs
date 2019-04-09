@@ -85,6 +85,16 @@ namespace NtApiDotNet.Ndr
             return chars;
         }
 
+        public T[] ReadFixedPrimitiveArray<T>(int actual_count) where T : struct
+        {
+            int size = NdrNativeUtils.GetPrimitiveTypeSize<T>();
+            Align(size);
+            byte[] total_buffer = ReadBytes(size * actual_count);
+            T[] ret = new T[actual_count];
+            Buffer.BlockCopy(total_buffer, 0, ret, 0, total_buffer.Length);
+            return ret;
+        }
+
         public sbyte ReadSByte()
         {
             return _reader.ReadSByte();

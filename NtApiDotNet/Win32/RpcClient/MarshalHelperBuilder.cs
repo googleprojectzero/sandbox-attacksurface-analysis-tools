@@ -86,11 +86,6 @@ namespace NtApiDotNet.Win32.RpcClient
             return CodeGenUtils.GetVariable(p_name);
         }
 
-        private static CodeTypeReference GetBaseType(CodeTypeReference type)
-        {
-            return type.ArrayElementType ?? type;
-        }
-
         private static CodeMemberMethod AddMethod(CodeTypeDeclaration marshal_type, string method_name, CodeTypeReference generic_type, CodeTypeReference return_type, 
             string name, CodeTypeReference[] pre_args, AdditionalArguments additional_args)
         {
@@ -118,7 +113,7 @@ namespace NtApiDotNet.Win32.RpcClient
 
         public string AddGenericUnmarshal(NdrBaseTypeReference ndr_type, CodeTypeReference type, string name, AdditionalArguments additional_args)
         {
-            var method = AddMethod(UnmarshalHelper, $"Read_{_current_unmarshal_id++}", additional_args.Generic ? GetBaseType(type) : null, type, name, new CodeTypeReference[0], additional_args);
+            var method = AddMethod(UnmarshalHelper, $"Read_{_current_unmarshal_id++}", additional_args.Generic ? type.ToBaseRef() : null, type, name, new CodeTypeReference[0], additional_args);
             UnmarshalMethods.Add(ndr_type, method);
             return method.Name;
         }
@@ -130,7 +125,7 @@ namespace NtApiDotNet.Win32.RpcClient
 
         public string AddGenericMarshal(NdrBaseTypeReference ndr_type, CodeTypeReference type, string name, AdditionalArguments additional_args)
         {
-            var method = AddMethod(MarshalHelper, $"Write_{_current_marshal_id++}", additional_args.Generic ? GetBaseType(type) : null, null, name, new[] { type }, additional_args);
+            var method = AddMethod(MarshalHelper, $"Write_{_current_marshal_id++}", additional_args.Generic ? type.ToBaseRef() : null, null, name, new[] { type }, additional_args);
             MarshalMethods.Add(ndr_type, method);
             return method.Name;
         }

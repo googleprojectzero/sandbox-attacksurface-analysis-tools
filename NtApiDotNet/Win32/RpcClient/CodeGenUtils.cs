@@ -570,5 +570,15 @@ namespace NtApiDotNet.Win32.RpcClient
         {
             return new CodeTypeReference(type);
         }
+
+        public static CodeTypeReference ToRefArray(this CodeTypeReference type)
+        {
+            return new CodeTypeReference(type, type.ArrayRank + 1);
+        }
+
+        public static CodeTypeReference ToBaseRef(this CodeTypeReference type)
+        {
+            return type.ArrayElementType ?? type;
+        }
     }
 }
