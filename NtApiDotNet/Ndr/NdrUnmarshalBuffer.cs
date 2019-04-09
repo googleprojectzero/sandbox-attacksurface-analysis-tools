@@ -429,6 +429,32 @@ namespace NtApiDotNet.Ndr
             return ReadConformantVaryingArrayCallback(() => ReadStruct<T>());
         }
 
+        public T[] ReadConformantVaryingArray<T>() where T : struct
+        {
+            if (typeof(T) == typeof(byte))
+            {
+                return ReadConformantVaryingByteArray().Cast<byte, T>();
+            }
+            else if (typeof(T) == typeof(char))
+            {
+                return ReadConformantVaryingCharArray().Cast<char, T>();
+            }
+            else if (typeof(T) == typeof(INdrStructure))
+            {
+                return ReadConformantVaryingArrayCallback(() =>
+                {
+                    T t = new T();
+                    ((INdrStructure)t).Unmarshal(this);
+                    return t;
+                });
+            }
+            else if (typeof(T).IsPrimitive)
+            {
+                return ReadConformantVaryingPrimitiveArray<T>();
+            }
+            throw new ArgumentException($"Invalid type {typeof(T)} for {nameof(ReadConformantVaryingArray)}");
+        }
+
         #endregion
 
         #region String Types

@@ -116,16 +116,16 @@ namespace NtApiDotNet.Win32.RpcClient
 
             if (conformant_array_type.VarianceDescriptor.IsValid && conformant_array_type.ConformanceDescriptor.IsValid)
             {
-                // Check support for this correlation descriptor.
-                if (!conformant_array_type.VarianceDescriptor.ValidateCorrelation() || !conformant_array_type.ConformanceDescriptor.ValidateCorrelation())
+                if (!conformant_array_type.VarianceDescriptor.ValidateCorrelation() 
+                 || !conformant_array_type.ConformanceDescriptor.ValidateCorrelation())
                 {
                     return null;
                 }
 
-                marshal_name = nameof(NdrMarshalBuffer.WriteConformantVaryingArrayCallback);
-                unmarshal_name = nameof(NdrMarshalBuffer.WriteConformantVaryingArrayCallback);
-
-                return null;
+                marshal_params.Add(typeof(long).ToRef());
+                marshal_params.Add(typeof(long).ToRef());
+                marshal_name = nameof(NdrMarshalBuffer.WriteConformantVaryingArray);
+                unmarshal_name = nameof(NdrUnmarshalBuffer.ReadConformantVaryingArray);
             }
             else if (conformant_array_type.ConformanceDescriptor.IsValid)
             {
@@ -139,22 +139,9 @@ namespace NtApiDotNet.Win32.RpcClient
                 marshal_name = nameof(NdrMarshalBuffer.WriteConformantArray);
                 unmarshal_name = nameof(NdrUnmarshalBuffer.ReadConformantArray);
             }
-            else if (conformant_array_type.VarianceDescriptor.IsValid)
-            {
-                // Check support for this correlation descriptor.
-                if (!conformant_array_type.VarianceDescriptor.ValidateCorrelation())
-                {
-                    return null;
-                }
-
-                marshal_name = nameof(NdrMarshalBuffer.WriteVaryingArray);
-                unmarshal_name = nameof(NdrMarshalBuffer.WriteVaryingArray);
-
-                return null;
-            }
             else
             {
-                // Not sure how we got here, one or other of the correlation descriptors should be valid.
+                // Not sure how we got here, conformant or both descriptors should be valid.
                 return null;
             }
 
