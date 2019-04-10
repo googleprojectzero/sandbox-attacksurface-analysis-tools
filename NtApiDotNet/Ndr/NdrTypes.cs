@@ -210,7 +210,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrPointerTypeReference : NdrBaseTypeReference
+    public sealed class NdrPointerTypeReference : NdrBaseTypeReference
     {
         public NdrBaseTypeReference Type { get; private set; }
         public NdrPointerFlags Flags { get; }
@@ -260,7 +260,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrByteCountPointerReferenceType : NdrBaseTypeReference
+    public sealed class NdrByteCountPointerReferenceType : NdrBaseTypeReference
     {
         public NdrBaseTypeReference Type { get; private set; }
         public NdrCorrelationDescriptor Description { get; private set; }
@@ -301,7 +301,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrStringTypeReference : NdrBaseStringTypeReference
+    public sealed class NdrStringTypeReference : NdrBaseStringTypeReference
     {
         public int StringSize { get; }
 
@@ -337,7 +337,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrConformantStringTypeReference : NdrBaseStringTypeReference
+    public sealed class NdrConformantStringTypeReference : NdrBaseStringTypeReference
     {
         public NdrCorrelationDescriptor ConformanceDescriptor { get; }
 
@@ -416,7 +416,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrUserMarshalTypeReference : NdrBaseTypeReference
+    public sealed class NdrUserMarshalTypeReference : NdrBaseTypeReference
     {
         public NdrUserMarshalFlags Flags { get; }
         public int QuadrupleIndex { get; }
@@ -480,7 +480,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrNamedTypeReference : NdrBaseTypeReference
+    public sealed class NdrNamedTypeReference : NdrBaseTypeReference
     {
         public string Name { get; }
 
@@ -503,7 +503,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrKnownTypeReference : NdrBaseTypeReference
+    public sealed class NdrKnownTypeReference : NdrBaseTypeReference
     {
         public NdrKnownTypes KnownType { get; }
 
@@ -557,7 +557,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrUnknownTypeReference : NdrBaseTypeReference
+    public sealed class NdrUnknownTypeReference : NdrBaseTypeReference
     {
         static HashSet<NdrFormatCharacter> _formats = new HashSet<NdrFormatCharacter>();
         internal NdrUnknownTypeReference(NdrFormatCharacter format) : base(format)
@@ -575,7 +575,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrStructureMember
+    public sealed class NdrStructureMember
     {
         public NdrBaseTypeReference MemberType { get; internal set; }
         public int Offset { get; private set; }
@@ -686,7 +686,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrSimpleStructureTypeReference : NdrBaseStructureTypeReference
+    public sealed class NdrSimpleStructureTypeReference : NdrBaseStructureTypeReference
     {
         internal NdrSimpleStructureTypeReference(NdrParseContext context, BinaryReader reader)
             : base(context, NdrFormatCharacter.FC_STRUCT, reader)
@@ -696,7 +696,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrSimpleStructureWithPointersTypeReference : NdrBaseStructureTypeReference
+    public sealed class NdrSimpleStructureWithPointersTypeReference : NdrBaseStructureTypeReference
     {
         public NdrPointerInfoTypeReference PointerInfo { get; }
 
@@ -727,7 +727,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrConformantStructureTypeReference : NdrBaseStructureTypeReference
+    public sealed class NdrConformantStructureTypeReference : NdrBaseStructureTypeReference
     {
         internal NdrConformantStructureTypeReference(NdrParseContext context, BinaryReader reader)
             : base(context, NdrFormatCharacter.FC_CSTRUCT, reader)
@@ -742,7 +742,7 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrBogusStructureTypeReference : NdrBaseStructureTypeReference
+    public sealed class NdrBogusStructureTypeReference : NdrBaseStructureTypeReference
     {
         internal NdrBogusStructureTypeReference(NdrParseContext context, NdrFormatCharacter format, BinaryReader reader)
             : base(context, format, reader)
