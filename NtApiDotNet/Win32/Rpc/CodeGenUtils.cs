@@ -21,6 +21,27 @@ using System.Text.RegularExpressions;
 
 namespace NtApiDotNet.Win32.Rpc
 {
+    [Serializable]
+    internal sealed class ComplexTypeMember
+    {
+        public NdrBaseTypeReference MemberType { get; }
+        public int Offset { get; }
+        public string Name { get; }
+        public long? Selector { get; }
+        public bool Default { get; }
+        public bool Hidden { get; }
+
+        internal ComplexTypeMember(NdrBaseTypeReference member_type, int offset, string name, long? selector, bool default_arm, bool hidden)
+        {
+            MemberType = member_type;
+            Offset = offset;
+            Name = name;
+            Selector = selector;
+            Default = default_arm;
+            Hidden = hidden;
+        }
+    }
+
     internal static class CodeGenUtils
     {
         public static CodeNamespace AddNamespace(this CodeCompileUnit unit, string ns_name)
@@ -66,19 +87,42 @@ namespace NtApiDotNet.Win32.Rpc
             return method;
         }
 
-        private static void AddMarshalInterfaceMethod(CodeTypeDeclaration type, MarshalHelperBuilder marshal_helper)
+        private static void AddMarshalInterfaceMethod(CodeTypeDeclaration type, MarshalHelperBuilder marshal_helper, bool non_encapsulated_union)
         {
             CodeMemberMethod method = type.AddMethod(nameof(INdrStructure.Marshal), MemberAttributes.Final | MemberAttributes.Private);
             method.PrivateImplementationType = new CodeTypeReference(typeof(INdrStructure));
             method.AddParam(typeof(NdrMarshalBuffer), "m");
+            if (non_encapsulated_union)
+            {
+                method.AddThrow(typeof(NotImplementedException));
+            }
+            else
+            {
+                method.Statements.Add(new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(null, nameof(INdrStructure.Marshal)),
+                    marshal_helper.CastMarshal(GetVariable("m"))));
+            }
+        }
+
+        private static void AddMarshalUnionInterfaceMethod(CodeTypeDeclaration type, MarshalHelperBuilder marshal_helper, string selector_name, CodeTypeReference selector_type)
+        {
+            CodeMemberMethod method = type.AddMethod(nameof(INdrNonEncapsulatedUnion.Marshal), MemberAttributes.Final | MemberAttributes.Private);
+            method.PrivateImplementationType = new CodeTypeReference(typeof(INdrNonEncapsulatedUnion));
+            method.AddParam(typeof(NdrMarshalBuffer), "m");
+            method.AddParam(typeof(long), "l");
+            // Assign the hidden selector.
+            method.Statements.Add(new CodeAssignStatement(GetVariable(selector_name), new CodeCastExpression(selector_type, GetVariable("l"))));
             method.Statements.Add(new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(null, nameof(INdrStructure.Marshal)),
                 marshal_helper.CastMarshal(GetVariable("m"))));
         }
 
-        public static CodeMemberMethod AddMarshalMethod(this CodeTypeDeclaration type, string marshal_name, MarshalHelperBuilder marshal_helper)
+        public static CodeMemberMethod AddMarshalMethod(this CodeTypeDeclaration type, string marshal_name, MarshalHelperBuilder marshal_helper, 
+            bool non_encapsulated_union, string selector_name, CodeTypeReference selector_type)
         {
-            AddMarshalInterfaceMethod(type, marshal_helper);
-
+            AddMarshalInterfaceMethod(type, marshal_helper, non_encapsulated_union);
+            if (non_encapsulated_union)
+            {
+                AddMarshalUnionInterfaceMethod(type, marshal_helper, selector_name, selector_type);
+            }
             CodeMemberMethod method = type.AddMethod(nameof(INdrStructure.Marshal), MemberAttributes.Final | MemberAttributes.Private);
             method.AddParam(marshal_helper.MarshalHelperType, marshal_name);
             return method;
@@ -109,7 +153,7 @@ namespace NtApiDotNet.Win32.Rpc
         public static void ThrowNotImplemented(this CodeMemberMethod method, string comment)
         {
             method.Statements.Add(new CodeCommentStatement(comment));
-            method.Statements.Add(new CodeThrowExceptionStatement(new CodeObjectCreateExpression(typeof(NotImplementedException))));
+            method.AddThrow(typeof(NotImplementedException));
         }
 
         public static CodeConstructor AddConstructor(this CodeTypeDeclaration type, MemberAttributes attributes)
@@ -177,7 +221,7 @@ namespace NtApiDotNet.Win32.Rpc
             method.AddReturn(return_value);
         }
 
-        private static void AddAssignmentStatements(this CodeMemberMethod method, CodeExpression target, IEnumerable<Tuple<CodeTypeReference, string>> parameters)
+        private static void AddAssignmentStatements(this CodeMemberMethod method, CodeExpression target, IEnumerable<Tuple<CodeTypeReference, string, bool>> parameters)
         {
             foreach (var p in parameters)
             {
@@ -196,7 +240,8 @@ namespace NtApiDotNet.Win32.Rpc
             ns.Comments.AddComment(text);
         }
 
-        public static void AddConstructorMethod(this CodeTypeDeclaration type, string name, RpcTypeDescriptor complex_type, IEnumerable<Tuple<CodeTypeReference, string>> parameters)
+        public static void AddConstructorMethod(this CodeTypeDeclaration type, string name, 
+            RpcTypeDescriptor complex_type, IEnumerable<Tuple<CodeTypeReference, string, bool>> parameters)
         {
             if (!parameters.Any())
             {
@@ -207,11 +252,11 @@ namespace NtApiDotNet.Win32.Rpc
             method.ReturnType = complex_type.CodeType;
             method.Statements.Add(new CodeVariableDeclarationStatement(complex_type.CodeType, "ret", new CodeObjectCreateExpression(complex_type.CodeType)));
             CodeExpression return_value = GetVariable("ret");
-            method.AddAssignmentStatements(return_value, parameters);
+            method.AddAssignmentStatements(return_value, parameters.Where(t => !t.Item3));
             method.AddReturn(return_value);
         }
 
-        public static void AddConstructorMethod(this CodeTypeDeclaration type, RpcTypeDescriptor complex_type, IEnumerable<Tuple<CodeTypeReference, string>> parameters)
+        public static void AddConstructorMethod(this CodeTypeDeclaration type, RpcTypeDescriptor complex_type, IEnumerable<Tuple<CodeTypeReference, string, bool>> parameters)
         {
             if (!parameters.Any())
             {
@@ -239,7 +284,8 @@ namespace NtApiDotNet.Win32.Rpc
             return new CodeVariableReferenceExpression(MakeIdentifier(var_name));
         }
 
-        public static void AddMarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string marshal_name, string var_name, bool add_write_referent, params RpcMarshalArgument[] additional_args)
+        public static void AddMarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string marshal_name, string var_name, bool add_write_referent,
+            long? case_selector, string union_selector, string done_label, params RpcMarshalArgument[] additional_args)
         {
             List<CodeExpression> args = new List<CodeExpression>
             {
@@ -260,7 +306,17 @@ namespace NtApiDotNet.Win32.Rpc
 
             args.AddRange(additional_args.Select(r => r.Expression));
             CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(marshal_method, args.ToArray());
-            method.Statements.Add(invoke);
+
+            if (case_selector.HasValue)
+            {
+                method.Statements.Add(new CodeConditionStatement(new CodeBinaryOperatorExpression(GetVariable(union_selector), 
+                    CodeBinaryOperatorType.ValueEquality, GetPrimitive(case_selector.Value)),
+                    new CodeExpressionStatement(invoke), new CodeGotoStatement(done_label)));
+            }
+            else
+            {
+                method.Statements.Add(invoke);
+            }
         }
 
         public static void AddFlushDeferredWrites(this CodeMemberMethod method, string marshal_name)
@@ -324,7 +380,8 @@ namespace NtApiDotNet.Win32.Rpc
             return new CodeDelegateCreateExpression(delegate_type, target, name);
         }
 
-        public static void AddDeferredMarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string marshal_name, string var_name, params RpcMarshalArgument[] additional_args)
+        public static void AddDeferredMarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string marshal_name, string var_name,
+            long? case_selector, string union_selector, string done_label, params RpcMarshalArgument[] additional_args)
         {
             List<CodeExpression> args = new List<CodeExpression>
             {
@@ -344,15 +401,31 @@ namespace NtApiDotNet.Win32.Rpc
             args.AddRange(additional_args.Select(r => r.Expression));
             CodeMethodReferenceExpression write_pointer = new CodeMethodReferenceExpression(GetVariable(marshal_name), method_name, marshal_args.ToArray());
             CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(write_pointer, args.ToArray());
-            method.Statements.Add(invoke);
+            if (case_selector.HasValue)
+            {
+                method.Statements.Add(new CodeConditionStatement(new CodeBinaryOperatorExpression(GetVariable(union_selector), 
+                    CodeBinaryOperatorType.ValueEquality, GetPrimitive(case_selector.Value)),
+                    new CodeExpressionStatement(invoke), new CodeGotoStatement(done_label)));
+            }
+            else
+            {
+                method.Statements.Add(invoke);
+            }
         }
 
-        public static void AddUnmarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name, string var_name, params CodeExpression[] additional_args)
+        public static void AddUnmarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name,
+            string var_name, long? case_selector, string union_selector, string done_label, params CodeExpression[] additional_args)
         {
             List<CodeExpression> args = new List<CodeExpression>();
             args.AddRange(additional_args);
 
-            CodeAssignStatement assign = new CodeAssignStatement(GetVariable(var_name), descriptor.GetUnmarshalMethodInvoke(unmarshal_name, args));
+            CodeStatement assign = new CodeAssignStatement(GetVariable(var_name), descriptor.GetUnmarshalMethodInvoke(unmarshal_name, args));
+            if (case_selector.HasValue)
+            {
+                assign = new CodeConditionStatement(new CodeBinaryOperatorExpression(GetVariable(union_selector),
+                    CodeBinaryOperatorType.ValueEquality, GetPrimitive(case_selector.Value)),
+                    assign, new CodeGotoStatement(done_label));
+            }
             method.Statements.Add(assign);
         }
 
@@ -361,7 +434,8 @@ namespace NtApiDotNet.Win32.Rpc
             return new CodePrimitiveExpression(obj);
         }
 
-        public static void AddDeferredEmbeddedUnmarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name, string var_name, params RpcMarshalArgument[] additional_args)
+        public static void AddDeferredEmbeddedUnmarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name, string var_name,
+            long? case_selector, string union_selector, string done_label, params RpcMarshalArgument[] additional_args)
         {
             string method_name = null;
             List<CodeExpression> args = new List<CodeExpression>();
@@ -378,7 +452,15 @@ namespace NtApiDotNet.Win32.Rpc
             args.AddRange(additional_args.Select(r => r.Expression));
             CodeMethodReferenceExpression read_pointer = new CodeMethodReferenceExpression(GetVariable(unmarshal_name), method_name, marshal_args.ToArray());
             CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(read_pointer, args.ToArray());
-            CodeAssignStatement assign = new CodeAssignStatement(GetVariable(var_name), invoke);
+            CodeStatement assign = new CodeAssignStatement(GetVariable(var_name), invoke);
+
+            if (case_selector.HasValue)
+            {
+                assign = new CodeConditionStatement(new CodeBinaryOperatorExpression(GetVariable(union_selector),
+                    CodeBinaryOperatorType.ValueEquality, GetPrimitive(case_selector.Value)),
+                    assign, new CodeGotoStatement(done_label));
+            }
+
             method.Statements.Add(assign);
         }
 
@@ -605,6 +687,87 @@ namespace NtApiDotNet.Win32.Rpc
         public static CodeTypeReference ToBaseRef(this CodeTypeReference type)
         {
             return type.ArrayElementType ?? type;
+        }
+
+        public static bool IsNonEncapsulatedUnion(this NdrComplexTypeReference complex_type)
+        {
+            if (complex_type is NdrUnionTypeReference union_type)
+            {
+                return union_type.NonEncapsulated;
+            }
+            return false;
+        }
+
+        public static bool IsUnion(this NdrComplexTypeReference complex_type)
+        {
+            return complex_type is NdrUnionTypeReference;
+        }
+
+        public static bool IsStruct(this NdrComplexTypeReference complex_type)
+        {
+            return complex_type is NdrBaseStructureTypeReference;
+        }
+
+        public static int GetAlignment(this NdrComplexTypeReference complex_type)
+        {
+            if (complex_type is NdrBaseStructureTypeReference struct_type)
+            {
+                return struct_type.Alignment + 1;
+            }
+            else if (complex_type is NdrUnionTypeReference union_type)
+            {
+                return union_type.Arms.Alignment + 1;
+            }
+            return 0;
+        }
+
+        public static List<ComplexTypeMember> GetMembers(this NdrComplexTypeReference complex_type, string selector_name)
+        {
+            List<ComplexTypeMember> members = new List<ComplexTypeMember>();
+            if (complex_type is NdrBaseStructureTypeReference struct_type)
+            {
+                members.AddRange(struct_type.Members.Select(m => new ComplexTypeMember(m.MemberType, m.Offset, m.Name, null, false, false)).ToList());
+            }
+            else if (complex_type is NdrUnionTypeReference union_type)
+            {
+                var selector_type = new NdrSimpleTypeReference(union_type.SwitchType);
+                int base_offset = selector_type.GetSize();
+                members.Add(new ComplexTypeMember(new NdrSimpleTypeReference(union_type.SwitchType), 0, selector_name, null, false, union_type.NonEncapsulated));
+                if (!union_type.NonEncapsulated)
+                {
+                    base_offset = union_type.SwitchIncrement;
+                }
+
+                members.AddRange(union_type.Arms.Arms.Select(a => new ComplexTypeMember(a.ArmType, base_offset, $"Arm_{a.CaseValue}", a.CaseValue, false, false)));
+                if (union_type.Arms.DefaultArm != null && union_type.Arms.DefaultArm.Format != NdrFormatCharacter.FC_ZERO)
+                {
+                    members.Add(new ComplexTypeMember(union_type.Arms.DefaultArm, base_offset, "Arm_Default", null, true, false));
+                }
+            }
+            return members;
+        }
+
+        public static NdrSimpleTypeReference GetSelectorType(this NdrComplexTypeReference complex_type)
+        {
+            if (complex_type is NdrUnionTypeReference union_type)
+            {
+                return new NdrSimpleTypeReference(union_type.SwitchType);
+            }
+            return null;
+        }
+
+        public static NdrCorrelationDescriptor GetUnionCorrelation(this NdrComplexTypeReference complex_type)
+        {
+            if (complex_type is NdrUnionTypeReference union_type && union_type.NonEncapsulated)
+            {
+                return union_type.Correlation;
+            }
+            return null;
+        }
+
+        public static void AddThrow(this CodeMemberMethod method, Type exception_type, params object[] args)
+        {
+            method.Statements.Add(new CodeThrowExceptionStatement(new CodeObjectCreateExpression(exception_type.ToRef(), args.Select(o => GetPrimitive(o)).ToArray())));
         }
     }
 }

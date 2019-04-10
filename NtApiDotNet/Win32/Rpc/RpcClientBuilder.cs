@@ -409,6 +409,10 @@ namespace NtApiDotNet.Win32.Rpc
             {
                 ret_desc = GetTypeDescriptor(byte_count_pointer_type.Type, marshal_helper);
             }
+            else if (type is NdrInterfacePointerTypeReference)
+            {
+                System.Diagnostics.Debug.WriteLine(type.ToString());
+            }
 
             if (ret_desc != null)
             {
@@ -444,6 +448,8 @@ namespace NtApiDotNet.Win32.Rpc
         private const string ARRAY_CONSTRUCTOR_STRUCT_NAME = "_Array_Constructors";
         private const string UNMARSHAL_HELPER_NAME = "_Unmarshal_Helper";
         private const string MARSHAL_HELPER_NAME = "_Marshal_Helper";
+        private const string UNION_SELECTOR_NAME = "Selector";
+        private const string DEFAULT_UNION_ARM_LABEL = "done";
 
         private int GenerateComplexTypes(CodeNamespace ns, MarshalHelperBuilder marshal_helper)
         {
@@ -452,14 +458,20 @@ namespace NtApiDotNet.Win32.Rpc
             // First populate the type cache.
             foreach (var complex_type in _server.ComplexTypes)
             {
-                if (complex_type is NdrBaseStructureTypeReference struct_type)
+                if (!complex_type.IsStruct() && !complex_type.IsUnion())
                 {
-                    var type_desc = new RpcTypeDescriptor(complex_type.Name, true,
-                         nameof(NdrUnmarshalBuffer.ReadStruct), marshal_helper, nameof(NdrMarshalBuffer.WriteStruct), complex_type, null, null,
-                         new AdditionalArguments(true), new AdditionalArguments(true));
-                    _type_descriptors[complex_type] = type_desc;
-                    type_count++;
+                    continue;
                 }
+
+                bool non_encapsulated_union = complex_type.IsNonEncapsulatedUnion();
+                string marshal_method = non_encapsulated_union ? nameof(NdrMarshalBuffer.WriteUnion) : nameof(NdrMarshalBuffer.WriteStruct);
+                AdditionalArguments marshal_arguments = non_encapsulated_union ? new AdditionalArguments(true, typeof(long).ToRef()) : new AdditionalArguments(true);
+
+                var type_desc = new RpcTypeDescriptor(complex_type.Name, true,
+                        nameof(NdrUnmarshalBuffer.ReadStruct), marshal_helper, marshal_method, complex_type, complex_type.GetUnionCorrelation(), null,
+                        marshal_arguments, new AdditionalArguments(true));
+                _type_descriptors[complex_type] = type_desc;
+                type_count++;
             }
 
             if (type_count == 0)
@@ -487,11 +499,9 @@ namespace NtApiDotNet.Win32.Rpc
             // Now generate the complex types.
             foreach (var complex_type in _server.ComplexTypes)
             {
-                if (!(complex_type is NdrBaseStructureTypeReference struct_type))
-                {
-                    ns.Comments.Add(new CodeCommentStatement($"Unsupported type {complex_type.GetType()} {complex_type.Name}"));
-                    continue;
-                }
+                bool non_encapsulated_union = complex_type.IsNonEncapsulatedUnion();
+                bool is_union = complex_type.IsUnion();
+                var selector_type = complex_type.GetSelectorType();
 
                 var s_type = ns.AddType(complex_type.Name);
                 if (start_type == null)
@@ -500,41 +510,55 @@ namespace NtApiDotNet.Win32.Rpc
                 }
                 end_type = s_type;
                 s_type.IsStruct = true;
-                s_type.BaseTypes.Add(new CodeTypeReference(typeof(INdrStructure)));
+                if (non_encapsulated_union)
+                {
+                    s_type.BaseTypes.Add(new CodeTypeReference(typeof(INdrNonEncapsulatedUnion)));
+                }
+                else
+                {
+                    s_type.BaseTypes.Add(new CodeTypeReference(typeof(INdrStructure)));
+                }
 
-                var marshal_method = s_type.AddMarshalMethod(MARSHAL_NAME, marshal_helper);
-                marshal_method.AddAlign(MARSHAL_NAME, struct_type.Alignment + 1);
+                var marshal_method = s_type.AddMarshalMethod(MARSHAL_NAME, marshal_helper, non_encapsulated_union, UNION_SELECTOR_NAME, 
+                    selector_type != null ? GetSimpleTypeDescriptor(selector_type, null).CodeType : null);
+                marshal_method.AddAlign(MARSHAL_NAME, complex_type.GetAlignment());
 
                 var unmarshal_method = s_type.AddUnmarshalMethod(UNMARSHAL_NAME, marshal_helper);
-                unmarshal_method.AddAlign(UNMARSHAL_NAME, struct_type.Alignment + 1);
+                unmarshal_method.AddAlign(UNMARSHAL_NAME, complex_type.GetAlignment());
 
                 var offset_to_name =
-                    struct_type.Members.Select(m => Tuple.Create(m.Offset, m.Name)).ToList();
+                    complex_type.GetMembers(UNION_SELECTOR_NAME).Select(m => Tuple.Create(m.Offset, m.Name)).ToList();
                 var default_initialize_expr = new Dictionary<string, CodeExpression>();
-                var member_parameters = new List<Tuple<CodeTypeReference, string>>();
+                var member_parameters = new List<Tuple<CodeTypeReference, string, bool>>();
+                bool set_default_arm = false;
 
-                foreach (var member in struct_type.Members)
+                foreach (var member in complex_type.GetMembers(UNION_SELECTOR_NAME))
                 {
                     var f_type = GetTypeDescriptor(member.MemberType, marshal_helper);
-                    s_type.AddField(f_type.GetStructureType(), member.Name, MemberAttributes.Public);
-                    member_parameters.Add(Tuple.Create(f_type.GetParameterType(), member.Name));
+                    s_type.AddField(f_type.GetStructureType(), member.Name, member.Hidden ? MemberAttributes.Private : MemberAttributes.Public);
+                    member_parameters.Add(Tuple.Create(f_type.GetParameterType(), member.Name, member.Hidden));
 
                     List<RpcMarshalArgument> extra_marshal_args = new List<RpcMarshalArgument>();
 
-                    if (f_type.ConformanceDescriptor.IsValid)
+                    if (!is_union)
                     {
-                        extra_marshal_args.Add(f_type.ConformanceDescriptor.CalculateCorrelationArgument(member.Offset, offset_to_name));
-                    }
+                        if (f_type.ConformanceDescriptor.IsValid)
+                        {
+                            extra_marshal_args.Add(f_type.ConformanceDescriptor.CalculateCorrelationArgument(member.Offset, offset_to_name));
+                        }
 
-                    if (f_type.VarianceDescriptor.IsValid)
-                    {
-                        extra_marshal_args.Add(f_type.VarianceDescriptor.CalculateCorrelationArgument(member.Offset, offset_to_name));
+                        if (f_type.VarianceDescriptor.IsValid)
+                        {
+                            extra_marshal_args.Add(f_type.VarianceDescriptor.CalculateCorrelationArgument(member.Offset, offset_to_name));
+                        }
                     }
 
                     if (f_type.Pointer)
                     {
-                        marshal_method.AddDeferredMarshalCall(f_type, MARSHAL_NAME, member.Name, extra_marshal_args.ToArray());
-                        unmarshal_method.AddDeferredEmbeddedUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name);
+                        marshal_method.AddDeferredMarshalCall(f_type, MARSHAL_NAME, member.Name, member.Selector, 
+                            UNION_SELECTOR_NAME, DEFAULT_UNION_ARM_LABEL, extra_marshal_args.ToArray());
+                        unmarshal_method.AddDeferredEmbeddedUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name, member.Selector,
+                            UNION_SELECTOR_NAME, DEFAULT_UNION_ARM_LABEL);
                     }
                     else
                     {
@@ -543,8 +567,10 @@ namespace NtApiDotNet.Win32.Rpc
                             marshal_method.AddNullCheck(MARSHAL_NAME, member.Name);
                         }
 
-                        marshal_method.AddMarshalCall(f_type, MARSHAL_NAME, member.Name, false, extra_marshal_args.ToArray());
-                        unmarshal_method.AddUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name);
+                        marshal_method.AddMarshalCall(f_type, MARSHAL_NAME, member.Name, false, member.Selector, 
+                            UNION_SELECTOR_NAME, DEFAULT_UNION_ARM_LABEL, extra_marshal_args.ToArray());
+                        unmarshal_method.AddUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name, member.Selector,
+                            UNION_SELECTOR_NAME, DEFAULT_UNION_ARM_LABEL);
                     }
 
                     if (!f_type.Pointer || f_type.PointerType == RpcPointerType.Reference)
@@ -559,6 +585,22 @@ namespace NtApiDotNet.Win32.Rpc
                                 CodeGenUtils.GetPrimitive(f_type.FixedCount)));
                         }
                     }
+
+                    if (member.Default)
+                    {
+                        set_default_arm = true;
+                    }
+                }
+
+                if (is_union)
+                {
+                    if (!set_default_arm)
+                    {
+                        marshal_method.AddThrow(typeof(ArgumentException), $"No matching union selector when marshaling {s_type.Name}");
+                        unmarshal_method.AddThrow(typeof(ArgumentException), $"No matching union selector when marshaling {s_type.Name}");
+                    }
+                    marshal_method.Statements.Add(new CodeLabeledStatement(DEFAULT_UNION_ARM_LABEL, new CodeMethodReturnStatement()));
+                    unmarshal_method.Statements.Add(new CodeLabeledStatement(DEFAULT_UNION_ARM_LABEL, new CodeMethodReturnStatement()));
                 }
 
                 var p_type = _type_descriptors[complex_type];
@@ -670,7 +712,7 @@ namespace NtApiDotNet.Win32.Rpc
                     {
                         method.AddNullCheck(MARSHAL_NAME, p.Name);
                     }
-                    method.AddMarshalCall(p_type, MARSHAL_NAME, p.Name, write_ref, extra_marshal_args.ToArray());
+                    method.AddMarshalCall(p_type, MARSHAL_NAME, p.Name, write_ref, null, null, null, extra_marshal_args.ToArray());
                     // If it's a constructed type then ensure any deferred writes are flushed.
                     if (p_type.Constructed)
                     {
@@ -694,7 +736,7 @@ namespace NtApiDotNet.Win32.Rpc
                     }
                     else
                     {
-                        method.AddUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name);
+                        method.AddUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name, null, null, null);
                     }
 
                     if (p_type.Constructed || p_type.CodeType.ArrayRank > 0)
