@@ -405,6 +405,10 @@ namespace NtApiDotNet.Win32.RpcClient
             {
                 ret_desc = GetTypeDescriptor(range_type.RangeType, marshal_helper);
             }
+            else if (type is NdrByteCountPointerReferenceType byte_count_pointer_type)
+            {
+                ret_desc = GetTypeDescriptor(byte_count_pointer_type.Type, marshal_helper);
+            }
 
             if (ret_desc != null)
             {
