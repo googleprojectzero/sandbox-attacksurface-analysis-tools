@@ -74,7 +74,7 @@ namespace NtApiDotNet.Ndr
                 flags = reader.ReadByte();
                 reader.ReadByte();
 
-                // Read padding.
+                // Read out the range.
                 reader.ReadAll(context.CorrDescSize - 6);
             }
 

@@ -422,6 +422,15 @@ namespace NtApiDotNet.Ndr
         public IntPtr CsRoutineTables;
         public IntPtr ProxyServerInfo;
         public IntPtr pExprInfo;
+
+        public NDR_EXPR_DESC GetExprDesc(IMemoryReader reader)
+        {
+            if (pExprInfo != IntPtr.Zero)
+            {
+                return reader.ReadStruct<NDR_EXPR_DESC>(pExprInfo);
+            }
+            return new NDR_EXPR_DESC();
+        }
     }
 
     [StructLayout(LayoutKind.Sequential), CrossBitnessType(typeof(MIDL_SERVER_INFO32))]

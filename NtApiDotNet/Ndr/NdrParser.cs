@@ -92,7 +92,7 @@ namespace NtApiDotNet.Ndr
         public int CorrDescSize { get; }
         public IMemoryReader Reader { get; }
         public NdrParserFlags Flags { get; }
-        public IntPtr ExprFormat { get; }
+        public NDR_EXPR_DESC ExprDesc { get; }
 
         public bool HasFlag(NdrParserFlags flags)
         {
@@ -100,14 +100,14 @@ namespace NtApiDotNet.Ndr
         }
 
         internal NdrParseContext(NdrTypeCache type_cache, ISymbolResolver symbol_resolver, 
-            MIDL_STUB_DESC stub_desc, IntPtr type_desc, IntPtr expr_format,
+            MIDL_STUB_DESC stub_desc, IntPtr type_desc, NDR_EXPR_DESC expr_desc,
             int desc_size, IMemoryReader reader, NdrParserFlags parser_flags)
         {
             TypeCache = type_cache;
             SymbolResolver = symbol_resolver;
             StubDesc = stub_desc;
             TypeDesc = type_desc;
-            ExprFormat = expr_format;
+            ExprDesc = expr_desc;
             CorrDescSize = desc_size;
             Reader = reader;
             Flags = parser_flags;
@@ -179,8 +179,7 @@ namespace NtApiDotNet.Ndr
             IntPtr[] dispatch_funcs = server_info.GetDispatchTable(reader, dispatch_count);
             MIDL_STUB_DESC stub_desc = server_info.GetStubDesc(reader);
             IntPtr type_desc = stub_desc.pFormatTypes;
-            NDR_EXPR_DESC expr_desc = reader.ReadStruct<NDR_EXPR_DESC>(stub_desc.pExprInfo);
-            IntPtr format_expr = expr_desc.pFormatExpr;
+            NDR_EXPR_DESC expr_desc = stub_desc.GetExprDesc(reader);
             List<NdrProcedureDefinition> procs = new List<NdrProcedureDefinition>();
             if (fmt_str_ofs != IntPtr.Zero)
             {
@@ -195,7 +194,7 @@ namespace NtApiDotNet.Ndr
                             name = names[i - start_offset];
                         }
                         procs.Add(new NdrProcedureDefinition(reader, type_cache, symbol_resolver,
-                            stub_desc, proc_str + fmt_ofs, type_desc, format_expr, dispatch_funcs[i], name, parser_flags));
+                            stub_desc, proc_str + fmt_ofs, type_desc, expr_desc, dispatch_funcs[i], name, parser_flags));
                     }
                 }
             }
@@ -213,9 +212,8 @@ namespace NtApiDotNet.Ndr
             if ((pickle_info.Flags & MidlTypePicklingInfoFlags.NewCorrDesc) != 0)
             {
                 desc_size = 6;
-                // TODO: Might need to support extended correlation descriptors.
             }
-            NdrParseContext context = new NdrParseContext(_type_cache, null, new MIDL_STUB_DESC(), fmt_str_ptr, IntPtr.Zero, 
+            NdrParseContext context = new NdrParseContext(_type_cache, null, new MIDL_STUB_DESC(), fmt_str_ptr, new NDR_EXPR_DESC(), 
                 desc_size, _reader, NdrParserFlags.IgnoreUserMarshal);
             foreach (var i in fmt_offsets)
             {
