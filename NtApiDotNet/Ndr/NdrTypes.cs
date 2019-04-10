@@ -259,6 +259,38 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [Serializable]
+    public class NdrByteCountPointerReferenceType : NdrBaseTypeReference
+    {
+        public NdrBaseTypeReference Type { get; private set; }
+        public NdrCorrelationDescriptor Description { get; private set; }
+
+        internal NdrByteCountPointerReferenceType(NdrParseContext context, BinaryReader reader) : base(NdrFormatCharacter.FC_BYTE_COUNT_POINTER)
+        {
+            NdrFormatCharacter format = (NdrFormatCharacter)reader.ReadByte();
+            if (format != NdrFormatCharacter.FC_PAD)
+            {
+                Type = new NdrSimpleTypeReference(format);
+                Description = new NdrCorrelationDescriptor();
+            }
+            else
+            {
+                Description = new NdrCorrelationDescriptor(context, reader);
+                Type = Read(context, ReadTypeOffset(reader));
+            }
+        }
+
+        internal override string FormatType(NdrFormatter context)
+        {
+            string comment = Format.ToString();
+            if (Description.IsValid)
+            {
+                comment = $"{comment} {Description}";
+            }
+            return $"{context.FormatComment(comment)} {Type.FormatType(context)}*";
+        }
+    }
+
     // Marker class for a string type.
     [Serializable]
     public class NdrBaseStringTypeReference : NdrBaseTypeReference
@@ -1928,6 +1960,8 @@ namespace NtApiDotNet.Ndr
                         return new NdrPipeTypeReference(context, reader);
                     case NdrFormatCharacter.FC_SUPPLEMENT:
                         return new NdrSupplementTypeReference(context, reader);
+                    case NdrFormatCharacter.FC_BYTE_COUNT_POINTER:
+                        return new NdrByteCountPointerReferenceType(context, reader);
                     default:
                         return new NdrUnknownTypeReference(format);
                 }
