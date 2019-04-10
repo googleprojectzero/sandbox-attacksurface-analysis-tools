@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Ndr;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -30,11 +31,26 @@ namespace NtApiDotNet.Win32.RpcClient
         /// Any object handles returned in the response.
         /// </summary>
         public IEnumerable<NtObject> Handles { get; }
+        /// <summary>
+        /// The integer representation of the NDR data.
+        /// </summary>
+        public NdrIntegerRepresentation IntegerRepresentation { get; }
+        /// <summary>
+        /// The character representation of the NDR data.
+        /// </summary>
+        public NdrCharacterRepresentation CharacterRepresentation { get; }
+        /// <summary>
+        /// The floating representation of the NDR data.
+        /// </summary>
+        public NdrFloatingPointRepresentation FloatingPointRepresentation { get; }
 
         internal RpcClientResponse(byte[] ndr_buffer, IEnumerable<NtObject> handles)
         {
             NdrBuffer = ndr_buffer;
             Handles = new List<NtObject>(handles.Select(o => o.DuplicateObject()));
+            IntegerRepresentation = NdrIntegerRepresentation.LittleEndian;
+            CharacterRepresentation = NdrCharacterRepresentation.ASCII;
+            FloatingPointRepresentation = NdrFloatingPointRepresentation.IEEE;
         }
     }
 }

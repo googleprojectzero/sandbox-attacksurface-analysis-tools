@@ -21,6 +21,36 @@ using System.Text;
 namespace NtApiDotNet.Ndr
 {
 #pragma warning disable 1591
+
+    /// <summary>
+    /// NDR integer representation.
+    /// </summary>
+    public enum NdrIntegerRepresentation
+    {
+        LittleEndian,
+        BigEndian
+    }
+
+    /// <summary>
+    /// NDR character representation.
+    /// </summary>
+    public enum NdrCharacterRepresentation
+    {
+        ASCII,
+        EBCDIC
+    }
+
+    /// <summary>
+    /// NDR floating point representation.
+    /// </summary>
+    public enum NdrFloatingPointRepresentation
+    {
+        IEEE,
+        VAX,
+        Cray,
+        IBM
+    }
+
     /// <summary>
     /// A buffer to unmarshal NDR data from.
     /// </summary>
