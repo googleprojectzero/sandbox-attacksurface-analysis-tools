@@ -90,15 +90,26 @@ namespace NtApiDotNet.Win32.RpcClient
         private RpcTypeDescriptor GetBogusArrayTypeDescriptor(NdrBogusArrayTypeReference bogus_array_type, MarshalHelperBuilder marshal_helper)
         {
             RpcTypeDescriptor element_type = GetTypeDescriptor(bogus_array_type.ElementType, marshal_helper);
-            // We only support constructed types for now.
-            if (!element_type.Constructed)
+            // We only support constructed and string types for now.
+            bool is_string = element_type.BuiltinType != typeof(string);
+            if (!element_type.Constructed && !is_string)
             {
                 return null;
             }
 
             List<CodeTypeReference> marshal_params = new List<CodeTypeReference>();
+            List<CodeExpression> string_marshal_expr = new List<CodeExpression>();
+            List<CodeExpression> string_unmarshal_expr = new List<CodeExpression>();
             string marshal_name = null;
             string unmarshal_name = null;
+
+            if (is_string)
+            {
+                var func_type = CodeGenUtils.CreateFuncType(typeof(string).ToRef());
+                string_unmarshal_expr.Add(CodeGenUtils.CreateDelegate(func_type, CodeGenUtils.GetVariable(null), element_type.UnmarshalMethod));
+                var action_type = CodeGenUtils.CreateActionType(typeof(string).ToRef());
+                string_marshal_expr.Add(CodeGenUtils.CreateDelegate(action_type, CodeGenUtils.GetVariable(null), element_type.MarshalMethod));
+            }
 
             if (bogus_array_type.VarianceDescriptor.IsValid && bogus_array_type.ConformanceDescriptor.IsValid)
             {
@@ -108,8 +119,8 @@ namespace NtApiDotNet.Win32.RpcClient
                     return null;
                 }
 
-                marshal_name = nameof(NdrMarshalBuffer.WriteConformantVaryingStructArray);
-                unmarshal_name = nameof(NdrUnmarshalBuffer.ReadConformantVaryingStructArray);
+                marshal_name = is_string ? nameof(NdrMarshalBuffer.WriteConformantVaryingStringArray) : nameof(NdrMarshalBuffer.WriteConformantVaryingStructArray);
+                unmarshal_name = is_string ? nameof(NdrUnmarshalBuffer.ReadConformantVaryingStringArray) : nameof(NdrUnmarshalBuffer.ReadConformantVaryingStructArray);
                 marshal_params.Add(typeof(long).ToRef());
                 marshal_params.Add(typeof(long).ToRef());
             }
@@ -122,8 +133,8 @@ namespace NtApiDotNet.Win32.RpcClient
                 }
 
                 marshal_params.Add(typeof(long).ToRef());
-                marshal_name = nameof(NdrMarshalBuffer.WriteConformantStructArray);
-                unmarshal_name = nameof(NdrUnmarshalBuffer.ReadConformantStructArray);
+                marshal_name = is_string ? nameof(NdrMarshalBuffer.WriteConformantStringArray) : nameof(NdrMarshalBuffer.WriteConformantStructArray);
+                unmarshal_name = is_string ? nameof(NdrUnmarshalBuffer.ReadConformantStringArray) : nameof(NdrUnmarshalBuffer.ReadConformantStructArray);
             } else if (bogus_array_type.VarianceDescriptor.IsValid)
             {
                 if (!bogus_array_type.VarianceDescriptor.ValidateCorrelation())
@@ -132,8 +143,8 @@ namespace NtApiDotNet.Win32.RpcClient
                 }
 
                 marshal_params.Add(typeof(long).ToRef());
-                marshal_name = nameof(NdrMarshalBuffer.WriteVaryingStructArray);
-                unmarshal_name = nameof(NdrUnmarshalBuffer.ReadVaryingStructArray);
+                marshal_name = is_string ? nameof(NdrMarshalBuffer.WriteVaryingStringArray) : nameof(NdrMarshalBuffer.WriteVaryingStructArray);
+                unmarshal_name = is_string ? nameof(NdrUnmarshalBuffer.ReadVaryingStringArray) : nameof(NdrUnmarshalBuffer.ReadVaryingStructArray);
             }
             else
             {
@@ -145,9 +156,9 @@ namespace NtApiDotNet.Win32.RpcClient
             // The variance also needs to be a constant or a normal correlation.
             return new RpcTypeDescriptor(new CodeTypeReference(element_type.CodeType, 1), false,
                 unmarshal_name, marshal_helper, marshal_name,
-                bogus_array_type, bogus_array_type.ConformanceDescriptor, bogus_array_type.VarianceDescriptor, 
-                new AdditionalArguments(true, marshal_params.ToArray()),
-                new AdditionalArguments(true))
+                bogus_array_type, bogus_array_type.ConformanceDescriptor, bogus_array_type.VarianceDescriptor,
+                new AdditionalArguments(string_marshal_expr.ToArray(), marshal_params.ToArray(), !is_string),
+                new AdditionalArguments(!is_string, string_unmarshal_expr.ToArray()))
             {
                 FixedCount = bogus_array_type.ElementCount
             };

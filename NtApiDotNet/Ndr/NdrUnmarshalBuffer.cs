@@ -34,6 +34,20 @@ namespace NtApiDotNet.Ndr
         private readonly DisposableList<NtObject> _handles;
         private readonly List<Action> _deferred_reads;
 
+        private string[] ReadStringArray(int[] refs, Func<string> reader)
+        {
+            string[] ret = new string[refs.Length];
+            for (int i = 0; i < refs.Length; ++i)
+            {
+                if (refs[i] == 0)
+                {
+                    ret[i] = string.Empty;
+                }
+                ret[i] = reader();
+            }
+            return ret;
+        }
+
         #endregion
 
         #region Constructors
@@ -247,6 +261,11 @@ namespace NtApiDotNet.Ndr
             return ReadConformantArrayCallback(() => ReadStruct<T>());
         }
 
+        public string[] ReadConformantStringArray(Func<string> reader)
+        {
+            return ReadStringArray(ReadConformantArrayCallback(ReadReferent), reader);
+        }
+
         public T[] ReadConformantArray<T>() where T : struct
         {
             if (typeof(T) == typeof(byte))
@@ -330,6 +349,11 @@ namespace NtApiDotNet.Ndr
         public T[] ReadVaryingStructArray<T>() where T : INdrStructure, new()
         {
             return ReadVaryingArrayCallback(() => ReadStruct<T>());
+        }
+
+        public string[] ReadVaryingStringArray(Func<string> reader)
+        {
+            return ReadStringArray(ReadVaryingArrayCallback(ReadReferent), reader);
         }
 
         public T[] ReadVaryingArray<T>() where T : struct
@@ -427,6 +451,11 @@ namespace NtApiDotNet.Ndr
         public T[] ReadConformantVaryingStructArray<T>() where T : INdrStructure, new()
         {
             return ReadConformantVaryingArrayCallback(() => ReadStruct<T>());
+        }
+
+        public string[] ReadConformantVaryingStringArray(Func<string> reader)
+        {
+            return ReadStringArray(ReadConformantVaryingArrayCallback(ReadReferent), reader);
         }
 
         public T[] ReadConformantVaryingArray<T>() where T : struct

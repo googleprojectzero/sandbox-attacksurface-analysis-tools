@@ -306,6 +306,11 @@ namespace NtApiDotNet.Win32.RpcClient
             return delegate_type;
         }
 
+        public static CodeExpression CreateDelegate(CodeTypeReference delegate_type, CodeExpression target, string name)
+        {
+            return new CodeDelegateCreateExpression(delegate_type, target, name);
+        }
+
         public static void AddDeferredMarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string marshal_name, string var_name, params RpcMarshalArgument[] additional_args)
         {
             List<CodeExpression> args = new List<CodeExpression>

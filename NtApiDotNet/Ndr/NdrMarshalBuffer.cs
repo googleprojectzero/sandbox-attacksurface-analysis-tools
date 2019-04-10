@@ -43,6 +43,38 @@ namespace NtApiDotNet.Ndr
             }
         }
 
+        private void WriteStringArray(string[] array, Action<string> writer, int count)
+        {
+            if (array == null)
+            {
+                array = new string[0];
+            }
+
+            for (int i = 0; i < count; ++i)
+            {
+                if (i < array.Length)
+                {
+                    WriteReferent(array[i]);
+                }
+                else
+                {
+                    WriteReferent(string.Empty);
+                }
+            }
+
+            for (int i = 0; i < count; ++i)
+            {
+                if (i < array.Length)
+                {
+                    writer(array[i]);
+                }
+                else
+                {
+                    writer(string.Empty);
+                }
+            }
+        }
+
         #endregion
 
         #region Constructors
@@ -343,7 +375,20 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        public void WriteStruct<T>(T structure) where T : INdrStructure
+        public void WriteStruct<T>(T? structure) where T : struct, INdrStructure
+        {
+            if (structure.HasValue)
+            {
+                structure.Value.Marshal(this);
+            }
+        }
+
+        public void WriteStruct<T>(T structure) where T : struct, INdrStructure
+        {
+            structure.Marshal(this);
+        }
+
+        public void WriteStruct(INdrStructure structure)
         {
             structure.Marshal(this);
         }
@@ -372,9 +417,9 @@ namespace NtApiDotNet.Ndr
             WriteEmbeddedPointer(pointer, () => writer(pointer, arg, arg2));
         }
 
-        public void WriteEmbeddedStructPointer<T>(NdrEmbeddedPointer<T> pointer) where T : INdrStructure, new()
+        public void WriteEmbeddedStructPointer<T>(NdrEmbeddedPointer<T> pointer) where T : struct, INdrStructure
         {
-            WriteEmbeddedPointer(pointer, () => WriteStruct((T)pointer));
+            WriteEmbeddedPointer(pointer, () => WriteStruct((INdrStructure)pointer));
         }
 
         public void WriteReferent<T>(T obj) where T : class
@@ -563,6 +608,15 @@ namespace NtApiDotNet.Ndr
             }
         }
 
+        public void WriteVaryingStringArray(string[] array, Action<string> writer, long variance)
+        {
+            // Offset.
+            WriteInt32(0);
+            // Actual Count
+            WriteInt32((int)variance);
+            WriteStringArray(array, writer, (int)variance);
+        }
+
         #endregion
 
         #region Conformant Array Types
@@ -593,9 +647,17 @@ namespace NtApiDotNet.Ndr
             WriteFixedPrimitiveArray<T>(array, var_int);
         }
 
-        public void WriteConformantStructArray<T>(T[] array, long conformance) where T : INdrStructure, new()
+        public void WriteConformantStructArray<T>(T[] array, long conformance) where T : struct, INdrStructure
         {
-            WriteConformantArrayCallback(array, t => WriteStruct(t), conformance);
+            WriteConformantArrayCallback(array, t => WriteStruct((INdrStructure)t), conformance);
+        }
+
+        public void WriteConformantStringArray(string[] array, Action<string> writer, long conformance)
+        {
+            int var_int = (int)conformance;
+            // Max Count
+            WriteInt32(var_int);
+            WriteStringArray(array, writer, var_int);
         }
 
         public void WriteConformantArrayCallback<T>(T[] array, Action<T> writer, long conformance) where T : new()
@@ -668,9 +730,16 @@ namespace NtApiDotNet.Ndr
             WriteVaryingPrimitiveArray(array, variance);
         }
 
-        public void WriteConformantVaryingStructArray<T>(T[] array, long conformance, long variance) where T : INdrStructure, new()
+        public void WriteConformantVaryingStructArray<T>(T[] array, long conformance, long variance) where T : struct, INdrStructure
         {
             WriteVaryingArrayCallback(array, t => WriteStruct(t), variance);
+        }
+
+        public void WriteConformantVaryingStringArray(string[] array, Action<string> writer, long conformance, long variance)
+        {
+            // Max Count
+            WriteInt32((int)conformance);
+            WriteVaryingStringArray(array, writer, (int)variance);
         }
 
         public void WriteConformantVaryingArrayCallback<T>(T[] array, Action<T> writer, long conformance, long variance) where T : new()
