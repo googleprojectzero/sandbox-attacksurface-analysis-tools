@@ -18,7 +18,7 @@ using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtApiDotNet.Win32.RpcClient
+namespace NtApiDotNet.Win32.Rpc
 {
     internal enum RpcPointerType
     {

@@ -14,7 +14,7 @@
 
 using System;
 
-namespace NtApiDotNet.Win32.RpcClient
+namespace NtApiDotNet.Win32.Rpc
 {
     /// <summary>
     /// Flags for the RPC client builder.

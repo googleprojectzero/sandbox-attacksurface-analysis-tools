@@ -15,12 +15,12 @@
 using System;
 using System.Collections.Generic;
 
-namespace NtApiDotNet.Win32.RpcClient
+namespace NtApiDotNet.Win32.Rpc
 {
     /// <summary>
-    /// Base class for an RPC ALPC client.
+    /// RPC client transport over ALPC.
     /// </summary>
-    public abstract class RpcAlpcClientBase : IDisposable
+    public class RpcAlpcClientTransport : IRpcClientTransport
     {
         #region Private Members
         private NtAlpcClient _client;
@@ -69,9 +69,9 @@ namespace NtApiDotNet.Win32.RpcClient
             }
         }
 
-        private void BindInterface()
+        private void BindInterface(Guid interface_id, Version interface_version)
         {
-            var bind_msg = new AlpcMessageType<LRPC_BIND_MESSAGE>(new LRPC_BIND_MESSAGE(InterfaceId, InterfaceVersion));
+            var bind_msg = new AlpcMessageType<LRPC_BIND_MESSAGE>(new LRPC_BIND_MESSAGE(interface_id, interface_version));
             var recv_msg = new AlpcMessageRaw(0x1000);
 
             using (var recv_attr = new AlpcReceiveMessageAttributes())
@@ -87,16 +87,6 @@ namespace NtApiDotNet.Win32.RpcClient
                     }
                 }
             }
-        }
-
-        private string LookupEndpoint()
-        {
-            var endpoint = RpcEndpointMapper.MapServerToAlpcEndpoint(InterfaceId, InterfaceVersion);
-            if (endpoint == null || string.IsNullOrEmpty(endpoint.EndpointPath))
-            {
-                throw new ArgumentException($"Can't find endpoint for {InterfaceId} {InterfaceVersion}");
-            }
-            return endpoint.EndpointPath;
         }
 
         private RpcClientResponse HandleLargeResponse(AlpcMessageRaw message, SafeStructureInOutBuffer<LRPC_LARGE_RESPONSE_MESSAGE> response, AlpcReceiveMessageAttributes attributes)
@@ -145,7 +135,7 @@ namespace NtApiDotNet.Win32.RpcClient
             _client.Send(AlpcMessageFlags.None, msg, attributes.ToContinuationAttributes(flags), NtWaitTimeout.Infinite);
         }
 
-        private RpcClientResponse SendAndReceiveLarge(int proc_num, byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles)
+        private RpcClientResponse SendAndReceiveLarge(int proc_num, Guid objuuid, byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles)
         {
             LRPC_LARGE_REQUEST_MESSAGE req_msg = new LRPC_LARGE_REQUEST_MESSAGE()
             {
@@ -157,9 +147,9 @@ namespace NtApiDotNet.Win32.RpcClient
                 Flags = LRPC_REQUEST_MESSAGE_FLAGS.ViewPresent
             };
 
-            if (ObjectUuid != Guid.Empty)
+            if (objuuid != Guid.Empty)
             {
-                req_msg.ObjectUuid = ObjectUuid;
+                req_msg.ObjectUuid = objuuid;
                 req_msg.Flags |= LRPC_REQUEST_MESSAGE_FLAGS.ObjectUuid;
             }
 
@@ -189,7 +179,7 @@ namespace NtApiDotNet.Win32.RpcClient
             }
         }
 
-        private RpcClientResponse SendAndReceiveImmediate(int proc_num, byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles)
+        private RpcClientResponse SendAndReceiveImmediate(int proc_num, Guid objuuid, byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles)
         {
             LRPC_IMMEDIATE_REQUEST_MESSAGE req_msg = new LRPC_IMMEDIATE_REQUEST_MESSAGE()
             {
@@ -199,9 +189,9 @@ namespace NtApiDotNet.Win32.RpcClient
                 ProcNum = proc_num,
             };
 
-            if (ObjectUuid != Guid.Empty)
+            if (objuuid != Guid.Empty)
             {
-                req_msg.ObjectUuid = ObjectUuid;
+                req_msg.ObjectUuid = objuuid;
                 req_msg.Flags |= LRPC_REQUEST_MESSAGE_FLAGS.ObjectUuid;
             }
 
@@ -226,140 +216,68 @@ namespace NtApiDotNet.Win32.RpcClient
         #endregion
 
         #region Constructors
-
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="interface_id">The interface ID.</param>
-        /// <param name="interface_version">Version of the interface.</param>
-        protected RpcAlpcClientBase(Guid interface_id, Version interface_version)
+        /// <param name="path">The path to connect. The format depends on the transport.</param>
+        /// <param name="security_quality_of_service">The security quality of service for the connection.</param>
+        public RpcAlpcClientTransport(string path, SecurityQualityOfService security_quality_of_service)
         {
-            InterfaceId = interface_id;
-            InterfaceVersion = interface_version;
-        }
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentException("Must specify a path to connect to");
+            }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="interface_id">The interface ID as a string.</param>
-        /// <param name="major">Major version of the interface.</param>
-        /// <param name="minor">Minor version of the interface.</param>
-        protected RpcAlpcClientBase(string interface_id, int major, int minor) 
-            : this(new Guid(interface_id), new Version(major, minor))
-        {
-        }
+            if (!path.StartsWith(@"\"))
+            {
+                path = $@"\RPC Control\{path}";
+            }
 
+            _client = ConnectPort(path, security_quality_of_service);
+            Endpoint = path;
+        }
         #endregion
 
-        #region Protected Methods
+        #region Public Methods
+        /// <summary>
+        /// Bind the RPC transport to an interface.
+        /// </summary>
+        /// <param name="interface_id">The interface ID to bind to.</param>
+        /// <param name="interface_version">The interface version to bind to.</param>
+        /// <param name="transfer_syntax_id">The transfer syntax to use.</param>
+        /// <param name="transfer_syntax_version">The transfer syntax version to use.</param>
+        public void Bind(Guid interface_id, Version interface_version, Guid transfer_syntax_id, Version transfer_syntax_version)
+        {
+            if (transfer_syntax_id != Ndr.NdrNativeUtils.DCE_TransferSyntax)
+            {
+                throw new ArgumentException("Only supports DCE transfer syntax");
+            }
+
+            CallId = 1;
+            BindInterface(interface_id, interface_version);
+        }
 
         /// <summary>
         /// Send and receive an RPC message.
         /// </summary>
         /// <param name="proc_num">The procedure number.</param>
+        /// <param name="objuuid">The object UUID for the call.</param>
         /// <param name="ndr_buffer">Marshal NDR buffer for the call.</param>
         /// <param name="handles">List of handles marshaled into the buffer.</param>
-        /// <returns>Unmarshal NDR buffer for the result.</returns>
-        protected RpcClientResponse SendReceive(int proc_num, byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles)
+        /// <returns>Client response from the send.</returns>
+        public RpcClientResponse SendReceive(int proc_num, Guid objuuid, byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles)
         {
-            if (!Connected)
-            {
-                throw new InvalidOperationException("RPC client is not connected.");
-            }
-
             if (ndr_buffer.Length > 0xF00)
             {
-                return SendAndReceiveLarge(proc_num, ndr_buffer, handles);
+                return SendAndReceiveLarge(proc_num, objuuid, ndr_buffer, handles);
             }
-            return SendAndReceiveImmediate(proc_num, ndr_buffer, handles);
-        }
-
-        #endregion
-
-        #region Public Properties
-
-        /// <summary>
-        /// Get whether the client is connected or not.
-        /// </summary>
-        public bool Connected => _client != null && !_client.Handle.IsInvalid;
-
-        /// <summary>
-        /// Get the ALPC port path that we connected to.
-        /// </summary>
-        public string AlpcPath { get; private set; }
-
-        /// <summary>
-        /// Get the current Call ID.
-        /// </summary>
-        public int CallId { get; private set; }
-
-        /// <summary>
-        /// Get or set the current Object UUID used for calls.
-        /// </summary>
-        public Guid ObjectUuid { get; set; }
-
-        /// <summary>
-        /// The RPC interface ID.
-        /// </summary>
-        public Guid InterfaceId { get; }
-
-        /// <summary>
-        /// The RPC interface version.
-        /// </summary>
-        public Version InterfaceVersion { get; }
-
-        #endregion
-
-        #region Public Methods
-
-        /// <summary>
-        /// Connect the client to an ALPC port.
-        /// </summary>
-        /// <param name="alpc_path">The path to the ALPC port.</param>
-        /// <param name="security_quality_of_service">The security quality of service for the port.</param>
-        public void Connect(string alpc_path, SecurityQualityOfService security_quality_of_service)
-        {
-            if (Connected)
-            {
-                throw new InvalidOperationException("RPC client is already connected.");
-            }
-
-            if (string.IsNullOrEmpty(alpc_path))
-            {
-                alpc_path = LookupEndpoint();
-            }
-            else if (!alpc_path.StartsWith(@"\"))
-            {
-                alpc_path = $@"\RPC Control\{alpc_path}";
-            }
-            AlpcPath = alpc_path;
-            _client = ConnectPort(alpc_path, security_quality_of_service);
-            CallId = 1;
-            BindInterface();
-        }
-
-        /// <summary>
-        /// Connect the client to an ALPC port.
-        /// </summary>
-        /// <param name="alpc_path">The path to the ALPC port. If an empty string the endpoint will be looked up in the endpoint mapped.</param>
-        public void Connect(string alpc_path)
-        {
-            Connect(alpc_path, null);
-        }
-
-        /// <summary>
-        /// Connect the client to an ALPC port.
-        /// </summary>
-        /// <remarks>The ALPC endpoint will be looked up in the endpoint mapper.</remarks>
-        public void Connect()
-        {
-            Connect(null);
+            return SendAndReceiveImmediate(proc_num, objuuid, ndr_buffer, handles);
         }
 
         /// <summary>
         /// Dispose of the client.
         /// </summary>
-        public virtual void Dispose()
+        public void Dispose()
         {
             _client?.Dispose();
             _client = null;
@@ -372,6 +290,29 @@ namespace NtApiDotNet.Win32.RpcClient
         {
             Dispose();
         }
+
+        #endregion
+
+        #region Public Properties
+        /// <summary>
+        /// Get whether the client is connected or not.
+        /// </summary>
+        public bool Connected => _client != null && !_client.Handle.IsInvalid;
+
+        /// <summary>
+        /// Get the ALPC port path that we connected to.
+        /// </summary>
+        public string Endpoint { get; private set; }
+
+        /// <summary>
+        /// Get the current Call ID.
+        /// </summary>
+        public int CallId { get; private set; }
+
+        /// <summary>
+        /// Get the transport protocol sequence.
+        /// </summary>
+        public string ProtocolSequence => "ncalrpc";
 
         #endregion
     }

@@ -16,7 +16,7 @@ using NtApiDotNet.Ndr;
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32.RpcClient
+namespace NtApiDotNet.Win32.Rpc
 {
     internal enum LRPC_MESSAGE_TYPE
     {

@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.RpcClient;
+using NtApiDotNet.Win32.Rpc;
 using System;
 
 namespace NtApiDotNet.Win32

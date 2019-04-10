@@ -16,7 +16,7 @@ using NtApiDotNet.Ndr;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NtApiDotNet.Win32.RpcClient
+namespace NtApiDotNet.Win32.Rpc
 {
     /// <summary>
     /// Response data from an RPC client call.

@@ -13,22 +13,22 @@
 //  limitations under the License.
 
 using NtApiDotNet.Ndr;
-using NtApiDotNet.Win32.RpcClient;
+using NtApiDotNet.Win32.Rpc;
 using System;
 
 namespace NtApiDotNet.Win32
 {
     /// <summary>
-    /// Generic RPC ALPC client.
+    /// Generic RPC client.
     /// </summary>
-    public sealed class RpcAlpcClient : RpcAlpcClientBase
+    public sealed class RpcClient : RpcClientBase
     {
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="interface_id">The interface ID.</param>
         /// <param name="interface_version">Version of the interface.</param>
-        public RpcAlpcClient(Guid interface_id, Version interface_version) 
+        public RpcClient(Guid interface_id, Version interface_version) 
             : base(interface_id, interface_version)
         {
         }
@@ -37,8 +37,8 @@ namespace NtApiDotNet.Win32
         /// Constructor.
         /// </summary>
         /// <param name="server">The RPC server to bind to.</param>
-        public RpcAlpcClient(RpcServer server)
-            : base(server.InterfaceId, server.InterfaceVersion)
+        public RpcClient(RpcServer server)
+            : this(server.InterfaceId, server.InterfaceVersion)
         {
         }
 
@@ -51,7 +51,7 @@ namespace NtApiDotNet.Win32
         public NdrUnmarshalBuffer SendReceive(int proc_num, NdrMarshalBuffer ndr_buffer)
         {
             var response = SendReceive(proc_num, ndr_buffer.ToArray(), ndr_buffer.Handles);
-            return new NdrUnmarshalBuffer(response.NdrBuffer, response.Handles);
+            return new NdrUnmarshalBuffer(response.NdrBuffer, response.Handles, response.DataRepresentation);
         }
     }
 }

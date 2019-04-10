@@ -4020,10 +4020,10 @@ function New-AppContainerProfile {
 
 <#
 .SYNOPSIS
-Get an ALPC RPC client object based on a parsed RPC server.
+Get a RPC client object based on a parsed RPC server.
 .DESCRIPTION
-This cmdlet creates a new ALPC RPC client from a parsed RPC server. The client object contains methods
-to call RPC methods. The client starts off disconnected. You need to pass the client to Connect-RpcAlpcClient to
+This cmdlet creates a new RPC client from a parsed RPC server. The client object contains methods
+to call RPC methods. The client starts off disconnected. You need to pass the client to Connect-RpcClient to
 connect to the server. If you specify an interface ID and version then a generic client will be created which 
 allows simple calls to be made without requiring the NDR data.
 .PARAMETER Server
@@ -4045,12 +4045,12 @@ Specify to enable debugging of the built client.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.RpcClient.RpcAlpcClientBase
+NtApiDotNet.Win32.Rpc.RpcClientBase
 .EXAMPLE
-Get-RpcAlpcClient -Server $Server
-Create a new RPC ALPC client from a parsed RPC server.
+Get-RpcClient -Server $Server
+Create a new RPC client from a parsed RPC server.
 #>
-function Get-RpcAlpcClient {
+function Get-RpcClient {
     [CmdletBinding(DefaultParameterSetName="FromServer")]
     Param(
         [parameter(Mandatory, Position = 0, ParameterSetName = "FromServer")]
@@ -4072,7 +4072,7 @@ function Get-RpcAlpcClient {
     )
 
     if ($PSCmdlet.ParameterSetName -eq "FromServer") {
-        $args = [NtApiDotNet.Win32.RpcClient.RpcClientBuilderArguments]::new();
+        $args = [NtApiDotNet.Win32.Rpc.RpcClientBuilderArguments]::new();
         $args.NamespaceName = $NamespaceName
         $args.ClientName = $ClientName
         
@@ -4081,21 +4081,23 @@ function Get-RpcAlpcClient {
         } else {
             $args.Flags = "GenerateConstructorProperties"
         }
-        [NtApiDotNet.Win32.RpcClient.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache, $Provider)
+        [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache, $Provider)
     } else {
-        [NtApiDotNet.Win32.RpcAlpcClient]::new($InterfaceId, $InterfaceVersion)
+        [NtApiDotNet.Win32.RpcClient]::new($InterfaceId, $InterfaceVersion)
     }
 }
 
 <#
 .SYNOPSIS
-Connects an ALPC RPC client to an ALPC port.
+Connects a RPC client to an endpoint.
 .DESCRIPTION
-This cmdlet connects an ALPC RPC client to an ALPC port.
+This cmdlet connects a RPC client to an endpoint. You can specify what transport to use based on the protocol sequence.
 .PARAMETER Client
 Specify the RPC client to connect.
-.PARAMETER AlpcPath
-Specify the path to the ALPC server port. If not specified this will lookup the endpoint from the endpoint mapper.
+.PARAMETER ProtocolSequence
+Specify the RPC protocol sequence this client will connect through.
+.PARAMETER EndpointPath
+Specify the endpoint string. If not specified this will lookup the endpoint from the endpoint mapper.
 .PARAMETER SecurityQualityOfService
 Specify the security quality of service for the connection.
 .PARAMETER PassThru
@@ -4105,27 +4107,41 @@ None
 .OUTPUTS
 None
 .EXAMPLE
-Connect-RpcAlpcClient -Client $Client
+Connect-RpcClient -Client $Client
 Connect an RPC ALPC client, looking up the path using the endpoint mapper.
 .EXAMPLE
-Connect-RpcAlpcClient -Client $Client -AlpcPath "\RPC Control\ABC"
+Connect-RpcClient -Client $Client -EndpointPath "\RPC Control\ABC"
 Connect an RPC ALPC client with an explicit path.
 .EXAMPLE
-Connect-RpcAlpcClient -Client $Client -SecurityQualityOfService $(New-NtSecurityQualityOfService -ImpersonationLevel Anonymous)
+Connect-RpcClient -Client $Client -SecurityQualityOfService $(New-NtSecurityQualityOfService -ImpersonationLevel Anonymous)
 Connect an RPC ALPC client with anonymous impersonation level.
+.EXAMPLE
+Connect-RpcClient -Client $Client -ProtocolSequence "ncalrpc"
+Connect an RPC ALPC client from a specific protocol sequence.
+.EXAMPLE
+Connect-RpcClient -Client $Client -Endpoint $ep
+Connect an RPC client to a specific endpoint.
 #>
-function Connect-RpcAlpcClient {
-    [CmdletBinding()]
+function Connect-RpcClient {
+    [CmdletBinding(DefaultParameterSetName="FromProtocol")]
     Param(
         [parameter(Mandatory, Position = 0, ValueFromPipeline)]
-        [NtApiDotNet.Win32.RpcClient.RpcAlpcClientBase]$Client,
-        [parameter(Position = 1)]
-        [string]$AlpcPath,
+        [NtApiDotNet.Win32.Rpc.RpcClientBase]$Client,
+        [parameter(Position = 1, ParameterSetName="FromProtocol")]
+        [string]$EndpointPath,
+        [parameter(ParameterSetName="FromProtocol")]
+        [string]$ProtocolSequence = "ncalrpc",
+        [parameter(Position = 1, Mandatory, ParameterSetName="FromEndpoint")]
+        [NtApiDotNet.Win32.RpcEndpoint]$Endpoint,
         [NtApiDotNet.SecurityQualityOfService]$SecurityQualityOfService,
         [switch]$PassThru
     )
 
-    $Client.Connect($AlpcPath, $SecurityQualityOfService)
+    if ($PSCmdlet.ParameterSetName -eq "FromProtocol") {
+        $Client.Connect($ProtocolSequence, $EndpointPath, $SecurityQualityOfService)
+    } else {
+        $Client.Connect($Endpoint, $SecurityQualityOfService)
+    }
     if ($PassThru) {
         $Client | Write-Output
     }
@@ -4133,9 +4149,9 @@ function Connect-RpcAlpcClient {
 
 <#
 .SYNOPSIS
-Format an ALPC RPC client as source code based on a parsed RPC server.
+Format a RPC client as source code based on a parsed RPC server.
 .DESCRIPTION
-This cmdlet gets source code for an ALPC RPC client from a parsed RPC server.
+This cmdlet gets source code for a RPC client from a parsed RPC server.
 .PARAMETER Server
 Specify the RPC server to base the client on.
 .PARAMETER NamespaceName
@@ -4155,35 +4171,35 @@ None
 .OUTPUTS
 string
 .EXAMPLE
-Format-RpcAlpcClient -Server $Server
-Get the source code for a RPC ALPC client from a parsed RPC server.
+Format-RpcClient -Server $Server
+Get the source code for a RPC client from a parsed RPC server.
 .EXAMPLE
 $servers | Format-RpcAlpcClient
-Get the source code for a RPC ALPC client from a list of parsed RPC server.
+Get the source code for a RPC client from a list of parsed RPC server.
 #>
-function Format-RpcAlpcClient {
+function Format-RpcClient {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0, ValueFromPipeline)]
         [NtApiDotNet.Win32.RpcServer[]]$Server,
         [string]$NamespaceName,
         [string]$ClientName,
-        [NtApiDotNet.Win32.RpcClient.RpcClientBuilderFlags]$Flags = 0,
+        [NtApiDotNet.Win32.Rpc.RpcClientBuilderFlags]$Flags = 0,
         [System.CodeDom.Compiler.CodeDomProvider]$Provider,
         [System.CodeDom.Compiler.CodeGeneratorOptions]$Options
     )
 
     PROCESS {
-        $args = [NtApiDotNet.Win32.RpcClient.RpcClientBuilderArguments]::new();
+        $args = [NtApiDotNet.Win32.Rpc.RpcClientBuilderArguments]::new();
         $args.NamespaceName = $NamespaceName
         $args.ClientName = $ClientName
         $args.Flags = $Flags
 
         foreach($s in $Server) {
             if ($Provider -eq $null) {
-                [NtApiDotNet.Win32.RpcClient.RpcClientBuilder]::BuildSource($s, $args) | Write-Output
+                [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource($s, $args) | Write-Output
             } else {
-                [NtApiDotNet.Win32.RpcClient.RpcClientBuilder]::BuildSource($s, $args, $Provider, $Options) | Write-Output
+                [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource($s, $args, $Provider, $Options) | Write-Output
             }
         }
     }
