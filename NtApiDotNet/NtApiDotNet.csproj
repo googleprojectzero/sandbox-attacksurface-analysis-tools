@@ -98,6 +98,7 @@
     <Compile Include="Ndr\NdrStringBuilder.cs" />
     <Compile Include="Ndr\NdrTypes.cs" />
     <Compile Include="Ndr\NdrRpcServerInterface.cs" />
+    <Compile Include="Ndr\INdrNonEncapsulatedUnion.cs" />
     <Compile Include="Ndr\NdrUnmarshalBuffer.cs" />
     <Compile Include="Ndr\NdrUnsupported.cs" />
     <Compile Include="NtAlpcNative.cs" />

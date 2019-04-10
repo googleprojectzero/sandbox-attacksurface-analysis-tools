@@ -393,6 +393,24 @@ namespace NtApiDotNet.Ndr
             structure.Marshal(this);
         }
 
+        public void WriteUnion<T>(T? union, long selector) where T : struct, INdrNonEncapsulatedUnion
+        {
+            if (union.HasValue)
+            {
+                union.Value.Marshal(this, selector);
+            }
+        }
+
+        public void WriteUnion<T>(T union, long selector) where T : struct, INdrNonEncapsulatedUnion
+        {
+            union.Marshal(this, selector);
+        }
+
+        public void WriteUnion(INdrNonEncapsulatedUnion union, long selector)
+        {
+            union.Marshal(this, selector);
+        }
+
         public void WriteContextHandle(NdrContextHandle handle)
         {
             WriteInt32(handle.Attributes);
