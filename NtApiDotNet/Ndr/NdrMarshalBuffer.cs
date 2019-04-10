@@ -422,28 +422,81 @@ namespace NtApiDotNet.Ndr
             WriteEmbeddedPointer(pointer, () => WriteStruct((INdrStructure)pointer));
         }
 
-        public void WriteReferent<T>(T obj) where T : class
+        public bool WriteReferent<T>(T obj) where T : class
         {
             if (obj == null)
             {
                 WriteInt32(0);
+                return false;
             }
             else
             {
                 WriteInt32(_referent);
                 _referent += 4;
+                return true;
             }
         }
 
-        public void WriteReferent<T>(T? obj) where T : struct
+        public void WriteReferent<T>(T obj, Action<T> writer) where T : class
+        {
+            if (WriteReferent(obj))
+            {
+                writer(obj);
+            }
+        }
+
+        public void WriteReferent<T, U>(T obj, Action<T, U> writer, U arg) where T : class
+        {
+            if (WriteReferent(obj))
+            {
+                writer(obj, arg);
+            }
+        }
+
+        public void WriteReferent<T, U, V>(T obj, Action<T, U, V> writer, U arg, V arg2) where T : class
+        {
+            if (WriteReferent(obj))
+            {
+                writer(obj, arg, arg2);
+            }
+        }
+
+        public bool WriteReferent<T>(T? obj) where T : struct
         {
             if (!obj.HasValue)
             {
                 WriteInt32(0);
+                return false;
             }
             else
             {
-                WriteInt32(_referent++);
+                WriteInt32(_referent);
+                _referent += 4;
+                return true;
+            }
+        }
+
+        public void WriteReferent<T>(T? obj, Action<T> writer) where T : struct
+        {
+            if (WriteReferent(obj))
+            {
+                writer(obj.Value);
+            }
+        }
+
+        public void WriteReferent<T, U>(T? obj, Action<T, U> writer, U arg) where T : struct
+        {
+            if (WriteReferent(obj))
+            {
+                writer(obj.Value, arg);
+            }
+        }
+
+        public void WriteReferent<T, U, V>(T? obj, Action<T, U, V> writer, U arg, V arg2) where T : struct
+        {
+            if (WriteReferent(obj))
+            {
+                writer(obj.Value, arg, arg2);
             }
         }
 

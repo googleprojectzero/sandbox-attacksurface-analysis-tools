@@ -239,20 +239,33 @@ namespace NtApiDotNet.Win32.RpcClient
             return new CodeVariableReferenceExpression(MakeIdentifier(var_name));
         }
 
-        public static void AddMarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string marshal_name, string var_name, params RpcMarshalArgument[] additional_args)
+        public static void AddMarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string marshal_name, string var_name, bool add_write_referent, params RpcMarshalArgument[] additional_args)
         {
             List<CodeExpression> args = new List<CodeExpression>
             {
                 GetVariable(var_name)
             };
+
+            CodeMethodReferenceExpression marshal_method = descriptor.GetMarshalMethod(GetVariable(marshal_name));
+            if (add_write_referent)
+            {
+                List<CodeTypeReference> marshal_args = new List<CodeTypeReference>();
+                marshal_args.Add(descriptor.CodeType);
+                marshal_args.AddRange(additional_args.Select(a => a.CodeType));
+                var create_delegate = new CodeDelegateCreateExpression(CreateActionType(marshal_args.ToArray()),
+                    GetVariable(marshal_name), descriptor.MarshalMethod);
+                args.Add(create_delegate);
+                marshal_method = new CodeMethodReferenceExpression(GetVariable(marshal_name), nameof(NdrMarshalBuffer.WriteReferent));
+            }
+
             args.AddRange(additional_args.Select(r => r.Expression));
-            CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(descriptor.GetMarshalMethod(GetVariable(marshal_name)), args.ToArray());
+            CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(marshal_method, args.ToArray());
             method.Statements.Add(invoke);
         }
 
         public static void AddFlushDeferredWrites(this CodeMemberMethod method, string marshal_name)
         {
-            method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(marshal_name), "FlushDeferredWrites"));
+            method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(marshal_name), nameof(NdrMarshalBuffer.FlushDeferredWrites)));
         }
 
         public static CodeTypeReference CreateActionType(params CodeTypeReference[] args)

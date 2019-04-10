@@ -91,7 +91,7 @@ namespace NtApiDotNet.Win32.RpcClient
         {
             RpcTypeDescriptor element_type = GetTypeDescriptor(bogus_array_type.ElementType, marshal_helper);
             // We only support constructed and string types for now.
-            bool is_string = element_type.BuiltinType != typeof(string);
+            bool is_string = element_type.NdrType.Format == NdrFormatCharacter.FC_C_WSTRING || element_type.NdrType.Format == NdrFormatCharacter.FC_C_CSTRING;
             if (!element_type.Constructed && !is_string)
             {
                 return null;
@@ -539,7 +539,7 @@ namespace NtApiDotNet.Win32.RpcClient
                             marshal_method.AddNullCheck(MARSHAL_NAME, member.Name);
                         }
 
-                        marshal_method.AddMarshalCall(f_type, MARSHAL_NAME, member.Name, extra_marshal_args.ToArray());
+                        marshal_method.AddMarshalCall(f_type, MARSHAL_NAME, member.Name, false, extra_marshal_args.ToArray());
                         unmarshal_method.AddUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name);
                     }
 
@@ -649,6 +649,8 @@ namespace NtApiDotNet.Win32.RpcClient
                     {
                         continue;
                     }
+
+                    bool write_ref = false;
                     if (p_type.Pointer)
                     {
                         if (p_type.PointerType == RpcPointerType.Reference)
@@ -657,14 +659,14 @@ namespace NtApiDotNet.Win32.RpcClient
                         }
                         else
                         {
-                            method.AddWriteReferent(MARSHAL_NAME, p.Name);
+                            write_ref = true;
                         }
                     }
                     else if (!p_type.ValueType)
                     {
                         method.AddNullCheck(MARSHAL_NAME, p.Name);
                     }
-                    method.AddMarshalCall(p_type, MARSHAL_NAME, p.Name, extra_marshal_args.ToArray());
+                    method.AddMarshalCall(p_type, MARSHAL_NAME, p.Name, write_ref, extra_marshal_args.ToArray());
                     // If it's a constructed type then ensure any deferred writes are flushed.
                     if (p_type.Constructed)
                     {
