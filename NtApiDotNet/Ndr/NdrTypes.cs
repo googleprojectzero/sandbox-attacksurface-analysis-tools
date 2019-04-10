@@ -1227,6 +1227,19 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+
+    [Serializable]
+    public abstract class NdrComplexTypeReference : NdrBaseTypeReference
+    {
+        public string Name { get; set; }
+        internal abstract string FormatComplexType(NdrFormatter context);
+
+        internal NdrComplexTypeReference(string name, NdrFormatCharacter format) : base(format)
+        {
+            Name = name;
+        }
+    }
+
     [Serializable]
     public sealed class NdrUnionArms
     {
@@ -1259,39 +1272,28 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public abstract class NdrComplexTypeReference : NdrBaseTypeReference
-    {
-        public string Name { get; set; }
-        internal abstract string FormatComplexType(NdrFormatter context);
-
-        internal NdrComplexTypeReference(string name, NdrFormatCharacter format) : base(format)
-        {
-            Name = name;
-        }
-    }
-
-    [Serializable]
     public sealed class NdrUnionTypeReference : NdrComplexTypeReference
     {
         public NdrFormatCharacter SwitchType { get; }
         public int SwitchIncrement { get; }
         public NdrUnionArms Arms { get; }
         public NdrCorrelationDescriptor Correlation { get; }
+        public bool NonEncapsulated => Format == NdrFormatCharacter.FC_NON_ENCAPSULATED_UNION;
 
         internal NdrUnionTypeReference(NdrFormatCharacter format, NdrParseContext context, BinaryReader reader)
             : base($"Union_{context.TypeCache.GetNextComplexId()}", format)
         {
             int switch_type = reader.ReadByte();
-            SwitchIncrement = (switch_type >> 4) & 0xF;
-            SwitchType = (NdrFormatCharacter)(switch_type & 0xF);
-
-            if (format == NdrFormatCharacter.FC_NON_ENCAPSULATED_UNION)
+            if (NonEncapsulated)
             {
+                SwitchType = (NdrFormatCharacter)switch_type;
                 Correlation = new NdrCorrelationDescriptor(context, reader);
                 Arms = new NdrUnionArms(context, ReadTypeOffset(reader));
             }
             else
             {
+                SwitchIncrement = (switch_type >> 4) & 0xF;
+                SwitchType = (NdrFormatCharacter)(switch_type & 0xF);
                 Correlation = new NdrCorrelationDescriptor();
                 Arms = new NdrUnionArms(context, reader);
             }
@@ -1311,7 +1313,7 @@ namespace NtApiDotNet.Ndr
             builder.Append(context.FormatComment("Memory Size: {0}", GetSize())).AppendLine();
             builder.Append(FormatType(context)).AppendLine(" {");
 
-            if (Format == NdrFormatCharacter.FC_ENCAPSULATED_UNION)
+            if (NonEncapsulated)
             {
                 builder.Append(' ', indent).AppendFormat("{0} Selector;", new NdrSimpleTypeReference(SwitchType).FormatType(context)).AppendLine();
                 builder.Append(' ', indent).AppendLine("union { ");
@@ -1338,7 +1340,7 @@ namespace NtApiDotNet.Ndr
                 }
             }
 
-            if (Format == NdrFormatCharacter.FC_ENCAPSULATED_UNION)
+            if (!NonEncapsulated)
             {
                 indent /= 2;
                 builder.Append(' ', indent).AppendLine("};");
