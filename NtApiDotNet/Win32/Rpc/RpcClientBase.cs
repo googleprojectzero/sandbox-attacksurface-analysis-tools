@@ -138,7 +138,7 @@ namespace NtApiDotNet.Win32.Rpc
             }
 
             _transport = RpcClientTransportFactory.ConnectEndpoint(endpoint, security_quality_of_service);
-            _transport.Bind(InterfaceId, InterfaceVersion, NdrNativeUtils.DCE_TransferSyntax, new Version(1, 0));
+            _transport.Bind(InterfaceId, InterfaceVersion, NdrNativeUtils.DCE_TransferSyntax, new Version(2, 0));
         }
 
         /// <summary>

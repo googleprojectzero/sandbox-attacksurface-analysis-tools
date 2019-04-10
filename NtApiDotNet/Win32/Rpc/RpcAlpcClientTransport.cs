@@ -248,7 +248,7 @@ namespace NtApiDotNet.Win32.Rpc
         /// <param name="transfer_syntax_version">The transfer syntax version to use.</param>
         public void Bind(Guid interface_id, Version interface_version, Guid transfer_syntax_id, Version transfer_syntax_version)
         {
-            if (transfer_syntax_id != Ndr.NdrNativeUtils.DCE_TransferSyntax)
+            if (transfer_syntax_id != Ndr.NdrNativeUtils.DCE_TransferSyntax || transfer_syntax_version != new Version(2, 0))
             {
                 throw new ArgumentException("Only supports DCE transfer syntax");
             }
