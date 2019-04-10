@@ -52,6 +52,25 @@ namespace NtApiDotNet.Ndr
     }
 
     /// <summary>
+    /// Definition of the NDR data representation for an NDR stream.
+    /// </summary>
+    public struct NdrDataRepresentation
+    {
+        /// <summary>
+        /// The integer representation of the NDR data.
+        /// </summary>
+        public NdrIntegerRepresentation IntegerRepresentation { get; set; }
+        /// <summary>
+        /// The character representation of the NDR data.
+        /// </summary>
+        public NdrCharacterRepresentation CharacterRepresentation { get; set; }
+        /// <summary>
+        /// The floating representation of the NDR data.
+        /// </summary>
+        public NdrFloatingPointRepresentation FloatingPointRepresentation { get; set; }
+    }
+
+    /// <summary>
     /// A buffer to unmarshal NDR data from.
     /// </summary>
     /// <remarks>This class is primarily for internal use only.</remarks>
@@ -78,15 +97,30 @@ namespace NtApiDotNet.Ndr
             return ret;
         }
 
+        private void CheckDataRepresentation(NdrDataRepresentation data_represenation)
+        {
+            if (data_represenation.IntegerRepresentation != NdrIntegerRepresentation.LittleEndian ||
+                data_represenation.FloatingPointRepresentation != NdrFloatingPointRepresentation.IEEE ||
+                data_represenation.CharacterRepresentation != NdrCharacterRepresentation.ASCII)
+            {
+                throw new ArgumentException("Unsupported NDR data representation");
+            }
+        }
+
         #endregion
 
         #region Constructors
-        public NdrUnmarshalBuffer(byte[] buffer, IEnumerable<NtObject> handles)
+        public NdrUnmarshalBuffer(byte[] buffer, IEnumerable<NtObject> handles, NdrDataRepresentation data_represenation)
         {
             _stm = new MemoryStream(buffer);
             _reader = new BinaryReader(_stm, Encoding.Unicode);
             _handles = new DisposableList<NtObject>(handles);
             _deferred_reads = new List<Action>();
+            CheckDataRepresentation(data_represenation);
+        }
+        public NdrUnmarshalBuffer(byte[] buffer, IEnumerable<NtObject> handles) 
+            : this(buffer, handles, new NdrDataRepresentation())
+        {
         }
 
         public NdrUnmarshalBuffer(byte[] buffer)

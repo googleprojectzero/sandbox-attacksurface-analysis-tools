@@ -28,29 +28,19 @@ namespace NtApiDotNet.Win32.RpcClient
         /// </summary>
         public byte[] NdrBuffer { get; }
         /// <summary>
-        /// Any object handles returned in the response.
+        /// Any object handles returned in the response. (only for ALPC).
         /// </summary>
         public IEnumerable<NtObject> Handles { get; }
         /// <summary>
-        /// The integer representation of the NDR data.
+        /// Indicates the NDR data representation for the response.
         /// </summary>
-        public NdrIntegerRepresentation IntegerRepresentation { get; }
-        /// <summary>
-        /// The character representation of the NDR data.
-        /// </summary>
-        public NdrCharacterRepresentation CharacterRepresentation { get; }
-        /// <summary>
-        /// The floating representation of the NDR data.
-        /// </summary>
-        public NdrFloatingPointRepresentation FloatingPointRepresentation { get; }
+        public NdrDataRepresentation DataRepresentation { get; }
 
         internal RpcClientResponse(byte[] ndr_buffer, IEnumerable<NtObject> handles)
         {
             NdrBuffer = ndr_buffer;
             Handles = new List<NtObject>(handles.Select(o => o.DuplicateObject()));
-            IntegerRepresentation = NdrIntegerRepresentation.LittleEndian;
-            CharacterRepresentation = NdrCharacterRepresentation.ASCII;
-            FloatingPointRepresentation = NdrFloatingPointRepresentation.IEEE;
+            DataRepresentation = new NdrDataRepresentation();
         }
     }
 }
