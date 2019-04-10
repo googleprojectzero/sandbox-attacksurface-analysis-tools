@@ -127,6 +127,7 @@ namespace NtApiDotNet.Ndr
         FC_CONSTANT_IID,            // 0x5a
         FC_END,                     // 0x5b
         FC_PAD,                     // 0x5c
+        FC_EXPR,                    // 0x5d
         FC_SPLIT_DEREFERENCE = 0x74,      // 0x74
         FC_SPLIT_DIV_2,                   // 0x75
         FC_SPLIT_MULT_2,                  // 0x76

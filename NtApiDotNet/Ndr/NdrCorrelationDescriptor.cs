@@ -41,7 +41,8 @@ namespace NtApiDotNet.Ndr
         Early = 0x1,
         Split = 0x2,
         IsIidIs = 0x4,
-        DontCheck = 0x8
+        DontCheck = 0x8,
+        Range = 0x10,
     }
 
     [Serializable]
@@ -84,8 +85,14 @@ namespace NtApiDotNet.Ndr
                 ValueType = (NdrFormatCharacter)(type_byte & 0xF);
                 Operator = (NdrFormatCharacter)op_byte;
                 Offset = offset;
-                // TODO: Constant conformance also uses the flag value as an upper byte, maybe merge it in?
-                Flags = (NdrCorrelationFlags)flags;
+                if (IsConstant)
+                {
+                    Offset |= (flags << 16);
+                }
+                else
+                {
+                    Flags = (NdrCorrelationFlags)flags;
+                }
             }
         }
 

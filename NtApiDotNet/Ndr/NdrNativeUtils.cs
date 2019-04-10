@@ -588,6 +588,28 @@ namespace NtApiDotNet.Ndr
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct NDR_EXPR_DESC32 : IConvertToNative<NDR_EXPR_DESC>
+    {
+        public IntPtr32 pOffset;
+        public IntPtr32 pFormatExpr;
+
+        public NDR_EXPR_DESC Convert()
+        {
+            NDR_EXPR_DESC ret = new NDR_EXPR_DESC();
+            ret.pOffset = pOffset.Convert();
+            ret.pFormatExpr = pFormatExpr.Convert();
+            return ret;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential), CrossBitnessType(typeof(NDR_EXPR_DESC32))]
+    internal struct NDR_EXPR_DESC
+    {
+        public IntPtr pOffset;
+        public IntPtr pFormatExpr;
+    }
+
     [Flags]
     internal enum MidlTypePicklingInfoFlags
     {

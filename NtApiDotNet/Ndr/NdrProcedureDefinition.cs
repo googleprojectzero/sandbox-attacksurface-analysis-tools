@@ -197,7 +197,7 @@ namespace NtApiDotNet.Ndr
 
         internal NdrProcedureDefinition(IMemoryReader mem_reader, NdrTypeCache type_cache, 
             ISymbolResolver symbol_resolver, MIDL_STUB_DESC stub_desc, 
-            IntPtr proc_desc, IntPtr type_desc, IntPtr dispatch_func,
+            IntPtr proc_desc, IntPtr type_desc, IntPtr expr_format, IntPtr dispatch_func,
             string name, NdrParserFlags parser_flags)
         {
             BinaryReader reader = mem_reader.GetReader(proc_desc);
@@ -291,12 +291,12 @@ namespace NtApiDotNet.Ndr
             if ((exts.Flags2 & NdrInterpreterOptFlags2.HasNewCorrDesc) != 0)
             {
                 desc_size = 6;
-                if ((exts.Flags2 & NdrInterpreterOptFlags2.ExtendedCorrDesc) != 0)
+                if ((exts.Flags2 & NdrInterpreterOptFlags2.HasRangeOnConformance) != 0)
                 {
                     desc_size = 16;
                 }
             }
-            NdrParseContext context = new NdrParseContext(type_cache, symbol_resolver, stub_desc, type_desc, desc_size, mem_reader, parser_flags);
+            NdrParseContext context = new NdrParseContext(type_cache, symbol_resolver, stub_desc, type_desc, expr_format, desc_size, mem_reader, parser_flags);
             List<NdrProcedureParameter> ps = new List<NdrProcedureParameter>();
 
             bool has_return = (oi2_flags & NdrInterpreterOptFlags.HasReturn) == NdrInterpreterOptFlags.HasReturn;
