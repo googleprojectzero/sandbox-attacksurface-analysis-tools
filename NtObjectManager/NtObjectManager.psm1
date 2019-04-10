@@ -4188,3 +4188,20 @@ function Format-RpcAlpcClient {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Get a new RPC context handle.
+.DESCRIPTION
+This cmdlet creates a new RPC context handle for calling RPC APIs.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Ndr.NdrContextHandle
+.EXAMPLE
+New-RpcContextHandle 
+Creates a new RPC context handle.
+#>
+function New-RpcContextHandle {
+    New-Object "NtApiDotNet.Ndr.NdrContextHandle"
+}
