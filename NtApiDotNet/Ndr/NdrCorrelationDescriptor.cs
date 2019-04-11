@@ -46,6 +46,26 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
+    public sealed class NdrCorrelationDescriptorRange
+    {
+        public bool IsValid { get; }
+        public int MinValue { get; }
+        public int MaxValue { get; }
+
+        internal NdrCorrelationDescriptorRange()
+        {
+        }
+
+        internal NdrCorrelationDescriptorRange(BinaryReader reader)
+        {
+            IsValid = (reader.ReadByte() & 1) != 0;
+            reader.ReadByte(); // Padding?
+            MinValue = reader.ReadInt32();
+            MaxValue = reader.ReadInt32();
+        }
+    }
+
+    [Serializable]
     public sealed class NdrCorrelationDescriptor
     {
         public NdrCorrelationType CorrelationType { get; private set; }
@@ -54,6 +74,7 @@ namespace NtApiDotNet.Ndr
         public int Offset { get; private set; }
         public NdrCorrelationFlags Flags { get; private set; }
         public bool IsValid { get; private set; }
+        public NdrCorrelationDescriptorRange Range { get; private set; }
         public bool IsConstant => CorrelationType == NdrCorrelationType.FC_CONSTANT_CONFORMANCE;
         public bool IsNormal => CorrelationType == NdrCorrelationType.FC_NORMAL_CONFORMANCE;
         public bool IsTopLevel => CorrelationType == NdrCorrelationType.FC_TOP_LEVEL_CONFORMANCE;
@@ -61,9 +82,10 @@ namespace NtApiDotNet.Ndr
 
         internal NdrCorrelationDescriptor()
         {
+            Range = new NdrCorrelationDescriptorRange();
         }
 
-        internal NdrCorrelationDescriptor(NdrParseContext context, BinaryReader reader)
+        internal NdrCorrelationDescriptor(NdrParseContext context, BinaryReader reader) : this()
         {
             byte type_byte = reader.ReadByte();
             byte op_byte = reader.ReadByte();
@@ -75,7 +97,13 @@ namespace NtApiDotNet.Ndr
                 reader.ReadByte();
 
                 // Read out the range.
-                reader.ReadAll(context.CorrDescSize - 6);
+                //reader.ReadAll(context.CorrDescSize - 6);
+                if (context.CorrDescSize >= 16)
+                {
+                    Range = new NdrCorrelationDescriptorRange(reader);
+                    System.Diagnostics.Debug.Assert(((flags & 0x10) == 0x10) == Range.IsValid);
+                    reader.ReadAll(context.CorrDescSize - 16);
+                }
             }
 
             if (type_byte != 0xFF || op_byte != 0xFF || offset != -1)
