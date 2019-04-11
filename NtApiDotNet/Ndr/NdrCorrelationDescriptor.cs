@@ -75,6 +75,7 @@ namespace NtApiDotNet.Ndr
         public NdrCorrelationFlags Flags { get; private set; }
         public bool IsValid { get; private set; }
         public NdrCorrelationDescriptorRange Range { get; private set; }
+        public NdrExpression Expression { get; private set; }
         public bool IsConstant => CorrelationType == NdrCorrelationType.FC_CONSTANT_CONFORMANCE;
         public bool IsNormal => CorrelationType == NdrCorrelationType.FC_NORMAL_CONFORMANCE;
         public bool IsTopLevel => CorrelationType == NdrCorrelationType.FC_TOP_LEVEL_CONFORMANCE;
@@ -83,6 +84,7 @@ namespace NtApiDotNet.Ndr
         internal NdrCorrelationDescriptor()
         {
             Range = new NdrCorrelationDescriptorRange();
+            Expression = new NdrExpression();
         }
 
         internal NdrCorrelationDescriptor(NdrParseContext context, BinaryReader reader) : this()
@@ -118,6 +120,10 @@ namespace NtApiDotNet.Ndr
                 else
                 {
                     Flags = (NdrCorrelationFlags)flags;
+                    if (Operator == NdrFormatCharacter.FC_EXPR)
+                    {
+                        Expression = NdrExpression.Read(context, offset);
+                    }
                 }
             }
         }

@@ -208,11 +208,6 @@ namespace NtApiDotNet.Ndr
             {
                 throw new ArgumentException($"Unsupported picking type version {pickle_info.Version:X}");
             }
-            int desc_size = 4;
-            if ((pickle_info.Flags & MidlTypePicklingInfoFlags.NewCorrDesc) != 0)
-            {
-                desc_size = 6;
-            }
             NdrParseContext context = new NdrParseContext(_type_cache, null, new MIDL_STUB_DESC(), fmt_str_ptr, new NDR_EXPR_DESC(), 
                 NdrInterpreterOptFlags2.HasNewCorrDesc, _reader, NdrParserFlags.IgnoreUserMarshal);
             foreach (var i in fmt_offsets)
