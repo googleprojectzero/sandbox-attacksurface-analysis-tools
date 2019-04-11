@@ -669,6 +669,11 @@ namespace NtApiDotNet.Win32.Rpc
                 }
 
                 var method = type.AddMethod(proc_name, MemberAttributes.Public | MemberAttributes.Final);
+                if (HasFlag(RpcClientBuilderFlags.InsertBreakpoints))
+                {
+                    method.AddBreakpoint();
+                }
+
                 RpcTypeDescriptor return_type = GetTypeDescriptor(proc.ReturnValue?.Type, marshal_helper);
                 if (return_type == null)
                 {
@@ -817,7 +822,7 @@ namespace NtApiDotNet.Win32.Rpc
             CompilerParameters compile_params = new CompilerParameters();
             TempFileCollection temp_files = new TempFileCollection(Path.GetTempPath());
 
-            bool enable_debugging = HasFlag(RpcClientBuilderFlags.EnableDebugging);
+            bool enable_debugging = HasFlag(RpcClientBuilderFlags.EnableDebugging) || HasFlag(RpcClientBuilderFlags.InsertBreakpoints);
 
             compile_params.GenerateExecutable = false;
             compile_params.GenerateInMemory = true;

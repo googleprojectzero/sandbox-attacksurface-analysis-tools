@@ -4042,6 +4042,8 @@ Specify the interface version for a generic client.
 Specify a Code DOM provider. Defaults to C#.
 .PARAMETER EnableDebugging
 Specify to enable debugging of the built client.
+.PARAMETER InsertBreakpoints
+Specify to insert breakpoints at the start of all build methods. Also enables debugging support.
 .INPUTS
 None
 .OUTPUTS
@@ -4068,19 +4070,27 @@ function Get-RpcClient {
         [parameter(ParameterSetName = "FromServer")]
         [System.CodeDom.Compiler.CodeDomProvider]$Provider,
         [parameter(ParameterSetName = "FromServer")]
-        [switch]$EnableDebugging
+        [switch]$EnableDebugging,
+        [parameter(ParameterSetName = "FromServer")]
+        [switch]$InsertBreakpoints
     )
 
     if ($PSCmdlet.ParameterSetName -eq "FromServer") {
         $args = [NtApiDotNet.Win32.Rpc.RpcClientBuilderArguments]::new();
         $args.NamespaceName = $NamespaceName
         $args.ClientName = $ClientName
-        
+
+        $flags = "GenerateConstructorProperties"
         if ($EnableDebugging) {
-            $args.Flags = "GenerateConstructorProperties, EnableDebugging"
-        } else {
-            $args.Flags = "GenerateConstructorProperties"
+            $flags += ", EnableDebugging"
         }
+
+        if ($InsertBreakpoints) {
+            $flags += ", InsertBreakpoints"
+        }
+
+        $args.Flags = $flags
+
         [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache, $Provider)
     } else {
         [NtApiDotNet.Win32.RpcClient]::new($InterfaceId, $InterfaceVersion)

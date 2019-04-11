@@ -35,6 +35,10 @@ namespace NtApiDotNet.Win32.Rpc
         /// Enable debugging for built clients.
         /// </summary>
         EnableDebugging = 2,
+        /// <summary>
+        /// Insert breakpoints into the start of every generated method. Also enables debugging.
+        /// </summary>
+        InsertBreakpoints = 4,
     }
 
     /// <summary>
