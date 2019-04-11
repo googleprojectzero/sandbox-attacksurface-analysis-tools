@@ -620,6 +620,165 @@ namespace NtApiDotNet.Win32.Rpc
             return true;
         }
 
+        private static string FindCorrelationArgument(int expected_offset, IEnumerable<Tuple<int, string>> offset_to_name)
+        {
+            foreach (var offset in offset_to_name)
+            {
+                if (offset.Item1 == expected_offset)
+                {
+                    return offset.Item2;
+                }
+                else if (offset.Item1 > expected_offset)
+                {
+                    break;
+                }
+            }
+            return null;
+        }
+
+        private static CodeExpression GetBinaryExpression(NdrOperatorExpression expr, CodeBinaryOperatorType op, int current_offset, IEnumerable<Tuple<int, string>> offset_to_name)
+        {
+            return new CodeBinaryOperatorExpression(BuildCorrelationExpression(expr.Arguments[0], current_offset, offset_to_name), 
+                op, BuildCorrelationExpression(expr.Arguments[1], current_offset, offset_to_name));
+        }
+
+        private static CodeExpression GetUnaryExpression(CodeExpression left_expr, NdrOperatorExpression expr, CodeBinaryOperatorType op, int current_offset, IEnumerable<Tuple<int, string>> offset_to_name)
+        {
+            return new CodeBinaryOperatorExpression(left_expr, op, BuildCorrelationExpression(expr.Arguments[0], current_offset, offset_to_name));
+        }
+
+        public static RpcTypeDescriptor GetSimpleTypeDescriptor(this NdrSimpleTypeReference simple_type, MarshalHelperBuilder marshal_helper)
+        {
+            switch (simple_type.Format)
+            {
+                case NdrFormatCharacter.FC_BYTE:
+                case NdrFormatCharacter.FC_USMALL:
+                    return new RpcTypeDescriptor(typeof(byte), nameof(NdrUnmarshalBuffer.ReadByte), nameof(NdrMarshalBuffer.WriteByte), simple_type);
+                case NdrFormatCharacter.FC_SMALL:
+                case NdrFormatCharacter.FC_CHAR:
+                    return new RpcTypeDescriptor(typeof(sbyte), nameof(NdrUnmarshalBuffer.ReadSByte), nameof(NdrMarshalBuffer.WriteSByte), simple_type);
+                case NdrFormatCharacter.FC_WCHAR:
+                    return new RpcTypeDescriptor(typeof(char), nameof(NdrUnmarshalBuffer.ReadChar), nameof(NdrMarshalBuffer.WriteChar), simple_type);
+                case NdrFormatCharacter.FC_SHORT:
+                case NdrFormatCharacter.FC_ENUM16:
+                    return new RpcTypeDescriptor(typeof(short), nameof(NdrUnmarshalBuffer.ReadInt16), nameof(NdrMarshalBuffer.WriteInt16), simple_type);
+                case NdrFormatCharacter.FC_USHORT:
+                    return new RpcTypeDescriptor(typeof(ushort), nameof(NdrUnmarshalBuffer.ReadUInt16), nameof(NdrMarshalBuffer.WriteUInt16), simple_type);
+                case NdrFormatCharacter.FC_LONG:
+                case NdrFormatCharacter.FC_ENUM32:
+                    return new RpcTypeDescriptor(typeof(int), nameof(NdrUnmarshalBuffer.ReadInt32), nameof(NdrMarshalBuffer.WriteInt32), simple_type);
+                case NdrFormatCharacter.FC_ULONG:
+                case NdrFormatCharacter.FC_ERROR_STATUS_T:
+                    return new RpcTypeDescriptor(typeof(uint), nameof(NdrUnmarshalBuffer.ReadUInt32), nameof(NdrMarshalBuffer.WriteUInt32), simple_type);
+                case NdrFormatCharacter.FC_FLOAT:
+                    return new RpcTypeDescriptor(typeof(float), nameof(NdrUnmarshalBuffer.ReadFloat), nameof(NdrMarshalBuffer.WriteFloat), simple_type);
+                case NdrFormatCharacter.FC_HYPER:
+                    return new RpcTypeDescriptor(typeof(long), nameof(NdrUnmarshalBuffer.ReadInt64), nameof(NdrMarshalBuffer.WriteInt64), simple_type);
+                case NdrFormatCharacter.FC_DOUBLE:
+                    return new RpcTypeDescriptor(typeof(double), nameof(NdrUnmarshalBuffer.ReadDouble), nameof(NdrMarshalBuffer.WriteDouble), simple_type);
+                case NdrFormatCharacter.FC_INT3264:
+                    return new RpcTypeDescriptor(typeof(NdrInt3264), nameof(NdrUnmarshalBuffer.ReadInt3264), nameof(NdrMarshalBuffer.WriteInt3264), simple_type);
+                case NdrFormatCharacter.FC_UINT3264:
+                    return new RpcTypeDescriptor(typeof(NdrUInt3264), nameof(NdrUnmarshalBuffer.ReadUInt3264), nameof(NdrMarshalBuffer.WriteUInt3264), simple_type);
+                case NdrFormatCharacter.FC_C_WSTRING:
+                    return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadConformantVaryingString), nameof(NdrMarshalBuffer.WriteTerminatedString), simple_type);
+                case NdrFormatCharacter.FC_C_CSTRING:
+                    return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadConformantVaryingAnsiString), nameof(NdrMarshalBuffer.WriteTerminatedAnsiString), simple_type);
+                case NdrFormatCharacter.FC_CSTRING:
+                case NdrFormatCharacter.FC_WSTRING:
+                    break;
+            }
+            return null;
+        }
+
+        private static RpcTypeDescriptor GetSimpleTypeDescriptor(this NdrFormatCharacter format)
+        {
+            return GetSimpleTypeDescriptor(new NdrSimpleTypeReference(format), null);
+        }
+
+        private static CodeExpression BuildCorrelationExpression(NdrExpression expr, int current_offset, IEnumerable<Tuple<int, string>> offset_to_name)
+        {
+            if (expr is NdrConstantExpression const_expr)
+            {
+                return GetPrimitive(const_expr.Value);
+            }
+            else if (expr is NdrVariableExpression var_expr)
+            {
+                string var_name = FindCorrelationArgument(current_offset + var_expr.Offset, offset_to_name);
+                if (var_name != null)
+                {
+                    return GetVariable(var_name);
+                }
+            }
+            else if (expr is NdrOperatorExpression op_expr)
+            {
+                if (op_expr.Arguments.Count == 2)
+                {
+                    CodeBinaryOperatorType op_type;
+
+                    switch (op_expr.Operator)
+                    {
+                        case NdrExpressionOperator.OP_AND:
+                            op_type = CodeBinaryOperatorType.BitwiseAnd;
+                            break;
+                        case NdrExpressionOperator.OP_OR:
+                            op_type = CodeBinaryOperatorType.BitwiseOr;
+                            break;
+                        case NdrExpressionOperator.OP_PLUS:
+                            op_type = CodeBinaryOperatorType.Add;
+                            break;
+                        case NdrExpressionOperator.OP_MINUS:
+                            op_type = CodeBinaryOperatorType.Subtract;
+                            break;
+                        case NdrExpressionOperator.OP_MOD:
+                            op_type = CodeBinaryOperatorType.Modulus;
+                            break;
+                        case NdrExpressionOperator.OP_SLASH:
+                            op_type = CodeBinaryOperatorType.Divide;
+                            break;
+                        case NdrExpressionOperator.OP_STAR:
+                            op_type = CodeBinaryOperatorType.Divide;
+                            break;
+                        default:
+                            return GetPrimitive(0);
+                    }
+                    return GetBinaryExpression(op_expr, op_type, current_offset, offset_to_name);
+                }
+                else if (op_expr.Arguments.Count == 1)
+                {
+                    CodeBinaryOperatorType op_type;
+                    CodeExpression left_expr;
+
+                    switch (op_expr.Operator)
+                    {
+                        case NdrExpressionOperator.OP_UNARY_INDIRECTION:
+                            return BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name).DeRef();
+                        case NdrExpressionOperator.OP_UNARY_CAST:
+                            return BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name).Cast(GetSimpleTypeDescriptor(op_expr.Format).CodeType);
+                        case NdrExpressionOperator.OP_UNARY_COMPLEMENT:
+                            op_type = CodeBinaryOperatorType.Subtract;
+                            left_expr = GetPrimitive(-1);
+                            break;
+                        case NdrExpressionOperator.OP_UNARY_MINUS:
+                            op_type = CodeBinaryOperatorType.Subtract;
+                            left_expr = GetPrimitive(0);
+                            break;
+                        case NdrExpressionOperator.OP_UNARY_PLUS:
+                            op_type = CodeBinaryOperatorType.Subtract;
+                            left_expr = GetPrimitive(0);
+                            break;
+                        default:
+                            return GetPrimitive(0);
+                    }
+
+                    return GetUnaryExpression(left_expr, op_expr, op_type, current_offset, offset_to_name);
+                }
+            }
+
+            // Can't seem to generate expression.
+            return GetPrimitive(0);
+        }
+
         public static RpcMarshalArgument CalculateCorrelationArgument(this NdrCorrelationDescriptor correlation,
             int current_offset, IEnumerable<Tuple<int, string>> offset_to_name)
         {
@@ -627,57 +786,51 @@ namespace NtApiDotNet.Win32.Rpc
             {
                 return RpcMarshalArgument.CreateFromPrimitive((long)correlation.Offset);
             }
-            else if (correlation.Expression.IsValid)
-            {
-                return RpcMarshalArgument.CreateFromPrimitive(0L);
-            }
 
             if (correlation.IsTopLevel || correlation.IsPointer)
             {
                 current_offset = 0;
             }
 
-            int expected_offset = current_offset + correlation.Offset;
-            foreach (var offset in offset_to_name)
+            if (correlation.Expression.IsValid)
             {
-                if (offset.Item1 == expected_offset)
-                {
-                    CodeExpression expr = GetVariable(offset.Item2);
-                    CodeExpression right_expr = null;
-                    CodeBinaryOperatorType operator_type = CodeBinaryOperatorType.Add;
-                    switch (correlation.Operator)
-                    {
-                        case NdrFormatCharacter.FC_ADD_1:
-                            right_expr = GetPrimitive(1);
-                            operator_type = CodeBinaryOperatorType.Add;
-                            break;
-                        case NdrFormatCharacter.FC_DIV_2:
-                            right_expr = GetPrimitive(2);
-                            operator_type = CodeBinaryOperatorType.Divide;
-                            break;
-                        case NdrFormatCharacter.FC_MULT_2:
-                            right_expr = GetPrimitive(2);
-                            operator_type = CodeBinaryOperatorType.Multiply;
-                            break;
-                        case NdrFormatCharacter.FC_SUB_1:
-                            right_expr = GetPrimitive(2);
-                            operator_type = CodeBinaryOperatorType.Multiply;
-                            break;
-                        case NdrFormatCharacter.FC_DEREFERENCE:
-                            expr = expr.DeRef();
-                            break;
-                    }
+                return new RpcMarshalArgument(BuildCorrelationExpression(correlation.Expression, current_offset, offset_to_name), typeof(long).ToRef());
+            }
 
-                    if (right_expr != null)
-                    {
-                        expr = new CodeBinaryOperatorExpression(expr, operator_type, right_expr);
-                    }
-                    return new RpcMarshalArgument(expr, new CodeTypeReference(typeof(long)));
-                }
-                else if (offset.Item1 > expected_offset)
+            var offset = FindCorrelationArgument(current_offset + correlation.Offset, offset_to_name);
+            if (offset != null)
+            {
+                CodeExpression expr = GetVariable(offset);
+                CodeExpression right_expr = null;
+                CodeBinaryOperatorType operator_type = CodeBinaryOperatorType.Add;
+                switch (correlation.Operator)
                 {
-                    break;
+                    case NdrFormatCharacter.FC_ADD_1:
+                        right_expr = GetPrimitive(1);
+                        operator_type = CodeBinaryOperatorType.Add;
+                        break;
+                    case NdrFormatCharacter.FC_DIV_2:
+                        right_expr = GetPrimitive(2);
+                        operator_type = CodeBinaryOperatorType.Divide;
+                        break;
+                    case NdrFormatCharacter.FC_MULT_2:
+                        right_expr = GetPrimitive(2);
+                        operator_type = CodeBinaryOperatorType.Multiply;
+                        break;
+                    case NdrFormatCharacter.FC_SUB_1:
+                        right_expr = GetPrimitive(2);
+                        operator_type = CodeBinaryOperatorType.Multiply;
+                        break;
+                    case NdrFormatCharacter.FC_DEREFERENCE:
+                        expr = expr.DeRef();
+                        break;
                 }
+
+                if (right_expr != null)
+                {
+                    expr = new CodeBinaryOperatorExpression(expr, operator_type, right_expr);
+                }
+                return new RpcMarshalArgument(expr, new CodeTypeReference(typeof(long)));
             }
 
             // We failed to find the base name, just return a 0 for now.
@@ -798,6 +951,16 @@ namespace NtApiDotNet.Win32.Rpc
         public static void AddBreakpoint(this CodeMemberMethod method)
         {
             method.Statements.Add(GetStaticMethod(typeof(System.Diagnostics.Debugger), nameof(System.Diagnostics.Debugger.Break)));
+        }
+
+        public static CodeExpression Cast(this CodeExpression expr, CodeTypeReference type)
+        {
+            return new CodeCastExpression(type, expr);
+        }
+
+        public static CodeExpression Cast(this CodeExpression expr, Type type)
+        {
+            return new CodeCastExpression(type, expr);
         }
     }
 }

@@ -15,7 +15,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace NtApiDotNet.Ndr
 {
@@ -74,8 +73,57 @@ namespace NtApiDotNet.Ndr
     /// Expression element.
     /// </summary>
     [Serializable]
-    public class NdrExpressionElement
+    public class NdrExpression
     {
+        #region Private Members
+
+        private static bool IsValidType(NdrExpressionType type)
+        {
+            switch (type)
+            {
+                case NdrExpressionType.FC_EXPR_OPER:
+                case NdrExpressionType.FC_EXPR_CONST32:
+                case NdrExpressionType.FC_EXPR_CONST64:
+                case NdrExpressionType.FC_EXPR_VAR:
+                    return true;
+            }
+            return false;
+        }
+
+        private static NdrExpression ReadElement(BinaryReader reader)
+        {
+            NdrExpressionType type = (NdrExpressionType)reader.ReadByte();
+            switch (type)
+            {
+                case NdrExpressionType.FC_EXPR_OPER:
+                    return new NdrOperatorExpression(reader);
+                case NdrExpressionType.FC_EXPR_CONST32:
+                case NdrExpressionType.FC_EXPR_CONST64:
+                    return new NdrConstantExpression(type, reader);
+                case NdrExpressionType.FC_EXPR_VAR:
+                    return new NdrVariableExpression(reader);
+                default:
+                    break;
+            }
+
+            return new NdrExpression();
+        }
+
+        #endregion
+
+        #region Constructors
+
+        internal NdrExpression(NdrExpressionType type)
+        {
+            Type = type;
+        }
+
+        internal NdrExpression() : this(0)
+        {
+        }
+
+        #endregion
+
         /// <summary>
         /// The expression type.
         /// </summary>
@@ -86,9 +134,46 @@ namespace NtApiDotNet.Ndr
         /// </summary>
         public bool IsValid { get; internal set; }
 
-        internal NdrExpressionElement(NdrExpressionType type)
+        internal static NdrExpression ReadExpression(BinaryReader reader, NdrParseContext context)
         {
-            Type = type;
+            NdrExpression element = ReadElement(reader);
+
+            // TODO: Work out what OP_EXPRESSION means.
+            if (!element.IsValid)
+            {
+                return element;
+            }
+
+            if ((element is NdrVariableExpression) || (element is NdrConstantExpression))
+            {
+                return element;
+            }
+
+            NdrOperatorExpression op_expr = (NdrOperatorExpression)element;
+            op_expr.Arguments.Add(ReadExpression(reader, context));
+            if (op_expr.ArgumentsTotal > 1)
+            {
+                op_expr.Arguments.Add(ReadExpression(reader, context));
+            }
+
+            return op_expr;
+        }
+
+        internal static NdrExpression Read(NdrParseContext context, int index)
+        {
+            if (context.ExprDesc.pOffset == IntPtr.Zero || context.ExprDesc.pFormatExpr == IntPtr.Zero || index < 0)
+            {
+                return new NdrExpression(0);
+            }
+
+            int expr_ofs = context.Reader.ReadInt16(context.ExprDesc.pOffset + (2 * index));
+            if (expr_ofs < 0)
+            {
+                return new NdrExpression(0);
+            }
+
+            BinaryReader reader = context.Reader.GetReader(context.ExprDesc.pFormatExpr + expr_ofs);
+            return ReadExpression(reader, context);
         }
     }
 
@@ -96,7 +181,7 @@ namespace NtApiDotNet.Ndr
     /// Operator expression element.
     /// </summary>
     [Serializable]
-    public sealed class NdrExpressionOperatorElement : NdrExpressionElement
+    public sealed class NdrOperatorExpression : NdrExpression
     {
         /// <summary>
         /// NDR format type of element.
@@ -109,42 +194,42 @@ namespace NtApiDotNet.Ndr
         public NdrFormatCharacter Format { get; }
 
         /// <summary>
-        /// Padding, probably.
+        /// Offset, used for OP_EXPRESSION.
         /// </summary>
-        public int Padding { get; }
+        public int Offset { get; }
 
         internal int ArgumentsTotal { get; }
 
         /// <summary>
         /// Parsed arguments.
         /// </summary>
-        public IReadOnlyCollection<NdrExpressionElement> Arguments { get; private set; }
+        public List<NdrExpression> Arguments { get; private set; }
 
-        internal void SetArguments(Stack<NdrExpressionElement> elements)
+        internal void SetArguments(Stack<NdrExpression> elements)
         {
-            List<NdrExpressionElement> args = new List<NdrExpressionElement>();
+            List<NdrExpression> args = new List<NdrExpression>();
             for (int i = 0; i < ArgumentsTotal; ++i)
             {
                 args.Insert(0, elements.Pop());
             }
-            Arguments = args.AsReadOnly();
+            Arguments = args;
         }
 
-        internal NdrExpressionOperatorElement(BinaryReader reader) 
+        internal NdrOperatorExpression(BinaryReader reader) 
             : base(NdrExpressionType.FC_EXPR_VAR)
         {
             Operator = (NdrExpressionOperator)reader.ReadByte();
-            Format = (NdrFormatCharacter)reader.ReadByte();
-            Padding = reader.ReadByte();
-            Arguments = new List<NdrExpressionElement>().AsReadOnly();
+            Offset = reader.ReadInt16();
+            Format = (NdrFormatCharacter)(Offset & 0xFF);
+            Arguments = new List<NdrExpression>();
 
             switch (Operator)
             {
                 case NdrExpressionOperator.OP_UNARY_INDIRECTION:
                 case NdrExpressionOperator.OP_UNARY_MINUS:
-                case NdrExpressionOperator.OP_UNARY_NOT:
                 case NdrExpressionOperator.OP_UNARY_PLUS:
                 case NdrExpressionOperator.OP_UNARY_CAST:
+                case NdrExpressionOperator.OP_UNARY_COMPLEMENT:
                     IsValid = true;
                     ArgumentsTotal = 1;
                     break;
@@ -171,7 +256,7 @@ namespace NtApiDotNet.Ndr
     /// Variable expression element.
     /// </summary>
     [Serializable]
-    public sealed class NdrExpressionVariableElement : NdrExpressionElement
+    public sealed class NdrVariableExpression : NdrExpression
     {
         /// <summary>
         /// Offset of the variable.
@@ -183,7 +268,7 @@ namespace NtApiDotNet.Ndr
         /// </summary>
         public NdrFormatCharacter Format { get; }
 
-        internal NdrExpressionVariableElement(BinaryReader reader)
+        internal NdrVariableExpression(BinaryReader reader)
             : base(NdrExpressionType.FC_EXPR_VAR)
         {
             Format = (NdrFormatCharacter)reader.ReadByte();
@@ -196,7 +281,7 @@ namespace NtApiDotNet.Ndr
     /// Expression element.
     /// </summary>
     [Serializable]
-    public sealed class NdrExpressionContantElement : NdrExpressionElement
+    public sealed class NdrConstantExpression : NdrExpression
     {
         /// <summary>
         /// NDR format type of element.
@@ -213,7 +298,7 @@ namespace NtApiDotNet.Ndr
         /// </summary>
         public long Value { get; }
 
-        internal NdrExpressionContantElement(NdrExpressionType type, BinaryReader reader)
+        internal NdrConstantExpression(NdrExpressionType type, BinaryReader reader)
             : base(type)
         {
             Format = (NdrFormatCharacter)reader.ReadByte();
@@ -227,123 +312,6 @@ namespace NtApiDotNet.Ndr
                 Value = reader.ReadInt64();
             }
             IsValid = true;
-        }
-    }
-
-    /// <summary>
-    /// Class to represent an NDR expression.
-    /// </summary>
-    [Serializable]
-    public sealed class NdrExpression
-    {
-        private static bool IsValidType(NdrExpressionType type)
-        {
-            switch (type)
-            {
-                case NdrExpressionType.FC_EXPR_OPER:
-                case NdrExpressionType.FC_EXPR_CONST32:
-                case NdrExpressionType.FC_EXPR_CONST64:
-                case NdrExpressionType.FC_EXPR_VAR:
-                    return true;
-            }
-            return false;
-        }
-
-        private static NdrExpressionElement ReadElement(BinaryReader reader)
-        {
-            NdrExpressionType type = (NdrExpressionType)reader.ReadByte();
-            switch (type)
-            {
-                case NdrExpressionType.FC_EXPR_OPER:
-                    return new NdrExpressionOperatorElement(reader);
-                case NdrExpressionType.FC_EXPR_CONST32:
-                case NdrExpressionType.FC_EXPR_CONST64:
-                    return new NdrExpressionContantElement(type, reader);
-                case NdrExpressionType.FC_EXPR_VAR:
-                    return new NdrExpressionVariableElement(reader);
-                default:
-                    break;
-            }
-
-            return new NdrExpressionElement(0);
-        }
-
-        /// <summary>
-        /// Indicates if this expression is valid.
-        /// </summary>
-        public bool IsValid { get; }
-
-        /// <summary>
-        /// The root element for the expression.
-        /// </summary>
-        public NdrExpressionElement RootElement { get; }
-
-        internal NdrExpression()
-        {
-            RootElement = new NdrExpressionElement(0);
-        }
-
-        internal NdrExpression(NdrExpressionElement root_element)
-        {
-            RootElement = root_element;
-            IsValid = true;
-        }
-
-        internal static NdrExpression Read(NdrParseContext context, int index)
-        {
-            if (context.ExprDesc.pOffset == IntPtr.Zero || context.ExprDesc.pFormatExpr == IntPtr.Zero || index < 0)
-            {
-                return new NdrExpression();
-            }
-
-            int expr_ofs = context.Reader.ReadInt16(context.ExprDesc.pOffset + (2 * index));
-            if (expr_ofs < 0)
-            {
-                return new NdrExpression();
-            }
-
-            BinaryReader reader = context.Reader.GetReader(context.ExprDesc.pFormatExpr + expr_ofs);
-            List<NdrExpressionElement> elements = new List<NdrExpressionElement>();
-            Stack<NdrExpressionOperatorElement> operator_stack = new Stack<NdrExpressionOperatorElement>();
-            Stack<NdrExpressionElement> value_stack = new Stack<NdrExpressionElement>();
-            bool is_valid = true;
-
-            do
-            {
-                NdrExpressionElement element = ReadElement(reader);
-
-                // TODO: Implement OP_EXPRESSION.
-                if (!element.IsValid)
-                {
-                    is_valid = false;
-                    break;
-                }
-
-                elements.Add(element);
-                if (element is NdrExpressionOperatorElement op)
-                {
-                    operator_stack.Push(op);
-                }
-                else
-                {
-                    value_stack.Push(element);
-                    if (operator_stack.Count > 0 && value_stack.Count >= operator_stack.Peek().ArgumentsTotal)
-                    {
-                        var curr_op = operator_stack.Pop();
-                        curr_op.SetArguments(value_stack);
-                        value_stack.Push(curr_op);
-                    }
-                }
-            }
-            while (operator_stack.Count > 0);
-
-            // There should only be one value left on the stack, if not don't trust it.
-            if (!is_valid || value_stack.Count != 1)
-            {
-                return new NdrExpression();
-            }
-
-            return new NdrExpression(value_stack.Pop());
         }
     }
 }

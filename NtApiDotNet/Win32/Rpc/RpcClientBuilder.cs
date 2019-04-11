@@ -257,50 +257,6 @@ namespace NtApiDotNet.Win32.Rpc
             return null;
         }
 
-        private RpcTypeDescriptor GetSimpleTypeDescriptor(NdrSimpleTypeReference simple_type, MarshalHelperBuilder marshal_helper)
-        {
-            switch (simple_type.Format)
-            {
-                case NdrFormatCharacter.FC_BYTE:
-                case NdrFormatCharacter.FC_USMALL:
-                    return new RpcTypeDescriptor(typeof(byte), nameof(NdrUnmarshalBuffer.ReadByte), nameof(NdrMarshalBuffer.WriteByte), simple_type);
-                case NdrFormatCharacter.FC_SMALL:
-                case NdrFormatCharacter.FC_CHAR:
-                    return new RpcTypeDescriptor(typeof(sbyte), nameof(NdrUnmarshalBuffer.ReadSByte), nameof(NdrMarshalBuffer.WriteSByte), simple_type);
-                case NdrFormatCharacter.FC_WCHAR:
-                    return new RpcTypeDescriptor(typeof(char), nameof(NdrUnmarshalBuffer.ReadChar), nameof(NdrMarshalBuffer.WriteChar), simple_type);
-                case NdrFormatCharacter.FC_SHORT:
-                case NdrFormatCharacter.FC_ENUM16:
-                    return new RpcTypeDescriptor(typeof(short), nameof(NdrUnmarshalBuffer.ReadInt16), nameof(NdrMarshalBuffer.WriteInt16), simple_type);
-                case NdrFormatCharacter.FC_USHORT:
-                    return new RpcTypeDescriptor(typeof(ushort), nameof(NdrUnmarshalBuffer.ReadUInt16), nameof(NdrMarshalBuffer.WriteUInt16), simple_type);
-                case NdrFormatCharacter.FC_LONG:
-                case NdrFormatCharacter.FC_ENUM32:
-                    return new RpcTypeDescriptor(typeof(int), nameof(NdrUnmarshalBuffer.ReadInt32), nameof(NdrMarshalBuffer.WriteInt32), simple_type);
-                case NdrFormatCharacter.FC_ULONG:
-                case NdrFormatCharacter.FC_ERROR_STATUS_T:
-                    return new RpcTypeDescriptor(typeof(uint), nameof(NdrUnmarshalBuffer.ReadUInt32), nameof(NdrMarshalBuffer.WriteUInt32), simple_type);
-                case NdrFormatCharacter.FC_FLOAT:
-                    return new RpcTypeDescriptor(typeof(float), nameof(NdrUnmarshalBuffer.ReadFloat), nameof(NdrMarshalBuffer.WriteFloat), simple_type);
-                case NdrFormatCharacter.FC_HYPER:
-                    return new RpcTypeDescriptor(typeof(long), nameof(NdrUnmarshalBuffer.ReadInt64), nameof(NdrMarshalBuffer.WriteInt64), simple_type);
-                case NdrFormatCharacter.FC_DOUBLE:
-                    return new RpcTypeDescriptor(typeof(double), nameof(NdrUnmarshalBuffer.ReadDouble), nameof(NdrMarshalBuffer.WriteDouble), simple_type);
-                case NdrFormatCharacter.FC_INT3264:
-                    return new RpcTypeDescriptor(typeof(NdrInt3264), nameof(NdrUnmarshalBuffer.ReadInt3264), nameof(NdrMarshalBuffer.WriteInt3264), simple_type);
-                case NdrFormatCharacter.FC_UINT3264:
-                    return new RpcTypeDescriptor(typeof(NdrUInt3264), nameof(NdrUnmarshalBuffer.ReadUInt3264), nameof(NdrMarshalBuffer.WriteUInt3264), simple_type);
-                case NdrFormatCharacter.FC_C_WSTRING:
-                    return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadConformantVaryingString), nameof(NdrMarshalBuffer.WriteTerminatedString), simple_type);
-                case NdrFormatCharacter.FC_C_CSTRING:
-                    return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadConformantVaryingAnsiString), nameof(NdrMarshalBuffer.WriteTerminatedAnsiString), simple_type);
-                case NdrFormatCharacter.FC_CSTRING:
-                case NdrFormatCharacter.FC_WSTRING:
-                    break;
-            }
-            return null;
-        }
-
         private RpcTypeDescriptor GetPointerTypeDescriptor(NdrPointerTypeReference pointer, MarshalHelperBuilder marshal_helper)
         {
             var desc = GetTypeDescriptor(pointer.Type, marshal_helper);
@@ -383,7 +339,7 @@ namespace NtApiDotNet.Win32.Rpc
 
             if (type is NdrSimpleTypeReference simple_type)
             {
-                ret_desc = GetSimpleTypeDescriptor(simple_type, marshal_helper);
+                ret_desc = simple_type.GetSimpleTypeDescriptor(marshal_helper);
             }
             else if (type is NdrKnownTypeReference known_type)
             {
@@ -532,7 +488,7 @@ namespace NtApiDotNet.Win32.Rpc
                 }
 
                 var marshal_method = s_type.AddMarshalMethod(MARSHAL_NAME, marshal_helper, non_encapsulated_union, UNION_SELECTOR_NAME, 
-                    selector_type != null ? GetSimpleTypeDescriptor(selector_type, null).CodeType : null);
+                    selector_type != null ? selector_type.GetSimpleTypeDescriptor(null).CodeType : null);
                 marshal_method.AddAlign(MARSHAL_NAME, complex_type.GetAlignment());
 
                 var unmarshal_method = s_type.AddUnmarshalMethod(UNMARSHAL_NAME, marshal_helper);
