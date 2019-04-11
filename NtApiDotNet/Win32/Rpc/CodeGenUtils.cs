@@ -609,7 +609,10 @@ namespace NtApiDotNet.Win32.Rpc
                 case NdrFormatCharacter.FC_MULT_2:
                 case NdrFormatCharacter.FC_SUB_1:
                 case NdrFormatCharacter.FC_ZERO:
+                case NdrFormatCharacter.FC_DEREFERENCE:
                     break;
+                case NdrFormatCharacter.FC_EXPR:
+                    return correlation.Expression.IsValid;
                 default:
                     return false;
             }
@@ -623,6 +626,10 @@ namespace NtApiDotNet.Win32.Rpc
             if (correlation.IsConstant)
             {
                 return RpcMarshalArgument.CreateFromPrimitive((long)correlation.Offset);
+            }
+            else if (correlation.Expression.IsValid)
+            {
+                return RpcMarshalArgument.CreateFromPrimitive(0L);
             }
 
             if (correlation.IsTopLevel || correlation.IsPointer)
@@ -655,6 +662,9 @@ namespace NtApiDotNet.Win32.Rpc
                         case NdrFormatCharacter.FC_SUB_1:
                             right_expr = GetPrimitive(2);
                             operator_type = CodeBinaryOperatorType.Multiply;
+                            break;
+                        case NdrFormatCharacter.FC_DEREFERENCE:
+                            expr = expr.DeRef();
                             break;
                     }
 
@@ -768,6 +778,11 @@ namespace NtApiDotNet.Win32.Rpc
         public static void AddThrow(this CodeMemberMethod method, Type exception_type, params object[] args)
         {
             method.Statements.Add(new CodeThrowExceptionStatement(new CodeObjectCreateExpression(exception_type.ToRef(), args.Select(o => GetPrimitive(o)).ToArray())));
+        }
+
+        public static CodeExpression DeRef(this CodeExpression expr)
+        {
+            return new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(RpcUtils)), nameof(RpcUtils.DeRef), expr);
         }
     }
 }
