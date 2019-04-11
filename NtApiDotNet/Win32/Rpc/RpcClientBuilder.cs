@@ -152,8 +152,6 @@ namespace NtApiDotNet.Win32.Rpc
                 return null;
             }
 
-            // For now we only support constructed types with variance and no conformance.
-            // The variance also needs to be a constant or a normal correlation.
             return new RpcTypeDescriptor(new CodeTypeReference(element_type.CodeType, 1), false,
                 unmarshal_name, marshal_helper, marshal_name,
                 bogus_array_type, bogus_array_type.ConformanceDescriptor, bogus_array_type.VarianceDescriptor,
@@ -338,13 +336,27 @@ namespace NtApiDotNet.Win32.Rpc
 
         private RpcTypeDescriptor GetStringTypeDescriptor(NdrBaseStringTypeReference string_type, MarshalHelperBuilder marshal_helper)
         {
-            if (string_type is NdrConformantStringTypeReference conformant_str && !conformant_str.ConformanceDescriptor.IsValid)
+            if (string_type is NdrConformantStringTypeReference conformant_str)
             {
-                if (conformant_str.Format == NdrFormatCharacter.FC_C_CSTRING)
+                if (!conformant_str.ConformanceDescriptor.IsValid)
                 {
-                    return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadConformantVaryingAnsiString), nameof(NdrMarshalBuffer.WriteTerminatedAnsiString), string_type);
+                    if (conformant_str.Format == NdrFormatCharacter.FC_C_CSTRING)
+                    {
+                        return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadConformantVaryingAnsiString), nameof(NdrMarshalBuffer.WriteTerminatedAnsiString), string_type);
+                    }
+                    return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadConformantVaryingString), nameof(NdrMarshalBuffer.WriteTerminatedString), string_type);
                 }
-                return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadConformantVaryingString), nameof(NdrMarshalBuffer.WriteTerminatedString), string_type);
+                else
+                {
+                    AdditionalArguments marshal_args = new AdditionalArguments(false, typeof(long).ToRef());
+                    if (conformant_str.Format == NdrFormatCharacter.FC_C_CSTRING)
+                    {
+                        return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadConformantVaryingAnsiString), marshal_helper,
+                            nameof(NdrMarshalBuffer.WriteConformantVaryingAnsiString), string_type, conformant_str.ConformanceDescriptor, null, marshal_args, null);
+                    }
+                    return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadConformantVaryingString), marshal_helper,
+                            nameof(NdrMarshalBuffer.WriteConformantVaryingString), string_type, conformant_str.ConformanceDescriptor, null, marshal_args, null);
+                }
             }
             return null;
         }
