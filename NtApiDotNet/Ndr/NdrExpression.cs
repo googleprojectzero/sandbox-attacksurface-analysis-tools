@@ -337,13 +337,9 @@ namespace NtApiDotNet.Ndr
             }
             while (operator_stack.Count > 0);
 
-            // There should only be one value left on the stack.
+            // There should only be one value left on the stack, if not don't trust it.
             if (!is_valid || value_stack.Count != 1)
             {
-                if (is_valid && value_stack.Count != 1)
-                {
-                    System.Diagnostics.Debug.WriteLine("Wait");
-                }
                 return new NdrExpression();
             }
 
