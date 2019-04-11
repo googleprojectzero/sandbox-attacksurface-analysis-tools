@@ -780,9 +780,24 @@ namespace NtApiDotNet.Win32.Rpc
             method.Statements.Add(new CodeThrowExceptionStatement(new CodeObjectCreateExpression(exception_type.ToRef(), args.Select(o => GetPrimitive(o)).ToArray())));
         }
 
+        public static CodeMethodInvokeExpression GetStaticMethod(Type type, string name, params CodeExpression[] ps)
+        {
+            return new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(type), name, ps);
+        }
+
+        public static CodeMethodInvokeExpression GetStaticMethod(CodeTypeReference type, string name, params CodeExpression[] ps)
+        {
+            return new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(type), name, ps);
+        }
+
         public static CodeExpression DeRef(this CodeExpression expr)
         {
-            return new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(RpcUtils)), nameof(RpcUtils.DeRef), expr);
+            return GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.DeRef), expr);
+        }
+
+        public static void AddBreakpoint(this CodeMemberMethod method)
+        {
+            method.Statements.Add(GetStaticMethod(typeof(System.Diagnostics.Debugger), nameof(System.Diagnostics.Debugger.Break)));
         }
     }
 }
