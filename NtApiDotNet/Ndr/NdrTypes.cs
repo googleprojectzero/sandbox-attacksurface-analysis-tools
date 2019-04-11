@@ -143,7 +143,36 @@ namespace NtApiDotNet.Ndr
         FC_RANGE,                   // 0xb7
         FC_INT3264,                 // 0xb8
         FC_UINT3264,                // 0xb9
-        FC_END_OF_UNIVERSE          // 0xba
+        FC_CSARRAY,
+        FC_CS_TAG,
+        FC_STRUCTPADN,
+        FC_INT128,
+        FC_UINT128,
+        FC_FLOAT80,
+        FC_FLOAT128,
+        FC_BUFFER_ALIGN,
+        FC_ENCAP_UNION,
+        FC_FIX_ARRAY,
+        FC_CONF_ARRAY,
+        FC_VAR_ARRAY,
+        FC_CONFVAR_ARRAY,
+        FC_FIX_FORCED_BOGUS_ARRAY,
+        FC_FIX_BOGUS_ARRAY,
+        FC_FORCED_BOGUS_ARRAY,
+        FC_CHAR_STRING,
+        FC_WCHAR_STRING,
+        FC_STRUCT_STRING,
+        FC_CONF_CHAR_STRING,
+        FC_CONF_WCHAR_STRING,
+        FC_CONF_STRUCT_STRING,
+        FC_CONF_STRUCT,
+        FC_CONF_PSTRUCT,
+        FC_CONFVAR_STRUCT,
+        FC_CONFVAR_PSTRUCT,
+        FC_FORCED_BOGUS_STRUCT_2,
+        FC_CONF_BOGUS_STRUCT,
+        FC_FORCED_CONF_BOGUS_STRUCT,
+        FC_END_OF_UNIVERSE
     }
 
     [Flags]
