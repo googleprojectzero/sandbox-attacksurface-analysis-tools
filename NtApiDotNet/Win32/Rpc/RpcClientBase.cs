@@ -160,7 +160,7 @@ namespace NtApiDotNet.Win32.Rpc
             }
 
             Connect(string.IsNullOrEmpty(endpoint) ? LookupEndpoint(protocol_seq) :
-                new RpcEndpoint(InterfaceId, InterfaceVersion, $"{protocol_seq}:[{endpoint}]", true),
+                new RpcEndpoint(InterfaceId, InterfaceVersion, $"{protocol_seq}:[{endpoint.Replace("\\", "\\\\")}]", true),
                 security_quality_of_service);
         }
 
