@@ -91,18 +91,16 @@ namespace NtApiDotNet.Ndr
             byte op_byte = reader.ReadByte();
             int offset = reader.ReadInt16();
             byte flags = 0;
-            if (context.CorrDescSize > 4)
+            if (context.OptFlags.HasFlag(NdrInterpreterOptFlags2.HasNewCorrDesc) || context.OptFlags.HasFlag(NdrInterpreterOptFlags2.HasRangeOnConformance))
             {
                 flags = reader.ReadByte();
                 reader.ReadByte();
 
                 // Read out the range.
-                //reader.ReadAll(context.CorrDescSize - 6);
-                if (context.CorrDescSize >= 16)
+                if (context.OptFlags.HasFlag(NdrInterpreterOptFlags2.HasRangeOnConformance))
                 {
                     Range = new NdrCorrelationDescriptorRange(reader);
                     System.Diagnostics.Debug.Assert(((flags & 0x10) == 0x10) == Range.IsValid);
-                    reader.ReadAll(context.CorrDescSize - 16);
                 }
             }
 

@@ -287,16 +287,7 @@ namespace NtApiDotNet.Ndr
                 }
             }
 
-            int desc_size = 4;
-            if ((exts.Flags2 & NdrInterpreterOptFlags2.HasNewCorrDesc) != 0)
-            {
-                desc_size = 6;
-                if ((exts.Flags2 & NdrInterpreterOptFlags2.HasRangeOnConformance) != 0)
-                {
-                    desc_size = 16;
-                }
-            }
-            NdrParseContext context = new NdrParseContext(type_cache, symbol_resolver, stub_desc, type_desc, expr_desc, desc_size, mem_reader, parser_flags);
+            NdrParseContext context = new NdrParseContext(type_cache, symbol_resolver, stub_desc, type_desc, expr_desc, exts.Flags2, mem_reader, parser_flags);
             List<NdrProcedureParameter> ps = new List<NdrProcedureParameter>();
 
             bool has_return = (oi2_flags & NdrInterpreterOptFlags.HasReturn) == NdrInterpreterOptFlags.HasReturn;

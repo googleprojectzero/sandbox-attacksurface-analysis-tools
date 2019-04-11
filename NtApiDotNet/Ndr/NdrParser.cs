@@ -89,10 +89,10 @@ namespace NtApiDotNet.Ndr
         public ISymbolResolver SymbolResolver { get; }
         public MIDL_STUB_DESC StubDesc { get; }
         public IntPtr TypeDesc { get; }
-        public int CorrDescSize { get; }
         public IMemoryReader Reader { get; }
         public NdrParserFlags Flags { get; }
         public NDR_EXPR_DESC ExprDesc { get; }
+        public NdrInterpreterOptFlags2 OptFlags { get; }
 
         public bool HasFlag(NdrParserFlags flags)
         {
@@ -101,14 +101,14 @@ namespace NtApiDotNet.Ndr
 
         internal NdrParseContext(NdrTypeCache type_cache, ISymbolResolver symbol_resolver, 
             MIDL_STUB_DESC stub_desc, IntPtr type_desc, NDR_EXPR_DESC expr_desc,
-            int desc_size, IMemoryReader reader, NdrParserFlags parser_flags)
+            NdrInterpreterOptFlags2 opt_flags, IMemoryReader reader, NdrParserFlags parser_flags)
         {
             TypeCache = type_cache;
             SymbolResolver = symbol_resolver;
             StubDesc = stub_desc;
             TypeDesc = type_desc;
             ExprDesc = expr_desc;
-            CorrDescSize = desc_size;
+            OptFlags = opt_flags;
             Reader = reader;
             Flags = parser_flags;
         }
@@ -214,7 +214,7 @@ namespace NtApiDotNet.Ndr
                 desc_size = 6;
             }
             NdrParseContext context = new NdrParseContext(_type_cache, null, new MIDL_STUB_DESC(), fmt_str_ptr, new NDR_EXPR_DESC(), 
-                desc_size, _reader, NdrParserFlags.IgnoreUserMarshal);
+                NdrInterpreterOptFlags2.HasNewCorrDesc, _reader, NdrParserFlags.IgnoreUserMarshal);
             foreach (var i in fmt_offsets)
             {
                 NdrBaseTypeReference.Read(context, i);
