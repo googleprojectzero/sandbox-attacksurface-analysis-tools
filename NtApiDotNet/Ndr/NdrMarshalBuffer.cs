@@ -313,6 +313,7 @@ namespace NtApiDotNet.Ndr
         #endregion
 
         #region String Types
+
         public void WriteTerminatedString(string str)
         {
             WriteConformantVaryingString(str, -1);
@@ -365,6 +366,16 @@ namespace NtApiDotNet.Ndr
             // Actual count.
             WriteInt32(values.Length);
             WriteBytes(values);
+        }
+
+        public void WriteFixedString(string str, int fixed_count)
+        {
+            WriteFixedChars(str.ToCharArray(), fixed_count);
+        }
+
+        public void WriteFixedAnsiString(string str, int fixed_count)
+        {
+            WriteFixedByteArray(BinaryEncoding.Instance.GetBytes(str), fixed_count);
         }
 
         #endregion
@@ -570,11 +581,6 @@ namespace NtApiDotNet.Ndr
                 Array.Resize(ref chars, fixed_count);
             }
             _writer.Write(chars);
-        }
-
-        public void WriteFixedString(string str, int fixed_count)
-        {
-            WriteFixedChars(str.ToCharArray(), fixed_count);
         }
 
         public void WriteFixedPrimitiveArray<T>(T[] array, int fixed_count) where T : struct

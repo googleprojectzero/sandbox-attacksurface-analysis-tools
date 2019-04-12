@@ -557,6 +557,11 @@ namespace NtApiDotNet.Ndr
             return new string(ReadFixedCharArray(count));
         }
 
+        public string ReadFixedAnsiString(int count)
+        {
+            return BinaryEncoding.Instance.GetString(ReadFixedByteArray(count));
+        }
+
         public string ReadConformantVaryingAnsiString()
         {
             return BinaryEncoding.Instance.GetString(ReadConformantVaryingByteArray()).TrimEnd('\0');
