@@ -200,7 +200,6 @@
     <Compile Include="SafeStructureInOutBuffer.cs" />
     <Compile Include="SecurityCapabilities.cs" />
     <Compile Include="SecurityDescriptor.cs" />
-    <Compile Include="SecurityDescriptorNative.cs" />
     <Compile Include="SecurityQualityOfService.cs" />
     <Compile Include="Sid.cs" />
     <Compile Include="ThreadImpersonationContext.cs" />
