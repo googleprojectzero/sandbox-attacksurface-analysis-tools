@@ -92,12 +92,10 @@ namespace NtApiDotNet.Ndr
             byte type_byte = reader.ReadByte();
             byte op_byte = reader.ReadByte();
             int offset = reader.ReadInt16();
-            byte flags = 0;
+            int flags = 0;
             if (context.OptFlags.HasFlag(NdrInterpreterOptFlags2.HasNewCorrDesc) || context.OptFlags.HasFlag(NdrInterpreterOptFlags2.HasRangeOnConformance))
             {
-                flags = reader.ReadByte();
-                reader.ReadByte();
-
+                flags = reader.ReadInt16();
                 // Read out the range.
                 if (context.OptFlags.HasFlag(NdrInterpreterOptFlags2.HasRangeOnConformance))
                 {
@@ -113,13 +111,14 @@ namespace NtApiDotNet.Ndr
                 ValueType = (NdrFormatCharacter)(type_byte & 0xF);
                 Operator = (NdrFormatCharacter)op_byte;
                 Offset = offset;
+                Flags = (NdrCorrelationFlags)flags;
                 if (IsConstant)
                 {
-                    Offset |= (flags << 16);
+                    Offset |= (op_byte << 16);
+                    Operator = NdrFormatCharacter.FC_ZERO;
                 }
                 else
                 {
-                    Flags = (NdrCorrelationFlags)flags;
                     if (Operator == NdrFormatCharacter.FC_EXPR)
                     {
                         Expression = NdrExpression.Read(context, offset);
