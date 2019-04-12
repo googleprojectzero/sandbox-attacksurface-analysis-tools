@@ -315,12 +315,12 @@ namespace NtApiDotNet.Ndr
         #region String Types
         public void WriteTerminatedString(string str)
         {
-            WriteConformantVaryingString(str, str.Length + 1);
+            WriteConformantVaryingString(str, -1);
         }
 
         public void WriteTerminatedAnsiString(string str)
         {
-            WriteConformantVaryingAnsiString(str, str.Length + 1);
+            WriteConformantVaryingAnsiString(str, -1);
         }
 
         public void WriteConformantVaryingString(string str, long conformance)
@@ -331,6 +331,11 @@ namespace NtApiDotNet.Ndr
             }
 
             char[] values = (str + '\0').ToCharArray();
+            if (conformance < 0)
+            {
+                conformance = values.Length;
+            }
+
             // Maximum count.
             WriteInt32((int)conformance);
             // Offset.
@@ -348,6 +353,11 @@ namespace NtApiDotNet.Ndr
             }
 
             byte[] values = BinaryEncoding.Instance.GetBytes(str + '\0');
+            if (conformance < 0)
+            {
+                conformance = values.Length;
+            }
+
             // Maximum count.
             WriteInt32((int)conformance);
             // Offset.
@@ -601,6 +611,10 @@ namespace NtApiDotNet.Ndr
             // Offset.
             WriteInt32(0);
             int var_int = (int)variance;
+            if (var_int < 0)
+            {
+                var_int = array.Length;
+            }
             // Actual Count
             WriteInt32(var_int);
             Array.Resize(ref array, var_int);
@@ -612,6 +626,10 @@ namespace NtApiDotNet.Ndr
             // Offset.
             WriteInt32(0);
             int var_int = (int)variance;
+            if (var_int < 0)
+            {
+                var_int = array.Length;
+            }
             // Actual Count
             WriteInt32(var_int);
             Array.Resize(ref array, var_int);
@@ -622,6 +640,10 @@ namespace NtApiDotNet.Ndr
         {
             WriteInt32(0);
             int var_int = (int)variance;
+            if (var_int < 0)
+            {
+                var_int = array.Length;
+            }
             // Actual Count
             WriteInt32(var_int);
             WriteFixedPrimitiveArray<T>(array, var_int);
@@ -660,13 +682,18 @@ namespace NtApiDotNet.Ndr
         {
             // Offset.
             WriteInt32(0);
-            // Actual Count
-            WriteInt32((int)variance);
             if (array == null)
             {
                 array = new T[0];
             }
-            for (int i = 0; i < (int)variance; ++i)
+            int var_int = (int)variance;
+            if (var_int < 0)
+            {
+                var_int = array.Length;
+            }
+            // Actual Count
+            WriteInt32(var_int);
+            for (int i = 0; i < var_int; ++i)
             {
                 if (i < array.Length)
                 {
@@ -684,7 +711,12 @@ namespace NtApiDotNet.Ndr
             // Offset.
             WriteInt32(0);
             // Actual Count
-            WriteInt32((int)variance);
+            int var_int = (int)variance;
+            if (var_int < 0)
+            {
+                var_int = array.Length;
+            }
+            WriteInt32(var_int);
             WriteStringArray(array, writer, (int)variance);
         }
 
@@ -695,6 +727,10 @@ namespace NtApiDotNet.Ndr
         public void WriteConformantByteArray(byte[] array, long conformance)
         {
             int var_int = (int)conformance;
+            if (var_int < 0)
+            {
+                var_int = array.Length;
+            }
             // Max Count
             WriteInt32(var_int);
             Array.Resize(ref array, var_int);
@@ -704,6 +740,10 @@ namespace NtApiDotNet.Ndr
         public void WriteConformantCharArray(char[] array, long conformance)
         {
             int var_int = (int)conformance;
+            if (var_int < 0)
+            {
+                var_int = array.Length;
+            }
             // Max Count
             WriteInt32(var_int);
             Array.Resize(ref array, var_int);
@@ -713,6 +753,10 @@ namespace NtApiDotNet.Ndr
         public void WriteConformantPrimitiveArray<T>(T[] array, long conformance) where T : struct
         {
             int var_int = (int)conformance;
+            if (var_int < 0)
+            {
+                var_int = array.Length;
+            }
             // Max Count
             WriteInt32(var_int);
             WriteFixedPrimitiveArray<T>(array, var_int);
@@ -726,6 +770,10 @@ namespace NtApiDotNet.Ndr
         public void WriteConformantStringArray(string[] array, Action<string> writer, long conformance)
         {
             int var_int = (int)conformance;
+            if (var_int < 0)
+            {
+                var_int = array.Length;
+            }
             // Max Count
             WriteInt32(var_int);
             WriteStringArray(array, writer, var_int);
@@ -734,12 +782,18 @@ namespace NtApiDotNet.Ndr
         public void WriteConformantArrayCallback<T>(T[] array, Action<T> writer, long conformance) where T : new()
         {
             // Max Count
-            WriteInt32((int)conformance);
             if (array == null)
             {
                 array = new T[0];
             }
-            for (int i = 0; i < (int)conformance; ++i)
+            int var_int = (int)conformance;
+            if (var_int < 0)
+            {
+                var_int = array.Length;
+            }
+            WriteInt32(var_int);
+
+            for (int i = 0; i < var_int; ++i)
             {
                 if (i < array.Length)
                 {
@@ -783,21 +837,36 @@ namespace NtApiDotNet.Ndr
         public void WriteConformantVaryingByteArray(byte[] array, long conformance, long variance)
         {
             // Max Count
-            WriteInt32((int)conformance);
+            int con_int = (int)conformance;
+            if (con_int < 0)
+            {
+                con_int = array.Length;
+            }
+            WriteInt32(con_int);
             WriteVaryingByteArray(array, variance);
         }
 
         public void WriteConformantVaryingCharArray(char[] array, long conformance, long variance)
         {
             // Max Count
-            WriteInt32((int)conformance);
+            int con_int = (int)conformance;
+            if (con_int < 0)
+            {
+                con_int = array.Length;
+            }
+            WriteInt32(con_int);
             WriteVaryingCharArray(array, variance);
         }
 
         public void WriteConformantVaryingPrimitiveArray<T>(T[] array, long conformance, long variance) where T : struct
         {
             // Max Count
-            WriteInt32((int)conformance);
+            int con_int = (int)conformance;
+            if (con_int < 0)
+            {
+                con_int = array.Length;
+            }
+            WriteInt32(con_int);
             WriteVaryingPrimitiveArray(array, variance);
         }
 
@@ -809,14 +878,24 @@ namespace NtApiDotNet.Ndr
         public void WriteConformantVaryingStringArray(string[] array, Action<string> writer, long conformance, long variance)
         {
             // Max Count
-            WriteInt32((int)conformance);
+            int con_int = (int)conformance;
+            if (con_int < 0)
+            {
+                con_int = array.Length;
+            }
+            WriteInt32(con_int);
             WriteVaryingStringArray(array, writer, (int)variance);
         }
 
         public void WriteConformantVaryingArrayCallback<T>(T[] array, Action<T> writer, long conformance, long variance) where T : new()
         {
             // Max Count
-            WriteInt32((int)conformance);
+            int con_int = (int)conformance;
+            if (con_int < 0)
+            {
+                con_int = array.Length;
+            }
+            WriteInt32(con_int);
             WriteVaryingArrayCallback(array, writer, variance);
         }
 
