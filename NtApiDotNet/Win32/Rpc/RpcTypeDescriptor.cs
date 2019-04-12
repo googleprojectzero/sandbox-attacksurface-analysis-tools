@@ -85,6 +85,7 @@ namespace NtApiDotNet.Win32.Rpc
         public RpcPointerType PointerType { get; }
         public bool ValueType { get; }
         public bool Constructed { get; }
+        public bool Union { get; }
         public string UnmarshalMethod { get; }
         public string MarshalMethod { get; }
         public NdrCorrelationDescriptor ConformanceDescriptor { get; }
@@ -153,6 +154,7 @@ namespace NtApiDotNet.Win32.Rpc
                   conformance, variance, additional_marshal_args, additional_unmarshal_args)
         {
             Constructed = true;
+            Union = ndr_type is NdrUnionTypeReference;
         }
 
         public RpcTypeDescriptor(RpcTypeDescriptor original_desc, RpcPointerType pointer_type)
@@ -163,6 +165,7 @@ namespace NtApiDotNet.Win32.Rpc
             PointerType = pointer_type;
             Constructed = original_desc.Constructed;
             FixedCount = original_desc.FixedCount;
+            Union = original_desc.Union;
         }
 
         public CodeMethodReferenceExpression GetMarshalMethod(CodeExpression target)

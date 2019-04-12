@@ -410,6 +410,11 @@ namespace NtApiDotNet.Win32.Rpc
             return _type_descriptors[type];
         }
 
+        private bool DisableCalculatedCorrelation(RpcTypeDescriptor desc)
+        {
+            return HasFlag(RpcClientBuilderFlags.DisableCalculatedCorrelations) && !desc.Union;
+        }
+
         private const string MARSHAL_NAME = "m";
         private const string UNMARSHAL_NAME = "u";
         private const string CONSTRUCTOR_STRUCT_NAME = "_Constructors";
@@ -512,12 +517,14 @@ namespace NtApiDotNet.Win32.Rpc
                     {
                         if (f_type.ConformanceDescriptor.IsValid)
                         {
-                            extra_marshal_args.Add(f_type.ConformanceDescriptor.CalculateCorrelationArgument(member.Offset, offset_to_name));
+                            extra_marshal_args.Add(f_type.ConformanceDescriptor.CalculateCorrelationArgument(member.Offset, offset_to_name,
+                                DisableCalculatedCorrelation(f_type)));
                         }
 
                         if (f_type.VarianceDescriptor.IsValid)
                         {
-                            extra_marshal_args.Add(f_type.VarianceDescriptor.CalculateCorrelationArgument(member.Offset, offset_to_name));
+                            extra_marshal_args.Add(f_type.VarianceDescriptor.CalculateCorrelationArgument(member.Offset,
+                                offset_to_name, DisableCalculatedCorrelation(f_type)));
                         }
                     }
 
@@ -654,12 +661,12 @@ namespace NtApiDotNet.Win32.Rpc
 
                     if (p_type.ConformanceDescriptor.IsValid)
                     {
-                        extra_marshal_args.Add(p_type.ConformanceDescriptor.CalculateCorrelationArgument(p.Offset, offset_to_name));
+                        extra_marshal_args.Add(p_type.ConformanceDescriptor.CalculateCorrelationArgument(p.Offset, offset_to_name, DisableCalculatedCorrelation(p_type)));
                     }
 
                     if (p_type.VarianceDescriptor.IsValid)
                     {
-                        extra_marshal_args.Add(p_type.VarianceDescriptor.CalculateCorrelationArgument(p.Offset, offset_to_name));
+                        extra_marshal_args.Add(p_type.VarianceDescriptor.CalculateCorrelationArgument(p.Offset, offset_to_name, DisableCalculatedCorrelation(p_type)));
                     }
 
                     var p_obj = method.AddParam(p_type.GetParameterType(), p.Name);

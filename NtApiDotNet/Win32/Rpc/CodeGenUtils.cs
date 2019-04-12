@@ -638,13 +638,13 @@ namespace NtApiDotNet.Win32.Rpc
 
         private static CodeExpression GetBinaryExpression(NdrOperatorExpression expr, CodeBinaryOperatorType op, int current_offset, IEnumerable<Tuple<int, string>> offset_to_name)
         {
-            return new CodeBinaryOperatorExpression(BuildCorrelationExpression(expr.Arguments[0], current_offset, offset_to_name), 
-                op, BuildCorrelationExpression(expr.Arguments[1], current_offset, offset_to_name));
+            return new CodeBinaryOperatorExpression(BuildCorrelationExpression(expr.Arguments[0], current_offset, offset_to_name, false), 
+                op, BuildCorrelationExpression(expr.Arguments[1], current_offset, offset_to_name, false));
         }
 
         private static CodeExpression GetUnaryExpression(CodeExpression left_expr, NdrOperatorExpression expr, CodeBinaryOperatorType op, int current_offset, IEnumerable<Tuple<int, string>> offset_to_name)
         {
-            return new CodeBinaryOperatorExpression(left_expr, op, BuildCorrelationExpression(expr.Arguments[0], current_offset, offset_to_name));
+            return new CodeBinaryOperatorExpression(left_expr, op, BuildCorrelationExpression(expr.Arguments[0], current_offset, offset_to_name, false));
         }
 
         public static RpcTypeDescriptor GetSimpleTypeDescriptor(this NdrSimpleTypeReference simple_type, MarshalHelperBuilder marshal_helper)
@@ -696,13 +696,21 @@ namespace NtApiDotNet.Win32.Rpc
             return GetSimpleTypeDescriptor(new NdrSimpleTypeReference(format), null);
         }
 
-        private static CodeExpression BuildCorrelationExpression(NdrExpression expr, int current_offset, IEnumerable<Tuple<int, string>> offset_to_name)
+        private static CodeExpression BuildCorrelationExpression(NdrExpression expr, int current_offset, 
+            IEnumerable<Tuple<int, string>> offset_to_name, bool disable_correlation)
         {
             if (expr is NdrConstantExpression const_expr)
             {
                 return GetPrimitive(const_expr.Value);
             }
-            else if (expr is NdrVariableExpression var_expr)
+
+            // Allow constant expressions even if disabled.
+            if (disable_correlation)
+            {
+                return GetPrimitive(-1);
+            }
+
+            if (expr is NdrVariableExpression var_expr)
             {
                 string var_name = FindCorrelationArgument(current_offset + var_expr.Offset, offset_to_name);
                 if (var_name != null)
@@ -752,9 +760,9 @@ namespace NtApiDotNet.Win32.Rpc
                     switch (op_expr.Operator)
                     {
                         case NdrExpressionOperator.OP_UNARY_INDIRECTION:
-                            return BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name).DeRef();
+                            return BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name, false).DeRef();
                         case NdrExpressionOperator.OP_UNARY_CAST:
-                            return BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name).Cast(GetSimpleTypeDescriptor(op_expr.Format).CodeType);
+                            return BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name, false).Cast(GetSimpleTypeDescriptor(op_expr.Format).CodeType);
                         case NdrExpressionOperator.OP_UNARY_COMPLEMENT:
                             op_type = CodeBinaryOperatorType.Subtract;
                             left_expr = GetPrimitive(-1);
@@ -768,7 +776,7 @@ namespace NtApiDotNet.Win32.Rpc
                             left_expr = GetPrimitive(0);
                             break;
                         default:
-                            return GetPrimitive(0);
+                            return GetPrimitive(-1);
                     }
 
                     return GetUnaryExpression(left_expr, op_expr, op_type, current_offset, offset_to_name);
@@ -776,11 +784,11 @@ namespace NtApiDotNet.Win32.Rpc
             }
 
             // Can't seem to generate expression.
-            return GetPrimitive(0);
+            return GetPrimitive(-1);
         }
 
         public static RpcMarshalArgument CalculateCorrelationArgument(this NdrCorrelationDescriptor correlation,
-            int current_offset, IEnumerable<Tuple<int, string>> offset_to_name)
+            int current_offset, IEnumerable<Tuple<int, string>> offset_to_name, bool disable_correlation)
         {
             if (correlation.IsConstant)
             {
@@ -794,7 +802,13 @@ namespace NtApiDotNet.Win32.Rpc
 
             if (correlation.Expression.IsValid)
             {
-                return new RpcMarshalArgument(BuildCorrelationExpression(correlation.Expression, current_offset, offset_to_name), typeof(long).ToRef());
+                return new RpcMarshalArgument(BuildCorrelationExpression(correlation.Expression, 
+                    current_offset, offset_to_name, disable_correlation), typeof(long).ToRef());
+            }
+
+            if (disable_correlation)
+            {
+                return RpcMarshalArgument.CreateFromPrimitive(-1L);
             }
 
             var offset = FindCorrelationArgument(current_offset + correlation.Offset, offset_to_name);
@@ -833,8 +847,8 @@ namespace NtApiDotNet.Win32.Rpc
                 return new RpcMarshalArgument(expr, new CodeTypeReference(typeof(long)));
             }
 
-            // We failed to find the base name, just return a 0 for now.
-            return RpcMarshalArgument.CreateFromPrimitive(0L);
+            // We failed to find the base name, return -1 as a default.
+            return RpcMarshalArgument.CreateFromPrimitive(-1L);
         }
 
         public static CodeTypeReference ToRef(this Type type)

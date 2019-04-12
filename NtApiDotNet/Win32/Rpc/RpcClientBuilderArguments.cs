@@ -39,6 +39,12 @@ namespace NtApiDotNet.Win32.Rpc
         /// Insert breakpoints into the start of every generated method. Also enables debugging.
         /// </summary>
         InsertBreakpoints = 4,
+        /// <summary>
+        /// Disable calculated correlation information. This will prevent automatic updating of array and 
+        /// string lengths based on other parameters or fields. This might result in unexpected behavior or
+        /// call failures. This won't disable correlations for union types or constant correlations.
+        /// </summary>
+        DisableCalculatedCorrelations = 8,
     }
 
     /// <summary>
