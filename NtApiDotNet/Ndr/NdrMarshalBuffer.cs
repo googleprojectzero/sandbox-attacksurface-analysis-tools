@@ -118,6 +118,11 @@ namespace NtApiDotNet.Ndr
             }
         }
 
+        public void WriteEmpty(NdrEmpty empty)
+        {
+            // Do nothing.
+        }
+
         public byte[] ToArray()
         {
             byte[] ret = _stm.ToArray();

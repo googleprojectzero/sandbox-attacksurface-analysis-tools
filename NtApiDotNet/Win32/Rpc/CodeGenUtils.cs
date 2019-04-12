@@ -684,9 +684,8 @@ namespace NtApiDotNet.Win32.Rpc
                     return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadConformantVaryingString), nameof(NdrMarshalBuffer.WriteTerminatedString), simple_type);
                 case NdrFormatCharacter.FC_C_CSTRING:
                     return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadConformantVaryingAnsiString), nameof(NdrMarshalBuffer.WriteTerminatedAnsiString), simple_type);
-                case NdrFormatCharacter.FC_CSTRING:
-                case NdrFormatCharacter.FC_WSTRING:
-                    break;
+                case NdrFormatCharacter.FC_ZERO:
+                    return new RpcTypeDescriptor(typeof(NdrEmpty), nameof(NdrUnmarshalBuffer.ReadEmpty), nameof(NdrMarshalBuffer.WriteEmpty), simple_type);
             }
             return null;
         }
@@ -922,7 +921,7 @@ namespace NtApiDotNet.Win32.Rpc
                 }
 
                 members.AddRange(union_type.Arms.Arms.Select(a => new ComplexTypeMember(a.ArmType, base_offset, $"Arm_{a.CaseValue}", a.CaseValue, false, false)));
-                if (union_type.Arms.DefaultArm != null && union_type.Arms.DefaultArm.Format != NdrFormatCharacter.FC_ZERO)
+                if (union_type.Arms.DefaultArm != null)
                 {
                     members.Add(new ComplexTypeMember(union_type.Arms.DefaultArm, base_offset, "Arm_Default", null, true, false));
                 }

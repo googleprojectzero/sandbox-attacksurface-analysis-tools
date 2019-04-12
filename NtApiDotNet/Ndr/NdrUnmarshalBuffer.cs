@@ -160,6 +160,11 @@ namespace NtApiDotNet.Ndr
             throw new NotImplementedException($"Reading type {name} is unsupported");
         }
 
+        public NdrEmpty ReadEmpty()
+        {
+            return new NdrEmpty();
+        }
+
         #endregion
 
         #region Primitive Types
