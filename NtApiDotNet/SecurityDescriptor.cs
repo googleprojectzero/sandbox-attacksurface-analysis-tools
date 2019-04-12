@@ -50,6 +50,7 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class SecurityDescriptorSid
     {
+        #region Public Properties
         /// <summary>
         /// The SID.
         /// </summary>
@@ -59,7 +60,9 @@ namespace NtApiDotNet
         /// Indicates whether the SID was defaulted or not.
         /// </summary>
         public bool Defaulted { get; set; }
+        #endregion
 
+        #region Constructors
         /// <summary>
         /// Constructor from existing SID.
         /// </summary>
@@ -70,7 +73,9 @@ namespace NtApiDotNet
             Sid = sid;
             Defaulted = defaulted;
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Convert to a string.
         /// </summary>
@@ -79,6 +84,7 @@ namespace NtApiDotNet
         {
             return $"{Sid} - Defaulted: {Defaulted}";
         }
+        #endregion
     }
 
     /// <summary>
@@ -86,179 +92,7 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class SecurityDescriptor
     {
-        /// <summary>
-        /// Discretionary access control list (can be null)
-        /// </summary>
-        public Acl Dacl { get; set; }
-        /// <summary>
-        /// System access control list (can be null)
-        /// </summary>
-        public Acl Sacl { get; set; }
-        /// <summary>
-        /// Owner (can be null)
-        /// </summary>
-        public SecurityDescriptorSid Owner { get; set; }
-        /// <summary>
-        /// Group (can be null)
-        /// </summary>
-        public SecurityDescriptorSid Group { get; set; }
-        /// <summary>
-        /// Control flags
-        /// </summary>
-        public SecurityDescriptorControl Control { get; set; }
-        /// <summary>
-        /// Revision value
-        /// </summary>
-        public uint Revision { get; set; }
-
-        [StructLayout(LayoutKind.Sequential)]
-        struct SecurityDescriptorHeader
-        {
-            public byte Revision;
-            public byte Sbz1;
-            public SecurityDescriptorControl Control;
-
-            public bool HasFlag(SecurityDescriptorControl control)
-            {
-                return (control & Control) == control;
-            }
-        }
-
-        interface ISecurityDescriptor
-        {
-            long GetOwner(long base_address);
-            long GetGroup(long base_address);
-            long GetSacl(long base_address);
-            long GetDacl(long base_address);
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        struct SecurityDescriptorRelative : ISecurityDescriptor
-        {
-            public SecurityDescriptorHeader Header;
-            public int Owner;
-            public int Group;
-            public int Sacl;
-            public int Dacl;
-
-            long ISecurityDescriptor.GetOwner(long base_address)
-            {
-                if (Owner == 0)
-                {
-                    return 0;
-                }
-
-                return base_address + Owner;
-            }
-
-            long ISecurityDescriptor.GetGroup(long base_address)
-            {
-                if (Group == 0)
-                {
-                    return 0;
-                }
-
-                return base_address + Group;
-            }
-
-            long ISecurityDescriptor.GetSacl(long base_address)
-            {
-                if (Sacl == 0)
-                {
-                    return 0;
-                }
-
-                return base_address + Sacl;
-            }
-
-            long ISecurityDescriptor.GetDacl(long base_address)
-            {
-                if (Dacl == 0)
-                {
-                    return 0;
-                }
-
-                return base_address + Dacl;
-            }
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        struct SecurityDescriptorAbsolute : ISecurityDescriptor
-        {
-            public SecurityDescriptorHeader Header;
-            public IntPtr Owner;
-            public IntPtr Group;
-            public IntPtr Sacl;
-            public IntPtr Dacl;
-
-            long ISecurityDescriptor.GetOwner(long base_address)
-            {
-                return Owner.ToInt64();
-            }
-
-            long ISecurityDescriptor.GetGroup(long base_address)
-            {
-                return Group.ToInt64();
-            }
-
-            long ISecurityDescriptor.GetSacl(long base_address)
-            {
-                return Sacl.ToInt64();
-            }
-
-            long ISecurityDescriptor.GetDacl(long base_address)
-            {
-                return Dacl.ToInt64();
-            }
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        struct SecurityDescriptorAbsolute32 : ISecurityDescriptor
-        {
-            public SecurityDescriptorHeader Header;
-            public int Owner;
-            public int Group;
-            public int Sacl;
-            public int Dacl;
-
-            long ISecurityDescriptor.GetOwner(long base_address)
-            {
-                return Owner;
-            }
-
-            long ISecurityDescriptor.GetGroup(long base_address)
-            {
-                return Group;
-            }
-
-            long ISecurityDescriptor.GetSacl(long base_address)
-            {
-                return Sacl;
-            }
-
-            long ISecurityDescriptor.GetDacl(long base_address)
-            {
-                return Dacl;
-            }
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        struct SidHeader
-        {
-            public byte Revision;
-            public byte RidCount;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        struct AclHeader
-        {
-            public byte AclRevision;
-            public byte Sbz1;
-            public ushort AclSize;
-            public ushort AceCount;
-            public ushort Sbz2;
-        }
-
+        #region Private Members
         private static SecurityDescriptorSid ReadSid(NtProcess process, long address, bool defaulted)
         {
             if (address == 0)
@@ -342,77 +176,6 @@ namespace NtApiDotNet
             return null;
         }
 
-        /// <summary>
-        /// Get the mandatory label. Returns null if it doesn't exist.
-        /// </summary>
-        /// <returns></returns>
-        public Ace GetMandatoryLabel()
-        {
-            return FindSaclAce(AceType.MandatoryLabel);
-        }
-
-        /// <summary>
-        /// Get or set mandatory label. Returns a medium label if it doesn't exist.
-        /// </summary>
-        public Ace MandatoryLabel
-        {
-            get
-            {
-                return GetMandatoryLabel() 
-                    ?? new MandatoryLabelAce(AceFlags.None, MandatoryLabelPolicy.NoWriteUp, 
-                        TokenIntegrityLevel.Medium);
-            }
-
-            set
-            {
-                Ace label = GetMandatoryLabel();
-                if (label != null)
-                {
-                    Sacl.Remove(label);
-                }
-
-                if (Sacl == null)
-                {
-                    Sacl = new Acl();
-                }
-                Sacl.NullAcl = false;
-                MandatoryLabelAce ace = value as MandatoryLabelAce;
-                if (ace == null)
-                {
-                    ace = new MandatoryLabelAce(value.Flags, value.Mask.ToMandatoryLabelPolicy(), value.Sid);
-                }
-                Sacl.Add(ace);
-            }
-        }
-
-        /// <summary>
-        /// Get the process trust label.
-        /// </summary>
-        public Ace ProcessTrustLabel
-        {
-            get
-            {
-                return FindSaclAce(AceType.ProcessTrustLabel);
-            }
-        }
-
-        /// <summary>
-        /// Get or set the integrity level
-        /// </summary>
-        public TokenIntegrityLevel IntegrityLevel
-        {
-            get
-            {
-                return NtSecurity.GetIntegrityLevel(MandatoryLabel.Sid);
-            }
-            set
-            {
-                Ace label = MandatoryLabel;
-                label.Sid = NtSecurity.GetIntegritySid(value);
-                MandatoryLabel = label;
-            }
-        }
-
         private delegate NtStatus QuerySidFunc(SafeBuffer SecurityDescriptor, out IntPtr sid, out bool defaulted);
 
         private delegate NtStatus QueryAclFunc(SafeBuffer SecurityDescriptor, out bool acl_present, out IntPtr acl, out bool acl_defaulted);
@@ -452,172 +215,6 @@ namespace NtApiDotNet
             NtRtl.RtlGetControlSecurityDescriptor(buffer, out SecurityDescriptorControl control, out uint revision).ToNtException();
             Control = control;
             Revision = revision;
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="ptr">Native pointer to security descriptor.</param>
-        public SecurityDescriptor(IntPtr ptr)
-        {
-            ParseSecurityDescriptor(new SafeHGlobalBuffer(ptr, 0, false));
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="process">The process containing the security descriptor.</param>
-        /// <param name="ptr">Native pointer to security descriptor.</param>
-        public SecurityDescriptor(NtProcess process, IntPtr ptr)
-        {
-            ParseSecurityDescriptor(process, ptr.ToInt64());
-        }
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        public SecurityDescriptor()
-        {
-            Revision = 1;
-        }
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="security_descriptor">Binary form of security descriptor</param>
-        public SecurityDescriptor(byte[] security_descriptor)
-        {
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(security_descriptor))
-            {
-                ParseSecurityDescriptor(buffer);
-            }
-        }
-
-        /// <summary>
-        /// Constructor from a token default DACL and ownership values.
-        /// </summary>
-        /// <param name="token">The token to use for its default DACL</param>
-        public SecurityDescriptor(NtToken token) : this()
-        {
-            Owner = new SecurityDescriptorSid(token.Owner, true);
-            Group = new SecurityDescriptorSid(token.PrimaryGroup, true);
-            Dacl = token.DefaultDacl;
-            if (token.IntegrityLevel < TokenIntegrityLevel.Medium)
-            {
-                Sacl = new Acl
-                {
-                    new Ace(AceType.MandatoryLabel, AceFlags.None, 1, token.IntegrityLevelSid.Sid)
-                };
-            }
-        }
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="base_object">Base object for security descriptor</param>
-        /// <param name="token">Token for determining user rights</param>
-        /// <param name="is_directory">True if a directory security descriptor</param>
-        public SecurityDescriptor(NtObject base_object, NtToken token, bool is_directory) : this()
-        {
-            if ((base_object == null) && (token == null))
-            {
-                throw new ArgumentNullException();
-            }
-
-            SecurityDescriptor parent_sd = null;
-            if (base_object != null)
-            {
-                parent_sd = base_object.SecurityDescriptor;
-            }
-
-            SecurityDescriptor creator_sd = null;
-            if (token != null)
-            {
-                creator_sd = new SecurityDescriptor
-                {
-                    Owner = new SecurityDescriptorSid(token.Owner, false),
-                    Group = new SecurityDescriptorSid(token.PrimaryGroup, false),
-                    Dacl = token.DefaultDacl
-                };
-            }
-
-            NtType type = base_object.NtType;
-
-            SafeBuffer parent_sd_buffer = SafeHGlobalBuffer.Null;
-            SafeBuffer creator_sd_buffer = SafeHGlobalBuffer.Null;
-            SafeSecurityObjectBuffer security_obj = null;
-            try
-            {
-                if (parent_sd != null)
-                {
-                    parent_sd_buffer = parent_sd.ToSafeBuffer();
-                }
-                if (creator_sd != null)
-                {
-                    creator_sd_buffer = creator_sd.ToSafeBuffer();
-                }
-
-                GenericMapping mapping = type.GenericMapping;
-                NtRtl.RtlNewSecurityObject(parent_sd_buffer, creator_sd_buffer, out security_obj, is_directory,
-                    token.GetHandle(), ref mapping).ToNtException();
-                ParseSecurityDescriptor(security_obj);
-            }
-            finally
-            {
-                parent_sd_buffer?.Close();
-                creator_sd_buffer?.Close();
-                security_obj?.Close();
-            }
-        }
-
-        /// <summary>
-        /// Constructor from an SDDL string
-        /// </summary>
-        /// <param name="sddl">The SDDL string</param>
-        /// <exception cref="NtException">Thrown if invalid SDDL</exception>
-        public SecurityDescriptor(string sddl)
-            : this(NtSecurity.SddlToSecurityDescriptor(sddl))
-        {
-        }
-
-        /// <summary>
-        /// Convert security descriptor to a byte array
-        /// </summary>
-        /// <returns>The binary security descriptor</returns>
-        public byte[] ToByteArray()
-        {
-            using (var sd_buffer = CreateRelativeSecurityDescriptor())
-            {
-                return sd_buffer.ToArray();
-            }
-        }
-
-        /// <summary>
-        /// Convert security descriptor to SDDL string
-        /// </summary>
-        /// <param name="security_information">The parts of the security descriptor to return</param>
-        /// <returns>The SDDL string</returns>
-        public string ToSddl(SecurityInformation security_information)
-        {
-            return NtSecurity.SecurityDescriptorToSddl(ToByteArray(), security_information);
-        }
-
-        /// <summary>
-        /// Convert security descriptor to SDDL string
-        /// </summary>
-        /// <returns>The SDDL string</returns>
-        public string ToSddl()
-        {
-            return ToSddl(SecurityInformation.AllBasic);
-        }
-
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>The security descriptor as an SDDL string.</returns>
-        public override string ToString()
-        {
-            return ToSddl();
         }
 
         private static IntPtr UpdateBuffer<T>(SafeStructureInOutBuffer<T> buffer, byte[] data, ref int current_ofs) where T : new()
@@ -706,6 +303,201 @@ namespace NtApiDotNet
             }
         }
 
+        private void AddAce(AceType type, AccessMask mask, AceFlags flags, Sid sid)
+        {
+            AddAce(new Ace(type, flags, mask, sid));
+        }
+
+        private void AddAccessDeniedAceInternal(AccessMask mask, AceFlags flags, Sid sid)
+        {
+            AddAce(AceType.Denied, mask, flags, sid);
+        }
+
+        private void AddAccessDeniedAceInternal(AccessMask mask, AceFlags flags, string sid)
+        {
+            AddAce(AceType.Denied, mask, flags, NtSecurity.SidFromSddl(sid));
+        }
+
+        private void AddAccessAllowedAceInternal(AccessMask mask, AceFlags flags, Sid sid)
+        {
+            AddAce(AceType.Allowed, mask, flags, sid);
+        }
+
+        private void AddAccessAllowedAceInternal(AccessMask mask, AceFlags flags, string sid)
+        {
+            AddAce(AceType.Allowed, mask, flags, NtSecurity.SidFromSddl(sid));
+        }
+
+        #endregion
+
+        #region Public Properties
+        /// <summary>
+        /// Discretionary access control list (can be null)
+        /// </summary>
+        public Acl Dacl { get; set; }
+        /// <summary>
+        /// System access control list (can be null)
+        /// </summary>
+        public Acl Sacl { get; set; }
+        /// <summary>
+        /// Owner (can be null)
+        /// </summary>
+        public SecurityDescriptorSid Owner { get; set; }
+        /// <summary>
+        /// Group (can be null)
+        /// </summary>
+        public SecurityDescriptorSid Group { get; set; }
+        /// <summary>
+        /// Control flags
+        /// </summary>
+        public SecurityDescriptorControl Control { get; set; }
+        /// <summary>
+        /// Revision value
+        /// </summary>
+        public uint Revision { get; set; }
+        /// <summary>
+        /// Get or set mandatory label. Returns a medium label if it doesn't exist.
+        /// </summary>
+        public Ace MandatoryLabel
+        {
+            get
+            {
+                return GetMandatoryLabel()
+                    ?? new MandatoryLabelAce(AceFlags.None, MandatoryLabelPolicy.NoWriteUp,
+                        TokenIntegrityLevel.Medium);
+            }
+
+            set
+            {
+                Ace label = GetMandatoryLabel();
+                if (label != null)
+                {
+                    Sacl.Remove(label);
+                }
+
+                if (Sacl == null)
+                {
+                    Sacl = new Acl();
+                }
+                Sacl.NullAcl = false;
+                MandatoryLabelAce ace = value as MandatoryLabelAce;
+                if (ace == null)
+                {
+                    ace = new MandatoryLabelAce(value.Flags, value.Mask.ToMandatoryLabelPolicy(), value.Sid);
+                }
+                Sacl.Add(ace);
+            }
+        }
+
+        /// <summary>
+        /// Get the process trust label.
+        /// </summary>
+        public Ace ProcessTrustLabel
+        {
+            get
+            {
+                return FindSaclAce(AceType.ProcessTrustLabel);
+            }
+        }
+
+        /// <summary>
+        /// Get or set the integrity level
+        /// </summary>
+        public TokenIntegrityLevel IntegrityLevel
+        {
+            get
+            {
+                return NtSecurity.GetIntegrityLevel(MandatoryLabel.Sid);
+            }
+            set
+            {
+                Ace label = MandatoryLabel;
+                label.Sid = NtSecurity.GetIntegritySid(value);
+                MandatoryLabel = label;
+            }
+        }
+
+        /// <summary>
+        /// Get or set the DACL protected flag.
+        /// </summary>
+        public bool DaclProtected
+        {
+            get => Control.HasFlag(SecurityDescriptorControl.DaclProtected);
+            set
+            {
+                if (value)
+                {
+                    Control |= SecurityDescriptorControl.DaclProtected;
+                }
+                else
+                {
+                    Control &= ~SecurityDescriptorControl.DaclProtected;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get or set the SACL protected flag.
+        /// </summary>
+        public bool SaclProtected
+        {
+            get => Control.HasFlag(SecurityDescriptorControl.SaclProtected);
+            set
+            {
+                if (value)
+                {
+                    Control |= SecurityDescriptorControl.SaclProtected;
+                }
+                else
+                {
+                    Control &= ~SecurityDescriptorControl.SaclProtected;
+                }
+            }
+        }
+
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Get the mandatory label. Returns null if it doesn't exist.
+        /// </summary>
+        /// <returns></returns>
+        public Ace GetMandatoryLabel()
+        {
+            return FindSaclAce(AceType.MandatoryLabel);
+        }
+
+        /// <summary>
+        /// Convert security descriptor to a byte array
+        /// </summary>
+        /// <returns>The binary security descriptor</returns>
+        public byte[] ToByteArray()
+        {
+            using (var sd_buffer = CreateRelativeSecurityDescriptor())
+            {
+                return sd_buffer.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Convert security descriptor to SDDL string
+        /// </summary>
+        /// <param name="security_information">The parts of the security descriptor to return</param>
+        /// <returns>The SDDL string</returns>
+        public string ToSddl(SecurityInformation security_information)
+        {
+            return NtSecurity.SecurityDescriptorToSddl(ToByteArray(), security_information);
+        }
+
+        /// <summary>
+        /// Convert security descriptor to SDDL string
+        /// </summary>
+        /// <returns>The SDDL string</returns>
+        public string ToSddl()
+        {
+            return ToSddl(SecurityInformation.AllBasic);
+        }
+
         /// <summary>
         /// Convert security descriptor to a safe buffer.
         /// </summary>
@@ -738,31 +530,6 @@ namespace NtApiDotNet
             }
             Dacl.NullAcl = false;
             Dacl.Add(ace);
-        }
-
-        private void AddAce(AceType type, AccessMask mask, AceFlags flags, Sid sid)
-        {
-            AddAce(new Ace(type, flags, mask, sid));
-        }
-
-        private void AddAccessDeniedAceInternal(AccessMask mask, AceFlags flags, Sid sid)
-        {
-            AddAce(AceType.Denied, mask, flags, sid);
-        }
-
-        private void AddAccessDeniedAceInternal(AccessMask mask, AceFlags flags, string sid)
-        {
-            AddAce(AceType.Denied, mask, flags, NtSecurity.SidFromSddl(sid));
-        }
-
-        private void AddAccessAllowedAceInternal(AccessMask mask, AceFlags flags, Sid sid)
-        {
-            AddAce(AceType.Allowed, mask, flags, sid);
-        }
-
-        private void AddAccessAllowedAceInternal(AccessMask mask, AceFlags flags, string sid)
-        {
-            AddAce(AceType.Allowed, mask, flags, NtSecurity.SidFromSddl(sid));
         }
 
         /// <summary>
@@ -918,5 +685,144 @@ namespace NtApiDotNet
                 ProcessTrustLabel.Mask = generic_mapping.MapMask(ProcessTrustLabel.Mask);
             }
         }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The security descriptor as an SDDL string.</returns>
+        public override string ToString()
+        {
+            return ToSddl();
+        }
+
+        #endregion
+
+        #region Constructors
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="ptr">Native pointer to security descriptor.</param>
+        public SecurityDescriptor(IntPtr ptr)
+        {
+            ParseSecurityDescriptor(new SafeHGlobalBuffer(ptr, 0, false));
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="process">The process containing the security descriptor.</param>
+        /// <param name="ptr">Native pointer to security descriptor.</param>
+        public SecurityDescriptor(NtProcess process, IntPtr ptr)
+        {
+            ParseSecurityDescriptor(process, ptr.ToInt64());
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public SecurityDescriptor()
+        {
+            Revision = 1;
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="security_descriptor">Binary form of security descriptor</param>
+        public SecurityDescriptor(byte[] security_descriptor)
+        {
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(security_descriptor))
+            {
+                ParseSecurityDescriptor(buffer);
+            }
+        }
+
+        /// <summary>
+        /// Constructor from a token default DACL and ownership values.
+        /// </summary>
+        /// <param name="token">The token to use for its default DACL</param>
+        public SecurityDescriptor(NtToken token) : this()
+        {
+            Owner = new SecurityDescriptorSid(token.Owner, true);
+            Group = new SecurityDescriptorSid(token.PrimaryGroup, true);
+            Dacl = token.DefaultDacl;
+            if (token.IntegrityLevel < TokenIntegrityLevel.Medium)
+            {
+                Sacl = new Acl
+                {
+                    new Ace(AceType.MandatoryLabel, AceFlags.None, 1, token.IntegrityLevelSid.Sid)
+                };
+            }
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="base_object">Base object for security descriptor</param>
+        /// <param name="token">Token for determining user rights</param>
+        /// <param name="is_directory">True if a directory security descriptor</param>
+        public SecurityDescriptor(NtObject base_object, NtToken token, bool is_directory) : this()
+        {
+            if ((base_object == null) && (token == null))
+            {
+                throw new ArgumentNullException();
+            }
+
+            SecurityDescriptor parent_sd = null;
+            if (base_object != null)
+            {
+                parent_sd = base_object.SecurityDescriptor;
+            }
+
+            SecurityDescriptor creator_sd = null;
+            if (token != null)
+            {
+                creator_sd = new SecurityDescriptor
+                {
+                    Owner = new SecurityDescriptorSid(token.Owner, false),
+                    Group = new SecurityDescriptorSid(token.PrimaryGroup, false),
+                    Dacl = token.DefaultDacl
+                };
+            }
+
+            NtType type = base_object.NtType;
+
+            SafeBuffer parent_sd_buffer = SafeHGlobalBuffer.Null;
+            SafeBuffer creator_sd_buffer = SafeHGlobalBuffer.Null;
+            SafeSecurityObjectBuffer security_obj = null;
+            try
+            {
+                if (parent_sd != null)
+                {
+                    parent_sd_buffer = parent_sd.ToSafeBuffer();
+                }
+                if (creator_sd != null)
+                {
+                    creator_sd_buffer = creator_sd.ToSafeBuffer();
+                }
+
+                GenericMapping mapping = type.GenericMapping;
+                NtRtl.RtlNewSecurityObject(parent_sd_buffer, creator_sd_buffer, out security_obj, is_directory,
+                    token.GetHandle(), ref mapping).ToNtException();
+                ParseSecurityDescriptor(security_obj);
+            }
+            finally
+            {
+                parent_sd_buffer?.Close();
+                creator_sd_buffer?.Close();
+                security_obj?.Close();
+            }
+        }
+
+        /// <summary>
+        /// Constructor from an SDDL string
+        /// </summary>
+        /// <param name="sddl">The SDDL string</param>
+        /// <exception cref="NtException">Thrown if invalid SDDL</exception>
+        public SecurityDescriptor(string sddl)
+            : this(NtSecurity.SddlToSecurityDescriptor(sddl))
+        {
+        }
+        #endregion
     }
 }
