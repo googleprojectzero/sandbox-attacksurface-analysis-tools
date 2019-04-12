@@ -53,5 +53,29 @@ namespace NtApiDotNet.Win32.Rpc
         {
             return t.GetValue();
         }
+
+        /// <summary>
+        /// Perform a ternary operation.
+        /// </summary>
+        /// <param name="condition">The condition to evaluate as != 0.</param>
+        /// <param name="true_value">The result if true.</param>
+        /// <param name="false_value">The result if false.</param>
+        /// <returns></returns>
+        public static long OpTernary(long condition, long true_value, long false_value)
+        {
+            return OpTernary(condition != 0, true_value, false_value);
+        }
+
+        /// <summary>
+        /// Perform a ternary operation.
+        /// </summary>
+        /// <param name="condition">The condition to evaluate as != 0.</param>
+        /// <param name="true_value">The result if true.</param>
+        /// <param name="false_value">The result if false.</param>
+        /// <returns></returns>
+        public static long OpTernary(bool condition, long true_value, long false_value)
+        {
+            return condition ? true_value : false_value;
+        }
     }
 }

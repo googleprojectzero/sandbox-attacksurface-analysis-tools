@@ -137,8 +137,6 @@ namespace NtApiDotNet.Ndr
         internal static NdrExpression ReadExpression(BinaryReader reader, NdrParseContext context)
         {
             NdrExpression element = ReadElement(reader);
-
-            // TODO: Work out what OP_EXPRESSION means.
             if (!element.IsValid)
             {
                 return element;
@@ -150,8 +148,7 @@ namespace NtApiDotNet.Ndr
             }
 
             NdrOperatorExpression op_expr = (NdrOperatorExpression)element;
-            op_expr.Arguments.Add(ReadExpression(reader, context));
-            if (op_expr.ArgumentsTotal > 1)
+            for (int i = 0; i < op_expr.ArgumentsTotal; ++i)
             {
                 op_expr.Arguments.Add(ReadExpression(reader, context));
             }
@@ -245,6 +242,10 @@ namespace NtApiDotNet.Ndr
                 case NdrExpressionOperator.OP_RIGHT_SHIFT:
                     IsValid = true;
                     ArgumentsTotal = 2;
+                    break;
+                case NdrExpressionOperator.OP_EXPRESSION:
+                    IsValid = true;
+                    ArgumentsTotal = 3;
                     break;
                 default:
                     break;

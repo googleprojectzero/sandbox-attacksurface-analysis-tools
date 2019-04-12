@@ -720,7 +720,13 @@ namespace NtApiDotNet.Win32.Rpc
             }
             else if (expr is NdrOperatorExpression op_expr)
             {
-                if (op_expr.Arguments.Count == 2)
+                if (op_expr.Arguments.Count == 3)
+                {
+                    return OpTernary(BuildCorrelationExpression(op_expr.Arguments[2], current_offset, offset_to_name, false),
+                        BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name, false),
+                        BuildCorrelationExpression(op_expr.Arguments[1], current_offset, offset_to_name, false));
+                }
+                else if (op_expr.Arguments.Count == 2)
                 {
                     CodeBinaryOperatorType op_type;
 
@@ -975,6 +981,11 @@ namespace NtApiDotNet.Win32.Rpc
         public static CodeExpression Cast(this CodeExpression expr, Type type)
         {
             return new CodeCastExpression(type, expr);
+        }
+
+        public static CodeExpression OpTernary(CodeExpression condition_expr, CodeExpression true_expr, CodeExpression false_expr)
+        {
+            return GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.OpTernary), condition_expr, true_expr, false_expr);
         }
     }
 }
