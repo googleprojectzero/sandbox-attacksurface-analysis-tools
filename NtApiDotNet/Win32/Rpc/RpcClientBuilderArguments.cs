@@ -45,6 +45,10 @@ namespace NtApiDotNet.Win32.Rpc
         /// call failures. This won't disable correlations for union types or constant correlations.
         /// </summary>
         DisableCalculatedCorrelations = 8,
+        /// <summary>
+        /// Don't emit any namespace, normally not specifying a namespace will auto-generate one.
+        /// </summary>
+        NoNamespace = 0x10,
     }
 
     /// <summary>

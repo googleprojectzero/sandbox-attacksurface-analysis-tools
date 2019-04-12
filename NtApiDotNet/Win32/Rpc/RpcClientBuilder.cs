@@ -783,7 +783,10 @@ namespace NtApiDotNet.Win32.Rpc
         {
             CodeCompileUnit unit = new CodeCompileUnit();
             string ns_name = _args.NamespaceName;
-            if (string.IsNullOrWhiteSpace(ns_name))
+            if (HasFlag(RpcClientBuilderFlags.NoNamespace))
+            {
+                ns_name = string.Empty;
+            } else if (string.IsNullOrWhiteSpace(ns_name))
             {
                 ns_name = $"rpc_{_server.InterfaceId.ToString().Replace('-', '_')}_{_server.InterfaceVersion.Major}_{_server.InterfaceVersion.Minor}";
             }
