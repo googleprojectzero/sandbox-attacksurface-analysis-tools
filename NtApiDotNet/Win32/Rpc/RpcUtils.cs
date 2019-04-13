@@ -120,6 +120,28 @@ namespace NtApiDotNet.Win32.Rpc
         }
 
         /// <summary>
+        /// Perform bitwise LEFTSHIFT.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>Returns left LSH right.</returns>
+        public static long OpLeftShift(long left, long right)
+        {
+            return left << (int)right;
+        }
+
+        /// <summary>
+        /// Perform bitwise RIGHTSHIFT.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>Returns left RSH right.</returns>
+        public static long OpRightShift(long left, long right)
+        {
+            return left >> (int)right;
+        }
+
+        /// <summary>
         /// Perform logical AND.
         /// </summary>
         /// <param name="left">The left operand.</param>

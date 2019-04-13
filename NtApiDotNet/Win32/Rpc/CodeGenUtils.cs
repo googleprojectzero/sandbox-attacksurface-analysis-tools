@@ -699,6 +699,7 @@ namespace NtApiDotNet.Win32.Rpc
                                     BuildCorrelationExpression(op_expr.Arguments[1], current_offset, offset_to_name, false));
         }
 
+        // TODO: Operations might need to be handled as int32 rather than long.
         private static CodeExpression BuildCorrelationExpression(NdrExpression expr, int current_offset, 
             IEnumerable<Tuple<int, string>> offset_to_name, bool disable_correlation)
         {
@@ -756,6 +757,10 @@ namespace NtApiDotNet.Win32.Rpc
                         case NdrExpressionOperator.OP_STAR:
                             op_type = CodeBinaryOperatorType.Divide;
                             break;
+                        case NdrExpressionOperator.OP_LEFT_SHIFT:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpLeftShift), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_RIGHT_SHIFT:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpRightShift), current_offset, offset_to_name);
                         case NdrExpressionOperator.OP_XOR:
                             return GetOpMethod(op_expr, nameof(RpcUtils.OpXor), current_offset, offset_to_name);
                         case NdrExpressionOperator.OP_LOGICAL_AND:
