@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Ndr;
+using System;
 
 namespace NtApiDotNet.Win32.Rpc
 {
@@ -41,6 +42,49 @@ namespace NtApiDotNet.Win32.Rpc
         public static T DeRef<T>(T? t) where T : struct
         {
             return t.Value;
+        }
+
+        /// <summary>
+        /// Helper to check for NULL.
+        /// </summary>
+        /// <typeparam name="T">The type to check.</typeparam>
+        /// <param name="obj">The object to check.</param>
+        /// <param name="name">The name of the value to check.</param>
+        public static void CheckNull<T>(T obj, string name) where T : class
+        {
+            if (obj == null)
+            {
+                throw new ArgumentNullException(name);
+            }
+        }
+
+
+        /// <summary>
+        /// Helper to check for NULL.
+        /// </summary>
+        /// <typeparam name="T">The type to check.</typeparam>
+        /// <param name="obj">The object to check.</param>
+        /// <param name="name">The name of the value to check.</param>
+        public static void CheckNull<T>(T[] obj, string name)
+        {
+            if (obj == null)
+            {
+                throw new ArgumentNullException(name);
+            }
+        }
+
+        /// <summary>
+        /// Helper to check for NULL.
+        /// </summary>
+        /// <typeparam name="T">The type to check.</typeparam>
+        /// <param name="obj">The object to check.</param>
+        /// <param name="name">The name of the value to check.</param>
+        public static void CheckNull<T>(T? obj, string name) where T : struct
+        {
+            if (!obj.HasValue)
+            {
+                throw new ArgumentNullException(name);
+            }
         }
 
         /// <summary>
@@ -82,18 +126,6 @@ namespace NtApiDotNet.Win32.Rpc
         public static long OpComplement(long v)
         {
             return ~v;
-        }
-
-        /// <summary>
-        /// Perform a ternary operation.
-        /// </summary>
-        /// <param name="condition">The condition to evaluate as != 0.</param>
-        /// <param name="true_value">The result if true.</param>
-        /// <param name="false_value">The result if false.</param>
-        /// <returns>The result.</returns>
-        public static int OpTernary(long condition, long true_value, long false_value)
-        {
-            return OpTernary(condition != 0, true_value, false_value);
         }
 
         /// <summary>
@@ -306,14 +338,119 @@ namespace NtApiDotNet.Win32.Rpc
             return ToInt(left <= right);
         }
 
-        private static bool ToBool(long v)
-        {
-            return v != 0;
-        }
-
         private static int ToInt(bool b)
         {
             return b ? 1 : 0;
+        }
+
+        /// <summary>
+        /// Convert value to a boolean.
+        /// </summary>
+        /// <param name="value">The value</param>
+        /// <returns>True if value != 0.</returns>
+        public static bool ToBool(bool value)
+        {
+            return value;
+        }
+
+        /// <summary>
+        /// Convert value to a boolean.
+        /// </summary>
+        /// <param name="value">The value</param>
+        /// <returns>True if value != 0.</returns>
+        public static bool ToBool(sbyte value)
+        {
+            return value != 0;
+        }
+
+        /// <summary>
+        /// Convert value to a boolean.
+        /// </summary>
+        /// <param name="value">The value</param>
+        /// <returns>True if value != 0.</returns>
+        public static bool ToBool(byte value)
+        {
+            return value != 0;
+        }
+
+        /// <summary>
+        /// Convert value to a boolean.
+        /// </summary>
+        /// <param name="value">The value</param>
+        /// <returns>True if value != 0.</returns>
+        public static bool ToBool(short value)
+        {
+            return value != 0;
+        }
+
+        /// <summary>
+        /// Convert value to a boolean.
+        /// </summary>
+        /// <param name="value">The value</param>
+        /// <returns>True if value != 0.</returns>
+        public static bool ToBool(ushort value)
+        {
+            return value != 0;
+        }
+
+        /// <summary>
+        /// Convert value to a boolean.
+        /// </summary>
+        /// <param name="value">The value</param>
+        /// <returns>True if value != 0.</returns>
+        public static bool ToBool(int value)
+        {
+            return value != 0;
+        }
+
+        /// <summary>
+        /// Convert value to a boolean.
+        /// </summary>
+        /// <param name="value">The value</param>
+        /// <returns>True if value != 0.</returns>
+        public static bool ToBool(uint value)
+        {
+            return value != 0;
+        }
+
+        /// <summary>
+        /// Convert value to a boolean.
+        /// </summary>
+        /// <param name="value">The value</param>
+        /// <returns>True if value != 0.</returns>
+        public static bool ToBool(long value)
+        {
+            return value != 0;
+        }
+
+        /// <summary>
+        /// Convert value to a boolean.
+        /// </summary>
+        /// <param name="value">The value</param>
+        /// <returns>True if value != 0.</returns>
+        public static bool ToBool(ulong value)
+        {
+            return value != 0;
+        }
+
+        /// <summary>
+        /// Convert value to a boolean.
+        /// </summary>
+        /// <param name="value">The nullable value</param>
+        /// <returns>True if value has a value set.</returns>
+        public static bool ToBool<T>(T? value) where T : struct
+        {
+            return value.HasValue;
+        }
+
+        /// <summary>
+        /// Convert value to a boolean.
+        /// </summary>
+        /// <param name="value">The nullable value</param>
+        /// <returns>True if value has a value set.</returns>
+        public static bool ToBool<T>(T value) where T : class
+        {
+            return value != null;
         }
     }
 }

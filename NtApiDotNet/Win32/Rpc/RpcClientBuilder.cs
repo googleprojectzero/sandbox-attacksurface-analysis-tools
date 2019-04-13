@@ -560,7 +560,7 @@ namespace NtApiDotNet.Win32.Rpc
                     {
                         if (!f_type.ValueType)
                         {
-                            marshal_method.AddNullCheck(MARSHAL_NAME, member.Name);
+                            marshal_method.AddNullCheck(member.Name);
                         }
 
                         marshal_method.AddMarshalCall(f_type, MARSHAL_NAME, member.Name, false, member.Selector, 
@@ -702,7 +702,7 @@ namespace NtApiDotNet.Win32.Rpc
                     {
                         if (p_type.PointerType == RpcPointerType.Reference)
                         {
-                            method.AddNullCheck(MARSHAL_NAME, p.Name);
+                            method.AddNullCheck(p.Name);
                         }
                         else
                         {
@@ -711,7 +711,7 @@ namespace NtApiDotNet.Win32.Rpc
                     }
                     else if (!p_type.ValueType)
                     {
-                        method.AddNullCheck(MARSHAL_NAME, p.Name);
+                        method.AddNullCheck(p.Name);
                     }
                     method.AddMarshalCall(p_type, MARSHAL_NAME, p.Name, write_ref, null, null, null, extra_marshal_args.ToArray());
                     // If it's a constructed type then ensure any deferred writes are flushed.

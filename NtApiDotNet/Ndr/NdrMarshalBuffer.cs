@@ -110,14 +110,6 @@ namespace NtApiDotNet.Ndr
             throw new NotImplementedException($"Writing type {name} is unsupported");
         }
 
-        public void CheckNull<T>(T obj, string name) where T : class
-        {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(name);
-            }
-        }
-
         public void WriteEmpty(NdrEmpty empty)
         {
             // Do nothing.

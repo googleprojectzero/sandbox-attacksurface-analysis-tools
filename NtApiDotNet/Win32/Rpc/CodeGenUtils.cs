@@ -502,10 +502,9 @@ namespace NtApiDotNet.Win32.Rpc
             method.Statements.Add(ret);
         }
 
-        public static void AddNullCheck(this CodeMemberMethod method, string marshal_name, string var_name)
+        public static void AddNullCheck(this CodeMemberMethod method, string var_name)
         {
-            CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(GetVariable(marshal_name),
-                nameof(NdrMarshalBuffer.CheckNull), GetVariable(var_name), GetPrimitive(var_name));
+            var invoke = GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.CheckNull), GetVariable(var_name), GetPrimitive(var_name));
             method.Statements.Add(invoke);
         }
 
@@ -726,7 +725,7 @@ namespace NtApiDotNet.Win32.Rpc
             {
                 if (op_expr.Arguments.Count == 3)
                 {
-                    return OpTernary(BuildCorrelationExpression(op_expr.Arguments[2], current_offset, offset_to_name, false),
+                    return OpTernary(BuildCorrelationExpression(op_expr.Arguments[2], current_offset, offset_to_name, false).ToBool(),
                         BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name, false),
                         BuildCorrelationExpression(op_expr.Arguments[1], current_offset, offset_to_name, false));
                 }
@@ -907,6 +906,15 @@ namespace NtApiDotNet.Win32.Rpc
             return 0;
         }
 
+        private static string FormatCaseLabel(NdrUnionArm arm)
+        {
+            if (arm.CaseValue < 0)
+            {
+                return $"minus_{-arm.CaseValue}";
+            }
+            return arm.CaseValue.ToString();
+        }
+
         public static List<ComplexTypeMember> GetMembers(this NdrComplexTypeReference complex_type, string selector_name)
         {
             List<ComplexTypeMember> members = new List<ComplexTypeMember>();
@@ -924,7 +932,7 @@ namespace NtApiDotNet.Win32.Rpc
                     base_offset = union_type.SwitchIncrement;
                 }
 
-                members.AddRange(union_type.Arms.Arms.Select(a => new ComplexTypeMember(a.ArmType, base_offset, $"Arm_{a.CaseValue}", a.CaseValue, false, false)));
+                members.AddRange(union_type.Arms.Arms.Select(a => new ComplexTypeMember(a.ArmType, base_offset, $"Arm_{FormatCaseLabel(a)}", a.CaseValue, false, false)));
                 if (union_type.Arms.DefaultArm != null)
                 {
                     members.Add(new ComplexTypeMember(union_type.Arms.DefaultArm, base_offset, "Arm_Default", null, true, false));
@@ -989,6 +997,11 @@ namespace NtApiDotNet.Win32.Rpc
         public static CodeExpression OpTernary(CodeExpression condition_expr, CodeExpression true_expr, CodeExpression false_expr)
         {
             return GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.OpTernary), condition_expr, true_expr, false_expr);
+        }
+
+        public static CodeExpression ToBool(this CodeExpression expr)
+        {
+            return GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.ToBool), expr);
         }
     }
 }
