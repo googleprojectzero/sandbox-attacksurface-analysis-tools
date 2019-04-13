@@ -270,21 +270,37 @@ namespace NtApiDotNet.Win32.Rpc
             method.AddReturn(new CodeArrayCreateExpression(complex_type.CodeType, GetVariable("size")));
         }
 
-        public static CodeExpression GetVariable(string var_name)
+        public static CodeExpression GetVariable(string var_name, bool null_check)
         {
+            CodeExpression ret;
             if (var_name == null)
             {
-                return new CodeThisReferenceExpression();
+                ret = new CodeThisReferenceExpression();
             }
-            return new CodeVariableReferenceExpression(MakeIdentifier(var_name));
+            else
+            {
+                ret = new CodeVariableReferenceExpression(MakeIdentifier(var_name));
+            }
+
+            if (null_check)
+            {
+                return AddNullCheck(ret, var_name);
+            }
+
+            return ret;
+        }
+
+        public static CodeExpression GetVariable(string var_name)
+        {
+            return GetVariable(var_name, false);
         }
 
         public static void AddMarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string marshal_name, string var_name, bool add_write_referent,
-            long? case_selector, string union_selector, string done_label, params RpcMarshalArgument[] additional_args)
+            bool null_check, long? case_selector, string union_selector, string done_label, params RpcMarshalArgument[] additional_args)
         {
             List<CodeExpression> args = new List<CodeExpression>
             {
-                GetVariable(var_name)
+                GetVariable(var_name, null_check)
             };
 
             CodeMethodReferenceExpression marshal_method = descriptor.GetMarshalMethod(GetVariable(marshal_name));
@@ -497,10 +513,9 @@ namespace NtApiDotNet.Win32.Rpc
             method.Statements.Add(ret);
         }
 
-        public static void AddNullCheck(this CodeMemberMethod method, string var_name)
+        public static CodeExpression AddNullCheck(this CodeExpression var_expr, string var_name)
         {
-            var invoke = GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.CheckNull), GetVariable(var_name), GetPrimitive(var_name));
-            method.Statements.Add(invoke);
+            return GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.CheckNull), var_expr, GetPrimitive(var_name));
         }
 
         public static FieldDirection GetDirection(this NdrProcedureParameter p)

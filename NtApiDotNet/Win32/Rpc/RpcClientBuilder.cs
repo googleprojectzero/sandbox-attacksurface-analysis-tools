@@ -555,12 +555,13 @@ namespace NtApiDotNet.Win32.Rpc
                     }
                     else
                     {
+                        bool null_check = false;
                         if (!f_type.ValueType)
                         {
-                            marshal_method.AddNullCheck(member.Name);
+                            null_check = true;
                         }
 
-                        marshal_method.AddMarshalCall(f_type, MARSHAL_NAME, member.Name, false, member.Selector, 
+                        marshal_method.AddMarshalCall(f_type, MARSHAL_NAME, member.Name, false, null_check, member.Selector, 
                             UNION_SELECTOR_NAME, DEFAULT_UNION_ARM_LABEL, extra_marshal_args.ToArray());
                         unmarshal_method.AddUnmarshalCall(f_type, UNMARSHAL_NAME, member.Name, member.Selector,
                             UNION_SELECTOR_NAME, DEFAULT_UNION_ARM_LABEL);
@@ -695,11 +696,12 @@ namespace NtApiDotNet.Win32.Rpc
                     }
 
                     bool write_ref = false;
+                    bool null_check = false;
                     if (p_type.Pointer)
                     {
                         if (p_type.PointerType == RpcPointerType.Reference)
                         {
-                            method.AddNullCheck(p.Name);
+                            null_check = true;
                         }
                         else
                         {
@@ -708,9 +710,9 @@ namespace NtApiDotNet.Win32.Rpc
                     }
                     else if (!p_type.ValueType)
                     {
-                        method.AddNullCheck(p.Name);
+                        null_check = true;
                     }
-                    method.AddMarshalCall(p_type, MARSHAL_NAME, p.Name, write_ref, null, null, null, extra_marshal_args.ToArray());
+                    method.AddMarshalCall(p_type, MARSHAL_NAME, p.Name, write_ref, null_check, null, null, null, extra_marshal_args.ToArray());
                     // If it's a constructed type then ensure any deferred writes are flushed.
                     if (p_type.Constructed)
                     {

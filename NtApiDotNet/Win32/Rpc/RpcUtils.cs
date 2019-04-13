@@ -50,27 +50,14 @@ namespace NtApiDotNet.Win32.Rpc
         /// <typeparam name="T">The type to check.</typeparam>
         /// <param name="obj">The object to check.</param>
         /// <param name="name">The name of the value to check.</param>
-        public static void CheckNull<T>(T obj, string name) where T : class
+        /// <returns>The checked value.</returns>
+        public static T CheckNull<T>(T obj, string name) where T : class
         {
             if (obj == null)
             {
                 throw new ArgumentNullException(name);
             }
-        }
-
-
-        /// <summary>
-        /// Helper to check for NULL.
-        /// </summary>
-        /// <typeparam name="T">The type to check.</typeparam>
-        /// <param name="obj">The object to check.</param>
-        /// <param name="name">The name of the value to check.</param>
-        public static void CheckNull<T>(T[] obj, string name)
-        {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(name);
-            }
+            return obj;
         }
 
         /// <summary>
@@ -79,12 +66,30 @@ namespace NtApiDotNet.Win32.Rpc
         /// <typeparam name="T">The type to check.</typeparam>
         /// <param name="obj">The object to check.</param>
         /// <param name="name">The name of the value to check.</param>
-        public static void CheckNull<T>(T? obj, string name) where T : struct
+        /// <returns>The checked value.</returns>
+        public static T[] CheckNull<T>(T[] obj, string name)
+        {
+            if (obj == null)
+            {
+                throw new ArgumentNullException(name);
+            }
+            return obj;
+        }
+
+        /// <summary>
+        /// Helper to check for NULL.
+        /// </summary>
+        /// <typeparam name="T">The type to check.</typeparam>
+        /// <param name="obj">The object to check.</param>
+        /// <param name="name">The name of the value to check.</param>
+        /// <returns>The checked value.</returns>
+        public static T CheckNull<T>(T? obj, string name) where T : struct
         {
             if (!obj.HasValue)
             {
                 throw new ArgumentNullException(name);
             }
+            return obj.Value;
         }
 
         /// <summary>
