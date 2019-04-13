@@ -237,6 +237,11 @@ namespace NtApiDotNet.Ndr
                 return $"{formatter.FormatComment("iid_is param offset: {0}", IidIsDescriptor.Offset)} {formatter.FormatPointer("IUnknown")}";
             }
         }
+
+        public override int GetSize()
+        {
+            return IntPtr.Size;
+        }
     }
 
     [Serializable]
@@ -644,7 +649,7 @@ namespace NtApiDotNet.Ndr
             int current_offset = 0;
             foreach (var type in _base_members)
             {
-                if (!(type is NdrStructurePaddingTypeReference))
+                if (!(type is NdrStructurePaddingTypeReference) && !(type is NdrIgnoreTypeReference))
                 {
                     members.Add(new NdrStructureMember(type, current_offset, $"Member{current_offset:X}"));
                 }
@@ -1062,6 +1067,14 @@ namespace NtApiDotNet.Ndr
                 return $"{context.FormatComment(builder.ToString())} {base.FormatType(context)}";
             }
             return base.FormatType(context);
+        }
+    }
+
+    [Serializable]
+    public sealed class NdrIgnoreTypeReference : NdrBaseTypeReference
+    {
+        internal NdrIgnoreTypeReference() : base(NdrFormatCharacter.FC_IGNORE)
+        {
         }
     }
 
@@ -1980,6 +1993,8 @@ namespace NtApiDotNet.Ndr
                     case NdrFormatCharacter.FC_STRUCTPAD6:
                     case NdrFormatCharacter.FC_STRUCTPAD7:
                         return new NdrStructurePaddingTypeReference(format);
+                    case NdrFormatCharacter.FC_IGNORE:
+                        return new NdrIgnoreTypeReference();
                     case NdrFormatCharacter.FC_SYSTEM_HANDLE:
                         return new NdrSystemHandleTypeReference(reader);
                     case NdrFormatCharacter.FC_AUTO_HANDLE:
