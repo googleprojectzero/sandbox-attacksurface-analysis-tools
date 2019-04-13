@@ -534,19 +534,16 @@ namespace NtApiDotNet.Win32.Rpc
 
                     List<RpcMarshalArgument> extra_marshal_args = new List<RpcMarshalArgument>();
 
-                    if (!is_union)
+                    if (f_type.ConformanceDescriptor.IsValid)
                     {
-                        if (f_type.ConformanceDescriptor.IsValid)
-                        {
-                            extra_marshal_args.Add(f_type.ConformanceDescriptor.CalculateCorrelationArgument(member.Offset, offset_to_name,
-                                DisableCalculatedCorrelation(f_type)));
-                        }
+                        extra_marshal_args.Add(f_type.ConformanceDescriptor.CalculateCorrelationArgument(member.Offset, offset_to_name,
+                            DisableCalculatedCorrelation(f_type)));
+                    }
 
-                        if (f_type.VarianceDescriptor.IsValid)
-                        {
-                            extra_marshal_args.Add(f_type.VarianceDescriptor.CalculateCorrelationArgument(member.Offset,
-                                offset_to_name, DisableCalculatedCorrelation(f_type)));
-                        }
+                    if (f_type.VarianceDescriptor.IsValid)
+                    {
+                        extra_marshal_args.Add(f_type.VarianceDescriptor.CalculateCorrelationArgument(member.Offset,
+                            offset_to_name, DisableCalculatedCorrelation(f_type)));
                     }
 
                     if (f_type.Pointer)

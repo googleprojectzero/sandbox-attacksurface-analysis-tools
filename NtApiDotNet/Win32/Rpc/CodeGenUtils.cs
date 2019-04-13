@@ -190,11 +190,6 @@ namespace NtApiDotNet.Win32.Rpc
             return field;
         }
 
-        public static CodeMemberField AddField(this CodeTypeDeclaration type, Type builtin_type, string name, MemberAttributes attributes)
-        {
-            return AddField(type, new CodeTypeReference(builtin_type), name, attributes);
-        }
-
         public static CodeFieldReferenceExpression GetFieldReference(this CodeExpression target, string name)
         {
             return new CodeFieldReferenceExpression(target, name);
