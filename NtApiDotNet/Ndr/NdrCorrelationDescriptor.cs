@@ -131,7 +131,8 @@ namespace NtApiDotNet.Ndr
         {
             if (IsValid)
             {
-                return $"({CorrelationType})({Offset})({Operator})({ValueType})({Flags})";
+                string expr = (Operator == NdrFormatCharacter.FC_EXPR) && Expression.IsValid ? Expression.ToString() : Operator.ToString();
+                return $"({CorrelationType})({Offset})({expr})({ValueType})({Flags})";
             }
             return string.Empty;
         }

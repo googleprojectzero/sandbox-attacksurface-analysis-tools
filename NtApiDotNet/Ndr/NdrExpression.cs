@@ -109,6 +109,15 @@ namespace NtApiDotNet.Ndr
             return new NdrExpression();
         }
 
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The expression as a string.</returns>
+        public override string ToString()
+        {
+            return string.Empty;
+        }
+
         #endregion
 
         #region Constructors
@@ -263,6 +272,85 @@ namespace NtApiDotNet.Ndr
                     break;
             }
         }
+
+        private string FormatUnaryOperator(string op)
+        {
+            return $"{op}{Arguments[0]}";
+        }
+        private string FormatBinaryOperator(string op)
+        {
+            return $"({Arguments[0]} {op} {Arguments[1]})";
+        }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The expression as a string.</returns>
+        public override string ToString()
+        {
+            switch (Operator)
+            {
+                case NdrExpressionOperator.OP_UNARY_INDIRECTION:
+                    return FormatUnaryOperator("*");
+                case NdrExpressionOperator.OP_UNARY_MINUS:
+                    return FormatUnaryOperator("-");
+                case NdrExpressionOperator.OP_UNARY_PLUS:
+                    return FormatUnaryOperator("+");
+                case NdrExpressionOperator.OP_UNARY_CAST:
+                    return FormatUnaryOperator($"({Format})");
+                case NdrExpressionOperator.OP_UNARY_COMPLEMENT:
+                    return FormatUnaryOperator("~");
+                case NdrExpressionOperator.OP_UNARY_NOT:
+                    return FormatUnaryOperator("!");
+                case NdrExpressionOperator.OP_UNARY_SIZEOF:
+                    return FormatUnaryOperator("sizeof ");
+                case NdrExpressionOperator.OP_UNARY_ALIGNOF:
+                    return FormatUnaryOperator("alignof ");
+                case NdrExpressionOperator.OP_UNARY_AND:
+                    return FormatUnaryOperator(string.Empty);
+                case NdrExpressionOperator.OP_MINUS:
+                    return FormatBinaryOperator("-");
+                case NdrExpressionOperator.OP_MOD:
+                    return FormatBinaryOperator("%");
+                case NdrExpressionOperator.OP_OR:
+                    return FormatBinaryOperator("|");
+                case NdrExpressionOperator.OP_PLUS:
+                    return FormatBinaryOperator("+");
+                case NdrExpressionOperator.OP_SLASH:
+                    return FormatBinaryOperator("/");
+                case NdrExpressionOperator.OP_STAR:
+                    return FormatBinaryOperator("*");
+                case NdrExpressionOperator.OP_XOR:
+                    return FormatBinaryOperator("^");
+                case NdrExpressionOperator.OP_AND:
+                    return FormatBinaryOperator("&");
+                case NdrExpressionOperator.OP_LEFT_SHIFT:
+                    return FormatBinaryOperator("<<");
+                case NdrExpressionOperator.OP_RIGHT_SHIFT:
+                    return FormatBinaryOperator(">>");
+                case NdrExpressionOperator.OP_EQUAL:
+                    return FormatBinaryOperator("==");
+                case NdrExpressionOperator.OP_GREATER:
+                    return FormatBinaryOperator(">");
+                case NdrExpressionOperator.OP_GREATER_EQUAL:
+                    return FormatBinaryOperator(">=");
+                case NdrExpressionOperator.OP_LESS:
+                    return FormatBinaryOperator("<");
+                case NdrExpressionOperator.OP_LESS_EQUAL:
+                    return FormatBinaryOperator("<=");
+                case NdrExpressionOperator.OP_LOGICAL_AND:
+                    return FormatBinaryOperator("&&");
+                case NdrExpressionOperator.OP_LOGICAL_OR:
+                    return FormatBinaryOperator("||");
+                case NdrExpressionOperator.OP_NOT_EQUAL:
+                    return FormatBinaryOperator("!=");
+                case NdrExpressionOperator.OP_EXPRESSION:
+                    return $"({Arguments[2]} ? {Arguments[0]} : {Arguments[1]})";
+                default:
+                    break;
+            }
+            return string.Empty;
+        }
     }
 
     /// <summary>
@@ -287,6 +375,15 @@ namespace NtApiDotNet.Ndr
             Format = (NdrFormatCharacter)reader.ReadByte();
             Offset = reader.ReadInt16();
             IsValid = true;
+        }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The expression as a string.</returns>
+        public override string ToString()
+        {
+            return $"VAR{{{Offset}}}";
         }
     }
 
@@ -325,6 +422,15 @@ namespace NtApiDotNet.Ndr
                 Value = reader.ReadInt64();
             }
             IsValid = true;
+        }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The expression as a string.</returns>
+        public override string ToString()
+        {
+            return Value.ToString();
         }
     }
 }
