@@ -55,6 +55,36 @@ namespace NtApiDotNet.Win32.Rpc
         }
 
         /// <summary>
+        /// Helper to perform a plus unary operation.
+        /// </summary>
+        /// <param name="v">The value to apply the operator to.</param>
+        /// <returns>The result.</returns>
+        public static long OpPlus(long v)
+        {
+            return +v;
+        }
+
+        /// <summary>
+        /// Helper to perform a minus unary operation.
+        /// </summary>
+        /// <param name="v">The value to apply the operator to.</param>
+        /// <returns>The result.</returns>
+        public static long OpMinus(long v)
+        {
+            return -v;
+        }
+
+        /// <summary>
+        /// Helper to perform a complement unary operation.
+        /// </summary>
+        /// <param name="v">The value to apply the operator to.</param>
+        /// <returns>The result.</returns>
+        public static long OpComplement(long v)
+        {
+            return ~v;
+        }
+
+        /// <summary>
         /// Perform a ternary operation.
         /// </summary>
         /// <param name="condition">The condition to evaluate as != 0.</param>
@@ -77,5 +107,37 @@ namespace NtApiDotNet.Win32.Rpc
         {
             return condition ? true_value : false_value;
         }
+
+        /// <summary>
+        /// Perform bitwise XOR. Needed as Code DOM doesn't support XOR.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>Returns left XOR right.</returns>
+        public static long OpXor(long left, long right)
+        {
+            return left ^ right;
+        }
+
+        /// <summary>
+        /// Convert a long to a bool.
+        /// </summary>
+        /// <param name="v"></param>
+        /// <returns></returns>
+        public static bool LongToBool(long v)
+        {
+            return v != 0;
+        }
+
+        /// <summary>
+        /// Convert a bool to a long.
+        /// </summary>
+        /// <param name="b">The bool to convert.</param>
+        /// <returns>1 if bool is true, otherwise 0.</returns>
+        public static long BoolToLong(bool b)
+        {
+            return b ? 1 : 0;
+        }
+
     }
 }

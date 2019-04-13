@@ -636,17 +636,6 @@ namespace NtApiDotNet.Win32.Rpc
             return null;
         }
 
-        private static CodeExpression GetBinaryExpression(NdrOperatorExpression expr, CodeBinaryOperatorType op, int current_offset, IEnumerable<Tuple<int, string>> offset_to_name)
-        {
-            return new CodeBinaryOperatorExpression(BuildCorrelationExpression(expr.Arguments[0], current_offset, offset_to_name, false), 
-                op, BuildCorrelationExpression(expr.Arguments[1], current_offset, offset_to_name, false));
-        }
-
-        private static CodeExpression GetUnaryExpression(CodeExpression left_expr, NdrOperatorExpression expr, CodeBinaryOperatorType op, int current_offset, IEnumerable<Tuple<int, string>> offset_to_name)
-        {
-            return new CodeBinaryOperatorExpression(left_expr, op, BuildCorrelationExpression(expr.Arguments[0], current_offset, offset_to_name, false));
-        }
-
         public static RpcTypeDescriptor GetSimpleTypeDescriptor(this NdrSimpleTypeReference simple_type, MarshalHelperBuilder marshal_helper)
         {
             switch (simple_type.Format)
@@ -690,6 +679,14 @@ namespace NtApiDotNet.Win32.Rpc
             return null;
         }
 
+
+        private static CodeExpression GetBinaryExpression(NdrOperatorExpression expr, CodeBinaryOperatorType op, int current_offset, IEnumerable<Tuple<int, string>> offset_to_name)
+        {
+            return new CodeBinaryOperatorExpression(BuildCorrelationExpression(expr.Arguments[0], current_offset, offset_to_name, false), 
+                op, BuildCorrelationExpression(expr.Arguments[1], current_offset, offset_to_name, false));
+        }
+
+        
         private static RpcTypeDescriptor GetSimpleTypeDescriptor(this NdrFormatCharacter format)
         {
             return GetSimpleTypeDescriptor(new NdrSimpleTypeReference(format), null);
@@ -752,39 +749,31 @@ namespace NtApiDotNet.Win32.Rpc
                         case NdrExpressionOperator.OP_STAR:
                             op_type = CodeBinaryOperatorType.Divide;
                             break;
+                        case NdrExpressionOperator.OP_XOR:
+                            return GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.OpXor), BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name, false),
+                                    BuildCorrelationExpression(op_expr.Arguments[1], current_offset, offset_to_name, false));
                         default:
-                            return GetPrimitive(0);
+                            return GetPrimitive(-1);
                     }
                     return GetBinaryExpression(op_expr, op_type, current_offset, offset_to_name);
                 }
                 else if (op_expr.Arguments.Count == 1)
                 {
-                    CodeBinaryOperatorType op_type;
-                    CodeExpression left_expr;
+                    CodeExpression left_expr = BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name, false);
 
                     switch (op_expr.Operator)
                     {
                         case NdrExpressionOperator.OP_UNARY_INDIRECTION:
-                            return BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name, false).DeRef();
+                            return left_expr.DeRef();
                         case NdrExpressionOperator.OP_UNARY_CAST:
-                            return BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name, false).Cast(GetSimpleTypeDescriptor(op_expr.Format).CodeType);
+                            return left_expr.Cast(GetSimpleTypeDescriptor(op_expr.Format).CodeType);
                         case NdrExpressionOperator.OP_UNARY_COMPLEMENT:
-                            op_type = CodeBinaryOperatorType.Subtract;
-                            left_expr = GetPrimitive(-1);
-                            break;
+                            return GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.OpComplement), left_expr);
                         case NdrExpressionOperator.OP_UNARY_MINUS:
-                            op_type = CodeBinaryOperatorType.Subtract;
-                            left_expr = GetPrimitive(0);
-                            break;
+                            return GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.OpMinus), left_expr);
                         case NdrExpressionOperator.OP_UNARY_PLUS:
-                            op_type = CodeBinaryOperatorType.Subtract;
-                            left_expr = GetPrimitive(0);
-                            break;
-                        default:
-                            return GetPrimitive(-1);
+                            return GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.OpPlus), left_expr);
                     }
-
-                    return GetUnaryExpression(left_expr, op_expr, op_type, current_offset, offset_to_name);
                 }
             }
 

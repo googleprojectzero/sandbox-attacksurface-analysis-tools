@@ -227,6 +227,10 @@ namespace NtApiDotNet.Ndr
                 case NdrExpressionOperator.OP_UNARY_PLUS:
                 case NdrExpressionOperator.OP_UNARY_CAST:
                 case NdrExpressionOperator.OP_UNARY_COMPLEMENT:
+                case NdrExpressionOperator.OP_UNARY_NOT:
+                case NdrExpressionOperator.OP_UNARY_SIZEOF:
+                case NdrExpressionOperator.OP_UNARY_ALIGNOF:
+                case NdrExpressionOperator.OP_UNARY_AND:
                     IsValid = true;
                     ArgumentsTotal = 1;
                     break;
@@ -240,6 +244,14 @@ namespace NtApiDotNet.Ndr
                 case NdrExpressionOperator.OP_AND:
                 case NdrExpressionOperator.OP_LEFT_SHIFT:
                 case NdrExpressionOperator.OP_RIGHT_SHIFT:
+                case NdrExpressionOperator.OP_EQUAL:
+                case NdrExpressionOperator.OP_GREATER:
+                case NdrExpressionOperator.OP_GREATER_EQUAL:
+                case NdrExpressionOperator.OP_LESS:
+                case NdrExpressionOperator.OP_LESS_EQUAL:
+                case NdrExpressionOperator.OP_LOGICAL_AND:
+                case NdrExpressionOperator.OP_LOGICAL_OR:
+                case NdrExpressionOperator.OP_NOT_EQUAL:
                     IsValid = true;
                     ArgumentsTotal = 2;
                     break;
