@@ -90,8 +90,8 @@ namespace NtApiDotNet.Win32.Rpc
         /// <param name="condition">The condition to evaluate as != 0.</param>
         /// <param name="true_value">The result if true.</param>
         /// <param name="false_value">The result if false.</param>
-        /// <returns></returns>
-        public static long OpTernary(long condition, long true_value, long false_value)
+        /// <returns>The result.</returns>
+        public static int OpTernary(long condition, long true_value, long false_value)
         {
             return OpTernary(condition != 0, true_value, false_value);
         }
@@ -102,10 +102,87 @@ namespace NtApiDotNet.Win32.Rpc
         /// <param name="condition">The condition to evaluate as != 0.</param>
         /// <param name="true_value">The result if true.</param>
         /// <param name="false_value">The result if false.</param>
-        /// <returns></returns>
-        public static long OpTernary(bool condition, long true_value, long false_value)
+        /// <returns>The result.</returns>
+        public static int OpTernary(bool condition, long true_value, long false_value)
         {
-            return condition ? true_value : false_value;
+            return (int)(condition ? true_value : false_value);
+        }
+
+        /// <summary>
+        /// Perform ADD.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>The result.</returns>
+        public static int OpPlus(long left, long right)
+        {
+            return (int)(left + right);
+        }
+
+        /// <summary>
+        /// Perform SUB.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>The result.</returns>
+        public static int OpMinus(long left, long right)
+        {
+            return (int)(left - right);
+        }
+
+        /// <summary>
+        /// Perform MUL.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>The result.</returns>
+        public static int OpStar(long left, long right)
+        {
+            return (int)(left * right);
+        }
+
+        /// <summary>
+        /// Perform DIV.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>The result.</returns>
+        public static int OpSlash(long left, long right)
+        {
+            return (int)(left / right);
+        }
+
+        /// <summary>
+        /// Perform MOD.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>The result.</returns>
+        public static int OpMod(long left, long right)
+        {
+            return (int)(left % right);
+        }
+
+        /// <summary>
+        /// Perform Bitwise AND.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>The result.</returns>
+        public static int OpBitwiseAnd(long left, long right)
+        {
+            return (int)(left & right);
+        }
+
+        /// <summary>
+        /// Perform Bitwise OR.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>The result.</returns>
+        public static int OpBitwiseOr(long left, long right)
+        {
+            return (int)(left | right);
         }
 
         /// <summary>
@@ -113,10 +190,10 @@ namespace NtApiDotNet.Win32.Rpc
         /// </summary>
         /// <param name="left">The left operand.</param>
         /// <param name="right">The right operand.</param>
-        /// <returns>Returns left XOR right.</returns>
-        public static long OpXor(long left, long right)
+        /// <returns>The result.</returns>
+        public static int OpXor(long left, long right)
         {
-            return left ^ right;
+            return (int)(left ^ right);
         }
 
         /// <summary>
@@ -124,10 +201,10 @@ namespace NtApiDotNet.Win32.Rpc
         /// </summary>
         /// <param name="left">The left operand.</param>
         /// <param name="right">The right operand.</param>
-        /// <returns>Returns left LSH right.</returns>
-        public static long OpLeftShift(long left, long right)
+        /// <returns>The result.</returns>
+        public static int OpLeftShift(long left, long right)
         {
-            return left << (int)right;
+            return (int)(left << (int)right);
         }
 
         /// <summary>
@@ -135,10 +212,10 @@ namespace NtApiDotNet.Win32.Rpc
         /// </summary>
         /// <param name="left">The left operand.</param>
         /// <param name="right">The right operand.</param>
-        /// <returns>Returns left RSH right.</returns>
-        public static long OpRightShift(long left, long right)
+        /// <returns>The result.</returns>
+        public static int OpRightShift(long left, long right)
         {
-            return left >> (int)right;
+            return (int)(left >> (int)right);
         }
 
         /// <summary>
@@ -146,10 +223,10 @@ namespace NtApiDotNet.Win32.Rpc
         /// </summary>
         /// <param name="left">The left operand.</param>
         /// <param name="right">The right operand.</param>
-        /// <returns>Returns left AND right.</returns>
-        public static long OpAnd(long left, long right)
+        /// <returns>The result.</returns>
+        public static int OpLogicalAnd(long left, long right)
         {
-            return BoolToLong(LongToBool(left) && LongToBool(right));
+            return ToInt(ToBool(left) && ToBool(right));
         }
 
         /// <summary>
@@ -157,10 +234,10 @@ namespace NtApiDotNet.Win32.Rpc
         /// </summary>
         /// <param name="left">The left operand.</param>
         /// <param name="right">The right operand.</param>
-        /// <returns>Returns left OR right.</returns>
-        public static long OpOr(long left, long right)
+        /// <returns>The result.</returns>
+        public static int OpLogicalOr(long left, long right)
         {
-            return BoolToLong(LongToBool(left) || LongToBool(right));
+            return ToInt(ToBool(left) || ToBool(right));
         }
 
         /// <summary>
@@ -168,10 +245,10 @@ namespace NtApiDotNet.Win32.Rpc
         /// </summary>
         /// <param name="left">The left operand.</param>
         /// <param name="right">The right operand.</param>
-        /// <returns>Returns left EQUAL right.</returns>
-        public static long OpEqual(long left, long right)
+        /// <returns>The result.</returns>
+        public static int OpEqual(long left, long right)
         {
-            return BoolToLong(left == right);
+            return ToInt(left == right);
         }
 
         /// <summary>
@@ -179,10 +256,10 @@ namespace NtApiDotNet.Win32.Rpc
         /// </summary>
         /// <param name="left">The left operand.</param>
         /// <param name="right">The right operand.</param>
-        /// <returns>Returns left NOTEQUAL right.</returns>
-        public static long OpNotEqual(long left, long right)
+        /// <returns>The result.</returns>
+        public static int OpNotEqual(long left, long right)
         {
-            return BoolToLong(left != right);
+            return ToInt(left != right);
         }
 
         /// <summary>
@@ -190,10 +267,10 @@ namespace NtApiDotNet.Win32.Rpc
         /// </summary>
         /// <param name="left">The left operand.</param>
         /// <param name="right">The right operand.</param>
-        /// <returns>Returns left GREATER right.</returns>
-        public static long OpGreater(long left, long right)
+        /// <returns>The result.</returns>
+        public static int OpGreater(long left, long right)
         {
-            return BoolToLong(left > right);
+            return ToInt(left > right);
         }
 
         /// <summary>
@@ -201,10 +278,10 @@ namespace NtApiDotNet.Win32.Rpc
         /// </summary>
         /// <param name="left">The left operand.</param>
         /// <param name="right">The right operand.</param>
-        /// <returns>Returns left GREATEREQUAL right.</returns>
-        public static long OpGreaterEqual(long left, long right)
+        /// <returns>The result.</returns>
+        public static int OpGreaterEqual(long left, long right)
         {
-            return BoolToLong(left >= right);
+            return ToInt(left >= right);
         }
 
         /// <summary>
@@ -212,10 +289,10 @@ namespace NtApiDotNet.Win32.Rpc
         /// </summary>
         /// <param name="left">The left operand.</param>
         /// <param name="right">The right operand.</param>
-        /// <returns>Returns left LESS right.</returns>
-        public static long OpLess(long left, long right)
+        /// <returns>The result.</returns>
+        public static int OpLess(long left, long right)
         {
-            return BoolToLong(left < right);
+            return ToInt(left < right);
         }
 
         /// <summary>
@@ -224,27 +301,17 @@ namespace NtApiDotNet.Win32.Rpc
         /// <param name="left">The left operand.</param>
         /// <param name="right">The right operand.</param>
         /// <returns>Returns left LESSEQUAL right.</returns>
-        public static long OpLessEqual(long left, long right)
+        public static int OpLessEqual(long left, long right)
         {
-            return BoolToLong(left <= right);
+            return ToInt(left <= right);
         }
 
-        /// <summary>
-        /// Convert a long to a bool.
-        /// </summary>
-        /// <param name="v"></param>
-        /// <returns></returns>
-        public static bool LongToBool(long v)
+        private static bool ToBool(long v)
         {
             return v != 0;
         }
 
-        /// <summary>
-        /// Convert a bool to a long.
-        /// </summary>
-        /// <param name="b">The bool to convert.</param>
-        /// <returns>1 if bool is true, otherwise 0.</returns>
-        public static long BoolToLong(bool b)
+        private static int ToInt(bool b)
         {
             return b ? 1 : 0;
         }

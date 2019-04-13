@@ -732,31 +732,22 @@ namespace NtApiDotNet.Win32.Rpc
                 }
                 else if (op_expr.Arguments.Count == 2)
                 {
-                    CodeBinaryOperatorType op_type;
-
                     switch (op_expr.Operator)
                     {
                         case NdrExpressionOperator.OP_AND:
-                            op_type = CodeBinaryOperatorType.BitwiseAnd;
-                            break;
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpBitwiseAnd), current_offset, offset_to_name);
                         case NdrExpressionOperator.OP_OR:
-                            op_type = CodeBinaryOperatorType.BitwiseOr;
-                            break;
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpBitwiseOr), current_offset, offset_to_name);
                         case NdrExpressionOperator.OP_PLUS:
-                            op_type = CodeBinaryOperatorType.Add;
-                            break;
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpPlus), current_offset, offset_to_name);
                         case NdrExpressionOperator.OP_MINUS:
-                            op_type = CodeBinaryOperatorType.Subtract;
-                            break;
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpMinus), current_offset, offset_to_name);
                         case NdrExpressionOperator.OP_MOD:
-                            op_type = CodeBinaryOperatorType.Modulus;
-                            break;
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpMod), current_offset, offset_to_name);
                         case NdrExpressionOperator.OP_SLASH:
-                            op_type = CodeBinaryOperatorType.Divide;
-                            break;
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpSlash), current_offset, offset_to_name);
                         case NdrExpressionOperator.OP_STAR:
-                            op_type = CodeBinaryOperatorType.Divide;
-                            break;
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpStar), current_offset, offset_to_name);
                         case NdrExpressionOperator.OP_LEFT_SHIFT:
                             return GetOpMethod(op_expr, nameof(RpcUtils.OpLeftShift), current_offset, offset_to_name);
                         case NdrExpressionOperator.OP_RIGHT_SHIFT:
@@ -764,9 +755,9 @@ namespace NtApiDotNet.Win32.Rpc
                         case NdrExpressionOperator.OP_XOR:
                             return GetOpMethod(op_expr, nameof(RpcUtils.OpXor), current_offset, offset_to_name);
                         case NdrExpressionOperator.OP_LOGICAL_AND:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpAnd), current_offset, offset_to_name);
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpLogicalAnd), current_offset, offset_to_name);
                         case NdrExpressionOperator.OP_LOGICAL_OR:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpOr), current_offset, offset_to_name);
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpLogicalOr), current_offset, offset_to_name);
                         case NdrExpressionOperator.OP_EQUAL:
                             return GetOpMethod(op_expr, nameof(RpcUtils.OpEqual), current_offset, offset_to_name);
                         case NdrExpressionOperator.OP_NOT_EQUAL:
@@ -779,10 +770,7 @@ namespace NtApiDotNet.Win32.Rpc
                             return GetOpMethod(op_expr, nameof(RpcUtils.OpGreater), current_offset, offset_to_name);
                         case NdrExpressionOperator.OP_GREATER_EQUAL:
                             return GetOpMethod(op_expr, nameof(RpcUtils.OpGreaterEqual), current_offset, offset_to_name);
-                        default:
-                            return GetPrimitive(-1);
                     }
-                    return GetBinaryExpression(op_expr, op_type, current_offset, offset_to_name);
                 }
                 else if (op_expr.Arguments.Count == 1)
                 {
