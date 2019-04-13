@@ -120,6 +120,94 @@ namespace NtApiDotNet.Win32.Rpc
         }
 
         /// <summary>
+        /// Perform logical AND.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>Returns left AND right.</returns>
+        public static long OpAnd(long left, long right)
+        {
+            return BoolToLong(LongToBool(left) && LongToBool(right));
+        }
+
+        /// <summary>
+        /// Perform logical OR.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>Returns left OR right.</returns>
+        public static long OpOr(long left, long right)
+        {
+            return BoolToLong(LongToBool(left) || LongToBool(right));
+        }
+
+        /// <summary>
+        /// Perform EQUAL.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>Returns left EQUAL right.</returns>
+        public static long OpEqual(long left, long right)
+        {
+            return BoolToLong(left == right);
+        }
+
+        /// <summary>
+        /// Perform NOTEQUAL.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>Returns left NOTEQUAL right.</returns>
+        public static long OpNotEqual(long left, long right)
+        {
+            return BoolToLong(left != right);
+        }
+
+        /// <summary>
+        /// Perform GREATER.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>Returns left GREATER right.</returns>
+        public static long OpGreater(long left, long right)
+        {
+            return BoolToLong(left > right);
+        }
+
+        /// <summary>
+        /// Perform GREATEREQUAL.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>Returns left GREATEREQUAL right.</returns>
+        public static long OpGreaterEqual(long left, long right)
+        {
+            return BoolToLong(left >= right);
+        }
+
+        /// <summary>
+        /// Perform LESS.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>Returns left LESS right.</returns>
+        public static long OpLess(long left, long right)
+        {
+            return BoolToLong(left < right);
+        }
+
+        /// <summary>
+        /// Perform LESSEQUAL.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>Returns left LESSEQUAL right.</returns>
+        public static long OpLessEqual(long left, long right)
+        {
+            return BoolToLong(left <= right);
+        }
+
+        /// <summary>
         /// Convert a long to a bool.
         /// </summary>
         /// <param name="v"></param>
@@ -138,6 +226,5 @@ namespace NtApiDotNet.Win32.Rpc
         {
             return b ? 1 : 0;
         }
-
     }
 }

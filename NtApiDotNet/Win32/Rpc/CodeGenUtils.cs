@@ -692,6 +692,13 @@ namespace NtApiDotNet.Win32.Rpc
             return GetSimpleTypeDescriptor(new NdrSimpleTypeReference(format), null);
         }
 
+        private static CodeExpression GetOpMethod(NdrOperatorExpression op_expr, string name, int current_offset,
+            IEnumerable<Tuple<int, string>> offset_to_name)
+        {
+            return GetStaticMethod(typeof(RpcUtils), name, BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name, false),
+                                    BuildCorrelationExpression(op_expr.Arguments[1], current_offset, offset_to_name, false));
+        }
+
         private static CodeExpression BuildCorrelationExpression(NdrExpression expr, int current_offset, 
             IEnumerable<Tuple<int, string>> offset_to_name, bool disable_correlation)
         {
@@ -750,8 +757,23 @@ namespace NtApiDotNet.Win32.Rpc
                             op_type = CodeBinaryOperatorType.Divide;
                             break;
                         case NdrExpressionOperator.OP_XOR:
-                            return GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.OpXor), BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name, false),
-                                    BuildCorrelationExpression(op_expr.Arguments[1], current_offset, offset_to_name, false));
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpXor), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_LOGICAL_AND:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpAnd), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_LOGICAL_OR:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpOr), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_EQUAL:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpEqual), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_NOT_EQUAL:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpNotEqual), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_LESS:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpLess), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_LESS_EQUAL:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpLessEqual), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_GREATER:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpGreater), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_GREATER_EQUAL:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpGreaterEqual), current_offset, offset_to_name);
                         default:
                             return GetPrimitive(-1);
                     }
