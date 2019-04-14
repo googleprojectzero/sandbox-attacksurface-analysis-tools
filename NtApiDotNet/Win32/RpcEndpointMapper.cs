@@ -169,6 +169,14 @@ namespace NtApiDotNet.Win32
             }
         }
 
+        public static string Compose(string objuuid, string protseq, string networkaddr, string endpoint, string options)
+        {
+            using (var binding = Create(objuuid, protseq, networkaddr, endpoint, options))
+            {
+                return binding.ToString();
+            }
+        }
+
         public override string ToString()
         {
             if (!IsInvalid && !IsClosed)
