@@ -54,6 +54,42 @@ namespace NtApiDotNet.Ndr
         }
 
         /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="value">The value to construct from.</param>
+        public static explicit operator NdrEnum16(uint value)
+        {
+            return new NdrEnum16((int)value);
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="value">The value to construct from.</param>
+        public static explicit operator long(NdrEnum16 value)
+        {
+            return value.Value;
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="value">The value to construct from.</param>
+        public static explicit operator NdrEnum16(long value)
+        {
+            return new NdrEnum16((int)value);
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="value">The value to construct from.</param>
+        public static explicit operator uint(NdrEnum16 value)
+        {
+            return (uint)value.Value;
+        }
+
+        /// <summary>
         /// Equality operator.
         /// </summary>
         /// <param name="left">The left value.</param>
@@ -137,25 +173,5 @@ namespace NtApiDotNet.Ndr
         {
             return Value.GetHashCode();
         }
-
-        ///// <summary>
-        ///// Equal operator.
-        ///// </summary>
-        ///// <param name="e">The value to compare against.</param>
-        ///// <returns>True if the values are equal.</returns>
-        //public static bool operator ==(NdrEnum16 e)
-        //{
-        //    return Value == e.Value;
-        //}
-
-        ///// <summary>
-        ///// Not equal operator.
-        ///// </summary>
-        ///// <param name="e">The value to compare against.</param>
-        ///// <returns>True if the values are not-equal.</returns>
-        //public static bool operator !=(NdrEnum16 e)
-        //{
-        //    return Value != e.Value;
-        //}
     }
 }
