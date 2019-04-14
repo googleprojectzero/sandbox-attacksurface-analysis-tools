@@ -307,6 +307,19 @@ namespace NtApiDotNet.Ndr
             }
         }
 
+        public void WriteEnum16(NdrEnum16 e)
+        {
+            WriteInt16((short)e.Value);
+        }
+
+        public void WriteEnum16(NdrEnum16? p)
+        {
+            if (p.HasValue)
+            {
+                WriteEnum16(p.Value);
+            }
+        }
+
         #endregion
 
         #region String Types

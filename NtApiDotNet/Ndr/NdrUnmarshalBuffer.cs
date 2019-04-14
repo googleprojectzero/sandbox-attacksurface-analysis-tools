@@ -243,6 +243,11 @@ namespace NtApiDotNet.Ndr
             return _reader.ReadChar();
         }
 
+        public NdrEnum16 ReadEnum16()
+        {
+            return ReadInt16();
+        }
+
         #endregion
 
         #region Fixed Array Types

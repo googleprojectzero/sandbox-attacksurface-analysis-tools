@@ -664,8 +664,9 @@ namespace NtApiDotNet.Win32.Rpc
                 case NdrFormatCharacter.FC_WCHAR:
                     return new RpcTypeDescriptor(typeof(char), nameof(NdrUnmarshalBuffer.ReadChar), nameof(NdrMarshalBuffer.WriteChar), simple_type);
                 case NdrFormatCharacter.FC_SHORT:
-                case NdrFormatCharacter.FC_ENUM16:
                     return new RpcTypeDescriptor(typeof(short), nameof(NdrUnmarshalBuffer.ReadInt16), nameof(NdrMarshalBuffer.WriteInt16), simple_type);
+                case NdrFormatCharacter.FC_ENUM16:
+                    return new RpcTypeDescriptor(typeof(NdrEnum16), nameof(NdrUnmarshalBuffer.ReadEnum16), nameof(NdrMarshalBuffer.WriteEnum16), simple_type);
                 case NdrFormatCharacter.FC_USHORT:
                     return new RpcTypeDescriptor(typeof(ushort), nameof(NdrUnmarshalBuffer.ReadUInt16), nameof(NdrMarshalBuffer.WriteUInt16), simple_type);
                 case NdrFormatCharacter.FC_LONG:
