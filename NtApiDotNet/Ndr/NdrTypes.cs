@@ -1356,7 +1356,7 @@ namespace NtApiDotNet.Ndr
             builder.Append(context.FormatComment("Memory Size: {0}", GetSize())).AppendLine();
             builder.Append(FormatType(context)).AppendLine(" {");
 
-            if (NonEncapsulated)
+            if (!NonEncapsulated)
             {
                 builder.Append(' ', indent).AppendFormat("{0} Selector;", new NdrSimpleTypeReference(SwitchType).FormatType(context)).AppendLine();
                 builder.Append(' ', indent).AppendLine("union { ");
