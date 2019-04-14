@@ -645,9 +645,15 @@ namespace NtApiDotNet.Win32.Rpc
             return null;
         }
 
-        public static RpcTypeDescriptor GetSimpleTypeDescriptor(this NdrSimpleTypeReference simple_type, MarshalHelperBuilder marshal_helper)
+        public static RpcTypeDescriptor GetSimpleTypeDescriptor(this NdrSimpleTypeReference simple_type, MarshalHelperBuilder marshal_helper, bool unsigned_char)
         {
-            switch (simple_type.Format)
+            NdrFormatCharacter format = simple_type.Format;
+            if (unsigned_char && format == NdrFormatCharacter.FC_CHAR)
+            {
+                format = NdrFormatCharacter.FC_BYTE;
+            }
+
+            switch (format)
             {
                 case NdrFormatCharacter.FC_BYTE:
                 case NdrFormatCharacter.FC_USMALL:
@@ -698,7 +704,7 @@ namespace NtApiDotNet.Win32.Rpc
         
         private static RpcTypeDescriptor GetSimpleTypeDescriptor(this NdrFormatCharacter format)
         {
-            return GetSimpleTypeDescriptor(new NdrSimpleTypeReference(format), null);
+            return GetSimpleTypeDescriptor(new NdrSimpleTypeReference(format), null, false);
         }
 
         private static CodeExpression GetOpMethod(NdrOperatorExpression op_expr, string name, int current_offset,

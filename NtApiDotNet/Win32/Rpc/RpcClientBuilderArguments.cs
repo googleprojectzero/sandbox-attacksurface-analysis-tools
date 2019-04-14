@@ -49,6 +49,11 @@ namespace NtApiDotNet.Win32.Rpc
         /// Don't emit any namespace, normally not specifying a namespace will auto-generate one.
         /// </summary>
         NoNamespace = 0x10,
+        /// <summary>
+        /// Output FC_CHAR as if the original compiler had specified unsigned char types. Basically converts
+        /// System.SByte to System.Byte where needed which makes the methods easier to use.
+        /// </summary>
+        UnsignedChar = 0x20,
     }
 
     /// <summary>

@@ -360,7 +360,7 @@ namespace NtApiDotNet.Win32.Rpc
 
             if (type is NdrSimpleTypeReference simple_type)
             {
-                ret_desc = simple_type.GetSimpleTypeDescriptor(marshal_helper);
+                ret_desc = simple_type.GetSimpleTypeDescriptor(marshal_helper, HasFlag(RpcClientBuilderFlags.UnsignedChar));
             }
             else if (type is NdrKnownTypeReference known_type)
             {
@@ -514,7 +514,7 @@ namespace NtApiDotNet.Win32.Rpc
                 }
 
                 var marshal_method = s_type.AddMarshalMethod(MARSHAL_NAME, marshal_helper, non_encapsulated_union, UNION_SELECTOR_NAME, 
-                    selector_type != null ? selector_type.GetSimpleTypeDescriptor(null).CodeType : null);
+                    selector_type != null ? selector_type.GetSimpleTypeDescriptor(null, HasFlag(RpcClientBuilderFlags.UnsignedChar)).CodeType : null);
                 marshal_method.AddAlign(MARSHAL_NAME, complex_type.GetAlignment());
 
                 var unmarshal_method = s_type.AddUnmarshalMethod(UNMARSHAL_NAME, marshal_helper);
