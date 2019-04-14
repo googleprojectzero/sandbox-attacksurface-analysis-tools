@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace NtApiDotNet.Ndr
 {
@@ -90,25 +91,6 @@ namespace NtApiDotNet.Ndr
             return false;
         }
 
-        private static NdrExpression ReadElement(BinaryReader reader)
-        {
-            NdrExpressionType type = (NdrExpressionType)reader.ReadByte();
-            switch (type)
-            {
-                case NdrExpressionType.FC_EXPR_OPER:
-                    return new NdrOperatorExpression(reader);
-                case NdrExpressionType.FC_EXPR_CONST32:
-                case NdrExpressionType.FC_EXPR_CONST64:
-                    return new NdrConstantExpression(type, reader);
-                case NdrExpressionType.FC_EXPR_VAR:
-                    return new NdrVariableExpression(reader);
-                default:
-                    break;
-            }
-
-            return new NdrExpression();
-        }
-
         /// <summary>
         /// Overridden ToString method.
         /// </summary>
@@ -143,26 +125,23 @@ namespace NtApiDotNet.Ndr
         /// </summary>
         public bool IsValid { get; internal set; }
 
-        internal static NdrExpression ReadExpression(BinaryReader reader, NdrParseContext context)
+        internal static NdrExpression ReadExpression(BinaryReader reader)
         {
-            NdrExpression element = ReadElement(reader);
-            if (!element.IsValid)
+            NdrExpressionType type = (NdrExpressionType)reader.ReadByte();
+            switch (type)
             {
-                return element;
+                case NdrExpressionType.FC_EXPR_OPER:
+                    return new NdrOperatorExpression(reader);
+                case NdrExpressionType.FC_EXPR_CONST32:
+                case NdrExpressionType.FC_EXPR_CONST64:
+                    return new NdrConstantExpression(type, reader);
+                case NdrExpressionType.FC_EXPR_VAR:
+                    return new NdrVariableExpression(reader);
+                default:
+                    break;
             }
 
-            if ((element is NdrVariableExpression) || (element is NdrConstantExpression))
-            {
-                return element;
-            }
-
-            NdrOperatorExpression op_expr = (NdrOperatorExpression)element;
-            for (int i = 0; i < op_expr.ArgumentsTotal; ++i)
-            {
-                op_expr.Arguments.Add(ReadExpression(reader, context));
-            }
-
-            return op_expr;
+            return new NdrExpression();
         }
 
         internal static NdrExpression Read(NdrParseContext context, int index)
@@ -179,7 +158,7 @@ namespace NtApiDotNet.Ndr
             }
 
             BinaryReader reader = context.Reader.GetReader(context.ExprDesc.pFormatExpr + expr_ofs);
-            return ReadExpression(reader, context);
+            return ReadExpression(reader);
         }
     }
 
@@ -204,22 +183,10 @@ namespace NtApiDotNet.Ndr
         /// </summary>
         public int Offset { get; }
 
-        internal int ArgumentsTotal { get; }
-
         /// <summary>
         /// Parsed arguments.
         /// </summary>
-        public List<NdrExpression> Arguments { get; private set; }
-
-        internal void SetArguments(Stack<NdrExpression> elements)
-        {
-            List<NdrExpression> args = new List<NdrExpression>();
-            for (int i = 0; i < ArgumentsTotal; ++i)
-            {
-                args.Insert(0, elements.Pop());
-            }
-            Arguments = args;
-        }
+        public IReadOnlyList<NdrExpression> Arguments { get; private set; }
 
         internal NdrOperatorExpression(BinaryReader reader) 
             : base(NdrExpressionType.FC_EXPR_VAR)
@@ -227,7 +194,7 @@ namespace NtApiDotNet.Ndr
             Operator = (NdrExpressionOperator)reader.ReadByte();
             Offset = reader.ReadInt16();
             Format = (NdrFormatCharacter)(Offset & 0xFF);
-            Arguments = new List<NdrExpression>();
+            int arg_count = 0;
 
             switch (Operator)
             {
@@ -241,7 +208,7 @@ namespace NtApiDotNet.Ndr
                 case NdrExpressionOperator.OP_UNARY_ALIGNOF:
                 case NdrExpressionOperator.OP_UNARY_AND:
                     IsValid = true;
-                    ArgumentsTotal = 1;
+                    arg_count = 1;
                     break;
                 case NdrExpressionOperator.OP_MINUS:
                 case NdrExpressionOperator.OP_MOD:
@@ -262,21 +229,25 @@ namespace NtApiDotNet.Ndr
                 case NdrExpressionOperator.OP_LOGICAL_OR:
                 case NdrExpressionOperator.OP_NOT_EQUAL:
                     IsValid = true;
-                    ArgumentsTotal = 2;
+                    arg_count = 2;
                     break;
                 case NdrExpressionOperator.OP_EXPRESSION:
                     IsValid = true;
-                    ArgumentsTotal = 3;
+                    arg_count = 3;
                     break;
                 default:
                     break;
             }
+
+            Arguments = new List<NdrExpression>(Enumerable.Range(0, 
+                arg_count).Select(i => ReadExpression(reader))).AsReadOnly();
         }
 
         private string FormatUnaryOperator(string op)
         {
             return $"{op}{Arguments[0]}";
         }
+
         private string FormatBinaryOperator(string op)
         {
             return $"({Arguments[0]} {op} {Arguments[1]})";
