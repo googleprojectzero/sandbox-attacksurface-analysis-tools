@@ -461,8 +461,15 @@ namespace NtApiDotNet.Win32.Rpc
                 string marshal_method = non_encapsulated_union ? nameof(NdrMarshalBuffer.WriteUnion) : nameof(NdrMarshalBuffer.WriteStruct);
                 AdditionalArguments marshal_arguments = non_encapsulated_union ? new AdditionalArguments(true, typeof(long).ToRef()) : new AdditionalArguments(true);
 
+                NdrCorrelationDescriptor union_correlation = complex_type.GetUnionCorrelation();
+                if (union_correlation == null && non_encapsulated_union)
+                {
+                    // If the correlation is invalid then we've got a problem.
+                    marshal_arguments = new AdditionalArguments(true, CodeGenUtils.GetPrimitive(0));
+                }
+
                 var type_desc = new RpcTypeDescriptor(complex_type.Name, true,
-                        nameof(NdrUnmarshalBuffer.ReadStruct), marshal_helper, marshal_method, complex_type, complex_type.GetUnionCorrelation(), null,
+                        nameof(NdrUnmarshalBuffer.ReadStruct), marshal_helper, marshal_method, complex_type, union_correlation, null,
                         marshal_arguments, new AdditionalArguments(true));
                 _type_descriptors[complex_type] = type_desc;
                 type_count++;
@@ -701,7 +708,7 @@ namespace NtApiDotNet.Win32.Rpc
                     {
                         if (p_type.PointerType == RpcPointerType.Reference)
                         {
-                            null_check = true;
+                            null_check = !p_type.ValueType;
                         }
                         else
                         {

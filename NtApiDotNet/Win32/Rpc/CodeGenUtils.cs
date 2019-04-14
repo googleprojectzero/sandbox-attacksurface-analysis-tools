@@ -27,11 +27,11 @@ namespace NtApiDotNet.Win32.Rpc
         public NdrBaseTypeReference MemberType { get; }
         public int Offset { get; }
         public string Name { get; }
-        public long? Selector { get; }
+        public CodeExpression Selector { get; }
         public bool Default { get; }
         public bool Hidden { get; }
 
-        internal ComplexTypeMember(NdrBaseTypeReference member_type, int offset, string name, long? selector, bool default_arm, bool hidden)
+        internal ComplexTypeMember(NdrBaseTypeReference member_type, int offset, string name, CodeExpression selector, bool default_arm, bool hidden)
         {
             MemberType = member_type;
             Offset = offset;
@@ -296,7 +296,7 @@ namespace NtApiDotNet.Win32.Rpc
         }
 
         public static void AddMarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string marshal_name, string var_name, bool add_write_referent,
-            bool null_check, long? case_selector, string union_selector, string done_label, params RpcMarshalArgument[] additional_args)
+            bool null_check, CodeExpression case_selector, string union_selector, string done_label, params RpcMarshalArgument[] additional_args)
         {
             List<CodeExpression> args = new List<CodeExpression>
             {
@@ -318,10 +318,10 @@ namespace NtApiDotNet.Win32.Rpc
             args.AddRange(additional_args.Select(r => r.Expression));
             CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(marshal_method, args.ToArray());
 
-            if (case_selector.HasValue)
+            if (case_selector != null)
             {
                 method.Statements.Add(new CodeConditionStatement(new CodeBinaryOperatorExpression(GetVariable(union_selector), 
-                    CodeBinaryOperatorType.ValueEquality, GetPrimitive(case_selector.Value)),
+                    CodeBinaryOperatorType.ValueEquality, case_selector),
                     new CodeExpressionStatement(invoke), new CodeGotoStatement(done_label)));
             }
             else
@@ -392,7 +392,7 @@ namespace NtApiDotNet.Win32.Rpc
         }
 
         public static void AddDeferredMarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string marshal_name, string var_name,
-            long? case_selector, string union_selector, string done_label, params RpcMarshalArgument[] additional_args)
+            CodeExpression case_selector, string union_selector, string done_label, params RpcMarshalArgument[] additional_args)
         {
             List<CodeExpression> args = new List<CodeExpression>
             {
@@ -412,10 +412,10 @@ namespace NtApiDotNet.Win32.Rpc
             args.AddRange(additional_args.Select(r => r.Expression));
             CodeMethodReferenceExpression write_pointer = new CodeMethodReferenceExpression(GetVariable(marshal_name), method_name, marshal_args.ToArray());
             CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(write_pointer, args.ToArray());
-            if (case_selector.HasValue)
+            if (case_selector != null)
             {
                 method.Statements.Add(new CodeConditionStatement(new CodeBinaryOperatorExpression(GetVariable(union_selector), 
-                    CodeBinaryOperatorType.ValueEquality, GetPrimitive(case_selector.Value)),
+                    CodeBinaryOperatorType.ValueEquality, case_selector),
                     new CodeExpressionStatement(invoke), new CodeGotoStatement(done_label)));
             }
             else
@@ -425,16 +425,16 @@ namespace NtApiDotNet.Win32.Rpc
         }
 
         public static void AddUnmarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name,
-            string var_name, long? case_selector, string union_selector, string done_label, params CodeExpression[] additional_args)
+            string var_name, CodeExpression case_selector, string union_selector, string done_label, params CodeExpression[] additional_args)
         {
             List<CodeExpression> args = new List<CodeExpression>();
             args.AddRange(additional_args);
 
             CodeStatement assign = new CodeAssignStatement(GetVariable(var_name), descriptor.GetUnmarshalMethodInvoke(unmarshal_name, args));
-            if (case_selector.HasValue)
+            if (case_selector != null)
             {
                 assign = new CodeConditionStatement(new CodeBinaryOperatorExpression(GetVariable(union_selector),
-                    CodeBinaryOperatorType.ValueEquality, GetPrimitive(case_selector.Value)),
+                    CodeBinaryOperatorType.ValueEquality, case_selector),
                     assign, new CodeGotoStatement(done_label));
             }
             method.Statements.Add(assign);
@@ -446,7 +446,7 @@ namespace NtApiDotNet.Win32.Rpc
         }
 
         public static void AddDeferredEmbeddedUnmarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name, string var_name,
-            long? case_selector, string union_selector, string done_label, params RpcMarshalArgument[] additional_args)
+            CodeExpression case_selector, string union_selector, string done_label, params RpcMarshalArgument[] additional_args)
         {
             string method_name = null;
             List<CodeExpression> args = new List<CodeExpression>();
@@ -465,10 +465,10 @@ namespace NtApiDotNet.Win32.Rpc
             CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(read_pointer, args.ToArray());
             CodeStatement assign = new CodeAssignStatement(GetVariable(var_name), invoke);
 
-            if (case_selector.HasValue)
+            if (case_selector != null)
             {
                 assign = new CodeConditionStatement(new CodeBinaryOperatorExpression(GetVariable(union_selector),
-                    CodeBinaryOperatorType.ValueEquality, GetPrimitive(case_selector.Value)),
+                    CodeBinaryOperatorType.ValueEquality, case_selector),
                     assign, new CodeGotoStatement(done_label));
             }
 
@@ -932,6 +932,24 @@ namespace NtApiDotNet.Win32.Rpc
             return arm.CaseValue.ToString();
         }
 
+        private static CodeExpression GetArmCase(this NdrUnionArm arm, NdrSimpleTypeReference ndr_type)
+        {
+            long ret = arm.CaseValue;
+            switch (ndr_type.Format)
+            {
+                case NdrFormatCharacter.FC_BYTE:
+                    ret = (byte)arm.CaseValue;
+                    break;
+                case NdrFormatCharacter.FC_USHORT:
+                    ret = (ushort)arm.CaseValue;
+                    break;
+                case NdrFormatCharacter.FC_ULONG:
+                    ret = (uint)arm.CaseValue;
+                    break;
+            }
+            return GetPrimitive(ret);
+        }
+
         public static List<ComplexTypeMember> GetMembers(this NdrComplexTypeReference complex_type, string selector_name)
         {
             List<ComplexTypeMember> members = new List<ComplexTypeMember>();
@@ -943,13 +961,13 @@ namespace NtApiDotNet.Win32.Rpc
             {
                 var selector_type = new NdrSimpleTypeReference(union_type.SwitchType);
                 int base_offset = selector_type.GetSize();
-                members.Add(new ComplexTypeMember(new NdrSimpleTypeReference(union_type.SwitchType), 0, selector_name, null, false, union_type.NonEncapsulated));
+                members.Add(new ComplexTypeMember(selector_type, 0, selector_name, null, false, union_type.NonEncapsulated));
                 if (!union_type.NonEncapsulated)
                 {
                     base_offset = union_type.SwitchIncrement;
                 }
 
-                members.AddRange(union_type.Arms.Arms.Select(a => new ComplexTypeMember(a.ArmType, base_offset, $"Arm_{FormatCaseLabel(a)}", a.CaseValue, false, false)));
+                members.AddRange(union_type.Arms.Arms.Select(a => new ComplexTypeMember(a.ArmType, base_offset, $"Arm_{FormatCaseLabel(a)}", a.GetArmCase(selector_type), false, false)));
                 if (union_type.Arms.DefaultArm != null)
                 {
                     members.Add(new ComplexTypeMember(union_type.Arms.DefaultArm, base_offset, "Arm_Default", null, true, false));
@@ -969,7 +987,7 @@ namespace NtApiDotNet.Win32.Rpc
 
         public static NdrCorrelationDescriptor GetUnionCorrelation(this NdrComplexTypeReference complex_type)
         {
-            if (complex_type is NdrUnionTypeReference union_type && union_type.NonEncapsulated)
+            if (complex_type is NdrUnionTypeReference union_type && union_type.NonEncapsulated && union_type.Correlation.ValidateCorrelation())
             {
                 return union_type.Correlation;
             }
