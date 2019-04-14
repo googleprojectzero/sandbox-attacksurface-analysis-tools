@@ -41,5 +41,14 @@ namespace NtApiDotNet.Ndr
             Attributes = attributes;
             Uuid = uuid;
         }
+
+        /// <summary>
+        /// Overidden ToString method.
+        /// </summary>
+        /// <returns>The handle as string.</returns>
+        public override string ToString()
+        {
+            return $"Handle: {Uuid} - Attributes: {Attributes}";
+        }
     }
 }
