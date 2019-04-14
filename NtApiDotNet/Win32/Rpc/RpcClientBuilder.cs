@@ -730,7 +730,7 @@ namespace NtApiDotNet.Win32.Rpc
                     }
 
                     RpcTypeDescriptor p_type = GetTypeDescriptor(p.Type, marshal_helper);
-                    if (p_type.Pointer)
+                    if (p_type.Pointer && p_type.PointerType != RpcPointerType.Reference)
                     {
                         method.AddPointerUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name);
                     }

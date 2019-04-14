@@ -199,7 +199,7 @@ namespace NtApiDotNet.Win32.Rpc
 
         public CodeTypeReference GetParameterType()
         {
-            if (Pointer && ValueType)
+            if (Pointer && ValueType && PointerType != RpcPointerType.Reference)
             {
                 CodeTypeReference ret = new CodeTypeReference(typeof(Nullable<>));
                 ret.TypeArguments.Add(CodeType);
