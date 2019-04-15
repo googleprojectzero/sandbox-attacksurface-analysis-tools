@@ -70,16 +70,18 @@ namespace NtApiDotNet.Win32.Rpc
         /// Send and receive an RPC message.
         /// </summary>
         /// <param name="proc_num">The procedure number.</param>
+        /// <param name="data_representation">The NDR data representation.</param>
         /// <param name="ndr_buffer">Marshal NDR buffer for the call.</param>
         /// <param name="handles">List of handles marshaled into the buffer.</param>
         /// <returns>Unmarshal NDR buffer for the result.</returns>
-        protected RpcClientResponse SendReceive(int proc_num, byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles)
+        protected RpcClientResponse SendReceive(int proc_num, NdrDataRepresentation data_representation, 
+            byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles)
         {
             if (!Connected)
             {
                 throw new InvalidOperationException("RPC client is not connected.");
             }
-            return _transport.SendReceive(proc_num, ObjectUuid, ndr_buffer, handles);
+            return _transport.SendReceive(proc_num, ObjectUuid, data_representation, ndr_buffer, handles);
         }
 
         #endregion

@@ -542,7 +542,9 @@ namespace NtApiDotNet.Win32.Rpc
         public static void SendReceive(this CodeMemberMethod method, string marshal_name, string unmarshal_name, int proc_num, MarshalHelperBuilder marshal_helper)
         {
             CodeExpression call_sendrecv = new CodeMethodInvokeExpression(null, "SendReceive",
-                GetPrimitive(proc_num), new CodeMethodInvokeExpression(GetVariable(marshal_name), nameof(NdrMarshalBuffer.ToArray)), 
+                GetPrimitive(proc_num),
+                new CodePropertyReferenceExpression(GetVariable(marshal_name), nameof(NdrMarshalBuffer.DataRepresentation)),
+                new CodeMethodInvokeExpression(GetVariable(marshal_name), nameof(NdrMarshalBuffer.ToArray)), 
                 new CodePropertyReferenceExpression(GetVariable(marshal_name), nameof(NdrMarshalBuffer.Handles)));
             call_sendrecv = new CodeObjectCreateExpression(marshal_helper.UnmarshalHelperType, call_sendrecv);
             CodeVariableDeclarationStatement unmarshal = new CodeVariableDeclarationStatement(marshal_helper.UnmarshalHelperType, unmarshal_name, call_sendrecv);

@@ -21,55 +21,6 @@ using System.Text;
 namespace NtApiDotNet.Ndr
 {
 #pragma warning disable 1591
-
-    /// <summary>
-    /// NDR integer representation.
-    /// </summary>
-    public enum NdrIntegerRepresentation
-    {
-        LittleEndian,
-        BigEndian
-    }
-
-    /// <summary>
-    /// NDR character representation.
-    /// </summary>
-    public enum NdrCharacterRepresentation
-    {
-        ASCII,
-        EBCDIC
-    }
-
-    /// <summary>
-    /// NDR floating point representation.
-    /// </summary>
-    public enum NdrFloatingPointRepresentation
-    {
-        IEEE,
-        VAX,
-        Cray,
-        IBM
-    }
-
-    /// <summary>
-    /// Definition of the NDR data representation for an NDR stream.
-    /// </summary>
-    public struct NdrDataRepresentation
-    {
-        /// <summary>
-        /// The integer representation of the NDR data.
-        /// </summary>
-        public NdrIntegerRepresentation IntegerRepresentation { get; set; }
-        /// <summary>
-        /// The character representation of the NDR data.
-        /// </summary>
-        public NdrCharacterRepresentation CharacterRepresentation { get; set; }
-        /// <summary>
-        /// The floating representation of the NDR data.
-        /// </summary>
-        public NdrFloatingPointRepresentation FloatingPointRepresentation { get; set; }
-    }
-
     /// <summary>
     /// A buffer to unmarshal NDR data from.
     /// </summary>

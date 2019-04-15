@@ -84,6 +84,7 @@
     <Compile Include="Ndr\IMemoryReader.cs" />
     <Compile Include="Ndr\INdrStructure.cs" />
     <Compile Include="Ndr\NdrContextHandle.cs" />
+    <Compile Include="Ndr\NdrDataRepresentation.cs" />
     <Compile Include="Ndr\NdrEmbeddedPointer.cs" />
     <Compile Include="Ndr\NdrEmpty.cs" />
     <Compile Include="Ndr\NdrEnum16.cs" />

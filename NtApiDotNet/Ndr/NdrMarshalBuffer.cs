@@ -942,7 +942,16 @@ namespace NtApiDotNet.Ndr
         #endregion
 
         #region Public Properties
+
         public List<NtObject> Handles => _handles;
+
+        public NdrDataRepresentation DataRepresentation => new NdrDataRepresentation()
+        {
+            CharacterRepresentation = NdrCharacterRepresentation.ASCII,
+            FloatingPointRepresentation = NdrFloatingPointRepresentation.IEEE,
+            IntegerRepresentation = NdrIntegerRepresentation.LittleEndian
+        };
+
         #endregion
     }
 #pragma warning restore 1591

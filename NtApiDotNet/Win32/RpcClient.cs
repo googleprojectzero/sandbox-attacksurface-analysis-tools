@@ -50,7 +50,8 @@ namespace NtApiDotNet.Win32
         /// <returns>Unmarshal NDR buffer for the result.</returns>
         public NdrUnmarshalBuffer SendReceive(int proc_num, NdrMarshalBuffer ndr_buffer)
         {
-            var response = SendReceive(proc_num, ndr_buffer.ToArray(), ndr_buffer.Handles);
+            var response = SendReceive(proc_num, ndr_buffer.DataRepresentation, 
+                ndr_buffer.ToArray(), ndr_buffer.Handles);
             return new NdrUnmarshalBuffer(response.NdrBuffer, response.Handles, response.DataRepresentation);
         }
     }

@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Ndr;
 using System;
 using System.Collections.Generic;
 
@@ -36,10 +37,12 @@ namespace NtApiDotNet.Win32.Rpc
         /// </summary>
         /// <param name="proc_num">The procedure number.</param>
         /// <param name="objuuid">The object UUID for the call.</param>
+        /// <param name="data_representation">NDR data representation.</param>
         /// <param name="ndr_buffer">Marshal NDR buffer for the call.</param>
         /// <param name="handles">List of handles marshaled into the buffer.</param>
         /// <returns>Client response from the send.</returns>
-        RpcClientResponse SendReceive(int proc_num, Guid objuuid, byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles);
+        RpcClientResponse SendReceive(int proc_num, Guid objuuid, NdrDataRepresentation data_representation, 
+            byte[] ndr_buffer, IReadOnlyCollection<NtObject> handles);
 
         /// <summary>
         /// Disconnect the transport.
