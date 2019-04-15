@@ -12,16 +12,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Win32.Rpc;
 using System;
 
-namespace NtApiDotNet.Win32
+namespace NtApiDotNet.Win32.Rpc.Transport
 {
     /// <summary>
     /// Exception for RPC fault conditions.
     /// </summary>
     [Serializable]
-    public class RpcFaultException : NtException
+    public sealed class RpcFaultException : NtException
     {
         private RpcFaultException(SafeStructureInOutBuffer<LRPC_FAULT_MESSAGE> buffer, LRPC_FAULT_MESSAGE message) 
             : base(NtObjectUtils.MapDosErrorToStatus(message.RpcStatus))

@@ -16,7 +16,7 @@ using NtApiDotNet.Ndr.Marshal;
 using System;
 using System.Collections.Generic;
 
-namespace NtApiDotNet.Win32.Rpc
+namespace NtApiDotNet.Win32.Rpc.Transport
 {
     /// <summary>
     /// Interface to implement an RPC client transport.

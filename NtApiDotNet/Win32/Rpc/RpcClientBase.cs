@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Ndr;
 using NtApiDotNet.Ndr.Marshal;
+using NtApiDotNet.Win32.Rpc.Transport;
 using System;
 using System.Collections.Generic;
 
