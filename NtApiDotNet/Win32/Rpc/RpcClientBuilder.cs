@@ -705,6 +705,10 @@ namespace NtApiDotNet.Win32.Rpc
             type.IsStruct = true;
 
             var method = client.AddMethod(proc.Name, MemberAttributes.Public | MemberAttributes.Final);
+            if (proc.HasAsyncHandle)
+            {
+                method.Comments.Add(new CodeCommentStatement("async"));
+            }
             method.ReturnType = new CodeTypeReference(type.Name);
 
             var retval_type = new CodeTypeReference(type.Name);
@@ -778,6 +782,10 @@ namespace NtApiDotNet.Win32.Rpc
                 }
 
                 var method = type.AddMethod(proc_name, MemberAttributes.Public | MemberAttributes.Final);
+                if (proc.HasAsyncHandle)
+                {
+                    method.Comments.Add(new CodeCommentStatement("async"));
+                }
                 if (HasFlag(RpcClientBuilderFlags.InsertBreakpoints))
                 {
                     method.AddBreakpoint();

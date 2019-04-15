@@ -170,8 +170,9 @@ namespace NtApiDotNet.Ndr
         public uint RpcFlags { get; }
         public int ProcNum { get; }
         public int StackSize { get; }
-        public bool HasAsyncHandle { get; }
+        public bool HasAsyncHandle => InterpreterFlags.HasFlag(NdrInterpreterOptFlags.HasAsyncHandle);
         public IntPtr DispatchFunction { get; }
+        public NdrInterpreterOptFlags InterpreterFlags { get; }
 
         internal string FormatProcedure(NdrFormatter context)
         {
@@ -266,12 +267,11 @@ namespace NtApiDotNet.Ndr
 
             ushort constant_client_buffer_size = reader.ReadUInt16();
             ushort constant_server_buffer_size = reader.ReadUInt16();
-            NdrInterpreterOptFlags oi2_flags = (NdrInterpreterOptFlags)reader.ReadByte();
+            InterpreterFlags = (NdrInterpreterOptFlags)reader.ReadByte();
             int number_of_params = reader.ReadByte();
-            HasAsyncHandle = (oi2_flags & NdrInterpreterOptFlags.HasAsyncHandle) != 0;
 
             NdrProcHeaderExts exts = new NdrProcHeaderExts();
-            if ((oi2_flags & NdrInterpreterOptFlags.HasExtensions) == NdrInterpreterOptFlags.HasExtensions)
+            if ((InterpreterFlags & NdrInterpreterOptFlags.HasExtensions) == NdrInterpreterOptFlags.HasExtensions)
             {
                 int ext_size = reader.ReadByte();
                 reader.BaseStream.Position -= 1;
@@ -290,7 +290,7 @@ namespace NtApiDotNet.Ndr
             NdrParseContext context = new NdrParseContext(type_cache, symbol_resolver, stub_desc, type_desc, expr_desc, exts.Flags2, mem_reader, parser_flags);
             List<NdrProcedureParameter> ps = new List<NdrProcedureParameter>();
 
-            bool has_return = (oi2_flags & NdrInterpreterOptFlags.HasReturn) == NdrInterpreterOptFlags.HasReturn;
+            bool has_return = InterpreterFlags.HasFlag(NdrInterpreterOptFlags.HasReturn);
             int param_count = has_return ? number_of_params - 1 : number_of_params;
             for (int param = 0; param < param_count; ++param)
             {
