@@ -401,7 +401,8 @@ namespace NtApiDotNet.Win32.Rpc
             }
             else if (type is NdrInterfacePointerTypeReference)
             {
-                System.Diagnostics.Debug.WriteLine(type.ToString());
+                ret_desc = new RpcTypeDescriptor(typeof(NdrInterfacePointer), nameof(NdrUnmarshalBuffer.ReadInterfacePointer), 
+                    nameof(NdrMarshalBuffer.WriteInterfacePointer), type);
             }
 
             if (ret_desc != null)

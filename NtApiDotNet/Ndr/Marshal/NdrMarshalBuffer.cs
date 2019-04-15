@@ -127,6 +127,13 @@ namespace NtApiDotNet.Ndr.Marshal
             // Do nothing.
         }
 
+        public void WriteInterfacePointer(NdrInterfacePointer intf)
+        {
+            Align(4);
+            WriteInt32(intf.Data.Length);
+            WriteConformantByteArray(intf.Data, intf.Data.Length);
+        }
+
         public byte[] ToArray()
         {
             byte[] ret = _stm.ToArray();

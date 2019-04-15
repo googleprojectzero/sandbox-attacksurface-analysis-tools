@@ -88,6 +88,7 @@
     <Compile Include="Ndr\Marshal\NdrEmbeddedPointer.cs" />
     <Compile Include="Ndr\Marshal\NdrEmpty.cs" />
     <Compile Include="Ndr\Marshal\NdrEnum16.cs" />
+    <Compile Include="Ndr\Marshal\NdrInterfacePointer.cs" />
     <Compile Include="Ndr\NdrExpression.cs" />
     <Compile Include="Ndr\Marshal\NdrInt3264.cs" />
     <Compile Include="Ndr\NdrComProxyDefinition.cs" />

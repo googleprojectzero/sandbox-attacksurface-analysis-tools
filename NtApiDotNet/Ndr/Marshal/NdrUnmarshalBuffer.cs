@@ -48,16 +48,6 @@ namespace NtApiDotNet.Ndr.Marshal
             return ret;
         }
 
-        internal static void CheckDataRepresentation(NdrDataRepresentation data_represenation)
-        {
-            if (data_represenation.IntegerRepresentation != NdrIntegerRepresentation.LittleEndian ||
-                data_represenation.FloatingPointRepresentation != NdrFloatingPointRepresentation.IEEE ||
-                data_represenation.CharacterRepresentation != NdrCharacterRepresentation.ASCII)
-            {
-                throw new ArgumentException("Unsupported NDR data representation");
-            }
-        }
-
         #endregion
 
         #region Constructors
@@ -114,6 +104,24 @@ namespace NtApiDotNet.Ndr.Marshal
         public NdrEmpty ReadEmpty()
         {
             return new NdrEmpty();
+        }
+
+        public NdrInterfacePointer ReadInterfacePointer()
+        {
+            Align(4);
+            // Size.
+            ReadInt32();
+            return new NdrInterfacePointer(ReadConformantByteArray());
+        }
+
+        internal static void CheckDataRepresentation(NdrDataRepresentation data_represenation)
+        {
+            if (data_represenation.IntegerRepresentation != NdrIntegerRepresentation.LittleEndian ||
+                data_represenation.FloatingPointRepresentation != NdrFloatingPointRepresentation.IEEE ||
+                data_represenation.CharacterRepresentation != NdrCharacterRepresentation.ASCII)
+            {
+                throw new ArgumentException("Unsupported NDR data representation");
+            }
         }
 
         #endregion
