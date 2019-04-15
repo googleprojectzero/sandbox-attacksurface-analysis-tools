@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Ndr
+namespace NtApiDotNet.Ndr.Marshal
 {
 #pragma warning disable 1591
     /// <summary>

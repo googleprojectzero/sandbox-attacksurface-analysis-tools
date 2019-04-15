@@ -78,14 +78,26 @@ namespace NtApiDotNet.Ndr.Marshal
         #endregion
 
         #region Constructors
-        public NdrMarshalBuffer()
+        public NdrMarshalBuffer() : this(new NdrDataRepresentation()
+        {
+            CharacterRepresentation = NdrCharacterRepresentation.ASCII,
+            FloatingPointRepresentation = NdrFloatingPointRepresentation.IEEE,
+            IntegerRepresentation = NdrIntegerRepresentation.LittleEndian
+        })
+        {
+        }
+
+        public NdrMarshalBuffer(NdrDataRepresentation data_representation)
         {
             _stm = new MemoryStream();
             _writer = new BinaryWriter(_stm, Encoding.Unicode);
             _handles = new List<NtObject>();
             _referent = 0x20000;
             _deferred_writes = new List<Action>();
+            NdrUnmarshalBuffer.CheckDataRepresentation(data_representation);
+            DataRepresentation = data_representation;
         }
+
         #endregion
 
         #region Misc Methods
@@ -945,12 +957,7 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public List<NtObject> Handles => _handles;
 
-        public NdrDataRepresentation DataRepresentation => new NdrDataRepresentation()
-        {
-            CharacterRepresentation = NdrCharacterRepresentation.ASCII,
-            FloatingPointRepresentation = NdrFloatingPointRepresentation.IEEE,
-            IntegerRepresentation = NdrIntegerRepresentation.LittleEndian
-        };
+        public NdrDataRepresentation DataRepresentation { get; }
 
         #endregion
     }

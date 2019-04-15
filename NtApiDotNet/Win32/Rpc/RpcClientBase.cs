@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Ndr;
+using NtApiDotNet.Ndr.Marshal;
 using System;
 using System.Collections.Generic;
 

@@ -48,7 +48,7 @@ namespace NtApiDotNet.Ndr.Marshal
             return ret;
         }
 
-        private void CheckDataRepresentation(NdrDataRepresentation data_represenation)
+        internal static void CheckDataRepresentation(NdrDataRepresentation data_represenation)
         {
             if (data_represenation.IntegerRepresentation != NdrIntegerRepresentation.LittleEndian ||
                 data_represenation.FloatingPointRepresentation != NdrFloatingPointRepresentation.IEEE ||
