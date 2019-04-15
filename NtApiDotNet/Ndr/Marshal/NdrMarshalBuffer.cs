@@ -109,8 +109,15 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public void WriteSystemHandle<T>(T handle) where T : NtObject
         {
-            _handles.Add(handle);
-            WriteInt32(_handles.Count);
+            if (handle != null)
+            {
+                _handles.Add(handle);
+                WriteInt32(_handles.Count);
+            }
+            else
+            {
+                WriteInt32(0);
+            }
             if (!NtObjectUtils.IsWindows81OrLess)
             {
                 WriteInt32(0);
@@ -718,7 +725,7 @@ namespace NtApiDotNet.Ndr.Marshal
             }
         }
 
-        public void WriteVaryingArrayCallback<T>(T[] array, Action<T> writer, long variance) where T : new()
+        public void WriteVaryingArrayCallback<T>(T[] array, Action<T> writer, long variance)
         {
             // Offset.
             WriteInt32(0);
@@ -741,7 +748,7 @@ namespace NtApiDotNet.Ndr.Marshal
                 }
                 else
                 {
-                    writer(new T());
+                    writer(default(T));
                 }
             }
         }
@@ -819,7 +826,7 @@ namespace NtApiDotNet.Ndr.Marshal
             WriteStringArray(array, writer, var_int);
         }
 
-        public void WriteConformantArrayCallback<T>(T[] array, Action<T> writer, long conformance) where T : new()
+        public void WriteConformantArrayCallback<T>(T[] array, Action<T> writer, long conformance)
         {
             // Max Count
             if (array == null)
@@ -841,7 +848,7 @@ namespace NtApiDotNet.Ndr.Marshal
                 }
                 else
                 {
-                    writer(new T());
+                    writer(default(T));
                 }
             }
         }
@@ -927,7 +934,7 @@ namespace NtApiDotNet.Ndr.Marshal
             WriteVaryingStringArray(array, writer, (int)variance);
         }
 
-        public void WriteConformantVaryingArrayCallback<T>(T[] array, Action<T> writer, long conformance, long variance) where T : new()
+        public void WriteConformantVaryingArrayCallback<T>(T[] array, Action<T> writer, long conformance, long variance)
         {
             // Max Count
             int con_int = (int)conformance;

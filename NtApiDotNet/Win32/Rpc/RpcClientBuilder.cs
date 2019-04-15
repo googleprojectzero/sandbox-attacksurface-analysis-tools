@@ -704,14 +704,21 @@ namespace NtApiDotNet.Win32.Rpc
             type.TypeAttributes = TypeAttributes.Public;
             type.IsStruct = true;
 
-            var method = client.AddMethod(proc.Name, MemberAttributes.Public | MemberAttributes.Final);
+            CodeMemberMethod method = new CodeMemberMethod
+            {
+                Name = private_method.Name,
+                Attributes = MemberAttributes.Public | MemberAttributes.Final
+            };
+
+            client.Members.Add(method);
+            method.Name = private_method.Name;
             if (proc.HasAsyncHandle)
             {
                 method.Comments.Add(new CodeCommentStatement("async"));
             }
-            method.ReturnType = new CodeTypeReference(type.Name);
 
             var retval_type = new CodeTypeReference(type.Name);
+            method.ReturnType = retval_type;
             method.Statements.Add(new CodeVariableDeclarationStatement(retval_type, "r", new CodeObjectCreateExpression(retval_type)));
             CodeExpression retval_ref = CodeGenUtils.GetVariable("r");
 
