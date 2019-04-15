@@ -114,6 +114,11 @@ namespace NtApiDotNet.Ndr.Marshal
             return new NdrInterfacePointer(ReadConformantByteArray());
         }
 
+        public NdrPipe<T> ReadPipe<T>() where T : struct
+        {
+            throw new NotImplementedException("Pipe support is not implemented");
+        }
+
         internal static void CheckDataRepresentation(NdrDataRepresentation data_represenation)
         {
             if (data_represenation.IntegerRepresentation != NdrIntegerRepresentation.LittleEndian ||

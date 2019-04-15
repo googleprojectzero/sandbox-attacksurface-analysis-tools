@@ -51,6 +51,7 @@ namespace NtApiDotNet.Win32.Rpc
         public CodeExpression[] FixedArgs { get; }
         public CodeTypeReference[] Params { get; }
         public bool Generic { get; }
+        public CodeTypeReference GenericType { get; }
 
         public AdditionalArguments(CodeExpression[] args, CodeTypeReference[] ps, bool generic)
         {
@@ -70,6 +71,12 @@ namespace NtApiDotNet.Win32.Rpc
         public AdditionalArguments(bool generic) 
             : this(null, null, generic)
         {
+        }
+
+        public AdditionalArguments(CodeTypeReference generic_type)
+            : this(true)
+        {
+            GenericType = generic_type;
         }
 
         public AdditionalArguments() : this(null, null, false)

@@ -403,6 +403,15 @@ namespace NtApiDotNet.Win32.Rpc
             return null;
         }
 
+        private RpcTypeDescriptor GetPipeTypeDescriptor(NdrPipeTypeReference pipe_type, MarshalHelperBuilder marshal_helper)
+        {
+            var base_type_descriptor = GetTypeDescriptor(pipe_type.BaseType, marshal_helper);
+            AdditionalArguments args = new AdditionalArguments(base_type_descriptor.CodeType);
+            return new RpcTypeDescriptor(typeof(NdrPipe<>).ToRef(base_type_descriptor.CodeType), false,
+                nameof(NdrUnmarshalBuffer.ReadPipe), marshal_helper, nameof(NdrMarshalBuffer.WritePipe),
+                pipe_type, null, null, args, args);
+        }
+
         private RpcTypeDescriptor GetTypeDescriptorInternal(NdrBaseTypeReference type, MarshalHelperBuilder marshal_helper)
         {
             RpcTypeDescriptor ret_desc = null;
@@ -449,8 +458,12 @@ namespace NtApiDotNet.Win32.Rpc
             }
             else if (type is NdrInterfacePointerTypeReference)
             {
-                ret_desc = new RpcTypeDescriptor(typeof(NdrInterfacePointer), nameof(NdrUnmarshalBuffer.ReadInterfacePointer), 
+                ret_desc = new RpcTypeDescriptor(typeof(NdrInterfacePointer), nameof(NdrUnmarshalBuffer.ReadInterfacePointer),
                     nameof(NdrMarshalBuffer.WriteInterfacePointer), type);
+            }
+            else if (type is NdrPipeTypeReference pipe_type)
+            {
+                ret_desc = GetPipeTypeDescriptor(pipe_type, marshal_helper);
             }
 
             if (ret_desc != null)

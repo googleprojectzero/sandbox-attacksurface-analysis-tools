@@ -884,6 +884,13 @@ namespace NtApiDotNet.Win32.Rpc
             return new CodeTypeReference(type);
         }
 
+        public static CodeTypeReference ToRef(this Type type, params CodeTypeReference[] generic_types)
+        {
+            var ret = new CodeTypeReference(type);
+            ret.TypeArguments.AddRange(generic_types);
+            return ret;
+        }
+
         public static CodeTypeReference ToRefArray(this CodeTypeReference type)
         {
             return new CodeTypeReference(type, type.ArrayRank + 1);

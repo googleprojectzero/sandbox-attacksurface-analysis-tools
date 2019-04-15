@@ -113,7 +113,8 @@ namespace NtApiDotNet.Win32.Rpc
 
         public string AddGenericUnmarshal(NdrBaseTypeReference ndr_type, CodeTypeReference type, string name, AdditionalArguments additional_args)
         {
-            var method = AddMethod(UnmarshalHelper, $"Read_{_current_unmarshal_id++}", additional_args.Generic ? type.ToBaseRef() : null, type, name, new CodeTypeReference[0], additional_args);
+            CodeTypeReference generic_type = additional_args.Generic ? (additional_args.GenericType ?? type.ToBaseRef()) : null;
+            var method = AddMethod(UnmarshalHelper, $"Read_{_current_unmarshal_id++}", generic_type, type, name, new CodeTypeReference[0], additional_args);
             UnmarshalMethods.Add(ndr_type, method);
             return method.Name;
         }
@@ -125,7 +126,8 @@ namespace NtApiDotNet.Win32.Rpc
 
         public string AddGenericMarshal(NdrBaseTypeReference ndr_type, CodeTypeReference type, string name, AdditionalArguments additional_args)
         {
-            var method = AddMethod(MarshalHelper, $"Write_{_current_marshal_id++}", additional_args.Generic ? type.ToBaseRef() : null, null, name, new[] { type }, additional_args);
+            CodeTypeReference generic_type = additional_args.Generic ? (additional_args.GenericType ?? type.ToBaseRef()) : null;
+            var method = AddMethod(MarshalHelper, $"Write_{_current_marshal_id++}", generic_type, null, name, new[] { type }, additional_args);
             MarshalMethods.Add(ndr_type, method);
             return method.Name;
         }

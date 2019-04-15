@@ -134,6 +134,11 @@ namespace NtApiDotNet.Ndr.Marshal
             WriteConformantByteArray(intf.Data, intf.Data.Length);
         }
 
+        public void WritePipe<T>(NdrPipe<T> pipe) where T : struct
+        {
+            throw new NotImplementedException("Pipe support is not implemented");
+        }
+
         public byte[] ToArray()
         {
             byte[] ret = _stm.ToArray();
