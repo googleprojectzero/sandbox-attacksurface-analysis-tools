@@ -32,37 +32,33 @@ namespace NtApiDotNet.Win32.Rpc
         /// <remarks>If not specified then constructors will be defined on the types themselves.</remarks>
         GenerateConstructorProperties = 1,
         /// <summary>
-        /// Enable debugging for built clients.
-        /// </summary>
-        EnableDebugging = 2,
-        /// <summary>
         /// Insert breakpoints into the start of every generated method. Also enables debugging.
         /// </summary>
-        InsertBreakpoints = 4,
+        InsertBreakpoints = 2,
         /// <summary>
         /// Disable calculated correlation information. This will prevent automatic updating of array and 
         /// string lengths based on other parameters or fields. This might result in unexpected behavior or
         /// call failures. This won't disable correlations for union types or constant correlations.
         /// </summary>
-        DisableCalculatedCorrelations = 8,
+        DisableCalculatedCorrelations = 4,
         /// <summary>
         /// Don't emit any namespace, normally not specifying a namespace will auto-generate one.
         /// </summary>
-        NoNamespace = 0x10,
+        NoNamespace = 8,
         /// <summary>
         /// Output FC_CHAR as if the original compiler had specified unsigned char types. Basically converts
         /// System.SByte to System.Byte where needed which makes the methods easier to use.
         /// </summary>
-        UnsignedChar = 0x20,
+        UnsignedChar = 0x10,
         /// <summary>
         /// Return ref/out parameters via a structure rather than requiring ref/out parameters in client
         /// methods.
         /// </summary>
-        StructureReturn = 0x40,
+        StructureReturn = 0x20,
         /// <summary>
         /// When using StructureReturn hide the original out/ref methods.
         /// </summary>
-        HideWrappedMethods = 0x80,
+        HideWrappedMethods = 0x40,
     }
 
     /// <summary>
@@ -82,10 +78,14 @@ namespace NtApiDotNet.Win32.Rpc
         /// The class name of the client.
         /// </summary>
         public string ClientName { get; set; }
+        /// <summary>
+        /// Enable debugging on built code.
+        /// </summary>
+        public bool EnableDebugging { get; set; }
 
-        private Tuple<RpcClientBuilderFlags, string, string> CreateTuple()
+        private Tuple<RpcClientBuilderFlags, string, string, bool> CreateTuple()
         {
-            return Tuple.Create(Flags, NamespaceName, ClientName);
+            return Tuple.Create(Flags, NamespaceName, ClientName, EnableDebugging);
         }
 
         /// <summary>

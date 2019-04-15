@@ -953,12 +953,12 @@ namespace NtApiDotNet.Win32.Rpc
             return unit;
         }
 
-        private Assembly Compile(CodeCompileUnit unit, CodeDomProvider provider)
+        private Assembly Compile(CodeCompileUnit unit, CodeDomProvider provider, bool enable_debugging)
         {
             CompilerParameters compile_params = new CompilerParameters();
             TempFileCollection temp_files = new TempFileCollection(Path.GetTempPath());
 
-            bool enable_debugging = HasFlag(RpcClientBuilderFlags.EnableDebugging) || HasFlag(RpcClientBuilderFlags.InsertBreakpoints);
+            enable_debugging = enable_debugging || HasFlag(RpcClientBuilderFlags.InsertBreakpoints);
 
             compile_params.GenerateExecutable = false;
             compile_params.GenerateInMemory = true;
@@ -1050,13 +1050,13 @@ namespace NtApiDotNet.Win32.Rpc
             var builder = new RpcClientBuilder(server, args);
             if (ignore_cache)
             {
-                return builder.Compile(builder.Generate(), provider);
+                return builder.Compile(builder.Generate(), provider, args.EnableDebugging);
             }
 
             var key = Tuple.Create(server, args);
             if (!_compiled_clients.ContainsKey(key))
             {
-                _compiled_clients[key] = builder.Compile(builder.Generate(), provider);
+                _compiled_clients[key] = builder.Compile(builder.Generate(), provider, args.EnableDebugging);
             }
             return _compiled_clients[key];
         }

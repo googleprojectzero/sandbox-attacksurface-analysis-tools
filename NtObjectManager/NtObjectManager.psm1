@@ -4042,6 +4042,8 @@ Specify the interface version for a generic client.
 Specify a Code DOM provider. Defaults to C#.
 .PARAMETER Flags
 Specify optional flags for the built client class.
+.PARAMETER EnableDebugging
+Specify to enable debugging on the compiled code.
 .INPUTS
 None
 .OUTPUTS
@@ -4068,7 +4070,8 @@ function Get-RpcClient {
         [parameter(ParameterSetName = "FromServer")]
         [System.CodeDom.Compiler.CodeDomProvider]$Provider,
         [parameter(ParameterSetName = "FromServer")]
-        [NtApiDotNet.Win32.Rpc.RpcClientBuilderFlags]$Flags = "GenerateConstructorProperties"
+        [NtApiDotNet.Win32.Rpc.RpcClientBuilderFlags]$Flags = "GenerateConstructorProperties, StructureReturn, HideWrappedMethods, UnsignedChar, NoNamespace",
+        [switch]$EnableDebugging
     )
 
     if ($PSCmdlet.ParameterSetName -eq "FromServer") {
@@ -4076,6 +4079,7 @@ function Get-RpcClient {
         $args.NamespaceName = $NamespaceName
         $args.ClientName = $ClientName
         $args.Flags = $Flags
+        $args.EnableDebugging = $EnableDebugging
 
         [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache, $Provider)
     } else {
