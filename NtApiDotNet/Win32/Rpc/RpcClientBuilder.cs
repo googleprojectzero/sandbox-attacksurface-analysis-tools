@@ -692,11 +692,64 @@ namespace NtApiDotNet.Win32.Rpc
             return type_count;
         }
 
+        private CodeTypeDeclaration GenerateStuctureWrapper(CodeNamespace ns, NdrProcedureDefinition proc, CodeTypeDeclaration client, 
+            CodeMemberMethod private_method, int out_parameter_count, MarshalHelperBuilder marshal_helper)
+        {
+            private_method.Attributes = MemberAttributes.Private | MemberAttributes.Final;
+
+            var type = ns.AddType($"{private_method.Name}_RetVal");
+            type.TypeAttributes = TypeAttributes.Public;
+            type.IsStruct = true;
+
+            var method = client.AddMethod(proc.Name, MemberAttributes.Public | MemberAttributes.Final);
+            method.ReturnType = new CodeTypeReference(type.Name);
+
+            var retval_type = new CodeTypeReference(type.Name);
+            method.Statements.Add(new CodeVariableDeclarationStatement(retval_type, "r", new CodeObjectCreateExpression(retval_type)));
+            CodeExpression retval_ref = CodeGenUtils.GetVariable("r");
+
+            List <CodeExpression> call_params = new List<CodeExpression>();
+            foreach (var p in private_method.Parameters.Cast<CodeParameterDeclarationExpression>())
+            {
+                if (p.Direction == FieldDirection.In)
+                {
+                    method.Parameters.Add(new CodeParameterDeclarationExpression(p.Type, p.Name));
+                    call_params.Add(CodeGenUtils.GetVariable(p.Name));
+                }
+                else
+                {
+                    type.AddField(p.Type, p.Name, MemberAttributes.Public);
+                    var field_ref = new CodeFieldReferenceExpression(retval_ref, p.Name);
+                    if (p.Direction == FieldDirection.Ref)
+                    {
+                        method.Parameters.Add(new CodeParameterDeclarationExpression(p.Type, p.Name));
+                        method.Statements.Add(new CodeAssignStatement(field_ref, CodeGenUtils.GetVariable(p.Name)));
+                    }
+                    call_params.Add(new CodeDirectionExpression(p.Direction, field_ref));
+                }
+            }
+
+            CodeExpression invoke_expr = new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(null, private_method.Name),
+                call_params.ToArray());
+            if (proc.ReturnValue != null)
+            {
+                type.AddField(private_method.ReturnType, "retval", MemberAttributes.Public);
+                method.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(retval_ref, "retval"), invoke_expr));
+            }
+            else
+            {
+                method.Statements.Add(invoke_expr);
+            }
+
+            method.AddReturn(retval_ref);
+            return type;
+        }
+
         private void GenerateClient(string name, CodeNamespace ns, int complex_type_count, MarshalHelperBuilder marshal_helper)
         {
             CodeTypeDeclaration type = ns.AddType(name);
+            CodeTypeDeclaration last_type = type;
             type.AddStartRegion("Client Implementation");
-            type.AddEndRegion();
             type.IsClass = true;
             type.TypeAttributes = TypeAttributes.Public | TypeAttributes.Sealed;
             type.BaseTypes.Add(typeof(RpcClientBase));
@@ -739,12 +792,20 @@ namespace NtApiDotNet.Win32.Rpc
 
                 method.ReturnType = return_type.CodeType;
                 method.CreateMarshalObject(MARSHAL_NAME, marshal_helper);
+
+                int out_parameter_count = 0;
                 foreach (var p in proc.Params)
                 {
                     if (p == proc.Handle)
                     {
                         continue;
                     }
+
+                    if (p.IsOut)
+                    {
+                        out_parameter_count++;
+                    }
+
                     RpcTypeDescriptor p_type = GetTypeDescriptor(p.Type, marshal_helper);
 
                     List<RpcMarshalArgument> extra_marshal_args = new List<RpcMarshalArgument>();
@@ -817,6 +878,11 @@ namespace NtApiDotNet.Win32.Rpc
                 }
 
                 method.AddUnmarshalReturn(return_type, UNMARSHAL_NAME);
+
+                if (HasFlag(RpcClientBuilderFlags.StructureReturn) && out_parameter_count > 0)
+                {
+                    last_type = GenerateStuctureWrapper(ns, proc, type, method, out_parameter_count, marshal_helper);
+                }
             }
 
             if (complex_type_count > 0 && HasFlag(RpcClientBuilderFlags.GenerateConstructorProperties))
@@ -828,6 +894,8 @@ namespace NtApiDotNet.Win32.Rpc
                 type.AddProperty("NewArray", constructor_type, MemberAttributes.Public | MemberAttributes.Final,
                     new CodeMethodReturnStatement(new CodeObjectCreateExpression(constructor_type)));
             }
+
+            last_type.AddEndRegion();
         }
 
         private static string GenerateSourceCode(CodeDomProvider provider, CodeGeneratorOptions options, CodeCompileUnit unit)

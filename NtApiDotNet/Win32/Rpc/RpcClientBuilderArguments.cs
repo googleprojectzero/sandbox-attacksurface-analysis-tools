@@ -54,6 +54,11 @@ namespace NtApiDotNet.Win32.Rpc
         /// System.SByte to System.Byte where needed which makes the methods easier to use.
         /// </summary>
         UnsignedChar = 0x20,
+        /// <summary>
+        /// Return ref/out parameters via a structure rather than requiring ref/out parameters in client
+        /// methods.
+        /// </summary>
+        StructureReturn = 0x40,
     }
 
     /// <summary>
