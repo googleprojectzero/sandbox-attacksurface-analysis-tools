@@ -107,6 +107,15 @@ namespace NtApiDotNet.Ndr.Marshal
         /// Constructor.
         /// </summary>
         /// <param name="value">The value to construct from.</param>
+        public NdrUInt3264(int value) 
+            : this((uint)value)
+        {
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="value">The value to construct from.</param>
         public NdrUInt3264(IntPtr value)
         {
             Value = (uint)(value.ToInt64() & uint.MaxValue);
