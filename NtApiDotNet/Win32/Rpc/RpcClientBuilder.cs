@@ -409,7 +409,8 @@ namespace NtApiDotNet.Win32.Rpc
             }
 
             // No known type, return an unsupported type.
-            var type_name_arg = CodeGenUtils.GetPrimitive(type.Format.ToString());
+            NdrFormatter formatter = new NdrFormatter(new Dictionary<Guid, string>(), s=> s, DefaultNdrFormatterFlags.RemoveComments);
+            var type_name_arg = CodeGenUtils.GetPrimitive($"{type.Format} - {type.FormatType(formatter)}");
             AdditionalArguments additional_args = new AdditionalArguments(false, type_name_arg);
             return new RpcTypeDescriptor(typeof(NdrUnsupported), nameof(NdrUnmarshalBuffer.ReadUnsupported), marshal_helper,
                 nameof(NdrMarshalBuffer.WriteUnsupported), type, null, null, additional_args, additional_args);
