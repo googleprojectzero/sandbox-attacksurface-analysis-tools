@@ -695,7 +695,10 @@ namespace NtApiDotNet.Win32.Rpc
         private CodeTypeDeclaration GenerateStuctureWrapper(CodeNamespace ns, NdrProcedureDefinition proc, CodeTypeDeclaration client, 
             CodeMemberMethod private_method, int out_parameter_count, MarshalHelperBuilder marshal_helper)
         {
-            private_method.Attributes = MemberAttributes.Private | MemberAttributes.Final;
+            if (HasFlag(RpcClientBuilderFlags.HideWrappedMethods))
+            {
+                private_method.Attributes = MemberAttributes.Private | MemberAttributes.Final;
+            }
 
             var type = ns.AddType($"{private_method.Name}_RetVal");
             type.TypeAttributes = TypeAttributes.Public;

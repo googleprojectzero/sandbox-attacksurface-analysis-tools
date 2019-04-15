@@ -59,6 +59,10 @@ namespace NtApiDotNet.Win32.Rpc
         /// methods.
         /// </summary>
         StructureReturn = 0x40,
+        /// <summary>
+        /// When using StructureReturn hide the original out/ref methods.
+        /// </summary>
+        HideWrappedMethods = 0x80,
     }
 
     /// <summary>
