@@ -262,7 +262,7 @@ namespace NtApiDotNet.Ndr
                 // Reference Count
                 // ProxyFileInfo*
 
-                IntPtr pInfo = Marshal.ReadIntPtr(psfactory, 2 * IntPtr.Size);
+                IntPtr pInfo = System.Runtime.InteropServices.Marshal.ReadIntPtr(psfactory, 2 * IntPtr.Size);
                 // TODO: Should add better checks here, 
                 // for example VTable should be in COMBASE and the pointer should be in the
                 // server DLL's rdata section. But this is probably good enough for now.
@@ -284,7 +284,7 @@ namespace NtApiDotNet.Ndr
             {
                 if (psfactory != IntPtr.Zero)
                 {
-                    Marshal.Release(psfactory);
+                    System.Runtime.InteropServices.Marshal.Release(psfactory);
                 }
             }
         }

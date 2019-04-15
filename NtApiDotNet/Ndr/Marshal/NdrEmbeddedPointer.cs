@@ -14,7 +14,7 @@
 
 using System;
 
-namespace NtApiDotNet.Ndr.Types
+namespace NtApiDotNet.Ndr.Marshal
 {
     /// <summary>
     /// A class which represents an embedded pointer.

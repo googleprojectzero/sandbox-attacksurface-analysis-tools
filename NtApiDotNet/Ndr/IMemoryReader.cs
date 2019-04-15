@@ -47,7 +47,7 @@ namespace NtApiDotNet.Ndr
 
         public int GetSize()
         {
-            return Marshal.SizeOf(CrossBitnessType);
+            return System.Runtime.InteropServices.Marshal.SizeOf(CrossBitnessType);
         }
     }
 
@@ -135,44 +135,44 @@ namespace NtApiDotNet.Ndr
         public byte ReadByte(IntPtr address)
         {
             CheckAddress(address, 1);
-            return Marshal.ReadByte(address);
+            return System.Runtime.InteropServices.Marshal.ReadByte(address);
         }
 
         public short ReadInt16(IntPtr address)
         {
             CheckAddress(address, 2);
-            return Marshal.ReadInt16(address);
+            return System.Runtime.InteropServices.Marshal.ReadInt16(address);
         }
 
         public int ReadInt32(IntPtr address)
         {
             CheckAddress(address, 4);
-            return Marshal.ReadInt32(address);
+            return System.Runtime.InteropServices.Marshal.ReadInt32(address);
         }
 
         public IntPtr ReadIntPtr(IntPtr address)
         {
             CheckAddress(address, IntPtr.Size);
-            return Marshal.ReadIntPtr(address);
+            return System.Runtime.InteropServices.Marshal.ReadIntPtr(address);
         }
 
         public byte[] ReadBytes(IntPtr address, int length)
         {
             CheckAddress(address, length);
             byte[] ret = new byte[length];
-            Marshal.Copy(address, ret, 0, length);
+            System.Runtime.InteropServices.Marshal.Copy(address, ret, 0, length);
             return ret;
         }
 
         public T ReadStruct<T>(IntPtr address) where T : struct
         {
-            CheckAddress(address, Marshal.SizeOf(typeof(T)));
-            return (T)Marshal.PtrToStructure(address, typeof(T));
+            CheckAddress(address, System.Runtime.InteropServices.Marshal.SizeOf(typeof(T)));
+            return (T)System.Runtime.InteropServices.Marshal.PtrToStructure(address, typeof(T));
         }
 
         public T[] ReadArray<T>(IntPtr address, int count) where T : struct
         {
-            CheckAddress(address, Marshal.SizeOf(typeof(T)) * count);
+            CheckAddress(address, System.Runtime.InteropServices.Marshal.SizeOf(typeof(T)) * count);
             var buffer = new SafeBufferWrapper(address);
             T[] ret = new T[count];
             buffer.ReadArray(0, ret, 0, count);
@@ -182,7 +182,7 @@ namespace NtApiDotNet.Ndr
         public string ReadAnsiStringZ(IntPtr address)
         {
             CheckAddress(address, 1);
-            return Marshal.PtrToStringAnsi(address);
+            return System.Runtime.InteropServices.Marshal.PtrToStringAnsi(address);
         }
 
         public int PointerSize { get { return IntPtr.Size; } }
@@ -292,7 +292,7 @@ namespace NtApiDotNet.Ndr
         public virtual T[] ReadArray<T>(IntPtr address, int count) where T : struct
         {
             T[] ret = new T[count];
-            int size = Marshal.SizeOf(typeof(T));
+            int size = System.Runtime.InteropServices.Marshal.SizeOf(typeof(T));
             for (int i = 0; i < count; ++i)
             {
                 ret[i] = ReadStruct<T>(address + i * size);

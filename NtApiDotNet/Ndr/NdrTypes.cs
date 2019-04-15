@@ -22,7 +22,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace NtApiDotNet.Ndr
@@ -1708,12 +1707,12 @@ namespace NtApiDotNet.Ndr
         // Walk series of jumps until we either find an address we don't know or we change modules.
         internal static IntPtr GetTargetAddress(SafeLoadLibraryHandle curr_module, IntPtr ptr)
         {
-            byte start_byte = Marshal.ReadByte(ptr);
+            byte start_byte = System.Runtime.InteropServices.Marshal.ReadByte(ptr);
             switch (start_byte)
             {
                 // Absolute jump.
                 case 0xFF:
-                    if (Marshal.ReadByte(ptr + 1) != 0x25)
+                    if (System.Runtime.InteropServices.Marshal.ReadByte(ptr + 1) != 0x25)
                     {
                         return ptr;
                     }
@@ -1721,26 +1720,26 @@ namespace NtApiDotNet.Ndr
                     if (Environment.Is64BitProcess)
                     {
                         // RIP relative
-                        ptr = Marshal.ReadIntPtr(ptr + 6 + Marshal.ReadInt32(ptr + 2));
+                        ptr = System.Runtime.InteropServices.Marshal.ReadIntPtr(ptr + 6 + System.Runtime.InteropServices.Marshal.ReadInt32(ptr + 2));
                     }
                     else
                     {
                         // Absolute
-                        ptr = Marshal.ReadIntPtr(new IntPtr(Marshal.ReadInt32(ptr + 2)));
+                        ptr = System.Runtime.InteropServices.Marshal.ReadIntPtr(new IntPtr(System.Runtime.InteropServices.Marshal.ReadInt32(ptr + 2)));
                     }
                     break;
                 // Relative jump.
                 case 0xE9:
-                    ptr = ptr + 5 + Marshal.ReadInt32(ptr + 1);
+                    ptr = ptr + 5 + System.Runtime.InteropServices.Marshal.ReadInt32(ptr + 1);
                     break;
                 // lea rax, ofs import - Delay load 64bit
                 case 0x48:
                     {
-                        if (!Environment.Is64BitProcess || Marshal.ReadByte(ptr + 1) != 0x8D || Marshal.ReadByte(ptr + 2) != 0x05)
+                        if (!Environment.Is64BitProcess || System.Runtime.InteropServices.Marshal.ReadByte(ptr + 1) != 0x8D || System.Runtime.InteropServices.Marshal.ReadByte(ptr + 2) != 0x05)
                         {
                             return ptr;
                         }
-                        IntPtr iat = ptr + Marshal.ReadInt32(ptr + 3) + 7;
+                        IntPtr iat = ptr + System.Runtime.InteropServices.Marshal.ReadInt32(ptr + 3) + 7;
                         IDictionary<IntPtr, IntPtr> delayed_loaded = curr_module.ParseDelayedImports();
                         if (delayed_loaded.ContainsKey(iat))
                         {
@@ -1755,7 +1754,7 @@ namespace NtApiDotNet.Ndr
                         {
                             return ptr;
                         }
-                        IntPtr iat = Marshal.ReadIntPtr(ptr + 1);
+                        IntPtr iat = System.Runtime.InteropServices.Marshal.ReadIntPtr(ptr + 1);
                         IDictionary<IntPtr, IntPtr> delayed_loaded = curr_module.ParseDelayedImports();
                         if (delayed_loaded.ContainsKey(iat))
                         {

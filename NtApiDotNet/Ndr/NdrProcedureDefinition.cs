@@ -277,7 +277,7 @@ namespace NtApiDotNet.Ndr
                 reader.BaseStream.Position -= 1;
                 // Read out extension bytes.
                 byte[] extension = reader.ReadAll(ext_size);
-                if (Marshal.SizeOf(typeof(NdrProcHeaderExts)) <= ext_size)
+                if (System.Runtime.InteropServices.Marshal.SizeOf(typeof(NdrProcHeaderExts)) <= ext_size)
                 {
                     using (var buffer = new SafeStructureInOutBuffer<NdrProcHeaderExts>(ext_size, false))
                     {

@@ -14,7 +14,7 @@
 
 using System;
 
-namespace NtApiDotNet.Ndr.Types
+namespace NtApiDotNet.Ndr.Marshal
 {
     /// <summary>
     /// Class to represent a 16 bit enumerated type.

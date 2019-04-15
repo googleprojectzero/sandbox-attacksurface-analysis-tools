@@ -12,15 +12,23 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Ndr.Types
+namespace NtApiDotNet.Ndr.Marshal
 {
     /// <summary>
-    /// Place holder for unsupported types.
+    /// Interface for a marshalled NDR structure.
     /// </summary>
-    public class NdrUnsupported
+    /// <remarks>This interface is primarily for internal use only.</remarks>
+    public interface INdrStructure
     {
-        private NdrUnsupported()
-        {
-        }
+        /// <summary>
+        /// Marshal the stucture to a stream.
+        /// </summary>
+        /// <param name="marshal">The marshal stream.</param>
+        void Marshal(NdrMarshalBuffer marshal);
+        /// <summary>
+        /// Unmarshal the structure from a stream.
+        /// </summary>
+        /// <param name="unmarshal">The unmarshal stream.</param>
+        void Unmarshal(NdrUnmarshalBuffer unmarshal);
     }
 }

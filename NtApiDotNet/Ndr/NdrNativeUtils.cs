@@ -110,7 +110,7 @@ namespace NtApiDotNet.Ndr
                 return 2;
             }
 
-            return Marshal.SizeOf(typeof(T));
+            return System.Runtime.InteropServices.Marshal.SizeOf(typeof(T));
         }
 
         internal static int CalculateAlignment(int offset, int alignment)
