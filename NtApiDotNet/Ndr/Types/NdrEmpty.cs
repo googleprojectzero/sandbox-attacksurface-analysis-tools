@@ -12,23 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Ndr
+namespace NtApiDotNet.Ndr.Types
 {
     /// <summary>
-    /// Interface for a marshalled NDR structure.
+    /// Structure to represent an empty value.
     /// </summary>
-    /// <remarks>This interface is primarily for internal use only.</remarks>
-    public interface INdrStructure
+    public struct NdrEmpty
     {
-        /// <summary>
-        /// Marshal the stucture to a stream.
-        /// </summary>
-        /// <param name="marshal">The marshal stream.</param>
-        void Marshal(NdrMarshalBuffer marshal);
-        /// <summary>
-        /// Unmarshal the structure from a stream.
-        /// </summary>
-        /// <param name="unmarshal">The unmarshal stream.</param>
-        void Unmarshal(NdrUnmarshalBuffer unmarshal);
     }
 }

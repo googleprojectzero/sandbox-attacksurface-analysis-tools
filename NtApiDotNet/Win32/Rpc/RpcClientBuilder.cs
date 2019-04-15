@@ -14,6 +14,7 @@
 
 using Microsoft.CSharp;
 using NtApiDotNet.Ndr;
+using NtApiDotNet.Ndr.Types;
 using System;
 using System.CodeDom;
 using System.CodeDom.Compiler;

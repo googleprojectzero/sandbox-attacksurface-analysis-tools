@@ -115,6 +115,8 @@ namespace NtApiDotNet.Ndr
 
         #endregion
 
+        #region Public Properties
+
         /// <summary>
         /// The expression type.
         /// </summary>
@@ -125,6 +127,9 @@ namespace NtApiDotNet.Ndr
         /// </summary>
         public bool IsValid { get; internal set; }
 
+        #endregion
+
+        #region Internal Members
         internal static NdrExpression ReadExpression(BinaryReader reader)
         {
             NdrExpressionType type = (NdrExpressionType)reader.ReadByte();
@@ -160,6 +165,7 @@ namespace NtApiDotNet.Ndr
             BinaryReader reader = context.Reader.GetReader(context.ExprDesc.pFormatExpr + expr_ofs);
             return ReadExpression(reader);
         }
+        #endregion
     }
 
     /// <summary>
@@ -168,6 +174,7 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public sealed class NdrOperatorExpression : NdrExpression
     {
+        #region Public Properties
         /// <summary>
         /// NDR format type of element.
         /// </summary>
@@ -187,7 +194,9 @@ namespace NtApiDotNet.Ndr
         /// Parsed arguments.
         /// </summary>
         public IReadOnlyList<NdrExpression> Arguments { get; private set; }
+        #endregion
 
+        #region Constructors
         internal NdrOperatorExpression(BinaryReader reader) 
             : base(NdrExpressionType.FC_EXPR_VAR)
         {
@@ -242,7 +251,9 @@ namespace NtApiDotNet.Ndr
             Arguments = new List<NdrExpression>(Enumerable.Range(0, 
                 arg_count).Select(i => ReadExpression(reader))).AsReadOnly();
         }
+        #endregion
 
+        #region Private Members
         private string FormatUnaryOperator(string op)
         {
             return $"{op}{Arguments[0]}";
@@ -252,7 +263,9 @@ namespace NtApiDotNet.Ndr
         {
             return $"({Arguments[0]} {op} {Arguments[1]})";
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Overridden ToString method.
         /// </summary>
@@ -322,6 +335,7 @@ namespace NtApiDotNet.Ndr
             }
             return string.Empty;
         }
+        #endregion
     }
 
     /// <summary>
@@ -330,6 +344,7 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public sealed class NdrVariableExpression : NdrExpression
     {
+        #region Public Properties
         /// <summary>
         /// Offset of the variable.
         /// </summary>
@@ -339,6 +354,9 @@ namespace NtApiDotNet.Ndr
         /// NDR format type of element.
         /// </summary>
         public NdrFormatCharacter Format { get; }
+        #endregion
+
+        #region Constructors
 
         internal NdrVariableExpression(BinaryReader reader)
             : base(NdrExpressionType.FC_EXPR_VAR)
@@ -348,6 +366,9 @@ namespace NtApiDotNet.Ndr
             IsValid = true;
         }
 
+        #endregion
+
+        #region Public Methods
         /// <summary>
         /// Overridden ToString method.
         /// </summary>
@@ -356,6 +377,7 @@ namespace NtApiDotNet.Ndr
         {
             return $"VAR{{{Offset}}}";
         }
+        #endregion
     }
 
     /// <summary>
@@ -364,6 +386,7 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public sealed class NdrConstantExpression : NdrExpression
     {
+        #region Public Properties
         /// <summary>
         /// NDR format type of element.
         /// </summary>
@@ -378,6 +401,9 @@ namespace NtApiDotNet.Ndr
         /// The value of the constant.
         /// </summary>
         public long Value { get; }
+        #endregion
+
+        #region Constructors
 
         internal NdrConstantExpression(NdrExpressionType type, BinaryReader reader)
             : base(type)
@@ -394,7 +420,9 @@ namespace NtApiDotNet.Ndr
             }
             IsValid = true;
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Overridden ToString method.
         /// </summary>
@@ -403,5 +431,6 @@ namespace NtApiDotNet.Ndr
         {
             return Value.ToString();
         }
+        #endregion
     }
 }

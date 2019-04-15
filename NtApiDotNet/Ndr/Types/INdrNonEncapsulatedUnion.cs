@@ -12,12 +12,19 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Ndr
+namespace NtApiDotNet.Ndr.Types
 {
     /// <summary>
-    /// Structure to represent an empty value.
+    /// Interface for a marshalled non-encapsulated NDR union.
     /// </summary>
-    public struct NdrEmpty
+    /// <remarks>This interface is primarily for internal use only.</remarks>
+    public interface INdrNonEncapsulatedUnion : INdrStructure
     {
+        /// <summary>
+        /// Marshal the union to a stream.
+        /// </summary>
+        /// <param name="selector">The selector for union arm.</param>
+        /// <param name="marshal">The marshal stream.</param>
+        void Marshal(NdrMarshalBuffer marshal, long selector);
     }
 }

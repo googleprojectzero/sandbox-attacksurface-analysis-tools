@@ -14,7 +14,7 @@
 
 using System;
 
-namespace NtApiDotNet.Ndr
+namespace NtApiDotNet.Ndr.Types
 {
     /// <summary>
     /// Structure which represents an NDR FC_INT3264

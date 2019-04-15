@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Ndr;
+using NtApiDotNet.Ndr.Types;
 using System;
 
 namespace NtApiDotNet.Win32.Rpc

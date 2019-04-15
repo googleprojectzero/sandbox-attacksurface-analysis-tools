@@ -14,7 +14,7 @@
 
 using System;
 
-namespace NtApiDotNet.Ndr
+namespace NtApiDotNet.Ndr.Types
 {
     /// <summary>
     /// Structure to represent a context handle.
