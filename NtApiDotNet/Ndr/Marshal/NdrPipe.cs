@@ -12,13 +12,33 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+
 namespace NtApiDotNet.Ndr.Marshal
 {
     /// <summary>
-    /// Placeholder for an NDR pipe type.
+    /// Placeholder for a NDR pipe type.
     /// </summary>
     /// <typeparam name="T">The base type of pipe blocks.</typeparam>
     public class NdrPipe<T> where T : struct
     {
+        /// <summary>
+        /// Pull a block from a pipe.
+        /// </summary>
+        /// <param name="count">The maximum number of elements to pull.</param>
+        /// <returns>The pulled block.</returns>
+        public T[] Pull(int count)
+        {
+            throw new NotImplementedException("Pipe support not implemented");
+        }
+
+        /// <summary>
+        /// Push a block to a pipe.
+        /// </summary>
+        /// <param name="data">The block to push.</param>
+        public void Push(T[] data)
+        {
+            throw new NotImplementedException("Pipe support not implemented");
+        }
     }
 }
