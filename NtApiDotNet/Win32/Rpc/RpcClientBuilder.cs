@@ -91,25 +91,30 @@ namespace NtApiDotNet.Win32.Rpc
         private RpcTypeDescriptor GetBogusArrayTypeDescriptor(NdrBogusArrayTypeReference bogus_array_type, MarshalHelperBuilder marshal_helper)
         {
             RpcTypeDescriptor element_type = GetTypeDescriptor(bogus_array_type.ElementType, marshal_helper);
-            // We only support constructed and string types for now.
-            bool is_string = element_type.NdrType.Format == NdrFormatCharacter.FC_C_WSTRING || element_type.NdrType.Format == NdrFormatCharacter.FC_C_CSTRING;
-            if (!element_type.Constructed && !is_string)
+            // We only support a limited set of types for now.
+            bool is_string = element_type.NdrType.Format == NdrFormatCharacter.FC_C_WSTRING 
+                || element_type.NdrType.Format == NdrFormatCharacter.FC_C_CSTRING;
+            bool is_basic = element_type.BuiltinType == typeof(NdrEnum16)
+                || element_type.BuiltinType == typeof(Guid)
+                || element_type.BuiltinType == typeof(NdrInterfacePointer)
+                || element_type.NdrType.Format == NdrFormatCharacter.FC_SYSTEM_HANDLE;
+            if (!element_type.Constructed && !is_string && !is_basic)
             {
                 return null;
             }
 
             List<CodeTypeReference> marshal_params = new List<CodeTypeReference>();
-            List<CodeExpression> string_marshal_expr = new List<CodeExpression>();
-            List<CodeExpression> string_unmarshal_expr = new List<CodeExpression>();
+            List<CodeExpression> marshal_expr = new List<CodeExpression>();
+            List<CodeExpression> unmarshal_expr = new List<CodeExpression>();
             string marshal_name = null;
             string unmarshal_name = null;
 
-            if (is_string)
+            if (is_string || is_basic)
             {
-                var func_type = CodeGenUtils.CreateFuncType(typeof(string).ToRef());
-                string_unmarshal_expr.Add(CodeGenUtils.CreateDelegate(func_type, CodeGenUtils.GetVariable(null), element_type.UnmarshalMethod));
-                var action_type = CodeGenUtils.CreateActionType(typeof(string).ToRef());
-                string_marshal_expr.Add(CodeGenUtils.CreateDelegate(action_type, CodeGenUtils.GetVariable(null), element_type.MarshalMethod));
+                var func_type = CodeGenUtils.CreateFuncType(element_type.CodeType);
+                unmarshal_expr.Add(CodeGenUtils.CreateDelegate(func_type, CodeGenUtils.GetVariable(null), element_type.UnmarshalMethod));
+                var action_type = CodeGenUtils.CreateActionType(element_type.CodeType);
+                marshal_expr.Add(CodeGenUtils.CreateDelegate(action_type, CodeGenUtils.GetVariable(null), element_type.MarshalMethod));
             }
 
             if (bogus_array_type.VarianceDescriptor.IsValid && bogus_array_type.ConformanceDescriptor.IsValid)
@@ -120,8 +125,22 @@ namespace NtApiDotNet.Win32.Rpc
                     return null;
                 }
 
-                marshal_name = is_string ? nameof(NdrMarshalBuffer.WriteConformantVaryingStringArray) : nameof(NdrMarshalBuffer.WriteConformantVaryingStructArray);
-                unmarshal_name = is_string ? nameof(NdrUnmarshalBuffer.ReadConformantVaryingStringArray) : nameof(NdrUnmarshalBuffer.ReadConformantVaryingStructArray);
+                if (is_string)
+                {
+                    marshal_name = nameof(NdrMarshalBuffer.WriteConformantVaryingStringArray);
+                    unmarshal_name = nameof(NdrUnmarshalBuffer.ReadConformantVaryingStringArray);
+                }
+                else if (is_basic)
+                {
+                    marshal_name = nameof(NdrMarshalBuffer.WriteConformantVaryingArrayCallback);
+                    unmarshal_name = nameof(NdrUnmarshalBuffer.ReadConformantVaryingArrayCallback);
+                }
+                else
+                {
+                    marshal_name = nameof(NdrMarshalBuffer.WriteConformantVaryingStructArray);
+                    unmarshal_name = nameof(NdrUnmarshalBuffer.ReadConformantVaryingStructArray);
+                }
+
                 marshal_params.Add(typeof(long).ToRef());
                 marshal_params.Add(typeof(long).ToRef());
             }
@@ -133,10 +152,25 @@ namespace NtApiDotNet.Win32.Rpc
                     return null;
                 }
 
+                if (is_string)
+                {
+                    marshal_name = nameof(NdrMarshalBuffer.WriteConformantStringArray);
+                    unmarshal_name = nameof(NdrUnmarshalBuffer.ReadConformantStringArray);
+                }
+                else if (is_basic)
+                {
+                    marshal_name = nameof(NdrMarshalBuffer.WriteConformantArrayCallback);
+                    unmarshal_name = nameof(NdrUnmarshalBuffer.ReadConformantArrayCallback);
+                }
+                else
+                {
+                    marshal_name = nameof(NdrMarshalBuffer.WriteConformantStructArray);
+                    unmarshal_name = nameof(NdrUnmarshalBuffer.ReadConformantStructArray);
+                }
+
                 marshal_params.Add(typeof(long).ToRef());
-                marshal_name = is_string ? nameof(NdrMarshalBuffer.WriteConformantStringArray) : nameof(NdrMarshalBuffer.WriteConformantStructArray);
-                unmarshal_name = is_string ? nameof(NdrUnmarshalBuffer.ReadConformantStringArray) : nameof(NdrUnmarshalBuffer.ReadConformantStructArray);
-            } else if (bogus_array_type.VarianceDescriptor.IsValid)
+            }
+            else if (bogus_array_type.VarianceDescriptor.IsValid)
             {
                 if (!bogus_array_type.VarianceDescriptor.ValidateCorrelation())
                 {
@@ -144,8 +178,22 @@ namespace NtApiDotNet.Win32.Rpc
                 }
 
                 marshal_params.Add(typeof(long).ToRef());
-                marshal_name = is_string ? nameof(NdrMarshalBuffer.WriteVaryingStringArray) : nameof(NdrMarshalBuffer.WriteVaryingStructArray);
-                unmarshal_name = is_string ? nameof(NdrUnmarshalBuffer.ReadVaryingStringArray) : nameof(NdrUnmarshalBuffer.ReadVaryingStructArray);
+
+                if (is_string)
+                {
+                    marshal_name = nameof(NdrMarshalBuffer.WriteVaryingStringArray);
+                    unmarshal_name = nameof(NdrUnmarshalBuffer.ReadVaryingStringArray);
+                }
+                else if (is_basic)
+                {
+                    marshal_name = nameof(NdrMarshalBuffer.WriteVaryingArrayCallback);
+                    unmarshal_name = nameof(NdrUnmarshalBuffer.ReadVaryingArrayCallback);
+                }
+                else
+                {
+                    marshal_name = nameof(NdrMarshalBuffer.WriteVaryingStructArray);
+                    unmarshal_name = nameof(NdrUnmarshalBuffer.ReadVaryingStructArray);
+                }
             }
             else
             {
@@ -156,8 +204,8 @@ namespace NtApiDotNet.Win32.Rpc
             return new RpcTypeDescriptor(new CodeTypeReference(element_type.CodeType, 1), false,
                 unmarshal_name, marshal_helper, marshal_name,
                 bogus_array_type, bogus_array_type.ConformanceDescriptor, bogus_array_type.VarianceDescriptor,
-                new AdditionalArguments(string_marshal_expr.ToArray(), marshal_params.ToArray(), !is_string),
-                new AdditionalArguments(!is_string, string_unmarshal_expr.ToArray()))
+                new AdditionalArguments(marshal_expr.ToArray(), marshal_params.ToArray(), !is_string),
+                new AdditionalArguments(!is_string, unmarshal_expr.ToArray()))
             {
                 FixedCount = bogus_array_type.ElementCount
             };
