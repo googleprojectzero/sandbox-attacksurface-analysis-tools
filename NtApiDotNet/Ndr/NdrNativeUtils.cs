@@ -395,6 +395,20 @@ namespace NtApiDotNet.Ndr
         public IntPtr pReserved2;
     }
 
+    [Flags]
+    internal enum RpcFlags : uint
+    {
+        HasPipes = 0x0001,
+        Message = 0x01000000,
+        AutoComplete = 0x08000000,
+        LocalCall = 0x10000000,
+        InputSynchronous = 0x20000000,
+        Asynchronous = 0x40000000,
+        NonNdr = 0x80000000,
+        HasMultiSyntaxes = 0x02000000,
+        HasCallback = 0x04000000,
+    }
+
     [StructLayout(LayoutKind.Sequential), CrossBitnessType(typeof(MIDL_STUB_DESC32))]
     internal struct MIDL_STUB_DESC
     {
@@ -430,6 +444,11 @@ namespace NtApiDotNet.Ndr
                 return reader.ReadStruct<NDR_EXPR_DESC>(pExprInfo);
             }
             return new NDR_EXPR_DESC();
+        }
+
+        public RpcFlags GetFlags()
+        {
+            return (RpcFlags)(uint)mFlags.ToInt32();
         }
     }
 
