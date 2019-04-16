@@ -84,6 +84,20 @@ namespace NtApiDotNet.Ndr.Marshal
         /// Constructor.
         /// </summary>
         /// <param name="value">The value to construct from.</param>
+        public static explicit operator NdrEnum16(Enum value)
+        {
+            Type enum_type = value.GetType().GetEnumUnderlyingType();
+            if (enum_type == typeof(uint))
+            {
+                return (NdrEnum16)Convert.ToUInt32(value);
+            }
+            return new NdrEnum16(Convert.ToInt32(value));
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="value">The value to construct from.</param>
         public static explicit operator uint(NdrEnum16 value)
         {
             return (uint)value.Value;
