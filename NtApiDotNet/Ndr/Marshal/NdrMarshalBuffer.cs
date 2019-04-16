@@ -31,7 +31,7 @@ namespace NtApiDotNet.Ndr.Marshal
         private readonly MemoryStream _stm;
         private readonly BinaryWriter _writer;
         private readonly List<NtObject> _handles;
-        private readonly List<Action> _deferred_writes;
+        private readonly Queue<Action> _deferred_writes;
         private int _referent;
 
         private void WriteEmbeddedPointer<T>(NdrEmbeddedPointer<T> pointer, Action writer)
@@ -39,7 +39,7 @@ namespace NtApiDotNet.Ndr.Marshal
             WriteReferent(pointer);
             if (pointer != null)
             {
-                _deferred_writes.Add(writer);
+                _deferred_writes.Enqueue(writer);
             }
         }
 
@@ -93,7 +93,7 @@ namespace NtApiDotNet.Ndr.Marshal
             _writer = new BinaryWriter(_stm, Encoding.Unicode);
             _handles = new List<NtObject>();
             _referent = 0x20000;
-            _deferred_writes = new List<Action>();
+            _deferred_writes = new Queue<Action>();
             NdrUnmarshalBuffer.CheckDataRepresentation(data_representation);
             DataRepresentation = data_representation;
         }
@@ -582,11 +582,10 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public void FlushDeferredWrites()
         {
-            foreach (var a in _deferred_writes)
+            while (_deferred_writes.Count > 0)
             {
-                a();
+                _deferred_writes.Dequeue()();
             }
-            _deferred_writes.Clear();
         }
 
         #endregion

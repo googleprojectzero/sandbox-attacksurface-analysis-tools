@@ -32,7 +32,7 @@ namespace NtApiDotNet.Ndr.Marshal
         private readonly MemoryStream _stm;
         private readonly BinaryReader _reader;
         private readonly DisposableList<NtObject> _handles;
-        private readonly List<Action> _deferred_reads;
+        private readonly Queue<Action> _deferred_reads;
 
         private string[] ReadStringArray(int[] refs, Func<string> reader)
         {
@@ -56,7 +56,7 @@ namespace NtApiDotNet.Ndr.Marshal
             _stm = new MemoryStream(buffer);
             _reader = new BinaryReader(_stm, Encoding.Unicode);
             _handles = new DisposableList<NtObject>(handles);
-            _deferred_reads = new List<Action>();
+            _deferred_reads = new Queue<Action>();
             CheckDataRepresentation(data_represenation);
         }
         public NdrUnmarshalBuffer(byte[] buffer, IEnumerable<NtObject> handles) 
@@ -578,7 +578,7 @@ namespace NtApiDotNet.Ndr.Marshal
             // Really should have referents, but I'm not convinced the MSRPC NDR engine uses them.
             // Perhaps introduce a lazy method to bind it after the fact.
             var deferred_reader = NdrEmbeddedPointer<T>.CreateDeferredReader(unmarshal_func);
-            _deferred_reads.Add(deferred_reader.Item2);
+            _deferred_reads.Enqueue(deferred_reader.Item2);
             return deferred_reader.Item1;
         }
 
@@ -599,11 +599,10 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public void PopulateDeferredPointers()
         {
-            foreach (var a in _deferred_reads)
+            while(_deferred_reads.Count > 0)
             {
-                a();
+                _deferred_reads.Dequeue()();
             }
-            _deferred_reads.Clear();
         }
 
         #endregion
