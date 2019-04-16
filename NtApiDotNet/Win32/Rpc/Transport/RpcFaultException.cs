@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace NtApiDotNet.Win32.Rpc.Transport
 {
@@ -25,12 +27,28 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         private RpcFaultException(SafeStructureInOutBuffer<LRPC_FAULT_MESSAGE> buffer, LRPC_FAULT_MESSAGE message) 
             : base(NtObjectUtils.MapDosErrorToStatus(message.RpcStatus))
         {
-            // Maybe read extended error info.
+            ExtendedErrorInfo = new RpcExtendedErrorInfo[0];
+            if (message.Flags.HasFlag(LRPC_FAULT_MESSAGE_FLAGS.ExtendedErrorInfo))
+            {
+                try
+                {
+                    byte[] data = buffer.Data.ReadBytes(16, buffer.Data.Length - 16);
+                    ExtendedErrorInfo = RpcExtendedErrorInfo.ReadErrorInfo(data);
+                }
+                catch
+                {
+                }
+            }
         }
 
         internal RpcFaultException(SafeStructureInOutBuffer<LRPC_FAULT_MESSAGE> buffer) 
             : this(buffer, buffer.Result)
         {
         }
+
+        /// <summary>
+        /// Get extended error information.
+        /// </summary>
+        public IEnumerable<RpcExtendedErrorInfo> ExtendedErrorInfo { get; }
     }
 }
