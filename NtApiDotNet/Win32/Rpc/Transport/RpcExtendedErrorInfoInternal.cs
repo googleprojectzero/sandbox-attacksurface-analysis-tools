@@ -219,53 +219,10 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         }
         void INdrNonEncapsulatedUnion.Marshal(NdrMarshalBuffer m, long l)
         {
-            Selector = ((short)(l));
-            Marshal(((_Marshal_Helper)(m)));
+            throw new NotImplementedException();
         }
-        private void Marshal(_Marshal_Helper m)
-        {
-            m.Align(1);
-            m.WriteInt16(Selector);
-            if ((Selector == 1))
-            {
-                m.Write_3(AnsiString);
-                goto done;
-            }
-            if ((Selector == 2))
-            {
-                m.Write_4(UnicodeString);
-                goto done;
-            }
-            if ((Selector == 3))
-            {
-                m.WriteInt32(LongVal);
-                goto done;
-            }
-            if ((Selector == 4))
-            {
-                m.WriteInt16(ShortVal);
-                goto done;
-            }
-            if ((Selector == 5))
-            {
-                m.WriteInt64(PointerVal);
-                goto done;
-            }
-            if ((Selector == 6))
-            {
-                m.WriteEmpty(NoneVal);
-                goto done;
-            }
-            if ((Selector == 7))
-            {
-                m.Write_5(BinaryVal);
-                goto done;
-            }
-            throw new System.ArgumentException("No matching union selector when marshaling Union_2");
-            done:
-            return;
-        }
-        void NtApiDotNet.Ndr.Marshal.INdrStructure.Unmarshal(NtApiDotNet.Ndr.Marshal.NdrUnmarshalBuffer u)
+        
+        void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
             Unmarshal(((_Unmarshal_Helper)(u)));
         }
@@ -325,14 +282,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     {
         void INdrStructure.Marshal(NdrMarshalBuffer m)
         {
-            Marshal(((_Marshal_Helper)(m)));
+            throw new NotImplementedException();
         }
-        private void Marshal(_Marshal_Helper m)
-        {
-            m.Align(4);
-            m.WriteInt16(Length);
-            m.WriteEmbeddedPointer(Data, new Action<byte[], long>(m.Write_9), Length);
-        }
+        
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
             Unmarshal(((_Unmarshal_Helper)(u)));
@@ -355,14 +307,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     {
         void INdrStructure.Marshal(NdrMarshalBuffer m)
         {
-            Marshal(((_Marshal_Helper)(m)));
+            throw new NotImplementedException();
         }
-        private void Marshal(_Marshal_Helper m)
-        {
-            m.Align(4);
-            m.WriteInt16(Length);
-            m.WriteEmbeddedPointer<short[], long>(Data, new Action<short[], long>(m.Write_10), Length);
-        }
+
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
             Unmarshal(((_Unmarshal_Helper)(u)));
@@ -390,14 +337,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     {
         void INdrStructure.Marshal(NdrMarshalBuffer m)
         {
-            Marshal(((_Marshal_Helper)(m)));
+            throw new NotImplementedException();
         }
-        private void Marshal(_Marshal_Helper m)
-        {
-            m.Align(4);
-            m.WriteInt16(Length);
-            m.WriteEmbeddedPointer<sbyte[], long>(Data, new Action<sbyte[], long>(m.Write_11), Length);
-        }
+
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
             Unmarshal(((_Unmarshal_Helper)(u)));
@@ -420,15 +362,10 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     {
         void INdrStructure.Marshal(NdrMarshalBuffer m)
         {
-            Marshal(((_Marshal_Helper)(m)));
+            throw new NotImplementedException();
         }
-        private void Marshal(_Marshal_Helper m)
-        {
-            m.Align(4);
-            m.WriteEnum16(Member0);
-            m.Write_7(Member8, Member0);
-        }
-        void NtApiDotNet.Ndr.Marshal.INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
+
+        void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
             Unmarshal(((_Unmarshal_Helper)(u)));
         }
@@ -454,31 +391,13 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     {
         void INdrStructure.Marshal(NdrMarshalBuffer m)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
         void INdrNonEncapsulatedUnion.Marshal(NdrMarshalBuffer m, long l)
         {
-            Selector = ((short)(l));
-            Marshal(((_Marshal_Helper)(m)));
+            throw new NotImplementedException();
         }
-        private void Marshal(_Marshal_Helper m)
-        {
-            m.Align(1);
-            m.WriteInt16(Selector);
-            if ((Selector == 1))
-            {
-                m.Write_4(Arm_1);
-                goto done;
-            }
-            if ((Selector == 2))
-            {
-                m.WriteEmpty(Arm_2);
-                goto done;
-            }
-            throw new ArgumentException("No matching union selector when marshaling Union_7");
-            done:
-            return;
-        }
+
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
             Unmarshal(((_Unmarshal_Helper)(u)));
@@ -507,16 +426,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     }
     #endregion
     #region Complex Type Encoders
-    internal static class ExtendedErrorInfoEncoder
-    {
-        public static byte[] Encode(RpcExtendedErrorInfoInternal error_info)
-        {
-            _Marshal_Helper m = new _Marshal_Helper();
-            m.Write_0(error_info);
-            m.FlushDeferredWrites();
-            return m.ToArray();
-        }
-    }
     internal static class ExtendedErrorInfoDecoder
     {
         internal static RpcExtendedErrorInfoInternal? Decode(byte[] data)
