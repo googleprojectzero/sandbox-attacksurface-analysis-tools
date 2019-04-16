@@ -55,6 +55,12 @@ namespace NtApiDotNet.Win32.Rpc
 
             con.BaseConstructorArgs.Add(new CodePropertyReferenceExpression(param_var, "NdrBuffer"));
             con.BaseConstructorArgs.Add(new CodePropertyReferenceExpression(param_var, "Handles"));
+            con.BaseConstructorArgs.Add(new CodePropertyReferenceExpression(param_var, "DataRepresentation"));
+
+            con = type.AddConstructor(MemberAttributes.Public);
+            con.AddParam(typeof(byte[]).ToRef(), "ba");
+            con.BaseConstructorArgs.Add(CodeGenUtils.GetVariable("ba"));
+
             return type;
         }
 

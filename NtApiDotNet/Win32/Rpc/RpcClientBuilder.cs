@@ -35,6 +35,7 @@ namespace NtApiDotNet.Win32.Rpc
         private static readonly Dictionary<Tuple<RpcServer, RpcClientBuilderArguments>, Assembly> _compiled_clients
             = new Dictionary<Tuple<RpcServer, RpcClientBuilderArguments>, Assembly>();
         private readonly Dictionary<NdrBaseTypeReference, RpcTypeDescriptor> _type_descriptors;
+        private readonly IEnumerable<NdrComplexTypeReference> _complex_types;
         private readonly RpcServer _server;
         private readonly RpcClientBuilderArguments _args;
         private readonly HashSet<string> _proc_names;
@@ -514,7 +515,7 @@ namespace NtApiDotNet.Win32.Rpc
             int type_count = 0;
 
             // First populate the type cache.
-            foreach (var complex_type in _server.ComplexTypes)
+            foreach (var complex_type in _complex_types)
             {
                 if (!complex_type.IsStruct() && !complex_type.IsUnion())
                 {
@@ -562,7 +563,7 @@ namespace NtApiDotNet.Win32.Rpc
             CodeTypeDeclaration end_type = null;
 
             // Now generate the complex types.
-            foreach (var complex_type in _server.ComplexTypes)
+            foreach (var complex_type in _complex_types)
             {
                 bool non_encapsulated_union = complex_type.IsNonEncapsulatedUnion();
                 bool is_union = complex_type.IsUnion();
@@ -692,6 +693,55 @@ namespace NtApiDotNet.Win32.Rpc
             return type_count;
         }
 
+        private void GenerateComplexTypesEncoders(string encoder_name, string decoder_name, CodeNamespace ns, MarshalHelperBuilder marshal_helper)
+        {
+            CodeTypeDeclaration encoder_type = ns.AddType(encoder_name);
+            encoder_type.TypeAttributes = TypeAttributes.Public | TypeAttributes.Sealed;
+            encoder_type.AddStartRegion("Complex Type Encoders");
+            encoder_type.AddConstructor(MemberAttributes.Private);
+            CodeTypeDeclaration decoder_type = ns.AddType(decoder_name);
+            decoder_type.TypeAttributes = TypeAttributes.Public | TypeAttributes.Sealed;
+            decoder_type.AddEndRegion();
+            decoder_type.AddConstructor(MemberAttributes.Private);
+
+            // Now generate the complex types.
+            foreach (var complex_type in _complex_types)
+            {
+                var desc = GetTypeDescriptor(complex_type, marshal_helper);
+                if (desc.Unsupported || !desc.Constructed)
+                {
+                    continue;
+                }
+
+                var marshal_method = marshal_helper.MarshalMethods[complex_type];
+                var unmarshal_method = marshal_helper.UnmarshalMethods[complex_type];
+
+                var encode_method = encoder_type.AddMethod($"{complex_type.Name}_Encode", MemberAttributes.Public | MemberAttributes.Static);
+                CodeParameterDeclarationExpression[] marshal_params = marshal_method.Parameters.Cast<CodeParameterDeclarationExpression>().ToArray();
+                encode_method.Parameters.AddRange(marshal_params);
+                encode_method.CreateMarshalObject(MARSHAL_NAME, marshal_helper);
+                encode_method.ReturnType = typeof(byte[]).ToRef();
+
+                RpcMarshalArgument[] additional_args = marshal_params.Skip(1).Select(
+                    p => new RpcMarshalArgument(CodeGenUtils.GetVariable(p.Name), p.Type)).ToArray();
+
+                encode_method.AddMarshalCall(desc, MARSHAL_NAME, marshal_method.Parameters[0].Name, false, false, null, null, null, additional_args);
+                encode_method.AddFlushDeferredWrites(MARSHAL_NAME);
+                encode_method.AddReturn(new CodeMethodInvokeExpression(CodeGenUtils.GetVariable(MARSHAL_NAME), "ToArray"));
+
+                var decode_method = decoder_type.AddMethod($"{complex_type.Name}_Decode", MemberAttributes.Public | MemberAttributes.Static);
+                decode_method.AddParam(typeof(byte[]).ToRef(), "data");
+
+                decode_method.Statements.Add(new CodeVariableDeclarationStatement(marshal_helper.UnmarshalHelperType, UNMARSHAL_NAME,
+                    new CodeObjectCreateExpression(marshal_helper.UnmarshalHelperType, CodeGenUtils.GetVariable("data"))));
+                decode_method.Statements.Add(new CodeVariableDeclarationStatement(desc.CodeType, "v"));
+                decode_method.AddUnmarshalCall(desc, UNMARSHAL_NAME, "v", null, null, null);
+                decode_method.AddPopluateDeferredPointers(UNMARSHAL_NAME);
+                decode_method.AddReturn(CodeGenUtils.GetVariable("v"));
+                decode_method.ReturnType = desc.CodeType;
+            }
+        }
+
         private CodeTypeDeclaration GenerateStuctureWrapper(CodeNamespace ns, NdrProcedureDefinition proc, CodeTypeDeclaration client, 
             CodeMemberMethod private_method, int out_parameter_count, MarshalHelperBuilder marshal_helper)
         {
@@ -761,6 +811,10 @@ namespace NtApiDotNet.Win32.Rpc
 
         private void GenerateClient(string name, CodeNamespace ns, int complex_type_count, MarshalHelperBuilder marshal_helper)
         {
+            if (_server == null)
+            {
+                return;
+            }
             CodeTypeDeclaration type = ns.AddType(name);
             CodeTypeDeclaration last_type = type;
             type.AddStartRegion("Client Implementation");
@@ -926,6 +980,10 @@ namespace NtApiDotNet.Win32.Rpc
 
         private void AddServerComment(CodeCompileUnit unit)
         {
+            if (_server == null)
+            {
+                return;
+            }
             CodeNamespace ns = unit.AddNamespace(string.Empty);
 
             ns.AddComment($"Source Executable: {_server.FilePath}");
@@ -939,12 +997,16 @@ namespace NtApiDotNet.Win32.Rpc
         {
             CodeCompileUnit unit = new CodeCompileUnit();
             string ns_name = _args.NamespaceName;
-            if (HasFlag(RpcClientBuilderFlags.NoNamespace))
+            if (string.IsNullOrWhiteSpace(ns_name))
             {
-                ns_name = string.Empty;
-            } else if (string.IsNullOrWhiteSpace(ns_name))
-            {
-                ns_name = $"rpc_{_server.InterfaceId.ToString().Replace('-', '_')}_{_server.InterfaceVersion.Major}_{_server.InterfaceVersion.Minor}";
+                if (_server != null && !HasFlag(RpcClientBuilderFlags.NoNamespace))
+                {
+                    ns_name = $"rpc_{_server.InterfaceId.ToString().Replace('-', '_')}_{_server.InterfaceVersion.Major}_{_server.InterfaceVersion.Minor}";
+                }
+                else
+                {
+                    ns_name = string.Empty;
+                }
             }
             string name = _args.ClientName;
             if (string.IsNullOrWhiteSpace(name))
@@ -955,6 +1017,20 @@ namespace NtApiDotNet.Win32.Rpc
             CodeNamespace ns = unit.AddNamespace(ns_name);
             MarshalHelperBuilder marshal_helper = new MarshalHelperBuilder(ns, MARSHAL_HELPER_NAME, UNMARSHAL_HELPER_NAME);
             int complex_type_count = GenerateComplexTypes(ns, marshal_helper);
+            if (HasFlag(RpcClientBuilderFlags.GenerateComplexTypeEncodeMethods))
+            {
+                string encode_name = _args.EncoderName;
+                if (string.IsNullOrWhiteSpace(encode_name))
+                {
+                    encode_name = "Encoder";
+                }
+                string decode_name = _args.DecoderName;
+                if (string.IsNullOrWhiteSpace(decode_name))
+                {
+                    decode_name = "Decoder";
+                }
+                GenerateComplexTypesEncoders(encode_name, decode_name, ns, marshal_helper);
+            }
             GenerateClient(name, ns, complex_type_count, marshal_helper);
 
             return unit;
@@ -989,12 +1065,18 @@ namespace NtApiDotNet.Win32.Rpc
 
         #region Constructors
 
-        private RpcClientBuilder(RpcServer server, RpcClientBuilderArguments args)
+        private RpcClientBuilder(IEnumerable<NdrComplexTypeReference> complex_types, RpcClientBuilderArguments args)
         {
-            _server = server;
+            _complex_types = complex_types;
             _type_descriptors = new Dictionary<NdrBaseTypeReference, RpcTypeDescriptor>();
             _args = args;
             _proc_names = new HashSet<string>();
+        }
+
+        private RpcClientBuilder(RpcServer server, RpcClientBuilderArguments args) 
+            : this(server.ComplexTypes, args: args)
+        {
+            _server = server;
         }
 
         #endregion
@@ -1006,7 +1088,7 @@ namespace NtApiDotNet.Win32.Rpc
         /// </summary>
         /// <param name="server">The RPC server to base the client on.</param>
         /// <param name="args">Additional builder arguments.</param>
-        /// <param name="options">The code genearation options, can be null.</param>
+        /// <param name="options">The code generation options, can be null.</param>
         /// <param name="provider">The code dom provider, such as CSharpDomProvider</param>
         /// <returns>The source code file.</returns>
         public static string BuildSource(RpcServer server, RpcClientBuilderArguments args, CodeDomProvider provider, CodeGeneratorOptions options)
@@ -1041,6 +1123,61 @@ namespace NtApiDotNet.Win32.Rpc
         public static string BuildSource(RpcServer server)
         {
             return BuildSource(server, new RpcClientBuilderArguments());
+        }
+
+        /// <summary>
+        /// Build a source file for RPC complex types.
+        /// </summary>
+        /// <param name="complex_types">The RPC complex types to build the encoders from.</param>
+        /// <param name="decoder_name">Name of the decoder class. Can be null or empty to use default.</param>
+        /// <param name="encoder_name">Name of the encoder class. Can be null or empty to use default.</param>
+        /// <param name="namespace_name">Name of the generated namespace. Null or empty specified no namespace.</param>
+        /// <param name="options">The code generation options, can be null.</param>
+        /// <param name="provider">The code dom provider, such as CSharpDomProvider</param>
+        /// <returns>The source code file.</returns>
+        public static string BuildSource(IEnumerable<NdrComplexTypeReference> complex_types, 
+            string encoder_name, string decoder_name, string namespace_name, CodeDomProvider provider, CodeGeneratorOptions options)
+        {
+            RpcClientBuilderArguments args = new RpcClientBuilderArguments
+            {
+                EncoderName = encoder_name,
+                DecoderName = decoder_name,
+                NamespaceName = namespace_name,
+                Flags = RpcClientBuilderFlags.GenerateComplexTypeEncodeMethods
+            };
+            return GenerateSourceCode(provider, options, new RpcClientBuilder(complex_types, args).Generate());
+        }
+
+        /// <summary>
+        /// Build a source file for RPC complex types.
+        /// </summary>
+        /// <param name="complex_types">The RPC complex types to build the encoders from.</param>
+        /// <param name="decoder_name">Name of the decoder class. Can be null or empty to use default.</param>
+        /// <param name="encoder_name">Name of the encoder class. Can be null or empty to use default.</param>
+        /// <param name="namespace_name">Name of the generated namespace. Null or empty specified no namespace.</param>
+        /// <returns>The source code file.</returns>
+        public static string BuildSource(IEnumerable<NdrComplexTypeReference> complex_types,
+            string encoder_name, string decoder_name, string namespace_name)
+        {
+            CodeDomProvider provider = new CSharpCodeProvider();
+            CodeGeneratorOptions options = new CodeGeneratorOptions
+            {
+                IndentString = "    ",
+                BlankLinesBetweenMembers = false,
+                VerbatimOrder = true,
+                BracingStyle = "C"
+            };
+            return BuildSource(complex_types, encoder_name, decoder_name, namespace_name, provider, options);
+        }
+
+        /// <summary>
+        /// Build a source file for RPC complex types.
+        /// </summary>
+        /// <param name="complex_types">The RPC complex types to build the encoders from.</param>
+        /// <returns>The C# source code file.</returns>
+        public static string BuildSource(IEnumerable<NdrComplexTypeReference> complex_types)
+        {
+            return BuildSource(complex_types, string.Empty, string.Empty, string.Empty);
         }
 
         /// <summary>

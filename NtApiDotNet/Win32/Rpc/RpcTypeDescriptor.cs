@@ -99,6 +99,7 @@ namespace NtApiDotNet.Win32.Rpc
         public NdrCorrelationDescriptor ConformanceDescriptor { get; }
         public NdrCorrelationDescriptor VarianceDescriptor { get; }
         public int FixedCount { get; set; }
+        public bool Unsupported => BuiltinType == typeof(NdrUnsupported);
 
         public RpcTypeDescriptor(CodeTypeReference code_type, bool value_type, string unmarshal_method,
             MarshalHelperBuilder marshal_helper, string marshal_method, NdrBaseTypeReference ndr_type,

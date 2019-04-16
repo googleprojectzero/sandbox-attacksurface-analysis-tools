@@ -2508,7 +2508,7 @@ string - The formatted complex type.
 Format-NdrComplexType $type
 Format a complex type.
 .EXAMPLE
-$ndr.ComplexTypes = | Format-NdrComplexType
+$ndr.ComplexTypes | Format-NdrComplexType
 Format a list of complex types from a pipeline.
 .EXAMPLE
 Format-NdrComplexType $type -IidToName @{"00000000-0000-0000-C000-000000000046"="IUnknown";}
@@ -2518,7 +2518,7 @@ function Format-NdrComplexType {
   [CmdletBinding()]
     Param(
     [parameter(Mandatory, Position=0, ValueFromPipeline)]
-    [NtApiDotNet.Ndr.NdrComplexTypeReference]$ComplexType,
+    [NtApiDotNet.Ndr.NdrComplexTypeReference[]]$ComplexType,
     [Hashtable]$IidToName
     )
 
@@ -2528,8 +2528,9 @@ function Format-NdrComplexType {
   }
 
   PROCESS {
-    $fmt = $formatter.FormatComplexType($ComplexType)
-    Write-Output $fmt
+    foreach($t in $ComplexType) {
+        $formatter.FormatComplexType($t) | Write-Output
+    }
   }
 }
 
@@ -4160,8 +4161,6 @@ Specify the name of the compiled namespace for the client.
 Specify the class name of the compiled client.
 .PARAMETER Flags
 Specify to flags for the source creation.
-.PARAMETER IgnoreCache
-Specify to ignore the compiled client cache and regenerate the source code.
 .PARAMETER Provider
 Specify a Code DOM provider. Defaults to C#.
 .PARAMETER Options
@@ -4201,6 +4200,64 @@ function Format-RpcClient {
             } else {
                 [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource($s, $args, $Provider, $Options) | Write-Output
             }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Format RPC complex types to an encoder/decoder source code file.
+.DESCRIPTION
+This cmdlet gets source code for encoding and decoding RPC complex types.
+.PARAMETER ComplexType
+Specify the list of complex types to format.
+.PARAMETER Server
+Specify the server containing the list of complex types to format.
+.PARAMETER NamespaceName
+Specify the name of the compiled namespace for the client.
+.PARAMETER EncoderName
+Specify the class name of the encoder.
+.PARAMETER DecoderName
+Specify the class name of the decoder.
+.PARAMETER Provider
+Specify a Code DOM provider. Defaults to C#.
+.PARAMETER Options
+Specify optional options for the code generation if Provider is also specified.
+.INPUTS
+None
+.OUTPUTS
+string
+.EXAMPLE
+Format-RpcComplexType -Server $Server
+Get the source code for RPC complex types client from a parsed RPC server.
+.EXAMPLE
+Format-RpcComplexType -ComplexType $ComplexTypes
+Get the source code for RPC complex types client from a list of types.
+#>
+function Format-RpcComplexType {
+    [CmdletBinding(DefaultParameterSetName="FromTypes")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromTypes")]
+        [NtApiDotNet.Ndr.NdrComplexTypeReference[]]$ComplexType,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromServer")]
+        [NtApiDotNet.Win32.RpcServer]$Server,
+        [string]$NamespaceName,
+        [string]$EncoderName,
+        [string]$DecoderName,
+        [NtApiDotNet.Win32.Rpc.RpcClientBuilderFlags]$Flags = 0,
+        [System.CodeDom.Compiler.CodeDomProvider]$Provider,
+        [System.CodeDom.Compiler.CodeGeneratorOptions]$Options
+    )
+
+    PROCESS {
+        $types = switch($PsCmdlet.ParameterSetName) {
+            "FromTypes" { $ComplexType }
+            "FromServer" { $Server.ComplexTypes }
+        }
+        if ($Provider -eq $null) {
+            [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource([NtApiDotNet.Ndr.NdrComplexTypeReference[]]$types, $EncoderName, $DecoderName, $NamespaceName) | Write-Output
+        } else {
+            [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource([NtApiDotNet.Ndr.NdrComplexTypeReference[]]$types, $EncoderName, $DecoderName, $NamespaceName, $Provider, $Options) | Write-Output
         }
     }
 }

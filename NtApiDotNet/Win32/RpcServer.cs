@@ -32,77 +32,6 @@ namespace NtApiDotNet.Win32
         #region Public Methods
 
         /// <summary>
-        /// Parse all RPC servers from a PE file.
-        /// </summary>
-        /// <param name="file">The PE file to parse.</param>
-        /// <param name="dbghelp_path">Path to a DBGHELP DLL to resolve symbols.</param>
-        /// <param name="symbol_path">Symbol path for DBGHELP</param>
-        /// <remarks>This only works for PE files with the same bitness as the current process.</remarks>
-        /// <returns>A list of parsed RPC server.</returns>
-        public static IEnumerable<RpcServer> ParsePeFile(string file, string dbghelp_path, string symbol_path)
-        {
-            return ParsePeFile(file, dbghelp_path, symbol_path, false, false);
-        }
-
-        /// <summary>
-        /// Parse all RPC servers from a PE file.
-        /// </summary>
-        /// <param name="file">The PE file to parse.</param>
-        /// <param name="dbghelp_path">Path to a DBGHELP DLL to resolve symbols.</param>
-        /// <param name="symbol_path">Symbol path for DBGHELP</param>
-        /// <param name="parse_clients">True to parse client RPC interfaces.</param>
-        /// <remarks>This only works for PE files with the same bitness as the current process.</remarks>
-        /// <returns>A list of parsed RPC server.</returns>
-        public static IEnumerable<RpcServer> ParsePeFile(string file, string dbghelp_path, string symbol_path, bool parse_clients)
-        {
-            return ParsePeFile(file, dbghelp_path, symbol_path, parse_clients, false);
-        }
-
-        /// <summary>
-        /// Parse all RPC servers from a PE file.
-        /// </summary>
-        /// <param name="file">The PE file to parse.</param>
-        /// <param name="dbghelp_path">Path to a DBGHELP DLL to resolve symbols.</param>
-        /// <param name="symbol_path">Symbol path for DBGHELP</param>
-        /// <param name="parse_clients">True to parse client RPC interfaces.</param>
-        /// <param name="ignore_symbols">Ignore symbol resolving.</param>
-        /// <remarks>This only works for PE files with the same bitness as the current process.</remarks>
-        /// <returns>A list of parsed RPC server.</returns>
-        public static IEnumerable<RpcServer> ParsePeFile(string file, string dbghelp_path, string symbol_path, bool parse_clients, bool ignore_symbols)
-        {
-            List<RpcServer> servers = new List<RpcServer>();
-            using (var result = SafeLoadLibraryHandle.LoadLibrary(file, LoadLibraryFlags.DontResolveDllReferences, false))
-            {
-                if (!result.IsSuccess)
-                {
-                    return servers.AsReadOnly();
-                }
-
-                var lib = result.Result;
-                var sections = lib.GetImageSections();
-                var offsets = sections.SelectMany(s => FindRpcServerInterfaces(s, parse_clients));
-                if (offsets.Any())
-                {
-                    using (var sym_resolver = !ignore_symbols ? SymbolResolver.Create(NtProcess.Current,
-                            dbghelp_path, symbol_path) : null)
-                    {
-                        foreach (var offset in offsets)
-                        {
-                            IMemoryReader reader = new CurrentProcessMemoryReader(sections.Select(s => Tuple.Create(s.Data.DangerousGetHandle().ToInt64(), (int)s.Data.ByteLength)));
-                            NdrParser parser = new NdrParser(reader, NtProcess.Current, 
-                                sym_resolver, NdrParserFlags.IgnoreUserMarshal);
-                            IntPtr ifspec = lib.DangerousGetHandle() + (int)offset.Offset;
-                            var rpc = parser.ReadFromRpcServerInterface(ifspec);
-                            servers.Add(new RpcServer(rpc, parser.ComplexTypes, file, offset.Offset, offset.Client));
-                        }
-                    }
-                }
-            }
-
-            return servers.AsReadOnly();
-        }
-
-        /// <summary>
         /// Resolve the current running endpoint for this server.
         /// </summary>
         /// <returns></returns>
@@ -273,6 +202,77 @@ namespace NtApiDotNet.Win32
         #endregion
 
         #region Static Methods
+
+        /// <summary>
+        /// Parse all RPC servers from a PE file.
+        /// </summary>
+        /// <param name="file">The PE file to parse.</param>
+        /// <param name="dbghelp_path">Path to a DBGHELP DLL to resolve symbols.</param>
+        /// <param name="symbol_path">Symbol path for DBGHELP</param>
+        /// <remarks>This only works for PE files with the same bitness as the current process.</remarks>
+        /// <returns>A list of parsed RPC server.</returns>
+        public static IEnumerable<RpcServer> ParsePeFile(string file, string dbghelp_path, string symbol_path)
+        {
+            return ParsePeFile(file, dbghelp_path, symbol_path, false, false);
+        }
+
+        /// <summary>
+        /// Parse all RPC servers from a PE file.
+        /// </summary>
+        /// <param name="file">The PE file to parse.</param>
+        /// <param name="dbghelp_path">Path to a DBGHELP DLL to resolve symbols.</param>
+        /// <param name="symbol_path">Symbol path for DBGHELP</param>
+        /// <param name="parse_clients">True to parse client RPC interfaces.</param>
+        /// <remarks>This only works for PE files with the same bitness as the current process.</remarks>
+        /// <returns>A list of parsed RPC server.</returns>
+        public static IEnumerable<RpcServer> ParsePeFile(string file, string dbghelp_path, string symbol_path, bool parse_clients)
+        {
+            return ParsePeFile(file, dbghelp_path, symbol_path, parse_clients, false);
+        }
+
+        /// <summary>
+        /// Parse all RPC servers from a PE file.
+        /// </summary>
+        /// <param name="file">The PE file to parse.</param>
+        /// <param name="dbghelp_path">Path to a DBGHELP DLL to resolve symbols.</param>
+        /// <param name="symbol_path">Symbol path for DBGHELP</param>
+        /// <param name="parse_clients">True to parse client RPC interfaces.</param>
+        /// <param name="ignore_symbols">Ignore symbol resolving.</param>
+        /// <remarks>This only works for PE files with the same bitness as the current process.</remarks>
+        /// <returns>A list of parsed RPC server.</returns>
+        public static IEnumerable<RpcServer> ParsePeFile(string file, string dbghelp_path, string symbol_path, bool parse_clients, bool ignore_symbols)
+        {
+            List<RpcServer> servers = new List<RpcServer>();
+            using (var result = SafeLoadLibraryHandle.LoadLibrary(file, LoadLibraryFlags.DontResolveDllReferences, false))
+            {
+                if (!result.IsSuccess)
+                {
+                    return servers.AsReadOnly();
+                }
+
+                var lib = result.Result;
+                var sections = lib.GetImageSections();
+                var offsets = sections.SelectMany(s => FindRpcServerInterfaces(s, parse_clients));
+                if (offsets.Any())
+                {
+                    using (var sym_resolver = !ignore_symbols ? SymbolResolver.Create(NtProcess.Current,
+                            dbghelp_path, symbol_path) : null)
+                    {
+                        foreach (var offset in offsets)
+                        {
+                            IMemoryReader reader = new CurrentProcessMemoryReader(sections.Select(s => Tuple.Create(s.Data.DangerousGetHandle().ToInt64(), (int)s.Data.ByteLength)));
+                            NdrParser parser = new NdrParser(reader, NtProcess.Current,
+                                sym_resolver, NdrParserFlags.IgnoreUserMarshal);
+                            IntPtr ifspec = lib.DangerousGetHandle() + (int)offset.Offset;
+                            var rpc = parser.ReadFromRpcServerInterface(ifspec);
+                            servers.Add(new RpcServer(rpc, parser.ComplexTypes, file, offset.Offset, offset.Client));
+                        }
+                    }
+                }
+            }
+
+            return servers.AsReadOnly();
+        }
 
         /// <summary>
         /// Deserialize an RPC server instance from a stream.

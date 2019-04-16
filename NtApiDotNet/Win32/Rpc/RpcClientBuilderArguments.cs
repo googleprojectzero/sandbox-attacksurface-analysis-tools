@@ -59,6 +59,10 @@ namespace NtApiDotNet.Win32.Rpc
         /// When using StructureReturn hide the original out/ref methods.
         /// </summary>
         HideWrappedMethods = 0x40,
+        /// <summary>
+        /// Generate encode/decode methods for complex types.
+        /// </summary>
+        GenerateComplexTypeEncodeMethods = 0x80
     }
 
     /// <summary>
@@ -79,13 +83,22 @@ namespace NtApiDotNet.Win32.Rpc
         /// </summary>
         public string ClientName { get; set; }
         /// <summary>
+        /// The class name of the complex type encoding class.
+        /// </summary>
+        public string EncoderName { get; set; }
+        /// <summary>
+        /// The class name of the complex type decoder class.
+        /// </summary>
+        public string DecoderName { get; set; }
+        /// <summary>
         /// Enable debugging on built code.
         /// </summary>
         public bool EnableDebugging { get; set; }
 
-        private Tuple<RpcClientBuilderFlags, string, string, bool> CreateTuple()
+        private Tuple<RpcClientBuilderFlags, string, string, string, string, bool> CreateTuple()
         {
-            return Tuple.Create(Flags, NamespaceName, ClientName, EnableDebugging);
+            return Tuple.Create(Flags, NamespaceName, ClientName, 
+                EncoderName, DecoderName, EnableDebugging);
         }
 
         /// <summary>
