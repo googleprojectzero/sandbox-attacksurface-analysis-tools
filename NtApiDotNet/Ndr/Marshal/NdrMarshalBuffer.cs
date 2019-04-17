@@ -33,6 +33,7 @@ namespace NtApiDotNet.Ndr.Marshal
         private readonly List<NtObject> _handles;
         private readonly Queue<Action> _deferred_writes;
         private int _referent;
+        private long? _conformance_position;
 
         private void WriteEmbeddedPointer<T>(NdrEmbeddedPointer<T> pointer, Action writer)
         {
@@ -72,6 +73,41 @@ namespace NtApiDotNet.Ndr.Marshal
                 {
                     writer(string.Empty);
                 }
+            }
+        }
+
+        private void WriteConformance(params int[] conformance)
+        {
+            long? current_position = null;
+            if (_conformance_position.HasValue)
+            {
+                current_position = _stm.Position;
+                _stm.Position = _conformance_position.Value;
+                _conformance_position = null;
+            }
+
+            foreach (int i in conformance)
+            {
+                WriteInt32(i);
+            }
+
+            if (current_position.HasValue)
+            {
+                _stm.Position = current_position.Value;
+            }
+        }
+
+        private void SetupConformance(int dimensions)
+        {
+            if (dimensions == 0 || _conformance_position.HasValue)
+            {
+                return;
+            }
+
+            _conformance_position = _stm.Position;
+            for (int i = 0; i < dimensions; ++i)
+            {
+                WriteInt32(0x77777777);
             }
         }
 
@@ -441,18 +477,31 @@ namespace NtApiDotNet.Ndr.Marshal
         {
             if (structure.HasValue)
             {
-                structure.Value.Marshal(this);
+                WriteStruct(structure.Value);
             }
         }
 
         public void WriteStruct<T>(T structure) where T : struct, INdrStructure
         {
-            structure.Marshal(this);
+            WriteStruct((INdrStructure)structure);
         }
 
         public void WriteStruct(INdrStructure structure)
         {
+            bool conformant = false;
+            if (structure is INdrConformantStructure conformant_structure)
+            {
+                SetupConformance(conformant_structure.GetConformantDimensions());
+                System.Diagnostics.Debug.Assert(_conformance_position.HasValue);
+                conformant = true;
+            }
+
             structure.Marshal(this);
+
+            if (conformant)
+            {
+                System.Diagnostics.Debug.Assert(!_conformance_position.HasValue);
+            }
         }
 
         public void WriteUnion<T>(T? union, long selector) where T : struct, INdrNonEncapsulatedUnion
@@ -778,7 +827,7 @@ namespace NtApiDotNet.Ndr.Marshal
                 var_int = array.Length;
             }
             // Max Count
-            WriteInt32(var_int);
+            WriteConformance(var_int);
             Array.Resize(ref array, var_int);
             WriteBytes(array);
         }
@@ -791,7 +840,7 @@ namespace NtApiDotNet.Ndr.Marshal
                 var_int = array.Length;
             }
             // Max Count
-            WriteInt32(var_int);
+            WriteConformance(var_int);
             Array.Resize(ref array, var_int);
             WriteChars(array);
         }
@@ -804,7 +853,7 @@ namespace NtApiDotNet.Ndr.Marshal
                 var_int = array.Length;
             }
             // Max Count
-            WriteInt32(var_int);
+            WriteConformance(var_int);
             WriteFixedPrimitiveArray<T>(array, var_int);
         }
 
@@ -821,7 +870,7 @@ namespace NtApiDotNet.Ndr.Marshal
                 var_int = array.Length;
             }
             // Max Count
-            WriteInt32(var_int);
+            WriteConformance(var_int);
             WriteStringArray(array, writer, var_int);
         }
 
@@ -837,7 +886,7 @@ namespace NtApiDotNet.Ndr.Marshal
             {
                 var_int = array.Length;
             }
-            WriteInt32(var_int);
+            WriteConformance(var_int);
 
             for (int i = 0; i < var_int; ++i)
             {
@@ -888,7 +937,7 @@ namespace NtApiDotNet.Ndr.Marshal
             {
                 con_int = array.Length;
             }
-            WriteInt32(con_int);
+            WriteConformance(con_int);
             WriteVaryingByteArray(array, variance);
         }
 
@@ -900,7 +949,7 @@ namespace NtApiDotNet.Ndr.Marshal
             {
                 con_int = array.Length;
             }
-            WriteInt32(con_int);
+            WriteConformance(con_int);
             WriteVaryingCharArray(array, variance);
         }
 
@@ -912,7 +961,7 @@ namespace NtApiDotNet.Ndr.Marshal
             {
                 con_int = array.Length;
             }
-            WriteInt32(con_int);
+            WriteConformance(con_int);
             WriteVaryingPrimitiveArray(array, variance);
         }
 
@@ -929,7 +978,7 @@ namespace NtApiDotNet.Ndr.Marshal
             {
                 con_int = array.Length;
             }
-            WriteInt32(con_int);
+            WriteConformance(con_int);
             WriteVaryingStringArray(array, writer, (int)variance);
         }
 
@@ -941,7 +990,7 @@ namespace NtApiDotNet.Ndr.Marshal
             {
                 con_int = array.Length;
             }
-            WriteInt32(con_int);
+            WriteConformance(con_int);
             WriteVaryingArrayCallback(array, writer, variance);
         }
 
