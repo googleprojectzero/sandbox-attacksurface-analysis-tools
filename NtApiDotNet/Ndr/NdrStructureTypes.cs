@@ -72,6 +72,7 @@ namespace NtApiDotNet.Ndr
 
         public int Alignment { get; }
         public int MemorySize { get; }
+        public virtual bool Conformant => false;
 
         protected virtual List<NdrStructureMember> PopulateMembers()
         {
@@ -194,25 +195,40 @@ namespace NtApiDotNet.Ndr
     [Serializable]
     public sealed class NdrConformantStructureTypeReference : NdrBaseStructureTypeReference
     {
+        public NdrBaseTypeReference ConformantArray { get; }
+
+        public override bool Conformant => true;
+
         internal NdrConformantStructureTypeReference(NdrParseContext context, BinaryReader reader)
             : base(context, NdrFormatCharacter.FC_CSTRUCT, reader)
         {
-            NdrBaseTypeReference array = Read(context, ReadTypeOffset(reader));
+            ConformantArray = Read(context, ReadTypeOffset(reader));
             ReadMemberInfo(context, reader);
-            if (array != null)
+        }
+
+        protected override List<NdrStructureMember> PopulateMembers()
+        {
+            var last_member = _base_members.LastOrDefault() as NdrBaseStructureTypeReference;
+            if (last_member == null || !last_member.Conformant)
             {
-                _base_members.Add(array);
+                _base_members.Add(ConformantArray);
             }
+
+            return base.PopulateMembers();
         }
     }
 
     [Serializable]
     public sealed class NdrBogusStructureTypeReference : NdrBaseStructureTypeReference
     {
+        public NdrBaseTypeReference ConformantArray { get; }
+
+        public override bool Conformant => ConformantArray != null;
+
         internal NdrBogusStructureTypeReference(NdrParseContext context, NdrFormatCharacter format, BinaryReader reader)
             : base(context, format, reader)
         {
-            NdrBaseTypeReference array = Read(context, ReadTypeOffset(reader));
+            ConformantArray = Read(context, ReadTypeOffset(reader));
             int pointer_ofs = ReadTypeOffset(reader);
             ReadMemberInfo(context, reader);
             if (pointer_ofs >= 0)
@@ -226,11 +242,20 @@ namespace NtApiDotNet.Ndr
                     }
                 }
             }
+        }
 
-            if (array != null)
+        protected override List<NdrStructureMember> PopulateMembers()
+        {
+            if (ConformantArray != null)
             {
-                _base_members.Add(array);
+                var last_member = _base_members.LastOrDefault() as NdrBaseStructureTypeReference;
+                if (last_member == null || !last_member.Conformant)
+                {
+                    _base_members.Add(ConformantArray);
+                }
             }
+
+            return base.PopulateMembers();
         }
     }
 
