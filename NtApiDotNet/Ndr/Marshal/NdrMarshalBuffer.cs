@@ -28,20 +28,12 @@ namespace NtApiDotNet.Ndr.Marshal
     public class NdrMarshalBuffer
     {
         #region Private Members
-
-        private struct ConformanceFixups
-        {
-            public int offset;
-            public int[] values;
-        }
-
         private readonly MemoryStream _stm;
         private readonly BinaryWriter _writer;
         private readonly List<NtObject> _handles;
         private readonly Queue<Action> _deferred_writes;
         private int _referent;
         private long? _conformance_position;
-        private List<ConformanceFixups> _conformance_fixups;
 
         private void WriteEmbeddedPointer<T>(NdrEmbeddedPointer<T> pointer, Action writer)
         {
@@ -88,11 +80,12 @@ namespace NtApiDotNet.Ndr.Marshal
         {
             if (_conformance_position.HasValue)
             {
-                _conformance_fixups.Add(new ConformanceFixups()
-                {
-                    offset = (int)_conformance_position.Value,
-                    values = conformance
-                });
+                long current_position = _stm.Position;
+                _stm.Position = _conformance_position.Value;
+                byte[] data = new byte[conformance.Length * 4];
+                Buffer.BlockCopy(conformance, 0, data, 0, data.Length);
+                _stm.Write(data, 0, data.Length);
+                _stm.Position = current_position;
                 _conformance_position = null;
             }
             else
@@ -140,7 +133,6 @@ namespace NtApiDotNet.Ndr.Marshal
             _handles = new List<NtObject>();
             _referent = 0x20000;
             _deferred_writes = new Queue<Action>();
-            _conformance_fixups = new List<ConformanceFixups>();
             NdrUnmarshalBuffer.CheckDataRepresentation(data_representation);
             DataRepresentation = data_representation;
         }
@@ -200,11 +192,6 @@ namespace NtApiDotNet.Ndr.Marshal
             if (alignment > 0)
             {
                 Array.Resize(ref ret, ret.Length + alignment);
-            }
-
-            foreach (var fixup in _conformance_fixups)
-            {
-                Buffer.BlockCopy(fixup.values, 0, ret, fixup.offset, fixup.values.Length * 4);
             }
 
             return ret;
