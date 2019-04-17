@@ -19,55 +19,6 @@ using System.Text;
 
 namespace NtApiDotNet.Win32.Rpc.Transport
 {
-    #region Marshal Helpers
-    internal class _Unmarshal_Helper : NdrUnmarshalBuffer
-    {
-        public _Unmarshal_Helper(byte[] ba) :
-                base(ba)
-        {
-        }
-        public RpcExtendedErrorInfoInternal Read_0()
-        {
-            return ReadStruct<RpcExtendedErrorInfoInternal>();
-        }
-        public ExtendedErrorInfoParamInternal Read_1()
-        {
-            return ReadStruct<ExtendedErrorInfoParamInternal>();
-        }
-        public Union_2 Read_2()
-        {
-            return ReadStruct<Union_2>();
-        }
-        public AnsiStringData Read_3()
-        {
-            return ReadStruct<AnsiStringData>();
-        }
-        public UnicodeStringData Read_4()
-        {
-            return ReadStruct<UnicodeStringData>();
-        }
-        public BinaryData Read_5()
-        {
-            return ReadStruct<BinaryData>();
-        }
-        public ComputerNameData Read_7()
-        {
-            return ReadStruct<ComputerNameData>();
-        }
-        public byte[] Read_9()
-        {
-            return ReadConformantArray<byte>();
-        }
-        public short[] Read_10()
-        {
-            return ReadConformantArray<short>();
-        }
-        public sbyte[] Read_11()
-        {
-            return ReadConformantArray<sbyte>();
-        }
-    }
-    #endregion
     #region Complex Types
     internal struct RpcExtendedErrorInfoInternal : INdrConformantStructure
     {
@@ -78,12 +29,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            Unmarshal(((_Unmarshal_Helper)(u)));
-        }
-        private void Unmarshal(_Unmarshal_Helper u)
-        {
             u.Align(8);
-            Chain = u.ReadEmbeddedPointer(new Func<RpcExtendedErrorInfoInternal>(u.Read_0));
+            Chain = u.ReadEmbeddedPointer(u.ReadStruct<RpcExtendedErrorInfoInternal>);
             ComputerName = u.ReadStruct<ComputerNameUnion>();
             ProcessId = u.ReadInt32();
             TimeStamp = u.ReadInt64();
@@ -120,14 +67,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            Unmarshal((_Unmarshal_Helper)u);
-        }
-        private void Unmarshal(_Unmarshal_Helper u)
-        {
             u.Align(8);
             ParameterType = u.ReadEnum16();
-            ParameterData = u.Read_2();
+            ParameterData = u.ReadStruct<Union_2>();
         }
+
         public NdrEnum16 ParameterType;
         public Union_2 ParameterData;
 
@@ -165,20 +109,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            Unmarshal(((_Unmarshal_Helper)(u)));
-        }
-        private void Unmarshal(_Unmarshal_Helper u)
-        {
             u.Align(1);
             Selector = u.ReadInt16();
             if ((Selector == 1))
             {
-                AnsiString = u.Read_3();
+                AnsiString = u.ReadStruct<AnsiStringData>();
                 goto done;
             }
             if ((Selector == 2))
             {
-                UnicodeString = u.Read_4();
+                UnicodeString = u.ReadStruct<UnicodeStringData>();
                 goto done;
             }
             if ((Selector == 3))
@@ -203,13 +143,14 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             }
             if ((Selector == 7))
             {
-                BinaryVal = u.Read_5();
+                BinaryVal = u.ReadStruct<BinaryData>();
                 goto done;
             }
             throw new System.ArgumentException("No matching union selector when marshaling Union_2");
             done:
             return;
         }
+
         private short Selector;
         public AnsiStringData AnsiString;
         public UnicodeStringData UnicodeString;
@@ -228,14 +169,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            Unmarshal(((_Unmarshal_Helper)(u)));
-        }
-        private void Unmarshal(_Unmarshal_Helper u)
-        {
             u.Align(4);
             Length = u.ReadInt16();
-            Data = u.ReadEmbeddedPointer(new Func<byte[]>(u.Read_9));
+            Data = u.ReadEmbeddedPointer(u.ReadConformantArray<byte>);
         }
+
         public short Length;
         public NdrEmbeddedPointer<byte[]> Data;
 
@@ -253,14 +191,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            Unmarshal(((_Unmarshal_Helper)(u)));
-        }
-        private void Unmarshal(_Unmarshal_Helper u)
-        {
             u.Align(4);
             Length = u.ReadInt16();
-            Data = u.ReadEmbeddedPointer<short[]>(new Func<short[]>(u.Read_10));
+            Data = u.ReadEmbeddedPointer(u.ReadConformantArray<short>);
         }
+
         public short Length;
         public NdrEmbeddedPointer<short[]> Data;
 
@@ -282,14 +217,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            Unmarshal(((_Unmarshal_Helper)(u)));
-        }
-        private void Unmarshal(_Unmarshal_Helper u)
-        {
             u.Align(4);
             Length = u.ReadInt16();
-            Data = u.ReadEmbeddedPointer<sbyte[]>(new System.Func<sbyte[]>(u.Read_11));
+            Data = u.ReadEmbeddedPointer(u.ReadConformantArray<sbyte>);
         }
+
         public short Length;
         public NdrEmbeddedPointer<sbyte[]> Data;
 
@@ -307,14 +239,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            Unmarshal(((_Unmarshal_Helper)(u)));
-        }
-        private void Unmarshal(_Unmarshal_Helper u)
-        {
             u.Align(4);
             Member0 = u.ReadEnum16();
-            Member8 = u.Read_7();
+            Member8 = u.ReadStruct<ComputerNameData>();
         }
+
         public NdrEnum16 Member0;
         public ComputerNameData Member8;
 
@@ -340,26 +269,19 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            Unmarshal((_Unmarshal_Helper)u);
-        }
-        private void Unmarshal(_Unmarshal_Helper u)
-        {
             u.Align(1);
-            Selector = u.ReadInt16();
-            if ((Selector == 1))
+            switch (u.ReadInt16())
             {
-                Arm_1 = u.Read_4();
-                goto done;
+                case 1:
+                    Arm_1 = u.ReadStruct<UnicodeStringData>();
+                    break;
+                case 2:
+                    break;
+                default:
+                    throw new System.ArgumentException("No matching union selector when marshaling ComputerNameData");
             }
-            if ((Selector == 2))
-            {
-                Arm_2 = u.ReadEmpty();
-                goto done;
-            }
-            throw new System.ArgumentException("No matching union selector when marshaling ComputerNameData");
-            done:
-            return;
         }
+
         private short Selector;
         public UnicodeStringData Arm_1;
         public NdrEmpty Arm_2;
@@ -370,7 +292,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     {
         internal static RpcExtendedErrorInfoInternal? Decode(byte[] data)
         {
-            _Unmarshal_Helper u = new _Unmarshal_Helper(data);
+            NdrUnmarshalBuffer u = new NdrUnmarshalBuffer(data);
             RpcExtendedErrorInfoInternal v;
             // Read out referent.
             int referent = u.ReadReferent();
@@ -378,7 +300,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             {
                 return null;
             }
-            v = u.Read_0();
+            v = u.ReadStruct<RpcExtendedErrorInfoInternal>();
             u.PopulateDeferredPointers();
             return v;
         }
