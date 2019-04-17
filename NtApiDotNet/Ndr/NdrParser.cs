@@ -383,6 +383,16 @@ namespace NtApiDotNet.Ndr
             }
         }
 
+        private static void RunWithAccessCatch(Action func)
+        {
+            RunWithAccessCatch(() =>
+            {
+                func();
+                return 0;
+            }
+            );
+        }
+
         private static IMemoryReader CreateReader(NtProcess process)
         {
             if (process == null || process.ProcessId == NtProcess.Current.ProcessId)
@@ -662,7 +672,7 @@ namespace NtApiDotNet.Ndr
             }
 
             NdrParser parser = new NdrParser(process, null, NdrParserFlags.IgnoreUserMarshal);
-            parser.ReadTypes(midl_type_pickling_info, midl_stub_desc, start_offsets);
+            RunWithAccessCatch(() => parser.ReadTypes(midl_type_pickling_info, midl_stub_desc, start_offsets));
             return parser.ComplexTypes;
         }
 
