@@ -69,11 +69,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         {
             u.Align(8);
             ParameterType = u.ReadEnum16();
-            ParameterData = u.ReadStruct<Union_2>();
+            ParameterData = u.ReadStruct<ParameterValueUnion>();
         }
 
         public NdrEnum16 ParameterType;
-        public Union_2 ParameterData;
+        public ParameterValueUnion ParameterData;
 
         public object GetObject()
         {
@@ -96,68 +96,49 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             }
         }
     }
-    internal struct Union_2 : INdrNonEncapsulatedUnion
+    internal struct ParameterValueUnion : INdrStructure
     {
         void INdrStructure.Marshal(NdrMarshalBuffer m)
         {
             throw new NotImplementedException();
         }
-        void INdrNonEncapsulatedUnion.Marshal(NdrMarshalBuffer m, long l)
-        {
-            throw new NotImplementedException();
-        }
-        
+
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
             u.Align(1);
-            Selector = u.ReadInt16();
-            if ((Selector == 1))
+
+            switch (u.ReadInt16())
             {
-                AnsiString = u.ReadStruct<AnsiStringData>();
-                goto done;
+                case 1:
+                    AnsiString = u.ReadStruct<AnsiStringData>();
+                    break;
+                case 2:
+                    UnicodeString = u.ReadStruct<UnicodeStringData>();
+                    break;
+                case 3:
+                    LongVal = u.ReadInt32();
+                    break;
+                case 4:
+                    ShortVal = u.ReadInt16();
+                    break;
+                case 5:
+                    PointerVal = u.ReadInt64();
+                    break;
+                case 6:
+                    break;
+                case 7:
+                    BinaryVal = u.ReadStruct<BinaryData>();
+                    break;
+                default:
+                    throw new System.ArgumentException("No matching union selector when marshaling Union_2");
             }
-            if ((Selector == 2))
-            {
-                UnicodeString = u.ReadStruct<UnicodeStringData>();
-                goto done;
-            }
-            if ((Selector == 3))
-            {
-                LongVal = u.ReadInt32();
-                goto done;
-            }
-            if ((Selector == 4))
-            {
-                ShortVal = u.ReadInt16();
-                goto done;
-            }
-            if ((Selector == 5))
-            {
-                PointerVal = u.ReadInt64();
-                goto done;
-            }
-            if ((Selector == 6))
-            {
-                NoneVal = u.ReadEmpty();
-                goto done;
-            }
-            if ((Selector == 7))
-            {
-                BinaryVal = u.ReadStruct<BinaryData>();
-                goto done;
-            }
-            throw new System.ArgumentException("No matching union selector when marshaling Union_2");
-            done:
-            return;
         }
 
-        private short Selector;
         public AnsiStringData AnsiString;
         public UnicodeStringData UnicodeString;
         public int LongVal;
         public short ShortVal;
         public long PointerVal;
-        public NdrEmpty NoneVal;
         public BinaryData BinaryVal;
     }
     internal struct AnsiStringData : INdrStructure
@@ -240,18 +221,18 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
             u.Align(4);
-            Member0 = u.ReadEnum16();
-            Member8 = u.ReadStruct<ComputerNameData>();
+            Selector = u.ReadEnum16();
+            Name = u.ReadStruct<ComputerNameData>();
         }
 
-        public NdrEnum16 Member0;
-        public ComputerNameData Member8;
+        public NdrEnum16 Selector;
+        public ComputerNameData Name;
 
         public string GetString()
         {
-            if (Member0 == 1)
+            if (Selector == 1)
             {
-                return Member8.Arm_1.GetString();
+                return Name.StringData.GetString();
             }
             return string.Empty;
         }
@@ -273,7 +254,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             switch (u.ReadInt16())
             {
                 case 1:
-                    Arm_1 = u.ReadStruct<UnicodeStringData>();
+                    StringData = u.ReadStruct<UnicodeStringData>();
                     break;
                 case 2:
                     break;
@@ -282,9 +263,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             }
         }
 
-        private short Selector;
-        public UnicodeStringData Arm_1;
-        public NdrEmpty Arm_2;
+        public UnicodeStringData StringData;
     }
     #endregion
     #region Complex Type Encoders

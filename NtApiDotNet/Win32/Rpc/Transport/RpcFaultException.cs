@@ -24,7 +24,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     public sealed class RpcFaultException : NtException
     {
         private RpcFaultException(SafeStructureInOutBuffer<LRPC_FAULT_MESSAGE> buffer, LRPC_FAULT_MESSAGE message) 
-            : base(NtObjectUtils.MapDosErrorToStatus(message.RpcStatus))
+            : this(message.RpcStatus)
         {
             ExtendedErrorInfo = new RpcExtendedErrorInfo[0];
             if (message.Flags.HasFlag(LRPC_FAULT_MESSAGE_FLAGS.ExtendedErrorInfo))
@@ -42,6 +42,15 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         internal RpcFaultException(SafeStructureInOutBuffer<LRPC_FAULT_MESSAGE> buffer) 
             : this(buffer, buffer.Result)
+        {
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="rpc_status">The RPC status code.</param>
+        public RpcFaultException(int rpc_status) 
+            : base(NtObjectUtils.MapDosErrorToStatus(rpc_status))
         {
         }
 
