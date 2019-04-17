@@ -38,6 +38,16 @@ namespace NtApiDotNet.Win32.Rpc
             return endpoint;
         }
 
+#if (DEBUG)
+        private void DumpNdrBuffer(byte[] buffer)
+        {
+            for (int i = 0; i < buffer.Length; i += 4)
+            {
+                System.Diagnostics.Debug.WriteLine($"{BitConverter.ToUInt32(buffer, i):X08}");
+            }
+        }
+#endif
+
         #endregion
 
         #region Constructors
@@ -83,7 +93,24 @@ namespace NtApiDotNet.Win32.Rpc
             {
                 throw new InvalidOperationException("RPC client is not connected.");
             }
-            return _transport.SendReceive(proc_num, ObjectUuid, data_representation, ndr_buffer, handles);
+#if (DEBUG)
+            if (EnableDebugOutput)
+            {
+                System.Diagnostics.Debug.WriteLine("Input:");
+                DumpNdrBuffer(ndr_buffer);
+                System.Diagnostics.Debug.WriteLine("");
+            }
+#endif
+            var resp = _transport.SendReceive(proc_num, ObjectUuid, data_representation, ndr_buffer, handles);
+#if (DEBUG)
+            if (EnableDebugOutput)
+            {
+                System.Diagnostics.Debug.WriteLine("Output:");
+                DumpNdrBuffer(resp.NdrBuffer);
+                System.Diagnostics.Debug.WriteLine("");
+            }
+#endif
+            return resp;
         }
 
         #endregion
@@ -119,6 +146,13 @@ namespace NtApiDotNet.Win32.Rpc
         /// The RPC interface version.
         /// </summary>
         public Version InterfaceVersion { get; }
+
+#if(DEBUG)
+        /// <summary>
+        /// Enable debug output for the RPC client.
+        /// </summary>
+        public bool EnableDebugOutput { get; set; }
+#endif
 
         #endregion
 
