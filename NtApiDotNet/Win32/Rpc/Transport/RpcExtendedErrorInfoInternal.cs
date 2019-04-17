@@ -69,7 +69,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     }
     #endregion
     #region Complex Types
-    internal struct RpcExtendedErrorInfoInternal : INdrStructure
+    internal struct RpcExtendedErrorInfoInternal : INdrConformantStructure
     {
         void INdrStructure.Marshal(NdrMarshalBuffer m)
         {
@@ -82,7 +82,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         }
         private void Unmarshal(_Unmarshal_Helper u)
         {
-            int max_count = u.ReadInt32();
             u.Align(8);
             Chain = u.ReadEmbeddedPointer(new Func<RpcExtendedErrorInfoInternal>(u.Read_0));
             ComputerName = u.ReadStruct<ComputerNameUnion>();
@@ -93,8 +92,14 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             DetectionLocation = u.ReadInt16();
             Flags = u.ReadInt16();
             nLen = u.ReadInt16();
-            Parameters = u.ReadFixedStructArray<ExtendedErrorInfoParamInternal>(max_count);
+            Parameters = u.ReadConformantStructArray<ExtendedErrorInfoParamInternal>();
         }
+
+        int INdrConformantStructure.GetConformantDimensions()
+        {
+            return 1;
+        }
+
         public NdrEmbeddedPointer<RpcExtendedErrorInfoInternal> Chain;
         public ComputerNameUnion ComputerName;
         public int ProcessId;
@@ -131,9 +136,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             switch (ParameterType)
             {
                 case 1:
-                    return ParameterData.AnsiString.GetString();
+                    return ParameterData.AnsiString.GetString().TrimEnd('\0');
                 case 2:
-                    return ParameterData.UnicodeString.GetString();
+                    return ParameterData.UnicodeString.GetString().TrimEnd('\0');
                 case 3:
                     return ParameterData.LongVal;
                 case 4:
