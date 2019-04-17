@@ -95,6 +95,13 @@ namespace NtApiDotNet.Ndr.Marshal
                 });
                 _conformance_position = null;
             }
+            else
+            {
+                foreach (var i in conformance)
+                {
+                    WriteInt32(i);
+                }
+            }
         }
 
         private bool SetupConformance(int dimensions)
