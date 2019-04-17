@@ -129,6 +129,15 @@ namespace NtApiDotNet.Win32.Rpc
             return method;
         }
 
+
+        public static void AddConformantDimensionsMethod(this CodeTypeDeclaration type, int dimensions, MarshalHelperBuilder marshal_helper)
+        {
+            CodeMemberMethod method = type.AddMethod(nameof(INdrConformantStructure.GetConformantDimensions), MemberAttributes.Final | MemberAttributes.Private);
+            method.PrivateImplementationType = new CodeTypeReference(typeof(INdrConformantStructure));
+            method.ReturnType = typeof(int).ToRef();
+            method.AddReturn(GetPrimitive(dimensions));
+        }
+
         public static void AddAlign(this CodeMemberMethod method, string marshal_name, int align)
         {
             method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(marshal_name), nameof(NdrUnmarshalBuffer.Align), GetPrimitive(align)));
@@ -918,6 +927,24 @@ namespace NtApiDotNet.Win32.Rpc
         public static bool IsStruct(this NdrComplexTypeReference complex_type)
         {
             return complex_type is NdrBaseStructureTypeReference;
+        }
+
+        public static bool IsConformantStruct(this NdrComplexTypeReference complex_type)
+        {
+            if (complex_type is NdrBaseStructureTypeReference struct_type)
+            {
+                return struct_type.Conformant;
+            }
+            return false;
+        }
+
+        public static int GetConformantDimensions(this NdrComplexTypeReference complex_type)
+        {
+            if (complex_type.IsConformantStruct())
+            {
+                return 1;
+            }
+            return 0;
         }
 
         public static int GetAlignment(this NdrComplexTypeReference complex_type)

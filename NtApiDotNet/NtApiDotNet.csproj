@@ -82,6 +82,7 @@
     <Compile Include="MappedFile.cs" />
     <Compile Include="MemoryInformation.cs" />
     <Compile Include="Ndr\IMemoryReader.cs" />
+    <Compile Include="Ndr\Marshal\INdrConformantStructure.cs" />
     <Compile Include="Ndr\Marshal\INdrStructure.cs" />
     <Compile Include="Ndr\Marshal\NdrContextHandle.cs" />
     <Compile Include="Ndr\Marshal\NdrDataRepresentation.cs" />

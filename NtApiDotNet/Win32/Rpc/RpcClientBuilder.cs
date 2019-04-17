@@ -567,6 +567,7 @@ namespace NtApiDotNet.Win32.Rpc
             {
                 bool non_encapsulated_union = complex_type.IsNonEncapsulatedUnion();
                 bool is_union = complex_type.IsUnion();
+                bool is_conformant = complex_type.IsConformantStruct();
                 var selector_type = complex_type.GetSelectorType();
 
                 var s_type = ns.AddType(complex_type.Name);
@@ -580,6 +581,10 @@ namespace NtApiDotNet.Win32.Rpc
                 {
                     s_type.BaseTypes.Add(new CodeTypeReference(typeof(INdrNonEncapsulatedUnion)));
                 }
+                else if (is_conformant)
+                {
+                    s_type.BaseTypes.Add(new CodeTypeReference(typeof(INdrConformantStructure)));
+                }
                 else
                 {
                     s_type.BaseTypes.Add(new CodeTypeReference(typeof(INdrStructure)));
@@ -591,6 +596,11 @@ namespace NtApiDotNet.Win32.Rpc
 
                 var unmarshal_method = s_type.AddUnmarshalMethod(UNMARSHAL_NAME, marshal_helper);
                 unmarshal_method.AddAlign(UNMARSHAL_NAME, complex_type.GetAlignment());
+
+                if (is_conformant)
+                {
+                    s_type.AddConformantDimensionsMethod(complex_type.GetConformantDimensions(), marshal_helper);
+                }
 
                 var offset_to_name =
                     complex_type.GetMembers(UNION_SELECTOR_NAME).Select(m => Tuple.Create(m.Offset, m.Name)).ToList();
