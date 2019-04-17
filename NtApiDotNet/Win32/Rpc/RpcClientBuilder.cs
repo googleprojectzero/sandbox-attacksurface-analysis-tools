@@ -323,6 +323,12 @@ namespace NtApiDotNet.Win32.Rpc
                     pointer_type = RpcPointerType.Full;
                     break;
             }
+
+            if (desc.Pointer && pointer_type == RpcPointerType.Reference)
+            {
+                return desc;
+            }
+
             return new RpcTypeDescriptor(desc, pointer_type);
         }
 
