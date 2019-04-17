@@ -14,7 +14,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace NtApiDotNet.Win32.Rpc.Transport
 {

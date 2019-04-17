@@ -20,57 +20,6 @@ using System.Text;
 namespace NtApiDotNet.Win32.Rpc.Transport
 {
     #region Marshal Helpers
-    internal class _Marshal_Helper : NdrMarshalBuffer
-    {
-        public void Write_0(RpcExtendedErrorInfoInternal p0)
-        {
-            WriteStruct(p0);
-        }
-        public void Write_1(ExtendedErrorInfoParamInternal p0)
-        {
-            WriteStruct(p0);
-        }
-        public void Write_2(Union_2 p0, long p1)
-        {
-            WriteUnion(p0, p1);
-        }
-        public void Write_3(AnsiStringData p0)
-        {
-            WriteStruct(p0);
-        }
-        public void Write_4(UnicodeStringData p0)
-        {
-            WriteStruct(p0);
-        }
-        public void Write_5(BinaryData p0)
-        {
-            WriteStruct(p0);
-        }
-        public void Write_6(ComputerNameUnion p0)
-        {
-            WriteStruct(p0);
-        }
-        public void Write_7(ComputerNameData p0, long p1)
-        {
-            WriteUnion(p0, p1);
-        }
-        public void Write_8(ExtendedErrorInfoParamInternal[] p0, long p1)
-        {
-            WriteConformantStructArray(p0, p1);
-        }
-        public void Write_9(byte[] p0, long p1)
-        {
-            WriteConformantArray(p0, p1);
-        }
-        public void Write_10(short[] p0, long p1)
-        {
-            WriteConformantArray(p0, p1);
-        }
-        public void Write_11(sbyte[] p0, long p1)
-        {
-            WriteConformantArray(p0, p1);
-        }
-    }
     internal class _Unmarshal_Helper : NdrUnmarshalBuffer
     {
         public _Unmarshal_Helper(byte[] ba) :
@@ -101,17 +50,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         {
             return ReadStruct<BinaryData>();
         }
-        public ComputerNameUnion Read_6()
-        {
-            return ReadStruct<ComputerNameUnion>();
-        }
         public ComputerNameData Read_7()
         {
             return ReadStruct<ComputerNameData>();
-        }
-        public ExtendedErrorInfoParamInternal[] Read_8()
-        {
-            return ReadConformantStructArray<ExtendedErrorInfoParamInternal>();
         }
         public byte[] Read_9()
         {
@@ -144,7 +85,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             int max_count = u.ReadInt32();
             u.Align(8);
             Chain = u.ReadEmbeddedPointer(new Func<RpcExtendedErrorInfoInternal>(u.Read_0));
-            ComputerName = u.Read_6();
+            ComputerName = u.ReadStruct<ComputerNameUnion>();
             ProcessId = u.ReadInt32();
             TimeStamp = u.ReadInt64();
             GeneratingComponent = u.ReadInt32();
@@ -169,17 +110,12 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     {
         void INdrStructure.Marshal(NdrMarshalBuffer m)
         {
-            Marshal(((_Marshal_Helper)(m)));
+            throw new NotImplementedException();
         }
-        private void Marshal(_Marshal_Helper m)
-        {
-            m.Align(8);
-            m.WriteEnum16(ParameterType);
-            m.Write_2(ParameterData, ParameterType);
-        }
+
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            Unmarshal(((_Unmarshal_Helper)(u)));
+            Unmarshal((_Unmarshal_Helper)u);
         }
         private void Unmarshal(_Unmarshal_Helper u)
         {
@@ -192,7 +128,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         public object GetObject()
         {
-            switch ((int)ParameterType)
+            switch (ParameterType)
             {
                 case 1:
                     return ParameterData.AnsiString.GetString();
@@ -332,7 +268,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         }
     }
 
-    // TODO: Fixed up these structures.
     internal struct BinaryData : INdrStructure
     {
         void INdrStructure.Marshal(NdrMarshalBuffer m)
@@ -400,7 +335,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            Unmarshal(((_Unmarshal_Helper)(u)));
+            Unmarshal((_Unmarshal_Helper)u);
         }
         private void Unmarshal(_Unmarshal_Helper u)
         {
@@ -416,7 +351,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 Arm_2 = u.ReadEmpty();
                 goto done;
             }
-            throw new System.ArgumentException("No matching union selector when marshaling Union_7");
+            throw new System.ArgumentException("No matching union selector when marshaling ComputerNameData");
             done:
             return;
         }
