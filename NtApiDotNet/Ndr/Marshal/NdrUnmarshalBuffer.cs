@@ -33,6 +33,7 @@ namespace NtApiDotNet.Ndr.Marshal
         private readonly BinaryReader _reader;
         private readonly DisposableList<NtObject> _handles;
         private readonly Queue<Action> _deferred_reads;
+        private int[] _conformance_values;
 
         private string[] ReadStringArray(int[] refs, Func<string> reader)
         {
@@ -44,6 +45,40 @@ namespace NtApiDotNet.Ndr.Marshal
                     ret[i] = string.Empty;
                 }
                 ret[i] = reader();
+            }
+            return ret;
+        }
+
+        private bool SetupConformance(int dimensions)
+        {
+            if (_conformance_values == null)
+            {
+                _conformance_values = new int[dimensions];
+                for (int i = 0; i < dimensions; ++i)
+                {
+                    _conformance_values[i] = ReadInt32();
+                }
+                return true;
+            }
+            return false;
+        }
+
+        private int[] ReadConformance(int dimensions)
+        {
+            int[] ret;
+            if (_conformance_values != null)
+            {
+                System.Diagnostics.Debug.Assert(_conformance_values.Length == dimensions);
+                ret = _conformance_values;
+                _conformance_values = null;
+            }
+            else
+            {
+                ret = new int[dimensions];
+                for (int i = 0; i < dimensions; ++i)
+                {
+                    ret[i] = ReadInt32();
+                }
             }
             return ret;
         }
@@ -267,25 +302,25 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public byte[] ReadConformantByteArray()
         {
-            int max_count = ReadInt32();
+            int max_count = ReadConformance(1)[0];
             return ReadFixedByteArray(max_count);
         }
 
         public char[] ReadConformantCharArray()
         {
-            int max_count = ReadInt32();
+            int max_count = ReadConformance(1)[0];
             return ReadFixedCharArray(max_count);
         }
 
         public T[] ReadConformantPrimitiveArray<T>() where T : struct
         {
-            int max_count = ReadInt32();
+            int max_count = ReadConformance(1)[0];
             return ReadFixedPrimitiveArray<T>(max_count);
         }
 
         public T[] ReadConformantArrayCallback<T>(Func<T> reader)
         {
-            int max_count = ReadInt32();
+            int max_count = ReadConformance(1)[0];
             T[] ret = new T[max_count];
             for (int i = 0; i < max_count; ++i)
             {
@@ -426,7 +461,7 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public byte[] ReadConformantVaryingByteArray()
         {
-            int max_count = ReadInt32();
+            int max_count = ReadConformance(1)[0];
             int offset = ReadInt32();
             int actual_count = ReadInt32();
             byte[] ret = new byte[max_count];
@@ -440,7 +475,7 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public char[] ReadConformantVaryingCharArray()
         {
-            int max_count = ReadInt32();
+            int max_count = ReadConformance(1)[0];
             int offset = ReadInt32();
             int actual_count = ReadInt32();
 
@@ -458,7 +493,7 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public T[] ReadConformantVaryingPrimitiveArray<T>() where T : struct
         {
-            int max_count = ReadInt32();
+            int max_count = ReadConformance(1)[0];
             int offset = ReadInt32();
             int actual_count = ReadInt32();
 
@@ -475,7 +510,7 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public T[] ReadConformantVaryingArrayCallback<T>(Func<T> reader)
         {
-            int max_count = ReadInt32();
+            int max_count = ReadConformance(1)[0];
             int offset = ReadInt32();
             int actual_count = ReadInt32();
             T[] ret = new T[offset + actual_count];
@@ -618,7 +653,18 @@ namespace NtApiDotNet.Ndr.Marshal
         public T ReadStruct<T>() where T : INdrStructure, new()
         {
             T ret = new T();
+            bool conformant = false;
+            if (ret is INdrConformantStructure conformant_struct)
+            {
+                conformant = SetupConformance(conformant_struct.GetConformantDimensions());
+                System.Diagnostics.Debug.Assert(_conformance_values != null);
+            }
             ret.Unmarshal(this);
+            if (conformant)
+            {
+                System.Diagnostics.Debug.Assert(_conformance_values == null);
+            }
+
             return ret;
         }
 

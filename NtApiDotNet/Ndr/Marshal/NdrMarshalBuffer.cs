@@ -97,11 +97,11 @@ namespace NtApiDotNet.Ndr.Marshal
             }
         }
 
-        private void SetupConformance(int dimensions)
+        private bool SetupConformance(int dimensions)
         {
             if (dimensions == 0 || _conformance_position.HasValue)
             {
-                return;
+                return false;
             }
 
             _conformance_position = _stm.Position;
@@ -109,6 +109,8 @@ namespace NtApiDotNet.Ndr.Marshal
             {
                 WriteInt32(0x77777777);
             }
+
+            return true;
         }
 
         #endregion
@@ -415,7 +417,7 @@ namespace NtApiDotNet.Ndr.Marshal
             }
 
             // Maximum count.
-            WriteInt32((int)conformance);
+            WriteConformance((int)conformance);
             // Offset.
             WriteInt32(0);
             // Actual count.
@@ -437,7 +439,7 @@ namespace NtApiDotNet.Ndr.Marshal
             }
 
             // Maximum count.
-            WriteInt32((int)conformance);
+            WriteConformance((int)conformance);
             // Offset.
             WriteInt32(0);
             // Actual count.
@@ -491,9 +493,8 @@ namespace NtApiDotNet.Ndr.Marshal
             bool conformant = false;
             if (structure is INdrConformantStructure conformant_structure)
             {
-                SetupConformance(conformant_structure.GetConformantDimensions());
+                conformant = SetupConformance(conformant_structure.GetConformantDimensions());
                 System.Diagnostics.Debug.Assert(_conformance_position.HasValue);
-                conformant = true;
             }
 
             structure.Marshal(this);
