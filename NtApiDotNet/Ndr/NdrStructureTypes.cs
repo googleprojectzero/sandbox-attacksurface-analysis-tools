@@ -199,8 +199,8 @@ namespace NtApiDotNet.Ndr
 
         public override bool Conformant => true;
 
-        internal NdrConformantStructureTypeReference(NdrParseContext context, BinaryReader reader)
-            : base(context, NdrFormatCharacter.FC_CSTRUCT, reader)
+        internal NdrConformantStructureTypeReference(NdrFormatCharacter format, NdrParseContext context, BinaryReader reader)
+            : base(context, format, reader)
         {
             ConformantArray = Read(context, ReadTypeOffset(reader));
             ReadMemberInfo(context, reader);

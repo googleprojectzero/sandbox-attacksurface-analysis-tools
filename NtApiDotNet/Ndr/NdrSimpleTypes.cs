@@ -566,7 +566,8 @@ namespace NtApiDotNet.Ndr
                     case NdrFormatCharacter.FC_PSTRUCT:
                         return new NdrSimpleStructureWithPointersTypeReference(context, reader);
                     case NdrFormatCharacter.FC_CSTRUCT:
-                        return new NdrConformantStructureTypeReference(context, reader);
+                    case NdrFormatCharacter.FC_CVSTRUCT:
+                        return new NdrConformantStructureTypeReference(format, context, reader);
                     case NdrFormatCharacter.FC_BOGUS_STRUCT:
                         return new NdrBogusStructureTypeReference(context, format, reader);
                     case NdrFormatCharacter.FC_FORCED_BOGUS_STRUCT:
