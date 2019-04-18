@@ -34,6 +34,7 @@ namespace NtApiDotNet.Ndr.Marshal
         private readonly DisposableList<NtObject> _handles;
         private readonly Queue<Action> _deferred_reads;
         private int[] _conformance_values;
+        private Dictionary<int, object> _full_pointers;
 
         private string[] ReadStringArray(int[] refs, Func<string> reader)
         {
@@ -83,6 +84,16 @@ namespace NtApiDotNet.Ndr.Marshal
             return ret;
         }
 
+        private T ReadFullPointer<T>(int referent, Func<T> unmarshal_func)
+        {
+            if (!_full_pointers.ContainsKey(referent))
+            {
+                _full_pointers[referent] = unmarshal_func();
+            }
+
+            return (T)_full_pointers[referent];
+        }
+
         #endregion
 
         #region Constructors
@@ -92,6 +103,7 @@ namespace NtApiDotNet.Ndr.Marshal
             _reader = new BinaryReader(_stm, Encoding.Unicode);
             _handles = new DisposableList<NtObject>(handles);
             _deferred_reads = new Queue<Action>();
+            _full_pointers = new Dictionary<int, object>();
             CheckDataRepresentation(data_represenation);
         }
         public NdrUnmarshalBuffer(byte[] buffer, IEnumerable<NtObject> handles) 
@@ -336,7 +348,7 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public string[] ReadConformantStringArray(Func<string> reader)
         {
-            return ReadStringArray(ReadConformantArrayCallback(ReadReferent), reader);
+            return ReadStringArray(ReadConformantArrayCallback(ReadInt32), reader);
         }
 
         public T[] ReadConformantArray<T>() where T : struct
@@ -426,7 +438,7 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public string[] ReadVaryingStringArray(Func<string> reader)
         {
-            return ReadStringArray(ReadVaryingArrayCallback(ReadReferent), reader);
+            return ReadStringArray(ReadVaryingArrayCallback(ReadInt32), reader);
         }
 
         public T[] ReadVaryingArray<T>() where T : struct
@@ -528,7 +540,7 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public string[] ReadConformantVaryingStringArray(Func<string> reader)
         {
-            return ReadStringArray(ReadConformantVaryingArrayCallback(ReadReferent), reader);
+            return ReadStringArray(ReadConformantVaryingArrayCallback(ReadInt32), reader);
         }
 
         public T[] ReadConformantVaryingArray<T>() where T : struct
@@ -585,51 +597,73 @@ namespace NtApiDotNet.Ndr.Marshal
 
         #region Pointer Types
 
-        public int ReadReferent()
-        {
-            // Might need to actually handle referents, guess we'll see.
-            return ReadInt32();
-        }
-
-
-        public T ReadUniquePointer<T>(Func<T> read_func) where T : class
+        public T? ReadReferentValue<T>(Func<T> unmarshal_func, bool full_pointer) where T : struct
         {
             int referent = ReadInt32();
             if (referent == 0)
             {
                 return null;
             }
-            return read_func();
+
+            return full_pointer ? ReadFullPointer(referent, unmarshal_func) : unmarshal_func();
         }
 
-        public NdrEmbeddedPointer<T> ReadEmbeddedPointer<T>(Func<T> unmarshal_func)
+        public T? ReadReferentValue<T, U>(Func<U, T> unmarshal_func, bool full_pointer, U arg) where T : struct
         {
-            int referent = ReadReferent();
+            return ReadReferentValue(() => unmarshal_func(arg), full_pointer);
+        }
+
+        public T? ReadReferentValue<T, U, V>(Func<U, V, T> unmarshal_func, bool full_pointer, U arg1, V arg2) where T : struct
+        {
+            return ReadReferentValue(() => unmarshal_func(arg1, arg2), full_pointer);
+        }
+
+        public T ReadReferent<T>(Func<T> unmarshal_func, bool full_pointer) where T : class
+        {
+            int referent = ReadInt32();
+            if (referent == 0)
+            {
+                return null;
+            }
+            return full_pointer ? ReadFullPointer(referent, unmarshal_func) : unmarshal_func();
+        }
+
+        public T ReadReferent<T, U>(Func<U, T> unmarshal_func, bool full_pointer, U arg) where T : class
+        {
+            return ReadReferent(() => unmarshal_func(arg), full_pointer);
+        }
+
+        public T ReadReferent<T, U, V>(Func<U, V, T> unmarshal_func, bool full_pointer, U arg1, V arg2) where T : class
+        {
+            return ReadReferent(() => unmarshal_func(arg1, arg2), full_pointer);
+        }
+
+        public NdrEmbeddedPointer<T> ReadEmbeddedPointer<T>(Func<T> unmarshal_func, bool full_pointer)
+        {
+            int referent = ReadInt32();
             if (referent == 0)
             {
                 return null;
             }
 
-            // Really should have referents, but I'm not convinced the MSRPC NDR engine uses them.
-            // Perhaps introduce a lazy method to bind it after the fact.
+            if (full_pointer)
+            {
+                unmarshal_func = () => ReadFullPointer(referent, unmarshal_func);
+            }
+
             var deferred_reader = NdrEmbeddedPointer<T>.CreateDeferredReader(unmarshal_func);
             _deferred_reads.Enqueue(deferred_reader.Item2);
             return deferred_reader.Item1;
         }
 
-        public NdrEmbeddedPointer<T> ReadEmbeddedPointer<T, U>(Func<U, T> unmarshal_func, U arg)
+        public NdrEmbeddedPointer<T> ReadEmbeddedPointer<T, U>(Func<U, T> unmarshal_func, bool full_pointer, U arg)
         {
-            return ReadEmbeddedPointer(() => unmarshal_func(arg));
+            return ReadEmbeddedPointer(() => unmarshal_func(arg), full_pointer);
         }
 
-        public NdrEmbeddedPointer<T> ReadEmbeddedPointer<T, U, V>(Func<U, V, T> unmarshal_func, U arg, V arg2)
+        public NdrEmbeddedPointer<T> ReadEmbeddedPointer<T, U, V>(Func<U, V, T> unmarshal_func, bool full_pointer, U arg, V arg2)
         {
-            return ReadEmbeddedPointer(() => unmarshal_func(arg, arg2));
-        }
-
-        public NdrEmbeddedPointer<T> ReadEmbeddedStructPointer<T>() where T : INdrStructure, new()
-        {
-            return ReadEmbeddedPointer(() => ReadStruct<T>());
+            return ReadEmbeddedPointer(() => unmarshal_func(arg, arg2), full_pointer);
         }
 
         public void PopulateDeferredPointers()

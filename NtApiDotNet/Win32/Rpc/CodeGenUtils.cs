@@ -458,20 +458,18 @@ namespace NtApiDotNet.Win32.Rpc
         public static void AddDeferredEmbeddedUnmarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name, string var_name,
             CodeExpression case_selector, string union_selector, string done_label, params RpcMarshalArgument[] additional_args)
         {
-            string method_name = null;
             List<CodeExpression> args = new List<CodeExpression>();
-
             List<CodeTypeReference> marshal_args = new List<CodeTypeReference>();
             marshal_args.Add(descriptor.CodeType);
             marshal_args.AddRange(additional_args.Select(a => a.CodeType));
 
-            method_name = nameof(NdrUnmarshalBuffer.ReadEmbeddedPointer);
             var create_delegate = new CodeDelegateCreateExpression(CreateFuncType(descriptor.CodeType, marshal_args.Skip(1).ToArray()),
                 descriptor.GetUnmarshalTarget(unmarshal_name), descriptor.UnmarshalMethod);
             args.Add(create_delegate);
-
+            args.Add(GetPrimitive(descriptor.Pointer && descriptor.PointerType == RpcPointerType.Full));
             args.AddRange(additional_args.Select(r => r.Expression));
-            CodeMethodReferenceExpression read_pointer = new CodeMethodReferenceExpression(GetVariable(unmarshal_name), method_name, marshal_args.ToArray());
+            CodeMethodReferenceExpression read_pointer = new CodeMethodReferenceExpression(GetVariable(unmarshal_name), 
+                nameof(NdrUnmarshalBuffer.ReadEmbeddedPointer), marshal_args.ToArray());
             CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(read_pointer, args.ToArray());
             CodeStatement assign = new CodeAssignStatement(GetVariable(var_name), invoke);
 
@@ -485,19 +483,21 @@ namespace NtApiDotNet.Win32.Rpc
             method.Statements.Add(assign);
         }
 
-        public static void AddPointerUnmarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name, string var_name, params CodeExpression[] additional_args)
+        public static void AddPointerUnmarshalCall(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name, string var_name)
         {
             List<CodeExpression> args = new List<CodeExpression>();
-            args.AddRange(additional_args);
-            CodeAssignStatement assign = new CodeAssignStatement(GetVariable(var_name), descriptor.GetUnmarshalMethodInvoke(unmarshal_name, args));
-            CodeAssignStatement assign_null = new CodeAssignStatement(GetVariable(var_name), new CodeDefaultValueExpression(descriptor.GetParameterType()));
+            List<CodeTypeReference> marshal_args = new List<CodeTypeReference>();
+            marshal_args.Add(descriptor.CodeType);
 
-            CodeConditionStatement if_statement = new CodeConditionStatement(
-                new CodeBinaryOperatorExpression(new CodeMethodInvokeExpression(GetVariable(unmarshal_name), 
-                nameof(NdrUnmarshalBuffer.ReadReferent)), CodeBinaryOperatorType.IdentityInequality, GetPrimitive(0)),
-                new CodeStatement[] { assign }, new CodeStatement[] { assign_null });
-
-            method.Statements.Add(if_statement);
+            var create_delegate = new CodeDelegateCreateExpression(CreateFuncType(descriptor.CodeType, marshal_args.Skip(1).ToArray()),
+                descriptor.GetUnmarshalTarget(unmarshal_name), descriptor.UnmarshalMethod);
+            args.Add(create_delegate);
+            args.Add(GetPrimitive(descriptor.Pointer && descriptor.PointerType == RpcPointerType.Full));
+            CodeMethodReferenceExpression read_pointer = new CodeMethodReferenceExpression(GetVariable(unmarshal_name),
+                descriptor.ValueType ? nameof(NdrUnmarshalBuffer.ReadReferentValue) : nameof(NdrUnmarshalBuffer.ReadReferent), marshal_args.ToArray());
+            CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(read_pointer, args.ToArray());
+            CodeStatement assign = new CodeAssignStatement(GetVariable(var_name), invoke);
+            method.Statements.Add(assign);
         }
 
         public static void AddPopluateDeferredPointers(this CodeMemberMethod method, string unmarshal_name)

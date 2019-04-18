@@ -30,7 +30,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
             u.Align(8);
-            Chain = u.ReadEmbeddedPointer(u.ReadStruct<RpcExtendedErrorInfoInternal>);
+            Chain = u.ReadEmbeddedPointer(u.ReadStruct<RpcExtendedErrorInfoInternal>, false);
             ComputerName = u.ReadStruct<ComputerNameUnion>();
             ProcessId = u.ReadInt32();
             TimeStamp = u.ReadInt64();
@@ -152,7 +152,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         {
             u.Align(4);
             Length = u.ReadInt16();
-            Data = u.ReadEmbeddedPointer(u.ReadConformantArray<byte>);
+            Data = u.ReadEmbeddedPointer(u.ReadConformantArray<byte>, false);
         }
 
         public short Length;
@@ -174,7 +174,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         {
             u.Align(4);
             Length = u.ReadInt16();
-            Data = u.ReadEmbeddedPointer(u.ReadConformantArray<short>);
+            Data = u.ReadEmbeddedPointer(u.ReadConformantArray<short>, false);
         }
 
         public short Length;
@@ -200,7 +200,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         {
             u.Align(4);
             Length = u.ReadInt16();
-            Data = u.ReadEmbeddedPointer(u.ReadConformantArray<sbyte>);
+            Data = u.ReadEmbeddedPointer(u.ReadConformantArray<sbyte>, false);
         }
 
         public short Length;
@@ -272,16 +272,9 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         internal static RpcExtendedErrorInfoInternal? Decode(byte[] data)
         {
             NdrUnmarshalBuffer u = new NdrUnmarshalBuffer(data);
-            RpcExtendedErrorInfoInternal v;
-            // Read out referent.
-            int referent = u.ReadReferent();
-            if (referent == 0)
-            {
-                return null;
-            }
-            v = u.ReadStruct<RpcExtendedErrorInfoInternal>();
+            var res = u.ReadReferentValue(u.ReadStruct<RpcExtendedErrorInfoInternal>, false);
             u.PopulateDeferredPointers();
-            return v;
+            return res;
         }
     }
     #endregion
