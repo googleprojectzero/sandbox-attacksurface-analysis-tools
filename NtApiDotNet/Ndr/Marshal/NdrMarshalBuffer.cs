@@ -143,6 +143,24 @@ namespace NtApiDotNet.Ndr.Marshal
             return true;
         }
 
+        private void WriteStructInternal(INdrStructure structure)
+        {
+            Align(structure.GetAlignment());
+            structure.Marshal(this);
+        }
+
+        private void WriteUnionInternal(INdrNonEncapsulatedUnion union, long selector)
+        {
+            Align(union.GetAlignment());
+            union.Marshal(this, selector);
+        }
+
+        private void Align(int alignment)
+        {
+            byte[] buffer = new byte[NdrNativeUtils.CalculateAlignment((int)_stm.Length, alignment)];
+            _stm.Write(buffer, 0, buffer.Length);
+        }
+
         #endregion
 
         #region Constructors
@@ -169,12 +187,6 @@ namespace NtApiDotNet.Ndr.Marshal
         #endregion
 
         #region Misc Methods
-        public void Align(int alignment)
-        {
-            byte[] buffer = new byte[NdrNativeUtils.CalculateAlignment((int)_stm.Length, alignment)];
-            _stm.Write(buffer, 0, buffer.Length);
-        }
-
         public void WriteSystemHandle<T>(T handle) where T : NtObject
         {
             if (handle != null)
@@ -531,7 +543,7 @@ namespace NtApiDotNet.Ndr.Marshal
                 System.Diagnostics.Debug.Assert(_conformance_position.HasValue);
             }
 
-            structure.Marshal(this);
+            WriteStructInternal(structure);
 
             if (conformant)
             {
@@ -554,7 +566,7 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public void WriteUnion(INdrNonEncapsulatedUnion union, long selector)
         {
-            union.Marshal(this, selector);
+            WriteUnionInternal(union, selector);
         }
 
         public void WriteContextHandle(NdrContextHandle handle)
@@ -688,11 +700,11 @@ namespace NtApiDotNet.Ndr.Marshal
             {
                 if (i < arr.Length)
                 {
-                    arr[i].Marshal(this);
+                    WriteStructInternal(arr[i]);
                 }
                 else
                 {
-                    new T().Marshal(this);
+                    WriteStructInternal(new T());
                 }
             }
         }

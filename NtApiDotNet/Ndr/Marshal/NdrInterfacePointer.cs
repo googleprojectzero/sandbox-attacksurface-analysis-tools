@@ -43,14 +43,12 @@ namespace NtApiDotNet.Ndr.Marshal
         void INdrStructure.Marshal(NdrMarshalBuffer marshal)
         {
             RpcUtils.CheckNull(Data, "Data");
-            marshal.Align(4);
             marshal.WriteInt32(Data.Length);
             marshal.WriteConformantByteArray(Data, Data.Length);
         }
 
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer unmarshal)
         {
-            unmarshal.Align(4);
             unmarshal.ReadInt32(); // length.
             Data = unmarshal.ReadConformantByteArray();
         }

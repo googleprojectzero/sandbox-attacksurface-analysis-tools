@@ -94,6 +94,33 @@ namespace NtApiDotNet.Ndr.Marshal
             return (T)_full_pointers[referent];
         }
 
+        private T ReadStructInternal<T>(bool top_level_struct) where T : new()
+        {
+            INdrStructure s = (INdrStructure)new T();
+            bool conformant = false;
+            if (top_level_struct && s is INdrConformantStructure conformant_struct)
+            {
+                conformant = SetupConformance(conformant_struct.GetConformantDimensions());
+                System.Diagnostics.Debug.Assert(_conformance_values != null);
+            }
+
+            Align(s.GetAlignment());
+            s.Unmarshal(this);
+
+            if (conformant)
+            {
+                System.Diagnostics.Debug.Assert(_conformance_values == null);
+            }
+
+            return (T)s;
+        }
+
+        private void Align(int alignment)
+        {
+            _stm.Position += NdrNativeUtils.CalculateAlignment((int)_stm.Position, alignment);
+            System.Diagnostics.Debug.WriteLine($"Pos: {_stm.Position} - Align: {alignment}");
+        }
+
         #endregion
 
         #region Constructors
@@ -124,12 +151,6 @@ namespace NtApiDotNet.Ndr.Marshal
         #endregion
 
         #region Misc Methods
-
-        public void Align(int alignment)
-        {
-            _stm.Position += NdrNativeUtils.CalculateAlignment((int)_stm.Position, alignment);
-        }
-
         public T ReadSystemHandle<T>() where T : NtObject
         {
             int index = ReadInt32();
@@ -368,9 +389,7 @@ namespace NtApiDotNet.Ndr.Marshal
             {
                 return ReadConformantArrayCallback(() =>
                 {
-                    T t = new T();
-                    ((INdrStructure)t).Unmarshal(this);
-                    return t;
+                    return ReadStructInternal<T>(false);
                 });
             }
             else if (typeof(T).IsPrimitive)
@@ -458,9 +477,7 @@ namespace NtApiDotNet.Ndr.Marshal
             {
                 return ReadVaryingArrayCallback(() =>
                 {
-                    T t = new T();
-                    ((INdrStructure)t).Unmarshal(this);
-                    return t;
+                    return ReadStructInternal<T>(false);
                 });
             }
             else if (typeof(T).IsPrimitive)
@@ -560,9 +577,7 @@ namespace NtApiDotNet.Ndr.Marshal
             {
                 return ReadConformantVaryingArrayCallback(() =>
                 {
-                    T t = new T();
-                    ((INdrStructure)t).Unmarshal(this);
-                    return t;
+                    return ReadStructInternal<T>(false);
                 });
             }
             else if (typeof(T).IsPrimitive)
@@ -689,20 +704,7 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public T ReadStruct<T>() where T : INdrStructure, new()
         {
-            T ret = new T();
-            bool conformant = false;
-            if (ret is INdrConformantStructure conformant_struct)
-            {
-                conformant = SetupConformance(conformant_struct.GetConformantDimensions());
-                System.Diagnostics.Debug.Assert(_conformance_values != null);
-            }
-            ret.Unmarshal(this);
-            if (conformant)
-            {
-                System.Diagnostics.Debug.Assert(_conformance_values == null);
-            }
-
-            return ret;
+            return ReadStructInternal<T>(true);
         }
 
         #endregion

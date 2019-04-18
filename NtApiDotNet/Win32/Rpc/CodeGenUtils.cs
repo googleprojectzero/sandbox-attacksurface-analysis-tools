@@ -329,11 +329,6 @@ namespace NtApiDotNet.Win32.Rpc
             method.AddReturn(GetPrimitive(alignment));
         }
 
-        public static void AddAlign(this CodeMemberMethod method, string marshal_name, int align)
-        {
-            method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(marshal_name), nameof(NdrUnmarshalBuffer.Align), GetPrimitive(align)));
-        }
-
         public static CodeMemberMethod AddUnmarshalMethod(this CodeTypeDeclaration type, string unmarshal_name, MarshalHelperBuilder marshal_helper)
         {
             AddUnmarshalInterfaceMethod(type, marshal_helper);

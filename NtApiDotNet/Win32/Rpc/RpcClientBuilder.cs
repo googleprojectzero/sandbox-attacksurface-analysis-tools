@@ -598,11 +598,7 @@ namespace NtApiDotNet.Win32.Rpc
 
                 var marshal_method = s_type.AddMarshalMethod(MARSHAL_NAME, marshal_helper, non_encapsulated_union, UNION_SELECTOR_NAME, 
                     selector_type != null ? selector_type.GetSimpleTypeDescriptor(null, HasFlag(RpcClientBuilderFlags.UnsignedChar)).CodeType : null);
-                marshal_method.AddAlign(MARSHAL_NAME, complex_type.GetAlignment());
-
                 var unmarshal_method = s_type.AddUnmarshalMethod(UNMARSHAL_NAME, marshal_helper);
-                unmarshal_method.AddAlign(UNMARSHAL_NAME, complex_type.GetAlignment());
-
                 if (is_conformant)
                 {
                     s_type.AddConformantDimensionsMethod(complex_type.GetConformantDimensions(), marshal_helper);

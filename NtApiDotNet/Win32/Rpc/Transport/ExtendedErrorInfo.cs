@@ -29,7 +29,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            u.Align(8);
             Next = u.ReadEmbeddedPointer(u.ReadStruct<ExtendedErrorInfo>, false);
             ComputerName = u.ReadStruct<EEComputerName>();
             ProcessId = u.ReadInt32();
@@ -72,7 +71,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            u.Align(8);
             ParameterType = u.ReadEnum16();
             ParameterData = u.ReadStruct<ParameterValueUnion>();
         }
@@ -115,8 +113,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            u.Align(1);
-
             switch (u.ReadInt16())
             {
                 case 1:
@@ -165,7 +161,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            u.Align(4);
             nLength = u.ReadInt16();
             pString = u.ReadEmbeddedPointer(u.ReadConformantArray<byte>, false);
         }
@@ -192,7 +187,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            u.Align(4);
             nLength = u.ReadInt16();
             pString = u.ReadEmbeddedPointer(u.ReadConformantArray<short>, false);
         }
@@ -223,7 +217,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            u.Align(4);
             nSize = u.ReadInt16();
             pBlob = u.ReadEmbeddedPointer(u.ReadConformantArray<sbyte>, false);
         }
@@ -250,7 +243,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            u.Align(4);
             Selector = u.ReadEnum16();
             Name = u.ReadStruct<EEComputerNameData>();
         }
@@ -285,7 +277,6 @@ namespace NtApiDotNet.Win32.Rpc.Transport
 
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
-            u.Align(1);
             switch (u.ReadInt16())
             {
                 case 1:
