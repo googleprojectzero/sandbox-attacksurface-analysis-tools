@@ -17,6 +17,7 @@ using NtApiDotNet.Ndr.Marshal;
 using NtApiDotNet.Win32.Rpc.Transport;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace NtApiDotNet.Win32.Rpc
 {
@@ -38,15 +39,19 @@ namespace NtApiDotNet.Win32.Rpc
             return endpoint;
         }
 
-#if (DEBUG)
-        private void DumpNdrBuffer(byte[] buffer)
+        private static void DumpNdrBuffer(string title, byte[] buffer)
         {
+            if (!RpcUtils.RpcTraceSwitch.TraceVerbose)
+            {
+                return;
+            }
+            Trace.WriteLine($"{title}:");
             for (int i = 0; i < buffer.Length; i += 4)
             {
-                System.Diagnostics.Debug.WriteLine($"{BitConverter.ToUInt32(buffer, i):X08}");
+                Trace.WriteLine($"{BitConverter.ToUInt32(buffer, i):X08}");
             }
+            Trace.WriteLine(string.Empty);
         }
-#endif
 
         #endregion
 
@@ -93,23 +98,10 @@ namespace NtApiDotNet.Win32.Rpc
             {
                 throw new InvalidOperationException("RPC client is not connected.");
             }
-#if (DEBUG)
-            if (EnableDebugOutput)
-            {
-                System.Diagnostics.Debug.WriteLine("Input:");
-                DumpNdrBuffer(ndr_buffer);
-                System.Diagnostics.Debug.WriteLine("");
-            }
-#endif
+
+            DumpNdrBuffer("Input", ndr_buffer);
             var resp = _transport.SendReceive(proc_num, ObjectUuid, data_representation, ndr_buffer, handles);
-#if (DEBUG)
-            if (EnableDebugOutput)
-            {
-                System.Diagnostics.Debug.WriteLine("Output:");
-                DumpNdrBuffer(resp.NdrBuffer);
-                System.Diagnostics.Debug.WriteLine("");
-            }
-#endif
+            DumpNdrBuffer("Output", resp.NdrBuffer);
             return resp;
         }
 
@@ -146,13 +138,6 @@ namespace NtApiDotNet.Win32.Rpc
         /// The RPC interface version.
         /// </summary>
         public Version InterfaceVersion { get; }
-
-#if(DEBUG)
-        /// <summary>
-        /// Enable debug output for the RPC client.
-        /// </summary>
-        public bool EnableDebugOutput { get; set; }
-#endif
 
         #endregion
 

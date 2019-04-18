@@ -12,9 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Ndr;
 using NtApiDotNet.Ndr.Marshal;
 using System;
+using System.Diagnostics;
 
 namespace NtApiDotNet.Win32.Rpc
 {
@@ -23,6 +23,17 @@ namespace NtApiDotNet.Win32.Rpc
     /// </summary>
     public static class RpcUtils
     {
+        internal static TraceSwitch RpcTraceSwitch = new TraceSwitch("RpcTrace", "RPC Tracing");
+
+        /// <summary>
+        /// Specify NDR trace level.
+        /// </summary>
+        /// <param name="level">Specify the RPC trace level.</param>
+        public static void SetRpcTraceLevel(TraceLevel level)
+        {
+            RpcTraceSwitch.Level = level;
+        }
+
         /// <summary>
         /// Helper to dereference a type.
         /// </summary>
