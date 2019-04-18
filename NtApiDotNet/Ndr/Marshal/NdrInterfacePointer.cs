@@ -12,17 +12,19 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32.Rpc;
+
 namespace NtApiDotNet.Ndr.Marshal
 {
     /// <summary>
     /// Class to represent an NDR interface pointer.
     /// </summary>
-    public struct NdrInterfacePointer
+    public struct NdrInterfacePointer : INdrConformantStructure
     {
         /// <summary>
         /// The marshaled interface data.
         /// </summary>
-        public byte[] Data { get; }
+        public byte[] Data { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -31,6 +33,26 @@ namespace NtApiDotNet.Ndr.Marshal
         public NdrInterfacePointer(byte[] data)
         {
             Data = data;
+        }
+
+        int INdrConformantStructure.GetConformantDimensions()
+        {
+            return 1;
+        }
+
+        void INdrStructure.Marshal(NdrMarshalBuffer marshal)
+        {
+            RpcUtils.CheckNull(Data, "Data");
+            marshal.Align(4);
+            marshal.WriteInt32(Data.Length);
+            marshal.WriteConformantByteArray(Data, Data.Length);
+        }
+
+        void INdrStructure.Unmarshal(NdrUnmarshalBuffer unmarshal)
+        {
+            unmarshal.Align(4);
+            unmarshal.ReadInt32(); // length.
+            Data = unmarshal.ReadConformantByteArray();
         }
     }
 }

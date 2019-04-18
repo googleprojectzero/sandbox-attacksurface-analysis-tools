@@ -155,10 +155,7 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public NdrInterfacePointer ReadInterfacePointer()
         {
-            Align(4);
-            // Size.
-            ReadInt32();
-            return new NdrInterfacePointer(ReadConformantByteArray());
+            return ReadStruct<NdrInterfacePointer>();
         }
 
         public NdrPipe<T> ReadPipe<T>() where T : struct

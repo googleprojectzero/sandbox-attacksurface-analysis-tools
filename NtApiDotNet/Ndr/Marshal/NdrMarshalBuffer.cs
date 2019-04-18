@@ -204,9 +204,7 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public void WriteInterfacePointer(NdrInterfacePointer intf)
         {
-            Align(4);
-            WriteInt32(intf.Data.Length);
-            WriteConformantByteArray(intf.Data, intf.Data.Length);
+            WriteStruct(intf);
         }
 
         public void WritePipe<T>(NdrPipe<T> pipe) where T : struct
