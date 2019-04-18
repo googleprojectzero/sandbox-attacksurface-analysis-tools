@@ -271,7 +271,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
     {
         internal static ExtendedErrorInfo? Decode(byte[] data)
         {
-            NdrUnmarshalBuffer u = new NdrUnmarshalBuffer(data);
+            NdrPickledType pickled_type = new NdrPickledType(data);
+            NdrUnmarshalBuffer u = new NdrUnmarshalBuffer(pickled_type);
             var res = u.ReadReferentValue(u.ReadStruct<ExtendedErrorInfo>, false);
             u.PopulateDeferredPointers();
             return res;

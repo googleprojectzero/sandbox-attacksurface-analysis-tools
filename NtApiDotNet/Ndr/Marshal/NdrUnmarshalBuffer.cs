@@ -115,6 +115,12 @@ namespace NtApiDotNet.Ndr.Marshal
             : this(buffer, new NtObject[0])
         {
         }
+
+        public NdrUnmarshalBuffer(NdrPickledType pickled_type) 
+            : this(pickled_type.Data, new NtObject[0], pickled_type.DataRepresentation)
+        {
+        }
+
         #endregion
 
         #region Misc Methods

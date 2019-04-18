@@ -224,6 +224,11 @@ namespace NtApiDotNet.Ndr.Marshal
             return ret;
         }
 
+        public NdrPickledType ToPickledType()
+        {
+            return new NdrPickledType(ToArray(), DataRepresentation);
+        }
+
         #endregion
 
         #region Primitive Types

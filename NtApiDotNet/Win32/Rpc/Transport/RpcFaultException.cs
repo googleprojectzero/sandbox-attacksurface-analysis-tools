@@ -31,7 +31,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             {
                 try
                 {
-                    byte[] data = buffer.Data.ReadBytes(16, buffer.Data.Length - 16);
+                    byte[] data = buffer.Data.ToArray();
                     ExtendedErrorInfo = RpcExtendedErrorInfo.ReadErrorInfo(data);
                 }
                 catch
