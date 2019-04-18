@@ -729,32 +729,47 @@ namespace NtApiDotNet.Win32.Rpc
                     continue;
                 }
 
+                if (complex_type.IsConformantStruct())
+                {
+                    // Conformant structures need to be wrapped in a unique pointer.
+                    desc = new RpcTypeDescriptor(desc, RpcPointerType.Unique);
+                }
+
                 var marshal_method = marshal_helper.MarshalMethods[complex_type];
                 var unmarshal_method = marshal_helper.UnmarshalMethods[complex_type];
 
                 var encode_method = encoder_type.AddMethod($"{complex_type.Name}_Encode", MemberAttributes.Public | MemberAttributes.Static);
-                CodeParameterDeclarationExpression[] marshal_params = marshal_method.Parameters.Cast<CodeParameterDeclarationExpression>().ToArray();
-                encode_method.Parameters.AddRange(marshal_params);
+                List<CodeParameterDeclarationExpression> marshal_params = new List<CodeParameterDeclarationExpression>();
+                marshal_params.Add(new CodeParameterDeclarationExpression(desc.GetParameterType(), "o"));
+                marshal_params.AddRange(marshal_method.Parameters.Cast<CodeParameterDeclarationExpression>().Skip(1).ToArray());
+                encode_method.Parameters.AddRange(marshal_params.ToArray());
                 encode_method.CreateMarshalObject(MARSHAL_NAME, marshal_helper);
-                encode_method.ReturnType = typeof(byte[]).ToRef();
+                encode_method.ReturnType = typeof(NdrPickledType).ToRef();
 
                 RpcMarshalArgument[] additional_args = marshal_params.Skip(1).Select(
                     p => new RpcMarshalArgument(CodeGenUtils.GetVariable(p.Name), p.Type)).ToArray();
 
-                encode_method.AddMarshalCall(desc, MARSHAL_NAME, marshal_method.Parameters[0].Name, false, false, null, null, null, additional_args);
+                encode_method.AddMarshalCall(desc, MARSHAL_NAME, "o", desc.Pointer, false, null, null, null, additional_args);
                 encode_method.AddFlushDeferredWrites(MARSHAL_NAME);
-                encode_method.AddReturn(new CodeMethodInvokeExpression(CodeGenUtils.GetVariable(MARSHAL_NAME), "ToArray"));
+                encode_method.AddReturn(new CodeMethodInvokeExpression(CodeGenUtils.GetVariable(MARSHAL_NAME), nameof(NdrMarshalBuffer.ToPickledType)));
 
                 var decode_method = decoder_type.AddMethod($"{complex_type.Name}_Decode", MemberAttributes.Public | MemberAttributes.Static);
-                decode_method.AddParam(typeof(byte[]).ToRef(), "data");
+                decode_method.AddParam(typeof(NdrPickledType).ToRef(), "pickled_type");
 
                 decode_method.Statements.Add(new CodeVariableDeclarationStatement(marshal_helper.UnmarshalHelperType, UNMARSHAL_NAME,
-                    new CodeObjectCreateExpression(marshal_helper.UnmarshalHelperType, CodeGenUtils.GetVariable("data"))));
-                decode_method.Statements.Add(new CodeVariableDeclarationStatement(desc.CodeType, "v"));
-                decode_method.AddUnmarshalCall(desc, UNMARSHAL_NAME, "v", null, null, null);
+                    new CodeObjectCreateExpression(marshal_helper.UnmarshalHelperType, CodeGenUtils.GetVariable("pickled_type"))));
+                decode_method.Statements.Add(new CodeVariableDeclarationStatement(desc.GetParameterType(), "v"));
+                if (desc.Pointer)
+                {
+                    decode_method.AddPointerUnmarshalCall(desc, UNMARSHAL_NAME, "v");
+                }
+                else
+                {
+                    decode_method.AddUnmarshalCall(desc, UNMARSHAL_NAME, "v", null, null, null);
+                }
                 decode_method.AddPopluateDeferredPointers(UNMARSHAL_NAME);
                 decode_method.AddReturn(CodeGenUtils.GetVariable("v"));
-                decode_method.ReturnType = desc.CodeType;
+                decode_method.ReturnType = desc.GetParameterType();
             }
         }
 
@@ -1031,9 +1046,10 @@ namespace NtApiDotNet.Win32.Rpc
             }
             AddServerComment(unit);
             CodeNamespace ns = unit.AddNamespace(ns_name);
-            MarshalHelperBuilder marshal_helper = new MarshalHelperBuilder(ns, MARSHAL_HELPER_NAME, UNMARSHAL_HELPER_NAME);
+            bool type_decode = HasFlag(RpcClientBuilderFlags.GenerateComplexTypeEncodeMethods);
+            MarshalHelperBuilder marshal_helper = new MarshalHelperBuilder(ns, MARSHAL_HELPER_NAME, UNMARSHAL_HELPER_NAME, type_decode);
             int complex_type_count = GenerateComplexTypes(ns, marshal_helper);
-            if (HasFlag(RpcClientBuilderFlags.GenerateComplexTypeEncodeMethods))
+            if (type_decode)
             {
                 string encode_name = _args.EncoderName;
                 if (string.IsNullOrWhiteSpace(encode_name))

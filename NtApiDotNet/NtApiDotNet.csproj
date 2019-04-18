@@ -90,6 +90,7 @@
     <Compile Include="Ndr\Marshal\NdrEmpty.cs" />
     <Compile Include="Ndr\Marshal\NdrEnum16.cs" />
     <Compile Include="Ndr\Marshal\NdrInterfacePointer.cs" />
+    <Compile Include="Ndr\Marshal\NdrPickledType.cs" />
     <Compile Include="Ndr\Marshal\NdrPipe.cs" />
     <Compile Include="Ndr\NdrArrayTypes.cs" />
     <Compile Include="Ndr\NdrExpression.cs" />

@@ -44,7 +44,7 @@ namespace NtApiDotNet.Win32.Rpc
         public Dictionary<NdrBaseTypeReference, CodeMemberMethod> MarshalMethods { get; }
         public Dictionary<NdrBaseTypeReference, CodeMemberMethod> UnmarshalMethods { get; }
 
-        public static CodeTypeDeclaration CreateUnmarshalHelperType(CodeNamespace ns, string name)
+        public static CodeTypeDeclaration CreateUnmarshalHelperType(CodeNamespace ns, string name, bool type_decode)
         {
             var type = ns.AddType(name);
             type.TypeAttributes = TypeAttributes.NestedAssembly;
@@ -61,6 +61,13 @@ namespace NtApiDotNet.Win32.Rpc
             con.AddParam(typeof(byte[]).ToRef(), "ba");
             con.BaseConstructorArgs.Add(CodeGenUtils.GetVariable("ba"));
 
+            if (type_decode)
+            {
+                con = type.AddConstructor(MemberAttributes.Public);
+                con.AddParam(typeof(NdrPickledType).ToRef(), "pickled_type");
+                con.BaseConstructorArgs.Add(CodeGenUtils.GetVariable("pickled_type"));
+            }
+
             return type;
         }
 
@@ -73,12 +80,12 @@ namespace NtApiDotNet.Win32.Rpc
             return type;
         }
 
-        public MarshalHelperBuilder(CodeNamespace ns, string marshal_name, string unmarshal_name)
+        public MarshalHelperBuilder(CodeNamespace ns, string marshal_name, string unmarshal_name, bool type_decode)
         {
             MarshalHelper = CreateMarshalHelperType(ns, marshal_name);
             MarshalHelper.AddStartRegion("Marshal Helpers");
             MarshalHelperType = new CodeTypeReference(MarshalHelper.Name);
-            UnmarshalHelper = CreateUnmarshalHelperType(ns, unmarshal_name);
+            UnmarshalHelper = CreateUnmarshalHelperType(ns, unmarshal_name, type_decode);
             UnmarshalHelper.AddEndRegion();
             UnmarshalHelperType = new CodeTypeReference(UnmarshalHelper.Name);
             MarshalMethods = new Dictionary<NdrBaseTypeReference, CodeMemberMethod>();
