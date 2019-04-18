@@ -99,9 +99,9 @@ namespace NtApiDotNet.Win32.Rpc
                 throw new InvalidOperationException("RPC client is not connected.");
             }
 
-            DumpNdrBuffer("Input", ndr_buffer);
+            DumpNdrBuffer("NDR Send Data", ndr_buffer);
             var resp = _transport.SendReceive(proc_num, ObjectUuid, data_representation, ndr_buffer, handles);
-            DumpNdrBuffer("Output", resp.NdrBuffer);
+            DumpNdrBuffer("NDR Receive Data", resp.NdrBuffer);
             return resp;
         }
 

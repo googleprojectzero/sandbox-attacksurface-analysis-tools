@@ -26,7 +26,7 @@ namespace NtApiDotNet.Win32.Rpc
         internal static TraceSwitch RpcTraceSwitch = new TraceSwitch("RpcTrace", "RPC Tracing");
 
         /// <summary>
-        /// Specify NDR trace level.
+        /// Specify RPC trace level.
         /// </summary>
         /// <param name="level">Specify the RPC trace level.</param>
         public static void SetRpcTraceLevel(TraceLevel level)
