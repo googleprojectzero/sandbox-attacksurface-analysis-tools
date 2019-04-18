@@ -45,48 +45,9 @@ namespace NtApiDotNet.Win32.Rpc
 
     internal static class CodeGenUtils
     {
-        public static CodeNamespace AddNamespace(this CodeCompileUnit unit, string ns_name)
-        {
-            CodeNamespace ns = new CodeNamespace(ns_name);
-            unit.Namespaces.Add(ns);
-            return ns;
-        }
+        #region Private Members
 
-        public static CodeNamespaceImport AddImport(this CodeNamespace ns, string import_name)
-        {
-            CodeNamespaceImport import = new CodeNamespaceImport(import_name);
-            ns.Imports.Add(import);
-            return import;
-        }
-
-        public static CodeTypeDeclaration AddType(this CodeNamespace ns, string name)
-        {
-            CodeTypeDeclaration type = new CodeTypeDeclaration(MakeIdentifier(name));
-            ns.Types.Add(type);
-            return type;
-        }
-
-        public static CodeMemberProperty AddProperty(this CodeTypeDeclaration type, string name, CodeTypeReference prop_type, MemberAttributes attributes, params CodeStatement[] get_statements)
-        {
-            var property = new CodeMemberProperty();
-            property.Name = name;
-            property.Type = prop_type;
-            property.Attributes = attributes;
-            property.GetStatements.AddRange(get_statements);
-            type.Members.Add(property);
-            return property;
-        }
-
-        public static CodeMemberMethod AddMethod(this CodeTypeDeclaration type, string name, MemberAttributes attributes)
-        {
-            CodeMemberMethod method = new CodeMemberMethod
-            {
-                Name = MakeIdentifier(name),
-                Attributes = attributes
-            };
-            type.Members.Add(method);
-            return method;
-        }
+        private static Regex _identifier_regex = new Regex(@"[^a-zA-Z0-9_\.]");
 
         private static void AddMarshalInterfaceMethod(CodeTypeDeclaration type, MarshalHelperBuilder marshal_helper, bool non_encapsulated_union)
         {
@@ -116,6 +77,230 @@ namespace NtApiDotNet.Win32.Rpc
                 marshal_helper.CastMarshal(GetVariable("m"))));
         }
 
+        private static void AddAssignmentStatements(this CodeMemberMethod method, CodeExpression target, IEnumerable<Tuple<CodeTypeReference, string, bool>> parameters)
+        {
+            foreach (var p in parameters)
+            {
+                method.AddParam(p.Item1, p.Item2);
+                method.Statements.Add(new CodeAssignStatement(target.GetFieldReference(p.Item2), GetVariable(p.Item2)));
+            }
+        }
+
+        private static string FormatCaseLabel(NdrUnionArm arm)
+        {
+            if (arm.CaseValue < 0)
+            {
+                return $"minus_{-arm.CaseValue}";
+            }
+            return arm.CaseValue.ToString();
+        }
+
+        private static CodeExpression GetArmCase(this NdrUnionArm arm, NdrSimpleTypeReference ndr_type)
+        {
+            long ret = arm.CaseValue;
+            switch (ndr_type.Format)
+            {
+                case NdrFormatCharacter.FC_BYTE:
+                    ret = (byte)arm.CaseValue;
+                    break;
+                case NdrFormatCharacter.FC_USHORT:
+                    ret = (ushort)arm.CaseValue;
+                    break;
+                case NdrFormatCharacter.FC_ULONG:
+                    ret = (uint)arm.CaseValue;
+                    break;
+            }
+            return GetPrimitive(ret);
+        }
+
+        private static string FindCorrelationArgument(int expected_offset, IEnumerable<Tuple<int, string>> offset_to_name)
+        {
+            foreach (var offset in offset_to_name)
+            {
+                if (offset.Item1 == expected_offset)
+                {
+                    return offset.Item2;
+                }
+                else if (offset.Item1 > expected_offset)
+                {
+                    break;
+                }
+            }
+            return null;
+        }
+
+        private static void AddUnmarshalInterfaceMethod(CodeTypeDeclaration type, MarshalHelperBuilder marshal_helper)
+        {
+            CodeMemberMethod method = type.AddMethod(nameof(INdrStructure.Unmarshal), MemberAttributes.Final | MemberAttributes.Private);
+            method.PrivateImplementationType = new CodeTypeReference(typeof(INdrStructure));
+            method.AddParam(typeof(NdrUnmarshalBuffer), "u");
+            method.Statements.Add(new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(null, nameof(INdrStructure.Unmarshal)),
+                marshal_helper.CastUnmarshal(GetVariable("u"))));
+        }
+
+        // TODO: Operations might need to be handled as int32 rather than long.
+        private static CodeExpression BuildCorrelationExpression(NdrExpression expr, int current_offset,
+            IEnumerable<Tuple<int, string>> offset_to_name, bool disable_correlation)
+        {
+            if (expr is NdrConstantExpression const_expr)
+            {
+                return GetPrimitive(const_expr.Value);
+            }
+
+            // Allow constant expressions even if disabled.
+            if (disable_correlation)
+            {
+                return GetPrimitive(-1);
+            }
+
+            if (expr is NdrVariableExpression var_expr)
+            {
+                string var_name = FindCorrelationArgument(current_offset + var_expr.Offset, offset_to_name);
+                if (var_name != null)
+                {
+                    return GetVariable(var_name);
+                }
+            }
+            else if (expr is NdrOperatorExpression op_expr)
+            {
+                if (op_expr.Arguments.Count == 3)
+                {
+                    return OpTernary(BuildCorrelationExpression(op_expr.Arguments[2], current_offset, offset_to_name, false).ToBool(),
+                        BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name, false),
+                        BuildCorrelationExpression(op_expr.Arguments[1], current_offset, offset_to_name, false));
+                }
+                else if (op_expr.Arguments.Count == 2)
+                {
+                    switch (op_expr.Operator)
+                    {
+                        case NdrExpressionOperator.OP_AND:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpBitwiseAnd), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_OR:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpBitwiseOr), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_PLUS:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpPlus), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_MINUS:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpMinus), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_MOD:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpMod), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_SLASH:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpSlash), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_STAR:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpStar), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_LEFT_SHIFT:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpLeftShift), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_RIGHT_SHIFT:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpRightShift), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_XOR:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpXor), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_LOGICAL_AND:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpLogicalAnd), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_LOGICAL_OR:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpLogicalOr), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_EQUAL:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpEqual), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_NOT_EQUAL:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpNotEqual), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_LESS:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpLess), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_LESS_EQUAL:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpLessEqual), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_GREATER:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpGreater), current_offset, offset_to_name);
+                        case NdrExpressionOperator.OP_GREATER_EQUAL:
+                            return GetOpMethod(op_expr, nameof(RpcUtils.OpGreaterEqual), current_offset, offset_to_name);
+                    }
+                }
+                else if (op_expr.Arguments.Count == 1)
+                {
+                    CodeExpression left_expr = BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name, false);
+
+                    switch (op_expr.Operator)
+                    {
+                        case NdrExpressionOperator.OP_UNARY_INDIRECTION:
+                            return left_expr.DeRef();
+                        case NdrExpressionOperator.OP_UNARY_CAST:
+                            return left_expr.Cast(GetSimpleTypeDescriptor(op_expr.Format).CodeType);
+                        case NdrExpressionOperator.OP_UNARY_COMPLEMENT:
+                            return GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.OpComplement), left_expr);
+                        case NdrExpressionOperator.OP_UNARY_MINUS:
+                            return GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.OpMinus), left_expr);
+                        case NdrExpressionOperator.OP_UNARY_PLUS:
+                            return GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.OpPlus), left_expr);
+                    }
+                }
+            }
+
+            // Can't seem to generate expression.
+            return GetPrimitive(-1);
+        }
+
+        private static CodeExpression GetBinaryExpression(NdrOperatorExpression expr, CodeBinaryOperatorType op, int current_offset, IEnumerable<Tuple<int, string>> offset_to_name)
+        {
+            return new CodeBinaryOperatorExpression(BuildCorrelationExpression(expr.Arguments[0], current_offset, offset_to_name, false),
+                op, BuildCorrelationExpression(expr.Arguments[1], current_offset, offset_to_name, false));
+        }
+
+        private static RpcTypeDescriptor GetSimpleTypeDescriptor(this NdrFormatCharacter format)
+        {
+            return GetSimpleTypeDescriptor(new NdrSimpleTypeReference(format), null, false);
+        }
+
+        private static CodeExpression GetOpMethod(NdrOperatorExpression op_expr, string name, int current_offset,
+            IEnumerable<Tuple<int, string>> offset_to_name)
+        {
+            return GetStaticMethod(typeof(RpcUtils), name, BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name, false),
+                                    BuildCorrelationExpression(op_expr.Arguments[1], current_offset, offset_to_name, false));
+        }
+
+        #endregion
+
+        public static CodeNamespace AddNamespace(this CodeCompileUnit unit, string ns_name)
+        {
+            CodeNamespace ns = new CodeNamespace(ns_name);
+            unit.Namespaces.Add(ns);
+            return ns;
+        }
+
+        public static CodeNamespaceImport AddImport(this CodeNamespace ns, string import_name)
+        {
+            CodeNamespaceImport import = new CodeNamespaceImport(import_name);
+            ns.Imports.Add(import);
+            return import;
+        }
+
+        public static CodeTypeDeclaration AddType(this CodeNamespace ns, string name)
+        {
+            CodeTypeDeclaration type = new CodeTypeDeclaration(MakeIdentifier(name));
+            ns.Types.Add(type);
+            return type;
+        }
+
+        public static CodeMemberProperty AddProperty(this CodeTypeDeclaration type, string name, CodeTypeReference prop_type, MemberAttributes attributes, params CodeStatement[] get_statements)
+        {
+            var property = new CodeMemberProperty
+            {
+                Name = name,
+                Type = prop_type,
+                Attributes = attributes
+            };
+            property.GetStatements.AddRange(get_statements);
+            type.Members.Add(property);
+            return property;
+        }
+
+        public static CodeMemberMethod AddMethod(this CodeTypeDeclaration type, string name, MemberAttributes attributes)
+        {
+            CodeMemberMethod method = new CodeMemberMethod
+            {
+                Name = MakeIdentifier(name),
+                Attributes = attributes
+            };
+            type.Members.Add(method);
+            return method;
+        }
+
+
         public static CodeMemberMethod AddMarshalMethod(this CodeTypeDeclaration type, string marshal_name, MarshalHelperBuilder marshal_helper, 
             bool non_encapsulated_union, string selector_name, CodeTypeReference selector_type)
         {
@@ -141,15 +326,6 @@ namespace NtApiDotNet.Win32.Rpc
         public static void AddAlign(this CodeMemberMethod method, string marshal_name, int align)
         {
             method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(marshal_name), nameof(NdrUnmarshalBuffer.Align), GetPrimitive(align)));
-        }
-
-        private static void AddUnmarshalInterfaceMethod(CodeTypeDeclaration type, MarshalHelperBuilder marshal_helper)
-        {
-            CodeMemberMethod method = type.AddMethod(nameof(INdrStructure.Unmarshal), MemberAttributes.Final | MemberAttributes.Private);
-            method.PrivateImplementationType = new CodeTypeReference(typeof(INdrStructure));
-            method.AddParam(typeof(NdrUnmarshalBuffer), "u");
-            method.Statements.Add(new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(null, nameof(INdrStructure.Unmarshal)),
-                marshal_helper.CastUnmarshal(GetVariable("u"))));
         }
 
         public static CodeMemberMethod AddUnmarshalMethod(this CodeTypeDeclaration type, string unmarshal_name, MarshalHelperBuilder marshal_helper)
@@ -226,15 +402,7 @@ namespace NtApiDotNet.Win32.Rpc
             method.AddReturn(return_value);
         }
 
-        private static void AddAssignmentStatements(this CodeMemberMethod method, CodeExpression target, IEnumerable<Tuple<CodeTypeReference, string, bool>> parameters)
-        {
-            foreach (var p in parameters)
-            {
-                method.AddParam(p.Item1, p.Item2);
-                method.Statements.Add(new CodeAssignStatement(target.GetFieldReference(p.Item2), GetVariable(p.Item2)));
-            }
-        }
-
+        
         public static void AddComment(this CodeCommentStatementCollection comments, string text)
         {
             comments.Add(new CodeCommentStatement(text));
@@ -565,8 +733,6 @@ namespace NtApiDotNet.Win32.Rpc
             type.EndDirectives.Add(new CodeRegionDirective(CodeRegionMode.End, string.Empty));
         }
 
-        private static Regex _identifier_regex = new Regex(@"[^a-zA-Z0-9_\.]");
-
         public static string MakeIdentifier(string id)
         {
             id = _identifier_regex.Replace(id, "_");
@@ -635,22 +801,6 @@ namespace NtApiDotNet.Win32.Rpc
             return true;
         }
 
-        private static string FindCorrelationArgument(int expected_offset, IEnumerable<Tuple<int, string>> offset_to_name)
-        {
-            foreach (var offset in offset_to_name)
-            {
-                if (offset.Item1 == expected_offset)
-                {
-                    return offset.Item2;
-                }
-                else if (offset.Item1 > expected_offset)
-                {
-                    break;
-                }
-            }
-            return null;
-        }
-
         public static RpcTypeDescriptor GetSimpleTypeDescriptor(this NdrSimpleTypeReference simple_type, MarshalHelperBuilder marshal_helper, bool unsigned_char)
         {
             NdrFormatCharacter format = simple_type.Format;
@@ -699,123 +849,6 @@ namespace NtApiDotNet.Win32.Rpc
                     return new RpcTypeDescriptor(typeof(NdrEmpty), nameof(NdrUnmarshalBuffer.ReadEmpty), nameof(NdrMarshalBuffer.WriteEmpty), simple_type);
             }
             return null;
-        }
-
-
-        private static CodeExpression GetBinaryExpression(NdrOperatorExpression expr, CodeBinaryOperatorType op, int current_offset, IEnumerable<Tuple<int, string>> offset_to_name)
-        {
-            return new CodeBinaryOperatorExpression(BuildCorrelationExpression(expr.Arguments[0], current_offset, offset_to_name, false), 
-                op, BuildCorrelationExpression(expr.Arguments[1], current_offset, offset_to_name, false));
-        }
-
-        
-        private static RpcTypeDescriptor GetSimpleTypeDescriptor(this NdrFormatCharacter format)
-        {
-            return GetSimpleTypeDescriptor(new NdrSimpleTypeReference(format), null, false);
-        }
-
-        private static CodeExpression GetOpMethod(NdrOperatorExpression op_expr, string name, int current_offset,
-            IEnumerable<Tuple<int, string>> offset_to_name)
-        {
-            return GetStaticMethod(typeof(RpcUtils), name, BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name, false),
-                                    BuildCorrelationExpression(op_expr.Arguments[1], current_offset, offset_to_name, false));
-        }
-
-        // TODO: Operations might need to be handled as int32 rather than long.
-        private static CodeExpression BuildCorrelationExpression(NdrExpression expr, int current_offset, 
-            IEnumerable<Tuple<int, string>> offset_to_name, bool disable_correlation)
-        {
-            if (expr is NdrConstantExpression const_expr)
-            {
-                return GetPrimitive(const_expr.Value);
-            }
-
-            // Allow constant expressions even if disabled.
-            if (disable_correlation)
-            {
-                return GetPrimitive(-1);
-            }
-
-            if (expr is NdrVariableExpression var_expr)
-            {
-                string var_name = FindCorrelationArgument(current_offset + var_expr.Offset, offset_to_name);
-                if (var_name != null)
-                {
-                    return GetVariable(var_name);
-                }
-            }
-            else if (expr is NdrOperatorExpression op_expr)
-            {
-                if (op_expr.Arguments.Count == 3)
-                {
-                    return OpTernary(BuildCorrelationExpression(op_expr.Arguments[2], current_offset, offset_to_name, false).ToBool(),
-                        BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name, false),
-                        BuildCorrelationExpression(op_expr.Arguments[1], current_offset, offset_to_name, false));
-                }
-                else if (op_expr.Arguments.Count == 2)
-                {
-                    switch (op_expr.Operator)
-                    {
-                        case NdrExpressionOperator.OP_AND:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpBitwiseAnd), current_offset, offset_to_name);
-                        case NdrExpressionOperator.OP_OR:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpBitwiseOr), current_offset, offset_to_name);
-                        case NdrExpressionOperator.OP_PLUS:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpPlus), current_offset, offset_to_name);
-                        case NdrExpressionOperator.OP_MINUS:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpMinus), current_offset, offset_to_name);
-                        case NdrExpressionOperator.OP_MOD:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpMod), current_offset, offset_to_name);
-                        case NdrExpressionOperator.OP_SLASH:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpSlash), current_offset, offset_to_name);
-                        case NdrExpressionOperator.OP_STAR:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpStar), current_offset, offset_to_name);
-                        case NdrExpressionOperator.OP_LEFT_SHIFT:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpLeftShift), current_offset, offset_to_name);
-                        case NdrExpressionOperator.OP_RIGHT_SHIFT:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpRightShift), current_offset, offset_to_name);
-                        case NdrExpressionOperator.OP_XOR:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpXor), current_offset, offset_to_name);
-                        case NdrExpressionOperator.OP_LOGICAL_AND:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpLogicalAnd), current_offset, offset_to_name);
-                        case NdrExpressionOperator.OP_LOGICAL_OR:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpLogicalOr), current_offset, offset_to_name);
-                        case NdrExpressionOperator.OP_EQUAL:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpEqual), current_offset, offset_to_name);
-                        case NdrExpressionOperator.OP_NOT_EQUAL:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpNotEqual), current_offset, offset_to_name);
-                        case NdrExpressionOperator.OP_LESS:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpLess), current_offset, offset_to_name);
-                        case NdrExpressionOperator.OP_LESS_EQUAL:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpLessEqual), current_offset, offset_to_name);
-                        case NdrExpressionOperator.OP_GREATER:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpGreater), current_offset, offset_to_name);
-                        case NdrExpressionOperator.OP_GREATER_EQUAL:
-                            return GetOpMethod(op_expr, nameof(RpcUtils.OpGreaterEqual), current_offset, offset_to_name);
-                    }
-                }
-                else if (op_expr.Arguments.Count == 1)
-                {
-                    CodeExpression left_expr = BuildCorrelationExpression(op_expr.Arguments[0], current_offset, offset_to_name, false);
-
-                    switch (op_expr.Operator)
-                    {
-                        case NdrExpressionOperator.OP_UNARY_INDIRECTION:
-                            return left_expr.DeRef();
-                        case NdrExpressionOperator.OP_UNARY_CAST:
-                            return left_expr.Cast(GetSimpleTypeDescriptor(op_expr.Format).CodeType);
-                        case NdrExpressionOperator.OP_UNARY_COMPLEMENT:
-                            return GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.OpComplement), left_expr);
-                        case NdrExpressionOperator.OP_UNARY_MINUS:
-                            return GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.OpMinus), left_expr);
-                        case NdrExpressionOperator.OP_UNARY_PLUS:
-                            return GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.OpPlus), left_expr);
-                    }
-                }
-            }
-
-            // Can't seem to generate expression.
-            return GetPrimitive(-1);
         }
 
         public static RpcMarshalArgument CalculateCorrelationArgument(this NdrCorrelationDescriptor correlation,
@@ -886,7 +919,6 @@ namespace NtApiDotNet.Win32.Rpc
         {
             return new CodeTypeReference(type);
         }
-
         public static CodeTypeReference ToRef(this Type type, params CodeTypeReference[] generic_types)
         {
             var ret = new CodeTypeReference(type);
@@ -954,33 +986,6 @@ namespace NtApiDotNet.Win32.Rpc
             return 0;
         }
 
-        private static string FormatCaseLabel(NdrUnionArm arm)
-        {
-            if (arm.CaseValue < 0)
-            {
-                return $"minus_{-arm.CaseValue}";
-            }
-            return arm.CaseValue.ToString();
-        }
-
-        private static CodeExpression GetArmCase(this NdrUnionArm arm, NdrSimpleTypeReference ndr_type)
-        {
-            long ret = arm.CaseValue;
-            switch (ndr_type.Format)
-            {
-                case NdrFormatCharacter.FC_BYTE:
-                    ret = (byte)arm.CaseValue;
-                    break;
-                case NdrFormatCharacter.FC_USHORT:
-                    ret = (ushort)arm.CaseValue;
-                    break;
-                case NdrFormatCharacter.FC_ULONG:
-                    ret = (uint)arm.CaseValue;
-                    break;
-            }
-            return GetPrimitive(ret);
-        }
-
         public static List<ComplexTypeMember> GetMembers(this NdrComplexTypeReference complex_type, string selector_name)
         {
             List<ComplexTypeMember> members = new List<ComplexTypeMember>();
@@ -1035,11 +1040,6 @@ namespace NtApiDotNet.Win32.Rpc
             return new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(type), name, ps);
         }
 
-        public static CodeMethodInvokeExpression GetStaticMethod(CodeTypeReference type, string name, params CodeExpression[] ps)
-        {
-            return new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(type), name, ps);
-        }
-
         public static CodeExpression DeRef(this CodeExpression expr)
         {
             return GetStaticMethod(typeof(RpcUtils), nameof(RpcUtils.DeRef), expr);
@@ -1051,11 +1051,6 @@ namespace NtApiDotNet.Win32.Rpc
         }
 
         public static CodeExpression Cast(this CodeExpression expr, CodeTypeReference type)
-        {
-            return new CodeCastExpression(type, expr);
-        }
-
-        public static CodeExpression Cast(this CodeExpression expr, Type type)
         {
             return new CodeCastExpression(type, expr);
         }

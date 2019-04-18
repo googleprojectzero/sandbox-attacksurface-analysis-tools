@@ -42,7 +42,7 @@ namespace NtApiDotNet.Win32.Rpc
 
         public static RpcMarshalArgument CreateFromPrimitive<T>(T primitive)
         {
-            return new RpcMarshalArgument(new CodePrimitiveExpression(primitive), new CodeTypeReference(typeof(T)));
+            return new RpcMarshalArgument(CodeGenUtils.GetPrimitive(primitive), typeof(T).ToRef());
         }
     }
 

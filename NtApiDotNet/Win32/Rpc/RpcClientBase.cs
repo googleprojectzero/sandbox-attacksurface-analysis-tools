@@ -46,10 +46,22 @@ namespace NtApiDotNet.Win32.Rpc
                 return;
             }
             Trace.WriteLine($"{title}:");
-            for (int i = 0; i < buffer.Length; i += 4)
+            int trailing = buffer.Length % 16;
+            int count = (buffer.Length / 16) * 16;
+            for (int i = 0; i < count; i += 16)
             {
-                Trace.WriteLine($"{BitConverter.ToUInt32(buffer, i):X08}");
+                for (int j = 0; j < 16; j += 4)
+                {
+                    Trace.Write($"{BitConverter.ToUInt32(buffer, i + j):X08} ");
+                }
+                Trace.WriteLine(string.Empty);
             }
+
+            for (int i = 0; i < trailing; i += 4)
+            {
+                Trace.Write($"{BitConverter.ToUInt32(buffer, count + i):X08} ");
+            }
+
             Trace.WriteLine(string.Empty);
         }
 
