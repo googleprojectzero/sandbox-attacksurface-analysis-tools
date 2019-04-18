@@ -20,7 +20,7 @@ using System.Text;
 namespace NtApiDotNet.Win32.Rpc.Transport
 {
     #region Complex Types
-    internal struct RpcExtendedErrorInfoInternal : INdrConformantStructure
+    internal struct ExtendedErrorInfo : INdrConformantStructure
     {
         void INdrStructure.Marshal(NdrMarshalBuffer m)
         {
@@ -30,8 +30,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
             u.Align(8);
-            Chain = u.ReadEmbeddedPointer(u.ReadStruct<RpcExtendedErrorInfoInternal>, false);
-            ComputerName = u.ReadStruct<ComputerNameUnion>();
+            Next = u.ReadEmbeddedPointer(u.ReadStruct<ExtendedErrorInfo>, false);
+            ComputerName = u.ReadStruct<EEComputerName>();
             ProcessId = u.ReadInt32();
             TimeStamp = u.ReadInt64();
             GeneratingComponent = u.ReadInt32();
@@ -39,7 +39,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             DetectionLocation = u.ReadInt16();
             Flags = u.ReadInt16();
             nLen = u.ReadInt16();
-            Parameters = u.ReadConformantStructArray<ExtendedErrorInfoParamInternal>();
+            Params = u.ReadConformantStructArray<ExtendedErrorInfoParamInternal>();
         }
 
         int INdrConformantStructure.GetConformantDimensions()
@@ -47,8 +47,8 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             return 1;
         }
 
-        public NdrEmbeddedPointer<RpcExtendedErrorInfoInternal> Chain;
-        public ComputerNameUnion ComputerName;
+        public NdrEmbeddedPointer<ExtendedErrorInfo> Next;
+        public EEComputerName ComputerName;
         public int ProcessId;
         public long TimeStamp;
         public int GeneratingComponent;
@@ -56,7 +56,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         public short DetectionLocation;
         public short Flags;
         public short nLen;
-        public ExtendedErrorInfoParamInternal[] Parameters;
+        public ExtendedErrorInfoParamInternal[] Params;
     }
     internal struct ExtendedErrorInfoParamInternal : INdrStructure
     {
@@ -84,13 +84,13 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 case 2:
                     return ParameterData.UnicodeString.GetString().TrimEnd('\0');
                 case 3:
-                    return ParameterData.LongVal;
+                    return ParameterData.LVal;
                 case 4:
-                    return ParameterData.ShortVal;
+                    return ParameterData.IVal;
                 case 5:
-                    return ParameterData.PointerVal;
+                    return ParameterData.PVal;
                 case 7:
-                    return ParameterData.BinaryVal.GetObject();
+                    return ParameterData.Blob.GetObject();
                 default:
                     return string.Empty;
             }
@@ -110,38 +110,38 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             switch (u.ReadInt16())
             {
                 case 1:
-                    AnsiString = u.ReadStruct<AnsiStringData>();
+                    AnsiString = u.ReadStruct<EEAString>();
                     break;
                 case 2:
-                    UnicodeString = u.ReadStruct<UnicodeStringData>();
+                    UnicodeString = u.ReadStruct<EEUString>();
                     break;
                 case 3:
-                    LongVal = u.ReadInt32();
+                    LVal = u.ReadInt32();
                     break;
                 case 4:
-                    ShortVal = u.ReadInt16();
+                    IVal = u.ReadInt16();
                     break;
                 case 5:
-                    PointerVal = u.ReadInt64();
+                    PVal = u.ReadInt64();
                     break;
                 case 6:
                     break;
                 case 7:
-                    BinaryVal = u.ReadStruct<BinaryData>();
+                    Blob = u.ReadStruct<BinaryEEInfo>();
                     break;
                 default:
                     throw new System.ArgumentException("No matching union selector when marshaling Union_2");
             }
         }
 
-        public AnsiStringData AnsiString;
-        public UnicodeStringData UnicodeString;
-        public int LongVal;
-        public short ShortVal;
-        public long PointerVal;
-        public BinaryData BinaryVal;
+        public EEAString AnsiString;
+        public EEUString UnicodeString;
+        public int LVal;
+        public short IVal;
+        public long PVal;
+        public BinaryEEInfo Blob;
     }
-    internal struct AnsiStringData : INdrStructure
+    internal struct EEAString : INdrStructure
     {
         void INdrStructure.Marshal(NdrMarshalBuffer m)
         {
@@ -151,19 +151,19 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
             u.Align(4);
-            Length = u.ReadInt16();
-            Data = u.ReadEmbeddedPointer(u.ReadConformantArray<byte>, false);
+            nLength = u.ReadInt16();
+            pString = u.ReadEmbeddedPointer(u.ReadConformantArray<byte>, false);
         }
 
-        public short Length;
-        public NdrEmbeddedPointer<byte[]> Data;
+        public short nLength;
+        public NdrEmbeddedPointer<byte[]> pString;
 
         public string GetString()
         {
-            return BinaryEncoding.Instance.GetString(Data.GetValue());
+            return BinaryEncoding.Instance.GetString(pString.GetValue());
         }
     }
-    internal struct UnicodeStringData : INdrStructure
+    internal struct EEUString : INdrStructure
     {
         void INdrStructure.Marshal(NdrMarshalBuffer m)
         {
@@ -173,23 +173,23 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
             u.Align(4);
-            Length = u.ReadInt16();
-            Data = u.ReadEmbeddedPointer(u.ReadConformantArray<short>, false);
+            nLength = u.ReadInt16();
+            pString = u.ReadEmbeddedPointer(u.ReadConformantArray<short>, false);
         }
 
-        public short Length;
-        public NdrEmbeddedPointer<short[]> Data;
+        public short nLength;
+        public NdrEmbeddedPointer<short[]> pString;
 
         public string GetString()
         {
-            short[] data = Data.GetValue();
+            short[] data = pString.GetValue();
             byte[] buffer = new byte[data.Length * 2];
             Buffer.BlockCopy(data, 0, buffer, 0, buffer.Length);
             return Encoding.Unicode.GetString(buffer);
         }
     }
 
-    internal struct BinaryData : INdrStructure
+    internal struct BinaryEEInfo : INdrStructure
     {
         void INdrStructure.Marshal(NdrMarshalBuffer m)
         {
@@ -199,19 +199,19 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         void INdrStructure.Unmarshal(NdrUnmarshalBuffer u)
         {
             u.Align(4);
-            Length = u.ReadInt16();
-            Data = u.ReadEmbeddedPointer(u.ReadConformantArray<sbyte>, false);
+            nSize = u.ReadInt16();
+            pBlob = u.ReadEmbeddedPointer(u.ReadConformantArray<sbyte>, false);
         }
 
-        public short Length;
-        public NdrEmbeddedPointer<sbyte[]> Data;
+        public short nSize;
+        public NdrEmbeddedPointer<sbyte[]> pBlob;
 
         public object GetObject()
         {
-            return (byte[])(object)Data.GetValue();
+            return (byte[])(object)pBlob.GetValue();
         }
     }
-    internal struct ComputerNameUnion : INdrStructure
+    internal struct EEComputerName : INdrStructure
     {
         void INdrStructure.Marshal(NdrMarshalBuffer m)
         {
@@ -222,11 +222,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         {
             u.Align(4);
             Selector = u.ReadEnum16();
-            Name = u.ReadStruct<ComputerNameData>();
+            Name = u.ReadStruct<EEComputerNameData>();
         }
 
         public NdrEnum16 Selector;
-        public ComputerNameData Name;
+        public EEComputerNameData Name;
 
         public string GetString()
         {
@@ -237,7 +237,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             return string.Empty;
         }
     }
-    internal struct ComputerNameData : INdrNonEncapsulatedUnion
+    internal struct EEComputerNameData : INdrNonEncapsulatedUnion
     {
         void INdrStructure.Marshal(NdrMarshalBuffer m)
         {
@@ -254,7 +254,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             switch (u.ReadInt16())
             {
                 case 1:
-                    StringData = u.ReadStruct<UnicodeStringData>();
+                    StringData = u.ReadStruct<EEUString>();
                     break;
                 case 2:
                     break;
@@ -263,16 +263,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             }
         }
 
-        public UnicodeStringData StringData;
+        public EEUString StringData;
     }
     #endregion
     #region Complex Type Encoders
     internal static class ExtendedErrorInfoDecoder
     {
-        internal static RpcExtendedErrorInfoInternal? Decode(byte[] data)
+        internal static ExtendedErrorInfo? Decode(byte[] data)
         {
             NdrUnmarshalBuffer u = new NdrUnmarshalBuffer(data);
-            var res = u.ReadReferentValue(u.ReadStruct<RpcExtendedErrorInfoInternal>, false);
+            var res = u.ReadReferentValue(u.ReadStruct<ExtendedErrorInfo>, false);
             u.PopulateDeferredPointers();
             return res;
         }

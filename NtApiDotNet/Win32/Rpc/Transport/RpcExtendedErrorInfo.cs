@@ -56,7 +56,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         /// </summary>
         public IReadOnlyList<object> Parameters { get; }
 
-        private RpcExtendedErrorInfo(RpcExtendedErrorInfoInternal priv)
+        private RpcExtendedErrorInfo(ExtendedErrorInfo priv)
         {
             ComputerName = priv.ComputerName.GetString();
             ProcessId = priv.ProcessId;
@@ -65,7 +65,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             Status = priv.Status;
             DetectionLocation = priv.DetectionLocation;
             Flags = priv.Flags;
-            Parameters = priv.Parameters.Select(i => i.GetObject()).ToList();
+            Parameters = priv.Params.Select(i => i.GetObject()).ToList();
         }
 
         internal static IEnumerable<RpcExtendedErrorInfo> ReadErrorInfo(byte[] ndr_data)
@@ -75,11 +75,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             while (priv.HasValue)
             {
                 error_info.Add(new RpcExtendedErrorInfo(priv.Value));
-                if (priv.Value.Chain == null)
+                if (priv.Value.Next == null)
                 {
                     break;
                 }
-                priv = priv.Value.Chain.GetValue();
+                priv = priv.Value.Next.GetValue();
             }
             return error_info;
         }
