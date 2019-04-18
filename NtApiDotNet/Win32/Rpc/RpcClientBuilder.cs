@@ -607,6 +607,7 @@ namespace NtApiDotNet.Win32.Rpc
                 {
                     s_type.AddConformantDimensionsMethod(complex_type.GetConformantDimensions(), marshal_helper);
                 }
+                s_type.AddAlignmentMethod(complex_type.GetAlignment(), marshal_helper);
 
                 var offset_to_name =
                     complex_type.GetMembers(UNION_SELECTOR_NAME).Select(m => Tuple.Create(m.Offset, m.Name)).ToList();

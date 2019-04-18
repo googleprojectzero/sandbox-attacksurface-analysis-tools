@@ -300,7 +300,6 @@ namespace NtApiDotNet.Win32.Rpc
             return method;
         }
 
-
         public static CodeMemberMethod AddMarshalMethod(this CodeTypeDeclaration type, string marshal_name, MarshalHelperBuilder marshal_helper, 
             bool non_encapsulated_union, string selector_name, CodeTypeReference selector_type)
         {
@@ -314,13 +313,20 @@ namespace NtApiDotNet.Win32.Rpc
             return method;
         }
 
-
         public static void AddConformantDimensionsMethod(this CodeTypeDeclaration type, int dimensions, MarshalHelperBuilder marshal_helper)
         {
             CodeMemberMethod method = type.AddMethod(nameof(INdrConformantStructure.GetConformantDimensions), MemberAttributes.Final | MemberAttributes.Private);
             method.PrivateImplementationType = new CodeTypeReference(typeof(INdrConformantStructure));
             method.ReturnType = typeof(int).ToRef();
             method.AddReturn(GetPrimitive(dimensions));
+        }
+
+        public static void AddAlignmentMethod(this CodeTypeDeclaration type, int alignment, MarshalHelperBuilder marshal_helper)
+        {
+            CodeMemberMethod method = type.AddMethod(nameof(INdrStructure.GetAlignment), MemberAttributes.Final | MemberAttributes.Private);
+            method.PrivateImplementationType = new CodeTypeReference(typeof(INdrStructure));
+            method.ReturnType = typeof(int).ToRef();
+            method.AddReturn(GetPrimitive(alignment));
         }
 
         public static void AddAlign(this CodeMemberMethod method, string marshal_name, int align)

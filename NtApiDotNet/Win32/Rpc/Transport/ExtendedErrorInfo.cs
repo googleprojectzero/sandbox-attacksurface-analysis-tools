@@ -42,6 +42,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             Params = u.ReadConformantStructArray<ExtendedErrorInfoParamInternal>();
         }
 
+        int INdrStructure.GetAlignment()
+        {
+            return 8;
+        }
+
         int INdrConformantStructure.GetConformantDimensions()
         {
             return 1;
@@ -70,6 +75,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             u.Align(8);
             ParameterType = u.ReadEnum16();
             ParameterData = u.ReadStruct<ParameterValueUnion>();
+        }
+
+        int INdrStructure.GetAlignment()
+        {
+            return 8;
         }
 
         public NdrEnum16 ParameterType;
@@ -134,6 +144,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             }
         }
 
+        int INdrStructure.GetAlignment()
+        {
+            return 1;
+        }
+
         public EEAString AnsiString;
         public EEUString UnicodeString;
         public int LVal;
@@ -153,6 +168,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             u.Align(4);
             nLength = u.ReadInt16();
             pString = u.ReadEmbeddedPointer(u.ReadConformantArray<byte>, false);
+        }
+
+        int INdrStructure.GetAlignment()
+        {
+            return 4;
         }
 
         public short nLength;
@@ -175,6 +195,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             u.Align(4);
             nLength = u.ReadInt16();
             pString = u.ReadEmbeddedPointer(u.ReadConformantArray<short>, false);
+        }
+
+        int INdrStructure.GetAlignment()
+        {
+            return 4;
         }
 
         public short nLength;
@@ -203,6 +228,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             pBlob = u.ReadEmbeddedPointer(u.ReadConformantArray<sbyte>, false);
         }
 
+        int INdrStructure.GetAlignment()
+        {
+            return 4;
+        }
+
         public short nSize;
         public NdrEmbeddedPointer<sbyte[]> pBlob;
 
@@ -223,6 +253,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             u.Align(4);
             Selector = u.ReadEnum16();
             Name = u.ReadStruct<EEComputerNameData>();
+        }
+
+        int INdrStructure.GetAlignment()
+        {
+            return 4;
         }
 
         public NdrEnum16 Selector;
@@ -261,6 +296,11 @@ namespace NtApiDotNet.Win32.Rpc.Transport
                 default:
                     throw new System.ArgumentException("No matching union selector when marshaling ComputerNameData");
             }
+        }
+
+        int INdrStructure.GetAlignment()
+        {
+            return 1;
         }
 
         public EEUString StringData;

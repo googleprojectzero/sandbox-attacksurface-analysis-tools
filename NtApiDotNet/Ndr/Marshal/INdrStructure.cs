@@ -30,5 +30,10 @@ namespace NtApiDotNet.Ndr.Marshal
         /// </summary>
         /// <param name="unmarshal">The unmarshal stream.</param>
         void Unmarshal(NdrUnmarshalBuffer unmarshal);
+        /// <summary>
+        /// Get the structure's alignment.
+        /// </summary>
+        /// <returns></returns>
+        int GetAlignment();
     }
 }

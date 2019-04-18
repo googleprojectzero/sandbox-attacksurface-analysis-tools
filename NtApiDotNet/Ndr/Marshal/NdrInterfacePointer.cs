@@ -54,5 +54,10 @@ namespace NtApiDotNet.Ndr.Marshal
             unmarshal.ReadInt32(); // length.
             Data = unmarshal.ReadConformantByteArray();
         }
+
+        int INdrStructure.GetAlignment()
+        {
+            return 4;
+        }
     }
 }

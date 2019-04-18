@@ -543,13 +543,13 @@ namespace NtApiDotNet.Ndr.Marshal
         {
             if (union.HasValue)
             {
-                union.Value.Marshal(this, selector);
+                WriteUnion((INdrNonEncapsulatedUnion)union.Value, selector);
             }
         }
 
         public void WriteUnion<T>(T union, long selector) where T : struct, INdrNonEncapsulatedUnion
         {
-            union.Marshal(this, selector);
+            WriteUnion((INdrNonEncapsulatedUnion)union, selector);
         }
 
         public void WriteUnion(INdrNonEncapsulatedUnion union, long selector)
