@@ -35,10 +35,39 @@ namespace NtApiDotNet.Ndr.Marshal
         private int _referent;
         private long? _conformance_position;
 
+        private bool WriteReferent<T>(T obj) where T : class
+        {
+            if (obj == null)
+            {
+                WriteInt32(0);
+                return false;
+            }
+            else
+            {
+                WriteInt32(_referent);
+                _referent += 4;
+                return true;
+            }
+        }
+
+        private bool WriteReferent<T>(T? obj) where T : struct
+        {
+            if (!obj.HasValue)
+            {
+                WriteInt32(0);
+                return false;
+            }
+            else
+            {
+                WriteInt32(_referent);
+                _referent += 4;
+                return true;
+            }
+        }
+
         private void WriteEmbeddedPointer<T>(NdrEmbeddedPointer<T> pointer, Action writer)
         {
-            WriteReferent(pointer);
-            if (pointer != null)
+            if (WriteReferent(pointer))
             {
                 _deferred_writes.Enqueue(writer);
             }
@@ -549,26 +578,6 @@ namespace NtApiDotNet.Ndr.Marshal
             WriteEmbeddedPointer(pointer, () => writer(pointer, arg, arg2));
         }
 
-        public void WriteEmbeddedStructPointer<T>(NdrEmbeddedPointer<T> pointer) where T : struct, INdrStructure
-        {
-            WriteEmbeddedPointer(pointer, () => WriteStruct((INdrStructure)pointer));
-        }
-
-        public bool WriteReferent<T>(T obj) where T : class
-        {
-            if (obj == null)
-            {
-                WriteInt32(0);
-                return false;
-            }
-            else
-            {
-                WriteInt32(_referent);
-                _referent += 4;
-                return true;
-            }
-        }
-
         public void WriteReferent<T>(T obj, Action<T> writer) where T : class
         {
             if (WriteReferent(obj))
@@ -590,21 +599,6 @@ namespace NtApiDotNet.Ndr.Marshal
             if (WriteReferent(obj))
             {
                 writer(obj, arg, arg2);
-            }
-        }
-
-        public bool WriteReferent<T>(T? obj) where T : struct
-        {
-            if (!obj.HasValue)
-            {
-                WriteInt32(0);
-                return false;
-            }
-            else
-            {
-                WriteInt32(_referent);
-                _referent += 4;
-                return true;
             }
         }
 

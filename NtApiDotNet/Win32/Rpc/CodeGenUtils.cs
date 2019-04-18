@@ -505,12 +505,6 @@ namespace NtApiDotNet.Win32.Rpc
             method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(unmarshal_name), nameof(NdrUnmarshalBuffer.PopulateDeferredPointers)));
         }
 
-        public static void AddWriteReferent(this CodeMemberMethod method, string marshal_name, string var_name)
-        {
-            CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(GetVariable(marshal_name), nameof(NdrMarshalBuffer.WriteReferent), GetVariable(var_name));
-            method.Statements.Add(invoke);
-        }
-
         public static void AddUnmarshalReturn(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name, params RpcMarshalArgument[] additional_args)
         {
             if (descriptor.BuiltinType == typeof(void))
