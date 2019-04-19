@@ -129,22 +129,46 @@ namespace NtApiDotNet.Ndr
     }
 
     [Serializable]
-    public class NdrStructureStringTypeReferece : NdrBaseStringTypeReference
+    public class NdrStructureStringTypeReference : NdrBaseStringTypeReference
     {
         public int ElementSize { get; }
         public int NumberOfElements { get; }
-        internal NdrStructureStringTypeReferece(NdrFormatCharacter format, BinaryReader reader) : base(format)
+        internal NdrStructureStringTypeReference(BinaryReader reader) : base(NdrFormatCharacter.FC_SSTRING)
         {
             ElementSize = reader.ReadByte();
-            if (format == NdrFormatCharacter.FC_SSTRING)
-            {
-                NumberOfElements = reader.ReadUInt16();
-            }
+            NumberOfElements = reader.ReadUInt16();
         }
 
         internal override string FormatType(NdrFormatter formatter)
         {
             return string.Format("{0}<{1}>[{2}]", base.FormatType(formatter), ElementSize, NumberOfElements);
+        }
+    }
+
+    [Serializable]
+    public class NdrConformantStructureStringTypeReference : NdrBaseStringTypeReference
+    {
+        public int ElementSize { get; }
+        public NdrCorrelationDescriptor ConformanceDescriptor { get; }
+
+        internal NdrConformantStructureStringTypeReference(NdrParseContext context, BinaryReader reader) : base(NdrFormatCharacter.FC_C_SSTRING)
+        {
+            ElementSize = reader.ReadByte();
+            if (NdrFormatCharacter.FC_STRING_SIZED == (NdrFormatCharacter)reader.ReadByte())
+            {
+                // Padding.
+                reader.ReadByte();
+                ConformanceDescriptor = new NdrCorrelationDescriptor(context, reader);
+            }
+            else
+            {
+                ConformanceDescriptor = new NdrCorrelationDescriptor();
+            }
+        }
+
+        internal override string FormatType(NdrFormatter formatter)
+        {
+            return string.Format("{0}<{1}>[]", base.FormatType(formatter), ElementSize);
         }
     }
 

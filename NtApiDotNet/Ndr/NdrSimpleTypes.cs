@@ -554,8 +554,9 @@ namespace NtApiDotNet.Ndr
                     case NdrFormatCharacter.FC_WSTRING:
                         return new NdrStringTypeReference(format, reader);
                     case NdrFormatCharacter.FC_C_SSTRING:
+                        return new NdrConformantStructureStringTypeReference(context, reader);
                     case NdrFormatCharacter.FC_SSTRING:
-                        return new NdrStructureStringTypeReferece(format, reader);
+                        return new NdrStructureStringTypeReference(reader);
                     case NdrFormatCharacter.FC_USER_MARSHAL:
                         return FixupUserMarshal(context, new NdrUserMarshalTypeReference(context, reader));
                     case NdrFormatCharacter.FC_EMBEDDED_COMPLEX:
