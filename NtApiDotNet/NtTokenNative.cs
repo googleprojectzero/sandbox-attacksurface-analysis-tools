@@ -75,6 +75,8 @@ namespace NtApiDotNet
         TokenBnoIsolation = 44,
         TokenChildProcessFlags = 45,
         TokenIsLessPrivilegedAppContainer = 46,
+        TokenIsSandboxed = 47,
+        TokenOriginatingProcessTrustLevel = 48,
     }
 
     public enum TokenPrivilegeValue : uint
