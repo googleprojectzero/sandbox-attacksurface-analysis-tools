@@ -641,6 +641,9 @@ namespace NtApiDotNet
         public static extern NtStatus NtSetContextThread(
             SafeKernelObjectHandle ThreadHandle,
             SafeBuffer ThreadContext);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtTestAlert();
     }
 #pragma warning restore 1591
 }

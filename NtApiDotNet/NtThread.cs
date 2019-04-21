@@ -383,6 +383,24 @@ namespace NtApiDotNet
             SetWorkOnBehalfThread(ticket, true);
         }
 
+        /// <summary>
+        /// Test alert status for the current thread.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus TestAlert(bool throw_on_error)
+        {
+            return NtSystemCalls.NtTestAlert();
+        }
+
+        /// <summary>
+        /// Test alert status for the current thread.
+        /// </summary>
+        public static void TestAlert()
+        {
+            TestAlert(true);
+        }
+
         #endregion
 
         #region Static Properties
