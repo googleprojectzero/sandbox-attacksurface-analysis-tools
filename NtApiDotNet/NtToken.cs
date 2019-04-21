@@ -1335,7 +1335,7 @@ namespace NtApiDotNet
                 {
                     if (TokenType == TokenType.Primary)
                     {
-                        return DuplicateToken(SecurityImpersonationLevel.Identification)
+                        return DuplicateToken(SecurityImpersonationLevel.Impersonation)
                             .RunAndDispose(token => token.IsSandbox);
                     }
 
