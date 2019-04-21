@@ -41,6 +41,13 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtWaitForMultipleObjects(int HandleCount, 
             IntPtr[] Handles, WaitType WaitType, bool Alertable, LargeInteger Timeout);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSignalAndWaitForSingleObject(
+          SafeKernelObjectHandle ObjectToSignal,
+          SafeKernelObjectHandle WaitableObject,
+          bool Alertable,
+          LargeInteger Timeout);
     }
 #pragma warning disable 1591
 
@@ -205,10 +212,10 @@ namespace NtApiDotNet
     public static class NtWait
     {
         /// <summary>
-        /// Wait on a single object to become signalled
+        /// Wait on a single object to become signaled
         /// </summary>
         /// <param name="obj">The object to wait on</param>
-        /// <param name="alertable">Whether the thread should be alerable</param>
+        /// <param name="alertable">Whether the thread should be alertable</param>
         /// <param name="timeout">The timeout to wait for</param>
         /// <returns>The success status of the wait, such as STATUS_SUCCESS or STATUS_TIMEOUT</returns>
         public static NtStatus Wait(NtObject obj, bool alertable, NtWaitTimeout timeout)
@@ -217,11 +224,11 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Wait on multiple objects to become signalled
+        /// Wait on multiple objects to become signaled
         /// </summary>
         /// <param name="objs">The objects to wait on</param>
         /// <param name="alertable">Whether the thread should be alerable</param>
-        /// <param name="wait_all">True to wait for all objects to be signalled</param>
+        /// <param name="wait_all">True to wait for all objects to be signaled</param>
         /// <param name="timeout">The timeout to wait for</param>
         /// <returns>The success status of the wait, such as STATUS_WAIT_OBJECT_0 or STATUS_TIMEOUT</returns>
         public static NtStatus Wait(IEnumerable<NtObject> objs, bool alertable, bool wait_all, NtWaitTimeout timeout)
@@ -229,6 +236,19 @@ namespace NtApiDotNet
             IntPtr[] handles = objs.Select(o => o.Handle.DangerousGetHandle()).ToArray();
             return NtSystemCalls.NtWaitForMultipleObjects(handles.Length, handles,
                 wait_all ? WaitType.WaitAll : WaitType.WaitAny, alertable, timeout.ToLargeInteger()).ToNtException();
+        }
+
+        /// <summary>
+        /// Signal an object then wait for another to become signaled.
+        /// </summary>
+        /// <param name="object_to_signal">The object to signal</param>
+        /// <param name="object_to_wait">The object to wait on.</param>
+        /// <param name="alertable">Whether the thread should be alertable</param>
+        /// <param name="timeout">The timeout to wait for</param>
+        /// <returns>The success status of the wait, such as STATUS_SUCCESS or STATUS_TIMEOUT</returns>
+        public static NtStatus SignalAndWait(NtObject object_to_signal, NtObject object_to_wait, bool alertable, NtWaitTimeout timeout)
+        {
+            return NtSystemCalls.NtSignalAndWaitForSingleObject(object_to_signal.Handle, object_to_wait.Handle, alertable, timeout.Timeout);
         }
     }
 }
