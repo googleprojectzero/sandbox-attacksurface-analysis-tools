@@ -478,6 +478,8 @@ namespace NtApiDotNet
         ProcessCombineSecurityDomainsInformation,
         ProcessEnableLogging,
         ProcessLeapSecondInformation,
+        ProcessFiberShadowStackAllocation,
+        ProcessFreeFiberShadowStackAllocation
     }
 
     public enum ProcessMitigationPolicy
