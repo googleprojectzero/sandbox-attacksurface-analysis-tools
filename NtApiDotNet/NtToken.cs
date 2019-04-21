@@ -1333,6 +1333,12 @@ namespace NtApiDotNet
             {
                 try
                 {
+                    var result = Query(TokenInformationClass.TokenIsSandboxed, 0, false);
+                    if (result.IsSuccess)
+                    {
+                        return result.Result != 0;
+                    }
+
                     if (TokenType == TokenType.Primary)
                     {
                         return DuplicateToken(SecurityImpersonationLevel.Impersonation)
