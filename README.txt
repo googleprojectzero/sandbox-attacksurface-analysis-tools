@@ -21,6 +21,17 @@ with .NET Core 2.0 by building the specific project files.
 
 Release Notes:
 
+1.1.21
+--------
+* Various updates to the NDR parser, including new types and support for correlation expressions.
+* Added complete transaction cmdlets.
+* Added extended process creation flags for Win32Process.
+* Added Format-NtSecurityDescriptor to display on the console
+* Added Copy-NtObject cmdlet.
+* Added basic RPC ALPC client support.
+* Added option to specify a debug object for a Win32 process.
+* Added processor system information.
+
 1.1.20
 --------
 * Added basic ALPC support including cmdlets.
