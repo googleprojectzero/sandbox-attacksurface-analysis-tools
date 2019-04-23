@@ -212,8 +212,16 @@ namespace NtApiDotNet.Win32.Rpc.Transport
         ExtendedErrorInfo = 1,
     }
 
-    [StructLayout(LayoutKind.Sequential), DataStart("ExtendedErrorInfo")]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct LRPC_FAULT_MESSAGE
+    {
+        public LRPC_HEADER Header;
+        public int RpcStatus;
+        public LRPC_FAULT_MESSAGE_FLAGS Flags;
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("ExtendedErrorInfo")]
+    internal struct LRPC_FAULT_MESSAGE_EXTENDED
     {
         public LRPC_HEADER Header;
         public int RpcStatus;

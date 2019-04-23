@@ -31,7 +31,7 @@ namespace NtApiDotNet.Win32.Rpc.Transport
             {
                 try
                 {
-                    byte[] data = buffer.Data.ToArray();
+                    byte[] data = buffer.GetStructAtOffset<LRPC_FAULT_MESSAGE_EXTENDED>(0).Data.ToArray();
                     ExtendedErrorInfo = RpcExtendedErrorInfo.ReadErrorInfo(data);
                 }
                 catch
