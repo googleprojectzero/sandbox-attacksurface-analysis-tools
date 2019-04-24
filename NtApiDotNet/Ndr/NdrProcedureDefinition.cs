@@ -242,7 +242,6 @@ namespace NtApiDotNet.Ndr
                 }
                 else if (handle_type == NdrFormatCharacter.FC_BIND_GENERIC)
                 {
-                    int handle_size = (int)flags & 0xF;
                     // Remove the size field, we might do something with this later.
                     flags = (NdrHandleParamFlags)((byte)flags & 0xF0);
                     // Read out the remaining data.
