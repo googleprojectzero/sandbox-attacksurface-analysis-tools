@@ -172,7 +172,7 @@ namespace NtApiDotNet
             }
         }
 
-        private NtStatus DoRenameEx(string filename, NtFile root, FileRenameInformationExFlags flags, bool throw_on_error)
+        private NtStatus DoRenameEx(string filename, NtObject root, FileRenameInformationExFlags flags, bool throw_on_error)
         {
             FileRenameInformationEx information = new FileRenameInformationEx
             {
@@ -188,7 +188,7 @@ namespace NtApiDotNet
             }
         }
 
-        private NtStatus DoLinkRename(FileInformationClass file_info, string linkname, NtFile root, bool replace_if_exists, bool throw_on_error)
+        private NtStatus DoLinkRename(FileInformationClass file_info, string linkname, NtObject root, bool replace_if_exists, bool throw_on_error)
         {
             FileLinkRenameInformation link = new FileLinkRenameInformation
             {
@@ -1385,7 +1385,7 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public NtStatus CreateHardlink(string linkname, NtFile root, bool replace_if_exists, bool throw_on_error)
+        public NtStatus CreateHardlink(string linkname, NtObject root, bool replace_if_exists, bool throw_on_error)
         {
             return DoLinkRename(FileInformationClass.FileLinkInformation, linkname, root, replace_if_exists, throw_on_error);
         }
@@ -1399,7 +1399,7 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public NtStatus Rename(string new_name, NtFile root, bool replace_if_exists, bool throw_on_error)
+        public NtStatus Rename(string new_name, NtObject root, bool replace_if_exists, bool throw_on_error)
         {
             return DoLinkRename(FileInformationClass.FileRenameInformation, new_name, root, replace_if_exists, true);
         }
@@ -1411,7 +1411,7 @@ namespace NtApiDotNet
         /// <param name="root">The root directory if new_name is relative</param>
         /// <param name="replace_if_exists">If TRUE, replaces the target file if it exists. If FALSE, fails if the target file already exists.</param>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public void Rename(string new_name, NtFile root, bool replace_if_exists)
+        public void Rename(string new_name, NtObject root, bool replace_if_exists)
         {
             DoLinkRename(FileInformationClass.FileRenameInformation, new_name, root, replace_if_exists, true);
         }
@@ -1457,7 +1457,7 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public NtStatus RenameEx(string new_name, NtFile root, FileRenameInformationExFlags flags, bool throw_on_error)
+        public NtStatus RenameEx(string new_name, NtObject root, FileRenameInformationExFlags flags, bool throw_on_error)
         {
             return DoRenameEx(new_name, root, flags, throw_on_error);
         }
@@ -1469,7 +1469,7 @@ namespace NtApiDotNet
         /// <param name="root">The root directory if new_name is relative</param>
         /// <param name="flags">The flags associated to FileRenameInformationEx.</param>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public void RenameEx(string new_name, NtFile root, FileRenameInformationExFlags flags)
+        public void RenameEx(string new_name, NtObject root, FileRenameInformationExFlags flags)
         {
             DoRenameEx(new_name, root, flags, true);
         }
