@@ -150,13 +150,15 @@ namespace NtApiDotNet.Ndr
     {
         NdrHandleParamFlags Flags { get; }
         public bool Explicit { get; }
+        public bool Generic { get; }
 
         internal NdrProcedureHandleParameter(NdrParamAttributes attributes, 
-            NdrBaseTypeReference type, int offset, bool explicit_handle, NdrHandleParamFlags flags) 
+            NdrBaseTypeReference type, int offset, bool explicit_handle, NdrHandleParamFlags flags, bool generic)
             : base(attributes, 0, type, offset, string.Empty)
         {
             Flags = flags;
             Explicit = explicit_handle;
+            Generic = generic;
         }
     }
 
@@ -240,6 +242,7 @@ namespace NtApiDotNet.Ndr
                 }
                 else if (handle_type == NdrFormatCharacter.FC_BIND_GENERIC)
                 {
+                    int handle_size = (int)flags & 0xF;
                     // Remove the size field, we might do something with this later.
                     flags = (NdrHandleParamFlags)((byte)flags & 0xF0);
                     // Read out the remaining data.
@@ -258,11 +261,11 @@ namespace NtApiDotNet.Ndr
                 }
                 Handle = new NdrProcedureHandleParameter(0, 
                         (flags & NdrHandleParamFlags.HANDLE_PARAM_IS_VIA_PTR) != 0 ? new NdrPointerTypeReference(base_type)
-                            : base_type, handle_offset, true, flags);
+                            : base_type, handle_offset, true, flags, handle_type == NdrFormatCharacter.FC_BIND_GENERIC);
             }
             else
             {
-                Handle = new NdrProcedureHandleParameter(0, new NdrSimpleTypeReference(handle_type), 0, false, 0);
+                Handle = new NdrProcedureHandleParameter(0, new NdrSimpleTypeReference(handle_type), 0, false, 0, false);
             }
 
             ushort constant_client_buffer_size = reader.ReadUInt16();
@@ -297,7 +300,7 @@ namespace NtApiDotNet.Ndr
                 ps.Add(new NdrProcedureParameter(context, reader, $"p{param}"));
             }
 
-            if (Handle.Explicit)
+            if (Handle.Explicit && !Handle.Generic)
             {
                 // Insert handle into parameter list at the best location.
                 int index = 0;
