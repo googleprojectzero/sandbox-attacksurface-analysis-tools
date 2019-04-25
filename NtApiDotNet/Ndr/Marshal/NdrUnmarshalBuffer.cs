@@ -151,6 +151,11 @@ namespace NtApiDotNet.Ndr.Marshal
                 ReadInt32();
             }
 
+            if (index <= 0 || index > _handles.Count)
+            {
+                return null;
+            }
+
             return (T)_handles[index - 1].DuplicateObject();
         }
 
