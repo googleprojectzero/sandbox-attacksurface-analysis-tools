@@ -748,6 +748,24 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Add an AppContainer capability by name.
+        /// </summary>
+        /// <param name="capability_name"></param>
+        public void AddNamedCapability(string capability_name)
+        {
+            Capabilities.Add(NtSecurity.GetCapabilitySid(capability_name));
+        }
+
+        /// <summary>
+        /// Set AppContainer SID from a package name.
+        /// </summary>
+        /// <param name="package_name">The package name.</param>
+        public void SetAppContainerSidFromName(string package_name)
+        {
+            AppContainerSid = TokenUtils.DerivePackageSidFromName(package_name);
+        }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public Win32ProcessConfig()
