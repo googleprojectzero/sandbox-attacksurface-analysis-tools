@@ -132,11 +132,6 @@ namespace NtApiDotNet.Win32.Rpc
             return method.Name;
         }
 
-        public string AddGenericUnmarshal(NdrBaseTypeReference ndr_type, string type_name, string name, AdditionalArguments additional_args)
-        {
-            return AddGenericUnmarshal(ndr_type, new CodeTypeReference(CodeGenUtils.MakeIdentifier(type_name)), name, additional_args);
-        }
-
         public string AddGenericMarshal(NdrBaseTypeReference ndr_type, CodeTypeReference type, string name, AdditionalArguments additional_args)
         {
             CodeTypeReference generic_type = additional_args.Generic ? (additional_args.GenericType ?? type.ToBaseRef()) : null;
