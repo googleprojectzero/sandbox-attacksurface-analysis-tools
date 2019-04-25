@@ -31,7 +31,7 @@ namespace NtApiDotNet.Ndr.Marshal
         private readonly MemoryStream _stm;
         private readonly BinaryWriter _writer;
         private readonly List<NtObject> _handles;
-        private readonly Queue<Action> _deferred_writes;
+        private NdrDeferralStack _deferred_writes;
         private int _referent;
         private long? _conformance_position;
 
@@ -69,7 +69,7 @@ namespace NtApiDotNet.Ndr.Marshal
         {
             if (WriteReferent(pointer))
             {
-                _deferred_writes.Enqueue(writer);
+                _deferred_writes.Add(writer);
             }
         }
 
@@ -179,7 +179,7 @@ namespace NtApiDotNet.Ndr.Marshal
             _writer = new BinaryWriter(_stm, Encoding.Unicode);
             _handles = new List<NtObject>();
             _referent = 0x20000;
-            _deferred_writes = new Queue<Action>();
+            _deferred_writes = new NdrDeferralStack();
             NdrUnmarshalBuffer.CheckDataRepresentation(data_representation);
             DataRepresentation = data_representation;
         }
@@ -543,7 +543,10 @@ namespace NtApiDotNet.Ndr.Marshal
                 System.Diagnostics.Debug.Assert(_conformance_position.HasValue);
             }
 
-            WriteStructInternal(structure);
+            using (var queue = _deferred_writes.Push())
+            {
+                WriteStructInternal(structure);
+            }
 
             if (conformant)
             {
@@ -580,7 +583,7 @@ namespace NtApiDotNet.Ndr.Marshal
         #region Pointer Types
         public void WriteEmbeddedPointer<T>(NdrEmbeddedPointer<T> pointer, Action<T> writer)
         {
-            WriteEmbeddedPointer(pointer, () => writer(pointer));
+             WriteEmbeddedPointer(pointer, () => writer(pointer));
         }
 
         public void WriteEmbeddedPointer<T, U>(NdrEmbeddedPointer<T> pointer, Action<T, U> writer, U arg)
@@ -641,14 +644,6 @@ namespace NtApiDotNet.Ndr.Marshal
             }
         }
 
-        public void FlushDeferredWrites()
-        {
-            while (_deferred_writes.Count > 0)
-            {
-                _deferred_writes.Dequeue()();
-            }
-        }
-
         #endregion
 
         #region Fixed Array Types
@@ -696,15 +691,18 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public void WriteFixedStructArray<T>(T[] arr, int actual_count) where T : INdrStructure, new()
         {
-            for (int i = 0; i < actual_count; ++i)
+            using (var queue = _deferred_writes.Push())
             {
-                if (i < arr.Length)
+                for (int i = 0; i < actual_count; ++i)
                 {
-                    WriteStructInternal(arr[i]);
-                }
-                else
-                {
-                    WriteStructInternal(new T());
+                    if (i < arr.Length)
+                    {
+                        WriteStructInternal(arr[i]);
+                    }
+                    else
+                    {
+                        WriteStructInternal(new T());
+                    }
                 }
             }
         }
@@ -758,7 +756,10 @@ namespace NtApiDotNet.Ndr.Marshal
     
         public void WriteVaryingStructArray<T>(T[] array, long variance) where T : struct, INdrStructure
         {
-            WriteVaryingArrayCallback(array, t => WriteStruct(t), variance);
+            using (var queue = _deferred_writes.Push())
+            {
+                WriteVaryingArrayCallback(array, t => WriteStructInternal(t), variance);
+            }
         }
 
         public void WriteVaryingArray<T>(T[] array, long variance) where T : struct
@@ -773,7 +774,10 @@ namespace NtApiDotNet.Ndr.Marshal
             }
             else if (typeof(T) == typeof(INdrStructure))
             {
-                WriteVaryingArrayCallback(array, p => WriteStruct((INdrStructure)p), variance);
+                using (var queue = _deferred_writes.Push())
+                {
+                    WriteVaryingArrayCallback(array, p => WriteStructInternal((INdrStructure)p), variance);
+                }
             }
             else if (typeof(T).IsPrimitive)
             {
@@ -871,7 +875,10 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public void WriteConformantStructArray<T>(T[] array, long conformance) where T : struct, INdrStructure
         {
-            WriteConformantArrayCallback(array, t => WriteStruct((INdrStructure)t), conformance);
+            using (var queue = _deferred_writes.Push())
+            {
+                WriteConformantArrayCallback(array, t => WriteStructInternal(t), conformance);
+            }
         }
 
         public void WriteConformantStringArray(string[] array, Action<string> writer, long conformance)
@@ -925,7 +932,10 @@ namespace NtApiDotNet.Ndr.Marshal
             }
             else if (typeof(T) == typeof(INdrStructure))
             {
-                WriteConformantArrayCallback(array, p => WriteStruct((INdrStructure)p), conformance);
+                using (var queue = _deferred_writes.Push())
+                {
+                    WriteConformantArrayCallback(array, p => WriteStructInternal((INdrStructure)p), conformance);
+                }
             }
             else if (typeof(T).IsPrimitive)
             {
@@ -979,7 +989,10 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public void WriteConformantVaryingStructArray<T>(T[] array, long conformance, long variance) where T : struct, INdrStructure
         {
-            WriteVaryingArrayCallback(array, t => WriteStruct(t), variance);
+            using (var queue = _deferred_writes.Push())
+            {
+                WriteVaryingArrayCallback(array, t => WriteStructInternal(t), variance);
+            }
         }
 
         public void WriteConformantVaryingStringArray(string[] array, Action<string> writer, long conformance, long variance)
@@ -1018,7 +1031,10 @@ namespace NtApiDotNet.Ndr.Marshal
             }
             else if (typeof(T) == typeof(INdrStructure))
             {
-                WriteConformantVaryingArrayCallback(array, p => WriteStruct((INdrStructure)p), conformance, variance);
+                using (var queue = _deferred_writes.Push())
+                {
+                    WriteConformantVaryingArrayCallback(array, p => WriteStructInternal((INdrStructure)p), conformance, variance);
+                }
             }
             else if (typeof(T).IsPrimitive)
             {

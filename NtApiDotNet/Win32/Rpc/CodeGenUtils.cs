@@ -509,11 +509,6 @@ namespace NtApiDotNet.Win32.Rpc
             }
         }
 
-        public static void AddFlushDeferredWrites(this CodeMemberMethod method, string marshal_name)
-        {
-            method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(marshal_name), nameof(NdrMarshalBuffer.FlushDeferredWrites)));
-        }
-
         public static CodeTypeReference CreateActionType(params CodeTypeReference[] args)
         {
             CodeTypeReference delegate_type = null;
@@ -667,11 +662,6 @@ namespace NtApiDotNet.Win32.Rpc
             CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(read_pointer, args.ToArray());
             CodeStatement assign = new CodeAssignStatement(GetVariable(var_name), invoke);
             method.Statements.Add(assign);
-        }
-
-        public static void AddPopluateDeferredPointers(this CodeMemberMethod method, string unmarshal_name)
-        {
-            method.Statements.Add(new CodeMethodInvokeExpression(GetVariable(unmarshal_name), nameof(NdrUnmarshalBuffer.PopulateDeferredPointers)));
         }
 
         public static void AddUnmarshalReturn(this CodeMemberMethod method, RpcTypeDescriptor descriptor, string unmarshal_name, params RpcMarshalArgument[] additional_args)

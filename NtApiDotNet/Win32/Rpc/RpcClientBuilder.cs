@@ -754,7 +754,6 @@ namespace NtApiDotNet.Win32.Rpc
                     p => new RpcMarshalArgument(CodeGenUtils.GetVariable(p.Name), p.Type)).ToArray();
 
                 encode_method.AddMarshalCall(desc, MARSHAL_NAME, "o", desc.Pointer, false, null, null, null, additional_args);
-                encode_method.AddFlushDeferredWrites(MARSHAL_NAME);
                 encode_method.AddReturn(new CodeMethodInvokeExpression(CodeGenUtils.GetVariable(MARSHAL_NAME), nameof(NdrMarshalBuffer.ToPickledType)));
 
                 var decode_method = decoder_type.AddMethod($"{complex_type.Name}_Decode", MemberAttributes.Public | MemberAttributes.Static);
@@ -771,7 +770,6 @@ namespace NtApiDotNet.Win32.Rpc
                 {
                     decode_method.AddUnmarshalCall(desc, UNMARSHAL_NAME, "v", null, null, null);
                 }
-                decode_method.AddPopluateDeferredPointers(UNMARSHAL_NAME);
                 decode_method.AddReturn(CodeGenUtils.GetVariable("v"));
                 decode_method.ReturnType = desc.GetParameterType();
             }
@@ -952,11 +950,6 @@ namespace NtApiDotNet.Win32.Rpc
                         null_check = true;
                     }
                     method.AddMarshalCall(p_type, MARSHAL_NAME, p.Name, write_ref, null_check, null, null, null, extra_marshal_args.ToArray());
-                    // If it's a constructed type then ensure any deferred writes are flushed.
-                    if (p_type.Constructed)
-                    {
-                        method.AddFlushDeferredWrites(MARSHAL_NAME);
-                    }
                 }
 
                 method.SendReceive(MARSHAL_NAME, UNMARSHAL_NAME, proc.ProcNum, marshal_helper);
@@ -976,11 +969,6 @@ namespace NtApiDotNet.Win32.Rpc
                     else
                     {
                         method.AddUnmarshalCall(p_type, UNMARSHAL_NAME, p.Name, null, null, null);
-                    }
-
-                    if (p_type.Constructed || p_type.CodeType.ArrayRank > 0)
-                    {
-                        method.AddPopluateDeferredPointers(UNMARSHAL_NAME);
                     }
                 }
 

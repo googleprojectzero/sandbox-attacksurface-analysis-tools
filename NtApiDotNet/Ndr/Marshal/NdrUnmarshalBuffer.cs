@@ -32,7 +32,7 @@ namespace NtApiDotNet.Ndr.Marshal
         private readonly MemoryStream _stm;
         private readonly BinaryReader _reader;
         private readonly DisposableList<NtObject> _handles;
-        private readonly Queue<Action> _deferred_reads;
+        private NdrDeferralStack _deferred_reads;
         private int[] _conformance_values;
         private Dictionary<int, object> _full_pointers;
 
@@ -94,24 +94,11 @@ namespace NtApiDotNet.Ndr.Marshal
             return (T)_full_pointers[referent];
         }
 
-        private T ReadStructInternal<T>(bool top_level_struct) where T : new()
+        private T ReadStructInternal<T>() where T : new()
         {
             INdrStructure s = (INdrStructure)new T();
-            bool conformant = false;
-            if (top_level_struct && s is INdrConformantStructure conformant_struct)
-            {
-                conformant = SetupConformance(conformant_struct.GetConformantDimensions());
-                System.Diagnostics.Debug.Assert(_conformance_values != null);
-            }
-
             Align(s.GetAlignment());
             s.Unmarshal(this);
-
-            if (conformant)
-            {
-                System.Diagnostics.Debug.Assert(_conformance_values == null);
-            }
-
             return (T)s;
         }
 
@@ -129,7 +116,7 @@ namespace NtApiDotNet.Ndr.Marshal
             _stm = new MemoryStream(buffer);
             _reader = new BinaryReader(_stm, Encoding.Unicode);
             _handles = new DisposableList<NtObject>(handles);
-            _deferred_reads = new Queue<Action>();
+            _deferred_reads = new NdrDeferralStack();
             _full_pointers = new Dictionary<int, object>();
             CheckDataRepresentation(data_represenation);
         }
@@ -329,7 +316,10 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public T[] ReadFixedStructArray<T>(int actual_count) where T : INdrStructure, new()
         {
-            return ReadFixedArray(() => ReadStruct<T>(), actual_count);
+            using (var queue = _deferred_reads.Push())
+            {
+                return ReadFixedArray(ReadStruct<T>, actual_count);
+            }
         }
 
         #endregion
@@ -367,7 +357,10 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public T[] ReadConformantStructArray<T>() where T : INdrStructure, new()
         {
-            return ReadConformantArrayCallback(() => ReadStruct<T>());
+            using (var queue = _deferred_reads.Push())
+            {
+                return ReadConformantArrayCallback(() => ReadStructInternal<T>());
+            }
         }
 
         public string[] ReadConformantStringArray(Func<string> reader)
@@ -387,10 +380,10 @@ namespace NtApiDotNet.Ndr.Marshal
             }
             else if (typeof(T) == typeof(INdrStructure))
             {
-                return ReadConformantArrayCallback(() =>
+                using (var queue = _deferred_reads.Push())
                 {
-                    return ReadStructInternal<T>(false);
-                });
+                    return ReadConformantArrayCallback(ReadStructInternal<T>);
+                }
             }
             else if (typeof(T).IsPrimitive)
             {
@@ -455,7 +448,10 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public T[] ReadVaryingStructArray<T>() where T : INdrStructure, new()
         {
-            return ReadVaryingArrayCallback(() => ReadStruct<T>());
+            using (var queue = _deferred_reads.Push())
+            {
+                return ReadVaryingArrayCallback(ReadStruct<T>);
+            }
         }
 
         public string[] ReadVaryingStringArray(Func<string> reader)
@@ -475,10 +471,10 @@ namespace NtApiDotNet.Ndr.Marshal
             }
             else if (typeof(T) == typeof(INdrStructure))
             {
-                return ReadVaryingArrayCallback(() =>
+                using (var queue = _deferred_reads.Push())
                 {
-                    return ReadStructInternal<T>(false);
-                });
+                    return ReadVaryingArrayCallback(ReadStructInternal<T>);
+                }
             }
             else if (typeof(T).IsPrimitive)
             {
@@ -555,7 +551,10 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public T[] ReadConformantVaryingStructArray<T>() where T : INdrStructure, new()
         {
-            return ReadConformantVaryingArrayCallback(() => ReadStruct<T>());
+            using (var queue = _deferred_reads.Push())
+            {
+                return ReadConformantVaryingArrayCallback(ReadStructInternal<T>);
+            }
         }
 
         public string[] ReadConformantVaryingStringArray(Func<string> reader)
@@ -575,10 +574,10 @@ namespace NtApiDotNet.Ndr.Marshal
             }
             else if (typeof(T) == typeof(INdrStructure))
             {
-                return ReadConformantVaryingArrayCallback(() =>
+                using (var queue = _deferred_reads.Push())
                 {
-                    return ReadStructInternal<T>(false);
-                });
+                    return ReadConformantVaryingArrayCallback(ReadStructInternal<T>);
+                }
             }
             else if (typeof(T).IsPrimitive)
             {
@@ -670,7 +669,7 @@ namespace NtApiDotNet.Ndr.Marshal
             }
 
             var deferred_reader = NdrEmbeddedPointer<T>.CreateDeferredReader(unmarshal_func);
-            _deferred_reads.Enqueue(deferred_reader.Item2);
+            _deferred_reads.Add(deferred_reader.Item2);
             return deferred_reader.Item1;
         }
 
@@ -682,14 +681,6 @@ namespace NtApiDotNet.Ndr.Marshal
         public NdrEmbeddedPointer<T> ReadEmbeddedPointer<T, U, V>(Func<U, V, T> unmarshal_func, bool full_pointer, U arg, V arg2)
         {
             return ReadEmbeddedPointer(() => unmarshal_func(arg, arg2), full_pointer);
-        }
-
-        public void PopulateDeferredPointers()
-        {
-            while(_deferred_reads.Count > 0)
-            {
-                _deferred_reads.Dequeue()();
-            }
         }
 
         #endregion
@@ -704,7 +695,26 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public T ReadStruct<T>() where T : INdrStructure, new()
         {
-            return ReadStructInternal<T>(true);
+            INdrStructure s = (INdrStructure)new T();
+            bool conformant = false;
+            if (s is INdrConformantStructure conformant_struct)
+            {
+                conformant = SetupConformance(conformant_struct.GetConformantDimensions());
+                System.Diagnostics.Debug.Assert(_conformance_values != null);
+            }
+
+            T ret;
+            using (var queue = _deferred_reads.Push())
+            {
+                ret = ReadStructInternal<T>();
+            }
+
+            if (conformant)
+            {
+                System.Diagnostics.Debug.Assert(_conformance_values == null);
+            }
+
+            return ret;
         }
 
         #endregion

@@ -86,6 +86,7 @@
     <Compile Include="Ndr\Marshal\INdrStructure.cs" />
     <Compile Include="Ndr\Marshal\NdrContextHandle.cs" />
     <Compile Include="Ndr\Marshal\NdrDataRepresentation.cs" />
+    <Compile Include="Ndr\Marshal\NdrDeferralStack.cs" />
     <Compile Include="Ndr\Marshal\NdrEmbeddedPointer.cs" />
     <Compile Include="Ndr\Marshal\NdrEmpty.cs" />
     <Compile Include="Ndr\Marshal\NdrEnum16.cs" />
