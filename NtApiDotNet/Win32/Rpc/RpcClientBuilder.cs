@@ -851,8 +851,7 @@ namespace NtApiDotNet.Win32.Rpc
             constructor.BaseConstructorArgs.Add(CodeGenUtils.GetPrimitive(_server.InterfaceVersion.Major));
             constructor.BaseConstructorArgs.Add(CodeGenUtils.GetPrimitive(_server.InterfaceVersion.Minor));
 
-            CodeTypeReference unmarshal_helper_type = complex_type_count > 0
-                ? new CodeTypeReference(CodeGenUtils.MakeIdentifier(UNMARSHAL_HELPER_NAME)) : null;
+            type.CreateSendReceive(marshal_helper);
 
             foreach (var proc in _server.Procedures)
             {

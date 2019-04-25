@@ -702,14 +702,27 @@ namespace NtApiDotNet.Win32.Rpc
             method.Statements.Add(new CodeVariableDeclarationStatement(marshal_helper.MarshalHelperType, name, new CodeObjectCreateExpression(marshal_helper.MarshalHelperType)));
         }
 
+        public static void CreateSendReceive(this CodeTypeDeclaration type, MarshalHelperBuilder marshal_helper)
+        {
+            var method = type.AddMethod("SendReceive", MemberAttributes.Private | MemberAttributes.Final);
+            method.AddParam(typeof(int), "p");
+            method.AddParam(marshal_helper.MarshalHelperType, "m");
+            method.ReturnType = marshal_helper.UnmarshalHelperType;
+
+            CodeExpression call_sendrecv = new CodeMethodInvokeExpression(null, "SendReceive",
+                GetVariable("p"),
+                new CodePropertyReferenceExpression(GetVariable("m"), nameof(NdrMarshalBuffer.DataRepresentation)),
+                new CodeMethodInvokeExpression(GetVariable("m"), nameof(NdrMarshalBuffer.ToArray)),
+                new CodePropertyReferenceExpression(GetVariable("m"), nameof(NdrMarshalBuffer.Handles)));
+            call_sendrecv = new CodeObjectCreateExpression(marshal_helper.UnmarshalHelperType, call_sendrecv);
+            method.AddReturn(call_sendrecv);
+        }
+
         public static void SendReceive(this CodeMemberMethod method, string marshal_name, string unmarshal_name, int proc_num, MarshalHelperBuilder marshal_helper)
         {
             CodeExpression call_sendrecv = new CodeMethodInvokeExpression(null, "SendReceive",
                 GetPrimitive(proc_num),
-                new CodePropertyReferenceExpression(GetVariable(marshal_name), nameof(NdrMarshalBuffer.DataRepresentation)),
-                new CodeMethodInvokeExpression(GetVariable(marshal_name), nameof(NdrMarshalBuffer.ToArray)), 
-                new CodePropertyReferenceExpression(GetVariable(marshal_name), nameof(NdrMarshalBuffer.Handles)));
-            call_sendrecv = new CodeObjectCreateExpression(marshal_helper.UnmarshalHelperType, call_sendrecv);
+                GetVariable(marshal_name));
             CodeVariableDeclarationStatement unmarshal = new CodeVariableDeclarationStatement(marshal_helper.UnmarshalHelperType, unmarshal_name, call_sendrecv);
             method.Statements.Add(unmarshal);
         }
