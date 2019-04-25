@@ -196,9 +196,16 @@ namespace NtApiDotNet.Win32.Rpc
                     unmarshal_name = nameof(NdrUnmarshalBuffer.ReadVaryingStructArray);
                 }
             }
+            else if (bogus_array_type.ElementCount > 0 && element_type.Constructed)
+            {
+                // For now we don't support fixed basic/string bogus arrays.
+                marshal_expr.Add(CodeGenUtils.GetPrimitive(bogus_array_type.ElementCount));
+                unmarshal_expr.Add(CodeGenUtils.GetPrimitive(bogus_array_type.ElementCount));
+                marshal_name = nameof(NdrMarshalBuffer.WriteFixedStructArray);
+                unmarshal_name = nameof(NdrUnmarshalBuffer.ReadFixedStructArray);
+            }
             else
             {
-                // Not sure how we got here variance descriptors should be valid.
                 return null;
             }
 
