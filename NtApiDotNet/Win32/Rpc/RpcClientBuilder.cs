@@ -379,22 +379,13 @@ namespace NtApiDotNet.Win32.Rpc
             }
             else if (string_type is NdrStringTypeReference fixed_str)
             {
-                var args = new AdditionalArguments(false, CodeGenUtils.GetPrimitive(fixed_str.StringSize));
                 if (fixed_str.Format == NdrFormatCharacter.FC_WSTRING)
                 {
-                    return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadFixedString), marshal_helper, nameof(NdrMarshalBuffer.WriteFixedString), 
-                        fixed_str, null, null, args, args)
-                    {
-                        FixedCount = fixed_str.StringSize
-                    };
+                    return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadVaryingString), nameof(NdrMarshalBuffer.WriteVaryingString), fixed_str);
                 }
                 else if (fixed_str.Format == NdrFormatCharacter.FC_CSTRING)
                 {
-                    return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadFixedAnsiString), marshal_helper, nameof(NdrMarshalBuffer.WriteFixedAnsiString), fixed_str, 
-                        null, null, args, args)
-                    {
-                        FixedCount = fixed_str.StringSize
-                    };
+                    return new RpcTypeDescriptor(typeof(string), nameof(NdrUnmarshalBuffer.ReadVaryingAnsiString), nameof(NdrMarshalBuffer.WriteVaryingAnsiString), fixed_str);
                 }
             }
 

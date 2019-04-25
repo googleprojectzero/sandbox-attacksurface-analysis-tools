@@ -82,26 +82,9 @@ namespace NtApiDotNet.Ndr.Marshal
 
             for (int i = 0; i < count; ++i)
             {
-                if (i < array.Length)
-                {
-                    WriteReferent(array[i]);
-                }
-                else
-                {
-                    WriteReferent(string.Empty);
-                }
-            }
-
-            for (int i = 0; i < count; ++i)
-            {
-                if (i < array.Length)
-                {
-                    writer(array[i]);
-                }
-                else
-                {
-                    writer(string.Empty);
-                }
+                string value = i < array.Length ? array[i] : string.Empty;
+                WriteReferent(value);
+                _deferred_writes.Add(() => writer(value));
             }
         }
 
@@ -503,6 +486,36 @@ namespace NtApiDotNet.Ndr.Marshal
             WriteFixedByteArray(BinaryEncoding.Instance.GetBytes(str), fixed_count);
         }
 
+        public void WriteVaryingString(string str)
+        {
+            if (str == null)
+            {
+                return;
+            }
+
+            char[] values = (str + '\0').ToCharArray();
+            // Offset.
+            WriteInt32(0);
+            // Actual count.
+            WriteInt32(values.Length);
+            WriteChars(values);
+        }
+
+        public void WriteVaryingAnsiString(string str)
+        {
+            if (str == null)
+            {
+                return;
+            }
+
+            byte[] values = BinaryEncoding.Instance.GetBytes(str + '\0');
+            // Offset.
+            WriteInt32(0);
+            // Actual count.
+            WriteInt32(values.Length);
+            WriteBytes(values);
+        }
+
         #endregion
 
         #region Structure Types
@@ -828,7 +841,10 @@ namespace NtApiDotNet.Ndr.Marshal
                 var_int = array.Length;
             }
             WriteInt32(var_int);
-            WriteStringArray(array, writer, (int)variance);
+            using (var queue = _deferred_writes.Push())
+            {
+                WriteStringArray(array, writer, (int)variance);
+            }
         }
 
         #endregion
@@ -890,7 +906,10 @@ namespace NtApiDotNet.Ndr.Marshal
             }
             // Max Count
             WriteConformance(var_int);
-            WriteStringArray(array, writer, var_int);
+            using (var queue = _deferred_writes.Push())
+            {
+                WriteStringArray(array, writer, var_int);
+            }
         }
 
         public void WriteConformantArrayCallback<T>(T[] array, Action<T> writer, long conformance)
@@ -1004,7 +1023,10 @@ namespace NtApiDotNet.Ndr.Marshal
                 con_int = array.Length;
             }
             WriteConformance(con_int);
-            WriteVaryingStringArray(array, writer, (int)variance);
+            using (var queue = _deferred_writes.Push())
+            {
+                WriteVaryingStringArray(array, writer, (int)variance);
+            }
         }
 
         public void WriteConformantVaryingArrayCallback<T>(T[] array, Action<T> writer, long conformance, long variance)

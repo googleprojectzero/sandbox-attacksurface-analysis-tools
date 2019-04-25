@@ -45,7 +45,11 @@ namespace NtApiDotNet.Ndr.Marshal
                 {
                     ret[i] = string.Empty;
                 }
-                ret[i] = reader();
+                else
+                {
+                    int pos = i;
+                    _deferred_reads.Add(() => ret[pos] = reader());
+                }
             }
             return ret;
         }
@@ -365,7 +369,10 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public string[] ReadConformantStringArray(Func<string> reader)
         {
-            return ReadStringArray(ReadConformantArrayCallback(ReadInt32), reader);
+            using (var queue = _deferred_reads.Push())
+            {
+                return ReadStringArray(ReadConformantArrayCallback(ReadInt32), reader);
+            }
         }
 
         public T[] ReadConformantArray<T>() where T : struct
@@ -456,7 +463,10 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public string[] ReadVaryingStringArray(Func<string> reader)
         {
-            return ReadStringArray(ReadVaryingArrayCallback(ReadInt32), reader);
+            using (var queue = _deferred_reads.Push())
+            {
+                return ReadStringArray(ReadVaryingArrayCallback(ReadInt32), reader);
+            }
         }
 
         public T[] ReadVaryingArray<T>() where T : struct
@@ -559,7 +569,10 @@ namespace NtApiDotNet.Ndr.Marshal
 
         public string[] ReadConformantVaryingStringArray(Func<string> reader)
         {
-            return ReadStringArray(ReadConformantVaryingArrayCallback(ReadInt32), reader);
+            using (var queue = _deferred_reads.Push())
+            {
+                return ReadStringArray(ReadConformantVaryingArrayCallback(ReadInt32), reader);
+            }
         }
 
         public T[] ReadConformantVaryingArray<T>() where T : struct
@@ -608,6 +621,16 @@ namespace NtApiDotNet.Ndr.Marshal
         public string ReadConformantVaryingString()
         {
             return new string(ReadConformantVaryingCharArray()).TrimEnd('\0');
+        }
+
+        public string ReadVaryingString()
+        {
+            return new string(ReadVaryingCharArray()).TrimEnd('\0');
+        }
+
+        public string ReadVaryingAnsiString()
+        {
+            return BinaryEncoding.Instance.GetString(ReadVaryingByteArray()).TrimEnd('\0');
         }
 
         #endregion
