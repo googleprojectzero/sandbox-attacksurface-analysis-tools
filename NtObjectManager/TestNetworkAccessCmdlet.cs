@@ -25,7 +25,7 @@ using System.Threading.Tasks;
 namespace NtObjectManager
 {
     /// <summary>
-    /// <para type="synopsis">Test whether network access is allowed based for a specific token.</para>
+    /// <para type="synopsis">Test whether network access is allowed based on a specific token.</para>
     /// <para type="description">This cmdlet tests network access for a particular token. This can either
     /// be network client access or network server access.</para>
     /// </summary>
