@@ -3,23 +3,55 @@ sandbox-attacksurface-analysis-tools
 (c) Google Inc. 2015, 2016, 2017, 2018, 2019
 Developed by James Forshaw
 
-This is a small suite of tools to test various properties of sandboxes on Windows. Many of the checking
-tools take a -p flag which is used to specify the PID of a sandboxed process. The tool will impersonate
+This is a small suite of PowerShell tools to test various properties of sandboxes on Windows. Many of the
+tools take a -ProcessId flag which is used to specify the PID of a sandboxed process. The tool will impersonate
 the token of that process and determine what access is allowed from that location. Also it's recommended
 to run these tools as an administrator or local system to ensure the system can be appropriately enumerated.
 
-CheckExeManifest: Check for specific executable manifest flags.
-CheckNetworkAccess: Check access to network stack.
-NewProcessFromToken: Create a new process based on existing token.
+EditSection: View and manipulate memory sections.
 TokenView: View and manipulate various process token values.
 NtApiDotNet: A basic managed library to access NT system calls and objects.
 NtObjectManager: A powershell module which uses NtApiDotNet to expose the NT object manager.
 ViewSecurityDescriptor: View the security descriptor from an SDDL string or an inherited object.
 
+You can load the using the Import-Module Cmdlet. You'll need to disable signing requirements however.
+
+For example copy the module to %USERPROFILE%\Documents\WindowsPowerShell\Modules then load the module with:
+
+Import-Module NtObjectManager
+
+You can now do things like listing the NT object manager namespace using:
+
+Get-ChildItem NtObject:\
+
+Also see help for various commons such as Get-NtProcess, Get-NtType or New-File.
+
 The tools can be built with Visual Studio 2017. It's possible to also build NtApiDotNet and NtObjectManager
-with .NET Core 2.0 by building the specific project files.
+with .NET Core 2.0/PowerShell Core 6.0 by building the specific project files.
+
+In order to build for PowerShell Core 6.0 you first need to build the .NET Framework
+version of the module, or pull the latest version of NtObjectManager from the PowerShell
+Gallery. Next build the .NET Core version of the module using the dotnet command line tool:
+
+dotnet build NtObjectManager\NtObjectManager.Core.csproj -c Release
+
+Now copy the files NtObjectManager.dll and NtApiDotNet.dll from the output folder to
+the folder Core inside the original NtObjectManager module module directory.
+
+Thanks to the people who were willing to test it and give feedback:
+* Matt Graeber
+* Lee Holmes
+* Casey Smith
+* Jared Atkinson
 
 Release Notes:
+
+1.1.22
+--------
+* Removed old standalone utilities, everything should be accessible from PowerShell.
+* Added Test-NetworkAccess cmdlet to replace CheckNetworkAccess utility.
+* Added Set-NtFileHardlink cmdlet.
+* Various fixes for RPC client code.
 
 1.1.21
 --------

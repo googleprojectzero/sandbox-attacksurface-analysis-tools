@@ -11,16 +11,12 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A .NET class library to access native NT API system calls</description>
     <releaseNotes>
-1.1.21
+1.1.22
 --------
-* Various updates to the NDR parser, including new types and support for correlation expressions.
-* Added complete transaction cmdlets.
-* Added extended process creation flags for Win32Process.
-* Added Format-NtSecurityDescriptor to display on the console
-* Added Copy-NtObject cmdlet.
-* Added basic RPC ALPC client support.
-* Added option to specify a debug object for a Win32 process.
-* Added processor system information.
+* Removed old standalone utilities, everything should be accessible from PowerShell.
+* Added Test-NetworkAccess cmdlet to replace CheckNetworkAccess utility.
+* Added Set-NtFileHardlink cmdlet.
+* Various fixes for RPC client code.
 </releaseNotes>
     <copyright>Copyright Google Inc. 2017, 2018, 2019</copyright>
     <tags>syscalls</tags>

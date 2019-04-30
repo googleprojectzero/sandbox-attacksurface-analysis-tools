@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.21'
+ModuleVersion = '1.1.22'
 
 # ID used to uniquely identify this module
 GUID = 'ac251c97-67a6-4bc4-bb8a-5ae300e93030'
@@ -112,16 +112,12 @@ PrivateData = @{
         ProjectUri = 'https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools'
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.21
+        ReleaseNotes = '1.1.22
 --------
-* Various updates to the NDR parser, including new types and support for correlation expressions.
-* Added complete transaction cmdlets.
-* Added extended process creation flags for Win32Process.
-* Added Format-NtSecurityDescriptor to display on the console
-* Added Copy-NtObject cmdlet.
-* Added basic RPC ALPC client support.
-* Added option to specify a debug object for a Win32 process.
-* Added processor system information.
+* Removed old standalone utilities, everything should be accessible from PowerShell.
+* Added Test-NetworkAccess cmdlet to replace CheckNetworkAccess utility.
+* Added Set-NtFileHardlink cmdlet.
+* Various fixes for RPC client code.
 '
 
         # External dependent modules of this module

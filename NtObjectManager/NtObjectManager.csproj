@@ -96,7 +96,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <None Include="packages.config" />
-    <None Include="Readme.txt" />
     <None Include="Formatters.ps1xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
