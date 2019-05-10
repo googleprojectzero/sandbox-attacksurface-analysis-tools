@@ -671,5 +671,12 @@ namespace NtApiDotNet.Win32
             ref int pathLength,
             StringBuilder path
         );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error EventAccessQuery(
+          ref Guid Guid,
+          SafeBuffer Buffer,
+          ref int BufferSize
+        );
     }
 }

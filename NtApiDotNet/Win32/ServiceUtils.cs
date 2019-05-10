@@ -239,7 +239,7 @@ namespace NtApiDotNet.Win32
                         string[] ss = Encoding.Unicode.GetString(RawData).TrimEnd('\0').Split('\0');
                         if (ss.Length == 1)
                         {
-                           return ss[0];
+                            return ss[0];
                         }
                         else
                         {
@@ -257,7 +257,7 @@ namespace NtApiDotNet.Win32
             RawData = new byte[data_item.cbData];
             if (data_item.pData != IntPtr.Zero)
             {
-                Marshal.Copy(data_item.pData, RawData, 0, data_item.cbData);   
+                Marshal.Copy(data_item.pData, RawData, 0, data_item.cbData);
             }
             else
             {
@@ -367,8 +367,8 @@ namespace NtApiDotNet.Win32
             List<ServiceTriggerCustomData> data = new List<ServiceTriggerCustomData>();
             if (trigger.pDataItems != IntPtr.Zero && trigger.cDataItems > 0)
             {
-                SERVICE_TRIGGER_SPECIFIC_DATA_ITEM[] data_items;
-                ReadArray(trigger.pDataItems, trigger.cDataItems, out data_items);
+                ReadArray(trigger.pDataItems, trigger.cDataItems, 
+                    out SERVICE_TRIGGER_SPECIFIC_DATA_ITEM[] data_items);
                 for (int i = 0; i < data_items.Length; ++i)
                 {
                     data.Add(new ServiceTriggerCustomData(data_items[i]));
@@ -381,7 +381,36 @@ namespace NtApiDotNet.Win32
         {
             return $"{TriggerType} {Action} {SubTypeDescription}";
         }
+
+        internal static ServiceTriggerInformation GetTriggerInformation(SERVICE_TRIGGER trigger)
+        {
+            if (trigger.dwTriggerType == ServiceTriggerType.Custom)
+            {
+                return new EtwServiceTriggerInformation(trigger);
+            }
+            return new ServiceTriggerInformation(trigger);
+        }
     }
+
+    public class EtwServiceTriggerInformation : ServiceTriggerInformation
+    {
+        public SecurityDescriptor SecurityDescriptor { get; }
+
+        internal EtwServiceTriggerInformation(SERVICE_TRIGGER trigger) 
+            : base(trigger)
+        {
+            var sd = EventTracing.QueryTraceSecurity(SubType, false);
+            if (sd.IsSuccess)
+            {
+                SecurityDescriptor = sd.Result;
+            }
+            else
+            {
+                SecurityDescriptor = new SecurityDescriptor();
+            }
+        }
+    }
+
 #pragma warning restore
 
     /// <summary>
@@ -650,7 +679,7 @@ namespace NtApiDotNet.Win32
 
                 for (int i = 0; i < trigger_arr.Length; ++i)
                 {
-                    triggers.Add(new ServiceTriggerInformation(trigger_arr[i]));
+                    triggers.Add(ServiceTriggerInformation.GetTriggerInformation(trigger_arr[i]));
                 }
 
                 return triggers.AsReadOnly();

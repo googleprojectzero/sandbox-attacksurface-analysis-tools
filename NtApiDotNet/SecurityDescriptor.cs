@@ -841,8 +841,18 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">True to throw on error.</param>
         public static NtResult<SecurityDescriptor> Parse(IntPtr ptr, bool throw_on_error)
         {
+            return Parse(new SafeHGlobalBuffer(ptr, 0, false), throw_on_error);
+        }
+
+        /// <summary>
+        /// Parse a security descriptor.
+        /// </summary>
+        /// <param name="buffer">Safe buffer to security descriptor.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        public static NtResult<SecurityDescriptor> Parse(SafeBuffer buffer, bool throw_on_error)
+        {
             SecurityDescriptor sd = new SecurityDescriptor();
-            return sd.ParseSecurityDescriptor(new SafeHGlobalBuffer(ptr, 0, false)).CreateResult(throw_on_error, () => sd);
+            return sd.ParseSecurityDescriptor(buffer).CreateResult(throw_on_error, () => sd);
         }
 
         /// <summary>
@@ -854,8 +864,7 @@ namespace NtApiDotNet
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(security_descriptor))
             {
-                SecurityDescriptor sd = new SecurityDescriptor();
-                return sd.ParseSecurityDescriptor(buffer).CreateResult(throw_on_error, () => sd);
+                return Parse(buffer, throw_on_error);
             }
         }
 

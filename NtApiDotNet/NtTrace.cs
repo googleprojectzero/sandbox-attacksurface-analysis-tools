@@ -12,16 +12,25 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet.Win32
+namespace NtApiDotNet
 {
-    internal enum Win32Error
+    /// <summary>
+    /// Class to represent an NT trace GUID.
+    /// </summary>
+    [NtType("WmiGuid")]
+    public class NtTrace : NtObjectWithDuplicate<NtTrace, TraceAccessRights>
     {
-        SUCCESS = 0,
-        ERROR_FILE_NOT_FOUND = 2,
-        ERROR_INVALID_PARAMETER = 87,
-        ERROR_INSUFFICIENT_BUFFER = 122,
-        ERROR_ALREADY_EXISTS = 183,
-        ERROR_MORE_DATA = 234,
-        ERROR_NOT_FOUND = 1168
+        #region Constructors
+        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        {
+            public NtTypeFactoryImpl() : base(false)
+            {
+            }
+        }
+
+        internal NtTrace(SafeKernelObjectHandle handle) : base(handle)
+        {
+        }
+        #endregion
     }
 }

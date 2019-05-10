@@ -496,7 +496,12 @@ namespace NtApiDotNet
 
         internal static void ToNtException(this Win32Error dos_error)
         {
-            ToNtException(MapDosErrorToStatus((int)dos_error));
+            ToNtException(dos_error, true);
+        }
+
+        internal static NtStatus ToNtException(this Win32Error dos_error, bool throw_on_error)
+        {
+            return ToNtException(MapDosErrorToStatus((int)dos_error), throw_on_error);
         }
 
         internal static NtStatus MapDosErrorToStatus(int dos_error)
