@@ -12,25 +12,27 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-namespace NtApiDotNet
+using Microsoft.Win32.SafeHandles;
+using System;
+
+namespace NtApiDotNet.Win32
 {
-    /// <summary>
-    /// Class to represent an NT trace GUID.
-    /// </summary>
-    [NtType("WmiGuid")]
-    public class NtTrace : NtObjectWithDuplicate<NtTrace, TraceAccessRights>
+    internal sealed class SafeEventRegHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        #region Constructors
-        internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
+        protected override bool ReleaseHandle()
         {
-            public NtTypeFactoryImpl() : base(false)
-            {
-            }
+            return Win32NativeMethods.EventUnregister(handle) == Win32Error.SUCCESS;
         }
 
-        internal NtTrace(SafeKernelObjectHandle handle) : base(handle)
+        public SafeEventRegHandle(IntPtr handle, bool owns_handle) 
+            : base(owns_handle)
+        {
+            SetHandle(handle);
+        }
+
+        public SafeEventRegHandle()
+            : base(true)
         {
         }
-        #endregion
     }
 }

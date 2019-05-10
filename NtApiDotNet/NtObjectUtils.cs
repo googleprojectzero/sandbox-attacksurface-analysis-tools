@@ -506,6 +506,10 @@ namespace NtApiDotNet
 
         internal static NtStatus MapDosErrorToStatus(int dos_error)
         {
+            if (dos_error == 0)
+            {
+                return NtStatus.STATUS_SUCCESS;
+            }
             return BuildStatus(NtStatusSeverity.STATUS_SEVERITY_WARNING, false, false, 
                 NtStatusFacility.FACILITY_NTWIN32, dos_error);
         }

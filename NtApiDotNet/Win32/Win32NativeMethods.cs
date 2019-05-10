@@ -181,6 +181,36 @@ namespace NtApiDotNet.Win32
         public IntPtr publisherId;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct EVENT_FILTER_DESCRIPTOR
+    {
+        public long Ptr;
+        public int Size;
+        public int Type;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct EVENT_DESCRIPTOR
+    {
+        public ushort Id;
+        public byte Version;
+        public byte Channel;
+        public byte Level;
+        public byte Opcode;
+        public ushort Task;
+        public ulong Keyword;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct EVENT_DATA_DESCRIPTOR
+    {
+        public long Ptr;
+        public int Size;
+        public byte Type;
+        public byte Reserved1;
+        public ushort Reserved2;
+    }
+
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     internal delegate bool EnumResTypeProc(IntPtr hModule, IntPtr lpszType, IntPtr lParam);
 
@@ -190,6 +220,17 @@ namespace NtApiDotNet.Win32
     [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode)]
     internal delegate Win32Error GetStagedPackageOrigin(string packageFullName, out PackageOrigin origin);
 
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    internal delegate void EventEnableCallback(
+          ref Guid SourceId,
+          int IsEnabled,
+          byte Level,
+          ulong MatchAnyKeyword,
+          ulong MatchAllKeyword,
+          ref EVENT_FILTER_DESCRIPTOR FilterData,
+          IntPtr CallbackContext
+        );
+
     internal static class Win32NativeMethods
     {
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -197,7 +238,6 @@ namespace NtApiDotNet.Win32
 
         [DllImport("aclui.dll", SetLastError = true)]
         internal static extern bool EditSecurity(IntPtr hwndOwner, ISecurityInformation psi);
-
 
         [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
         internal static extern int RpcBindingFromStringBinding([MarshalAs(UnmanagedType.LPTStr)] string StringBinding, out SafeRpcBindingHandle Binding);
@@ -677,6 +717,27 @@ namespace NtApiDotNet.Win32
           ref Guid Guid,
           SafeBuffer Buffer,
           ref int BufferSize
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error EventRegister(
+          ref Guid ProviderId,
+          EventEnableCallback EnableCallback,
+          IntPtr CallbackContext,
+          out SafeEventRegHandle RegHandle
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error EventUnregister(
+            IntPtr RegHandle
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error EventWrite(
+          SafeEventRegHandle RegHandle,
+          ref EVENT_DESCRIPTOR EventDescriptor,
+          int UserDataCount,
+          EVENT_DATA_DESCRIPTOR[] UserData
         );
     }
 }

@@ -155,7 +155,7 @@
     <Compile Include="NtSystemInfoNative.cs" />
     <Compile Include="NtThreadNative.cs" />
     <Compile Include="NtTokenNative.cs" />
-    <Compile Include="NtTrace.cs" />
+    <Compile Include="NtEtwRegistration.cs" />
     <Compile Include="NtTraceNative.cs" />
     <Compile Include="NtTransactionManager.cs" />
     <Compile Include="NtTransactionManagerNative.cs" />
@@ -228,6 +228,7 @@
     <Compile Include="UserGroup.cs" />
     <Compile Include="Utilities\Text\BinaryEncoding.cs" />
     <Compile Include="Win32\AppContainerProfile.cs" />
+    <Compile Include="Win32\EventTrace.cs" />
     <Compile Include="Win32\EventTracing.cs" />
     <Compile Include="Win32\ExecutableManifest.cs" />
     <Compile Include="Win32\LogonUtils.cs" />
@@ -253,6 +254,7 @@
     <Compile Include="Win32\Rpc\Transport\RpcFaultException.cs" />
     <Compile Include="Win32\RpcServer.cs" />
     <Compile Include="Win32\SafeCoTaskMemHandle.cs" />
+    <Compile Include="Win32\SafeEventRegHandle.cs" />
     <Compile Include="Win32\SafeLocalAllocHandle.cs" />
     <Compile Include="Win32\SymbolResolver.cs" />
     <Compile Include="Win32\Win32Debug.cs" />

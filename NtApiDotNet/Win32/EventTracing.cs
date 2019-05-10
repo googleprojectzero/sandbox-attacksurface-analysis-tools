@@ -56,5 +56,27 @@ namespace NtApiDotNet.Win32
                 return SecurityDescriptor.Parse(buffer, throw_on_error);
             }
         }
+
+        /// <summary>
+        /// Register an event trace with a specific GUID.
+        /// </summary>
+        /// <param name="guid">The event trace GUID.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The event trace.</returns>
+        public static NtResult<EventTrace> Register(Guid guid, bool throw_on_error)
+        {
+            return Win32NativeMethods.EventRegister(ref guid, null, IntPtr.Zero, out SafeEventRegHandle handle)
+                .MapDosErrorToStatus().CreateResult(throw_on_error, () => new EventTrace(handle));
+        }
+
+        /// <summary>
+        /// Register an event trace with a specific GUID.
+        /// </summary>
+        /// <param name="guid">The event trace GUID.</param>
+        /// <returns>The event trace.</returns>
+        public static EventTrace Register(Guid guid)
+        {
+            return Register(guid, true).Result;
+        }
     }
 }
