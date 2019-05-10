@@ -382,6 +382,14 @@ namespace NtApiDotNet.Win32
             return $"{TriggerType} {Action} {SubTypeDescription}";
         }
 
+        /// <summary>
+        /// Trigger the service.
+        /// </summary>
+        public virtual void Trigger()
+        {
+            throw new NotImplementedException("This trigger type is not supported");
+        }
+
         internal static ServiceTriggerInformation GetTriggerInformation(SERVICE_TRIGGER trigger)
         {
             if (trigger.dwTriggerType == ServiceTriggerType.Custom)
@@ -395,6 +403,14 @@ namespace NtApiDotNet.Win32
     public class EtwServiceTriggerInformation : ServiceTriggerInformation
     {
         public SecurityDescriptor SecurityDescriptor { get; }
+
+        public override void Trigger()
+        {
+            using (var reg = EventTracing.Register(SubType))
+            {
+                reg.Write();
+            }
+        }
 
         internal EtwServiceTriggerInformation(SERVICE_TRIGGER trigger) 
             : base(trigger)
