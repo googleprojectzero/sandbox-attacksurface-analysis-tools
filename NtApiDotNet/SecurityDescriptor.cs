@@ -201,20 +201,27 @@ namespace NtApiDotNet
             return new Acl(acl, acl_defaulted);
         }
 
-        private void ParseSecurityDescriptor(SafeBuffer buffer)
+        private NtStatus ParseSecurityDescriptor(SafeBuffer buffer)
         {
             if (!NtRtl.RtlValidSecurityDescriptor(buffer))
             {
-                throw new NtException(NtStatus.STATUS_INVALID_SECURITY_DESCR);
+                return NtStatus.STATUS_INVALID_SECURITY_DESCR;
             }
 
             Owner = QuerySid(buffer, NtRtl.RtlGetOwnerSecurityDescriptor);
             Group = QuerySid(buffer, NtRtl.RtlGetGroupSecurityDescriptor);
             Dacl = QueryAcl(buffer, NtRtl.RtlGetDaclSecurityDescriptor);
             Sacl = QueryAcl(buffer, NtRtl.RtlGetSaclSecurityDescriptor);
-            NtRtl.RtlGetControlSecurityDescriptor(buffer, out SecurityDescriptorControl control, out uint revision).ToNtException();
+            NtStatus status = NtRtl.RtlGetControlSecurityDescriptor(buffer, 
+                out SecurityDescriptorControl control, out uint revision);
+            if (!status.IsSuccess())
+            {
+                return status;
+            }
             Control = control;
             Revision = revision;
+
+            return NtStatus.STATUS_SUCCESS;
         }
 
         private static IntPtr UpdateBuffer<T>(SafeStructureInOutBuffer<T> buffer, byte[] data, ref int current_ofs) where T : new()
@@ -704,7 +711,7 @@ namespace NtApiDotNet
         /// <param name="ptr">Native pointer to security descriptor.</param>
         public SecurityDescriptor(IntPtr ptr)
         {
-            ParseSecurityDescriptor(new SafeHGlobalBuffer(ptr, 0, false));
+            ParseSecurityDescriptor(new SafeHGlobalBuffer(ptr, 0, false)).ToNtException();
         }
 
         /// <summary>
@@ -733,7 +740,7 @@ namespace NtApiDotNet
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(security_descriptor))
             {
-                ParseSecurityDescriptor(buffer);
+                ParseSecurityDescriptor(buffer).ToNtException();
             }
         }
 
@@ -804,7 +811,7 @@ namespace NtApiDotNet
                 GenericMapping mapping = type.GenericMapping;
                 NtRtl.RtlNewSecurityObject(parent_sd_buffer, creator_sd_buffer, out security_obj, is_directory,
                     token.GetHandle(), ref mapping).ToNtException();
-                ParseSecurityDescriptor(security_obj);
+                ParseSecurityDescriptor(security_obj).ToNtException();
             }
             finally
             {
@@ -823,6 +830,35 @@ namespace NtApiDotNet
             : this(NtSecurity.SddlToSecurityDescriptor(sddl))
         {
         }
+        #endregion
+
+        #region Static Methods
+
+        /// <summary>
+        /// Parse a security descriptor.
+        /// </summary>
+        /// <param name="ptr">Native pointer to security descriptor.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        public static NtResult<SecurityDescriptor> Parse(IntPtr ptr, bool throw_on_error)
+        {
+            SecurityDescriptor sd = new SecurityDescriptor();
+            return sd.ParseSecurityDescriptor(new SafeHGlobalBuffer(ptr, 0, false)).CreateResult(throw_on_error, () => sd);
+        }
+
+        /// <summary>
+        /// Parse a security descriptor.
+        /// </summary>
+        /// <param name="security_descriptor">Binary form of security descriptor</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        public static NtResult<SecurityDescriptor> Parse(byte[] security_descriptor, bool throw_on_error)
+        {
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(security_descriptor))
+            {
+                SecurityDescriptor sd = new SecurityDescriptor();
+                return sd.ParseSecurityDescriptor(buffer).CreateResult(throw_on_error, () => sd);
+            }
+        }
+
         #endregion
     }
 }
