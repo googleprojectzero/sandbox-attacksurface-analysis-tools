@@ -156,6 +156,7 @@
     <Compile Include="NtThreadNative.cs" />
     <Compile Include="NtTokenNative.cs" />
     <Compile Include="NtEtwRegistration.cs" />
+    <Compile Include="NtTrace.cs" />
     <Compile Include="NtTraceNative.cs" />
     <Compile Include="NtTransactionManager.cs" />
     <Compile Include="NtTransactionManagerNative.cs" />

@@ -49,6 +49,60 @@ namespace NtApiDotNet
         AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
     }
 
+    public static class TraceKnownGuids
+    {
+        /// <summary>
+        /// The security trace provider GUID.
+        /// </summary>
+        public static readonly Guid SecurityProvider = new Guid("54849625-5478-4994-A5BA-3E3B0328C30D");
+        /// <summary>
+        /// The default security GUID.
+        /// </summary>
+        public static readonly Guid DefaultTraceSecurity = new Guid("0811C1AF-7A07-4A06-82ED-869455CDF713");
+    }
+
+    public enum TraceControlFunctionCode : uint
+    {
+        Start = 1,
+        Stop = 2,
+        Query = 3,
+        Update = 4,
+        Flush = 5,
+        IncrementFile = 6,
+        RealtimeConnect = 11,
+        CreateActivityId = 12,
+        DispatchControl = 13,
+        RealtimeDisconnect = 14,
+        RegisterGuid = 15,          // IN: Handle to registration block. OUT: Handle to result block.
+        ReceiveNotification = 16,
+        EnableOrNotify = 17,
+        SendReply = 18,
+        ReceiveReply = 19,
+        UpdateSem = 20,
+        GetGuidList = 21,
+        GetGuidInfo = 22,
+        EnumerateGuids = 23,
+        RegisterSecurityProvider = 24,
+        QueryReferenceTime = 25,
+        TrackProviderBinary = 26,
+        AddNotificationEvent = 27, // IN: HANDLE to NtEvent.
+        UpdateDisallowList = 28,
+        SetProviderTraits = 30,
+        UseDescriptorType = 31,
+        GetGroupList = 32,
+        GetGroupInfo = 33,
+        GetDisallowList = 34,
+        SetCompressionSettings = 35,
+        GetCompressionSettings = 36,
+        UpdatePeriodicCaptureState = 37,
+        GetPrivateSessionHandle = 38,
+        RegisterPrivateSession = 39,
+        QuerySessionDemuxObject = 40,
+        SetTrackProviderBinary = 41,
+        GetMaxLogger = 42,
+        Wow64 = 0x80000000,
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
@@ -61,7 +115,7 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtTraceControl(
-            int FunctionCode,
+            TraceControlFunctionCode FunctionCode,
             SafeBuffer InBuffer,
             int InBufferLen,
             SafeBuffer OutBuffer,

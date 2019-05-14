@@ -22,11 +22,6 @@ namespace NtApiDotNet.Win32
     public static class EventTracing
     {
         /// <summary>
-        /// The default security GUID.
-        /// </summary>
-        public static readonly Guid DefaultTraceSecurityGuid = new Guid("0811c1af-7a07-4a06-82ed-869455cdf713");
-
-        /// <summary>
         /// Query security of an event.
         /// </summary>
         /// <param name="guid">The event GUID to query.</param>
@@ -36,9 +31,9 @@ namespace NtApiDotNet.Win32
         {
             int length = 0;
             Win32Error error = Win32NativeMethods.EventAccessQuery(ref guid, SafeHGlobalBuffer.Null, ref length);
-            if (error == Win32Error.ERROR_FILE_NOT_FOUND && guid != DefaultTraceSecurityGuid)
+            if (error == Win32Error.ERROR_FILE_NOT_FOUND && guid != TraceKnownGuids.DefaultTraceSecurity)
             {
-                return QueryTraceSecurity(DefaultTraceSecurityGuid, throw_on_error);
+                return QueryTraceSecurity(TraceKnownGuids.DefaultTraceSecurity, throw_on_error);
             }
 
             if (error != Win32Error.ERROR_MORE_DATA)
