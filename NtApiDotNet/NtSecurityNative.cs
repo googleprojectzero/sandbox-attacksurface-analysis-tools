@@ -39,7 +39,7 @@ namespace NtApiDotNet
         ProtectedDacl = 0x80000000,
         ProtectedSacl = 0x40000000,
         UnprotectedDacl = 0x20000000,
-        UnprotectedSacl = 0x1000000,
+        UnprotectedSacl = 0x10000000,
         AllBasic = Dacl | Owner | Group | Label | ProcessTrustLabel,
     }
 
