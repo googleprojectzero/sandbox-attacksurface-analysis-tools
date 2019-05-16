@@ -121,6 +121,12 @@ namespace NtApiDotNet
 
             ReparseBuffer buffer = null;
 
+            if (data_length > reader.RemainingLength())
+            {
+                // Possibly corrupted. Return an opaque buffer with all the data until the end.
+                return new OpaqueReparseBuffer(tag, reader.ReadToEnd());
+            }
+
             switch (tag)
             {
                 case ReparseTag.MOUNT_POINT:
@@ -139,7 +145,7 @@ namespace NtApiDotNet
                     buffer = new OpaqueReparseBuffer(ReparseTag.AFUNIX);
                     break;
                 default:
-                    if (opaque_buffer)
+                    if (opaque_buffer || reader.RemainingLength() < 16)
                     {
                         buffer = new OpaqueReparseBuffer(tag);
                     }

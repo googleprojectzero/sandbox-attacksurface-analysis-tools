@@ -1528,9 +1528,8 @@ namespace NtApiDotNet
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(16 * 1024))
             {
-                FsControl(NtWellKnownIoControlCodes.FSCTL_GET_REPARSE_POINT, null, buffer);
-
-                return ReparseBuffer.FromByteArray(buffer.ToArray(), opaque_buffer);
+                int res = FsControl(NtWellKnownIoControlCodes.FSCTL_GET_REPARSE_POINT, null, buffer);
+                return ReparseBuffer.FromByteArray(buffer.ReadBytes(res), opaque_buffer);
             }
         }
 
@@ -1549,7 +1548,7 @@ namespace NtApiDotNet
         /// <returns>The original reparse buffer.</returns>
         public ReparseBuffer DeleteReparsePoint()
         {
-            ReparseBuffer reparse = GetReparsePoint();
+            ReparseBuffer reparse = GetReparsePoint(true);
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(new OpaqueReparseBuffer(reparse.Tag, new byte[0]).ToByteArray()))
             {
                 FsControl(NtWellKnownIoControlCodes.FSCTL_DELETE_REPARSE_POINT, buffer, null);

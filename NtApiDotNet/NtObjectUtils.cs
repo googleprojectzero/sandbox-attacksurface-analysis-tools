@@ -69,6 +69,21 @@ namespace NtApiDotNet
             return ret;
         }
 
+        internal static byte[] ReadToEnd(this BinaryReader reader)
+        {
+            return reader.ReadBytes(int.MaxValue);
+        }
+
+        internal static long RemainingLength(this Stream stm)
+        {
+            return stm.Length - stm.Position;
+        }
+
+        internal static long RemainingLength(this BinaryReader reader)
+        {
+            return reader.BaseStream.RemainingLength();
+        }
+
         /// <summary>
         /// Convert an NtStatus to an exception if the status is an error
         /// </summary>
