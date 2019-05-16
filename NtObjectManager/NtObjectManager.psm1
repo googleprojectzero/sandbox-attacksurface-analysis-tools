@@ -659,6 +659,7 @@ Get list of NT file paths from the pipeline.
 function Get-NtFilePath {
   [CmdletBinding()]
   Param(
+    [alias("Path")]
     [parameter(Mandatory=$true, Position=0, ValueFromPipeline, valueFromPipelineByPropertyName)]
     [string]$FullName,
     [switch]$Resolve
@@ -4277,4 +4278,51 @@ Creates a new RPC context handle.
 #>
 function New-RpcContextHandle {
     New-Object "NtApiDotNet.Ndr.NdrContextHandle"
+}
+
+<#
+.SYNOPSIS
+Open a file using the Win32 CreateFile API.
+.DESCRIPTION
+This cmdlet opens a file using the Win32 CreateFile API rather than the native APIs.
+.PARAMETER Path
+Specify the path to open. Note that the function doesn't resolve relative paths from the PS working directory.
+.PARAMETER DesiredAccess
+Specify the desired access for the handle.
+.PARAMETER ShareMode
+Specify the share mode for the file.
+.PARAMETER SecurityDescriptor
+Specify an optional security descriptor.
+.PARAMETER InheritHandle
+Specify that the file handle should be inheritable.
+.PARAMETER Disposition
+Specify the file open disposition.
+.PARAMETER FlagsAndAttributes
+Specify flags and attributes for the open.
+.PARAMETER TemplateFile
+Specify a template file to copy certain properties from.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.NtFile
+.EXAMPLE
+Get-Win32File -Path c:\abc\xyz.txt
+Open the existing file c:\abc\xyz.txt
+#>
+function Get-Win32File {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [string]$Path,
+        [NtApiDotNet.FileAccessRights]$DesiredAccess = "MaximumAllowed",
+        [NtApiDotNet.FileShareMode]$ShareMode = 0,
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [switch]$InheritHandle,
+        [NtApiDotNet.Win32.CreateFileDisposition]$Disposition = "OpenExisting",
+        [NtApiDotNet.Win32.CreateFileFlagsAndAttributes]$FlagsAndAttributes = 0,
+        [NtApiDotNet.NtFile]$TemplateFile
+    )
+
+    [NtApiDotNet.Win32.Win32Utils]::CreateFile($Path, $DesiredAccess, $ShareMode, `
+            $SecurityDescriptor, $InheritHandle, $Disposition, $FlagsAndAttributes, $TemplateFile)
 }

@@ -260,5 +260,116 @@ namespace NtApiDotNet.Win32
         {
             return (Win32Error)Marshal.GetLastWin32Error();
         }
+
+        /// <summary>
+        /// Open a file with the Win32 CreateFile API.
+        /// </summary>
+        /// <param name="filename">The filename to open.</param>
+        /// <param name="desired_access">The desired access.</param>
+        /// <param name="share_mode">The share mode.</param>
+        /// <param name="security_descriptor">Optional security descriptor.</param>
+        /// <param name="inherit_handle">True to set the handle as inheritable.</param>
+        /// <param name="creation_disposition">Creation disposition.</param>
+        /// <param name="flags_and_attributes">Flags and attributes.</param>
+        /// <param name="template_file">Optional template file.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened file handle.</returns>
+        public static NtResult<NtFile> CreateFile(string filename,
+          FileAccessRights desired_access,
+          FileShareMode share_mode,
+          SecurityDescriptor security_descriptor,
+          bool inherit_handle,
+          CreateFileDisposition creation_disposition,
+          CreateFileFlagsAndAttributes flags_and_attributes,
+          NtFile template_file,
+          bool throw_on_error)
+        {
+            using (var resources = new DisposableList())
+            {
+                SECURITY_ATTRIBUTES sec_attr = null;
+                if (security_descriptor != null || inherit_handle)
+                {
+                    sec_attr = new SECURITY_ATTRIBUTES();
+                    sec_attr.bInheritHandle = inherit_handle;
+                    sec_attr.lpSecurityDescriptor = security_descriptor == null ? SafeHGlobalBuffer.Null :
+                        resources.AddResource(security_descriptor.ToSafeBuffer());
+                }
+
+                var handle = Win32NativeMethods.CreateFile(filename, desired_access,
+                    share_mode, sec_attr, creation_disposition, flags_and_attributes,
+                    template_file.GetHandle());
+                if (handle.IsInvalid)
+                {
+                    return GetLastWin32Error().CreateResultFromDosError<NtFile>(throw_on_error);
+                }
+
+                return new NtFile(handle).CreateResult();
+            }
+        }
+
+        /// <summary>
+        /// Open a file with the Win32 CreateFile API.
+        /// </summary>
+        /// <param name="filename">The filename to open.</param>
+        /// <param name="desired_access">The desired access.</param>
+        /// <param name="share_mode">The share mode.</param>
+        /// <param name="security_descriptor">Optional security descriptor.</param>
+        /// <param name="inherit_handle">True to set the handle as inheritable.</param>
+        /// <param name="creation_disposition">Creation disposition.</param>
+        /// <param name="flags_and_attributes">Flags and attributes.</param>
+        /// <param name="template_file">Optional template file.</param>
+        /// <returns>The opened file handle.</returns>
+        public static NtFile CreateFile(string filename,
+          FileAccessRights desired_access,
+          FileShareMode share_mode,
+          SecurityDescriptor security_descriptor,
+          bool inherit_handle,
+          CreateFileDisposition creation_disposition,
+          CreateFileFlagsAndAttributes flags_and_attributes,
+          NtFile template_file)
+        {
+            return CreateFile(filename, desired_access, share_mode, security_descriptor, inherit_handle,
+                creation_disposition, flags_and_attributes, template_file, true).Result;
+        }
+
+        /// <summary>
+        /// Open a file with the Win32 CreateFile API.
+        /// </summary>
+        /// <param name="filename">The filename to open.</param>
+        /// <param name="desired_access">The desired access.</param>
+        /// <param name="share_mode">The share mode.</param>
+        /// <param name="creation_disposition">Creation disposition.</param>
+        /// <param name="flags_and_attributes">Flags and attributes.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened file handle.</returns>
+        public static NtResult<NtFile> CreateFile(string filename,
+          FileAccessRights desired_access,
+          FileShareMode share_mode,
+          CreateFileDisposition creation_disposition,
+          CreateFileFlagsAndAttributes flags_and_attributes,
+          bool throw_on_error)
+        {
+            return CreateFile(filename, desired_access, share_mode, null, false,
+                creation_disposition, flags_and_attributes, null, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open a file with the Win32 CreateFile API.
+        /// </summary>
+        /// <param name="filename">The filename to open.</param>
+        /// <param name="desired_access">The desired access.</param>
+        /// <param name="share_mode">The share mode.</param>
+        /// <param name="creation_disposition">Creation disposition.</param>
+        /// <param name="flags_and_attributes">Flags and attributes.</param>
+        /// <returns>The opened file handle.</returns>
+        public static NtFile CreateFile(string filename,
+          FileAccessRights desired_access,
+          FileShareMode share_mode,
+          CreateFileDisposition creation_disposition,
+          CreateFileFlagsAndAttributes flags_and_attributes)
+        {
+            return CreateFile(filename, desired_access, share_mode,
+            creation_disposition, flags_and_attributes, true).Result;
+        }
     }
 }

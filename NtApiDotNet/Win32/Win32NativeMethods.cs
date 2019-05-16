@@ -19,6 +19,7 @@ using System.Text;
 
 namespace NtApiDotNet.Win32
 {
+#pragma warning disable 1591
     /// <summary>
     /// Flags for DefineDosDevice
     /// </summary>
@@ -45,6 +46,69 @@ namespace NtApiDotNet.Win32
         /// Don't broadcast changes to the system
         /// </summary>
         NoBroadcastSystem = 8,
+    }
+
+    /// <summary>
+    /// Disposition values for CreateFile.
+    /// </summary>
+    public enum CreateFileDisposition
+    {
+        /// <summary>
+        /// Create a new file. Fail if it exists.
+        /// </summary>
+        CreateNew = 1,
+        /// <summary>
+        /// Always create a new file, overwrite if it exists.
+        /// </summary>
+        CreateAlways = 2,
+        /// <summary>
+        /// Open a file, fail if it doesn't exist.
+        /// </summary>
+        OpenExisting = 3,
+        /// <summary>
+        /// Open a file, create if it doesn't exist.
+        /// </summary>
+        OpenAlways = 4,
+        /// <summary>
+        /// Truncate existing file.
+        /// </summary>
+        TruncateExisting = 5
+    }
+
+    [Flags]
+    public enum CreateFileFlagsAndAttributes : uint
+    {
+        None = 0,
+        ReadOnly = 0x00000001,
+        Hidden = 0x00000002,
+        System = 0x00000004,
+        Directory = 0x00000010,
+        Archive = 0x00000020,
+        Device = 0x00000040,
+        Normal = 0x00000080,
+        Temporary = 0x00000100,
+        SparseFile = 0x00000200,
+        ReparsePoint = 0x00000400,
+        Compressed = 0x00000800,
+        Offline = 0x00001000,
+        NotContentIndexed = 0x00002000,
+        Encrypted = 0x00004000,
+        IntegrityStream = 0x00008000,
+        SecurityIdentification = 0x00010000,
+        SecurityImpersonation = 0x00020000,
+        SecurityDelegation = 0x00030000,
+        ContextTracking = 0x00040000,
+        EffectiveOnly = 0x00080000,
+        SQoSPresent = 0x00100000,
+        OpenReparsePoint = 0x00200000,
+        PosixSemantics = 0x01000000,
+        BackupDemantics = 0x02000000,
+        DeleteOnClose = 0x04000000,
+        SequentialScan = 0x08000000,
+        RandomAccess = 0x10000000,
+        NoBuffering = 0x20000000,
+        Overlapped = 0x40000000,
+        WriteThrough = 0x80000000,
     }
 
     internal enum WTS_CONNECTSTATE_CLASS
@@ -739,5 +803,17 @@ namespace NtApiDotNet.Win32
           int UserDataCount,
           EVENT_DATA_DESCRIPTOR[] UserData
         );
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern SafeKernelObjectHandle CreateFile(
+          string lpFileName,
+          FileAccessRights dwDesiredAccess,
+          FileShareMode dwShareMode,
+          SECURITY_ATTRIBUTES lpSecurityAttributes,
+          CreateFileDisposition dwCreationDisposition,
+          CreateFileFlagsAndAttributes dwFlagsAndAttributes,
+          SafeKernelObjectHandle hTemplateFile
+        );
     }
+#pragma warning restore 1591
 }
