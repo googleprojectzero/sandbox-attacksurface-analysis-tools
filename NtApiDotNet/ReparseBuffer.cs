@@ -108,9 +108,68 @@ namespace NtApiDotNet
         /// Get a reparse buffer from a byte array.
         /// </summary>
         /// <param name="ba">The byte array to parse</param>
+        /// <returns>The reparse buffer.</returns>
+        public static ReparseBuffer FromByteArray(byte[] ba)
+        {
+            BinaryReader reader = new BinaryReader(new MemoryStream(ba), Encoding.Unicode);
+            ReparseTag tag = (ReparseTag)reader.ReadUInt32();
+            int data_length = reader.ReadUInt16();
+            // Reserved
+            reader.ReadUInt16();
+
+            ReparseBuffer buffer = null;
+
+            long remaining_length = reader.RemainingLength();
+            long expected_length = data_length;
+            if (!NtFileUtils.IsReparseTagMicrosoft(tag))
+            {
+                expected_length += 16;
+            }
+
+            if (remaining_length != expected_length)
+            {
+                // Corrupted buffer. Return an opaque buffer with all the data until the end.
+                return new OpaqueReparseBuffer(tag, reader.ReadToEnd());
+            }
+
+            switch (tag)
+            {
+                case ReparseTag.MOUNT_POINT:
+                    buffer = new MountPointReparseBuffer();
+                    break;
+                case ReparseTag.SYMLINK:
+                    buffer = new SymlinkReparseBuffer(false);
+                    break;
+                case ReparseTag.GLOBAL_REPARSE:
+                    buffer = new SymlinkReparseBuffer(true);
+                    break;
+                case ReparseTag.APPEXECLINK:
+                    buffer = new ExecutionAliasReparseBuffer();
+                    break;
+                default:
+                    if (NtFileUtils.IsReparseTagMicrosoft(tag))
+                    {
+                        buffer = new OpaqueReparseBuffer(tag);
+                    }
+                    else
+                    {
+                        buffer = new GenericReparseBuffer(tag);
+                    }
+                    break;
+            }
+
+            buffer.ParseBuffer(data_length, reader);
+            return buffer;
+        }
+
+        /// <summary>
+        /// Get a reparse buffer from a byte array.
+        /// </summary>
+        /// <param name="ba">The byte array to parse</param>
         /// <param name="opaque_buffer">True to return an opaque buffer if 
         /// the tag isn't known, otherwise try and parse as a generic buffer</param>
         /// <returns>The reparse buffer.</returns>
+        [Obsolete("Opaque buffer now automatically determined, use FromByteArray without the parameter")]
         public static ReparseBuffer FromByteArray(byte[] ba, bool opaque_buffer)
         {
             BinaryReader reader = new BinaryReader(new MemoryStream(ba), Encoding.Unicode);
@@ -121,7 +180,7 @@ namespace NtApiDotNet
 
             ReparseBuffer buffer = null;
 
-            if (data_length > reader.RemainingLength())
+            if (data_length != reader.RemainingLength())
             {
                 // Possibly corrupted. Return an opaque buffer with all the data until the end.
                 return new OpaqueReparseBuffer(tag, reader.ReadToEnd());

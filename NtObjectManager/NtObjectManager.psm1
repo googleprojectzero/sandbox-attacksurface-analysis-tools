@@ -1491,7 +1491,7 @@ function Get-ExecutionAlias
 
     Use-NtObject($file = Get-NtFile -Path $path -Win32Path -Options OpenReparsePoint,SynchronousIoNonAlert `
                   -Access GenericRead,Synchronize) {
-        $file.GetReparsePoint($true)
+        $file.GetReparsePoint()
     }
 }
 
