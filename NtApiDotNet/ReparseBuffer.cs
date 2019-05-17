@@ -71,6 +71,13 @@ namespace NtApiDotNet
         GVFS_TOMBSTONE = 0xA0000022,
     }
 
+    [Flags]
+    public enum ReparseBufferExFlags
+    {
+        None = 0,
+        GivenTagOrNone = 1,
+    }
+
 #pragma warning restore 1591
 
     /// <summary>
@@ -220,9 +227,9 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Convert reparse buffer to a byte array.
+        /// Convert reparse buffer to a byte array in REPARSE_DATA_BUFFER format.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The reparse buffer as a byte array.</returns>
         public byte[] ToByteArray()
         {
             byte[] buffer = GetBuffer();
@@ -236,6 +243,30 @@ namespace NtApiDotNet
             writer.Write((ushort)buffer.Length);
             writer.Write((ushort)0);
             writer.Write(buffer);
+            return stm.ToArray();
+        }
+
+        /// <summary>
+        /// Convert reparse buffer to a byte array in the REPARSE_DATA_BUFFER_EX format.
+        /// </summary>
+        /// <param name="flags">Flags for the buffer.</param>
+        /// <param name="existing_guid">Existing GUID to match against.</param>
+        /// <param name="existing_tag">Existing tag to matcha against.</param>
+        /// <returns>The reparse buffer as a byte array.</returns>
+        public byte[] ToByteArray(ReparseBufferExFlags flags, ReparseTag existing_tag, Guid existing_guid)
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            // Flags.
+            writer.Write((int)flags);
+            // Existing tag.
+            writer.Write((uint)existing_tag);
+            // Existing GUID for non-Microsoft tags.
+            writer.Write(existing_guid.ToByteArray());
+            // Reserved (64 bit)
+            writer.Write(0L);
+            // The original reparse buffer.
+            writer.Write(ToByteArray());
             return stm.ToArray();
         }
 

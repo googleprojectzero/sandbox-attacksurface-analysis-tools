@@ -668,10 +668,28 @@ namespace NtObjectManager
         public SwitchParameter Relative { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify the a raw reparse point buffer.</para>
+        /// <para type="description">Specify the raw reparse point buffer.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "ReparseBuffer", Position = 1)]
         public ReparseBuffer ReparseBuffer { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify an existing reparse tag to check when setting the reparse point (on RS1+).</para>
+        /// </summary>
+        [Parameter]
+        public ReparseTag ExistingTag { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify an existing GUID to check when setting the reparse point (on RS1+).</para>
+        /// </summary>
+        [Parameter]
+        public Guid ExistingGuid { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify flags to use when setting the reparse point (on RS1+).</para>
+        /// </summary>
+        [Parameter]
+        public ReparseBufferExFlags Flags { get; set; }
 
         /// <summary>
         /// Method to create an object from a set of object attributes.
@@ -701,7 +719,14 @@ namespace NtObjectManager
 
             using (NtFile file = (NtFile)base.CreateObject(obj_attributes))
             {
-                file.SetReparsePoint(ReparseBuffer);
+                if (Flags != ReparseBufferExFlags.None || ExistingTag != 0 || ExistingGuid != Guid.Empty)
+                {
+                    file.SetReparsePointEx(ReparseBuffer, Flags, ExistingTag, ExistingGuid);
+                }
+                else
+                {
+                    file.SetReparsePoint(ReparseBuffer);
+                }
             }
 
             return null;

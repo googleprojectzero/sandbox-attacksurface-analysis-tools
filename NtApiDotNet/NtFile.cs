@@ -1498,6 +1498,40 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Set an arbitrary reparse point.
+        /// </summary>
+        /// <param name="reparse">The reparse point data.</param>
+        /// <param name="flags">Flags for the reparse buffer.</param>
+        /// <param name="existing_tag">Existing tag to check against. If no check required use 0.</param>
+        /// <param name="existing_guid">Existing Guid to check against. If no check requested use empty GUID.</param>
+        public void SetReparsePointEx(ReparseBuffer reparse, ReparseBufferExFlags flags, ReparseTag existing_tag, Guid existing_guid)
+        {
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(reparse.ToByteArray(flags, existing_tag, existing_guid)))
+            {
+                FsControl(NtWellKnownIoControlCodes.FSCTL_SET_REPARSE_POINT_EX, buffer, null);
+            }
+        }
+
+        /// <summary>
+        /// Set an arbitrary reparse point.
+        /// </summary>
+        /// <param name="reparse">The reparse point data.</param>
+        /// <param name="existing_tag">Existing tag to check against. If no check required use 0.</param>
+        public void SetReparsePointEx(ReparseBuffer reparse, ReparseTag existing_tag)
+        {
+            SetReparsePointEx(reparse, ReparseBufferExFlags.None, existing_tag, Guid.Empty);
+        }
+
+        /// <summary>
+        /// Set an arbitrary reparse point.
+        /// </summary>
+        /// <param name="reparse">The reparse point data.</param>>
+        public void SetReparsePointEx(ReparseBuffer reparse)
+        {
+            SetReparsePointEx(reparse, 0, 0, Guid.Empty);
+        }
+
+        /// <summary>
         /// Set a mount point on the current file object.
         /// </summary>
         /// <param name="substitute_name">The substitute name to reparse to.</param>
