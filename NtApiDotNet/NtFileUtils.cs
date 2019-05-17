@@ -159,10 +159,10 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get if a reparse tag is a directory.
+        /// Get if a reparse tag is a directory which can have children.
         /// </summary>
         /// <param name="tag">The reparse tag.</param>
-        /// <returns>True if it's a directory reparse tag.</returns>
+        /// <returns>True if it's a directory reparse tag which can have children.</returns>
         public static bool IsReparseTagDirectory(ReparseTag tag)
         {
             return ((uint)tag & 0x10000000) != 0;

@@ -42,9 +42,9 @@ namespace NtApiDotNet
         FILE_PLACEHOLDER = 0x80000015,
         DFM = 0x80000016,
         WOF = 0x80000017,
+        WCI = 0x80000018,
+        WCI_1 = 0x90001018,
         GLOBAL_REPARSE = 0xA0000019,
-        APPEXECLINK = 0x8000001B,
-        AFUNIX = 0x80000023,
         CLOUD = 0x9000001A,
         CLOUD_1 = 0x9000101A,
         CLOUD_2 = 0x9000201A,
@@ -62,13 +62,18 @@ namespace NtApiDotNet
         CLOUD_E = 0x9000E01A,
         CLOUD_F = 0x9000F01A,
         CLOUD_MASK = 0x0000F000,
-        GVFS = 0x9000001C,
-        WSL_SYMLINK = 0xA000001D,
+        APPEXECLINK = 0x8000001B,
+        PROJFS = 0x9000001C,
+        LX_SYMLINK = 0xA000001D,
         STORAGE_SYNC = 0x8000001E,
         WCI_TOMBSTONE = 0xA000001F,
         UNHANDLED = 0x80000020,
         ONEDRIVE = 0x80000021,
-        GVFS_TOMBSTONE = 0xA0000022,
+        PROJFS_TOMBSTONE = 0xA0000022,
+        AF_UNIX = 0x80000023,
+        LX_FIFO = 0x80000024,
+        LX_CHR = 0x80000025,
+        LX_BLK = 0x80000026,
     }
 
     [Flags]
@@ -207,8 +212,8 @@ namespace NtApiDotNet
                 case ReparseTag.APPEXECLINK:
                     buffer = new ExecutionAliasReparseBuffer();
                     break;
-                case ReparseTag.AFUNIX:
-                    buffer = new OpaqueReparseBuffer(ReparseTag.AFUNIX);
+                case ReparseTag.AF_UNIX:
+                    buffer = new OpaqueReparseBuffer(ReparseTag.AF_UNIX);
                     break;
                 default:
                     if (opaque_buffer || reader.RemainingLength() < 16)
