@@ -140,6 +140,18 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Duplicate object.
+        /// </summary>
+        /// <param name="access_rights">Access rights to duplicate with.</param>
+        /// <param name="flags">Attribute flags.</param>
+        /// <param name="options">Duplicate options</param>
+        /// <returns>The duplicated object.</returns>
+        public O Duplicate(A access_rights, AttributeFlags flags, DuplicateObjectOptions options)
+        {
+            return Duplicate(access_rights, flags, options, true).Result;
+        }
+
+        /// <summary>
         /// Duplicate the object with specific access rights
         /// </summary>
         /// <param name="access">The access rights for the new handle</param>

@@ -73,6 +73,10 @@ namespace NtApiDotNet
         /// Duplicate with the same handle attributes.
         /// </summary>
         SameAttributes = 4,
+        /// <summary>
+        /// Prevent duplicating handle above the existing access.
+        /// </summary>
+        NoRightsUpgrade = 8,
     }
 
     /// <summary>

@@ -695,6 +695,12 @@ namespace NtObjectManager
         public GenericAccessRights? DesiredAccess { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify the no rights upgrade flags.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter NoRightsUpgrade { get; set; }
+
+        /// <summary>
         /// <para type="description">The desired object attribute flags for the duplication.</para>
         /// </summary>
         [Parameter]
@@ -731,6 +737,11 @@ namespace NtObjectManager
             if (CloseSource)
             {
                 options |= DuplicateObjectOptions.CloseSource;
+            }
+
+            if (NoRightsUpgrade)
+            {
+                options |= DuplicateObjectOptions.NoRightsUpgrade;
             }
 
             return options;
