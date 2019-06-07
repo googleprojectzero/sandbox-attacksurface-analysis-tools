@@ -1786,6 +1786,15 @@ namespace NtApiDotNet
         /// </summary>
         public string PackageFullName => QueryToken(t => t.PackageFullName, string.Empty);
 
+        /// <summary>
+        /// Get or set whether resource virtualization is enabled.
+        /// </summary>
+        public bool VirtualizationEnabled
+        {
+            get => QueryToken(t => t.VirtualizationEnabled, false);
+            set => Set(ProcessInformationClass.ProcessTokenVirtualizationEnabled, value ? 1 : 0);
+        }
+
         #endregion
 
         #region Static Properties
