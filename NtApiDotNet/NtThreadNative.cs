@@ -109,7 +109,7 @@ namespace NtApiDotNet
         public NtStatus ExitStatus;
         public IntPtr TebBaseAddress;
         public ClientIdStruct ClientId;
-        public IntPtr AffinityMask;
+        public UIntPtr AffinityMask;
         public int Priority;
         public int BasePriority;
     }

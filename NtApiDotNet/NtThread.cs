@@ -923,6 +923,15 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get or set the thread's affinity mask.
+        /// </summary>
+        public ulong AffinityMask
+        {
+            get => QueryBasicInformation().AffinityMask.ToUInt64();
+            set => Set(ThreadInformationClass.ThreadAffinityMask, new UIntPtr(value));
+        }
+
+        /// <summary>
         /// Get the thread's TEB base address.
         /// </summary>
         public IntPtr TebBaseAddress => QueryBasicInformation().TebBaseAddress;
