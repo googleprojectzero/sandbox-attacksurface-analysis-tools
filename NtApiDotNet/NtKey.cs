@@ -1291,14 +1291,7 @@ namespace NtApiDotNet
         public KeyControlFlags ControlFlags
         {
             get => Query<KeyFlagsInformation>(KeyInformationClass.KeyFlagsInformation).ControlFlags;
-
-            set
-            {
-                using (var buffer = value.ToBuffer())
-                {
-                    Set(KeySetInformationClass.KeyControlFlagsInformation, (int)value);
-                }
-            }
+            set => Set(KeySetInformationClass.KeyControlFlagsInformation, (int)value);
         }
 
         /// <summary>
@@ -1307,14 +1300,7 @@ namespace NtApiDotNet
         public int Wow64Flags
         {
             get => Query<KeyFlagsInformation>(KeyInformationClass.KeyFlagsInformation).Wow64Flags;
-
-            set
-            {
-                using (var buffer = value.ToBuffer())
-                {
-                    Set(KeySetInformationClass.KeyWow64FlagsInformation, value);
-                }
-            }
+            set => Set(KeySetInformationClass.KeyWow64FlagsInformation, value);
         }
 
         /// <summary>
@@ -1326,6 +1312,20 @@ namespace NtApiDotNet
         /// Indicates if this key is from a trusted hive.
         /// </summary>
         public bool Trusted => Query<KeyTrustInformation>(KeyInformationClass.KeyTrustInformation).TrustedKey;
+
+        /// <summary>
+        /// Get the name from NtQueryKey.
+        /// </summary>
+        public string NameInformation
+        {
+            get
+            {
+                using (var buffer = QueryBuffer<KeyNameInformation>(KeyInformationClass.KeyNameInformation))
+                {
+                    return buffer.Data.ReadUnicodeString(buffer.Result.NameLength / 2);
+                }
+            }
+        }
 
         /// <summary>
         /// Returns whether this object is a container.
