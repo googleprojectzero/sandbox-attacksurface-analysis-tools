@@ -410,9 +410,19 @@ namespace NtApiDotNet
         /// Set virtualization enabled
         /// </summary>
         /// <param name="enable">True to enable virtualization</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        public NtStatus SetVirtualizationEnabled(bool enable, bool throw_on_error)
+        {
+            return Set(TokenInformationClass.TokenVirtualizationEnabled, enable ? 1 : 0, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set virtualization enabled
+        /// </summary>
+        /// <param name="enable">True to enable virtualization</param>
         public void SetVirtualizationEnabled(bool enable)
         {
-            Set(TokenInformationClass.TokenVirtualizationEnabled, enable ? 1 : 0);
+            SetVirtualizationEnabled(enable, true);
         }
 
         /// <summary>
