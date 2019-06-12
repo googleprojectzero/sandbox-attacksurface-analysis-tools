@@ -437,11 +437,20 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the linked token 
         /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The linked token</returns>
+        public NtResult<NtToken> GetLinkedToken(bool throw_on_error)
+        {
+            return Query(TokenInformationClass.TokenLinkedToken, IntPtr.Zero, throw_on_error).Map(h => new NtToken(new SafeKernelObjectHandle(h, true)));
+        }
+
+        /// <summary>
+        /// Get the linked token 
+        /// </summary>
         /// <returns>The linked token</returns>
         public NtToken GetLinkedToken()
         {
-            IntPtr linked_token = Query<IntPtr>(TokenInformationClass.TokenLinkedToken);
-            return new NtToken(new SafeKernelObjectHandle(linked_token, true));
+            return GetLinkedToken(true).Result;
         }
 
         /// <summary>
