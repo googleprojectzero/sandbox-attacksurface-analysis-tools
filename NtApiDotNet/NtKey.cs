@@ -1184,129 +1184,69 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>The last write time</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public DateTime LastWriteTime
-        {
-            get
-            {
-                return DateTime.FromFileTime(GetFullInfo().Item1.LastWriteTime.QuadPart);
-            }
-        }
+        public DateTime LastWriteTime => DateTime.FromFileTime(GetFullInfo().Item1.LastWriteTime.QuadPart);
 
         /// <summary>
         /// Get key subkey count
         /// </summary>
         /// <returns>The subkey count</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public int SubKeyCount
-        {
-            get
-            {
-                return GetFullInfo().Item1.SubKeys;
-            }
-        }
+        public int SubKeyCount => GetFullInfo().Item1.SubKeys;
 
         /// <summary>
         /// Get key value count
         /// </summary>
         /// <returns>The key value count</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public int ValueCount
-        {
-            get
-            {
-                return GetFullInfo().Item1.Values;
-            }
-        }
+        public int ValueCount => GetFullInfo().Item1.Values;
 
         /// <summary>
         /// Get the key title index
         /// </summary>
         /// <returns>The key title index</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public int TitleIndex
-        {
-            get
-            {
-                return GetFullInfo().Item1.TitleIndex;
-            }
-        }
+        public int TitleIndex => GetFullInfo().Item1.TitleIndex;
 
         /// <summary>
         /// Get the key class name
         /// </summary>
         /// <returns>The key class name</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public string ClassName
-        {
-            get
-            {
-                return GetFullInfo().Item2;
-            }
-        }
+        public string ClassName => GetFullInfo().Item2;
 
         /// <summary>
         /// Get the maximum key value name length
         /// </summary>
         /// <returns>The maximum key value name length</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public int MaxValueNameLength
-        {
-            get
-            {
-                return GetFullInfo().Item1.MaxValueNameLen;
-            }
-        }
+        public int MaxValueNameLength => GetFullInfo().Item1.MaxValueNameLen;
 
         /// <summary>
         /// Get the maximum key value data length
         /// </summary>
         /// <returns>The maximum key value data length</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public int MaxValueDataLength
-        {
-            get
-            {
-                return GetFullInfo().Item1.MaxValueDataLen;
-            }
-        }
+        public int MaxValueDataLength => GetFullInfo().Item1.MaxValueDataLen;
 
         /// <summary>
         /// Get the maximum subkey name length
         /// </summary>
         /// <returns>The maximum subkey name length</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public int MaxNameLength
-        {
-            get
-            {
-                return GetFullInfo().Item1.MaxNameLen;
-            }
-        }
+        public int MaxNameLength => GetFullInfo().Item1.MaxNameLen;
 
         /// <summary>
         /// Get the maximum class name length
         /// </summary>
         /// <returns>The maximum class name length</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public int MaxClassLength
-        {
-            get
-            {
-                return GetFullInfo().Item1.MaxClassLen;
-            }
-        }
+        public int MaxClassLength => GetFullInfo().Item1.MaxClassLen;
 
         /// <summary>
         /// Get the key path as a Win32 style one. If not possible returns
         /// the original path.
         /// </summary>
-        public string Win32Path
-        {
-            get
-            {
-                return NtKeyUtils.NtKeyNameToWin32(FullPath);
-            }
-        }
+        public string Win32Path => NtKeyUtils.NtKeyNameToWin32(FullPath);
 
         /// <summary>
         /// The disposition when the key was created.
@@ -1323,10 +1263,7 @@ namespace NtApiDotNet
         /// </summary>
         public KeyVirtualizationFlags VirtualizationFlags
         {
-            get
-            {
-                return (KeyVirtualizationFlags)Query<int>(KeyInformationClass.KeyVirtualizationInformation);
-            }
+            get => (KeyVirtualizationFlags)Query<int>(KeyInformationClass.KeyVirtualizationInformation);
             set
             {
                 // Map value to set virtualization flags.
@@ -1353,10 +1290,7 @@ namespace NtApiDotNet
         /// </summary>
         public KeyControlFlags ControlFlags
         {
-            get
-            {
-                return Query<KeyFlagsInformation>(KeyInformationClass.KeyFlagsInformation).ControlFlags;
-            }
+            get => Query<KeyFlagsInformation>(KeyInformationClass.KeyFlagsInformation).ControlFlags;
 
             set
             {
@@ -1372,10 +1306,7 @@ namespace NtApiDotNet
         /// </summary>
         public int Wow64Flags
         {
-            get
-            {
-                return Query<KeyFlagsInformation>(KeyInformationClass.KeyFlagsInformation).Wow64Flags;
-            }
+            get => Query<KeyFlagsInformation>(KeyInformationClass.KeyFlagsInformation).Wow64Flags;
 
             set
             {
@@ -1387,15 +1318,14 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get key flags.
+        /// </summary>
+        public int KeyFlags => Query<KeyFlagsInformation>(KeyInformationClass.KeyFlagsInformation).KeyFlags;
+
+        /// <summary>
         /// Indicates if this key is from a trusted hive.
         /// </summary>
-        public bool Trusted
-        {
-            get
-            {
-                return Query<KeyTrustInformation>(KeyInformationClass.KeyTrustInformation).TrustedKey;
-            }
-        }
+        public bool Trusted => Query<KeyTrustInformation>(KeyInformationClass.KeyTrustInformation).TrustedKey;
 
         /// <summary>
         /// Returns whether this object is a container.
