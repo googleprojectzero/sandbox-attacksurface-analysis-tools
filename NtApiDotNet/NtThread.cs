@@ -905,47 +905,36 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get thread's current priority
+        /// Get or set the thread's current priority
         /// </summary>
         public int Priority
         {
-            get
-            {
-                return QueryBasicInformation().Priority;
-            }
+            get => QueryBasicInformation().Priority;
+            set => Set(ThreadInformationClass.ThreadPriority, value);
         }
 
         /// <summary>
-        /// Get thread's base priority
+        /// Get or set the thread's base priority
         /// </summary>
         public int BasePriority
         {
-            get
-            {
-                return QueryBasicInformation().BasePriority;
-            }
+            get => QueryBasicInformation().BasePriority;
+            set => Set(ThreadInformationClass.ThreadBasePriority, value);
         }
 
         /// <summary>
         /// Get the thread's TEB base address.
         /// </summary>
-        public IntPtr TebBaseAddress
-        {
-            get
-            {
-                return QueryBasicInformation().TebBaseAddress;
-            }
-        }
+        public IntPtr TebBaseAddress => QueryBasicInformation().TebBaseAddress;
 
         /// <summary>
-        /// Get whether thread is allowed to create dynamic code.
+        /// Get or set whether thread is allowed to create dynamic code.
         /// </summary>
+        /// <remarks>Set can only be done on the current thread.</remarks>
         public bool AllowDynamicCode
         {
-            get
-            {
-                return Query<int>(ThreadInformationClass.ThreadDynamicCodePolicyInfo) != 0;
-            }
+            get => Query<int>(ThreadInformationClass.ThreadDynamicCodePolicyInfo) != 0;
+            set => Set(ThreadInformationClass.ThreadDynamicCodePolicyInfo, value ? 1 : 0);
         }
 
         /// <summary>
