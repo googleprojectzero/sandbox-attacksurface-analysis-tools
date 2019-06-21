@@ -154,6 +154,8 @@
     <Compile Include="NtSymbolicLinkNative.cs" />
     <Compile Include="NtSystemInfoNative.cs" />
     <Compile Include="NtThreadNative.cs" />
+    <Compile Include="NtTimer.cs" />
+    <Compile Include="NtTimerNative.cs" />
     <Compile Include="NtTokenNative.cs" />
     <Compile Include="NtEtwRegistration.cs" />
     <Compile Include="NtTrace.cs" />
