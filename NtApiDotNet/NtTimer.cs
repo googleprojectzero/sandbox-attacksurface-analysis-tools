@@ -275,6 +275,25 @@ namespace NtApiDotNet
             return Set(NtWaitTimeout.FromMilliseconds(due_time_ms));
         }
 
+        /// <summary>
+        /// Cancel the timer.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The previous state.</returns>
+        public NtResult<bool> Cancel(bool throw_on_error)
+        {
+            return NtSystemCalls.NtCancelTimer(Handle, out bool state).CreateResult(throw_on_error, () => state);
+        }
+
+        /// <summary>
+        /// Cancel the timer.
+        /// </summary>
+        /// <returns>The previous state.</returns>
+        public bool Cancel()
+        {
+            return Cancel(true).Result;
+        }
+
         #endregion
 
         #region Public Properties
