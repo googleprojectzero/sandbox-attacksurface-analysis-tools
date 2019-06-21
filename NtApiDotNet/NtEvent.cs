@@ -49,7 +49,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="name">The path to the event</param>
         /// <param name="root">The root object for relative path names</param>
-        /// <param name="type">The type of the even</param>
+        /// <param name="type">The type of the event</param>
         /// <param name="initial_state">The initial state of the event</param>
         /// <returns>The event object</returns>
         public static NtEvent Create(string name, NtObject root, EventType type, bool initial_state)
@@ -70,7 +70,7 @@ namespace NtApiDotNet
         /// <returns>The event object</returns>
         public static NtEvent Create(ObjectAttributes object_attributes, EventType type, bool initial_state, EventAccessRights desired_access)
         {
-            return Create(object_attributes, type, initial_state, desired_access, true).Result;      
+            return Create(object_attributes, type, initial_state, desired_access, true).Result;
         }
 
 
@@ -85,15 +85,15 @@ namespace NtApiDotNet
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtEvent> Create(ObjectAttributes object_attributes, EventType type, bool initial_state, EventAccessRights desired_access, bool throw_on_error)
         {
-            SafeKernelObjectHandle handle;
-            return NtSystemCalls.NtCreateEvent(out handle, desired_access, object_attributes, type, initial_state).CreateResult(throw_on_error, () => new NtEvent(handle));
+            return NtSystemCalls.NtCreateEvent(out SafeKernelObjectHandle handle, desired_access, 
+                object_attributes, type, initial_state).CreateResult(throw_on_error, () => new NtEvent(handle));
         }
 
         /// <summary>
         /// Create an event object
         /// </summary>
         /// <param name="name">The path to the event</param>
-        /// <param name="type">The type of the even</param>
+        /// <param name="type">The type of the event</param>
         /// <param name="initial_state">The initial state of the event</param>
         /// <returns>The event object</returns>
         public static NtEvent Create(string name, EventType type, bool initial_state)

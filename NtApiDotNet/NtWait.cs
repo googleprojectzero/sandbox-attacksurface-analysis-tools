@@ -113,6 +113,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create an absolute wait timeout from a datetime.
+        /// </summary>
+        /// <param name="date_time">The time for the timeout to complete.</param>
+        /// <returns>An instance of the timeout class.</returns>
+        public static NtWaitTimeout FromDateTime(DateTime date_time)
+        {
+            return new NtWaitTimeout(date_time.ToFileTime());
+        }
+
+        /// <summary>
         /// The timeout as a long.
         /// </summary>
         public LargeInteger Timeout { get; }
