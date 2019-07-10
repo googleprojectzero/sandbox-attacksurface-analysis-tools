@@ -568,6 +568,10 @@ Specify an explicit token to create the new process with.
  Specify extended creation flags.
 .PARAMETER Config
 Specify the configuration for the new process.
+.PARAMETER Wait
+Specify to wait for the process to exit.
+.PARAMETER WaitTimeout
+Specify the timeout to wait for the process to exit. Defaults to infinite.
 .INPUTS
 None
 .OUTPUTS
@@ -620,7 +624,9 @@ function New-Win32Process
         [Parameter(ParameterSetName = "FromArgs")]
         [NtApiDotNet.Win32.ProcessExtendedFlags]$ExtendedFlags = 0,
         [Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromConfig")]
-        [NtApiDotNet.Win32.Win32ProcessConfig]$Config
+        [NtApiDotNet.Win32.Win32ProcessConfig]$Config,
+        [switch]$Wait,
+        [NtApiDotNet.NtWaitTimeout]$WaitTimeout = [NtApiDotNet.NtWaitTimeout]::Infinite
     )
 
   if ($null -eq $Config) {
@@ -633,7 +639,11 @@ function New-Win32Process
     -DebugObject $DebugObject -AppContainerProfile $AppContainerProfile -ExtendedFlags $ExtendedFlags
   }
 
-  [NtApiDotNet.Win32.Win32Process]::CreateProcess($config)
+  $p = [NtApiDotNet.Win32.Win32Process]::CreateProcess($config)
+  if ($Wait) {
+    $p.Process.Wait($WaitTimeout)
+  }
+  $p | Write-Output
 }
 
 <#
