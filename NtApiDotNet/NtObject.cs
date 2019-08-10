@@ -328,17 +328,50 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Duplicate a handle to a new handle, potentially in a different process.
+        /// Close a handle in another process by PID.
         /// </summary>
-        /// <param name="flags">Attribute flags for new handle</param>
-        /// <param name="src_handle">The source handle to duplicate</param>
-        /// <param name="src_process">The source process to duplicate from</param>
-        /// <param name="dest_process">The desination process for the handle</param>
-        /// <param name="options">Duplicate handle options</param>
-        /// <param name="access_rights">The access rights for the new handle</param>
+        /// <param name="handle">The source handle to close.</param>
+        /// <param name="pid">The source process ID containing the handle to close.</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
-        /// <returns>The NT status code and object result.</returns>
-        public static NtResult<IntPtr> DuplicateHandle(
+        /// <returns>The NT status code.</returns>
+        public static NtStatus CloseHandle(
+            int pid, IntPtr handle,
+            bool throw_on_error)
+        {
+            using (var proc = NtProcess.Open(pid, ProcessAccessRights.DupHandle, throw_on_error))
+            {
+                if (!proc.IsSuccess)
+                {
+                    return proc.Status;
+                }
+
+                return CloseHandle(proc.Result, handle, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Close a handle in another process by PID.
+        /// </summary>
+        /// <param name="handle">The source handle to close.</param>
+        /// <param name="pid">The source process ID containing the handle to close.</param>
+        public static void CloseHandle(
+            int pid, IntPtr handle)
+        {
+            CloseHandle(pid, handle, true);
+        }
+
+            /// <summary>
+            /// Duplicate a handle to a new handle, potentially in a different process.
+            /// </summary>
+            /// <param name="flags">Attribute flags for new handle</param>
+            /// <param name="src_handle">The source handle to duplicate</param>
+            /// <param name="src_process">The source process to duplicate from</param>
+            /// <param name="dest_process">The desination process for the handle</param>
+            /// <param name="options">Duplicate handle options</param>
+            /// <param name="access_rights">The access rights for the new handle</param>
+            /// <param name="throw_on_error">True to throw an exception on error.</param>
+            /// <returns>The NT status code and object result.</returns>
+            public static NtResult<IntPtr> DuplicateHandle(
             NtProcess src_process, IntPtr src_handle,
             NtProcess dest_process, AccessMask access_rights,
             AttributeFlags flags, DuplicateObjectOptions options,
