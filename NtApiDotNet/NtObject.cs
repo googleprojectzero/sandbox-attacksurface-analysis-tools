@@ -301,6 +301,33 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Close a handle in another process.
+        /// </summary>
+        /// <param name="handle">The source handle to close.</param>
+        /// <param name="process">The source process containing the handle to close.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus CloseHandle(
+            NtProcess process, IntPtr handle,
+            bool throw_on_error)
+        {
+            return NtSystemCalls.NtDuplicateObject(process.Handle, handle,
+                IntPtr.Zero, IntPtr.Zero, 0, 0,
+                 DuplicateObjectOptions.CloseSource).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Close a handle in another process.
+        /// </summary>
+        /// <param name="handle">The source handle to close.</param>
+        /// <param name="process">The source process containing the handle to close.</param>
+        public static void CloseHandle(
+            NtProcess process, IntPtr handle)
+        {
+            CloseHandle(process, handle, true);
+        }
+
+        /// <summary>
         /// Duplicate a handle to a new handle, potentially in a different process.
         /// </summary>
         /// <param name="flags">Attribute flags for new handle</param>

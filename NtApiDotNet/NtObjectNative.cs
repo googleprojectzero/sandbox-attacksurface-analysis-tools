@@ -201,6 +201,17 @@ namespace NtApiDotNet
         );
 
         [DllImport("ntdll.dll")]
+        public static extern NtStatus NtDuplicateObject(
+          SafeHandle SourceProcessHandle,
+          IntPtr SourceHandle,
+          IntPtr TargetProcessHandle,
+          IntPtr TargetHandle,
+          AccessMask DesiredAccess,
+          AttributeFlags HandleAttributes,
+          DuplicateObjectOptions Options
+        );
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus NtQueryObject(
             SafeHandle ObjectHandle,
             ObjectInformationClass ObjectInformationClass,
