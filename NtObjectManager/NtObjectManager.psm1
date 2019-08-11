@@ -4336,3 +4336,54 @@ function Get-Win32File {
     [NtApiDotNet.Win32.Win32Utils]::CreateFile($Path, $DesiredAccess, $ShareMode, `
             $SecurityDescriptor, $InheritHandle, $Disposition, $FlagsAndAttributes, $TemplateFile)
 }
+
+<#
+.SYNOPSIS
+Close an object handle.
+.DESCRIPTION
+This cmdlet closes an object handle. It supports closing a handle locally or in another process as long
+as duplicate handle access is granted.
+.PARAMETER Object
+Specify the object to close.
+.PARAMETER Process
+Specify the process where the handle to close is located.
+.PARAMETER ProcessId
+Specify the process ID where the handle to close is located.
+.PARAMETER Handle
+Specify the handle value to close in another process.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Close-NtObject -Object $obj
+Close an object in the current process.
+.EXAMPLE
+Close-NtObject -Handle 0x1234 -Process $proc
+Close handle 0x1234 in another process.
+.EXAMPLE
+Close-NtObject -Handle 0x1234 -ProcessId 684
+Close handle 0x1234 in process with ID 684.
+#>
+function Close-NtObject {
+    [CmdletBinding(DefaultParameterSetName="FromProcess")]
+    Param(
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromObject")]
+        [NtApiDotNet.NtObject]$Object,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromProcess")]
+        [NtApiDotNet.NtProcess]$Process,
+        [parameter(Mandatory, Position = 0, ParameterSetName="FromProcessId")]
+        [int]$ProcessId,
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromProcess")]
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromProcessId")]
+        [IntPtr]$Handle
+    )
+
+    PROCESS {
+        switch($PsCmdlet.ParameterSetName) {
+            "FromObject" { $Object.Close() }
+            "FromProcess" { [NtApiDotNet.NtObject]::CloseHandle($Process, $Handle) }
+            "FromProcessId" { [NtApiDotNet.NtObject]::CloseHandle($ProcessId, $Handle) }
+        }
+    }
+}
