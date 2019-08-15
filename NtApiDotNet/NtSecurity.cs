@@ -702,15 +702,10 @@ namespace NtApiDotNet
                 sid.SubAuthorities[0] == 32;
         }
 
-        private static int GetSidSize(int rids)
-        {
-            return 8 + rids * 4;
-        }
-
         private static void GetCapabilitySids(string capability_name, out Sid capability_sid, out Sid capability_group_sid)
         {
-            using (SafeHGlobalBuffer cap_sid = new SafeHGlobalBuffer(GetSidSize(9)),
-                    cap_group_sid = new SafeHGlobalBuffer(GetSidSize(10)))
+            using (SafeHGlobalBuffer cap_sid = new SafeHGlobalBuffer(Sid.MaximumSidSize),
+                    cap_group_sid = new SafeHGlobalBuffer(Sid.MaximumSidSize))
             {
                 NtRtl.RtlDeriveCapabilitySidsFromName(
                     new UnicodeString(capability_name),
@@ -727,8 +722,8 @@ namespace NtApiDotNet
         /// <returns>The capability SID.</returns>
         public static Sid GetCapabilitySid(string capability_name)
         {
-            using (SafeHGlobalBuffer cap_sid = new SafeHGlobalBuffer(GetSidSize(9)), 
-                cap_group_sid = new SafeHGlobalBuffer(GetSidSize(10)))
+            using (SafeHGlobalBuffer cap_sid = new SafeHGlobalBuffer(Sid.MaximumSidSize), 
+                cap_group_sid = new SafeHGlobalBuffer(Sid.MaximumSidSize))
             {
                 NtRtl.RtlDeriveCapabilitySidsFromName(
                     new UnicodeString(capability_name),
@@ -744,8 +739,8 @@ namespace NtApiDotNet
         /// <returns>The capability SID.</returns>
         public static Sid GetCapabilityGroupSid(string capability_name)
         {
-            using (SafeHGlobalBuffer cap_sid = new SafeHGlobalBuffer(GetSidSize(9)),
-                cap_group_sid = new SafeHGlobalBuffer(GetSidSize(10)))
+            using (SafeHGlobalBuffer cap_sid = new SafeHGlobalBuffer(Sid.MaximumSidSize),
+                cap_group_sid = new SafeHGlobalBuffer(Sid.MaximumSidSize))
             {
                 NtRtl.RtlDeriveCapabilitySidsFromName(
                     new UnicodeString(capability_name),

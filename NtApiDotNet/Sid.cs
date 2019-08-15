@@ -180,6 +180,11 @@ namespace NtApiDotNet
     public sealed class Sid
     {
         /// <summary>
+        /// Maximum size of a SID buffer.
+        /// </summary>
+        public const int MaximumSidSize = 256;
+
+        /// <summary>
         /// The SIDs authority.
         /// </summary>
         public SidIdentifierAuthority Authority { get; private set; }
