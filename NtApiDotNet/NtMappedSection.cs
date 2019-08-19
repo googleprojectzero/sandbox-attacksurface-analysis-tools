@@ -78,6 +78,11 @@ namespace NtApiDotNet
         /// </summary>
         public SigningLevel ImageSigningLevel => NtVirtualMemory.QueryImageInformation(Process.Handle, DangerousGetHandle().ToInt64()).ImageSigningLevel;
 
+        /// <summary>
+        /// Get the base address of the mapped section.
+        /// </summary>
+        public long BaseAddress => DangerousGetHandle().ToInt64();
+
         #endregion
 
         #region Constructors

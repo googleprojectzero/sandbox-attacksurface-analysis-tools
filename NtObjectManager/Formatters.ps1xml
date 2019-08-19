@@ -1205,5 +1205,54 @@
             </TableRowEntries>
         </TableControl>
     </View>
+    <View>
+      <Name>NtMappedSection</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.NtMappedSection</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>BaseAddress</Label>
+            <Width>18</Width>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Protection</Label>
+              <Width>11</Width>
+              <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Length</Label>
+            <Width>8</Width>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Path</Label>
+            <Width>40</Width>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>BaseAddress</PropertyName>
+                <FormatString>X016</FormatString>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Protection</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>LongLength</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>FullPath</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>
