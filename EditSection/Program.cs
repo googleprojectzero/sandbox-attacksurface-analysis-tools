@@ -41,6 +41,18 @@ namespace EditSection
                     $"Handle {section.Handle.DangerousGetHandle()} - 0x{map.DangerousGetHandle().ToInt64():X}" : name;
         }
 
+        static void ViewSection(NtSection section, bool read_only)
+        {
+            read_only = read_only || !section.IsAccessGranted(SectionAccessRights.MapWrite);
+            using (var map = read_only ? section.MapRead() : section.MapReadWrite())
+            {
+                using (SectionEditorForm frm = new SectionEditorForm(map, GetName(section, map), read_only))
+                {
+                    Application.Run(frm);
+                }
+            }
+        }
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -64,6 +76,7 @@ namespace EditSection
                     bool read_only = false;
                     bool delete_file = false;
                     string filename = string.Empty;
+                    string path = string.Empty;
 
                     OptionSet opts = new OptionSet() {
                         { "handle=", "Specify an inherited handle to view.",
@@ -71,6 +84,7 @@ namespace EditSection
                         { "readonly", "Specify view section readonly", v => read_only = v != null },
                         { "file=", "Specify a file to view", v => filename = v },
                         { "delete", "Delete file after viewing", v => delete_file = v != null },
+                        { "path=", "Specify an object manager path to view", v => path = v },
                     };
 
                     opts.Parse(args);
@@ -79,14 +93,7 @@ namespace EditSection
                     {
                         using (var section = NtSection.FromHandle(new SafeKernelObjectHandle(new IntPtr(handle), true)))
                         {
-                            read_only = read_only || !section.IsAccessGranted(SectionAccessRights.MapWrite);
-                            using (var map = read_only ? section.MapRead() : section.MapReadWrite())
-                            {
-                                using (SectionEditorForm frm = new SectionEditorForm(map, GetName(section, map), read_only))
-                                {
-                                    Application.Run(frm);
-                                }
-                            }
+                            ViewSection(section, read_only);
                         }
                     }
                     else if (File.Exists(filename))
@@ -114,6 +121,13 @@ namespace EditSection
                             {
                                 File.Delete(filename);
                             }
+                        }
+                    }
+                    else if (path.Length > 0)
+                    {
+                        using (var section = NtSection.Open(path, null, SectionAccessRights.MaximumAllowed))
+                        {
+                            ViewSection(section, read_only);
                         }
                     }
                     else

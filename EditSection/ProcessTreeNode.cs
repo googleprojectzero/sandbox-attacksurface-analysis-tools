@@ -20,8 +20,8 @@ namespace EditSection
 {
     class ProcessTreeNode : TreeNode
     {
-        private int _id;
-        private string _name;
+        private readonly int _id;
+        private readonly string _name;
 
         public ProcessTreeNode(NtProcess p)
             : base($"[{p.ProcessId}/0x{p.ProcessId:X}] {p.Name}")
