@@ -566,11 +566,17 @@ namespace NtObjectManager
         [Parameter]
         public SwitchParameter AllowPartialAccess { get; set; }
 
+        /// <summary>
+        /// <para type="description">If set an access entry will be generated even if granted access is 0.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter AllowEmptyAccess { get; set; }
+
         internal bool IsAccessGranted(AccessMask granted_access, AccessMask access_rights)
         {
             if (granted_access.IsEmpty)
             {
-                return false;
+                return AllowEmptyAccess;
             }
 
             if (access_rights.IsEmpty)

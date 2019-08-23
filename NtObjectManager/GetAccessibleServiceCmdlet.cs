@@ -15,7 +15,6 @@
 using NtApiDotNet;
 using NtApiDotNet.Win32;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Management.Automation;
 using System.ServiceProcess;
@@ -44,9 +43,9 @@ namespace NtObjectManager
     }
 
     /// <summary>
-    /// <para type="synopsis">Get a list of services opened by a specified token.</para>
+    /// <para type="synopsis">Get a list of services openable by a specified token.</para>
     /// <para type="description">This cmdlet checks all services and tries to determine
-    /// if one or more specified tokens can open them to them. If no tokens are specified then the 
+    /// if one or more specified tokens can open them. If no tokens are specified then the 
     /// current process token is used.</para>
     /// </summary>
     /// <remarks>For best results this command should be run as an administrator.</remarks>
@@ -64,7 +63,7 @@ namespace NtObjectManager
     /// </example>
     /// <example>
     ///   <code>$token = Get-NtToken -Primary -Duplicate -IntegrityLevel Low&#x0A;Get-AccessibleService -Tokens $token -AccessRights GenericWrite</code>
-    ///   <para>Get all services with can be written by a low integrity copy of current token.</para>
+    ///   <para>Get all services which can be written by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleService")]
     [OutputType(typeof(AccessCheckResult))]
