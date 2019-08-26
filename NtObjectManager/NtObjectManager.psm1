@@ -4398,3 +4398,43 @@ function Close-NtObject {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Start an accessible scheduled task.
+.DESCRIPTION
+This cmdlet starts a scheduled task based on an accessible task result.
+.PARAMETER Task
+Specify the task to start.
+.PARAMETER User
+Specify the user to run the task under.
+.PARAMETER Flags
+Specify optional flags.
+.PARAMETER SessionId
+Specify an optional session ID.
+.PARAMETER Arguments
+Specify optional arguments to the pass to the task.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Start-AccessibleScheduledTask -Task $task
+Start a task with no options.
+.EXAMPLE
+Start-AccessibleScheduledTask -Task $task -Arguments "A", B"
+Start a task with optional argument strings "A" and "B"
+#>
+function Start-AccessibleScheduledTask {
+    [CmdletBinding()]
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        [NtObjectManager.ScheduledTaskAccessCheckResult]$Task,
+		[NtApiDotNet.Sid]$User,
+		[NtObjectManager.TaskRunFlags]$Flags = 0,
+		[int]$SessionId,
+		[string[]]$Arguments
+    )
+
+	$Task.RunEx($Flags, $SessionId, $User, $Arguments)
+}

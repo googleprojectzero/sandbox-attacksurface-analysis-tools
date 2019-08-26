@@ -13,7 +13,9 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Management.Automation;
 using TaskScheduler;
@@ -87,6 +89,34 @@ namespace NtObjectManager
         /// Show a message.
         /// </summary>
         ShowMessage,
+    }
+
+    /// <summary>
+    /// Flags for running a task.
+    /// </summary>
+    [Flags]
+    public enum TaskRunFlags
+    {
+        /// <summary>
+        /// None
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Run as user calling Run.
+        /// </summary>
+        AsSelf = 1,
+        /// <summary>
+        /// Ignore task constraints.
+        /// </summary>
+        IgnoreConstrains = 2,
+        /// <summary>
+        /// Use the session ID for the terminal session.
+        /// </summary>
+        UseSessionId = 4,
+        /// <summary>
+        /// Run using a SID.
+        /// </summary>
+        UserSid = 8,
     }
 
     /// <summary>
@@ -205,6 +235,27 @@ namespace NtObjectManager
         /// </summary>
         public string DefaultAction => Actions.FirstOrDefault()?.Action ?? string.Empty;
 
+        /// <summary>
+        /// Try and run the last with optional arguments.
+        /// </summary>
+        /// <param name="args">Optional arguments.</param>
+        public void Run(params string[] args)
+        {
+            GetTask().Run(args);
+        }
+
+        /// <summary>
+        /// Try and run the last with optional arguments.
+        /// </summary>
+        /// <param name="args">Optional arguments.</param>
+        /// <param name="flags">Flags for the run operation.</param>
+        /// <param name="session_id">Optional session ID (Needs UseSessionId flag).</param>
+        /// <param name="user">Optional user SID.</param>
+        public void RunEx(TaskRunFlags flags, int session_id, Sid user, params string[] args)
+        {
+            GetTask().RunEx(args, (int)flags, session_id, user?.ToString());
+        }
+
         internal ScheduledTaskAccessCheckResult(GetAccessibleScheduledTaskCmdlet.TaskSchedulerEntry entry, AccessMask granted_access,
             string sddl, GenericMapping generic_mapping, TokenInformation token_info)
             : base(entry.Path, GetAccessibleScheduledTaskCmdlet.TypeName, granted_access,
@@ -219,6 +270,15 @@ namespace NtObjectManager
             Principal = entry.Principal;
             Actions = entry.Actions;
             ActionCount = Actions.Count();
+        }
+
+        private IRegisteredTask GetTask()
+        {
+            ITaskService service = new TaskScheduler.TaskScheduler();
+            service.Connect();
+
+            ITaskFolder folder = service.GetFolder(Path.GetDirectoryName(Name));
+            return folder.GetTask(Path.GetFileName(Name));
         }
     }
 
