@@ -96,7 +96,8 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Specify a process ID to open.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "pid")]
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "pid"), 
+            Parameter(Mandatory = true, ParameterSetName = "pidinfo")]
         [Alias(new string[] { "pid" })]
         public int ProcessId { get; set; }
 
@@ -158,7 +159,8 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Only get process information, do not open the objects.</para>
         /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "infoonly")]
+        [Parameter(Mandatory = true, ParameterSetName = "infoonly"), 
+            Parameter(Mandatory = true, ParameterSetName = "pidinfo")]
         public SwitchParameter InfoOnly { get; set; }
 
         /// <summary>
@@ -285,6 +287,9 @@ namespace NtObjectManager
                 case "pid":
                 case "current":
                     OpenProcess();
+                    break;
+                case "pidinfo":
+                    WriteObject(NtSystemInfo.GetProcessInformation().Where(p => p.ProcessId == ProcessId), true);
                     break;
                 case "service":
                     OpenServiceProcess();
