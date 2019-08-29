@@ -236,6 +236,16 @@ namespace NtObjectManager
         public string DefaultAction => Actions.FirstOrDefault()?.Action ?? string.Empty;
 
         /// <summary>
+        /// Get the task name.
+        /// </summary>
+        public string TaskName => Path.GetFileName(Name);
+
+        /// <summary>
+        /// Get the task path.
+        /// </summary>
+        public string TaskPath => Path.GetDirectoryName(Name);
+
+        /// <summary>
         /// Try and run the last with optional arguments.
         /// </summary>
         /// <param name="args">Optional arguments.</param>
@@ -348,6 +358,12 @@ namespace NtObjectManager
         [Parameter]
         public SwitchParameter Executable { get; set; }
 
+        /// <summary>
+        /// <para type="description">Shortcut to specify that we're querying for writable tasks or directories.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter Writable { get; set; }
+
         #endregion
 
         #region Internal Members
@@ -365,8 +381,24 @@ namespace NtObjectManager
                     continue;
                 }
 
-                AccessMask task_access = Executable ? FileAccessRights.ReadData | FileAccessRights.Execute : AccessRights;
-                AccessMask requested_access = entry.Folder ? (AccessMask)DirectoryAccessRights : task_access;
+                AccessMask requested_access;
+                if (entry.Folder)
+                {
+                    requested_access = Writable ? FileDirectoryAccessRights.AddSubDirectory : DirectoryAccessRights;
+                }
+                else
+                {
+                    requested_access = Executable ? FileAccessRights.ReadData | FileAccessRights.Execute : 0;
+                    if (Writable)
+                    {
+                        requested_access |= FileAccessRights.WriteData;
+                    }
+
+                    if (requested_access.IsEmpty)
+                    {
+                        requested_access = AccessRights;
+                    }
+                }
 
                 AccessMask access_rights = _file_type.GenericMapping.MapMask(requested_access);
                 foreach (TokenEntry token in tokens)
