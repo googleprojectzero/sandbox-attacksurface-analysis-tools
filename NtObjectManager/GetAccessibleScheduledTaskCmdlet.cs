@@ -196,6 +196,11 @@ namespace NtObjectManager
         public bool Hidden { get; }
 
         /// <summary>
+        /// Whether the task can be started on demand.
+        /// </summary>
+        public bool AllowDemandStart { get; }
+
+        /// <summary>
         /// The full XML registration for the task.
         /// </summary>
         public string Xml { get; }
@@ -274,6 +279,7 @@ namespace NtObjectManager
         {
             Enabled = entry.Enabled;
             Hidden = entry.Hidden;
+            AllowDemandStart = entry.AllowDemandStart;
             Xml = entry.Xml;
             LogonType = entry.LogonType;
             RunLevel = entry.RunLevel;
@@ -430,6 +436,7 @@ namespace NtObjectManager
             public string SecurityDescriptor { get; }
             public bool Enabled { get; }
             public bool Hidden { get; }
+            public bool AllowDemandStart { get; }
             public string Xml { get; }
             public TaskLogonType LogonType { get; }
             public TaskRunLevel RunLevel { get; }
@@ -445,6 +452,7 @@ namespace NtObjectManager
                 var definition = task.Definition;
                 var settings = definition.Settings;
                 Hidden = settings.Hidden;
+                AllowDemandStart = settings.AllowDemandStart;
                 var principal = definition.Principal;
                 if (principal.RunLevel == _TASK_RUNLEVEL.TASK_RUNLEVEL_HIGHEST)
                 {
