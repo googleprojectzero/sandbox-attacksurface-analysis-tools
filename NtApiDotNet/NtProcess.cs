@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1410,6 +1411,11 @@ namespace NtApiDotNet
                 }
             }
         }
+
+        /// <summary>
+        /// Get the command line as parsed arguments.
+        /// </summary>
+        public string[] CommandLineArguments => Win32Utils.ParseCommandLine(CommandLine);
 
         /// <summary>
         /// Get process DEP status

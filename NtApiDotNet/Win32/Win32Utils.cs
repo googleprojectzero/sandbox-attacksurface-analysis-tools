@@ -145,11 +145,16 @@ namespace NtApiDotNet.Win32
         /// <returns>The list of arguments.</returns>
         public static string[] ParseCommandLine(string command_line)
         {
+            if (string.IsNullOrWhiteSpace(command_line))
+            {
+                return new string[0];
+            }
+
             using (var argv = Win32NativeMethods.CommandLineToArgvW(command_line, out int argc))
             {
                 if (argv.IsInvalid)
                 {
-                    throw new SafeWin32Exception();
+                    throw new NtException(NtObjectUtils.MapDosErrorToStatus());
                 }
 
                 string[] ret = new string[argc];
