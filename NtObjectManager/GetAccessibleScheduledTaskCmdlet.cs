@@ -250,10 +250,10 @@ namespace NtObjectManager
         /// <param name="args">Optional arguments.</param>
         /// <param name="flags">Flags for the run operation.</param>
         /// <param name="session_id">Optional session ID (Needs UseSessionId flag).</param>
-        /// <param name="user">Optional user SID.</param>
-        public void RunEx(TaskRunFlags flags, int session_id, Sid user, params string[] args)
+        /// <param name="user">Optional user name or SID.</param>
+        public void RunEx(TaskRunFlags flags, int session_id, string user, params string[] args)
         {
-            GetTask().RunEx(args, (int)flags, session_id, user?.ToString());
+            GetTask().RunEx(args, (int)flags, session_id, string.IsNullOrWhiteSpace(user) ? null : user);
         }
 
         internal ScheduledTaskAccessCheckResult(GetAccessibleScheduledTaskCmdlet.TaskSchedulerEntry entry, AccessMask granted_access,
@@ -313,6 +313,10 @@ namespace NtObjectManager
     ///   <para>Check all accessible scheduled tasks for the current process token.</para>
     /// </example>
     /// <example>
+    ///   <code>Get-AccessibleScheduledTask -Executable</code>
+    ///   <para>Check all executable scheduled tasks for the current process token.</para>
+    /// </example>
+    /// <example>
     ///   <code>Get-AccessibleScheduledTask -ProcessIds 1234,5678</code>
     ///   <para>>Check all accessible scheduled tasks for the process tokens of PIDs 1234 and 5678</para>
     /// </example>
@@ -338,6 +342,12 @@ namespace NtObjectManager
         [Parameter]
         public FileDirectoryAccessRights DirectoryAccessRights { get; set; }
 
+        /// <summary>
+        /// <para type="description">Shortcut to specify that we're querying for executable tasks.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter Executable { get; set; }
+
         #endregion
 
         #region Internal Members
@@ -355,7 +365,9 @@ namespace NtObjectManager
                     continue;
                 }
 
-                AccessMask requested_access = entry.Folder ? (AccessMask)DirectoryAccessRights : AccessRights;
+                AccessMask task_access = Executable ? FileAccessRights.ReadData | FileAccessRights.Execute : AccessRights;
+                AccessMask requested_access = entry.Folder ? (AccessMask)DirectoryAccessRights : task_access;
+
                 AccessMask access_rights = _file_type.GenericMapping.MapMask(requested_access);
                 foreach (TokenEntry token in tokens)
                 {

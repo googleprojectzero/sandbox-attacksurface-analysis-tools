@@ -4407,7 +4407,7 @@ This cmdlet starts a scheduled task based on an accessible task result.
 .PARAMETER Task
 Specify the task to start.
 .PARAMETER User
-Specify the user to run the task under.
+Specify the user to run the task under. Can be a username or a SID.
 .PARAMETER Flags
 Specify optional flags.
 .PARAMETER SessionId
@@ -4430,7 +4430,7 @@ function Start-AccessibleScheduledTask {
     Param(
         [parameter(Mandatory, Position = 0)]
         [NtObjectManager.ScheduledTaskAccessCheckResult]$Task,
-		[NtApiDotNet.Sid]$User,
+		[string]$User,
 		[NtObjectManager.TaskRunFlags]$Flags = 0,
 		[int]$SessionId,
 		[string[]]$Arguments
