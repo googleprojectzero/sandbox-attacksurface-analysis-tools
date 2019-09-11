@@ -14,12 +14,11 @@
 
 Set-StrictMode -Version Latest
 
-if (($PSVersionTable.Keys -contains "PSEdition") -and ($PSVersionTable.PSEdition -ne 'Desktop')) {
-  Import-Module "$PSScriptRoot\Core\NtObjectManager.dll"
-}
-else
-{
-  Import-Module "$PSScriptRoot\NtObjectManager.dll"
+Import-Module "$PSScriptRoot\NtObjectManager.dll"
+
+# We use this incase we're running on a downlevel PowerShell.
+function Get-IsPSCore {
+    return ($PSVersionTable.Keys -contains "PSEdition") -and ($PSVersionTable.PSEdition -ne 'Desktop')
 }
 
 if ([System.Environment]::Is64BitProcess) {
@@ -4430,11 +4429,11 @@ function Start-AccessibleScheduledTask {
     Param(
         [parameter(Mandatory, Position = 0)]
         [NtObjectManager.ScheduledTaskAccessCheckResult]$Task,
-		[string]$User,
-		[NtObjectManager.TaskRunFlags]$Flags = 0,
-		[int]$SessionId,
-		[string[]]$Arguments
+        [string]$User,
+        [NtObjectManager.TaskRunFlags]$Flags = 0,
+        [int]$SessionId,
+        [string[]]$Arguments
     )
 
-	$Task.RunEx($Flags, $SessionId, $User, $Arguments)
+    $Task.RunEx($Flags, $SessionId, $User, $Arguments)
 }
