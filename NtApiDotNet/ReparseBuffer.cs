@@ -512,12 +512,12 @@ namespace NtApiDotNet
             bool global)
             : this(global)
         {
-            if (String.IsNullOrEmpty(substitution_name))
+            if (string.IsNullOrEmpty(substitution_name))
             {
                 throw new ArgumentException("substitution_name");
             }
 
-            if (String.IsNullOrEmpty(print_name))
+            if (string.IsNullOrEmpty(print_name))
             {
                 throw new ArgumentException("print_name");
             }
@@ -613,9 +613,9 @@ namespace NtApiDotNet
         /// </summary>
         public string Target { get; set; }
         /// <summary>
-        /// Flags for the alias.
+        /// Application type for the alias.
         /// </summary>
-        public int Flags { get; set; }
+        public int AppType { get; set; }
 
         private static string ReadNulTerminated(BinaryReader reader)
         {
@@ -653,7 +653,7 @@ namespace NtApiDotNet
             PackageName = package_name;
             EntryPoint = entry_point;
             Target = target;
-            Flags = flags;
+            AppType = flags;
         }
 
         internal ExecutionAliasReparseBuffer() : base(ReparseTag.APPEXECLINK)
@@ -672,7 +672,7 @@ namespace NtApiDotNet
             WriteNulTerminated(writer, PackageName);
             WriteNulTerminated(writer, EntryPoint);
             WriteNulTerminated(writer, Target);
-            writer.Write(Flags);
+            WriteNulTerminated(writer, AppType.ToString());
             return stm.ToArray();
         }
 
@@ -687,7 +687,7 @@ namespace NtApiDotNet
             PackageName = ReadNulTerminated(reader);
             EntryPoint = ReadNulTerminated(reader);
             Target = ReadNulTerminated(reader);
-            Flags = reader.ReadInt32();
+            AppType = int.Parse(ReadNulTerminated(reader));
         }
     }
 }
