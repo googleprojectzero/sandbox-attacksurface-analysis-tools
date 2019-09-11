@@ -580,6 +580,12 @@ namespace NtObjectManager
         }
 
         /// <summary>
+        /// <para type="description">Specify reading the reparse point data as a raw byte array.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter Bytes { get; set; }
+
+        /// <summary>
         /// Method to create an object from a set of object attributes.
         /// </summary>
         /// <param name="obj_attributes">The object attributes to create/open from.</param>
@@ -590,6 +596,10 @@ namespace NtObjectManager
 
             using (NtFile file = (NtFile)base.CreateObject(obj_attributes))
             {
+                if (Bytes)
+                {
+                    return file.GetReparsePointRaw();
+                }
                 return file.GetReparsePoint();
             }
         }
@@ -674,6 +684,12 @@ namespace NtObjectManager
         public ReparseBuffer ReparseBuffer { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify the raw reparse point buffer as bytes.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "Bytes", Position = 1)]
+        public byte[] Bytes { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify an existing reparse tag to check when setting the reparse point (on RS1+).</para>
         /// </summary>
         [Parameter]
@@ -713,6 +729,9 @@ namespace NtObjectManager
                     case "Symlink":
                         ReparseBuffer = new SymlinkReparseBuffer(target_path, string.IsNullOrEmpty(PrintName)
                             ? target_path : PrintName, Relative ? SymlinkReparseBufferFlags.Relative : SymlinkReparseBufferFlags.None);
+                        break;
+                    case "RawBytes":
+                        ReparseBuffer = ReparseBuffer.FromByteArray(Bytes);
                         break;
                 }
             }

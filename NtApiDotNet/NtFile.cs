@@ -1491,7 +1491,16 @@ namespace NtApiDotNet
         /// <param name="reparse">The reparse point data.</param>
         public void SetReparsePoint(ReparseBuffer reparse)
         {
-            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(reparse.ToByteArray()))
+            SetReparsePoint(reparse.ToByteArray());
+        }
+
+        /// <summary>
+        /// Set an arbitrary reparse point as a raw byte array.
+        /// </summary>
+        /// <param name="reparse">The reparse point data as a byte array.</param>
+        public void SetReparsePoint(byte[] reparse)
+        {
+            using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(reparse))
             {
                 FsControl(NtWellKnownIoControlCodes.FSCTL_SET_REPARSE_POINT, buffer, null);
             }
@@ -1570,10 +1579,19 @@ namespace NtApiDotNet
         /// <returns>The reparse point buffer.</returns>
         public ReparseBuffer GetReparsePoint()
         {
+            return ReparseBuffer.FromByteArray(GetReparsePointRaw());
+        }
+
+        /// <summary>
+        /// Get the reparse point buffer for the file as a raw buffer.
+        /// </summary>
+        /// <returns>The reparse point buffer.</returns>
+        public byte[] GetReparsePointRaw()
+        {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(16 * 1024))
             {
                 int res = FsControl(NtWellKnownIoControlCodes.FSCTL_GET_REPARSE_POINT, null, buffer);
-                return ReparseBuffer.FromByteArray(buffer.ReadBytes(res));
+                return buffer.ReadBytes(res);
             }
         }
 
