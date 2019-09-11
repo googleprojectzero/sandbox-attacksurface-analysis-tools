@@ -616,6 +616,15 @@ namespace NtApiDotNet
         /// Application type for the alias.
         /// </summary>
         public int AppType { get; set; }
+        /// <summary>
+        /// Flags, obsolete.
+        /// </summary>
+        [Obsolete("Use AppType instead")]
+        public int Flags
+        {
+            get => AppType.ToString()[0];
+            set => throw new NotImplementedException();
+        }
 
         private static string ReadNulTerminated(BinaryReader reader)
         {
