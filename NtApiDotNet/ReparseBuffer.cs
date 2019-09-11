@@ -592,6 +592,29 @@ namespace NtApiDotNet
     }
 
     /// <summary>
+    /// Application type for execution alias.
+    /// </summary>
+    public enum ExecutionAliasAppType
+    {
+        /// <summary>
+        /// Desktop bridge application.
+        /// </summary>
+        Desktop = 0,
+        /// <summary>
+        /// UWP type 1
+        /// </summary>
+        UWP1 = 1,
+        /// <summary>
+        /// UWP type 2
+        /// </summary>
+        UWP2 = 2,
+        /// <summary>
+        /// UWP type 3
+        /// </summary>
+        UWP3 = 3
+    }
+
+    /// <summary>
     /// Reparse buffer for an execution alias.
     /// </summary>
     public class ExecutionAliasReparseBuffer : ReparseBuffer
@@ -615,14 +638,14 @@ namespace NtApiDotNet
         /// <summary>
         /// Application type for the alias.
         /// </summary>
-        public int AppType { get; set; }
+        public ExecutionAliasAppType AppType { get; set; }
         /// <summary>
         /// Flags, obsolete.
         /// </summary>
         [Obsolete("Use AppType instead")]
         public int Flags
         {
-            get => AppType.ToString()[0];
+            get => ((int)AppType).ToString()[0];
             set => throw new NotImplementedException();
         }
 
@@ -654,15 +677,15 @@ namespace NtApiDotNet
         /// <param name="package_name">The name of the application package.</param>
         /// <param name="entry_point">The entry point in the package.</param>
         /// <param name="target">The target executable.</param>
-        /// <param name="flags">Flags for the alias.</param>
-        public ExecutionAliasReparseBuffer(int version, string package_name, string entry_point, string target, int flags)
+        /// <param name="apptype">Apptype for the alias.</param>
+        public ExecutionAliasReparseBuffer(int version, string package_name, string entry_point, string target, ExecutionAliasAppType apptype)
             : this()
         {
             Version = version;
             PackageName = package_name;
             EntryPoint = entry_point;
             Target = target;
-            AppType = flags;
+            AppType = apptype;
         }
 
         internal ExecutionAliasReparseBuffer() : base(ReparseTag.APPEXECLINK)
@@ -681,7 +704,7 @@ namespace NtApiDotNet
             WriteNulTerminated(writer, PackageName);
             WriteNulTerminated(writer, EntryPoint);
             WriteNulTerminated(writer, Target);
-            WriteNulTerminated(writer, AppType.ToString());
+            WriteNulTerminated(writer, ((int)AppType).ToString());
             return stm.ToArray();
         }
 
@@ -696,7 +719,7 @@ namespace NtApiDotNet
             PackageName = ReadNulTerminated(reader);
             EntryPoint = ReadNulTerminated(reader);
             Target = ReadNulTerminated(reader);
-            AppType = int.Parse(ReadNulTerminated(reader));
+            AppType = (ExecutionAliasAppType)int.Parse(ReadNulTerminated(reader));
         }
     }
 }

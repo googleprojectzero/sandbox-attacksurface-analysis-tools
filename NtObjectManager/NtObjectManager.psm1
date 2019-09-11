@@ -1507,7 +1507,7 @@ function Get-ExecutionAlias
 
 <#
 .SYNOPSIS
-Creates a new execution alias information.
+Creates a new execution alias information or updates and existing one.
 .DESCRIPTION
 This cmdlet creates a new execution alias for a packaged application.
 .PARAMETER PackageName
@@ -1516,15 +1516,15 @@ The name of the UWP package.
 The entry point of the application
 .PARAMETER Target
 The target executable path
-.PARAMETER Flags
-Additional flags
+.PARAMETER AppType
+The application type.
 .PARAMETER Version
 Version number
 .EXAMPLE
 Set-ExecutionAlias c:\path\to\alias.exe -PackageName test -EntryPoint test!test -Target c:\test.exe -Flags 48 -Version 3
 Set the alias.exe execution alias.
 #>
-function New-ExecutionAlias
+function Set-ExecutionAlias
 {
     Param(
         [Parameter(Mandatory=$true, Position=0)]
@@ -1535,11 +1535,11 @@ function New-ExecutionAlias
         [string]$EntryPoint,
         [Parameter(Mandatory=$true, Position=3)]
         [string]$Target,
-        [Int32]$Flags = 48,
+        [NtApiDotNet.ExecutionAliasAppType]$AppType = "Desktop",
         [Int32]$Version = 3
     )
 
-    $rp = [NtApiDotNet.ExecutionAliasReparseBuffer]::new($Version, $PackageName, $EntryPoint, $Target, $Flags)
+    $rp = [NtApiDotNet.ExecutionAliasReparseBuffer]::new($Version, $PackageName, $EntryPoint, $Target, $AppType)
     Use-NtObject($file = New-NtFile -Path $Path -Win32Path -Options OpenReparsePoint,SynchronousIoNonAlert `
                   -Access GenericWrite,Synchronize -Disposition OpenIf) {
             $file.SetReparsePoint($rp)
