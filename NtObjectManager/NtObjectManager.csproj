@@ -59,6 +59,7 @@
     <Compile Include="NtTransactionCmdlets.cs" />
     <Compile Include="NtTransactionManagerCmdlets.cs" />
     <Compile Include="PSUtils.cs" />
+    <Compile Include="RpcServerCmdlets.cs" />
     <Compile Include="RpcServerNameCmdlets.cs" />
     <Compile Include="TestNetworkAccessCmdlet.cs" />
     <Compile Include="Win32Cmdlets.cs" />
