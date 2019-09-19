@@ -28,9 +28,17 @@ namespace NtApiDotNet
         /// </summary>
         None = 0,
         /// <summary>
+        /// Handle is protected from closing.
+        /// </summary>
+        ProtectClose = 0x00000001,
+        /// <summary>
         /// The handle created can be inherited
         /// </summary>
         Inherit = 0x00000002,
+        /// <summary>
+        /// Audit handle close.
+        /// </summary>
+        AuditObjectClose = 0x00000004,
         /// <summary>
         /// The object created is marked as permanent
         /// </summary>
