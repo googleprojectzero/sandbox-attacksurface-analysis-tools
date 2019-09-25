@@ -365,23 +365,28 @@ namespace NtApiDotNet
     public struct ClaimSecurityAttributeFqbnValue
     {
         public ulong Version;
-        public IntPtr Name;
+        public UnicodeStringOut Name;
     }
 
     public class ClaimSecurityAttributeFqbn
     {
-        public ulong Version { get; }
+        public Version Version { get; }
         public string Name { get; }
 
         public ClaimSecurityAttributeFqbn(ClaimSecurityAttributeFqbnValue value)
         {
-            Version = value.Version;
-            Name = Marshal.PtrToStringUni(value.Name);
+            short[] parts = new short[4];
+            ulong[] original = new ulong[] { value.Version };
+
+            Buffer.BlockCopy(original, 0, parts, 0, sizeof(ulong));
+
+            Version = new Version(parts[3], parts[2], parts[1], parts[0]);
+            Name = value.Name.ToString();
         }
 
         public override string ToString()
         {
-            return $"Version {Version:X} - {Name}";
+            return $"Version {Version} - {Name}";
         }
     }
 
