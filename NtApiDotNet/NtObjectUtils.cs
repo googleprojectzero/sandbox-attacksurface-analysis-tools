@@ -772,5 +772,15 @@ namespace NtApiDotNet
             var result = await task;
             return result.Map(map);
         }
+
+        internal static Version UnpackVersion(ulong version)
+        {
+            short[] parts = new short[4];
+            ulong[] original = new ulong[] { version };
+
+            Buffer.BlockCopy(original, 0, parts, 0, sizeof(ulong));
+
+            return new Version(parts[3], parts[2], parts[1], parts[0]);
+        }
     }
 }

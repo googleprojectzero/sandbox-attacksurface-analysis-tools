@@ -1156,7 +1156,7 @@ namespace NtApiDotNet
                         {
                             attributes.Add(new ClaimSecurityAttribute(buffer));
                             count--;
-                            buffer += Marshal.SizeOf(typeof(ClaimSecurityAttributeV1_NT));
+                            buffer += Marshal.SizeOf(typeof(ClaimSecurityAttributeV1));
                         }
                     }
                     return attributes.ToArray();

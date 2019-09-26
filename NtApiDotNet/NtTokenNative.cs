@@ -375,12 +375,7 @@ namespace NtApiDotNet
 
         public ClaimSecurityAttributeFqbn(ClaimSecurityAttributeFqbnValue value)
         {
-            short[] parts = new short[4];
-            ulong[] original = new ulong[] { value.Version };
-
-            Buffer.BlockCopy(original, 0, parts, 0, sizeof(ulong));
-
-            Version = new Version(parts[3], parts[2], parts[1], parts[0]);
+            Version = NtObjectUtils.UnpackVersion(value.Version);
             Name = value.Name.ToString();
         }
 
@@ -391,7 +386,7 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct ClaimSecurityAttributeV1_NT
+    public struct ClaimSecurityAttributeV1
     {
         public UnicodeStringOut Name;
         public ClaimSecurityValueType ValueType;
@@ -405,17 +400,6 @@ namespace NtApiDotNet
         //UNICODE_STRING* ppString;
         //PCLAIM_SECURITY_ATTRIBUTE_FQBN_VALUE pFqbn;
         //PCLAIM_SECURITY_ATTRIBUTE_OCTET_STRING_VALUE pOctetString;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct ClaimSecurityAttributeV1
-    {
-        public IntPtr Name;
-        public ClaimSecurityValueType ValueType;
-        public ushort Reserved;
-        public ClaimSecurityFlags Flags;
-        public int ValueCount;
-        public IntPtr Values;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -794,7 +778,7 @@ namespace NtApiDotNet
 
         internal ClaimSecurityAttribute(IntPtr ptr)
         {
-            ClaimSecurityAttributeV1_NT v1 = (ClaimSecurityAttributeV1_NT)Marshal.PtrToStructure(ptr, typeof(ClaimSecurityAttributeV1_NT));
+            ClaimSecurityAttributeV1 v1 = (ClaimSecurityAttributeV1)Marshal.PtrToStructure(ptr, typeof(ClaimSecurityAttributeV1));
             Name = v1.Name.ToString();
             ValueType = v1.ValueType;
             Flags = v1.Flags;
