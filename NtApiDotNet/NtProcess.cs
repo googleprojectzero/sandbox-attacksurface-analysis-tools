@@ -247,14 +247,27 @@ namespace NtApiDotNet
         /// <param name="ParentProcess">The parent process</param>
         /// <param name="Flags">Creation flags</param>
         /// <param name="SectionHandle">Handle to the executable image section</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The created process</returns>
+        public static NtResult<NtProcess> CreateProcessEx(NtProcess ParentProcess, ProcessCreateFlags Flags, NtSection SectionHandle, bool throw_on_error)
+        {
+            SafeHandle parent_process = ParentProcess?.Handle ?? Current.Handle;
+            SafeHandle section = SectionHandle.GetHandle();
+            return NtSystemCalls.NtCreateProcessEx(out SafeKernelObjectHandle process, ProcessAccessRights.MaximumAllowed,
+                new ObjectAttributes(), parent_process, Flags, section, SafeKernelObjectHandle.Null,
+                SafeKernelObjectHandle.Null, 0).CreateResult(throw_on_error, () => new NtProcess(process));
+        }
+
+        /// <summary>
+        /// Create a new process
+        /// </summary>
+        /// <param name="ParentProcess">The parent process</param>
+        /// <param name="Flags">Creation flags</param>
+        /// <param name="SectionHandle">Handle to the executable image section</param>
         /// <returns>The created process</returns>
         public static NtProcess CreateProcessEx(NtProcess ParentProcess, ProcessCreateFlags Flags, NtSection SectionHandle)
         {
-            SafeHandle parent_process = ParentProcess != null ? ParentProcess.Handle : Current.Handle;
-            SafeHandle section = SectionHandle?.Handle;
-            NtSystemCalls.NtCreateProcessEx(out SafeKernelObjectHandle process, ProcessAccessRights.MaximumAllowed,
-                new ObjectAttributes(), parent_process, Flags, section, null, null, 0).ToNtException();
-            return new NtProcess(process);
+            return CreateProcessEx(ParentProcess, Flags, SectionHandle, true).Result;
         }
 
         /// <summary>
