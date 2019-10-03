@@ -106,7 +106,7 @@ namespace NtApiDotNet
         /// <returns>The mapped result.</returns>
         public NtResult<S> Cast<S>()
         {
-            return Map<S>(d => (S)(object)d);
+            return Map(d => (S)(object)d);
         }
 
         /// <summary>
