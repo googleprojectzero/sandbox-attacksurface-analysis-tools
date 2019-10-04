@@ -21,6 +21,32 @@ using System.Threading;
 
 namespace NtApiDotNet
 {
+    /// <summary>
+    /// Enumeration for querying group list using QueryGroups.
+    /// </summary>
+    public enum QueryGroupType
+    {
+        /// <summary>
+        /// The default group list.
+        /// </summary>
+        Default,
+        /// <summary>
+        /// The restrict group list.
+        /// </summary>
+        Restricted,
+        /// <summary>
+        /// The capability group list.
+        /// </summary>
+        Capability,
+        /// <summary>
+        /// The device group list.
+        /// </summary>
+        Device,
+        /// <summary>
+        /// The restricted device list.
+        /// </summary>
+        RestrictedDevice,
+    }
 
     /// <summary>
     /// Class representing a Token object
@@ -657,6 +683,49 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Query a list of groups from the token.
+        /// </summary>
+        /// <param name="group_type">The type of groups to query.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of groups.</returns>
+        public NtResult<UserGroup[]> QueryGroups(QueryGroupType group_type, bool throw_on_error)
+        {
+            TokenInformationClass info_class;
+            switch (group_type)
+            {
+                case QueryGroupType.Default:
+                    info_class = TokenInformationClass.TokenGroups;
+                    break;
+                case QueryGroupType.Restricted:
+                    info_class = TokenInformationClass.TokenRestrictedSids;
+                    break;
+                case QueryGroupType.Capability:
+                    info_class = TokenInformationClass.TokenCapabilities;
+                    break;
+                case QueryGroupType.Device:
+                    info_class = TokenInformationClass.TokenDeviceGroups;
+                    break;
+                case QueryGroupType.RestrictedDevice:
+                    info_class = TokenInformationClass.TokenRestrictedDeviceGroups;
+                    break;
+                default:
+                    throw new ArgumentException("Invalid group type", "group_type");
+            }
+
+            return QueryGroupsInternal(info_class, throw_on_error);
+        }
+
+        /// <summary>
+        /// Query a list of groups from the token.
+        /// </summary>
+        /// <param name="group_type">The type of groups to query.</param>
+        /// <returns>The list of groups.</returns>
+        public UserGroup[] QueryGroups(QueryGroupType group_type)
+        {
+            return QueryGroups(group_type, true).Result;
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -708,7 +777,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryGroups(TokenInformationClass.TokenGroups);
+                return QueryGroupsInternal(TokenInformationClass.TokenGroups);
             }
         }
 
@@ -883,7 +952,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryGroups(TokenInformationClass.TokenRestrictedSids);
+                return QueryGroupsInternal(TokenInformationClass.TokenRestrictedSids);
             }
         }
 
@@ -1059,7 +1128,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryGroups(TokenInformationClass.TokenCapabilities);
+                return QueryGroupsInternal(TokenInformationClass.TokenCapabilities);
             }
         }
 
@@ -1085,7 +1154,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryGroups(TokenInformationClass.TokenLogonSid).FirstOrDefault();
+                return QueryGroupsInternal(TokenInformationClass.TokenLogonSid).FirstOrDefault();
             }
         }
 
@@ -1261,7 +1330,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryGroups(TokenInformationClass.TokenDeviceGroups);
+                return QueryGroupsInternal(TokenInformationClass.TokenDeviceGroups);
             }
         }
 
@@ -1272,7 +1341,7 @@ namespace NtApiDotNet
         {
             get
             {
-                return QueryGroups(TokenInformationClass.TokenRestrictedDeviceGroups);
+                return QueryGroupsInternal(TokenInformationClass.TokenRestrictedDeviceGroups);
             }
         }
 
@@ -2054,15 +2123,24 @@ namespace NtApiDotNet
             return builder.ToBuffer();
         }
 
-        private UserGroup[] QueryGroups(TokenInformationClass info_class)
+        private NtResult<UserGroup[]> QueryGroupsInternal(TokenInformationClass info_class, bool throw_on_error)
         {
-            using (var groups = QueryBuffer<TokenGroups>(info_class))
+            using (var groups = QueryBuffer<TokenGroups>(info_class, new TokenGroups(), throw_on_error))
             {
-                TokenGroups result = groups.Result;
-                SidAndAttributes[] sids = new SidAndAttributes[result.GroupCount];
-                groups.Data.ReadArray(0, sids, 0, result.GroupCount);
-                return sids.Select(s => s.ToUserGroup()).ToArray();
+                return groups.Map(buffer =>
+                {
+                    TokenGroups result = buffer.Result;
+                    SidAndAttributes[] sids = new SidAndAttributes[result.GroupCount];
+                    buffer.Data.ReadArray(0, sids, 0, result.GroupCount);
+                    return sids.Select(s => s.ToUserGroup()).ToArray();
+                }
+                );
             }
+        }
+
+        private UserGroup[] QueryGroupsInternal(TokenInformationClass info_class)
+        {
+            return QueryGroupsInternal(info_class, true).Result;
         }
 
         private TokenStatistics GetTokenStats()

@@ -293,9 +293,11 @@ namespace NtApiDotNet
 
         public long ToInt64()
         {
-            LargeInteger li = new LargeInteger();
-            li.LowPart = LowPart;
-            li.HighPart = HighPart;
+            LargeInteger li = new LargeInteger
+            {
+                LowPart = LowPart,
+                HighPart = HighPart
+            };
             return li.QuadPart;
         }
     }
@@ -373,7 +375,7 @@ namespace NtApiDotNet
         public Version Version { get; }
         public string Name { get; }
 
-        public ClaimSecurityAttributeFqbn(ClaimSecurityAttributeFqbnValue value)
+        internal ClaimSecurityAttributeFqbn(ClaimSecurityAttributeFqbnValue value)
         {
             Version = NtObjectUtils.UnpackVersion(value.Version);
             Name = value.Name.ToString();
@@ -409,6 +411,22 @@ namespace NtApiDotNet
         public ushort Reserved;
         public int AttributeCount;
         public IntPtr pAttributeV1;
+    }
+
+    public enum TokenSecurityAttributeOperation
+    {
+        None = 0,
+        ReplaceAll = 1,
+        Add = 2,
+        Delete = 3,
+        Replace = 4,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class TokenSecurityAttributesAndOperationInformation
+    {
+        public IntPtr Attributes; // ClaimSecurityAttributesInformation
+        public IntPtr Operations; // TokenSecurityAttributeOperation[]
     }
 
     [Flags]
@@ -785,6 +803,59 @@ namespace NtApiDotNet
             var values = ReadValues(v1.Values, v1.ValueCount, v1.ValueType).ToArray();
             Values = values;
             ValueCount = values.Length;
+        }
+
+        internal ClaimSecurityAttribute(string name, ClaimSecurityValueType value_type, ClaimSecurityFlags flags, IEnumerable<object> values)
+        {
+            Name = name;
+            ValueType = value_type;
+            Flags = flags;
+            var array = values.ToArray();
+            Values = array;
+            ValueCount = array.Length;
+        }
+    }
+
+    internal class ClaimSecurityAttributeBuilder
+    {
+        private readonly List<ClaimSecurityAttribute> _attributes;
+
+        public ClaimSecurityAttributeBuilder()
+        {
+            _attributes = new List<ClaimSecurityAttribute>();
+        }
+
+        public IEnumerable<ClaimSecurityAttribute> Attributes => _attributes.AsReadOnly();
+        public int AttributeCount => _attributes.Count;
+
+        public void AddInt64(string name, ClaimSecurityFlags flags, long value)
+        {
+            _attributes.Add(new ClaimSecurityAttribute(name, ClaimSecurityValueType.Int64, flags, new object[] { value }));
+        }
+
+        public void AddUInt64(string name, ClaimSecurityFlags flags, ulong value)
+        {
+            _attributes.Add(new ClaimSecurityAttribute(name, ClaimSecurityValueType.UInt64, flags, new object[] { value }));
+        }
+
+        public void AddOctetString(string name, ClaimSecurityFlags flags, byte[] value)
+        {
+            _attributes.Add(new ClaimSecurityAttribute(name, ClaimSecurityValueType.OctetString, flags, new object[] { value }));
+        }
+
+        public void AddSid(string name, ClaimSecurityFlags flags, Sid value)
+        {
+            _attributes.Add(new ClaimSecurityAttribute(name, ClaimSecurityValueType.Sid, flags, new object[] { value }));
+        }
+
+        public void AddBoolean(string name, ClaimSecurityFlags flags, bool value)
+        {
+            _attributes.Add(new ClaimSecurityAttribute(name, ClaimSecurityValueType.Boolean, flags, new object[] { value }));
+        }
+
+        public void AddRange(IEnumerable<ClaimSecurityAttribute> attributes)
+        {
+            _attributes.AddRange(attributes);
         }
     }
 
