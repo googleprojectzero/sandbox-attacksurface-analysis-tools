@@ -4186,6 +4186,8 @@ Specify to flags for the source creation.
 Specify a Code DOM provider. Defaults to C#.
 .PARAMETER Options
 Specify optional options for the code generation if Provider is also specified.
+.PARAMETER OutputPath
+Specify optional output directory to write formatted client.
 .INPUTS
 None
 .OUTPUTS
@@ -4194,8 +4196,11 @@ string
 Format-RpcClient -Server $Server
 Get the source code for a RPC client from a parsed RPC server.
 .EXAMPLE
-$servers | Format-RpcAlpcClient
-Get the source code for a RPC client from a list of parsed RPC server.
+$servers | Format-RpcClient
+Get the source code for RPC clients from a list of parsed RPC servers.
+.EXAMPLE
+$servers | Format-RpcClient -OutputPath rpc_output
+Get the source code for RPC clients from a list of parsed RPC servers and output as separate source code files.
 #>
 function Format-RpcClient {
     [CmdletBinding()]
@@ -4206,8 +4211,20 @@ function Format-RpcClient {
         [string]$ClientName,
         [NtApiDotNet.Win32.Rpc.RpcClientBuilderFlags]$Flags = 0,
         [System.CodeDom.Compiler.CodeDomProvider]$Provider,
-        [System.CodeDom.Compiler.CodeGeneratorOptions]$Options
+        [System.CodeDom.Compiler.CodeGeneratorOptions]$Options,
+        [string]$OutputPath
     )
+
+    BEGIN {
+        $file_ext = "cs"
+        if ($null -ne $Provider) {
+            $file_ext = $Provider.FileExtension
+        }
+
+        if ("" -ne $OutputPath) {
+            mkdir $OutputPath -ErrorAction Ignore | Out-Null
+        }
+    }
 
     PROCESS {
         $args = [NtApiDotNet.Win32.Rpc.RpcClientBuilderArguments]::new();
@@ -4216,10 +4233,17 @@ function Format-RpcClient {
         $args.Flags = $Flags
 
         foreach($s in $Server) {
-            if ($Provider -eq $null) {
-                [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource($s, $args) | Write-Output
+            $src = if ($Provider -eq $null) {
+                [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource($s, $args)
             } else {
-                [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource($s, $args, $Provider, $Options) | Write-Output
+                [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource($s, $args, $Provider, $Options)
+            }
+
+            if ("" -eq $OutputPath) {
+                $src | Write-Output
+            } else {
+                $path = Join-Path -Path $OutputPath -ChildPath "$($s.InterfaceId)_$($s.InterfaceVersion).$file_ext"
+                $src | Set-Content -Path $path
             }
         }
     }
