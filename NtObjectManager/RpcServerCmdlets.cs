@@ -209,6 +209,21 @@ namespace NtObjectManager
             return false;
         }
 
+        private static bool MatchInterfaceId(RpcServer server, Guid interface_id, Version interface_version)
+        {
+            if (server.InterfaceId != interface_id)
+            {
+                return false;
+            }
+
+            if (interface_version == null)
+            {
+                return true;
+            }
+
+            return server.InterfaceVersion == interface_version;
+        }
+
         private bool MatchServer(RpcServer server)
         {
             switch (ParameterSetName)
@@ -217,6 +232,8 @@ namespace NtObjectManager
                     return MatchName(server, Name);
                 case "MatchSystemHandle":
                     return MatchSystemHandle(server, SystemHandleType);
+                case "MatchInterfaceId":
+                    return MatchInterfaceId(server, InterfaceId, InterfaceVersion);
             }
             return false;
         }
@@ -244,6 +261,18 @@ namespace NtObjectManager
         /// </summary>
         [Parameter(ParameterSetName = "MatchSystemHandle")]
         public NdrSystemHandleResource? SystemHandleType { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the Interface ID to match.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "MatchInterfaceId")]
+        public Guid InterfaceId { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify an optional interface version to match.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "MatchInterfaceId")]
+        public Version InterfaceVersion { get; set; }
 
         /// <summary>
         /// Overridden ProcessRecord method.
