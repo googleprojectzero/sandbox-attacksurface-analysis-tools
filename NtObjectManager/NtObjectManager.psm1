@@ -4157,17 +4157,35 @@ function Connect-RpcClient {
         [string]$ProtocolSequence = "ncalrpc",
         [parameter(Position = 1, Mandatory, ParameterSetName="FromEndpoint")]
         [NtApiDotNet.Win32.RpcEndpoint]$Endpoint,
+        [parameter(Mandatory, ParameterSetName="FromFindEndpoint")]
+        [switch]$FindAlpcPort,
         [NtApiDotNet.SecurityQualityOfService]$SecurityQualityOfService,
         [switch]$PassThru
     )
 
-    if ($PSCmdlet.ParameterSetName -eq "FromProtocol") {
-        $Client.Connect($ProtocolSequence, $EndpointPath, $SecurityQualityOfService)
-    } else {
-        $Client.Connect($Endpoint, $SecurityQualityOfService)
-    }
-    if ($PassThru) {
-        $Client | Write-Output
+    PROCESS {
+        switch($PSCmdlet.ParameterSetName) {
+            "FromProtocol" {
+                $Client.Connect($ProtocolSequence, $EndpointPath, $SecurityQualityOfService)
+            }
+            "FromEndpoint" {
+                $Client.Connect($Endpoint, $SecurityQualityOfService)
+            }
+            "FromFindEndpoint" {
+                foreach($ep in $(Get-ChildItem "NtObject:\RPC Control")) {
+                    try {
+                        $name = $ep.Name
+                        Write-Progress -Activity "Finding ALPC Endpoint" -CurrentOperation "$name"
+                        $Client.Connect("ncalrpc", $name, $SecurityQualityOfService)
+                    } catch {
+                    }
+                }
+            }
+        }
+
+        if ($PassThru) {
+            $Client | Write-Output
+        }
     }
 }
 
