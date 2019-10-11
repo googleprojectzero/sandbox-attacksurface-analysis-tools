@@ -157,4 +157,103 @@ namespace NtObjectManager
             WriteObject(CompareServers());
         }
     }
+
+    /// <summary>
+    /// <para type="synopsis">Selects RPC server objects based on some specific criteria.</para>
+    /// <para type="description">This cmdlet selects out RPC servers from a list based on a few specific criteria such as partial name match or specific parameter types.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>$rpc | Select-RpcServer -Name "Start"</code>
+    ///   <para>Select all servers which have a procedure containing the text Start.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$rpc | Select-RpcServer -SystemHandle</code>
+    ///   <para>Select all servers which have a procedure which take a system handle parameter.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$rpc | Select-RpcServer -SystemHandle -SystemHandleType File</code>
+    ///   <para>Select all servers which have a procedure which take a system handle parameter of type File.</para>
+    /// </example>
+    [Cmdlet(VerbsCommon.Select, "RpcServer")]
+    [OutputType(typeof(RpcServer))]
+    public class SelectRpcServerCmdlet : PSCmdlet
+    {
+        private static bool MatchName(RpcServer server, string name)
+        {
+            name = name.ToLower();
+            foreach (var f in server.Procedures)
+            {
+                if (f.Name.ToLower().Contains(name))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool MatchSystemHandle(RpcServer server, NdrSystemHandleResource? type)
+        {
+            foreach (var f in server.Procedures)
+            {
+                foreach (var p in f.Params)
+                {
+                    if (p.Type is NdrSystemHandleTypeReference system_handle)
+                    {
+                        if (!type.HasValue || system_handle.Resource == type.Value)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        private bool MatchServer(RpcServer server)
+        {
+            switch (ParameterSetName)
+            {
+                case "MatchName":
+                    return MatchName(server, Name);
+                case "MatchSystemHandle":
+                    return MatchSystemHandle(server, SystemHandleType);
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// <para type="description">Specify a list of RPC servers for selecting.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true, ValueFromPipeline = true)]
+        public RpcServer[] Server { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify name to partially match against a function name.</para>
+        /// </summary>
+        [Parameter(Position = 1, Mandatory = true, ParameterSetName = "MatchName")]
+        public string Name { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify one function must take a system handle parameter.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "MatchSystemHandle")]
+        public SwitchParameter SystemHandle { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify an optional type of system handle to match.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "MatchSystemHandle")]
+        public NdrSystemHandleResource? SystemHandleType { get; set; }
+
+        /// <summary>
+        /// Overridden ProcessRecord method.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            foreach (var s in Server.Where(MatchServer))
+            {
+                WriteObject(s);
+            }
+        }
+    }
 }
