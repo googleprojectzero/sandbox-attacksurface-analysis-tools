@@ -172,8 +172,18 @@ namespace NtApiDotNet.Win32.Rpc
                 throw new ArgumentNullException("Must specify an endpoint", nameof(endpoint));
             }
 
-            _transport = RpcClientTransportFactory.ConnectEndpoint(endpoint, security_quality_of_service);
-            _transport.Bind(InterfaceId, InterfaceVersion, NdrNativeUtils.DCE_TransferSyntax, new Version(2, 0));
+            try
+            {
+                _transport = RpcClientTransportFactory.ConnectEndpoint(endpoint, security_quality_of_service);
+                _transport.Bind(InterfaceId, InterfaceVersion, NdrNativeUtils.DCE_TransferSyntax, new Version(2, 0));
+            }
+            catch
+            {
+                // Disconnect transport on any exception.
+                _transport?.Disconnect();
+                _transport = null;
+                throw;
+            }
         }
 
         /// <summary>
