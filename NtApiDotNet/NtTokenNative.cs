@@ -375,10 +375,21 @@ namespace NtApiDotNet
         public Version Version { get; }
         public string Name { get; }
 
+        private ClaimSecurityAttributeFqbn(Version version, string name)
+        {
+            Version = version;
+            Name = name;
+        }
+
         internal ClaimSecurityAttributeFqbn(ClaimSecurityAttributeFqbnValue value)
         {
             Version = NtObjectUtils.UnpackVersion(value.Version);
             Name = value.Name.ToString();
+        }
+
+        internal ClaimSecurityAttributeFqbn Clone()
+        {
+            return new ClaimSecurityAttributeFqbn((Version)Version.Clone(), Name);
         }
 
         public override string ToString()
@@ -813,49 +824,6 @@ namespace NtApiDotNet
             var array = values.ToArray();
             Values = array;
             ValueCount = array.Length;
-        }
-    }
-
-    internal class ClaimSecurityAttributeBuilder
-    {
-        private readonly List<ClaimSecurityAttribute> _attributes;
-
-        public ClaimSecurityAttributeBuilder()
-        {
-            _attributes = new List<ClaimSecurityAttribute>();
-        }
-
-        public IEnumerable<ClaimSecurityAttribute> Attributes => _attributes.AsReadOnly();
-        public int AttributeCount => _attributes.Count;
-
-        public void AddInt64(string name, ClaimSecurityFlags flags, long value)
-        {
-            _attributes.Add(new ClaimSecurityAttribute(name, ClaimSecurityValueType.Int64, flags, new object[] { value }));
-        }
-
-        public void AddUInt64(string name, ClaimSecurityFlags flags, ulong value)
-        {
-            _attributes.Add(new ClaimSecurityAttribute(name, ClaimSecurityValueType.UInt64, flags, new object[] { value }));
-        }
-
-        public void AddOctetString(string name, ClaimSecurityFlags flags, byte[] value)
-        {
-            _attributes.Add(new ClaimSecurityAttribute(name, ClaimSecurityValueType.OctetString, flags, new object[] { value }));
-        }
-
-        public void AddSid(string name, ClaimSecurityFlags flags, Sid value)
-        {
-            _attributes.Add(new ClaimSecurityAttribute(name, ClaimSecurityValueType.Sid, flags, new object[] { value }));
-        }
-
-        public void AddBoolean(string name, ClaimSecurityFlags flags, bool value)
-        {
-            _attributes.Add(new ClaimSecurityAttribute(name, ClaimSecurityValueType.Boolean, flags, new object[] { value }));
-        }
-
-        public void AddRange(IEnumerable<ClaimSecurityAttribute> attributes)
-        {
-            _attributes.AddRange(attributes);
         }
     }
 
