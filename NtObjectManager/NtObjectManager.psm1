@@ -4077,7 +4077,7 @@ Create a new RPC client from a parsed RPC server.
 function Get-RpcClient {
     [CmdletBinding(DefaultParameterSetName="FromServer")]
     Param(
-        [parameter(Mandatory, Position = 0, ParameterSetName = "FromServer")]
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromServer", ValueFromPipeline)]
         [NtApiDotNet.Win32.RpcServer]$Server,
         [parameter(ParameterSetName = "FromServer")]
         [string]$NamespaceName,
@@ -4096,16 +4096,18 @@ function Get-RpcClient {
         [switch]$EnableDebugging
     )
 
-    if ($PSCmdlet.ParameterSetName -eq "FromServer") {
-        $args = [NtApiDotNet.Win32.Rpc.RpcClientBuilderArguments]::new();
-        $args.NamespaceName = $NamespaceName
-        $args.ClientName = $ClientName
-        $args.Flags = $Flags
-        $args.EnableDebugging = $EnableDebugging
+    PROCESS {
+        if ($PSCmdlet.ParameterSetName -eq "FromServer") {
+            $args = [NtApiDotNet.Win32.Rpc.RpcClientBuilderArguments]::new();
+            $args.NamespaceName = $NamespaceName
+            $args.ClientName = $ClientName
+            $args.Flags = $Flags
+            $args.EnableDebugging = $EnableDebugging
 
-        [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache, $Provider)
-    } else {
-        [NtApiDotNet.Win32.RpcClient]::new($InterfaceId, $InterfaceVersion)
+            [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::CreateClient($Server, $args, $IgnoreCache, $Provider)
+        } else {
+            [NtApiDotNet.Win32.RpcClient]::new($InterfaceId, $InterfaceVersion)
+        }
     }
 }
 
