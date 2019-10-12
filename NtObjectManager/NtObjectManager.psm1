@@ -2995,10 +2995,11 @@ function Get-NtAlpcServer {
 
 <#
 .SYNOPSIS
-Gets the endpoints for a RPC interface from the local endpoint mapper.
+Gets the endpoints for a RPC interface from the local endpoint mapper or by brute force.
 .DESCRIPTION
 This cmdlet gets the endpoints for a RPC interface from the local endpoint mapper. Not all RPC interfaces
-are registered in the endpoint mapper so it might not show.
+are registered in the endpoint mapper so it might not show. You can use the -FindAlpcPort command to try
+and brute force an ALPC port for the interface.
 .PARAMETER InterfaceId
 The UUID of the RPC interface.
 .PARAMETER InterfaceVersion
@@ -3009,6 +3010,8 @@ Parsed NDR server.
 A RPC binding string to query all endpoints from.
 .PARAMETER AlpcPort
 An ALPC port name. Can contain a full path as long as the string contains \RPC Control\ (case sensitive).
+.PARAMETER FindAlpcPort
+Use brute force to find a valid ALPC endpoint for the interface.
 .INPUTS
 None or NtApiDotNet.Ndr.NdrRpcServerInterface
 .OUTPUTS
@@ -3025,6 +3028,9 @@ Get RPC endpoints for a specified interface ID ignoring the version.
 .EXAMPLE
 Get-RpcEndpoint "A57A4ED7-0B59-4950-9CB1-E600A665154F" "1.0"
 Get RPC endpoints for a specified interface ID and version.
+.EXAMPLE
+Get-RpcEndpoint "A57A4ED7-0B59-4950-9CB1-E600A665154F" "1.0" -FindAlpcPort
+Get ALPC RPC endpoints for a specified interface ID and version by brute force.
 .EXAMPLE
 Get-RpcEndpoint -Binding "ncalrpc:[RPC_PORT]"
 Get RPC endpoints for exposed over ncalrpc with name RPC_PORT.
@@ -3045,28 +3051,39 @@ function Get-RpcEndpoint {
        [parameter(Mandatory, ParameterSetName = "FromBinding")]
        [string]$Binding,
        [parameter(Mandatory, ParameterSetName = "FromAlpc")]
-       [string]$AlpcPort
+       [string]$AlpcPort,
+       [parameter(ParameterSetName = "FromIdAndVersion")]
+       [parameter(ParameterSetName = "FromServer")]
+       [switch]$FindAlpcPort
     )
 
     PROCESS {
         switch($PsCmdlet.ParameterSetName) {
             "All" {
-                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints()
+                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints() | Write-Output
             }
             "FromId" {
-                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($InterfaceId)
+                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($InterfaceId) | Write-Output
             }
             "FromIdAndVersion" {
-                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($InterfaceId, $InterfaceVersion)
+                if ($FindAlpcPort) {
+                    [NtApiDotNet.Win32.RpcEndpointMapper]::FindAlpcEndpointForInterface($InterfaceId, $InterfaceVersion) | Write-Output
+                } else {
+                    [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($InterfaceId, $InterfaceVersion) | Write-Output
+                }
             }
             "FromServer" {
-                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($Server)
+                if ($FindAlpcPort) {
+                    [NtApiDotNet.Win32.RpcEndpointMapper]::FindAlpcEndpointForInterface($Server.InterfaceId, $Server.InterfaceVersion) | Write-Output
+                } else {
+                    [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpoints($Server) | Write-Output
+                }
             }
             "FromBinding" {
-                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpointsForBinding($Binding)
+                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpointsForBinding($Binding) | Write-Output
             }
             "FromAlpc" {
-                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpointsForAlpcPort($AlpcPort)
+                [NtApiDotNet.Win32.RpcEndpointMapper]::QueryEndpointsForAlpcPort($AlpcPort) | Write-Output
             }
         }
     }
