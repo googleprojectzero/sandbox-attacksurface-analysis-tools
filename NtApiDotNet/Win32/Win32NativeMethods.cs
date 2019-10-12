@@ -378,6 +378,12 @@ namespace NtApiDotNet.Win32
             ref IntPtr IfIdVector
         );
 
+        [DllImport("rpcrt4.dll")]
+        internal static extern void I_RpcFree(IntPtr pObject);
+
+        [DllImport("rpcrt4.dll")]
+        internal static extern Win32Error I_RpcGetDefaultSD(out IntPtr ppSecurityDescriptor);
+
         [DllImport("shell32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern SafeLocalAllocHandle CommandLineToArgvW(string lpCmdLine, out int pNumArgs);
 

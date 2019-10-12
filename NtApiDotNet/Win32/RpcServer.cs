@@ -301,6 +301,28 @@ namespace NtApiDotNet.Win32
             return Deserialize(new MemoryStream(ba));
         }
 
+        /// <summary>
+        /// Get the default RPC server security descriptor.
+        /// </summary>
+        /// <returns>The default security descriptor.</returns>
+        public static SecurityDescriptor GetDefaultSecurityDescriptor()
+        {
+            Win32Error result = Win32NativeMethods.I_RpcGetDefaultSD(out IntPtr sd);
+            if (result != Win32Error.SUCCESS)
+            {
+                result.ToNtException();
+            }
+
+            try
+            {
+                return new SecurityDescriptor(sd);
+            }
+            finally
+            {
+                Win32NativeMethods.I_RpcFree(sd);
+            }
+        }
+
         #endregion
 
         #region Private Methods
