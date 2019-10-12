@@ -487,6 +487,58 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Finds ALPC endpoints which allows for the server binding. This brute forces all ALPC ports to try and find
+        /// something which will accept the bind.
+        /// </summary>
+        /// <remarks>This could hang if the ALPC port is owned by a suspended process.</remarks>
+        /// <param name="interface_id">Interface UUID to lookup.</param>
+        /// <param name="interface_version">Interface version lookup.</param>
+        /// <returns>A list of RPC endpoints which can bind the interface.</returns>
+        /// <exception cref="NtException">Throws on error.</exception>
+        public static IEnumerable<RpcEndpoint> FindAlpcEndpointForInterface(Guid interface_id, Version interface_version)
+        {
+            using (var dir = NtDirectory.Open(@"\RPC Control"))
+            {
+                var nt_type = NtType.GetTypeByType<NtAlpc>().Name;
+
+                foreach (var port in dir.Query().Where(e => e.NtTypeName == nt_type))
+                {
+                    bool success = false;
+                    try
+                    {
+                        using (var server = new RpcClient(interface_id, interface_version))
+                        {
+                            server.Connect(port.Name);
+                            success = true;
+                        }
+                    }
+                    catch
+                    {
+                    }
+                    if (success)
+                    {
+                        yield return new RpcEndpoint(interface_id, interface_version, 
+                            SafeRpcBindingHandle.Compose(null, "ncalrpc", null, port.Name, null), false);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Finds an ALPC endpoint which allows for the server binding. This brute forces all ALPC ports to try and find
+        /// something which will accept the bind.
+        /// </summary>
+        /// <remarks>This could hang if the ALPC port is owned by a suspended process.</remarks>
+        /// <param name="interface_id">Interface UUID to lookup.</param>
+        /// <param name="interface_version">Interface version lookup.</param>
+        /// <returns>The first RPC endpoints which can bind the interface. Throws exception if nothing found.</returns>
+        /// <exception cref="NtException">Throws on error.</exception>
+        public static RpcEndpoint FindFirstAlpcEndpointForInterface(Guid interface_id, Version interface_version)
+        {
+            return FindAlpcEndpointForInterface(interface_id, interface_version).First();
+        }
+
+        /// <summary>
         /// Resolve the binding string for this service from the local Endpoint Mapper.
         /// </summary>
         /// <param name="protocol_seq">The protocol sequence to lookup.</param>
