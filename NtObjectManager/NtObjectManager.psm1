@@ -4143,6 +4143,8 @@ Specify the endpoint string. If not specified this will lookup the endpoint from
 Specify the security quality of service for the connection.
 .PARAMETER PassThru
 Specify to the pass the client object to the output.
+.PARAMETER FindAlpcPort
+Specify to search for an ALPC port for the RPC client.
 .INPUTS
 None
 .OUTPUTS
@@ -4162,6 +4164,9 @@ Connect an RPC ALPC client from a specific protocol sequence.
 .EXAMPLE
 Connect-RpcClient -Client $Client -Endpoint $ep
 Connect an RPC client to a specific endpoint.
+.EXAMPLE
+Connect-RpcClient -Client $Client -FindAlpcPort
+Connect an RPC ALPC client, looking up the path using brute force.
 #>
 function Connect-RpcClient {
     [CmdletBinding(DefaultParameterSetName="FromProtocol")]
