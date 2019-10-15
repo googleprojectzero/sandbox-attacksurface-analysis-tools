@@ -40,7 +40,7 @@ namespace NtApiDotNet.Token
     /// <summary>
     /// Builder for a claim security attribute.
     /// </summary>
-    public class ClaimSecurityAttributeBuilder
+    internal class ClaimSecurityAttributeBuilder
     {
         private class WrapperList<T> : List<T>, IList<object>
         {
