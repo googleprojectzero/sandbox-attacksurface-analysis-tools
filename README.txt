@@ -46,6 +46,19 @@ Thanks to the people who were willing to test it and give feedback:
 
 Release Notes:
 
+1.1.23
+--------
+* Added basic ETW APIs.
+* Added new thread properties.
+* Added Close-NtObject function.
+* Added Get-AccessibleScheduledTask cmdlet.
+* Added typing for New-ExecutionAlias and renamed to Set-ExecutionAlias.
+* Added Compare-RpcServer.
+* Fixed handling of FQBN token security attributes.
+* Added option to Format-RpcClient to output to a directory.
+* Added Select-RpcServer cmdlet.
+* Added RPC ALPC port brute force.
+
 1.1.22
 --------
 * Removed old standalone utilities, everything should be accessible from PowerShell.
