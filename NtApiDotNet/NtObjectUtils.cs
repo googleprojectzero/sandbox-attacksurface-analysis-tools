@@ -782,5 +782,15 @@ namespace NtApiDotNet
 
             return new Version(parts[3], parts[2], parts[1], parts[0]);
         }
+
+        internal static ulong PackVersion(Version version)
+        {
+            short[] parts = new short[4] { (short)version.Revision, (short)version.Build, (short)version.Minor, (short)version.Major };
+            ulong[] original = new ulong[1];
+
+            Buffer.BlockCopy(parts, 0, original, 0, sizeof(ulong));
+
+            return original[0];
+        }
     }
 }
