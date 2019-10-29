@@ -113,6 +113,29 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class DisposableList : DisposableList<IDisposable>
     {
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public DisposableList()
+        {
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="capacity">The initial capacity of the list</param>
+        public DisposableList(int capacity) : base(capacity)
+        {
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="collection">A collection to initialize the list</param>
+        public DisposableList(IEnumerable<IDisposable> collection) : base(collection)
+        {
+        }
+
         internal SidAndAttributes[] CreateSidAndAttributes(IEnumerable<Sid> sids)
         {
             if (sids == null)
