@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Token;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -597,14 +598,154 @@ namespace NtApiDotNet
             return GetSecurityAttributeByName(name, ClaimSecurityValueType.None);
         }
 
-        private void SetIntegrityLevelSid(Sid sid)
+        /// <summary>
+        /// Get token's security attributes
+        /// </summary>
+        /// <param name="throw_on_error">Throw on error.</param>
+        /// <returns>The security attributes.</returns>
+        public NtResult<ClaimSecurityAttribute[]> GetSecurityAttributes(bool throw_on_error)
         {
-            using (SafeSidBufferHandle sid_buffer = sid.ToSafeBuffer())
+            using (var buf = QueryBuffer(TokenInformationClass.TokenSecurityAttributes, new ClaimSecurityAttributesInformation(), throw_on_error))
             {
-                TokenMandatoryLabel label = new TokenMandatoryLabel();
-                label.Label.Sid = sid_buffer.DangerousGetHandle();
-                Set(TokenInformationClass.TokenIntegrityLevel, label);
+                if (!buf.IsSuccess)
+                {
+                    return buf.Cast<ClaimSecurityAttribute[]>();
+                }
+                ClaimSecurityAttributesInformation r = buf.Result.Result;
+                List<ClaimSecurityAttribute> attributes = new List<ClaimSecurityAttribute>();
+                if (r.AttributeCount > 0)
+                {
+                    int count = r.AttributeCount;
+                    IntPtr buffer = r.pAttributeV1;
+                    while (count > 0)
+                    {
+                        attributes.Add(new ClaimSecurityAttribute(buffer));
+                        count--;
+                        buffer += Marshal.SizeOf(typeof(ClaimSecurityAttributeV1));
+                    }
+                }
+                return new NtResult<ClaimSecurityAttribute[]>(NtStatus.STATUS_SUCCESS, attributes.ToArray());
             }
+        }
+
+        /// <summary>
+        /// Get token's security attributes
+        /// </summary>
+        /// <returns>The security attributes.</returns>
+        public ClaimSecurityAttribute[] GetSecurityAttributes()
+        {
+            return GetSecurityAttributes(true).Result;
+        }
+
+        /// <summary>
+        /// Set security attributes on the token.
+        /// </summary>
+        /// <param name="attributes">The list of attributes.</param>
+        /// <param name="operations">The operation to perform on the attribute.</param>
+        /// <param name="throw_on_error">Throw on error.</param>
+        /// <remarks>The array of attributes aand operations must be the same size. You need SeTcbPrivilege to call this API.</remarks>
+        /// <returns>The NT Status code.</returns>
+        public NtStatus SetSecurityAttributes(IEnumerable<ClaimSecurityAttributeBuilder> attributes, IEnumerable<TokenSecurityAttributeOperation> operations, bool throw_on_error)
+        {
+            return SetSecurityAttributes(attributes.ToArray(), operations.ToArray(), throw_on_error);
+        }
+
+        /// <summary>
+        /// Set security attributes on the token.
+        /// </summary>
+        /// <param name="attributes">The list of attributes.</param>
+        /// <param name="operations">The operation to perform on the attribute.</param>
+        /// <remarks>The array of attributes aand operations must be the same size. You need SeTcbPrivilege to call this API.</remarks>
+        public void SetSecurityAttributes(IEnumerable<ClaimSecurityAttributeBuilder> attributes, IEnumerable<TokenSecurityAttributeOperation> operations)
+        {
+            SetSecurityAttributes(attributes, operations, true);
+        }
+
+        /// <summary>
+        /// Add security attributes to the token.
+        /// </summary>
+        /// <param name="attributes">The list of attributes.</param>
+        /// <param name="throw_on_error">Throw on error.</param>
+        /// <remarks>You need SeTcbPrivilege to call this API.</remarks>
+        /// <returns>The NT Status code.</returns>
+        public NtStatus AddSecurityAttributes(IEnumerable<ClaimSecurityAttributeBuilder> attributes, bool throw_on_error)
+        {
+            return SetSecurityAttributes(attributes, attributes.Select(_ => TokenSecurityAttributeOperation.Add), throw_on_error);
+        }
+
+        /// <summary>
+        /// Add security attributes to the token.
+        /// </summary>
+        /// <param name="attributes">The list of attributes.</param>
+        /// <remarks>You need SeTcbPrivilege to call this API.</remarks>
+        public void AddSecurityAttributes(IEnumerable<ClaimSecurityAttributeBuilder> attributes)
+        {
+            AddSecurityAttributes(attributes, true);
+        }
+
+        /// <summary>
+        /// Replace security attributes in the token.
+        /// </summary>
+        /// <param name="attributes">The list of attributes.</param>
+        /// <param name="throw_on_error">Throw on error.</param>
+        /// <remarks>You need SeTcbPrivilege to call this API.</remarks>
+        /// <returns>The NT Status code.</returns>
+        public NtStatus ReplaceSecurityAttributes(IEnumerable<ClaimSecurityAttributeBuilder> attributes, bool throw_on_error)
+        {
+            return SetSecurityAttributes(attributes, attributes.Select(_ => TokenSecurityAttributeOperation.Replace), throw_on_error);
+        }
+
+        /// <summary>
+        /// Replace security attributes in the token.
+        /// </summary>
+        /// <param name="attributes">The list of attributes.</param>
+        /// <remarks>You need SeTcbPrivilege to call this API.</remarks>
+        public void ReplaceSecurityAttributes(IEnumerable<ClaimSecurityAttributeBuilder> attributes)
+        {
+            ReplaceSecurityAttributes(attributes, true);
+        }
+
+        /// <summary>
+        /// Replace all security attributes in the token.
+        /// </summary>
+        /// <param name="attributes">The list of attributes.</param>
+        /// <param name="throw_on_error">Throw on error.</param>
+        /// <remarks>You need SeTcbPrivilege to call this API.</remarks>
+        /// <returns>The NT Status code.</returns>
+        public NtStatus ReplaceAllSecurityAttributes(IEnumerable<ClaimSecurityAttributeBuilder> attributes, bool throw_on_error)
+        {
+            return SetSecurityAttributes(attributes, attributes.Select(_ => TokenSecurityAttributeOperation.ReplaceAll), throw_on_error);
+        }
+
+        /// <summary>
+        /// Replace security attributes in the token.
+        /// </summary>
+        /// <param name="attributes">The list of attributes.</param>
+        /// <remarks>You need SeTcbPrivilege to call this API.</remarks>
+        public void ReplaceAllSecurityAttributes(IEnumerable<ClaimSecurityAttributeBuilder> attributes)
+        {
+            ReplaceSecurityAttributes(attributes, true);
+        }
+
+        /// <summary>
+        /// Remove security attributes by name.
+        /// </summary>
+        /// <param name="attributes">The attribute names to remove.</param>
+        /// <param name="throw_on_error">Throw on error.</param>
+        /// <returns>The NT Status code.</returns>
+        public NtStatus DeleteSecurityAttributes(IEnumerable<string> attributes, bool throw_on_error)
+        {
+            return SetSecurityAttributes(attributes.Select(s => ClaimSecurityAttributeBuilder.Create(s, 0, new bool[0])), 
+                attributes.Select(_ => TokenSecurityAttributeOperation.Delete), throw_on_error);
+        }
+
+        /// <summary>
+        /// Remove security attributes by name.
+        /// </summary>
+        /// <param name="attributes">The attribute names to remove.</param>
+        public void DeleteSecurityAttributes(IEnumerable<string> attributes)
+        {
+            DeleteSecurityAttributes(attributes, true);
         }
 
         /// <summary>
@@ -1209,29 +1350,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get token's security attributes
         /// </summary>
-        public ClaimSecurityAttribute[] SecurityAttributes
-        {
-            get
-            {
-                using (var buf = QueryBuffer<ClaimSecurityAttributesInformation>(TokenInformationClass.TokenSecurityAttributes))
-                {
-                    ClaimSecurityAttributesInformation r = buf.Result;
-                    List<ClaimSecurityAttribute> attributes = new List<ClaimSecurityAttribute>();
-                    if (r.AttributeCount > 0)
-                    {
-                        int count = r.AttributeCount;
-                        IntPtr buffer = r.pAttributeV1;
-                        while (count > 0)
-                        {
-                            attributes.Add(new ClaimSecurityAttribute(buffer));
-                            count--;
-                            buffer += Marshal.SizeOf(typeof(ClaimSecurityAttributeV1));
-                        }
-                    }
-                    return attributes.ToArray();
-                }
-            }
-        }
+        public ClaimSecurityAttribute[] SecurityAttributes => GetSecurityAttributes();
 
         /// <summary>
         /// Get whether a token is an AppContainer token
@@ -2161,6 +2280,52 @@ namespace NtApiDotNet
             {
                 IsPseudoToken = true
             };
+        }
+
+        private void SetIntegrityLevelSid(Sid sid)
+        {
+            using (SafeSidBufferHandle sid_buffer = sid.ToSafeBuffer())
+            {
+                TokenMandatoryLabel label = new TokenMandatoryLabel();
+                label.Label.Sid = sid_buffer.DangerousGetHandle();
+                Set(TokenInformationClass.TokenIntegrityLevel, label);
+            }
+        }
+
+        private NtStatus SetSecurityAttributes(ClaimSecurityAttributeBuilder[] attributes, TokenSecurityAttributeOperation[] operations, bool throw_on_error)
+        {
+            if (attributes.Length != operations.Length)
+            {
+                throw new ArgumentException("Attributes and Operations must be the same length");
+            }
+            if (attributes.Length == 0)
+            {
+                return NtStatus.STATUS_SUCCESS;
+            }
+
+            using (var list = new DisposableList())
+            {
+                var attrs = list.AddResource(attributes.Select(a => a.MarshalAttribute(list)).ToArray().ToBuffer());
+                var ops = list.AddResource(operations.Select(o => (int)o).ToArray().ToBuffer());
+                using (var attr_info = new ClaimSecurityAttributesInformation
+                {
+                    Version = 1,
+                    AttributeCount = attributes.Length,
+                    pAttributeV1 = attrs.DangerousGetHandle()
+                }.ToBuffer())
+                {
+                    TokenSecurityAttributesAndOperationInformation info = new TokenSecurityAttributesAndOperationInformation()
+                    {
+                        Attributes = attr_info.DangerousGetHandle(),
+                        Operations = ops.DangerousGetHandle()
+                    };
+
+                    using (var buffer = info.ToBuffer())
+                    {
+                        return SetInformation(TokenInformationClass.TokenSecurityAttributes, buffer).ToNtException(throw_on_error);
+                    }
+                }
+            }
         }
 
         private static readonly AppModelPolicy_PolicyValue[] _policy_lookup_table = {

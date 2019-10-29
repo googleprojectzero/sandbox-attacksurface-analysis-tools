@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Token;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -375,7 +376,7 @@ namespace NtApiDotNet
         public Version Version { get; }
         public string Name { get; }
 
-        private ClaimSecurityAttributeFqbn(Version version, string name)
+        public ClaimSecurityAttributeFqbn(Version version, string name)
         {
             Version = version;
             Name = name;
@@ -804,6 +805,11 @@ namespace NtApiDotNet
         public ClaimSecurityFlags Flags { get; }
         public IEnumerable<object> Values { get; }
         public int ValueCount { get; }
+
+        public ClaimSecurityAttributeBuilder ToBuilder()
+        {
+            return ClaimSecurityAttributeBuilder.Create(this);
+        }
 
         internal ClaimSecurityAttribute(IntPtr ptr)
         {
