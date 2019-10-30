@@ -50,6 +50,27 @@ namespace NtApiDotNet
     }
 
     /// <summary>
+    /// Data from the TSA://ProcUnique security attribute.
+    /// </summary>
+    public struct ProcessUniqueAttribute
+    {
+        /// <summary>
+        /// The index entry for the process.
+        /// </summary>
+        public ulong IndexEntry { get; }
+        /// <summary>
+        /// The value for the entry.
+        /// </summary>
+        public ulong UniqueId { get; }
+
+        internal ProcessUniqueAttribute(ulong index_entry, ulong unique_id)
+        {
+            IndexEntry = index_entry;
+            UniqueId = unique_id;
+        }
+    }
+
+    /// <summary>
     /// Class representing a Token object
     /// </summary>
     [NtType("Token")]
@@ -735,7 +756,7 @@ namespace NtApiDotNet
         /// <returns>The NT Status code.</returns>
         public NtStatus DeleteSecurityAttributes(IEnumerable<string> attributes, bool throw_on_error)
         {
-            return SetSecurityAttributes(attributes.Select(s => ClaimSecurityAttributeBuilder.Create(s, 0, new bool[0])), 
+            return SetSecurityAttributes(attributes.Select(s => ClaimSecurityAttributeBuilder.Create(s, 0, new bool[0])),
                 attributes.Select(_ => TokenSecurityAttributeOperation.Delete), throw_on_error);
         }
 
@@ -1671,6 +1692,23 @@ namespace NtApiDotNet
         /// </summary>
         [Obsolete("Use Restricted instead")]
         public bool IsRestricted => Restricted;
+
+        /// <summary>
+        /// Get the TSA://ProcUnique attribute.
+        /// </summary>
+        public ProcessUniqueAttribute ProcessUniqueAttribute
+        {
+            get
+            {
+                var attribute = GetSecurityAttributeByName("TSA://ProcUnique");
+                if (attribute != null && attribute.ValueCount == 2)
+                {
+                    ulong[] values = attribute.Values.Cast<ulong>().ToArray();
+                    return new ProcessUniqueAttribute(values[0], values[1]);
+                }
+                throw new NtException(NtStatus.STATUS_OBJECT_NAME_NOT_FOUND);
+            }
+        }
 
         #endregion
 
