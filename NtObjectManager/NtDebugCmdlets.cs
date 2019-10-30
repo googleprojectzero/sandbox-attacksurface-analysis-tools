@@ -49,6 +49,11 @@ namespace NtObjectManager
     ///   <para>Get the current debug object.
     ///   </para>
     /// </example>
+    /// <example>
+    ///   <code>Get-NtDebug -Process $p</code>
+    ///   <para>Get the debug object from a process.
+    ///   </para>
+    /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtDebug")]
     [OutputType(typeof(NtDebug))]
@@ -76,6 +81,12 @@ namespace NtObjectManager
         public SwitchParameter Current { get; set; }
 
         /// <summary>
+        /// <para type="description">Open the debug object from a process. Most parameters on this cmdlet will be ignored.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromProcess")]
+        public NtProcess Process { get; set; }
+
+        /// <summary>
         /// Method to create an object from a set of object attributes.
         /// </summary>
         /// <param name="obj_attributes">The object attributes to create/open from.</param>
@@ -85,6 +96,10 @@ namespace NtObjectManager
             if (ParameterSetName == "FromPath")
             {
                 return NtDebug.Open(obj_attributes, Access);
+            }
+            else if (ParameterSetName == "FromProcess")
+            {
+                return Process.OpenDebugObject();
             }
             else
             {
@@ -235,11 +250,7 @@ namespace NtObjectManager
     ///   <para>Wait indefinitely for a debug event to be returned in an alertable state.</para>
     /// </example>
     /// <example>
-    ///   <code>$ev = Start-NtDebugWait $dbg -Infinite -ContinueEvent</code>
-    ///   <para>Continue a previous event with the default continue state for the event and wait indefinitely for a debug event to be returned.</para>
-    /// </example>
-    /// <example>
-    ///   <code>$ev = Start-NtDebugWait $dbg -Infinite -ContinueEvent</code>
+    ///   <code>$ev = Start-NtDebugWait $dbg -Infinite -ContinueEvent $ev</code>
     ///   <para>Continue a previous event with an explicit continue state for the event and wait indefinitely for a debug event to be returned.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
