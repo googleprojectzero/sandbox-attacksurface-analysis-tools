@@ -12,13 +12,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System.Runtime.InteropServices;
+
 namespace NtApiDotNet
 {
     /// <summary>
     /// Class representing a NT SymbolicLink object
     /// </summary>
     [NtType("SymbolicLink")]
-    public class NtSymbolicLink : NtObjectWithDuplicate<NtSymbolicLink, SymbolicLinkAccessRights>
+    public class NtSymbolicLink : NtObjectWithDuplicateAndInfo<NtSymbolicLink, SymbolicLinkAccessRights, SymbolicLinkInformationClass, SymbolicLinkInformationClass>
     {
         #region Constructors
         internal NtSymbolicLink(SafeKernelObjectHandle handle) : base(handle)
@@ -184,6 +186,21 @@ namespace NtApiDotNet
                 }
             }
         }
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Method to set information for this object type.
+        /// </summary>
+        /// <param name="info_class">The information class.</param>
+        /// <param name="buffer">The buffer to set data from.</param>
+        /// <returns>The NT status code for the set.</returns>
+        public override NtStatus SetInformation(SymbolicLinkInformationClass info_class, SafeBuffer buffer)
+        {
+            return NtSystemCalls.NtSetInformationSymbolicLink(Handle, info_class, buffer, buffer.GetLength());
+        }
+
         #endregion
     }
 }

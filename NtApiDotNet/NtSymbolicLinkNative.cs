@@ -36,6 +36,12 @@ namespace NtApiDotNet
         MaximumAllowed = GenericAccessRights.MaximumAllowed,
     }
 
+    public enum SymbolicLinkInformationClass
+    {
+        SymbolicLinkGlobalInformation = 1,
+        SymbolicLinkAccessMask = 2
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
@@ -59,6 +65,13 @@ namespace NtApiDotNet
             [In, Out] UnicodeStringAllocated LinkTarget,
             out int ReturnedLength
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSetInformationSymbolicLink(
+          SafeKernelObjectHandle LinkHandle,
+          SymbolicLinkInformationClass LinkInformationClass,
+          SafeBuffer LinkInformation,
+          int LinkInformationLength);
     }
 #pragma warning restore 1591
 
