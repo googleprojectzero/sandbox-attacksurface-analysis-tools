@@ -31,13 +31,21 @@ namespace NtApiDotNet
         /// <returns>The basic information</returns>
         private static ObjectBasicInformation QueryBasicInformation(SafeKernelObjectHandle handle)
         {
-            using (var basic_info = QueryObject<ObjectBasicInformation>(handle, ObjectInformationClass.ObjectBasicInformation, false))
-            {
-                if (basic_info.IsSuccess)
-                    return basic_info.Result.Result;
-            }
-            
+            var basic_info = QueryObjectFixed<ObjectBasicInformation>(handle, 
+                ObjectInformationClass.ObjectBasicInformation, false);
+            if (basic_info.IsSuccess)
+                return basic_info.Result;
             return new ObjectBasicInformation();
+        }
+
+        private static NtResult<T> QueryObjectFixed<T>(SafeKernelObjectHandle handle,
+            ObjectInformationClass object_info, bool throw_on_error) where T : new()
+        {
+            using (var buffer = new SafeStructureInOutBuffer<T>())
+            {
+                return NtSystemCalls.NtQueryObject(handle, object_info, buffer, 
+                    buffer.Length, out int return_length).CreateResult(throw_on_error, () => buffer.Result);
+            }
         }
 
         private static NtResult<SafeStructureInOutBuffer<T>> QueryObject<T>(SafeKernelObjectHandle handle,
