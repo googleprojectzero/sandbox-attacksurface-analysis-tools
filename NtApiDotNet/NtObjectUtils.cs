@@ -200,7 +200,9 @@ namespace NtApiDotNet
         {
             SafeLoadLibraryHandle module = SafeLoadLibraryHandle.Null;
             uint message_id = (uint)status;
-            if (status.GetFacility() == NtStatusFacility.FACILITY_NTWIN32)
+            NtStatusFacility facility = status.GetFacility();
+            if (facility == NtStatusFacility.FACILITY_NTWIN32 ||
+                facility == NtStatusFacility.FACILITY_VISUALCPP)
             {
                 module = SafeLoadLibraryHandle.GetModuleHandleNoThrow("kernel32.dll");
                 message_id = (uint)status.GetStatusCode();

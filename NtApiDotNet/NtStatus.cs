@@ -2749,6 +2749,7 @@ namespace NtApiDotNet
         FACILITY_SDBUS = 0x51,
         FACILITY_SHARED_VHDX = 0x5C,
         FACILITY_SMB = 0x5D,
+        FACILITY_VISUALCPP = 0x6D,
         FACILITY_INTERIX = 0x99,
         FACILITY_SPACES = 0xE7,
         FACILITY_SECURITY_CORE = 0xE8,
