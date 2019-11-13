@@ -104,13 +104,20 @@ namespace NtObjectManager
 
         public void UpdateNames(NdrProcedureDefinition procedure)
         {
-            procedure.Name = Name;
-            var ps = procedure.Params;
-            foreach (var p in Parameters)
+            if (Name != null)
             {
-                if (ps.Count > p.Index)
+                procedure.Name = Name;
+            }
+
+            if (Parameters != null)
+            {
+                var ps = procedure.Params;
+                foreach (var p in Parameters)
                 {
-                    ps[p.Index].Name = p.Name;
+                    if (ps.Count > p.Index)
+                    {
+                        ps[p.Index].Name = p.Name;
+                    }
                 }
             }
         }
@@ -149,21 +156,27 @@ namespace NtObjectManager
                 throw new ArgumentException("Name XML doesn't match the server identity");
             }
 
-            var structures = server.ComplexTypes.OfType<NdrBaseStructureTypeReference>().ToList();
-            foreach (var s in Structures)
+            if (Structures != null)
             {
-                if (structures.Count > s.Index)
+                var structures = server.ComplexTypes.OfType<NdrBaseStructureTypeReference>().ToList();
+                foreach (var s in Structures)
                 {
-                    s.UpdateNames(structures[s.Index]);
+                    if (structures.Count > s.Index)
+                    {
+                        s.UpdateNames(structures[s.Index]);
+                    }
                 }
             }
 
-            var procedures = server.Procedures.ToList();
-            foreach (var p in Procedures)
+            if (Procedures != null)
             {
-                if (procedures.Count > p.Index)
+                var procedures = server.Procedures.ToList();
+                foreach (var p in Procedures)
                 {
-                    p.UpdateNames(procedures[p.Index]);
+                    if (procedures.Count > p.Index)
+                    {
+                        p.UpdateNames(procedures[p.Index]);
+                    }
                 }
             }
         }
