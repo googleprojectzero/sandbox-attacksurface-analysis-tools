@@ -266,6 +266,7 @@ namespace NtObjectManager
         /// <para type="description">Specify the Interface ID to match.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "MatchInterfaceId")]
+        [Alias("UUID")]
         public Guid InterfaceId { get; set; }
 
         /// <summary>

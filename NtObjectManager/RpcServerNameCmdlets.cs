@@ -13,9 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32;
-using System;
 using System.IO;
-using System.Linq;
 using System.Management.Automation;
 using System.Runtime.Serialization;
 using System.Text;
