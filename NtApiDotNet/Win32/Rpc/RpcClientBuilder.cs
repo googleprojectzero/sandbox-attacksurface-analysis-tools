@@ -999,11 +999,15 @@ namespace NtApiDotNet.Win32.Rpc
             }
             CodeNamespace ns = unit.AddNamespace(string.Empty);
 
-            ns.AddComment($"Source Executable: {_server.FilePath}");
+            ns.AddComment($"Source Executable: {_server.FilePath.ToLower()}");
             ns.AddComment($"Interface ID: {_server.InterfaceId}");
             ns.AddComment($"Interface Version: {_server.InterfaceVersion}");
-            ns.AddComment($"Client Generated: {DateTime.Now}");
-            ns.AddComment($"NtApiDotNet Version: {NtObjectUtils.GetVersion()}");
+
+            if (!_args.Flags.HasFlag(RpcClientBuilderFlags.ExcludeVariableSourceText))
+            {
+                ns.AddComment($"Client Generated: {DateTime.Now}");
+                ns.AddComment($"NtApiDotNet Version: {NtObjectUtils.GetVersion()}");
+            }
         }
 
         private CodeCompileUnit Generate()

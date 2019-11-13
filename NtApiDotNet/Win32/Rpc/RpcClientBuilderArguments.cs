@@ -62,7 +62,11 @@ namespace NtApiDotNet.Win32.Rpc
         /// <summary>
         /// Generate encode/decode methods for complex types.
         /// </summary>
-        GenerateComplexTypeEncodeMethods = 0x80
+        GenerateComplexTypeEncodeMethods = 0x80,
+        /// <summary>
+        /// Exclude any text in the source code which can change between generations.
+        /// </summary>
+        ExcludeVariableSourceText = 0x100,
     }
 
     /// <summary>
