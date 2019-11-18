@@ -1248,6 +1248,9 @@ Format the security descriptor of an object.
 Format-NtSecurityDescriptor -SecurityDescriptor $obj.SecurityDescriptor -Type $obj.NtType
 Format the security descriptor for an object via it's properties.
 .EXAMPLE
+Format-NtSecurityDescriptor -SecurityDescriptor $sd -Type File
+Format the security descriptor assuming it's a File type.
+.EXAMPLE
 Format-NtSecurityDescriptor -Path \BaseNamedObjects
 Format the security descriptor for an object from a path.
 #>

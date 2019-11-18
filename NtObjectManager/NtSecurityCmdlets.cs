@@ -503,7 +503,7 @@ namespace NtApiDotNet
         [Parameter]
         public SwitchParameter ToMandatoryLabelPolicy { get; set; }
         /// <summary>
-        /// <para type="description">Return access as specific access type based on the NtType.</para>
+        /// <para type="description">Return access as specific access type based on the type enumeration.</para>
         /// </summary>
         [Parameter]
         public SpecificAccessType ToSpecificAccess { get; set; }
