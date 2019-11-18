@@ -25,9 +25,7 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class NtType
     {
-        private static NtTypeFactory _generic_factory = new NtGeneric.NtTypeFactoryImpl();
-        private NtTypeFactory _type_factory;
-
+        #region Public Properties
         /// <summary>
         /// The name of the type
         /// </summary>
@@ -179,6 +177,9 @@ namespace NtApiDotNet
             get { return _type_factory.CanOpen; }
         }
 
+        #endregion
+
+        #region Public Methods
         /// <summary>
         /// Open this NT type by name (if CanOpen is true)
         /// </summary>
@@ -370,6 +371,30 @@ namespace NtApiDotNet
             return (GenericMapping.MapMask(access_mask) & ~ValidAccess).IsEmpty;
         }
 
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>Returns the type as a string.</returns>
+        public override string ToString()
+        {
+            return $"Name = {Name} - Index = {Index}";
+        }
+
+        #endregion
+
+        #region Constructors
+
+        /// <summary>
+        /// Create an NtType object by name.
+        /// </summary>
+        /// <param name="name">The name of the NT type.</param>
+        /// <remarks>This will always return a cached type.</remarks>
+        /// <exception cref="ArgumentException">Invalid NT type name.</exception>
+        public NtType(string name) 
+            : this(GetTypeByName(name, false))
+        {
+        }
+
         internal NtType(string name, GenericMapping generic_mapping, Type access_rights_type, Type container_access_rights_type)
         {
             if (!access_rights_type.IsEnum)
@@ -435,8 +460,45 @@ namespace NtApiDotNet
             GenericAll = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericAll, GenericMapping, _type_factory.AccessRightsType, false);
         }
 
-        private static Dictionary<string, NtType> _types = LoadTypes();
+        internal NtType(NtType existing_type)
+        {
+            if (existing_type == null)
+                throw new ArgumentException("Invalid NT Type", "existing_type");
+            Index = existing_type.Index;
+            Name = existing_type.Name;
+            InvalidAttributes = existing_type.InvalidAttributes;
+            GenericMapping = existing_type.GenericMapping;
+            ValidAccess = existing_type.ValidAccess;
+            SecurityRequired = existing_type.SecurityRequired;
 
+            TotalNumberOfObjects = existing_type.TotalNumberOfObjects;
+            TotalNumberOfHandles = existing_type.TotalNumberOfHandles;
+            TotalPagedPoolUsage = existing_type.TotalPagedPoolUsage;
+            TotalNonPagedPoolUsage = existing_type.TotalNonPagedPoolUsage;
+            TotalNamePoolUsage = existing_type.TotalNamePoolUsage;
+            TotalHandleTableUsage = existing_type.TotalHandleTableUsage;
+            HighWaterNumberOfObjects = existing_type.HighWaterNumberOfObjects;
+            HighWaterNumberOfHandles = existing_type.HighWaterNumberOfHandles;
+            HighWaterPagedPoolUsage = existing_type.HighWaterPagedPoolUsage;
+            HighWaterNonPagedPoolUsage = existing_type.HighWaterNonPagedPoolUsage;
+            HighWaterNamePoolUsage = existing_type.HighWaterNamePoolUsage;
+            HighWaterHandleTableUsage = existing_type.HighWaterHandleTableUsage;
+            MaintainHandleCount = existing_type.MaintainHandleCount;
+            MaintainTypeList = existing_type.MaintainTypeList;
+            PoolType = existing_type.PoolType;
+            PagedPoolUsage = existing_type.PagedPoolUsage;
+            NonPagedPoolUsage = existing_type.NonPagedPoolUsage;
+            _type_factory = existing_type._type_factory;
+
+            GenericRead = existing_type.GenericRead;
+            GenericWrite = existing_type.GenericWrite;
+            GenericExecute = existing_type.GenericExecute;
+            GenericAll = existing_type.GenericAll;
+        }
+
+        #endregion
+
+        #region Static Members
         /// <summary>
         /// Get a type object by index
         /// </summary>
@@ -584,7 +646,6 @@ namespace NtApiDotNet
             return new NtType(name, new GenericMapping() { GenericRead = generic_read, GenericWrite = generic_write, GenericExecute = generic_exec, GenericAll = generic_all }, access_rights_type, container_access_rights_type);
         }
 
-
         /// <summary>
         /// Get a fake type object. This can be used in access checking for operations which need an NtType object
         /// but there's no real NT object.
@@ -601,6 +662,38 @@ namespace NtApiDotNet
         {
             return GetFakeType(name, generic_read, generic_write, generic_exec, generic_all, access_rights_type, access_rights_type);
         }
+
+        /// <summary>
+        /// Get a list of all types.
+        /// </summary>
+        /// <returns>The list of types.</returns>
+        public static IEnumerable<NtType> GetTypes()
+        {
+            return GetTypes(true);
+        }
+
+        /// <summary>
+        /// Get a list of all types.
+        /// </summary>
+        /// <param name="cached">True to get the cached list of types, false to return a live list of all types.</param>
+        /// <returns>The list of types.</returns>
+        public static IEnumerable<NtType> GetTypes(bool cached)
+        {
+            if (cached)
+            {
+                return _types.Values;
+            }
+            else
+            {
+                return LoadTypes().Values;
+            }
+        }
+
+        #endregion
+
+        private static NtTypeFactory _generic_factory = new NtGeneric.NtTypeFactoryImpl();
+        private static Dictionary<string, NtType> _types = LoadTypes();
+        private readonly NtTypeFactory _type_factory;
 
         private static Dictionary<string, NtType> LoadTypes()
         {
@@ -654,41 +747,6 @@ namespace NtApiDotNet
 
             // raise exception if the candidate buffer is over a MB.
             throw new NtException(NtStatus.STATUS_INSUFFICIENT_RESOURCES);
-        }
-
-        /// <summary>
-        /// Overridden ToString method.
-        /// </summary>
-        /// <returns>Returns the type as a string.</returns>
-        public override string ToString()
-        {
-            return $"Name = {Name} - Index = {Index}";
-        }
-
-        /// <summary>
-        /// Get a list of all types.
-        /// </summary>
-        /// <returns>The list of types.</returns>
-        public static IEnumerable<NtType> GetTypes()
-        {
-            return GetTypes(true);
-        }
-
-        /// <summary>
-        /// Get a list of all types.
-        /// </summary>
-        /// <param name="cached">True to get the cached list of types, false to return a live list of all types.</param>
-        /// <returns>The list of types.</returns>
-        public static IEnumerable<NtType> GetTypes(bool cached)
-        {
-            if (cached)
-            {
-                return _types.Values;
-            }
-            else
-            {
-                return LoadTypes().Values;
-            }
         }
     }
 }
