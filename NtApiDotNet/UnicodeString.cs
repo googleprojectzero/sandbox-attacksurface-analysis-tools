@@ -163,7 +163,7 @@ namespace NtApiDotNet
                 String.Buffer = IntPtr.Zero;
             }
         }
-        
+
         public void Dispose()
         {
             DisposeUnmanaged();
@@ -180,6 +180,26 @@ namespace NtApiDotNet
     {
         [DllImport("ntdll.dll")]
         public static extern void RtlFreeUnicodeString([In, Out] ref UnicodeStringOut UnicodeString);
+
+        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+        public static extern char RtlUpcaseUnicodeChar(char SourceCharacter);
+
+        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+        public static extern NtStatus RtlUpcaseUnicodeString(
+            ref UnicodeStringOut DestinationString,
+            UnicodeString SourceString,
+            bool AllocateDestinationString
+        );
+
+        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+        public static extern char RtlDowncaseUnicodeChar(char SourceCharacter);
+
+        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+        public static extern NtStatus RtlDowncaseUnicodeString(
+            ref UnicodeStringOut DestinationString,
+            UnicodeString SourceString,
+            bool AllocateDestinationString
+        );
     }
 #pragma warning restore 1591
 }
