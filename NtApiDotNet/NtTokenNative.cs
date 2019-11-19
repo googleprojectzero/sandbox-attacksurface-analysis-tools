@@ -338,7 +338,8 @@ namespace NtApiDotNet
         DisabledByDefault = 0x0008,
         Disabled = 0x0010,
         Mandatory = 0x0020,
-        Unknown40 = 0x0040,
+        Unique = 0x0040,
+        InheritOnce = 0x0080,
     }
 
     [StructLayout(LayoutKind.Sequential)]
