@@ -696,8 +696,9 @@ namespace NtApiDotNet
         PnpDevice = 0x00000800,
         TsDevice = 0x00001000,
         WebDavDevice = 0x00002000,
-        PortableDevice = 0x0004000,
-        AllowAppContainerTraversal = 0x00020000
+        Csv = 0x00010000,
+        AllowAppContainerTraversal = 0x00020000,
+        PortableDevice = 0x0040000
     }
 
     [StructLayout(LayoutKind.Sequential)]
