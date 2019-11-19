@@ -20,7 +20,10 @@ namespace NtApiDotNet
     public static partial class NtRtl
     {
         [DllImport("ntdll.dll")]
-        public static extern int RtlNtStatusToDosError(NtStatus status);        
+        public static extern int RtlNtStatusToDosError(NtStatus status);
+
+        [DllImport("ntdll.dll")]
+        public static extern int RtlNtStatusToDosErrorNoTeb(NtStatus status);
     }
 #pragma warning restore 1591
 }

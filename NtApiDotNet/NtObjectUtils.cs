@@ -548,7 +548,7 @@ namespace NtApiDotNet
             {
                 return status.GetStatusCode();
             }
-            return NtRtl.RtlNtStatusToDosError(status);
+            return NtRtl.RtlNtStatusToDosErrorNoTeb(status);
         }
 
         /// <summary>
