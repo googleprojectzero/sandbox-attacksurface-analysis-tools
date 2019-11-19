@@ -769,7 +769,7 @@ NT path to executable.
 .PARAMETER Config
 The configuration for the new process from New-NtProcessConfig.
 .PARAMETER Win32Path
-Specified ImagePath is a Win32 path.
+Specify ImagePath is a Win32 path.
 .INPUTS
 None
 .OUTPUTS
@@ -777,7 +777,6 @@ NtApiDotNet.CreateUserProcessResult
 #>
 function New-NtProcess
 {
-  [CmdletBinding(DefaultParameterSetName = "FromArgs")]
     Param(
     [Parameter(Mandatory=$true, Position=0)]
     [string]$ImagePath,
@@ -4505,4 +4504,88 @@ function Start-AccessibleScheduledTask {
     )
 
     $Task.RunEx($Flags, $SessionId, $User, $Arguments)
+}
+
+<#
+.SYNOPSIS
+Get the EA buffer from a file.
+.DESCRIPTION
+This cmdlet queries for the Extended Attribute buffer from a file by path or from a NtFile object.
+.PARAMETER Path
+NT path to file.
+.PARAMETER Win32Path
+Specify Path is a Win32 path.
+.PARAMETER File
+Specify an existing NtFile object.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.EaBuffer
+#>
+function Get-NtEaBuffer
+{
+    [CmdletBinding(DefaultParameterSetName = "FromPath")]
+    Param(
+        [Parameter(Mandatory=$true, Position=0,ParameterSetName="FromPath")]
+        [string]$Path,
+        [Parameter(ParameterSetName="FromPath")]
+        [switch]$Win32Path,
+        [Parameter(Mandatory=$true, Position=0,ParameterSetName="FromFile")]
+        [NtApiDotNet.NtFile]$File
+    )
+
+    switch($PsCmdlet.ParameterSetName) {
+        "FromFile" {
+            $File.GetEa()
+        }
+        "FromPath" {
+            Use-NtObject($f = Get-NtFile -Path $Path -Win32Path:$Win32Path -Access ReadEa) {
+                $f.GetEa()
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Set the EA buffer on a file.
+.DESCRIPTION
+This cmdlet sets the Extended Attribute buffer on a file by path or a NtFile object.
+.PARAMETER Path
+NT path to file.
+.PARAMETER Win32Path
+Specify Path is a Win32 path.
+.PARAMETER File
+Specify an existing NtFile object.
+.PARAMETER EaBuffer
+Specify the EA buffer to set.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Set-NtEaBuffer
+{
+    [CmdletBinding(DefaultParameterSetName = "FromPath")]
+    Param(
+        [Parameter(Mandatory=$true, Position=0,ParameterSetName="FromPath")]
+        [string]$Path,
+        [Parameter(ParameterSetName="FromPath")]
+        [switch]$Win32Path,
+        [Parameter(Mandatory=$true, Position=0,ParameterSetName="FromFile")]
+        [NtApiDotNet.NtFile]$File,
+        [Parameter(Mandatory=$true, Position=1)]
+        [NtApiDotNet.EaBuffer]$EaBuffer
+    )
+
+    switch($PsCmdlet.ParameterSetName) {
+        "FromFile" {
+            $File.SetEa($EaBuffer)
+        }
+        "FromPath" {
+            Use-NtObject($f = Get-NtFile -Path $Path -Win32Path:$Win32Path -Access WriteEa) {
+                $f.SetEa($EaBuffer)
+            }
+        }
+    }
 }
