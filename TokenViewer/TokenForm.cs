@@ -200,6 +200,7 @@ namespace TokenViewer
             txtOriginLoginId.Text = _token.Origin.ToString();
 
             btnLinkedToken.Enabled = evtype != TokenElevationType.Default;
+            btnLinkedToken.Visible = btnLinkedToken.Enabled;
 
             UpdateGroupList();
 
@@ -267,6 +268,7 @@ namespace TokenViewer
             bool virtAllowed = _token.VirtualizationAllowed;
             txtVirtualizationAllowed.Text = virtAllowed.ToString();
             btnToggleVirtualizationEnabled.Enabled = virtAllowed;
+            btnToggleVirtualizationEnabled.Visible = virtAllowed;
             if (virtAllowed)
             {
                 txtVirtualizationEnabled.Text = _token.VirtualizationEnabled.ToString();
