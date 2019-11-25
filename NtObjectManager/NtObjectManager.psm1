@@ -1238,6 +1238,8 @@ Specify the path to an NT object for the security descriptor.
 Specify what parts of the security descriptor to format.
 .PARAMETER MapGeneric
 Specify to map access masks back to generic access rights for the object type.
+.PARAMETER ToSddl
+Specify to format the security descriptor as SDDL.
 .OUTPUTS
 None
 .EXAMPLE
@@ -1265,7 +1267,8 @@ function Format-NtSecurityDescriptor {
         [Parameter(Position = 0, ParameterSetName = "FromPath", Mandatory = $true, ValueFromPipeline)]
         [string]$Path,
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
-        [switch]$MapGeneric
+        [switch]$MapGeneric,
+        [switch]$ToSddl
     )
 
     PROCESS {
@@ -1292,8 +1295,15 @@ function Format-NtSecurityDescriptor {
                 }
             }
 
+            if ($ToSddl) {
+               $sd.ToSddl($SecurityInformation) | Write-Output
+               return
+            }
+
             Write-Output "Path: $n"
             Write-Output "Type: $($t.Name)"
+            Write-Output "Control: $($sd.Control)"
+            Write-Output ""
 
             if ($sd.Owner -ne $null -and (($SecurityInformation -band "Owner") -ne 0)) {
                 Write-Output "<Owner>"
