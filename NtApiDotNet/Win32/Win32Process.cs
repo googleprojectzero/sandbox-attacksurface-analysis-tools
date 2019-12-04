@@ -1245,6 +1245,31 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Resume the entire process.
+        /// </summary>
+        public void Resume()
+        {
+            Process?.Resume();
+        }
+
+        /// <summary>
+        /// Suspend the entire process.
+        /// </summary>
+        public void Suspend()
+        {
+            Process?.Suspend();
+        }
+
+        /// <summary>
+        /// Terminate the process
+        /// </summary>
+        /// <param name="exitcode">The exit code for the termination</param>
+        public void Terminate(NtStatus exitcode)
+        {
+            Process?.Terminate(exitcode);
+        }
+
+        /// <summary>
         /// The handle to the process.
         /// </summary>
         public NtProcess Process { get; }
@@ -1264,6 +1289,14 @@ namespace NtApiDotNet.Win32
         /// True to terminate process when disposed.
         /// </summary>
         public bool TerminateOnDispose { get; set; }
+        /// <summary>
+        /// Get the process' exit status.
+        /// </summary>
+        public int ExitStatus => Process.ExitStatus;
+        /// <summary>
+        /// Get the process' exit status as an NtStatus code.
+        /// </summary>
+        public NtStatus ExitNtStatus => Process.ExitNtStatus;
 
         /// <summary>
         /// Explicit conversion operator to an NtThread object.
