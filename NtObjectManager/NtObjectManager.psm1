@@ -4599,3 +4599,191 @@ function Set-NtEaBuffer
         }
     }
 }
+
+<#
+.SYNOPSIS
+Suspend a process.
+.DESCRIPTION
+This cmdlet suspends a process.
+.PARAMETER Process
+The process to suspend.
+.INPUTS
+NtApiDotNet.NtProcess
+.OUTPUTS
+None
+#>
+function Suspend-NtProcess
+{
+    [CmdletBinding(DefaultParameterSetName = "FromProcess")]
+    Param(
+        [Parameter(Mandatory=$true, Position=0, ParameterSetName="FromProcess", ValueFromPipeline)]
+        [NtApiDotNet.NtProcess[]]$Process
+    )
+
+    PROCESS {
+        switch($PsCmdlet.ParameterSetName) {
+            "FromProcess" {
+                foreach($p in $Process) {
+                    $p.Suspend()
+                }
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Resume a process.
+.DESCRIPTION
+This cmdlet resumes a process.
+.PARAMETER Process
+The process to resume.
+.INPUTS
+NtApiDotNet.NtProcess
+.OUTPUTS
+None
+#>
+function Resume-NtProcess
+{
+    [CmdletBinding(DefaultParameterSetName = "FromProcess")]
+    Param(
+        [Parameter(Mandatory=$true, Position=0, ParameterSetName="FromProcess", ValueFromPipeline)]
+        [NtApiDotNet.NtProcess[]]$Process
+    )
+
+    PROCESS {
+        switch($PsCmdlet.ParameterSetName) {
+            "FromProcess" {
+                foreach($p in $Process) {
+                    $p.Resume()
+                }
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Stop a process.
+.DESCRIPTION
+This cmdlet stops/kills a process with an optional status code.
+.PARAMETER Process
+The process to stop.
+.INPUTS
+NtApiDotNet.NtProcess
+.OUTPUTS
+None
+#>
+function Stop-NtProcess
+{
+    [CmdletBinding(DefaultParameterSetName = "FromProcess")]
+    Param(
+        [Parameter(Mandatory=$true, Position=0, ParameterSetName="FromProcess", ValueFromPipeline)]
+        [NtApiDotNet.NtProcess[]]$Process,
+        [NtApiDotNet.NtStatus]$ExitCode = 0
+    )
+
+    PROCESS {
+        switch($PsCmdlet.ParameterSetName) {
+            "FromProcess" {
+                foreach($p in $Process) {
+                    $p.Terminate($ExitCode)
+                }
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Suspend a thread.
+.DESCRIPTION
+This cmdlet suspends a thread.
+.PARAMETER Process
+The thread to suspend.
+.INPUTS
+NtApiDotNet.NtThread
+.OUTPUTS
+None
+#>
+function Suspend-NtThread
+{
+    [CmdletBinding(DefaultParameterSetName = "FromThread")]
+    Param(
+        [Parameter(Mandatory=$true, Position=0, ParameterSetName="FromThread", ValueFromPipeline)]
+        [NtApiDotNet.NtThread[]]$Thread
+    )
+
+    PROCESS {
+        switch($PsCmdlet.ParameterSetName) {
+            "FromThread" {
+                foreach($t in $Thread) {
+                    $t.Suspend() | Out-Null
+                }
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Resume a thread.
+.DESCRIPTION
+This cmdlet resumes a thread.
+.PARAMETER Process
+The thread to resume.
+.INPUTS
+NtApiDotNet.NtThread
+.OUTPUTS
+None
+#>
+function Resume-NtThread
+{
+    [CmdletBinding(DefaultParameterSetName = "FromThread")]
+    Param(
+        [Parameter(Mandatory=$true, Position=0, ParameterSetName="FromThread", ValueFromPipeline)]
+        [NtApiDotNet.NtThread[]]$Thread
+    )
+
+    PROCESS {
+        switch($PsCmdlet.ParameterSetName) {
+            "FromThread" {
+                foreach($t in $Thread) {
+                    $t.Resume() | Out-Null
+                }
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Stop a thread.
+.DESCRIPTION
+This cmdlet stops/kills a thread with an optional status code.
+.PARAMETER Process
+The thread to stop.
+.INPUTS
+NtApiDotNet.NtThread
+.OUTPUTS
+None
+#>
+function Stop-NtThread
+{
+    [CmdletBinding(DefaultParameterSetName = "FromThread")]
+    Param(
+        [Parameter(Mandatory=$true, Position=0, ParameterSetName="FromThread", ValueFromPipeline)]
+        [NtApiDotNet.NtThread[]]$Thread,
+        [NtApiDotNet.NtStatus]$ExitCode = 0
+    )
+
+    PROCESS {
+        switch($PsCmdlet.ParameterSetName) {
+            "FromThread" {
+                foreach($t in $Thread) {
+                    $t.Terminate($ExitCode)
+                }
+            }
+        }
+    }
+}
