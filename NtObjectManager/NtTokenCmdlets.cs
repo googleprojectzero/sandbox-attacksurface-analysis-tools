@@ -18,6 +18,8 @@ using System.Management.Automation;
 using System.Collections.Generic;
 using System.Linq;
 using NtApiDotNet.Win32;
+using System.Security;
+using System.Runtime.InteropServices;
 
 namespace NtObjectManager
 {
@@ -251,6 +253,12 @@ namespace NtObjectManager
         public string Password { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify password for logon token using a secure string. Note this isn't really secure, but useful for Read-Host -AsSecureString.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Logon")]
+        public SecureString SecurePassword { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify additional group sids for logon token. Needs TCB privilege.</para>
         /// </summary>
         [Parameter(ParameterSetName = "Logon")]
@@ -451,6 +459,32 @@ namespace NtObjectManager
             return NtToken.OpenProcessToken(pid, false, desired_access);
         }
 
+        private string GetPassword()
+        {
+            if (Password != null)
+            {
+                return Password;
+            }
+
+            if (SecurePassword != null)
+            {
+                IntPtr str = Marshal.SecureStringToBSTR(SecurePassword);
+                try
+                {
+                    return Marshal.PtrToStringBSTR(str);
+                }
+                finally
+                {
+                    if (str != IntPtr.Zero)
+                    {
+                        Marshal.FreeBSTR(str);
+                    }
+                }
+            }
+
+            return null;
+        }
+
         private NtToken GetLogonToken(TokenAccessRights desired_access)
         {
             IEnumerable<UserGroup> groups = null;
@@ -459,7 +493,7 @@ namespace NtObjectManager
                 groups = AdditionalGroups.Select(s => new UserGroup(s, 
                     GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Mandatory));
             }
-            using (NtToken token = TokenUtils.GetLogonUserToken(User, Domain, Password, LogonType, groups))
+            using (NtToken token = TokenUtils.GetLogonUserToken(User, Domain, GetPassword(), LogonType, groups))
             {
                 if (desired_access == TokenAccessRights.MaximumAllowed)
                 {
