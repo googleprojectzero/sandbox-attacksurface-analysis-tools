@@ -1265,6 +1265,18 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public bool TerminateOnDispose { get; set; }
 
+        /// <summary>
+        /// Explicit conversion operator to an NtThread object.
+        /// </summary>
+        /// <param name="process">The win32 process</param>
+        public static explicit operator NtThread(Win32Process process) => process.Thread;
+
+        /// <summary>
+        /// Explicit conversion operator to an NtProcess object.
+        /// </summary>
+        /// <param name="process">The win32 process</param>
+        public static explicit operator NtProcess(Win32Process process) => process.Process;
+
         internal Win32Process(PROCESS_INFORMATION proc_info, bool terminate_on_dispose)
         {
             Process = NtProcess.FromHandle(new SafeKernelObjectHandle(proc_info.hProcess, true));
