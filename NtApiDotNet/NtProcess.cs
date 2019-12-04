@@ -1448,6 +1448,17 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the process' exit status as an NtStatus code.
+        /// </summary>
+        public NtStatus ExitNtStatus
+        {
+            get
+            {
+                return (NtStatus)ExitStatus;
+            }
+        }
+
+        /// <summary>
         /// Get the process' command line
         /// </summary>
         public string CommandLine
