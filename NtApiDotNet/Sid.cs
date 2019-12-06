@@ -659,6 +659,11 @@ namespace NtApiDotNet
         /// NT AUTHORITY\SELF
         /// </summary>
         Self,
+
+        /// <summary>
+        /// NT AUTHORITY\WRITE RESTRICTED
+        /// </summary>
+        WriteRestricted,
     }
 
     /// <summary>
@@ -702,6 +707,10 @@ namespace NtApiDotNet
         /// RESTRICTED SID
         /// </summary>
         public static Sid Restricted { get { return GetKnownSid(KnownSidValue.Restricted); } }
+        /// <summary>
+        /// NT AUTHORITY\WRITE RESTRICTED
+        /// </summary>
+        public static Sid WriteRestricted { get { return GetKnownSid(KnownSidValue.WriteRestricted); } }
         /// <summary>
         /// LOCAL SYSTEM SID
         /// </summary>
@@ -844,6 +853,7 @@ namespace NtApiDotNet
                 case KnownSidValue.LocalSystem: return new Sid(SecurityAuthority.Nt, 18);
                 case KnownSidValue.LocalService: return new Sid(SecurityAuthority.Nt, 19);
                 case KnownSidValue.NetworkService: return new Sid(SecurityAuthority.Nt, 20);
+                case KnownSidValue.WriteRestricted: return new Sid(SecurityAuthority.Nt, 33);
                 case KnownSidValue.AllApplicationPackages: return new Sid(SecurityAuthority.Package, 2, 1);
                 case KnownSidValue.AllRestrictedApplicationPackages: return new Sid(SecurityAuthority.Package, 2, 2);
                 case KnownSidValue.TrustedInstaller: return NtSecurity.GetServiceSid("TrustedInstaller");
