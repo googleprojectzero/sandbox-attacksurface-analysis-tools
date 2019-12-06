@@ -1634,6 +1634,10 @@ A process ID of a process to display the token for.
 The name of a process to display the token for.
 .PARAMETER MaxTokens
 When getting the name only display at most this number of tokens.
+.PARAMETER All
+Show dialog with all access tokens.
+.PARAMETER RunAsAdmin
+When showing all tokens elevate the process to admin.
 .INPUTS
 None
 .OUTPUTS
@@ -1676,7 +1680,9 @@ function Show-NtToken {
         [string]$Name,
         [int]$MaxTokens = 0,
         [Parameter(ParameterSetName="All")]
-        [switch]$All
+        [switch]$All,
+        [Parameter(ParameterSetName="All")]
+        [switch]$RunAsAdmin
     )
 
     PROCESS {
@@ -1709,7 +1715,11 @@ function Show-NtToken {
           Start-NtTokenViewer $Token
         }
         "All" {
-            Start-Process "$PSScriptRoot\TokenViewer.exe"
+            $verb = "open"
+            if ($RunAsAdmin) {
+                $verb = "runas"
+            }
+            Start-Process "$PSScriptRoot\TokenViewer.exe" -Verb $verb
         }
       }
     }
