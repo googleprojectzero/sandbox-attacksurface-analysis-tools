@@ -53,14 +53,9 @@ namespace ViewSecurityDescriptor
                     }
                     else
                     {
-                        SecurityDescriptor sd = new SecurityDescriptor(args[1]);
-                        NtType type = NtType.GetTypeByName(args[2], false);
-                        if (type == null)
-                        {
-                            throw new ArgumentException($"Unknown NT type {args[2]}");
-                        }
+                        SecurityDescriptor sd = new SecurityDescriptor(args[1], new NtType(args[2]));
 
-                        Application.Run(new SecurityDescriptorViewerForm(args[0], sd, type));
+                        Application.Run(new SecurityDescriptorViewerForm(args[0], sd));
                     }
                     
                 }

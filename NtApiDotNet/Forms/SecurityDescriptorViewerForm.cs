@@ -49,9 +49,8 @@ namespace NtApiDotNet.Forms
         /// </summary>
         /// <param name="name">Name of the object.</param>
         /// <param name="security_descriptor">Security descriptor to view.</param>
-        /// <param name="type">NT type for view.</param>
-        public SecurityDescriptorViewerForm(string name, SecurityDescriptor security_descriptor, NtType type) 
-            : this(name, security_descriptor, type, false)
+        public SecurityDescriptorViewerForm(string name, SecurityDescriptor security_descriptor) 
+            : this(name, security_descriptor, security_descriptor.NtType, false)
         {
         }
 

@@ -793,10 +793,15 @@ namespace NtApiDotNet
         public NtToken Token { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify an NT type to map generic accesses.</para>
+        /// <para type="description">Specify mapping the generic accesses based on the NT Type.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromToken"), Parameter(ParameterSetName = "FromSddl"), Parameter(ParameterSetName = "FromBytes"), Parameter(ParameterSetName = "FromKey")]
-        public NtType MapType { get; set; }
+        public SwitchParameter MapType { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a default NT type for the security descriptor.</para>
+        /// </summary>
+        public NtType Type { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a byte array containing the security descriptor.</para>
@@ -828,6 +833,11 @@ namespace NtApiDotNet
         /// </summary>
         protected override void ProcessRecord()
         {
+            if (MapType && Type == null)
+            {
+                WriteWarning("Must specify NtType for MapType to work correctly.");
+            }
+
             SecurityDescriptor sd = null;
             switch (ParameterSetName)
             {
@@ -855,9 +865,10 @@ namespace NtApiDotNet
                     break;
             }
 
-            if (MapType != null)
+            sd.NtType = Type;
+            if (MapType)
             {
-                sd.MapGenericAccess(MapType);
+                sd.MapGenericAccess();
             }
 
             WriteObject(sd);

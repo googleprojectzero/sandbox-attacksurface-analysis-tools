@@ -1240,6 +1240,10 @@ Specify what parts of the security descriptor to format.
 Specify to map access masks back to generic access rights for the object type.
 .PARAMETER ToSddl
 Specify to format the security descriptor as SDDL.
+.PARAMETER Acl
+Specify a ACL to format.
+.PARAMETER AuditOnly
+Specify the ACL is a SACL otherwise a DACL.
 .OUTPUTS
 None
 .EXAMPLE
@@ -1248,6 +1252,9 @@ Format the security descriptor of an object.
 .EXAMPLE
 Format-NtSecurityDescriptor -SecurityDescriptor $obj.SecurityDescriptor -Type $obj.NtType
 Format the security descriptor for an object via it's properties.
+.EXAMPLE
+Format-NtSecurityDescriptor -SecurityDescriptor $sd
+Format the security descriptor using a default type.
 .EXAMPLE
 Format-NtSecurityDescriptor -SecurityDescriptor $sd -Type File
 Format the security descriptor assuming it's a File type.
@@ -1262,7 +1269,12 @@ function Format-NtSecurityDescriptor {
         [NtApiDotNet.NtObject]$Object,
         [Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true, ValueFromPipeline)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
-        [Parameter(Position = 1, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true)]
+        [Parameter(Position = 0, ParameterSetName = "FromAcl", Mandatory = $true)]
+        [NtApiDotNet.Acl]$Acl,
+        [Parameter(ParameterSetName = "FromAcl")]
+        [switch]$AuditOnly,
+        [Parameter(Position = 1, ParameterSetName = "FromSecurityDescriptor")]
+        [Parameter(Position = 1, ParameterSetName = "FromAcl")]
         [NtApiDotNet.NtType]$Type,
         [Parameter(Position = 0, ParameterSetName = "FromPath", Mandatory = $true, ValueFromPipeline)]
         [string]$Path,
@@ -1291,13 +1303,33 @@ function Format-NtSecurityDescriptor {
                     }
                 }
                 "FromSecurityDescriptor" {
-                    ($SecurityDescriptor, $Type, "UNKNOWN")
+                    $sd_type = $SecurityDescriptor.NtType
+                    if ($sd_type -eq $null) {
+                        $sd_type = $Type
+                    }
+                    ($SecurityDescriptor, $sd_type, "UNKNOWN")
+                }
+                "FromAcl" {
+                    $fake_sd = New-NtSecurityDescriptor
+                    if ($AuditOnly) {
+                        $fake_sd.Sacl = $Acl
+                        $SecurityInformation = "Sacl"
+                    } else {
+                        $fake_sd.Dacl = $Acl
+                        $SecurityInformation = "Dacl"
+                    }
+                    ($fake_sd, $Type, "UNKNOWN")
                 }
             }
 
             if ($ToSddl) {
                $sd.ToSddl($SecurityInformation) | Write-Output
                return
+            }
+
+            if ($t -eq $null) {
+                Write-Warning "No type specified, formatting might be incorrect." 
+                $t = New-NtType Generic
             }
 
             Write-Output "Path: $n"
