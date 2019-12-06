@@ -168,6 +168,34 @@ namespace NtApiDotNet
         NewProcessMin = 2,
     }
 
+    // Not all these flags are accessible from user mode.
+    [Flags]
+    public enum TokenFlags
+    {
+        HasTraversePrivilege = 1,
+        HasBackupPrivilege = 2,
+        HasRestorePrivilege = 4,
+        WriteRestricted = 8,
+        IsRestricted = 0x10,
+        SessionNotReferenced = 0x20,
+        SandboxInert = 0x40,
+        HasImpersonatePrivilege = 0x80,
+        BackupPrivilegesChecked = 0x100,
+        VirtualizeAllowed = 0x200,
+        VirtualizeEnabled = 0x400,
+        IsFiltered = 0x800,
+        UiAccess = 0x1000,
+        NoLow = 0x2000,
+        LowBox = 0x4000,
+        HasOwnClaimAttributes = 0x8000,
+        PrivateNamespace = 0x10000,
+        DoNotUseGlobalAttributesForQuery = 0x20000,
+        SpecialEncryptedOpen = 0x40000,
+        NoChildProcess = 0x80000,
+        NoChildProcessUnlessSecure = 0x100000,
+        AuditNoChildProcess = 0x200000
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct SidAndAttributes
     {
@@ -179,6 +207,37 @@ namespace NtApiDotNet
             return new UserGroup(new Sid(Sid), Attributes);
         }
     };
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TokenAccessInformationTruncated
+    {
+        public IntPtr SidHash;
+        public IntPtr RestrictedSidHash;
+        public IntPtr Privileges;
+        public Luid AuthenticationId;
+        public TokenType TokenType;
+        public SecurityImpersonationLevel ImpersonationLevel;
+        public TokenMandatoryPolicy MandatoryPolicy;
+        public TokenFlags Flags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TokenAccessInformation
+    {
+        public IntPtr SidHash;
+        public IntPtr RestrictedSidHash;
+        public IntPtr Privileges;
+        public Luid AuthenticationId;
+        public TokenType TokenType;
+        public SecurityImpersonationLevel ImpersonationLevel;
+        public TokenMandatoryPolicy MandatoryPolicy;
+        public TokenFlags Flags;
+        public int AppContainerNumber;
+        public IntPtr PackageSid;
+        public IntPtr CapabilitiesHash;
+        public IntPtr TrustLevelSid;
+        public IntPtr SecurityAttributes;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct TokenUser

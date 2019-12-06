@@ -1286,22 +1286,27 @@ namespace NtApiDotNet
         /// <summary>
         /// Get whether token is write restricted.
         /// </summary>
-        /// <remarks>This checks if the token has a WRITE RESTRICTED restricted SID. This isn't required
-        /// and so this could return an erroneous value. There seems to be no better way of getting this
-        /// information.</remarks>
         public bool WriteRestricted
         {
             get
             {
                 if (!Restricted)
                     return false;
-                Sid write_restricted_sid = KnownSids.WriteRestricted;
-                foreach (var sid in RestrictedSids)
+                return (Flags & TokenFlags.WriteRestricted) != 0;
+            }
+        }
+
+        /// <summary>
+        /// Token access flags.
+        /// </summary>
+        public TokenFlags Flags
+        {
+            get
+            {
+                using (var buffer = QueryBuffer<TokenAccessInformationTruncated>(TokenInformationClass.TokenAccessInformation))
                 {
-                    if (sid.Sid == write_restricted_sid)
-                        return true;
+                    return buffer.Result.Flags;
                 }
-                return false;
             }
         }
 
