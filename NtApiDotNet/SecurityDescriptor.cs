@@ -212,7 +212,7 @@ namespace NtApiDotNet
             Group = QuerySid(buffer, NtRtl.RtlGetGroupSecurityDescriptor);
             Dacl = QueryAcl(buffer, NtRtl.RtlGetDaclSecurityDescriptor);
             Sacl = QueryAcl(buffer, NtRtl.RtlGetSaclSecurityDescriptor);
-            NtStatus status = NtRtl.RtlGetControlSecurityDescriptor(buffer, 
+            NtStatus status = NtRtl.RtlGetControlSecurityDescriptor(buffer,
                 out SecurityDescriptorControl control, out uint revision);
             if (!status.IsSuccess())
             {
@@ -362,6 +362,10 @@ namespace NtApiDotNet
         /// Revision value
         /// </summary>
         public uint Revision { get; set; }
+        /// <summary>
+        /// Get or set an associated NT type for this security descriptor.
+        /// </summary>
+        public NtType NtType { get; set; }
         /// <summary>
         /// Get or set mandatory label. Returns a medium label if it doesn't exist.
         /// </summary>
@@ -665,6 +669,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Map all generic access in this security descriptor to the default type specified by NtType.
+        /// </summary>
+        public void MapGenericAccess()
+        {
+            if (NtType == null)
+                return;
+            MapGenericAccess(NtType);
+        }
+
+        /// <summary>
         /// Map all generic access in this security descriptor to a specific type.
         /// </summary>
         /// <param name="type">The type to get the generic mapping from.</param>
@@ -736,12 +750,23 @@ namespace NtApiDotNet
         /// Constructor
         /// </summary>
         /// <param name="security_descriptor">Binary form of security descriptor</param>
-        public SecurityDescriptor(byte[] security_descriptor)
+        /// <param name="type">Optional NT type for security descriptor.</param>
+        public SecurityDescriptor(byte[] security_descriptor, NtType type)
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(security_descriptor))
             {
                 ParseSecurityDescriptor(buffer).ToNtException();
             }
+            NtType = type;
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="security_descriptor">Binary form of security descriptor</param>
+        public SecurityDescriptor(byte[] security_descriptor) 
+            : this(security_descriptor, null)
+        {
         }
 
         /// <summary>
@@ -793,6 +818,7 @@ namespace NtApiDotNet
             }
 
             NtType type = base_object.NtType;
+            NtType = type;
 
             SafeBuffer parent_sd_buffer = SafeHGlobalBuffer.Null;
             SafeBuffer creator_sd_buffer = SafeHGlobalBuffer.Null;
@@ -827,9 +853,21 @@ namespace NtApiDotNet
         /// <param name="sddl">The SDDL string</param>
         /// <exception cref="NtException">Thrown if invalid SDDL</exception>
         public SecurityDescriptor(string sddl)
-            : this(NtSecurity.SddlToSecurityDescriptor(sddl))
+            : this(sddl, null)
         {
         }
+
+        /// <summary>
+        /// Constructor from an SDDL string
+        /// </summary>
+        /// <param name="sddl">The SDDL string</param>
+        /// <param name="type">Optional NT type for security descriptor.</param>
+        /// <exception cref="NtException">Thrown if invalid SDDL</exception>
+        public SecurityDescriptor(string sddl, NtType type)
+            : this(NtSecurity.SddlToSecurityDescriptor(sddl) ,type)
+        {
+        }
+
         #endregion
 
         #region Static Methods

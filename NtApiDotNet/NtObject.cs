@@ -569,7 +569,7 @@ namespace NtApiDotNet
         /// <returns>The security descriptor</returns>
         public SecurityDescriptor GetSecurityDescriptor(SecurityInformation security_information)
         {
-            return new SecurityDescriptor(GetSecurityDescriptorBytes(security_information));
+            return GetSecurityDescriptor(security_information, true).Result;
         }
 
         /// <summary>
@@ -580,7 +580,7 @@ namespace NtApiDotNet
         /// <returns>The security descriptor</returns>
         public NtResult<SecurityDescriptor> GetSecurityDescriptor(SecurityInformation security_information, bool throw_on_error)
         {
-            return GetSecurityDescriptorBytes(security_information, throw_on_error).Map(sd => new SecurityDescriptor(sd));
+            return GetSecurityDescriptorBytes(security_information, throw_on_error).Map(sd => new SecurityDescriptor(sd, NtType));
         }
 
         /// <summary>
