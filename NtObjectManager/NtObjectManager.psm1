@@ -1124,7 +1124,7 @@ function Show-NtSecurityDescriptor {
     [switch]$ReadOnly,
     [Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true)]
     [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
-    [Parameter(Position = 1, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true)]
+    [Parameter(Position = 1, ParameterSetName = "FromSecurityDescriptor")]
     [NtApiDotNet.NtType]$Type,
     [Parameter(ParameterSetName = "FromSecurityDescriptor")]
     [string]$Name = "Object",
@@ -1157,6 +1157,14 @@ function Show-NtSecurityDescriptor {
         }
     }
     "FromSecurityDescriptor" {
+        if ($Type -eq $null) {
+            $Type = $SecurityDescriptor.NtType
+        }
+
+        if ($Type -eq $null) {
+            Write-Warning "Defaulting NT type to File. This might give incorrect results."
+            $Type = Get-NtType File
+        }
         Start-Process -FilePath "$PSScriptRoot\ViewSecurityDescriptor.exe" -ArgumentList @("`"$Name`"", "`"$($SecurityDescriptor.ToSddl())`"","`"$($Type.Name)`"") -Wait:$Wait
     }
   }
