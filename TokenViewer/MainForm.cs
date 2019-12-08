@@ -481,8 +481,7 @@ namespace TokenViewer
         {
             if (listViewSessions.SelectedItems.Count > 0)
             {
-                NtToken token = listViewSessions.SelectedItems[0].Tag as NtToken;
-                if (token != null)
+                if (listViewSessions.SelectedItems[0].Tag is NtToken token)
                 {
                     TokenForm.OpenForm(token, "Session", true);
                 }
