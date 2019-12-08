@@ -631,6 +631,14 @@ namespace NtApiDotNet.Win32
             int cbBufSize,
             out int pcbBytesNeeded);
 
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool QueryServiceConfig(
+          SafeServiceHandle hService,
+          SafeBuffer lpServiceConfig,
+          int cbBufSize,
+          out int pcbBytesNeeded
+        );
+
         [DllImport("Advapi32.dll", SetLastError = true)]
         internal static extern bool QueryServiceConfig2(
           SafeServiceHandle hService,

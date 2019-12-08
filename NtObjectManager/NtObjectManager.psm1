@@ -3421,6 +3421,8 @@ Gets a list of running services.
 This cmdlet gets a list of running services. It can also include in the list non-active services.
 .PARAMETER IncludeNonActive
 Specify to return all services including non-active ones.
+.PARAMETER Driver
+Specify to return drivers rather than services.
 .PARAMETER Name
 Specify a name to lookup.
 .INPUTS
@@ -3432,30 +3434,43 @@ Get-RunningService
 Get all running services.
 .EXAMPLE
 Get-RunningService -IncludeNonActive
-Get all running services including non-active services.
+Get all services including non-active services.
+.EXAMPLE
+Get-RunningService -Driver
+Get all running drivers.
 .EXAMPLE
 Get-RunningService -Name Fax
-Get the Fax running services.
+Get the Fax running service.
 #>
 function Get-RunningService {
     [CmdletBinding(DefaultParameterSetName = "All")]
     Param(
         [parameter(ParameterSetName = "All")]
         [switch]$IncludeNonActive,
-        [parameter(ParameterSetName = "FromName")]
+        [parameter(ParameterSetName = "All")]
+        [switch]$Driver,
+        [parameter(ParameterSetName = "FromName", Position = 0)]
         [string]$Name
     )
 
     switch($PSCmdlet.ParameterSetName) {
         "All" {
             if ($IncludeNonActive) {
-                [NtApiDotNet.Win32.ServiceUtils]::GetServices()
+                if ($Driver) {
+                    [NtApiDotNet.Win32.ServiceUtils]::GetDrivers()
+                } else {
+                    [NtApiDotNet.Win32.ServiceUtils]::GetServices()
+                }
             } else {
-                [NtApiDotNet.Win32.ServiceUtils]::GetRunningServicesWithProcessIds()
+                if ($Driver) {
+                    [NtApiDotNet.Win32.ServiceUtils]::GetDrivers()
+                } else {
+                    [NtApiDotNet.Win32.ServiceUtils]::GetRunningServicesWithProcessIds()
+                }
             }
         }
         "FromName" {
-            [NtApiDotNet.Win32.ServiceUtils]::GetServices() | ? Name -eq $Name
+            [NtApiDotNet.Win32.ServiceUtils]::GetService($Name)
         }
     }
 }

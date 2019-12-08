@@ -165,8 +165,8 @@ namespace NtApiDotNet.Win32
         SystemDriver = 0x00000002,
         Win32OwnProcess = 0x00000010,
         Win32ShareProcess = 0x00000020,
-        UserService         =  0x00000040,
-        UserServiceInstance =  0x00000080,
+        UserService = 0x00000040,
+        UserServiceInstance = 0x00000080,
         InteractiveProcess = 0x00000100
     }
 
@@ -203,11 +203,52 @@ namespace NtApiDotNet.Win32
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    struct SERVICE_TRIGGER_SPECIFIC_DATA_ITEM
+    internal struct SERVICE_TRIGGER_SPECIFIC_DATA_ITEM
     {
         public ServiceTriggerDataType dwDataType;
         public int cbData;
         public IntPtr pData;
+    }
+
+    public enum ServiceSidType
+    {
+        None = 0,
+        Unrestricted = 1,
+        Restricted = 3
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SERVICE_SID_INFO
+    {
+        public ServiceSidType dwServiceSidType;
+    }
+
+    public enum ServiceLaunchProtectedType
+    {
+        None = 0,
+        Windows = 1,
+        WindowsLight = 2,
+        AntimalwareLight = 3,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SERVICE_LAUNCH_PROTECTED_INFO
+    {
+        public ServiceLaunchProtectedType dwLaunchProtected;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct QUERY_SERVICE_CONFIG
+    {
+        public ServiceType dwServiceType;
+        public int dwStartType;
+        public int dwErrorControl;
+        public IntPtr lpBinaryPathName;
+        public IntPtr lpLoadOrderGroup;
+        public int dwTagId;
+        public IntPtr lpDependencies;
+        public IntPtr lpServiceStartName;
+        public IntPtr lpDisplayName;
     }
 
     public class ServiceTriggerCustomData
@@ -446,12 +487,24 @@ namespace NtApiDotNet.Win32
         /// The list of triggers for the service.
         /// </summary>
         public IEnumerable<ServiceTriggerInformation> Triggers { get; }
+        /// <summary>
+        /// The service SID setting.
+        /// </summary>
+        public ServiceSidType SidType { get; }
+        /// <summary>
+        /// The service launch protected setting.
+        /// </summary>
+        public ServiceLaunchProtectedType LaunchProtected { get; }
 
-        internal ServiceInformation(string name, SecurityDescriptor sd, IEnumerable<ServiceTriggerInformation> triggers)
+        internal ServiceInformation(string name, SecurityDescriptor sd, 
+            IEnumerable<ServiceTriggerInformation> triggers, ServiceSidType sid_type,
+            ServiceLaunchProtectedType launch_protected)
         {
             Name = name;
             SecurityDescriptor = sd;
             Triggers = triggers;
+            SidType = sid_type;
+            LaunchProtected = launch_protected;
         }
     }
 
@@ -468,7 +521,9 @@ namespace NtApiDotNet.Win32
             }
             catch (SafeWin32Exception)
             {
-                return new ServiceInformation(Name, null, new ServiceTriggerInformation[0]);
+                return new ServiceInformation(Name, null, 
+                    new ServiceTriggerInformation[0], ServiceSidType.None,
+                    ServiceLaunchProtectedType.None);
             }
         }
 
@@ -514,6 +569,14 @@ namespace NtApiDotNet.Win32
         /// The list of triggers for the service.
         /// </summary>
         public IEnumerable<ServiceTriggerInformation> Triggers => _service_information.Value.Triggers;
+        /// <summary>
+        /// The service SID type.
+        /// </summary>
+        public ServiceSidType SidType => _service_information.Value.SidType;
+        /// <summary>
+        /// The service launch protected setting.
+        /// </summary>
+        public ServiceLaunchProtectedType LaunchProtected => _service_information.Value.LaunchProtected;
         /// <summary>
         /// The user name this service runs under.
         /// </summary>
@@ -572,13 +635,13 @@ namespace NtApiDotNet.Win32
             return Marshal.PtrToStringUni(ptr);
         }
 
-        internal RunningService(ENUM_SERVICE_STATUS_PROCESS process)
+        internal RunningService(string name, string display_name, SERVICE_STATUS_PROCESS status)
         {
-            Name = GetString(process.lpServiceName);
-            DisplayName = GetString(process.lpDisplayName);
-            ServiceType = process.ServiceStatusProcess.dwServiceType;
-            Status = process.ServiceStatusProcess.dwCurrentState;
-            ProcessId = process.ServiceStatusProcess.dwProcessId;
+            Name = name;
+            DisplayName = display_name;
+            ServiceType = status.dwServiceType;
+            Status = status.dwCurrentState;
+            ProcessId = status.dwProcessId;
             ServiceDll = string.Empty;
             ImagePath = string.Empty;
             CommandLine = string.Empty;
@@ -589,7 +652,7 @@ namespace NtApiDotNet.Win32
                     CommandLine = ReadStringFromKey(key, null, "ImagePath");
                     ImagePath = Win32Utils.GetImagePathFromCommandLine(CommandLine);
                     ServiceDll = ReadStringFromKey(key, "Parameters", "ServiceDll");
-                    if (String.IsNullOrEmpty(ServiceDll))
+                    if (string.IsNullOrEmpty(ServiceDll))
                     {
                         ServiceDll = ReadStringFromKey(key, null, "ServiceDll");
                     }
@@ -597,6 +660,11 @@ namespace NtApiDotNet.Win32
                 }
             }
             _service_information = new Lazy<ServiceInformation>(GetServiceInformation);
+        }
+
+        internal RunningService(ENUM_SERVICE_STATUS_PROCESS process) : this(GetString(process.lpServiceName),
+            GetString(process.lpDisplayName), process.ServiceStatusProcess)
+        {
         }
     }
 
@@ -606,6 +674,8 @@ namespace NtApiDotNet.Win32
     public static class ServiceUtils
     {
         const int SERVICE_CONFIG_TRIGGER_INFO = 8;
+        const int SERVICE_CONFIG_SERVICE_SID_INFO = 5;
+        const int SERVICE_CONFIG_LAUNCH_PROTECTED = 12;
 
         /// <summary>
         /// Get the generic mapping for the SCM.
@@ -650,11 +720,11 @@ namespace NtApiDotNet.Win32
             using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
                             ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.ReadControl))
             {
-                return GetServiceSecurityDescriptor(scm);
+                return GetServiceSecurityDescriptor(scm, "scm");
             }
         }
 
-        static SecurityDescriptor GetServiceSecurityDescriptor(SafeServiceHandle handle)
+        static SecurityDescriptor GetServiceSecurityDescriptor(SafeServiceHandle handle, string type_name)
         {
             int required = 0;
             byte[] sd = new byte[8192];
@@ -666,7 +736,7 @@ namespace NtApiDotNet.Win32
                 throw new SafeWin32Exception();
             }
 
-            return new SecurityDescriptor(sd);
+            return new SecurityDescriptor(sd, GetServiceNtType(type_name));
         }
 
         static IEnumerable<ServiceTriggerInformation> GetTriggersForService(SafeServiceHandle service)
@@ -674,8 +744,7 @@ namespace NtApiDotNet.Win32
             List<ServiceTriggerInformation> triggers = new List<ServiceTriggerInformation>();
             using (var buf = new SafeStructureInOutBuffer<SERVICE_TRIGGER_INFO>(8192, false))
             {
-                int required = 0;
-                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_TRIGGER_INFO, buf, 8192, out required))
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_TRIGGER_INFO, buf, 8192, out int required))
                 {
                     return triggers.AsReadOnly();
                 }
@@ -687,7 +756,8 @@ namespace NtApiDotNet.Win32
                 }
 
                 SERVICE_TRIGGER[] trigger_arr;
-                using (SafeHGlobalBuffer trigger_buffer = new SafeHGlobalBuffer(trigger_info.pTriggers, trigger_info.cTriggers * Marshal.SizeOf(typeof(SERVICE_TRIGGER)), false))
+                using (SafeHGlobalBuffer trigger_buffer = new SafeHGlobalBuffer(trigger_info.pTriggers, 
+                    trigger_info.cTriggers * Marshal.SizeOf(typeof(SERVICE_TRIGGER)), false))
                 {
                     trigger_arr = new SERVICE_TRIGGER[trigger_info.cTriggers];
                     trigger_buffer.ReadArray(0, trigger_arr, 0, trigger_arr.Length);
@@ -702,16 +772,45 @@ namespace NtApiDotNet.Win32
             }
         }
 
+        private static ServiceSidType GetServiceSidType(SafeServiceHandle service)
+        {
+            using (var buf = new SafeStructureInOutBuffer<SERVICE_SID_INFO>())
+            {
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_SERVICE_SID_INFO,
+                        buf, buf.Length, out int needed))
+                {
+                    return ServiceSidType.None;
+                }
+                return buf.Result.dwServiceSidType;
+            }
+        }
+
+        private static ServiceLaunchProtectedType GetServiceLaunchProtectedType(SafeServiceHandle service)
+        {
+            using (var buf = new SafeStructureInOutBuffer<SERVICE_LAUNCH_PROTECTED_INFO>())
+            {
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_LAUNCH_PROTECTED,
+                        buf, buf.Length, out int needed))
+                {
+                    return ServiceLaunchProtectedType.None;
+                }
+                return buf.Result.dwLaunchProtected;
+            }
+        }
+
         private static ServiceInformation GetServiceSecurityInformation(SafeServiceHandle scm, string name)
         {
-            using (SafeServiceHandle service = Win32NativeMethods.OpenService(scm, name, ServiceAccessRights.QueryConfig | ServiceAccessRights.ReadControl))
+            using (SafeServiceHandle service = Win32NativeMethods.OpenService(scm, name, 
+                ServiceAccessRights.QueryConfig | ServiceAccessRights.ReadControl))
             {
                 if (service.IsInvalid)
                 {
                     throw new SafeWin32Exception();
                 }
 
-                return new ServiceInformation(name, GetServiceSecurityDescriptor(service), GetTriggersForService(service));
+                return new ServiceInformation(name, GetServiceSecurityDescriptor(service, "service"), 
+                    GetTriggersForService(service), GetServiceSidType(service),
+                    GetServiceLaunchProtectedType(service));
             }
         }
         
@@ -734,11 +833,31 @@ namespace NtApiDotNet.Win32
             }
         }
 
+        private static string GetServiceDisplayName(SafeServiceHandle service)
+        {
+            using (var buf = new SafeStructureInOutBuffer<QUERY_SERVICE_CONFIG>(8192, false))
+            {
+                if (!Win32NativeMethods.QueryServiceConfig(service, buf, buf.Length, out int required))
+                {
+                    return string.Empty;
+                }
+
+                var result = buf.Result;
+                if (result.lpDisplayName == IntPtr.Zero)
+                {
+                    return string.Empty;
+                }
+
+                return Marshal.PtrToStringUni(result.lpDisplayName);
+            }
+        }
+
         private static SERVICE_STATUS_PROCESS QueryStatus(SafeServiceHandle service)
         {
             using (var buffer = new SafeStructureInOutBuffer<SERVICE_STATUS_PROCESS>())
             {
-                if (!Win32NativeMethods.QueryServiceStatusEx(service, SC_STATUS_TYPE.SC_STATUS_PROCESS_INFO, buffer, buffer.Length, out int length))
+                if (!Win32NativeMethods.QueryServiceStatusEx(service, SC_STATUS_TYPE.SC_STATUS_PROCESS_INFO, 
+                    buffer, buffer.Length, out int length))
                 {
                     throw new SafeWin32Exception();
                 }
@@ -807,11 +926,21 @@ namespace NtApiDotNet.Win32
             return result;
         }
 
+        private static ServiceType GetServiceTypes()
+        {
+            ServiceType service_types = ServiceType.Win32OwnProcess | ServiceType.Win32ShareProcess;
+            if (!NtObjectUtils.IsWindows81OrLess)
+            {
+                service_types |= ServiceType.UserService;
+            }
+            return service_types;
+        }
+
         /// <summary>
         /// Get a list of registered services.
         /// </summary>
         /// <returns>A list of running services with process IDs.</returns>
-        private static IEnumerable<RunningService> GetServices(SERVICE_STATE service_state)
+        private static IEnumerable<RunningService> GetServices(SERVICE_STATE service_state, ServiceType service_types)
         {
             using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
                             ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.EnumerateService))
@@ -821,19 +950,14 @@ namespace NtApiDotNet.Win32
                     throw new SafeWin32Exception();
                 }
 
-                ServiceType service_types = ServiceType.Win32OwnProcess | ServiceType.Win32ShareProcess;
-                if (!NtObjectUtils.IsWindows81OrLess)
-                {
-                    service_types |= ServiceType.UserService;
-                }
-
                 const int Length = 32 * 1024;
                 using (var buffer = new SafeHGlobalBuffer(Length))
                 {
                     int resume_handle = 0;
                     while (true)
                     {
-                        bool ret = Win32NativeMethods.EnumServicesStatusEx(scm, SC_ENUM_TYPE.SC_ENUM_PROCESS_INFO, service_types, service_state, buffer,
+                        bool ret = Win32NativeMethods.EnumServicesStatusEx(scm, SC_ENUM_TYPE.SC_ENUM_PROCESS_INFO, 
+                            service_types, service_state, buffer,
                             buffer.Length, out int bytes_needed, out int services_returned, ref resume_handle, null);
                         Win32Error error = Win32Utils.GetLastWin32Error();
                         if (!ret && error != Win32Error.ERROR_MORE_DATA)
@@ -858,12 +982,40 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Get a running service by name.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <returns>The running service.</returns>
+        /// <remarks>This will return active and non-active services as well as drivers.</remarks>
+        public static RunningService GetService(string name)
+        {
+            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
+                            ServiceControlManagerAccessRights.Connect))
+            {
+                if (scm.IsInvalid)
+                {
+                    throw new SafeWin32Exception();
+                }
+
+                using (var service = Win32NativeMethods.OpenService(scm, name, 
+                    ServiceAccessRights.QueryConfig | ServiceAccessRights.QueryStatus))
+                {
+                    if (service.IsInvalid)
+                    {
+                        throw new SafeWin32Exception();
+                    }
+                    return new RunningService(name, GetServiceDisplayName(service), QueryStatus(service));
+                }
+            }
+        }
+
+        /// <summary>
         /// Get a list of all registered services.
         /// </summary>
         /// <returns>A list of registered services.</returns>
         public static IEnumerable<RunningService> GetServices()
         {
-            return GetServices(SERVICE_STATE.SERVICE_STATE_ALL);
+            return GetServices(SERVICE_STATE.SERVICE_STATE_ALL, GetServiceTypes());
         }
 
         /// <summary>
@@ -872,7 +1024,44 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of all active running services with process IDs.</returns>
         public static IEnumerable<RunningService> GetRunningServicesWithProcessIds()
         {
-            return GetServices(SERVICE_STATE.SERVICE_ACTIVE);
+            return GetServices(SERVICE_STATE.SERVICE_ACTIVE, GetServiceTypes());
+        }
+
+        /// <summary>
+        /// Get a list of all drivers.
+        /// </summary>
+        /// <returns>A list of all drivers.</returns>
+        public static IEnumerable<RunningService> GetDrivers()
+        {
+            return GetServices(SERVICE_STATE.SERVICE_STATE_ALL, ServiceType.KernelDriver | ServiceType.SystemDriver);
+        }
+
+        /// <summary>
+        /// Get a list of all active running drivers.
+        /// </summary>
+        /// <returns>A list of all active running drivers.</returns>
+        public static IEnumerable<RunningService> GetRunningDrivers()
+        {
+            return GetServices(SERVICE_STATE.SERVICE_STATE_ALL, ServiceType.KernelDriver | ServiceType.SystemDriver);
+        }
+
+        /// <summary>
+        /// Get a fake NtType for a service.
+        /// </summary>
+        /// <param name="type_name">Service returns the service type, SCM returns SCM type.</param>
+        /// <returns>The fake service NtType. Returns null if not a recognized type.</returns>
+        public static NtType GetServiceNtType(string type_name)
+        {
+            switch (type_name.ToLower())
+            {
+                case "service":
+                    return new NtType("Service", GetServiceGenericMapping(), 
+                        typeof(ServiceAccessRights), typeof(ServiceAccessRights));
+                case "scm":
+                    return new NtType("SCM", GetScmGenericMapping(),
+                        typeof(ServiceControlManagerAccessRights), typeof(ServiceControlManagerAccessRights));
+            }
+            return null;
         }
     }
 }
