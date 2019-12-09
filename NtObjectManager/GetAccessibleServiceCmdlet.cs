@@ -14,6 +14,7 @@
 
 using NtApiDotNet;
 using NtApiDotNet.Win32;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
@@ -21,6 +22,25 @@ using System.ServiceProcess;
 
 namespace NtObjectManager
 {
+    /// <summary>
+    /// <para type="description">Check mode for accessible services.</para>
+    /// </summary>
+    public enum ServiceCheckMode
+    {
+        /// <summary>
+        /// Only services.
+        /// </summary>
+        ServiceOnly,
+        /// <summary>
+        /// Only drivers.
+        /// </summary>
+        DriverOnly,
+        /// <summary>
+        /// Services and drivers.
+        /// </summary>
+        ServiceAndDriver
+    }
+
     /// <summary>
     /// <para type="description">Access check result for a service.</para>
     /// </summary>
@@ -65,21 +85,60 @@ namespace NtObjectManager
     ///   <code>$token = Get-NtToken -Primary -Duplicate -IntegrityLevel Low&#x0A;Get-AccessibleService -Tokens $token -AccessRights GenericWrite</code>
     ///   <para>Get all services which can be written by a low integrity copy of current token.</para>
     /// </example>
-    [Cmdlet(VerbsCommon.Get, "AccessibleService")]
+    [Cmdlet(VerbsCommon.Get, "AccessibleService", DefaultParameterSetName = "All")]
     [OutputType(typeof(AccessCheckResult))]
     public class GetAccessibleServiceCmdlet : CommonAccessBaseWithAccessCmdlet<ServiceAccessRights>
     {
+        private RunningService GetServiceByName(string name)
+        {
+            try
+            {
+                return ServiceUtils.GetService(name);
+            }
+            catch (SafeWin32Exception ex)
+            {
+                WriteError(new ErrorRecord(ex, "OpenService", ErrorCategory.OpenError, name));
+            }
+            return null;
+        }
+
+        private IEnumerable<RunningService> GetServices()
+        {
+            if (Name != null && Name.Length > 0)
+            {
+                return Name.Select(n => GetServiceByName(n));
+            }
+
+            switch (CheckMode)
+            {
+                case ServiceCheckMode.ServiceOnly:
+                    return ServiceUtils.GetServices();
+                case ServiceCheckMode.DriverOnly:
+                    return ServiceUtils.GetDrivers();
+                case ServiceCheckMode.ServiceAndDriver:
+                    return ServiceUtils.GetServicesAndDrivers();
+                default:
+                    throw new ArgumentException("Invalid check mode");
+            }
+        }
+
         /// <summary>
         /// <para type="description">Specify names of services to check.</para>
         /// </summary>
-        [Parameter(Position = 0)]
+        [Parameter(Position = 0, ParameterSetName = "FromName")]
         public string[] Name { get; set; }
 
         /// <summary>
         /// <para type="description">Check access to the SCM.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "CheckScm")]
         public SwitchParameter CheckScmAccess { get; set; }
+
+        /// <summary>
+        /// <para type="description">Check mode for accessible services.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "All")]
+        public ServiceCheckMode CheckMode { get; set; }
 
         internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
@@ -96,34 +155,22 @@ namespace NtObjectManager
             }
             else
             {
-                string[] names = Name;
-                if (names == null || names.Length == 0)
-                {
-                    names = ServiceController.GetServices().Select(s => s.ServiceName).ToArray();
-                }
+                IEnumerable<RunningService> services = GetServices();
 
                 GenericMapping service_mapping = ServiceUtils.GetServiceGenericMapping();
                 AccessMask access_rights = service_mapping.MapMask(AccessRights);
 
-                foreach (string name in names)
+                foreach (var service in services.Where(s => s?.SecurityDescriptor != null))
                 {
-                    try
+                    foreach (TokenEntry token in tokens)
                     {
-                        var service = ServiceUtils.GetServiceInformation(name);
-                        foreach (TokenEntry token in tokens)
+                        AccessMask granted_access = NtSecurity.GetMaximumAccess(service.SecurityDescriptor,
+                            token.Token, service_mapping);
+                        if (IsAccessGranted(granted_access, access_rights))
                         {
-                            AccessMask granted_access = NtSecurity.GetMaximumAccess(service.SecurityDescriptor,
-                                token.Token, service_mapping);
-                            if (IsAccessGranted(granted_access, access_rights))
-                            {
-                                WriteObject(new ServiceAccessCheckResult(name, granted_access,
-                                    service.SecurityDescriptor.ToSddl(), token.Information, service.Triggers));
-                            }
+                            WriteObject(new ServiceAccessCheckResult(service.Name, granted_access,
+                                service.SecurityDescriptor.ToSddl(), token.Information, service.Triggers));
                         }
-                    }
-                    catch (SafeWin32Exception ex)
-                    {
-                        WriteError(new ErrorRecord(ex, "OpenService", ErrorCategory.OpenError, name));
                     }
                 }
             }

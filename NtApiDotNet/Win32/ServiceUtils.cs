@@ -1046,6 +1046,16 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Get a list of all services and drivers.
+        /// </summary>
+        /// <returns>A list of all services and drivers.</returns>
+        public static IEnumerable<RunningService> GetServicesAndDrivers()
+        {
+            return GetServices(SERVICE_STATE.SERVICE_STATE_ALL, 
+                ServiceType.KernelDriver | ServiceType.SystemDriver | GetServiceTypes());
+        }
+
+        /// <summary>
         /// Get a fake NtType for a service.
         /// </summary>
         /// <param name="type_name">Service returns the service type, SCM returns SCM type.</param>
