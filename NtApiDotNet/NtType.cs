@@ -403,6 +403,7 @@ namespace NtApiDotNet
             }
             _type_factory = new NtTypeFactory(access_rights_type, container_access_rights_type, typeof(object), false);
             Name = name;
+            ValidAccess = CalculateValidAccess(access_rights_type) | CalculateValidAccess(container_access_rights_type);
             GenericMapping = generic_mapping;
             GenericRead = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericRead, GenericMapping, access_rights_type, false);
             GenericWrite = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericWrite, GenericMapping, access_rights_type, false);
@@ -691,6 +692,7 @@ namespace NtApiDotNet
 
         #endregion
 
+        #region Private Members
         private static NtTypeFactory _generic_factory = new NtGeneric.NtTypeFactoryImpl();
         private static Dictionary<string, NtType> _types = LoadTypes();
         private readonly NtTypeFactory _type_factory;
@@ -748,5 +750,20 @@ namespace NtApiDotNet
             // raise exception if the candidate buffer is over a MB.
             throw new NtException(NtStatus.STATUS_INSUFFICIENT_RESOURCES);
         }
+
+        private static uint CalculateValidAccess(Type access_type)
+        {
+            uint valid_access = 0;
+            foreach (uint value in Enum.GetValues(access_type))
+            {
+                if ((value & 0xFF000000) == 0)
+                {
+                    valid_access |= value;
+                }
+            }
+            return valid_access;
+        }
+
+        #endregion
     }
 }
