@@ -639,7 +639,7 @@ namespace NtApiDotNet.Win32
           out int pcbBytesNeeded
         );
 
-        [DllImport("Advapi32.dll", SetLastError = true)]
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern bool QueryServiceConfig2(
           SafeServiceHandle hService,
           int dwInfoLevel,

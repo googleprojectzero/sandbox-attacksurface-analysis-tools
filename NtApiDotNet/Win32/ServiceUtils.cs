@@ -495,16 +495,21 @@ namespace NtApiDotNet.Win32
         /// The service launch protected setting.
         /// </summary>
         public ServiceLaunchProtectedType LaunchProtected { get; }
+        /// <summary>
+        /// The service required privileges.
+        /// </summary>
+        public IEnumerable<string> RequiredPrivileges { get; }
 
         internal ServiceInformation(string name, SecurityDescriptor sd, 
             IEnumerable<ServiceTriggerInformation> triggers, ServiceSidType sid_type,
-            ServiceLaunchProtectedType launch_protected)
+            ServiceLaunchProtectedType launch_protected, IEnumerable<string> required_privileges)
         {
             Name = name;
             SecurityDescriptor = sd;
             Triggers = triggers;
             SidType = sid_type;
             LaunchProtected = launch_protected;
+            RequiredPrivileges = required_privileges;
         }
     }
 
@@ -523,7 +528,7 @@ namespace NtApiDotNet.Win32
             {
                 return new ServiceInformation(Name, null, 
                     new ServiceTriggerInformation[0], ServiceSidType.None,
-                    ServiceLaunchProtectedType.None);
+                    ServiceLaunchProtectedType.None, new string[0]);
             }
         }
 
@@ -577,6 +582,10 @@ namespace NtApiDotNet.Win32
         /// The service launch protected setting.
         /// </summary>
         public ServiceLaunchProtectedType LaunchProtected => _service_information.Value.LaunchProtected;
+        /// <summary>
+        /// The service required privileges.
+        /// </summary>
+        public IEnumerable<string> RequiredPrivileges => _service_information.Value.RequiredPrivileges;
         /// <summary>
         /// The user name this service runs under.
         /// </summary>
@@ -675,6 +684,7 @@ namespace NtApiDotNet.Win32
     {
         const int SERVICE_CONFIG_TRIGGER_INFO = 8;
         const int SERVICE_CONFIG_SERVICE_SID_INFO = 5;
+        const int SERVICE_CONFIG_REQUIRED_PRIVILEGES_INFO = 6;
         const int SERVICE_CONFIG_LAUNCH_PROTECTED = 12;
 
         /// <summary>
@@ -744,7 +754,8 @@ namespace NtApiDotNet.Win32
             List<ServiceTriggerInformation> triggers = new List<ServiceTriggerInformation>();
             using (var buf = new SafeStructureInOutBuffer<SERVICE_TRIGGER_INFO>(8192, false))
             {
-                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_TRIGGER_INFO, buf, 8192, out int required))
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_TRIGGER_INFO, 
+                    buf, buf.Length, out int required))
                 {
                     return triggers.AsReadOnly();
                 }
@@ -769,6 +780,39 @@ namespace NtApiDotNet.Win32
                 }
 
                 return triggers.AsReadOnly();
+            }
+        }
+
+        private static IEnumerable<string> GetServiceRequiredPrivileges(SafeServiceHandle service)
+        {
+            using (var buf = new SafeHGlobalBuffer(8192))
+            {
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_REQUIRED_PRIVILEGES_INFO,
+                        buf, buf.Length, out int needed))
+                {
+                    return new string[0];
+                }
+
+                IntPtr str_pointer = buf.Read<IntPtr>(0);
+                if (str_pointer == IntPtr.Zero)
+                {
+                    return new string[0];
+                }
+
+                SafeHGlobalBuffer str_buffer = new SafeHGlobalBuffer(str_pointer, 8192 - 8, false);
+                ulong offset = 0;
+                List<string> privs = new List<string>();
+                while (offset < str_buffer.ByteLength)
+                {
+                    string s = str_buffer.ReadNulTerminatedUnicodeString(offset);
+                    if (s.Length == 0)
+                    {
+                        break;
+                    }
+                    privs.Add(s);
+                    offset += (ulong)(s.Length + 1) * 2;
+                }
+                return privs.AsReadOnly();
             }
         }
 
@@ -810,7 +854,7 @@ namespace NtApiDotNet.Win32
 
                 return new ServiceInformation(name, GetServiceSecurityDescriptor(service, "service"), 
                     GetTriggersForService(service), GetServiceSidType(service),
-                    GetServiceLaunchProtectedType(service));
+                    GetServiceLaunchProtectedType(service), GetServiceRequiredPrivileges(service));
             }
         }
         
