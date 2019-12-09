@@ -24,6 +24,25 @@ using System.Runtime.InteropServices;
 namespace NtObjectManager
 {
     /// <summary>
+    /// <para type="description">Type of service account to create.</para>
+    /// </summary>
+    public enum ServiceAccountType
+    {
+        /// <summary>
+        /// Create SYSTEM token.
+        /// </summary>
+        System,
+        /// <summary>
+        /// Create Local Service token.
+        /// </summary>
+        LocalService,
+        /// <summary>
+        /// Create Network Service token.
+        /// </summary>
+        NetworkService
+    }
+
+    /// <summary>
     /// <para type="synopsis">Open an NT token from different sources.</para>
     /// <para type="description">This cmdlet gets a token from one of multiple possible sources. You can specify either a Primary process token, a Thread impersonation token, an Effective token, 
     /// a Clipboard token, a Logon/S4U token, the anonymous token, a lowbox or a filtered token.</para>
@@ -261,7 +280,7 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Specify additional group sids for logon token. Needs TCB privilege.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "Logon")]
+        [Parameter(ParameterSetName = "Logon"), Parameter(ParameterSetName = "Service")]
         public Sid[] AdditionalGroups { get; set; }
 
         /// <summary>
@@ -343,10 +362,16 @@ namespace NtObjectManager
         public string[] CapabilitySids { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify list of handles to capture with lowbox token..</para>
+        /// <para type="description">Specify list of handles to capture with lowbox token.</para>
         /// </summary>
         [Parameter(ParameterSetName = "LowBox")]
         public NtObject[] Handles { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a service account to create.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Service", Mandatory = true)]
+        public ServiceAccountType? Service { get; set; }
 
         private static void AddLuids(HashSet<Luid> set, IEnumerable<Luid> luids)
         {
@@ -485,15 +510,16 @@ namespace NtObjectManager
             return null;
         }
 
-        private NtToken GetLogonToken(TokenAccessRights desired_access)
+        private NtToken GetLogonToken(TokenAccessRights desired_access, string user, 
+            string domain, string password, SecurityLogonType logon_type)
         {
             IEnumerable<UserGroup> groups = null;
             if (AdditionalGroups != null && AdditionalGroups.Length > 0)
             {
-                groups = AdditionalGroups.Select(s => new UserGroup(s, 
+                groups = AdditionalGroups.Select(s => new UserGroup(s,
                     GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Mandatory));
             }
-            using (NtToken token = TokenUtils.GetLogonUserToken(User, Domain, GetPassword(), LogonType, groups))
+            using (NtToken token = TokenUtils.GetLogonUserToken(user, domain, password, logon_type, groups))
             {
                 if (desired_access == TokenAccessRights.MaximumAllowed)
                 {
@@ -501,6 +527,11 @@ namespace NtObjectManager
                 }
                 return token.Duplicate(desired_access);
             }
+        }
+
+        private NtToken GetLogonToken(TokenAccessRights desired_access)
+        {
+            return GetLogonToken(desired_access, User, Domain, GetPassword(), LogonType);
         }
 
         private NtToken GetS4UToken(TokenAccessRights desired_access)
@@ -572,6 +603,24 @@ namespace NtObjectManager
                 GetPrivileges(PrivilegesToDelete), GroupsToSids(RestrictedSids));
         }
 
+        private NtToken GetServiceToken(TokenAccessRights desired_access, ServiceAccountType service_type)
+        {
+            string user = string.Empty;
+            switch (service_type)
+            {
+                case ServiceAccountType.System:
+                    user = "SYSTEM";
+                    break;
+                case ServiceAccountType.LocalService:
+                    user = "Local Service";
+                    break;
+                case ServiceAccountType.NetworkService:
+                    user = "Network Service";
+                    break;
+            }
+            return GetLogonToken(desired_access, user, "NT AUTHORITY", null, SecurityLogonType.Service);
+        }
+
         private NtToken GetToken(TokenAccessRights desired_access)
         {
             if (Impersonation)
@@ -605,6 +654,10 @@ namespace NtObjectManager
             else if (Filtered)
             {
                 return GetSandboxedToken(desired_access, GetFilteredToken);
+            }
+            else if (Service.HasValue)
+            {
+                return GetServiceToken(desired_access, Service.Value);
             }
             else
             {
