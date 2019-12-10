@@ -879,7 +879,7 @@ namespace NtObjectManager
         /// <para type="description">Specify the long values.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromLong")]
-        public ulong[] LongValue { get; set; }
+        public long[] LongValue { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the bool values.</para>
@@ -988,13 +988,25 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Specify the name of the attributes to remove.</para>
         /// </summary>
+        [Parameter(Position = 1, Mandatory = true, ParameterSetName = "FromName")]
         public string[] Name { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify existing attribute values.</para>
+        /// </summary>
+        [Parameter(Position = 1, Mandatory = true, ParameterSetName = "FromAttribute")]
+        public ClaimSecurityAttribute[] Attribute { get; set; }
 
         /// <summary>
         /// Overridden ProcessRecord method.
         /// </summary>
         protected override void ProcessRecord()
         {
+            if (Attribute != null)
+            {
+                Name = Attribute.Select(a => a.Name).ToArray();
+            }
+            
             var builders = Name.Select(n => ClaimSecurityAttributeBuilder.Create(n, 0, new long[0]));
             var ops = Enumerable.Repeat(TokenSecurityAttributeOperation.Delete, Name.Length);
             Token.SetSecurityAttributes(builders, ops);
