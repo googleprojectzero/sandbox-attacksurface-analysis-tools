@@ -46,6 +46,18 @@ Thanks to the people who were willing to test it and give feedback:
 
 Release Notes:
 
+1.1.24
+--------
+* Added Add-NtTokenSecurityAttribute and Remove-NtTokenSecurityAttribute cmdlets.
+* Added additional properties for running servies.
+* Added support for drivers to Get-RunningService and Get-AccesibleService.
+* Added fake service NtType objects for services and SCM to allow formatting and the UI.
+* Added NtType property to security descriptors.
+* Added option to Show-NtToken to elevate to admin.
+* Added Suspend, Resume and Stop process commands.
+* Added Get-NtEaBuffer and Set-NtEaBuffer commands.
+* Added open to Get-NtDebug to get from a process.
+
 1.1.23
 --------
 * Added basic ETW APIs.

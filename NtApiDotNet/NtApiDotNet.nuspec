@@ -11,12 +11,17 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A .NET class library to access native NT API system calls</description>
     <releaseNotes>
-1.1.22
+1.1.24
 --------
-* Removed old standalone utilities, everything should be accessible from PowerShell.
-* Added Test-NetworkAccess cmdlet to replace CheckNetworkAccess utility.
-* Added Set-NtFileHardlink cmdlet.
-* Various fixes for RPC client code.
+* Added Add-NtTokenSecurityAttribute and Remove-NtTokenSecurityAttribute cmdlets.
+* Added additional properties for running servies.
+* Added support for drivers to Get-RunningService and Get-AccesibleService.
+* Added fake service NtType objects for services and SCM to allow formatting and the UI.
+* Added NtType property to security descriptors.
+* Added option to Show-NtToken to elevate to admin.
+* Added Suspend, Resume and Stop process commands.
+* Added Get-NtEaBuffer and Set-NtEaBuffer commands.
+* Added open to Get-NtDebug to get from a process.
 </releaseNotes>
     <copyright>Copyright Google Inc. 2017, 2018, 2019</copyright>
     <tags>syscalls</tags>
