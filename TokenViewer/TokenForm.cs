@@ -221,7 +221,10 @@ namespace TokenViewer
 
                     ListViewItem item = new ListViewItem(group.ToString());
 
-                    AccessMask mask = GenericAccessRights.GenericAll | GenericAccessRights.GenericExecute | GenericAccessRights.GenericRead | GenericAccessRights.GenericWrite;
+                    AccessMask mask = GenericAccessRights.GenericAll | GenericAccessRights.GenericExecute 
+                        | GenericAccessRights.GenericRead | GenericAccessRights.GenericWrite 
+                        | GenericAccessRights.AccessSystemSecurity | GenericAccessRights.Delete | GenericAccessRights.ReadControl
+                        | GenericAccessRights.Synchronize | GenericAccessRights.WriteDac | GenericAccessRights.WriteOwner;
                     string maskstr;
 
                     if ((ace.Mask & ~mask).HasAccess)
