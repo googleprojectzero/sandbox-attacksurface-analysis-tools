@@ -78,6 +78,7 @@
             System.Windows.Forms.ColumnHeader columnHeader6;
             System.Windows.Forms.Label label27;
             System.Windows.Forms.TableLayoutPanel tableLayoutPanelSecurity;
+            System.Windows.Forms.Label label29;
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TokenForm));
             this.groupBoxSource = new System.Windows.Forms.GroupBox();
             this.txtSourceId = new System.Windows.Forms.TextBox();
@@ -141,6 +142,7 @@
             this.txtFileContents = new System.Windows.Forms.TextBox();
             this.txtFilePath = new System.Windows.Forms.TextBox();
             this.btnEditPermissions = new System.Windows.Forms.Button();
+            this.securityDescriptorViewerControl = new NtApiDotNet.Forms.SecurityDescriptorViewerControl();
             this.tabControlMain = new System.Windows.Forms.TabControl();
             this.tabPagePrivs = new System.Windows.Forms.TabPage();
             this.listViewPrivs = new System.Windows.Forms.ListView();
@@ -168,7 +170,7 @@
             this.tabPageOperations = new System.Windows.Forms.TabPage();
             this.tabPageSecurity = new System.Windows.Forms.TabPage();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.securityDescriptorViewerControl = new NtApiDotNet.Forms.SecurityDescriptorViewerControl();
+            this.txtTokenFlags = new System.Windows.Forms.TextBox();
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
@@ -218,6 +220,7 @@
             columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             label27 = new System.Windows.Forms.Label();
             tableLayoutPanelSecurity = new System.Windows.Forms.TableLayoutPanel();
+            label29 = new System.Windows.Forms.Label();
             tabPageMain.SuspendLayout();
             this.groupBoxSource.SuspendLayout();
             groupBoxToken.SuspendLayout();
@@ -248,7 +251,7 @@
             tabPageMain.Controls.Add(groupBoxToken);
             tabPageMain.Location = new System.Drawing.Point(4, 22);
             tabPageMain.Name = "tabPageMain";
-            tabPageMain.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            tabPageMain.Padding = new System.Windows.Forms.Padding(3);
             tabPageMain.Size = new System.Drawing.Size(467, 457);
             tabPageMain.TabIndex = 0;
             tabPageMain.Text = "Main Details";
@@ -570,7 +573,7 @@
             tabPageGroups.Controls.Add(this.listViewGroups);
             tabPageGroups.Location = new System.Drawing.Point(4, 22);
             tabPageGroups.Name = "tabPageGroups";
-            tabPageGroups.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            tabPageGroups.Padding = new System.Windows.Forms.Padding(3);
             tabPageGroups.Size = new System.Drawing.Size(467, 457);
             tabPageGroups.TabIndex = 1;
             tabPageGroups.Text = "Groups";
@@ -653,7 +656,7 @@
             tabPageDefaultDacl.Controls.Add(this.txtOwner);
             tabPageDefaultDacl.Location = new System.Drawing.Point(4, 22);
             tabPageDefaultDacl.Name = "tabPageDefaultDacl";
-            tabPageDefaultDacl.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            tabPageDefaultDacl.Padding = new System.Windows.Forms.Padding(3);
             tabPageDefaultDacl.Size = new System.Drawing.Size(467, 457);
             tabPageDefaultDacl.TabIndex = 2;
             tabPageDefaultDacl.Text = "Default Dacl";
@@ -951,6 +954,8 @@
             groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            groupBox2.Controls.Add(label29);
+            groupBox2.Controls.Add(this.txtTokenFlags);
             groupBox2.Controls.Add(label28);
             groupBox2.Controls.Add(this.txtTrustLevel);
             groupBox2.Controls.Add(this.btnToggleVirtualizationEnabled);
@@ -1039,15 +1044,15 @@
             this.treeViewSecurityAttributes.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.treeViewSecurityAttributes.Location = new System.Drawing.Point(9, 225);
+            this.treeViewSecurityAttributes.Location = new System.Drawing.Point(9, 248);
             this.treeViewSecurityAttributes.Name = "treeViewSecurityAttributes";
-            this.treeViewSecurityAttributes.Size = new System.Drawing.Size(436, 201);
+            this.treeViewSecurityAttributes.Size = new System.Drawing.Size(436, 178);
             this.treeViewSecurityAttributes.TabIndex = 17;
             // 
             // llbSecurityAttributes
             // 
             this.llbSecurityAttributes.AutoSize = true;
-            this.llbSecurityAttributes.Location = new System.Drawing.Point(6, 209);
+            this.llbSecurityAttributes.Location = new System.Drawing.Point(6, 232);
             this.llbSecurityAttributes.Name = "llbSecurityAttributes";
             this.llbSecurityAttributes.Size = new System.Drawing.Size(95, 13);
             this.llbSecurityAttributes.TabIndex = 16;
@@ -1297,7 +1302,7 @@
             tableLayoutPanelSecurity.Controls.Add(this.securityDescriptorViewerControl, 0, 0);
             tableLayoutPanelSecurity.Dock = System.Windows.Forms.DockStyle.Fill;
             tableLayoutPanelSecurity.Location = new System.Drawing.Point(2, 2);
-            tableLayoutPanelSecurity.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            tableLayoutPanelSecurity.Margin = new System.Windows.Forms.Padding(2);
             tableLayoutPanelSecurity.Name = "tableLayoutPanelSecurity";
             tableLayoutPanelSecurity.RowCount = 2;
             tableLayoutPanelSecurity.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
@@ -1314,6 +1319,15 @@
             this.btnEditPermissions.Text = "Edit";
             this.btnEditPermissions.UseVisualStyleBackColor = true;
             this.btnEditPermissions.Click += new System.EventHandler(this.btnEditPermissions_Click);
+            // 
+            // securityDescriptorViewerControl
+            // 
+            this.securityDescriptorViewerControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.securityDescriptorViewerControl.Location = new System.Drawing.Point(2, 2);
+            this.securityDescriptorViewerControl.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.securityDescriptorViewerControl.Name = "securityDescriptorViewerControl";
+            this.securityDescriptorViewerControl.Size = new System.Drawing.Size(459, 420);
+            this.securityDescriptorViewerControl.TabIndex = 0;
             // 
             // tabControlMain
             // 
@@ -1338,7 +1352,7 @@
             this.tabPagePrivs.Controls.Add(this.listViewPrivs);
             this.tabPagePrivs.Location = new System.Drawing.Point(4, 22);
             this.tabPagePrivs.Name = "tabPagePrivs";
-            this.tabPagePrivs.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPagePrivs.Padding = new System.Windows.Forms.Padding(3);
             this.tabPagePrivs.Size = new System.Drawing.Size(467, 457);
             this.tabPagePrivs.TabIndex = 7;
             this.tabPagePrivs.Text = "Privileges";
@@ -1407,7 +1421,7 @@
             this.tabPageRestricted.Controls.Add(this.listViewRestrictedSids);
             this.tabPageRestricted.Location = new System.Drawing.Point(4, 22);
             this.tabPageRestricted.Name = "tabPageRestricted";
-            this.tabPageRestricted.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPageRestricted.Padding = new System.Windows.Forms.Padding(3);
             this.tabPageRestricted.Size = new System.Drawing.Size(467, 457);
             this.tabPageRestricted.TabIndex = 3;
             this.tabPageRestricted.Text = "Restricted SIDs";
@@ -1482,7 +1496,7 @@
             this.tabPageAppContainer.Controls.Add(this.txtPackageName);
             this.tabPageAppContainer.Location = new System.Drawing.Point(4, 22);
             this.tabPageAppContainer.Name = "tabPageAppContainer";
-            this.tabPageAppContainer.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPageAppContainer.Padding = new System.Windows.Forms.Padding(3);
             this.tabPageAppContainer.Size = new System.Drawing.Size(467, 457);
             this.tabPageAppContainer.TabIndex = 4;
             this.tabPageAppContainer.Text = "App Container";
@@ -1546,7 +1560,7 @@
             this.tabPageMisc.Controls.Add(groupBox2);
             this.tabPageMisc.Location = new System.Drawing.Point(4, 22);
             this.tabPageMisc.Name = "tabPageMisc";
-            this.tabPageMisc.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPageMisc.Padding = new System.Windows.Forms.Padding(3);
             this.tabPageMisc.Size = new System.Drawing.Size(467, 457);
             this.tabPageMisc.TabIndex = 6;
             this.tabPageMisc.Text = "Misc";
@@ -1560,7 +1574,7 @@
             this.tabPageOperations.Controls.Add(groupBoxDuplicate);
             this.tabPageOperations.Location = new System.Drawing.Point(4, 22);
             this.tabPageOperations.Name = "tabPageOperations";
-            this.tabPageOperations.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPageOperations.Padding = new System.Windows.Forms.Padding(3);
             this.tabPageOperations.Size = new System.Drawing.Size(467, 457);
             this.tabPageOperations.TabIndex = 5;
             this.tabPageOperations.Text = "Operations";
@@ -1570,22 +1584,32 @@
             // 
             this.tabPageSecurity.Controls.Add(tableLayoutPanelSecurity);
             this.tabPageSecurity.Location = new System.Drawing.Point(4, 22);
-            this.tabPageSecurity.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tabPageSecurity.Margin = new System.Windows.Forms.Padding(2);
             this.tabPageSecurity.Name = "tabPageSecurity";
-            this.tabPageSecurity.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tabPageSecurity.Padding = new System.Windows.Forms.Padding(2);
             this.tabPageSecurity.Size = new System.Drawing.Size(467, 457);
             this.tabPageSecurity.TabIndex = 8;
             this.tabPageSecurity.Text = "Security";
             this.tabPageSecurity.UseVisualStyleBackColor = true;
             // 
-            // securityDescriptorViewerControl
+            // label29
             // 
-            this.securityDescriptorViewerControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.securityDescriptorViewerControl.Location = new System.Drawing.Point(2, 2);
-            this.securityDescriptorViewerControl.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.securityDescriptorViewerControl.Name = "securityDescriptorViewerControl";
-            this.securityDescriptorViewerControl.Size = new System.Drawing.Size(459, 420);
-            this.securityDescriptorViewerControl.TabIndex = 0;
+            label29.AutoSize = true;
+            label29.Location = new System.Drawing.Point(6, 203);
+            label29.Name = "label29";
+            label29.Size = new System.Drawing.Size(69, 13);
+            label29.TabIndex = 24;
+            label29.Text = "Token Flags:";
+            // 
+            // txtTokenFlags
+            // 
+            this.txtTokenFlags.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtTokenFlags.Location = new System.Drawing.Point(121, 200);
+            this.txtTokenFlags.Name = "txtTokenFlags";
+            this.txtTokenFlags.ReadOnly = true;
+            this.txtTokenFlags.Size = new System.Drawing.Size(324, 20);
+            this.txtTokenFlags.TabIndex = 25;
             // 
             // TokenForm
             // 
@@ -1725,5 +1749,6 @@
         private System.Windows.Forms.TabPage tabPageSecurity;
         private NtApiDotNet.Forms.SecurityDescriptorViewerControl securityDescriptorViewerControl;
         private System.Windows.Forms.Button btnEditPermissions;
+        private System.Windows.Forms.TextBox txtTokenFlags;
     }
 }
