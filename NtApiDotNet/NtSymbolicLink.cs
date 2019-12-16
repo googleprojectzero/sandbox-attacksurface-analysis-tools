@@ -201,6 +201,49 @@ namespace NtApiDotNet
             return NtSystemCalls.NtSetInformationSymbolicLink(Handle, info_class, buffer, buffer.GetLength());
         }
 
+        /// <summary>
+        /// Set access mask filter.
+        /// </summary>
+        /// <param name="access_mask">The access mask to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <remarks>Needs SeTcbPrivilege.</remarks>
+        public NtStatus SetAccessMask(AccessMask access_mask, bool throw_on_error)
+        {
+            return Set(SymbolicLinkInformationClass.SymbolicLinkAccessMask, 
+                access_mask.Access, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set access mask filter.
+        /// </summary>
+        /// <param name="access_mask">The access mask to set.</param>
+        /// <remarks>Needs SeTcbPrivilege.</remarks>
+        public void SetAccessMask(AccessMask access_mask)
+        {
+            SetAccessMask(access_mask, true);
+        }
+
+        /// <summary>
+        /// Set as a global link.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <remarks>Needs SeTcbPrivilege.</remarks>
+        public NtStatus SetGlobalLink(bool throw_on_error)
+        {
+            return Set(SymbolicLinkInformationClass.SymbolicLinkGlobalInformation, 1, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set as a global link.
+        /// </summary>
+        /// <remarks>Needs SeTcbPrivilege.</remarks>
+        public void SetGlobalLink()
+        {
+            SetGlobalLink(true);
+        }
+
         #endregion
     }
 }
