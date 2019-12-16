@@ -999,6 +999,111 @@ function Get-ExecutableManifest
 
 <#
 .SYNOPSIS
+Prints the details of a token.
+.DESCRIPTION
+This cmdlet opens prints basic details about it a token.
+.PARAMETER Token
+Specify the token to format.
+.PARAMETER All
+Show all information.
+.PARAMETER User
+Show user information.
+.PARAMETER Group
+Show group information. Also prints capability sids and restricted sids if a sandboxed token.
+.PARAMETER Privilege
+Show privilege information.
+.PARAMETER Integrity
+Show integrity information.
+.PARAMETER SecurityAttributes
+Show token security attributes.
+.OUTPUTS
+Text data
+.EXAMPLE
+Format-NtToken -Token $token
+Print the user name of the token.
+.EXAMPLE
+Format-NtToken -Token $token -All
+Print all details for the token.
+.EXAMPLE
+Format-NtToken -Token $token -User -Group
+Print the user and groups of the token.
+#>
+function Format-NtToken {
+    Param(
+    [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
+    [NtApiDotNet.NtToken]$Token,
+    [switch]$All,
+    [switch]$Group,
+    [switch]$Privilege,
+    [switch]$User,
+    [switch]$Integrity,
+    [switch]$SecurityAttributes
+  )
+
+  if ($All) {
+    $Group = $true
+    $User = $true
+    $Privilege = $true
+    $Integrity = $true
+    $SecurityAttributes = $true
+  }
+
+  if (!$User -and !$Group -and !$Privilege -and !$Integrity) {
+    $token.User.ToString()
+    return
+  }
+
+  if ($User) {
+    "USER INFORMATION"
+    "----------------"
+    $token.User | Format-Table
+  }
+
+  if ($Group) {
+    "GROUP SID INFORMATION"
+    "-----------------"
+    $token.Groups | Format-Table
+
+    if ($token.AppContainer) {
+      "CAPABILITY SID INFORMATION"
+      "----------------------"
+      $token.Capabilities | Format-Table
+    }
+
+    if ($token.Restricted) {
+      if ($token.WriteRestricted) {
+        "WRITE RESTRICTED SID INFORMATION"
+        "--------------------------------"
+      } else {
+        "RESTRICTED SID INFORMATION"
+        "--------------------------"
+      }
+      $token.RestrictedSids | Format-Table
+    }
+  }
+
+  if ($Privilege) {
+    "PRIVILEGE INFORMATION"
+    "---------------------"
+    $token.Privileges | Format-Table
+  }
+
+  if ($Integrity) {
+    "INTEGRITY LEVEL"
+    "---------------"
+    $token.IntegrityLevel | Format-Table
+    ""
+  }
+
+  if ($SecurityAttributes) {
+    "SECURITY ATTRIBUTES"
+    "-------------------"
+    $token.SecurityAttributes | Format-Table
+  }
+}
+
+<#
+.SYNOPSIS
 Prints the details of the current token.
 .DESCRIPTION
 This cmdlet opens the current token and prints basic details about it. This is similar to the Windows whoami
@@ -1037,62 +1142,9 @@ function Show-NtTokenEffective {
     [switch]$SecurityAttributes
     )
 
-  $token = Get-NtToken -Effective
-
-  if ($All) {
-    $Group = $true
-    $User = $true
-    $Privilege = $true
-    $Integrity = $true
-    $SecurityAttributes = $true
-  }
-
-  if (!$User -and !$Group -and !$Privilege -and !$Integrity) {
-    $token.User.ToString()
-    return
-  }
-
-  if ($User) {
-    "USER INFORMATION"
-    "----------------"
-    $token.User | Format-Table
-  }
-
-  if ($Group) {
-    "GROUP SID INFORMATION"
-    "-----------------"
-    $token.Groups | Format-Table
-
-    if ($token.AppContainer) {
-      "CAPABILITY SID INFORMATION"
-      "----------------------"
-      $token.Capabilities | Format-Table
-    }
-
-    if ($token.Restricted) {
-      "RESTRICTED SID INFORMATION"
-      "--------------------------"
-      $token.RestrictedSids | Format-Table
-    }
-  }
-
-  if ($Privilege) {
-    "PRIVILEGE INFORMATION"
-    "---------------------"
-    $token.Privileges | Format-Table
-  }
-
-  if ($Integrity) {
-    "INTEGRITY LEVEL"
-    "---------------"
-    $token.IntegrityLevel | Format-Table
-    ""
-  }
-
-  if ($SecurityAttributes) {
-    "SECURITY ATTRIBUTES"
-    "-------------------"
-    $token.SecurityAttributes | Format-Table
+  Use-NtObject($token = Get-NtToken -Effective) {
+    Format-NtToken -Token $token -All:$All -Group:$Group -Privilege:$Privilege `
+        -User:$User -Integrity:$Integrity -SecurityAttributes:$SecurityAttributes
   }
 }
 

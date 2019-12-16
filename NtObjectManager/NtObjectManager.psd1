@@ -65,7 +65,8 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Set-NtProcessMitigationPolicy', 'Format-NtSecurityDescriptor', 'Get-AppContainerProfile', 'New-AppContainerProfile',
           'Get-RpcClient', 'Format-RpcClient', 'Set-RpcServer', 'Connect-RpcClient', 'New-RpcContextHandle', 'Format-RpcComplexType',
           'Get-Win32File', 'Close-NtObject', 'Start-AccessibleScheduledTask', 'Get-NtEaBuffer', 'Set-NtEaBuffer',
-          'Suspend-NtProcess', 'Resume-NtProcess', 'Stop-NtProcess', 'Suspend-NtThread', 'Resume-NtThread', 'Stop-NtThread'
+          'Suspend-NtProcess', 'Resume-NtProcess', 'Stop-NtProcess', 'Suspend-NtThread', 'Resume-NtThread', 'Stop-NtThread',
+          'Format-NtToken'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
