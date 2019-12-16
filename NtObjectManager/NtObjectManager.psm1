@@ -1001,7 +1001,7 @@ function Get-ExecutableManifest
 .SYNOPSIS
 Prints the details of the current token.
 .DESCRIPTION
-This cmdlet opens the current token and prints basic details about it. This is similar to the Windows whois
+This cmdlet opens the current token and prints basic details about it. This is similar to the Windows whoami
 command but runs in process and will print information about the current thread token if you're impersonating.
 .PARAMETER All
 Show all information.
@@ -1013,6 +1013,8 @@ Show group information. Also prints capability sids and restricted sids if a san
 Show privilege information.
 .PARAMETER Integrity
 Show integrity information.
+.PARAMETER SecurityAttributes
+Show token security attributes.
 .OUTPUTS
 Text data
 .EXAMPLE
@@ -1031,7 +1033,8 @@ function Show-NtTokenEffective {
     [switch]$Group,
     [switch]$Privilege,
     [switch]$User,
-    [switch]$Integrity
+    [switch]$Integrity,
+    [switch]$SecurityAttributes
     )
 
   $token = Get-NtToken -Effective
@@ -1041,6 +1044,7 @@ function Show-NtTokenEffective {
     $User = $true
     $Privilege = $true
     $Integrity = $true
+    $SecurityAttributes = $true
   }
 
   if (!$User -and !$Group -and !$Privilege -and !$Integrity) {
@@ -1082,6 +1086,13 @@ function Show-NtTokenEffective {
     "INTEGRITY LEVEL"
     "---------------"
     $token.IntegrityLevel | Format-Table
+    ""
+  }
+
+  if ($SecurityAttributes) {
+    "SECURITY ATTRIBUTES"
+    "-------------------"
+    $token.SecurityAttributes | Format-Table
   }
 }
 
@@ -1805,10 +1816,10 @@ function Show-NtSection {
         [switch]$ReadOnly,
         [Parameter(Position = 0, Mandatory = $true, ParameterSetName = "FromData")]
         [byte[]]$Data,
-		[Parameter(Position = 0, Mandatory = $true, ParameterSetName = "FromFile")]
-		[string]$Path,
-		[Parameter(Position = 0, Mandatory = $true, ParameterSetName = "FromPath")]
-		[string]$ObjPath,
+        [Parameter(Position = 0, Mandatory = $true, ParameterSetName = "FromFile")]
+        [string]$Path,
+        [Parameter(Position = 0, Mandatory = $true, ParameterSetName = "FromPath")]
+        [string]$ObjPath,
         [switch]$Wait
     )
     switch($PSCmdlet.ParameterSetName) {
@@ -1845,23 +1856,23 @@ function Show-NtSection {
                 }
             }
         }
-		"FromFile" {
-		  $Path = Resolve-Path $Path
-		  if ($Path -ne "") {
-			Use-NtObject($p = New-Win32Process "EditSection --file=""$Path""" -ApplicationName "$PSScriptRoot\EditSection.exe") {
-			  if ($Wait) {
-				$p.Process.Wait() | Out-Null
-			  }
-			}
-		  }
+        "FromFile" {
+          $Path = Resolve-Path $Path
+          if ($Path -ne "") {
+            Use-NtObject($p = New-Win32Process "EditSection --file=""$Path""" -ApplicationName "$PSScriptRoot\EditSection.exe") {
+              if ($Wait) {
+                $p.Process.Wait() | Out-Null
+              }
+            }
+          }
         }
-		"FromPath" {
-			Use-NtObject($p = New-Win32Process "EditSection --path=""$ObjPath""" -ApplicationName "$PSScriptRoot\EditSection.exe") {
-				if ($Wait) {
-					$p.Process.Wait() | Out-Null
-				}
-			}
-		}
+        "FromPath" {
+            Use-NtObject($p = New-Win32Process "EditSection --path=""$ObjPath""" -ApplicationName "$PSScriptRoot\EditSection.exe") {
+                if ($Wait) {
+                    $p.Process.Wait() | Out-Null
+                }
+            }
+        }
     } 
 }
 
