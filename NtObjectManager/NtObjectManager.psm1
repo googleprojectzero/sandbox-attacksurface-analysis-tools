@@ -1644,7 +1644,7 @@ A process ID of a process to display the token for.
 .PARAMETER Name
 The name of a process to display the token for.
 .PARAMETER MaxTokens
-When getting the name only display at most this number of tokens.
+When getting the name/command line only display at most this number of tokens.
 .PARAMETER All
 Show dialog with all access tokens.
 .PARAMETER RunAsAdmin
@@ -1689,6 +1689,10 @@ function Show-NtToken {
         [int]$ProcessId = $pid,
         [Parameter(Mandatory=$true, ParameterSetName="FromName")]
         [string]$Name,
+        [Parameter(Mandatory=$true, ParameterSetName="FromCommandLine")]
+        [string]$CommandLine,
+        [Parameter(ParameterSetName="FromName")]
+        [Parameter(ParameterSetName="FromCommandLine")]
         [int]$MaxTokens = 0,
         [Parameter(ParameterSetName="All")]
         [switch]$All,
@@ -1710,8 +1714,18 @@ function Show-NtToken {
         }
         "FromName" {
           Use-NtObject($ps = Get-NtProcess -Name $Name -Access QueryLimitedInformation) {
+            $result = $ps
             if ($MaxTokens -gt 0) {
-              $ps = $ps | Select-Object -First $MaxTokens
+              $result = $ps | Select-Object -First $MaxTokens
+            }
+            $ps | Show-NtToken
+          }
+        }
+        "FromCommandLine" {
+          Use-NtObject($ps = Get-NtProcess -CommandLine $CommandLine -Access QueryLimitedInformation) {
+            $result = $ps
+            if ($MaxTokens -gt 0) {
+              $result = $ps | Select-Object -First $MaxTokens
             }
             $ps | Show-NtToken
           }
