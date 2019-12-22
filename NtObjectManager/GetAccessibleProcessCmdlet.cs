@@ -41,7 +41,6 @@ namespace NtObjectManager
         /// Session ID of the process.
         /// </summary>
         public int SessionId { get; }
-
         /// <summary>
         /// Gets whether this is a thread access check result.
         /// </summary>
@@ -49,8 +48,8 @@ namespace NtObjectManager
 
         internal ProcessAccessCheckResult(string name, string image_path, int process_id, int session_id,
             string command_line, AccessMask granted_access, bool is_thread,
-            NtType type, string sddl, TokenInformation token_info) : base(name, type.Name, granted_access, 
-                type.GenericMapping, sddl, type.AccessRightsType, false, token_info)
+            NtType type, SecurityDescriptor sd, TokenInformation token_info) : base(name, type.Name, granted_access, 
+                type.GenericMapping, sd, type.AccessRightsType, false, token_info)
         {
             ProcessImagePath = image_path;
             ProcessId = process_id;
@@ -75,11 +74,12 @@ namespace NtObjectManager
         /// </summary>
         public string ThreadDescription { get; }
 
-        internal ThreadAccessCheckResult(string name, string image_path, int thread_id, string thread_description, int process_id, 
+        internal ThreadAccessCheckResult(string name, string image_path, int thread_id, 
+            string thread_description, int process_id, 
             int session_id, string command_line, AccessMask granted_access,
-            NtType type, string sddl, TokenInformation token_info) : base($"{name}/{process_id}.{thread_id}", 
+            NtType type, SecurityDescriptor sd, TokenInformation token_info) : base($"{name}/{process_id}.{thread_id}", 
                 image_path, process_id, session_id, command_line, granted_access,
-                true, type, sddl, token_info)
+                true, type, sd, token_info)
         {
             ThreadId = thread_id;
             ThreadDescription = thread_description;
@@ -239,17 +239,18 @@ namespace NtObjectManager
         }
 
         private void WriteAccessCheckResult(ProcessDetails process, ThreadDetails thread, AccessMask granted_access,
-           GenericMapping generic_mapping, string sddl, TokenInformation token)
+           GenericMapping generic_mapping, SecurityDescriptor sd, TokenInformation token)
         {
             if (thread == null)
             {
                 WriteObject(new ProcessAccessCheckResult(process.Name, process.ImagePath, process.ProcessId, process.SessionId, 
-                    process.CommandLine, granted_access, false, _process_type, sddl, token));
+                    process.CommandLine, granted_access, false, _process_type, sd, token));
             }
             else
             {
                 WriteObject(new ThreadAccessCheckResult(process.Name, process.ImagePath, thread.ThreadId, 
-                    thread.Description, process.ProcessId, process.SessionId, process.CommandLine, granted_access, _thread_type, sddl, token));
+                    thread.Description, process.ProcessId, process.SessionId, process.CommandLine, granted_access, 
+                    _thread_type, sd, token));
             }
         }
 
@@ -258,7 +259,7 @@ namespace NtObjectManager
             AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
             if (IsAccessGranted(granted_access, access_rights))
             {
-                WriteAccessCheckResult(process, thread, granted_access, type.GenericMapping, sd.ToSddl(), token.Information);
+                WriteAccessCheckResult(process, thread, granted_access, type.GenericMapping, sd, token.Information);
             }
         }
 
@@ -293,7 +294,7 @@ namespace NtObjectManager
                         if (new_thread.IsSuccess && IsAccessGranted(new_thread.Result.GrantedAccessMask, access_rights))
                         {
                             WriteAccessCheckResult(proc_details, ThreadDetails.FromThread(thread), new_thread.Result.GrantedAccessMask,
-                                _thread_type.GenericMapping, String.Empty, token.Information);
+                                _thread_type.GenericMapping, null, token.Information);
                         }
                     }
                 }
@@ -327,7 +328,7 @@ namespace NtObjectManager
                                 if (new_process.IsSuccess && IsAccessGranted(new_process.Result.GrantedAccessMask, access_rights))
                                 {
                                     WriteAccessCheckResult(proc_details, null, new_process.Result.GrantedAccessMask,
-                                        _process_type.GenericMapping, String.Empty, token.Information);
+                                        _process_type.GenericMapping, null, token.Information);
                                 }
                             }
                         }

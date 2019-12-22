@@ -65,7 +65,9 @@ namespace NtObjectManager
 
         internal HandleAccessCheckResult(MaximumAccess maximum_access, NtHandle handle, string name, string type_name, AccessMask granted_access,
             GenericMapping generic_mapping, string sddl, Type enum_type, bool is_directory, TokenInformation token_info) 
-            : base(name, type_name, granted_access, generic_mapping, sddl, enum_type, is_directory, token_info)
+            : base(name, type_name, granted_access, generic_mapping, 
+                  !string.IsNullOrWhiteSpace(sddl) ? new SecurityDescriptor(sddl) : null, 
+                  enum_type, is_directory, token_info)
         {
             if (maximum_access != null)
             {
@@ -146,10 +148,9 @@ namespace NtObjectManager
             {
                 if (!QueryAllDevicePaths)
                 {
-                    NtFile file_obj = obj as NtFile;
-                    if (file_obj != null && file_obj.DeviceType != FileDeviceType.DISK)
+                    if (obj is NtFile file_obj && file_obj.DeviceType != FileDeviceType.DISK)
                     {
-                        return String.Empty;
+                        return string.Empty;
                     }
                 }
 
@@ -179,7 +180,8 @@ namespace NtObjectManager
             if (!result.IsSuccess && !obj.IsAccessMaskGranted(GenericAccessRights.ReadControl))
             {
                 // Try and duplicate handle to see if we can just ask for ReadControl.
-                using (var dup_obj = obj.DuplicateObject(GenericAccessRights.ReadControl, AttributeFlags.None, DuplicateObjectOptions.None, false))
+                using (var dup_obj = obj.DuplicateObject(GenericAccessRights.ReadControl, AttributeFlags.None, 
+                    DuplicateObjectOptions.None, false))
                 {
                     if (dup_obj.IsSuccess)
                     {
@@ -238,7 +240,7 @@ namespace NtObjectManager
                         MaximumAccess maximum_access = GetMaxAccess(token, obj, handle.Object, max_access);
                         HandleAccessCheckResult access = new HandleAccessCheckResult(maximum_access, handle, 
                             full_path, type.Name, handle.GrantedAccess, type.GenericMapping,
-                            maximum_access != null ? maximum_access.SecurityDescriptor : String.Empty, type.AccessRightsType, false, token.Information);
+                            maximum_access != null ? maximum_access.SecurityDescriptor : string.Empty, type.AccessRightsType, false, token.Information);
                         WriteObject(access);
                     }
                 }

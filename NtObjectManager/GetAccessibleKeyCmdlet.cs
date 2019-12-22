@@ -76,7 +76,7 @@ namespace NtObjectManager
             if (IsAccessGranted(granted_access, access_rights))
             {
                 WriteAccessCheckResult(FormatWin32Path ? key.Win32Path : key.FullPath, type.Name, granted_access, type.GenericMapping, 
-                    sd.ToSddl(), typeof(KeyAccessRights), true, token.Information);
+                    sd, typeof(KeyAccessRights), true, token.Information);
             }
         }
 
@@ -90,7 +90,7 @@ namespace NtObjectManager
                     if (result.IsSuccess && IsAccessGranted(result.Result.GrantedAccessMask, access_rights))
                     {
                         WriteAccessCheckResult(key.FullPath, key.NtType.Name, result.Result.GrantedAccessMask, key.NtType.GenericMapping,
-                            String.Empty, typeof(KeyAccessRights), true, token.Information);
+                            null, typeof(KeyAccessRights), true, token.Information);
                     }
                 }
             }

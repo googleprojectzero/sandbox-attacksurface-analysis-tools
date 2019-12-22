@@ -106,13 +106,14 @@ namespace NtObjectManager
             }
         }
 
-        private void CheckAccess(TokenEntry token, NtObject obj, NtType type, bool is_directory, AccessMask access_rights, SecurityDescriptor sd)
+        private void CheckAccess(TokenEntry token, NtObject obj, NtType type, bool is_directory, 
+            AccessMask access_rights, SecurityDescriptor sd)
         {
             AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
             if (IsAccessGranted(granted_access, access_rights))
             {
                 WriteAccessCheckResult(ConvertPath(obj), type.Name, granted_access, type.GenericMapping,
-                    sd.ToSddl(), type.AccessRightsType, is_directory, token.Information);
+                    sd, type.AccessRightsType, is_directory, token.Information);
             }
         }
 
@@ -125,14 +126,15 @@ namespace NtObjectManager
             }
         }
 
-        private void CheckAccessUnderImpersonation(TokenEntry token, NtType type, bool is_directory, AccessMask access_rights, NtObject obj)
+        private void CheckAccessUnderImpersonation(TokenEntry token, NtType type, bool is_directory, 
+            AccessMask access_rights, NtObject obj)
         {
             using (var result = ReopenUnderImpersonation(token, type, obj))
             {
                 if (result.IsSuccess && IsAccessGranted(result.Result.GrantedAccessMask, access_rights))
                 {
                     WriteAccessCheckResult(ConvertPath(obj), type.Name, result.Result.GrantedAccessMask, type.GenericMapping,
-                        String.Empty, type.AccessRightsType, is_directory, token.Information);
+                        null, type.AccessRightsType, is_directory, token.Information);
                 }
             }
         }

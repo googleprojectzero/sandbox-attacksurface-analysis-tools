@@ -101,7 +101,7 @@ namespace NtObjectManager
             {
                 WriteAccessCheckResult(FormatPath(path, FormatWin32Path), "NamedPipe",
                     granted_access, _file_type.GenericMapping,
-                    sd.Result.ToSddl(), typeof(FileAccessRights), false, token.Information);
+                    sd.Result, typeof(FileAccessRights), false, token.Information);
             }
         }
 
@@ -115,7 +115,7 @@ namespace NtObjectManager
                     if (IsAccessGranted(result.Result.GrantedAccessMask, access_rights))
                     {
                         WriteAccessCheckResult(FormatPath(path, FormatWin32Path), "NamedPipe", result.Result.GrantedAccessMask,
-                           _file_type.GenericMapping, String.Empty, typeof(FileAccessRights), false,
+                           _file_type.GenericMapping, null, typeof(FileAccessRights), false,
                             token.Information);
                     }
                 }

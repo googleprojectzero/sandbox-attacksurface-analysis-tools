@@ -61,6 +61,16 @@ namespace NtObjectManager
         public string SecurityDescriptor { get; }
 
         /// <summary>
+        /// The owner of the resource from the security descriptor.
+        /// </summary>
+        public string Owner { get; }
+
+        /// <summary>
+        /// The SID of the owner of the resource from the security descriptor.
+        /// </summary>
+        public string OwnerSid { get; }
+
+        /// <summary>
         /// Information the token used in the access check.
         /// </summary>
         public TokenInformation TokenInfo { get; }
@@ -96,14 +106,17 @@ namespace NtObjectManager
         public long TokenId { get; }
 
         internal AccessCheckResult(string name, string type_name, AccessMask granted_access,
-            GenericMapping generic_mapping, string sddl, Type enum_type, bool is_directory, TokenInformation token_info)
+            GenericMapping generic_mapping, SecurityDescriptor sd, 
+            Type enum_type, bool is_directory, TokenInformation token_info)
         {
             Name = name;
             TypeName = type_name;
             GrantedAccess = granted_access;
             GenericMapping = generic_mapping;
             TokenInfo = token_info;
-            SecurityDescriptor = sddl;
+            SecurityDescriptor = sd?.ToSddl() ?? string.Empty;
+            OwnerSid = sd?.Owner?.Sid.ToString() ?? string.Empty;
+            Owner = sd?.Owner?.Sid.Name ?? string.Empty;
             IsRead = generic_mapping.HasRead(granted_access);
             IsWrite = generic_mapping.HasWrite(granted_access);
             IsExecute = generic_mapping.HasExecute(granted_access);
@@ -124,46 +137,62 @@ namespace NtObjectManager
         /// Token username
         /// </summary>
         public Sid UserName { get; }
+
         /// <summary>
         /// Token integrity level
         /// </summary>
         public TokenIntegrityLevel IntegrityLevel { get; }
+
         /// <summary>
         /// Token type
         /// </summary>
         public TokenType TokenType { get; }
+
         /// <summary>
         /// Token impersonation level
         /// </summary>
         public SecurityImpersonationLevel ImpersonationLevel { get; }
+
         /// <summary>
         /// Token ID
         /// </summary>
         public Luid TokenId { get; }
+
         /// <summary>
         /// Elevated token
         /// </summary>
         public bool Elevated { get; }
+
         /// <summary>
         /// Restricted token
         /// </summary>
         public bool Restricted { get; }
+
+        /// <summary>
+        /// Write restricted token
+        /// </summary>
+        public bool WriteRestricted { get; }
+
         /// <summary>
         /// App container token
         /// </summary>
         public bool AppContainer { get; }
+
         /// <summary>
         /// App container SID (if an AppContainer)
         /// </summary>
         public Sid AppContainerSid { get; }
+
         /// <summary>
         /// Low privilege AC
         /// </summary>
         public bool LowPrivilegeAppContainer { get; }
+
         /// <summary>
         /// The session ID of the token.
         /// </summary>
         public int SessionId { get; }
+
         /// <summary>
         /// Additonal information of where the token was sourced from
         /// </summary>
@@ -194,6 +223,7 @@ namespace NtObjectManager
             AppContainerSid = token.AppContainerSid;
             Elevated = token.Elevated;
             Restricted = token.Restricted;
+            WriteRestricted = token.WriteRestricted;
             LowPrivilegeAppContainer = token.LowPrivilegeAppContainer;
             SessionId = token.SessionId;
 
@@ -285,9 +315,10 @@ namespace NtObjectManager
         internal abstract void RunAccessCheck(IEnumerable<TokenEntry> tokens);
 
         internal void WriteAccessCheckResult(string name, string type_name, AccessMask granted_access,
-            GenericMapping generic_mapping, string sddl, Type enum_type, bool is_directory, TokenInformation token_info)
+            GenericMapping generic_mapping, SecurityDescriptor sd, Type enum_type, bool is_directory, TokenInformation token_info)
         {
-            WriteObject(new AccessCheckResult(name, type_name, granted_access, generic_mapping, sddl, enum_type, is_directory, token_info));
+            WriteObject(new AccessCheckResult(name, type_name, granted_access, generic_mapping, 
+                sd, enum_type, is_directory, token_info));
         }
 
         private static void AddTokenEntry(HashSet<TokenEntry> tokens, TokenEntry token)

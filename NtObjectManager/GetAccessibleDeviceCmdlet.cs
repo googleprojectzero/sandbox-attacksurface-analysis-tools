@@ -40,8 +40,8 @@ namespace NtObjectManager
         public FileDeviceCharacteristics Characteristics { get; }
 
         internal DeviceAccessCheckResult(string name, bool namespace_path, FileDeviceType device_type, FileDeviceCharacteristics device_chars,
-            AccessMask granted_access, string sddl, TokenInformation token_info) : base(name, "Device",
-                granted_access, NtType.GetTypeByType<NtFile>().GenericMapping, sddl, typeof(FileAccessRights), false, token_info)
+            AccessMask granted_access, SecurityDescriptor sd, TokenInformation token_info) : base(name, "Device",
+                granted_access, NtType.GetTypeByType<NtFile>().GenericMapping, sd, typeof(FileAccessRights), false, token_info)
         {
             NamespacePath = namespace_path;
             DeviceType = device_type;
@@ -215,7 +215,7 @@ namespace NtObjectManager
 
                         WriteObject(new DeviceAccessCheckResult(path, namespace_path, GetDeviceType(result.Result), 
                             GetDeviceCharacteristics(result.Result), result.Result.GrantedAccess, 
-                            sd.IsSuccess ? sd.Result.ToSddl() : String.Empty, token.Information));
+                            sd.IsSuccess ? sd.Result : null, token.Information));
                     }
                 }
                 else

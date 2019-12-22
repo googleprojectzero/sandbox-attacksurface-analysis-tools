@@ -272,9 +272,9 @@ namespace NtObjectManager
         }
 
         internal ScheduledTaskAccessCheckResult(GetAccessibleScheduledTaskCmdlet.TaskSchedulerEntry entry, AccessMask granted_access,
-            string sddl, GenericMapping generic_mapping, TokenInformation token_info)
+            SecurityDescriptor sd, GenericMapping generic_mapping, TokenInformation token_info)
             : base(entry.Path, GetAccessibleScheduledTaskCmdlet.TypeName, granted_access,
-                generic_mapping, sddl,
+                generic_mapping, sd,
                 typeof(FileAccessRights), false, token_info)
         {
             Enabled = entry.Enabled;
@@ -499,11 +499,12 @@ namespace NtObjectManager
                 if (Folder)
                 {
                     return new AccessCheckResult(Path, "Scheduled Task", granted_access, _file_type.GenericMapping,
-                        SecurityDescriptor, typeof(FileDirectoryAccessRights), true, token_info);
+                        new SecurityDescriptor(SecurityDescriptor), typeof(FileDirectoryAccessRights), true, token_info);
                 }
                 else
                 {
-                    return new ScheduledTaskAccessCheckResult(this, granted_access, SecurityDescriptor, _file_type.GenericMapping, token_info);
+                    return new ScheduledTaskAccessCheckResult(this, granted_access, new SecurityDescriptor(SecurityDescriptor), 
+                        _file_type.GenericMapping, token_info);
                 }
             }
         }

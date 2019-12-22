@@ -52,10 +52,10 @@ namespace NtObjectManager
         public IEnumerable<ServiceTriggerInformation> Triggers { get; }
 
         internal ServiceAccessCheckResult(string name, AccessMask granted_access, 
-            string sddl, TokenInformation token_info,
+            SecurityDescriptor sd, TokenInformation token_info,
             IEnumerable<ServiceTriggerInformation> triggers) 
             : base(name, "Service", granted_access,
-                ServiceUtils.GetServiceGenericMapping(), sddl, 
+                ServiceUtils.GetServiceGenericMapping(), sd, 
                 typeof(ServiceAccessRights), false, token_info)
         {
             Triggers = triggers;
@@ -149,7 +149,7 @@ namespace NtObjectManager
                 foreach (TokenEntry token in tokens)
                 {
                     AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, scm_mapping);
-                    WriteAccessCheckResult("SCM", "SCM", granted_access, scm_mapping, sd.ToSddl(),
+                    WriteAccessCheckResult("SCM", "SCM", granted_access, scm_mapping, sd,
                         typeof(ServiceControlManagerAccessRights), false, token.Information);
                 }
             }
@@ -169,7 +169,7 @@ namespace NtObjectManager
                         if (IsAccessGranted(granted_access, access_rights))
                         {
                             WriteObject(new ServiceAccessCheckResult(service.Name, granted_access,
-                                service.SecurityDescriptor.ToSddl(), token.Information, service.Triggers));
+                                service.SecurityDescriptor, token.Information, service.Triggers));
                         }
                     }
                 }
