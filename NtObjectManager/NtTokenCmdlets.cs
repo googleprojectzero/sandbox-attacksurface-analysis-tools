@@ -645,6 +645,11 @@ namespace NtObjectManager
 
         private NtToken GetSessionToken(TokenAccessRights desired_access, int session_id)
         {
+            if (!NtToken.EnableEffectivePrivilege(TokenPrivilegeValue.SeTcbPrivilege))
+            {
+                WriteWarning("Getting session token requires SeTcbPrivilege");
+            }
+
             if (session_id < 0)
             {
                 session_id = NtProcess.Current.SessionId;
