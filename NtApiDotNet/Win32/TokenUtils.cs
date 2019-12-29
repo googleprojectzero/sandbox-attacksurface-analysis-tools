@@ -308,6 +308,21 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Get session token for a session ID.
+        /// </summary>
+        /// <param name="session_id">The session ID.</param>
+        /// <returns>The session token.</returns>
+        public static NtToken GetSessionToken(int session_id)
+        {
+            if (!Win32NativeMethods.WTSQueryUserToken(session_id, 
+                out SafeKernelObjectHandle handle))
+            {
+                throw new SafeWin32Exception();
+            }
+            return NtToken.FromHandle(handle);
+        }
+
+        /// <summary>
         /// Get tokens for all logged on sessions.
         /// </summary>
         /// <remarks>Needs SeTcbPrivilege to work.</remarks>
