@@ -130,6 +130,50 @@ function Set-NtTokenPrivilege
 
 <#
 .SYNOPSIS
+Remove privileges from a token.
+.DESCRIPTION
+This cmdlet will remove privileges from a token. Note that this completely removes the privilege, not just disable.
+.PARAMETER Privileges
+A list of privileges to remove.
+.PARAMETER Token
+Optional token object to use to remove privileges.
+.INPUTS
+None
+.OUTPUTS
+List of TokenPrivilege values indicating the new state of all privileges successfully modified.
+.EXAMPLE
+Remove-NtTokenPrivilege SeDebugPrivilege
+Remove SeDebugPrivilege from the current process token
+.EXAMPLE
+Remove-NtTokenPrivilege SeBackupPrivilege, SeRestorePrivilege -Token $token
+Remove SeBackupPrivilege and SeRestorePrivilege from an explicit token object.
+#>
+function Remove-NtTokenPrivilege
+{
+  Param(
+    [Parameter(Mandatory=$true, Position=0)]
+    [NtApiDotNet.TokenPrivilegeValue[]]$Privileges,
+    [NtApiDotNet.NtToken]$Token
+    )
+  if ($null -eq $Token) {
+    $Token = Get-NtToken -Primary
+  } else {
+    $Token = $Token.Duplicate()
+  }
+
+  Use-NtObject($Token) {
+    $result = @()
+    foreach($priv in $Privileges) {
+      if (!$Token.RemovePrivilege($priv)) {
+        Write-Warning "Can't remove $priv from token."
+      }
+    }
+    return $result
+  }
+}
+
+<#
+.SYNOPSIS
 Set the integrity level of a token.
 .DESCRIPTION
 This cmdlet will set the integrity level of a token. If you want to raise the level you must have SeTcbPrivilege otherwise you can only lower it. 
