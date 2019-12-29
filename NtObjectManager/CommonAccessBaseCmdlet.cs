@@ -61,14 +61,9 @@ namespace NtObjectManager
         public string SecurityDescriptor { get; }
 
         /// <summary>
-        /// The owner of the resource from the security descriptor.
+        /// The SID owner of the resource from the security descriptor.
         /// </summary>
         public string Owner { get; }
-
-        /// <summary>
-        /// The SID of the owner of the resource from the security descriptor.
-        /// </summary>
-        public string OwnerSid { get; }
 
         /// <summary>
         /// Information the token used in the access check.
@@ -115,8 +110,7 @@ namespace NtObjectManager
             GenericMapping = generic_mapping;
             TokenInfo = token_info;
             SecurityDescriptor = sd?.ToSddl() ?? string.Empty;
-            OwnerSid = sd?.Owner?.Sid.ToString() ?? string.Empty;
-            Owner = sd?.Owner?.Sid.Name ?? string.Empty;
+            Owner = sd?.Owner?.Sid.ToString() ?? string.Empty;
             IsRead = generic_mapping.HasRead(granted_access);
             IsWrite = generic_mapping.HasWrite(granted_access);
             IsExecute = generic_mapping.HasExecute(granted_access);
