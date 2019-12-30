@@ -40,7 +40,11 @@ namespace NtObjectManager
         /// <summary>
         /// Create Network Service token.
         /// </summary>
-        NetworkService
+        NetworkService,
+        /// <summary>
+        /// Create IUsr Service token.
+        /// </summary>
+        IUser,
     }
 
     /// <summary>
@@ -638,6 +642,9 @@ namespace NtObjectManager
                     break;
                 case ServiceAccountType.NetworkService:
                     user = "Network Service";
+                    break;
+                case ServiceAccountType.IUser:
+                    user = "IUsr";
                     break;
             }
             return GetLogonToken(desired_access, user, "NT AUTHORITY", null, SecurityLogonType.Service);
