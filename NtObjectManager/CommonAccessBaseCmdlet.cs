@@ -365,7 +365,7 @@ namespace NtObjectManager
                 }
             }
             
-            return GetTokenFromProcessDuplication(process);            
+            return GetTokenFromProcessDuplication(process);
         }
 
         private static void AddTokenEntryFromProcess(HashSet<TokenEntry> tokens, NtProcess process)
