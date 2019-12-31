@@ -194,6 +194,12 @@ namespace NtApiDotNet
         public uint[] RelativeIdentifiers { get; set; }
 
         /// <summary>
+        /// <para type="description">Get a new logon session SID.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "logon")]
+        public SwitchParameter NewLogon { get; set; }
+
+        /// <summary>
         /// Process record.
         /// </summary>
         protected override void ProcessRecord()
@@ -261,6 +267,9 @@ namespace NtApiDotNet
                     break;
                 case "sid":
                     sid = new Sid(SecurityAuthority, RelativeIdentifiers);
+                    break;
+                case "logon":
+                    sid = NtSecurity.GetLogonSessionSid();
                     break;
                 default:
                     throw new ArgumentException("No SID type specified");

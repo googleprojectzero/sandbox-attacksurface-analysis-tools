@@ -669,6 +669,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Checks if a SID is a logon session SID.
+        /// </summary>
+        /// <param name="sid">The sid to check.</param>
+        /// <returns>True if a logon session sid.</returns>
+        public static bool IsLogonSessionSid(Sid sid)
+        {
+            return sid.Authority.IsAuthority(SecurityAuthority.Nt) && sid.SubAuthorities.Count == 3 && sid.SubAuthorities[0] == 5;
+        }
+
+        /// <summary>
         /// Checks if a SID is a process trust SID.
         /// </summary>
         /// <param name="sid">The sid to check.</param>
@@ -988,7 +998,7 @@ namespace NtApiDotNet
                 int index = 1;
                 while (index < name.Length)
                 {
-                    if (Char.IsUpper(name[index]))
+                    if (char.IsUpper(name[index]))
                     {
                         parts.Add(name.Substring(start, index - start));
                         start = index;
@@ -1098,6 +1108,40 @@ namespace NtApiDotNet
         public static void ClearSidNameCache()
         {
             _cached_names.Clear();
+        }
+
+        /// <summary>
+        /// Get a logon session SID from an ID.
+        /// </summary>
+        /// <param name="session_id">The logon session ID.</param>
+        /// <returns>The new logon session SID.</returns>
+        public static Sid GetLogonSessionSid(Luid session_id)
+        {
+            return new Sid(SecurityAuthority.Nt, 5, 
+                (uint)session_id.HighPart, session_id.LowPart);
+        }
+
+        /// <summary>
+        /// Get a new logon session SID.
+        /// </summary>
+        /// <returns>The new logon session SID.</returns>
+        public static Sid GetLogonSessionSid()
+        {
+            return GetLogonSessionSid(NtSystemInfo.AllocateLocallyUniqueId());
+        }
+
+        /// <summary>
+        /// Get session id from logon session SID.
+        /// </summary>
+        /// <param name="sid">The logon session SID.</param>
+        /// <returns>The logon session ID.</returns>
+        public static Luid GetLogonSessionId(Sid sid)
+        {
+            if (!IsLogonSessionSid(sid))
+            {
+                throw new ArgumentException("Must specify logon session SID", "sid");
+            }
+            return new Luid(sid.SubAuthorities[2], (int)sid.SubAuthorities[1]);
         }
     }
 }

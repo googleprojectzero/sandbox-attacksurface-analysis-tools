@@ -536,6 +536,19 @@ namespace NtObjectManager
             return null;
         }
 
+        private static GroupAttributes GetAttributes(Sid sid)
+        {
+            if (NtSecurity.IsServiceSid(sid))
+            {
+                return GroupAttributes.Owner | GroupAttributes.Enabled;
+            }
+            else if (NtSecurity.IsLogonSessionSid(sid))
+            {
+                return GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Mandatory | GroupAttributes.LogonId;
+            }
+            return GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Mandatory;
+        }
+
         private NtToken GetLogonToken(TokenAccessRights desired_access, string user, 
             string domain, string password, SecurityLogonType logon_type)
         {
@@ -543,7 +556,7 @@ namespace NtObjectManager
             if (AdditionalGroups != null && AdditionalGroups.Length > 0)
             {
                 groups = AdditionalGroups.Select(s => new UserGroup(s,
-                    GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Mandatory));
+                    GetAttributes(s)));
             }
             using (NtToken token = TokenUtils.GetLogonUserToken(user, domain, password, logon_type, groups))
             {
