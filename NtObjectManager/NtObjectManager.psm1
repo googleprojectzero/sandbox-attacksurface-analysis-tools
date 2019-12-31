@@ -2080,6 +2080,12 @@ function Get-NtSecurityDescriptor
         [string]$Path,
         [parameter(ParameterSetName = "FromPath")]
         [string]$TypeName,
+        [parameter(Mandatory, ParameterSetName = "FromPid")]
+        [alias("pid")]
+        [int]$ProcessId,
+        [parameter(Mandatory, ParameterSetName = "FromTid")]
+        [alias("tid")]
+        [int]$ThreadId,
         [switch]$ToSddl
     )
     PROCESS {
@@ -2092,6 +2098,16 @@ function Get-NtSecurityDescriptor
             }
             "FromPath" {
                 Use-NtObject($obj = Get-NtObject -Path $Path -TypeName $TypeName -Access ReadControl) {
+                    $obj.GetSecurityDescriptor($SecurityInformation)
+                }
+            }
+            "FromPid" {
+                Use-NtObject($obj = Get-NtProcess -ProcessId $ProcessId -Access ReadControl) {
+                    $obj.GetSecurityDescriptor($SecurityInformation)
+                }
+            }
+            "FromTid" {
+                Use-NtObject($obj = Get-NtThread -ThreadId $ThreadId -Access ReadControl) {
                     $obj.GetSecurityDescriptor($SecurityInformation)
                 }
             }
