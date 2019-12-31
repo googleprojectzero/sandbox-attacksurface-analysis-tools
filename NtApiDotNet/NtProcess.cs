@@ -707,10 +707,31 @@ namespace NtApiDotNet
         /// <summary>
         /// Open the process' token
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The process token.</returns>
         public NtToken OpenToken()
         {
-            return NtToken.OpenProcessToken(this, false);
+            return OpenToken(true).Result;
+        }
+
+        /// <summary>
+        /// Open the process' token
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The process token.</returns>
+        public NtResult<NtToken> OpenToken(bool throw_on_error)
+        {
+            return OpenToken(TokenAccessRights.MaximumAllowed, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open the process' token
+        /// </summary>
+        /// <param name="desired_access">Desired access for token.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The process token.</returns>
+        public NtResult<NtToken> OpenToken(TokenAccessRights desired_access, bool throw_on_error)
+        {
+            return NtToken.OpenProcessToken(this, desired_access, throw_on_error);
         }
 
         /// <summary>
@@ -1089,7 +1110,6 @@ namespace NtApiDotNet
         /// <returns>The process' debug object.</returns>
         public NtDebug OpenDebugObject()
         {
-
             return OpenDebugObject(true).Result;
         }
 
@@ -1321,6 +1341,28 @@ namespace NtApiDotNet
         public void Unmap(IntPtr base_address)
         {
             Unmap(base_address, true);
+        }
+
+        /// <summary>
+        /// Get the user SID for the process.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The user SID.</returns>
+        public NtResult<Sid> GetUser(bool throw_on_error)
+        {
+            using (var token = OpenToken(TokenAccessRights.Query, throw_on_error))
+            {
+                return token.Map(t => t.User.Sid);
+            }
+        }
+
+        /// <summary>
+        /// Get the user SID for the process.
+        /// </summary>
+        /// <returns>The user SID.</returns>
+        public Sid GetUser()
+        {
+            return GetUser(true).Result;
         }
 
         /// <summary>
@@ -1612,16 +1654,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the process user.
         /// </summary>
-        public Sid User
-        {
-            get
-            {
-                using (NtToken token = OpenToken())
-                {
-                    return token.User.Sid;
-                }
-            }
-        }
+        public Sid User => GetUser();
 
         /// <summary>
         /// Get process mitigations
