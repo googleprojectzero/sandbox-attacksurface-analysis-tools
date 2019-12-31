@@ -112,7 +112,8 @@ namespace NtObjectManager
             SecurityDescriptor = sd?.ToSddl() ?? string.Empty;
             Owner = sd?.Owner?.Sid.ToString() ?? string.Empty;
             IsRead = generic_mapping.HasRead(granted_access);
-            IsWrite = generic_mapping.HasWrite(granted_access);
+            IsWrite = generic_mapping.HasWrite(granted_access) 
+                || granted_access.IsAccessGranted(GenericAccessRights.WriteDac);
             IsExecute = generic_mapping.HasExecute(granted_access);
             IsAll = generic_mapping.HasAll(granted_access);
             GrantedAccessString = NtObjectUtils.GrantedAccessAsString(granted_access, generic_mapping, enum_type, false);
