@@ -46,6 +46,15 @@ Thanks to the people who were willing to test it and give feedback:
 
 Release Notes:
 
+1.1.25
+--------
+* Added new options to Get-NtSecurityDescriptor.
+* Updated accessible resource checking.
+* Added Remove-NtTokenPrivilege.
+* Added Session option to Get-NtToken.
+* Added command line option to Show-NtToken.
+* Added information classes for symbolic links.
+
 1.1.24
 --------
 * Added Add-NtTokenSecurityAttribute and Remove-NtTokenSecurityAttribute cmdlets.

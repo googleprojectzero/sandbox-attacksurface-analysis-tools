@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.24'
+ModuleVersion = '1.1.25'
 
 # ID used to uniquely identify this module
 GUID = 'ac251c97-67a6-4bc4-bb8a-5ae300e93030'
@@ -117,17 +117,14 @@ PrivateData = @{
         ProjectUri = 'https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools'
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.24
+        ReleaseNotes = '1.1.25
 --------
-* Added Add-NtTokenSecurityAttribute and Remove-NtTokenSecurityAttribute cmdlets.
-* Added additional properties for running servies.
-* Added support for drivers to Get-RunningService and Get-AccesibleService.
-* Added fake service NtType objects for services and SCM to allow formatting and the UI.
-* Added NtType property to security descriptors.
-* Added option to Show-NtToken to elevate to admin.
-* Added Suspend, Resume and Stop process commands.
-* Added Get-NtEaBuffer and Set-NtEaBuffer commands.
-* Added open to Get-NtDebug to get from a process.
+* Added new options to Get-NtSecurityDescriptor.
+* Updated accessible resource checking.
+* Added Remove-NtTokenPrivilege.
+* Added Session option to Get-NtToken.
+* Added command line option to Show-NtToken.
+* Added information classes for symbolic links.
 '
 
         # External dependent modules of this module
