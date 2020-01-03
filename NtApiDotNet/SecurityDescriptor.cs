@@ -906,6 +906,16 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Parse a security descriptor.
+        /// </summary>
+        /// <param name="sddl">The SDDL form of the security descriptor.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        public static NtResult<SecurityDescriptor> Parse(string sddl, bool throw_on_error)
+        {
+            return NtSecurity.SddlToSecurityDescriptor(sddl, throw_on_error).Map(ba => new SecurityDescriptor(ba));
+        }
+
         #endregion
     }
 }
