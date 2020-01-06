@@ -378,6 +378,22 @@ namespace NtApiDotNet
         WSL = 1,
     }
 
+    public enum ProcessFaultFlags
+    {
+        None = 0,
+        SetCrashed = 1,
+        IncrementHangCount = 2,
+        IncrementGhostCound = 4,
+        PrefilterException = 8,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ProcessFaultInformation
+    {
+        public ProcessFaultFlags FaultFlags;
+        public int AdditionalInfo;
+    }
+
     public enum ProcessInformationClass
     {
         ProcessBasicInformation, // 0, q: PROCESS_BASIC_INFORMATION, PROCESS_EXTENDED_BASIC_INFORMATION

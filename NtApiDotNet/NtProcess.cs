@@ -1366,6 +1366,27 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Set process fault flags.
+        /// </summary>
+        /// <param name="flags">The flags to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code for the operation.</returns>
+        public NtStatus SetFaultFlags(ProcessFaultFlags flags, bool throw_on_error)
+        {
+            return Set(ProcessInformationClass.ProcessFaultInformation, new ProcessFaultInformation() { FaultFlags = flags }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set process fault flags.
+        /// </summary>
+        /// <param name="flags">The flags to set.</param>
+        /// <returns>The NT status code for the operation.</returns>
+        public void SetFaultFlags(ProcessFaultFlags flags)
+        {
+            SetFaultFlags(flags, true);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
