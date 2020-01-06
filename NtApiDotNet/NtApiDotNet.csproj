@@ -262,7 +262,6 @@
     <Compile Include="Win32\Rpc\Transport\RpcFaultException.cs" />
     <Compile Include="Win32\RpcServer.cs" />
     <Compile Include="Win32\SafeCoTaskMemHandle.cs" />
-    <Compile Include="Win32\SafeEventRegHandle.cs" />
     <Compile Include="Win32\SafeLocalAllocHandle.cs" />
     <Compile Include="Win32\SymbolResolver.cs" />
     <Compile Include="Win32\Win32Debug.cs" />

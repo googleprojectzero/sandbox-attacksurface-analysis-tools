@@ -275,6 +275,34 @@ namespace NtApiDotNet.Win32
         public ushort Reserved2;
     }
 
+    internal enum TRACE_QUERY_INFO_CLASS
+    {
+        TraceGuidQueryList,
+        TraceGuidQueryInfo,
+        TraceGuidQueryProcess,
+        TraceStackTracingInfo,
+        TraceSystemTraceEnableFlagsInfo,
+        TraceSampledProfileIntervalInfo,
+        TraceProfileSourceConfigInfo,
+        TraceProfileSourceListInfo,
+        TracePmcEventListInfo,
+        TracePmcCounterListInfo,
+        TraceSetDisallowList,
+        TraceVersionInfo,
+        TraceGroupQueryList,
+        TraceGroupQueryInfo,
+        TraceDisallowListQuery,
+        TraceInfoReserved15,
+        TracePeriodicCaptureStateListInfo,
+        TracePeriodicCaptureStateInfo,
+        TraceProviderBinaryTracking,
+        TraceMaxLoggersQuery,
+        MaxTraceSetInfoClass,
+        TraceLbrConfigurationInfo,
+        TraceLbrEventListInfo,
+        TraceMaxPmcCounterQuery
+    }
+
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     internal delegate bool EnumResTypeProc(IntPtr hModule, IntPtr lpszType, IntPtr lParam);
 
@@ -802,20 +830,30 @@ namespace NtApiDotNet.Win32
           ref Guid ProviderId,
           EventEnableCallback EnableCallback,
           IntPtr CallbackContext,
-          out SafeEventRegHandle RegHandle
+          out long RegHandle
         );
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern Win32Error EventUnregister(
-            IntPtr RegHandle
+            long RegHandle
         );
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern Win32Error EventWrite(
-          SafeEventRegHandle RegHandle,
+          long RegHandle,
           ref EVENT_DESCRIPTOR EventDescriptor,
           int UserDataCount,
           EVENT_DATA_DESCRIPTOR[] UserData
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error EnumerateTraceGuidsEx(
+            TRACE_QUERY_INFO_CLASS TraceQueryInfoClass,
+            SafeBuffer InBuffer,
+            int InBufferSize,
+            SafeBuffer OutBuffer,
+            int OutBufferSize,
+            out int ReturnLength
         );
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
