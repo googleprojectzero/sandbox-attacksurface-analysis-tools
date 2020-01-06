@@ -120,6 +120,11 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Check if ACE is a critical ACE.
+        /// </summary>
+        public bool IsCriticalAce => (Flags & AceFlags.Critical) != 0;
+
         internal Ace(AceType type)
         {
             Type = type;
