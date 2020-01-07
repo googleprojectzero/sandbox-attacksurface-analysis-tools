@@ -721,6 +721,12 @@
                 <FormatString>X08</FormatString>
               </ListItem>
               <ListItem>
+                <PropertyName>GrantedAccessString</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>GrantedGenericAccessString</PropertyName>
+              </ListItem>
+              <ListItem>
                 <PropertyName>Name</PropertyName>
               </ListItem>
               <ListItem>

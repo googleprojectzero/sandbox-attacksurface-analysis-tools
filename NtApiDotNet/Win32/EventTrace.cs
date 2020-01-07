@@ -21,9 +21,9 @@ namespace NtApiDotNet.Win32
     /// </summary>
     public sealed class EventTrace : IDisposable
     {
-        private SafeEventRegHandle _handle;
+        private long _handle;
 
-        internal EventTrace(SafeEventRegHandle handle)
+        internal EventTrace(long handle)
         {
             _handle = handle;
         }
@@ -46,7 +46,7 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public void Dispose()
         {
-            _handle.Dispose();
+            Win32NativeMethods.EventUnregister(_handle);
         }
     }
 }

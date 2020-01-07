@@ -388,21 +388,52 @@ namespace NtApiDotNet
         /// Convert an SDDL string to a binary security descriptor
         /// </summary>
         /// <param name="sddl">The SDDL string</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The binary security descriptor</returns>
         /// <exception cref="NtException">Thrown if cannot convert from a SDDL string.</exception>
-        public static byte[] SddlToSecurityDescriptor(string sddl)
+        public static NtResult<byte[]> SddlToSecurityDescriptor(string sddl, bool throw_on_error)
         {
-            if (!Win32NativeMethods.ConvertStringSecurityDescriptorToSecurityDescriptor(sddl, 1, 
+            if (!Win32NativeMethods.ConvertStringSecurityDescriptorToSecurityDescriptor(sddl, 1,
                 out SafeLocalAllocHandle handle, out int return_length))
             {
-                throw new NtException(NtObjectUtils.MapDosErrorToStatus());
+                return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<byte[]>(throw_on_error);
             }
 
             using (handle)
             {
                 byte[] ret = new byte[return_length];
                 Marshal.Copy(handle.DangerousGetHandle(), ret, 0, return_length);
-                return ret;
+                return ret.CreateResult();
+            }
+        }
+
+        /// <summary>
+        /// Convert an SDDL string to a binary security descriptor
+        /// </summary>
+        /// <param name="sddl">The SDDL string</param>
+        /// <returns>The binary security descriptor</returns>
+        /// <exception cref="NtException">Thrown if cannot convert from a SDDL string.</exception>
+        public static byte[] SddlToSecurityDescriptor(string sddl)
+        {
+            return SddlToSecurityDescriptor(sddl, true).Result;
+        }
+
+        /// <summary>
+        /// Convert an SDDL SID string to a Sid
+        /// </summary>
+        /// <param name="sddl">The SDDL SID string</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The converted Sid</returns>
+        /// <exception cref="NtException">Thrown if cannot convert from a SDDL string.</exception>
+        public static NtResult<Sid> SidFromSddl(string sddl, bool throw_on_error)
+        {
+            if (!Win32NativeMethods.ConvertStringSidToSid(sddl, out SafeLocalAllocHandle handle))
+            {
+                return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<Sid>(throw_on_error);
+            }
+            using (handle)
+            {
+                return new Sid(handle.DangerousGetHandle()).CreateResult();
             }
         }
 
@@ -414,14 +445,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown if cannot convert from a SDDL string.</exception>
         public static Sid SidFromSddl(string sddl)
         {
-            if (!Win32NativeMethods.ConvertStringSidToSid(sddl, out SafeLocalAllocHandle handle))
-            {
-                throw new NtException(NtObjectUtils.MapDosErrorToStatus());
-            }
-            using (handle)
-            {
-                return new Sid(handle.DangerousGetHandle());
-            }
+            return SidFromSddl(sddl, true).Result;
         }
 
         private static NtToken DuplicateForAccessCheck(NtToken token)

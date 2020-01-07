@@ -72,6 +72,16 @@ namespace NtApiDotNet
         public AccessMask GrantedAccess { get; }
 
         /// <summary>
+        /// The granted access mask as a string.
+        /// </summary>
+        public string GrantedAccessString => NtType?.AccessMaskToString(GrantedAccess) ?? $"0x{GrantedAccess:X08}";
+
+        /// <summary>
+        /// The granted access mask as a string.
+        /// </summary>
+        public string GrantedGenericAccessString => NtType?.AccessMaskToString(GrantedAccess, true) ?? $"0x{GrantedAccess:X08}";
+
+        /// <summary>
         /// The name of the object (needs to have set query access in constructor)
         /// </summary>
         public string Name
@@ -128,7 +138,7 @@ namespace NtApiDotNet
             Attributes = (AttributeFlags)entry.HandleAttributes;
             Handle = entry.HandleValue.ToInt32();
             Object = entry.Object.ToUInt64();
-            GrantedAccess = entry.GrantedAccess.ToGenericAccess();
+            GrantedAccess = entry.GrantedAccess;
             _allow_query = allow_query;
         }
 

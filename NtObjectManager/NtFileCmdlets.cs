@@ -13,7 +13,9 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtApiDotNet.Win32.Device;
 using System;
+using System.Linq;
 using System.Management.Automation;
 
 namespace NtObjectManager
@@ -50,6 +52,12 @@ namespace NtObjectManager
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
         public override string Path { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify that the path is a device GUID not a full path.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter DeviceGuid { get; set; }
 
         /// <summary>
         /// Determine if the cmdlet can create objects.
@@ -152,6 +160,16 @@ namespace NtObjectManager
         /// <returns>The object path.</returns>
         protected override string ResolvePath()
         {
+            if (DeviceGuid)
+            {
+                string path = DeviceUtils.GetDeviceInterfaceList(new Guid(Path)).FirstOrDefault();
+                if (path == null)
+                {
+                    throw new ArgumentException($"No device paths for interface {Path}");
+                }
+                return NtFileUtils.DosFileNameToNt(path);
+            }
+
             return ResolvePath(SessionState, Path, Win32Path);
         }
 

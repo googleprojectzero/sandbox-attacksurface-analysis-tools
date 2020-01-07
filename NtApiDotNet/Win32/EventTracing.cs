@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Generic;
 
 namespace NtApiDotNet.Win32
 {
@@ -60,7 +61,7 @@ namespace NtApiDotNet.Win32
         /// <returns>The event trace.</returns>
         public static NtResult<EventTrace> Register(Guid guid, bool throw_on_error)
         {
-            return Win32NativeMethods.EventRegister(ref guid, null, IntPtr.Zero, out SafeEventRegHandle handle)
+            return Win32NativeMethods.EventRegister(ref guid, null, IntPtr.Zero, out long handle)
                 .MapDosErrorToStatus().CreateResult(throw_on_error, () => new EventTrace(handle));
         }
 
@@ -72,6 +73,35 @@ namespace NtApiDotNet.Win32
         public static EventTrace Register(Guid guid)
         {
             return Register(guid, true).Result;
+        }
+
+        /// <summary>
+        /// Get the list of registered trace GUIDs.
+        /// </summary>
+        /// <returns>The list of trace GUIDs.</returns>
+        public static IEnumerable<Guid> GetTraceGuids()
+        {
+            int curr_length = 1024;
+            while (true)
+            {
+                using (var buffer = new SafeHGlobalBuffer(curr_length))
+                {
+                    Win32Error error = Win32NativeMethods.EnumerateTraceGuidsEx(TRACE_QUERY_INFO_CLASS.TraceGuidQueryList,
+                        SafeHGlobalBuffer.Null, 0, buffer, buffer.Length, out int return_length);
+                    if (error == Win32Error.ERROR_INSUFFICIENT_BUFFER)
+                    {
+                        curr_length = return_length;
+                        continue;
+                    }
+
+                    error.ToNtException();
+                    int count = return_length / 16;
+
+                    Guid[] ret = new Guid[count];
+                    buffer.ReadArray(0, ret, 0, count);
+                    return ret;
+                }
+            }
         }
     }
 }

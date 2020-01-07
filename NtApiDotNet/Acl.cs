@@ -24,47 +24,7 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class Acl : List<Ace>
     {
-        static T GetAclInformation<T>(IntPtr acl, AclInformationClass info_class) where T : new()
-        {
-            using (var buffer = new SafeStructureInOutBuffer<T>())
-            {
-                NtRtl.RtlQueryInformationAcl(acl, buffer, buffer.Length, info_class).ToNtException();
-                return buffer.Result;
-            }
-        }
-
-        private void ParseAcl(IntPtr acl)
-        {
-            var size_info = GetAclInformation<AclSizeInformation>(acl, AclInformationClass.AclSizeInformation);
-            using (var buffer = new SafeHGlobalBuffer(acl, size_info.AclBytesInUse, false))
-            {
-                using (var reader = new BinaryReader(new UnmanagedMemoryStream(buffer, 0, size_info.AclBytesInUse)))
-                {
-                    for (int i = 0; i < size_info.AceCount; ++i)
-                    {
-                        NtRtl.RtlGetAce(acl, i, out IntPtr ace).ToNtException();
-                        reader.BaseStream.Position = ace.ToInt64() - acl.ToInt64();
-                        Add(Ace.CreateAceFromReader(reader));
-                    }
-                }
-            }
-            Revision = GetAclInformation<AclRevisionInformation>(acl, AclInformationClass.AclRevisionInformation).AclRevision;
-        }
-
-        private void InitializeFromPointer(IntPtr acl, bool defaulted)
-        {
-            if (acl != IntPtr.Zero)
-            {
-                ParseAcl(acl);
-            }
-            else
-            {
-                NullAcl = true;
-            }
-
-            Defaulted = defaulted;
-        }
-
+        #region Constructors
         /// <summary>
         /// Constructor
         /// </summary>
@@ -123,18 +83,24 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get or set whether the ACL was defaulted
+        /// Constructor.
         /// </summary>
-        public bool Defaulted { get; set; }
-        /// <summary>
-        /// Get or set whether the ACL is NULL (no security)
-        /// </summary>
-        public bool NullAcl { get; set; }
-        /// <summary>
-        /// Get or set the ACL revision
-        /// </summary>
-        public AclRevision Revision { get; set; }
+        /// <param name="sddl">An SDDL string to create the DACL from.</param>
+        /// <remarks>The SDDL string should be of the form D:(...) or S:(...), if you specify
+        /// both a DACL and a SACL then only the DACL will be used.</remarks>
+        public Acl(string sddl)
+        {
+            SecurityDescriptor sd = new SecurityDescriptor(sddl);
+            Acl acl = sd.Dacl ?? sd.Sacl 
+                ?? throw new ArgumentException("Must specify a DACL or a SACL", "sddl");
+            Defaulted = acl.Defaulted;
+            NullAcl = acl.NullAcl;
+            Revision = acl.Revision;
+            AddRange(acl);
+        }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Convert the ACL to a byte array
         /// </summary>
@@ -335,6 +301,23 @@ namespace NtApiDotNet
             ret.AddRange(inherited);
             return ret;
         }
+        #endregion
+
+        #region Public Properties
+        /// <summary>
+        /// Get or set whether the ACL was defaulted
+        /// </summary>
+        public bool Defaulted { get; set; }
+
+        /// <summary>
+        /// Get or set whether the ACL is NULL (no security)
+        /// </summary>
+        public bool NullAcl { get; set; }
+
+        /// <summary>
+        /// Get or set the ACL revision
+        /// </summary>
+        public AclRevision Revision { get; set; }
 
         /// <summary>
         /// Indicates the ACL has at least one conditional ACE.
@@ -353,5 +336,49 @@ namespace NtApiDotNet
                 return false;
             }
         }
+        #endregion
+
+        #region Private Members
+        private static T GetAclInformation<T>(IntPtr acl, AclInformationClass info_class) where T : new()
+        {
+            using (var buffer = new SafeStructureInOutBuffer<T>())
+            {
+                NtRtl.RtlQueryInformationAcl(acl, buffer, buffer.Length, info_class).ToNtException();
+                return buffer.Result;
+            }
+        }
+
+        private void ParseAcl(IntPtr acl)
+        {
+            var size_info = GetAclInformation<AclSizeInformation>(acl, AclInformationClass.AclSizeInformation);
+            using (var buffer = new SafeHGlobalBuffer(acl, size_info.AclBytesInUse, false))
+            {
+                using (var reader = new BinaryReader(new UnmanagedMemoryStream(buffer, 0, size_info.AclBytesInUse)))
+                {
+                    for (int i = 0; i < size_info.AceCount; ++i)
+                    {
+                        NtRtl.RtlGetAce(acl, i, out IntPtr ace).ToNtException();
+                        reader.BaseStream.Position = ace.ToInt64() - acl.ToInt64();
+                        Add(Ace.CreateAceFromReader(reader));
+                    }
+                }
+            }
+            Revision = GetAclInformation<AclRevisionInformation>(acl, AclInformationClass.AclRevisionInformation).AclRevision;
+        }
+
+        private void InitializeFromPointer(IntPtr acl, bool defaulted)
+        {
+            if (acl != IntPtr.Zero)
+            {
+                ParseAcl(acl);
+            }
+            else
+            {
+                NullAcl = true;
+            }
+
+            Defaulted = defaulted;
+        }
+        #endregion
     }
 }
