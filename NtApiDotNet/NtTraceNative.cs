@@ -35,6 +35,7 @@ namespace NtApiDotNet
         GuidEnable = 0x0080,
         AccessKernelLogger = 0x0100,
         CreateInproc = 0x0200,
+        AccessRealtime = 0x0400,
         RegisterGuids = 0x0800,
         GenericRead = GenericAccessRights.GenericRead,
         GenericWrite = GenericAccessRights.GenericWrite,
