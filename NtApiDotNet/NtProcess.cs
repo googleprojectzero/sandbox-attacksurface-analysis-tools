@@ -1387,6 +1387,27 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Set the process exception port.
+        /// </summary>
+        /// <param name="exception_port">The exception port to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetExceptionPort(NtAlpc exception_port, bool throw_on_error)
+        {
+            return Set(ProcessInformationClass.ProcessExceptionPort, exception_port.Handle.DangerousGetHandle(), throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the process exception port.
+        /// </summary>
+        /// <param name="exception_port">The exception port to set.</param>
+        /// <returns>The NT status code.</returns>
+        public void SetExceptionPort(NtAlpc exception_port)
+        {
+            SetExceptionPort(exception_port, true);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
