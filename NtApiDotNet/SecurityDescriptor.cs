@@ -747,6 +747,15 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="type">The NT type for the security descriptor.</param>
+        public SecurityDescriptor(NtType type) : this()
+        {
+            NtType = type;
+        }
+
+        /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="security_descriptor">Binary form of security descriptor</param>
@@ -886,11 +895,22 @@ namespace NtApiDotNet
         /// Parse a security descriptor.
         /// </summary>
         /// <param name="buffer">Safe buffer to security descriptor.</param>
+        /// <param name="type">The NT type for the security descriptor.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        public static NtResult<SecurityDescriptor> Parse(SafeBuffer buffer, NtType type, bool throw_on_error)
+        {
+            SecurityDescriptor sd = new SecurityDescriptor(type);
+            return sd.ParseSecurityDescriptor(buffer).CreateResult(throw_on_error, () => sd);
+        }
+
+        /// <summary>
+        /// Parse a security descriptor.
+        /// </summary>
+        /// <param name="buffer">Safe buffer to security descriptor.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         public static NtResult<SecurityDescriptor> Parse(SafeBuffer buffer, bool throw_on_error)
         {
-            SecurityDescriptor sd = new SecurityDescriptor();
-            return sd.ParseSecurityDescriptor(buffer).CreateResult(throw_on_error, () => sd);
+            return Parse(buffer, null, throw_on_error);
         }
 
         /// <summary>
