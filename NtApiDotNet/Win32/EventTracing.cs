@@ -49,7 +49,7 @@ namespace NtApiDotNet.Win32
                 {
                     return error.CreateResultFromDosError<SecurityDescriptor>(throw_on_error);
                 }
-                return SecurityDescriptor.Parse(buffer, throw_on_error);
+                return SecurityDescriptor.Parse(buffer, NtType.GetTypeByType<NtEtwRegistration>(), throw_on_error);
             }
         }
 
