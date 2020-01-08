@@ -521,7 +521,8 @@ function New-Win32ProcessConfig
         [NtApiDotNet.NtDebug]$DebugObject,
         [switch]$NoTokenFallback,
         [NtApiDotNet.Win32.AppContainerProfile]$AppContainerProfile,
-        [NtApiDotNet.Win32.ProcessExtendedFlags]$ExtendedFlags = 0
+        [NtApiDotNet.Win32.ProcessExtendedFlags]$ExtendedFlags = 0,
+        [NtApiDotNet.ChildProcessMitigationFlags]$ChildProcessMitigations = 0
     )
     $config = New-Object NtApiDotNet.Win32.Win32ProcessConfig
     $config.CommandLine = $CommandLine
@@ -561,6 +562,7 @@ function New-Win32ProcessConfig
         $config.AppContainerSid = $AppContainerProfile.Sid
     }
     $config.ExtendedFlags = $ExtendedFlags
+    $config.ChildProcessMitigations = $ChildProcessMitigations
     return $config
 }
 
@@ -666,6 +668,8 @@ function New-Win32Process
         [NtApiDotNet.Win32.AppContainerProfile]$AppContainerProfile,
         [Parameter(ParameterSetName = "FromArgs")]
         [NtApiDotNet.Win32.ProcessExtendedFlags]$ExtendedFlags = 0,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [NtApiDotNet.ChildProcessMitigationFlags]$ChildProcessMitigations = 0,
         [Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromConfig")]
         [NtApiDotNet.Win32.Win32ProcessConfig]$Config,
         [switch]$Wait,
@@ -679,7 +683,8 @@ function New-Win32Process
     -Environment $Environment -CurrentDirectory $CurrentDirectory -Desktop $Desktop -Title $Title `
     -InheritHandles:$InheritHandles -InheritProcessHandle:$InheritProcessHandle -InheritThreadHandle:$InheritThreadHandle `
     -MitigationOptions $MitigationOptions -Token $Token -ProtectionLevel $ProtectionLevel -NoTokenFallback:$NoTokenFallback `
-    -DebugObject $DebugObject -AppContainerProfile $AppContainerProfile -ExtendedFlags $ExtendedFlags
+    -DebugObject $DebugObject -AppContainerProfile $AppContainerProfile -ExtendedFlags $ExtendedFlags `
+    -ChildProcessMitigations $ChildProcessMitigations
   }
 
   $p = [NtApiDotNet.Win32.Win32Process]::CreateProcess($config)

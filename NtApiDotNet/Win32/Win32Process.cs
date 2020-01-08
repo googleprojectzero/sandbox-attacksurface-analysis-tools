@@ -678,11 +678,25 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Restrict the process from creating child processes.
         /// </summary>
-        public bool RestrictChildProcessCreation { get; set; }
+        [Obsolete("Use ChildProcessMitigations")]
+        public bool RestrictChildProcessCreation
+        {
+            get => (ChildProcessMitigations & ChildProcessMitigationFlags.Restricted) != 0;
+            set => ChildProcessMitigations |= ChildProcessMitigationFlags.Restricted;
+        }
         /// <summary>
         /// Override child process creation restriction.
         /// </summary>
-        public bool OverrideChildProcessCreation { get; set; }
+        [Obsolete("Use ChildProcessMitigations")]
+        public bool OverrideChildProcessCreation
+        {
+            get => (ChildProcessMitigations & ChildProcessMitigationFlags.Override) != 0;
+            set => ChildProcessMitigations |= ChildProcessMitigationFlags.Override;
+        }
+        /// <summary>
+        /// Set child process mitigation flags.
+        /// </summary>
+        public ChildProcessMitigationFlags ChildProcessMitigations { get; set; }
         /// <summary>
         /// Specify new process policy when creating a desktop bridge application.
         /// </summary>
@@ -838,7 +852,7 @@ namespace NtApiDotNet.Win32
                 count++;
             }
 
-            if (RestrictChildProcessCreation || OverrideChildProcessCreation)
+            if (ChildProcessMitigations != 0)
             {
                 count++;
             }
@@ -958,11 +972,9 @@ namespace NtApiDotNet.Win32
                 attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeAllApplicationPackagesPolicy, 1);
             }
 
-            if (RestrictChildProcessCreation || OverrideChildProcessCreation)
+            if (ChildProcessMitigations != 0)
             {
-                int flags = RestrictChildProcessCreation ? 1 : 0;
-                flags |= OverrideChildProcessCreation ? 2 : 0;
-
+                int flags = (int)ChildProcessMitigations;
                 attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeChildProcessPolicy, flags);
             }
 

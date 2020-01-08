@@ -600,6 +600,15 @@ namespace NtApiDotNet
         public IntPtr InitialThread;
     }
 
+    [Flags]
+    public enum ChildProcessMitigationFlags
+    {
+        None = 0,
+        Restricted = 1,
+        Override = 2,
+        RestrictedUnlessSecure = 4,
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
@@ -772,11 +781,16 @@ namespace NtApiDotNet
 
         public static ProcessAttribute ChildProcess(bool child_process_restricted, bool child_process_override)
         {
-            int value = child_process_restricted ? 1 : 0;
+            ChildProcessMitigationFlags flags = child_process_restricted ? 
+                ChildProcessMitigationFlags.Restricted : ChildProcessMitigationFlags.None;
             if (child_process_override)
-            {
-                value |= 2;
-            }
+                flags |= ChildProcessMitigationFlags.Override;
+            return ChildProcess(flags);
+        }
+
+        public static ProcessAttribute ChildProcess(ChildProcessMitigationFlags flags)
+        {
+            int value = (int)flags;
             return new ProcessAttribute(ProcessAttributeNum.ChildProcess, false, true, false, value.ToBuffer());
         }
 
