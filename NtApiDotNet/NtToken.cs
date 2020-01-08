@@ -1311,6 +1311,11 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get whether token can be used for new child processes.
+        /// </summary>
+        public bool NoChildProcess => (Flags & TokenFlags.NoChildProcess) != 0;
+
+        /// <summary>
         /// Get token capabilities.
         /// </summary>
         public UserGroup[] Capabilities
