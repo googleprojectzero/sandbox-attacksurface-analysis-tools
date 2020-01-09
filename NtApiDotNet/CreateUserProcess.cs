@@ -242,6 +242,32 @@ namespace NtApiDotNet
         /// <returns>The new forked process result</returns>
         public static CreateUserProcessResult Fork()
         {
+            return Fork(ProcessCreateFlags.InheritFromParent, 
+                ThreadCreateFlags.Suspended, true).Result;
+        }
+
+        /// <summary>
+        /// For the current process
+        /// </summary>
+        /// <param name="process_create_flags">Process create flags.</param>
+        /// <param name="thread_create_flags">Thread create flags.</param>
+        /// <returns>The new forked process result</returns>
+        public static CreateUserProcessResult Fork(ProcessCreateFlags process_create_flags,
+            ThreadCreateFlags thread_create_flags)
+        {
+            return Fork(process_create_flags, thread_create_flags, true).Result;
+        }
+
+        /// <summary>
+        /// For the current process
+        /// </summary>
+        /// <param name="process_create_flags">Process create flags.</param>
+        /// <param name="thread_create_flags">Thread create flags.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The new forked process result</returns>
+        public static NtResult<CreateUserProcessResult> Fork(ProcessCreateFlags process_create_flags, 
+            ThreadCreateFlags thread_create_flags, bool throw_on_error)
+        {
             List<ProcessAttribute> attrs = new List<ProcessAttribute>();
             try
             {
@@ -252,14 +278,13 @@ namespace NtApiDotNet
 
                 ProcessAttributeList attr_list = new ProcessAttributeList(attrs);
 
-                NtStatus status = NtSystemCalls.NtCreateUserProcess(
+                return NtSystemCalls.NtCreateUserProcess(
                   out SafeKernelObjectHandle process_handle, out SafeKernelObjectHandle thread_handle,
                   ProcessAccessRights.MaximumAllowed, ThreadAccessRights.MaximumAllowed,
-                  null, null, ProcessCreateFlags.InheritFromParent,
-                  ThreadCreateFlags.Suspended, IntPtr.Zero, create_info, attr_list).ToNtException();
-
-                return new CreateUserProcessResult(process_handle, thread_handle,
-                  create_info.Data, new SectionImageInformation(), client_id.Result, false);
+                  null, null, process_create_flags | ProcessCreateFlags.InheritFromParent,
+                    thread_create_flags, IntPtr.Zero, create_info, attr_list).CreateResult(throw_on_error, 
+                        () => new CreateUserProcessResult(process_handle, thread_handle,
+                            create_info.Data, new SectionImageInformation(), client_id.Result, false));
             }
             finally
             {
