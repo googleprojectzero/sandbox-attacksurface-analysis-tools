@@ -829,6 +829,7 @@ function New-NtProcess
     Param(
     [Parameter(Mandatory=$true, Position=0)]
     [string]$ImagePath,
+    [Parameter(Mandatory=$true, Position=1)]
     [NtApiDotNet.CreateUserProcess]$Config,
     [switch]$Win32Path
     )

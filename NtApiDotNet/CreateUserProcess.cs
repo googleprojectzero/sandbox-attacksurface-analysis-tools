@@ -268,8 +268,7 @@ namespace NtApiDotNet
         public static NtResult<CreateUserProcessResult> Fork(ProcessCreateFlags process_create_flags, 
             ThreadCreateFlags thread_create_flags, bool throw_on_error)
         {
-            List<ProcessAttribute> attrs = new List<ProcessAttribute>();
-            try
+            using (var attrs = new DisposableList<ProcessAttribute>())
             {
                 ProcessCreateInfo create_info = new ProcessCreateInfo();
 
@@ -279,45 +278,13 @@ namespace NtApiDotNet
                 ProcessAttributeList attr_list = new ProcessAttributeList(attrs);
 
                 return NtSystemCalls.NtCreateUserProcess(
-                  out SafeKernelObjectHandle process_handle, out SafeKernelObjectHandle thread_handle,
-                  ProcessAccessRights.MaximumAllowed, ThreadAccessRights.MaximumAllowed,
-                  null, null, process_create_flags | ProcessCreateFlags.InheritFromParent,
-                    thread_create_flags, IntPtr.Zero, create_info, attr_list).CreateResult(throw_on_error, 
+                    out SafeKernelObjectHandle process_handle, out SafeKernelObjectHandle thread_handle,
+                    ProcessAccessRights.MaximumAllowed, ThreadAccessRights.MaximumAllowed,
+                    null, null, process_create_flags | ProcessCreateFlags.InheritFromParent,
+                    thread_create_flags, IntPtr.Zero, create_info, attr_list).CreateResult(throw_on_error,
                         () => new CreateUserProcessResult(process_handle, thread_handle,
                             create_info.Data, new SectionImageInformation(), client_id.Result, false));
             }
-            finally
-            {
-                foreach (ProcessAttribute attr in attrs)
-                {
-                    attr.Dispose();
-                }
-            }
-        }
-
-        private static UnicodeString GetString(string s)
-        {
-            return s != null ? new UnicodeString(s) : null;
-        }
-
-        private static IntPtr CreateProcessParameters(
-                string ImagePathName,
-                string DllPath,
-                string CurrentDirectory,
-                string CommandLine,
-                byte[] Environment,
-                string WindowTitle,
-                string DesktopInfo,
-                string ShellInfo,
-                string RuntimeData,
-                uint Flags)
-        {
-            IntPtr ret;
-
-            NtRtl.RtlCreateProcessParametersEx(out ret, GetString(ImagePathName), GetString(DllPath), GetString(CurrentDirectory),
-              GetString(CommandLine), Environment, GetString(WindowTitle), GetString(DesktopInfo), GetString(ShellInfo), GetString(RuntimeData), Flags).ToNtException();
-
-            return ret;
         }
 
         /// <summary>
@@ -337,83 +304,79 @@ namespace NtApiDotNet
         public CreateUserProcessResult Start(string image_path)
         {
             if (image_path == null)
-                throw new System.ArgumentNullException("image_path");
+                throw new ArgumentNullException("image_path");
 
-            IntPtr process_params = CreateProcessParameters(ConfigImagePath ?? image_path, DllPath, CurrentDirectory,
-                  CommandLine, Environment, WindowTitle, DesktopInfo, ShellInfo, RuntimeData, 1);
-            DisposableList<ProcessAttribute> attrs = new DisposableList<ProcessAttribute>();
-            try
+            using (var process_params = SafeProcessParametersHandle.Create(ConfigImagePath ?? image_path, DllPath, CurrentDirectory,
+                  CommandLine, Environment, WindowTitle, DesktopInfo, ShellInfo, RuntimeData, 1))
             {
-                ProcessCreateInfo create_info = new ProcessCreateInfo();
-
-                attrs.Add(ProcessAttribute.ImageName(image_path));
-                SafeStructureInOutBuffer<SectionImageInformation> image_info = new SafeStructureInOutBuffer<SectionImageInformation>();
-                attrs.Add(ProcessAttribute.ImageInfo(image_info));
-                SafeStructureInOutBuffer<ClientId> client_id = new SafeStructureInOutBuffer<ClientId>();
-                attrs.Add(ProcessAttribute.ClientId(client_id));
-                attrs.AddRange(AdditionalAttributes);
-                if (ParentProcess != null)
+                using (var attrs = new DisposableList<ProcessAttribute>())
                 {
-                    attrs.Add(ProcessAttribute.ParentProcess(ParentProcess.Handle));
-                }
+                    ProcessCreateInfo create_info = new ProcessCreateInfo();
 
-                if (RestrictChildProcess || OverrideRestrictChildProcess)
-                {
-                    attrs.Add(ProcessAttribute.ChildProcess(RestrictChildProcess, OverrideRestrictChildProcess));
-                }
-
-                if (Token != null)
-                {
-                    attrs.Add(ProcessAttribute.Token(Token.Handle));
-                }
-
-                using (ProcessAttributeList attr_list = ProcessAttributeList.Create(attrs))
-                {
-                    create_info.Data.InitFlags = InitFlags | ProcessCreateInitFlag.WriteOutputOnExit;
-                    create_info.Data.ProhibitedImageCharacteristics = ProhibitedImageCharacteristics;
-                    create_info.Data.AdditionalFileAccess = AdditionalFileAccess;
-
-                    using (ObjectAttributes proc_attr = new ObjectAttributes(null, AttributeFlags.None, (NtObject)null, null, ProcessSecurityDescriptor),
-                        thread_attr = new ObjectAttributes(null, AttributeFlags.None, (NtObject)null, null, ThreadSecurityDescriptor))
+                    attrs.Add(ProcessAttribute.ImageName(image_path));
+                    SafeStructureInOutBuffer<SectionImageInformation> image_info = new SafeStructureInOutBuffer<SectionImageInformation>();
+                    attrs.Add(ProcessAttribute.ImageInfo(image_info));
+                    SafeStructureInOutBuffer<ClientId> client_id = new SafeStructureInOutBuffer<ClientId>();
+                    attrs.Add(ProcessAttribute.ClientId(client_id));
+                    attrs.AddRange(AdditionalAttributes);
+                    if (ParentProcess != null)
                     {
-                        NtStatus status = NtSystemCalls.NtCreateUserProcess(
-                          out SafeKernelObjectHandle process_handle, out SafeKernelObjectHandle thread_handle,
-                          ProcessDesiredAccess, ThreadDesiredAccess,
-                          proc_attr, thread_attr, ProcessFlags,
-                          ThreadFlags, process_params, create_info, attr_list);
+                        attrs.Add(ProcessAttribute.ParentProcess(ParentProcess.Handle));
+                    }
 
-                        if (!status.IsSuccess() && !ReturnOnError)
+                    if (RestrictChildProcess || OverrideRestrictChildProcess)
+                    {
+                        attrs.Add(ProcessAttribute.ChildProcess(RestrictChildProcess, OverrideRestrictChildProcess));
+                    }
+
+                    if (Token != null)
+                    {
+                        attrs.Add(ProcessAttribute.Token(Token.Handle));
+                    }
+
+                    using (ProcessAttributeList attr_list = ProcessAttributeList.Create(attrs))
+                    {
+                        create_info.Data.InitFlags = InitFlags | ProcessCreateInitFlag.WriteOutputOnExit;
+                        create_info.Data.ProhibitedImageCharacteristics = ProhibitedImageCharacteristics;
+                        create_info.Data.AdditionalFileAccess = AdditionalFileAccess;
+
+                        using (ObjectAttributes proc_attr = new ObjectAttributes(null, AttributeFlags.None, (NtObject)null, null, ProcessSecurityDescriptor),
+                            thread_attr = new ObjectAttributes(null, AttributeFlags.None, (NtObject)null, null, ThreadSecurityDescriptor))
                         {
-                            // Close handles which come from errors
-                            switch (create_info.State)
+                            NtStatus status = NtSystemCalls.NtCreateUserProcess(
+                                out SafeKernelObjectHandle process_handle, out SafeKernelObjectHandle thread_handle,
+                                ProcessDesiredAccess, ThreadDesiredAccess,
+                                proc_attr, thread_attr, ProcessFlags,
+                                ThreadFlags, process_params.DangerousGetHandle(), create_info, attr_list);
+
+                            if (!status.IsSuccess() && !ReturnOnError)
                             {
-                                case ProcessCreateState.FailOnSectionCreate:
-                                    NtSystemCalls.NtClose(create_info.Data.FileHandle);
-                                    break;
-                                case ProcessCreateState.FailExeName:
-                                    NtSystemCalls.NtClose(create_info.Data.IFEOKey);
-                                    break;
+                                // Close handles which come from errors
+                                switch (create_info.State)
+                                {
+                                    case ProcessCreateState.FailOnSectionCreate:
+                                        NtSystemCalls.NtClose(create_info.Data.FileHandle);
+                                        break;
+                                    case ProcessCreateState.FailExeName:
+                                        NtSystemCalls.NtClose(create_info.Data.IFEOKey);
+                                        break;
+                                }
+
+                                status.ToNtException();
                             }
 
-                            status.ToNtException();
-                        }
-
-                        if (create_info.State == ProcessCreateState.Success)
-                        {
-                            return new CreateUserProcessResult(process_handle, thread_handle,
-                              create_info.Data, image_info.Result, client_id.Result, TerminateOnDispose);
-                        }
-                        else
-                        {
-                            return new CreateUserProcessResult(status, create_info.Data, create_info.State);
+                            if (create_info.State == ProcessCreateState.Success)
+                            {
+                                return new CreateUserProcessResult(process_handle, thread_handle,
+                                    create_info.Data, image_info.Result, client_id.Result, TerminateOnDispose);
+                            }
+                            else
+                            {
+                                return new CreateUserProcessResult(status, create_info.Data, create_info.State);
+                            }
                         }
                     }
                 }
-            }
-            finally
-            {
-                NtRtl.RtlDestroyProcessParameters(process_params);
-                attrs.Dispose();
             }
         }
     }

@@ -54,6 +54,7 @@
     <Compile Include="BufferUtils.cs" />
     <Compile Include="CachedEnumerable.cs" />
     <Compile Include="KnownSids.cs" />
+    <Compile Include="SafeProcessParametersHandle.cs" />
     <Compile Include="Utilities\Text\StringUtils.cs" />
     <Compile Include="Utilities\Token\ClaimSecurityAttributeBuilder.cs" />
     <Compile Include="CreateUserProcess.cs" />
