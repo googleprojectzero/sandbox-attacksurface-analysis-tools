@@ -562,6 +562,18 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get flags for isolated user mode.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The ISO flags.</returns>
+
+        public static NtResult<SystemIsolatedUserModeInformationFlags> GetIsolatedUserModeFlags(bool throw_on_error)
+        {
+            return Query(SystemInformationClass.SystemIsolatedUserModeInformation, 
+                default(SystemIsolatedUserModeInformation), throw_on_error).Map(s => s.Flags);
+        }
+
+        /// <summary>
         /// Query a fixed structure from the object.
         /// </summary>
         /// <typeparam name="T">The type of structure to return.</typeparam>
@@ -970,6 +982,10 @@ namespace NtApiDotNet
         /// Get the system emulation processor information.
         /// </summary>
         public static SystemProcessorInformation EmulationProcessorInformation => QueryCached<SystemProcessorInformation>(SystemInformationClass.SystemEmulationProcessorInformation);
+        /// <summary>
+        /// Get the Isolated User Mode flags.
+        /// </summary>
+        public static SystemIsolatedUserModeInformationFlags IsolatedUserModeFlags => GetIsolatedUserModeFlags(true).Result;
 
         #endregion
     }

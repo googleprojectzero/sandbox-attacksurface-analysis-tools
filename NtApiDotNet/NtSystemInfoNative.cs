@@ -963,5 +963,27 @@ namespace NtApiDotNet
         public int NumberOfParallelPorts;
     }
 
+    [Flags]
+    public enum SystemIsolatedUserModeInformationFlags
+    {
+        None = 0,
+        SecureKernelRunning = 1,
+        HvciEnabled = 2,
+        HvciStrictMode = 4,
+        DebugEnabled = 8,
+        FirmwarePageProtection = 0x10,
+        EncryptionKeyAvailable = 0x20,
+        TrustletRunning = 0x100,
+        HvciDisableAllowed = 0x200,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemIsolatedUserModeInformation
+    {
+        public SystemIsolatedUserModeInformationFlags Flags;
+        public int Spare0;
+        public long Spare1;
+    }
+
 #pragma warning restore 1591
 }
