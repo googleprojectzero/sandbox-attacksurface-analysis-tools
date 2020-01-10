@@ -1067,6 +1067,7 @@ namespace NtApiDotNet.Win32
     /// </summary>
     public sealed class Win32Process : IDisposable
     {
+        #region Static Methods
         /// <summary>
         /// Create process with a token.
         /// </summary>
@@ -1236,6 +1237,7 @@ namespace NtApiDotNet.Win32
             };
             return CreateProcess(config);
         }
+        #endregion
 
         /// <summary>
         /// Dispose the process.
@@ -1244,13 +1246,7 @@ namespace NtApiDotNet.Win32
         {
             if (TerminateOnDispose)
             {
-                try
-                {
-                    Process?.Terminate(NtStatus.STATUS_PROCESS_IS_TERMINATING);
-                }
-                catch (NtException)
-                {
-                }
+                Process?.Terminate(NtStatus.STATUS_PROCESS_IS_TERMINATING, false);
             }
             Process?.Dispose();
             Thread?.Dispose();
@@ -1281,6 +1277,7 @@ namespace NtApiDotNet.Win32
             Process?.Terminate(exitcode);
         }
 
+        #region Public Properties
         /// <summary>
         /// The handle to the process.
         /// </summary>
@@ -1309,7 +1306,9 @@ namespace NtApiDotNet.Win32
         /// Get the process' exit status as an NtStatus code.
         /// </summary>
         public NtStatus ExitNtStatus => Process.ExitNtStatus;
+        #endregion
 
+        #region Public Operators
         /// <summary>
         /// Explicit conversion operator to an NtThread object.
         /// </summary>
@@ -1321,7 +1320,9 @@ namespace NtApiDotNet.Win32
         /// </summary>
         /// <param name="process">The win32 process</param>
         public static explicit operator NtProcess(Win32Process process) => process.Process;
+        #endregion
 
+        #region Constructors
         internal Win32Process(PROCESS_INFORMATION proc_info, bool terminate_on_dispose)
         {
             Process = NtProcess.FromHandle(new SafeKernelObjectHandle(proc_info.hProcess, true));
@@ -1330,5 +1331,6 @@ namespace NtApiDotNet.Win32
             Tid = proc_info.dwThreadId;
             TerminateOnDispose = terminate_on_dispose;
         }
+        #endregion
     }
 }
