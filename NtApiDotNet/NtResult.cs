@@ -76,13 +76,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Is the result successful.
         /// </summary>
-        public bool IsSuccess
-        {
-            get
-            {
-                return Status.IsSuccess();
-            }
-        }
+        public bool IsSuccess => Status.IsSuccess();
 
         /// <summary>
         /// Map result to a different type.
