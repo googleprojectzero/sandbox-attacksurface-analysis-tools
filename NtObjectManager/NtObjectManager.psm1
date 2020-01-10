@@ -765,6 +765,8 @@ function Get-NtFilePathType {
 Create a new native NT process configuration.
 .DESCRIPTION
 This cmdlet creates a new native process configuration which you can then pass to New-NtProcess.
+.PARAMETER ImagePath
+The path to image file to load.
 .PARAMETER CommandLine
 The command line of the process to create.
 .PARAMETER ProcessFlags
@@ -777,33 +779,51 @@ Protected process type.
 Protected process signer.
 .PARAMETER TerminateOnDispose
 Specify switch to terminate the process when the CreateUserProcessResult object is disposed.
+.PARAMETER Win32Path
+Specify ImagePath is a Win32 path.
+.PARAMETER CaptureAdditionalInformation
+Specify to capture additional information from create call.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.CreateUserProcess
+NtApiDotNet.NtProcessCreateConfig
 #>
 function New-NtProcessConfig
 {
     Param(
-    [Parameter(Mandatory=$true, Position=0)]
-    [string]$CommandLine,
-    [NtApiDotNet.ProcessCreateFlags]$ProcessFlags = 0,
-    [NtApiDotNet.ThreadCreateFlags]$ThreadFlags = 0,
-    [NtApiDotNet.PsProtectedType]$ProtectedType = 0,
-    [NtApiDotNet.PsProtectedSigner]$ProtectedSigner = 0,
-    [switch]$TerminateOnDispose
+        [Parameter(Mandatory=$true, Position=0)]
+        [string]$ImagePath,
+        [Parameter(Position=1)]
+        [string]$CommandLine,
+        [NtApiDotNet.ProcessCreateFlags]$ProcessFlags = 0,
+        [NtApiDotNet.ThreadCreateFlags]$ThreadFlags = 0,
+        [NtApiDotNet.PsProtectedType]$ProtectedType = 0,
+        [NtApiDotNet.PsProtectedSigner]$ProtectedSigner = 0,
+        [switch]$TerminateOnDispose,
+        [switch]$Win32Path,
+        [switch]$CaptureAdditionalInformation
     )
-    $config = New-Object NtApiDotNet.CreateUserProcess
+    
+    if ($Win32Path) {
+        $ImagePath = Get-NtFilePath $ImagePath -Resolve
+    }
+
+    if ("" -eq $CommandLine) {
+        $CommandLine = $ImagePath
+    }
+
+    $config = New-Object NtApiDotNet.NtProcessCreateConfig
+    $config.ImagePath = $ImagePath
     $config.ProcessFlags = $ProcessFlags
     $config.ThreadFlags = $ThreadFlags
     $config.CommandLine = $CommandLine
     $config.TerminateOnDispose = $TerminateOnDispose
-
     if ($ProtectedType -ne 0 -or $ProtectedSigner -ne 0)
     {
         $config.AddProtectionLevel($ProtectedType, $ProtectedSigner)
         $config.ProcessFlags = $ProcessFlags -bor "ProtectedProcess"
     }
+    $config.CaptureAdditionalInformation = $CaptureAdditionalInformation
 
     return $config
 }
@@ -813,36 +833,23 @@ function New-NtProcessConfig
 Create a new native NT process.
 .DESCRIPTION
 This cmdlet creates a new native NT process.
-.PARAMETER ImagePath
-NT path to executable.
 .PARAMETER Config
 The configuration for the new process from New-NtProcessConfig.
-.PARAMETER Win32Path
-Specify ImagePath is a Win32 path.
+.PARAMETER ReturnOnError
+Specify to always return a result even on error.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.CreateUserProcessResult
+NtApiDotNet.NtProcessCreateResult
 #>
 function New-NtProcess
 {
     Param(
-    [Parameter(Mandatory=$true, Position=0)]
-    [string]$ImagePath,
-    [Parameter(Mandatory=$true, Position=1)]
-    [NtApiDotNet.CreateUserProcess]$Config,
-    [switch]$Win32Path
+        [Parameter(Mandatory=$true, Position=0)]
+        [NtApiDotNet.NtProcessCreateConfig]$Config,
+        [switch]$ReturnOnError
     )
-
-  if ($null -eq $Config) {
-    $Config = New-NtProcessConfig -CommandLine $ImagePath
-  }
-
-  if ($Win32Path) {
-    $ImagePath = Get-NtFilePath $ImagePath -Resolve
-  }
-
-  $Config.Start($ImagePath)
+  [NtApiDotNet.NtProcess]::Create($Config, !$ReturnOnError)
 }
 
 <#
@@ -2466,6 +2473,7 @@ function Get-EmbeddedAuthenticodeSignature {
         $dynamic = $false
         $elam = $false
         $store = $false
+        $ium = $false
 
         foreach($eku in $cert.EnhancedKeyUsageList) {
            switch($eku.ObjectId) {
@@ -2476,6 +2484,7 @@ function Get-EmbeddedAuthenticodeSignature {
                 "1.3.6.1.4.1.311.76.11.1" { $elam = $true }
                 "1.3.6.1.4.1.311.76.5.1" { $dynamic = $true }
                 "1.3.6.1.4.311.76.3.1" { $store = $true }
+                "1.3.6.1.4.1.311.10.3.37" { $ium = $true }
             }
         }
 
@@ -2489,6 +2498,7 @@ function Get-EmbeddedAuthenticodeSignature {
             DynamicCodeGeneration=$dynamic;
             Elam=$elam;
             Store=$store;
+            IsolatedUserMode = $ium;
         }
         $obj = New-Object –TypeName PSObject –Prop $props
         Write-Output $obj

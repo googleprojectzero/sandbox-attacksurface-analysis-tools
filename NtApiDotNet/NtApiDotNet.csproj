@@ -54,6 +54,8 @@
     <Compile Include="BufferUtils.cs" />
     <Compile Include="CachedEnumerable.cs" />
     <Compile Include="KnownSids.cs" />
+    <Compile Include="NtProcessCreateResult.cs" />
+    <Compile Include="NtProcessCreateConfig.cs" />
     <Compile Include="SafeProcessParametersHandle.cs" />
     <Compile Include="Utilities\Text\StringUtils.cs" />
     <Compile Include="Utilities\Token\ClaimSecurityAttributeBuilder.cs" />
@@ -275,6 +277,7 @@
     <Compile Include="Win32\ServiceUtils.cs" />
     <Compile Include="Win32\TokenUtils.cs" />
     <Compile Include="Win32\Win32Process.cs" />
+    <Compile Include="ProcessAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Readme.txt" />

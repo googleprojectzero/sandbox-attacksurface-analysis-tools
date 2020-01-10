@@ -21,6 +21,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Result from a native create process call.
     /// </summary>
+    [Obsolete("Use NtProcessCreateResult")]
     public sealed class CreateUserProcessResult : IDisposable
     {
         /// <summary>

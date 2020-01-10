@@ -325,6 +325,96 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Create a new use new process.
+        /// </summary>
+        /// <param name="config">The process configuration.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The result of the process creation</returns>
+        public static NtProcessCreateResult Create(NtProcessCreateConfig config, bool throw_on_error)
+        {
+            string image_path = config.ImagePath ?? config.ConfigImagePath;
+            if (image_path == null)
+                throw new ArgumentNullException("image_path");
+
+            using (var dispose = new DisposableList())
+            {
+                var process_params = dispose.AddResource(SafeProcessParametersHandle.Create(config.ConfigImagePath ?? image_path,
+                        config.DllPath, config.CurrentDirectory, config.CommandLine, config.Environment,
+                        config.WindowTitle, config.DesktopInfo, config.ShellInfo, config.RuntimeData,
+                        CreateProcessParametersFlags.Normalize, throw_on_error));
+
+                if (!process_params.IsSuccess)
+                    return new NtProcessCreateResult(process_params.Status);
+
+                ProcessCreateInfo create_info = dispose.AddResource(new ProcessCreateInfo());
+                dispose.Add(ProcessAttribute.ImageName(image_path));
+                SafeStructureInOutBuffer<SectionImageInformation> image_info = new SafeStructureInOutBuffer<SectionImageInformation>();
+                dispose.Add(ProcessAttribute.ImageInfo(image_info));
+                SafeStructureInOutBuffer<ClientId> client_id = new SafeStructureInOutBuffer<ClientId>();
+                dispose.Add(ProcessAttribute.ClientId(client_id));
+
+                if (config.ParentProcess != null)
+                {
+                    dispose.Add(ProcessAttribute.ParentProcess(config.ParentProcess.Handle));
+                }
+
+                if (config.ChildProcessMitigations != ChildProcessMitigationFlags.None)
+                {
+                    dispose.Add(ProcessAttribute.ChildProcess(config.ChildProcessMitigations));
+                }
+
+                if (config.Token != null)
+                {
+                    dispose.Add(ProcessAttribute.Token(config.Token.Handle));
+                }
+
+                if (config.ProtectionLevel.Level != 0)
+                {
+                    dispose.Add(ProcessAttribute.ProtectionLevel(config.ProtectionLevel));
+                }
+
+                var attr_list = dispose.AddResource(ProcessAttributeList.Create(dispose.OfType<ProcessAttribute>().Concat(config.AdditionalAttributes)));
+                create_info.Data.InitFlags = config.InitFlags;
+                if (config.CaptureAdditionalInformation)
+                {
+                    create_info.Data.InitFlags |= ProcessCreateInitFlag.WriteOutputOnExit;
+                }
+                create_info.Data.ProhibitedImageCharacteristics = config.ProhibitedImageCharacteristics;
+                create_info.Data.AdditionalFileAccess = config.AdditionalFileAccess;
+
+                var proc_attr = dispose.AddResource(new ObjectAttributes(null, AttributeFlags.None, 
+                        (NtObject)null, null, config.ProcessSecurityDescriptor));
+                var thread_attr = dispose.AddResource(new ObjectAttributes(null, AttributeFlags.None,
+                        (NtObject)null, null, config.ThreadSecurityDescriptor));
+
+                NtStatus status = NtSystemCalls.NtCreateUserProcess(
+                    out SafeKernelObjectHandle process_handle, out SafeKernelObjectHandle thread_handle,
+                    config.ProcessDesiredAccess, config.ThreadDesiredAccess,
+                    proc_attr, thread_attr, config.ProcessFlags,
+                    config.ThreadFlags, process_params.Result.DangerousGetHandle(), create_info, attr_list).ToNtException(throw_on_error);
+                if (create_info.State == ProcessCreateState.Success)
+                {
+                    return new NtProcessCreateResult(status, process_handle, thread_handle,
+                        create_info.Data, image_info.Result, client_id.Result, config.TerminateOnDispose);
+                }
+                else
+                {
+                    return new NtProcessCreateResult(status, create_info.Data, create_info.State);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Create a new use new process.
+        /// </summary>
+        /// <param name="config">The process configuration.</param>
+        /// <returns>The result of the process creation</returns>
+        public static NtProcessCreateResult Create(NtProcessCreateConfig config)
+        {
+            return Create(config, true);
+        }
+
+        /// <summary>
         /// Open an actual handle to the current process rather than the pseudo one used for Current
         /// </summary>
         /// <returns>The process object</returns>

@@ -60,7 +60,7 @@ namespace NtApiDotNet
                 string desktop_info,
                 string shell_info,
                 string runtime_data,
-                uint flags,
+                CreateProcessParametersFlags flags,
                 bool throw_on_error)
         {
             return NtRtl.RtlCreateProcessParametersEx(out IntPtr ret, GetString(image_path_name), GetString(dll_path), GetString(current_directory),
@@ -78,7 +78,7 @@ namespace NtApiDotNet
                 string desktop_info,
                 string shell_info,
                 string runtime_data,
-                uint flags)
+                CreateProcessParametersFlags flags)
         {
             return Create(image_path_name, dll_path, current_directory, command_line, environment, 
                 window_title, desktop_info, shell_info, runtime_data, flags, true).Result;

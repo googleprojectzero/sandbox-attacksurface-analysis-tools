@@ -13,8 +13,6 @@
 //  limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -122,7 +120,7 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public class ProcessCreateInfo
+    public sealed class ProcessCreateInfo : IDisposable
     {
         IntPtr Size;
         public ProcessCreateState State;
@@ -132,6 +130,24 @@ namespace NtApiDotNet
         {
             Size = new IntPtr(Marshal.SizeOf(this));
             State = ProcessCreateState.InitialState;
+        }
+
+        void IDisposable.Dispose()
+        {
+            // Close handles which come from errors
+            switch (State)
+            {
+                case ProcessCreateState.FailOnSectionCreate:
+                    NtObjectUtils.CloseHandle(Data.FileHandle);
+                    break;
+                case ProcessCreateState.FailExeName:
+                    NtObjectUtils.CloseHandle(Data.IFEOKey);
+                    break;
+                case ProcessCreateState.Success:
+                    NtObjectUtils.CloseHandle(Data.Success.FileHandle);
+                    NtObjectUtils.CloseHandle(Data.Success.SectionHandle);
+                    break;
+            }
         }
     }
 
@@ -207,6 +223,11 @@ namespace NtApiDotNet
         public PsProtection(PsProtectedType type, PsProtectedSigner signer, bool audit)
         {
             level = (byte)((int)type | (audit ? 0x8 : 0) | ((int)signer << 4));
+        }
+
+        public PsProtection(PsProtectedType type, PsProtectedSigner signer) 
+            : this(type, signer, false)
+        {
         }
 
         public PsProtectedType Type { get { return (PsProtectedType)(level & 0x7); } }
@@ -609,6 +630,13 @@ namespace NtApiDotNet
         RestrictedUnlessSecure = 4,
     }
 
+    [Flags]
+    public enum CreateProcessParametersFlags
+    {
+        None = 0,
+        Normalize = 1,
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
@@ -681,7 +709,6 @@ namespace NtApiDotNet
 
     public static partial class NtRtl
     {
-
         [DllImport("ntdll.dll")]
         public static extern NtStatus RtlCreateProcessParametersEx(
             [Out] out IntPtr pProcessParameters,
@@ -694,181 +721,10 @@ namespace NtApiDotNet
             [In] UnicodeString DesktopInfo,
             [In] UnicodeString ShellInfo,
             [In] UnicodeString RuntimeData,
-            uint Flags);
+            CreateProcessParametersFlags Flags);
 
         [DllImport("ntdll.dll")]
         public static extern void RtlDestroyProcessParameters(IntPtr pProcessParameters);
-    }
-
-    public class ProcessAttribute : IDisposable
-    {
-        const uint NumberMask = 0x0000FFFF;
-        const uint ThreadOnly = 0x00010000; // Attribute may be used with thread creation
-        const uint InputOnly = 0x00020000; // Attribute is input only
-        const uint Additive = 0x00040000; // Attribute may be "accumulated," e.g. bitmasks, counters, etc
-
-        SafeHandle _handle;
-        ProcessAttributeNum _attribute_num;
-        bool _thread;
-        bool _input;
-        bool _additive;
-        IntPtr _valueptr;
-        IntPtr _size;
-        IntPtr _return_length;
-
-        private ProcessAttribute(ProcessAttributeNum num, bool thread, bool input, bool additive, IntPtr valueptr, int size, IntPtr return_length)
-        {
-            _attribute_num = num;
-            _thread = thread;
-            _input = input;
-            _additive = additive;
-            _valueptr = valueptr;
-            _size = new IntPtr(size);
-            _return_length = return_length;
-        }
-
-        private ProcessAttribute(ProcessAttributeNum num, bool thread, bool input, bool additive, SafeHandle handle, int size, IntPtr return_length) :
-           this(num, thread, input, additive, handle.DangerousGetHandle(), size, return_length)
-        {
-            _handle = handle;
-        }
-
-        private ProcessAttribute(ProcessAttributeNum num, bool thread, bool input, bool additive, SafeHGlobalBuffer handle) :
-          this(num, thread, input, additive, handle, handle.Length, IntPtr.Zero)
-        {
-        }
-
-        private ProcessAttribute(ProcessAttributeNum num, bool thread, bool input, bool additive, SafeKernelObjectHandle handle) :
-            this(num, thread, input, additive, handle, IntPtr.Size, IntPtr.Zero)
-        {
-        }
-
-        public ProcessAttributeNative GetNativeAttribute()
-        {
-            IntPtr valueptr = _handle != null ? _handle.DangerousGetHandle() : _valueptr;
-            return new ProcessAttributeNative(((uint)_attribute_num & NumberMask)
-              | (_thread ? ThreadOnly : 0) | (_input ? InputOnly : 0) | (_additive ? Additive : 0), valueptr, _size, _return_length);
-        }
-
-        public static ProcessAttribute ImageName(string image_name)
-        {
-            SafeHGlobalBuffer name = new SafeHGlobalBuffer(Marshal.StringToHGlobalUni(image_name), image_name.Length * 2, true);
-            return new ProcessAttribute(ProcessAttributeNum.ImageName, false, true, false,
-                  name);
-        }
-
-        public static ProcessAttribute ParentProcess(SafeKernelObjectHandle parent_process)
-        {
-            return new ProcessAttribute(ProcessAttributeNum.ParentProcess,
-              false, true, true, NtObject.DuplicateHandle(parent_process));
-        }
-
-        public static ProcessAttribute Token(SafeKernelObjectHandle token)
-        {
-            return new ProcessAttribute(ProcessAttributeNum.Token,
-              false, true, true, NtObject.DuplicateHandle(token));
-        }
-
-        public static ProcessAttribute ImageInfo(SafeStructureInOutBuffer<SectionImageInformation> image_information)
-        {
-            return new ProcessAttribute(ProcessAttributeNum.ImageInfo, false, false, false, image_information);
-        }
-
-        public static ProcessAttribute ClientId(SafeStructureInOutBuffer<ClientId> client_id)
-        {
-            return new ProcessAttribute(ProcessAttributeNum.ClientId, true, false, false, client_id);
-        }
-
-        public static ProcessAttribute ChildProcess(bool child_process_restricted, bool child_process_override)
-        {
-            ChildProcessMitigationFlags flags = child_process_restricted ? 
-                ChildProcessMitigationFlags.Restricted : ChildProcessMitigationFlags.None;
-            if (child_process_override)
-                flags |= ChildProcessMitigationFlags.Override;
-            return ChildProcess(flags);
-        }
-
-        public static ProcessAttribute ChildProcess(ChildProcessMitigationFlags flags)
-        {
-            int value = (int)flags;
-            return new ProcessAttribute(ProcessAttributeNum.ChildProcess, false, true, false, value.ToBuffer());
-        }
-
-        public static ProcessAttribute ProtectionLevel(PsProtectedType type, PsProtectedSigner signer, bool audit)
-        {
-            PsProtection protection = new PsProtection(type, signer, audit);
-
-            return new ProcessAttribute(ProcessAttributeNum.ProtectionLevel, false, true, true, new IntPtr(protection.Level), 1, IntPtr.Zero);
-        }
-
-        public static ProcessAttribute HandleList(IEnumerable<SafeHandle> handles)
-        {
-            return new ProcessAttribute(ProcessAttributeNum.HandleList, false, true, false,
-              new SafeHandleListHandle(handles.Select(h => NtObject.DuplicateHandle(h.ToSafeKernelHandle()))));
-        }
-
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (_handle != null)
-                {
-                    _handle.Close();
-                    _handle = null;
-                }
-
-                disposedValue = true;
-            }
-        }
-
-        ~ProcessAttribute()
-        {
-            Dispose(false);
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-        #endregion
-
-    };
-
-    public sealed class ProcessAttributeList : SafeStructureInOutBuffer<PsAttributeList>
-    {
-        private ProcessAttributeList(ProcessAttributeNative[] attributes)
-            : base(Marshal.SizeOf(typeof(ProcessAttributeNative)) * attributes.Length, true)
-        {
-            var result = Result;
-            result.TotalLength = new IntPtr(Length);
-            Result = result;
-            Data.WriteArray(0, attributes, 0, attributes.Length);
-        }
-
-        private ProcessAttributeList(IntPtr buffer, int length, bool owns_handle)
-            : base(buffer, length, owns_handle)
-        {
-        }
-
-        public ProcessAttributeList(IEnumerable<ProcessAttribute> attributes)
-            : this(attributes.Select(a => a.GetNativeAttribute()).ToArray())
-        {
-        }
-
-        new public static ProcessAttributeList Null => new ProcessAttributeList(IntPtr.Zero, 0, false);
-
-        public static ProcessAttributeList Create(IEnumerable<ProcessAttribute> attributes)
-        {
-            if (attributes == null || !attributes.Any())
-            {
-                return Null;
-            }
-            return new ProcessAttributeList(attributes);
-        }
     }
 
     [Flags]

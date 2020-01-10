@@ -20,6 +20,7 @@ namespace NtApiDotNet
     /// <summary>
     /// Class to create a new user process using the native APIs.
     /// </summary>
+    [Obsolete("Use NtProcessCreateConfig")]
     public sealed class CreateUserProcess
     {
         /// <summary>
@@ -307,7 +308,7 @@ namespace NtApiDotNet
                 throw new ArgumentNullException("image_path");
 
             using (var process_params = SafeProcessParametersHandle.Create(ConfigImagePath ?? image_path, DllPath, CurrentDirectory,
-                  CommandLine, Environment, WindowTitle, DesktopInfo, ShellInfo, RuntimeData, 1))
+                  CommandLine, Environment, WindowTitle, DesktopInfo, ShellInfo, RuntimeData, CreateProcessParametersFlags.Normalize))
             {
                 using (var attrs = new DisposableList<ProcessAttribute>())
                 {
