@@ -779,6 +779,14 @@ Protected process type.
 Protected process signer.
 .PARAMETER TerminateOnDispose
 Specify switch to terminate the process when the CreateUserProcessResult object is disposed.
+.PARAMETER ProhibitedImageCharacteristics
+Specify prohibited image characteristics for the new process.
+.PARAMETER ChildProcessMitigations
+Specify child process mitigations.
+.PARAMETER AdditionalFileAccess
+Specify additional file access mask.
+.PARAMETER InitFlags
+Specify additional initialization flags.
 .PARAMETER Win32Path
 Specify ImagePath is a Win32 path.
 .PARAMETER CaptureAdditionalInformation
@@ -799,6 +807,10 @@ function New-NtProcessConfig
         [NtApiDotNet.ThreadCreateFlags]$ThreadFlags = 0,
         [NtApiDotNet.PsProtectedType]$ProtectedType = 0,
         [NtApiDotNet.PsProtectedSigner]$ProtectedSigner = 0,
+        [NtApiDotNet.ImageCharacteristics]$ProhibitedImageCharacteristics = 0,
+        [NtApiDotNet.ChildProcessMitigationFlags]$ChildProcessMitigations = 0,
+        [NtApiDotNet.FileAccessRights]$AdditionalFileAccess = 0,
+        [NtApiDotNet.ProcessCreateInitFlag]$InitFlags = 0,
         [switch]$TerminateOnDispose,
         [switch]$Win32Path,
         [switch]$CaptureAdditionalInformation
@@ -817,6 +829,10 @@ function New-NtProcessConfig
     $config.ProcessFlags = $ProcessFlags
     $config.ThreadFlags = $ThreadFlags
     $config.CommandLine = $CommandLine
+    $config.ProhibitedImageCharacteristics = $ProhibitedImageCharacteristics
+    $config.ChildProcessMitigations = $ChildProcessMitigations
+    $config.AdditionalFileAccess = $AdditionalFileAccess
+    $config.InitFlags = $InitFlags
     $config.TerminateOnDispose = $TerminateOnDispose
     if ($ProtectedType -ne 0 -or $ProtectedSigner -ne 0)
     {
