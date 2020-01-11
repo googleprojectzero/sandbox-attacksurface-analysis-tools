@@ -63,6 +63,7 @@ namespace NtApiDotNet
 
     public enum ProcessCreateStateSuccessOutputFlags : uint
     {
+        None = 0,
         ProtectedProcess = 1,
         AddressSpaceOverride = 2,
         DevOverrideEnabled = 4,

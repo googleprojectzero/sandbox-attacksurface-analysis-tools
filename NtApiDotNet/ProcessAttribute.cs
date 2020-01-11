@@ -133,7 +133,6 @@ namespace NtApiDotNet
 
         public static ProcessAttribute SecureProcess(byte[] data)
         {
-            data = data ?? new byte[] { 1, 0, 0, 0, 0, 0, 0, 0 };
             return new ProcessAttribute(ProcessAttributeNum.SecureProcess, false, true, false,
                   data.ToBuffer());
         }

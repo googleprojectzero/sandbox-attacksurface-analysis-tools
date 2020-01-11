@@ -144,6 +144,11 @@ namespace NtApiDotNet
         public PsProtection ProtectionLevel { get; set; }
 
         /// <summary>
+        /// Set whether to create a secure process.
+        /// </summary>
+        public bool SecureProcess { get; set; }
+
+        /// <summary>
         /// Capture additional information when NtProcess.Create returns.
         /// </summary>
         public bool CaptureAdditionalInformation { get; set; }
