@@ -278,6 +278,7 @@
     <Compile Include="Win32\TokenUtils.cs" />
     <Compile Include="Win32\Win32Process.cs" />
     <Compile Include="ProcessAttribute.cs" />
+    <Compile Include="SafeAlpcPortMessageBuffer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Readme.txt" />

@@ -40,8 +40,19 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class BoundaryDescriptor : IDisposable
     {
+        #region Private Members
         private IntPtr _boundary_descriptor;
 
+        private void AddIntegrityLevel(Sid sid)
+        {
+            using (SafeSidBufferHandle sid_buffer = sid.ToSafeBuffer())
+            {
+                NtRtl.RtlAddIntegrityLabelToBoundaryDescriptor(ref _boundary_descriptor, sid_buffer).ToNtException();
+            }
+        }
+        #endregion
+
+        #region Constructors
         /// <summary>
         /// Constructor
         /// </summary>
@@ -64,7 +75,9 @@ namespace NtApiDotNet
             : this(name, BoundaryDescriptorFlags.None)
         {
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Add a SID to the boundary descriptor.
         /// </summary>
@@ -75,14 +88,6 @@ namespace NtApiDotNet
             using (SafeSidBufferHandle sid_buffer = sid.ToSafeBuffer())
             {
                 NtRtl.RtlAddSIDToBoundaryDescriptor(ref _boundary_descriptor, sid_buffer).ToNtException();
-            }
-        }
-
-        private void AddIntegrityLevel(Sid sid)
-        {
-            using (SafeSidBufferHandle sid_buffer = sid.ToSafeBuffer())
-            {
-                NtRtl.RtlAddIntegrityLabelToBoundaryDescriptor(ref _boundary_descriptor, sid_buffer).ToNtException();
             }
         }
 
@@ -124,12 +129,16 @@ namespace NtApiDotNet
         {
             AddSids(new Sid[] { sid }.Concat(sids));
         }
+        #endregion
 
+        #region Public Properties
         /// <summary>
         /// The handle to the boundary descriptor. 
         /// </summary>
-        public IntPtr Handle { get { return _boundary_descriptor; } }
+        public IntPtr Handle => _boundary_descriptor;
+        #endregion
 
+        #region Static Methods
         /// <summary>
         /// Create a boundary descriptor from a string representation.
         /// </summary>
@@ -149,6 +158,7 @@ namespace NtApiDotNet
 
             return boundary;
         }
+        #endregion
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls

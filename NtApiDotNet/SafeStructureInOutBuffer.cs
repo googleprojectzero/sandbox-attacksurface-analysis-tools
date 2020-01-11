@@ -25,6 +25,7 @@ namespace NtApiDotNet
     /// <typeparam name="T">The type of structure as the base of the memory allocation.</typeparam>
     public class SafeStructureInOutBuffer<T> : SafeHGlobalBuffer where T : new()
     {
+        #region Constructors
         /// <summary>
         /// Constructor
         /// </summary>
@@ -53,16 +54,6 @@ namespace NtApiDotNet
         {
         }
 
-        // Private constructor for Null buffer.
-        private SafeStructureInOutBuffer(int dummy_length) : base(IntPtr.Zero, dummy_length, false)
-        {
-        }
-
-        /// <summary>
-        /// Get a buffer which represents NULL.
-        /// </summary>
-        new public static SafeStructureInOutBuffer<T> Null { get { return new SafeStructureInOutBuffer<T>(0); } }
-
         /// <summary>
         /// Constructor, initializes buffer with a default structure.
         /// </summary>
@@ -71,29 +62,6 @@ namespace NtApiDotNet
         public SafeStructureInOutBuffer(int additional_size, bool add_struct_size)
             : this(new T(), additional_size, add_struct_size)
         {
-        }
-
-        private static int GetTotalLength(int additional_size, bool add_struct_size)
-        {
-            if (add_struct_size)
-            {
-                int data_offset = BufferUtils.GetIncludeField<T>()
-                    ? Marshal.SizeOf(typeof(T)) : BufferUtils.GetStructDataOffset<T>();
-                return data_offset + additional_size;
-            }
-            return additional_size;
-        }
-
-        private static int GetAllocationLength(int length)
-        {
-            // Always ensure we at least allocate the entire structure length.
-            return Math.Max(Marshal.SizeOf(typeof(T)), length);
-        }
-
-        private SafeStructureInOutBuffer(T value, int total_length)
-            : base(GetAllocationLength(total_length), total_length)
-        {
-            Marshal.StructureToPtr(value, handle, false);
         }
 
         /// <summary>
@@ -107,6 +75,16 @@ namespace NtApiDotNet
         {
         }
 
+        #endregion
+
+        #region Static Properties
+        /// <summary>
+        /// Get a buffer which represents NULL.
+        /// </summary>
+        new public static SafeStructureInOutBuffer<T> Null { get { return new SafeStructureInOutBuffer<T>(0); } }
+        #endregion
+
+        #region Protected Members
         /// <summary>
         /// Overridden ReleaseHandle method.
         /// </summary>
@@ -119,7 +97,9 @@ namespace NtApiDotNet
             }
             return base.ReleaseHandle();
         }
+        #endregion
 
+        #region Public Properties
         /// <summary>
         /// Get or set the result structure in the memory buffer.
         /// </summary>
@@ -157,7 +137,9 @@ namespace NtApiDotNet
                 return new SafeHGlobalBuffer(handle + size, length < 0 ? 0 : length, false);
             }
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Detaches the current buffer and allocates a new one.
         /// </summary>
@@ -194,5 +176,38 @@ namespace NtApiDotNet
             {
             }
         }
+        #endregion
+
+        #region Private Members
+
+        // Private constructor for Null buffer.
+        private SafeStructureInOutBuffer(int dummy_length) : base(IntPtr.Zero, dummy_length, false)
+        {
+        }
+
+        private static int GetTotalLength(int additional_size, bool add_struct_size)
+        {
+            if (add_struct_size)
+            {
+                int data_offset = BufferUtils.GetIncludeField<T>()
+                    ? Marshal.SizeOf(typeof(T)) : BufferUtils.GetStructDataOffset<T>();
+                return data_offset + additional_size;
+            }
+            return additional_size;
+        }
+
+        private static int GetAllocationLength(int length)
+        {
+            // Always ensure we at least allocate the entire structure length.
+            return Math.Max(Marshal.SizeOf(typeof(T)), length);
+        }
+
+        private SafeStructureInOutBuffer(T value, int total_length)
+            : base(GetAllocationLength(total_length), total_length)
+        {
+            Marshal.StructureToPtr(value, handle, false);
+        }
+
+        #endregion
     }
 }

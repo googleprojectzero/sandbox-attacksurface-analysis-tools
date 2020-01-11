@@ -14,72 +14,11 @@
 
 using NtApiDotNet.Utilities.Text;
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace NtApiDotNet
 {
-    /// <summary>
-    /// Safe buffer to contain an ALPC port message.
-    /// </summary>
-    public class SafeAlpcPortMessageBuffer : SafeStructureInOutBuffer<AlpcPortMessage>
-    {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="header">The port message header.</param>
-        /// <param name="allocated_data_length">The total length of allocated memory excluding the header.</param>
-        public SafeAlpcPortMessageBuffer(AlpcPortMessage header, int allocated_data_length) : base(header, allocated_data_length, true)
-        {
-            Data.ZeroBuffer();
-        }
-
-        /// <summary>
-        /// Constructor. Creates a receive buffer with a set length.
-        /// </summary>
-        /// <param name="allocated_data_length">The total length of allocated memory excluding the header.</param>
-        public SafeAlpcPortMessageBuffer(int allocated_data_length)
-            : this(new AlpcPortMessage(), allocated_data_length)
-        {
-        }
-
-        internal SafeAlpcPortMessageBuffer() : base(IntPtr.Zero, 0, false)
-        {
-        }
-
-        internal SafeAlpcPortMessageBuffer(IntPtr buffer, int length) 
-            : base(buffer, length, true)
-        {
-        }
-
-        /// <summary>
-        /// Get a NULL safe buffer.
-        /// </summary>
-        new public static SafeAlpcPortMessageBuffer Null => new SafeAlpcPortMessageBuffer();
-
-        /// <summary>
-        /// Detaches the current buffer and allocates a new one.
-        /// </summary>
-        /// <returns>The detached buffer.</returns>
-        /// <remarks>The original buffer will become invalid after this call.</remarks>
-        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
-        new public SafeAlpcPortMessageBuffer Detach()
-        {
-            RuntimeHelpers.PrepareConstrainedRegions();
-            try // Needed for constrained region.
-            {
-                IntPtr handle = DangerousGetHandle();
-                SetHandleAsInvalid();
-                return new SafeAlpcPortMessageBuffer(handle, Length);
-            }
-            finally
-            {
-            }
-        }
-    }
-
     /// <summary>
     /// Base class to represent an ALPC message.
     /// </summary>
