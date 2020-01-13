@@ -57,6 +57,8 @@
     <Compile Include="NtDesktopNative.cs" />
     <Compile Include="NtProcessCreateResult.cs" />
     <Compile Include="NtProcessCreateConfig.cs" />
+    <Compile Include="NtWaitNative.cs" />
+    <Compile Include="NtWindowStationNative.cs" />
     <Compile Include="SafeProcessParametersHandle.cs" />
     <Compile Include="Utilities\Text\StringUtils.cs" />
     <Compile Include="Utilities\Token\ClaimSecurityAttributeBuilder.cs" />
@@ -279,6 +281,8 @@
     <Compile Include="Win32\TokenUtils.cs" />
     <Compile Include="Win32\Win32Process.cs" />
     <Compile Include="ProcessAttribute.cs" />
+    <Compile Include="NtWaitTimeout.cs" />
+    <Compile Include="NtWaitHandle.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Readme.txt" />
