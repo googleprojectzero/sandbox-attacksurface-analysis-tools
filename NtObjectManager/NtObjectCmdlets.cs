@@ -380,7 +380,7 @@ namespace NtObjectManager
     /// Base object cmdlet which has an access parameter.
     /// </summary>
     /// <typeparam name="T">The access enumeration type.</typeparam>
-    public abstract class NtObjectBaseNoPathCmdletWithAccess<T> : NtObjectBaseNoPathCmdlet where T : struct, IConvertible
+    public abstract class NtObjectBaseNoPathCmdletWithAccess<T> : NtObjectBaseNoPathCmdlet where T : Enum
     {
         /// <summary>
         /// <para type="description">Specify the access rights for a new handle when creating/opening an object.</para>
@@ -401,7 +401,7 @@ namespace NtObjectManager
     /// Base object cmdlet which has an access parameter.
     /// </summary>
     /// <typeparam name="T">The access enumeration type.</typeparam>
-    public abstract class NtObjectBaseCmdletWithAccess<T> : NtObjectBaseCmdlet where T : struct, IConvertible
+    public abstract class NtObjectBaseCmdletWithAccess<T> : NtObjectBaseCmdlet where T : Enum
     {
         /// <summary>
         /// <para type="description">Specify the access rights for a new handle when creating/opening an object.</para>
@@ -793,7 +793,7 @@ namespace NtObjectManager
     /// </summary>
     /// <typeparam name="O">The type of NT object.</typeparam>
     /// <typeparam name="A">The access rights type.</typeparam>
-    public abstract class BaseGetNtChildObjectCmdlet<O, A> : PSCmdlet where A : struct where O : NtObject
+    public abstract class BaseGetNtChildObjectCmdlet<O, A> : PSCmdlet where A : Enum where O : NtObject
     {
         /// <summary>
         /// <para type="description">Specify an object to get children from, should be a directory.</para>

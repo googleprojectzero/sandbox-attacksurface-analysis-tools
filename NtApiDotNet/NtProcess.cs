@@ -115,7 +115,7 @@ namespace NtApiDotNet
 
         private T QueryToken<T>(Func<NtToken, T> callback)
         {
-            return QueryToken(TokenAccessRights.Query, callback, default(T));
+            return QueryToken(TokenAccessRights.Query, callback, default);
         }
 
         private static NtProcessCreateResult Create(NtProcessCreateConfig config, string image_path, bool fork, bool throw_on_error)

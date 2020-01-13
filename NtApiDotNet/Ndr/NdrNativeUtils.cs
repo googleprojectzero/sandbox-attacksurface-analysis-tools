@@ -77,7 +77,7 @@ namespace NtApiDotNet.Ndr
                 IntPtr curr = reader.ReadIntPtr(p + i * reader.PointerSize);
                 if (curr == IntPtr.Zero)
                 {
-                    ret[i] = default(T);
+                    ret[i] = default;
                 }
                 else
                 {

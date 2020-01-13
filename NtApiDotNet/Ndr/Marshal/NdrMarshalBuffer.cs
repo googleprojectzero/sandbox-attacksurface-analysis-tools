@@ -825,7 +825,7 @@ namespace NtApiDotNet.Ndr.Marshal
                 }
                 else
                 {
-                    writer(default(T));
+                    writer(default);
                 }
             }
         }
@@ -934,7 +934,7 @@ namespace NtApiDotNet.Ndr.Marshal
                 }
                 else
                 {
-                    writer(default(T));
+                    writer(default);
                 }
             }
         }
