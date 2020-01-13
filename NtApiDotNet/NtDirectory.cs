@@ -26,8 +26,9 @@ namespace NtApiDotNet
     public class NtDirectory : NtObjectWithDuplicate<NtDirectory, DirectoryAccessRights>
     {
         #region Constructors
-        internal NtDirectory(SafeKernelObjectHandle handle) : base(handle)
+        internal NtDirectory(SafeKernelObjectHandle handle, bool private_namespace) : base(handle)
         {
+            _private_namespace = private_namespace;
         }
 
         internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
@@ -57,7 +58,7 @@ namespace NtApiDotNet
         public static NtResult<NtDirectory> Open(ObjectAttributes obj_attributes, DirectoryAccessRights desired_access, bool throw_on_error)
         {
             return NtSystemCalls.NtOpenDirectoryObject(out SafeKernelObjectHandle handle, 
-                desired_access, obj_attributes).CreateResult(throw_on_error, () => new NtDirectory(handle));
+                desired_access, obj_attributes).CreateResult(throw_on_error, () => new NtDirectory(handle, false));
         }
 
         /// <summary>
@@ -138,7 +139,7 @@ namespace NtApiDotNet
                 status = NtSystemCalls.NtCreateDirectoryObjectEx(out handle, desired_access, obj_attributes,
                     shadow_dir.GetHandle(), flags);
             }
-            return status.CreateResult(throw_on_error, () => new NtDirectory(handle));
+            return status.CreateResult(throw_on_error, () => new NtDirectory(handle, false));
         }
 
         /// <summary>
@@ -392,16 +393,27 @@ namespace NtApiDotNet
         /// <param name="obj_attributes">Object attributes for the directory</param>
         /// <param name="boundary_descriptor">Boundary descriptor for the namespace</param>
         /// <param name="desired_access">Desired access for the directory</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The directory object</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public static NtResult<NtDirectory> CreatePrivateNamespace(ObjectAttributes obj_attributes, 
+            BoundaryDescriptor boundary_descriptor, DirectoryAccessRights desired_access, bool throw_on_error)
+        {
+            return NtSystemCalls.NtCreatePrivateNamespace(out SafeKernelObjectHandle handle, desired_access, 
+                obj_attributes, boundary_descriptor.Handle).CreateResult(throw_on_error, () => new NtDirectory(handle, true));
+        }
+
+        /// <summary>
+        /// Create a private namespace directory.
+        /// </summary>
+        /// <param name="obj_attributes">Object attributes for the directory</param>
+        /// <param name="boundary_descriptor">Boundary descriptor for the namespace</param>
+        /// <param name="desired_access">Desired access for the directory</param>
         /// <returns>The directory object</returns>
         /// <exception cref="NtException">Thrown on error</exception>
         public static NtDirectory CreatePrivateNamespace(ObjectAttributes obj_attributes, BoundaryDescriptor boundary_descriptor, DirectoryAccessRights desired_access)
         {
-            NtSystemCalls.NtCreatePrivateNamespace(out SafeKernelObjectHandle handle, desired_access, obj_attributes, boundary_descriptor.Handle).ToNtException();
-            NtDirectory ret = new NtDirectory(handle)
-            {
-                _private_namespace = true
-            };
-            return ret;
+            return CreatePrivateNamespace(obj_attributes, boundary_descriptor, desired_access, true).Result;
         }
 
         /// <summary>
@@ -424,16 +436,27 @@ namespace NtApiDotNet
         /// <param name="obj_attributes">Object attributes for the directory</param>
         /// <param name="boundary_descriptor">Boundary descriptor for the namespace</param>
         /// <param name="desired_access">Desired access for the directory</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The directory object</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public static NtResult<NtDirectory> OpenPrivateNamespace(ObjectAttributes obj_attributes, 
+            BoundaryDescriptor boundary_descriptor, DirectoryAccessRights desired_access, bool throw_on_error)
+        {
+            return NtSystemCalls.NtOpenPrivateNamespace(out SafeKernelObjectHandle handle, desired_access, obj_attributes, boundary_descriptor.Handle)
+                .CreateResult(throw_on_error, () => new NtDirectory(handle, true));
+        }
+
+        /// <summary>
+        /// Open a private namespace directory.
+        /// </summary>
+        /// <param name="obj_attributes">Object attributes for the directory</param>
+        /// <param name="boundary_descriptor">Boundary descriptor for the namespace</param>
+        /// <param name="desired_access">Desired access for the directory</param>
         /// <returns>The directory object</returns>
         /// <exception cref="NtException">Thrown on error</exception>
         public static NtDirectory OpenPrivateNamespace(ObjectAttributes obj_attributes, BoundaryDescriptor boundary_descriptor, DirectoryAccessRights desired_access)
         {
-            NtSystemCalls.NtOpenPrivateNamespace(out SafeKernelObjectHandle handle, desired_access, obj_attributes, boundary_descriptor.Handle).ToNtException();
-            NtDirectory ret = new NtDirectory(handle)
-            {
-                _private_namespace = true
-            };
-            return ret;
+            return OpenPrivateNamespace(obj_attributes, boundary_descriptor, desired_access, true).Result;
         }
 
         /// <summary>
