@@ -180,9 +180,9 @@ namespace NtApiDotNet
                 create_info.Data.AdditionalFileAccess = config.AdditionalFileAccess;
 
                 var proc_attr = dispose.AddResource(new ObjectAttributes(null, AttributeFlags.None,
-                        (NtObject)null, null, config.ProcessSecurityDescriptor));
+                        SafeKernelObjectHandle.Null, null, config.ProcessSecurityDescriptor));
                 var thread_attr = dispose.AddResource(new ObjectAttributes(null, AttributeFlags.None,
-                        (NtObject)null, null, config.ThreadSecurityDescriptor));
+                        SafeKernelObjectHandle.Null, null, config.ThreadSecurityDescriptor));
 
                 ProcessCreateFlags process_flags = config.ProcessFlags;
                 if (fork)
