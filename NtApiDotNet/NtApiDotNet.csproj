@@ -54,6 +54,7 @@
     <Compile Include="BufferUtils.cs" />
     <Compile Include="CachedEnumerable.cs" />
     <Compile Include="KnownSids.cs" />
+    <Compile Include="NtDesktopNative.cs" />
     <Compile Include="NtProcessCreateResult.cs" />
     <Compile Include="NtProcessCreateConfig.cs" />
     <Compile Include="SafeProcessParametersHandle.cs" />
