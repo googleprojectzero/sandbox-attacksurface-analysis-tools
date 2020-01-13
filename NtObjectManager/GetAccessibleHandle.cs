@@ -133,7 +133,7 @@ namespace NtObjectManager
             return true;
         }
 
-        private NtResult<NtObject> ReopenUnderImpersonation(TokenEntry token, NtType type, NtObject obj)
+        private static NtResult<NtObject> ReopenUnderImpersonation(TokenEntry token, NtType type, NtObject obj)
         {
             using (ObjectAttributes obj_attributes = new ObjectAttributes(string.Empty,
                AttributeFlags.CaseInsensitive, obj))

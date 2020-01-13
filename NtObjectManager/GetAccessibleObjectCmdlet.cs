@@ -102,7 +102,7 @@ namespace NtObjectManager
             }
             catch
             {
-                return String.Empty;
+                return string.Empty;
             }
         }
 
@@ -117,7 +117,7 @@ namespace NtObjectManager
             }
         }
 
-        private NtResult<NtObject> ReopenUnderImpersonation(TokenEntry token, NtType type, NtObject obj)
+        private static NtResult<NtObject> ReopenUnderImpersonation(TokenEntry token, NtType type, NtObject obj)
         {
             using (ObjectAttributes obj_attributes = new ObjectAttributes(string.Empty,
                AttributeFlags.CaseInsensitive, obj))
@@ -247,7 +247,7 @@ namespace NtObjectManager
             }
         }
 
-        private NtResult<NtObject> OpenObject(ObjectDirectoryInformation entry, NtObject root, AccessMask desired_access)
+        private static NtResult<NtObject> OpenObject(ObjectDirectoryInformation entry, NtObject root, AccessMask desired_access)
         {
             NtType type = entry.NtType;
             using (var obja = new ObjectAttributes(entry.Name, AttributeFlags.CaseInsensitive, root))
@@ -256,7 +256,7 @@ namespace NtObjectManager
             }
         }
 
-        private NtResult<NtDirectory> OpenDirectory(string path, NtObject root)
+        private static NtResult<NtDirectory> OpenDirectory(string path, NtObject root)
         {
             using (ObjectAttributes obja = new ObjectAttributes(path,
                 AttributeFlags.CaseInsensitive, root))

@@ -29,9 +29,9 @@ namespace NtObjectManager
     /// Object manager provider.
     /// </summary>
     [CmdletProvider("NtObjectManager", ProviderCapabilities.ExpandWildcards)]
-    public class NtObjectManagerProvider : NavigationCmdletProvider, ISecurityDescriptorCmdletProvider
+    public sealed class NtObjectManagerProvider : NavigationCmdletProvider, ISecurityDescriptorCmdletProvider
     {
-        private static Dictionary<string, NtDirectoryEntry> _item_cache = new Dictionary<string, NtDirectoryEntry>();
+        private static readonly Dictionary<string, NtDirectoryEntry> _item_cache = new Dictionary<string, NtDirectoryEntry>();
 
         internal class ObjectManagerPSDriveInfo : PSDriveInfo
         {
@@ -54,12 +54,12 @@ namespace NtObjectManager
             return PSDriveInfo.Root;
         }
 
-        private string PSPathToNT(string path)
+        private static string PSPathToNT(string path)
         {
             return path.Replace('\u2044', '/');
         }
 
-        private string NTPathToPS(string path)
+        private static string NTPathToPS(string path)
         {
             return path.Replace('/', '\u2044');
         }
@@ -101,7 +101,7 @@ namespace NtObjectManager
             if (drive == null)
             {
                 WriteError(new ErrorRecord(
-                           new ArgumentNullException("drive"),
+                           new ArgumentNullException(nameof(drive)),
                            "NullDrive",
                            ErrorCategory.InvalidArgument,
                            null));
@@ -124,10 +124,13 @@ namespace NtObjectManager
             {
                 if (drive.Root.StartsWith(NAMESPACE_ROOT))
                 {
-                    using (NtDirectory dir = NtDirectory.OpenPrivateNamespace(BoundaryDescriptor.CreateFromString(drive.Root.Substring(NAMESPACE_ROOT.Length))))
+                    using (var descriptor = BoundaryDescriptor.CreateFromString(drive.Root.Substring(NAMESPACE_ROOT.Length)))
                     {
-                        ObjectManagerPSDriveInfo objmgr_drive = new ObjectManagerPSDriveInfo(dir.Duplicate(), drive);
-                        return objmgr_drive;
+                        using (NtDirectory dir = NtDirectory.OpenPrivateNamespace(descriptor))
+                        {
+                            ObjectManagerPSDriveInfo objmgr_drive = new ObjectManagerPSDriveInfo(dir.Duplicate(), drive);
+                            return objmgr_drive;
+                        }
                     }
                 }
                 else
@@ -163,7 +166,7 @@ namespace NtObjectManager
             if (drive == null)
             {
                 WriteError(new ErrorRecord(
-                           new ArgumentNullException("drive"),
+                           new ArgumentNullException(nameof(drive)),
                            "NullDrive",
                            ErrorCategory.InvalidArgument,
                            drive));
@@ -349,7 +352,7 @@ namespace NtObjectManager
             }
         }
 
-        private string BuildRelativePath(string relative_path, string name)
+        private static string BuildRelativePath(string relative_path, string name)
         {
             if (relative_path.Length == 0)
             {
@@ -602,7 +605,7 @@ namespace NtObjectManager
         {
             if (itemTypeName == null)
             {
-                throw new ArgumentNullException("itemTypeName", "Must specify a typename");
+                throw new ArgumentNullException(nameof(itemTypeName), "Must specify a typename");
             }
 
             NtObject obj = null;
@@ -622,7 +625,7 @@ namespace NtObjectManager
                 case "link":
                     if (newItemValue == null)
                     {
-                        throw new ArgumentNullException("newItemValue", "Must specify value for the symbolic link");
+                        throw new ArgumentNullException(nameof(newItemValue), "Must specify value for the symbolic link");
                     }
                     obj = NtSymbolicLink.Create(relative_path, GetDrive().DirectoryRoot, newItemValue.ToString());
                     break;

@@ -373,7 +373,7 @@ namespace NtObjectManager
         #endregion
 
         #region Internal Members
-        internal static readonly string TypeName = "Scheduled Task";
+        internal const string TypeName = "Scheduled Task";
 
         internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {

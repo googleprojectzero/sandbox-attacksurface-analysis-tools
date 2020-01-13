@@ -489,7 +489,7 @@ namespace NtObjectManager
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet("Use", "NtObject")]
-    public class UseNtObjectCmdlet : Cmdlet, IDisposable
+    public sealed class UseNtObjectCmdlet : Cmdlet, IDisposable
     {
         /// <summary>
         /// <para type="description">Specify the input object to be disposed.</para>
@@ -515,8 +515,7 @@ namespace NtObjectManager
         private static void DisposeObject(object obj)
         {
             IDisposable disp = obj as IDisposable;
-            PSObject psobj = obj as PSObject;
-            if (psobj != null)
+            if (obj is PSObject psobj)
             {
                 disp = psobj.BaseObject as IDisposable;
             }
@@ -529,9 +528,9 @@ namespace NtObjectManager
 
         void IDisposable.Dispose()
         {
-            if (InputObject is IEnumerable)
+            if (InputObject is IEnumerable e)
             {
-                foreach (object obj in ((IEnumerable)InputObject))
+                foreach (object obj in e)
                 {
                     DisposeObject(obj);
                 }

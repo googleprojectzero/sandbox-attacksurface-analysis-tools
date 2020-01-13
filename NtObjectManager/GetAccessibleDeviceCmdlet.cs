@@ -168,7 +168,7 @@ namespace NtObjectManager
         [Parameter]
         public FileOpenOptions OpenOptions { get; set; }
 
-        private NtResult<NtFile> OpenUnderImpersonation(TokenEntry token, string path, FileOpenOptions open_options, EaBuffer ea_buffer)
+        private static NtResult<NtFile> OpenUnderImpersonation(TokenEntry token, string path, FileOpenOptions open_options, EaBuffer ea_buffer)
         {
             using (var obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive))
             {
@@ -258,7 +258,7 @@ namespace NtObjectManager
             }
         }
         
-        private NtResult<NtDirectory> OpenDirectory(string path, NtObject root)
+        private static NtResult<NtDirectory> OpenDirectory(string path, NtObject root)
         {
             using (ObjectAttributes obja = new ObjectAttributes(path,
                 AttributeFlags.CaseInsensitive, root))

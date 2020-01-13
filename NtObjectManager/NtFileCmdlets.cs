@@ -318,13 +318,13 @@ namespace NtObjectManager
         /// <para type="description">Specify whether to delete with POSIX semantics.</para>
         /// </summary>
         [Parameter]
-        public SwitchParameter PosixSemantics;
+        public SwitchParameter PosixSemantics { get; set; }
 
         /// <summary>
         /// <para type="description">Specify whether to delete the reparse point or the target.</para>
         /// </summary>
         [Parameter]
-        public SwitchParameter DeleteReparsePoint;
+        public SwitchParameter DeleteReparsePoint { get; set; }
 
         /// <summary>
         /// Method to create an object from a set of object attributes.

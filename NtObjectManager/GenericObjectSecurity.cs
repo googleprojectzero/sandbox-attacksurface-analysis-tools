@@ -35,7 +35,8 @@ namespace NtObjectManager
         /// </summary>
         /// <param name="obj">The NT object to extract the security descriptor from.</param>
         /// <param name="include_sections">Indicates which bits of the security descriptor you want to include.</param>
-        public GenericObjectSecurity(NtObject obj, AccessControlSections include_sections) : base(false, ResourceType.KernelObject, obj.Handle, include_sections)
+        public GenericObjectSecurity(NtObject obj, AccessControlSections include_sections) 
+            : base(false, ResourceType.KernelObject, obj.Handle, include_sections)
         {
         }
 
