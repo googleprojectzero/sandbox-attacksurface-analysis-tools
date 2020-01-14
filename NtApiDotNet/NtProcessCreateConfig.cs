@@ -144,9 +144,14 @@ namespace NtApiDotNet
         public PsProtection ProtectionLevel { get; set; }
 
         /// <summary>
-        /// Set whether to create a secure process.
+        /// Set to create a trustlet.
         /// </summary>
-        public bool SecureProcess { get; set; }
+        public bool Secure { get; set; }
+
+        /// <summary>
+        /// Set to specify the configuration for the trustlet if Secure is set.
+        /// </summary>
+        public NtProcessTrustletConfig TrustletConfig { get; set; }
 
         /// <summary>
         /// Capture additional information when NtProcess.Create returns.

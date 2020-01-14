@@ -165,9 +165,10 @@ namespace NtApiDotNet
                     dispose.Add(ProcessAttribute.ProtectionLevel(config.ProtectionLevel));
                 }
 
-                if (config.SecureProcess)
+                if (config.Secure)
                 {
-                    dispose.Add(ProcessAttribute.SecureProcess(new byte[] { 1, 0, 0, 0, 0, 0, 0, 0 }));
+                    var trustlet_config = config.TrustletConfig ?? NtProcessTrustletConfig.CreateFromFile(image_path);
+                    dispose.Add(ProcessAttribute.SecureProcess(trustlet_config));
                 }
 
                 var attr_list = dispose.AddResource(ProcessAttributeList.Create(dispose.OfType<ProcessAttribute>().Concat(config.AdditionalAttributes)));

@@ -131,10 +131,10 @@ namespace NtApiDotNet
               new SafeHandleListHandle(handles.Select(h => NtObject.DuplicateHandle(h.ToSafeKernelHandle()))));
         }
 
-        public static ProcessAttribute SecureProcess(byte[] data)
+        public static ProcessAttribute SecureProcess(NtProcessTrustletConfig trustlet_config)
         {
             return new ProcessAttribute(ProcessAttributeNum.SecureProcess, false, true, false,
-                  data.ToBuffer());
+                  trustlet_config.ToArray().ToBuffer());
         }
 
         #region IDisposable Support

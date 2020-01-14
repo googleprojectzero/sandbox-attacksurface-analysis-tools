@@ -49,5 +49,23 @@ namespace NtApiDotNet
             out IntPtr ProcedureAddress
         );
     }
+
+    [Flags]
+    public enum RtlImageNtHeaderExFlags
+    {
+        None = 0,
+        NoRangeCheck = 1,
+    }
+
+    public static partial class NtRtl
+    {
+        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+        public static extern NtStatus RtlImageNtHeaderEx(
+            RtlImageNtHeaderExFlags Flags,
+            IntPtr Base,
+            long Size,
+            out IntPtr OutHeaders // PIMAGE_NT_HEADERS
+        );
+    }
 #pragma warning restore 1591
 }

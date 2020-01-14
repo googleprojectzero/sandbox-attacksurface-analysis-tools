@@ -791,6 +791,8 @@ Specify additional initialization flags.
 Specify ImagePath is a Win32 path.
 .PARAMETER CaptureAdditionalInformation
 Specify to capture additional information from create call.
+.PARAMETER Secure
+Specify to create a secure process.
 .INPUTS
 None
 .OUTPUTS
@@ -813,9 +815,10 @@ function New-NtProcessConfig
         [NtApiDotNet.ProcessCreateInitFlag]$InitFlags = 0,
         [switch]$TerminateOnDispose,
         [switch]$Win32Path,
-        [switch]$CaptureAdditionalInformation
+        [switch]$CaptureAdditionalInformation,
+        [switch]$Secure
     )
-    
+
     if ($Win32Path) {
         $ImagePath = Get-NtFilePath $ImagePath -Resolve
     }
@@ -840,6 +843,7 @@ function New-NtProcessConfig
         $config.ProcessFlags = $ProcessFlags -bor "ProtectedProcess"
     }
     $config.CaptureAdditionalInformation = $CaptureAdditionalInformation
+    $config.Secure = $Secure
 
     return $config
 }
