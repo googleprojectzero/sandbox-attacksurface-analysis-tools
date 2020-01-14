@@ -372,6 +372,27 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the valid specific access rights for this Type.
+        /// </summary>
+        public IDictionary<uint, string> SpecificAccessRights
+        {
+            get
+            {
+                Dictionary<uint, string> ret = new Dictionary<uint, string>();
+                uint mask = 1;
+                while (mask < 0x10000)
+                {
+                    if (Enum.IsDefined(AccessRightsType, mask))
+                    {
+                        ret.Add(mask, Enum.GetName(AccessRightsType, mask));
+                    }
+                    mask <<= 1;
+                }
+                return ret;
+            }
+        }
+
+        /// <summary>
         /// Overridden ToString method.
         /// </summary>
         /// <returns>Returns the type as a string.</returns>
