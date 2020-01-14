@@ -646,6 +646,38 @@ namespace NtApiDotNet
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQuerySecurityObject(
+            SafeHandle Handle,
+            SecurityInformation SecurityInformation,
+            [Out] byte[] SecurityDescriptor,
+            int SecurityDescriptorLength,
+            out int ReturnLength
+            );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSetSecurityObject(
+            SafeHandle Handle,
+            SecurityInformation SecurityInformation,
+            [In] byte[] SecurityDescriptor
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtQuerySecurityObject(
+            SafeHandle Handle,
+            SecurityInformation SecurityInformation,
+            SafeBuffer SecurityDescriptor,
+            int SecurityDescriptorLength,
+            out int ReturnLength
+            );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtSetSecurityObject(
+            SafeHandle Handle,
+            SecurityInformation SecurityInformation,
+            SafeBuffer SecurityDescriptor
+        );
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus NtAccessCheck(
             SafeBuffer SecurityDescriptor,
             SafeKernelObjectHandle ClientToken,

@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -140,19 +141,17 @@ namespace NtApiDotNet
         /// <returns>True if the security authority.</returns>
         public bool IsAuthority(SecurityAuthority authority)
         {
-            return this.Equals(new SidIdentifierAuthority(authority));
+            return Equals(new SidIdentifierAuthority(authority));
         }
 
-        private static bool IsSystemAuthority(byte[] value)
+        /// <summary>
+        /// Convert authority to a 64 bit integer.
+        /// </summary>
+        /// <returns>The authority as a 64 bit integer.</returns>
+        public long ToInt64()
         {
-            for (int i = 0; i < 5; ++i)
-            {
-                if (value[i] != 0)
-                {
-                    return false;
-                }
-            }
-            return true;
+            byte[] temp = _value.Reverse().Concat(new byte[2]).ToArray();
+            return BitConverter.ToInt64(temp, 0);
         }
 
         /// <summary>
@@ -161,14 +160,13 @@ namespace NtApiDotNet
         /// <returns>The security authority as a string.</returns>
         public override string ToString()
         {
-            if (IsSystemAuthority(_value))
+            long i = ToInt64();
+            if (i < byte.MaxValue && Enum.IsDefined(typeof(SecurityAuthority), (byte)i))
             {
-                return ((SecurityAuthority)_value[5]).ToString();
+                return Enum.GetName(typeof(SecurityAuthority), (byte)i);
             }
 
-            byte[] temp = _value;
-            Array.Resize(ref temp, 8);
-            return $"Authority {BitConverter.ToInt64(temp, 0)}";
+            return $"Authority: {i}";
         }
     }
 

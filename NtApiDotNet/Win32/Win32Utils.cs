@@ -241,7 +241,7 @@ namespace NtApiDotNet.Win32
         {
             if (Win32NativeMethods.FormatMessage(FormatFlags.AllocateBuffer | FormatFlags.FromHModule
                 | FormatFlags.FromSystem | FormatFlags.IgnoreInserts,
-                module.DangerousGetHandle(), message_id, 0, out SafeLocalAllocHandle buffer, 0, IntPtr.Zero) > 0)
+                module.DangerousGetHandle(), message_id, 0, out SafeLocalAllocBuffer buffer, 0, IntPtr.Zero) > 0)
             {
                 using (buffer)
                 {

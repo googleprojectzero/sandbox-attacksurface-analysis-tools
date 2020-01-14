@@ -483,7 +483,6 @@ namespace NtApiDotNet
             return GetSecurityDescriptorBytes(security_information, true).Result;
         }
 
-
         /// <summary>
         /// Get security descriptor as a byte array
         /// </summary>
@@ -498,16 +497,11 @@ namespace NtApiDotNet
                 return NtStatus.STATUS_ACCESS_DENIED.CreateResultFromError<byte[]>(throw_on_error);
             }
 
-            NtStatus status = NtSystemCalls.NtQuerySecurityObject(Handle, security_information, null, 0, out int return_length);
-            if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+            using (var buffer = NtSecurity.GetSecurityDescriptor(Handle, security_information, throw_on_error))
             {
-                return status.CreateResult(throw_on_error, () => new byte[0]);
+                return buffer.Map(b => b.ToArray());
             }
-            byte[] buffer = new byte[return_length];
-            return NtSystemCalls.NtQuerySecurityObject(Handle, security_information, buffer,
-                buffer.Length, out return_length).CreateResult(throw_on_error, () => buffer);
         }
-
 
         /// <summary>
         /// Get security descriptor as a byte array
@@ -516,6 +510,21 @@ namespace NtApiDotNet
         public byte[] GetSecurityDescriptorBytes()
         {
             return GetSecurityDescriptorBytes(SecurityInformation.AllBasic);
+        }
+
+        /// <summary>
+        /// Set the object's security descriptor
+        /// </summary>
+        /// <param name="security_desc">The security descriptor to set.</param>
+        /// <param name="security_information">What parts of the security descriptor to set</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <return>The NT status result.</return>
+        public NtStatus SetSecurityDescriptor(byte[] security_desc, SecurityInformation security_information, bool throw_on_error)
+        {
+            using (var buffer = security_desc.ToBuffer())
+            {
+                return NtSecurity.SetSecurityDescriptor(Handle, buffer, security_information, throw_on_error);
+            }
         }
 
         /// <summary>
@@ -533,21 +542,9 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="security_desc">The security descriptor to set.</param>
         /// <param name="security_information">What parts of the security descriptor to set</param>
-        /// <param name="throw_on_error">True to throw on error.</param>
-        /// <return>The NT status result.</return>
-        public NtStatus SetSecurityDescriptor(byte[] security_desc, SecurityInformation security_information, bool throw_on_error)
-        {
-            return NtSystemCalls.NtSetSecurityObject(Handle, security_information, security_desc).ToNtException(throw_on_error);
-        }
-
-        /// <summary>
-        /// Set the object's security descriptor
-        /// </summary>
-        /// <param name="security_desc">The security descriptor to set.</param>
-        /// <param name="security_information">What parts of the security descriptor to set</param>
         public void SetSecurityDescriptor(SecurityDescriptor security_desc, SecurityInformation security_information)
         {
-            SetSecurityDescriptor(security_desc.ToByteArray(), security_information);
+            SetSecurityDescriptor(security_desc, security_information, true);
         }
 
         /// <summary>
@@ -559,7 +556,10 @@ namespace NtApiDotNet
         /// <returns>The NT status code.</returns>
         public NtStatus SetSecurityDescriptor(SecurityDescriptor security_desc, SecurityInformation security_information, bool throw_on_error)
         {
-            return SetSecurityDescriptor(security_desc.ToByteArray(), security_information, throw_on_error);
+            using (var buffer = security_desc.ToSafeBuffer(true))
+            {
+                return NtSecurity.SetSecurityDescriptor(Handle, buffer, security_information, throw_on_error);
+            }
         }
 
         /// <summary>

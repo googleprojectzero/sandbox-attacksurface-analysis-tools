@@ -372,16 +372,62 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown if cannot convert to a SDDL string.</exception>
         public static string SecurityDescriptorToSddl(byte[] sd, SecurityInformation security_information)
         {
-            if (!Win32NativeMethods.ConvertSecurityDescriptorToStringSecurityDescriptor(sd,
-                1, security_information, out SafeLocalAllocHandle handle, out int return_length))
+            using (var buffer = sd.ToBuffer())
             {
-                throw new NtException(NtObjectUtils.MapDosErrorToStatus());
+                return SecurityDescriptorToSddl(buffer, security_information, true).Result;
+            }
+        }
+
+        /// <summary>
+        /// Convert a security descriptor to SDDL string
+        /// </summary>
+        /// <param name="sd">The security descriptor</param>
+        /// <param name="security_information">Indicates what parts of the security descriptor to include</param>
+        /// <param name="throw_on_error">True to throw on errror.</param>
+        /// <returns>The SDDL string</returns>
+        /// <exception cref="NtException">Thrown if cannot convert to a SDDL string.</exception>
+        public static NtResult<string> SecurityDescriptorToSddl(SafeBuffer sd, SecurityInformation security_information, bool throw_on_error)
+        {
+            if (!Win32NativeMethods.ConvertSecurityDescriptorToStringSecurityDescriptor(sd,
+                1, security_information, out SafeLocalAllocBuffer buffer, out int return_length))
+            {
+                return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<string>(throw_on_error);
             }
 
-            using (handle)
+            using (buffer)
             {
-                return Marshal.PtrToStringUni(handle.DangerousGetHandle());
+                return Marshal.PtrToStringUni(buffer.DangerousGetHandle()).CreateResult();
             }
+        }
+
+        /// <summary>
+        /// Convert an SDDL string to a binary security descriptor
+        /// </summary>
+        /// <param name="sddl">The SDDL string</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The binary security descriptor</returns>
+        /// <exception cref="NtException">Thrown if cannot convert from a SDDL string.</exception>
+        public static NtResult<SafeBuffer> SddlToSecurityDescriptorBuffer(string sddl, bool throw_on_error)
+        {
+            if (!Win32NativeMethods.ConvertStringSecurityDescriptorToSecurityDescriptor(sddl, 1,
+                out SafeLocalAllocBuffer buffer, out int return_length))
+            {
+                return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<SafeBuffer>(throw_on_error);
+            }
+
+            buffer.Initialize((ulong)return_length);
+            return buffer.CreateResult<SafeBuffer>();
+        }
+
+        /// <summary>
+        /// Convert an SDDL string to a binary security descriptor
+        /// </summary>
+        /// <param name="sddl">The SDDL string</param>
+        /// <returns>The binary security descriptor</returns>
+        /// <exception cref="NtException">Thrown if cannot convert from a SDDL string.</exception>
+        public static SafeBuffer SddlToSecurityDescriptorBuffer(string sddl)
+        {
+            return SddlToSecurityDescriptorBuffer(sddl, true).Result;
         }
 
         /// <summary>
@@ -394,15 +440,15 @@ namespace NtApiDotNet
         public static NtResult<byte[]> SddlToSecurityDescriptor(string sddl, bool throw_on_error)
         {
             if (!Win32NativeMethods.ConvertStringSecurityDescriptorToSecurityDescriptor(sddl, 1,
-                out SafeLocalAllocHandle handle, out int return_length))
+                out SafeLocalAllocBuffer buffer, out int return_length))
             {
                 return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<byte[]>(throw_on_error);
             }
 
-            using (handle)
+            using (buffer)
             {
                 byte[] ret = new byte[return_length];
-                Marshal.Copy(handle.DangerousGetHandle(), ret, 0, return_length);
+                Marshal.Copy(buffer.DangerousGetHandle(), ret, 0, return_length);
                 return ret.CreateResult();
             }
         }
@@ -427,13 +473,13 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown if cannot convert from a SDDL string.</exception>
         public static NtResult<Sid> SidFromSddl(string sddl, bool throw_on_error)
         {
-            if (!Win32NativeMethods.ConvertStringSidToSid(sddl, out SafeLocalAllocHandle handle))
+            if (!Win32NativeMethods.ConvertStringSidToSid(sddl, out SafeLocalAllocBuffer buffer))
             {
                 return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<Sid>(throw_on_error);
             }
-            using (handle)
+            using (buffer)
             {
-                return new Sid(handle.DangerousGetHandle()).CreateResult();
+                return new Sid(buffer.DangerousGetHandle()).CreateResult();
             }
         }
 
@@ -1166,6 +1212,43 @@ namespace NtApiDotNet
                 throw new ArgumentException("Must specify logon session SID", "sid");
             }
             return new Luid(sid.SubAuthorities[2], (int)sid.SubAuthorities[1]);
+        }
+
+        /// <summary>
+        /// Get security descriptor as a byte array
+        /// </summary>
+        /// <param name="handle">Handle to the object to query.</param>
+        /// <param name="security_information">What parts of the security descriptor to retrieve</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <return>The NT status result and security descriptor as a buffer.</return>
+        public static NtResult<SafeHGlobalBuffer> GetSecurityDescriptor(SafeKernelObjectHandle handle, SecurityInformation security_information, bool throw_on_error)
+        {
+            NtStatus status = NtSystemCalls.NtQuerySecurityObject(handle, security_information, SafeHGlobalBuffer.Null, 
+                0, out int return_length);
+            if (status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+            {
+                return status.CreateResultFromError<SafeHGlobalBuffer>(throw_on_error);
+            }
+
+            using (var buffer = new SafeHGlobalBuffer(return_length))
+            {
+                return NtSystemCalls.NtQuerySecurityObject(handle, security_information, buffer,
+                    buffer.Length, out return_length).CreateResult(throw_on_error, () => buffer.Detach());
+            }
+        }
+
+        /// <summary>
+        /// Set the object's security descriptor
+        /// </summary>
+        /// <param name="handle">Handle to the object to set.</param>
+        /// <param name="security_desc">The security descriptor to set.</param>
+        /// <param name="security_information">What parts of the security descriptor to set</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <return>The NT status result.</return>
+        public static NtStatus SetSecurityDescriptor(SafeKernelObjectHandle handle, SafeBuffer security_desc, 
+            SecurityInformation security_information, bool throw_on_error)
+        {
+            return NtSystemCalls.NtSetSecurityObject(handle, security_information, security_desc).ToNtException(throw_on_error);
         }
     }
 }

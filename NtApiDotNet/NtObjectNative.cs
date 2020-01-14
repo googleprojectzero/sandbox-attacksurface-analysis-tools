@@ -229,22 +229,6 @@ namespace NtApiDotNet
         );
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus NtQuerySecurityObject(
-            SafeHandle Handle,
-            SecurityInformation SecurityInformation,
-            [Out] byte[] SecurityDescriptor,
-            int SecurityDescriptorLength,
-            out int ReturnLength
-            );
-
-        [DllImport("ntdll.dll")]
-        public static extern NtStatus NtSetSecurityObject(
-            SafeHandle Handle,
-            SecurityInformation SecurityInformation,
-            [In] byte[] SecurityDescriptor
-        );
-
-        [DllImport("ntdll.dll")]
         public static extern NtStatus NtMakeTemporaryObject(SafeKernelObjectHandle Handle);
 
         [DllImport("ntdll.dll")]

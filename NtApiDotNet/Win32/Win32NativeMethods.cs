@@ -413,7 +413,7 @@ namespace NtApiDotNet.Win32
         internal static extern Win32Error I_RpcGetDefaultSD(out IntPtr ppSecurityDescriptor);
 
         [DllImport("shell32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern SafeLocalAllocHandle CommandLineToArgvW(string lpCmdLine, out int pNumArgs);
+        internal static extern SafeLocalAllocBuffer CommandLineToArgvW(string lpCmdLine, out int pNumArgs);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern SafeLoadLibraryHandle LoadLibraryEx(string name, IntPtr reserved, LoadLibraryFlags flags);
@@ -463,9 +463,6 @@ namespace NtApiDotNet.Win32
         internal static extern bool SaferComputeTokenFromLevel(IntPtr LevelHandle, SafeHandle InAccessToken,
             out SafeKernelObjectHandle OutAccessToken, SaferFlags dwFlags, IntPtr lpReserved);
 
-        [DllImport("advapi32.dll", SetLastError = true)]
-        internal static extern IntPtr FreeSid(IntPtr sid);
-
         [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
         internal static extern int DeriveAppContainerSidFromAppContainerName(
             string pszAppContainerName,
@@ -503,30 +500,30 @@ namespace NtApiDotNet.Win32
           IntPtr lpSource,
           uint dwMessageId,
           int dwLanguageId,
-          out SafeLocalAllocHandle lpBuffer,
+          out SafeLocalAllocBuffer lpBuffer,
           int nSize,
           IntPtr Arguments
         );
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool ConvertSecurityDescriptorToStringSecurityDescriptor(
-            byte[] SecurityDescriptor,
+            SafeBuffer SecurityDescriptor,
             int RequestedStringSDRevision,
             SecurityInformation SecurityInformation,
-            out SafeLocalAllocHandle StringSecurityDescriptor,
+            out SafeLocalAllocBuffer StringSecurityDescriptor,
             out int StringSecurityDescriptorLen);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool ConvertStringSecurityDescriptorToSecurityDescriptor(
             string StringSecurityDescriptor,
             int StringSDRevision,
-            out SafeLocalAllocHandle SecurityDescriptor,
+            out SafeLocalAllocBuffer SecurityDescriptor,
             out int SecurityDescriptorSize);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool ConvertStringSidToSid(
             string StringSid,
-            out SafeLocalAllocHandle Sid);
+            out SafeLocalAllocBuffer Sid);
 
         [DllImport("Advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool LookupAccountSid(string lpSystemName, SafeSidBufferHandle lpSid, StringBuilder lpName,

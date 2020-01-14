@@ -17,19 +17,20 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32
 {
-    internal sealed class SafeLocalAllocHandle : SafeHandle
+    internal sealed class SafeLocalAllocBuffer : SafeBuffer
     {
         protected override bool ReleaseHandle()
         {
             return Win32NativeMethods.LocalFree(handle) == IntPtr.Zero;
         }
 
-        public SafeLocalAllocHandle(IntPtr handle, bool owns_handle) : base(IntPtr.Zero, owns_handle)
+        public SafeLocalAllocBuffer(IntPtr handle, bool owns_handle) 
+            : base(owns_handle)
         {
             SetHandle(handle);
         }
 
-        public SafeLocalAllocHandle() : base(IntPtr.Zero, true)
+        public SafeLocalAllocBuffer() : base(true)
         {
         }
 
