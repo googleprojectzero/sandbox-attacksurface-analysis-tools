@@ -87,7 +87,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <typeparam name="A">The specific access right.</typeparam>
         /// <returns>The converted value.</returns>
-        public A ToSpecificAccess<A>()
+        public A ToSpecificAccess<A>() where A : Enum
         {
             return (A)(object)Access;
         }

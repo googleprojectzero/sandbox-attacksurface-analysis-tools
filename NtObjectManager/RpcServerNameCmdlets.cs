@@ -83,8 +83,11 @@ namespace NtObjectManager
         {
             DataContractSerializer ser = new DataContractSerializer(typeof(RpcServerNameData));
             StringReader string_reader = new StringReader(_builder.ToString());
-            var name_data = (RpcServerNameData)ser.ReadObject(XmlReader.Create(string_reader));
-            name_data.UpdateNames(Server);
+            using (var reader = XmlReader.Create(string_reader))
+            {
+                var name_data = (RpcServerNameData)ser.ReadObject(reader);
+                name_data.UpdateNames(Server);
+            }
         }
 
         /// <summary>

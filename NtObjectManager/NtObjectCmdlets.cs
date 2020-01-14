@@ -380,7 +380,7 @@ namespace NtObjectManager
     /// Base object cmdlet which has an access parameter.
     /// </summary>
     /// <typeparam name="T">The access enumeration type.</typeparam>
-    public abstract class NtObjectBaseNoPathCmdletWithAccess<T> : NtObjectBaseNoPathCmdlet where T : struct, IConvertible
+    public abstract class NtObjectBaseNoPathCmdletWithAccess<T> : NtObjectBaseNoPathCmdlet where T : Enum
     {
         /// <summary>
         /// <para type="description">Specify the access rights for a new handle when creating/opening an object.</para>
@@ -401,7 +401,7 @@ namespace NtObjectManager
     /// Base object cmdlet which has an access parameter.
     /// </summary>
     /// <typeparam name="T">The access enumeration type.</typeparam>
-    public abstract class NtObjectBaseCmdletWithAccess<T> : NtObjectBaseCmdlet where T : struct, IConvertible
+    public abstract class NtObjectBaseCmdletWithAccess<T> : NtObjectBaseCmdlet where T : Enum
     {
         /// <summary>
         /// <para type="description">Specify the access rights for a new handle when creating/opening an object.</para>
@@ -489,7 +489,7 @@ namespace NtObjectManager
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet("Use", "NtObject")]
-    public class UseNtObjectCmdlet : Cmdlet, IDisposable
+    public sealed class UseNtObjectCmdlet : Cmdlet, IDisposable
     {
         /// <summary>
         /// <para type="description">Specify the input object to be disposed.</para>
@@ -515,8 +515,7 @@ namespace NtObjectManager
         private static void DisposeObject(object obj)
         {
             IDisposable disp = obj as IDisposable;
-            PSObject psobj = obj as PSObject;
-            if (psobj != null)
+            if (obj is PSObject psobj)
             {
                 disp = psobj.BaseObject as IDisposable;
             }
@@ -529,9 +528,9 @@ namespace NtObjectManager
 
         void IDisposable.Dispose()
         {
-            if (InputObject is IEnumerable)
+            if (InputObject is IEnumerable e)
             {
-                foreach (object obj in ((IEnumerable)InputObject))
+                foreach (object obj in e)
                 {
                     DisposeObject(obj);
                 }
@@ -794,7 +793,7 @@ namespace NtObjectManager
     /// </summary>
     /// <typeparam name="O">The type of NT object.</typeparam>
     /// <typeparam name="A">The access rights type.</typeparam>
-    public abstract class BaseGetNtChildObjectCmdlet<O, A> : PSCmdlet where A : struct where O : NtObject
+    public abstract class BaseGetNtChildObjectCmdlet<O, A> : PSCmdlet where A : Enum where O : NtObject
     {
         /// <summary>
         /// <para type="description">Specify an object to get children from, should be a directory.</para>

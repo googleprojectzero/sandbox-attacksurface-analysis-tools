@@ -12,52 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
-#pragma warning disable 1591
-    [Flags]
-    public enum WindowStationAccessRights : uint
-    {
-        EnumDesktops         = 0x0001,
-        ReadAttributes       = 0x0002,
-        AccessClipboard      = 0x0004,
-        CreateDesktop        = 0x0008,
-        WriteAttributes      = 0x0010,
-        AccessGlobalAtoms    = 0x0020,
-        ExitWindows          = 0x0040,
-        Enumerate            = 0x0100,
-        ReadScreen           = 0x0200,
-        GenericRead = GenericAccessRights.GenericRead,
-        GenericWrite = GenericAccessRights.GenericWrite,
-        GenericExecute = GenericAccessRights.GenericExecute,
-        GenericAll = GenericAccessRights.GenericAll,
-        Delete = GenericAccessRights.Delete,
-        ReadControl = GenericAccessRights.ReadControl,
-        WriteDac = GenericAccessRights.WriteDac,
-        WriteOwner = GenericAccessRights.WriteOwner,
-        Synchronize = GenericAccessRights.Synchronize,
-        MaximumAllowed = GenericAccessRights.MaximumAllowed,
-        AccessSystemSecurity = GenericAccessRights.AccessSystemSecurity
-    }
-
-    public static partial class NtSystemCalls
-    {
-        [DllImport("win32u.dll", SetLastError = true)]
-        public static extern SafeKernelObjectHandle NtUserOpenWindowStation(
-            ObjectAttributes ObjectAttributes,
-            WindowStationAccessRights DesiredAccess);
-
-        [DllImport("win32u.dll", SetLastError = true)]
-        public static extern NtStatus NtUserBuildNameList(
-            SafeKernelObjectHandle Handle, int Size, SafeBuffer NameList, out int RequiredSize);
-    }
-
-#pragma warning restore
-
     /// <summary>
     /// Class which represents a window station object.
     /// </summary>

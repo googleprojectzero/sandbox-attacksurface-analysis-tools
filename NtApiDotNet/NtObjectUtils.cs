@@ -421,7 +421,7 @@ namespace NtApiDotNet
         /// <remarks>If result is not a success then the function is not called.</remarks>
         public static S RunAndDispose<T, S>(this NtResult<T> result, Func<T, S> func) where T : NtObject
         {
-            return RunAndDispose(result, func, default(S));
+            return RunAndDispose(result, func, default);
         }
 
         /// <summary>
@@ -610,7 +610,7 @@ namespace NtApiDotNet
                 throw new NtException(status);
             }
 
-            return new NtResult<T>(status, default(T));
+            return new NtResult<T>(status, default);
         }
 
         /// <summary>
@@ -633,7 +633,7 @@ namespace NtApiDotNet
                 throw new NtException(status);
             }
 
-            return new NtResult<T>(status, default(T));
+            return new NtResult<T>(status, default);
         }
 
         internal static NtResult<T> CreateResultFromDosError<T>(this Win32Error error, bool throw_on_error)
@@ -644,7 +644,7 @@ namespace NtApiDotNet
                 throw new NtException(status);
             }
 
-            return new NtResult<T>(status, default(T));
+            return new NtResult<T>(status, default);
         }
 
         internal static NtResult<T> CreateResultFromDosError<T>(int error, bool throw_on_error)

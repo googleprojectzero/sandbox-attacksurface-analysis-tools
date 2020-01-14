@@ -22,7 +22,7 @@ namespace NtApiDotNet
     /// </summary>
     /// <typeparam name="O">The derived type to use as return values</typeparam>
     /// <typeparam name="A">An enum which represents the access mask values for the type</typeparam>
-    public abstract class NtObjectWithDuplicate<O, A> : NtObject where O : NtObject where A : struct, IConvertible
+    public abstract class NtObjectWithDuplicate<O, A> : NtObject where O : NtObject where A : Enum
     {
         internal abstract class NtTypeFactoryImplBase : NtTypeFactory
         {
@@ -178,7 +178,7 @@ namespace NtApiDotNet
         /// <returns>The duplicated object</returns>
         public O Duplicate()
         {
-            return Duplicate(default(A), AttributeFlags.None, DuplicateObjectOptions.SameAccess, true).Result;
+            return Duplicate(default, AttributeFlags.None, DuplicateObjectOptions.SameAccess, true).Result;
         }
 
         private O ShallowClone(SafeKernelObjectHandle handle, bool query_basic_info)
@@ -221,7 +221,7 @@ namespace NtApiDotNet
         {
             if (!IsAccessMaskGranted(GenericAccessRights.ReadControl))
             {
-                return default(A);
+                return default;
             }
 
             return NtSecurity.GetMaximumAccess(SecurityDescriptor,
@@ -349,7 +349,7 @@ namespace NtApiDotNet
             {
                 if (!process.IsSuccess)
                 {
-                    return new NtResult<O>(process.Status, default(O));
+                    return new NtResult<O>(process.Status, default);
                 }
 
                 return DuplicateFrom(process.Result, handle, access, options, throw_on_error);
@@ -390,7 +390,7 @@ namespace NtApiDotNet
         /// <returns>The duplicated object.</returns>
         public static O DuplicateFrom(NtProcess process, IntPtr handle)
         {
-            return DuplicateFrom(process, handle, default(A), DuplicateObjectOptions.SameAccess, true).Result;
+            return DuplicateFrom(process, handle, default, DuplicateObjectOptions.SameAccess, true).Result;
         }
 
         /// <summary>
@@ -401,7 +401,7 @@ namespace NtApiDotNet
         /// <returns>The duplicated handle</returns>
         public static O DuplicateFrom(int pid, IntPtr handle)
         {
-            return DuplicateFrom(pid, handle, default(A), DuplicateObjectOptions.SameAccess, true).Result;
+            return DuplicateFrom(pid, handle, default, DuplicateObjectOptions.SameAccess, true).Result;
         }
 
         /// <summary>
@@ -493,7 +493,7 @@ namespace NtApiDotNet
         /// <returns>The duplicated object.</returns>
         public static IntPtr DuplicateTo(NtProcess process, SafeKernelObjectHandle handle)
         {
-            return DuplicateTo(process, handle, default(A), DuplicateObjectOptions.SameAccess, true).Result;
+            return DuplicateTo(process, handle, default, DuplicateObjectOptions.SameAccess, true).Result;
         }
 
         /// <summary>
@@ -514,7 +514,7 @@ namespace NtApiDotNet
         /// <returns>The duplicated handle</returns>
         public static IntPtr DuplicateTo(int pid, SafeKernelObjectHandle handle)
         {
-            return DuplicateTo(pid, handle, default(A), DuplicateObjectOptions.SameAccess, true).Result;
+            return DuplicateTo(pid, handle, default, DuplicateObjectOptions.SameAccess, true).Result;
         }
 
         /// <summary>
@@ -614,7 +614,7 @@ namespace NtApiDotNet
         /// <returns>The duplicated object.</returns>
         public static IntPtr DuplicateTo(NtProcess src_process, IntPtr handle, NtProcess dst_process)
         {
-            return DuplicateTo(src_process, handle, dst_process, default(A), DuplicateObjectOptions.SameAccess, true).Result;
+            return DuplicateTo(src_process, handle, dst_process, default, DuplicateObjectOptions.SameAccess, true).Result;
         }
 
         /// <summary>
@@ -626,7 +626,7 @@ namespace NtApiDotNet
         /// <returns>The duplicated handle</returns>
         public static IntPtr DuplicateTo(int src_pid, IntPtr handle, int dst_pid)
         {
-            return DuplicateTo(src_pid, handle, dst_pid, default(A), DuplicateObjectOptions.SameAccess, true).Result;
+            return DuplicateTo(src_pid, handle, dst_pid, default, DuplicateObjectOptions.SameAccess, true).Result;
         }
     }
 }

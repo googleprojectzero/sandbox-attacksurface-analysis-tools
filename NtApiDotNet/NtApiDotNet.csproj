@@ -23,6 +23,7 @@
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Debug\NtApiDotNet.XML</DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -54,8 +55,11 @@
     <Compile Include="BufferUtils.cs" />
     <Compile Include="CachedEnumerable.cs" />
     <Compile Include="KnownSids.cs" />
+    <Compile Include="NtDesktopNative.cs" />
     <Compile Include="NtProcessCreateResult.cs" />
     <Compile Include="NtProcessCreateConfig.cs" />
+    <Compile Include="NtWaitNative.cs" />
+    <Compile Include="NtWindowStationNative.cs" />
     <Compile Include="SafeProcessParametersHandle.cs" />
     <Compile Include="Utilities\Text\StringUtils.cs" />
     <Compile Include="Utilities\Token\ClaimSecurityAttributeBuilder.cs" />
@@ -279,6 +283,8 @@
     <Compile Include="Win32\Win32Process.cs" />
     <Compile Include="ProcessAttribute.cs" />
     <Compile Include="SafeAlpcPortMessageBuffer.cs" />
+    <Compile Include="NtWaitTimeout.cs" />
+    <Compile Include="NtWaitHandle.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Readme.txt" />

@@ -24,12 +24,11 @@ namespace NtApiDotNet
     /// <typeparam name="A">An enum which represents the access mask values for the type</typeparam>
     /// <typeparam name="Q">An enum which represents the information class for query.</typeparam>
     /// <typeparam name="S">An enum which represents the information class for set.</typeparam>
-    public abstract class NtObjectWithDuplicateAndInfo<O, A, Q, S> : NtObjectWithDuplicate<O, A> where O : NtObject where A : struct, IConvertible where Q : struct where S : struct
+    public abstract class NtObjectWithDuplicateAndInfo<O, A, Q, S> : NtObjectWithDuplicate<O, A> where O : NtObject where A : Enum where Q : Enum where S : Enum
     {
         #region Constructors
         internal NtObjectWithDuplicateAndInfo(SafeKernelObjectHandle handle) : base(handle)
         {
-            System.Diagnostics.Debug.Assert(typeof(Q).IsEnum && typeof(S).IsEnum);
         }
         #endregion
 

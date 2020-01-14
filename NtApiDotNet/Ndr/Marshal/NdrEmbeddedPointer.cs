@@ -46,7 +46,7 @@ namespace NtApiDotNet.Ndr.Marshal
         {
             if (pointer == null)
             {
-                return default(T);
+                return default;
             }
             return pointer._value;
         }
@@ -71,19 +71,19 @@ namespace NtApiDotNet.Ndr.Marshal
 
         internal static Tuple<NdrEmbeddedPointer<T>, Action> CreateDeferredReader(Func<T> unmarshal_func)
         {
-            NdrEmbeddedPointer<T> ret = new NdrEmbeddedPointer<T>(default(T));
+            NdrEmbeddedPointer<T> ret = new NdrEmbeddedPointer<T>(default);
             return Tuple.Create(ret, new Action(() => ret._value = unmarshal_func()));
         }
 
         internal static Tuple<NdrEmbeddedPointer<T>, Action> CreateDeferredReader<U>(Func<U, T> unmarshal_func, U arg)
         {
-            NdrEmbeddedPointer<T> ret = new NdrEmbeddedPointer<T>(default(T));
+            NdrEmbeddedPointer<T> ret = new NdrEmbeddedPointer<T>(default);
             return Tuple.Create(ret, new Action(() => ret._value = unmarshal_func(arg)));
         }
 
         internal static Tuple<NdrEmbeddedPointer<T>, Action> CreateDeferredReader<U, V>(Func<U, V, T> unmarshal_func, U arg, V arg2)
         {
-            NdrEmbeddedPointer<T> ret = new NdrEmbeddedPointer<T>(default(T));
+            NdrEmbeddedPointer<T> ret = new NdrEmbeddedPointer<T>(default);
             return Tuple.Create(ret, new Action(() => ret._value = unmarshal_func(arg, arg2)));
         }
     }

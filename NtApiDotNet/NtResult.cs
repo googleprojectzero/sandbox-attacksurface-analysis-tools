@@ -70,7 +70,7 @@ namespace NtApiDotNet
         /// <returns>The result or the default if an error occurred.</returns>
         public T GetResultOrDefault()
         {
-            return GetResultOrDefault(default(T));
+            return GetResultOrDefault(default);
         }
 
         /// <summary>
@@ -90,7 +90,7 @@ namespace NtApiDotNet
             {
                 return new NtResult<S>(Status, map_func(Result));
             }
-            return new NtResult<S>(Status, default(S));
+            return new NtResult<S>(Status, default);
         }
 
         /// <summary>

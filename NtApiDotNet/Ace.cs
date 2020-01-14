@@ -341,7 +341,7 @@ namespace NtApiDotNet
         /// <returns>True if the other object equals this ACE</returns>
         public override bool Equals(object obj)
         {
-            if (object.ReferenceEquals(obj, this))
+            if (ReferenceEquals(obj, this))
             {
                 return true;
             }
@@ -373,7 +373,7 @@ namespace NtApiDotNet
         /// <returns>True if the ACEs are equal</returns>
         public static bool operator ==(Ace a, Ace b)
         {
-            if (object.ReferenceEquals(a, b))
+            if (ReferenceEquals(a, b))
             {
                 return true;
             }

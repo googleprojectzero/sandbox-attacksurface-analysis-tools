@@ -714,8 +714,8 @@ namespace NtApiDotNet
         #endregion
 
         #region Private Members
-        private static NtTypeFactory _generic_factory = new NtGeneric.NtTypeFactoryImpl();
-        private static Dictionary<string, NtType> _types = LoadTypes();
+        private static readonly NtTypeFactory _generic_factory = new NtGeneric.NtTypeFactoryImpl();
+        private static readonly Dictionary<string, NtType> _types = LoadTypes();
         private readonly NtTypeFactory _type_factory;
 
         private static Dictionary<string, NtType> LoadTypes()
@@ -724,15 +724,14 @@ namespace NtApiDotNet
             Dictionary<string, NtType> ret = new Dictionary<string, NtType>(StringComparer.OrdinalIgnoreCase);
 
             int size = 0x8000;
-            NtStatus status = NtStatus.STATUS_INFO_LENGTH_MISMATCH;
 
             // repeatly try to fill out ObjectTypes buffer by increasing it's size between each attempt
             while (size < 0x1000000)
             {
                 using (var type_info = new SafeStructureInOutBuffer<ObjectAllTypesInformation>(size, true))
                 {
-                    status = NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectTypesInformation,
-                        type_info, type_info.Length, out int return_length);
+                    NtStatus status = NtSystemCalls.NtQueryObject(SafeKernelObjectHandle.Null, ObjectInformationClass.ObjectTypesInformation,
+                            type_info, type_info.Length, out int return_length);
 
                     switch (status)
                     {

@@ -406,7 +406,7 @@ namespace NtObjectManager
             }
         }
 
-        private IEnumerable<Luid> GetPrivileges(IEnumerable<TokenPrivilege> privs)
+        private static IEnumerable<Luid> GetPrivileges(IEnumerable<TokenPrivilege> privs)
         {
             if (privs == null)
             {
@@ -458,7 +458,7 @@ namespace NtObjectManager
             return NtToken.OpenProcessToken(Process ?? NtProcess.Current, false, desired_access);
         }
 
-        private NtToken GetClipboardToken(TokenAccessRights desired_access)
+        private static NtToken GetClipboardToken(TokenAccessRights desired_access)
         {
             return TokenUtils.GetTokenFromClipboard(desired_access);
         }
@@ -585,7 +585,7 @@ namespace NtObjectManager
             }
         }
 
-        private NtToken GetAnonymousToken(TokenAccessRights desired_access)
+        private static NtToken GetAnonymousToken(TokenAccessRights desired_access)
         {
             return TokenUtils.GetAnonymousToken(desired_access);
         }

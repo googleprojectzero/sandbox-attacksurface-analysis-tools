@@ -83,12 +83,12 @@ namespace NtApiDotNet
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public sealed class ObjectAttributes : IDisposable
     {
-        int Length;
-        SafeKernelObjectHandle RootDirectory;
-        SafeBuffer ObjectName;
-        AttributeFlags Attributes;
-        SafeBuffer SecurityDescriptor;
-        SafeBuffer SecurityQualityOfService;
+        private readonly int Length;
+        private readonly SafeKernelObjectHandle RootDirectory;
+        private readonly SafeBuffer ObjectName;
+        private readonly AttributeFlags Attributes;
+        private readonly SafeBuffer SecurityDescriptor;
+        private readonly SafeBuffer SecurityQualityOfService;
 
         /// <summary>
         /// Constructor. Sets flags to None
@@ -147,6 +147,8 @@ namespace NtApiDotNet
         public ObjectAttributes(string object_name, AttributeFlags attributes, SafeKernelObjectHandle root, 
             SecurityQualityOfService sqos, SecurityDescriptor security_descriptor)
         {
+            if (root == null)
+                throw new ArgumentNullException(nameof(root), "Use SafeKernelObjectHandle.Null for a null handle");
             Length = Marshal.SizeOf(this);
             if (object_name != null)
             {
@@ -183,12 +185,12 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="object_name">The object name, can be null.</param>
         /// <param name="attributes">The object attribute flags.</param>
-        /// <param name="root">An optional root handle, can be SafeKernelObjectHandle.Null. Will duplicate the handle.</param>
+        /// <param name="root">An optional root handle, Will duplicate the handle.</param>
         /// <param name="sqos">An optional security quality of service.</param>
         /// <param name="security_descriptor">An optional security descriptor.</param>
         public ObjectAttributes(string object_name, AttributeFlags attributes, NtObject root, 
             SecurityQualityOfService sqos, SecurityDescriptor security_descriptor) 
-            : this(object_name, attributes, root != null ? root.Handle : SafeKernelObjectHandle.Null, sqos, security_descriptor)
+            : this(object_name, attributes, root?.Handle ?? SafeKernelObjectHandle.Null, sqos, security_descriptor)
         {
         }
 

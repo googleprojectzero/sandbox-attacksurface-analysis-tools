@@ -106,7 +106,7 @@ namespace NtObjectManager
             return ret;
         }
 
-        private ModifiedRpcServerResult CompareModifiedServer(RpcServer server, RpcServer compare_server)
+        private static ModifiedRpcServerResult CompareModifiedServer(RpcServer server, RpcServer compare_server)
         {
             if (server.ProcedureCount > compare_server.ProcedureCount)
             {

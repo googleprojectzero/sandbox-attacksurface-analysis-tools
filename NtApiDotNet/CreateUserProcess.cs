@@ -341,8 +341,10 @@ namespace NtApiDotNet
                         create_info.Data.ProhibitedImageCharacteristics = ProhibitedImageCharacteristics;
                         create_info.Data.AdditionalFileAccess = AdditionalFileAccess;
 
-                        using (ObjectAttributes proc_attr = new ObjectAttributes(null, AttributeFlags.None, (NtObject)null, null, ProcessSecurityDescriptor),
-                            thread_attr = new ObjectAttributes(null, AttributeFlags.None, (NtObject)null, null, ThreadSecurityDescriptor))
+                        using (ObjectAttributes proc_attr = new ObjectAttributes(null, AttributeFlags.None, 
+                            SafeKernelObjectHandle.Null, null, ProcessSecurityDescriptor),
+                            thread_attr = new ObjectAttributes(null, AttributeFlags.None, 
+                            SafeKernelObjectHandle.Null, null, ThreadSecurityDescriptor))
                         {
                             NtStatus status = NtSystemCalls.NtCreateUserProcess(
                                 out SafeKernelObjectHandle process_handle, out SafeKernelObjectHandle thread_handle,

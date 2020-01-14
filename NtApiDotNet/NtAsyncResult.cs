@@ -247,12 +247,23 @@ namespace NtApiDotNet
         /// </summary>
         internal void Cancel()
         {
+            Cancel(true);
+        }
+
+        /// <summary>
+        /// Cancel the pending IO operation.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        internal NtStatus Cancel(bool throw_on_error)
+        {
             if (_object is NtFile)
             {
                 IoStatus io_status = new IoStatus();
-                NtSystemCalls.NtCancelIoFileEx(_object.Handle,
-                    _io_status, io_status).ToNtException();
+                return NtSystemCalls.NtCancelIoFileEx(_object.Handle,
+                    _io_status, io_status).ToNtException(throw_on_error);
             }
+            return NtStatus.STATUS_SUCCESS;
         }
     }
 }
