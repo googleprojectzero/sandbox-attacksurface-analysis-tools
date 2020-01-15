@@ -32,6 +32,7 @@ namespace NtApiDotNet
                 case AceType.AuditCallbackObject:
                 case AceType.AuditObject:
                 case AceType.DeniedCallbackObject:
+                case AceType.DeniedObject:
                     return true;
             }
             return false;
