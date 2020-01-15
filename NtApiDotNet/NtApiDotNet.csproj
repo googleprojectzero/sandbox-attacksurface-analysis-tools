@@ -46,6 +46,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AccessMask.cs" />
+    <Compile Include="AccessMaskEntry.cs" />
     <Compile Include="Ace.cs" />
     <Compile Include="Acl.cs" />
     <Compile Include="AlpcMessage.cs" />

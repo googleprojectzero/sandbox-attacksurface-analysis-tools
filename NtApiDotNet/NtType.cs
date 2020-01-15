@@ -177,6 +177,52 @@ namespace NtApiDotNet
             get { return _type_factory.CanOpen; }
         }
 
+        /// <summary>
+        /// Get the valid access rights for this Type.
+        /// </summary>
+        public IEnumerable<AccessMaskEntry> AccessRights
+        {
+            get
+            {
+                if (_access_rights == null)
+                {
+                    var access_rights = new List<AccessMaskEntry>();
+                    uint mask = 1;
+                    while (mask < ValidAccess.Access)
+                    {
+                        if (Enum.IsDefined(AccessRightsType, mask))
+                        {
+                            access_rights.Add(new AccessMaskEntry(mask,
+                                (Enum)Enum.ToObject(AccessRightsType, mask)));
+                        }
+                        mask <<= 1;
+                    }
+                    _access_rights = access_rights.AsReadOnly();
+                }
+                return _access_rights;
+            }
+        }
+
+        /// <summary>
+        /// Get the valid read access rights for this Type.
+        /// </summary>
+        public IEnumerable<AccessMaskEntry> ReadAccessRights => AccessRights.Where(r => GenericMapping.GenericRead.IsAccessGranted(r.Mask));
+
+        /// <summary>
+        /// Get the valid write access rights for this Type.
+        /// </summary>
+        public IEnumerable<AccessMaskEntry> WriteAccessRights => AccessRights.Where(r => GenericMapping.GenericWrite.IsAccessGranted(r.Mask));
+
+        /// <summary>
+        /// Get the valid execute access rights for this Type.
+        /// </summary>
+        public IEnumerable<AccessMaskEntry> ExecuteAccessRights => AccessRights.Where(r => GenericMapping.GenericExecute.IsAccessGranted(r.Mask));
+
+        /// <summary>
+        /// Get the valid all access rights for this Type.
+        /// </summary>
+        public IEnumerable<AccessMaskEntry> AllAccessRights => AccessRights.Where(r => GenericMapping.GenericAll.IsAccessGranted(r.Mask));
+
         #endregion
 
         #region Public Methods
@@ -369,27 +415,6 @@ namespace NtApiDotNet
         public bool IsValidAccess(AccessMask access_mask)
         {
             return (GenericMapping.MapMask(access_mask) & ~ValidAccess).IsEmpty;
-        }
-
-        /// <summary>
-        /// Get the valid specific access rights for this Type.
-        /// </summary>
-        public IDictionary<uint, string> SpecificAccessRights
-        {
-            get
-            {
-                Dictionary<uint, string> ret = new Dictionary<uint, string>();
-                uint mask = 1;
-                while (mask < 0x10000)
-                {
-                    if (Enum.IsDefined(AccessRightsType, mask))
-                    {
-                        ret.Add(mask, Enum.GetName(AccessRightsType, mask));
-                    }
-                    mask <<= 1;
-                }
-                return ret;
-            }
         }
 
         /// <summary>
@@ -717,6 +742,7 @@ namespace NtApiDotNet
         private static readonly NtTypeFactory _generic_factory = new NtGeneric.NtTypeFactoryImpl();
         private static readonly Dictionary<string, NtType> _types = LoadTypes();
         private readonly NtTypeFactory _type_factory;
+        private IEnumerable<AccessMaskEntry> _access_rights;
 
         private static Dictionary<string, NtType> LoadTypes()
         {
