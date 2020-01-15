@@ -1343,6 +1343,14 @@ function Format-NtAce {
         if ($ace.IsConditionalAce) {
             Write-Output " - Condition: $($ace.Condition)"
         }
+        if ($ace.IsObjectAce) {
+            if ($ace.ObjectType -ne $null) {
+                Write-Output " - ObjectType  : $($ace.ObjectType)"
+            }
+            if ($ace.InheritedObjectType -ne $null) {
+                Write-Output " - InheritedObjectType  : $($ace.InheritedObjectType)"
+            }
+        }
         Write-Output ""
     }
 }
