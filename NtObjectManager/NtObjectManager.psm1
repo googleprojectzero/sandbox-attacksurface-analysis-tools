@@ -2027,8 +2027,10 @@ This cmdlet resolves the kernel address for a list of objects. This is an expens
 be 
 .PARAMETER Objects
 The list of objects to resolve.
+.PARAMETER PassThru
+Write the object addresses to the object. Normally no output is generated.
 .OUTPUTS
-None
+Int64 - If PassThru specified.
 .EXAMPLE
 Resolve-NtObjectAddress $obj1, $obj2; $obj1.Address
 Resolve the address of two objects.
@@ -2038,7 +2040,8 @@ function Resolve-NtObjectAddress
     [CmdletBinding()]
     param (
         [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
-        [NtApiDotNet.NtObject[]]$Objects
+        [NtApiDotNet.NtObject[]]$Objects,
+        [switch]$PassThru
     )
     BEGIN {
         $objs = @()
@@ -2048,6 +2051,9 @@ function Resolve-NtObjectAddress
     }
     END {
         [NtApiDotNet.NtSystemInfo]::ResolveObjectAddress([NtApiDotNet.NtObject[]]$objs)
+        if ($PassThru) {
+            $objs | Select-Object -ExpandProperty Address | Write-Output
+        }
     }
 }
 
