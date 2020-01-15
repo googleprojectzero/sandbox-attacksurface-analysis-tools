@@ -386,7 +386,7 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    struct FileDispositionInformation
+    public struct FileDispositionInformation
     {
         [MarshalAs(UnmanagedType.U1)]
         public bool DeleteFile;
@@ -403,7 +403,7 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    struct FileDispositionInformationEx
+    public struct FileDispositionInformationEx
     {
         public FileDispositionInformationExFlags Flags;
     }

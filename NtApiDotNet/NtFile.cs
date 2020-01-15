@@ -1312,6 +1312,31 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Specify file disposition.
+        /// </summary>
+        /// <param name="delete_file">True to set delete on close, false to clear delete on close.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <remarks>You can't prevent deletion if file opened with DeleteOnClose flag.</remarks>
+        public NtStatus SetDisposition(bool delete_file, bool throw_on_error)
+        {
+            return Set(FileInformationClass.FileDispositionInformation,
+                new FileDispositionInformation() { DeleteFile = delete_file }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Specify file disposition.
+        /// </summary>
+        /// <param name="delete_file">True to set delete on close, false to clear delete on close.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <remarks>You can't prevent deletion if file opened with DeleteOnClose flag.</remarks>
+        public void SetDisposition(bool delete_file)
+        {
+            SetDisposition(delete_file, true);
+        }
+
+        /// <summary>
         /// Delete the file. Must have been opened with DELETE access.
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
@@ -1319,8 +1344,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public NtStatus Delete(bool throw_on_error)
         {
-            return Set(FileInformationClass.FileDispositionInformation,
-                new FileDispositionInformation() { DeleteFile = true }, throw_on_error);
+            return SetDisposition(true, throw_on_error);
         }
 
         /// <summary>
@@ -1333,6 +1357,29 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Set disposition on the file (extended Windows version).
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <param name="flags">Flags for SetDispositionEx call.</param>
+        /// <returns>The NT status code.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtStatus SetDispositionEx(FileDispositionInformationExFlags flags, bool throw_on_error)
+        {
+            return Set(FileInformationClass.FileDispositionInformationEx,
+                new FileDispositionInformationEx() { Flags = flags }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set disposition on the file (extended Windows version).
+        /// </summary>
+        /// <param name="flags">Flags for SetDispositionEx call.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void SetDispositionEx(FileDispositionInformationExFlags flags)
+        {
+            SetDispositionEx(flags, true);
+        }
+
+        /// <summary>
         /// Delete the file (extended Windows version). Must have been opened with DELETE access.
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
@@ -1341,8 +1388,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public NtStatus DeleteEx(FileDispositionInformationExFlags flags, bool throw_on_error)
         {
-            return Set(FileInformationClass.FileDispositionInformationEx,
-                new FileDispositionInformationEx() { Flags = flags }, throw_on_error);
+            return SetDispositionEx(flags, throw_on_error);
         }
 
         /// <summary>
