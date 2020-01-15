@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -91,7 +92,7 @@ namespace NtApiDotNet
         public Acl(string sddl)
         {
             SecurityDescriptor sd = new SecurityDescriptor(sddl);
-            Acl acl = sd.Dacl ?? sd.Sacl 
+            Acl acl = sd.Dacl ?? sd.Sacl
                 ?? throw new ArgumentException("Must specify a DACL or a SACL", "sddl");
             Defaulted = acl.Defaulted;
             NullAcl = acl.NullAcl;
@@ -322,20 +323,12 @@ namespace NtApiDotNet
         /// <summary>
         /// Indicates the ACL has at least one conditional ACE.
         /// </summary>
-        public bool HasConditionalAce
-        {
-            get
-            {
-                foreach (var ace in this)
-                {
-                    if (ace.IsConditionalAce)
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        }
+        public bool HasConditionalAce => this.Any(ace => ace.IsConditionalAce);
+
+        /// <summary>
+        /// Indicates the ACL has at least one object ACE.
+        /// </summary>
+        public bool HasObjectAce => this.Any(ace => ace.IsObjectAce);
         #endregion
 
         #region Private Members

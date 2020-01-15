@@ -75,10 +75,43 @@ namespace NtApiDotNet.Forms
             _valid_access = valid_access;
             _is_container = is_container;
 
-            if (!acl.HasConditionalAce)
+            bool has_conditional_ace = false;
+            bool has_inherited_object_ace = false;
+            bool has_object_ace = false;
+
+            foreach (var ace in acl)
+            {
+                if (ace.IsConditionalAce)
+                {
+                    has_conditional_ace = true;
+                }
+                if (ace.IsObjectAce)
+                {
+                    if (ace.ObjectType.HasValue)
+                    {
+                        has_object_ace = true;
+                    }
+                    if (ace.InheritedObjectType.HasValue)
+                    {
+                        has_inherited_object_ace = true;
+                    }
+                }
+            }
+
+            if (!has_conditional_ace)
             {
                 listViewAcl.Columns.Remove(columnHeaderCondition);
                 copyConditionToolStripMenuItem.Visible = false;
+            }
+
+            if (!has_object_ace)
+            {
+                listViewAcl.Columns.Remove(columnHeaderObject);
+            }
+
+            if (!has_inherited_object_ace)
+            {
+                listViewAcl.Columns.Remove(columnHeaderInheritedObject);
             }
 
             foreach (var ace in acl)
@@ -99,9 +132,19 @@ namespace NtApiDotNet.Forms
 
                 item.SubItems.Add(access);
                 item.SubItems.Add(ace.Flags.ToString());
-                if (ace.IsConditionalAce)
+                if (has_conditional_ace)
                 {
                     item.SubItems.Add(ace.Condition);
+                }
+
+                if (has_object_ace)
+                {
+                    item.SubItems.Add(ace.ObjectType?.ToString() ?? string.Empty);
+                }
+
+                if (has_inherited_object_ace)
+                {
+                    item.SubItems.Add(ace.InheritedObjectType?.ToString() ?? string.Empty);
                 }
 
                 item.Tag = ace;
