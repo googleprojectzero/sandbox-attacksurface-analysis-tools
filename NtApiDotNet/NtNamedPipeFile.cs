@@ -45,10 +45,20 @@ namespace NtApiDotNet
     /// </summary>
     public abstract class NtNamedPipeFileBase : NtFile
     {
+        #region Constructors
         internal NtNamedPipeFileBase(SafeKernelObjectHandle handle, IoStatus io_status)
             : base(handle, io_status)
         {
+            _pipe_information = new Lazy<NtResult<FilePipeInformation>>(() 
+                => Query(FileInformationClass.FilePipeInformation, new FilePipeInformation(), false));
+            _pipe_local_information = new Lazy<NtResult<FilePipeLocalInformation>>(()
+                => Query(FileInformationClass.FilePipeLocalInformation, new FilePipeLocalInformation(), false));
         }
+        #endregion
+
+        #region Private Members
+        private Lazy<NtResult<FilePipeInformation>> _pipe_information;
+        private Lazy<NtResult<FilePipeLocalInformation>> _pipe_local_information;
 
         private static NtIoControlCode GetAttributeToIoCtl(PipeAttributeType attribute_type)
         {
@@ -80,6 +90,23 @@ namespace NtApiDotNet
             }
         }
 
+        private static T GetLazyResult<T>(Lazy<NtResult<T>> lazy)
+        {
+            if (!lazy.Value.IsSuccess)
+            {
+                return default;
+            }
+            return lazy.Value.Result;
+        }
+
+        private FilePipeLocalInformation QueryCurrentInfo()
+        {
+            return Query<FilePipeLocalInformation>(FileInformationClass.FilePipeLocalInformation);
+        }
+
+        #endregion
+
+        #region Public Methods
         /// <summary>
         /// Get a named attribute from the pipe.
         /// </summary>
@@ -270,6 +297,59 @@ namespace NtApiDotNet
         {
             return GetAttributeString(attribute_type, name, true).Result;
         }
+        #endregion
+
+        #region Public Properties
+
+        /// <summary>
+        /// Pipe completion mode.
+        /// </summary>
+        public NamedPipeCompletionMode CompletionMode => GetLazyResult(_pipe_information).CompletionMode;
+        /// <summary>
+        /// Pipe read mode.
+        /// </summary>
+        public NamedPipeReadMode ReadMode => GetLazyResult(_pipe_information).ReadMode;
+        /// <summary>
+        /// Pipe type.
+        /// </summary>
+        public NamedPipeType PipeType => GetLazyResult(_pipe_local_information).NamedPipeType;
+        /// <summary>
+        /// Pipe configuration.
+        /// </summary>
+        public NamedPipeConfiguration Configuration => GetLazyResult(_pipe_local_information).NamedPipeConfiguration;
+        /// <summary>
+        /// Maximum instances of the pipe, -1 is unlimited.
+        /// </summary>
+        public int MaximumInstances => GetLazyResult(_pipe_local_information).MaximumInstances;
+        /// <summary>
+        /// Current pipe instances.
+        /// </summary>
+        public int CurrentInstances => QueryCurrentInfo().CurrentInstances;
+        /// <summary>
+        /// Inbound quota.
+        /// </summary>
+        public int InboundQuota => GetLazyResult(_pipe_local_information).InboundQuota;
+        /// <summary>
+        /// Available bytes to read.
+        /// </summary>
+        public int ReadDataAvailable => QueryCurrentInfo().ReadDataAvailable;
+        /// <summary>
+        /// Outbound quota.
+        /// </summary>
+        public int OutboundQuota => GetLazyResult(_pipe_local_information).OutboundQuota;
+        /// <summary>
+        /// Available outbound quota.
+        /// </summary>
+        public int WriteQuotaAvailable => QueryCurrentInfo().WriteQuotaAvailable;
+        /// <summary>
+        /// Connect state of the named pipe.
+        /// </summary>
+        public NamedPipeState ConnectState => QueryCurrentInfo().NamedPipeState;
+        /// <summary>
+        /// Type of pipe endpoint.
+        /// </summary>
+        public NamedPipeEnd EndPointType => GetLazyResult(_pipe_local_information).NamedPipeEnd;
+        #endregion
     }
 
     /// <summary>

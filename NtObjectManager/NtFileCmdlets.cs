@@ -396,11 +396,20 @@ namespace NtObjectManager
     /// <summary>
     /// <para type="synopsis">Create a new NT named pipe file object.</para>
     /// <para type="description">This cmdlet creates a new NT named pipe file object. The absolute path to the object in the NT object manager name space can be specified. 
-    /// It's also possible to open the object relative to an existing object by specified the -Root parameter.</para>
+    /// It's also possible to open the object relative to an existing object by specified the -Root parameter. The ShareMode is used to determine data direction, specify
+    /// Write to make an inbound pipe (client->server), Read to make an outbound pipe (server->client) and Read, Write to make full duplex.</para>
     /// </summary>
     /// <example>
     ///   <code>$obj = New-NtNamedPipeFile \??\pipe\abc</code>
-    ///   <para>Creates a new file named pipe object with an absolute path.</para>
+    ///   <para>Creates a new, full duplex file named pipe object with an absolute path.</para>
+    /// </example>
+    /// <example>
+    ///   <code>$obj = New-NtNamedPipeFile \??\pipe\abc -ShareMode Read</code>
+    ///   <para>Creates a new outbound file named pipe object with an absolute path.</para>
+    /// </example>
+    /// /// <example>
+    ///   <code>$obj = New-NtNamedPipeFile \??\pipe\abc -ShareMode Write</code>
+    ///   <para>Creates a new inbound file named pipe object with an absolute path.</para>
     /// </example>
     /// <example>
     ///   <code>$obj = New-NtNamedPipeFile \??\pipe\abc -MaximumInstances 100</code>

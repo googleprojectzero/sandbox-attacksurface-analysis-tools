@@ -288,6 +288,13 @@ namespace NtApiDotNet
         Message = 1,
     }
 
+    public enum NamedPipeConfiguration
+    {
+        Inbound = 0,
+        Outbound = 1,
+        FullDuplex = 2,
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public class RtlRelativeName
     {
@@ -310,7 +317,6 @@ namespace NtApiDotNet
 
     public static partial class NtRtl
     {
-
         [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
         public static extern NtStatus RtlDosPathNameToRelativeNtPathName_U_WithStatus(
           string DosFileName,
@@ -400,6 +406,7 @@ namespace NtApiDotNet
         PosixSemantics = 0x00000002,
         ForceImageSectionCheck = 0x00000004,
         OnClose = 0x00000008,
+        IgnoreReadOnlyAttribute = 0x00000010,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -419,6 +426,8 @@ namespace NtApiDotNet
         NoIncreaseAvailableSpace = 0x00000010,
         NoDecreaseAvailableSpace = 0x00000020,
         IgnoreReadOnlyAttribute = 0x00000040,
+        ForceResizeTargetSR = 0x00000080,
+        ForceResourceSourceSR = 0x00000100,
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -486,10 +495,212 @@ namespace NtApiDotNet
         public int EaSize;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     public struct FileCompletionInformation
     {
         public IntPtr CompletionPort;
         public IntPtr Key;
+    }
+
+    [Flags]
+    public enum FileRemoteProtocolFlags
+    {
+        None = 0,
+        Loopback = 1,
+        Offline = 2,
+        PersistentHandle = 4,
+        Privacy = 8,
+        Integrity = 0x10,
+        MutualAuth = 0x20,
+    }
+
+    [Flags]
+    public enum FileRemoteProtocolShareFlags
+    {
+        None = 0,
+        Unknown01 = 0x00000001,
+        TimeWarp = 0x00000002,
+        Unknown04 = 0x00000004,
+        DFS = 0x00000008,
+        ContinuousAvailability = 0x00000010,
+        Scaleout = 0x00000020,
+        Cluster = 0x00000040,
+        Encrypted = 0x00000080,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileRemoteProtocolSpecificInformationServer
+    {
+        public FileRemoteProtocolShareFlags Capabilities;
+    }
+
+    [Flags]
+    public enum FileRemoteProtocolServerFlags
+    {
+        DFS = 0x00000001,
+        Leasing = 0x00000002,
+        LargeMTU = 0x00000004,
+        MultiChannel = 0x00000008,
+        PersistentHandles = 0x00000010,
+        DirectoryLeasing = 0x00000020,
+        EncryptionAware = 0x00000040,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileRemoteProtocolSpecificInformationSmb2
+    {
+        public FileRemoteProtocolServerFlags Capabilities;
+        public int CachingFlags;
+        public byte ShareType;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 0x40)]
+    public struct FileRemoteProtocolSpecificInformation
+    {
+        [FieldOffset(0)]
+        public FileRemoteProtocolSpecificInformationServer Server;
+        [FieldOffset(0)]
+        public FileRemoteProtocolSpecificInformationSmb2 Smb2;
+    }
+
+    public enum FileRemoteProtocolType
+    {
+        MSNET = 0x00010000,
+        SMB = 0x00020000,
+        LANMAN = 0x00020000,
+        NETWARE = 0x00030000,
+        VINES = 0x00040000,
+        TEN_NET = 0x00050000,
+        LOCUS = 0x00060000,
+        SUN_PC_NFS = 0x00070000,
+        LANSTEP = 0x00080000,
+        NINE_TILES = 0x00090000,
+        LANTASTIC = 0x000A0000,
+        AS400 = 0x000B0000,
+        FTP_NFS = 0x000C0000,
+        PATHWORKS = 0x000D0000,
+        LIFENET = 0x000E0000,
+        POWERLAN = 0x000F0000,
+        BWNFS = 0x00100000,
+        COGENT = 0x00110000,
+        FARALLON = 0x00120000,
+        APPLETALK = 0x00130000,
+        INTERGRAPH = 0x00140000,
+        SYMFONET = 0x00150000,
+        CLEARCASE = 0x00160000,
+        FRONTIER = 0x00170000,
+        BMC = 0x00180000,
+        DCE = 0x00190000,
+        AVID = 0x001A0000,
+        DOCUSPACE = 0x001B0000,
+        MANGOSOFT = 0x001C0000,
+        SERNET = 0x001D0000,
+        RIVERFRONT1 = 0x001E0000,
+        RIVERFRONT2 = 0x001F0000,
+        DECORB = 0x00200000,
+        PROTSTOR = 0x00210000,
+        FJ_REDIR = 0x00220000,
+        DISTINCT = 0x00230000,
+        TWINS = 0x00240000,
+        RDR2SAMPLE = 0x00250000,
+        CSC = 0x00260000,
+        THREE_IN_ONE = 0x00270000,
+        EXTENDNET = 0x00290000,
+        STAC = 0x002A0000,
+        FOXBAT = 0x002B0000,
+        YAHOO = 0x002C0000,
+        EXIFS = 0x002D0000,
+        DAV = 0x002E0000,
+        KNOWARE = 0x002F0000,
+        OBJECT_DIRE = 0x00300000,
+        MASFAX = 0x00310000,
+        HOB_NFS = 0x00320000,
+        SHIVA = 0x00330000,
+        IBMAL = 0x00340000,
+        LOCK = 0x00350000,
+        TERMSRV = 0x00360000,
+        SRT = 0x00370000,
+        QUINCY = 0x00380000,
+        OPENAFS = 0x00390000,
+        AVID1 = 0x003A0000,
+        DFS = 0x003B0000,
+        KWNP = 0x003C0000,
+        ZENWORKS = 0x003D0000,
+        DRIVEONWEB = 0x003E0000,
+        VMWARE = 0x003F0000,
+        RSFX = 0x00400000,
+        MFILES = 0x00410000,
+        MS_NFS = 0x00420000,
+        GOOGLE = 0x00430000,
+        NDFS = 0x00440000,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FileRemoteProtocolInformation
+    {
+        public ushort StructureVersion;
+        public ushort StructureSize;
+        public FileRemoteProtocolType Protocol;
+        public ushort ProtocolMajorVersion;
+        public ushort ProtocolMinorVersion;
+        public ushort ProtocolRevision;
+        public ushort Reserved;
+        public FileRemoteProtocolFlags Flags;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
+        public int[] GenericReserved;
+        public FileRemoteProtocolSpecificInformation ProtocolSpecific;
+    }
+
+    public class FileRemoteProtocol
+    {
+        public FileRemoteProtocolType Protocol { get; }
+        public Version ProtocolVersion { get; }
+        public FileRemoteProtocolFlags Flags { get; }
+        public FileRemoteProtocolSpecificInformation ProtocolSepecific { get; }
+
+        internal FileRemoteProtocol(FileRemoteProtocolInformation info)
+        {
+            Protocol = info.Protocol;
+            ProtocolVersion = new Version(info.ProtocolMajorVersion, info.ProtocolMinorVersion, info.ProtocolRevision);
+            Flags = info.Flags;
+            ProtocolSepecific = info.ProtocolSpecific;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FilePipeInformation
+    {
+        public NamedPipeReadMode ReadMode;
+        public NamedPipeCompletionMode CompletionMode;
+    }
+
+    public enum NamedPipeState
+    {
+        Disconencted = 1,
+        Listening = 2,
+        Connected = 3,
+        Closing = 4,
+    }
+
+    public enum NamedPipeEnd
+    {
+        Client = 0,
+        Server = 1,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FilePipeLocalInformation
+    {
+        public NamedPipeType NamedPipeType;
+        public NamedPipeConfiguration NamedPipeConfiguration;
+        public int MaximumInstances;
+        public int CurrentInstances;
+        public int InboundQuota;
+        public int ReadDataAvailable;
+        public int OutboundQuota;
+        public int WriteQuotaAvailable;
+        public NamedPipeState NamedPipeState;
+        public NamedPipeEnd NamedPipeEnd;
     }
 
     public enum FileInformationClass
@@ -725,7 +936,6 @@ namespace NtApiDotNet
         /// <summary>
         /// Return the status information field. (32 bit)
         /// </summary>
-        /// <exception cref="NtException">Thrown if not complete.</exception>
         internal int Information32
         {
             get

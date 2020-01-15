@@ -418,7 +418,7 @@ namespace NtApiDotNet
         public static NtResult<NtFile> Create(ObjectAttributes obj_attributes, FileAccessRights desired_access, FileAttributes file_attributes, FileShareMode share_access,
             FileOpenOptions open_options, FileDisposition disposition, EaBuffer ea_buffer, bool throw_on_error)
         {
-            return Create(obj_attributes, desired_access, file_attributes, 
+            return Create(obj_attributes, desired_access, file_attributes,
                 share_access, open_options, disposition, ea_buffer, null, throw_on_error);
         }
 
@@ -3662,6 +3662,23 @@ namespace NtApiDotNet
                     }
                 }
                 FileAttributes = current_attributes;
+            }
+        }
+
+        /// <summary>
+        /// Get remote protocol information.
+        /// </summary>
+        public FileRemoteProtocol RemoteProtocol
+        {
+            get
+            {
+                FileRemoteProtocolInformation info = new FileRemoteProtocolInformation();
+                info.StructureSize = (ushort)Marshal.SizeOf(info);
+                if (NtObjectUtils.IsWindows7OrLess)
+                    info.StructureVersion = 1;
+                else
+                    info.StructureVersion = 2;
+                return new FileRemoteProtocol(Query(FileInformationClass.FileRemoteProtocolInformation, info));
             }
         }
 
