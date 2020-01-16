@@ -29,6 +29,7 @@ namespace NtApiDotNet
     /// </summary>
     public static class NtSecurity
     {
+        #region Static Methods
         /// <summary>
         /// Looks up the account name of a SID. 
         /// </summary>
@@ -57,31 +58,6 @@ namespace NtApiDotNet
                     return $@"{domain}\{name}";
                 }
             }
-        }
-
-        private static Dictionary<Sid, string> _known_capabilities = null;
-
-        private static Dictionary<Sid, string> GetKnownCapabilitySids()
-        {
-            if (_known_capabilities == null)
-            {
-                Dictionary<Sid, string> known_capabilities = new Dictionary<Sid, string>();
-                try
-                {
-                    foreach (string name in SecurityCapabilities.KnownCapabilityNames)
-                    {
-                        GetCapabilitySids(name, out Sid capability_sid, out Sid capability_group_sid);
-                        known_capabilities.Add(capability_sid, name);
-                        known_capabilities.Add(capability_group_sid, name);
-                    }
-                }
-                catch (EntryPointNotFoundException)
-                {
-                    // Catch here in case the RtlDeriveCapabilitySid function isn't supported.
-                }
-                _known_capabilities = known_capabilities;
-            }
-            return _known_capabilities;
         }
 
         /// <summary>
@@ -193,57 +169,6 @@ namespace NtApiDotNet
             return $"{protection_type}-{protection_level}";
         }
 
-        private static string ReadMoniker(NtKey rootkey, Sid sid)
-        {
-            PackageSidType sid_type = GetPackageSidType(sid);
-            Sid child_sid = null;
-            if (sid_type == PackageSidType.Child)
-            {
-                child_sid = sid;
-                sid = GetPackageSidParent(sid);
-            }
-
-            string path = $@"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppContainer\Mappings\{sid}";
-            if (child_sid != null)
-            {
-                path = $@"{path}\Children\{child_sid}";
-            }
-
-            using (ObjectAttributes obj_attr = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, rootkey))
-            {
-                using (var key = NtKey.Open(obj_attr, KeyAccessRights.QueryValue, KeyCreateOptions.NonVolatile, false))
-                {
-                    if (key.IsSuccess)
-                    {
-                        var moniker = key.Result.QueryValue("Moniker", false);
-                        if (!moniker.IsSuccess)
-                        {
-                            return null;
-                        }
-
-                        if (child_sid == null)
-                        {
-                            return moniker.Result.ToString().TrimEnd('\0');
-                        }
-
-                        var parent_moniker = key.Result.QueryValue("ParentMoniker", false);
-                        string parent_moniker_string;
-                        if (parent_moniker.IsSuccess)
-                        {
-                            parent_moniker_string = parent_moniker.Result.ToString();
-                        }
-                        else
-                        {
-                            parent_moniker_string = ReadMoniker(rootkey, sid) ?? String.Empty;
-                        }
-
-                        return $"{parent_moniker_string.TrimEnd('\0')}/{moniker.Result.ToString().TrimEnd('\0')}";
-                    }
-                }
-            }
-            return null;
-        }
-
         /// <summary>
         /// Try and lookup the moniker associated with a package sid.
         /// </summary>
@@ -284,62 +209,6 @@ namespace NtApiDotNet
             }
 
             return ret;
-        }
-
-        private static Dictionary<Sid, string> _device_capabilities;
-
-        private static Sid GuidToCapabilitySid(Guid g)
-        {
-            byte[] guid_buffer = g.ToByteArray();
-            List<uint> subauthorities = new List<uint>
-            {
-                3
-            };
-            for (int i = 0; i < 4; ++i)
-            {
-                subauthorities.Add(BitConverter.ToUInt32(guid_buffer, i * 4));
-            }
-            return new Sid(SecurityAuthority.Package, subauthorities.ToArray());
-        }
-
-        private static Dictionary<Sid, string> GetDeviceCapabilities()
-        {
-            if (_device_capabilities != null)
-            {
-                return _device_capabilities;
-            }
-
-            var device_capabilities = new Dictionary<Sid, string>();
-
-            try
-            {
-                using (var base_key = NtKey.Open(@"\Registry\Machine\SOFTWARE\Microsoft\Windows\CurrentVersion\DeviceAccess\CapabilityMappings", null, KeyAccessRights.EnumerateSubKeys))
-                {
-                    using (var key_list = base_key.QueryAccessibleKeys(KeyAccessRights.EnumerateSubKeys).ToDisposableList())
-                    {
-                        foreach (var key in key_list)
-                        {
-                            foreach (var guid in key.QueryKeys())
-                            {
-                                if (Guid.TryParse(guid, out Guid g))
-                                {
-                                    Sid sid = GuidToCapabilitySid(g);
-                                    if (!device_capabilities.ContainsKey(sid))
-                                    {
-                                        device_capabilities[sid] = key.Name;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            catch (NtException)
-            {
-            }
-            
-            _device_capabilities = device_capabilities;
-            return _device_capabilities;
         }
 
         /// <summary>
@@ -492,52 +361,6 @@ namespace NtApiDotNet
         public static Sid SidFromSddl(string sddl)
         {
             return SidFromSddl(sddl, true).Result;
-        }
-
-        private static NtResult<NtToken> DuplicateForAccessCheck(NtToken token, bool throw_on_error)
-        {
-            if (token.IsPseudoToken)
-            {
-                // This is a pseudo token, pass along as no need to duplicate.
-                return token.CreateResult();
-            }
-
-            if (token.TokenType == TokenType.Primary)
-            {
-                return token.DuplicateToken(TokenType.Impersonation, 
-                    SecurityImpersonationLevel.Identification, TokenAccessRights.Query, throw_on_error);
-            }
-            else if (!token.IsAccessGranted(TokenAccessRights.Query))
-            {
-                return token.Duplicate(TokenAccessRights.Query, throw_on_error);
-            }
-            else
-            {
-                // If we've got query access rights already just create a shallow clone.
-                return token.ShallowClone().CreateResult();
-            }
-        }
-
-        private static SafeArrayBuffer<ObjectTypeList> ConvertObjectTypes(IEnumerable<ObjectTypeEntry> object_types)
-        {
-            if (object_types == null || !object_types.Any())
-                return SafeArrayBuffer<ObjectTypeList>.Null;
-
-            var guids = object_types.Select(o => o.ObjectType).ToArray();
-            var ret = new SafeArrayBuffer<ObjectTypeList>(new ObjectTypeList[guids.Length], guids.Length * 16);
-            try
-            {
-                IntPtr ptr = ret.Data.DangerousGetHandle();
-                var arr = object_types.Select((t, i) => new ObjectTypeList() { Level = (short)t.Level, ObjectType = ptr + (i * 16) }).ToArray();
-                ret.WriteArray(0, arr, 0, arr.Length);
-                ret.Data.WriteArray(0, guids, 0, guids.Length);
-                return ret;
-            }
-            catch
-            {
-                ret?.Dispose();
-                throw;
-            }
         }
 
         /// <summary>
@@ -732,23 +555,19 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="name">The path to the resource (such as \BaseNamedObejct\ABC)</param>
         /// <param name="type">The type of resource, can be null to get the method to try and discover the correct type.</param>
-        /// <returns>The named resource security descriptor.</returns>
-        /// <exception cref="NtException">Thrown if an error occurred opening the object.</exception>
-        /// <exception cref="ArgumentException">Thrown if type of resource couldn't be found.</exception>
+        /// <returns>The named resource security descriptor. Returns null if can't open the resource.</returns>
         public static SecurityDescriptor FromNamedObject(string name, string type)
         {
-            try
+            using (var obj = NtObject.OpenWithType(type, name, null, AttributeFlags.CaseInsensitive, 
+                GenericAccessRights.ReadControl, null, false))
             {
-                using (NtObject obj = NtObject.OpenWithType(type, name, null, GenericAccessRights.ReadControl))
-                {
-                    return obj.SecurityDescriptor;
-                }
+                if (!obj.IsSuccess)
+                    return null;
+                var sd = obj.Result.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
+                if (!sd.IsSuccess)
+                    return null;
+                return sd.Result;
             }
-            catch
-            {
-            }
-
-            return null;
         }
 
         /// <summary>
@@ -865,19 +684,6 @@ namespace NtApiDotNet
                 sid.SubAuthorities[0] == 32;
         }
 
-        private static void GetCapabilitySids(string capability_name, out Sid capability_sid, out Sid capability_group_sid)
-        {
-            using (SafeHGlobalBuffer cap_sid = new SafeHGlobalBuffer(Sid.MaximumSidSize),
-                    cap_group_sid = new SafeHGlobalBuffer(Sid.MaximumSidSize))
-            {
-                NtRtl.RtlDeriveCapabilitySidsFromName(
-                    new UnicodeString(capability_name),
-                    cap_group_sid, cap_sid).ToNtException();
-                capability_sid = new Sid(cap_sid);
-                capability_group_sid = new Sid(cap_group_sid);
-            }
-        }
-
         /// <summary>
         /// Get a capability sid by name.
         /// </summary>
@@ -954,8 +760,6 @@ namespace NtApiDotNet
             return new Sid(sid.Authority, sid.SubAuthorities.Take(8).ToArray());
         }
 
-        private static Regex ConditionalAceRegex = new Regex(@"^D:\(XA;;;;;WD;\((.+)\)\)$");
-
         /// <summary>
         /// Converts conditional ACE data to an SDDL string
         /// </summary>
@@ -1005,71 +809,6 @@ namespace NtApiDotNet
                 out SigningLevel signing_level, thumb_print, ref thumb_print_size, out HashAlgorithm thumb_print_algo).ToNtException();
             Array.Resize(ref thumb_print, thumb_print_size);
             return new CachedSigningLevel(flags, signing_level, thumb_print, thumb_print_algo);
-        }
-
-        private static CachedSigningLevelEaBuffer ReadCachedSigningLevelVersion1(BinaryReader reader)
-        {
-            int version2 = reader.ReadInt16();
-            int flags = reader.ReadInt32();
-            int policy = reader.ReadInt32();
-            long last_blacklist_time = reader.ReadInt64();
-            int sequence = reader.ReadInt32();
-            byte[] thumbprint = reader.ReadAllBytes(64);
-            int thumbprint_size = reader.ReadInt32();
-            Array.Resize(ref thumbprint, thumbprint_size);
-            HashAlgorithm thumbprint_algo = (HashAlgorithm)reader.ReadInt32();
-            byte[] hash = reader.ReadAllBytes(64);
-            int hash_size = reader.ReadInt32();
-            Array.Resize(ref hash, hash_size);
-            HashAlgorithm hash_algo = (HashAlgorithm)reader.ReadInt32();
-            long usn = reader.ReadInt64();
-           
-            return new CachedSigningLevelEaBuffer(version2, flags, (SigningLevel)policy, usn,
-                last_blacklist_time, sequence, thumbprint, thumbprint_algo, hash, hash_algo);
-        }
-
-        private static CachedSigningLevelEaBufferV2 ReadCachedSigningLevelVersion2(BinaryReader reader)
-        {
-            int version2 = reader.ReadInt16();
-            int flags = reader.ReadInt32();
-            int policy = reader.ReadInt32();
-            long last_blacklist_time = reader.ReadInt64();
-            long last_timestamp = reader.ReadInt64();
-            int thumbprint_size = reader.ReadInt32();
-            HashAlgorithm thumbprint_algo = (HashAlgorithm) reader.ReadInt32();
-            int hash_size = reader.ReadInt32();
-            HashAlgorithm hash_algo = (HashAlgorithm) reader.ReadInt32();
-            long usn = reader.ReadInt64();
-            byte[] thumbprint = reader.ReadAllBytes(thumbprint_size);
-            byte[] hash = reader.ReadAllBytes(hash_size);
-            
-            return new CachedSigningLevelEaBufferV2(version2, flags, (SigningLevel)policy, usn,
-                last_blacklist_time, last_timestamp, thumbprint, thumbprint_algo, hash, hash_algo);
-        }
-
-        private static CachedSigningLevelEaBufferV3 ReadCachedSigningLevelVersion3(BinaryReader reader)
-        {
-            int version2 = reader.ReadByte();
-            int policy = reader.ReadByte();
-            long usn = reader.ReadInt64();
-            long last_blacklist_time = reader.ReadInt64();
-            int flags = reader.ReadInt32();
-            int extra_size = reader.ReadUInt16();
-            long end_size = reader.BaseStream.Position + extra_size;
-            List<CachedSigningLevelBlob> extra_data = new List<CachedSigningLevelBlob>();
-            HashCachedSigningLevelBlob thumbprint = null;
-            while (reader.BaseStream.Position < end_size)
-            {
-                CachedSigningLevelBlob blob = CachedSigningLevelBlob.ReadBlob(reader);
-                if (blob.BlobType == CachedSigningLevelBlobType.SignerHash)
-                {
-                    thumbprint = (HashCachedSigningLevelBlob)blob;
-                }
-                extra_data.Add(blob);
-            }
-
-            return new CachedSigningLevelEaBufferV3(version2, flags, (SigningLevel)policy, usn,
-                last_blacklist_time, extra_data.AsReadOnly(), thumbprint);
         }
 
         /// <summary>
@@ -1127,107 +866,6 @@ namespace NtApiDotNet
                 NtSystemCalls.NtSetCachedSigningLevel(flags, signing_level, handles, handles_count, handle).ToNtException();
             }
         }
-
-        private static string UpperCaseString(string name)
-        {
-            StringBuilder result = new StringBuilder(name);
-            if (result.Length > 0)
-            {
-                result[0] = char.ToUpper(result[0]);
-            }
-            return result.ToString();
-        }
-
-        private static string MakeFakeCapabilityName(string name, bool group)
-        {
-            List<string> parts = new List<string>();
-            if (name.Contains("_"))
-            {
-                parts.Add(name);
-            }
-            else
-            {
-                int start = 0;
-                int index = 1;
-                while (index < name.Length)
-                {
-                    if (char.IsUpper(name[index]))
-                    {
-                        parts.Add(name.Substring(start, index - start));
-                        start = index;
-                    }
-                    index++;
-                }
-
-                parts.Add(name.Substring(start));
-                parts[0] = UpperCaseString(parts[0]);
-            }
-
-            return $@"NAMED CAPABILITIES{(group ? " GROUP":"")}\{String.Join(" ", parts)}";
-        }
-
-        private static SidName GetNameForSidInternal(Sid sid)
-        {
-            string name = LookupAccountSid(sid);
-            if (name != null)
-            {
-                return new SidName(name, SidNameSource.Account);
-            }
-
-            if (IsCapabilitySid(sid))
-            {
-                // See if there's a known SID with this name.
-                name = LookupKnownCapabilityName(sid);
-                if (name == null)
-                {
-                    switch (sid.SubAuthorities.Count)
-                    {
-                        case 8:
-                            uint[] sub_authorities = sid.SubAuthorities.ToArray();
-                            // Convert to a package SID.
-                            sub_authorities[0] = 2;
-                            name = LookupPackageName(new Sid(sid.Authority, sub_authorities));
-                            break;
-                        case 5:
-                            name = LookupDeviceCapabilityName(sid);
-                            break;
-                    }
-                }
-
-                if (!string.IsNullOrWhiteSpace(name))
-                {
-                    return new SidName(MakeFakeCapabilityName(name, false), SidNameSource.Capability);
-                }
-            }
-            else if (IsCapabilityGroupSid(sid))
-            {
-                name = LookupKnownCapabilityName(sid);
-                if (!string.IsNullOrWhiteSpace(name))
-                {
-                    return new SidName(MakeFakeCapabilityName(name, true), SidNameSource.Capability);
-                }
-            }
-            else if (IsPackageSid(sid))
-            {
-                name = LookupPackageName(sid);
-                if (name != null)
-                {
-                    return new SidName(name, SidNameSource.Package);
-                }
-            }
-            else if (IsProcessTrustSid(sid))
-            {
-                name = LookupProcessTrustName(sid);
-                if (name != null)
-                {
-                    return new SidName($@"TRUST LEVEL\{name}", SidNameSource.ProcessTrust);
-                }
-            }
-
-            return new SidName(sid.ToString(), SidNameSource.Sddl);
-        }
-
-        private static ConcurrentDictionary<Sid, SidName> _cached_names = new ConcurrentDictionary<Sid, SidName>();
 
         /// <summary>
         /// Get readable name for a SID, if known. This covers sources of names such as LSASS lookup, capability names and package names.
@@ -1333,5 +971,367 @@ namespace NtApiDotNet
         {
             return NtSystemCalls.NtSetSecurityObject(handle, security_information, security_desc).ToNtException(throw_on_error);
         }
+
+        #endregion
+
+        #region Private Members
+
+        private static Dictionary<Sid, string> _known_capabilities = null;
+        private static Dictionary<Sid, string> _device_capabilities;
+        private static Regex ConditionalAceRegex = new Regex(@"^D:\(XA;;;;;WD;\((.+)\)\)$");
+        private static ConcurrentDictionary<Sid, SidName> _cached_names = new ConcurrentDictionary<Sid, SidName>();
+
+        private static string UpperCaseString(string name)
+        {
+            StringBuilder result = new StringBuilder(name);
+            if (result.Length > 0)
+            {
+                result[0] = char.ToUpper(result[0]);
+            }
+            return result.ToString();
+        }
+
+        private static string MakeFakeCapabilityName(string name, bool group)
+        {
+            List<string> parts = new List<string>();
+            if (name.Contains("_"))
+            {
+                parts.Add(name);
+            }
+            else
+            {
+                int start = 0;
+                int index = 1;
+                while (index < name.Length)
+                {
+                    if (char.IsUpper(name[index]))
+                    {
+                        parts.Add(name.Substring(start, index - start));
+                        start = index;
+                    }
+                    index++;
+                }
+
+                parts.Add(name.Substring(start));
+                parts[0] = UpperCaseString(parts[0]);
+            }
+
+            return $@"NAMED CAPABILITIES{(group ? " GROUP" : "")}\{String.Join(" ", parts)}";
+        }
+
+        private static SidName GetNameForSidInternal(Sid sid)
+        {
+            string name = LookupAccountSid(sid);
+            if (name != null)
+            {
+                return new SidName(name, SidNameSource.Account);
+            }
+
+            if (IsCapabilitySid(sid))
+            {
+                // See if there's a known SID with this name.
+                name = LookupKnownCapabilityName(sid);
+                if (name == null)
+                {
+                    switch (sid.SubAuthorities.Count)
+                    {
+                        case 8:
+                            uint[] sub_authorities = sid.SubAuthorities.ToArray();
+                            // Convert to a package SID.
+                            sub_authorities[0] = 2;
+                            name = LookupPackageName(new Sid(sid.Authority, sub_authorities));
+                            break;
+                        case 5:
+                            name = LookupDeviceCapabilityName(sid);
+                            break;
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    return new SidName(MakeFakeCapabilityName(name, false), SidNameSource.Capability);
+                }
+            }
+            else if (IsCapabilityGroupSid(sid))
+            {
+                name = LookupKnownCapabilityName(sid);
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    return new SidName(MakeFakeCapabilityName(name, true), SidNameSource.Capability);
+                }
+            }
+            else if (IsPackageSid(sid))
+            {
+                name = LookupPackageName(sid);
+                if (name != null)
+                {
+                    return new SidName(name, SidNameSource.Package);
+                }
+            }
+            else if (IsProcessTrustSid(sid))
+            {
+                name = LookupProcessTrustName(sid);
+                if (name != null)
+                {
+                    return new SidName($@"TRUST LEVEL\{name}", SidNameSource.ProcessTrust);
+                }
+            }
+
+            return new SidName(sid.ToString(), SidNameSource.Sddl);
+        }
+
+        private static Dictionary<Sid, string> GetKnownCapabilitySids()
+        {
+            if (_known_capabilities == null)
+            {
+                Dictionary<Sid, string> known_capabilities = new Dictionary<Sid, string>();
+                try
+                {
+                    foreach (string name in SecurityCapabilities.KnownCapabilityNames)
+                    {
+                        GetCapabilitySids(name, out Sid capability_sid, out Sid capability_group_sid);
+                        known_capabilities.Add(capability_sid, name);
+                        known_capabilities.Add(capability_group_sid, name);
+                    }
+                }
+                catch (EntryPointNotFoundException)
+                {
+                    // Catch here in case the RtlDeriveCapabilitySid function isn't supported.
+                }
+                _known_capabilities = known_capabilities;
+            }
+            return _known_capabilities;
+        }
+
+        private static string ReadMoniker(NtKey rootkey, Sid sid)
+        {
+            PackageSidType sid_type = GetPackageSidType(sid);
+            Sid child_sid = null;
+            if (sid_type == PackageSidType.Child)
+            {
+                child_sid = sid;
+                sid = GetPackageSidParent(sid);
+            }
+
+            string path = $@"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppContainer\Mappings\{sid}";
+            if (child_sid != null)
+            {
+                path = $@"{path}\Children\{child_sid}";
+            }
+
+            using (ObjectAttributes obj_attr = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, rootkey))
+            {
+                using (var key = NtKey.Open(obj_attr, KeyAccessRights.QueryValue, KeyCreateOptions.NonVolatile, false))
+                {
+                    if (key.IsSuccess)
+                    {
+                        var moniker = key.Result.QueryValue("Moniker", false);
+                        if (!moniker.IsSuccess)
+                        {
+                            return null;
+                        }
+
+                        if (child_sid == null)
+                        {
+                            return moniker.Result.ToString().TrimEnd('\0');
+                        }
+
+                        var parent_moniker = key.Result.QueryValue("ParentMoniker", false);
+                        string parent_moniker_string;
+                        if (parent_moniker.IsSuccess)
+                        {
+                            parent_moniker_string = parent_moniker.Result.ToString();
+                        }
+                        else
+                        {
+                            parent_moniker_string = ReadMoniker(rootkey, sid) ?? String.Empty;
+                        }
+
+                        return $"{parent_moniker_string.TrimEnd('\0')}/{moniker.Result.ToString().TrimEnd('\0')}";
+                    }
+                }
+            }
+            return null;
+        }
+
+        private static Sid GuidToCapabilitySid(Guid g)
+        {
+            byte[] guid_buffer = g.ToByteArray();
+            List<uint> subauthorities = new List<uint>
+            {
+                3
+            };
+            for (int i = 0; i < 4; ++i)
+            {
+                subauthorities.Add(BitConverter.ToUInt32(guid_buffer, i * 4));
+            }
+            return new Sid(SecurityAuthority.Package, subauthorities.ToArray());
+        }
+
+        private static Dictionary<Sid, string> GetDeviceCapabilities()
+        {
+            if (_device_capabilities != null)
+            {
+                return _device_capabilities;
+            }
+
+            var device_capabilities = new Dictionary<Sid, string>();
+
+            try
+            {
+                using (var base_key = NtKey.Open(@"\Registry\Machine\SOFTWARE\Microsoft\Windows\CurrentVersion\DeviceAccess\CapabilityMappings", null, KeyAccessRights.EnumerateSubKeys))
+                {
+                    using (var key_list = base_key.QueryAccessibleKeys(KeyAccessRights.EnumerateSubKeys).ToDisposableList())
+                    {
+                        foreach (var key in key_list)
+                        {
+                            foreach (var guid in key.QueryKeys())
+                            {
+                                if (Guid.TryParse(guid, out Guid g))
+                                {
+                                    Sid sid = GuidToCapabilitySid(g);
+                                    if (!device_capabilities.ContainsKey(sid))
+                                    {
+                                        device_capabilities[sid] = key.Name;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (NtException)
+            {
+            }
+
+            _device_capabilities = device_capabilities;
+            return _device_capabilities;
+        }
+
+        private static NtResult<NtToken> DuplicateForAccessCheck(NtToken token, bool throw_on_error)
+        {
+            if (token.IsPseudoToken)
+            {
+                // This is a pseudo token, pass along as no need to duplicate.
+                return token.CreateResult();
+            }
+
+            if (token.TokenType == TokenType.Primary)
+            {
+                return token.DuplicateToken(TokenType.Impersonation,
+                    SecurityImpersonationLevel.Identification, TokenAccessRights.Query, throw_on_error);
+            }
+            else if (!token.IsAccessGranted(TokenAccessRights.Query))
+            {
+                return token.Duplicate(TokenAccessRights.Query, throw_on_error);
+            }
+            else
+            {
+                // If we've got query access rights already just create a shallow clone.
+                return token.ShallowClone().CreateResult();
+            }
+        }
+
+        private static SafeArrayBuffer<ObjectTypeList> ConvertObjectTypes(IEnumerable<ObjectTypeEntry> object_types)
+        {
+            if (object_types == null || !object_types.Any())
+                return SafeArrayBuffer<ObjectTypeList>.Null;
+
+            var guids = object_types.Select(o => o.ObjectType).ToArray();
+            var ret = new SafeArrayBuffer<ObjectTypeList>(new ObjectTypeList[guids.Length], guids.Length * 16);
+            try
+            {
+                IntPtr ptr = ret.Data.DangerousGetHandle();
+                var arr = object_types.Select((t, i) => new ObjectTypeList() { Level = (short)t.Level, ObjectType = ptr + (i * 16) }).ToArray();
+                ret.WriteArray(0, arr, 0, arr.Length);
+                ret.Data.WriteArray(0, guids, 0, guids.Length);
+                return ret;
+            }
+            catch
+            {
+                ret?.Dispose();
+                throw;
+            }
+        }
+
+        private static CachedSigningLevelEaBuffer ReadCachedSigningLevelVersion1(BinaryReader reader)
+        {
+            int version2 = reader.ReadInt16();
+            int flags = reader.ReadInt32();
+            int policy = reader.ReadInt32();
+            long last_blacklist_time = reader.ReadInt64();
+            int sequence = reader.ReadInt32();
+            byte[] thumbprint = reader.ReadAllBytes(64);
+            int thumbprint_size = reader.ReadInt32();
+            Array.Resize(ref thumbprint, thumbprint_size);
+            HashAlgorithm thumbprint_algo = (HashAlgorithm)reader.ReadInt32();
+            byte[] hash = reader.ReadAllBytes(64);
+            int hash_size = reader.ReadInt32();
+            Array.Resize(ref hash, hash_size);
+            HashAlgorithm hash_algo = (HashAlgorithm)reader.ReadInt32();
+            long usn = reader.ReadInt64();
+
+            return new CachedSigningLevelEaBuffer(version2, flags, (SigningLevel)policy, usn,
+                last_blacklist_time, sequence, thumbprint, thumbprint_algo, hash, hash_algo);
+        }
+
+        private static CachedSigningLevelEaBufferV2 ReadCachedSigningLevelVersion2(BinaryReader reader)
+        {
+            int version2 = reader.ReadInt16();
+            int flags = reader.ReadInt32();
+            int policy = reader.ReadInt32();
+            long last_blacklist_time = reader.ReadInt64();
+            long last_timestamp = reader.ReadInt64();
+            int thumbprint_size = reader.ReadInt32();
+            HashAlgorithm thumbprint_algo = (HashAlgorithm)reader.ReadInt32();
+            int hash_size = reader.ReadInt32();
+            HashAlgorithm hash_algo = (HashAlgorithm)reader.ReadInt32();
+            long usn = reader.ReadInt64();
+            byte[] thumbprint = reader.ReadAllBytes(thumbprint_size);
+            byte[] hash = reader.ReadAllBytes(hash_size);
+
+            return new CachedSigningLevelEaBufferV2(version2, flags, (SigningLevel)policy, usn,
+                last_blacklist_time, last_timestamp, thumbprint, thumbprint_algo, hash, hash_algo);
+        }
+
+        private static CachedSigningLevelEaBufferV3 ReadCachedSigningLevelVersion3(BinaryReader reader)
+        {
+            int version2 = reader.ReadByte();
+            int policy = reader.ReadByte();
+            long usn = reader.ReadInt64();
+            long last_blacklist_time = reader.ReadInt64();
+            int flags = reader.ReadInt32();
+            int extra_size = reader.ReadUInt16();
+            long end_size = reader.BaseStream.Position + extra_size;
+            List<CachedSigningLevelBlob> extra_data = new List<CachedSigningLevelBlob>();
+            HashCachedSigningLevelBlob thumbprint = null;
+            while (reader.BaseStream.Position < end_size)
+            {
+                CachedSigningLevelBlob blob = CachedSigningLevelBlob.ReadBlob(reader);
+                if (blob.BlobType == CachedSigningLevelBlobType.SignerHash)
+                {
+                    thumbprint = (HashCachedSigningLevelBlob)blob;
+                }
+                extra_data.Add(blob);
+            }
+
+            return new CachedSigningLevelEaBufferV3(version2, flags, (SigningLevel)policy, usn,
+                last_blacklist_time, extra_data.AsReadOnly(), thumbprint);
+        }
+
+        private static void GetCapabilitySids(string capability_name, out Sid capability_sid, out Sid capability_group_sid)
+        {
+            using (SafeHGlobalBuffer cap_sid = new SafeHGlobalBuffer(Sid.MaximumSidSize),
+                    cap_group_sid = new SafeHGlobalBuffer(Sid.MaximumSidSize))
+            {
+                NtRtl.RtlDeriveCapabilitySidsFromName(
+                    new UnicodeString(capability_name),
+                    cap_group_sid, cap_sid).ToNtException();
+                capability_sid = new Sid(cap_sid);
+                capability_group_sid = new Sid(cap_group_sid);
+            }
+        }
+
+        #endregion
     }
 }
