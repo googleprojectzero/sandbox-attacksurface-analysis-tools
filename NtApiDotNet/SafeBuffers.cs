@@ -62,9 +62,16 @@ namespace NtApiDotNet
 
         private static readonly int _element_size = Marshal.SizeOf(typeof(T));
 
-        private static int GetArraySize(T[] array)
+        private static int GetArraySize(int count, bool align)
         {
-            return _element_size * array.Length;
+            int array_size = _element_size * count;
+            if (align)
+            {
+                // Align the array buffer to 8 byte alignment. Assumes that allocations
+                // are always at least allocated on 8 byte boundaries.
+                return (array_size + 7) & ~7;
+            }
+            return array_size;
         }
 
         private SafeArrayBuffer() : base(IntPtr.Zero, 0, false)
@@ -77,7 +84,7 @@ namespace NtApiDotNet
         /// <param name="array">Array of elements.</param>
         /// <param name="additional_size">Additional data to place after the array.</param>
         public SafeArrayBuffer(T[] array, int additional_size)
-            : base(GetArraySize(array) + additional_size)
+            : base(GetArraySize(array.Length, additional_size > 0) + additional_size)
         {
             Count = array.Length;
             IntPtr ptr = DangerousGetHandle();
@@ -106,7 +113,7 @@ namespace NtApiDotNet
                 if (IsClosed || IsInvalid)
                     throw new ObjectDisposedException("handle");
 
-                int size = Count * _element_size;
+                int size = GetArraySize(Count, true);
                 int length = Length - size;
                 return new SafeHGlobalBuffer(handle + size, length < 0 ? 0 : length, false);
             }
