@@ -194,11 +194,6 @@ namespace NtApiDotNet
             return ShallowClone(new SafeKernelObjectHandle(Handle.DangerousGetHandle(), false), false);
         }
 
-        private A UIntToAccess(GenericAccessRights access)
-        {
-            return (A)Enum.ToObject(typeof(A), (uint)access);
-        }
-
         /// <summary>
         /// Get granted access for handle.
         /// </summary>

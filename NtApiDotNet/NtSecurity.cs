@@ -494,27 +494,104 @@ namespace NtApiDotNet
             return SidFromSddl(sddl, true).Result;
         }
 
-        private static NtToken DuplicateForAccessCheck(NtToken token)
+        private static NtResult<NtToken> DuplicateForAccessCheck(NtToken token, bool throw_on_error)
         {
             if (token.IsPseudoToken)
             {
                 // This is a pseudo token, pass along as no need to duplicate.
-                return token;
+                return token.CreateResult();
             }
 
             if (token.TokenType == TokenType.Primary)
             {
-                return token.DuplicateToken(TokenType.Impersonation, SecurityImpersonationLevel.Identification, TokenAccessRights.Query);
+                return token.DuplicateToken(TokenType.Impersonation, 
+                    SecurityImpersonationLevel.Identification, TokenAccessRights.Query, throw_on_error);
             }
             else if (!token.IsAccessGranted(TokenAccessRights.Query))
             {
-                return token.Duplicate(TokenAccessRights.Query);
+                return token.Duplicate(TokenAccessRights.Query, throw_on_error);
             }
             else
             {
                 // If we've got query access rights already just create a shallow clone.
-                return token.ShallowClone();
+                return token.ShallowClone().CreateResult();
             }
+        }
+
+        /// <summary>
+        /// Do an access check between a security descriptor and a token to determine the allowed access.
+        /// </summary>
+        /// <param name="sd">The security descriptor</param>
+        /// <param name="token">The access token.</param>
+        /// <param name="access_rights">The set of access rights to check against</param>
+        /// <param name="principal">An optional principal SID used to replace the SELF SID in a security descriptor.</param>
+        /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The result of the access check.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
+        public static NtResult<AccessCheckResult> AccessCheck(SecurityDescriptor sd, NtToken token,
+            AccessMask access_rights, Sid principal, GenericMapping generic_mapping,
+            bool throw_on_error)
+        {
+            if (sd == null)
+            {
+                throw new ArgumentNullException("sd");
+            }
+
+            if (token == null)
+            {
+                throw new ArgumentNullException("token");
+            }
+
+            if (access_rights.IsEmpty)
+            {
+                return new AccessCheckResult(NtStatus.STATUS_ACCESS_DENIED, 0, null).CreateResult();
+            }
+
+            using (var list = new DisposableList())
+            {
+                var sd_buffer = list.AddResource(sd.ToSafeBuffer());
+                var imp_token = list.AddResource(DuplicateForAccessCheck(token, throw_on_error));
+                if (!imp_token.IsSuccess)
+                {
+                    return imp_token.Cast<AccessCheckResult>();
+                }
+                var self_sid = list.AddResource(principal?.ToSafeBuffer() ?? SafeSidBufferHandle.Null);
+                var privs = list.AddResource(new SafePrivilegeSetBuffer());
+                int repeat_count = 1;
+
+                while (true)
+                {
+                    int buffer_length = privs.Length;
+                    NtStatus status = NtSystemCalls.NtAccessCheckByType(sd_buffer, self_sid, imp_token.Result.Handle, access_rights,
+                        SafeHGlobalBuffer.Null, 0, ref generic_mapping, privs,
+                        ref buffer_length, out AccessMask granted_access, out NtStatus result_status);
+                    if (repeat_count == 0 || status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+                    {
+                        return status.CreateResult(throw_on_error, () 
+                            => new AccessCheckResult(result_status, granted_access, privs));
+                    }
+
+                    repeat_count--;
+                    privs = list.AddResource(new SafePrivilegeSetBuffer(buffer_length));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Do an access check between a security descriptor and a token to determine the allowed access.
+        /// </summary>
+        /// <param name="sd">The security descriptor</param>
+        /// <param name="token">The access token.</param>
+        /// <param name="access_rights">The set of access rights to check against</param>
+        /// <param name="principal">An optional principal SID used to replace the SELF SID in a security descriptor.</param>
+        /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
+        /// <returns>The result of the access check.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
+        public static AccessCheckResult AccessCheck(SecurityDescriptor sd, NtToken token,
+            AccessMask access_rights, Sid principal, GenericMapping generic_mapping)
+        {
+            return AccessCheck(sd, token, access_rights, principal, generic_mapping, true).Result;
         }
 
         /// <summary>
@@ -530,43 +607,7 @@ namespace NtApiDotNet
         public static AccessMask GetAllowedAccess(SecurityDescriptor sd, NtToken token,
             AccessMask access_rights, Sid principal, GenericMapping generic_mapping)
         {
-            if (sd == null)
-            {
-                throw new ArgumentNullException("sd");
-            }
-
-            if (token == null)
-            {
-                throw new ArgumentNullException("token");
-            }
-
-            if (access_rights.IsEmpty)
-            {
-                return AccessMask.Empty;
-            }
-
-            using (SafeBuffer sd_buffer = sd.ToSafeBuffer())
-            {
-                using (NtToken imp_token = DuplicateForAccessCheck(token))
-                {
-                    using (var privs = new SafePrivilegeSetBuffer())
-                    {
-                        int buffer_length = privs.Length;
-
-                        using (var self_sid = principal != null ? principal.ToSafeBuffer() : SafeSidBufferHandle.Null)
-                        {
-                            NtSystemCalls.NtAccessCheckByType(sd_buffer, self_sid, imp_token.Handle, access_rights,
-                                SafeHGlobalBuffer.Null, 0, ref generic_mapping, privs,
-                                ref buffer_length, out AccessMask granted_access, out NtStatus result_status).ToNtException();
-                            if (result_status.IsSuccess())
-                            {
-                                return granted_access;
-                            }
-                            return AccessMask.Empty;
-                        }
-                    }
-                }
-            }
+            return AccessCheck(sd, token, access_rights, principal, generic_mapping, true).Result.GrantedAccess;
         }
 
         /// <summary>

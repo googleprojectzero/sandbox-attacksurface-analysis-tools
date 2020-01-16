@@ -366,7 +366,7 @@ namespace NtApiDotNet
     public struct LuidAndAttributes
     {
         public Luid Luid;
-        public uint Attributes;
+        public PrivilegeAttributes Attributes;
     }
 
     [StructLayout(LayoutKind.Sequential), DataStart("Privileges")]
@@ -674,7 +674,7 @@ namespace NtApiDotNet
             LuidAndAttributes priv = new LuidAndAttributes
             {
                 Luid = luid,
-                Attributes = (uint)attributes
+                Attributes = attributes
             };
             _privs.Add(priv);
         }
@@ -697,7 +697,7 @@ namespace NtApiDotNet
 
         public void AddPrivilegeRange(IEnumerable<TokenPrivilege> privileges)
         {
-            _privs.AddRange(privileges.Select(p => new LuidAndAttributes() { Luid = p.Luid, Attributes = (uint)p.Attributes }));
+            _privs.AddRange(privileges.Select(p => new LuidAndAttributes() { Luid = p.Luid, Attributes = p.Attributes }));
         }
 
         public SafeTokenPrivilegesBuffer ToBuffer()

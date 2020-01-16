@@ -46,6 +46,7 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AccessCheckResult.cs" />
     <Compile Include="AccessMask.cs" />
     <Compile Include="AccessMaskEntry.cs" />
     <Compile Include="Ace.cs" />
