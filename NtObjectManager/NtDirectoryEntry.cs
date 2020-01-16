@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using System;
 
 namespace NtObjectManager
 {
@@ -24,7 +25,7 @@ namespace NtObjectManager
         private NtDirectory _base_directory;
         private SecurityDescriptor _sd;
         private string _symlink_target;
-        private object _maximum_granted_access;
+        private Enum _maximum_granted_access;
         private bool _data_populated;
 
         private void PopulateData()
@@ -49,8 +50,7 @@ namespace NtObjectManager
                                 _sd = obj.SecurityDescriptor;
                             }
 
-                            NtSymbolicLink link = obj as NtSymbolicLink;
-                            if (link != null && link.IsAccessGranted(SymbolicLinkAccessRights.Query))
+                            if (obj is NtSymbolicLink link && link.IsAccessGranted(SymbolicLinkAccessRights.Query))
                             {
                                 _symlink_target = link.Target;
                             }
@@ -117,7 +117,7 @@ namespace NtObjectManager
         /// <summary>
         /// The maximum granted access to the entry. Can be set to 0 if the caller doesn't have permission to open the actual object.
         /// </summary>
-        public object MaximumGrantedAccess
+        public Enum MaximumGrantedAccess
         {
             get
             {

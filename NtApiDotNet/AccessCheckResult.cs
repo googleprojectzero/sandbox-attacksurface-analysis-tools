@@ -12,33 +12,113 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Collections.Generic;
 
 namespace NtApiDotNet
 {
     /// <summary>
-    /// Result of an access check.
+    /// Result of an access check with specific access types. This is an extension with
+    /// generic granted access masks.
     /// </summary>
-    public class AccessCheckResult
+    /// <typeparam name="T">The access rights type.</typeparam>
+    public class AccessCheckResult<T> where T : Enum
     {
         /// <summary>
         /// The NT status code from the access check.
         /// </summary>
         public NtStatus Status { get; }
         /// <summary>
-        /// The granted access from the check.
+        /// The granted access mask from the check.
         /// </summary>
         public AccessMask GrantedAccess { get; }
+        /// <summary>
+        /// The granted access mapped to generic access mask.
+        /// </summary>
+        public AccessMask GenericGrantedAccess { get; }
         /// <summary>
         /// The required privileges for this access.
         /// </summary>
         public IEnumerable<TokenPrivilege> PrivilegesRequired { get; }
+        /// <summary>
+        /// The specific granted access mask from the check.
+        /// </summary>
+        public T SpecificGrantedAccess { get; }
+        /// <summary>
+        /// The specific granted access mapped to generic access mask.
+        /// </summary>
+        public T SpecificGenericGrantedAccess { get; }
+        /// <summary>
+        /// Get access check result as a specific access.
+        /// </summary>
+        /// <returns>The specific access results.</returns>
+        public AccessCheckResult<U> ToSpecificAccess<U>() where U : Enum
+        {
+            return new AccessCheckResult<U>(Status, GrantedAccess, GenericGrantedAccess, PrivilegesRequired, 
+                GrantedAccess.ToSpecificAccess<U>(), GenericGrantedAccess.ToSpecificAccess<U>());
+        }
+        /// <summary>
+        /// Get access check result as a specific access.
+        /// </summary>
+        /// <returns>The specific access.</returns>
+        public AccessCheckResult<Enum> ToSpecificAccess(Type specific_access_type)
+        {
+            return new AccessCheckResult<Enum>(Status, GrantedAccess, GenericGrantedAccess, PrivilegesRequired,
+                GrantedAccess.ToSpecificAccess(specific_access_type),
+                GenericGrantedAccess.ToSpecificAccess(specific_access_type));
+        }
 
-        internal AccessCheckResult(NtStatus status, AccessMask granted_access, SafePrivilegeSetBuffer privilege_set)
+        internal AccessCheckResult(NtStatus status,
+            AccessMask granted_access,
+            AccessMask generic_granted_access,
+            IEnumerable<TokenPrivilege> privilege_required) 
+            : this(status, granted_access, 
+                  generic_granted_access, privilege_required,
+                  granted_access.ToSpecificAccess<T>(),
+                  generic_granted_access.ToSpecificAccess<T>())
+        {
+        }
+
+        internal AccessCheckResult(NtStatus status,
+            AccessMask granted_access,
+            AccessMask generic_granted_access,
+            IEnumerable<TokenPrivilege> privilege_required,
+            T specific_granted_access,
+            T specific_generic_granted_access)
         {
             Status = status;
             GrantedAccess = granted_access;
-            PrivilegesRequired = privilege_set?.GetPrivileges() ?? new TokenPrivilege[0];
+            GenericGrantedAccess = generic_granted_access;
+            PrivilegesRequired = privilege_required;
+            SpecificGrantedAccess = specific_granted_access;
+            SpecificGenericGrantedAccess = specific_generic_granted_access;
         }
     }
+
+    /// <summary>
+    /// Result of an access check.
+    /// </summary>
+    public class AccessCheckResult : AccessCheckResult<GenericAccessRights>
+    {
+        internal AccessCheckResult(NtStatus status,
+            AccessMask granted_access,
+            SafePrivilegeSetBuffer privilege_set,
+            GenericMapping generic_mapping)
+            : this(status, granted_access,
+                  generic_mapping.UnmapMask(granted_access),
+                  privilege_set?.GetPrivileges() ?? new TokenPrivilege[0])
+        {
+        }
+
+        internal AccessCheckResult(
+            NtStatus status,
+            AccessMask granted_access,
+            AccessMask generic_granted_access,
+            IEnumerable<TokenPrivilege> privilege_required)
+            : base(status, granted_access, generic_granted_access, privilege_required,
+                  granted_access.ToGenericAccess(), generic_granted_access.ToGenericAccess())
+        {
+        }
+    }
+
 }

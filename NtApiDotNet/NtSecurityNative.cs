@@ -554,6 +554,15 @@ namespace NtApiDotNet
     {
         public int Level { get; set; }
         public Guid ObjectType { get; set; }
+
+        internal ObjectTypeList ToStruct(DisposableList resources)
+        {
+            return new ObjectTypeList()
+            {
+                Level = (short)Level,
+                ObjectType = resources.AddResource(new SafeStructureInOutBuffer<Guid>(ObjectType)).DangerousGetHandle()
+            };
+        }
     }
 
     public static partial class NtRtl
@@ -752,7 +761,7 @@ namespace NtApiDotNet
             SafeHandle PrincipalSelfSid,
             SafeKernelObjectHandle ClientToken,
             AccessMask DesiredAccess,
-            SafeBuffer ObjectTypeList,
+            [In] ObjectTypeList[] ObjectTypeList,
             int ObjectTypeListLength,
             ref GenericMapping GenericMapping,
             SafePrivilegeSetBuffer RequiredPrivilegesBuffer,

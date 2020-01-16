@@ -97,11 +97,11 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="enum_type">The type of enumeration to convert to.</param>
         /// <returns>The converted value.</returns>
-        public object ToSpecificAccess(Type enum_type)
+        public Enum ToSpecificAccess(Type enum_type)
         {
             if (!enum_type.IsEnum)
                 throw new ArgumentException("Type must be an Enum", "enum_type");
-            return Enum.ToObject(enum_type, Access);
+            return (Enum)Enum.ToObject(enum_type, Access);
         }
 
         /// <summary>

@@ -630,7 +630,7 @@ namespace NtApiDotNet
         /// <summary>
         /// <para type="description">Specify the NT type for the access check.</para>
         /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "sd"), Parameter(Mandatory = true, ParameterSetName = "sddl")]
+        [Parameter(ParameterSetName = "sd"), Parameter(Mandatory = true, ParameterSetName = "sddl")]
         public NtType Type { get; set; }
 
         /// <summary>
@@ -646,7 +646,7 @@ namespace NtApiDotNet
         public NtObject Object { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify a token object to do the access check against. If not specified then current token is used.</para>
+        /// <para type="description">Specify a token object to do the access check against. If not specified then current effective token is used.</para>
         /// </summary>
         [Parameter]
         public NtToken Token { get; set; }
@@ -668,6 +668,12 @@ namespace NtApiDotNet
         /// </summary>
         [Parameter]
         public Sid Principal { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to return the access check result rather than get the granted access.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter PassResult { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -701,7 +707,7 @@ namespace NtApiDotNet
             }
             else
             {
-                return Object.NtType;
+                return GetSecurityDescriptor().NtType;
             }
         }
 
@@ -714,7 +720,7 @@ namespace NtApiDotNet
             }
             else
             {
-                using (NtToken token = NtToken.OpenProcessToken())
+                using (NtToken token = NtToken.OpenEffectiveToken())
                 {
                     return token.DuplicateToken(TokenType.Impersonation, 
                         SecurityImpersonationLevel.Identification, TokenAccessRights.Query);
@@ -730,12 +736,20 @@ namespace NtApiDotNet
             using (NtToken token = GetToken())
             {
                 NtType type = GetNtType();
-                AccessMask mask = NtSecurity.GetAllowedAccess(GetSecurityDescriptor(), 
-                    token, AccessMask, Principal, type.GenericMapping);
+                if (type == null)
+                    throw new ArgumentException("Must specify a type.");
+                var result = NtSecurity.AccessCheck(GetSecurityDescriptor(), 
+                    token, AccessMask, Principal, type.GenericMapping).ToSpecificAccess(type.AccessRightsType);
+                if (PassResult)
+                {
+                    WriteObject(result);
+                    return;
+                }
 
+                var mask = result.SpecificGrantedAccess;
                 if (MapToGeneric)
                 {
-                    mask = type.GenericMapping.UnmapMask(mask);
+                    mask = result.SpecificGenericGrantedAccess;
                 }
 
                 if (ConvertToString)
@@ -745,12 +759,11 @@ namespace NtApiDotNet
                 }
                 else
                 {
-                    WriteObject(mask.ToSpecificAccess(type.AccessRightsType));
+                    WriteObject(mask);
                 }
             }
         }
     }
-
 
     /// <summary>
     /// <para type="synopsis">Create a new security descriptor which can be used on NT objects.</para>
