@@ -172,13 +172,24 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Duplicate the token as a primary token
+        /// Duplicate the token as the same token type.
         /// </summary>
-        /// <returns>The new token</returns>
+        /// <returns>The new token.</returns>
         /// <exception cref="NtException">Thrown on error</exception>
         public NtToken DuplicateToken()
         {
-            return DuplicateToken(TokenType.Primary, SecurityImpersonationLevel.Anonymous, TokenAccessRights.MaximumAllowed);
+            return DuplicateToken(true).Result;
+        }
+
+        /// <summary>
+        /// Duplicate the token as the same token type.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The new token.</returns>
+        /// <exception cref="NtException">Thrown on error</exception>
+        public NtResult<NtToken> DuplicateToken(bool throw_on_error)
+        {
+            return DuplicateToken(TokenType, ImpersonationLevel, TokenAccessRights.MaximumAllowed, throw_on_error);
         }
 
         /// <summary>
@@ -885,6 +896,21 @@ namespace NtApiDotNet
         public UserGroup[] QueryGroups(QueryGroupType group_type)
         {
             return QueryGroups(group_type, true).Result;
+        }
+
+        /// <summary>
+        /// Get the user from the token.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The user group information.</returns>
+        public NtResult<UserGroup> GetUser(bool throw_on_error)
+        {
+            using (var user = QueryBuffer(TokenInformationClass.TokenUser, new TokenUser(), throw_on_error))
+            {
+                if (!user.IsSuccess)
+                    return user.Cast<UserGroup>();
+                return user.Result.Result.User.ToUserGroup().CreateResult();
+            }
         }
 
         /// <summary>
@@ -1854,15 +1880,27 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenProcessToken(NtProcess process, bool duplicate, TokenAccessRights desired_access)
         {
-            var ret = OpenProcessToken(process, desired_access, true).Result;
-            if (duplicate)
+            return OpenProcessToken(process, duplicate, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open the process token of another process
+        /// </summary>
+        /// <param name="process">The process to open the token for</param>
+        /// <param name="duplicate">True to duplicate the token before returning</param>
+        /// <param name="desired_access">The desired access for the token</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
+        public static NtResult<NtToken> OpenProcessToken(NtProcess process, bool duplicate, TokenAccessRights desired_access, bool throw_on_error)
+        {
+            var ret = OpenProcessToken(process, desired_access, throw_on_error);
+            if (!ret.IsSuccess || !duplicate)
+                return ret;
+            using (ret)
             {
-                using (ret)
-                {
-                    return ret.DuplicateToken();
-                }
+                return ret.Result.DuplicateToken(throw_on_error);
             }
-            return ret;
         }
 
         /// <summary>
@@ -1941,6 +1979,25 @@ namespace NtApiDotNet
         /// Open the process token of another process
         /// </summary>
         /// <param name="pid">The id of the process to open the token for</param>
+        /// <param name="duplicate">True to duplicate the token before returning</param>
+        /// <param name="desired_access">The desired access for the token</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
+        public static NtResult<NtToken> OpenProcessToken(int pid, bool duplicate, TokenAccessRights desired_access, bool throw_on_error)
+        {
+            using (var process = NtProcess.Open(pid, ProcessAccessRights.QueryLimitedInformation, throw_on_error))
+            {
+                if (!process.IsSuccess)
+                    return process.Cast<NtToken>();
+                return OpenProcessToken(process.Result, duplicate, desired_access, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Open the process token of another process
+        /// </summary>
+        /// <param name="pid">The id of the process to open the token for</param>
         /// <returns>The opened token</returns>
         /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenProcessToken(int pid)
@@ -1968,24 +2025,37 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="thread">The thread to open the token for</param>
         /// <param name="open_as_self">Open the token as the current identify rather than the impersonated one</param>
+        /// <param name="duplicate">True to duplicate the token before returning.</param>
+        /// <param name="desired_access">The desired access for the token</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened token, if no token return null</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
+        public static NtResult<NtToken> OpenThreadToken(NtThread thread, bool open_as_self, 
+            bool duplicate, TokenAccessRights desired_access, bool throw_on_error)
+        {
+            var result = OpenThreadToken(thread, open_as_self, desired_access, false);
+            if (result.Status == NtStatus.STATUS_NO_TOKEN)
+                return new NtResult<NtToken>();
+            if (!duplicate)
+                return result;
+            using (result)
+            {
+                return result.Result.DuplicateToken(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Open the thread token
+        /// </summary>
+        /// <param name="thread">The thread to open the token for</param>
+        /// <param name="open_as_self">Open the token as the current identify rather than the impersonated one</param>
         /// <param name="duplicate">True to duplicate the token before returning</param>
         /// <param name="desired_access">The desired access for the token</param>
         /// <returns>The opened token, if no token return null</returns>
         /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenThreadToken(NtThread thread, bool open_as_self, bool duplicate, TokenAccessRights desired_access)
         {
-            var result = OpenThreadToken(thread, open_as_self, desired_access, false);
-            if (result.Status == NtStatus.STATUS_NO_TOKEN)
-                return null;
-            NtToken ret = result.GetResultOrThrow();
-            if (duplicate)
-            {
-                using (ret)
-                {
-                    return ret.DuplicateToken();
-                }
-            }
-            return ret;
+            return OpenThreadToken(thread, open_as_self, duplicate, desired_access, true).Result;
         }
 
         /// <summary>
@@ -2055,6 +2125,27 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="thread">The thread to open the token for</param>
         /// <param name="duplicate">True to duplicate the token before returning</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
+        public static NtResult<NtToken> OpenEffectiveToken(NtThread thread, bool duplicate, bool throw_on_error)
+        {
+            var token = OpenThreadToken(thread, true, duplicate, TokenAccessRights.MaximumAllowed, throw_on_error);
+            if (!token.IsSuccess || token.Result != null)
+                return token;
+
+            var pid = thread.GetProcessId(throw_on_error);
+            if (!pid.IsSuccess)
+                return pid.Cast<NtToken>();
+
+            return OpenProcessToken(pid.Result, duplicate, TokenAccessRights.MaximumAllowed, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open the effective token, thread if available or process
+        /// </summary>
+        /// <param name="thread">The thread to open the token for</param>
+        /// <param name="duplicate">True to duplicate the token before returning</param>
         /// <returns>The opened token</returns>
         /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenEffectiveToken(NtThread thread, bool duplicate)
@@ -2078,7 +2169,18 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown if cannot open token</exception>
         public static NtToken OpenEffectiveToken()
         {
-            return OpenEffectiveToken(NtThread.Current, false);
+            return OpenEffectiveToken(true).Result;
+        }
+
+        /// <summary>
+        /// Open the current effective token, thread if available or process
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
+        public static NtResult<NtToken> OpenEffectiveToken(bool throw_on_error)
+        {
+            return OpenEffectiveToken(NtThread.Current, false, throw_on_error);
         }
 
         /// <summary>
@@ -2224,6 +2326,23 @@ namespace NtApiDotNet
                 {
                     return imp_token.Impersonate();
                 }
+            }
+        }
+
+        /// <summary>
+        /// Get the current user.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The current user.</returns>
+        public static NtResult<UserGroup> GetCurrentUser(bool throw_on_error)
+        {
+            using (var token = OpenEffectiveToken(throw_on_error))
+            {
+                if (!token.IsSuccess)
+                {
+                    return token.Cast<UserGroup>();
+                }
+                return token.Result.GetUser(throw_on_error);
             }
         }
 

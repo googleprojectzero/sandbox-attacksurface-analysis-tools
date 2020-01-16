@@ -42,7 +42,12 @@ namespace NtApiDotNet
 
         private ThreadBasicInformation QueryBasicInformation()
         {
-            return Query<ThreadBasicInformation>(ThreadInformationClass.ThreadBasicInformation);
+            return QueryBasicInformation(true).Result;
+        }
+
+        private NtResult<ThreadBasicInformation> QueryBasicInformation(bool throw_on_error)
+        {
+            return Query(ThreadInformationClass.ThreadBasicInformation, new ThreadBasicInformation(), throw_on_error);
         }
 
         private NtResult<IContext> GetX86Context(ContextFlags flags, bool throw_on_error)
@@ -821,6 +826,30 @@ namespace NtApiDotNet
         public ThreadAlpcServerInformation GetAlpcServerInformation()
         {
             return GetAlpcServerInformation(true).Result;
+        }
+
+        /// <summary>
+        /// Get the process ID associated with the thread.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The process ID.</returns>
+        public NtResult<int> GetProcessId(bool throw_on_error)
+        {
+            if (_pid.HasValue)
+                return _pid.Value.CreateResult();
+            return QueryBasicInformation(throw_on_error).Map(i => i.ClientId.UniqueProcess.ToInt32());
+        }
+
+        /// <summary>
+        /// Get the thread ID.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The thread ID.</returns>
+        public NtResult<int> GeThreadId(bool throw_on_error)
+        {
+            if (_tid.HasValue)
+                return _tid.Value.CreateResult();
+            return QueryBasicInformation(throw_on_error).Map(i => i.ClientId.UniqueProcess.ToInt32());
         }
 
         /// <summary>
