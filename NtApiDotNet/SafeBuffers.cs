@@ -60,19 +60,24 @@ namespace NtApiDotNet
         /// </summary>
         public int Count { get; }
 
-        private static int _element_size = Marshal.SizeOf(typeof(T));
+        private static readonly int _element_size = Marshal.SizeOf(typeof(T));
 
         private static int GetArraySize(T[] array)
         {
             return _element_size * array.Length;
         }
 
+        private SafeArrayBuffer() : base(IntPtr.Zero, 0, false)
+        {
+        }
+
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="array">Array of elements.</param>
-        public SafeArrayBuffer(T[] array)
-            : base(GetArraySize(array))
+        /// <param name="additional_size">Additional data to place after the array.</param>
+        public SafeArrayBuffer(T[] array, int additional_size)
+            : base(GetArraySize(array) + additional_size)
         {
             Count = array.Length;
             IntPtr ptr = DangerousGetHandle();
@@ -81,6 +86,36 @@ namespace NtApiDotNet
                 Marshal.StructureToPtr(array[i], ptr + (i * _element_size), false);
             }
         }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="array">Array of elements.</param>
+        public SafeArrayBuffer(T[] array)
+            : this(array, 0)
+        {
+        }
+
+        /// <summary>
+        /// Get a reference to the additional data.
+        /// </summary>
+        public SafeHGlobalBuffer Data
+        {
+            get
+            {
+                if (IsClosed || IsInvalid)
+                    throw new ObjectDisposedException("handle");
+
+                int size = Count * _element_size;
+                int length = Length - size;
+                return new SafeHGlobalBuffer(handle + size, length < 0 ? 0 : length, false);
+            }
+        }
+
+        /// <summary>
+        /// Get a NULL safe array buffer.
+        /// </summary>
+        new static public SafeArrayBuffer<T> Null => new SafeArrayBuffer<T>();
 
         /// <summary>
         /// Dispose buffer.
@@ -93,7 +128,6 @@ namespace NtApiDotNet
             {
                 Marshal.DestroyStructure(ptr + (i * _element_size), typeof(T));
             }
-
             base.Dispose(disposing);
         }
     }
