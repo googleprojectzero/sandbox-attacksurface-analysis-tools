@@ -518,19 +518,42 @@ namespace NtApiDotNet
             }
         }
 
+        private static SafeArrayBuffer<ObjectTypeList> ConvertObjectTypes(IEnumerable<ObjectTypeEntry> object_types)
+        {
+            if (object_types == null || !object_types.Any())
+                return SafeArrayBuffer<ObjectTypeList>.Null;
+
+            var guids = object_types.Select(o => o.ObjectType).ToArray();
+            var ret = new SafeArrayBuffer<ObjectTypeList>(new ObjectTypeList[guids.Length], guids.Length * 16);
+            try
+            {
+                IntPtr ptr = ret.Data.DangerousGetHandle();
+                var arr = object_types.Select((t, i) => new ObjectTypeList() { Level = (short)t.Level, ObjectType = ptr + (i * 16) }).ToArray();
+                ret.WriteArray(0, arr, 0, arr.Length);
+                ret.Data.WriteArray(0, guids, 0, guids.Length);
+                return ret;
+            }
+            catch
+            {
+                ret?.Dispose();
+                throw;
+            }
+        }
+
         /// <summary>
         /// Do an access check between a security descriptor and a token to determine the allowed access.
         /// </summary>
         /// <param name="sd">The security descriptor</param>
         /// <param name="token">The access token.</param>
-        /// <param name="access_rights">The set of access rights to check against</param>
+        /// <param name="desired_access">The set of access rights to check against</param>
         /// <param name="principal">An optional principal SID used to replace the SELF SID in a security descriptor.</param>
         /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
+        /// <param name="object_types">List of object types to check against.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The result of the access check.</returns>
         /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
         public static NtResult<AccessCheckResult> AccessCheck(SecurityDescriptor sd, NtToken token,
-            AccessMask access_rights, Sid principal, GenericMapping generic_mapping,
+            AccessMask desired_access, Sid principal, GenericMapping generic_mapping, IEnumerable<ObjectTypeEntry> object_types,
             bool throw_on_error)
         {
             if (sd == null)
@@ -543,7 +566,7 @@ namespace NtApiDotNet
                 throw new ArgumentNullException("token");
             }
 
-            if (access_rights.IsEmpty)
+            if (desired_access.IsEmpty)
             {
                 return new AccessCheckResult(NtStatus.STATUS_ACCESS_DENIED, 0, null).CreateResult();
             }
@@ -558,13 +581,14 @@ namespace NtApiDotNet
                 }
                 var self_sid = list.AddResource(principal?.ToSafeBuffer() ?? SafeSidBufferHandle.Null);
                 var privs = list.AddResource(new SafePrivilegeSetBuffer());
+                var object_type_list = list.AddResource(ConvertObjectTypes(object_types));
                 int repeat_count = 1;
 
                 while (true)
                 {
                     int buffer_length = privs.Length;
-                    NtStatus status = NtSystemCalls.NtAccessCheckByType(sd_buffer, self_sid, imp_token.Result.Handle, access_rights,
-                        SafeHGlobalBuffer.Null, 0, ref generic_mapping, privs,
+                    NtStatus status = NtSystemCalls.NtAccessCheckByType(sd_buffer, self_sid, imp_token.Result.Handle, desired_access,
+                        object_type_list, 0, ref generic_mapping, privs,
                         ref buffer_length, out AccessMask granted_access, out NtStatus result_status);
                     if (repeat_count == 0 || status != NtStatus.STATUS_BUFFER_TOO_SMALL)
                     {
@@ -583,15 +607,33 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="sd">The security descriptor</param>
         /// <param name="token">The access token.</param>
-        /// <param name="access_rights">The set of access rights to check against</param>
+        /// <param name="desired_access">The set of access rights to check against</param>
+        /// <param name="principal">An optional principal SID used to replace the SELF SID in a security descriptor.</param>
+        /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The result of the access check.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
+        public static NtResult<AccessCheckResult> AccessCheck(SecurityDescriptor sd, NtToken token,
+            AccessMask desired_access, Sid principal, GenericMapping generic_mapping,
+            bool throw_on_error)
+        {
+            return AccessCheck(sd, token, desired_access, principal, generic_mapping, null, throw_on_error);
+        }
+
+        /// <summary>
+        /// Do an access check between a security descriptor and a token to determine the allowed access.
+        /// </summary>
+        /// <param name="sd">The security descriptor</param>
+        /// <param name="token">The access token.</param>
+        /// <param name="desired_access">The set of access rights to check against</param>
         /// <param name="principal">An optional principal SID used to replace the SELF SID in a security descriptor.</param>
         /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
         /// <returns>The result of the access check.</returns>
         /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
         public static AccessCheckResult AccessCheck(SecurityDescriptor sd, NtToken token,
-            AccessMask access_rights, Sid principal, GenericMapping generic_mapping)
+            AccessMask desired_access, Sid principal, GenericMapping generic_mapping)
         {
-            return AccessCheck(sd, token, access_rights, principal, generic_mapping, true).Result;
+            return AccessCheck(sd, token, desired_access, principal, generic_mapping, true).Result;
         }
 
         /// <summary>

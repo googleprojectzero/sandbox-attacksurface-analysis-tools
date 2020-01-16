@@ -542,6 +542,20 @@ namespace NtApiDotNet
         ConvertCallerTokenToUserTokenForDeployment_ConvertTokenToUserToken = 0x2C0001,
     };
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ObjectTypeList
+    {
+        public short Level;
+        public short Sbz;
+        public IntPtr ObjectType;
+    }
+
+    public class ObjectTypeEntry
+    {
+        public int Level { get; set; }
+        public Guid ObjectType { get; set; }
+    }
+
     public static partial class NtRtl
     {
         public const uint SecurityDescriptorRevision = 1;
