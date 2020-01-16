@@ -276,6 +276,38 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Try and open a Key
+        /// </summary>
+        /// <param name="key_name">Path to the key to open</param>
+        /// <param name="root">Root key if key_name is relative</param>
+        /// <param name="desired_access">Desired access for the root key</param>
+        /// <param name="open_options">Open options.</param>
+        /// <param name="transaction">Optional transaction object.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtKey> Open(string key_name, NtObject root, KeyAccessRights desired_access, KeyCreateOptions open_options, INtTransaction transaction, bool throw_on_error)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(key_name, AttributeFlags.CaseInsensitive, root))
+            {
+                return Open(obja, desired_access, open_options, transaction, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Try and open a Key
+        /// </summary>
+        /// <param name="key_name">Path to the key to open</param>
+        /// <param name="root">Root key if key_name is relative</param>
+        /// <param name="desired_access">Desired access for the root key</param>
+        /// <param name="open_options">Open options.</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtKey> Open(string key_name, NtObject root, KeyAccessRights desired_access, KeyCreateOptions open_options, bool throw_on_error)
+        {
+            return Open(key_name, root, desired_access, open_options, null, throw_on_error);
+        }
+
+        /// <summary>
         /// Open a Key
         /// </summary>
         /// <param name="obj_attributes">Object attributes for the key name</param>
@@ -386,11 +418,22 @@ namespace NtApiDotNet
         /// <summary>
         /// Open the machine key
         /// </summary>
-        /// <returns>The opened key</returns>
+        /// <returns>The opened key with the maximum access allowed.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey GetMachineKey()
         {
-            return Open(@"\Registry\Machine", null, KeyAccessRights.MaximumAllowed);
+            return GetMachineKey(true).Result;
+        }
+
+        /// <summary>
+        /// Open the machine key
+        /// </summary>
+        /// <returns>The opened key with the maximum access allowed.</returns>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<NtKey> GetMachineKey(bool throw_on_error)
+        {
+            return Open(@"\Registry\Machine", null, KeyAccessRights.MaximumAllowed, KeyCreateOptions.NonVolatile, throw_on_error);
         }
 
         /// <summary>
@@ -400,18 +443,41 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey GetUserKey()
         {
-            return Open(@"\Registry\User", null, KeyAccessRights.MaximumAllowed);
+            return GetUserKey(true).Result;
+        }
+
+        /// <summary>
+        /// Open the user key
+        /// </summary>
+        /// <returns>The opened key with the maximum access allowed.</returns>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<NtKey> GetUserKey(bool throw_on_error)
+        {
+            return Open(@"\Registry\User", null, KeyAccessRights.MaximumAllowed, KeyCreateOptions.NonVolatile, throw_on_error);
         }
 
         /// <summary>
         /// Open a specific user key
         /// </summary>
-        /// <param name="sid">The SID fo the user to open</param>
+        /// <param name="sid">The SID of the user to open</param>
         /// <returns>The opened key</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey GetUserKey(Sid sid)
         {
-            return Open(@"\Registry\User\" + sid.ToString(), null, KeyAccessRights.MaximumAllowed);
+            return GetUserKey(sid, true).Result;
+        }
+
+        /// <summary>
+        /// Open the user key
+        /// </summary>
+        /// <param name="sid">The SID of the user to open</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened key with the maximum access allowed.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<NtKey> GetUserKey(Sid sid, bool throw_on_error)
+        {
+            return Open(@"\Registry\User\" + sid, null, KeyAccessRights.MaximumAllowed, KeyCreateOptions.NonVolatile, throw_on_error);
         }
 
         /// <summary>
@@ -421,7 +487,22 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey GetCurrentUserKey()
         {
-            return GetUserKey(NtToken.CurrentUser.Sid);
+            return GetCurrentUserKey(true).Result;
+        }
+
+        /// <summary>
+        /// Open the current user key
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened key with the maximum access allowed.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<NtKey> GetCurrentUserKey(bool throw_on_error)
+        {
+            var user = NtToken.GetCurrentUser(throw_on_error);
+            if (!user.IsSuccess)
+                return user.Cast<NtKey>();
+
+            return GetUserKey(user.Result.Sid, throw_on_error);
         }
 
         /// <summary>
@@ -431,7 +512,18 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtKey GetRootKey()
         {
-            return Open(@"\Registry", null, KeyAccessRights.MaximumAllowed);
+            return GetRootKey(true).Result;
+        }
+
+        /// <summary>
+        /// Open the root key
+        /// </summary>
+        /// <returns>The opened key with the maximum access allowed.</returns>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<NtKey> GetRootKey(bool throw_on_error)
+        {
+            return Open(@"\Registry", null, KeyAccessRights.MaximumAllowed, KeyCreateOptions.NonVolatile, throw_on_error);
         }
 
         #endregion
