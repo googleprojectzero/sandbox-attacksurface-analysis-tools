@@ -212,6 +212,61 @@ namespace NtApiDotNet.Ndr
 
         bool INdrFormatterInternal.ShowProcedureParameterAttributes { get { return false; } }
 
+        string INdrFormatterInternal.SimpleTypeToName(NdrFormatCharacter format)
+        {
+            switch (format)
+            {
+                case NdrFormatCharacter.FC_BYTE:
+                case NdrFormatCharacter.FC_USMALL:
+                    return "uint8_t";
+                case NdrFormatCharacter.FC_SMALL:
+                case NdrFormatCharacter.FC_CHAR:
+                    return "int8_t";
+                case NdrFormatCharacter.FC_WCHAR:
+                    return "wchar_t";
+                case NdrFormatCharacter.FC_SHORT:
+                    return "int16_t";
+                case NdrFormatCharacter.FC_USHORT:
+                    return "uint16_t";
+                case NdrFormatCharacter.FC_LONG:
+                    return "int64_t";
+                case NdrFormatCharacter.FC_ULONG:
+                    return "uint64_t";
+                case NdrFormatCharacter.FC_FLOAT:
+                    return "float";
+                case NdrFormatCharacter.FC_HYPER:
+                    return "int64_t";
+                case NdrFormatCharacter.FC_DOUBLE:
+                    return "double";
+                case NdrFormatCharacter.FC_INT3264:
+                    return "int*";
+                case NdrFormatCharacter.FC_UINT3264:
+                    return "unsigned int*";
+                case NdrFormatCharacter.FC_C_WSTRING:
+                case NdrFormatCharacter.FC_WSTRING:
+                    return "wchar_t";
+                case NdrFormatCharacter.FC_C_CSTRING:
+                case NdrFormatCharacter.FC_CSTRING:
+                    return "char";
+                case NdrFormatCharacter.FC_ENUM16:
+                    return "/* ENUM16 */ uint16_t";
+                case NdrFormatCharacter.FC_ENUM32:
+                    return "/* ENUM32 */ uint32_t";
+                case NdrFormatCharacter.FC_SYSTEM_HANDLE:
+                    return "HANDLE";
+                case NdrFormatCharacter.FC_AUTO_HANDLE:
+                case NdrFormatCharacter.FC_CALLBACK_HANDLE:
+                case NdrFormatCharacter.FC_BIND_CONTEXT:
+                case NdrFormatCharacter.FC_BIND_PRIMITIVE:
+                case NdrFormatCharacter.FC_BIND_GENERIC:
+                    return "handle_t";
+                case NdrFormatCharacter.FC_ERROR_STATUS_T:
+                    return "uint";
+            }
+
+            return string.Format("{0}", format);
+        }
+
         string INdrFormatter.FormatProcedure(NdrProcedureDefinition procedure)
         {
             return FormatProcedure(procedure);
