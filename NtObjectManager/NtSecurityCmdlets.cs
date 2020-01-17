@@ -676,6 +676,12 @@ namespace NtApiDotNet
         public SwitchParameter PassResult { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify object types for access check..</para>
+        /// </summary>
+        [Parameter]
+        public ObjectTypeEntry[] ObjectType { get; set; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public GetNtGrantedAccessCmdlet()
@@ -739,7 +745,7 @@ namespace NtApiDotNet
                 if (type == null)
                     throw new ArgumentException("Must specify a type.");
                 var result = NtSecurity.AccessCheck(GetSecurityDescriptor(), 
-                    token, AccessMask, Principal, type.GenericMapping).ToSpecificAccess(type.AccessRightsType);
+                    token, AccessMask, Principal, type.GenericMapping, ObjectType).ToSpecificAccess(type.AccessRightsType);
                 if (PassResult)
                 {
                     WriteObject(result);

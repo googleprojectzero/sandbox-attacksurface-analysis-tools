@@ -391,7 +391,8 @@ namespace NtApiDotNet
 
             if (desired_access.IsEmpty)
             {
-                return new AccessCheckResult(NtStatus.STATUS_ACCESS_DENIED, 0, null, generic_mapping).CreateResult();
+                return new AccessCheckResult(NtStatus.STATUS_ACCESS_DENIED, 0, null, 
+                    generic_mapping, object_types.GetDefaultObjectType()).CreateResult();
             }
 
             using (var list = new DisposableList())
@@ -416,13 +417,31 @@ namespace NtApiDotNet
                     if (repeat_count == 0 || status != NtStatus.STATUS_BUFFER_TOO_SMALL)
                     {
                         return status.CreateResult(throw_on_error, () 
-                            => new AccessCheckResult(result_status, granted_access, privs, generic_mapping));
+                            => new AccessCheckResult(result_status, granted_access, 
+                            privs, generic_mapping, object_types.GetDefaultObjectType()));
                     }
 
                     repeat_count--;
                     privs = list.AddResource(new SafePrivilegeSetBuffer(buffer_length));
                 }
             }
+        }
+
+        /// <summary>
+        /// Do an access check between a security descriptor and a token to determine the allowed access.
+        /// </summary>
+        /// <param name="sd">The security descriptor</param>
+        /// <param name="token">The access token.</param>
+        /// <param name="desired_access">The set of access rights to check against</param>
+        /// <param name="principal">An optional principal SID used to replace the SELF SID in a security descriptor.</param>
+        /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
+        /// <param name="object_types">List of object types to check against.</param>
+        /// <returns>The result of the access check.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
+        public static AccessCheckResult AccessCheck(SecurityDescriptor sd, NtToken token,
+            AccessMask desired_access, Sid principal, GenericMapping generic_mapping, IEnumerable<ObjectTypeEntry> object_types)
+        {
+            return AccessCheck(sd, token, desired_access, principal, generic_mapping, object_types, true).Result;
         }
 
         /// <summary>
@@ -443,6 +462,24 @@ namespace NtApiDotNet
         {
             return AccessCheck(sd, token, (AccessMask)desired_access, principal, 
                 generic_mapping, object_types, throw_on_error).Map(r => r.ToSpecificAccess<T>());
+        }
+
+        /// <summary>
+        /// Do an access check between a security descriptor and a token to determine the allowed access.
+        /// </summary>
+        /// <param name="sd">The security descriptor</param>
+        /// <param name="token">The access token.</param>
+        /// <param name="desired_access">The set of access rights to check against</param>
+        /// <param name="principal">An optional principal SID used to replace the SELF SID in a security descriptor.</param>
+        /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
+        /// <param name="object_types">List of object types to check against.</param>
+        /// <returns>The result of the access check.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
+        public static AccessCheckResult<T> AccessCheck<T>(SecurityDescriptor sd, NtToken token,
+            T desired_access, Sid principal, GenericMapping generic_mapping, IEnumerable<ObjectTypeEntry> object_types) 
+                where T : Enum
+        {
+            return AccessCheck(sd, token, desired_access, principal, generic_mapping, object_types, true).Result;
         }
 
         /// <summary>
@@ -1370,6 +1407,13 @@ namespace NtApiDotNet
                 capability_sid = new Sid(cap_sid);
                 capability_group_sid = new Sid(cap_group_sid);
             }
+        }
+
+        private static Guid GetDefaultObjectType(this IEnumerable<ObjectTypeEntry> object_types)
+        {
+            if (object_types == null)
+                return Guid.Empty;
+            return object_types.Select(e => e.ObjectType).FirstOrDefault();
         }
 
         #endregion

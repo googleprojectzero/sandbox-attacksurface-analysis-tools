@@ -18,10 +18,9 @@ using System.Collections.Generic;
 namespace NtApiDotNet
 {
     /// <summary>
-    /// Result of an access check with specific access types. This is an extension with
-    /// generic granted access masks.
+    /// Result of an access check with specific access types.
     /// </summary>
-    /// <typeparam name="T">The access rights type.</typeparam>
+    /// <typeparam name="T">The access rights type, must be derived from an Enum.</typeparam>
     public class AccessCheckResult<T> where T : Enum
     {
         /// <summary>
@@ -49,13 +48,17 @@ namespace NtApiDotNet
         /// </summary>
         public T SpecificGenericGrantedAccess { get; }
         /// <summary>
+        /// Object type associated with the access.
+        /// </summary>
+        public Guid ObjectType { get; }
+        /// <summary>
         /// Get access check result as a specific access.
         /// </summary>
         /// <returns>The specific access results.</returns>
         public AccessCheckResult<U> ToSpecificAccess<U>() where U : Enum
         {
             return new AccessCheckResult<U>(Status, GrantedAccess, GenericGrantedAccess, PrivilegesRequired, 
-                GrantedAccess.ToSpecificAccess<U>(), GenericGrantedAccess.ToSpecificAccess<U>());
+                GrantedAccess.ToSpecificAccess<U>(), GenericGrantedAccess.ToSpecificAccess<U>(), ObjectType);
         }
         /// <summary>
         /// Get access check result as a specific access.
@@ -65,17 +68,20 @@ namespace NtApiDotNet
         {
             return new AccessCheckResult<Enum>(Status, GrantedAccess, GenericGrantedAccess, PrivilegesRequired,
                 GrantedAccess.ToSpecificAccess(specific_access_type),
-                GenericGrantedAccess.ToSpecificAccess(specific_access_type));
+                GenericGrantedAccess.ToSpecificAccess(specific_access_type), 
+                ObjectType);
         }
 
         internal AccessCheckResult(NtStatus status,
             AccessMask granted_access,
             AccessMask generic_granted_access,
-            IEnumerable<TokenPrivilege> privilege_required) 
+            IEnumerable<TokenPrivilege> privilege_required,
+            Guid object_type) 
             : this(status, granted_access, 
                   generic_granted_access, privilege_required,
                   granted_access.ToSpecificAccess<T>(),
-                  generic_granted_access.ToSpecificAccess<T>())
+                  generic_granted_access.ToSpecificAccess<T>(),
+                  object_type)
         {
         }
 
@@ -84,7 +90,8 @@ namespace NtApiDotNet
             AccessMask generic_granted_access,
             IEnumerable<TokenPrivilege> privilege_required,
             T specific_granted_access,
-            T specific_generic_granted_access)
+            T specific_generic_granted_access,
+            Guid object_type)
         {
             Status = status;
             GrantedAccess = granted_access;
@@ -92,6 +99,7 @@ namespace NtApiDotNet
             PrivilegesRequired = privilege_required;
             SpecificGrantedAccess = specific_granted_access;
             SpecificGenericGrantedAccess = specific_generic_granted_access;
+            ObjectType = object_type;
         }
     }
 
@@ -103,10 +111,12 @@ namespace NtApiDotNet
         internal AccessCheckResult(NtStatus status,
             AccessMask granted_access,
             SafePrivilegeSetBuffer privilege_set,
-            GenericMapping generic_mapping)
+            GenericMapping generic_mapping,
+            Guid object_type)
             : this(status, granted_access,
                   generic_mapping.UnmapMask(granted_access),
-                  privilege_set?.GetPrivileges() ?? new TokenPrivilege[0])
+                  privilege_set?.GetPrivileges() ?? new TokenPrivilege[0],
+                  object_type)
         {
         }
 
@@ -114,11 +124,12 @@ namespace NtApiDotNet
             NtStatus status,
             AccessMask granted_access,
             AccessMask generic_granted_access,
-            IEnumerable<TokenPrivilege> privilege_required)
+            IEnumerable<TokenPrivilege> privilege_required,
+            Guid object_type)
             : base(status, granted_access, generic_granted_access, privilege_required,
-                  granted_access.ToGenericAccess(), generic_granted_access.ToGenericAccess())
+                  granted_access.ToGenericAccess(), generic_granted_access.ToGenericAccess(),
+                  object_type)
         {
         }
     }
-
 }

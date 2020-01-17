@@ -555,6 +555,21 @@ namespace NtApiDotNet
         public int Level { get; set; }
         public Guid ObjectType { get; set; }
 
+        public ObjectTypeEntry()
+        {
+        }
+
+        public ObjectTypeEntry(Guid object_type, int level)
+        {
+            ObjectType = object_type;
+            Level = level;
+        }
+
+        public ObjectTypeEntry(Guid object_type) 
+            : this(object_type, 0)
+        {
+        }
+
         internal ObjectTypeList ToStruct(DisposableList resources)
         {
             return new ObjectTypeList()
