@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NtApiDotNet.Ndr
 {
@@ -51,14 +52,27 @@ namespace NtApiDotNet.Ndr
         string FormatRpcServerInterface(NdrRpcServerInterface rpc_server);
     }
 
+    internal interface INdrFormatterInternal : INdrFormatter
+    {
+        string SimpleTypeToName(NdrFormatCharacter format);
+        string FormatComment(string comment);
+        string FormatComment(string comment, params object[] args);
+        string FormatPointer(string base_type);
+        string IidToName(Guid iid);
+        string DemangleComName(string name);
+        bool ShowProcedureParameterAttributes { get; }
+    }
+
     /// <summary>
     /// An base class which describes a text formatter for NDR data.
     /// </summary>
-    internal class NdrFormatter : INdrFormatter
+    internal class NdrFormatter : INdrFormatterInternal
     {
         private readonly IDictionary<Guid, string> _iids_to_name;
         private readonly Func<string, string> _demangle_com_name;
         private DefaultNdrFormatterFlags _flags;
+
+        bool INdrFormatterInternal.ShowProcedureParameterAttributes { get { return true; } }
 
         internal NdrFormatter(IDictionary<Guid, string> iids_to_names, Func<string, string> demangle_com_name, DefaultNdrFormatterFlags flags)
         {
@@ -66,8 +80,11 @@ namespace NtApiDotNet.Ndr
             _demangle_com_name = demangle_com_name;
             _flags = flags;
         }
-
-        internal string IidToName(Guid iid)
+        string INdrFormatterInternal.IidToName(Guid iid)
+        {
+            return IidToName(iid);
+        }
+        protected string IidToName(Guid iid)
         {
             if (_iids_to_name.ContainsKey(iid))
             {
@@ -76,12 +93,13 @@ namespace NtApiDotNet.Ndr
             return null;
         }
 
-        internal string DemangleComName(string name)
+        string INdrFormatterInternal.DemangleComName(string name)
         {
+            if (_demangle_com_name == null) return name;
             return _demangle_com_name(name);
         }
 
-        internal string SimpleTypeToName(NdrFormatCharacter format)
+        string INdrFormatterInternal.SimpleTypeToName(NdrFormatCharacter format)
         {
             switch (format)
             {
@@ -136,23 +154,27 @@ namespace NtApiDotNet.Ndr
             return string.Format("{0}", format);
         }
 
-        internal string FormatPointer(string base_type)
+        string INdrFormatterInternal.FormatPointer(string base_type)
         {
             return $"{base_type}*";
         }
 
-        internal string FormatComment(string comment)
+        string INdrFormatterInternal.FormatComment(string comment)
+        {
+            return FormatComment(comment);
+        }
+        string INdrFormatterInternal.FormatComment(string comment, params object[] args)
+        {
+            return FormatComment(string.Format(comment, args));
+        }
+
+        private string FormatComment(string comment)
         {
             if ((_flags & DefaultNdrFormatterFlags.RemoveComments) == DefaultNdrFormatterFlags.RemoveComments)
             {
                 return string.Empty;
             }
             return $"/* {comment} */";
-        }
-
-        internal string FormatComment(string comment, params object[] args)
-        {
-            return FormatComment(string.Format(comment, args));
         }
 
         string INdrFormatter.FormatComplexType(NdrComplexTypeReference complex_type)
@@ -173,6 +195,83 @@ namespace NtApiDotNet.Ndr
         string INdrFormatter.FormatRpcServerInterface(NdrRpcServerInterface rpc_server)
         {
             return rpc_server.Format(this);
+        }
+    }
+
+
+    /**
+     * This formatter generates data that the CPP compilter can (hopefully) understand.
+     * */
+    internal class CppNdrFormatterInternal : NdrFormatter, INdrFormatterInternal
+    {
+        internal CppNdrFormatterInternal(IDictionary<Guid, string> iids_to_names, Func<string, string> demangle_com_name, DefaultNdrFormatterFlags flags)
+            : base(iids_to_names, demangle_com_name, flags)
+        {
+
+        }
+
+        bool INdrFormatterInternal.ShowProcedureParameterAttributes { get { return false; } }
+
+        string INdrFormatter.FormatProcedure(NdrProcedureDefinition procedure)
+        {
+            return FormatProcedure(procedure);
+        }
+        private string FormatProcedure(NdrProcedureDefinition procedure)
+        {
+            string return_value;
+
+            if (procedure.ReturnValue == null)
+            {
+                return_value = "void";
+            }
+            else if (procedure.ReturnValue.Type.Format == NdrFormatCharacter.FC_LONG)
+            {
+                return_value = "HRESULT";
+            }
+            else
+            {
+                return_value = procedure.ReturnValue.Type.FormatType(this);
+            }
+
+            string procedureParameters = string.Join(", ", procedure.Params.Select(
+                (p, i) => string.Format(
+                    "{0} {1} {2}", 
+                    (this as INdrFormatterInternal).FormatComment("Stack Offset: {0}", p.Offset), 
+                    p.Format(this), 
+                    p.FormatName(i)
+                )
+            ));
+            return string.Format("virtual {0} __stdcall {1}({2});", return_value,
+                procedure.Name, procedureParameters);
+        }
+
+        string INdrFormatter.FormatComProxy(NdrComProxyDefinition com_proxy)
+        {
+            NdrStringBuilder builder = new NdrStringBuilder();
+
+            string base_name = this.IidToName(com_proxy.BaseIid);
+            if (base_name == null)
+            {
+                string unknown_iid = $"Unknown IID {com_proxy.BaseIid}";
+                string comment = (this as INdrFormatterInternal).FormatComment(unknown_iid);
+                base_name = $"{comment} IUnknown";
+            }
+
+            builder.AppendLine(
+                "class __declspec(uuid(\"{0}\")) {1} : public {2} {{\npublic:",
+                com_proxy.Iid,
+                (this as INdrFormatterInternal).DemangleComName(com_proxy.Name),
+                base_name
+            );
+
+            builder.PushIndent(' ', 4);
+            foreach (NdrProcedureDefinition proc in com_proxy.Procedures)
+            {
+                builder.AppendLine(this.FormatProcedure(proc));
+            }
+            builder.PopIndent();
+            builder.AppendLine("}").AppendLine();
+            return builder.ToString();
         }
     }
 
@@ -228,7 +327,7 @@ namespace NtApiDotNet.Ndr
         /// <returns>The default formatter.</returns>
         public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names, DefaultNdrFormatterFlags flags)
         {
-            return Create(iids_to_names, s => s, flags);
+            return Create(iids_to_names, flags);
         }
 
         /// <summary>
@@ -238,7 +337,77 @@ namespace NtApiDotNet.Ndr
         /// <returns>The default formatter.</returns>
         public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names)
         {
-            return Create(iids_to_names, s => s);
+            return Create(iids_to_names);
+        }
+
+        /// <summary>
+        /// Create the default formatter.
+        /// </summary>
+        /// <param name="flags">Formatter flags.</param>
+        /// <returns>The default formatter.</returns>
+        public static INdrFormatter Create(DefaultNdrFormatterFlags flags)
+        {
+            return Create(new Dictionary<Guid, string>(), flags);
+        }
+
+        /// <summary>
+        /// Create the default formatter.
+        /// </summary>
+        /// <returns>The default formatter.</returns>
+        public static INdrFormatter Create()
+        {
+            return Create(new Dictionary<Guid, string>());
+        }
+    }
+
+
+    /// <summary>
+    /// NDR formatter constructor for CPP style output.
+    /// </summary>
+    public static class CppNdrFormatter
+    {
+        /// <summary>
+        /// Create the default formatter.
+        /// </summary>
+        /// <param name="iids_to_names">Specify a dictionary of IIDs to names.</param>
+        /// <param name="demangle_com_name">Function to demangle COM interface names during formatting.</param>
+        /// <param name="flags">Formatter flags.</param>
+        /// <returns>The default formatter.</returns>
+        public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names, Func<string, string> demangle_com_name, DefaultNdrFormatterFlags flags)
+        {
+            return new CppNdrFormatterInternal(iids_to_names, demangle_com_name, flags);
+        }
+
+        /// <summary>
+        /// Create the default formatter.
+        /// </summary>
+        /// <param name="iids_to_names">Specify a dictionary of IIDs to names.</param>
+        /// <param name="demangle_com_name">Function to demangle COM interface names during formatting.</param>
+        /// <returns>The default formatter.</returns>
+        public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names, Func<string, string> demangle_com_name)
+        {
+            return Create(iids_to_names, demangle_com_name, DefaultNdrFormatterFlags.None);
+        }
+
+        /// <summary>
+        /// Create the default formatter.
+        /// </summary>
+        /// <param name="iids_to_names">Specify a dictionary of IIDs to names.</param>
+        /// <param name="flags">Formatter flags.</param>
+        /// <returns>The default formatter.</returns>
+        public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names, DefaultNdrFormatterFlags flags)
+        {
+            return Create(iids_to_names, flags);
+        }
+
+        /// <summary>
+        /// Create the default formatter.
+        /// </summary>
+        /// <param name="iids_to_names">Specify a dictionary of IIDs to names.</param>
+        /// <returns>The default formatter.</returns>
+        public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names)
+        {
+            return Create(iids_to_names);
         }
 
         /// <summary>

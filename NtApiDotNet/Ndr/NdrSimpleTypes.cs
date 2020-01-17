@@ -189,7 +189,7 @@ namespace NtApiDotNet.Ndr
             return string.Format("{0} - {1}", Format, GetType().Name);
         }
 
-        internal virtual string FormatType(NdrFormatter context)
+        internal virtual string FormatType(INdrFormatterInternal context)
         {
             return context.SimpleTypeToName(Format);
         }

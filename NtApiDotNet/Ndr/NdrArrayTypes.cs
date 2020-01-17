@@ -64,7 +64,7 @@ namespace NtApiDotNet.Ndr
             return ElementCount * ElementSize;
         }
 
-        internal override string FormatType(NdrFormatter context)
+        internal override string FormatType(INdrFormatterInternal context)
         {
             return string.Format("{0}[{1}]", ElementType.FormatType(context), ElementCount == 0 ? string.Empty : ElementCount.ToString());
         }
@@ -149,7 +149,7 @@ namespace NtApiDotNet.Ndr
             return 0;
         }
 
-        internal override string FormatType(NdrFormatter context)
+        internal override string FormatType(INdrFormatterInternal context)
         {
             StringBuilder builder = new StringBuilder();
             if (ConformanceDescriptor.IsValid)
@@ -205,7 +205,7 @@ namespace NtApiDotNet.Ndr
             return 0;
         }
 
-        internal override string FormatType(NdrFormatter context)
+        internal override string FormatType(INdrFormatterInternal context)
         {
             StringBuilder builder = new StringBuilder();
             if (ConformanceDescriptor != null && ConformanceDescriptor.IsValid)
@@ -274,7 +274,7 @@ namespace NtApiDotNet.Ndr
             return 0;
         }
 
-        internal override string FormatType(NdrFormatter context)
+        internal override string FormatType(INdrFormatterInternal context)
         {
             StringBuilder builder = new StringBuilder();
             if (VarianceDescriptor != null && VarianceDescriptor.IsValid)

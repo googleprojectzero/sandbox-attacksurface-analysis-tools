@@ -119,14 +119,14 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        internal override string FormatType(NdrFormatter context)
+        internal override string FormatType(INdrFormatterInternal context)
         {
             return string.Format("{0} {1}",
                  Format == NdrFormatCharacter.FC_NON_ENCAPSULATED_UNION ? "union" : "struct",
                  Name);
         }
 
-        internal override string FormatComplexType(NdrFormatter context)
+        internal override string FormatComplexType(INdrFormatterInternal context)
         {
             int indent = 4;
             StringBuilder builder = new StringBuilder();
