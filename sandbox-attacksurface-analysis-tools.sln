@@ -13,8 +13,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NtObjectManager", "NtObject
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ViewSecurityDescriptor", "ViewSecurityDescriptor\ViewSecurityDescriptor.csproj", "{85E8EE16-53F3-493B-90D2-49396574EFC7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NtApiDotNetTest", "NtApiDotNetTest\NtApiDotNetTest.csproj", "{35F28EE9-9C8D-4F24-8254-B32F6097FC1B}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,10 +39,6 @@ Global
 		{85E8EE16-53F3-493B-90D2-49396574EFC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{85E8EE16-53F3-493B-90D2-49396574EFC7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{85E8EE16-53F3-493B-90D2-49396574EFC7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{35F28EE9-9C8D-4F24-8254-B32F6097FC1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{35F28EE9-9C8D-4F24-8254-B32F6097FC1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{35F28EE9-9C8D-4F24-8254-B32F6097FC1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{35F28EE9-9C8D-4F24-8254-B32F6097FC1B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

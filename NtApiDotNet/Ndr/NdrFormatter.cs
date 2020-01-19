@@ -77,7 +77,7 @@ namespace NtApiDotNet.Ndr
         internal NdrFormatter(IDictionary<Guid, string> iids_to_names, Func<string, string> demangle_com_name, DefaultNdrFormatterFlags flags)
         {
             _iids_to_name = iids_to_names;
-            _demangle_com_name = demangle_com_name;
+            _demangle_com_name = demangle_com_name ?? (s => s);
             _flags = flags;
         }
         string INdrFormatterInternal.IidToName(Guid iid)
@@ -95,7 +95,6 @@ namespace NtApiDotNet.Ndr
 
         string INdrFormatterInternal.DemangleComName(string name)
         {
-            if (_demangle_com_name == null) return name;
             return _demangle_com_name(name);
         }
 
@@ -200,7 +199,8 @@ namespace NtApiDotNet.Ndr
 
 
     /**
-     * This formatter generates data that the CPP compilter can (hopefully) understand.
+     * This formatter generates data that the CPP compiler can (hopefully) understand,
+     * at least it will serve as a good skeleton to support spinning up new projects easily.
      * */
     internal class CppNdrFormatterInternal : NdrFormatter, INdrFormatterInternal
     {
@@ -239,9 +239,9 @@ namespace NtApiDotNet.Ndr
                 case NdrFormatCharacter.FC_DOUBLE:
                     return "double";
                 case NdrFormatCharacter.FC_INT3264:
-                    return "int*";
+                    return "intptr_t";
                 case NdrFormatCharacter.FC_UINT3264:
-                    return "unsigned int*";
+                    return "uintptr_t";
                 case NdrFormatCharacter.FC_C_WSTRING:
                 case NdrFormatCharacter.FC_WSTRING:
                     return "wchar_t";
@@ -382,7 +382,7 @@ namespace NtApiDotNet.Ndr
         /// <returns>The default formatter.</returns>
         public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names, DefaultNdrFormatterFlags flags)
         {
-            return Create(iids_to_names, flags);
+            return Create(iids_to_names, null, flags);
         }
 
         /// <summary>
@@ -392,7 +392,7 @@ namespace NtApiDotNet.Ndr
         /// <returns>The default formatter.</returns>
         public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names)
         {
-            return Create(iids_to_names);
+            return Create(iids_to_names, null);
         }
 
         /// <summary>
@@ -422,54 +422,54 @@ namespace NtApiDotNet.Ndr
     public static class CppNdrFormatter
     {
         /// <summary>
-        /// Create the default formatter.
+        /// Create the CPP formatter.
         /// </summary>
         /// <param name="iids_to_names">Specify a dictionary of IIDs to names.</param>
         /// <param name="demangle_com_name">Function to demangle COM interface names during formatting.</param>
         /// <param name="flags">Formatter flags.</param>
-        /// <returns>The default formatter.</returns>
+        /// <returns>The CPP formatter.</returns>
         public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names, Func<string, string> demangle_com_name, DefaultNdrFormatterFlags flags)
         {
             return new CppNdrFormatterInternal(iids_to_names, demangle_com_name, flags);
         }
 
         /// <summary>
-        /// Create the default formatter.
+        /// Create the CPP formatter.
         /// </summary>
         /// <param name="iids_to_names">Specify a dictionary of IIDs to names.</param>
         /// <param name="demangle_com_name">Function to demangle COM interface names during formatting.</param>
-        /// <returns>The default formatter.</returns>
+        /// <returns>The CPPformatter.</returns>
         public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names, Func<string, string> demangle_com_name)
         {
             return Create(iids_to_names, demangle_com_name, DefaultNdrFormatterFlags.None);
         }
 
         /// <summary>
-        /// Create the default formatter.
+        /// Create the CPP formatter.
         /// </summary>
         /// <param name="iids_to_names">Specify a dictionary of IIDs to names.</param>
         /// <param name="flags">Formatter flags.</param>
-        /// <returns>The default formatter.</returns>
+        /// <returns>The CPP formatter.</returns>
         public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names, DefaultNdrFormatterFlags flags)
         {
-            return Create(iids_to_names, flags);
+            return Create(iids_to_names, null, flags);
         }
 
         /// <summary>
-        /// Create the default formatter.
+        /// Create the CPP formatter.
         /// </summary>
         /// <param name="iids_to_names">Specify a dictionary of IIDs to names.</param>
-        /// <returns>The default formatter.</returns>
+        /// <returns>The CPP formatter.</returns>
         public static INdrFormatter Create(IDictionary<Guid, string> iids_to_names)
         {
-            return Create(iids_to_names);
+            return Create(iids_to_names, null);
         }
 
         /// <summary>
         /// Create the default formatter.
         /// </summary>
         /// <param name="flags">Formatter flags.</param>
-        /// <returns>The default formatter.</returns>
+        /// <returns>The CPP formatter.</returns>
         public static INdrFormatter Create(DefaultNdrFormatterFlags flags)
         {
             return Create(new Dictionary<Guid, string>(), flags);
@@ -478,7 +478,7 @@ namespace NtApiDotNet.Ndr
         /// <summary>
         /// Create the default formatter.
         /// </summary>
-        /// <returns>The default formatter.</returns>
+        /// <returns>The CPP formatter.</returns>
         public static INdrFormatter Create()
         {
             return Create(new Dictionary<Guid, string>());
