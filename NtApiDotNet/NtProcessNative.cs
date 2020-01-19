@@ -416,6 +416,13 @@ namespace NtApiDotNet
         public int AdditionalInfo;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ProcessExceptionPort
+    {
+        public IntPtr ExceptionPortHandle;
+        public int StateFlags;
+    }
+
     public enum ProcessInformationClass
     {
         ProcessBasicInformation, // 0, q: PROCESS_BASIC_INFORMATION, PROCESS_EXTENDED_BASIC_INFORMATION

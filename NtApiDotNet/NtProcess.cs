@@ -1526,6 +1526,23 @@ namespace NtApiDotNet
         /// Set the process exception port.
         /// </summary>
         /// <param name="exception_port">The exception port to set.</param>
+        /// <param name="state_flags">Additional state flags.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetExceptionPort(NtAlpc exception_port, int state_flags, bool throw_on_error)
+        {
+            ProcessExceptionPort port = new ProcessExceptionPort() 
+            { 
+                ExceptionPortHandle = exception_port.Handle.DangerousGetHandle(),
+                StateFlags = state_flags
+            };
+            return Set(ProcessInformationClass.ProcessExceptionPort, port, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the process exception port.
+        /// </summary>
+        /// <param name="exception_port">The exception port to set.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The NT status code.</returns>
         public NtStatus SetExceptionPort(NtAlpc exception_port, bool throw_on_error)
