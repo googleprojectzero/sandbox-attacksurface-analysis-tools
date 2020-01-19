@@ -1093,6 +1093,8 @@ Show privilege information.
 Show integrity information.
 .PARAMETER SecurityAttributes
 Show token security attributes.
+.PARAMETER TrustLevel
+Show token trust level.
 .OUTPUTS
 Text data
 .EXAMPLE
@@ -1114,7 +1116,8 @@ function Format-NtToken {
     [switch]$Privilege,
     [switch]$User,
     [switch]$Integrity,
-    [switch]$SecurityAttributes
+    [switch]$SecurityAttributes,
+    [switch]$TrustLevel
   )
 
   if ($All) {
@@ -1123,9 +1126,12 @@ function Format-NtToken {
     $Privilege = $true
     $Integrity = $true
     $SecurityAttributes = $true
+    $TrustLevel = $true
   }
 
-  if (!$User -and !$Group -and !$Privilege -and !$Integrity) {
+  if (!$User -and !$Group -and !$Privilege `
+    -and !$Integrity -and !$TrustLevel `
+    -and !$SecurityAttributes) {
     $token.User.ToString()
     return
   }
@@ -1172,6 +1178,17 @@ function Format-NtToken {
     ""
   }
 
+  if ($TrustLevel) {
+    "TRUST LEVEL"
+    "-----------"
+    $trust_level = $token.TrustLevel
+    if ($trust_level -eq $null) {
+      $trust_level = Get-NtSid "S-1-19-0-0"
+    }
+    $trust_level | Write-Output
+    ""
+  }
+
   if ($SecurityAttributes) {
     "SECURITY ATTRIBUTES"
     "-------------------"
@@ -1197,6 +1214,8 @@ Show privilege information.
 Show integrity information.
 .PARAMETER SecurityAttributes
 Show token security attributes.
+.PARAMETER TrustLevel
+Show token trust level.
 .OUTPUTS
 Text data
 .EXAMPLE
@@ -1216,12 +1235,14 @@ function Show-NtTokenEffective {
     [switch]$Privilege,
     [switch]$User,
     [switch]$Integrity,
-    [switch]$SecurityAttributes
+    [switch]$SecurityAttributes,
+    [switch]$TrustLevel
     )
 
   Use-NtObject($token = Get-NtToken -Effective) {
     Format-NtToken -Token $token -All:$All -Group:$Group -Privilege:$Privilege `
-        -User:$User -Integrity:$Integrity -SecurityAttributes:$SecurityAttributes
+        -User:$User -Integrity:$Integrity -SecurityAttributes:$SecurityAttributes `
+        -TrustLevel:$TrustLevel
   }
 }
 
