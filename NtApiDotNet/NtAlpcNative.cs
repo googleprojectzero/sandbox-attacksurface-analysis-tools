@@ -78,6 +78,8 @@ namespace NtApiDotNet
         DebugEvent = 8,
         ErrorEvent = 9,
         ConnectionRequest = 10,
+        // Used by the kernel when disconnecting an exception port.
+        PortDisconnected = 13,
     }
 
     [Flags]
