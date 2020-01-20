@@ -1249,13 +1249,15 @@ function Format-NtToken {
   if ($Information) {
     "TOKEN INFORMATION"
     "-----------------"
-    "Type      : {0}" -f $token.TokenType
+    "Type       : {0}" -f $token.TokenType
     if ($token.TokenType -eq "Impersonation") {
-      "Imp Level : {0}" -f $token.ImpersonationLevel
+      "Imp Level  : {0}" -f $token.ImpersonationLevel
     }
-    "ID        : {0}" -f $token.Id
-    "Auth ID   : {0}" -f $token.AuthenticationId
-    "Session ID: {0}" -f $token.SessionId
+    "ID         : {0}" -f $token.Id
+    "Auth ID    : {0}" -f $token.AuthenticationId
+    "Origin ID  : {0}" -f $token.Origin
+    "Modified ID: {0}" -f $token.ModifiedId
+    "Session ID : {0}" -f $token.SessionId
   }
 }
 
