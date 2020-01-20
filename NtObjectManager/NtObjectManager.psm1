@@ -1204,7 +1204,7 @@ function Format-NtToken {
     "-----------------"
     "Type      : {0}" -f $token.TokenType
     if ($token.TokenType -eq "Impersonation") {
-      "Imp Level : {0}" -f $token.TokenType
+      "Imp Level : {0}" -f $token.ImpersonationLevel
     }
     "ID        : {0}" -f $token.Id
     "Auth ID   : {0}" -f $token.AuthenticationId
