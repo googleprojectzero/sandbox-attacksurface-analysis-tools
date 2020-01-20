@@ -936,6 +936,11 @@ namespace NtApiDotNet
             OtherTransferCount = process_info.OtherTransferCount.QuadPart;
             ImagePath = NtSystemInfo.GetProcessIdImagePath(ProcessId, false).GetResultOrDefault(string.Empty);
         }
+
+        public override string ToString()
+        {
+            return ImageName;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
