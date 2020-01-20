@@ -1095,6 +1095,8 @@ Show integrity information.
 Show token security attributes.
 .PARAMETER TrustLevel
 Show token trust level.
+.PARAMETER Information
+Show token information such as type, impersonation level and ID.
 .OUTPUTS
 Text data
 .EXAMPLE
@@ -1117,7 +1119,8 @@ function Format-NtToken {
     [switch]$User,
     [switch]$Integrity,
     [switch]$SecurityAttributes,
-    [switch]$TrustLevel
+    [switch]$TrustLevel,
+    [switch]$Information
   )
 
   if ($All) {
@@ -1127,11 +1130,12 @@ function Format-NtToken {
     $Integrity = $true
     $SecurityAttributes = $true
     $TrustLevel = $true
+    $Information = $true
   }
 
   if (!$User -and !$Group -and !$Privilege `
     -and !$Integrity -and !$TrustLevel `
-    -and !$SecurityAttributes) {
+    -and !$SecurityAttributes -and !$Information) {
     $token.User.ToString()
     return
   }
@@ -1193,6 +1197,18 @@ function Format-NtToken {
     "SECURITY ATTRIBUTES"
     "-------------------"
     $token.SecurityAttributes | Format-Table
+  }
+
+  if ($Information) {
+    "TOKEN INFORMATION"
+    "-----------------"
+    "Type      : {0}" -f $token.TokenType
+    if ($token.TokenType -eq "Impersonation") {
+      "Imp Level : {0}" -f $token.TokenType
+    }
+    "ID        : {0}" -f $token.Id
+    "Auth ID   : {0}" -f $token.AuthenticationId
+    "Session ID: {0}" -f $token.SessionId
   }
 }
 
