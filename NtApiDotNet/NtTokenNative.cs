@@ -151,6 +151,7 @@ namespace NtApiDotNet
         Medium = 0x2000,
         High = 0x3000,
         System = 0x4000,
+        ProtectedProcess = 0x5000,
     };
 
     public enum TokenElevationType
