@@ -5117,3 +5117,20 @@ function Stop-NtThread
         }
     }
 }
+
+<#
+.SYNOPSIS
+Gets a new Locally Unique ID (LUID)
+.DESCRIPTION
+This cmdlet requests a new LUID value.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Luid
+.EXAMPLE
+Get-NtLocallyUniqueId
+Get a new locally unique ID.
+#>
+function Get-NtLocallyUniqueId {
+    [NtApiDotNet.NtSystemInfo]::AllocateLocallyUniqueId() | Write-Output
+}
