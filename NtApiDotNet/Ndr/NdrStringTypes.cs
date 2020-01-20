@@ -44,7 +44,7 @@ namespace NtApiDotNet.Ndr
             StringSize = reader.ReadUInt16();
         }
 
-        internal override string FormatType(NdrFormatter context)
+        internal override string FormatType(INdrFormatterInternal context)
         {
             if (StringSize > 0)
             {
@@ -88,7 +88,7 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        internal override string FormatType(NdrFormatter context)
+        internal override string FormatType(INdrFormatterInternal context)
         {
             string conformance_desc = string.Empty;
             if (ConformanceDescriptor != null && ConformanceDescriptor.IsValid)
@@ -139,7 +139,7 @@ namespace NtApiDotNet.Ndr
             NumberOfElements = reader.ReadUInt16();
         }
 
-        internal override string FormatType(NdrFormatter formatter)
+        internal override string FormatType(INdrFormatterInternal formatter)
         {
             return string.Format("{0}<{1}>[{2}]", base.FormatType(formatter), ElementSize, NumberOfElements);
         }
@@ -166,7 +166,7 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        internal override string FormatType(NdrFormatter formatter)
+        internal override string FormatType(INdrFormatterInternal formatter)
         {
             return string.Format("{0}<{1}>[]", base.FormatType(formatter), ElementSize);
         }

@@ -52,7 +52,7 @@ namespace NtApiDotNet.Ndr
             Type = Read(context, ReadTypeOffset(reader));
         }
 
-        internal override string FormatType(NdrFormatter formatter)
+        internal override string FormatType(INdrFormatterInternal formatter)
         {
             if ((Flags & NdrUserMarshalFlags.USER_MARSHAL_POINTER) != 0)
             {
@@ -108,7 +108,7 @@ namespace NtApiDotNet.Ndr
             Name = name;
         }
 
-        internal override string FormatType(NdrFormatter formatter)
+        internal override string FormatType(INdrFormatterInternal formatter)
         {
             return Name;
         }
@@ -131,7 +131,7 @@ namespace NtApiDotNet.Ndr
             KnownType = type;
         }
 
-        internal override string FormatType(NdrFormatter formatter)
+        internal override string FormatType(INdrFormatterInternal formatter)
         {
             return KnownType.ToString();
         }

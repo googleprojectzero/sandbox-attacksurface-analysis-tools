@@ -31,7 +31,7 @@ namespace NtApiDotNet.Ndr
     public abstract class NdrComplexTypeReference : NdrBaseTypeReference
     {
         public string Name { get; set; }
-        internal abstract string FormatComplexType(NdrFormatter context);
+        internal abstract string FormatComplexType(INdrFormatterInternal context);
 
         internal NdrComplexTypeReference(string name, NdrFormatCharacter format) : base(format)
         {
@@ -53,7 +53,7 @@ namespace NtApiDotNet.Ndr
             Name = name;
         }
 
-        internal string FormatMember(NdrFormatter context)
+        internal string FormatMember(INdrFormatterInternal context)
         {
             return string.Format("{0} {1}", context.FormatComment("Offset: {0}", Offset), MemberType.FormatType(context));
         }
@@ -119,12 +119,12 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        internal override string FormatType(NdrFormatter context)
+        internal override string FormatType(INdrFormatterInternal context)
         {
             return $"struct {Name}";
         }
 
-        internal override string FormatComplexType(NdrFormatter context)
+        internal override string FormatComplexType(INdrFormatterInternal context)
         {
             StringBuilder builder = new StringBuilder();
             builder.Append(context.FormatComment("Memory Size: {0}", GetSize())).AppendLine();
