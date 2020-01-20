@@ -130,6 +130,53 @@ function Set-NtTokenPrivilege
 
 <#
 .SYNOPSIS
+Get the state of a token's privileges.
+.DESCRIPTION
+This cmdlet will get the state of a token's privileges.
+.PARAMETER Privileges
+A list of privileges to get their state.
+.PARAMETER Token
+Optional token object to use to get privileges. Must be accesible for Query right.
+.INPUTS
+None
+.OUTPUTS
+List of TokenPrivilege values indicating the state of all privileges requested.
+.EXAMPLE
+Get-NtTokenPrivilege
+Get all privileges on the current process token
+.EXAMPLE
+Set-NtTokenPrivilege SeDebugPrivilege 
+Get state of SeDebugPrivilege on the current process token
+.EXAMPLE
+Get-NtTokenPrivilege SeBackupPrivilege, SeRestorePrivilege -Token $token
+Get SeBackupPrivilege and SeRestorePrivilege status on an explicit token object.
+#>
+function Get-NtTokenPrivilege
+{
+  Param(
+    [Parameter(Position=0)]
+    [NtApiDotNet.TokenPrivilegeValue[]]$Privileges,
+    [NtApiDotNet.NtToken]$Token
+    )
+  if ($null -eq $Token) {
+    $Token = Get-NtToken -Primary -Access Query
+  } else {
+    $Token = $Token.Duplicate()
+  }
+
+  Use-NtObject($Token) {
+    if ($Privileges -ne $null -and $Privileges.Count -gt 0) {
+        foreach($priv in $Privileges) {
+            $Token.GetPrivilege($priv) | Write-Output
+        }
+    } else {
+        $Token.Privileges | Write-Output
+    }
+  }
+}
+
+<#
+.SYNOPSIS
 Remove privileges from a token.
 .DESCRIPTION
 This cmdlet will remove privileges from a token. Note that this completely removes the privilege, not just disable.
