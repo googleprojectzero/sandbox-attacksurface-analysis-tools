@@ -36,7 +36,7 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        internal override string FormatType(NdrFormatter formatter)
+        internal override string FormatType(INdrFormatterInternal formatter)
         {
             return $"{formatter.FormatComment("Unhandled")} {base.FormatType(formatter)}";
         }
@@ -56,7 +56,7 @@ namespace NtApiDotNet.Ndr
             MaxValue = reader.ReadInt32();
         }
 
-        internal override string FormatType(NdrFormatter context)
+        internal override string FormatType(INdrFormatterInternal context)
         {
             return string.Format("{0} {1}", context.FormatComment("range: {0},{1}", MinValue, MaxValue), RangeType.FormatType(context));
         }
@@ -81,7 +81,7 @@ namespace NtApiDotNet.Ndr
         {
         }
 
-        internal override string FormatType(NdrFormatter context)
+        internal override string FormatType(INdrFormatterInternal context)
         {
             return RefType.FormatType(context);
         }
@@ -112,7 +112,7 @@ namespace NtApiDotNet.Ndr
             BaseType = Read(context, ReadTypeOffset(reader));
         }
 
-        internal override string FormatType(NdrFormatter context)
+        internal override string FormatType(INdrFormatterInternal context)
         {
             return $"{context.FormatComment("FC_PIPE")} {BaseType.FormatType(context)}";
         }
@@ -143,7 +143,7 @@ namespace NtApiDotNet.Ndr
             Argument2 = reader.ReadInt32();
         }
 
-        internal override string FormatType(NdrFormatter context)
+        internal override string FormatType(INdrFormatterInternal context)
         {
             string comment = $"FC_SUPPLEMENT {BaseType}";
             if (SupplementType is NdrBaseStringTypeReference)

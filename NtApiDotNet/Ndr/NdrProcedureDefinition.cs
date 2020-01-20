@@ -101,7 +101,7 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        internal string Format(NdrFormatter context)
+        internal string Format(INdrFormatterInternal context)
         {
             List<string> attributes = new List<string>();
             if ((Attributes & NdrParamAttributes.IsIn) != 0)
@@ -120,7 +120,7 @@ namespace NtApiDotNet.Ndr
             string type_format = (Attributes & NdrParamAttributes.IsSimpleRef) == 0
                 ? Type.FormatType(context) : string.Format("{0}*", Type.FormatType(context));
 
-            if (attributes.Count > 0)
+            if ((attributes.Count > 0)&&(context.ShowProcedureParameterAttributes))
             {
                 return string.Format("[{0}] {1}", string.Join(", ", attributes), type_format);
             }
@@ -176,7 +176,7 @@ namespace NtApiDotNet.Ndr
         public IntPtr DispatchFunction { get; }
         public NdrInterpreterOptFlags InterpreterFlags { get; }
 
-        internal string FormatProcedure(NdrFormatter context)
+        internal string FormatProcedure(INdrFormatterInternal context)
         {
             string return_value;
 

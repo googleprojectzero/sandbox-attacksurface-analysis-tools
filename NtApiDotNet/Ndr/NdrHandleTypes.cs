@@ -56,7 +56,7 @@ namespace NtApiDotNet.Ndr
             AccessMask = reader.ReadUInt32();
         }
 
-        internal override string FormatType(NdrFormatter context)
+        internal override string FormatType(INdrFormatterInternal context)
         {
             if (AccessMask != 0)
             {
@@ -118,7 +118,7 @@ namespace NtApiDotNet.Ndr
         {
         }
 
-        internal override string FormatType(NdrFormatter context)
+        internal override string FormatType(INdrFormatterInternal context)
         {
             return $"{context.FormatComment(Format.ToString())} {context.SimpleTypeToName(Format)}";
         }

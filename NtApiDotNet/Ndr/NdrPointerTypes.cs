@@ -60,7 +60,7 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        internal override string FormatType(NdrFormatter formatter)
+        internal override string FormatType(INdrFormatterInternal formatter)
         {
             if (IsConstant)
             {
@@ -109,7 +109,7 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        internal override string FormatType(NdrFormatter formatter)
+        internal override string FormatType(INdrFormatterInternal formatter)
         {
             if (Type is NdrBaseArrayTypeReference)
             {
@@ -154,7 +154,7 @@ namespace NtApiDotNet.Ndr
             }
         }
 
-        internal override string FormatType(NdrFormatter context)
+        internal override string FormatType(INdrFormatterInternal context)
         {
             string comment = Format.ToString();
             if (Description.IsValid)

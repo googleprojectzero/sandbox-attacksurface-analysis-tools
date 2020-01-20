@@ -73,7 +73,7 @@ namespace NtApiDotNet.Ndr
             return new NdrComProxyDefinition(name, iid, base_iid, dispatch_count, procedures.ToList().AsReadOnly());
         }
 
-        internal string Format(NdrFormatter context)
+        internal string Format(INdrFormatterInternal context)
         {
             NdrStringBuilder builder = new NdrStringBuilder();
             builder.AppendLine("[Guid(\"{0}\")]", Iid);
