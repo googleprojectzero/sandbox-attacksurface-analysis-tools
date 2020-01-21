@@ -7,8 +7,8 @@
     <Authors>James Forshaw</Authors>
     <Company>Google Inc.</Company>
     <Product>NtApiDotNet</Product>
-    <FileVersion>1.1.25.0</FileVersion>
-    <Copyright>Copyright © Google Inc. 2016, 2017, 2018, 2019</Copyright>
+    <FileVersion>1.1.26.0</FileVersion>
+    <Copyright>Copyright © Google Inc. 2016-2020</Copyright>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <PackageLicenseUrl>https://www.apache.org/licenses/LICENSE-2.0</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools</RepositoryUrl>

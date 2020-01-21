@@ -1,6 +1,6 @@
 sandbox-attacksurface-analysis-tools
 
-(c) Google Inc. 2015, 2016, 2017, 2018, 2019
+(c) Google Inc. 2015, 2016, 2017, 2018, 2019, 2020
 Developed by James Forshaw
 
 This is a small suite of PowerShell tools to test various properties of sandboxes on Windows. Many of the
@@ -45,6 +45,26 @@ Thanks to the people who were willing to test it and give feedback:
 * Jared Atkinson
 
 Release Notes:
+
+1.1.26
+--------
+* Add DeviceGuid to Get/New-NtFile
+* Fixed bug in ETA registrations and added GUID enumeration.
+* Added SetExceptionPort to NtProcess.
+* Added child process mitigation improvements.
+* Added extended Fork.
+* Updated native process creation support.
+* Various new non-throwing methods.
+* Updated to C# 7.3.
+* Added list of access rights to NtType.
+* Added default mandatory policy to NtType.
+* Added SetDisposition methods to NtFile.
+* Added console and GUI support for Object ACEs.
+* Updated access checking to support Object Types.
+* Access check returns a structure rather than just an access mask.
+* CPP style NDR formatting (#21)
+* Added Get-NtTokenPrivilege command.
+* Added Get-NtLocallyUniqueId command.
 
 1.1.25
 --------

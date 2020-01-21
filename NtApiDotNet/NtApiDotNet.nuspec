@@ -11,19 +11,27 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A .NET class library to access native NT API system calls</description>
     <releaseNotes>
-1.1.24
+1.1.26
 --------
-* Added Add-NtTokenSecurityAttribute and Remove-NtTokenSecurityAttribute cmdlets.
-* Added additional properties for running servies.
-* Added support for drivers to Get-RunningService and Get-AccesibleService.
-* Added fake service NtType objects for services and SCM to allow formatting and the UI.
-* Added NtType property to security descriptors.
-* Added option to Show-NtToken to elevate to admin.
-* Added Suspend, Resume and Stop process commands.
-* Added Get-NtEaBuffer and Set-NtEaBuffer commands.
-* Added open to Get-NtDebug to get from a process.
+* Add DeviceGuid to Get/New-NtFile
+* Fixed bug in ETA registrations and added GUID enumeration.
+* Added SetExceptionPort to NtProcess.
+* Added child process mitigation improvements.
+* Added extended Fork.
+* Updated native process creation support.
+* Various new non-throwing methods.
+* Updated to C# 7.3.
+* Added list of access rights to NtType.
+* Added default mandatory policy to NtType.
+* Added SetDisposition methods to NtFile.
+* Added console and GUI support for Object ACEs.
+* Updated access checking to support Object Types.
+* Access check returns a structure rather than just an access mask.
+* CPP style NDR formatting (#21)
+* Added Get-NtTokenPrivilege command.
+* Added Get-NtLocallyUniqueId command.
 </releaseNotes>
-    <copyright>Copyright Google Inc. 2017, 2018, 2019</copyright>
+    <copyright>Copyright Google Inc. 2016-2020</copyright>
     <tags>syscalls</tags>
   </metadata>
 </package>
