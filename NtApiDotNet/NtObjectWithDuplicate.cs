@@ -26,13 +26,23 @@ namespace NtApiDotNet
     {
         internal abstract class NtTypeFactoryImplBase : NtTypeFactory
         {
-            protected NtTypeFactoryImplBase(Type container_access_rights_type, bool can_open) 
-                : base(typeof(A), container_access_rights_type, typeof(O), can_open)
+            protected NtTypeFactoryImplBase(Type container_access_rights_type, bool can_open, MandatoryLabelPolicy default_policy) 
+                : base(typeof(A), container_access_rights_type, typeof(O), can_open, default_policy)
+            {
+            }
+
+            protected NtTypeFactoryImplBase(Type container_access_rights_type, bool can_open)
+                : this(container_access_rights_type, can_open, MandatoryLabelPolicy.NoWriteUp)
+            {
+            }
+
+            protected NtTypeFactoryImplBase(bool can_open, MandatoryLabelPolicy default_policy)
+                : this(typeof(A), can_open, default_policy)
             {
             }
 
             protected NtTypeFactoryImplBase(bool can_open)
-                : this(typeof(A), can_open)
+                : this(can_open, MandatoryLabelPolicy.NoWriteUp)
             {
             }
 

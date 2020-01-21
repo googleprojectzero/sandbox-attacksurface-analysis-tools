@@ -865,6 +865,7 @@ namespace NtApiDotNet
     [Flags]
     public enum MandatoryLabelPolicy : uint
     {
+        None = 0x0,
         NoWriteUp = 0x1,
         NoReadUp = 0x2,
         NoExecuteUp = 0x4,

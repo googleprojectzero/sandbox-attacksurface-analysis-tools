@@ -829,6 +829,7 @@ namespace NtApiDotNet
         /// <summary>
         /// <para type="description">Specify a default NT type for the security descriptor.</para>
         /// </summary>
+        [Parameter(ParameterSetName = "FromToken"), Parameter(ParameterSetName = "FromSddl"), Parameter(ParameterSetName = "FromBytes"), Parameter(ParameterSetName = "FromKey")]
         public NtType Type { get; set; }
 
         /// <summary>
@@ -863,7 +864,7 @@ namespace NtApiDotNet
         {
             if (MapType && Type == null)
             {
-                WriteWarning("Must specify NtType for MapType to work correctly.");
+                WriteWarning("Must specify Type for MapType to work correctly.");
             }
 
             SecurityDescriptor sd = null;

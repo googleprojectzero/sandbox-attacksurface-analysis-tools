@@ -37,6 +37,7 @@ namespace NtApiDotNet
         public Type AccessRightsType { get; }
         public Type ContainerAccessRightsType { get; }
         public bool CanOpen { get; }
+        public MandatoryLabelPolicy DefaultMandatoryPolicy { get; }
 
         public virtual NtObject FromHandle(SafeKernelObjectHandle handle)
         {
@@ -48,12 +49,13 @@ namespace NtApiDotNet
             return NtStatus.STATUS_NOT_IMPLEMENTED.CreateResultFromError<NtObject>(throw_on_error);
         }
 
-        internal NtTypeFactory(Type access_rights_type, Type container_access_rights_type, Type object_type, bool can_open)
+        internal NtTypeFactory(Type access_rights_type, Type container_access_rights_type, Type object_type, bool can_open, MandatoryLabelPolicy default_policy)
         {
             AccessRightsType = access_rights_type;
             ContainerAccessRightsType = container_access_rights_type;
             ObjectType = object_type;
             CanOpen = can_open;
+            DefaultMandatoryPolicy = default_policy;
         }
 
         public static Dictionary<string, NtTypeFactory> GetAssemblyNtTypeFactories(Assembly assembly)

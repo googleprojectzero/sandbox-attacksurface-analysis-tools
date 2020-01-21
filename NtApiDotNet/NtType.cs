@@ -418,6 +418,15 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the maximum access mask for the types default mandatory access policy.
+        /// </summary>
+        /// <returns>The allowed access mask for the type with the default policy.</returns>
+        public AccessMask GetDefaultMandatoryAccess()
+        {
+            return GenericMapping.GetAllowedMandatoryAccess(_type_factory.DefaultMandatoryPolicy);
+        }
+
+        /// <summary>
         /// Overridden ToString method.
         /// </summary>
         /// <returns>Returns the type as a string.</returns>
@@ -441,13 +450,13 @@ namespace NtApiDotNet
         {
         }
 
-        internal NtType(string name, GenericMapping generic_mapping, Type access_rights_type, Type container_access_rights_type)
+        internal NtType(string name, GenericMapping generic_mapping, Type access_rights_type, Type container_access_rights_type, MandatoryLabelPolicy default_policy)
         {
             if (!access_rights_type.IsEnum)
             {
                 throw new ArgumentException("Specify an enumerated type", "access_rights_type");
             }
-            _type_factory = new NtTypeFactory(access_rights_type, container_access_rights_type, typeof(object), false);
+            _type_factory = new NtTypeFactory(access_rights_type, container_access_rights_type, typeof(object), false, default_policy);
             Name = name;
             ValidAccess = CalculateValidAccess(access_rights_type) | CalculateValidAccess(container_access_rights_type);
             GenericMapping = generic_mapping;
@@ -659,7 +668,7 @@ namespace NtApiDotNet
         /// <returns>The fake NT type object.</returns>
         public static NtType GetFakeType(string name, GenericMapping generic_mapping, Type access_rights_type, Type container_access_rights_type)
         {
-            return new NtType(name, generic_mapping, access_rights_type, container_access_rights_type);
+            return new NtType(name, generic_mapping, access_rights_type, container_access_rights_type, MandatoryLabelPolicy.NoWriteUp);
         }
 
         /// <summary>
@@ -690,7 +699,9 @@ namespace NtApiDotNet
         public static NtType GetFakeType(string name, AccessMask generic_read, AccessMask generic_write,
             AccessMask generic_exec, AccessMask generic_all, Type access_rights_type, Type container_access_rights_type)
         {
-            return new NtType(name, new GenericMapping() { GenericRead = generic_read, GenericWrite = generic_write, GenericExecute = generic_exec, GenericAll = generic_all }, access_rights_type, container_access_rights_type);
+            return new NtType(name, new GenericMapping() { GenericRead = generic_read, GenericWrite = generic_write, 
+                GenericExecute = generic_exec, GenericAll = generic_all }, access_rights_type, container_access_rights_type,
+                MandatoryLabelPolicy.NoWriteUp);
         }
 
         /// <summary>

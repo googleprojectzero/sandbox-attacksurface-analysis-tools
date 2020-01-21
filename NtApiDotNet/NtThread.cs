@@ -97,7 +97,7 @@ namespace NtApiDotNet
 
         internal sealed class NtTypeFactoryImpl : NtTypeFactoryImplBase
         {
-            public NtTypeFactoryImpl() : base(false)
+            public NtTypeFactoryImpl() : base(false, MandatoryLabelPolicy.NoWriteUp | MandatoryLabelPolicy.NoReadUp)
             {
             }
         }

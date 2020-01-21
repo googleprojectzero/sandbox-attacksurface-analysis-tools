@@ -1110,10 +1110,12 @@ namespace NtApiDotNet.Win32
             {
                 case "service":
                     return new NtType("Service", GetServiceGenericMapping(), 
-                        typeof(ServiceAccessRights), typeof(ServiceAccessRights));
+                        typeof(ServiceAccessRights), typeof(ServiceAccessRights),
+                        MandatoryLabelPolicy.NoWriteUp);
                 case "scm":
                     return new NtType("SCM", GetScmGenericMapping(),
-                        typeof(ServiceControlManagerAccessRights), typeof(ServiceControlManagerAccessRights));
+                        typeof(ServiceControlManagerAccessRights), typeof(ServiceControlManagerAccessRights),
+                        MandatoryLabelPolicy.NoWriteUp);
             }
             return null;
         }
