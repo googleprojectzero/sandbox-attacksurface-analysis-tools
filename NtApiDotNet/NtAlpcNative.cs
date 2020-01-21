@@ -388,6 +388,7 @@ namespace NtApiDotNet
     [Flags]
     public enum AlpcDeleteSectionViewFlags
     {
+        None = 0,
     }
 
     [StructLayout(LayoutKind.Sequential)]
