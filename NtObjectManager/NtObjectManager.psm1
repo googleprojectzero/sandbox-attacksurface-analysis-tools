@@ -3581,6 +3581,8 @@ This cmdlet formats a list of RPC servers as text.
 The RPC servers to format.
 .PARAMETER RemoveComments
 When outputing as text remove comments from the output.
+.PARAMETER CppFormat
+Format output in C++ pseudo syntax rather than C++.
 .INPUTS
 RpcServer[] The RPC servers to format.
 .OUTPUTS
@@ -3600,12 +3602,13 @@ function Format-RpcServer {
   Param(
     [parameter(Mandatory=$true, Position=0, ValueFromPipeline)]
     [NtApiDotNet.Win32.RpcServer[]]$RpcServer,
-    [switch]$RemoveComments
+    [switch]$RemoveComments,
+    [switch]$CppFormat
   )
 
   PROCESS {
     foreach($server in $RpcServer) {
-        $server.FormatAsText($RemoveComments) | Write-Output
+        $server.FormatAsText($RemoveComments, $CppFormat) | Write-Output
     }
   }
 }

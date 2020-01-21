@@ -56,8 +56,20 @@ namespace NtApiDotNet.Win32
         /// <returns>The formatted RPC server.</returns>
         public string FormatAsText(bool remove_comments)
         {
-            INdrFormatter formatter = DefaultNdrFormatter.Create(remove_comments
-                ? DefaultNdrFormatterFlags.RemoveComments : DefaultNdrFormatterFlags.None);
+            return FormatAsText(remove_comments, false);
+        }
+
+        /// <summary>
+        /// Format the RPC server as text.
+        /// </summary>
+        /// <param name="remove_comments">True to remove comments from the output.</param>
+        /// <param name="cpp_format">Formating using C++ pseduo syntax.</param>
+        /// <returns>The formatted RPC server.</returns>
+        public string FormatAsText(bool remove_comments, bool cpp_format)
+        {
+            DefaultNdrFormatterFlags flags = remove_comments
+                ? DefaultNdrFormatterFlags.RemoveComments : DefaultNdrFormatterFlags.None;
+            INdrFormatter formatter = cpp_format ? CppNdrFormatter.Create(flags) : DefaultNdrFormatter.Create(flags);
             StringBuilder builder = new StringBuilder();
             if (!remove_comments)
             {
