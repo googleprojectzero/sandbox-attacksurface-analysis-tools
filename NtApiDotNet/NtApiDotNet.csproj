@@ -62,9 +62,16 @@
     <Compile Include="NtProcessCreateResult.cs" />
     <Compile Include="NtProcessCreateConfig.cs" />
     <Compile Include="NtProcessTrustletConfig.cs" />
+    <Compile Include="NtUserProcessParameters.cs" />
     <Compile Include="NtWaitNative.cs" />
     <Compile Include="NtWindowStationNative.cs" />
     <Compile Include="SafeProcessParametersHandle.cs" />
+    <Compile Include="Utilities\Memory\CrossBitnessProcessMemoryReader.cs" />
+    <Compile Include="Utilities\Memory\CrossBitnessTypeAttribute.cs" />
+    <Compile Include="Utilities\Memory\CurrentProcessMemoryReader.cs" />
+    <Compile Include="Utilities\Memory\ProcessMemoryReader.cs" />
+    <Compile Include="Utilities\Memory\ProcessMemoryStream.cs" />
+    <Compile Include="Utilities\Memory\SafeBufferWrapper.cs" />
     <Compile Include="Utilities\Text\StringUtils.cs" />
     <Compile Include="Utilities\Token\ClaimSecurityAttributeBuilder.cs" />
     <Compile Include="CreateUserProcess.cs" />
@@ -95,7 +102,7 @@
     <Compile Include="MandatoryLabelAce.cs" />
     <Compile Include="MappedFile.cs" />
     <Compile Include="MemoryInformation.cs" />
-    <Compile Include="Ndr\IMemoryReader.cs" />
+    <Compile Include="Utilities\Memory\IMemoryReader.cs" />
     <Compile Include="Ndr\Marshal\INdrConformantStructure.cs" />
     <Compile Include="Ndr\Marshal\INdrStructure.cs" />
     <Compile Include="Ndr\Marshal\NdrContextHandle.cs" />
@@ -304,6 +311,7 @@
       <DependentUpon>SecurityDescriptorViewerForm.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

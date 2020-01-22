@@ -16,6 +16,7 @@
 // https://github.com/tyranid/oleviewdotnet. It's been relicensed from GPLv3 by
 // the original author James Forshaw to be used under the Apache License for this
 
+using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;

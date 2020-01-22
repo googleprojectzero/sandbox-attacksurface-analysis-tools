@@ -1561,6 +1561,44 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the user process parameters.
+        /// </summary>
+        /// <returns>The user process parameters.</returns>
+        public NtUserProcessParameters GetUserProcessParameters()
+        {
+            if (!Environment.Is64BitProcess && Is64Bit)
+            {
+                throw new ArgumentException("Do not support 32 to 64 bit reading.");
+            }
+
+            var peb = GetPeb();
+            var params_ptr = peb.GetProcessParameters().ToInt64();
+            if (params_ptr == 0)
+                throw new NtException(NtStatus.STATUS_INSUFFICIENT_RESOURCES);
+
+            var header = ReadMemory<RtlUserProcessParametersHeader>(params_ptr);
+            byte[] bytes = ReadMemory(params_ptr, header.Length);
+            RtlUserProcessParameters user_params;
+            if (Environment.Is64BitProcess != Is64Bit)
+            {
+                using (var buffer = new SafeStructureInOutBuffer<RtlUserProcessParameters32>())
+                {
+                    buffer.WriteArray(0, bytes, 0, Math.Min(bytes.Length, buffer.Length));
+                    user_params = buffer.Result.Convert();
+                }
+            }
+            else
+            {
+                using (var buffer = new SafeStructureInOutBuffer<RtlUserProcessParameters>())
+                {
+                    buffer.WriteArray(0, bytes, 0, Math.Min(bytes.Length, buffer.Length));
+                    user_params = buffer.Result;
+                }
+            }
+            return user_params.ToObject(this);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>

@@ -17,6 +17,7 @@
 // the original author James Forshaw to be used under the Apache License for this
 // project.
 
+using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
@@ -401,19 +402,7 @@ namespace NtApiDotNet.Ndr
             }
             else
             {
-                if (!Environment.Is64BitProcess && process.Is64Bit)
-                {
-                    throw new ArgumentException("Do not support 32 to 64 bit reading.");
-                }
-
-                if (Environment.Is64BitProcess != process.Is64Bit)
-                {
-                    return new CrossBitnessProcessMemoryReader(process);
-                }
-                else
-                {
-                    return new ProcessMemoryReader(process);
-                }
+                return ProcessMemoryReader.Create(process);
             }
         }
 

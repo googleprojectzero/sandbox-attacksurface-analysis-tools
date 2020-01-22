@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -685,20 +686,5 @@ namespace NtApiDotNet.Ndr
         public ushort ServerCorrHint;
         public ushort NotifyIndex;
         public ushort FloatArgMask;
-    }
-
-    class SafeBufferWrapper : SafeBuffer
-    {
-        public SafeBufferWrapper(IntPtr buffer)
-            : base(false)
-        {
-            this.Initialize(int.MaxValue);
-            handle = buffer;
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            return true;
-        }
     }
 }

@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Ndr;
 using System;
 using System.Runtime.InteropServices;
 
@@ -150,50 +151,6 @@ namespace NtApiDotNet
                     break;
             }
         }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct RtlDriveLetterCurDir
-    {
-        public ushort Flags;
-        public ushort Length;
-        public uint TimeStamp;
-        public UnicodeStringOut DosPath;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public class RtlUserProcessParameters
-    {
-        public uint MaximumLength;
-        public uint Length;
-        public uint Flags;
-        public uint DebugFlags;
-        public IntPtr ConsoleHandle;
-        public uint ConsoleFlags;
-        public IntPtr StdInputHandle;
-        public IntPtr StdOutputHandle;
-        public IntPtr StdErrorHandle;
-        public UnicodeStringOut CurrentDirectoryPath;
-        public IntPtr CurrentDirectoryHandle;
-        public UnicodeStringOut DllPath;
-        public UnicodeStringOut ImagePathName;
-        public UnicodeStringOut CommandLine;
-        public IntPtr Environment;
-        public uint StartingPositionLeft;
-        public uint StartingPositionTop;
-        public uint Width;
-        public uint Height;
-        public uint CharWidth;
-        public uint CharHeight;
-        public uint ConsoleTextAttributes;
-        public uint WindowFlags;
-        public uint ShowWindowFlags;
-        public UnicodeStringOut WindowTitle;
-        public UnicodeStringOut DesktopName;
-        public UnicodeStringOut ShellInfo;
-        public UnicodeStringOut RuntimeData;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 0x20)]
-        public RtlDriveLetterCurDir[] DLCurrentDirectory;
     }
 
     public enum PsProtectedType
