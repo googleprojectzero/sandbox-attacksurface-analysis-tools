@@ -229,7 +229,15 @@ namespace NtApiDotNet
         /// <typeparam name="T">Type of structure to read.</typeparam>
         public static T[] ReadMemoryArray<T>(SafeKernelObjectHandle process, long base_address, int count) where T : new()
         {
-            int element_size = Marshal.SizeOf(typeof(T));
+            Type type = typeof(T);
+            bool char_type = false;
+            if (type == typeof(char))
+            {
+                type = typeof(short);
+                char_type = true;
+            }
+
+            int element_size = Marshal.SizeOf(type);
             using (var buffer = new SafeHGlobalBuffer(element_size * count))
             {
                 NtSystemCalls.NtReadVirtualMemory(process,
@@ -238,11 +246,18 @@ namespace NtApiDotNet
                 {
                     throw new NtException(NtStatus.STATUS_PARTIAL_COPY);
                 }
+
+                if (char_type)
+                {
+                    return (T[])(object)BufferUtils.ReadCharArray(buffer, 0, count);
+                }
+
                 T[] result = new T[count];
                 for (int i = 0; i < count; ++i)
                 {
                     int offset = i * element_size;
-                    result[i] = (T)Marshal.PtrToStructure(buffer.DangerousGetHandle() + offset, typeof(T));
+                    
+                    result[i] = (T)Marshal.PtrToStructure(buffer.DangerousGetHandle() + offset, type);
                 }
                 return result;
             }
