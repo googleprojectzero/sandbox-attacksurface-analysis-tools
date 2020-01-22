@@ -26,7 +26,7 @@ namespace NtApiDotNet
         public UnicodeStringOut TypeName;
     }
 
-    public class ObjectDirectoryInformation
+    public sealed class ObjectDirectoryInformation
     {
         private NtDirectory _root;
         private string _symlink_target;
@@ -66,14 +66,6 @@ namespace NtApiDotNet
                 }
                 return _symlink_target;
             }
-        }
-
-        /// <summary>
-        /// Children of entry if IsDirectory
-        /// </summary>
-        public IEnumerable<ObjectDirectoryInformation> Children
-        {
-            get { return null; }
         }
 
         internal ObjectDirectoryInformation(NtDirectory root, string base_path, OBJECT_DIRECTORY_INFORMATION info)
