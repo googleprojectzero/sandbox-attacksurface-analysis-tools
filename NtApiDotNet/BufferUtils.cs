@@ -170,17 +170,40 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Read a char array with length.
+        /// </summary>
+        /// <param name="buffer">The buffer to read from.</param>
+        /// <param name="count">The number of characters to read.</param>
+        /// <param name="byte_offset">The byte offset to read from.</param>
+        /// <returns>The chars read from the buffer</returns>
+        public static char[] ReadCharArray(SafeBuffer buffer, ulong byte_offset, int count)
+        {
+            char[] ret = new char[count];
+            buffer.ReadArray(byte_offset, ret, 0, count);
+            return ret;
+        }
+
+        /// <summary>
         /// Read a Unicode string string with length.
         /// </summary>
         /// <param name="buffer">The buffer to read from.</param>
         /// <param name="count">The number of characters to read.</param>
         /// <param name="byte_offset">The byte offset to read from.</param>
-        /// <returns>The string read from the buffer without the NUL terminator</returns>
+        /// <returns>The string read from the buffer.</returns>
         public static string ReadUnicodeString(SafeBuffer buffer, ulong byte_offset, int count)
         {
-            char[] ret = new char[count];
-            buffer.ReadArray(byte_offset, ret, 0, count);
-            return new string(ret);
+            return new string(ReadCharArray(buffer, byte_offset, count));
+        }
+
+        /// <summary>
+        /// Write char array.
+        /// </summary>
+        /// <param name="buffer">The buffer to write to.</param>
+        /// <param name="byte_offset">The byte offset to write to.</param>
+        /// <param name="value">The chars to write.</param>
+        public static void WriteCharArray(SafeBuffer buffer, ulong byte_offset, char[] value)
+        {
+            buffer.WriteArray(byte_offset, value, 0, value.Length);
         }
 
         /// <summary>
@@ -191,8 +214,7 @@ namespace NtApiDotNet
         /// <param name="value">The string value to write.</param>
         public static void WriteUnicodeString(SafeBuffer buffer, ulong byte_offset, string value)
         {
-            char[] chars = value.ToCharArray();
-            buffer.WriteArray(byte_offset, chars, 0, chars.Length);
+            WriteCharArray(buffer, byte_offset, value.ToCharArray());
         }
 
         /// <summary>
