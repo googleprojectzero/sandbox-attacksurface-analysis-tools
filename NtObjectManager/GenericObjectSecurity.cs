@@ -42,7 +42,7 @@ namespace NtObjectManager
 
         internal void PersistHandle(SafeHandle handle)
         {
-            base.Persist(handle);
+            Persist(handle);
         }
     }
 }

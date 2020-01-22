@@ -48,7 +48,7 @@ namespace NtObjectManager
         {
             if (PSDriveInfo == null)
             {
-                return String.Empty;
+                return string.Empty;
             }
 
             return PSDriveInfo.Root;
@@ -82,7 +82,7 @@ namespace NtObjectManager
                 base_dir = $@"{GLOBAL_ROOT}Sessions\{session_id}\BaseNamedObjects";
             }
 
-            PSDriveInfo session = new PSDriveInfo("SessionNtObject", this.ProviderInfo, 
+            PSDriveInfo session = new PSDriveInfo("SessionNtObject", ProviderInfo, 
                 base_dir, "Current Session NT Objects", null);
             Collection<PSDriveInfo> drives = new Collection<PSDriveInfo>() { drive, session };
             return drives;
@@ -109,7 +109,7 @@ namespace NtObjectManager
                 return null;
             }
 
-            if (String.IsNullOrWhiteSpace(drive.Root) && (!drive.Root.StartsWith(GLOBAL_ROOT) || !drive.Root.StartsWith(NAMESPACE_ROOT)))
+            if (string.IsNullOrWhiteSpace(drive.Root) && (!drive.Root.StartsWith(GLOBAL_ROOT) || !drive.Root.StartsWith(NAMESPACE_ROOT)))
             {
                 WriteError(new ErrorRecord(
                            new ArgumentNullException("drive.Root"),
@@ -192,7 +192,7 @@ namespace NtObjectManager
         /// <returns>True if the path is valid.</returns>
         protected override bool IsValidPath(string path)
         {
-            if (String.IsNullOrEmpty(path))
+            if (string.IsNullOrEmpty(path))
             {
                 return false;
             }
@@ -333,7 +333,7 @@ namespace NtObjectManager
                 }
             }
             catch (NtException)
-            {   
+            {
             }
 
             return is_container || GetDrive().DirectoryRoot.DirectoryExists(path); 
@@ -456,7 +456,7 @@ namespace NtObjectManager
             {
                 if (relative_path.Length == 0)
                 {
-                    WriteItemObject(new NtDirectoryEntry(GetDrive().DirectoryRoot, relative_path, String.Empty, "Directory"),
+                    WriteItemObject(new NtDirectoryEntry(GetDrive().DirectoryRoot, relative_path, string.Empty, "Directory"),
                             NTPathToPS(BuildDrivePath(relative_path)), true);
                 }
                 else
@@ -495,7 +495,7 @@ namespace NtObjectManager
                 foreach (ObjectDirectoryInformation dir_info in dir_infos)
                 {
                     if (dir_info.Name.Equals(current_entry, StringComparison.OrdinalIgnoreCase))
-                    {                        
+                    {
                         matching_entries.Add(dir_info);
                         break;
                     }
@@ -561,20 +561,20 @@ namespace NtObjectManager
 
             try
             {
-                string base_path = String.Join(@"\", remaining.Take(remaining.Count - 1));
+                string base_path = string.Join(@"\", remaining.Take(remaining.Count - 1));
                 NtDirectory root_dir = GetDrive().DirectoryRoot;
                 // We'll first try the general case of unglobbed dir and a globbed final name.
                 using (NtDirectory base_dir = 
                     remaining.Count > 1 ? NtDirectory.Open(base_path, root_dir, DirectoryAccessRights.Query) 
                                         : root_dir.Duplicate(DirectoryAccessRights.Query))
                 {
-                    AddMatches(base_dir, BuildRelativePath(base_path, String.Empty), new string[] { remaining.Last() }, matches);
+                    AddMatches(base_dir, BuildRelativePath(base_path, string.Empty), new string[] { remaining.Last() }, matches);
                 }
             }
             catch (NtException)
             {
                 // If we couldn't open the drive then try brute force approach.
-                AddMatches(GetDrive().DirectoryRoot, String.Empty, remaining, matches);
+                AddMatches(GetDrive().DirectoryRoot, string.Empty, remaining, matches);
             }
 
             return matches.Select(s => NTPathToPS(BuildDrivePath(s)));
@@ -672,11 +672,9 @@ namespace NtObjectManager
             }
         }
 
-
         void ISecurityDescriptorCmdletProvider.SetSecurityDescriptor(string path, ObjectSecurity securityDescriptor)
         {
-            GenericObjectSecurity obj_security = securityDescriptor as GenericObjectSecurity;
-            if (obj_security != null)
+            if (securityDescriptor is GenericObjectSecurity obj_security)
             {
                 string relative_path = GetRelativePath(PSPathToNT(path));
                 using (NtDirectory dir = GetPathDirectory(relative_path))
