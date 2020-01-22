@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Memory;
 using System;
 using System.Runtime.InteropServices;
 
@@ -84,7 +85,7 @@ namespace NtApiDotNet
     /// This class is used when the UNICODE_STRING is an output parameter.
     /// The allocatation of the buffer is handled elsewhere.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential), CrossBitnessType(typeof(UnicodeStringOut32))]
     public struct UnicodeStringOut
     {
         public ushort Length;
@@ -94,7 +95,40 @@ namespace NtApiDotNet
         {
             if (Buffer != IntPtr.Zero)
                 return Marshal.PtrToStringUni(Buffer, Length / 2);
-            return String.Empty;
+            return string.Empty;
+        }
+
+        internal string ToString(NtProcess process)
+        {
+            if (Length == 0 || Buffer == IntPtr.Zero)
+            {
+                return string.Empty;
+            }
+
+            return new string(process.ReadMemoryArray<char>(Buffer.ToInt64(), 
+                Length / 2));
+        }
+    }
+
+    /// <summary>
+    /// This class is used when the UNICODE_STRING is an output parameter.
+    /// The allocatation of the buffer is handled elsewhere.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct UnicodeStringOut32 : IConvertToNative<UnicodeStringOut>
+    {
+        public ushort Length;
+        public ushort MaximumLength;
+        public IntPtr32 Buffer;
+
+        public UnicodeStringOut Convert()
+        {
+            return new UnicodeStringOut
+            {
+                Length = Length,
+                MaximumLength = MaximumLength,
+                Buffer = Buffer.Convert()
+            };
         }
     }
 
