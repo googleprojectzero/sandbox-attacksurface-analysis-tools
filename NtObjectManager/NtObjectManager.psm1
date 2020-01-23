@@ -177,6 +177,57 @@ function Get-NtTokenPrivilege
 
 <#
 .SYNOPSIS
+Get a token's groups.
+.DESCRIPTION
+This cmdlet will get the groups for a token.
+.PARAMETER Group
+A list of group SIDs to get their state.
+.PARAMETER Token
+Optional token object to use to get groups. Must be accesible for Query right.
+.INPUTS
+None
+.OUTPUTS
+List of TokenPrivilege values indicating the state of all privileges requested.
+.EXAMPLE
+Get-NtTokenGroup
+Get all groups on the current process token
+.EXAMPLE
+Get-NtTokenGroup -Token $token
+Get groups on an explicit token object.
+#>
+function Get-NtTokenGroup {
+  [CmdletBinding(DefaultParameterSetName="Normal")]
+  Param(
+    [NtApiDotNet.NtToken]$Token,
+    [Parameter(Mandatory, ParameterSetName = "Enabled")]
+    [switch]$Enabled,
+    [Parameter(Mandatory, ParameterSetName = "Restricted")]
+    [switch]$Restricted,
+    [Parameter(Mandatory, ParameterSetName = "Capabilities")]
+    [switch]$Capabilities
+  )
+  if ($null -eq $Token) {
+    $Token = Get-NtToken -Primary -Access Query
+  } else {
+    $Token = $Token.Duplicate()
+  }
+
+  Use-NtObject($Token) {
+    $groups = if ($Enabled) {
+        $Token.EnabledGroups
+    } elseif ($Restricted) {
+        $Token.RestrictedSids
+    } elseif ($Capabilities) {
+        $Token.Capabilities
+    } else {
+        $Token.Groups 
+    } 
+    $groups | Write-Output
+  }
+}
+
+<#
+.SYNOPSIS
 Remove privileges from a token.
 .DESCRIPTION
 This cmdlet will remove privileges from a token. Note that this completely removes the privilege, not just disable.
