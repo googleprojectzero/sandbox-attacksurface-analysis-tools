@@ -104,12 +104,36 @@ namespace NtApiDotNet
         Wow64 = 0x80000000,
     }
 
+    public enum TraceEventFlags : uint
+    {
+        None = 0,
+        Header = 0x100,
+        Message = 0x200,
+        Event = 0x300,
+        System = 0x400,
+        Security = 0x500,
+        Mark = 0x600,
+        EventNoReg = 0x700,
+        Instance = 0x800,
+        Raw = 0x900,
+        UseNativeHeader = 0x40000000,
+        Wow64 = 0x80000000
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtTraceEvent(
-            SafeKernelObjectHandle TraceHandle,
-            int Flags,
+            SafeHandle TraceHandle,
+            TraceEventFlags Flags,
+            int FieldSize,
+            SafeBuffer Fields
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtTraceEvent(
+            ref Guid TraceHandle,
+            TraceEventFlags Flags,
             int FieldSize,
             SafeBuffer Fields
         );
