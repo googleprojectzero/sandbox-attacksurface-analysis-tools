@@ -347,6 +347,15 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The string representation.</returns>
+        public override string ToString()
+        {
+            return $"WNF:{StateName:X016} {Lifetime}";
+        }
+
         internal NtWnf(ulong state_name)
         {
             StateName = state_name;
