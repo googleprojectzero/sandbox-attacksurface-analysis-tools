@@ -227,7 +227,7 @@ namespace NtObjectManager
         [Parameter(ParameterSetName = "FromName")]
         public SwitchParameter IgnoreTrigger { get; set; }
 
-        internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
+        private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
             if (CheckScmAccess)
             {

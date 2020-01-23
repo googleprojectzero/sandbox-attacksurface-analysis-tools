@@ -147,7 +147,7 @@ namespace NtObjectManager
             }
         }
 
-        internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
+        private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
             NtType type = NtType.GetTypeByType<NtFile>();
             AccessMask access_rights = type.MapGenericRights(AccessRights);

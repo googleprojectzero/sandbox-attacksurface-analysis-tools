@@ -359,7 +359,7 @@ namespace NtObjectManager
             }
         }
 
-        internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
+        private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
             AccessMask access_rights = _process_type.MapGenericRights(AccessRights);
             AccessMask thread_access_rights = _thread_type.MapGenericRights(ThreadAccessRights);

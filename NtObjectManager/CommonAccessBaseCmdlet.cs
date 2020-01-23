@@ -309,9 +309,9 @@ namespace NtObjectManager
         [Parameter]
         public NtProcess[] Processes { get; set; }
 
-        internal abstract void RunAccessCheck(IEnumerable<TokenEntry> tokens);
+        private protected abstract void RunAccessCheck(IEnumerable<TokenEntry> tokens);
 
-        internal void WriteAccessCheckResult(string name, string type_name, AccessMask granted_access,
+        private protected void WriteAccessCheckResult(string name, string type_name, AccessMask granted_access,
             GenericMapping generic_mapping, SecurityDescriptor sd, Type enum_type, bool is_directory, TokenInformation token_info)
         {
             WriteObject(new AccessCheckResult(name, type_name, granted_access, generic_mapping, 
@@ -456,12 +456,12 @@ namespace NtObjectManager
             return false;
         }
 
-        internal void WriteAccessWarning(string path, NtStatus status)
+        private protected void WriteAccessWarning(string path, NtStatus status)
         {
             WriteWarning($"Couldn't access {path} - Status: {status}");
         }
 
-        internal void WriteAccessWarning(NtObject root, string path, NtStatus status)
+        private protected void WriteAccessWarning(NtObject root, string path, NtStatus status)
         {
             WriteAccessWarning($@"{root.FullPath.TrimEnd('\\')}\{path}", status);
         }
@@ -600,7 +600,7 @@ namespace NtObjectManager
         [Parameter]
         public SwitchParameter AllowEmptyAccess { get; set; }
 
-        internal bool IsAccessGranted(AccessMask granted_access, AccessMask access_rights)
+        private protected bool IsAccessGranted(AccessMask granted_access, AccessMask access_rights)
         {
             if (granted_access.IsEmpty)
             {
@@ -668,9 +668,9 @@ namespace NtObjectManager
         /// </summary>
         /// <param name="tokens">The list of tokens.</param>
         /// <param name="path">The path to check.</param>
-        internal abstract void RunAccessCheckPath(IEnumerable<TokenEntry> tokens, string path);
+        private protected abstract void RunAccessCheckPath(IEnumerable<TokenEntry> tokens, string path);
 
-        internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
+        private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
             List<string> paths = new List<string>();
             if (Path != null)

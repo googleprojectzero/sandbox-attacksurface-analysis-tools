@@ -291,7 +291,7 @@ namespace NtObjectManager
             return base_path;
         }
 
-        internal override void RunAccessCheckPath(IEnumerable<TokenEntry> tokens, string path)
+        private protected override void RunAccessCheckPath(IEnumerable<TokenEntry> tokens, string path)
         {
             using (var result = OpenDirectory(path, null))
             {
@@ -373,7 +373,7 @@ namespace NtObjectManager
             }
         }
 
-        internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
+        private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
             if (FromHandles)
             {

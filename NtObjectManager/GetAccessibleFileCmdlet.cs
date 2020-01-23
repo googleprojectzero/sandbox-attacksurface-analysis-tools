@@ -269,7 +269,7 @@ namespace NtObjectManager
             base.BeginProcessing();
         }
 
-        internal override void RunAccessCheckPath(IEnumerable<TokenEntry> tokens, string path)
+        private protected override void RunAccessCheckPath(IEnumerable<TokenEntry> tokens, string path)
         {
             FileOpenOptions options = FileOpenOptions.OpenReparsePoint | (_open_for_backup ? FileOpenOptions.OpenForBackupIntent : FileOpenOptions.None);
             NtType type = NtType.GetTypeByType<NtFile>();

@@ -284,7 +284,7 @@ namespace NtObjectManager
             return CheckMode == DeviceCheckMode.NamespaceOnly || CheckMode == DeviceCheckMode.DeviceAndNamespace;
         }
 
-        internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
+        private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
             HashSet<string> devices = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 

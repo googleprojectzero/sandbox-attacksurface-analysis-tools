@@ -375,7 +375,7 @@ namespace NtObjectManager
         #region Internal Members
         internal const string TypeName = "Scheduled Task";
 
-        internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
+        private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
             foreach (var entry in GetTaskSchedulerEntries())
             {

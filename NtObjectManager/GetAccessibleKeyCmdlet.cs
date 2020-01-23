@@ -170,7 +170,7 @@ namespace NtObjectManager
             return NtKeyUtils.Win32KeyNameToNt(win32_path);
         }
 
-        internal override void RunAccessCheckPath(IEnumerable<TokenEntry> tokens, string path)
+        private protected override void RunAccessCheckPath(IEnumerable<TokenEntry> tokens, string path)
         {
             using (var result = OpenKey(path, null, false, _open_for_backup))
             {

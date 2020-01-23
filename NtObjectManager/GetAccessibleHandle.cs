@@ -247,7 +247,7 @@ namespace NtObjectManager
             }
         }
 
-        internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
+        private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
             var type_filter = GetTypeFilter();
             if (QueryAllDevicePaths)
