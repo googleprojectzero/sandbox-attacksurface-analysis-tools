@@ -54,6 +54,16 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Query the default security for events.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The default security descriptor.</returns>
+        public static NtResult<SecurityDescriptor> QueryDefaultSecurity(bool throw_on_error)
+        {
+            return QueryTraceSecurity(TraceKnownGuids.DefaultTraceSecurity, throw_on_error);
+        }
+
+        /// <summary>
         /// Register an event trace with a specific GUID.
         /// </summary>
         /// <param name="guid">The event trace GUID.</param>
