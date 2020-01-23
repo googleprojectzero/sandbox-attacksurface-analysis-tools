@@ -1,4 +1,4 @@
-﻿//  Copyright 2016, 2017 Google Inc. All Rights Reserved.
+﻿//  Copyright 2020 Google Inc. All Rights Reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -12,29 +12,26 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+using System.Linq;
+
 namespace NtApiDotNet.Win32
 {
 #pragma warning disable 1591
-    public class EtwServiceTriggerInformation : ServiceTriggerInformation
+    public class WnfServiceTriggerInformation : ServiceTriggerInformation
     {
-        public SecurityDescriptor SecurityDescriptor { get; }
+        public NtWnf Name { get; }
 
-        public override void Trigger()
-        {
-            using (var reg = EventTracing.Register(SubType))
-            {
-                reg.Write();
-            }
-        }
-
-        internal EtwServiceTriggerInformation(SERVICE_TRIGGER trigger) 
+        internal WnfServiceTriggerInformation(SERVICE_TRIGGER trigger)
             : base(trigger)
         {
-            var sd = EventTracing.QueryTraceSecurity(SubType, false);
-            if (sd.IsSuccess)
+            var data = CustomData.FirstOrDefault();
+            if (data?.RawData?.Length != 8)
             {
-                SecurityDescriptor = sd.Result;
+                return;
             }
+
+            Name = NtWnf.Open(BitConverter.ToUInt64(data.RawData, 0), true, false).GetResultOrDefault();
         }
 
         public override string ToString()

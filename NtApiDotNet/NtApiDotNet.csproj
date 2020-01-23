@@ -301,6 +301,7 @@
     <Compile Include="SafeAlpcPortMessageBuffer.cs" />
     <Compile Include="NtWaitTimeout.cs" />
     <Compile Include="NtWaitHandle.cs" />
+    <Compile Include="Win32\WnfServiceTriggerInformation.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Readme.txt" />

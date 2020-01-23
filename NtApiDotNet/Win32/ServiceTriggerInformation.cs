@@ -156,6 +156,10 @@ namespace NtApiDotNet.Win32
             {
                 return new EtwServiceTriggerInformation(trigger);
             }
+            else if (trigger.dwTriggerType == ServiceTriggerType.CustomSystemStateChange)
+            {
+                return new WnfServiceTriggerInformation(trigger);
+            }
             return new ServiceTriggerInformation(trigger);
         }
     }
