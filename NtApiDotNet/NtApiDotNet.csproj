@@ -254,6 +254,7 @@
     <Compile Include="Win32\AppContainerProfile.cs" />
     <Compile Include="Win32\Device\DeviceNativeMethods.cs" />
     <Compile Include="Win32\Device\DeviceUtils.cs" />
+    <Compile Include="Win32\EtwServiceTriggerInformation.cs" />
     <Compile Include="Win32\EventTrace.cs" />
     <Compile Include="Win32\EventTracing.cs" />
     <Compile Include="Win32\ExecutableManifest.cs" />
@@ -279,8 +280,12 @@
     <Compile Include="Win32\Rpc\Transport\ExtendedErrorInfo.cs" />
     <Compile Include="Win32\Rpc\Transport\RpcFaultException.cs" />
     <Compile Include="Win32\RpcServer.cs" />
+    <Compile Include="Win32\RunningService.cs" />
     <Compile Include="Win32\SafeCoTaskMemHandle.cs" />
     <Compile Include="Win32\SafeLocalAllocBuffer.cs" />
+    <Compile Include="Win32\ServiceInformation.cs" />
+    <Compile Include="Win32\ServiceTriggerCustomData.cs" />
+    <Compile Include="Win32\ServiceTriggerInformation.cs" />
     <Compile Include="Win32\SymbolResolver.cs" />
     <Compile Include="Win32\Win32Debug.cs" />
     <Compile Include="Win32\Win32Error.cs" />
