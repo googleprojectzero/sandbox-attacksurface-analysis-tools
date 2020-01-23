@@ -148,6 +148,9 @@ namespace NtObjectManager
 
         private ServiceAccessRights GetTriggerAccess(RunningService service, NtToken token)
         {
+            if (IgnoreTrigger)
+                return 0;
+
             ServiceAccessRights granted_access = 0;
             NtType type = NtType.GetTypeByType<NtEtwRegistration>();
 
@@ -216,6 +219,13 @@ namespace NtObjectManager
         /// </summary>
         [Parameter(ParameterSetName = "All")]
         public ServiceCheckMode CheckMode { get; set; }
+
+        /// <summary>
+        /// <para type="description">Ignore triggers when checking maximum access.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "All")]
+        [Parameter(ParameterSetName = "FromName")]
+        public SwitchParameter IgnoreTrigger { get; set; }
 
         internal override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {

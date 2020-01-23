@@ -21,7 +21,7 @@ namespace NtApiDotNet.Win32
     /// </summary>
     public sealed class EventTrace : IDisposable
     {
-        private long _handle;
+        private readonly long _handle;
 
         internal EventTrace(long handle)
         {
