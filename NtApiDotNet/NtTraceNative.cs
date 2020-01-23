@@ -37,6 +37,7 @@ namespace NtApiDotNet
         CreateInproc = 0x0200,
         AccessRealtime = 0x0400,
         RegisterGuids = 0x0800,
+        JoinGroup = 0x1000,
         GenericRead = GenericAccessRights.GenericRead,
         GenericWrite = GenericAccessRights.GenericWrite,
         GenericExecute = GenericAccessRights.GenericExecute,
