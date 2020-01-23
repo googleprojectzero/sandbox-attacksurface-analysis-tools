@@ -210,7 +210,7 @@ namespace NtApiDotNet
                         return;
                     }
 
-                    var value = key.Result.QueryValue(StateName.ToString("X"), false);
+                    var value = key.Result.QueryValue(StateName.ToString("X016"), false);
                     if (value.IsSuccess)
                     {
                         ReadStateData(value.Result);
