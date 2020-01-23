@@ -489,6 +489,26 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Get whether the DACL is present.
+        /// </summary>
+        public bool DaclPresent => Dacl != null;
+
+        /// <summary>
+        /// Get count of ACEs in DACL.
+        /// </summary>
+        public int DaclAceCount => Dacl?.Count ?? 0;
+
+        /// <summary>
+        /// Get whether the SACL is present.
+        /// </summary>
+        public bool SaclPresent => Sacl != null;
+
+        /// <summary>
+        /// Get count of ACEs in DACL.
+        /// </summary>
+        public int SaclAceCount => Sacl?.Count ?? 0;
+
         #endregion
 
         #region Public Methods

@@ -1333,5 +1333,53 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>SecurityDescriptor</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.SecurityDescriptor</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Owner</Label>
+            <Width>30</Width>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>DACL ACE Count</Label>
+            <Width>14</Width>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>SACL ACE Count</Label>
+            <Width>14</Width>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Integrity Level</Label>
+            <Width>15</Width>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                  <ScriptBlock>$_.Owner.Sid.Name</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>DaclAceCount</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>SaclAceCount</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>IntegrityLevel</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>
