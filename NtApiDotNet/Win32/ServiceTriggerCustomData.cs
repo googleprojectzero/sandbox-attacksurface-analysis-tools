@@ -75,6 +75,11 @@ namespace NtApiDotNet.Win32
             }
             Data = GetDataString();
         }
+
+        public override string ToString()
+        {
+            return Data;
+        }
     }
 #pragma warning restore
 }

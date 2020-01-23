@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32
@@ -95,6 +96,8 @@ namespace NtApiDotNet.Win32
                         }
                         return $"[Unknown IP Address Availability] {SubType:B}";
                     }
+                case ServiceTriggerType.CustomSystemStateChange:
+                    return "[CustomSystemStateChange]";
                 default:
                     return $"Unknown Trigger Type: {TriggerType} SubType: {SubType}";
             }
@@ -131,7 +134,12 @@ namespace NtApiDotNet.Win32
 
         public override string ToString()
         {
-            return $"{TriggerType} {Action} {SubTypeDescription}";
+            string ret = $"{TriggerType} {Action} {SubTypeDescription}";
+            if (CustomData.Any())
+            {
+                ret = $"{ret} {string.Join(",", CustomData.Select(d => d.Data))}";
+            }
+            return ret;
         }
 
         /// <summary>
