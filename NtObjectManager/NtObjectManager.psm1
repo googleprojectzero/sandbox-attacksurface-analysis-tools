@@ -184,6 +184,12 @@ This cmdlet will get the groups for a token.
 A list of group SIDs to get their state.
 .PARAMETER Token
 Optional token object to use to get groups. Must be accesible for Query right.
+.PARAMETER Restricted
+Return the restricted SID list.
+.PARAMETER Capabilities
+Return the capability SID list.
+.PARAMETER Attributes
+Specify attributes to filter group list on.
 .INPUTS
 None
 .OUTPUTS
@@ -194,17 +200,19 @@ Get all groups on the current process token
 .EXAMPLE
 Get-NtTokenGroup -Token $token
 Get groups on an explicit token object.
+.EXAMPLE
+Get-NtTokenGroup -Attributes Enabled
+Get groups that are enabled.
 #>
 function Get-NtTokenGroup {
   [CmdletBinding(DefaultParameterSetName="Normal")]
   Param(
     [NtApiDotNet.NtToken]$Token,
-    [Parameter(Mandatory, ParameterSetName = "Enabled")]
-    [switch]$Enabled,
     [Parameter(Mandatory, ParameterSetName = "Restricted")]
     [switch]$Restricted,
     [Parameter(Mandatory, ParameterSetName = "Capabilities")]
-    [switch]$Capabilities
+    [switch]$Capabilities,
+    [NtApiDotNet.GroupAttributes]$Attributes = 0
   )
   if ($null -eq $Token) {
     $Token = Get-NtToken -Primary -Access Query
@@ -213,15 +221,18 @@ function Get-NtTokenGroup {
   }
 
   Use-NtObject($Token) {
-    $groups = if ($Enabled) {
-        $Token.EnabledGroups
-    } elseif ($Restricted) {
+    $groups = if ($Restricted) {
         $Token.RestrictedSids
     } elseif ($Capabilities) {
         $Token.Capabilities
     } else {
-        $Token.Groups 
-    } 
+        $Token.Groups
+    }
+
+    if ($Attributes -ne 0) {
+        $groups = $groups | ? {($_.Attributes -band $Attributes) -eq $Attributes}
+    }
+
     $groups | Write-Output
   }
 }
