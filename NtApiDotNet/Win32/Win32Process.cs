@@ -890,7 +890,7 @@ namespace NtApiDotNet.Win32
             return count;
         }
 
-        private SafeHGlobalBuffer GetAttributes(DisposableList<IDisposable> resources)
+        private SafeHGlobalBuffer GetAttributes(DisposableList resources)
         {
             int count = GetAttributeCount();
             if (count == 0)
@@ -943,27 +943,7 @@ namespace NtApiDotNet.Win32
 
             if (AppContainerSid != null)
             {
-                SECURITY_CAPABILITIES caps = new SECURITY_CAPABILITIES
-                {
-                    AppContainerSid = resources.AddResource(AppContainerSid.ToSafeBuffer()).DangerousGetHandle()
-                };
-
-                if (Capabilities.Count > 0)
-                {
-                    SidAndAttributes[] cap_sids = new SidAndAttributes[Capabilities.Count];
-                    for (int i = 0; i < Capabilities.Count; ++i)
-                    {
-                        cap_sids[i] = new SidAndAttributes()
-                        {
-                            Sid = resources.AddResource(Capabilities[i].ToSafeBuffer()).DangerousGetHandle(),
-                            Attributes = GroupAttributes.Enabled
-                        };
-                    }
-                    SafeHGlobalBuffer cap_buffer = resources.AddResource(new SafeHGlobalBuffer(Marshal.SizeOf(typeof(SidAndAttributes)) * Capabilities.Count));
-                    cap_buffer.WriteArray(0, cap_sids, 0, cap_sids.Length);
-                    caps.Capabilities = cap_buffer.DangerousGetHandle();
-                    caps.CapabilityCount = cap_sids.Length;
-                }
+                SECURITY_CAPABILITIES caps = Win32Utils.CreateSecuityCapabilities(AppContainerSid, Capabilities, resources);
                 attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeSecurityCapabilities, caps);
             }
 
@@ -1016,7 +996,7 @@ namespace NtApiDotNet.Win32
             return attr_list;
         }
 
-        internal STARTUPINFOEX ToStartupInfoEx(DisposableList<IDisposable> resources)
+        internal STARTUPINFOEX ToStartupInfoEx(DisposableList resources)
         {
             STARTUPINFOEX start_info = new STARTUPINFOEX();
             PopulateStartupInfo(ref start_info.StartupInfo);
@@ -1076,7 +1056,7 @@ namespace NtApiDotNet.Win32
         /// <returns>The created win32 process.</returns>
         public static Win32Process CreateProcessAsUser(NtToken token, Win32ProcessConfig config)
         {
-            using (var resources = new DisposableList<IDisposable>())
+            using (var resources = new DisposableList())
             {
                 PROCESS_INFORMATION proc_info = new PROCESS_INFORMATION();
                 STARTUPINFOEX start_info = config.ToStartupInfoEx(resources);
@@ -1197,7 +1177,7 @@ namespace NtApiDotNet.Win32
 
             PROCESS_INFORMATION proc_info = new PROCESS_INFORMATION();
 
-            using (var resources = new DisposableList<IDisposable>())
+            using (var resources = new DisposableList())
             {
                 SECURITY_ATTRIBUTES proc_attr = config.ProcessSecurityAttributes(resources);
                 SECURITY_ATTRIBUTES thread_attr = config.ThreadSecurityAttributes(resources);

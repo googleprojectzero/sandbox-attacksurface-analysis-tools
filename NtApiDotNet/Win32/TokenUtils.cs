@@ -359,5 +359,56 @@ namespace NtApiDotNet.Win32
 
             return tokens;
         }
+
+        /// <summary>
+        /// Create an AppContainer token using the CreateAppContainerToken API.
+        /// </summary>
+        /// <param name="token">The token to base the new token on. Can be null.</param>
+        /// <param name="appcontainer_sid">The AppContainer package SID.</param>
+        /// <param name="capabilities">List of capabilities.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The appcontainer token.</returns>
+        /// <remarks>This exported function was only introduced in RS3</remarks>
+        [SupportedVersion(SupportedVersion.Windows10_RS3)]
+        public static NtResult<NtToken> CreateAppContainerToken(NtToken token, Sid appcontainer_sid, 
+            IEnumerable<Sid> capabilities, bool throw_on_error)
+        {
+            using (var resources = new DisposableList())
+            {
+                SECURITY_CAPABILITIES caps = Win32Utils.CreateSecuityCapabilities(appcontainer_sid, capabilities ?? new Sid[0], resources);
+                if (!Win32NativeMethods.CreateAppContainerToken(token.GetHandle(), ref caps, out SafeKernelObjectHandle new_token))
+                {
+                    return Win32Utils.GetLastWin32Error().CreateResultFromDosError<NtToken>(throw_on_error);
+                }
+                return NtToken.FromHandle(new_token).CreateResult();
+            }
+        }
+
+        /// <summary>
+        /// Create an AppContainer token using the CreateAppContainerToken API.
+        /// </summary>
+        /// <param name="token">The token to base the new token on. Can be null.</param>
+        /// <param name="appcontainer_sid">The AppContainer package SID.</param>
+        /// <param name="capabilities">List of capabilities.</param>
+        /// <returns>The appcontainer token.</returns>
+        /// <remarks>This exported function was only introduced in RS3</remarks>
+        public static NtToken CreateAppContainerToken(NtToken token, Sid appcontainer_sid,
+            IEnumerable<Sid> capabilities)
+        {
+            return CreateAppContainerToken(token, appcontainer_sid, capabilities, true).Result;
+        }
+
+        /// <summary>
+        /// Create an AppContainer token using the CreateAppContainerToken API.
+        /// </summary>
+        /// <param name="appcontainer_sid">The AppContainer package SID.</param>
+        /// <param name="capabilities">List of capabilities.</param>
+        /// <returns>The appcontainer token.</returns>
+        /// <remarks>This exported function was only introduced in RS3</remarks>
+        public static NtToken CreateAppContainerToken(Sid appcontainer_sid,
+            IEnumerable<Sid> capabilities)
+        {
+            return CreateAppContainerToken(null, appcontainer_sid, capabilities);
+        }
     }
 }

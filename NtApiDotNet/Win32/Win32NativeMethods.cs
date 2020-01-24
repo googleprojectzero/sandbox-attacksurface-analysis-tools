@@ -863,6 +863,12 @@ namespace NtApiDotNet.Win32
           CreateFileFlagsAndAttributes dwFlagsAndAttributes,
           SafeKernelObjectHandle hTemplateFile
         );
+
+        [DllImport("kernelbase.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool CreateAppContainerToken(
+                SafeKernelObjectHandle TokenHandle,
+                ref SECURITY_CAPABILITIES SecurityCapabilities,
+                out SafeKernelObjectHandle AppContainerTokenHandle);
     }
 #pragma warning restore 1591
 }

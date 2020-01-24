@@ -32,6 +32,7 @@ namespace NtApiDotNet
         Windows10_RS3,
         Windows10_RS4,
         Windows10_RS5,
+        Windows10_19H1,
     }
 #pragma warning restore 1591
 

@@ -376,5 +376,29 @@ namespace NtApiDotNet.Win32
             return CreateFile(filename, desired_access, share_mode,
             creation_disposition, flags_and_attributes, true).Result;
         }
+
+        internal static SECURITY_CAPABILITIES CreateSecuityCapabilities(Sid package_sid, IEnumerable<Sid> capabilities, DisposableList resources)
+        {
+            SECURITY_CAPABILITIES caps = new SECURITY_CAPABILITIES
+            {
+                AppContainerSid = resources.AddResource(package_sid.ToSafeBuffer()).DangerousGetHandle()
+            };
+
+            if (capabilities.Any())
+            {
+                SidAndAttributes[] cap_sids = capabilities.Select(s => new SidAndAttributes()
+                {
+                    Sid = resources.AddResource(s.ToSafeBuffer()).DangerousGetHandle(),
+                    Attributes = GroupAttributes.Enabled
+                }).ToArray();
+
+                SafeHGlobalBuffer cap_buffer = resources.AddResource(new SafeHGlobalBuffer(Marshal.SizeOf(typeof(SidAndAttributes)) * cap_sids.Length));
+                cap_buffer.WriteArray(0, cap_sids, 0, cap_sids.Length);
+                caps.Capabilities = cap_buffer.DangerousGetHandle();
+                caps.CapabilityCount = cap_sids.Length;
+            }
+
+            return caps;
+        }
     }
 }
