@@ -425,10 +425,65 @@ namespace NtApiDotNet
         /// <param name="attributes">The attributes to set</param>
         public void SetGroup(Sid group, GroupAttributes attributes)
         {
-            using (var buffer = BuildGroups(new Sid[] { group }, attributes))
+            SetGroup(group, attributes, true);
+        }
+
+        /// <summary>
+        /// Set the state of a group
+        /// </summary>
+        /// <param name="group">The group SID to set</param>
+        /// <param name="attributes">The attributes to set</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetGroup(Sid group, GroupAttributes attributes, bool throw_on_error)
+        {
+            return SetGroups(new[] { group }, attributes, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the state of a group
+        /// </summary>
+        /// <param name="groups">The groups to set</param>
+        /// <param name="attributes">The attributes to set</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetGroups(IEnumerable<Sid> groups, GroupAttributes attributes, bool throw_on_error)
+        {
+            using (var buffer = BuildGroups(groups, attributes))
             {
-                NtSystemCalls.NtAdjustGroupsToken(Handle, false, buffer, 0, IntPtr.Zero, IntPtr.Zero).ToNtException();
+                return NtSystemCalls.NtAdjustGroupsToken(Handle, false,
+                    buffer, 0, IntPtr.Zero, IntPtr.Zero).ToNtException(throw_on_error);
             }
+        }
+
+        /// <summary>
+        /// Set the state of a group
+        /// </summary>
+        /// <param name="groups">The groups to set</param>
+        /// <param name="attributes">The attributes to set</param>
+        public void SetGroups(IEnumerable<Sid> groups, GroupAttributes attributes)
+        {
+            SetGroups(groups, attributes, true);
+        }
+
+        /// <summary>
+        /// Reset all groups to their default statue.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus ResetGroups(bool throw_on_error)
+        {
+            return NtSystemCalls.NtAdjustGroupsToken(Handle, true,
+                SafeTokenGroupsBuffer.Null, 0, IntPtr.Zero, IntPtr.Zero)
+                .ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Reset all groups to their default statue.
+        /// </summary>
+        public void ResetGroups()
+        {
+            ResetGroups(true);
         }
 
         /// <summary>
