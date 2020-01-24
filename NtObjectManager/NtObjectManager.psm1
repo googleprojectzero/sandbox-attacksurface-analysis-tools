@@ -238,6 +238,48 @@ function Get-NtTokenGroup {
 
 <#
 .SYNOPSIS
+Sets a token's group state.
+.DESCRIPTION
+This cmdlet will sets the state of groups for a token.
+.PARAMETER Token
+Optional token object to use to set groups. Must be accesible for AdjustGroups right.
+.PARAMETER Sid
+Specify the list of SIDs to set.
+.PARAMETER Attributes
+Specify the attributes to set on the SIDs.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Set-NtTokenGroup -Sid "WD" -Attributes 0
+Set the Everyone SID to disabled.
+.EXAMPLE
+Set-NtTokenGroup -Sid "WD" -Attributes Enabled
+Set the Everyone SID to enabled.
+#>
+function Set-NtTokenGroup {
+  [CmdletBinding(DefaultParameterSetName="Normal")]
+  Param(
+    [NtApiDotNet.NtToken]$Token,
+    [Parameter(Mandatory, Position = 0)] 
+    [NtApiDotNet.Sid[]]$Sid,
+    [Parameter(Mandatory, Position = 1)] 
+    [NtApiDotNet.GroupAttributes]$Attributes
+  )
+  if ($null -eq $Token) {
+    $Token = Get-NtToken -Primary -Access AdjustGroups
+  } else {
+    $Token = $Token.Duplicate()
+  }
+
+  Use-NtObject($Token) {
+    $Token.SetGroups($Sid, $Attributes)
+  }
+}
+
+<#
+.SYNOPSIS
 Get a token's user SID or one of the other single SID values.
 .DESCRIPTION
 This cmdlet will get user SID for a token. Or one of the other SIDs such as Owner.
