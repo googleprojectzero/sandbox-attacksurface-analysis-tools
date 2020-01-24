@@ -66,6 +66,7 @@
     <Compile Include="NtWaitNative.cs" />
     <Compile Include="NtWindowStationNative.cs" />
     <Compile Include="SafeProcessParametersHandle.cs" />
+    <Compile Include="SidIdentifierAuthority.cs" />
     <Compile Include="Utilities\Memory\CrossBitnessProcessMemoryReader.cs" />
     <Compile Include="Utilities\Memory\CrossBitnessTypeAttribute.cs" />
     <Compile Include="Utilities\Memory\CurrentProcessMemoryReader.cs" />

@@ -35,18 +35,11 @@ namespace NtApiDotNet
         {
             if (_thread != null)
             {
-                try
+                using (_thread)
                 {
-                    _thread.SetImpersonationToken(null);
+                    _thread.SetImpersonationToken(null, false);
                 }
-                catch
-                {
-                }
-                finally
-                {
-                    _thread.Dispose();
-                    _thread = null;
-                }
+                _thread = null;
             }
         }
 
