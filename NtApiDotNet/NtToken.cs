@@ -961,98 +961,47 @@ namespace NtApiDotNet
         /// <summary>
         /// Get token groups
         /// </summary>
-        public UserGroup[] Groups
-        {
-            get
-            {
-                return QueryGroupsInternal(TokenInformationClass.TokenGroups);
-            }
-        }
+        public UserGroup[] Groups => QueryGroupsInternal(TokenInformationClass.TokenGroups);
 
         /// <summary>
         /// Get list of enabled groups.
         /// </summary>
-        public IEnumerable<UserGroup> EnabledGroups
-        {
-            get
-            {
-                return Groups.Where(g => g.Enabled);
-            }
-        }
+        public IEnumerable<UserGroup> EnabledGroups => Groups.Where(g => g.Enabled);
 
         /// <summary>
         /// Get list of deny only groups.
         /// </summary>
-        public IEnumerable<UserGroup> DenyOnlyGroups
-        {
-            get
-            {
-                return Groups.Where(g => g.DenyOnly);
-            }
-        }
+        public IEnumerable<UserGroup> DenyOnlyGroups => Groups.Where(g => g.DenyOnly);
 
         /// <summary>
         /// Get count of groups in this token.
         /// </summary>
-        public int GroupCount
-        {
-            get { return Groups.Length; }
-        }
+        public int GroupCount => Groups.Length;
 
         /// <summary>
         /// Get the authentication ID for the token
         /// </summary>
-        public Luid AuthenticationId
-        {
-            get
-            {
-                return GetTokenStats().AuthenticationId;
-            }
-        }
+        public Luid AuthenticationId => GetTokenStats().AuthenticationId;
 
         /// <summary>
         /// Get the token's type
         /// </summary>
-        public TokenType TokenType
-        {
-            get
-            {
-                return GetTokenStats().TokenType;
-            }
-        }
+        public TokenType TokenType => GetTokenStats().TokenType;
 
         /// <summary>
         /// Get the token's expiration time.
         /// </summary>
-        public long ExpirationTime
-        {
-            get
-            {
-                return GetTokenStats().ExpirationTime.QuadPart;
-            }
-        }
+        public long ExpirationTime => GetTokenStats().ExpirationTime.QuadPart;
 
         /// <summary>
         /// Get the Token's Id
         /// </summary>
-        public Luid Id
-        {
-            get
-            {
-                return GetTokenStats().TokenId;
-            }
-        }
+        public Luid Id => GetTokenStats().TokenId;
 
         /// <summary>
         /// Get the Toen's modified Id.
         /// </summary>
-        public Luid ModifiedId
-        {
-            get
-            {
-                return GetTokenStats().ModifiedId;
-            }
-        }
+        public Luid ModifiedId => GetTokenStats().ModifiedId;
 
         /// <summary>
         /// Get/set the token's owner.
@@ -1136,32 +1085,17 @@ namespace NtApiDotNet
         /// <summary>
         /// Get token's restricted sids
         /// </summary>
-        public UserGroup[] RestrictedSids
-        {
-            get
-            {
-                return QueryGroupsInternal(TokenInformationClass.TokenRestrictedSids);
-            }
-        }
+        public UserGroup[] RestrictedSids => QueryGroupsInternal(TokenInformationClass.TokenRestrictedSids);
 
         /// <summary>
         /// Get count of restricted sids
         /// </summary>
-        public int RestrictedSidsCount
-        {
-            get { return RestrictedSids.Length; }
-        }
+        public int RestrictedSidsCount => RestrictedSids.Length;
 
         /// <summary>
         /// Get token's impersonation level
         /// </summary>
-        public SecurityImpersonationLevel ImpersonationLevel
-        {
-            get
-            {
-                return GetTokenStats().ImpersonationLevel;
-            }
-        }
+        public SecurityImpersonationLevel ImpersonationLevel => GetTokenStats().ImpersonationLevel;
 
         /// <summary>
         /// Get/set token's session ID
@@ -1350,17 +1284,8 @@ namespace NtApiDotNet
         /// </summary>
         public TokenIntegrityLevel IntegrityLevel
         {
-            get
-            {
-                UserGroup group = IntegrityLevelSid;
-                string[] parts = group.Sid.ToString().Split('-');
-                return (TokenIntegrityLevel)int.Parse(parts[parts.Length - 1]);
-            }
-
-            set
-            {
-                SetIntegrityLevel(value);
-            }
+            get => (TokenIntegrityLevel)IntegrityLevelSid.Sid.SubAuthorities.Last();
+            set => SetIntegrityLevel(value);
         }
 
         /// <summary>

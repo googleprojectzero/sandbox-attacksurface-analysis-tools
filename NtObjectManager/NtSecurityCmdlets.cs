@@ -71,7 +71,7 @@ namespace NtApiDotNet
     ///   <para>Gets the Sid for the current user.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-NtSid -Token -LogonGroup</code>
+    ///   <code>Get-NtSid -LogonGroup</code>
     ///   <para>Gets the Sid for the current default logon group.</para>
     /// </example>
     /// <example>
@@ -136,7 +136,7 @@ namespace NtApiDotNet
         /// <summary>
         /// <para type="description">Get the SID from the current user token. Defaults to the user SID.</para>
         /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "token")]
+        [Parameter(ParameterSetName = "token")]
         public SwitchParameter Token { get; set; }
 
         /// <summary>

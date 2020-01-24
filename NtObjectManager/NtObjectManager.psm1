@@ -180,8 +180,6 @@ function Get-NtTokenPrivilege
 Get a token's groups.
 .DESCRIPTION
 This cmdlet will get the groups for a token.
-.PARAMETER Group
-A list of group SIDs to get their state.
 .PARAMETER Token
 Optional token object to use to get groups. Must be accesible for Query right.
 .PARAMETER Restricted
@@ -193,7 +191,7 @@ Specify attributes to filter group list on.
 .INPUTS
 None
 .OUTPUTS
-List of TokenPrivilege values indicating the state of all privileges requested.
+List of UserGroup values indicating the state of all groups.
 .EXAMPLE
 Get-NtTokenGroup
 Get all groups on the current process token
@@ -207,6 +205,7 @@ Get groups that are enabled.
 function Get-NtTokenGroup {
   [CmdletBinding(DefaultParameterSetName="Normal")]
   Param(
+    [Parameter(Position = 0)]
     [NtApiDotNet.NtToken]$Token,
     [Parameter(Mandatory, ParameterSetName = "Restricted")]
     [switch]$Restricted,
@@ -234,6 +233,181 @@ function Get-NtTokenGroup {
     }
 
     $groups | Write-Output
+  }
+}
+
+<#
+.SYNOPSIS
+Get a token's user SID or one of the other single SID values.
+.DESCRIPTION
+This cmdlet will get user SID for a token. Or one of the other SIDs such as Owner.
+.PARAMETER Owner
+Specify to get the owner.
+.PARAMETER Group
+Specify to get the default group.
+.PARAMETER Integrity
+Specify to get the integrity level.
+.PARAMETER TrustLevel
+Specify to get the process trust level.
+.PARAMETER LogonId
+Specify to get the logon SID.
+.PARAMETER Package
+Specify to get the AppContainer package SID.
+.PARAMETER Token
+Optional token object to use to get SID. Must be accesible for Query right.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Sid
+.EXAMPLE
+Get-NtTokenSid
+Get user SID on the current process token
+.EXAMPLE
+Get-NtTokenSid -Token $token
+Get user SID on an explicit token object.
+.EXAMPLE
+Get-NtTokenSid -Group
+Get the default group SID.
+.EXAMPLE
+Get-NtTokenSid -Owner
+Get the default owner SID.
+#>
+function Get-NtTokenSid {
+  [CmdletBinding(DefaultParameterSetName="User")]
+  Param(
+    [Parameter(Position = 0)]
+    [NtApiDotNet.NtToken]$Token,
+    [Parameter(Mandatory, ParameterSetName="Owner")]
+    [switch]$Owner,
+    [Parameter(Mandatory, ParameterSetName="Group")]
+    [switch]$Group,
+    [Parameter(Mandatory, ParameterSetName="TrustLevel")]
+    [switch]$TrustLevel,
+    [Parameter(Mandatory, ParameterSetName="Login")]
+    [switch]$LogonId,
+    [Parameter(Mandatory, ParameterSetName="Integrity")]
+    [switch]$Integrity,
+    [Parameter(Mandatory, ParameterSetName="Package")]
+    [switch]$Package
+  )
+  if ($null -eq $Token) {
+    $Token = Get-NtToken -Primary -Access Query
+  } else {
+    $Token = $Token.Duplicate()
+  }
+
+  Use-NtObject($Token) {
+    $sid = switch($PsCmdlet.ParameterSetName) {
+        "User" { $Token.User.Sid }
+        "Owner" { $Token.Owner }
+        "Group" { $Token.PrimaryGroup }
+        "TrustLevel" { $Token.TrustLevel }
+        "Login" { $Token.LogonSid.Sid }
+        "Integrity" { $Token.IntegrityLevelSid.Sid }
+        "Package" { $Token.AppContainerSid }
+    }
+    $sid | Write-Output
+  }
+}
+
+<#
+.SYNOPSIS
+Set a token SID.
+.DESCRIPTION
+This cmdlet will set a SID on the token such as default owner or group.
+.PARAMETER Owner
+Specify to set the default owner.
+.PARAMETER Group
+Specify to set the default group.
+.PARAMETER Integrity
+Specify to set the integrity level.
+.PARAMETER Token
+Optional token object to use to set group. Must be accesible for AdjustDefault right.
+.PARAMETER Sid
+Specify the SID to set.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Set-NtTokenSid -Owner -Sid "S-1-2-3-4"
+Set default owner on the current process token
+.EXAMPLE
+Set-NtTokenOwner -Owner -Token $token -Sid "S-1-2-3-4"
+Set default owner on an explicit token object.
+.EXAMPLE
+Set-NtTokenOwner -Group -Sid "S-1-2-3-4"
+Set the default group.
+#>
+function Set-NtTokenSid {
+  [CmdletBinding(DefaultParameterSetName="Normal")]
+  Param(
+    [Parameter(Position = 1)]
+    [NtApiDotNet.NtToken]$Token,
+    [Parameter(Mandatory, Position = 0)]
+    [NtApiDotNet.Sid]$Sid,
+    [Parameter(Mandatory, ParameterSetName="Owner")]
+    [switch]$Owner,
+    [Parameter(Mandatory, ParameterSetName="Group")]
+    [switch]$Group,
+    [Parameter(Mandatory, ParameterSetName="Integrity")]
+    [switch]$Integrity
+  )
+  if ($null -eq $Token) {
+    $Token = Get-NtToken -Primary -Access AdjustDefault
+  } else {
+    $Token = $Token.Duplicate()
+  }
+
+  Use-NtObject($Token) {
+    switch($PsCmdlet.ParameterSetName) {
+        "Owner" { $Token.Owner = $Sid }
+        "Group" { $Token.PrimaryGroup = $Sid }
+        "Integrity" { $Token.IntegrityLevelSid = $sid }
+    }}
+}
+
+<#
+.SYNOPSIS
+Get a token's default owner of group.
+.DESCRIPTION
+This cmdlet will get the default owner or group for a token.
+.PARAMETER Group
+Specify to get the default group rather than default owner.
+.PARAMETER Token
+Optional token object to use to get group. Must be accesible for Query right.
+.INPUTS
+None
+.OUTPUTS
+List of TokenPrivilege values indicating the state of all privileges requested.
+.EXAMPLE
+Get-NtTokenOwner
+Get default owner on the current process token
+.EXAMPLE
+Get-NtTokenOwner -Token $token
+Get default owner on an explicit token object.
+.EXAMPLE
+Get-NtTokenOwner -Group
+Get the default group.
+#>
+function Get-NtTokenOwner {
+  [CmdletBinding(DefaultParameterSetName="Normal")]
+  Param(
+    [NtApiDotNet.NtToken]$Token,
+    [switch]$Group
+  )
+  if ($null -eq $Token) {
+    $Token = Get-NtToken -Primary -Access Query
+  } else {
+    $Token = $Token.Duplicate()
+  }
+
+  Use-NtObject($Token) {
+    if ($Group) {
+        $Token.PrimaryGroup | Write-Output
+    } else {
+        $Token.Owner | Write-Output
+    }
   }
 }
 
