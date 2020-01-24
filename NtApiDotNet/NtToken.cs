@@ -1209,49 +1209,25 @@ namespace NtApiDotNet
         /// <summary>
         /// Get token's elevation type
         /// </summary>
-        public TokenElevationType ElevationType
-        {
-            get
-            {
-                return (TokenElevationType)Query<int>(TokenInformationClass.TokenElevationType);
-            }
-        }
+        public TokenElevationType ElevationType => (TokenElevationType)Query<int>(TokenInformationClass.TokenElevationType);
 
         /// <summary>
         /// Get whether token is elevated
         /// </summary>
-        public bool Elevated
-        {
-            get
-            {
-                return Query<int>(TokenInformationClass.TokenElevation) != 0;
-            }
-        }
+        public bool Elevated => Query<int>(TokenInformationClass.TokenElevation) != 0;
 
         /// <summary>
         /// Get whether token has restrictions
         /// </summary>
-        public bool HasRestrictions
-        {
-            get
-            {
-                return Query<int>(TokenInformationClass.TokenHasRestrictions) != 0;
-            }
-        }
+        public bool HasRestrictions => Query<int>(TokenInformationClass.TokenHasRestrictions) != 0;
 
         /// <summary>
         /// Get/set token UI access flag
         /// </summary>
         public bool UIAccess
         {
-            get
-            {
-                return Query<int>(TokenInformationClass.TokenUIAccess) != 0;
-            }
-            set
-            {
-                SetUIAccess(value);
-            }
+            get => Query<int>(TokenInformationClass.TokenUIAccess) != 0;
+            set => SetUIAccess(value);
         }
 
         /// <summary>
@@ -1259,14 +1235,8 @@ namespace NtApiDotNet
         /// </summary>
         public bool VirtualizationAllowed
         {
-            get
-            {
-                return Query<int>(TokenInformationClass.TokenVirtualizationAllowed) != 0;
-            }
-            set
-            {
-                Set(TokenInformationClass.TokenVirtualizationAllowed, value ? 1 : 0);
-            }
+            get => Query<int>(TokenInformationClass.TokenVirtualizationAllowed) != 0;
+            set => Set(TokenInformationClass.TokenVirtualizationAllowed, value ? 1 : 0);
         }
 
         /// <summary>
@@ -1274,14 +1244,8 @@ namespace NtApiDotNet
         /// </summary>
         public bool VirtualizationEnabled
         {
-            get
-            {
-                return Query<int>(TokenInformationClass.TokenVirtualizationEnabled) != 0;
-            }
-            set
-            {
-                SetVirtualizationEnabled(value);
-            }
+            get => Query<int>(TokenInformationClass.TokenVirtualizationEnabled) != 0;
+            set => SetVirtualizationEnabled(value);
         }
 
         /// <summary>
@@ -1344,39 +1308,21 @@ namespace NtApiDotNet
         /// <summary>
         /// Get token capabilities.
         /// </summary>
-        public UserGroup[] Capabilities
-        {
-            get
-            {
-                return QueryGroupsInternal(TokenInformationClass.TokenCapabilities);
-            }
-        }
+        public UserGroup[] Capabilities => QueryGroupsInternal(TokenInformationClass.TokenCapabilities);
 
         /// <summary>
         /// Get or set the token mandatory policy
         /// </summary>
         public TokenMandatoryPolicy MandatoryPolicy
         {
-            get
-            {
-                return (TokenMandatoryPolicy)Query<int>(TokenInformationClass.TokenMandatoryPolicy);
-            }
-            set
-            {
-                Set(TokenInformationClass.TokenMandatoryPolicy, (int)value);
-            }
+            get => (TokenMandatoryPolicy)Query<int>(TokenInformationClass.TokenMandatoryPolicy);
+            set => Set(TokenInformationClass.TokenMandatoryPolicy, (int)value);
         }
 
         /// <summary>
         /// Get token logon sid
         /// </summary>
-        public UserGroup LogonSid
-        {
-            get
-            {
-                return QueryGroupsInternal(TokenInformationClass.TokenLogonSid).FirstOrDefault();
-            }
-        }
+        public UserGroup LogonSid => QueryGroupsInternal(TokenInformationClass.TokenLogonSid).FirstOrDefault();
 
         /// <summary>
         /// Get token's integrity level sid
@@ -1391,22 +1337,13 @@ namespace NtApiDotNet
                 }
             }
 
-            set
-            {
-                SetIntegrityLevelSid(value.Sid);
-            }
+            set => SetIntegrityLevelSid(value.Sid);
         }
 
         /// <summary>
         /// Get token's App Container number.
         /// </summary>
-        public int AppContainerNumber
-        {
-            get
-            {
-                return Query<int>(TokenInformationClass.TokenAppContainerNumber);
-            }
-        }
+        public int AppContainerNumber => Query<int>(TokenInformationClass.TokenAppContainerNumber);
 
         /// <summary>
         /// Get or set token's integrity level.
@@ -1524,24 +1461,12 @@ namespace NtApiDotNet
         /// <summary>
         /// Get token's device groups
         /// </summary>
-        public UserGroup[] DeviceGroups
-        {
-            get
-            {
-                return QueryGroupsInternal(TokenInformationClass.TokenDeviceGroups);
-            }
-        }
+        public UserGroup[] DeviceGroups => QueryGroupsInternal(TokenInformationClass.TokenDeviceGroups);
 
         /// <summary>
         /// Get token's restricted device groups.
         /// </summary>
-        public UserGroup[] RestrictedDeviceGroups
-        {
-            get
-            {
-                return QueryGroupsInternal(TokenInformationClass.TokenRestrictedDeviceGroups);
-            }
-        }
+        public UserGroup[] RestrictedDeviceGroups => QueryGroupsInternal(TokenInformationClass.TokenRestrictedDeviceGroups);
 
         /// <summary>
         /// Get list of privileges for token
