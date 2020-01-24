@@ -803,6 +803,7 @@ namespace NtApiDotNet
             "offlineMapsManagement",
             "oneProcessVoIP",
             "optical",
+            "pacJsWorker",
             "packageContents",
             "packageManagement",
             "packagePolicySystem",
