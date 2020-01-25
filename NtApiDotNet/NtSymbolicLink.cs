@@ -174,18 +174,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the symbolic link target.
         /// </summary>
-        public string Target
-        {
-            get
-            {
-                using (UnicodeStringAllocated ustr = new UnicodeStringAllocated())
-                {
-                    NtSystemCalls.NtQuerySymbolicLinkObject(Handle, ustr, 
-                        out int return_length).ToNtException();
-                    return ustr.ToString();
-                }
-            }
-        }
+        public string Target => GetTarget(true).Result;
         #endregion
 
         #region Public Methods
@@ -242,6 +231,20 @@ namespace NtApiDotNet
         public void SetGlobalLink()
         {
             SetGlobalLink(true);
+        }
+
+        /// <summary>
+        /// Get the symbolic link target path.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The target path.</returns>
+        public NtResult<string> GetTarget(bool throw_on_error)
+        {
+            using (UnicodeStringAllocated ustr = new UnicodeStringAllocated())
+            {
+                return NtSystemCalls.NtQuerySymbolicLinkObject(Handle, ustr,
+                    out int return_length).CreateResult(throw_on_error, () => ustr.ToString());
+            }
         }
 
         #endregion
