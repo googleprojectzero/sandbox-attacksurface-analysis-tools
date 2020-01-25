@@ -22,7 +22,7 @@ namespace NtObjectManager
     /// </summary>
     public class NtDirectoryEntry
     {
-        private NtDirectory _base_directory;
+        private readonly NtDirectory _base_directory;
         private SecurityDescriptor _sd;
         private string _symlink_target;
         private Enum _maximum_granted_access;
@@ -44,15 +44,14 @@ namespace NtObjectManager
                                 return;
                             }
                             var obj = result.Result;
-
                             if (obj.IsAccessMaskGranted(GenericAccessRights.ReadControl))
                             {
-                                _sd = obj.SecurityDescriptor;
+                                _sd = obj.GetSecurityDescriptor(SecurityInformation.AllBasic, false).GetResultOrDefault();
                             }
 
                             if (obj is NtSymbolicLink link && link.IsAccessGranted(SymbolicLinkAccessRights.Query))
                             {
-                                _symlink_target = link.Target;
+                                _symlink_target = link.GetTarget(false).GetResultOrDefault();
                             }
 
                             _maximum_granted_access = obj.GrantedAccessMask.ToSpecificAccess(obj.NtType.AccessRightsType);
