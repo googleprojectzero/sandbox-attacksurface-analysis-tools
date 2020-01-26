@@ -143,21 +143,24 @@ None
 List of TokenPrivilege values indicating the state of all privileges requested.
 .EXAMPLE
 Get-NtTokenPrivilege
-Get all privileges on the current process token
+Get all privileges on the current process token.
 .EXAMPLE
-Set-NtTokenPrivilege SeDebugPrivilege 
+Get-NtTokenPrivilege -Token $token
+Get all privileges on an explicit  token.
+.EXAMPLE
+Get-NtTokenPrivilege -Privileges SeDebugPrivilege 
 Get state of SeDebugPrivilege on the current process token
 .EXAMPLE
-Get-NtTokenPrivilege SeBackupPrivilege, SeRestorePrivilege -Token $token
+Get-NtTokenPrivilege -Privileges SeBackupPrivilege, SeRestorePrivilege -Token $token
 Get SeBackupPrivilege and SeRestorePrivilege status on an explicit token object.
 #>
 function Get-NtTokenPrivilege
 {
   Param(
     [Parameter(Position=0)]
-    [NtApiDotNet.TokenPrivilegeValue[]]$Privileges,
-    [NtApiDotNet.NtToken]$Token
-    )
+    [NtApiDotNet.NtToken]$Token,
+    [NtApiDotNet.TokenPrivilegeValue[]]$Privileges
+  )
   if ($null -eq $Token) {
     $Token = Get-NtToken -Primary -Access Query
   } else {
