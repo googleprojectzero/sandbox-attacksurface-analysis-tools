@@ -105,16 +105,24 @@ Enable SeBackupPrivilege and SeRestorePrivilege on an explicit token object.
 #>
 function Set-NtTokenPrivilege
 {
+  [CmdletBinding(DefaultParameterSetName="FromAttributes")]
   Param(
     [Parameter(Mandatory=$true, Position=0)]
     [NtApiDotNet.TokenPrivilegeValue[]]$Privileges,
     [NtApiDotNet.NtToken]$Token,
-    [NtApiDotNet.PrivilegeAttributes]$Attributes = "Enabled"
+    [Parameter(ParameterSetName="FromAttributes")]
+    [NtApiDotNet.PrivilegeAttributes]$Attributes = "Enabled",
+    [Parameter(ParameterSetName="FromDisable")]
+    [switch]$Disable
     )
   if ($null -eq $Token) {
     $Token = Get-NtToken -Primary
   } else {
     $Token = $Token.Duplicate()
+  }
+
+  if ($Disable) {
+    $Attributes = 0
   }
 
   Use-NtObject($Token) {
