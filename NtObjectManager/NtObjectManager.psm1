@@ -130,6 +130,8 @@ function Set-NtTokenPrivilege
     foreach($priv in $Privileges) {
       if ($Token.SetPrivilege($priv, $Attributes)) {
         $result += @($Token.GetPrivilege($priv))
+      } else {
+        Write-Warning "Couldn't set privilege $priv"
       }
     }
     return $result
@@ -178,7 +180,12 @@ function Get-NtTokenPrivilege
   Use-NtObject($Token) {
     if ($Privileges -ne $null -and $Privileges.Count -gt 0) {
         foreach($priv in $Privileges) {
-            $Token.GetPrivilege($priv) | Write-Output
+            $val = $Token.GetPrivilege($priv)
+            if ($val -ne $null) {
+                $val | Write-Output
+            } else {
+                Write-Warning "Couldn't get privilege $priv"
+            }
         }
     } else {
         $Token.Privileges | Write-Output
