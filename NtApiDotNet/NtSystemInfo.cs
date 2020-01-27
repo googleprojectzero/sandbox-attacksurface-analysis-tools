@@ -800,6 +800,46 @@ namespace NtApiDotNet
             _system_info_object.SetBytes(info_class, value);
         }
 
+        /// <summary>
+        /// Draw text on the background.
+        /// </summary>
+        /// <param name="text">The text to draw.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus DrawText(string text, bool throw_on_error)
+        {
+            return NtSystemCalls.NtDrawText(new UnicodeString(text)).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Draw text on the background.
+        /// </summary>
+        /// <param name="text">The text to draw.</param>
+        public static void DrawText(string text)
+        {
+            DrawText(text, true);
+        }
+
+        /// <summary>
+        /// Display a string.
+        /// </summary>
+        /// <param name="text">The text to display.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus DisplayString(string text, bool throw_on_error)
+        {
+            return NtSystemCalls.NtDisplayString(new UnicodeString(text)).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Display a string.
+        /// </summary>
+        /// <param name="text">The text to display.</param>
+        public static void DisplayString(string text)
+        {
+            DisplayString(text, true);
+        }
+
         #endregion
 
         #region Static Properties

@@ -79,6 +79,12 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtAllocateLocallyUniqueId(out Luid Luid);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtDrawText([In] UnicodeString Text);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtDisplayString([In] UnicodeString Text);
     }
 
     public static partial class NtRtl
