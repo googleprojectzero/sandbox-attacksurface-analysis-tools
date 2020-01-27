@@ -250,6 +250,10 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtReplacePartitionUnit(UnicodeString TargetInstancePath,
             UnicodeString SpareInstancePath, uint Flags);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtCancelSynchronousIoFile(SafeKernelObjectHandle ThreadHandle, 
+            [In] SafeIoStatusBuffer IoRequestToCancel, [Out] IoStatus IoStatusBlock);
     }
 
     public static partial class NtRtl

@@ -853,6 +853,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Cancel all synchronous IO for this thread.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status.</returns>
+        public NtStatus CancelSynchronousIo(bool throw_on_error = true)
+        {
+            return NtSystemCalls.NtCancelSynchronousIoFile(Handle, SafeIoStatusBuffer.Null, new IoStatus()).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
