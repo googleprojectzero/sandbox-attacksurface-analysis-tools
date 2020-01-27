@@ -172,7 +172,7 @@ namespace NtApiDotNet
         public ushort Atom { get; }
 
         /// <summary>
-        /// Get the name of the stom
+        /// Get the name of the atom.
         /// </summary>
         /// <returns>The name of the atom</returns>
         public string Name
