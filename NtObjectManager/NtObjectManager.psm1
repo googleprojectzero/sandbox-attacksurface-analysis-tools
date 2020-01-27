@@ -348,7 +348,9 @@ function Get-NtTokenSid {
     [Parameter(Mandatory, ParameterSetName="Integrity")]
     [switch]$Integrity,
     [Parameter(Mandatory, ParameterSetName="Package")]
-    [switch]$Package
+    [switch]$Package,
+    [switch]$ToSddl,
+    [switch]$ToName
   )
   if ($null -eq $Token) {
     $Token = Get-NtToken -Primary -Access Query
@@ -366,7 +368,14 @@ function Get-NtTokenSid {
         "Integrity" { $Token.IntegrityLevelSid.Sid }
         "Package" { $Token.AppContainerSid }
     }
-    $sid | Write-Output
+
+    if ($ToSddl) {
+        $sid.ToString() | Write-Output
+    } elseif ($ToName) {
+        $sid.Name | Write-Output
+    } else {
+        $sid | Write-Output
+    }
   }
 }
 
