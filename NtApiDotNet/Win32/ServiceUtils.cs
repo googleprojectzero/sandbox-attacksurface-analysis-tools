@@ -161,9 +161,17 @@ namespace NtApiDotNet.Win32
         SystemDriver = 0x00000002,
         Win32OwnProcess = 0x00000010,
         Win32ShareProcess = 0x00000020,
+        Win32 = Win32OwnProcess | Win32ShareProcess,
         UserService = 0x00000040,
         UserServiceInstance = 0x00000080,
         InteractiveProcess = 0x00000100
+    }
+
+    public enum ServiceState
+    {
+        All,
+        Active,
+        InActive
     }
 
     internal enum SC_STATUS_TYPE
@@ -253,66 +261,19 @@ namespace NtApiDotNet.Win32
     /// </summary>
     public static class ServiceUtils
     {
-        const int SERVICE_CONFIG_TRIGGER_INFO = 8;
-        const int SERVICE_CONFIG_SERVICE_SID_INFO = 5;
-        const int SERVICE_CONFIG_REQUIRED_PRIVILEGES_INFO = 6;
-        const int SERVICE_CONFIG_LAUNCH_PROTECTED = 12;
+        #region Private Members
+        private const int SERVICE_CONFIG_TRIGGER_INFO = 8;
+        private const int SERVICE_CONFIG_SERVICE_SID_INFO = 5;
+        private const int SERVICE_CONFIG_REQUIRED_PRIVILEGES_INFO = 6;
+        private const int SERVICE_CONFIG_LAUNCH_PROTECTED = 12;
 
-        /// <summary>
-        /// Get the generic mapping for the SCM.
-        /// </summary>
-        /// <returns>The SCM generic mapping.</returns>
-        public static GenericMapping GetScmGenericMapping()
+        private static SecurityDescriptor GetServiceSecurityDescriptor(SafeServiceHandle handle, string type_name)
         {
-            GenericMapping mapping = new GenericMapping
-            {
-                GenericRead = ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.EnumerateService | ServiceControlManagerAccessRights.QueryLockStatus,
-                GenericWrite = ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.CreateService | ServiceControlManagerAccessRights.ModifyBootConfig,
-                GenericExecute = ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.Lock,
-                GenericAll = ServiceControlManagerAccessRights.All
-            };
-            return mapping;
-        }
-
-        /// <summary>
-        /// Get the generic mapping for a service.
-        /// </summary>
-        /// <returns>The service generic mapping.</returns>
-        public static GenericMapping GetServiceGenericMapping()
-        {
-            GenericMapping mapping = new GenericMapping
-            {
-                GenericRead = ServiceAccessRights.ReadControl | ServiceAccessRights.QueryConfig
-                | ServiceAccessRights.QueryStatus | ServiceAccessRights.Interrogate | ServiceAccessRights.EnumerateDependents,
-                GenericWrite = ServiceAccessRights.ReadControl | ServiceAccessRights.ChangeConfig,
-                GenericExecute = ServiceAccessRights.ReadControl | ServiceAccessRights.Start
-                | ServiceAccessRights.Stop | ServiceAccessRights.PauseContinue | ServiceAccessRights.UserDefinedControl,
-                GenericAll = ServiceAccessRights.All
-            };
-            return mapping;
-        }
-        
-        /// <summary>
-        /// Get the security descriptor of the SCM.
-        /// </summary>
-        /// <returns></returns>
-        public static SecurityDescriptor GetScmSecurityDescriptor()
-        {
-            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
-                            ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.ReadControl))
-            {
-                return GetServiceSecurityDescriptor(scm, "scm");
-            }
-        }
-
-        static SecurityDescriptor GetServiceSecurityDescriptor(SafeServiceHandle handle, string type_name)
-        {
-            int required = 0;
             byte[] sd = new byte[8192];
-            if (!Win32NativeMethods.QueryServiceObjectSecurity(handle, SecurityInformation.Dacl 
-                | SecurityInformation.Owner 
-                | SecurityInformation.Label 
-                | SecurityInformation.Group, sd, sd.Length, out required))
+            if (!Win32NativeMethods.QueryServiceObjectSecurity(handle, SecurityInformation.Dacl
+                | SecurityInformation.Owner
+                | SecurityInformation.Label
+                | SecurityInformation.Group, sd, sd.Length, out int required))
             {
                 throw new SafeWin32Exception();
             }
@@ -320,12 +281,12 @@ namespace NtApiDotNet.Win32
             return new SecurityDescriptor(sd, GetServiceNtType(type_name));
         }
 
-        static IEnumerable<ServiceTriggerInformation> GetTriggersForService(SafeServiceHandle service)
+        private static IEnumerable<ServiceTriggerInformation> GetTriggersForService(SafeServiceHandle service)
         {
             List<ServiceTriggerInformation> triggers = new List<ServiceTriggerInformation>();
             using (var buf = new SafeStructureInOutBuffer<SERVICE_TRIGGER_INFO>(8192, false))
             {
-                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_TRIGGER_INFO, 
+                if (!Win32NativeMethods.QueryServiceConfig2(service, SERVICE_CONFIG_TRIGGER_INFO,
                     buf, buf.Length, out int required))
                 {
                     return triggers.AsReadOnly();
@@ -338,7 +299,7 @@ namespace NtApiDotNet.Win32
                 }
 
                 SERVICE_TRIGGER[] trigger_arr;
-                using (SafeHGlobalBuffer trigger_buffer = new SafeHGlobalBuffer(trigger_info.pTriggers, 
+                using (SafeHGlobalBuffer trigger_buffer = new SafeHGlobalBuffer(trigger_info.pTriggers,
                     trigger_info.cTriggers * Marshal.SizeOf(typeof(SERVICE_TRIGGER)), false))
                 {
                     trigger_arr = new SERVICE_TRIGGER[trigger_info.cTriggers];
@@ -415,7 +376,7 @@ namespace NtApiDotNet.Win32
 
         private static ServiceInformation GetServiceSecurityInformation(SafeServiceHandle scm, string name)
         {
-            using (SafeServiceHandle service = Win32NativeMethods.OpenService(scm, name, 
+            using (SafeServiceHandle service = Win32NativeMethods.OpenService(scm, name,
                 ServiceAccessRights.QueryConfig | ServiceAccessRights.ReadControl))
             {
                 if (service.IsInvalid)
@@ -423,28 +384,9 @@ namespace NtApiDotNet.Win32
                     throw new SafeWin32Exception();
                 }
 
-                return new ServiceInformation(name, GetServiceSecurityDescriptor(service, "service"), 
+                return new ServiceInformation(name, GetServiceSecurityDescriptor(service, "service"),
                     GetTriggersForService(service), GetServiceSidType(service),
                     GetServiceLaunchProtectedType(service), GetServiceRequiredPrivileges(service));
-            }
-        }
-        
-        /// <summary>
-        /// Get the information about a service.
-        /// </summary>
-        /// <param name="name">The name of the service.</param>
-        /// <returns>The servicec information.</returns>
-        public static ServiceInformation GetServiceInformation(string name)
-        {
-            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
-                            ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.ReadControl))
-            {
-                if (scm.IsInvalid)
-                {
-                    throw new SafeWin32Exception();
-                }
-
-                return GetServiceSecurityInformation(scm, name);
             }
         }
 
@@ -471,7 +413,7 @@ namespace NtApiDotNet.Win32
         {
             using (var buffer = new SafeStructureInOutBuffer<SERVICE_STATUS_PROCESS>())
             {
-                if (!Win32NativeMethods.QueryServiceStatusEx(service, SC_STATUS_TYPE.SC_STATUS_PROCESS_INFO, 
+                if (!Win32NativeMethods.QueryServiceStatusEx(service, SC_STATUS_TYPE.SC_STATUS_PROCESS_INFO,
                     buffer, buffer.Length, out int length))
                 {
                     throw new SafeWin32Exception();
@@ -490,6 +432,115 @@ namespace NtApiDotNet.Win32
                 }
 
                 return QueryStatus(service).dwProcessId;
+            }
+        }
+
+        private static IEnumerable<RunningService> GetServices(SERVICE_STATE service_state, ServiceType service_types)
+        {
+            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
+                            ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.EnumerateService))
+            {
+                if (scm.IsInvalid)
+                {
+                    throw new SafeWin32Exception();
+                }
+
+                const int Length = 32 * 1024;
+                using (var buffer = new SafeHGlobalBuffer(Length))
+                {
+                    int resume_handle = 0;
+                    while (true)
+                    {
+                        bool ret = Win32NativeMethods.EnumServicesStatusEx(scm, SC_ENUM_TYPE.SC_ENUM_PROCESS_INFO,
+                            service_types, service_state, buffer,
+                            buffer.Length, out int bytes_needed, out int services_returned, ref resume_handle, null);
+                        Win32Error error = Win32Utils.GetLastWin32Error();
+                        if (!ret && error != Win32Error.ERROR_MORE_DATA)
+                        {
+                            throw new SafeWin32Exception(error);
+                        }
+
+                        ENUM_SERVICE_STATUS_PROCESS[] services = new ENUM_SERVICE_STATUS_PROCESS[services_returned];
+                        buffer.ReadArray(0, services, 0, services_returned);
+                        foreach (var service in services)
+                        {
+                            yield return new RunningService(service);
+                        }
+
+                        if (ret)
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        #endregion
+
+        #region Static Methods
+        /// <summary>
+        /// Get the generic mapping for the SCM.
+        /// </summary>
+        /// <returns>The SCM generic mapping.</returns>
+        public static GenericMapping GetScmGenericMapping()
+        {
+            GenericMapping mapping = new GenericMapping
+            {
+                GenericRead = ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.EnumerateService | ServiceControlManagerAccessRights.QueryLockStatus,
+                GenericWrite = ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.CreateService | ServiceControlManagerAccessRights.ModifyBootConfig,
+                GenericExecute = ServiceControlManagerAccessRights.ReadControl | ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.Lock,
+                GenericAll = ServiceControlManagerAccessRights.All
+            };
+            return mapping;
+        }
+
+        /// <summary>
+        /// Get the generic mapping for a service.
+        /// </summary>
+        /// <returns>The service generic mapping.</returns>
+        public static GenericMapping GetServiceGenericMapping()
+        {
+            GenericMapping mapping = new GenericMapping
+            {
+                GenericRead = ServiceAccessRights.ReadControl | ServiceAccessRights.QueryConfig
+                | ServiceAccessRights.QueryStatus | ServiceAccessRights.Interrogate | ServiceAccessRights.EnumerateDependents,
+                GenericWrite = ServiceAccessRights.ReadControl | ServiceAccessRights.ChangeConfig,
+                GenericExecute = ServiceAccessRights.ReadControl | ServiceAccessRights.Start
+                | ServiceAccessRights.Stop | ServiceAccessRights.PauseContinue | ServiceAccessRights.UserDefinedControl,
+                GenericAll = ServiceAccessRights.All
+            };
+            return mapping;
+        }
+        
+        /// <summary>
+        /// Get the security descriptor of the SCM.
+        /// </summary>
+        /// <returns></returns>
+        public static SecurityDescriptor GetScmSecurityDescriptor()
+        {
+            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
+                            ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.ReadControl))
+            {
+                return GetServiceSecurityDescriptor(scm, "scm");
+            }
+        }
+
+        /// <summary>
+        /// Get the information about a service.
+        /// </summary>
+        /// <param name="name">The name of the service.</param>
+        /// <returns>The servicec information.</returns>
+        public static ServiceInformation GetServiceInformation(string name)
+        {
+            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
+                            ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.ReadControl))
+            {
+                if (scm.IsInvalid)
+                {
+                    throw new SafeWin32Exception();
+                }
+
+                return GetServiceSecurityInformation(scm, name);
             }
         }
 
@@ -541,61 +592,6 @@ namespace NtApiDotNet.Win32
             return result;
         }
 
-        private static ServiceType GetServiceTypes()
-        {
-            ServiceType service_types = ServiceType.Win32OwnProcess | ServiceType.Win32ShareProcess;
-            if (!NtObjectUtils.IsWindows81OrLess)
-            {
-                service_types |= ServiceType.UserService;
-            }
-            return service_types;
-        }
-
-        /// <summary>
-        /// Get a list of registered services.
-        /// </summary>
-        /// <returns>A list of running services with process IDs.</returns>
-        private static IEnumerable<RunningService> GetServices(SERVICE_STATE service_state, ServiceType service_types)
-        {
-            using (SafeServiceHandle scm = Win32NativeMethods.OpenSCManager(null, null,
-                            ServiceControlManagerAccessRights.Connect | ServiceControlManagerAccessRights.EnumerateService))
-            {
-                if (scm.IsInvalid)
-                {
-                    throw new SafeWin32Exception();
-                }
-
-                const int Length = 32 * 1024;
-                using (var buffer = new SafeHGlobalBuffer(Length))
-                {
-                    int resume_handle = 0;
-                    while (true)
-                    {
-                        bool ret = Win32NativeMethods.EnumServicesStatusEx(scm, SC_ENUM_TYPE.SC_ENUM_PROCESS_INFO, 
-                            service_types, service_state, buffer,
-                            buffer.Length, out int bytes_needed, out int services_returned, ref resume_handle, null);
-                        Win32Error error = Win32Utils.GetLastWin32Error();
-                        if (!ret && error != Win32Error.ERROR_MORE_DATA)
-                        {
-                            throw new SafeWin32Exception(error);
-                        }
-
-                        ENUM_SERVICE_STATUS_PROCESS[] services = new ENUM_SERVICE_STATUS_PROCESS[services_returned];
-                        buffer.ReadArray(0, services, 0, services_returned);
-                        foreach (var service in services)
-                        {
-                            yield return new RunningService(service);
-                        }
-
-                        if (ret)
-                        {
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
         /// <summary>
         /// Get a running service by name.
         /// </summary>
@@ -627,6 +623,55 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Get a list of all registered services.
         /// </summary>
+        /// <param name="state">Specify state of services to get.</param>
+        /// <param name="service_types">Specify the type filter for services.</param>
+        /// <returns>A list of registered services.</returns>
+        public static IEnumerable<RunningService> GetServices(ServiceState state, ServiceType service_types)
+        {
+            SERVICE_STATE state_flags;
+            switch (state)
+            {
+                case ServiceState.All:
+                    state_flags = SERVICE_STATE.SERVICE_STATE_ALL;
+                    break;
+                case ServiceState.Active:
+                    state_flags = SERVICE_STATE.SERVICE_ACTIVE;
+                    break;
+                case ServiceState.InActive:
+                    state_flags = SERVICE_STATE.SERVICE_INACTIVE;
+                    break;
+                default:
+                    throw new ArgumentException("Invalid state.", nameof(state));
+            }
+            return GetServices(state_flags, service_types);
+        }
+
+        /// <summary>
+        /// Get flags for all user service types.
+        /// </summary>
+        /// <returns>The flags for user service types.</returns>
+        public static ServiceType GetServiceTypes()
+        {
+            ServiceType service_types = ServiceType.Win32OwnProcess | ServiceType.Win32ShareProcess;
+            if (!NtObjectUtils.IsWindows81OrLess)
+            {
+                service_types |= ServiceType.UserService;
+            }
+            return service_types;
+        }
+
+        /// <summary>
+        /// Get flags for all kernel driver types.
+        /// </summary>
+        /// <returns>The flags for kernel driver types.</returns>
+        public static ServiceType GetDriverTypes()
+        {
+            return ServiceType.KernelDriver | ServiceType.SystemDriver;
+        }
+
+        /// <summary>
+        /// Get a list of all registered services.
+        /// </summary>
         /// <returns>A list of registered services.</returns>
         public static IEnumerable<RunningService> GetServices()
         {
@@ -648,7 +693,7 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of all drivers.</returns>
         public static IEnumerable<RunningService> GetDrivers()
         {
-            return GetServices(SERVICE_STATE.SERVICE_STATE_ALL, ServiceType.KernelDriver | ServiceType.SystemDriver);
+            return GetServices(SERVICE_STATE.SERVICE_STATE_ALL, GetDriverTypes());
         }
 
         /// <summary>
@@ -657,7 +702,7 @@ namespace NtApiDotNet.Win32
         /// <returns>A list of all active running drivers.</returns>
         public static IEnumerable<RunningService> GetRunningDrivers()
         {
-            return GetServices(SERVICE_STATE.SERVICE_STATE_ALL, ServiceType.KernelDriver | ServiceType.SystemDriver);
+            return GetServices(SERVICE_STATE.SERVICE_ACTIVE, GetDriverTypes());
         }
 
         /// <summary>
@@ -667,7 +712,17 @@ namespace NtApiDotNet.Win32
         public static IEnumerable<RunningService> GetServicesAndDrivers()
         {
             return GetServices(SERVICE_STATE.SERVICE_STATE_ALL, 
-                ServiceType.KernelDriver | ServiceType.SystemDriver | GetServiceTypes());
+                GetDriverTypes() | GetServiceTypes());
+        }
+
+        /// <summary>
+        /// Get a list of all services and drivers.
+        /// </summary>
+        /// <returns>A list of all services and drivers.</returns>
+        public static IEnumerable<RunningService> GetRunningServicesAndDrivers()
+        {
+            return GetServices(SERVICE_STATE.SERVICE_ACTIVE,
+                GetDriverTypes() | GetServiceTypes());
         }
 
         /// <summary>
@@ -690,5 +745,6 @@ namespace NtApiDotNet.Win32
             }
             return null;
         }
+        #endregion
     }
 }

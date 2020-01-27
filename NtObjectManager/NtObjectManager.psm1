@@ -3997,9 +3997,13 @@ This cmdlet gets a list of running services. It can also include in the list non
 .PARAMETER IncludeNonActive
 Specify to return all services including non-active ones.
 .PARAMETER Driver
-Specify to return drivers rather than services.
+Specify to include drivers.
+.PARAMETER State
+Specify the state of the services to get.
+.PARAMETER ServiceType
+Specify to filter the services to specific types only.
 .PARAMETER Name
-Specify a name to lookup.
+Specify names to lookup.
 .INPUTS
 None
 .OUTPUTS
@@ -4016,6 +4020,9 @@ Get all running drivers.
 .EXAMPLE
 Get-RunningService -Name Fax
 Get the Fax running service.
+.EXAMPLE
+Get-RunningService -State All -ServiceType UserService
+Get all user services.
 #>
 function Get-RunningService {
     [CmdletBinding(DefaultParameterSetName = "All")]
@@ -4024,28 +4031,39 @@ function Get-RunningService {
         [switch]$IncludeNonActive,
         [parameter(ParameterSetName = "All")]
         [switch]$Driver,
+        [parameter(ParameterSetName = "FromArgs")]
+        [NtApiDotNet.Win32.ServiceState]$State = "Active",
+        [parameter(Mandatory, ParameterSetName = "FromArgs")]
+        [NtApiDotNet.Win32.ServiceType]$ServiceType = 0,
         [parameter(ParameterSetName = "FromName", Position = 0)]
-        [string]$Name
+        [string[]]$Name
     )
 
-    switch($PSCmdlet.ParameterSetName) {
-        "All" {
-            if ($IncludeNonActive) {
+    PROCESS {
+        switch($PSCmdlet.ParameterSetName) {
+            "All" {
                 if ($Driver) {
-                    [NtApiDotNet.Win32.ServiceUtils]::GetDrivers()
+                    $ServiceType = [NtApiDotNet.Win32.ServiceUtils]::GetDriverTypes()
                 } else {
-                    [NtApiDotNet.Win32.ServiceUtils]::GetServices()
+                    $ServiceType = [NtApiDotNet.Win32.ServiceUtils]::GetServiceTypes()
                 }
-            } else {
-                if ($Driver) {
-                    [NtApiDotNet.Win32.ServiceUtils]::GetDrivers()
+
+                if ($IncludeNonActive) {
+                    $State = "All"
                 } else {
-                    [NtApiDotNet.Win32.ServiceUtils]::GetRunningServicesWithProcessIds()
+                    $State = "Active"
+                }
+
+                [NtApiDotNet.Win32.ServiceUtils]::GetServices($State, $ServiceType) | Write-Output
+            }
+            "FromArgs" {
+                [NtApiDotNet.Win32.ServiceUtils]::GetServices($State, $ServiceType) | Write-Output
+            }
+            "FromName" {
+                foreach($n in $Name) {
+                    [NtApiDotNet.Win32.ServiceUtils]::GetService($n) | Write-Output
                 }
             }
-        }
-        "FromName" {
-            [NtApiDotNet.Win32.ServiceUtils]::GetService($Name)
         }
     }
 }

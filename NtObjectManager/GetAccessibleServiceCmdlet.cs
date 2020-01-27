@@ -48,7 +48,7 @@ namespace NtObjectManager
         /// <summary>
         /// Service triggers for service.
         /// </summary>
-        public IEnumerable<ServiceTriggerInformation> Triggers { get; }
+        public IEnumerable<ServiceTriggerInformation> Triggers => Service.Triggers;
 
         /// <summary>
         /// Indicates additional access granted based on the Triggers.
@@ -60,18 +60,33 @@ namespace NtObjectManager
         /// </summary>
         public ServiceAccessRights OriginalGrantedAccess { get; }
 
+        /// <summary>
+        /// Indicates the service information.
+        /// </summary>
+        public RunningService Service { get; }
+
+        /// <summary>
+        /// Indicates the service image path.
+        /// </summary>
+        public string ImagePath => Service.ImagePath;
+
+        /// <summary>
+        /// Indicates the service DLL.
+        /// </summary>
+        public string ServiceDll => Service.ServiceDll;
+
         internal ServiceAccessCheckResult(string name, AccessMask granted_access, 
             SecurityDescriptor sd, TokenInformation token_info,
-            IEnumerable<ServiceTriggerInformation> triggers,
             ServiceAccessRights trigger_granted_access, 
-            ServiceAccessRights original_granted_access) 
+            ServiceAccessRights original_granted_access,
+            RunningService service) 
             : base(name, "Service", granted_access,
                 ServiceUtils.GetServiceGenericMapping(), sd, 
                 typeof(ServiceAccessRights), false, token_info)
         {
-            Triggers = triggers;
             TriggerGrantedAccess = trigger_granted_access;
             OriginalGrantedAccess = original_granted_access;
+            Service = service;
         }
     }
 
@@ -257,8 +272,8 @@ namespace NtObjectManager
                         if (IsAccessGranted(granted_access, access_rights))
                         {
                             WriteObject(new ServiceAccessCheckResult(service.Name, granted_access | trigger_access,
-                                service.SecurityDescriptor, token.Information, service.Triggers, trigger_access,
-                                granted_access.ToSpecificAccess<ServiceAccessRights>()));
+                                service.SecurityDescriptor, token.Information, trigger_access,
+                                granted_access.ToSpecificAccess<ServiceAccessRights>(), service));
                         }
                     }
                 }

@@ -121,7 +121,7 @@ namespace NtApiDotNet.Win32
                     key = OpenKeySafe(rootKey, keyName);
                 }
 
-                string valueString = String.Empty;
+                string valueString = string.Empty;
                 if (key != null)
                 {
                     object valueObject = key.GetValue(valueName);
