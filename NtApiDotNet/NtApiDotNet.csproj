@@ -65,7 +65,11 @@
     <Compile Include="NtUserProcessParameters.cs" />
     <Compile Include="NtWaitNative.cs" />
     <Compile Include="NtWindowStationNative.cs" />
+    <Compile Include="SafeArrayBuffer.cs" />
+    <Compile Include="SafeHandleListHandle.cs" />
+    <Compile Include="SafeIoStatusBuffer.cs" />
     <Compile Include="SafeProcessParametersHandle.cs" />
+    <Compile Include="SafeStringBuffer.cs" />
     <Compile Include="SidIdentifierAuthority.cs" />
     <Compile Include="Utilities\Memory\CrossBitnessProcessMemoryReader.cs" />
     <Compile Include="Utilities\Memory\CrossBitnessTypeAttribute.cs" />
@@ -235,7 +239,7 @@
     <Compile Include="SafeAlpcPortSectionHandle.cs" />
     <Compile Include="SafeAlpcSecurityContextHandle.cs" />
     <Compile Include="SafeBufferGeneric.cs" />
-    <Compile Include="SafeBuffers.cs" />
+    <Compile Include="SafeSecurityObjectBuffer.cs" />
     <Compile Include="SafeHGlobalBuffer.cs" />
     <Compile Include="SafeSidBufferHandle.cs" />
     <Compile Include="NtSecurity.cs" />

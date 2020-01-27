@@ -13,43 +13,10 @@
 //  limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace NtApiDotNet
 {
-    /// <summary>
-    /// Safe buffer to hold a security object which be deleted by RtlDeleteSecurityObject.
-    /// </summary>
-    public sealed class SafeSecurityObjectBuffer : SafeBuffer
-    {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public SafeSecurityObjectBuffer() : base(true)
-        {
-            Initialize(0);
-        }
-
-        /// <summary>
-        /// Overridden ReleaseHandle method.
-        /// </summary>
-        /// <returns>True if successfully released the memory.</returns>
-        protected override bool ReleaseHandle()
-        {
-            return NtRtl.RtlDeleteSecurityObject(ref handle).IsSuccess();
-        }
-    }
-
-    /// <summary>
-    /// Non-generic buffer to hold an IO_STATUS_BLOCK.
-    /// </summary>
-    public sealed class SafeIoStatusBuffer : SafeStructureInOutBuffer<IoStatus>
-    {
-    }
-
     /// <summary>
     /// Safe buffer to contain a list of structures.
     /// </summary>
@@ -136,35 +103,6 @@ namespace NtApiDotNet
                 Marshal.DestroyStructure(ptr + (i * _element_size), typeof(T));
             }
             base.Dispose(disposing);
-        }
-    }
-
-    internal sealed class SafeHandleListHandle : SafeHGlobalBuffer
-    {
-        private DisposableList<SafeKernelObjectHandle> _handles;
-        public SafeHandleListHandle(IEnumerable<SafeKernelObjectHandle> handles)
-          : base(IntPtr.Size * handles.Count())
-        {
-            _handles = handles.ToDisposableList();
-            IntPtr buffer = handle;
-            for (int i = 0; i < _handles.Count; ++i)
-            {
-                Marshal.WriteIntPtr(buffer, _handles[i].DangerousGetHandle());
-                buffer += IntPtr.Size;
-            }
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            _handles.Dispose();
-            return base.ReleaseHandle();
-        }
-    }
-
-    internal sealed class SafeStringBuffer : SafeHGlobalBuffer
-    {
-        public SafeStringBuffer(string str) : base(Encoding.Unicode.GetBytes(str + "\0"))
-        {
         }
     }
 }
