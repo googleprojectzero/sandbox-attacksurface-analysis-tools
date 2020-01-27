@@ -327,9 +327,15 @@ namespace NtObjectManager
         public SwitchParameter Filtered { get; set; }
 
         /// <summary>
+        /// <para type="description">Get a AppContainer token. This creates all the necessary directories for the AppContainer.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "AppContainer")]
+        public SwitchParameter AppContainer { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify the token to sandbox. If not specified then the current primary token is used.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "LowBox"), Parameter(ParameterSetName = "Filtered")]
+        [Parameter(ParameterSetName = "LowBox"), Parameter(ParameterSetName = "Filtered"), Parameter(ParameterSetName = "AppContainer")]
         public NtToken Token { get; set; }
 
         /// <summary>
@@ -359,19 +365,19 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Specify package SID or a package name.</para>
         /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "LowBox")]
+        [Parameter(Mandatory = true, ParameterSetName = "LowBox"), Parameter(ParameterSetName = "AppContainer")]
         public string PackageSid { get; set; }
 
         /// <summary>
         /// <para type="description">Specify an additional restricted name for the package SID.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "LowBox")]
+        [Parameter(ParameterSetName = "LowBox"), Parameter(ParameterSetName = "AppContainer")]
         public string RestrictedPackageName { get; set; }
 
         /// <summary>
         /// <para type="description">Specify list of capability SIDS to add to token. Can specify an SDDL format string or a capability name.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "LowBox")]
+        [Parameter(ParameterSetName = "LowBox"), Parameter(ParameterSetName = "AppContainer")]
         public string[] CapabilitySids { get; set; }
 
         /// <summary>
@@ -397,14 +403,6 @@ namespace NtObjectManager
         /// </summary>
         [Parameter(ParameterSetName = "Session")]
         public int SessionId { get; set; }
-
-        private static void AddLuids(HashSet<Luid> set, IEnumerable<Luid> luids)
-        {
-            foreach (Luid l in luids)
-            {
-                set.Add(l);
-            }
-        }
 
         private static IEnumerable<Luid> GetPrivileges(IEnumerable<TokenPrivilege> privs)
         {
@@ -605,6 +603,24 @@ namespace NtObjectManager
             }
         }
 
+        private IEnumerable<Sid> GetCapabilitySids()
+        {
+            return CapabilitySids == null ? new Sid[0] : CapabilitySids.Select(s =>
+            {
+                if (!s.StartsWith("S-"))
+                {
+                    return NtSecurity.GetCapabilitySid(s);
+                }
+                Sid sid = new Sid(s);
+                if (!NtSecurity.IsCapabilitySid(sid))
+                {
+                    throw new ArgumentException($"{s} is not a capability SID", s);
+                }
+                return sid;
+            }
+            );
+        }
+
         private NtToken GetLowBoxToken(NtToken token)
         {
             Sid package_sid = TokenUtils.GetPackageSidFromName(PackageSid);
@@ -618,22 +634,13 @@ namespace NtObjectManager
                 package_sid = TokenUtils.DeriveRestrictedPackageSidFromSid(package_sid, RestrictedPackageName);
             }
 
-            IEnumerable<Sid> capability_sids = CapabilitySids == null ? new Sid[0] : CapabilitySids.Select(s =>
-                {
-                    if (!s.StartsWith("S-"))
-                    {
-                        return NtSecurity.GetCapabilitySid(s);
-                    }
-                    Sid sid = new Sid(s);
-                    if (!NtSecurity.IsCapabilitySid(sid))
-                    {
-                        throw new ArgumentException($"{s} is not a capability SID", s);
-                    }
-                    return sid;
-                }
-            );
-                
-            return token.CreateLowBoxToken(package_sid, capability_sids, Handles ?? new NtObject[0], TokenAccessRights.MaximumAllowed);
+            if (AppContainer)
+            {
+                return TokenUtils.CreateAppContainerToken(token, package_sid, GetCapabilitySids());
+            }
+
+            return token.CreateLowBoxToken(package_sid, GetCapabilitySids(), 
+                Handles ?? new NtObject[0], TokenAccessRights.MaximumAllowed);
         }
 
         private NtToken GetFilteredToken(NtToken token)
@@ -710,7 +717,7 @@ namespace NtObjectManager
             {
                 return GetAnonymousToken(desired_access);
             }
-            else if (LowBox)
+            else if (LowBox || AppContainer)
             {
                 return GetSandboxedToken(desired_access, GetLowBoxToken);
             }
