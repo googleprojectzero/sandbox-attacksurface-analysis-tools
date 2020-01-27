@@ -200,6 +200,18 @@ namespace NtApiDotNet
         public SwitchParameter NewLogon { get; set; }
 
         /// <summary>
+        /// <para type="description">Output the SID in SDDL format.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter ToSddl { get; set; }
+
+        /// <summary>
+        /// <para type="description">Output the name of the SID from LSASS.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter ToName { get; set; }
+
+        /// <summary>
         /// Process record.
         /// </summary>
         protected override void ProcessRecord()
@@ -275,7 +287,18 @@ namespace NtApiDotNet
                     throw new ArgumentException("No SID type specified");
             }
 
-            WriteObject(sid);
+            if (ToSddl)
+            {
+                WriteObject(sid.ToString());
+            }
+            else if (ToName)
+            {
+                WriteObject(sid.Name);
+            }
+            else
+            {
+                WriteObject(sid);
+            }
         }
     }
 
