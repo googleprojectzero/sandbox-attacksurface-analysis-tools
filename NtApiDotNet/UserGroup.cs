@@ -33,35 +33,22 @@ namespace NtApiDotNet
         /// <summary>
         /// Get whether the user group is enabled
         /// </summary>
-        public bool Enabled
-        {
-            get
-            {
-                return (Attributes & GroupAttributes.Enabled) == GroupAttributes.Enabled;
-            }
-        }
+        public bool Enabled => (Attributes & GroupAttributes.Enabled) == GroupAttributes.Enabled;
 
         /// <summary>
         /// Get whether the user group is mandatory
         /// </summary>
-        public bool Mandatory
-        {
-            get
-            {
-                return (Attributes & GroupAttributes.Mandatory) == GroupAttributes.Mandatory;
-            }
-        }
+        public bool Mandatory => (Attributes & GroupAttributes.Mandatory) == GroupAttributes.Mandatory;
 
         /// <summary>
         /// Get whether the user group is used for deny only
         /// </summary>
-        public bool DenyOnly
-        {
-            get
-            {
-                return (Attributes & GroupAttributes.UseForDenyOnly) == GroupAttributes.UseForDenyOnly;
-            }
-        }
+        public bool DenyOnly => (Attributes & GroupAttributes.UseForDenyOnly) == GroupAttributes.UseForDenyOnly;
+
+        /// <summary>
+        /// Get the resolved name of the SID.
+        /// </summary>
+        public string Name => Sid.Name;
 
         /// <summary>
         /// Constructor
@@ -85,14 +72,10 @@ namespace NtApiDotNet
 
         private static Sid LookupAccountSid(string name)
         {
-            try
-            {
-                return new Sid(name);
-            }
-            catch (NtException)
-            {
-                return NtSecurity.LookupAccountName(name);
-            }
+            var sid = NtSecurity.SidFromSddl(name, false);
+            if (sid.IsSuccess)
+                return sid.Result;
+            return NtSecurity.LookupAccountName(name);
         }
 
         /// <summary>
