@@ -275,6 +275,22 @@ namespace NtApiDotNet.Win32
         public ushort Reserved2;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct TRACE_PROVIDER_INFO
+    {
+        public Guid ProviderGuid;
+        public int SchemaSource;
+        public uint ProviderNameOffset;
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("TraceProviderInfoArray")]
+    internal struct PROVIDER_ENUMERATION_INFO
+    {
+        public int NumberOfProviders;
+        public int Reserved;
+        public TRACE_PROVIDER_INFO TraceProviderInfoArray;
+    }
+
     internal enum TRACE_QUERY_INFO_CLASS
     {
         TraceGuidQueryList,
@@ -851,6 +867,12 @@ namespace NtApiDotNet.Win32
             SafeBuffer OutBuffer,
             int OutBufferSize,
             out int ReturnLength
+        );
+
+        [DllImport("tdh.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error TdhEnumerateProviders(
+                SafeBuffer pBuffer,
+                ref int pBufferSize
         );
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]

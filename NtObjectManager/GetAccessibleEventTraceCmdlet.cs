@@ -16,10 +16,33 @@ using NtApiDotNet;
 using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Management.Automation;
 
 namespace NtObjectManager
 {
+    /// <summary>
+    /// <para type="description">Access check result for an event trace.</para>
+    /// </summary>
+    public class EventTraceAccessCheckResult : AccessCheckResult
+    {
+        /// <summary>
+        /// The ID of the event trace provider.
+        /// </summary>
+        public Guid Id { get; }
+
+        internal EventTraceAccessCheckResult(EventTraceProvider provider, 
+            NtType type, AccessMask granted_access,
+            SecurityDescriptor sd, TokenInformation token_info)
+            : base(string.IsNullOrEmpty(provider.Name) ? provider.Id.ToString() : provider.Name, 
+                  type.Name, granted_access,
+                    type.GenericMapping, sd,
+                    type.AccessRightsType, false, token_info)
+        {
+            Id = provider.Id;
+        }
+    }
+
     /// <summary>
     /// <para type="synopsis">Get a list of ETW providers accessible by a specified token.</para>
     /// <para type="description">This cmdlet checks all ETW providers and tries to determine
@@ -44,35 +67,51 @@ namespace NtObjectManager
     public class GetAccessibleEventTraceCmdlet : CommonAccessBaseWithAccessCmdlet<TraceAccessRights>
     {
         /// <summary>
-        /// <para type="description">Specify list of ETW provider GUID to check..</para>
+        /// <para type="description">Specify list of ETW provider GUID to check.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromId")]
         public Guid[] ProviderId { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify list of ETW provider names to check.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromName")]
+        public string[] Name { get; set; }
 
         private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
             NtType type = NtType.GetTypeByType<NtEtwRegistration>();
             AccessMask access_rights = type.GenericMapping.MapMask(AccessRights);
+            var providers = EventTracing.GetProviders();
 
-            IEnumerable<Guid> guids = ProviderId ?? EventTracing.GetTraceGuids();
-            foreach (var guid in guids)
+            if (ProviderId != null && ProviderId.Length > 0)
             {
-                var sd = EventTracing.QueryTraceSecurity(guid, false);
-                if (!sd.IsSuccess)
+                HashSet<Guid> guids = new HashSet<Guid>(ProviderId);
+                providers = providers.Where(p => guids.Contains(p.Id));
+            }
+            else if (Name != null && Name.Length > 0)
+            {
+                var names = new HashSet<string>(Name, StringComparer.OrdinalIgnoreCase);
+                providers = providers.Where(p => names.Contains(p.Name));
+            }
+
+            foreach (var provider in providers)
+            {
+                var sd = provider.SecurityDescriptor;
+                if (sd == null)
                 {
-                    WriteWarning($"Couldn't query security for ETW Provider {guid}. Perhaps run as administrator.");
+                    WriteWarning($"Couldn't query security for ETW Provider {provider.Name}. Perhaps run as administrator.");
                     continue;
                 }
 
                 foreach (TokenEntry token in tokens)
                 {
-                    AccessMask granted_access = NtSecurity.GetMaximumAccess(sd.Result,
+                    AccessMask granted_access = NtSecurity.GetMaximumAccess(sd,
                         token.Token, type.GenericMapping);
                     if (IsAccessGranted(granted_access, access_rights))
                     {
-                        WriteAccessCheckResult(guid.ToString(), type.Name,
-                            granted_access, type.GenericMapping, sd.Result, type.AccessRightsType, false,
-                            token.Information);
+                        WriteObject(new EventTraceAccessCheckResult(provider, type, 
+                            granted_access, sd, token.Information));
                     }
                 }
             }
