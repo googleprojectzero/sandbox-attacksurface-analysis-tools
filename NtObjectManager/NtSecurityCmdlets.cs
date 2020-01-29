@@ -881,6 +881,12 @@ namespace NtApiDotNet
         public NtKeyValue KeyValue { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify additional control flags to apply to the SD.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromSddl"), Parameter(ParameterSetName = "FromToken")]
+        public SecurityDescriptorControl Control { get; set; }
+
+        /// <summary>
         /// Overridden ProcessRecord method.
         /// </summary>
         protected override void ProcessRecord()
@@ -922,6 +928,7 @@ namespace NtApiDotNet
             {
                 sd.MapGenericAccess();
             }
+            sd.Control |= Control;
 
             WriteObject(sd);
         }
