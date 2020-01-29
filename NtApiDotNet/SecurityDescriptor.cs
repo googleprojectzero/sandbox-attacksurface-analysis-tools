@@ -32,6 +32,8 @@ namespace NtApiDotNet
         DaclDefaulted = 0x0008,
         SaclPresent = 0x0010,
         SaclDefaulted = 0x0020,
+        DaclUntrusted = 0x0040,
+        ServerSecurity = 0x0080,
         DaclAutoInheritReq = 0x0100,
         SaclAutoInheritReq = 0x0200,
         DaclAutoInherited = 0x0400,
@@ -41,7 +43,8 @@ namespace NtApiDotNet
         RmControlValid = 0x4000,
         SelfRelative = 0x8000,
         ValidControlSetMask = DaclAutoInheritReq | SaclAutoInheritReq
-        | DaclAutoInherited | SaclAutoInherited | DaclProtected | SaclProtected
+        | DaclAutoInherited | SaclAutoInherited | DaclProtected | SaclProtected 
+        | DaclUntrusted | ServerSecurity
 #pragma warning restore 1591
     }
 
