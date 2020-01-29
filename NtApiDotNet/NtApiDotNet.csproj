@@ -261,6 +261,7 @@
     <Compile Include="Win32\Device\DeviceUtils.cs" />
     <Compile Include="Win32\EtwServiceTriggerInformation.cs" />
     <Compile Include="Win32\EventTrace.cs" />
+    <Compile Include="Win32\EventTraceLog.cs" />
     <Compile Include="Win32\EventTraceProvider.cs" />
     <Compile Include="Win32\EventTracing.cs" />
     <Compile Include="Win32\ExecutableManifest.cs" />
