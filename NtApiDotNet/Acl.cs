@@ -126,6 +126,11 @@ namespace NtApiDotNet
                         {
                             revision = AclRevision.RevisionDS;
                         }
+                        else if (ace.Type == AceType.AllowedCompound 
+                            && revision < AclRevision.RevisionCompound)
+                        {
+                            revision = AclRevision.RevisionCompound;
+                        }
                     }
                 }
                 aces = ace_stm.ToArray();

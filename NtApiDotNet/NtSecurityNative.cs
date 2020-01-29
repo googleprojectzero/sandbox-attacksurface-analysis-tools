@@ -883,6 +883,7 @@ namespace NtApiDotNet
     public enum AclRevision
     {
         Revision = 2,
+        RevisionCompound = 3,
         RevisionDS = 4,
     }
 

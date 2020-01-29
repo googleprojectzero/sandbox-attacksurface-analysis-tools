@@ -161,7 +161,18 @@ namespace NtApiDotNet
                 }
             }
 
+            if (type == AceType.AllowedCompound)
+            {
+                // Read out revision, or flags.
+                reader.ReadInt32();
+            }
+
+            if (type == AceType.AllowedCompound)
+            {
+                ace.ServerSid = new Sid(reader);
+            }
             ace.Sid = new Sid(reader);
+
             int bytes_used = (int)(reader.BaseStream.Position - current_position);
             ace.ApplicationData = reader.ReadAllBytes(ace_size - bytes_used);
             return ace;
@@ -170,7 +181,18 @@ namespace NtApiDotNet
         internal void Serialize(BinaryWriter writer)
         {
             byte[] sid_data = Sid.ToArray();
+            if (Type == AceType.AllowedCompound)
+            {
+                MemoryStream stm = new MemoryStream();
+                BinaryWriter sidwriter = new BinaryWriter(stm);
+                sidwriter.Write(1);
+                sidwriter.Write(ServerSid.ToArray());
+                sidwriter.Write(sid_data);
+                sid_data = stm.ToArray();
+            }
+
             int total_length = 4 + 4 + sid_data.Length;
+
             if (ApplicationData != null)
             {
                 total_length += ApplicationData.Length;
@@ -248,6 +270,11 @@ namespace NtApiDotNet
         /// Get ACE Security Identifier
         /// </summary>
         public Sid Sid { get; set; }
+
+        /// <summary>
+        /// Get the client SID in a compound ACE.
+        /// </summary>
+        public Sid ServerSid { get; set; }
 
         /// <summary>
         /// Get optional Object Type

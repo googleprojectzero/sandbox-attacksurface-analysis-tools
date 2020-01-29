@@ -1728,6 +1728,10 @@ function Format-NtAce {
         Write-Output " - Type  : $($ace.Type)"
         Write-Output " - Name  : $($ace.Sid.Name)"
         Write-Output " - SID   : $($ace.Sid)"
+        if ($ace.Type -eq "AllowedCompound") {
+            Write-Output " - ServerName: $($ace.ServerSid.Name)"
+            Write-Output " - ServerSID : $($ace.ServerSid)"
+        }
         Write-Output " - Mask  : 0x$($mask.ToString("X08"))"
         Write-Output " - $($access_name): $mask_str"
         Write-Output " - Flags : $($ace.Flags)"
@@ -1749,6 +1753,7 @@ function Format-NtAce {
 function Format-NtAcl {
     Param(
         [Parameter(Position = 0, Mandatory = $true)]
+        [AllowEmptyCollection()]
         [NtApiDotNet.Acl]$Acl,
         [Parameter(Position = 1, Mandatory = $true)]
         [NtApiDotNet.NtType]$Type,
@@ -1758,7 +1763,9 @@ function Format-NtAcl {
     )
 
     if ($Acl.NullAcl) {
-        Write-Output " - <NULL>"
+        Write-Output " - <NULL ACL>"
+    } elseif ($Acl.Count -eq 0) {
+        Write-Output " - <EMPTY ACL>"
     } else {
         if ($AuditOnly) {
             $Acl | ? IsAuditAce | Format-NtAce -Type $Type -MapGeneric:$MapGeneric
@@ -1817,6 +1824,7 @@ function Format-NtSecurityDescriptor {
         [Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true, ValueFromPipeline)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Position = 0, ParameterSetName = "FromAcl", Mandatory = $true)]
+        [AllowEmptyCollection()]
         [NtApiDotNet.Acl]$Acl,
         [Parameter(ParameterSetName = "FromAcl")]
         [switch]$AuditOnly,
@@ -1898,11 +1906,11 @@ function Format-NtSecurityDescriptor {
                 Write-Output " - Defaulted: $($sd.Group.Defaulted)"
                 Write-Output ""
             }
-            if ($sd.Dacl -ne $null -and (($SecurityInformation -band "Dacl") -ne 0)) {
+            if ($sd.DaclPresent -and (($SecurityInformation -band "Dacl") -ne 0)) {
                 Write-Output "<DACL>"
                 Format-NtAcl $sd.Dacl $t -MapGeneric:$MapGeneric
             }
-            if ($sd.Sacl -ne $null  -and (($SecurityInformation -band "Sacl") -ne 0)) {
+            if ($sd.SaclPresent -and (($SecurityInformation -band "Sacl") -ne 0)) {
                 Write-Output "<SACL>"
                 Format-NtAcl $sd.Sacl $t -MapGeneric:$MapGeneric -AuditOnly
             }
