@@ -165,10 +165,6 @@ namespace NtApiDotNet
             {
                 // Read out revision, or flags.
                 reader.ReadInt32();
-            }
-
-            if (type == AceType.AllowedCompound)
-            {
                 ace.ServerSid = new Sid(reader);
             }
             ace.Sid = new Sid(reader);
