@@ -65,7 +65,7 @@ namespace NtApiDotNet
         public static MemoryInformation QueryMemoryInformation(SafeKernelObjectHandle process, long base_address)
         {
             MemoryBasicInformation basic_info = new MemoryBasicInformation();
-            string mapped_image_path = String.Empty;
+            string mapped_image_path = string.Empty;
             using (var buffer = new SafeStructureInOutBuffer<MemoryBasicInformation>())
             {
                 NtSystemCalls.NtQueryVirtualMemory(process,

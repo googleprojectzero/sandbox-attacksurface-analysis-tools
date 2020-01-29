@@ -1385,7 +1385,7 @@ namespace NtApiDotNet
                 {
                     using (NtGeneric generic = NtGeneric.DuplicateFrom(this, new IntPtr(handle)))
                     {
-                        if (named_only && generic.FullPath == String.Empty)
+                        if (named_only && generic.FullPath == string.Empty)
                         {
                             continue;
                         }

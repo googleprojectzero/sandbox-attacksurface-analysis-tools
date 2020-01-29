@@ -246,11 +246,11 @@ namespace NtObjectManager
                     ret.Add(session_id.ToString());
                 }
                 ret.Add("BaseNamedObjects");
-                if (!String.IsNullOrEmpty(Path))
+                if (!string.IsNullOrEmpty(Path))
                 {
                     ret.AddRange(Path.Split('\\'));
                 }
-                return $@"\{String.Join(@"\", ret)}";
+                return $@"\{string.Join(@"\", ret)}";
             }
 
             if (Path.StartsWith(@"\") || Root != null)
@@ -264,7 +264,7 @@ namespace NtObjectManager
                 string root_path = drive.DirectoryRoot.FullPath;
                 if (root_path == @"\")
                 {
-                    root_path = String.Empty;
+                    root_path = string.Empty;
                 }
 
                 string relative_path = RemoveDrive(current_path.Path);

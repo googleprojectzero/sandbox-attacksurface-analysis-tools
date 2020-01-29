@@ -1107,7 +1107,7 @@ namespace NtApiDotNet
                 parts[0] = UpperCaseString(parts[0]);
             }
 
-            return $@"NAMED CAPABILITIES{(group ? " GROUP" : "")}\{String.Join(" ", parts)}";
+            return $@"NAMED CAPABILITIES{(group ? " GROUP" : "")}\{string.Join(" ", parts)}";
         }
 
         private static SidName GetNameForSidInternal(Sid sid)
@@ -1235,7 +1235,7 @@ namespace NtApiDotNet
                         }
                         else
                         {
-                            parent_moniker_string = ReadMoniker(rootkey, sid) ?? String.Empty;
+                            parent_moniker_string = ReadMoniker(rootkey, sid) ?? string.Empty;
                         }
 
                         return $"{parent_moniker_string.TrimEnd('\0')}/{moniker.Result.ToString().TrimEnd('\0')}";

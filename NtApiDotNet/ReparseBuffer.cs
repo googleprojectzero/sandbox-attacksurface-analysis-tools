@@ -404,12 +404,12 @@ namespace NtApiDotNet
         /// <param name="print_name">Printable name for the mount point.</param>
         public MountPointReparseBuffer(string substitution_name, string print_name) : base(ReparseTag.MOUNT_POINT)
         {
-            if (String.IsNullOrEmpty(substitution_name))
+            if (string.IsNullOrEmpty(substitution_name))
             {
                 throw new ArgumentException("substitution_name");
             }
             SubstitutionName = substitution_name;
-            PrintName = print_name ?? String.Empty;
+            PrintName = print_name ?? string.Empty;
         }
 
         internal MountPointReparseBuffer() : base(ReparseTag.MOUNT_POINT)

@@ -158,7 +158,7 @@ namespace NtObjectManager
             }
             catch (NtException)
             {
-                return String.Empty;
+                return string.Empty;
             }
         }
 
@@ -170,9 +170,9 @@ namespace NtObjectManager
             }
 
             NtType type = obj.NtType;
-            if (!type.SecurityRequired && String.IsNullOrEmpty(GetObjectName(obj)))
+            if (!type.SecurityRequired && string.IsNullOrEmpty(GetObjectName(obj)))
             {
-                max_access[obj_address] = new MaximumAccess(type.GenericMapping.GenericAll, String.Empty);
+                max_access[obj_address] = new MaximumAccess(type.GenericMapping.GenericAll, string.Empty);
                 return max_access[obj_address];
             }
 
@@ -201,7 +201,7 @@ namespace NtObjectManager
                 {
                     if (new_obj.IsSuccess)
                     {
-                        access = new MaximumAccess(new_obj.Result.GrantedAccessMask, String.Empty);
+                        access = new MaximumAccess(new_obj.Result.GrantedAccessMask, string.Empty);
                     }
                 }
             }

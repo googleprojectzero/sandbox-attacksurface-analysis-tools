@@ -280,7 +280,7 @@ namespace NtObjectManager
         protected override string ConvertWin32Path(string win32_path)
         {
             string base_path = win32_path.TrimStart('\\');
-            if (String.IsNullOrEmpty(base_path))
+            if (string.IsNullOrEmpty(base_path))
             {
                 base_path = _base_named_objects;
             }
@@ -322,7 +322,7 @@ namespace NtObjectManager
 
                     if (checked_objects.Add(handle.Object))
                     {
-                        if (CheckUnnamed || !String.IsNullOrEmpty(obj.Result.FullPath))
+                        if (CheckUnnamed || !string.IsNullOrEmpty(obj.Result.FullPath))
                         {
                             DumpObject(tokens, type_filter, AccessRights, obj.Result, 
                                 obj.Result.NtTypeName.Equals("Directory", StringComparison.OrdinalIgnoreCase));
