@@ -55,7 +55,7 @@ namespace NtApiDotNet.Ndr
 
         internal string FormatMember(INdrFormatterInternal context)
         {
-            return string.Format("{0} {1}", context.FormatComment("Offset: {0}", Offset), MemberType.FormatType(context));
+            return $"{context.FormatComment("Offset: {0}", Offset)} {MemberType.FormatType(context)}";
         }
 
         internal void FixupLateBoundTypes()

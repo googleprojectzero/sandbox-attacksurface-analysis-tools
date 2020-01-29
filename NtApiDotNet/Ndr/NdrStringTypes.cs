@@ -48,7 +48,7 @@ namespace NtApiDotNet.Ndr
         {
             if (StringSize > 0)
             {
-                return string.Format("{0}[{1}]", base.FormatType(context), StringSize);
+                return $"{base.FormatType(context)}[{StringSize}]";
             }
             else
             {
@@ -98,10 +98,10 @@ namespace NtApiDotNet.Ndr
 
             if (!ConformanceDescriptor.IsValid)
             {
-                return string.Format("{0}{1}", conformance_desc, base.FormatType(context));
+                return $"{conformance_desc}{base.FormatType(context)}";
             }
 
-            return string.Format("{0}{1}[{2}]", conformance_desc, base.FormatType(context), GetCharCount());
+            return $"{conformance_desc}{base.FormatType(context)}[{GetCharCount()}]";
         }
 
         private int GetCharSize()
@@ -141,7 +141,7 @@ namespace NtApiDotNet.Ndr
 
         internal override string FormatType(INdrFormatterInternal formatter)
         {
-            return string.Format("{0}<{1}>[{2}]", base.FormatType(formatter), ElementSize, NumberOfElements);
+            return $"{base.FormatType(formatter)}<{ElementSize}>[{NumberOfElements}]";
         }
     }
 
@@ -168,7 +168,7 @@ namespace NtApiDotNet.Ndr
 
         internal override string FormatType(INdrFormatterInternal formatter)
         {
-            return string.Format("{0}<{1}>[]", base.FormatType(formatter), ElementSize);
+            return $"{base.FormatType(formatter)}<{ElementSize}>[]";
         }
     }
 

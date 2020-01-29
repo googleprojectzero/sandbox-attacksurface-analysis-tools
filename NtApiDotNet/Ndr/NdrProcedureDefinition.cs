@@ -119,11 +119,11 @@ namespace NtApiDotNet.Ndr
             }
 
             string type_format = (Attributes & NdrParamAttributes.IsSimpleRef) == 0
-                ? Type.FormatType(context) : string.Format("{0}*", Type.FormatType(context));
+                ? Type.FormatType(context) : $"{Type.FormatType(context)}*";
 
             if ((attributes.Count > 0)&&(context.ShowProcedureParameterAttributes))
             {
-                return string.Format("[{0}] {1}", string.Join(", ", attributes), type_format);
+                return $"[{string.Join(", ", attributes)}] {type_format}";
             }
             else
             {
@@ -140,10 +140,7 @@ namespace NtApiDotNet.Ndr
             return $"p{index}";
         }
 
-        public override string ToString()
-        {
-            return string.Format("{0} - {1}", Type, Attributes);
-        }
+        public override string ToString() => $"{Type} - {Attributes}";
     }
 
     [Serializable]
@@ -194,9 +191,7 @@ namespace NtApiDotNet.Ndr
                 return_value = ReturnValue.Type.FormatType(context);
             }
 
-            return string.Format("{0} {1}({2});", return_value,
-                Name, string.Join(", ", Params.Select((p, i) => string.Format("{0} {1} {2}", 
-                        context.FormatComment("Stack Offset: {0}", p.Offset), p.Format(context), p.FormatName(i)))));
+            return $"{return_value} {Name}({string.Join(", ", Params.Select((p, i) => $"{context.FormatComment("Stack Offset: {0}", p.Offset)} {p.Format(context)} {p.FormatName(i)}"))});";
         }
 
         internal NdrProcedureDefinition(IMemoryReader mem_reader, NdrTypeCache type_cache, 

@@ -66,7 +66,7 @@ namespace NtApiDotNet.Ndr
 
         internal override string FormatType(INdrFormatterInternal context)
         {
-            return string.Format("{0}[{1}]", ElementType.FormatType(context), ElementCount == 0 ? string.Empty : ElementCount.ToString());
+            return $"{ElementType.FormatType(context)}[{(ElementCount == 0 ? string.Empty : ElementCount.ToString())}]";
         }
 
         protected override void OnFixupLateBoundTypes()

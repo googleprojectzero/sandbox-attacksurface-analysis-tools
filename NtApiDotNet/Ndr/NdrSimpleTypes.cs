@@ -184,10 +184,7 @@ namespace NtApiDotNet.Ndr
             Format = format;
         }
 
-        public override string ToString()
-        {
-            return string.Format("{0} - {1}", Format, GetType().Name);
-        }
+        public override string ToString() => $"{Format} - {GetType().Name}";
 
         internal virtual string FormatType(INdrFormatterInternal context)
         {
@@ -234,8 +231,8 @@ namespace NtApiDotNet.Ndr
 
             public StandardUserMarshaler(SafeLoadLibraryHandle lib, NdrKnownTypes known_type)
             {
-                _size_ptr = lib.GetProcAddress(string.Format("{0}_UserSize", known_type));
-                _size_64_ptr = lib.GetProcAddress(string.Format("{0}_UserSize64", known_type));
+                _size_ptr = lib.GetProcAddress($"{known_type}_UserSize");
+                _size_64_ptr = lib.GetProcAddress($"{known_type}_UserSize64");
                 KnownType = known_type;
             }
 

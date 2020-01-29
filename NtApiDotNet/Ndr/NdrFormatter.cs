@@ -150,7 +150,7 @@ namespace NtApiDotNet.Ndr
                     return "uint";
             }
 
-            return string.Format("{0}", format);
+            return $"{format}";
         }
 
         string INdrFormatterInternal.FormatPointer(string base_type)
@@ -264,7 +264,7 @@ namespace NtApiDotNet.Ndr
                     return "uint";
             }
 
-            return string.Format("{0}", format);
+            return $"{format}";
         }
 
         string INdrFormatter.FormatProcedure(NdrProcedureDefinition procedure)
@@ -289,15 +289,9 @@ namespace NtApiDotNet.Ndr
             }
 
             string procedureParameters = string.Join(", ", procedure.Params.Select(
-                (p, i) => string.Format(
-                    "{0} {1} {2}", 
-                    (this as INdrFormatterInternal).FormatComment("Stack Offset: {0}", p.Offset), 
-                    p.Format(this), 
-                    p.FormatName(i)
-                )
+                (p, i) => $"{(this as INdrFormatterInternal).FormatComment("Stack Offset: {0}", p.Offset)} {p.Format(this)} {p.FormatName(i)}"
             ));
-            return string.Format("virtual {0} __stdcall {1}({2});", return_value,
-                procedure.Name, procedureParameters);
+            return $"virtual {return_value} __stdcall {procedure.Name}({procedureParameters});";
         }
 
         string INdrFormatter.FormatComProxy(NdrComProxyDefinition com_proxy)

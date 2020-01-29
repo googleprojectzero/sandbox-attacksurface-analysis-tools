@@ -95,13 +95,13 @@ namespace NtApiDotNet.Ndr
                         access = (TokenAccessRights)AccessMask;
                         break;
                     default:
-                        access = string.Format("0x{0:X}", AccessMask);
+                        access = $"0x{AccessMask:X}";
                         break;
                 }
 
-                return string.Format("{0} HANDLE", context.FormatComment("FC_SYSTEM_HANDLE {0}({1})", Resource, access));
+                return $"{context.FormatComment("FC_SYSTEM_HANDLE {0}({1})", Resource, access)} HANDLE";
             }
-            return string.Format("{0} HANDLE", context.FormatComment("FC_SYSTEM_HANDLE {0}", Resource));
+            return $"{context.FormatComment("FC_SYSTEM_HANDLE {0}", Resource)} HANDLE";
         }
 
         public override int GetSize()

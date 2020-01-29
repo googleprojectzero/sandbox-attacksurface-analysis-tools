@@ -58,7 +58,7 @@ namespace NtApiDotNet.Ndr
 
         internal override string FormatType(INdrFormatterInternal context)
         {
-            return string.Format("{0} {1}", context.FormatComment("range: {0},{1}", MinValue, MaxValue), RangeType.FormatType(context));
+            return $"{context.FormatComment("range: {0},{1}", MinValue, MaxValue)} {RangeType.FormatType(context)}";
         }
 
         public override int GetSize()

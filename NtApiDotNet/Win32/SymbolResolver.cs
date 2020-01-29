@@ -508,7 +508,7 @@ namespace NtApiDotNet.Win32
                             if (_sym_load_module(Handle, IntPtr.Zero, dllpath.ToString(), 
                                 Path.GetFileNameWithoutExtension(dllpath.ToString()), module.ToInt64(), GetImageSize(module)) == 0)
                             {
-                                System.Diagnostics.Debug.WriteLine(String.Format("Couldn't load {0}", dllpath));
+                                System.Diagnostics.Debug.WriteLine($"Couldn't load {dllpath}");
                             }
                         }
                     }

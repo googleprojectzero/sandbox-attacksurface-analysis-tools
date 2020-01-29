@@ -118,7 +118,7 @@ namespace NtApiDotNet.Ndr
             else
             {
                 bool is_unique = Format == NdrFormatCharacter.FC_UP;
-                return string.Format("{0}{1}*", is_unique ? formatter.FormatComment("unique") : "", Type.FormatType(formatter));
+                return $"{(is_unique ? formatter.FormatComment("unique") : "")}{Type.FormatType(formatter)}*";
             }
         }
 

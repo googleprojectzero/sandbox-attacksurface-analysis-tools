@@ -56,7 +56,7 @@ namespace NtApiDotNet
                     }
                 }
 
-                return string.Format("(0x{0:X08}) - {1}", (uint)Status, message);
+                return $"(0x{(uint)Status:X08}) - {message}";
             }
         }
     }
