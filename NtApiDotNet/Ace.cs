@@ -84,7 +84,7 @@ namespace NtApiDotNet
         {
             get
             {
-                if (!IsCallbackAce)
+                if (!IsCallbackAce && Type != AceType.AccessFilter)
                 {
                     return false;
                 }
@@ -94,7 +94,7 @@ namespace NtApiDotNet
                     return false;
                 }
 
-                return BitConverter.ToUInt32(ApplicationData, 0) == 0x78747261;
+                return BitConverter.ToUInt32(ApplicationData, 0) == 0x78747261; // xtra.
             }
         }
 

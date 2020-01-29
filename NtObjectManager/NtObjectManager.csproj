@@ -53,6 +53,7 @@
   <ItemGroup>
     <Compile Include="GetAccessibleEventTraceCmdlet.cs" />
     <Compile Include="GetAccessibleScheduledTaskCmdlet.cs" />
+    <Compile Include="GetAccessibleTokenCmdlet.cs" />
     <Compile Include="NdrNameData.cs" />
     <Compile Include="NtAlpcCmdlets.cs" />
     <Compile Include="NtDebugCmdlets.cs" />
