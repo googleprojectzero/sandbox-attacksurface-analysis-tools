@@ -251,8 +251,8 @@ namespace NtObjectManager
         /// <summary>
         /// <para type="description">Specify the token should be a pseudo token. When set you can't use the object for anything other than queries.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "Primary"), Parameter(ParameterSetName = "Impersonation"), Parameter(ParameterSetName = "Effective")]
-        public SwitchParameter Pseduo { get; set; }
+        [Parameter(ParameterSetName = "Primary"), Parameter(ParameterSetName = "Impersonation"), Parameter(ParameterSetName = "Effective"), Alias("Pseduo")]
+        public SwitchParameter Pseudo { get; set; }
 
         /// <summary>
         /// <para type="description">Get the current clipboard token.</para>
@@ -444,7 +444,7 @@ namespace NtObjectManager
 
         private NtToken GetPrimaryToken(TokenAccessRights desired_access)
         {
-            if (Pseduo)
+            if (Pseudo)
             {
                 return NtToken.PseudoPrimaryToken;
             }
@@ -463,7 +463,7 @@ namespace NtObjectManager
 
         private NtToken GetImpersonationToken(TokenAccessRights desired_access)
         {
-            if (Pseduo)
+            if (Pseudo)
             {
                 return NtToken.PseudoImpersonationToken;
             }
@@ -477,7 +477,7 @@ namespace NtObjectManager
 
         private NtToken GetEffectiveToken(TokenAccessRights desired_access)
         {
-            if (Pseduo)
+            if (Pseudo)
             {
                 return NtToken.PseudoEffectiveToken;
             }
