@@ -160,7 +160,7 @@ namespace NtApiDotNet
         /// </summary>
         public void CreateSilo()
         {
-            NtSystemCalls.NtSetInformationJobObject(Handle, JobObjectInformationClass.JobObjectCreateSilo, 
+            NtSystemCalls.NtSetInformationJobObject(Handle, JobObjectInformationClass.JobObjectCreateSilo,
                 SafeHGlobalBuffer.Null, 0).ToNtException();
         }
 
@@ -200,9 +200,44 @@ namespace NtApiDotNet
         /// Terminate this job object.
         /// </summary>
         /// <param name="status">The termination status.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus Terminate(NtStatus status, bool throw_on_error)
+        {
+            return NtSystemCalls.NtTerminateJobObject(Handle, status).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Terminate this job object.
+        /// </summary>
+        /// <param name="status">The termination status.</param>
         public void Terminate(NtStatus status)
         {
-            NtSystemCalls.NtTerminateJobObject(Handle, status).ToNtException();
+            Terminate(status, true);
+        }
+
+        /// <summary>
+        /// Set the limit flags for the job.
+        /// </summary>
+        /// <param name="flags">The limit flags.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetLimitFlags(JobObjectLimitFlags flags, bool throw_on_error)
+        {
+            if (flags.HasFlag(JobObjectLimitFlags.Application))
+            {
+                return SetExtendedExtendedLimitInformation(i => {
+                    i.ExtendedLimitInformation.BasicLimitInformation.LimitFlags = flags;
+                    return i;
+                }, throw_on_error);
+            }
+            else
+            {
+                return SetExtendedLimitInformation(i => {
+                    i.BasicLimitInformation.LimitFlags = flags;
+                    return i;
+                }, throw_on_error);
+            }
         }
 
         /// <summary>
@@ -211,18 +246,7 @@ namespace NtApiDotNet
         /// <param name="flags">The limit flags.</param>
         public void SetLimitFlags(JobObjectLimitFlags flags)
         {
-            if ((flags & JobObjectLimitFlags.Application) != 0)
-            {
-                JobObjectExtendedExtendedLimitInformation info = new JobObjectExtendedExtendedLimitInformation();
-                info.ExtendedLimitInformation.BasicLimitInformation.LimitFlags = flags;
-                Set(JobObjectInformationClass.JobObjectExtendedLimitInformation, info);
-            }
-            else
-            {
-                JobObjectExtendedLimitInformation info = new JobObjectExtendedLimitInformation();
-                info.BasicLimitInformation.LimitFlags = flags;
-                Set(JobObjectInformationClass.JobObjectExtendedLimitInformation, info);
-            }
+            SetLimitFlags(flags, true);
         }
 
         /// <summary>
@@ -233,6 +257,30 @@ namespace NtApiDotNet
         public void SetSiloSystemRoot(string system_root)
         {
             Set(JobObjectInformationClass.JobObjectSiloSystemRoot, new UnicodeStringIn(system_root));
+        }
+
+        /// <summary>
+        /// Set the active process limit and whether breakaway is OK.
+        /// </summary>
+        /// <param name="active_process_limit">The number of active processes in the job.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetActiveProcessLimit(int active_process_limit, bool throw_on_error)
+        {
+            return SetExtendedLimitInformation(i => {
+                i.BasicLimitInformation.ActiveProcessLimit = active_process_limit;
+                i.BasicLimitInformation.LimitFlags |= JobObjectLimitFlags.ActiveProcess;
+                return i;
+            }, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set the active process limit and whether breakaway is OK.
+        /// </summary>
+        /// <param name="active_process_limit">The number of active processes in the job.</param>
+        public void SetActiveProcessLimit(int active_process_limit)
+        {
+            SetActiveProcessLimit(active_process_limit, true);
         }
 
         /// <summary>
@@ -313,6 +361,24 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Get or set the active process limit.
+        /// </summary>
+        public int ActiveProcessLimit
+        {
+            get => Query<JobObjectExtendedLimitInformation>(JobObjectInformationClass.JobObjectExtendedLimitInformation).BasicLimitInformation.ActiveProcessLimit;
+            set => SetActiveProcessLimit(value, true);
+        }
+
+        /// <summary>
+        /// Get or set the job limit flags.
+        /// </summary>
+        public JobObjectLimitFlags LimitFlags
+        {
+            get => Query<JobObjectExtendedLimitInformation>(JobObjectInformationClass.JobObjectExtendedLimitInformation).BasicLimitInformation.LimitFlags;
+            set => SetLimitFlags(value);
+        }
+
         #endregion
 
         #region Private Members
@@ -352,6 +418,28 @@ namespace NtApiDotNet
             }
             Set(JobObjectInformationClass.JobObjectNetRateControlInformation, result);
         }
+
+        private NtStatus SetLimitInformation<T>(JobObjectInformationClass info_class, Func<T, T> set_limit, bool throw_on_error) where T : struct
+        {
+            var result = Query(info_class, default(T), throw_on_error);
+            if (!result.IsSuccess)
+                return result.Status;
+            var info = result.Result;
+
+            info = set_limit(info);
+            return Set(info_class, info, throw_on_error);
+        }
+
+        private NtStatus SetExtendedLimitInformation(Func<JobObjectExtendedLimitInformation, JobObjectExtendedLimitInformation> set_limit, bool throw_on_error)
+        {
+            return SetLimitInformation(JobObjectInformationClass.JobObjectExtendedLimitInformation, set_limit, throw_on_error);
+        }
+
+        private NtStatus SetExtendedExtendedLimitInformation(Func<JobObjectExtendedExtendedLimitInformation, JobObjectExtendedExtendedLimitInformation> set_limit, bool throw_on_error)
+        {
+            return SetLimitInformation(JobObjectInformationClass.JobObjectExtendedLimitInformation, set_limit, throw_on_error);
+        }
+
         #endregion
     }
 }
