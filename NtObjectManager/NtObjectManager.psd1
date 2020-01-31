@@ -99,7 +99,7 @@ CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile',
                'Set-NtFileHardlink', 'Test-NetworkAccess', 'Get-AccessibleScheduledTask',
                'Compare-RpcServer', 'Select-RpcServer', 'Add-NtTokenSecurityAttribute',
                'Remove-NtTokenSecurityAttribute', 'Get-AccessibleEventTrace',
-               'Test-NtToken', 'Get-AccessibleToken'
+               'Test-NtToken', 'Get-AccessibleToken', 'Set-NtProcessJob'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @()
