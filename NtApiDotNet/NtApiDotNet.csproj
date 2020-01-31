@@ -296,6 +296,8 @@
     <Compile Include="Win32\SymbolResolver.cs" />
     <Compile Include="Win32\Win32Debug.cs" />
     <Compile Include="Win32\Win32Error.cs" />
+    <Compile Include="Win32\Win32ProcessConfig.cs" />
+    <Compile Include="Win32\Win32ProcessNative.cs" />
     <Compile Include="Win32\Win32Utils.cs" />
     <Compile Include="Win32\Win32NativeMethods.cs" />
     <Compile Include="Win32\SafeLoadLibraryHandle.cs" />
