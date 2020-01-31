@@ -416,6 +416,8 @@ namespace NtApiDotNet.Win32
 
         public static IntPtr ProcThreadAttributeAllApplicationPackagesPolicy => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeAllApplicationPackagesPolicy, false, true, false);
 
+        public static IntPtr ProcThreadAttribueJobList => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeJobList, false, true, false);
+
         public static IntPtr ProcThreadAttributeProtectionLevel => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeProtectionLevel, false, true, false);
 
         public static IntPtr ProcThreadAttributeSecurityCapabilities => GetValue(PROC_THREAD_ATTRIBUTE_NUM.ProcThreadAttributeSecurityCapabilities, false, true, false);

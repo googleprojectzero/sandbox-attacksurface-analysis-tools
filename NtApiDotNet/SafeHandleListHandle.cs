@@ -34,6 +34,16 @@ namespace NtApiDotNet
             }
         }
 
+        public static SafeHandleListHandle CreateAndDuplicate(IEnumerable<SafeKernelObjectHandle> handles)
+        {
+            return new SafeHandleListHandle(handles.Select(h => NtObject.DuplicateHandle(h)));
+        }
+
+        public static SafeHandleListHandle CreateAndDuplicate(IEnumerable<NtObject> handles)
+        {
+            return CreateAndDuplicate(handles.Select(h => h.Handle));
+        }
+
         protected override bool ReleaseHandle()
         {
             _handles.Dispose();

@@ -137,6 +137,12 @@ namespace NtApiDotNet
                   trustlet_config.ToArray().ToBuffer());
         }
 
+        public static ProcessAttribute JobList(IEnumerable<NtJob> jobs)
+        {
+            return new ProcessAttribute(ProcessAttributeNum.JobList, false, true, false,
+              SafeHandleListHandle.CreateAndDuplicate(jobs));
+        }
+
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 

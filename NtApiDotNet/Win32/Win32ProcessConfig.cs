@@ -187,6 +187,10 @@ namespace NtApiDotNet.Win32
         /// Specify additional extended flags.
         /// </summary>
         public ProcessExtendedFlags ExtendedFlags { get; set; }
+        /// <summary>
+        /// Specify list of handles to inherit.
+        /// </summary>
+        public List<NtJob> JobList { get; }
 
         /// <summary>
         /// Add an object's handle to the list of inherited handles. 
@@ -231,6 +235,7 @@ namespace NtApiDotNet.Win32
             StdInputHandle = Win32Utils.InvalidHandle;
             StdOutputHandle = Win32Utils.InvalidHandle;
             StdErrorHandle = Win32Utils.InvalidHandle;
+            JobList = new List<NtJob>();
         }
 
         private void PopulateStartupInfo(ref STARTUPINFO start_info)
@@ -329,6 +334,11 @@ namespace NtApiDotNet.Win32
                 count++;
             }
 
+            if (JobList.Count > 0)
+            {
+                count++;
+            }
+
             return count;
         }
 
@@ -377,9 +387,7 @@ namespace NtApiDotNet.Win32
 
             if (InheritHandleList.Count > 0)
             {
-                int total_size = IntPtr.Size * InheritHandleList.Count;
-                var handle_list = resources.AddResource(new SafeHGlobalBuffer(total_size));
-                handle_list.WriteArray(0, InheritHandleList.ToArray(), 0, InheritHandleList.Count);
+                var handle_list = resources.AddResource(InheritHandleList.ToArray().ToBuffer());
                 attr_list.AddAttributeBuffer(Win32ProcessAttributes.ProcThreadAttributeHandleList, handle_list);
             }
 
@@ -433,6 +441,12 @@ namespace NtApiDotNet.Win32
             if (ExtendedFlags != ProcessExtendedFlags.None)
             {
                 attr_list.AddAttribute(Win32ProcessAttributes.ProcThreadAttributeExtendedFlags, (int)ExtendedFlags);
+            }
+
+            if (JobList.Count > 0)
+            {
+                var job_list = resources.AddResource(SafeHandleListHandle.CreateAndDuplicate(JobList));
+                attr_list.AddAttributeBuffer(Win32ProcessAttributes.ProcThreadAttribueJobList, job_list);
             }
 
             return attr_list;
