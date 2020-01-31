@@ -164,6 +164,12 @@ namespace NtObjectManager
         public SwitchParameter InfoOnly { get; set; }
 
         /// <summary>
+        /// <para type="description">Ignore dead processes when getting process list.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "all")]
+        public SwitchParameter IgnoreDeadProcess { get; set; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public GetNtProcessCmdlet()
@@ -205,7 +211,10 @@ namespace NtObjectManager
 
         private IEnumerable<NtObject> GetProcesses()
         {
-            if (string.IsNullOrWhiteSpace(Name) && string.IsNullOrWhiteSpace(CommandLine) && FilterScript == null)
+            if (string.IsNullOrWhiteSpace(Name) 
+                && string.IsNullOrWhiteSpace(CommandLine) 
+                && FilterScript == null
+                && !IgnoreDeadProcess)
             {
                 return NtProcess.GetProcesses(Access, FromSystem);
             }
@@ -224,6 +233,10 @@ namespace NtObjectManager
                 if (FilterScript != null)
                 {
                     filtered_procs = filtered_procs.Where(p => ArbitraryFilter(p, FilterScript));
+                }
+                if (IgnoreDeadProcess)
+                {
+                    filtered_procs = filtered_procs.Where(p => !p.IsDeleting);
                 }
                 return filtered_procs.Select(p => p.Duplicate()).ToArray();
             }
