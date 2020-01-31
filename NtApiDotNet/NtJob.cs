@@ -170,7 +170,18 @@ namespace NtApiDotNet
         /// <param name="process">The process to assign.</param>
         public void AssignProcess(NtProcess process)
         {
-            NtSystemCalls.NtAssignProcessToJobObject(Handle, process.Handle).ToNtException();
+            AssignProcess(process, true);
+        }
+
+        /// <summary>
+        /// Assign a process to this job object.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <param name="process">The process to assign.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus AssignProcess(NtProcess process, bool throw_on_error)
+        {
+            return NtSystemCalls.NtAssignProcessToJobObject(Handle, process.Handle).ToNtException(throw_on_error);
         }
 
         /// <summary>
