@@ -142,14 +142,15 @@ namespace TokenViewer
             view.Items.Clear();
         }
 
-        private void RefreshProcessList(string filter, bool hideUnrestricted)
+        private void RefreshProcessList(string filter, bool hideUnrestricted, bool showDeadProcesses)
         {
             bool filter_name = !string.IsNullOrWhiteSpace(filter);
             ClearList(listViewProcesses);
             ClearList(listViewThreads);
 
-            using (var processes = new DisposableList<NtProcess>(NtProcess.GetProcesses(ProcessAccessRights.QueryLimitedInformation)))
+            using (var list = new DisposableList<NtProcess>(NtProcess.GetProcesses(ProcessAccessRights.QueryLimitedInformation)))
             {
+                List<NtProcess> processes = list.Where(p => !p.IsDeleting || showDeadProcesses).ToList();
                 processes.Sort((a, b) => a.ProcessId - b.ProcessId);
 
                 using (var tokens = new DisposableList<NtToken>(processes.Select(p => GetToken(p))))
@@ -220,7 +221,7 @@ namespace TokenViewer
             listViewThreads.ListViewItemSorter = new ListItemComparer(0);
             listViewSessions.ListViewItemSorter = new ListItemComparer(0);
             listViewHandles.ListViewItemSorter = new ListItemComparer(0);
-            RefreshProcessList(null, false);
+            RefreshProcessList(null, false, false);
 
             using (NtToken token = NtProcess.Current.OpenToken())
             {
@@ -438,12 +439,12 @@ namespace TokenViewer
 
         private void refreshToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            RefreshProcessList(txtFilter.Text, checkBoxUnrestricted.Checked);
+            RefreshProcessList(txtFilter.Text, checkBoxUnrestricted.Checked, showDeadProcessesToolStripMenuItem.Checked);
         }
 
         private void btnFilter_Click(object sender, EventArgs e)
         {
-            RefreshProcessList(txtFilter.Text, checkBoxUnrestricted.Checked);
+            RefreshProcessList(txtFilter.Text, checkBoxUnrestricted.Checked, showDeadProcessesToolStripMenuItem.Checked);
         }
         
         private void toolStripMenuItemOpenThreadToken_Click(object sender, EventArgs e)
@@ -575,6 +576,12 @@ namespace TokenViewer
         private void checkAddServiceSid_CheckedChanged(object sender, EventArgs e)
         {
             txtServiceSid.Enabled = checkAddServiceSid.Checked;
+        }
+
+        private void showDeadProcessesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            showDeadProcessesToolStripMenuItem.Checked = !showDeadProcessesToolStripMenuItem.Checked;
+            RefreshProcessList(txtFilter.Text, checkBoxUnrestricted.Checked, showDeadProcessesToolStripMenuItem.Checked);
         }
     }
 }
