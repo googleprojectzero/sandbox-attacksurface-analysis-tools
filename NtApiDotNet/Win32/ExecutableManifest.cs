@@ -255,5 +255,14 @@ namespace NtApiDotNet.Win32
                 return manifests;
             }
         }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The manifest as a string.</returns>
+        public override string ToString()
+        {
+            return $"{Name} ExecutionLevel: {ExecutionLevel} AutoElevate: {AutoElevate} UiAccess: {UiAccess}";
+        }
     }
 }
