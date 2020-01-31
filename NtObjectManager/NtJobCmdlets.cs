@@ -96,6 +96,18 @@ namespace NtObjectManager
     public sealed class NewNtJobCmdlet : NtObjectBaseCmdletWithAccess<JobAccessRights>
     {
         /// <summary>
+        /// <para type="description">Specify a process limit for the job.</para>
+        /// </summary>
+        [Parameter]
+        public int ActiveProcessLimit { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a limit flags for the job.</para>
+        /// </summary>
+        [Parameter]
+        public JobObjectLimitFlags LimitFlags { get; set; }
+
+        /// <summary>
         /// Determine if the cmdlet can create objects.
         /// </summary>
         /// <returns>True if objects can be created.</returns>
@@ -111,7 +123,18 @@ namespace NtObjectManager
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
-            return NtJob.Create(obj_attributes, Access);
+            using (var job = NtJob.Create(obj_attributes, Access))
+            {
+                if (LimitFlags != 0)
+                {
+                    job.LimitFlags = LimitFlags;
+                }
+                if (ActiveProcessLimit > 0)
+                {
+                    job.ActiveProcessLimit = ActiveProcessLimit;
+                }
+                return job.Duplicate();
+            }
         }
     }
 }
