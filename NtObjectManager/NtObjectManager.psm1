@@ -842,6 +842,8 @@ Specify to not fallback to using CreateProcessWithLogon if CreateProcessAsUser f
 Specify an app container profile to use.
 .PARAMETER ExtendedFlags
  Specify extended creation flags.
+ .PARAMETER JobList
+ Specify list of jobs to assign the process to.
 .INPUTS
 None
 .OUTPUTS
@@ -874,7 +876,8 @@ function New-Win32ProcessConfig
         [switch]$NoTokenFallback,
         [NtApiDotNet.Win32.AppContainerProfile]$AppContainerProfile,
         [NtApiDotNet.Win32.ProcessExtendedFlags]$ExtendedFlags = 0,
-        [NtApiDotNet.ChildProcessMitigationFlags]$ChildProcessMitigations = 0
+        [NtApiDotNet.ChildProcessMitigationFlags]$ChildProcessMitigations = 0,
+        [NtApiDotNet.NtJob[]]$JobList
     )
     $config = New-Object NtApiDotNet.Win32.Win32ProcessConfig
     $config.CommandLine = $CommandLine
@@ -915,6 +918,9 @@ function New-Win32ProcessConfig
     }
     $config.ExtendedFlags = $ExtendedFlags
     $config.ChildProcessMitigations = $ChildProcessMitigations
+    if ($JobList -ne $null) {
+        $config.JobList.AddRange($JobList)
+    }
     return $config
 }
 
@@ -963,6 +969,8 @@ Specify to not fallback to using CreateProcessWithLogon if CreateProcessAsUser f
 Specify an explicit token to create the new process with.
 .PARAMETER ExtendedFlags
  Specify extended creation flags.
+.PARAMETER JobList
+ Specify list of jobs to assign the process to.
 .PARAMETER Config
 Specify the configuration for the new process.
 .PARAMETER Wait
@@ -1022,6 +1030,8 @@ function New-Win32Process
         [NtApiDotNet.Win32.ProcessExtendedFlags]$ExtendedFlags = 0,
         [Parameter(ParameterSetName = "FromArgs")]
         [NtApiDotNet.ChildProcessMitigationFlags]$ChildProcessMitigations = 0,
+        [Parameter(ParameterSetName = "FromArgs")]
+        [NtApiDotNet.NtJob[]]$JobList,
         [Parameter(Mandatory=$true, Position=0, ParameterSetName = "FromConfig")]
         [NtApiDotNet.Win32.Win32ProcessConfig]$Config,
         [switch]$Wait,
@@ -1036,7 +1046,7 @@ function New-Win32Process
     -InheritHandles:$InheritHandles -InheritProcessHandle:$InheritProcessHandle -InheritThreadHandle:$InheritThreadHandle `
     -MitigationOptions $MitigationOptions -Token $Token -ProtectionLevel $ProtectionLevel -NoTokenFallback:$NoTokenFallback `
     -DebugObject $DebugObject -AppContainerProfile $AppContainerProfile -ExtendedFlags $ExtendedFlags `
-    -ChildProcessMitigations $ChildProcessMitigations
+    -ChildProcessMitigations $ChildProcessMitigations -JobList $JobList
   }
 
   $p = [NtApiDotNet.Win32.Win32Process]::CreateProcess($config)

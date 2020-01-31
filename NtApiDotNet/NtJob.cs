@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -295,6 +297,56 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get list of process IDs in Job.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of process IDs.</returns>
+        public NtResult<IEnumerable<int>> GetProcessIdList(bool throw_on_error)
+        {
+            using (var buffer = QueryBuffer(JobObjectInformationClass.JobObjectBasicProcessIdList, new JobObjectBasicProcessIdList(), throw_on_error))
+            {
+                if (!buffer.IsSuccess)
+                {
+                    return buffer.Cast<IEnumerable<int>>();
+                }
+                var info = buffer.Result.Result;
+                IntPtr[] ret = new IntPtr[info.NumberOfProcessIdsInList];
+                buffer.Result.Data.ReadArray(0, ret, 0, ret.Length);
+                return ret.Select(i => i.ToInt32()).CreateResult();
+            }
+        }
+
+        /// <summary>
+        /// Get list of process IDs in Job.
+        /// </summary>
+        /// <returns>The list of process IDs.</returns>
+        public IEnumerable<int> GetProcessIdList()
+        {
+            return GetProcessIdList(true).Result;
+        }
+
+        /// <summary>
+        /// Set UI Restriction Flags.
+        /// </summary>
+        /// <param name="flags">The UI Restriction Flags.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetUiRestrictionFlags(JobObjectUiLimitFlags flags, bool throw_on_error)
+        {
+            return Set(JobObjectInformationClass.JobObjectBasicUIRestrictions, (int)flags, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set UI Restriction Flags.
+        /// </summary>
+        /// <param name="flags">The UI Restriction Flags.</param>
+        /// <returns>The NT status code.</returns>
+        public void SetUiRestrictionFlags(JobObjectUiLimitFlags flags)
+        {
+            SetUiRestrictionFlags(flags, true);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -388,6 +440,15 @@ namespace NtApiDotNet
         {
             get => Query<JobObjectExtendedLimitInformation>(JobObjectInformationClass.JobObjectExtendedLimitInformation).BasicLimitInformation.LimitFlags;
             set => SetLimitFlags(value);
+        }
+
+        /// <summary>
+        /// Get or set the job UI Restriction flags.
+        /// </summary>
+        public JobObjectUiLimitFlags UiRestrictionFlags
+        {
+            get => (JobObjectUiLimitFlags)Query<int>(JobObjectInformationClass.JobObjectBasicUIRestrictions);
+            set => SetUiRestrictionFlags(value);
         }
 
         #endregion

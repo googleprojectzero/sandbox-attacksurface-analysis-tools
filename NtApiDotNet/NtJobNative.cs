@@ -221,6 +221,28 @@ namespace NtApiDotNet
         public byte DscpTag;
     }
 
+    [StructLayout(LayoutKind.Sequential), DataStart("ProcessIdList")]
+    public struct JobObjectBasicProcessIdList
+    {
+        public int NumberOfAssignedProcesses;
+        public int NumberOfProcessIdsInList;
+        public IntPtr ProcessIdList;
+    }
+
+    [Flags]
+    public enum JobObjectUiLimitFlags
+    {
+        None = 0,
+        Handles = 1,
+        ReadClipboard = 2,
+        WriteClipboard = 4,
+        SystemParameters = 8,
+        DisplaySettings = 0x10,
+        GlobalAtoms = 0x20,
+        Desktop = 0x40,
+        ExitWindows = 0x80
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]

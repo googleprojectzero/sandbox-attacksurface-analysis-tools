@@ -102,10 +102,16 @@ namespace NtObjectManager
         public int ActiveProcessLimit { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify a limit flags for the job.</para>
+        /// <para type="description">Specify limit flags for the job.</para>
         /// </summary>
         [Parameter]
         public JobObjectLimitFlags LimitFlags { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify UI Restriction flags for the job.</para>
+        /// </summary>
+        [Parameter]
+        public JobObjectUiLimitFlags UiRestrictionFlags { get; set; }
 
         /// <summary>
         /// Determine if the cmdlet can create objects.
@@ -132,6 +138,10 @@ namespace NtObjectManager
                 if (ActiveProcessLimit > 0)
                 {
                     job.ActiveProcessLimit = ActiveProcessLimit;
+                }
+                if (UiRestrictionFlags != 0)
+                {
+                    job.UiRestrictionFlags = UiRestrictionFlags;
                 }
                 return job.Duplicate();
             }
