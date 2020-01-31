@@ -445,6 +445,7 @@ namespace NtApiDotNet
         /// <param name="config">The process configuration.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The new forked process result</returns>
+        /// <remarks>This uses NtCreateUserProcess.</remarks>
         public static NtProcessCreateResult Fork(NtProcessCreateConfig config, bool throw_on_error)
         {
             return Create(config, string.Empty, true, throw_on_error);
@@ -455,6 +456,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="config">The process configuration.</param>
         /// <returns>The new forked process result</returns>
+        /// <remarks>This uses NtCreateUserProcess.</remarks>
         public static NtProcessCreateResult Fork(NtProcessCreateConfig config)
         {
             return Fork(config, true);
@@ -1596,6 +1598,40 @@ namespace NtApiDotNet
                 }
             }
             return user_params.ToObject(this);
+        }
+
+        /// <summary>
+        /// Fork the process.
+        /// </summary>
+        /// <param name="flags">Extra flags for fork.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The new forked process result.</returns>
+        /// <remarks>This uses NtCreateProcessEx.</remarks>
+        public NtResult<NtProcess> Fork(ProcessCreateFlags flags, bool throw_on_error)
+        {
+            return CreateProcessEx(ProcessAccessRights.MaximumAllowed, null, 
+                this, flags | ProcessCreateFlags.InheritFromParent, null, null, null, throw_on_error);
+        }
+
+        /// <summary>
+        /// Fork the process.
+        /// </summary>
+        /// <param name="flags">Extra flags for fork.</param>
+        /// <returns>The new forked process result.</returns>
+        /// <remarks>This uses NtCreateProcessEx.</remarks>
+        public NtProcess Fork(ProcessCreateFlags flags)
+        {
+            return Fork(flags, true).Result;
+        }
+
+        /// <summary>
+        /// Fork the process.
+        /// </summary>
+        /// <returns>The new forked process result.</returns>
+        /// <remarks>This uses NtCreateProcessEx.</remarks>
+        public NtProcess Fork()
+        {
+            return Fork(ProcessCreateFlags.None);
         }
 
         /// <summary>
