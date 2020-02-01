@@ -1509,17 +1509,19 @@ function Format-NtToken {
   }
 
   if ($Group) {
-    "GROUP SID INFORMATION"
-    "-----------------"
-    $token.Groups | Format-Table
+    if ($Token.GroupCount -gt 0) {
+        "GROUP SID INFORMATION"
+        "-----------------"
+        $token.Groups | Format-Table
+    }
 
-    if ($token.AppContainer) {
+    if ($token.AppContainer -and $token.Capabilities.Length -gt 0) {
       "CAPABILITY SID INFORMATION"
       "----------------------"
       $token.Capabilities | Format-Table
     }
 
-    if ($token.Restricted) {
+    if ($token.Restricted -and $token.RestrictedSids.Length -gt 0) {
       if ($token.WriteRestricted) {
         "WRITE RESTRICTED SID INFORMATION"
         "--------------------------------"
@@ -1531,7 +1533,7 @@ function Format-NtToken {
     }
   }
 
-  if ($Privilege) {
+  if ($Privilege -and $Token.Privileges.Length -gt 0) {
     "PRIVILEGE INFORMATION"
     "---------------------"
     $token.Privileges | Format-Table
@@ -1555,7 +1557,7 @@ function Format-NtToken {
     ""
   }
 
-  if ($SecurityAttributes) {
+  if ($SecurityAttributes -and $Token.SecurityAttributes.Length -gt 0) {
     "SECURITY ATTRIBUTES"
     "-------------------"
     $token.SecurityAttributes | Format-Table
