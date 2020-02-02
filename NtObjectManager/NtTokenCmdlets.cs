@@ -333,9 +333,12 @@ namespace NtObjectManager
         public SwitchParameter AppContainer { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify the token to sandbox. If not specified then the current primary token is used.</para>
+        /// <para type="description">Specify the token to sandbox or query. If not specified then the current primary token is used.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "LowBox"), Parameter(ParameterSetName = "Filtered"), Parameter(ParameterSetName = "AppContainer")]
+        [Parameter(ParameterSetName = "LowBox"), 
+         Parameter(ParameterSetName = "Filtered"), 
+         Parameter(ParameterSetName = "AppContainer"),
+         Parameter(ParameterSetName = "Linked")]
         public NtToken Token { get; set; }
 
         /// <summary>
@@ -403,6 +406,12 @@ namespace NtObjectManager
         /// </summary>
         [Parameter(ParameterSetName = "Session")]
         public int SessionId { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to get the linked token.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "Linked", Mandatory = true)]
+        public SwitchParameter Linked { get; set; }
 
         private static IEnumerable<Luid> GetPrivileges(IEnumerable<TokenPrivilege> privs)
         {
@@ -588,7 +597,7 @@ namespace NtObjectManager
             return TokenUtils.GetAnonymousToken(desired_access);
         }
 
-        private NtToken GetSandboxedToken(TokenAccessRights desired_access, Func<NtToken, NtToken> sandbox_func)
+        private NtToken GetRelatedToken(TokenAccessRights desired_access, Func<NtToken, NtToken> sandbox_func)
         {
             using (NtToken token = Token != null ? Token.Duplicate() : NtToken.OpenProcessToken())
             {
@@ -719,11 +728,11 @@ namespace NtObjectManager
             }
             else if (LowBox || AppContainer)
             {
-                return GetSandboxedToken(desired_access, GetLowBoxToken);
+                return GetRelatedToken(desired_access, GetLowBoxToken);
             }
             else if (Filtered)
             {
-                return GetSandboxedToken(desired_access, GetFilteredToken);
+                return GetRelatedToken(desired_access, GetFilteredToken);
             }
             else if (Service.HasValue)
             {
@@ -732,6 +741,10 @@ namespace NtObjectManager
             else if (Session)
             {
                 return GetSessionToken(desired_access, SessionId);
+            }
+            else if (Linked)
+            {
+                return GetRelatedToken(desired_access, t => t.GetLinkedToken());
             }
             else
             {
