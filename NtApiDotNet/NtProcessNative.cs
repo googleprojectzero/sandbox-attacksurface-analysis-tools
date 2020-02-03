@@ -380,6 +380,13 @@ namespace NtApiDotNet
         public int StateFlags;
     }
 
+    [Flags]
+    public enum ProcessDebugFlags
+    {
+        None = 0,
+        DebugInherit = 1,
+    }
+
     public enum ProcessInformationClass
     {
         ProcessBasicInformation, // 0, q: PROCESS_BASIC_INFORMATION, PROCESS_EXTENDED_BASIC_INFORMATION

@@ -343,7 +343,7 @@ namespace NtApiDotNet
         /// <param name="token">Access token for the new process.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The created process</returns>
-        public static NtResult<NtProcess> CreateProcessEx(ProcessAccessRights desired_access, ObjectAttributes object_attributes, 
+        public static NtResult<NtProcess> CreateProcessEx(ProcessAccessRights desired_access, ObjectAttributes object_attributes,
             NtProcess parent_process, ProcessCreateFlags flags, NtSection section_handle, NtDebug debug_port, NtToken token, bool throw_on_error)
         {
             return NtSystemCalls.NtCreateProcessEx(out SafeKernelObjectHandle process, desired_access,
@@ -1425,7 +1425,7 @@ namespace NtApiDotNet
         /// <remarks>Should only work on the pseudo process handle.</remarks>
         public NtResult<NtSection> OpenImageSection(bool throw_on_error)
         {
-            return Query(ProcessInformationClass.ProcessImageSection, 
+            return Query(ProcessInformationClass.ProcessImageSection,
                 IntPtr.Zero, throw_on_error).Map(r => NtSection.FromHandle(r, true));
         }
 
@@ -1533,8 +1533,8 @@ namespace NtApiDotNet
         /// <returns>The NT status code.</returns>
         public NtStatus SetExceptionPort(NtAlpc exception_port, int state_flags, bool throw_on_error)
         {
-            ProcessExceptionPort port = new ProcessExceptionPort() 
-            { 
+            ProcessExceptionPort port = new ProcessExceptionPort()
+            {
                 ExceptionPortHandle = exception_port.Handle.DangerousGetHandle(),
                 StateFlags = state_flags
             };
@@ -1609,7 +1609,7 @@ namespace NtApiDotNet
         /// <remarks>This uses NtCreateProcessEx.</remarks>
         public NtResult<NtProcess> Fork(ProcessCreateFlags flags, bool throw_on_error)
         {
-            return CreateProcessEx(ProcessAccessRights.MaximumAllowed, null, 
+            return CreateProcessEx(ProcessAccessRights.MaximumAllowed, null,
                 this, flags | ProcessCreateFlags.InheritFromParent, null, null, null, throw_on_error);
         }
 
@@ -1820,7 +1820,11 @@ namespace NtApiDotNet
         /// <summary>
         /// Get debug flags.
         /// </summary>
-        public int DebugFlags => Query<int>(ProcessInformationClass.ProcessDebugFlags);
+        public ProcessDebugFlags DebugFlags
+        {
+            get => (ProcessDebugFlags)Query<int>(ProcessInformationClass.ProcessDebugFlags);
+            set => Set(ProcessInformationClass.ProcessDebugFlags, (int)value);
+        }
 
         /// <summary>
         /// Get execute flags.
