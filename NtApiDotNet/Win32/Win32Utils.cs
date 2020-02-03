@@ -190,7 +190,6 @@ namespace NtApiDotNet.Win32
                 return args[0];
             }
 
-            StringBuilder builder = new StringBuilder();
             for (int i = 0; i < args.Length; ++i)
             {
                 string file = string.Join(" ", args.Take(i + 1));
