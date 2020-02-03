@@ -140,14 +140,14 @@ namespace NtApiDotNet
             switch (State)
             {
                 case ProcessCreateState.FailOnSectionCreate:
-                    NtObjectUtils.CloseHandle(Data.FileHandle);
+                    NtObject.CloseHandle(Data.FileHandle);
                     break;
                 case ProcessCreateState.FailExeName:
-                    NtObjectUtils.CloseHandle(Data.IFEOKey);
+                    NtObject.CloseHandle(Data.IFEOKey);
                     break;
                 case ProcessCreateState.Success:
-                    NtObjectUtils.CloseHandle(Data.Success.FileHandle);
-                    NtObjectUtils.CloseHandle(Data.Success.SectionHandle);
+                    NtObject.CloseHandle(Data.Success.FileHandle);
+                    NtObject.CloseHandle(Data.Success.SectionHandle);
                     break;
             }
         }

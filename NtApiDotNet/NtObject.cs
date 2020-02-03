@@ -368,18 +368,32 @@ namespace NtApiDotNet
             CloseHandle(pid, handle, true);
         }
 
-            /// <summary>
-            /// Duplicate a handle to a new handle, potentially in a different process.
-            /// </summary>
-            /// <param name="flags">Attribute flags for new handle</param>
-            /// <param name="src_handle">The source handle to duplicate</param>
-            /// <param name="src_process">The source process to duplicate from</param>
-            /// <param name="dest_process">The desination process for the handle</param>
-            /// <param name="options">Duplicate handle options</param>
-            /// <param name="access_rights">The access rights for the new handle</param>
-            /// <param name="throw_on_error">True to throw an exception on error.</param>
-            /// <returns>The NT status code and object result.</returns>
-            public static NtResult<IntPtr> DuplicateHandle(
+
+        /// <summary>
+        /// Close a handle.
+        /// </summary>
+        /// <param name="handle">The handle to close.</param>
+        /// <returns>The NT status code.</returns>
+        /// <remarks>This ensures the handle can't be 0 before calling NtClose.</remarks>
+        public static NtStatus CloseHandle(IntPtr handle)
+        {
+            if (handle == IntPtr.Zero)
+                return NtStatus.STATUS_INVALID_HANDLE;
+            return NtSystemCalls.NtClose(handle);
+        }
+
+        /// <summary>
+        /// Duplicate a handle to a new handle, potentially in a different process.
+        /// </summary>
+        /// <param name="flags">Attribute flags for new handle</param>
+        /// <param name="src_handle">The source handle to duplicate</param>
+        /// <param name="src_process">The source process to duplicate from</param>
+        /// <param name="dest_process">The desination process for the handle</param>
+        /// <param name="options">Duplicate handle options</param>
+        /// <param name="access_rights">The access rights for the new handle</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<IntPtr> DuplicateHandle(
             NtProcess src_process, IntPtr src_handle,
             NtProcess dest_process, AccessMask access_rights,
             AttributeFlags flags, DuplicateObjectOptions options,
