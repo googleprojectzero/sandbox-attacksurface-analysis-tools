@@ -311,7 +311,7 @@ namespace NtObjectManager
 
         private protected abstract void RunAccessCheck(IEnumerable<TokenEntry> tokens);
 
-        private protected void WriteAccessCheckResult(string name, string type_name, AccessMask granted_access,
+        private protected virtual void WriteAccessCheckResult(string name, string type_name, AccessMask granted_access,
             GenericMapping generic_mapping, SecurityDescriptor sd, Type enum_type, bool is_directory, TokenInformation token_info)
         {
             WriteObject(new AccessCheckResult(name, type_name, granted_access, generic_mapping, 

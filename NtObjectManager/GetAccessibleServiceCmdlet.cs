@@ -16,6 +16,7 @@ using NtApiDotNet;
 using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Management.Automation;
 
@@ -106,6 +107,10 @@ namespace NtObjectManager
     ///   <para>Check access to the SCM for the current process token.</para>
     /// </example>
     /// <example>
+    ///   <code>Get-AccessibleService -CheckFiles</code>
+    ///   <para>Check all accessible services for the current process token as well as generating access checks for the services files.</para>
+    /// </example>
+    /// <example>
     ///   <code>Get-AccessibleService -ProcessIds 1234,5678</code>
     ///   <para>>Check all accessible services for the process tokens of PIDs 1234 and 5678</para>
     /// </example>
@@ -117,6 +122,27 @@ namespace NtObjectManager
     [OutputType(typeof(AccessCheckResult))]
     public class GetAccessibleServiceCmdlet : CommonAccessBaseWithAccessCmdlet<ServiceAccessRights>
     {
+        private class InternalGetAccessibleFileCmdlet : GetAccessibleFileCmdlet
+        {
+            private GetAccessibleServiceCmdlet _cmdlet;
+
+            public InternalGetAccessibleFileCmdlet(GetAccessibleServiceCmdlet cmdlet)
+            {
+                _cmdlet = cmdlet;
+                FormatWin32Path = true;
+            }
+
+            private protected override void WriteAccessCheckResult(string name, string type_name, AccessMask granted_access, GenericMapping generic_mapping, SecurityDescriptor sd, Type enum_type, bool is_directory, TokenInformation token_info)
+            {
+                _cmdlet.WriteAccessCheckResult(name, type_name, granted_access, generic_mapping, sd, enum_type, is_directory, token_info);
+            }
+
+            internal void RunAccessCheckPathInternal(IEnumerable<TokenEntry> tokens, string path)
+            {
+                RunAccessCheckPath(tokens, NtFileUtils.DosFileNameToNt(path));
+            }
+        }
+
         private RunningService GetServiceByName(string name)
         {
             try
@@ -242,6 +268,13 @@ namespace NtObjectManager
         [Parameter(ParameterSetName = "FromName")]
         public SwitchParameter IgnoreTrigger { get; set; }
 
+        /// <summary>
+        /// <para type="description">Generate access check results for the service files.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "All")]
+        [Parameter(ParameterSetName = "FromName")]
+        public SwitchParameter CheckFiles { get; set; }
+
         private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
             if (CheckScmAccess)
@@ -258,6 +291,15 @@ namespace NtObjectManager
             else
             {
                 IEnumerable<RunningService> services = GetServices();
+                InternalGetAccessibleFileCmdlet file_cmdlet = null;
+                HashSet<string> checked_files = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                if (CheckFiles)
+                {
+                    file_cmdlet = new InternalGetAccessibleFileCmdlet(this)
+                    {
+                        FormatWin32Path = true
+                    };
+                }
 
                 GenericMapping service_mapping = ServiceUtils.GetServiceGenericMapping();
                 AccessMask access_rights = service_mapping.MapMask(AccessRights);
@@ -274,6 +316,22 @@ namespace NtObjectManager
                             WriteObject(new ServiceAccessCheckResult(service.Name, granted_access | trigger_access,
                                 service.SecurityDescriptor, token.Information, trigger_access,
                                 granted_access.ToSpecificAccess<ServiceAccessRights>(), service));
+                        }
+                    }
+                    if (CheckFiles)
+                    {
+                        if (!string.IsNullOrWhiteSpace(service.ImagePath) 
+                            && File.Exists(service.ImagePath) 
+                            && checked_files.Add(service.ImagePath))
+                        {
+                            file_cmdlet.RunAccessCheckPathInternal(tokens, service.ImagePath);
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(service.ServiceDll) 
+                            && File.Exists(service.ServiceDll) 
+                            && checked_files.Add(service.ServiceDll))
+                        {
+                            file_cmdlet.RunAccessCheckPathInternal(tokens, service.ServiceDll);
                         }
                     }
                 }
