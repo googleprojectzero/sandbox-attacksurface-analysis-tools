@@ -119,7 +119,7 @@ namespace NtObjectManager
             AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
 
             // Determine if the parent gives additonal rights to this file.
-            if (!granted_access.IsAllAccessGranted(FileDirectoryAccessRights.ListDirectory | FileDirectoryAccessRights.Delete) && parent_sd != null)
+            if (!granted_access.IsAllAccessGranted(FileDirectoryAccessRights.ReadAttributes | FileDirectoryAccessRights.Delete) && parent_sd != null)
             {
                 AccessMask parent_granted_access = NtSecurity.GetMaximumAccess(parent_sd, token.Token, type.GenericMapping);
                 if (parent_granted_access.IsAccessGranted(FileDirectoryAccessRights.DeleteChild))
