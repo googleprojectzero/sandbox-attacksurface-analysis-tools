@@ -2017,6 +2017,11 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the Win32 image path.
+        /// </summary>
+        public string Win32ImagePath => GetImageFilePath(false, false).GetResultOrDefault() ?? string.Empty;
+
+        /// <summary>
         /// Get owner process ID
         /// </summary>
         public int OwnerProcessId => Query<IntPtr>(ProcessInformationClass.ProcessConsoleHostProcess).ToInt32();
