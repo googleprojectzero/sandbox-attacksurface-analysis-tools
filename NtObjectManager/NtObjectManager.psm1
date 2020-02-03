@@ -3402,6 +3402,8 @@ This cmdlet gets the registered WNF entries or a specific entry from a state nam
 The statename to get.
 .PARAMETER DontCheckExists
 Specify to not check that the WNF entry exists.
+.PARAMETER Name
+Lookup the state name from a well known text name.
 .OUTPUTS
 NtApiDotNet.NtWnf
 .EXAMPLE
@@ -3413,6 +3415,9 @@ Get a WNF entry from a state name.
 .EXAMPLE
 Get-NtWnf 0x12345678 -DontCheckExists
 Get a WNF entry from a state name but don't check if it exists.
+.EXAMPLE
+Get-NtWnf "WNF_AOW_BOOT_PROGRESS"
+Get a WNF entry from a name.
 #>
 function Get-NtWnf {
     [CmdletBinding(DefaultParameterSetName = "All")]
@@ -3420,7 +3425,10 @@ function Get-NtWnf {
         [parameter(Position=0, Mandatory, ParameterSetName="StateName")]
         [uint64]$StateName,
         [parameter(ParameterSetName="StateName")]
-        [switch]$DontCheckExists
+        [parameter(ParameterSetName="Name")]
+        [switch]$DontCheckExists,
+        [parameter(Position=0, Mandatory, ParameterSetName="Name")]
+        [string]$Name
     )
     switch($PSCmdlet.ParameterSetName) {
         "All" {
@@ -3428,6 +3436,9 @@ function Get-NtWnf {
         }
         "StateName" { 
             [NtApiDotNet.NtWnf]::Open($StateName, -not $DontCheckExists)
+        }
+        "Name" {
+            [NtApiDotNet.NtWnf]::Open($Name, -not $DontCheckExists)
         }
     }
 }

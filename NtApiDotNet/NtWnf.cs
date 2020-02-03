@@ -22,6 +22,7 @@ namespace NtApiDotNet
     /// </summary>
     public class NtWnf
     {
+        #region Private Members
         private bool _read_state_data;
         private SecurityDescriptor _security_descriptor;
         private static readonly string[] _root_keys = { @"\Registry\Machine\System\CurrentControlSet\Control\Notifications",
@@ -38,6 +39,39 @@ namespace NtApiDotNet
             }
         }
 
+        private void ReadStateData(NtKeyValue value)
+        {
+            _security_descriptor = new SecurityDescriptor(value.Data);
+        }
+
+        private void ReadStateData()
+        {
+            if (_read_state_data)
+            {
+                return;
+            }
+            _read_state_data = true;
+            using (ObjectAttributes obj_attr = new ObjectAttributes(_root_keys[(int)Lifetime], AttributeFlags.CaseInsensitive))
+            {
+                using (var key = NtKey.Open(obj_attr, KeyAccessRights.QueryValue, KeyCreateOptions.NonVolatile, false))
+                {
+                    if (!key.IsSuccess)
+                    {
+                        return;
+                    }
+
+                    var value = key.Result.QueryValue(StateName.ToString("X016"), false);
+                    if (value.IsSuccess)
+                    {
+                        ReadStateData(value.Result);
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+        #region Static Members
         /// <summary>
         /// Get the generic mapping for a 
         /// </summary>
@@ -162,6 +196,65 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Open a state name. Doesn't check if it exists.
+        /// </summary>
+        /// <param name="name">The name to open.</param>
+        /// <param name="check_exists">True to check state name exists.</param>
+        /// <returns>The created object.</returns>
+        public static NtWnf Open(string name, bool check_exists)
+        {
+            if (!NtWnfWellKnownNames.Names.ContainsKey(name))
+            {
+                throw new NtException(NtStatus.STATUS_OBJECT_NAME_NOT_FOUND);
+            }
+            return Open(NtWnfWellKnownNames.Names[name], check_exists, true).Result;
+        }
+
+        /// <summary>
+        /// Open a state name. Doesn't check if it exists.
+        /// </summary>
+        /// <param name="name">The name to open.</param>
+        /// <returns>The created object.</returns>
+        public static NtWnf Open(string name)
+        {
+            return Open(name, true);
+        }
+
+        /// <summary>
+        /// Get registered notifications.
+        /// </summary>
+        /// <returns>The list of registered notifications.</returns>
+        public static IEnumerable<NtWnf> GetRegisteredNotifications()
+        {
+            foreach (string key_name in _root_keys)
+            {
+                using (ObjectAttributes obj_attr = new ObjectAttributes(key_name, AttributeFlags.CaseInsensitive))
+                {
+                    using (var key = NtKey.Open(obj_attr, KeyAccessRights.QueryValue, KeyCreateOptions.NonVolatile, false))
+                    {
+                        if (!key.IsSuccess)
+                        {
+                            continue;
+                        }
+                        foreach (var value in key.Result.QueryValues())
+                        {
+                            if (!ulong.TryParse(value.Name, System.Globalization.NumberStyles.HexNumber, null, out ulong state_name))
+                            {
+                                continue;
+                            }
+                            NtWnf result = new NtWnf(state_name);
+                            result.ReadStateData(value);
+                            result._read_state_data = true;
+                            yield return result;
+                        }
+                    }
+                }
+            }
+        }
+        #endregion
+
+        #region Public Properties
+        /// <summary>
         /// Get the state name for this WNF entry.
         /// </summary>
         public ulong StateName { get; }
@@ -189,36 +282,6 @@ namespace NtApiDotNet
             }
         }
 
-        private void ReadStateData(NtKeyValue value)
-        {
-            _security_descriptor = new SecurityDescriptor(value.Data);
-        }
-
-        private void ReadStateData()
-        {
-            if (_read_state_data)
-            {
-                return;
-            }
-            _read_state_data = true;
-            using (ObjectAttributes obj_attr = new ObjectAttributes(_root_keys[(int)Lifetime], AttributeFlags.CaseInsensitive))
-            {
-                using (var key = NtKey.Open(obj_attr, KeyAccessRights.QueryValue, KeyCreateOptions.NonVolatile, false))
-                {
-                    if (!key.IsSuccess)
-                    {
-                        return;
-                    }
-
-                    var value = key.Result.QueryValue(StateName.ToString("X016"), false);
-                    if (value.IsSuccess)
-                    {
-                        ReadStateData(value.Result);
-                    }
-                }
-            }
-        }
-
         /// <summary>
         /// Get the security descriptor for this object, if known.
         /// </summary>
@@ -236,6 +299,14 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Get a name for the WNF notification.
+        /// </summary>
+        public string Name => NtWnfWellKnownNames.GetName(StateName) ?? StateName.ToString("X016");
+
+        #endregion
+
+        #region Public Methods
         /// <summary>
         /// Query state data for the WNF object.
         /// </summary>
@@ -315,37 +386,7 @@ namespace NtApiDotNet
             UpdateStateData(data, null, IntPtr.Zero, null, true);
         }
 
-        /// <summary>
-        /// Get registered notifications.
-        /// </summary>
-        /// <returns>The list of registered notifications.</returns>
-        public static IEnumerable<NtWnf> GetRegisteredNotifications()
-        {
-            foreach (string key_name in _root_keys)
-            {
-                using (ObjectAttributes obj_attr = new ObjectAttributes(key_name, AttributeFlags.CaseInsensitive))
-                {
-                    using (var key = NtKey.Open(obj_attr, KeyAccessRights.QueryValue, KeyCreateOptions.NonVolatile, false))
-                    {
-                        if (!key.IsSuccess)
-                        {
-                            continue;
-                        }
-                        foreach (var value in key.Result.QueryValues())
-                        {
-                            if (!ulong.TryParse(value.Name, System.Globalization.NumberStyles.HexNumber, null, out ulong state_name))
-                            {
-                                continue;
-                            }
-                            NtWnf result = new NtWnf(state_name);
-                            result.ReadStateData(value);
-                            result._read_state_data = true;
-                            yield return result;
-                        }
-                    }
-                }
-            }
-        }
+        #endregion
 
         /// <summary>
         /// Overridden ToString method.
@@ -353,7 +394,7 @@ namespace NtApiDotNet
         /// <returns>The string representation.</returns>
         public override string ToString()
         {
-            return $"WNF:{StateName:X016} {Lifetime}";
+            return $"WNF:{Name} {Lifetime}";
         }
 
         internal NtWnf(ulong state_name)
