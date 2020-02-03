@@ -363,6 +363,7 @@ namespace NtApiDotNet
         Capability,
         Package,
         ProcessTrust,
+        WellKnown
     }
 
     /// <summary>

@@ -1071,6 +1071,13 @@ namespace NtApiDotNet
         private static Dictionary<Sid, string> _device_capabilities;
         private static Regex ConditionalAceRegex = new Regex(@"^D:\(XA;;;;;WD;\((.+)\)\)$");
         private static ConcurrentDictionary<Sid, SidName> _cached_names = new ConcurrentDictionary<Sid, SidName>();
+        private static readonly Dictionary<Sid, string> _known_sids = new Dictionary<Sid, string>()
+        {
+            // S-1-5-86-1544737700-199408000-2549878335-3519669259-381336952
+            { new Sid(SecurityAuthority.Nt, 86, 1544737700, 199408000, 2549878335, 3519669259, 381336952), "WMI_LOCAL_SERVICE" },
+            // "S-1-5-86-615999462-62705297-2911207457-59056572-3668589837"
+            { new Sid(SecurityAuthority.Nt, 86, 615999462, 62705297, 2911207457, 59056572, 3668589837), "WMI_NETWORK_SERVICE" },
+        };
 
         private static string UpperCaseString(string name)
         {
@@ -1166,6 +1173,10 @@ namespace NtApiDotNet
                 {
                     return new SidName($@"TRUST LEVEL\{name}", SidNameSource.ProcessTrust);
                 }
+            }
+            else if (_known_sids.ContainsKey(sid))
+            {
+                return new SidName(_known_sids[sid], SidNameSource.WellKnown);
             }
 
             return new SidName(sid.ToString(), SidNameSource.Sddl);
