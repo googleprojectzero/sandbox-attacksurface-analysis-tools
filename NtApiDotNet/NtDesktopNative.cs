@@ -63,6 +63,9 @@ namespace NtApiDotNet
             IntPtr DevMode, CreateDesktopFlags Flags,
             DesktopAccessRights DesiredAccess,
             int HeapSize);
+
+        [DllImport("win32u.dll", SetLastError = true)]
+        public static extern IntPtr NtUserGetThreadDesktop(int dwThreadId);
     }
 
 #pragma warning restore

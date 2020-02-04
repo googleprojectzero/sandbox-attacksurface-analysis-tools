@@ -135,5 +135,36 @@ namespace NtApiDotNet
         {
             return Create(desktop_name, null);
         }
+
+        /// <summary>
+        /// Get the desktop for a thread.
+        /// </summary>
+        /// <param name="thread_id">The thread ID of the thread.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The desktop result.</returns>
+        public static NtResult<NtDesktop> GetThreadDesktop(int thread_id, bool throw_on_error)
+        {
+            var handle = NtSystemCalls.NtUserGetThreadDesktop(thread_id);
+            if (handle == IntPtr.Zero)
+            {
+                return NtObjectUtils.CreateResultFromDosError<NtDesktop>(Marshal.GetLastWin32Error(), throw_on_error);
+            }
+            return new NtDesktop(new SafeKernelObjectHandle(handle, false)).CreateResult();
+        }
+
+        /// <summary>
+        /// Get the desktop for a thread.
+        /// </summary>
+        /// <param name="thread_id">The thread ID of the thread.</param>
+        /// <returns>The desktop result.</returns>
+        public static NtDesktop GetThreadDesktop(int thread_id)
+        {
+            return GetThreadDesktop(thread_id, true).Result;
+        }
+
+        /// <summary>
+        /// Get desktop for current thread.
+        /// </summary>
+        public static NtDesktop Current => GetThreadDesktop(NtThread.Current.ThreadId);
     }
 }
