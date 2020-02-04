@@ -5527,20 +5527,40 @@ This cmdlet queries the names of the Desktops from the specified Window Station.
 By default will use the current process Window Station.
 .PARAMETER WindowStation
 The Window Station to query.
+.PARAMETER Current
+Specify to get the name of the current thread desktop.
+.PARAMETER ThreadId
+Specify to get the name of the desktop from a thread.
 .INPUTS
 string
 .OUTPUTS
 None
 #>
 function Get-NtDesktopName {
-    [CmdletBinding(DefaultParameterSetName = "FromCurrent")]
+    [CmdletBinding(DefaultParameterSetName = "FromCurrentWindowStation")]
     Param(
         [Parameter(Position=0, ParameterSetName="FromWindowStation")]
-        [NtApiDotNet.NtWindowStation]$WindowStation
+        [NtApiDotNet.NtWindowStation]$WindowStation,
+        [Parameter(ParameterSetName="FromCurrentDesktop")]
+        [switch]$Current,
+        [Parameter(ParameterSetName="FromThreadId")]
+        [alias("tid")]
+        [int]$ThreadId
     )
-    if($PsCmdlet.ParameterSetName -eq "FromCurrent") {
-        $WindowStation = [NtApiDotNet.NtWindowStation]::Current
-    }
 
-    $WindowStation.Desktops | Write-Output
+    switch($PSCmdlet.ParameterSetName) {
+        "FromCurrentWindowStation" {
+            $winsta = [NtApiDotNet.NtWindowStation]::Current
+            $winsta.Desktops | Write-Output
+        }
+        "FromWindowStation" {
+            $WindowStation.Desktops | Write-Output
+        }
+        "FromCurrentDesktop" {
+            [NtApiDotNet.NtDesktop]::Current.Name | Write-Output
+        }
+        "FromThreadId" {
+            [NtApiDotNet.NtDesktop]::GetThreadDesktop($ThreadId).Name | Write-Output
+        }
+    }
 }
