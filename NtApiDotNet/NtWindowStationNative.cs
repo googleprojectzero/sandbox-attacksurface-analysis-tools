@@ -53,6 +53,15 @@ namespace NtApiDotNet
         [DllImport("win32u.dll", SetLastError = true)]
         public static extern NtStatus NtUserBuildNameList(
             SafeKernelObjectHandle Handle, int Size, SafeBuffer NameList, out int RequiredSize);
+
+        [DllImport("win32u.dll", SetLastError = true)]
+        public static extern SafeKernelObjectHandle NtUserGetProcessWindowStation();
+
+        [DllImport("win32u.dll", SetLastError = true)]
+        public static extern bool NtUserCloseWindowStation(SafeKernelObjectHandle handle);
+
+        [DllImport("win32u.dll", SetLastError = true)]
+        public static extern bool NtUserSetProcessWindowStation(SafeKernelObjectHandle handle);
     }
 
 #pragma warning restore

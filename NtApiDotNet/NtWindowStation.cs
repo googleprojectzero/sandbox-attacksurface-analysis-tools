@@ -23,7 +23,48 @@ namespace NtApiDotNet
     [NtType("WindowStation")]
     public class NtWindowStation : NtObjectWithDuplicate<NtWindowStation, WindowStationAccessRights>
     {
-        internal NtWindowStation(SafeKernelObjectHandle handle) 
+        internal static IEnumerable<string> EnumNameList(SafeKernelObjectHandle handle)
+        {
+            int size = 522;
+            for (int i = 0; i < 10; ++i)
+            {
+                using (var buffer = new SafeHGlobalBuffer(size))
+                {
+                    NtStatus status = NtSystemCalls.NtUserBuildNameList(handle, buffer.Length, buffer, out size);
+                    if (!status.IsSuccess())
+                    {
+                        if (status == NtStatus.STATUS_BUFFER_TOO_SMALL)
+                        {
+                            continue;
+                        }
+                        status.ToNtException();
+                    }
+                    int total_count = buffer.Read<int>(4);
+                    int offset = 8;
+                    while (total_count > 0)
+                    {
+                        string name = buffer.ReadNulTerminatedUnicodeString((ulong)offset);
+                        yield return name;
+                        offset += (name.Length + 1) * 2;
+                        total_count--;
+                    }
+                    yield break;
+                }
+            }
+            throw new NtException(NtStatus.STATUS_NO_MEMORY);
+        }
+
+        internal static string GetWindowStationBase()
+        {
+            int session_id = NtProcess.Current.SessionId;
+            if (session_id == 0)
+            {
+                return @"\Windows\WindowStations";
+            }
+            return $@"\Sessions\{session_id}\Windows\WindowStations";
+        }
+
+        internal NtWindowStation(SafeKernelObjectHandle handle)
             : base(handle)
         {
         }
@@ -55,7 +96,7 @@ namespace NtApiDotNet
             if (handle.IsInvalid)
             {
                 return NtObjectUtils.CreateResultFromDosError<NtWindowStation>(Marshal.GetLastWin32Error(), throw_on_error);
-                
+
             }
             return new NtResult<NtWindowStation>(NtStatus.STATUS_SUCCESS, new NtWindowStation(handle));
         }
@@ -89,38 +130,47 @@ namespace NtApiDotNet
         /// <summary>
         /// Get a list of desktops for this Window Station.
         /// </summary>
-        public IEnumerable<string> Desktops
+        public IEnumerable<string> Desktops => EnumNameList(Handle);
+
+        /// <summary>
+        /// Enumerate name of Window Stations in current session.
+        /// </summary>
+        public static IEnumerable<string> WindowStations => EnumNameList(SafeKernelObjectHandle.Null);
+
+        /// <summary>
+        /// Get a list of accessible Window Station objects.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the Window Stations.</param>
+        /// <returns>The list of desktops.</returns>
+        public static IEnumerable<NtWindowStation> GetAccessibleWindowStations(WindowStationAccessRights desired_access)
         {
-            get
+            using (var list = new DisposableList<NtWindowStation>())
             {
-                int size = 522;
-                for (int i = 0; i < 10; ++i)
+                string base_path = GetWindowStationBase();
+
+                foreach (string name in WindowStations)
                 {
-                    using (var buffer = new SafeHGlobalBuffer(size))
+                    string full_path = $@"{base_path}\{name}";
+                    using (ObjectAttributes obj_attr = new ObjectAttributes(full_path, AttributeFlags.CaseInsensitive))
                     {
-                        NtStatus status = NtSystemCalls.NtUserBuildNameList(Handle, buffer.Length, buffer, out size);
-                        if (!status.IsSuccess())
+                        var result = Open(obj_attr, desired_access, false);
+                        if (result.IsSuccess)
                         {
-                            if (status == NtStatus.STATUS_BUFFER_TOO_SMALL)
-                            {
-                                continue;
-                            }
-                            status.ToNtException();
+                            list.Add(result.Result);
                         }
-                        int total_count = buffer.Read<int>(4);
-                        int offset = 8;
-                        while (total_count > 0)
-                        {
-                            string desktop = buffer.ReadNulTerminatedUnicodeString((ulong)offset);
-                            yield return desktop;
-                            offset += (desktop.Length + 1) * 2;
-                            total_count--;
-                        }
-                        yield break;
                     }
                 }
-                throw new NtException(NtStatus.STATUS_NO_MEMORY);
+                return list.ToArrayAndClear();
             }
+        }
+
+        /// <summary>
+        /// Get a list of accessible Window Station objects.
+        /// </summary>
+        /// <returns>The list of desktops.</returns>
+        public static IEnumerable<NtWindowStation> GetAccessibleWindowStations()
+        {
+            return GetAccessibleWindowStations(WindowStationAccessRights.MaximumAllowed);
         }
 
         /// <summary>
@@ -130,16 +180,20 @@ namespace NtApiDotNet
         /// <returns>The list of desktops.</returns>
         public IEnumerable<NtDesktop> GetAccessibleDesktops(DesktopAccessRights desired_access)
         {
-            foreach (string desktop in Desktops)
+            using (var list = new DisposableList<NtDesktop>())
             {
-                using (ObjectAttributes obj_attr = new ObjectAttributes(desktop, AttributeFlags.CaseInsensitive, this))
+                foreach (string desktop in Desktops)
                 {
-                    var result = NtDesktop.Open(obj_attr, 0, desired_access, false);
-                    if (result.IsSuccess)
+                    using (ObjectAttributes obj_attr = new ObjectAttributes(desktop, AttributeFlags.CaseInsensitive, this))
                     {
-                        yield return result.Result;
+                        var result = NtDesktop.Open(obj_attr, 0, desired_access, false);
+                        if (result.IsSuccess)
+                        {
+                            list.Add(result.Result);
+                        }
                     }
                 }
+                return list.ToArrayAndClear();
             }
         }
 
@@ -151,5 +205,54 @@ namespace NtApiDotNet
         {
             return GetAccessibleDesktops(DesktopAccessRights.MaximumAllowed);
         }
+
+        /// <summary>
+        /// Close the Window Stations. This is different from normal Close as it destroys the Window Station.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status.</returns>
+        public NtStatus CloseWindowStation(bool throw_on_error = true)
+        {
+            if (!NtSystemCalls.NtUserCloseWindowStation(Handle))
+            {
+                return NtObjectUtils.MapDosErrorToStatus();
+            }
+            return NtStatus.STATUS_SUCCESS;
+        }
+
+        /// <summary>
+        /// Set the Window Station for the Process.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status.</returns>
+        public NtStatus SetProcess(bool throw_on_error = true)
+        {
+            if (!NtSystemCalls.NtUserSetProcessWindowStation(Handle))
+            {
+                return NtObjectUtils.MapDosErrorToStatus().ToNtException(throw_on_error);
+            }
+            return NtStatus.STATUS_SUCCESS;
+        }
+
+        /// <summary>
+        /// Open the current process Window Station.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The instance of the window station</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<NtWindowStation> OpenCurrent(bool throw_on_error)
+        {
+            SafeKernelObjectHandle handle = NtSystemCalls.NtUserGetProcessWindowStation();
+            if (handle.IsInvalid)
+            {
+                return NtObjectUtils.CreateResultFromDosError<NtWindowStation>(Marshal.GetLastWin32Error(), throw_on_error);
+            }
+            return new NtResult<NtWindowStation>(NtStatus.STATUS_SUCCESS, new NtWindowStation(handle));
+        }
+
+        /// <summary>
+        /// Open the current process Window Station.
+        /// </summary>
+        public static NtWindowStation Current => OpenCurrent(true).Result;
     }
 }
