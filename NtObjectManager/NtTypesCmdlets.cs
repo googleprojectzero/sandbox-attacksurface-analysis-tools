@@ -49,7 +49,7 @@ namespace NtObjectManager
         /// <para type="description">Specify a specific NT type to retrieve.</para>
         /// </summary>
         [Parameter(Position = 0)]
-        public string TypeName { get; set; }
+        public string[] TypeName { get; set; }
 
         /// <summary>
         /// <para type="description">If set then will pull the latest information 
@@ -63,16 +63,20 @@ namespace NtObjectManager
         /// </summary>
         protected override void ProcessRecord()
         {
-            if (!string.IsNullOrWhiteSpace(TypeName))
+            if (TypeName != null && TypeName.Length > 0)
             {
-                NtType type_info = NtType.GetTypeByName(TypeName, false, !CurrentStatus);
-                if (type_info != null)
+                foreach (var name in TypeName)
                 {
-                    WriteObject(type_info);
-                }
-                else
-                {
-                    throw new ArgumentException($"Invalid Type Name {TypeName}");
+                    NtType type_info = NtType.GetTypeByName(name, false, !CurrentStatus);
+                    if (type_info != null)
+                    {
+                        WriteObject(type_info);
+                    }
+                    else
+                    {
+                        WriteError(new ErrorRecord(new ArgumentException($"Invalid Type Name {name}"), 
+                            "Invalid.Type", ErrorCategory.InvalidArgument, name));
+                    }
                 }
             }
             else
