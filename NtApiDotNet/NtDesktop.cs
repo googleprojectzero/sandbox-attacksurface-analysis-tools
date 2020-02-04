@@ -171,6 +171,6 @@ namespace NtApiDotNet
         /// <summary>
         /// Get list of top level Windows for this Desktop.
         /// </summary>
-        public IEnumerable<NtWindow> Windows => NtWindow.GetWindows(this, NtWindow.Null, 0, 1, 0);
+        public IEnumerable<NtWindow> Windows => NtWindow.GetWindows(this, NtWindow.Null, false, true, 0);
     }
 }

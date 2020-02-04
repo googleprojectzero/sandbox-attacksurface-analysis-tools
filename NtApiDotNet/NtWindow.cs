@@ -19,10 +19,11 @@ using System.Linq;
 namespace NtApiDotNet
 {
     /// <summary>
-    /// Class to represent a Window.
+    /// Structure to represent a Window.
     /// </summary>
-    public sealed class NtWindow
+    public struct NtWindow
     {
+        #region Public Methods
         /// <summary>
         /// The Window Handle.
         /// </summary>
@@ -46,63 +47,100 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the class name for the Window.
         /// </summary>
-        public string ClassName => GetClassName(false);
+        public string ClassName => GetClassName(false, false).GetResultOrDefault(string.Empty);
+        #endregion
 
         /// <summary>
-        /// Get the NULL window handle.
+        /// Constructor.
         /// </summary>
-        public static NtWindow Null => new NtWindow(IntPtr.Zero);
-
-        /// <summary>
-        /// Get all Top Level windows.
-        /// </summary>
-        public static IEnumerable<NtWindow> Windows => GetWindows(null, Null, 0, 1, 0);
-
-        internal NtWindow(IntPtr handle)
+        /// <param name="handle">Window handle.</param>
+        public NtWindow(IntPtr handle)
         {
             Handle = handle;
         }
 
-        internal int Query(QueryWindowType query)
+        #region Static Properties
+        /// <summary>
+        /// Get the NULL window handle.
+        /// </summary>
+        public static NtWindow Null => new NtWindow();
+
+        /// <summary>
+        /// Get all Top Level windows.
+        /// </summary>
+        public static IEnumerable<NtWindow> Windows => GetWindows(null, Null, false, true, 0);
+        #endregion
+
+        #region Static Methods
+        /// <summary>
+        /// Enumerate window handles.
+        /// </summary>
+        /// <param name="desktop">Desktop containing the Windows. Optional.</param>
+        /// <param name="parent">The parent Window. Optional.</param>
+        /// <param name="enum_children">True to enumerate child Windows.</param>
+        /// <param name="hide_immersive">Hide immersive Windows.</param>
+        /// <param name="thread_id">The thread ID that owns the Window.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The enumerated Window Handles.</returns>
+        public static NtResult<IEnumerable<NtWindow>> GetWindows(NtDesktop desktop, NtWindow parent,
+            bool enum_children, bool hide_immersive, int thread_id, bool throw_on_error)
+        {
+            int count = 64;
+            while (true)
+            {
+                IntPtr[] handles = new IntPtr[count];
+                NtStatus status = NtSystemCalls.NtUserBuildHwndList(desktop.GetHandle(), parent.Handle, enum_children,
+                    hide_immersive, thread_id, handles.Length, handles, out int required_count);
+                if (status.IsSuccess())
+                {
+                    return handles.Take(required_count).Select(i => new NtWindow(i)).CreateResult();
+                }
+                if (status != NtStatus.STATUS_BUFFER_TOO_SMALL || count > required_count)
+                {
+                    return status.CreateResultFromError<IEnumerable<NtWindow>>(throw_on_error);
+                }
+                count = required_count;
+            }
+        }
+
+        /// <summary>
+        /// Enumerate window handles.
+        /// </summary>
+        /// <param name="desktop">Desktop containing the Windows. Optional.</param>
+        /// <param name="parent">The parent Window. Optional.</param>
+        /// <param name="enum_children">True to enumerate child Windows.</param>
+        /// <param name="hide_immersive">Hide immersive Windows.</param>
+        /// <param name="thread_id">The thread ID that owns the Window.</param>
+        /// <returns>The enumerated Window Handles.</returns>
+        public static IEnumerable<NtWindow> GetWindows(NtDesktop desktop, NtWindow parent,
+            bool enum_children, bool hide_immersive, int thread_id)
+        {
+            return GetWindows(desktop, parent, enum_children, hide_immersive, thread_id, true).Result;
+        }
+
+        #endregion
+
+        #region Private Members
+        private int Query(QueryWindowType query)
         {
             return NtSystemCalls.NtUserQueryWindow(Handle, query);
         }
 
-        internal string GetClassName(bool real_name)
+        private NtResult<string> GetClassName(bool real_name, bool throw_on_error)
         {
             using (var str = new UnicodeStringAllocated())
             {
                 int length = NtSystemCalls.NtUserGetClassName(Handle, real_name, str);
                 if (length == 0)
                 {
-                    throw new NtException(NtObjectUtils.MapDosErrorToStatus());
+                    return NtObjectUtils.CreateResultFromDosError<string>(throw_on_error);
                 }
 
                 str.String.Length = (ushort)(length * 2);
 
-                return str.ToString();
+                return str.ToString().CreateResult();
             }
         }
-
-        internal static IEnumerable<NtWindow> GetWindows(NtDesktop desktop, NtWindow parent,
-            int flag1, int flag2, int thread_id)
-        {
-            int count = 64;
-            while (true)
-            {
-                IntPtr[] handles = new IntPtr[count];
-                NtStatus status = NtSystemCalls.NtUserBuildHwndList(desktop.GetHandle(), parent.Handle, flag1, 
-                    flag2, thread_id, handles.Length, handles, out int required_count);
-                if (status.IsSuccess())
-                {
-                    return handles.Take(required_count).Select(i => new NtWindow(i));
-                }
-                if (status != NtStatus.STATUS_BUFFER_TOO_SMALL || count > required_count)
-                {
-                    throw new NtException(status);
-                }
-                count = required_count;
-            }
-        }
+        #endregion
     }
 }

@@ -31,7 +31,7 @@ namespace NtApiDotNet
     {
         [DllImport("win32u.dll")]
         public static extern NtStatus NtUserBuildHwndList(SafeKernelObjectHandle Desktop, IntPtr ParentWindow,
-            int Flag1, int Flag2, int ThreadId, int BufferCount,
+            [MarshalAs(UnmanagedType.Bool)] bool EnumerateChildren, bool HideImmersiveWindows, int ThreadId, int BufferCount,
             [Out, MarshalAs(UnmanagedType.LPArray)] IntPtr[] Buffer, out int RequiredCount);
 
         [DllImport("win32u.dll", SetLastError = true)]

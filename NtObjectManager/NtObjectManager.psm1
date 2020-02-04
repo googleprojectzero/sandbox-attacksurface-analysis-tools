@@ -5564,3 +5564,37 @@ function Get-NtDesktopName {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Gets the a list of Window handles.
+.DESCRIPTION
+This cmdlet queries the list of Window Handles based on a set of criteria such as Desktop or ThreadId.
+.PARAMETER Desktop
+The Desktop to query.
+.PARAMETER Parent
+Specify the parent Window if enumerating children.
+.PARAMETER Children
+Specify the get list of child windows.
+.PARAMETER Immersive
+Specify to get immersive Windows.
+.PARAMETER ThreadId
+Specify the thread ID for the Window.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.NtWindow
+#>
+function Get-NtWindow {
+    [CmdletBinding()]
+    Param(
+        [NtApiDotNet.NtDesktop]$Desktop,
+        [switch]$Children,
+        [switch]$Immersive,
+        [NtApiDotNet.NtWindow]$Parent = [NtApiDotNet.NtWindow]::Null,
+        [alias("tid")]
+        [int]$ThreadId
+    )
+
+    [NtApiDotNet.NtWindow]::GetWindows($Desktop, $Parent, $Children, !$Immersive, $ThreadId) | Write-Output
+}
