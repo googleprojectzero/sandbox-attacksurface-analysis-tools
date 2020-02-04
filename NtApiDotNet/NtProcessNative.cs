@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Ndr;
 using System;
 using System.Runtime.InteropServices;
 
@@ -385,6 +384,20 @@ namespace NtApiDotNet
     {
         None = 0,
         DebugInherit = 1,
+    }
+
+    [Flags]
+    public enum ProcessExecuteFlags
+    {
+        None = 0,
+        ExecuteDisable = 0x01,
+        ExecuteEnable = 0x02,
+        DisableThunkEmulation = 0x04,
+        Permanent = 0x08,
+        ExecuteDispatchEnable = 0x10,
+        ImageDispatchEnable = 0x20,
+        DisableExceptionChainValidation = 0x40,
+        Spare = 0x80
     }
 
     public enum ProcessInformationClass

@@ -1818,7 +1818,7 @@ namespace NtApiDotNet
         public bool BreakOnTermination => Query<int>(ProcessInformationClass.ProcessBreakOnTermination) != 0;
 
         /// <summary>
-        /// Get debug flags.
+        /// Get or set debug flags.
         /// </summary>
         public ProcessDebugFlags DebugFlags
         {
@@ -1827,9 +1827,13 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get execute flags.
+        /// Get or set execute flags.
         /// </summary>
-        public int ExecuteFlags => Query<int>(ProcessInformationClass.ProcessExecuteFlags);
+        public ProcessExecuteFlags ExecuteFlags
+        {
+            get => (ProcessExecuteFlags)Query<int>(ProcessInformationClass.ProcessExecuteFlags);
+            set => Set(ProcessInformationClass.ProcessExecuteFlags, (int)value);
+        }
 
         /// <summary>
         /// Get IO priority.
