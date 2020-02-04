@@ -64,6 +64,8 @@
     <Compile Include="NtProcessTrustletConfig.cs" />
     <Compile Include="NtUserProcessParameters.cs" />
     <Compile Include="NtWaitNative.cs" />
+    <Compile Include="NtWindow.cs" />
+    <Compile Include="NtWindowNative.cs" />
     <Compile Include="NtWindowStationNative.cs" />
     <Compile Include="NtWnfWellKnownNames.cs" />
     <Compile Include="SafeArrayBuffer.cs" />

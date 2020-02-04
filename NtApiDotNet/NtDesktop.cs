@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -166,5 +167,10 @@ namespace NtApiDotNet
         /// Get desktop for current thread.
         /// </summary>
         public static NtDesktop Current => GetThreadDesktop(NtThread.Current.ThreadId);
+
+        /// <summary>
+        /// Get list of top level Windows for this Desktop.
+        /// </summary>
+        public IEnumerable<NtWindow> Windows => NtWindow.GetWindows(this, NtWindow.Null, 0, 1, 0);
     }
 }

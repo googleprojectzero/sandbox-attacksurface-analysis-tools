@@ -58,9 +58,11 @@ namespace NtApiDotNet
         public static extern IntPtr NtUserGetProcessWindowStation();
 
         [DllImport("win32u.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool NtUserCloseWindowStation(SafeKernelObjectHandle handle);
 
         [DllImport("win32u.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool NtUserSetProcessWindowStation(SafeKernelObjectHandle handle);
     }
 
