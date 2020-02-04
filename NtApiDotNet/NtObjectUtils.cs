@@ -639,6 +639,11 @@ namespace NtApiDotNet
             return CreateResultFromDosError<T>((Win32Error)error, throw_on_error);
         }
 
+        internal static NtResult<T> CreateResultFromDosError<T>(bool throw_on_error)
+        {
+            return CreateResultFromDosError<T>(Marshal.GetLastWin32Error(), throw_on_error);
+        }
+
         internal static IEnumerable<T> SelectValidResults<T>(this IEnumerable<NtResult<T>> iterator)
         {
             return iterator.Where(r => r.IsSuccess).Select(r => r.Result);
