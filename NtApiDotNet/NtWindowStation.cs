@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
@@ -239,15 +240,16 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The instance of the window station</returns>
+        /// <remarks>The returned object is no owned by the caller.</remarks>
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtResult<NtWindowStation> OpenCurrent(bool throw_on_error)
         {
-            SafeKernelObjectHandle handle = NtSystemCalls.NtUserGetProcessWindowStation();
-            if (handle.IsInvalid)
+            var handle = NtSystemCalls.NtUserGetProcessWindowStation();
+            if (handle == IntPtr.Zero)
             {
                 return NtObjectUtils.CreateResultFromDosError<NtWindowStation>(Marshal.GetLastWin32Error(), throw_on_error);
             }
-            return new NtResult<NtWindowStation>(NtStatus.STATUS_SUCCESS, new NtWindowStation(handle));
+            return new NtResult<NtWindowStation>(NtStatus.STATUS_SUCCESS, new NtWindowStation(new SafeKernelObjectHandle(handle, false)));
         }
 
         /// <summary>

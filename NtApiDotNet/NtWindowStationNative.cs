@@ -55,7 +55,7 @@ namespace NtApiDotNet
             SafeKernelObjectHandle Handle, int Size, SafeBuffer NameList, out int RequiredSize);
 
         [DllImport("win32u.dll", SetLastError = true)]
-        public static extern SafeKernelObjectHandle NtUserGetProcessWindowStation();
+        public static extern IntPtr NtUserGetProcessWindowStation();
 
         [DllImport("win32u.dll", SetLastError = true)]
         public static extern bool NtUserCloseWindowStation(SafeKernelObjectHandle handle);

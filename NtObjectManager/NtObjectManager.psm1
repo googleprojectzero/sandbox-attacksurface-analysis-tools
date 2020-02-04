@@ -5493,3 +5493,54 @@ Get a new locally unique ID.
 function Get-NtLocallyUniqueId {
     [NtApiDotNet.NtSystemInfo]::AllocateLocallyUniqueId() | Write-Output
 }
+
+<#
+.SYNOPSIS
+Get the names of the Windows Stations in the current Session.
+.DESCRIPTION
+This cmdlet queries the names of the Window Stations in the current Session.
+.PARAMETER Current
+Show the current Window Station name only.
+.INPUTS
+string
+.OUTPUTS
+None
+#>
+function Get-NtWindowStationName {
+    Param(
+        [Parameter()]
+        [switch]$Current
+    )
+
+    if ($Current) {
+        [NtApiDotNet.NtWindowStation]::Current.Name | Write-Output
+    } else {
+        [NtApiDotNet.NtWindowStation]::WindowStations | Write-Output
+    }
+}
+
+<#
+.SYNOPSIS
+Gets the names of the Desktops from the specified Window Station.
+.DESCRIPTION
+This cmdlet queries the names of the Desktops from the specified Window Station. 
+By default will use the current process Window Station.
+.PARAMETER WindowStation
+The Window Station to query.
+.INPUTS
+string
+.OUTPUTS
+None
+#>
+function Get-NtDesktopName {
+    [CmdletBinding(DefaultParameterSetName = "FromCurrent")]
+    Param(
+        [Parameter(Position=0, ParameterSetName="FromWindowStation")]
+        [NtApiDotNet.NtWindowStation]$WindowStation
+    )
+    if($PsCmdlet.ParameterSetName -eq "FromCurrent") {
+        $WindowStation = [NtApiDotNet.NtWindowStation]::Current
+    }
+
+    $WindowStation.Desktops | Write-Output
+}
