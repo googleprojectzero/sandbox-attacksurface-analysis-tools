@@ -201,4 +201,32 @@ namespace NtObjectManager
             }
         }
     }
+
+    /// <summary>
+    /// <para type="synopsis">Gets the accessible Job objects assigned to a process.</para>
+    /// <para type="description">This cmdlet gets the accessible Job objects for a process. This might not include all Jobs and might contain duplicates.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>Get-NtProcessJob -Process $process</code>
+    ///   <para>Gets the Job objects assigned to the process.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet(VerbsCommon.Get, "NtProcessJob")]
+    [OutputType(typeof(NtJob))]
+    public sealed class GetNtProcessJobCmdlet : PSCmdlet
+    {
+        /// <summary>
+        /// <para type="description">Specify the list of processes to assign.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 0)]
+        public NtProcess Process { get; set; }
+
+        /// <summary>
+        /// Overridden ProcessRecord method.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            WriteObject(Process.GetAccessibleJobObjects(), true);
+        }
+    }
 }
