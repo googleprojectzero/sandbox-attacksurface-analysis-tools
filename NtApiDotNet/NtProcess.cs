@@ -1635,6 +1635,31 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the accessible job objects this process is in.
+        /// </summary>
+        /// <remarks>This tries to find accessible Job handles. There's no guarantee that all Job objects will be found for the process.</remarks>
+        /// <returns>The list of job objects.</returns>
+        public IEnumerable<NtJob> GetAccessibleJobObjects()
+        {
+            if (!IsInJob())
+                yield break;
+            foreach (var h in NtSystemInfo.GetHandles())
+            {
+                if (h.ObjectType == "Job")
+                {
+                    using (var result = h.GetObject(false).Cast<NtJob>())
+                    {
+                        if (!result.IsSuccess || !IsInJob(result.Result))
+                        {
+                            continue;
+                        }
+                        yield return result.Result.Duplicate();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
