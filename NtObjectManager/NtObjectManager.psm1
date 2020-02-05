@@ -5598,3 +5598,36 @@ function Get-NtWindow {
 
     [NtApiDotNet.NtWindow]::GetWindows($Desktop, $Parent, $Children, !$Immersive, $ThreadId) | Write-Output
 }
+
+<#
+.SYNOPSIS
+Outputs a hex dump for a byte array.
+.DESCRIPTION
+This cmdlet converts a byte array to a hex dump.
+.PARAMETER Bytes
+The bytes to convert.
+.INPUTS
+byte[]
+.OUTPUTS
+String
+#>
+function Out-HexDump {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, Position=0, ValueFromPipeline)]
+        [byte[]]$Bytes
+    )
+
+    BEGIN {
+        $builder = [NtApiDotNet.Utilities.Text.HexDumpBuilder]::new();
+    }
+
+    PROCESS {
+        $builder.Append($Bytes)
+    }
+
+    END {
+        $builder.Complete()
+        $builder.ToString() | Write-Output
+    }
+}
