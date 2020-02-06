@@ -64,6 +64,20 @@ namespace NtApiDotNet
         /// <summary>
         /// Open a desktop by name.
         /// </summary>
+        /// <param name="object_attributes">The object attributes for opening.</param>
+        /// <param name="flags">Flags for opening the desktop.</param>
+        /// <param name="desired_access">Desired access.</param>
+        /// <returns>The instance of the desktop.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtDesktop Open(ObjectAttributes object_attributes, CreateDesktopFlags flags,
+            DesktopAccessRights desired_access)
+        {
+            return Open(object_attributes, flags, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open a desktop by name.
+        /// </summary>
         /// <param name="desktop_name">The name of the desktop.</param>
         /// <param name="root">Optional root object</param>
         /// <returns>An instance of NtDesktop.</returns>

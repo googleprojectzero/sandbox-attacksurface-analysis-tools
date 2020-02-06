@@ -105,6 +105,18 @@ namespace NtApiDotNet
         /// <summary>
         /// Open a window station by name.
         /// </summary>
+        /// <param name="object_attributes">The object attributes for opening.</param>
+        /// <param name="desired_access">Desired access.</param>
+        /// <returns>The instance of the window station</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtWindowStation Open(ObjectAttributes object_attributes, WindowStationAccessRights desired_access)
+        {
+            return Open(object_attributes, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open a window station by name.
+        /// </summary>
         /// <param name="winsta_name">The name of the window station</param>
         /// <param name="root">Optional root object</param>
         /// <returns>The instance of the window station</returns>
@@ -216,7 +228,7 @@ namespace NtApiDotNet
         {
             if (!NtSystemCalls.NtUserCloseWindowStation(Handle))
             {
-                return NtObjectUtils.MapDosErrorToStatus();
+                return NtObjectUtils.MapDosErrorToStatus().ToNtException(throw_on_error);
             }
             return NtStatus.STATUS_SUCCESS;
         }
@@ -256,5 +268,29 @@ namespace NtApiDotNet
         /// Open the current process Window Station.
         /// </summary>
         public static NtWindowStation Current => OpenCurrent(true).Result;
+
+        /// <summary>
+        /// Get the Window Station directory for a session.
+        /// </summary>
+        /// <param name="session_id">The session ID.</param>
+        /// <returns>The path to the Window Station directory.</returns>
+        public static string GetWindowStationDirectory(int session_id)
+        {
+            string ret = @"\Windows\WindowStations";
+            if (session_id != 0)
+            {
+                ret = $@"\Sessions\{session_id}{ret}";
+            }
+            return ret;
+        }
+
+        /// <summary>
+        /// Get the Window Station directory for the current session.
+        /// </summary>
+        /// <returns>The path to the Window Station directory.</returns>
+        public static string GetWindowStationDirectory()
+        {
+            return GetWindowStationDirectory(NtProcess.Current.SessionId);
+        }
     }
 }

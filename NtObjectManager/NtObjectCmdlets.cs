@@ -221,6 +221,28 @@ namespace NtObjectManager
         }
 
         /// <summary>
+        /// Get the Win32 path for a specified path.
+        /// </summary>
+        /// <param name="path">The path component.</param>
+        /// <returns>The full NT path.</returns>
+        protected virtual string GetWin32Path(string path)
+        {
+            List<string> ret = new List<string>();
+            int session_id = NtProcess.Current.SessionId;
+            if (session_id != 0)
+            {
+                ret.Add("Sessions");
+                ret.Add(session_id.ToString());
+            }
+            ret.Add("BaseNamedObjects");
+            if (!string.IsNullOrEmpty(path))
+            {
+                ret.AddRange(Path.Split('\\'));
+            }
+            return $@"\{string.Join(@"\", ret)}";
+        }
+
+        /// <summary>
         /// Virtual method to resolve the value of the Path variable.
         /// </summary>
         /// <returns>The object path.</returns>
@@ -238,19 +260,7 @@ namespace NtObjectManager
                     throw new ArgumentException("Win32 paths can't start with a path separator");
                 }
 
-                List<string> ret = new List<string>();
-                int session_id = NtProcess.Current.SessionId;
-                if (session_id != 0)
-                {
-                    ret.Add("Sessions");
-                    ret.Add(session_id.ToString());
-                }
-                ret.Add("BaseNamedObjects");
-                if (!string.IsNullOrEmpty(Path))
-                {
-                    ret.AddRange(Path.Split('\\'));
-                }
-                return $@"\{string.Join(@"\", ret)}";
+                return GetWin32Path(Path);
             }
 
             if (Path.StartsWith(@"\") || Root != null)
@@ -335,7 +345,7 @@ namespace NtObjectManager
         /// <summary>
         /// Overridden ProcessRecord method.
         /// </summary>
-        protected sealed override void ProcessRecord()
+        protected override void ProcessRecord()
         {
             VerifyParameters();
             try
