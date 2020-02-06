@@ -2159,20 +2159,19 @@ function Set-ExecutionAlias
 function Start-NtTokenViewer {
     param(
         [Parameter(Mandatory=$true, Position=0)]
-        [NtApiDotNet.NtToken]$Token,
+        [NtApiDotNet.NtObject]$Handle,
         [string]$Text
     )
 
-    Use-NtObject($dup_token = $Token.Duplicate()) {
-        $dup_token.Inherit = $true
-        $cmdline = [string]::Format("TokenViewer --handle={0}", $dup_token.Handle.DangerousGetHandle())
+    Use-NtObject($dup_handle = $Handle.Duplicate()) {
+        $dup_handle.Inherit = $true
+        $cmdline = [string]::Format("TokenViewer --handle={0}", $dup_handle.Handle.DangerousGetHandle())
         if ($Text -ne "") {
             $cmdline += " ""--text=$Text"""
         }
         $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\TokenViewer.exe" -InheritHandles
-        $config.InheritHandleList.Add($dup_token.Handle.DangerousGetHandle())
-        Use-NtObject($p = New-Win32Process -Config $config) {
-        }
+        $config.InheritHandleList.Add($dup_handle.Handle.DangerousGetHandle())
+        Use-NtObject($p = New-Win32Process -Config $config) {}
     }
 }
 
@@ -2255,10 +2254,8 @@ function Show-NtToken {
       }
       switch($PSCmdlet.ParameterSetName) {
         "FromProcess" {
-            Use-NtObject($t = Get-NtToken -Primary -Process $Process) {
-              $text = "$($Process.Name):$($Process.ProcessId)"
-              Start-NtTokenViewer $t -Text $text
-            }
+            $text = "$($Process.Name):$($Process.ProcessId)"
+            Start-NtTokenViewer $Process -Text $text
         }
         "FromName" {
           Use-NtObject($ps = Get-NtProcess -Name $Name -Access QueryLimitedInformation) {

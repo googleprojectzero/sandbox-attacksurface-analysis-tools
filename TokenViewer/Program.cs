@@ -116,22 +116,25 @@ namespace TokenViewer
                 }
                 else if (handle > 0)
                 {
-                    using (NtToken token = NtToken.FromHandle(new SafeKernelObjectHandle(new IntPtr(handle), true)))
+                    using (var obj = NtObjectUtils.FromHandle(new IntPtr(handle), true))
                     {
-                        if (token.NtType != NtType.GetTypeByType<NtToken>())
+                        if (obj is NtToken token)
                         {
-                            throw new ArgumentException("Passed handle is not a token");
+                            return new TokenForm(token.Duplicate(), text);
                         }
-
-                        return new TokenForm(token.Duplicate(), text);
+                        else if (obj is NtProcess process)
+                        {
+                            return new TokenForm(new ProcessTokenEntry(process), text, false);
+                        }
+                        throw new ArgumentException("Passed handle is not a token or process.");
                     }
                 }
                 else if (pid > 0)
                 {
                     using (NtProcess process = NtProcess.Open(pid, ProcessAccessRights.QueryLimitedInformation))
                     {
-                        return new TokenForm(process.OpenToken(),
-                            $"{process.Name}:{pid}");
+                        return new TokenForm(new ProcessTokenEntry(process),
+                            $"{process.Name}:{pid}", false);
                     }
                 }
             }
