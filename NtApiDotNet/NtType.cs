@@ -227,6 +227,18 @@ namespace NtApiDotNet
         /// </summary>
         public IEnumerable<AccessMaskEntry> AllAccessRights => AccessRights.Where(r => GenericMapping.GenericAll.IsAccessGranted(r.Mask));
 
+        /// <summary>
+        /// Get the valid mandatory access rights for this Type.
+        /// </summary>
+        public IEnumerable<AccessMaskEntry> MandatoryAccessRights
+        {
+            get
+            {
+                AccessMask mask = GetDefaultMandatoryAccess();
+                return AccessRights.Where(r => mask.IsAccessGranted(r.Mask));
+            }
+        }
+
         #endregion
 
         #region Public Methods

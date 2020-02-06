@@ -5631,3 +5631,49 @@ function Out-HexDump {
         $builder.ToString() | Write-Output
     }
 }
+
+<#
+.SYNOPSIS
+Gets the access masks for a type.
+.DESCRIPTION
+This cmdlet gets the access masks for a type.
+.PARAMETER Type
+The NT type.
+.PARAMETER Read
+Shown only read access.
+.PARAMETER Write
+Shown only write access.
+.PARAMETER Execute
+Shown only execute access.
+.PARAMETER Mandatory
+Shown only default mandatory access.
+.INPUTS
+None
+.OUTPUTS
+AccessMask entries.
+#>
+function Get-NtTypeAccess {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    Param(
+        [Parameter(Mandatory, Position=0)]
+        [NtApiDotNet.NtType]$Type,
+        [Parameter(ParameterSetName="Read")]
+        [switch]$Read,
+        [Parameter(ParameterSetName="Write")]
+        [switch]$Write,
+        [Parameter(ParameterSetName="Execute")]
+        [switch]$Execute,
+        [Parameter(ParameterSetName="Mandatory")]
+        [switch]$Mandatory
+    )
+
+    $access = switch($PSCmdlet.ParameterSetName) {
+        "All" { $Type.AccessRights }
+        "Read" { $Type.ReadAccessRights } 
+        "Write" { $Type.WriteAccessRights }
+        "Execute" { $Type.ExecuteAccessRights }
+        "Mandatory" { $Type.MandatoryAccessRights }
+    }
+
+    $access | Write-Output
+}
