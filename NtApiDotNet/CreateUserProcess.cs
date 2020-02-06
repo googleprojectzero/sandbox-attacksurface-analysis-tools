@@ -307,7 +307,7 @@ namespace NtApiDotNet
             if (image_path == null)
                 throw new ArgumentNullException("image_path");
 
-            using (var process_params = SafeProcessParametersHandle.Create(ConfigImagePath ?? image_path, DllPath, CurrentDirectory,
+            using (var process_params = SafeProcessParametersBuffer.Create(ConfigImagePath ?? image_path, DllPath, CurrentDirectory,
                   CommandLine, Environment, WindowTitle, DesktopInfo, ShellInfo, RuntimeData, CreateProcessParametersFlags.Normalize))
             {
                 using (var attrs = new DisposableList<ProcessAttribute>())

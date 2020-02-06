@@ -12,27 +12,26 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using Microsoft.Win32.SafeHandles;
 using System;
+using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
 #pragma warning disable 1591
-
-    public sealed class SafeProcessParametersHandle : SafeHandleZeroOrMinusOneIsInvalid
+    public sealed class SafeProcessParametersBuffer : SafeBuffer
     {
-        public SafeProcessParametersHandle(IntPtr proc_params, bool owns_handle) : base(owns_handle)
+        public SafeProcessParametersBuffer(IntPtr proc_params, bool owns_handle) : base(owns_handle)
         {
             SetHandle(proc_params);
+            uint size = 0;
+            if (proc_params != IntPtr.Zero)
+                size = (uint)Marshal.ReadInt32(proc_params);
+            Initialize(size);
         }
 
-        public SafeProcessParametersHandle() : base(true)
+        public static SafeProcessParametersBuffer Null
         {
-        }
-
-        public static SafeProcessParametersHandle Null
-        {
-            get => new SafeProcessParametersHandle(IntPtr.Zero, false);
+            get => new SafeProcessParametersBuffer(IntPtr.Zero, false);
         }
 
         protected override bool ReleaseHandle()
@@ -50,7 +49,7 @@ namespace NtApiDotNet
             return s != null ? new UnicodeString(s) : null;
         }
 
-        public static NtResult<SafeProcessParametersHandle> Create(
+        public static NtResult<SafeProcessParametersBuffer> Create(
                 string image_path_name,
                 string dll_path,
                 string current_directory,
@@ -65,10 +64,10 @@ namespace NtApiDotNet
         {
             return NtRtl.RtlCreateProcessParametersEx(out IntPtr ret, GetString(image_path_name), GetString(dll_path), GetString(current_directory),
               GetString(command_line), environment, GetString(window_title), GetString(desktop_info), GetString(shell_info),
-              GetString(runtime_data), flags).CreateResult(throw_on_error, () => new SafeProcessParametersHandle(ret, true));
+              GetString(runtime_data), flags).CreateResult(throw_on_error, () => new SafeProcessParametersBuffer(ret, true));
         }
 
-        public static SafeProcessParametersHandle Create(
+        public static SafeProcessParametersBuffer Create(
                 string image_path_name,
                 string dll_path,
                 string current_directory,

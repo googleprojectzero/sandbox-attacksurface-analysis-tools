@@ -71,7 +71,7 @@
     <Compile Include="SafeArrayBuffer.cs" />
     <Compile Include="SafeHandleListHandle.cs" />
     <Compile Include="SafeIoStatusBuffer.cs" />
-    <Compile Include="SafeProcessParametersHandle.cs" />
+    <Compile Include="SafeProcessParametersBuffer.cs" />
     <Compile Include="SafeStringBuffer.cs" />
     <Compile Include="SidIdentifierAuthority.cs" />
     <Compile Include="Utilities\Memory\CrossBitnessProcessMemoryReader.cs" />

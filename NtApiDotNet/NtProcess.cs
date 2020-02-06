@@ -122,16 +122,20 @@ namespace NtApiDotNet
         {
             using (var dispose = new DisposableList())
             {
-                var process_params = SafeProcessParametersHandle.Null;
+                var process_params = SafeProcessParametersBuffer.Null;
                 if (!fork)
                 {
-                    var result = dispose.AddResource(SafeProcessParametersHandle.Create(config.ConfigImagePath ?? image_path,
+                    var result = dispose.AddResource(SafeProcessParametersBuffer.Create(config.ConfigImagePath ?? image_path,
                         config.DllPath, config.CurrentDirectory, config.CommandLine, config.Environment,
                         config.WindowTitle, config.DesktopInfo, config.ShellInfo, config.RuntimeData,
                         CreateProcessParametersFlags.Normalize, throw_on_error));
                     if (!result.IsSuccess)
                         return new NtProcessCreateResult(result.Status);
                     process_params = result.Result;
+                    if (config.ProcessParametersCallback != null)
+                    {
+                        process_params = config.ProcessParametersCallback(process_params, dispose);
+                    }
                 }
 
                 ProcessCreateInfo create_info = dispose.AddResource(new ProcessCreateInfo());

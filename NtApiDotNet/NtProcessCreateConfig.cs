@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Collections.Generic;
 
 namespace NtApiDotNet
@@ -157,6 +158,11 @@ namespace NtApiDotNet
         /// Capture additional information when NtProcess.Create returns.
         /// </summary>
         public bool CaptureAdditionalInformation { get; set; }
+
+        /// <summary>
+        /// Specify callback to update process parameters.
+        /// </summary>
+        public Func<SafeProcessParametersBuffer, DisposableList, SafeProcessParametersBuffer> ProcessParametersCallback { get; set; }
         #endregion
 
         #region Public Methods
