@@ -26,56 +26,6 @@ namespace TokenViewer
 {
     public partial class MainForm : Form
     {
-        private class ProcessTokenEntry : IDisposable
-        {
-            public int ProcessId { get; }
-            public string Name { get; }
-            public string ImagePath { get; }
-            public string CommandLine { get; }
-            public NtToken ProcessToken { get; }
-
-            public ProcessTokenEntry(int process_id, string name, string image_path, string command_line, NtToken process_token)
-            {
-                ProcessId = process_id;
-                Name = name;
-                ImagePath = image_path;
-                CommandLine = command_line;
-                ProcessToken = process_token.Duplicate();
-            }
-
-            public ProcessTokenEntry(NtProcess process, NtToken process_token)
-                : this(process.ProcessId, process.Name, process.Win32ImagePath, process.CommandLine, process_token)
-            {
-            }
-
-            public virtual void Dispose()
-            {
-                ProcessToken?.Dispose();
-            }
-        }
-
-        private class ThreadTokenEntry : ProcessTokenEntry
-        {
-            public string ThreadName { get; }
-            public int ThreadId { get; }
-            public NtToken ThreadToken { get; }
-
-            public ThreadTokenEntry(NtProcess process, NtToken process_token,
-                int thread_id, string thread_name, NtToken thread_token) 
-                : base(process, process_token)
-            {
-                ThreadName = thread_name;
-                ThreadId = thread_id;
-                ThreadToken = thread_token.Duplicate();
-            }
-
-            public override void Dispose()
-            {
-                ThreadToken?.Dispose();
-                base.Dispose();
-            }
-        }
-
         private static void ResizeColumns(ListView view)
         {
             view.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
@@ -109,6 +59,7 @@ namespace TokenViewer
                 {
                     return ret;
                 }
+
                 using (var threads = new DisposableList<NtThread>(query_process.Result.GetThreads(ThreadAccessRights.QueryLimitedInformation)))
                 {
                     foreach (NtThread thread in threads)
@@ -122,7 +73,7 @@ namespace TokenViewer
                             item.SubItems.Add(thread.ThreadId.ToString());
                             item.SubItems.Add(token.User.ToString());
                             item.SubItems.Add(token.ImpersonationLevel.ToString());
-                            item.Tag = new ThreadTokenEntry(query_process.Result, token, thread.ThreadId, thread.Description, token);
+                            item.Tag = new ThreadTokenEntry(query_process.Result, process_token, thread.ThreadId, thread.Description, token);
                             ret.Add(item);
                         }
                     }
@@ -302,7 +253,7 @@ namespace TokenViewer
                 {
                     if (item.Tag is ProcessTokenEntry process)
                     {
-                        TokenForm.OpenForm(process.ProcessToken, $"{item.SubItems[1].Text}:{item.SubItems[0].Text}", true);
+                        TokenForm.OpenForm(process, $"{item.SubItems[1].Text}:{item.SubItems[0].Text}", true, false);
                     }
                 }
             }
@@ -431,7 +382,7 @@ namespace TokenViewer
         {
             try
             {
-                TokenForm.OpenForm(NtToken.OpenProcessToken(), "Current", false);
+                TokenForm.OpenForm(new ProcessTokenEntry(NtProcess.Current), "Current", false, false);
             }
             catch (NtException ex)
             {
@@ -469,7 +420,7 @@ namespace TokenViewer
                 {
                     if (thread.ThreadToken != null)
                     {
-                        TokenForm.OpenForm(thread.ThreadToken, $"{thread.Name}:{thread.ProcessId}.{thread.ThreadId}", true);
+                        TokenForm.OpenForm(thread, $"{thread.Name}:{thread.ProcessId}.{thread.ThreadId}", true, true);
                     }
                 }
             }
@@ -483,7 +434,7 @@ namespace TokenViewer
                 {
                     if (thread.ProcessToken != null)
                     {
-                        TokenForm.OpenForm(thread.ProcessToken, $"{thread.Name}:{thread.ProcessId}", true);
+                        TokenForm.OpenForm((ProcessTokenEntry)thread, $"{thread.Name}:{thread.ProcessId}", true, false);
                     }
                 }
             }

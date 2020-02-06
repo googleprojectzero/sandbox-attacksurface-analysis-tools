@@ -62,6 +62,7 @@
             System.Windows.Forms.GroupBox groupBox1;
             System.Windows.Forms.Label label16;
             System.Windows.Forms.GroupBox groupBox2;
+            System.Windows.Forms.Label label29;
             System.Windows.Forms.Label label28;
             System.Windows.Forms.Label label26;
             System.Windows.Forms.Label label22;
@@ -78,7 +79,12 @@
             System.Windows.Forms.ColumnHeader columnHeader6;
             System.Windows.Forms.Label label27;
             System.Windows.Forms.TableLayoutPanel tableLayoutPanelSecurity;
-            System.Windows.Forms.Label label29;
+            System.Windows.Forms.Label lblProcessId;
+            System.Windows.Forms.Label lblImagePath;
+            System.Windows.Forms.Label lblCommandLine;
+            System.Windows.Forms.GroupBox groupProcess;
+            System.Windows.Forms.Label lblThreadId;
+            System.Windows.Forms.Label lblThreadName;
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TokenForm));
             this.groupBoxSource = new System.Windows.Forms.GroupBox();
             this.txtSourceId = new System.Windows.Forms.TextBox();
@@ -122,6 +128,7 @@
             this.checkBoxMakeInteractive = new System.Windows.Forms.CheckBox();
             this.btnCreateProcess = new System.Windows.Forms.Button();
             this.txtCommandLine = new System.Windows.Forms.TextBox();
+            this.txtTokenFlags = new System.Windows.Forms.TextBox();
             this.txtTrustLevel = new System.Windows.Forms.TextBox();
             this.btnToggleVirtualizationEnabled = new System.Windows.Forms.Button();
             this.txtHandleAccess = new System.Windows.Forms.TextBox();
@@ -170,7 +177,13 @@
             this.tabPageOperations = new System.Windows.Forms.TabPage();
             this.tabPageSecurity = new System.Windows.Forms.TabPage();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.txtTokenFlags = new System.Windows.Forms.TextBox();
+            this.tabPageTokenSource = new System.Windows.Forms.TabPage();
+            this.txtProcessId = new System.Windows.Forms.TextBox();
+            this.txtProcessImagePath = new System.Windows.Forms.TextBox();
+            this.txtProcessCommandLine = new System.Windows.Forms.TextBox();
+            this.groupThread = new System.Windows.Forms.GroupBox();
+            this.txtThreadId = new System.Windows.Forms.TextBox();
+            this.txtThreadName = new System.Windows.Forms.TextBox();
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
@@ -204,6 +217,7 @@
             groupBox1 = new System.Windows.Forms.GroupBox();
             label16 = new System.Windows.Forms.Label();
             groupBox2 = new System.Windows.Forms.GroupBox();
+            label29 = new System.Windows.Forms.Label();
             label28 = new System.Windows.Forms.Label();
             label26 = new System.Windows.Forms.Label();
             label22 = new System.Windows.Forms.Label();
@@ -220,7 +234,12 @@
             columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             label27 = new System.Windows.Forms.Label();
             tableLayoutPanelSecurity = new System.Windows.Forms.TableLayoutPanel();
-            label29 = new System.Windows.Forms.Label();
+            lblProcessId = new System.Windows.Forms.Label();
+            lblImagePath = new System.Windows.Forms.Label();
+            lblCommandLine = new System.Windows.Forms.Label();
+            groupProcess = new System.Windows.Forms.GroupBox();
+            lblThreadId = new System.Windows.Forms.Label();
+            lblThreadName = new System.Windows.Forms.Label();
             tabPageMain.SuspendLayout();
             this.groupBoxSource.SuspendLayout();
             groupBoxToken.SuspendLayout();
@@ -243,6 +262,9 @@
             this.tabPageMisc.SuspendLayout();
             this.tabPageOperations.SuspendLayout();
             this.tabPageSecurity.SuspendLayout();
+            this.tabPageTokenSource.SuspendLayout();
+            groupProcess.SuspendLayout();
+            this.groupThread.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabPageMain
@@ -981,6 +1003,25 @@
             groupBox2.TabStop = false;
             groupBox2.Text = "Additional Properties";
             // 
+            // label29
+            // 
+            label29.AutoSize = true;
+            label29.Location = new System.Drawing.Point(6, 203);
+            label29.Name = "label29";
+            label29.Size = new System.Drawing.Size(69, 13);
+            label29.TabIndex = 24;
+            label29.Text = "Token Flags:";
+            // 
+            // txtTokenFlags
+            // 
+            this.txtTokenFlags.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtTokenFlags.Location = new System.Drawing.Point(121, 200);
+            this.txtTokenFlags.Name = "txtTokenFlags";
+            this.txtTokenFlags.ReadOnly = true;
+            this.txtTokenFlags.Size = new System.Drawing.Size(324, 20);
+            this.txtTokenFlags.TabIndex = 25;
+            // 
             // label28
             // 
             label28.AutoSize = true;
@@ -1339,6 +1380,7 @@
             this.tabControlMain.Controls.Add(tabPageDefaultDacl);
             this.tabControlMain.Controls.Add(this.tabPageMisc);
             this.tabControlMain.Controls.Add(this.tabPageOperations);
+            this.tabControlMain.Controls.Add(this.tabPageTokenSource);
             this.tabControlMain.Controls.Add(this.tabPageSecurity);
             this.tabControlMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControlMain.Location = new System.Drawing.Point(0, 0);
@@ -1592,24 +1634,139 @@
             this.tabPageSecurity.Text = "Security";
             this.tabPageSecurity.UseVisualStyleBackColor = true;
             // 
-            // label29
+            // tabPageTokenSource
             // 
-            label29.AutoSize = true;
-            label29.Location = new System.Drawing.Point(6, 203);
-            label29.Name = "label29";
-            label29.Size = new System.Drawing.Size(69, 13);
-            label29.TabIndex = 24;
-            label29.Text = "Token Flags:";
+            this.tabPageTokenSource.Controls.Add(this.groupThread);
+            this.tabPageTokenSource.Controls.Add(groupProcess);
+            this.tabPageTokenSource.Location = new System.Drawing.Point(4, 22);
+            this.tabPageTokenSource.Name = "tabPageTokenSource";
+            this.tabPageTokenSource.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPageTokenSource.Size = new System.Drawing.Size(467, 457);
+            this.tabPageTokenSource.TabIndex = 9;
+            this.tabPageTokenSource.Text = "Token Source";
+            this.tabPageTokenSource.UseVisualStyleBackColor = true;
             // 
-            // txtTokenFlags
+            // lblProcessId
             // 
-            this.txtTokenFlags.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            lblProcessId.AutoSize = true;
+            lblProcessId.Location = new System.Drawing.Point(7, 23);
+            lblProcessId.Name = "lblProcessId";
+            lblProcessId.Size = new System.Drawing.Size(62, 13);
+            lblProcessId.TabIndex = 0;
+            lblProcessId.Text = "Process ID:";
+            // 
+            // txtProcessId
+            // 
+            this.txtProcessId.Location = new System.Drawing.Point(93, 20);
+            this.txtProcessId.Name = "txtProcessId";
+            this.txtProcessId.ReadOnly = true;
+            this.txtProcessId.Size = new System.Drawing.Size(100, 20);
+            this.txtProcessId.TabIndex = 1;
+            // 
+            // txtProcessImagePath
+            // 
+            this.txtProcessImagePath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtTokenFlags.Location = new System.Drawing.Point(121, 200);
-            this.txtTokenFlags.Name = "txtTokenFlags";
-            this.txtTokenFlags.ReadOnly = true;
-            this.txtTokenFlags.Size = new System.Drawing.Size(324, 20);
-            this.txtTokenFlags.TabIndex = 25;
+            this.txtProcessImagePath.Location = new System.Drawing.Point(93, 46);
+            this.txtProcessImagePath.Name = "txtProcessImagePath";
+            this.txtProcessImagePath.ReadOnly = true;
+            this.txtProcessImagePath.Size = new System.Drawing.Size(349, 20);
+            this.txtProcessImagePath.TabIndex = 3;
+            // 
+            // lblImagePath
+            // 
+            lblImagePath.AutoSize = true;
+            lblImagePath.Location = new System.Drawing.Point(7, 49);
+            lblImagePath.Name = "lblImagePath";
+            lblImagePath.Size = new System.Drawing.Size(64, 13);
+            lblImagePath.TabIndex = 2;
+            lblImagePath.Text = "Image Path:";
+            // 
+            // txtProcessCommandLine
+            // 
+            this.txtProcessCommandLine.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtProcessCommandLine.Location = new System.Drawing.Point(93, 72);
+            this.txtProcessCommandLine.Name = "txtProcessCommandLine";
+            this.txtProcessCommandLine.ReadOnly = true;
+            this.txtProcessCommandLine.Size = new System.Drawing.Size(349, 20);
+            this.txtProcessCommandLine.TabIndex = 5;
+            // 
+            // lblCommandLine
+            // 
+            lblCommandLine.AutoSize = true;
+            lblCommandLine.Location = new System.Drawing.Point(7, 75);
+            lblCommandLine.Name = "lblCommandLine";
+            lblCommandLine.Size = new System.Drawing.Size(80, 13);
+            lblCommandLine.TabIndex = 4;
+            lblCommandLine.Text = "Command Line:";
+            // 
+            // groupProcess
+            // 
+            groupProcess.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            groupProcess.Controls.Add(this.txtProcessCommandLine);
+            groupProcess.Controls.Add(lblProcessId);
+            groupProcess.Controls.Add(lblCommandLine);
+            groupProcess.Controls.Add(this.txtProcessId);
+            groupProcess.Controls.Add(this.txtProcessImagePath);
+            groupProcess.Controls.Add(lblImagePath);
+            groupProcess.Location = new System.Drawing.Point(11, 6);
+            groupProcess.Name = "groupProcess";
+            groupProcess.Size = new System.Drawing.Size(448, 106);
+            groupProcess.TabIndex = 6;
+            groupProcess.TabStop = false;
+            groupProcess.Text = "Process Information";
+            // 
+            // groupThread
+            // 
+            this.groupThread.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupThread.Controls.Add(lblThreadId);
+            this.groupThread.Controls.Add(this.txtThreadId);
+            this.groupThread.Controls.Add(this.txtThreadName);
+            this.groupThread.Controls.Add(lblThreadName);
+            this.groupThread.Location = new System.Drawing.Point(11, 118);
+            this.groupThread.Name = "groupThread";
+            this.groupThread.Size = new System.Drawing.Size(448, 79);
+            this.groupThread.TabIndex = 7;
+            this.groupThread.TabStop = false;
+            this.groupThread.Text = "Thread Information";
+            // 
+            // lblThreadId
+            // 
+            lblThreadId.AutoSize = true;
+            lblThreadId.Location = new System.Drawing.Point(7, 23);
+            lblThreadId.Name = "lblThreadId";
+            lblThreadId.Size = new System.Drawing.Size(58, 13);
+            lblThreadId.TabIndex = 0;
+            lblThreadId.Text = "Thread ID:";
+            // 
+            // txtThreadId
+            // 
+            this.txtThreadId.Location = new System.Drawing.Point(93, 20);
+            this.txtThreadId.Name = "txtThreadId";
+            this.txtThreadId.ReadOnly = true;
+            this.txtThreadId.Size = new System.Drawing.Size(100, 20);
+            this.txtThreadId.TabIndex = 1;
+            // 
+            // txtThreadName
+            // 
+            this.txtThreadName.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtThreadName.Location = new System.Drawing.Point(93, 46);
+            this.txtThreadName.Name = "txtThreadName";
+            this.txtThreadName.ReadOnly = true;
+            this.txtThreadName.Size = new System.Drawing.Size(349, 20);
+            this.txtThreadName.TabIndex = 3;
+            // 
+            // lblThreadName
+            // 
+            lblThreadName.AutoSize = true;
+            lblThreadName.Location = new System.Drawing.Point(7, 49);
+            lblThreadName.Name = "lblThreadName";
+            lblThreadName.Size = new System.Drawing.Size(75, 13);
+            lblThreadName.TabIndex = 2;
+            lblThreadName.Text = "Thread Name:";
             // 
             // TokenForm
             // 
@@ -1653,6 +1810,11 @@
             this.tabPageMisc.ResumeLayout(false);
             this.tabPageOperations.ResumeLayout(false);
             this.tabPageSecurity.ResumeLayout(false);
+            this.tabPageTokenSource.ResumeLayout(false);
+            groupProcess.ResumeLayout(false);
+            groupProcess.PerformLayout();
+            this.groupThread.ResumeLayout(false);
+            this.groupThread.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -1750,5 +1912,12 @@
         private NtApiDotNet.Forms.SecurityDescriptorViewerControl securityDescriptorViewerControl;
         private System.Windows.Forms.Button btnEditPermissions;
         private System.Windows.Forms.TextBox txtTokenFlags;
+        private System.Windows.Forms.TabPage tabPageTokenSource;
+        private System.Windows.Forms.TextBox txtProcessCommandLine;
+        private System.Windows.Forms.TextBox txtProcessImagePath;
+        private System.Windows.Forms.TextBox txtProcessId;
+        private System.Windows.Forms.GroupBox groupThread;
+        private System.Windows.Forms.TextBox txtThreadId;
+        private System.Windows.Forms.TextBox txtThreadName;
     }
 }

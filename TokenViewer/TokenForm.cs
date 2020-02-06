@@ -153,7 +153,7 @@ namespace TokenViewer
             txtTokenFlags.Text = _token.Flags.ToString();
         }
 
-        private void UpdateTokenData()
+        private void UpdateTokenData(ProcessTokenEntry process)
         {
             UserGroup user = _token.User;
 
@@ -275,6 +275,26 @@ namespace TokenViewer
                 tabControlMain.TabPages.Remove(tabPageAppContainer);
             }
 
+            if (process == null)
+            {
+                tabControlMain.TabPages.Remove(tabPageTokenSource);
+            }
+            else
+            {
+                txtProcessId.Text = process.ProcessId.ToString();
+                txtProcessImagePath.Text = process.ImagePath;
+                txtProcessCommandLine.Text = process.CommandLine;
+                if (process is ThreadTokenEntry thread)
+                {
+                    txtThreadId.Text = thread.ThreadId.ToString();
+                    txtThreadName.Text = thread.ThreadName;
+                }
+                else
+                {
+                    groupThread.Visible = false;
+                }
+            }
+
             txtUIAccess.Text = _token.UIAccess.ToString();
             txtSandboxInert.Text = _token.SandboxInert.ToString();
             bool virtAllowed = _token.VirtualizationAllowed;
@@ -325,7 +345,12 @@ namespace TokenViewer
         {
         }
 
-        public TokenForm(NtToken token, string text)
+        public TokenForm(NtToken token, string text) 
+            : this(null, token, text)
+        {
+        }
+
+        private TokenForm(ProcessTokenEntry process, NtToken token, string text)
         {
             InitializeComponent();
             this.Disposed += TokenForm_Disposed;
@@ -338,7 +363,7 @@ namespace TokenViewer
                 comboBoxILForDup.Items.Add(v);
             }
 
-            UpdateTokenData();
+            UpdateTokenData(process);
             listViewGroups.ListViewItemSorter = new ListItemComparer(0);
             listViewPrivs.ListViewItemSorter = new ListItemComparer(0);
             listViewRestrictedSids.ListViewItemSorter = new ListItemComparer(0);
@@ -360,6 +385,11 @@ namespace TokenViewer
             }
 
             comboBoxSaferLevel.SelectedItem = SaferLevel.NormalUser;
+        }
+
+        internal TokenForm(ProcessTokenEntry process, string text, bool thread)
+            : this(process, thread ? ((ThreadTokenEntry)process).ThreadToken : process.ProcessToken, text)
+        {
         }
 
         void TokenForm_Disposed(object sender, EventArgs e)
@@ -405,16 +435,26 @@ namespace TokenViewer
             _main_form = window;
         }
 
+        private static void OpenForm(TokenForm form)
+        {
+            _forms.Add(form);
+            form.FormClosed += form_FormClosed;
+            form.Show(_main_form);
+        }
+
         public static void OpenForm(NtToken token, string text, bool copy)
         {
             if (token != null)
             {
-                TokenForm form = new TokenForm(copy ? token.Duplicate() : token, text);
+                OpenForm(new TokenForm(copy ? token.Duplicate() : token, text));
+            }
+        }
 
-                _forms.Add(form);
-                form.FormClosed += form_FormClosed;
-
-                form.Show(_main_form);
+        internal static void OpenForm(ProcessTokenEntry process, string text, bool copy, bool thread)
+        {
+            if (process != null)
+            {
+                OpenForm(new TokenForm(copy ? process.Clone() : process, text, thread));
             }
         }
 
