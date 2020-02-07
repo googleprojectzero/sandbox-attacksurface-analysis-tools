@@ -144,6 +144,65 @@ namespace NtApiDotNet
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         private delegate IntPtr GetKbdLayout();
 
+        private static IntPtr GetKdbLayoutOffset(SafeLoadLibraryHandle lib, int ordinal)
+        {
+            var proc = lib.GetProcAddress(new IntPtr(ordinal));
+            if (proc != IntPtr.Zero)
+            {
+                GetKbdLayout kbdLayout = (GetKbdLayout)Marshal.GetDelegateForFunctionPointer(proc, typeof(GetKbdLayout));
+                var layout = kbdLayout();
+                return new IntPtr(layout.ToInt64() - lib.DangerousGetHandle().ToInt64());
+            }
+            return IntPtr.Zero;
+        }
+
+        /// <summary>
+        /// Create a Window Station by name.
+        /// </summary>
+        /// <param name="object_attributes">Object attributes for the Window Station.</param>
+        /// <param name="desired_access">Desired access for the Window Station.</param>
+        /// <param name="kbd_dll_path">Path to Keyboard DLL e.g. kbusa.dll.</param>
+        /// <param name="keyboard_locale">Locale ID, e.g. 0x4090409.</param>
+        /// <param name="language_id">Language ID e.g. 0x409.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The Window Station.</returns>
+        public static NtResult<NtWindowStation> Create(ObjectAttributes object_attributes, WindowStationAccessRights desired_access, string kbd_dll_path,
+            int language_id, int keyboard_locale, bool throw_on_error)
+        {
+            string dll_path;
+            IntPtr layout_offset;
+            IntPtr nls_offset;
+            using (var kbd_dll = SafeLoadLibraryHandle.LoadLibrary(kbd_dll_path, LoadLibraryFlags.None, throw_on_error))
+            {
+                if (!kbd_dll.IsSuccess)
+                {
+                    return kbd_dll.Cast<NtWindowStation>();
+                }
+                dll_path = kbd_dll.Result.FullPath;
+                layout_offset = GetKdbLayoutOffset(kbd_dll.Result, 1);
+                nls_offset = GetKdbLayoutOffset(kbd_dll.Result, 2);
+            }
+
+            using (var buffer = new SafeHGlobalBuffer(0x318))
+            {
+                BufferUtils.FillBuffer(buffer, 0);
+                using (var file = NtFile.Open(NtFileUtils.DosFileNameToNt(dll_path), null,
+                    FileAccessRights.GenericRead | FileAccessRights.Synchronize, FileShareMode.Read | FileShareMode.Delete,
+                    FileOpenOptions.NonDirectoryFile | FileOpenOptions.SynchronousIoNonAlert, throw_on_error))
+                {
+                    if (!file.IsSuccess)
+                    {
+                        return file.Cast<NtWindowStation>();
+                    }
+                    var handle = NtSystemCalls.NtUserCreateWindowStation(object_attributes, desired_access, file.Result.Handle,
+                        layout_offset, nls_offset, buffer, new UnicodeString($"{language_id:X08}"), keyboard_locale);
+                    if (handle.IsInvalid)
+                        return NtObjectUtils.CreateResultFromDosError<NtWindowStation>(throw_on_error);
+                    return new NtWindowStation(handle).CreateResult();
+                }
+            }
+        }
+
         /// <summary>
         /// Create a Window Station by name.
         /// </summary>
@@ -151,30 +210,10 @@ namespace NtApiDotNet
         /// <returns>The Window Station.</returns>
         public static NtWindowStation Create(string winsta_name)
         {
-            string dll_path;
-            IntPtr layout_offset;
-            using (var kbd_dll = SafeLoadLibraryHandle.LoadLibrary(@"kbdus.dll"))
+            using (var obja = new ObjectAttributes(winsta_name, AttributeFlags.CaseInsensitive))
             {
-                dll_path = kbd_dll.FullPath;
-                var proc = kbd_dll.GetProcAddress(new IntPtr(1));
-                GetKbdLayout kbdLayout = (GetKbdLayout)Marshal.GetDelegateForFunctionPointer(proc, typeof(GetKbdLayout));
-                var layout = kbdLayout();
-                layout_offset = new IntPtr(layout.ToInt64() - kbd_dll.DangerousGetHandle().ToInt64());
-            }
-
-            using (var buffer = new SafeHGlobalBuffer(0x318))
-            {
-                BufferUtils.FillBuffer(buffer, 0);
-                using (var file = NtFile.Open(NtFileUtils.DosFileNameToNt(dll_path), null,
-                    FileAccessRights.GenericRead | FileAccessRights.Synchronize, FileShareMode.Read | FileShareMode.Delete, 
-                    FileOpenOptions.NonDirectoryFile | FileOpenOptions.SynchronousIoNonAlert))
-                {
-                    using (var obja = new ObjectAttributes(winsta_name, AttributeFlags.CaseInsensitive))
-                    {
-                        return new NtWindowStation(NtSystemCalls.NtUserCreateWindowStation(obja, WindowStationAccessRights.MaximumAllowed, file.Handle,
-                            layout_offset, IntPtr.Zero, buffer, new UnicodeString("00000409"), 0x04090409));
-                    }
-                }
+                return Create(obja, WindowStationAccessRights.MaximumAllowed, 
+                    "kbdus.dll", 0x409, 0x4090409, true).Result;
             }
         }
 
