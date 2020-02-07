@@ -182,6 +182,13 @@ namespace NtApiDotNet
         {
         }
 
+        public UnicodeStringAllocated(string str)
+        {
+            String.Length = (ushort)(str.Length * 2);
+            String.MaximumLength = (ushort)(String.Length + 2);
+            String.Buffer = Marshal.StringToHGlobalUni(str);
+        }
+
         public const int MaxStringLength = ushort.MaxValue - 1;
 
         public override string ToString()
