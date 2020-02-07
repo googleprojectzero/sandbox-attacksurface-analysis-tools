@@ -971,9 +971,12 @@ namespace NtApiDotNet.Win32
             [MarshalAs(UnmanagedType.LPArray), In] INPUT[] pInputs,
             int cbSize);
 
-        [DllImport("user32.dll", SetLastError = true)]
-        internal static extern short GetAsyncKeyState(
-            int vKey
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern SafeKernelObjectHandle CreateWindowStation(
+            string lpwinsta,
+            int dwFlags,
+            AccessMask dwDesiredAccess,
+            SECURITY_ATTRIBUTES lpsa
         );
     }
 #pragma warning restore 1591

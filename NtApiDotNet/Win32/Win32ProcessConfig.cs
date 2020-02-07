@@ -191,6 +191,10 @@ namespace NtApiDotNet.Win32
         /// Specify list of handles to inherit.
         /// </summary>
         public List<NtJob> JobList { get; }
+        /// <summary>
+        /// Specify a service window station and desktop.
+        /// </summary>
+        public bool ServiceDesktop { get; set; }
 
         /// <summary>
         /// Add an object's handle to the list of inherited handles. 
@@ -240,7 +244,7 @@ namespace NtApiDotNet.Win32
 
         private void PopulateStartupInfo(ref STARTUPINFO start_info)
         {
-            start_info.lpDesktop = Desktop;
+            start_info.lpDesktop = ServiceDesktop ? CreateServiceDesktopName() : Desktop;
             start_info.lpTitle = Title;
             if (StdInputHandle != Win32Utils.InvalidHandle ||
                 StdOutputHandle != Win32Utils.InvalidHandle ||
@@ -495,6 +499,26 @@ namespace NtApiDotNet.Win32
                 ret.lpSecurityDescriptor = resources.AddResource(sd.ToSafeBuffer());
             }
             return ret;
+        }
+
+        private string ServiceDesktopNameFromToken(NtToken token)
+        {
+            Luid authid = token.AuthenticationId;
+            return $@"Service-0x{authid.HighPart:X}-{authid.LowPart:X}$\Default";
+        }
+
+        private string CreateServiceDesktopName()
+        {
+            if (Token != null)
+            {
+                return ServiceDesktopNameFromToken(Token);
+            }
+
+            NtProcess process = ParentProcess ?? NtProcess.Current;
+            using (var token = process.OpenToken())
+            {
+                return ServiceDesktopNameFromToken(token);
+            }
         }
     }
 }

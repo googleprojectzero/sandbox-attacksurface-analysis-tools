@@ -455,7 +455,7 @@ namespace NtApiDotNet.Win32
         private SymLoadModule64 _sym_load_module;
         private SymRefreshModuleList _sym_refresh_module_list;
 
-        private void GetFunc<T>(ref T f) where T : class
+        private void GetFunc<T>(ref T f) where T : Delegate
         {
             f = _dbghelp_lib.GetFunctionPointer<T>();
         }

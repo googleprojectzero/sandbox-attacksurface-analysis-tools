@@ -430,5 +430,18 @@ namespace NtApiDotNet.Win32
             SendKeyDown(key_codes);
             SendKeyUp(key_codes);
         }
+
+        /// <summary>
+        /// This creates a Window Station using the User32 API.
+        /// </summary>
+        /// <param name="name">The name of the Window Station.</param>
+        /// <returns>The Window Station.</returns>
+        public static NtWindowStation CreateWindowStation(string name)
+        {
+            var handle = Win32NativeMethods.CreateWindowStation(name, 0, WindowStationAccessRights.MaximumAllowed, null);
+            if (handle.IsInvalid)
+                throw new SafeWin32Exception();
+            return new NtWindowStation(handle);
+        }
     }
 }

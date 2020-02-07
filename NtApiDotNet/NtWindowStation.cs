@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -138,6 +139,43 @@ namespace NtApiDotNet
         public static NtWindowStation Open(string winsta_name)
         {
             return Open(winsta_name, null);
+        }
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate IntPtr GetKbdLayout();
+
+        /// <summary>
+        /// Create a Window Station by name.
+        /// </summary>
+        /// <param name="winsta_name">The name of the Window Station.</param>
+        /// <returns>The Window Station.</returns>
+        public static NtWindowStation Create(string winsta_name)
+        {
+            string dll_path;
+            IntPtr layout_offset;
+            using (var kbd_dll = SafeLoadLibraryHandle.LoadLibrary(@"kbdus.dll"))
+            {
+                dll_path = kbd_dll.FullPath;
+                var proc = kbd_dll.GetProcAddress(new IntPtr(1));
+                GetKbdLayout kbdLayout = (GetKbdLayout)Marshal.GetDelegateForFunctionPointer(proc, typeof(GetKbdLayout));
+                var layout = kbdLayout();
+                layout_offset = new IntPtr(layout.ToInt64() - kbd_dll.DangerousGetHandle().ToInt64());
+            }
+
+            using (var buffer = new SafeHGlobalBuffer(0x318))
+            {
+                BufferUtils.FillBuffer(buffer, 0);
+                using (var file = NtFile.Open(NtFileUtils.DosFileNameToNt(dll_path), null,
+                    FileAccessRights.GenericRead | FileAccessRights.Synchronize, FileShareMode.Read | FileShareMode.Delete, 
+                    FileOpenOptions.NonDirectoryFile | FileOpenOptions.SynchronousIoNonAlert))
+                {
+                    using (var obja = new ObjectAttributes(winsta_name, AttributeFlags.CaseInsensitive))
+                    {
+                        return new NtWindowStation(NtSystemCalls.NtUserCreateWindowStation(obja, WindowStationAccessRights.MaximumAllowed, file.Handle,
+                            layout_offset, IntPtr.Zero, buffer, new UnicodeString("00000409"), 0x04090409));
+                    }
+                }
+            }
         }
 
         /// <summary>

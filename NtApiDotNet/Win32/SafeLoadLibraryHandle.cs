@@ -401,10 +401,9 @@ namespace NtApiDotNet.Win32
         /// <typeparam name="TDelegate">The delegate type. The name of the delegate is used to lookup the name of the function.</typeparam>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The delegate.</returns>
-        public TDelegate GetFunctionPointer<TDelegate>(bool throw_on_error) where TDelegate : class
+        public TDelegate GetFunctionPointer<TDelegate>(bool throw_on_error) where TDelegate : Delegate
         {
-            if (!typeof(TDelegate).IsSubclassOf(typeof(Delegate)) ||
-                typeof(TDelegate).GetCustomAttribute<UnmanagedFunctionPointerAttribute>() == null)
+            if (typeof(TDelegate).GetCustomAttribute<UnmanagedFunctionPointerAttribute>() == null)
             {
                 throw new ArgumentException("Invalid delegate type, must have an UnmanagedFunctionPointerAttribute annotation");
             }
@@ -419,7 +418,7 @@ namespace NtApiDotNet.Win32
                 return null;
             }
 
-            return (TDelegate)(object)Marshal.GetDelegateForFunctionPointer(proc, typeof(TDelegate));
+            return (TDelegate)Marshal.GetDelegateForFunctionPointer(proc, typeof(TDelegate));
         }
 
         /// <summary>
@@ -427,7 +426,7 @@ namespace NtApiDotNet.Win32
         /// </summary>
         /// <typeparam name="TDelegate">The delegate type. The name of the delegate is used to lookup the name of the function.</typeparam>
         /// <returns>The delegate.</returns>
-        public TDelegate GetFunctionPointer<TDelegate>() where TDelegate : class
+        public TDelegate GetFunctionPointer<TDelegate>() where TDelegate : Delegate
         {
             return GetFunctionPointer<TDelegate>(true);
         }

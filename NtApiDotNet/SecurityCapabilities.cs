@@ -879,6 +879,7 @@ namespace NtApiDotNet
             "thumbnailCache",
             "timezone",
             "uiAutomationSystem",
+            "unvirtualizedResources",
             "unzipFile",
             "updateAndSecurityDeviceSettings",
             "usb",

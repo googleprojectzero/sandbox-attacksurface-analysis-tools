@@ -51,6 +51,17 @@ namespace NtApiDotNet
             WindowStationAccessRights DesiredAccess);
 
         [DllImport("win32u.dll", SetLastError = true)]
+        public static extern SafeKernelObjectHandle NtUserCreateWindowStation(
+            ObjectAttributes ObjectAttributes,
+            WindowStationAccessRights DesiredAccess,
+            SafeKernelObjectHandle KbdDllHandle,
+            IntPtr KbdTablesOffset,     // Offset of tables returned from Ordinal 1 call from DLL base.
+            IntPtr NlsTablesOffset,     // Offset of tables returned from Ordinal 2 call from DLL base.
+            SafeBuffer KbdMultiDescriptor, // Buffer 0x318 bytes in size. Can be extracted using Ordinal 6.
+            UnicodeString LanguageIdString, // e.g. "00000409"
+            int KeyboardLocale); // e.g. 0x04090409 is US English and US Layout
+
+        [DllImport("win32u.dll", SetLastError = true)]
         public static extern NtStatus NtUserBuildNameList(
             SafeKernelObjectHandle Handle, int Size, SafeBuffer NameList, out int RequiredSize);
 
