@@ -22,6 +22,7 @@ namespace NtApiDotNet
     /// </summary>
     public enum SupportedVersion
     {
+        Unknown,
         Windows7,
         Windows8,
         Windows81,
@@ -33,6 +34,11 @@ namespace NtApiDotNet
         Windows10_RS4,
         Windows10_RS5,
         Windows10_19H1,
+        Windows10_19H2,
+        /// <summary>
+        /// This should always be at the end.
+        /// </summary>
+        Windows10_Latest,
     }
 #pragma warning restore 1591
 

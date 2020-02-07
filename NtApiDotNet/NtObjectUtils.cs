@@ -687,6 +687,65 @@ namespace NtApiDotNet
             }
         }
 
+        internal static SupportedVersion SupportedVersion
+        {
+            get
+            {
+                if (IsWindows7OrLess)
+                    return SupportedVersion.Windows7;
+                if (IsWindows8OrLess)
+                    return SupportedVersion.Windows8;
+                if (IsWindows81OrLess)
+                    return SupportedVersion.Windows81;
+                Version ver = Environment.OSVersion.Version;
+                if (ver.Major != 10)
+                {
+                    return SupportedVersion.Unknown;
+                }
+
+                if (ver.Build <= 10240)
+                {
+                    return SupportedVersion.Windows10;
+                }
+                else if (ver.Build <= 10586)
+                {
+                    return SupportedVersion.Windows10_TH2;
+                }
+                else if (ver.Build <= 14393)
+                {
+                    return SupportedVersion.Windows10_RS1;
+                }
+                else if (ver.Build <= 15063)
+                {
+                    return SupportedVersion.Windows10_RS2;
+                }
+                else if (ver.Build <= 16299)
+                {
+                    return SupportedVersion.Windows10_RS3;
+                }
+                else if (ver.Build <= 17134)
+                {
+                    return SupportedVersion.Windows10_RS4;
+                }
+                else if (ver.Build <= 17763)
+                {
+                    return SupportedVersion.Windows10_RS5;
+                }
+                else if (ver.Build <= 18362)
+                {
+                    return SupportedVersion.Windows10_19H1;
+                }
+                else if (ver.Build <= 18363)
+                {
+                    return SupportedVersion.Windows10_19H2;
+                }
+                else
+                {
+                    return SupportedVersion.Windows10_Latest;
+                }
+            }
+        }
+
         private static Lazy<string> _assembly_version = new Lazy<string>(() =>
         {
             Assembly asm = Assembly.GetCallingAssembly();
