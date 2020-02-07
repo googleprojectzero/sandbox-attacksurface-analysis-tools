@@ -392,6 +392,8 @@ namespace NtApiDotNet.Win32
           IntPtr CallbackContext
         );
 
+    
+
     internal static class Win32NativeMethods
     {
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -963,6 +965,16 @@ namespace NtApiDotNet.Win32
                 SafeKernelObjectHandle TokenHandle,
                 ref SECURITY_CAPABILITIES SecurityCapabilities,
                 out SafeKernelObjectHandle AppContainerTokenHandle);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        internal static extern int SendInput(int nInputs,
+            [MarshalAs(UnmanagedType.LPArray), In] INPUT[] pInputs,
+            int cbSize);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        internal static extern short GetAsyncKeyState(
+            int vKey
+        );
     }
 #pragma warning restore 1591
 }

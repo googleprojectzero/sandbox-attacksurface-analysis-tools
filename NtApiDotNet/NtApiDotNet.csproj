@@ -294,6 +294,7 @@
     <Compile Include="Win32\RunningService.cs" />
     <Compile Include="Win32\SafeCoTaskMemHandle.cs" />
     <Compile Include="Win32\SafeLocalAllocBuffer.cs" />
+    <Compile Include="Win32\SendInput.cs" />
     <Compile Include="Win32\ServiceInformation.cs" />
     <Compile Include="Win32\ServiceTriggerCustomData.cs" />
     <Compile Include="Win32\ServiceTriggerInformation.cs" />
