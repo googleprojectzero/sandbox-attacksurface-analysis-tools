@@ -163,6 +163,11 @@ namespace NtApiDotNet
         /// Specify callback to update process parameters.
         /// </summary>
         public Func<SafeProcessParametersBuffer, DisposableList, SafeProcessParametersBuffer> ProcessParametersCallback { get; set; }
+
+        /// <summary>
+        /// Redirection DLL path. Only supported from 1903.
+        /// </summary>
+        public string RedirectionDllName { get; set; }
         #endregion
 
         #region Public Methods

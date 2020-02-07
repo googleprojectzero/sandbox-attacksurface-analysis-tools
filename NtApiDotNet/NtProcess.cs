@@ -136,6 +136,13 @@ namespace NtApiDotNet
                     {
                         process_params = config.ProcessParametersCallback(process_params, dispose);
                     }
+                    if (!string.IsNullOrWhiteSpace(config.RedirectionDllName) 
+                        && NtObjectUtils.SupportedVersion >= SupportedVersion.Windows10_19H1)
+                    {
+                        var str = dispose.AddResource(new UnicodeStringAllocated(config.RedirectionDllName));
+                        IntPtr offset = Marshal.OffsetOf(typeof(RtlUserProcessParameters), "RedirectionDllName");
+                        process_params.Write((ulong)offset.ToInt32(), str.String);
+                    }
                 }
 
                 ProcessCreateInfo create_info = dispose.AddResource(new ProcessCreateInfo());
