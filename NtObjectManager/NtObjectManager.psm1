@@ -1665,6 +1665,8 @@ function Show-NtSecurityDescriptor {
     [NtApiDotNet.NtObject]$Object,
     [Parameter(ParameterSetName = "FromObject")]
     [switch]$ReadOnly,
+    [Parameter(Position = 0, ParameterSetName = "FromAccessCheck", Mandatory = $true)]
+    [NtObjectManager.AccessCheckResult]$AccessCheckResult,
     [Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true)]
     [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
     [Parameter(Position = 1, ParameterSetName = "FromSecurityDescriptor")]
@@ -1709,6 +1711,14 @@ function Show-NtSecurityDescriptor {
             $Type = Get-NtType File
         }
         Start-Process -FilePath "$PSScriptRoot\ViewSecurityDescriptor.exe" -ArgumentList @("`"$Name`"", "`"$($SecurityDescriptor.ToSddl())`"","`"$($Type.Name)`"") -Wait:$Wait
+    }
+    "FromAccessCheck" {
+        if ($AccessCheckResult.SecurityDescriptor -eq "") {
+            return
+        }
+
+        Show-NtSecurityDescriptor -SecurityDescriptor $AccessCheckResult.SecurityDescriptor `
+                -Type $AccessCheckResult.TypeName -Name $AccessCheckResult.Name
     }
   }
 }
