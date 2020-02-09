@@ -188,7 +188,17 @@ namespace NtApiDotNet
         /// <returns>The duplicated object</returns>
         public O Duplicate()
         {
-            return Duplicate(default, AttributeFlags.None, DuplicateObjectOptions.SameAccess, true).Result;
+            return Duplicate(true).Result;
+        }
+
+        /// <summary>
+        /// Duplicate the object with same access rights
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The duplicated object</returns>
+        public NtResult<O> Duplicate(bool throw_on_error)
+        {
+            return Duplicate(default, AttributeFlags.None, DuplicateObjectOptions.SameAccess, throw_on_error);
         }
 
         private O ShallowClone(SafeKernelObjectHandle handle, bool query_basic_info)

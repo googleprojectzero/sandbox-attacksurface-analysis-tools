@@ -70,9 +70,9 @@ namespace NtObjectManager
         /// <returns>The list of default drives.</returns>
         protected override Collection<PSDriveInfo> InitializeDefaultDrives()
         {
-            PSDriveInfo drive = new PSDriveInfo("NtObject", this.ProviderInfo, GLOBAL_ROOT, "NT Object Manager Root Directory", null);
+            PSDriveInfo drive = new PSDriveInfo("NtObject", ProviderInfo, GLOBAL_ROOT, "NT Object Manager Root Directory", null);
             int session_id = Process.GetCurrentProcess().SessionId;
-            string base_dir = null;
+            string base_dir;
             if (session_id == 0)
             {
                 base_dir = GLOBAL_ROOT + "BaseNamedObjects";
@@ -223,15 +223,15 @@ namespace NtObjectManager
 
         private ObjectManagerPSDriveInfo GetDrive()
         {
-            return (ObjectManagerPSDriveInfo)this.PSDriveInfo;
+            return (ObjectManagerPSDriveInfo)PSDriveInfo;
         }
 
-        private NtDirectory GetPathDirectory(string path)
+        private NtResult<NtDirectory> GetPathDirectory(string path, bool throw_on_error)
         {
             int last_slash = path.LastIndexOf('\\');
             if (last_slash == -1)
             {
-                return GetDrive().DirectoryRoot.Duplicate();
+                return GetDrive().DirectoryRoot.Duplicate(throw_on_error);
             }
             else
             {
@@ -239,7 +239,7 @@ namespace NtObjectManager
                 string base_path = path.Substring(0, last_slash);
                 
                 return NtDirectory.Open(base_path,
-                        dir, DirectoryAccessRights.MaximumAllowed);
+                        dir, DirectoryAccessRights.MaximumAllowed, throw_on_error);
             }
         }
 
@@ -286,16 +286,13 @@ namespace NtObjectManager
             {
                 return true;
             }
-            
-            try
+
+            using (var dir = GetPathDirectory(path, false))
             {
-                using (NtDirectory dir = GetPathDirectory(path))
+                if (dir.IsSuccess)
                 {
-                    exists = GetEntry(dir, path) != null;
+                    exists = GetEntry(dir.Result, path) != null;
                 }
-            }
-            catch (NtException)
-            {
             }
 
             // If we can't find it indirectly, at least see if there's a directory with this name.
@@ -323,17 +320,14 @@ namespace NtObjectManager
                 return true;
             }
 
-            try
+            using (var dir = GetPathDirectory(path, false))
             {
-                using (NtDirectory dir = GetPathDirectory(path))
+                if (dir.IsSuccess)
                 {
-                    ObjectDirectoryInformation dir_info = GetEntry(dir, path);
+                    ObjectDirectoryInformation dir_info = GetEntry(dir.Result, path);
                     is_container = dir_info != null
                         && dir_info.NtTypeName.Equals("directory", StringComparison.OrdinalIgnoreCase);
                 }
-            }
-            catch (NtException)
-            {
             }
 
             return is_container || GetDrive().DirectoryRoot.DirectoryExists(path); 
@@ -452,8 +446,10 @@ namespace NtObjectManager
             }
 
             string relative_path = GetRelativePath(PSPathToNT(path));
-            using (NtDirectory dir = GetPathDirectory(relative_path))
+            using (var dir = GetPathDirectory(relative_path, false))
             {
+                if (!dir.IsSuccess)
+                    return;
                 if (relative_path.Length == 0)
                 {
                     WriteItemObject(new NtDirectoryEntry(GetDrive().DirectoryRoot, relative_path, string.Empty, "Directory"),
@@ -461,7 +457,7 @@ namespace NtObjectManager
                 }
                 else
                 {
-                    ObjectDirectoryInformation dir_info = GetEntry(dir, relative_path);
+                    ObjectDirectoryInformation dir_info = GetEntry(dir.Result, relative_path);
                     if (dir_info != null)
                     {
                         WriteItemObject(new NtDirectoryEntry(GetDrive().DirectoryRoot, relative_path, dir_info.Name, dir_info.NtTypeName),
@@ -535,15 +531,11 @@ namespace NtObjectManager
             {
                 foreach (ObjectDirectoryInformation entry in matching_entries)
                 {
-                    try
+                    using (var dir = NtDirectory.Open(entry.Name, root, DirectoryAccessRights.Query, false))
                     {
-                        using (NtDirectory dir = NtDirectory.Open(entry.Name, root, DirectoryAccessRights.Query))
-                        {
-                            AddMatches(dir, base_path + entry.Name + @"\", remaining.Skip(1), matches);
-                        }
-                    }
-                    catch (NtException)
-                    {
+                        if (!dir.IsSuccess)
+                            continue;
+                        AddMatches(dir.Result, base_path + entry.Name + @"\", remaining.Skip(1), matches);
                     }
                 }
             }
@@ -650,15 +642,15 @@ namespace NtObjectManager
         void ISecurityDescriptorCmdletProvider.GetSecurityDescriptor(string path, AccessControlSections includeSections)
         {
             string relative_path = GetRelativePath(PSPathToNT(path));
-            using (NtDirectory dir = GetPathDirectory(relative_path))
+            using (var dir = GetPathDirectory(relative_path, true))
             {
                 if (relative_path.Length == 0)
                 {
-                    WriteItemObject(new GenericObjectSecurity(dir, includeSections), path, true);
+                    WriteItemObject(new GenericObjectSecurity(dir.Result, includeSections), path, true);
                 }
                 else
                 {
-                    ObjectDirectoryInformation dir_info = GetEntry(dir, relative_path);
+                    ObjectDirectoryInformation dir_info = GetEntry(dir.Result, relative_path);
                     if (dir_info == null)
                     {
                         throw new NtException(NtStatus.STATUS_OBJECT_NAME_NOT_FOUND);
@@ -677,9 +669,9 @@ namespace NtObjectManager
             if (securityDescriptor is GenericObjectSecurity obj_security)
             {
                 string relative_path = GetRelativePath(PSPathToNT(path));
-                using (NtDirectory dir = GetPathDirectory(relative_path))
+                using (var dir = GetPathDirectory(relative_path, true))
                 {
-                    ObjectDirectoryInformation dir_info = GetEntry(dir, relative_path);
+                    ObjectDirectoryInformation dir_info = GetEntry(dir.Result, relative_path);
                     if (dir_info == null)
                     {
                         throw new NtException(NtStatus.STATUS_OBJECT_NAME_NOT_FOUND);

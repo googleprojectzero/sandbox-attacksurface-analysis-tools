@@ -22,7 +22,7 @@ namespace NtObjectManager
     /// </summary>
     public class NtDirectoryEntry
     {
-        private readonly NtDirectory _base_directory;
+        private readonly NtObject _root;
         private SecurityDescriptor _sd;
         private string _symlink_target;
         private Enum _maximum_granted_access;
@@ -51,7 +51,7 @@ namespace NtObjectManager
 
                             if (obj is NtSymbolicLink link && link.IsAccessGranted(SymbolicLinkAccessRights.Query))
                             {
-                                _symlink_target = link.GetTarget(false).GetResultOrDefault();
+                                _symlink_target = link.GetTarget(false).GetResultOrDefault(string.Empty);
                             }
 
                             _maximum_granted_access = obj.GrantedAccessMask.ToSpecificAccess(obj.NtType.AccessRightsType);
@@ -133,7 +133,7 @@ namespace NtObjectManager
         /// <exception cref="System.ArgumentException">Thrown if invalid typename.</exception>
         public NtResult<NtObject> ToObject(bool throw_on_error)
         {
-            return NtObject.OpenWithType(TypeName, RelativePath, _base_directory, 
+            return NtObject.OpenWithType(TypeName, RelativePath, _root, 
                 AttributeFlags.CaseInsensitive, GenericAccessRights.MaximumAllowed, null, throw_on_error);
         }
 
@@ -148,12 +148,12 @@ namespace NtObjectManager
             return ToObject(true).Result;
         }
 
-        internal NtDirectoryEntry(NtDirectory base_directory, string relative_path, string name, string typename)
+        internal NtDirectoryEntry(NtObject root, string relative_path, string name, string typename)
         {
             Name = name;
             TypeName = typename;
             RelativePath = relative_path;
-            _base_directory = base_directory;
+            _root = root;
 
             switch (typename.ToLower())
             {
