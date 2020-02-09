@@ -122,6 +122,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Checks if the NtStatus value is an error.
+        /// </summary>
+        /// <param name="status">The NtStatus value</param>
+        /// <returns>True if an error.</returns>
+        public static bool IsError(this NtStatus status)
+        {
+            return status.GetSeverity() == NtStatusSeverity.STATUS_SEVERITY_ERROR;
+        }
+
+        /// <summary>
         /// Get the severity of the NTSTATUS.
         /// </summary>
         /// <param name="status">The NtStatus value</param>
@@ -542,13 +552,13 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="status">The status code.</param>
         /// <returns>The mapped DOS error.</returns>
-        public static int MapNtStatusToDosError(NtStatus status)
+        public static Win32Error MapNtStatusToDosError(NtStatus status)
         {
             if (status.GetFacility() == NtStatusFacility.FACILITY_NTWIN32)
             {
-                return status.GetStatusCode();
+                return (Win32Error)status.GetStatusCode();
             }
-            return NtRtl.RtlNtStatusToDosErrorNoTeb(status);
+            return (Win32Error)NtRtl.RtlNtStatusToDosErrorNoTeb(status);
         }
 
         /// <summary>
