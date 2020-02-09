@@ -206,6 +206,22 @@ namespace NtApiDotNet
         /// <summary>
         /// Create a Window Station by name.
         /// </summary>
+        /// <param name="object_attributes">Object attributes for the Window Station.</param>
+        /// <param name="desired_access">Desired access for the Window Station.</param>
+        /// <param name="kbd_dll_path">Path to Keyboard DLL e.g. kbusa.dll.</param>
+        /// <param name="keyboard_locale">Locale ID, e.g. 0x4090409.</param>
+        /// <param name="language_id">Language ID e.g. 0x409.</param>
+        /// <returns>The Window Station.</returns>
+        public static NtWindowStation Create(ObjectAttributes object_attributes,
+            WindowStationAccessRights desired_access, string kbd_dll_path,
+            int language_id, int keyboard_locale)
+        {
+            return Create(object_attributes, desired_access, kbd_dll_path, language_id, keyboard_locale, true).Result;
+        }
+
+        /// <summary>
+        /// Create a Window Station by name.
+        /// </summary>
         /// <param name="winsta_name">The name of the Window Station.</param>
         /// <returns>The Window Station.</returns>
         public static NtWindowStation Create(string winsta_name)
