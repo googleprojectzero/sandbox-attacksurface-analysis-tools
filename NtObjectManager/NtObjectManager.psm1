@@ -1835,6 +1835,8 @@ function Format-NtSecurityDescriptor {
         [NtApiDotNet.NtObject]$Object,
         [Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true, ValueFromPipeline)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [Parameter(Position = 0, ParameterSetName = "FromAccessCheck", Mandatory = $true, ValueFromPipeline)]
+        [NtObjectManager.AccessCheckResult]$AccessCheckResult,
         [Parameter(Position = 0, ParameterSetName = "FromAcl", Mandatory = $true)]
         [AllowEmptyCollection()]
         [NtApiDotNet.Acl]$Acl,
@@ -1886,6 +1888,12 @@ function Format-NtSecurityDescriptor {
                         $SecurityInformation = "Dacl"
                     }
                     ($fake_sd, $Type, "UNKNOWN")
+                }
+                "FromAccessCheck" {
+                    $Check_sd = New-NtSecurityDescriptor $AccessCheckResult.SecurityDescriptor
+                    $Type = Get-NtType $AccessCheckResult.TypeName
+                    $Name = $AccessCheckResult.Name
+                    ($Check_sd, $Type, $Name)
                 }
             }
 
