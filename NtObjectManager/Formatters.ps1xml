@@ -1314,7 +1314,12 @@
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>Value</Label>
-            <Width>40</Width>
+            <Width>20</Width>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>GenericAccess</Label>
+            <Width>30</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -1327,6 +1332,9 @@
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>Value</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>GenericAccess</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

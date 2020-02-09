@@ -17,6 +17,34 @@ using System;
 namespace NtApiDotNet
 {
     /// <summary>
+    /// Flags representing what generic access the entry maps to.
+    /// </summary>
+    [Flags]
+    public enum GenericAccessType
+    {
+        /// <summary>
+        /// Not mapped to any access.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Mapped to read.
+        /// </summary>
+        Read = 1,
+        /// <summary>
+        /// Mapped to write.
+        /// </summary>
+        Write = 2,
+        /// <summary>
+        /// Mapped to execute.
+        /// </summary>
+        Execute = 4,
+        /// <summary>
+        /// Mapped to All.
+        /// </summary>
+        All = 8
+    }
+
+    /// <summary>
     /// A structure to hold an access mask to enum mapping.
     /// </summary>
     public struct AccessMaskEntry
@@ -29,6 +57,10 @@ namespace NtApiDotNet
         /// The value of the access mask entry enumeration.
         /// </summary>
         public Enum Value { get; }
+        /// <summary>
+        /// The generic access this maps to.
+        /// </summary>
+        public GenericAccessType GenericAccess { get; }
 
         /// <summary>
         /// Overridden ToString method.
@@ -39,10 +71,11 @@ namespace NtApiDotNet
             return $"{Mask:X08} - {Value}";
         }
 
-        internal AccessMaskEntry(AccessMask mask, Enum value)
+        internal AccessMaskEntry(AccessMask mask, Enum value, GenericAccessType generic_access)
         {
             Mask = mask;
             Value = value;
+            GenericAccess = generic_access;
         }
     }
 }

@@ -196,8 +196,26 @@ namespace NtApiDotNet
                     {
                         if (Enum.IsDefined(AccessRightsType, mask))
                         {
+                            GenericAccessType generic_access = GenericAccessType.None;
+                            if (GenericMapping.GenericRead.IsAccessGranted(mask))
+                            {
+                                generic_access |= GenericAccessType.Read;
+                            }
+                            if (GenericMapping.GenericWrite.IsAccessGranted(mask))
+                            {
+                                generic_access |= GenericAccessType.Write;
+                            }
+                            if (GenericMapping.GenericExecute.IsAccessGranted(mask))
+                            {
+                                generic_access |= GenericAccessType.Execute;
+                            }
+                            if (GenericMapping.GenericAll.IsAccessGranted(mask))
+                            {
+                                generic_access |= GenericAccessType.All;
+                            }
+
                             access_rights.Add(new AccessMaskEntry(mask,
-                                (Enum)Enum.ToObject(AccessRightsType, mask)));
+                                (Enum)Enum.ToObject(AccessRightsType, mask), generic_access));
                         }
                         mask <<= 1;
                     }

@@ -903,6 +903,25 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the cached signing level for a file.
+        /// </summary>
+        /// <param name="handle">The handle to the file to query.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The cached signing level.</returns>
+        public static NtResult<CachedSigningLevel> GetCachedSigningLevel(SafeKernelObjectHandle handle, bool throw_on_error)
+        {
+            byte[] thumb_print = new byte[0x68];
+            int thumb_print_size = thumb_print.Length;
+
+            return NtSystemCalls.NtGetCachedSigningLevel(handle, out int flags,
+                out SigningLevel signing_level, thumb_print, ref thumb_print_size, out HashAlgorithm thumb_print_algo).CreateResult(throw_on_error, () =>
+                {
+                    Array.Resize(ref thumb_print, thumb_print_size);
+                    return new CachedSigningLevel(flags, signing_level, thumb_print, thumb_print_algo);
+                });
+        }
+
+        /// <summary>
         /// Get the cached singing level from the raw EA buffer.
         /// </summary>
         /// <param name="ea">The EA buffer to read the cached signing level from.</param>
@@ -945,17 +964,47 @@ namespace NtApiDotNet
                                                  IEnumerable<SafeKernelObjectHandle> source_files,
                                                  string catalog_path)
         {
+            SetCachedSigningLevel(handle, flags, signing_level, source_files, catalog_path, true);
+        }
+
+        /// <summary>
+        /// Set the cached signing level for a file.
+        /// </summary>
+        /// <param name="handle">The handle to the file to set the cache on.</param>
+        /// <param name="flags">Flags to set for the cache.</param>
+        /// <param name="signing_level">The signing level to cache</param>
+        /// <param name="source_files">A list of source file for the cache.</param>
+        /// <param name="catalog_path">Optional directory path to look for catalog files.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        public static NtStatus SetCachedSigningLevel(SafeKernelObjectHandle handle,
+                                                     int flags, SigningLevel signing_level,
+                                                     IEnumerable<SafeKernelObjectHandle> source_files,
+                                                     string catalog_path, bool throw_on_error)
+        {
             IntPtr[] handles = source_files?.Select(f => f.DangerousGetHandle()).ToArray();
             int handles_count = handles == null ? 0 : handles.Length;
             if (catalog_path != null)
             {
                 CachedSigningLevelInformation info = new CachedSigningLevelInformation(catalog_path);
-                NtSystemCalls.NtSetCachedSigningLevel2(flags, signing_level, handles, handles_count, handle, info).ToNtException();
+                return NtSystemCalls.NtSetCachedSigningLevel2(flags, signing_level, handles, 
+                    handles_count, handle, info).ToNtException(throw_on_error);
             }
             else
             {
-                NtSystemCalls.NtSetCachedSigningLevel(flags, signing_level, handles, handles_count, handle).ToNtException();
+                return NtSystemCalls.NtSetCachedSigningLevel(flags, signing_level, handles, 
+                    handles_count, handle).ToNtException(throw_on_error);
             }
+        }
+
+        /// <summary>
+        /// Compare two signing levels.
+        /// </summary>
+        /// <param name="current_level">The current level.</param>
+        /// <param name="signing_level">The signing level to compare against.</param>
+        /// <returns>True if the current level is above or equal to the signing level.</returns>
+        public static bool CompareSigningLevel(SigningLevel current_level, SigningLevel signing_level)
+        {
+            return NtSystemCalls.NtCompareSigningLevel(current_level, signing_level).IsSuccess();
         }
 
         /// <summary>
