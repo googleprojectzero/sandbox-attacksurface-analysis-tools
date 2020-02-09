@@ -840,6 +840,28 @@ namespace NtApiDotNet
             DisplayString(text, true);
         }
 
+        /// <summary>
+        /// Load a driver.
+        /// </summary>
+        /// <param name="driver_service_name">The name of the driver service.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus LoadDriver(string driver_service_name, bool throw_on_error = true)
+        {
+            return NtSystemCalls.NtLoadDriver(new UnicodeString(driver_service_name)).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Unload a driver.
+        /// </summary>
+        /// <param name="driver_service_name">The name of the driver service.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus UnloadDriver(string driver_service_name, bool throw_on_error = true)
+        {
+            return NtSystemCalls.NtUnloadDriver(new UnicodeString(driver_service_name)).ToNtException(throw_on_error);
+        }
+
         #endregion
 
         #region Static Properties

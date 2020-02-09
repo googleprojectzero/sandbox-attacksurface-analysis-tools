@@ -85,6 +85,16 @@ namespace NtApiDotNet
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtDisplayString([In] UnicodeString Text);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtLoadDriver(
+            [In] UnicodeString DriverServiceName
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtUnloadDriver(
+            [In] UnicodeString DriverServiceName
+        );
     }
 
     public static partial class NtRtl
