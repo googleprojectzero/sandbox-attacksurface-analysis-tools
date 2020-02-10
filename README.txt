@@ -46,6 +46,28 @@ Thanks to the people who were willing to test it and give feedback:
 
 Release Notes:
 
+1.1.27
+--------
+* Added support for directory change notifications.
+* Added New-NtDesktop, Get-NtDesktop and Get-NtDesktopName.
+* Added New-NtWindowStation, Get-NtWindowStation and Get-NtWindowStationName.
+* Changed Win32 error codes to an enumeration.
+* Added Load/Unload driver.
+* Added properties to NtType to show access masks.
+* Added basic SendInput method.
+* Added token source tab to Token Viewer.
+* Updated for the Job object and New-NtJob.
+* Added NtWindow class a HWND enumeration.
+* Added Get-AccessibleWindowStation command.
+* Added some well known WNF names.
+* Added option to Get-AccessibleService to check file permissions.
+* Added Set-NtProcessJob command.
+* Added Get-AccessibleToken command.
+* Added support for compound ACEs.
+* Added Get/Sid-NtTokenSid and Get/Set-NtTokenGroup.
+* Added Get-AccessibleEventTrace command.
+* Added Get-AccessibleWnf command.
+
 1.1.26
 --------
 * Add DeviceGuid to Get/New-NtFile

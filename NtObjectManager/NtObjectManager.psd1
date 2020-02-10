@@ -18,7 +18,7 @@
 RootModule = 'NtObjectManager.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.26'
+ModuleVersion = '1.1.27'
 
 # ID used to uniquely identify this module
 GUID = 'ac251c97-67a6-4bc4-bb8a-5ae300e93030'
@@ -123,25 +123,27 @@ PrivateData = @{
         ProjectUri = 'https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools'
 
         # ReleaseNotes of this module
-        ReleaseNotes = '1.1.26
+        ReleaseNotes = '1.1.27
 --------
-* Add DeviceGuid to Get/New-NtFile
-* Fixed bug in ETA registrations and added GUID enumeration.
-* Added SetExceptionPort to NtProcess.
-* Added child process mitigation improvements.
-* Added extended Fork.
-* Updated native process creation support.
-* Various new non-throwing methods.
-* Updated to C# 7.3.
-* Added list of access rights to NtType.
-* Added default mandatory policy to NtType.
-* Added SetDisposition methods to NtFile.
-* Added console and GUI support for Object ACEs.
-* Updated access checking to support Object Types.
-* Access check returns a structure rather than just an access mask.
-* CPP style NDR formatting (#21)
-* Added Get-NtTokenPrivilege command.
-* Added Get-NtLocallyUniqueId command.
+* Added support for directory change notifications.
+* Added New-NtDesktop, Get-NtDesktop and Get-NtDesktopName.
+* Added New-NtWindowStation, Get-NtWindowStation and Get-NtWindowStationName.
+* Changed Win32 error codes to an enumeration.
+* Added Load/Unload driver.
+* Added properties to NtType to show access masks.
+* Added basic SendInput method.
+* Added token source tab to Token Viewer.
+* Updated for the Job object and New-NtJob.
+* Added NtWindow class a HWND enumeration.
+* Added Get-AccessibleWindowStation command.
+* Added some well known WNF names.
+* Added option to Get-AccessibleService to check file permissions.
+* Added Set-NtProcessJob command.
+* Added Get-AccessibleToken command.
+* Added support for compound ACEs.
+* Added Get/Sid-NtTokenSid and Get/Set-NtTokenGroup.
+* Added Get-AccessibleEventTrace command.
+* Added Get-AccessibleWnf command.
 '
 
         # External dependent modules of this module
