@@ -358,6 +358,28 @@ namespace NtApiDotNet
             return Query(FileInformationClass.FileBasicInformation, new FileBasicInformation(), throw_on_error);
         }
 
+        private static IEnumerable<DirectoryChangeNotification> ReadNotifications(SafeHGlobalBuffer buffer, IoStatus status)
+        {
+            List<DirectoryChangeNotification> ns = new List<DirectoryChangeNotification>();
+
+            // Change buffer size to reflect what's in the buffer.
+            buffer.Initialize((uint)status.Information32);
+
+            int offset = 0;
+            while (offset < buffer.Length)
+            {
+                var info = buffer.GetStructAtOffset<FileNotifyInformation>(offset);
+                var result = info.Result;
+                ns.Add(new DirectoryChangeNotification(result.Action, info.Data.ReadUnicodeString(result.FileNameLength / 2)));
+                if (result.NextEntryOffset == 0)
+                {
+                    break;
+                }
+                offset += result.NextEntryOffset;
+            }
+            return ns.AsReadOnly();
+        }
+
         #endregion
 
         #region Static Methods
@@ -3247,6 +3269,99 @@ namespace NtApiDotNet
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Get change notifications.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of changes.</returns>
+        public NtResult<IEnumerable<DirectoryChangeNotification>> GetChangeNotification(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, bool throw_on_error)
+        {
+            using (NtAsyncResult result = new NtAsyncResult(this))
+            {
+                using (var buffer = new SafeHGlobalBuffer(4096))
+                {
+                    return result.CompleteCall(NtSystemCalls.NtNotifyChangeDirectoryFile(
+                        Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
+                        buffer, buffer.Length, completion_filter, watch_subtree))
+                        .CreateResult(throw_on_error, () => ReadNotifications(buffer, result.IoStatusBuffer.Result));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get change notifications.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <returns>The list of changes.</returns>
+        public IEnumerable<DirectoryChangeNotification> GetChangeNotification(DirectoryChangeNotifyFilter completion_filter, bool watch_subtree)
+        {
+            return GetChangeNotification(completion_filter, watch_subtree, true).Result;
+        }
+
+        /// <summary>
+        /// Get change notifications.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>The list of changes.</returns>
+        public async Task<NtResult<IEnumerable<DirectoryChangeNotification>>> GetChangeNotificationAsync(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, CancellationToken token, bool throw_on_error)
+        {
+            using (var buffer = new SafeHGlobalBuffer(4096))
+            {
+                var status = await RunFileCallAsync(result => NtSystemCalls.NtNotifyChangeDirectoryFile(
+                        Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
+                        buffer, buffer.Length, completion_filter, watch_subtree), token, throw_on_error);
+                return status.Map(r => ReadNotifications(buffer, r));
+            }
+        }
+
+        /// <summary>
+        /// Get change notifications.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of changes.</returns>
+        public Task<NtResult<IEnumerable<DirectoryChangeNotification>>> GetChangeNotificationAsync(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, bool throw_on_error)
+        {
+            return GetChangeNotificationAsync(completion_filter, watch_subtree, CancellationToken.None, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get change notifications.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>The list of changes.</returns>
+        public async Task<IEnumerable<DirectoryChangeNotification>> GetChangeNotificationAsync(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, CancellationToken token)
+        {
+            var result = await GetChangeNotificationAsync(completion_filter, watch_subtree, token, true);
+            return result.Result;
+        }
+
+        /// <summary>
+        /// Get change notifications.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>The list of changes.</returns>
+        public Task<IEnumerable<DirectoryChangeNotification>> GetChangeNotificationAsync(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree)
+        {
+            return GetChangeNotificationAsync(completion_filter, watch_subtree, CancellationToken.None);
         }
 
         /// <summary>

@@ -254,6 +254,19 @@ namespace NtApiDotNet
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtCancelSynchronousIoFile(SafeKernelObjectHandle ThreadHandle, 
             [In] SafeIoStatusBuffer IoRequestToCancel, [Out] IoStatus IoStatusBlock);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtNotifyChangeDirectoryFile(
+            SafeKernelObjectHandle FileHandle,
+            SafeKernelObjectHandle Event,
+            IntPtr ApcRoutine,
+            IntPtr ApcContext,
+            SafeIoStatusBuffer IoStatusBlock,
+            SafeBuffer Buffer,
+            int BufferSize,
+            DirectoryChangeNotifyFilter CompletionFilter,
+            bool WatchTree
+        );
     }
 
     public static partial class NtRtl
@@ -1406,6 +1419,56 @@ namespace NtApiDotNet
     public struct FileCaseSensitiveInformation
     {
         public FileCaseSensitiveFlags Flags;
+    }
+
+
+    [Flags]
+    public enum DirectoryChangeNotifyFilter
+    {
+        None = 0,
+        FileName = 0x00000001,
+        DirName = 0x00000002,
+        Attributes = 0x00000004,
+        Size = 0x00000008,
+        LastWrite = 0x00000010,
+        LastAccess = 0x00000020,
+        Creation = 0x00000040,
+        Ea = 0x00000080,
+        Security = 0x00000100,
+        StreamName = 0x00000200,
+        StreamSize = 0x00000400,
+        StreamWrite = 0x00000800,
+        All = 0x00000FFF
+    }
+
+    public enum FileNotificationAction
+    {
+        Added = 1,
+        Removed = 2,
+        Modified = 3,
+        RenamedOldName = 4,
+        RenamedNewName = 5,
+    }
+
+    [StructLayout(LayoutKind.Sequential), DataStart("FileName")]
+    public struct FileNotifyInformation
+    {
+        public int NextEntryOffset;
+        public FileNotificationAction Action;
+        public int FileNameLength;
+        public char FileName;
+    }
+
+    public class DirectoryChangeNotification
+    {
+        public FileNotificationAction Action { get; }
+        public string FileName { get; }
+
+        internal DirectoryChangeNotification(FileNotificationAction action, string file_name)
+        {
+            Action = action;
+            FileName = file_name;
+        }
     }
 
 #pragma warning restore 1591
