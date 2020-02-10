@@ -323,6 +323,7 @@ namespace NtApiDotNet
             {
                 return NtObjectUtils.MapDosErrorToStatus().ToNtException(throw_on_error);
             }
+            Handle.SetHandleAsInvalid();
             return NtStatus.STATUS_SUCCESS;
         }
 
