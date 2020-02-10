@@ -358,7 +358,7 @@ namespace NtApiDotNet
             return Query(FileInformationClass.FileBasicInformation, new FileBasicInformation(), throw_on_error);
         }
 
-        private static IEnumerable<DirectoryChangeNotification> ReadNotifications(SafeHGlobalBuffer buffer, IoStatus status)
+        private IEnumerable<DirectoryChangeNotification> ReadNotifications(SafeHGlobalBuffer buffer, IoStatus status)
         {
             List<DirectoryChangeNotification> ns = new List<DirectoryChangeNotification>();
 
@@ -370,7 +370,7 @@ namespace NtApiDotNet
             {
                 var info = buffer.GetStructAtOffset<FileNotifyInformation>(offset);
                 var result = info.Result;
-                ns.Add(new DirectoryChangeNotification(info));
+                ns.Add(new DirectoryChangeNotification(FullPath, info));
                 if (result.NextEntryOffset == 0)
                 {
                     break;
@@ -380,7 +380,7 @@ namespace NtApiDotNet
             return ns.AsReadOnly();
         }
 
-        private static IEnumerable<DirectoryChangeNotificationExtended> ReadExtendedNotifications(SafeHGlobalBuffer buffer, IoStatus status)
+        private IEnumerable<DirectoryChangeNotificationExtended> ReadExtendedNotifications(SafeHGlobalBuffer buffer, IoStatus status)
         {
             List<DirectoryChangeNotificationExtended> ns = new List<DirectoryChangeNotificationExtended>();
 
@@ -392,7 +392,7 @@ namespace NtApiDotNet
             {
                 var info = buffer.GetStructAtOffset<FileNotifyExtendedInformation>(offset);
                 var result = info.Result;
-                ns.Add(new DirectoryChangeNotificationExtended(info));
+                ns.Add(new DirectoryChangeNotificationExtended(FullPath, info));
                 if (result.NextEntryOffset == 0)
                 {
                     break;

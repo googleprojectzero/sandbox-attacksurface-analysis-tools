@@ -1496,12 +1496,14 @@ namespace NtApiDotNet
     {
         public FileNotificationAction Action { get; }
         public string FileName { get; }
+        public string FullPath { get; }
 
-        internal DirectoryChangeNotification(SafeStructureInOutBuffer<FileNotifyInformation> buffer)
+        internal DirectoryChangeNotification(string base_path, SafeStructureInOutBuffer<FileNotifyInformation> buffer)
         {
             var info = buffer.Result;
             Action = info.Action;
             FileName = buffer.Data.ReadUnicodeString(info.FileNameLength / 2);
+            FullPath = Path.Combine(base_path, FileName);
         }
     }
 
@@ -1509,6 +1511,7 @@ namespace NtApiDotNet
     {
         public FileNotificationAction Action { get; }
         public string FileName { get; }
+        public string FullPath { get; }
         public DateTime CreationTime { get; }
         public DateTime LastModificationTime { get; }
         public DateTime LastChangeTime { get; }
@@ -1520,7 +1523,7 @@ namespace NtApiDotNet
         public long FileId { get; }
         public long ParentFileId { get; }
 
-        internal DirectoryChangeNotificationExtended(SafeStructureInOutBuffer<FileNotifyExtendedInformation> buffer)
+        internal DirectoryChangeNotificationExtended(string base_path, SafeStructureInOutBuffer<FileNotifyExtendedInformation> buffer)
         {
             var info = buffer.Result;
             Action = info.Action;
@@ -1535,6 +1538,7 @@ namespace NtApiDotNet
             FileId = info.FileId.QuadPart;
             ParentFileId = info.ParentFileId.QuadPart;
             FileName = buffer.Data.ReadUnicodeString(info.FileNameLength / 2);
+            FullPath = Path.Combine(base_path, FileName);
         }
     }
 
