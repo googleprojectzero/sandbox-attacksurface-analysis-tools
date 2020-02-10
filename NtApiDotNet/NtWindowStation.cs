@@ -25,7 +25,7 @@ namespace NtApiDotNet
     [NtType("WindowStation")]
     public class NtWindowStation : NtObjectWithDuplicate<NtWindowStation, WindowStationAccessRights>
     {
-        internal static IEnumerable<string> EnumNameList(SafeKernelObjectHandle handle)
+        private static IEnumerable<string> EnumNameList(SafeKernelObjectHandle handle)
         {
             int size = 522;
             for (int i = 0; i < 10; ++i)
