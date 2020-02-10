@@ -267,6 +267,20 @@ namespace NtApiDotNet
             DirectoryChangeNotifyFilter CompletionFilter,
             bool WatchTree
         );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtNotifyChangeDirectoryFileEx(
+            SafeKernelObjectHandle FileHandle,
+            SafeKernelObjectHandle Event,
+            IntPtr ApcRoutine,
+            IntPtr ApcContext,
+            SafeIoStatusBuffer IoStatusBlock,
+            SafeBuffer Buffer,
+            int BufferSize,
+            DirectoryChangeNotifyFilter CompletionFilter,
+            bool WatchTree,
+            DirectoryNotifyInformationClass DirectoryNotifyInformationClass
+        );
     }
 
     public static partial class NtRtl
@@ -1450,7 +1464,7 @@ namespace NtApiDotNet
         RenamedNewName = 5,
     }
 
-    [StructLayout(LayoutKind.Sequential), DataStart("FileName")]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), DataStart("FileName")]
     public struct FileNotifyInformation
     {
         public int NextEntryOffset;
@@ -1459,16 +1473,75 @@ namespace NtApiDotNet
         public char FileName;
     }
 
-    public class DirectoryChangeNotification
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode), DataStart("FileName")]
+    public struct FileNotifyExtendedInformation
+    {
+        public int NextEntryOffset;
+        public FileNotificationAction Action;
+        public LargeIntegerStruct CreationTime;
+        public LargeIntegerStruct LastModificationTime;
+        public LargeIntegerStruct LastChangeTime;
+        public LargeIntegerStruct LastAccessTime;
+        public LargeIntegerStruct AllocatedLength;
+        public LargeIntegerStruct FileSize;
+        public FileAttributes FileAttributes;
+        public int ReparsePointTag;
+        public LargeIntegerStruct FileId;
+        public LargeIntegerStruct ParentFileId;
+        public int FileNameLength;
+        public char FileName;
+    }
+
+    public sealed class DirectoryChangeNotification
     {
         public FileNotificationAction Action { get; }
         public string FileName { get; }
 
-        internal DirectoryChangeNotification(FileNotificationAction action, string file_name)
+        internal DirectoryChangeNotification(SafeStructureInOutBuffer<FileNotifyInformation> buffer)
         {
-            Action = action;
-            FileName = file_name;
+            var info = buffer.Result;
+            Action = info.Action;
+            FileName = buffer.Data.ReadUnicodeString(info.FileNameLength / 2);
         }
+    }
+
+    public sealed class DirectoryChangeNotificationExtended
+    {
+        public FileNotificationAction Action { get; }
+        public string FileName { get; }
+        public DateTime CreationTime { get; }
+        public DateTime LastModificationTime { get; }
+        public DateTime LastChangeTime { get; }
+        public DateTime LastAccessTime { get; }
+        public long AllocatedLength { get; }
+        public long FileSize { get; }
+        public FileAttributes FileAttributes { get; }
+        public ReparseTag ReparsePointTag { get; }
+        public long FileId { get; }
+        public long ParentFileId { get; }
+
+        internal DirectoryChangeNotificationExtended(SafeStructureInOutBuffer<FileNotifyExtendedInformation> buffer)
+        {
+            var info = buffer.Result;
+            Action = info.Action;
+            CreationTime = info.CreationTime.ToDateTime();
+            LastModificationTime = info.LastModificationTime.ToDateTime();
+            LastChangeTime = info.LastChangeTime.ToDateTime();
+            LastAccessTime = info.LastAccessTime.ToDateTime();
+            AllocatedLength = info.AllocatedLength.QuadPart;
+            FileSize = info.FileSize.QuadPart;
+            FileAttributes = info.FileAttributes;
+            ReparsePointTag = (ReparseTag)info.ReparsePointTag;
+            FileId = info.FileId.QuadPart;
+            ParentFileId = info.ParentFileId.QuadPart;
+            FileName = buffer.Data.ReadUnicodeString(info.FileNameLength / 2);
+        }
+    }
+
+    public enum DirectoryNotifyInformationClass
+    {
+        DirectoryNotifyInformation = 1,
+        DirectoryNotifyExtendedInformation = 2
     }
 
 #pragma warning restore 1591

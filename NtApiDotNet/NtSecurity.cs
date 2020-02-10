@@ -893,13 +893,7 @@ namespace NtApiDotNet
         /// <returns>The cached signing level.</returns>
         public static CachedSigningLevel GetCachedSigningLevel(SafeKernelObjectHandle handle)
         {
-            byte[] thumb_print = new byte[0x68];
-            int thumb_print_size = thumb_print.Length;
-
-            NtSystemCalls.NtGetCachedSigningLevel(handle, out int flags,
-                out SigningLevel signing_level, thumb_print, ref thumb_print_size, out HashAlgorithm thumb_print_algo).ToNtException();
-            Array.Resize(ref thumb_print, thumb_print_size);
-            return new CachedSigningLevel(flags, signing_level, thumb_print, thumb_print_algo);
+            return GetCachedSigningLevel(handle, true).Result;
         }
 
         /// <summary>

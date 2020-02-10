@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -35,6 +36,11 @@ namespace NtApiDotNet
         {
             QuadPart = value;
         }
+
+        internal DateTime ToDateTime()
+        {
+            return DateTime.FromFileTime(QuadPart);
+        }
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -46,6 +52,11 @@ namespace NtApiDotNet
         public int HighPart;
         [FieldOffset(0)]
         public long QuadPart;
+
+        internal DateTime ToDateTime()
+        {
+            return DateTime.FromFileTime(QuadPart);
+        }
     }
 #pragma warning restore 1591
 }

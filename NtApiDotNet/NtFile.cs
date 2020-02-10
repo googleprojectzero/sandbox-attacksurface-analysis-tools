@@ -370,7 +370,29 @@ namespace NtApiDotNet
             {
                 var info = buffer.GetStructAtOffset<FileNotifyInformation>(offset);
                 var result = info.Result;
-                ns.Add(new DirectoryChangeNotification(result.Action, info.Data.ReadUnicodeString(result.FileNameLength / 2)));
+                ns.Add(new DirectoryChangeNotification(info));
+                if (result.NextEntryOffset == 0)
+                {
+                    break;
+                }
+                offset += result.NextEntryOffset;
+            }
+            return ns.AsReadOnly();
+        }
+
+        private static IEnumerable<DirectoryChangeNotificationExtended> ReadExtendedNotifications(SafeHGlobalBuffer buffer, IoStatus status)
+        {
+            List<DirectoryChangeNotificationExtended> ns = new List<DirectoryChangeNotificationExtended>();
+
+            // Change buffer size to reflect what's in the buffer.
+            buffer.Initialize((uint)status.Information32);
+
+            int offset = 0;
+            while (offset < buffer.Length)
+            {
+                var info = buffer.GetStructAtOffset<FileNotifyExtendedInformation>(offset);
+                var result = info.Result;
+                ns.Add(new DirectoryChangeNotificationExtended(info));
                 if (result.NextEntryOffset == 0)
                 {
                     break;
@@ -2788,8 +2810,9 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the extended attributes of a file.
         /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The extended attributes, empty if no extended attributes.</returns>
-        public EaBuffer GetEa()
+        public NtResult<EaBuffer> GetEa(bool throw_on_error)
         {
             int ea_size = 1024;
             while (true)
@@ -2804,17 +2827,40 @@ namespace NtApiDotNet
                 }
                 else if (status.IsSuccess())
                 {
-                    return new EaBuffer(buffer);
+                    return new EaBuffer(buffer).CreateResult();
                 }
                 else if (status == NtStatus.STATUS_NO_EAS_ON_FILE)
                 {
-                    return new EaBuffer();
+                    return new EaBuffer().CreateResult();
                 }
                 else
                 {
-                    throw new NtException(status);
+                    return status.CreateResultFromError<EaBuffer>(throw_on_error);
                 }
             }
+        }
+
+        /// <summary>
+        /// Get the extended attributes of a file.
+        /// </summary>
+        /// <returns>The extended attributes, empty if no extended attributes.</returns>
+        public EaBuffer GetEa()
+        {
+            return GetEa(true).Result;
+        }
+
+        /// <summary>
+        /// Set the extended attributes for a file.
+        /// </summary>
+        /// <param name="ea">The EA buffer to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <remarks>This will add entries if they no longer exist, 
+        /// remove entries if the data is empty or update existing entires.</remarks>
+        public NtStatus SetEa(EaBuffer ea, bool throw_on_error)
+        {
+            byte[] ea_buffer = ea.ToByteArray();
+            IoStatus io_status = new IoStatus();
+            return NtSystemCalls.NtSetEaFile(Handle, io_status, ea_buffer, ea_buffer.Length).ToNtException(throw_on_error);
         }
 
         /// <summary>
@@ -2825,9 +2871,7 @@ namespace NtApiDotNet
         /// remove entries if the data is empty or update existing entires.</remarks>
         public void SetEa(EaBuffer ea)
         {
-            byte[] ea_buffer = ea.ToByteArray();
-            IoStatus io_status = new IoStatus();
-            NtSystemCalls.NtSetEaFile(Handle, io_status, ea_buffer, ea_buffer.Length).ToNtException();
+            SetEa(ea, true);
         }
 
         /// <summary>
@@ -2904,9 +2948,18 @@ namespace NtApiDotNet
         /// Get the cached signing level for a file.
         /// </summary>
         /// <returns>The cached signing level.</returns>
+        public NtResult<CachedSigningLevel> GetCachedSigningLevel(bool throw_on_error)
+        {
+            return NtSecurity.GetCachedSigningLevel(Handle, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get the cached signing level for a file.
+        /// </summary>
+        /// <returns>The cached signing level.</returns>
         public CachedSigningLevel GetCachedSigningLevel()
         {
-            return NtSecurity.GetCachedSigningLevel(Handle);
+            return GetCachedSigningLevel(true).Result;
         }
 
         /// <summary>
@@ -3356,12 +3409,112 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="completion_filter">The filter of events to watch for.</param>
         /// <param name="watch_subtree">True to watch all sub directories.</param>
-        /// <param name="token">Cancellation token.</param>
         /// <returns>The list of changes.</returns>
         public Task<IEnumerable<DirectoryChangeNotification>> GetChangeNotificationAsync(
             DirectoryChangeNotifyFilter completion_filter, bool watch_subtree)
         {
             return GetChangeNotificationAsync(completion_filter, watch_subtree, CancellationToken.None);
+        }
+
+
+        /// <summary>
+        /// Get extended change notifications.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of changes.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS3)]
+        public NtResult<IEnumerable<DirectoryChangeNotificationExtended>> GetChangeNotificationEx(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, bool throw_on_error)
+        {
+            using (NtAsyncResult result = new NtAsyncResult(this))
+            {
+                using (var buffer = new SafeHGlobalBuffer(8192))
+                {
+                    return result.CompleteCall(NtSystemCalls.NtNotifyChangeDirectoryFileEx(
+                        Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
+                        buffer, buffer.Length, completion_filter, watch_subtree, 
+                        DirectoryNotifyInformationClass.DirectoryNotifyExtendedInformation))
+                        .CreateResult(throw_on_error, () => ReadExtendedNotifications(buffer, result.IoStatusBuffer.Result));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get change notifications.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <returns>The list of changes.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS3)]
+        public IEnumerable<DirectoryChangeNotificationExtended> GetChangeNotificationEx(DirectoryChangeNotifyFilter completion_filter, bool watch_subtree)
+        {
+            return GetChangeNotificationEx(completion_filter, watch_subtree, true).Result;
+        }
+
+        /// <summary>
+        /// Get change notifications.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>The list of changes.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS3)]
+        public async Task<NtResult<IEnumerable<DirectoryChangeNotificationExtended>>> GetChangeNotificationExAsync(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, CancellationToken token, bool throw_on_error)
+        {
+            using (var buffer = new SafeHGlobalBuffer(8192))
+            {
+                var status = await RunFileCallAsync(result => NtSystemCalls.NtNotifyChangeDirectoryFileEx(
+                        Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
+                        buffer, buffer.Length, completion_filter, watch_subtree, 
+                        DirectoryNotifyInformationClass.DirectoryNotifyExtendedInformation), token, throw_on_error);
+                return status.Map(r => ReadExtendedNotifications(buffer, r));
+            }
+        }
+
+        /// <summary>
+        /// Get change notifications.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of changes.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS3)]
+        public Task<NtResult<IEnumerable<DirectoryChangeNotificationExtended>>> GetChangeNotificationExAsync(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, bool throw_on_error)
+        {
+            return GetChangeNotificationExAsync(completion_filter, watch_subtree, CancellationToken.None, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get change notifications.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>The list of changes.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS3)]
+        public async Task<IEnumerable<DirectoryChangeNotificationExtended>> GetChangeNotificationExAsync(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, CancellationToken token)
+        {
+            var result = await GetChangeNotificationExAsync(completion_filter, watch_subtree, token, true);
+            return result.Result;
+        }
+
+        /// <summary>
+        /// Get change notifications.
+        /// </summary>
+        /// <param name="completion_filter">The filter of events to watch for.</param>
+        /// <param name="watch_subtree">True to watch all sub directories.</param>
+        /// <returns>The list of changes.</returns>
+        [SupportedVersion(SupportedVersion.Windows10_RS3)]
+        public Task<IEnumerable<DirectoryChangeNotificationExtended>> GetChangeNotificationAsyncEx(
+            DirectoryChangeNotifyFilter completion_filter, bool watch_subtree)
+        {
+            return GetChangeNotificationExAsync(completion_filter, watch_subtree, CancellationToken.None);
         }
 
         /// <summary>
