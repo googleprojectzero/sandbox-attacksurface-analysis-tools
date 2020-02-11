@@ -90,7 +90,6 @@
         <TableHeaders>
           <TableColumnHeader>
             <Label>Name</Label>
-            <Width>40</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -114,12 +113,10 @@
         <TableHeaders>
           <TableColumnHeader>
             <Label>Name</Label>
-            <Width>40</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>Sid</Label>
-            <Width>30</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -256,17 +253,14 @@
         <TableHeaders>
           <TableColumnHeader>
             <Label>Name</Label>
-            <Width>30</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>Luid</Label>
-            <Width>20</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>Enabled</Label>
-            <Width>10</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -348,12 +342,10 @@
         <TableHeaders>
           <TableColumnHeader>
             <Label>Name</Label>
-            <Width>30</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>Attributes</Label>
-            <Width>30</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -403,13 +395,11 @@
       <TableControl>
         <TableHeaders>
           <TableColumnHeader>
-            <Label>Name</Label>
-            <Width>30</Width>
+            <Label>Atom</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>Atom</Label>
-            <Width>10</Width>
+            <Label>Name</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -417,11 +407,11 @@
           <TableRowEntry>
             <TableColumnItems>
               <TableColumnItem>
-                <PropertyName>Name</PropertyName>
-              </TableColumnItem>
-              <TableColumnItem>
                 <PropertyName>Atom</PropertyName>
                 <FormatString>X04</FormatString>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Name</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
@@ -506,27 +496,22 @@
         <TableHeaders>
           <TableColumnHeader>
             <Label>User</Label>
-            <Width>30</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>GroupCount</Label>
-            <Width>10</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>PrivilegeCount</Label>
-            <Width>10</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>AppContainer</Label>
-            <Width>10</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>Restricted</Label>
-            <Width>10</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -562,12 +547,10 @@
         <TableHeaders>
           <TableColumnHeader>
             <Label>Name</Label>
-            <Width>30</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>Target</Label>
-            <Width>40</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -594,12 +577,10 @@
         <TableHeaders>
           <TableColumnHeader>
             <Label>Name</Label>
-            <Width>30</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>NtTypeName</Label>
-            <Width>30</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -641,27 +622,22 @@
         <TableHeaders>
           <TableColumnHeader>
             <Label>ProcessId</Label>
-            <Width>10</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>Handle</Label>
-            <Width>10</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>ObjectType</Label>
-            <Width>30</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>Object</Label>
-            <Width>30</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>GrantedAccess</Label>
-            <Width>30</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -785,22 +761,18 @@
         <TableHeaders>
           <TableColumnHeader>
             <Label>Name</Label>
-            <Width>40</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>UiAccess</Label>
-            <Width>10</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>AutoElevate</Label>
-            <Width>15</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>ExecutionLevel</Label>
-            <Width>30</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -832,23 +804,19 @@
         <TableControl>
             <TableHeaders>
                 <TableColumnHeader>
-                    <Label>ProcessId</Label>
-                    <Width>10</Width>
+                    <Label>PID</Label>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
-                    <Label>ParentProcessId</Label>
-                    <Width>10</Width>
+                    <Label>PPID</Label>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
-                    <Label>ImageName</Label>
-                    <Width>40</Width>
+                    <Label>Name</Label>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>SessionId</Label>
-                    <Width>10</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
             </TableHeaders>
@@ -880,23 +848,19 @@
         <TableControl>
             <TableHeaders>
                 <TableColumnHeader>
-                    <Label>ThreadId</Label>
-                    <Width>10</Width>
+                    <Label>TID</Label>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
-                    <Label>ProcessId</Label>
-                    <Width>10</Width>
+                    <Label>PID</Label>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>ProcessName</Label>
-                    <Width>40</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>StartAddress</Label>
-                    <Width>40</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
             </TableHeaders>
@@ -930,27 +894,22 @@
             <TableHeaders>
                 <TableColumnHeader>
                     <Label>UUID</Label>
-                    <Width>36</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>Version</Label>
-                    <Width>8</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>Protocol</Label>
-                    <Width>8</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>Endpoint</Label>
-                    <Width>30</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>Annotation</Label>
-                    <Width>30</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
             </TableHeaders>
@@ -986,37 +945,30 @@
             <TableHeaders>
                 <TableColumnHeader>
                     <Label>Name</Label>
-                    <Width>10</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>UUID</Label>
-                    <Width>36</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
-                    <Label>Version</Label>
-                    <Width>8</Width>
+                    <Label>Ver</Label>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
-                    <Label>Procedures</Label>
-                    <Width>10</Width>
+                    <Label>Procs</Label>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
-                    <Label>Endpoints</Label>
-                    <Width>9</Width>
+                    <Label>EPs</Label>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>Service</Label>
-                    <Width>16</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>Running</Label>
-                    <Width>8</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
             </TableHeaders>
@@ -1058,17 +1010,14 @@
             <TableHeaders>
                 <TableColumnHeader>
                     <Label>Name</Label>
-                    <Width>30</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>Type</Label>
-                    <Width>10</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>DataObject</Label>
-                    <Width>40</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
             </TableHeaders>
@@ -1098,17 +1047,14 @@
             <TableHeaders>
                 <TableColumnHeader>
                     <Label>Status</Label>
-                    <Width>10</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>StatusName</Label>
-                    <Width>30</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>Message</Label>
-                    <Width>40</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
             </TableHeaders>
@@ -1139,27 +1085,22 @@
             <TableHeaders>
                 <TableColumnHeader>
                     <Label>DeviceType</Label>
-                    <Width>20</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>Function</Label>
-                    <Width>8</Width>
                     <Alignment>Right</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>Method</Label>
-                    <Width>10</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>Access</Label>
-                    <Width>12</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
                 <TableColumnHeader>
                     <Label>Name</Label>
-                    <Width>40</Width>
                     <Alignment>left</Alignment>
                 </TableColumnHeader>
             </TableHeaders>
@@ -1220,22 +1161,18 @@
         <TableHeaders>
           <TableColumnHeader>
             <Label>BaseAddress</Label>
-            <Width>18</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>Protection</Label>
-              <Width>11</Width>
               <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>Length</Label>
-            <Width>8</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>Path</Label>
-            <Width>40</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -1269,17 +1206,14 @@
         <TableHeaders>
           <TableColumnHeader>
             <Label>Name</Label>
-            <Width>40</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>Status</Label>
-              <Width>8</Width>
               <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>ProcessId</Label>
-            <Width>10</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -1309,17 +1243,14 @@
         <TableHeaders>
           <TableColumnHeader>
             <Label>Mask</Label>
-            <Width>10</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>Value</Label>
-            <Width>20</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>GenericAccess</Label>
-            <Width>30</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
