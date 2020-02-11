@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtApiDotNet.Forms;
 using NtApiDotNet.Win32;
 using System;
 using System.Collections.Generic;
@@ -49,33 +50,27 @@ namespace TokenViewer
             return item;
         }
 
-        private IEnumerable<ListViewItem> CreateThreads(NtProcess entry, NtToken process_token)
+        private IEnumerable<ListViewItem> CreateThreads(NtProcess query_process, NtToken process_token)
         {
             List<ListViewItem> ret = new List<ListViewItem>();
 
-            using (var query_process = entry.Duplicate(ProcessAccessRights.QueryInformation, false))
+            using (var threads = new DisposableList<NtThread>(query_process.GetThreads(ThreadAccessRights.MaximumAllowed)))
             {
-                if (!query_process.IsSuccess)
+                foreach (NtThread thread in threads.Where(t => t.IsAccessGranted(ThreadAccessRights.QueryLimitedInformation)))
                 {
-                    return ret;
-                }
-
-                using (var threads = new DisposableList<NtThread>(query_process.Result.GetThreads(ThreadAccessRights.QueryLimitedInformation)))
-                {
-                    foreach (NtThread thread in threads)
+                    using (var result = NtToken.OpenThreadToken(thread, true, TokenAccessRights.MaximumAllowed, false))
                     {
-                        using (var result = NtToken.OpenThreadToken(thread, true, TokenAccessRights.MaximumAllowed, false))
-                        {
-                            if (!result.IsSuccess)
-                                continue;
-                            var token = result.Result;
-                            ListViewItem item = new ListViewItem($"{entry.ProcessId} - {entry.Name}");
-                            item.SubItems.Add(thread.ThreadId.ToString());
-                            item.SubItems.Add(token.User.ToString());
-                            item.SubItems.Add(token.ImpersonationLevel.ToString());
-                            item.Tag = new ThreadTokenEntry(query_process.Result, process_token, thread.ThreadId, thread.Description, token);
-                            ret.Add(item);
-                        }
+                        if (!result.IsSuccess)
+                            continue;
+                        var token = result.Result;
+                        ListViewItem item = new ListViewItem($"{query_process.ProcessId} - {query_process.Name}");
+                        item.SubItems.Add(thread.ThreadId.ToString());
+                        item.SubItems.Add(token.User.ToString());
+                        item.SubItems.Add(token.ImpersonationLevel.ToString());
+                        item.Tag = new ThreadTokenEntry(query_process, process_token, 
+                            thread.ThreadId, thread.Description, token, 
+                            thread.GetSecurityDescriptor(SecurityInformation.AllBasic, false).GetResultOrDefault());
+                        ret.Add(item);
                     }
                 }
             }
@@ -114,9 +109,10 @@ namespace TokenViewer
             ClearList(listViewProcesses);
             ClearList(listViewThreads);
 
-            using (var list = new DisposableList<NtProcess>(NtProcess.GetProcesses(ProcessAccessRights.QueryLimitedInformation)))
+            using (var list = new DisposableList<NtProcess>(NtProcess.GetProcesses(ProcessAccessRights.MaximumAllowed)))
             {
-                List<NtProcess> processes = list.Where(p => !p.IsDeleting || showDeadProcesses).ToList();
+                List<NtProcess> processes = list.Where(p => !p.IsDeleting || showDeadProcesses)
+                    .Where(p => p.IsAccessGranted(ProcessAccessRights.QueryLimitedInformation)).ToList();
                 processes.Sort((a, b) => a.ProcessId - b.ProcessId);
 
                 using (var tokens = new DisposableList<NtToken>(processes.Select(p => GetToken(p))))
@@ -549,6 +545,57 @@ namespace TokenViewer
         {
             showDeadProcessesToolStripMenuItem.Checked = !showDeadProcessesToolStripMenuItem.Checked;
             RefreshProcessList(txtFilter.Text, checkBoxUnrestricted.Checked, showDeadProcessesToolStripMenuItem.Checked);
+        }
+
+        private void ShowProcessSecurity(ProcessTokenEntry process)
+        {
+            var viewer = new SecurityDescriptorViewerForm($"{process.Name}:{process.ProcessId}",
+                process.ProcessSecurity, NtType.GetTypeByType<NtProcess>(), false);
+            viewer.ShowDialog(this);
+        }
+
+        private void showProcessSecurityToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (listViewProcesses.SelectedItems.Count > 0)
+            {
+                if (listViewProcesses.SelectedItems[0].Tag is ProcessTokenEntry process)
+                {
+                    if (process.ProcessSecurity != null)
+                    {
+                        ShowProcessSecurity(process);
+                    }
+                }
+            }
+        }
+
+        private void showThreadSecurityToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (listViewThreads.SelectedItems.Count > 0)
+            {
+                if (listViewThreads.SelectedItems[0].Tag is ThreadTokenEntry thread)
+                {
+                    if (thread.ThreadSecurity != null)
+                    {
+                        var viewer = new SecurityDescriptorViewerForm($"{thread.Name}:{thread.ProcessId}.{thread.ThreadId}",
+                            thread.ThreadSecurity, NtType.GetTypeByType<NtThread>(), false);
+                        viewer.ShowDialog(this);
+                    }
+                }
+            }
+        }
+
+        private void showProcessSecurityToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            if (listViewThreads.SelectedItems.Count > 0)
+            {
+                if (listViewThreads.SelectedItems[0].Tag is ThreadTokenEntry thread)
+                {
+                    if (thread.ProcessSecurity != null)
+                    {
+                        ShowProcessSecurity(thread);
+                    }
+                }
+            }
         }
     }
 }

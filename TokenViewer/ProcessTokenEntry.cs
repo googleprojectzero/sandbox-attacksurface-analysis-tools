@@ -24,18 +24,23 @@ namespace TokenViewer
         public string ImagePath { get; }
         public string CommandLine { get; }
         public NtToken ProcessToken { get; private set; }
+        public SecurityDescriptor ProcessSecurity { get; }
 
-        public ProcessTokenEntry(int process_id, string name, string image_path, string command_line, NtToken process_token)
+        public ProcessTokenEntry(int process_id, string name, string image_path, 
+            string command_line, NtToken process_token, SecurityDescriptor process_security)
         {
             ProcessId = process_id;
             Name = name;
             ImagePath = image_path;
             CommandLine = command_line;
             ProcessToken = process_token.Duplicate();
+            ProcessSecurity = process_security;
         }
 
         public ProcessTokenEntry(NtProcess process, NtToken process_token)
-            : this(process.ProcessId, process.Name, process.Win32ImagePath, process.CommandLine, process_token)
+            : this(process.ProcessId, process.Name, process.Win32ImagePath, 
+                  process.CommandLine, process_token, 
+                  process.GetSecurityDescriptor(SecurityInformation.AllBasic, false).GetResultOrDefault())
         {
         }
 

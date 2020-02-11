@@ -21,14 +21,17 @@ namespace TokenViewer
         public string ThreadName { get; }
         public int ThreadId { get; }
         public NtToken ThreadToken { get; private set; }
+        public SecurityDescriptor ThreadSecurity { get; }
 
         public ThreadTokenEntry(NtProcess process, NtToken process_token,
-            int thread_id, string thread_name, NtToken thread_token)
+            int thread_id, string thread_name, NtToken thread_token,
+            SecurityDescriptor thread_security)
             : base(process, process_token)
         {
             ThreadName = thread_name;
             ThreadId = thread_id;
             ThreadToken = thread_token.Duplicate();
+            ThreadSecurity = thread_security;
         }
 
         public override void Dispose()

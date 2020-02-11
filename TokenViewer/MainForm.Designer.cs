@@ -81,6 +81,7 @@
             this.contextMenuStripProcesses = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.openTokenToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.refreshToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.showDeadProcessesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.contextMenuStripThreads = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.toolStripMenuItemOpenThreadToken = new System.Windows.Forms.ToolStripMenuItem();
             this.openProcessTokenToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -109,7 +110,9 @@
             this.contextMenuStripHandles = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.toolStripMenuItemHandlesOpenToken = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemHandlesRefresh = new System.Windows.Forms.ToolStripMenuItem();
-            this.showDeadProcessesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.showProcessSecurityToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.showThreadSecurityToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.showProcessSecurityToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             tabPageServices = new System.Windows.Forms.TabPage();
             groupBoxAnonymous = new System.Windows.Forms.GroupBox();
             groupBox2 = new System.Windows.Forms.GroupBox();
@@ -163,7 +166,7 @@
             tabPageServices.Controls.Add(groupBox1);
             tabPageServices.Location = new System.Drawing.Point(4, 22);
             tabPageServices.Name = "tabPageServices";
-            tabPageServices.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            tabPageServices.Padding = new System.Windows.Forms.Padding(3);
             tabPageServices.Size = new System.Drawing.Size(600, 397);
             tabPageServices.TabIndex = 4;
             tabPageServices.Text = "Services";
@@ -265,7 +268,7 @@
             tabPageGeneral.Controls.Add(groupBoxLogonUser);
             tabPageGeneral.Location = new System.Drawing.Point(4, 22);
             tabPageGeneral.Name = "tabPageGeneral";
-            tabPageGeneral.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            tabPageGeneral.Padding = new System.Windows.Forms.Padding(3);
             tabPageGeneral.Size = new System.Drawing.Size(600, 397);
             tabPageGeneral.TabIndex = 3;
             tabPageGeneral.Text = "Logon User";
@@ -289,7 +292,7 @@
             // 
             this.txtServiceSid.Enabled = false;
             this.txtServiceSid.Location = new System.Drawing.Point(118, 49);
-            this.txtServiceSid.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.txtServiceSid.Margin = new System.Windows.Forms.Padding(2);
             this.txtServiceSid.Name = "txtServiceSid";
             this.txtServiceSid.Size = new System.Drawing.Size(179, 20);
             this.txtServiceSid.TabIndex = 15;
@@ -299,7 +302,7 @@
             // 
             this.checkAddServiceSid.AutoSize = true;
             this.checkAddServiceSid.Location = new System.Drawing.Point(16, 51);
-            this.checkAddServiceSid.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.checkAddServiceSid.Margin = new System.Windows.Forms.Padding(2);
             this.checkAddServiceSid.Name = "checkAddServiceSid";
             this.checkAddServiceSid.Size = new System.Drawing.Size(102, 17);
             this.checkAddServiceSid.TabIndex = 14;
@@ -547,14 +550,15 @@
             this.contextMenuStripProcesses.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.openTokenToolStripMenuItem,
             this.refreshToolStripMenuItem,
-            this.showDeadProcessesToolStripMenuItem});
+            this.showDeadProcessesToolStripMenuItem,
+            this.showProcessSecurityToolStripMenuItem});
             this.contextMenuStripProcesses.Name = "contextMenuStripProcesses";
-            this.contextMenuStripProcesses.Size = new System.Drawing.Size(188, 92);
+            this.contextMenuStripProcesses.Size = new System.Drawing.Size(192, 92);
             // 
             // openTokenToolStripMenuItem
             // 
             this.openTokenToolStripMenuItem.Name = "openTokenToolStripMenuItem";
-            this.openTokenToolStripMenuItem.Size = new System.Drawing.Size(187, 22);
+            this.openTokenToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
             this.openTokenToolStripMenuItem.Text = "Open Token";
             this.openTokenToolStripMenuItem.Click += new System.EventHandler(this.openTokenToolStripMenuItem_Click);
             // 
@@ -562,9 +566,16 @@
             // 
             this.refreshToolStripMenuItem.Name = "refreshToolStripMenuItem";
             this.refreshToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F5;
-            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(187, 22);
+            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
             this.refreshToolStripMenuItem.Text = "Refresh";
             this.refreshToolStripMenuItem.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
+            // 
+            // showDeadProcessesToolStripMenuItem
+            // 
+            this.showDeadProcessesToolStripMenuItem.Name = "showDeadProcessesToolStripMenuItem";
+            this.showDeadProcessesToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.showDeadProcessesToolStripMenuItem.Text = "Show Dead Processes";
+            this.showDeadProcessesToolStripMenuItem.Click += new System.EventHandler(this.showDeadProcessesToolStripMenuItem_Click);
             // 
             // contextMenuStripThreads
             // 
@@ -572,21 +583,23 @@
             this.contextMenuStripThreads.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripMenuItemOpenThreadToken,
             this.openProcessTokenToolStripMenuItem,
+            this.showThreadSecurityToolStripMenuItem,
+            this.showProcessSecurityToolStripMenuItem1,
             this.toolStripMenuItemRefreshThreads});
             this.contextMenuStripThreads.Name = "contextMenuStripProcesses";
-            this.contextMenuStripThreads.Size = new System.Drawing.Size(181, 70);
+            this.contextMenuStripThreads.Size = new System.Drawing.Size(192, 136);
             // 
             // toolStripMenuItemOpenThreadToken
             // 
             this.toolStripMenuItemOpenThreadToken.Name = "toolStripMenuItemOpenThreadToken";
-            this.toolStripMenuItemOpenThreadToken.Size = new System.Drawing.Size(180, 22);
+            this.toolStripMenuItemOpenThreadToken.Size = new System.Drawing.Size(191, 22);
             this.toolStripMenuItemOpenThreadToken.Text = "Open Thread Token";
             this.toolStripMenuItemOpenThreadToken.Click += new System.EventHandler(this.toolStripMenuItemOpenThreadToken_Click);
             // 
             // openProcessTokenToolStripMenuItem
             // 
             this.openProcessTokenToolStripMenuItem.Name = "openProcessTokenToolStripMenuItem";
-            this.openProcessTokenToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.openProcessTokenToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
             this.openProcessTokenToolStripMenuItem.Text = "Open Process Token";
             this.openProcessTokenToolStripMenuItem.Click += new System.EventHandler(this.openProcessTokenToolStripMenuItem_Click);
             // 
@@ -594,7 +607,7 @@
             // 
             this.toolStripMenuItemRefreshThreads.Name = "toolStripMenuItemRefreshThreads";
             this.toolStripMenuItemRefreshThreads.ShortcutKeys = System.Windows.Forms.Keys.F5;
-            this.toolStripMenuItemRefreshThreads.Size = new System.Drawing.Size(180, 22);
+            this.toolStripMenuItemRefreshThreads.Size = new System.Drawing.Size(191, 22);
             this.toolStripMenuItemRefreshThreads.Text = "Refresh";
             this.toolStripMenuItemRefreshThreads.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
             // 
@@ -628,7 +641,7 @@
             this.tabPageSessions.Controls.Add(this.listViewSessions);
             this.tabPageSessions.Location = new System.Drawing.Point(4, 22);
             this.tabPageSessions.Name = "tabPageSessions";
-            this.tabPageSessions.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPageSessions.Padding = new System.Windows.Forms.Padding(3);
             this.tabPageSessions.Size = new System.Drawing.Size(600, 397);
             this.tabPageSessions.TabIndex = 6;
             this.tabPageSessions.Text = "Sessions";
@@ -669,7 +682,7 @@
             this.tabPageThreads.Controls.Add(this.listViewThreads);
             this.tabPageThreads.Location = new System.Drawing.Point(4, 22);
             this.tabPageThreads.Name = "tabPageThreads";
-            this.tabPageThreads.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPageThreads.Padding = new System.Windows.Forms.Padding(3);
             this.tabPageThreads.Size = new System.Drawing.Size(600, 397);
             this.tabPageThreads.TabIndex = 5;
             this.tabPageThreads.Text = "Threads";
@@ -720,7 +733,7 @@
             this.tabPageProcesses.Controls.Add(this.btnCurrentProcess);
             this.tabPageProcesses.Location = new System.Drawing.Point(4, 22);
             this.tabPageProcesses.Name = "tabPageProcesses";
-            this.tabPageProcesses.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPageProcesses.Padding = new System.Windows.Forms.Padding(3);
             this.tabPageProcesses.Size = new System.Drawing.Size(600, 397);
             this.tabPageProcesses.TabIndex = 2;
             this.tabPageProcesses.Text = "Processes";
@@ -809,7 +822,7 @@
             this.tabPageHandles.Controls.Add(this.listViewHandles);
             this.tabPageHandles.Location = new System.Drawing.Point(4, 22);
             this.tabPageHandles.Name = "tabPageHandles";
-            this.tabPageHandles.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPageHandles.Padding = new System.Windows.Forms.Padding(3);
             this.tabPageHandles.Size = new System.Drawing.Size(600, 397);
             this.tabPageHandles.TabIndex = 7;
             this.tabPageHandles.Text = "Handles";
@@ -877,12 +890,26 @@
             this.toolStripMenuItemHandlesRefresh.Text = "Refresh";
             this.toolStripMenuItemHandlesRefresh.Click += new System.EventHandler(this.btnRefreshHandles_Click);
             // 
-            // showDeadProcessesToolStripMenuItem
+            // showProcessSecurityToolStripMenuItem
             // 
-            this.showDeadProcessesToolStripMenuItem.Name = "showDeadProcessesToolStripMenuItem";
-            this.showDeadProcessesToolStripMenuItem.Size = new System.Drawing.Size(187, 22);
-            this.showDeadProcessesToolStripMenuItem.Text = "Show Dead Processes";
-            this.showDeadProcessesToolStripMenuItem.Click += new System.EventHandler(this.showDeadProcessesToolStripMenuItem_Click);
+            this.showProcessSecurityToolStripMenuItem.Name = "showProcessSecurityToolStripMenuItem";
+            this.showProcessSecurityToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.showProcessSecurityToolStripMenuItem.Text = "Show Process Security";
+            this.showProcessSecurityToolStripMenuItem.Click += new System.EventHandler(this.showProcessSecurityToolStripMenuItem_Click);
+            // 
+            // showThreadSecurityToolStripMenuItem
+            // 
+            this.showThreadSecurityToolStripMenuItem.Name = "showThreadSecurityToolStripMenuItem";
+            this.showThreadSecurityToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.showThreadSecurityToolStripMenuItem.Text = "Show Thread Security";
+            this.showThreadSecurityToolStripMenuItem.Click += new System.EventHandler(this.showThreadSecurityToolStripMenuItem_Click);
+            // 
+            // showProcessSecurityToolStripMenuItem1
+            // 
+            this.showProcessSecurityToolStripMenuItem1.Name = "showProcessSecurityToolStripMenuItem1";
+            this.showProcessSecurityToolStripMenuItem1.Size = new System.Drawing.Size(191, 22);
+            this.showProcessSecurityToolStripMenuItem1.Text = "Show Process Security";
+            this.showProcessSecurityToolStripMenuItem1.Click += new System.EventHandler(this.showProcessSecurityToolStripMenuItem1_Click);
             // 
             // MainForm
             // 
@@ -972,6 +999,9 @@
         private System.Windows.Forms.TextBox txtServiceSid;
         private System.Windows.Forms.CheckBox checkAddServiceSid;
         private System.Windows.Forms.ToolStripMenuItem showDeadProcessesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem showProcessSecurityToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem showThreadSecurityToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem showProcessSecurityToolStripMenuItem1;
     }
 }
 
