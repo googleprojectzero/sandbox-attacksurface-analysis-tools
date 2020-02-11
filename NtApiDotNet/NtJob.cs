@@ -379,10 +379,8 @@ namespace NtApiDotNet
         {
             get
             {
-                int mask = ((int)JobObjectCompletionPortMessageFilters.MaxMessage - 1) - 1;
-                int result = Query<int>(JobObjectInformationClass.JobObjectCompletionFilter);
-
-                return (JobObjectCompletionPortMessageFilters)(~result & mask);
+                return (JobObjectCompletionPortMessageFilters)Query<int>
+                    (JobObjectInformationClass.JobObjectCompletionFilter);
             }
 
             set

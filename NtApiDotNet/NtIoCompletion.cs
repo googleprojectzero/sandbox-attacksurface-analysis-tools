@@ -158,6 +158,22 @@ namespace NtApiDotNet
         #endregion
 
         #region Public Methods
+
+        /// <summary>
+        /// Remove a queued status from the queue.
+        /// </summary>
+        /// <param name="timeout">An optional timeout.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The completion result.</returns>
+        /// <exception cref="NtException">Thrown on error or timeout.</exception>
+        public NtResult<FileIoCompletionResult> Remove(NtWaitTimeout timeout, bool throw_on_error)
+        {
+            var io_status = new IoStatus();
+            return NtSystemCalls.NtRemoveIoCompletion(Handle, out IntPtr key_context,
+                out IntPtr apc_context, io_status, timeout.ToLargeInteger())
+                .CreateResult(throw_on_error, () => new FileIoCompletionResult(key_context, apc_context, io_status));
+        }
+
         /// <summary>
         /// Remove a queued status from the queue.
         /// </summary>
@@ -166,15 +182,25 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error or timeout.</exception>
         public FileIoCompletionResult Remove(NtWaitTimeout timeout)
         {
-            IntPtr key_context;
-            IntPtr apc_context;
+            return Remove(timeout, true).Result;
+        }
+
+        /// <summary>
+        /// Remove multiple queued status from the queue.
+        /// </summary>
+        /// <param name="max_count">Maximum number of status to remove.</param>
+        /// <param name="timeout">An optional timeout.</param>
+        /// <param name="alertable">Indicate whether the wait is alertable.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>Array of completion results. Length can be &lt;= max_count.</returns>
+        public NtResult<FileIoCompletionResult[]> Remove(int max_count, NtWaitTimeout timeout, bool alertable, bool throw_on_error)
+        {
             IoStatus io_status = new IoStatus();
-            NtStatus status = NtSystemCalls.NtRemoveIoCompletion(Handle, out key_context, out apc_context, io_status, timeout.ToLargeInteger()).ToNtException();
-            if (status != NtStatus.STATUS_SUCCESS)
-            {
-                throw new NtException(status);
-            }
-            return new FileIoCompletionResult(key_context, apc_context, io_status);
+            FileIoCompletionInformation[] result = new FileIoCompletionInformation[max_count];
+
+            return NtSystemCalls.NtRemoveIoCompletionEx(Handle, result, max_count,
+                out int result_count, timeout.ToLargeInteger(), alertable).CreateResult(throw_on_error, () =>
+                result.Take(result_count).Select(r => new FileIoCompletionResult(r)).ToArray());
         }
 
         /// <summary>
@@ -186,17 +212,7 @@ namespace NtApiDotNet
         /// <returns>Array of completion results. Length can be &lt;= max_count. If timeout then returns an empty array.</returns>
         public FileIoCompletionResult[] Remove(int max_count, NtWaitTimeout timeout, bool alertable)
         {
-            IoStatus io_status = new IoStatus();
-            FileIoCompletionInformation[] result = new FileIoCompletionInformation[max_count];
-            int result_count = 0;
-
-            NtStatus status = NtSystemCalls.NtRemoveIoCompletionEx(Handle, result, max_count,
-                out result_count, timeout.ToLargeInteger(), alertable).ToNtException();
-            if (status == NtStatus.STATUS_SUCCESS)
-            {
-                return result.Take(result_count).Select(r => new FileIoCompletionResult(r)).ToArray();
-            }
-            return new FileIoCompletionResult[0];
+            return Remove(max_count, timeout, alertable, false).GetResultOrDefault(new FileIoCompletionResult[0]);
         }
 
         /// <summary>
