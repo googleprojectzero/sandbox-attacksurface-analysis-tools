@@ -5692,3 +5692,96 @@ function Get-NtTypeAccess {
 
     $access | Write-Output
 }
+
+<#
+.SYNOPSIS
+Get an ATOM objects.
+.DESCRIPTION
+This cmdlet gets all ATOM objects or by name or atom.
+.PARAMETER Atom
+Specify the ATOM to get.
+.PARAMETER Name
+Specify the name of the ATOM to get.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.NtAtom
+#>
+function Get-NtAtom {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    Param(
+        [Parameter(Mandatory, ParameterSetName = "FromAtom")]
+        [uint16]$Atom,
+        [Parameter(Mandatory, Position=0, ParameterSetName = "FromName")]
+        [string]$Name
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "All" { [NtApiDotNet.NtAtom]::GetAtoms() | Write-Output }
+        "FromAtom" { [NtApiDotNet.NtAtom]::Open($Atom) | Write-Output }
+        "FromName" { [NtApiDotNet.NtAtom]::Find($Name) | Write-Output }
+    }
+}
+
+<#
+.SYNOPSIS
+Add a ATOM object.
+.DESCRIPTION
+This cmdlet adds an ATOM objects.
+.PARAMETER Name
+Specify the name of the ATOM to add.
+.PARAMETER Flags
+Specify the flags for the ATOM.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.NtAtom
+#>
+function Add-NtAtom {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, Position=0)]
+        [string]$Name,
+        [NtApiDotNet.AddAtomFlags]$Flags = 0
+    )
+
+    [NtApiDotNet.NtAtom]::Add($Name, $Flags) | Write-Output
+}
+
+<#
+.SYNOPSIS
+Removes an ATOM object.
+.DESCRIPTION
+This cmdlet removes an ATOM object by name or atom.
+.PARAMETER Object
+Specify the NtAtom object to remove.
+.PARAMETER Atom
+Specify the ATOM to remove.
+.PARAMETER Name
+Specify the name of the ATOM to remove.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Remove-NtAtom {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    Param(
+        [Parameter(Position=0, Mandatory, ParameterSetName = "FromObject")]
+        [NtApiDotNet.NtAtom]$Object,
+        [Parameter(Mandatory, ParameterSetName = "FromAtom")]
+        [uint16]$Atom,
+        [Parameter(Mandatory, Position=0, ParameterSetName = "FromName")]
+        [string]$Name
+    )
+
+    $obj = switch($PSCmdlet.ParameterSetName) {
+        "FromObject" { $Object }
+        "FromAtom" { Get-NtAtom -Atom $Atom }
+        "FromName" { Get-NtATom -Name $Name }
+    }
+
+    if ($obj -ne $null) {
+        $obj.Delete()
+    }
+}

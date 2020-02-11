@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -110,6 +111,54 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Query if the atom exists.
+        /// </summary>
+        /// <param name="atom">The atom to check.</param>
+        /// <returns>True if the atom exists.</returns>
+        public static bool Exists(ushort atom)
+        {
+            return new NtAtom(atom).GetName(false).IsSuccess;
+        }
+
+        /// <summary>
+        /// Open an atom by number.
+        /// </summary>
+        /// <param name="atom">The atom to open.</param>
+        /// <param name="check_exists">True to check atom exists.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The atom object.</returns>
+        public static NtResult<NtAtom> Open(ushort atom, bool check_exists, bool throw_on_error)
+        {
+            NtAtom ret = new NtAtom(atom);
+            if (check_exists)
+            {
+                return ret.GetName(false).Status.CreateResult(throw_on_error, () => ret);
+            }
+            return ret.CreateResult();
+        }
+
+        /// <summary>
+        /// Open an atom by number.
+        /// </summary>
+        /// <param name="atom">The atom to open.</param>
+        /// <param name="check_exists">True to check atom exists.</param>
+        /// <returns>The atom object.</returns>
+        public static NtAtom Open(ushort atom, bool check_exists)
+        {
+            return Open(atom, check_exists, true).Result;
+        }
+
+        /// <summary>
+        /// Open an atom by number.
+        /// </summary>
+        /// <param name="atom">The atom to open.</param>
+        /// <returns>The atom object.</returns>
+        public static NtAtom Open(ushort atom)
+        {
+            return Open(atom, true);
+        }
+
+        /// <summary>
         /// Enumerate all atoms.
         /// </summary>
         /// <returns>An enumeration of all atoms on the system.</returns>
@@ -126,13 +175,9 @@ namespace NtApiDotNet
                     {
                         AtomTableInformation table = buffer.Result;
                         IntPtr data = buffer.Data.DangerousGetHandle();
-                        for (int i = 0; i < table.NumberOfAtoms; ++i)
-                        {
-                            ushort atom = (ushort)Marshal.ReadInt16(data);
-                            yield return new NtAtom(atom);
-                            data += 2;
-                        }
-
+                        ushort[] atoms = new ushort[table.NumberOfAtoms];
+                        buffer.Data.ReadArray(0, atoms, 0, atoms.Length);
+                        return atoms.Select(a => new NtAtom(a));
                     }
                     else if (status != NtStatus.STATUS_INFO_LENGTH_MISMATCH)
                     {
@@ -141,6 +186,7 @@ namespace NtApiDotNet
                     size *= 2;
                 }
             }
+            return new NtAtom[0];
         }
         #endregion
 
@@ -162,6 +208,22 @@ namespace NtApiDotNet
         {
             Delete(true);
         }
+
+        /// <summary>
+        /// Get the name of the atom.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The name of the atom.</returns>
+        public NtResult<string> GetName(bool throw_on_error)
+        {
+            using (var buffer = new SafeStructureInOutBuffer<AtomBasicInformation>(2048, false))
+            {
+                return NtSystemCalls.NtQueryInformationAtom(Atom, AtomInformationClass.AtomBasicInformation,
+                     buffer, buffer.Length, out int return_length)
+                     .CreateResult(throw_on_error, () => buffer.Data.ReadUnicodeString(buffer.Result.NameLength / 2));
+            }
+        }
+
         #endregion
 
         #region Public Properties
@@ -175,20 +237,7 @@ namespace NtApiDotNet
         /// Get the name of the atom.
         /// </summary>
         /// <returns>The name of the atom</returns>
-        public string Name
-        {
-            get
-            {
-                using (var buffer = new SafeStructureInOutBuffer<AtomBasicInformation>(2048, false))
-                {
-                    NtSystemCalls.NtQueryInformationAtom(Atom, AtomInformationClass.AtomBasicInformation,
-                         buffer, buffer.Length, out int return_length).ToNtException();
-                    AtomBasicInformation basic_info = buffer.Result;
-
-                    return buffer.Data.ReadUnicodeString(basic_info.NameLength / 2);
-                }
-            }
-        }
+        public string Name => GetName(true).Result;
 
         #endregion
     }
