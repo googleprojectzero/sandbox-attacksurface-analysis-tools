@@ -391,6 +391,11 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// The count of completions for the job.
+        /// </summary>
+        public int CompletionCounter => Query<int>(JobObjectInformationClass.JobObjectCompletionCounter);
+
+        /// <summary>
         /// Get or set the Maximum Bandwith NetRate limitation.
         /// </summary>
         [SupportedVersion(SupportedVersion.Windows10)]
