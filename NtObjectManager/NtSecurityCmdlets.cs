@@ -200,6 +200,18 @@ namespace NtApiDotNet
         public SwitchParameter NewLogon { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify protected type for Trust SID.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "trust")]
+        public ProcessTrustType TrustType { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify level for Trust SID.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "trust")]
+        public ProcessTrustLevel TrustLevel { get; set; }
+
+        /// <summary>
         /// <para type="description">Output the SID in SDDL format.</para>
         /// </summary>
         [Parameter]
@@ -282,6 +294,9 @@ namespace NtApiDotNet
                     break;
                 case "logon":
                     sid = NtSecurity.GetLogonSessionSid();
+                    break;
+                case "trust":
+                    sid = new Sid(SecurityAuthority.ProcessTrust, (uint)TrustType, (uint)TrustLevel);
                     break;
                 default:
                     throw new ArgumentException("No SID type specified");

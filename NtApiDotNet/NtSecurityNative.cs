@@ -724,6 +724,34 @@ namespace NtApiDotNet
             [Out] OptionalGuid DynamicId,
             [Out] PsPkgClaim PkgClaim,
             OptionalInt64 AttributesPresent);
+
+        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+        public static extern NtStatus RtlSidDominates(
+            [Out] byte[] Sid1,
+            [Out] byte[] Sid2,
+            [MarshalAs(UnmanagedType.U1)] out bool Dominates
+        );
+
+        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+        public static extern NtStatus RtlSidDominatesForTrust(
+            [Out] byte[] Sid1,
+            [Out] byte[] Sid2,
+            [MarshalAs(UnmanagedType.U1)] out bool DominatesTrust
+        );
+
+        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+        public static extern NtStatus RtlSidEqualLevel(
+            [Out] byte[] Sid1,
+            [Out] byte[] Sid2,
+            [MarshalAs(UnmanagedType.U1)] out bool EqualLevel
+        );
+
+        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
+        public static extern NtStatus RtlSidIsHigherLevel(
+            [Out] byte[] Sid1,
+            [Out] byte[] Sid2,
+            [MarshalAs(UnmanagedType.U1)] out bool HigherLevel
+        );
     }
 
     public static partial class NtSystemCalls
@@ -1054,6 +1082,23 @@ namespace NtApiDotNet
         public ushort AclSize;
         public ushort AceCount;
         public ushort Sbz2;
+    }
+
+    public enum ProcessTrustType : uint
+    {
+        None = 0,
+        ProtectedLight = 512,
+        Protected = 1024,
+    }
+
+    public enum ProcessTrustLevel : uint
+    {
+        None = 0,
+        Authenticode = 1024,
+        AntiMalware = 1536,
+        App = 2048,
+        Windows = 4096,
+        WinTcb = 8192
     }
 
 #pragma warning restore 1591

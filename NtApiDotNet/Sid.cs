@@ -354,5 +354,49 @@ namespace NtApiDotNet
                 return NtSecurity.GetNameForSid(this).Name;
             }
         }
+
+        /// <summary>
+        /// Does this SID dominate another.
+        /// </summary>
+        /// <param name="sid">The other SID.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True if the sid dominates.</returns>
+        public NtResult<bool> Dominates(Sid sid, bool throw_on_error)
+        {
+            return NtRtl.RtlSidDominates(ToArray(), sid.ToArray(), 
+                out bool result).CreateResult(throw_on_error, () => result);
+        }
+
+        /// <summary>
+        /// Does this SID dominate another.
+        /// </summary>
+        /// <param name="sid">The other SID.</param>
+        /// <returns>True if the sid dominates.</returns>
+        public bool Dominates(Sid sid)
+        {
+            return Dominates(sid, true).Result;
+        }
+
+        /// <summary>
+        /// Does this SID dominate another for trust.
+        /// </summary>
+        /// <param name="sid">The other SID.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True if the sid dominates.</returns>
+        public NtResult<bool> DominatesForTrust(Sid sid, bool throw_on_error)
+        {
+            return NtRtl.RtlSidDominatesForTrust(ToArray(), sid.ToArray(),
+                out bool result).CreateResult(throw_on_error, () => result);
+        }
+
+        /// <summary>
+        /// Does this SID dominate another for trust.
+        /// </summary>
+        /// <param name="sid">The other SID.</param>
+        /// <returns>True if the sid dominates.</returns>
+        public bool DominatesForTrust(Sid sid)
+        {
+            return DominatesForTrust(sid, true).Result;
+        }
     }
 }

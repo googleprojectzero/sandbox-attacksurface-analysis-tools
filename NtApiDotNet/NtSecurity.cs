@@ -123,50 +123,7 @@ namespace NtApiDotNet
                 return null;
             }
 
-            string protection_type;
-            switch (trust_sid.SubAuthorities[0])
-            {
-                case 0:
-                    protection_type = "None";
-                    break;
-                case 512:
-                    protection_type = "ProtectedLight";
-                    break;
-                case 1024:
-                    protection_type = "Protected";
-                    break;
-                default:
-                    protection_type = $"Protected-{trust_sid.SubAuthorities[0]}";
-                    break;
-            }
-
-            string protection_level;
-            switch (trust_sid.SubAuthorities[1])
-            {
-                case 0:
-                    protection_level = "None";
-                    break;
-                case 1024:
-                    protection_level = "Authenticode";
-                    break;
-                case 1536:
-                    protection_level = "AntiMalware";
-                    break;
-                case 2048:
-                    protection_level = "App";
-                    break;
-                case 4096:
-                    protection_level = "Windows";
-                    break;
-                case 8192:
-                    protection_level = "WinTcb";
-                    break;
-                default:
-                    protection_level = trust_sid.SubAuthorities[1].ToString();
-                    break;
-            }
-
-            return $"{protection_type}-{protection_level}";
+            return $"{(ProcessTrustType)trust_sid.SubAuthorities[0]}-{(ProcessTrustLevel)trust_sid.SubAuthorities[1]}";
         }
 
         /// <summary>
