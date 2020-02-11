@@ -13,10 +13,7 @@
 //  limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32
 {
@@ -53,15 +50,57 @@ namespace NtApiDotNet.Win32
     public sealed class EventTraceLog : IDisposable
     {
         private readonly long _handle;
+        private readonly SafeBuffer _properties;
 
-        internal EventTraceLog(long handle)
+        internal EventTraceLog(long handle, Guid session_guid, string session_name, SafeHGlobalBuffer properties)
         {
             _handle = handle;
+            SessionGuid = session_guid;
+            SessionName = session_name;
+            _properties = properties.Detach();
         }
 
-        void IDisposable.Dispose()
+        /// <summary>
+        /// Get allocated session GUID.
+        /// </summary>
+        public Guid SessionGuid { get; }
+
+        /// <summary>
+        /// Get name of the session.
+        /// </summary>
+        public string SessionName { get; }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        private void Dispose(bool disposing)
         {
-            
+            if (!disposedValue && !_properties.IsClosed)
+            {
+                disposedValue = true;
+                var status = Win32NativeMethods.ControlTrace(_handle, null,
+                    _properties, EventTraceControl.Stop);
+                System.Diagnostics.Debug.WriteLine($"{status}");
+                _properties?.Dispose();
+            }
         }
+
+        /// <summary>
+        /// Finalizer.
+        /// </summary>
+         ~EventTraceLog()
+        {
+            Dispose(false);
+        }
+
+        /// <summary>
+        /// Dispose the event trace log.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion
     }
 }

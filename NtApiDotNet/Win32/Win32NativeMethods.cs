@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Ndr;
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -293,6 +294,74 @@ namespace NtApiDotNet.Win32
         public ushort Reserved2;
     }
 
+    [Flags]
+    public enum LogFileModeFlags : uint
+    {
+        None = 0,
+        Sequential = 0x00000001,
+        Circular = 0x00000002,
+        Append = 0x00000004,
+        NewFile = 0x00000008,
+        Preallocate = 0x00000020,
+        NonStoppable = 0x00000040,
+        Secure = 0x00000080,
+        RealTime = 0x00000100,
+        DelayOpen = 0x00000200,
+        Buffering = 0x00000400,
+        PrivateLogger = 0x00000800,
+        AddHeader = 0x00001000,
+        UseKBytesForSize = 0x00002000,
+        UseGlobalSequence = 0x00004000,
+        UseLocalSequence = 0x00008000,
+        Relog = 0x00010000,
+        PrivateInProc = 0x00020000,
+        Reserved = 0x00100000,
+        UsePagedMember = 0x01000000,
+        NoPerProcessorBuffering = 0x10000000,
+        SystemLogger = 0x02000000,
+        AddToTriageDump = 0x80000000,
+        StopOnHybridShutdown = 0x00400000,
+        PersistOnHybridShutdown = 0x00800000,
+        IndependentSession = 0x08000000,
+        Compressed = 0x04000000,
+    }
+
+    [Flags]
+    internal enum WNodeFlags
+    {
+        None = 0,
+        AllData = 0x00000001,
+        SingleInstance = 0x00000002,
+        SingleItem = 0x00000004,
+        EventItem = 0x00000008,
+        FixedInstanceSize = 0x00000010,
+        TooSmall = 0x00000020,
+        InstancesSame = 0x00000040,
+        StaticInstanceNames = 0x00000080,
+        Internal = 0x00000100,
+        UseTimestamp = 0x00000200,
+        PersistEvent = 0x00000400,
+        Reference = 0x00002000,
+        AnsiInstanceNames = 0x00004000,
+        MethodItem = 0x00008000,
+        PDOInstanceNames = 0x00010000,
+        TracedGuid = 0x00020000,
+        LogWNode = 0x00040000,
+        UseGuidPtr = 0x00080000,
+        UseMofPtr = 0x00100000,
+        NoHeader = 0x00200000,
+        SendDataBlock = 0x00400000,
+        VersionedProperties = 0x00800000,
+    }
+
+    public enum WNodeClientContext
+    {
+        Default = 0,
+        QPC = 1,
+        SystemTime = 2,
+        CpuCycleCounter = 3
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct WNODE_HEADER
     {
@@ -301,8 +370,8 @@ namespace NtApiDotNet.Win32
         public ulong HistoricalContext;
         public LargeIntegerStruct TimeStamp;
         public Guid Guid;
-        public uint ClientContext;
-        public uint Flags;
+        public WNodeClientContext ClientContext;
+        public WNodeFlags Flags;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -313,7 +382,7 @@ namespace NtApiDotNet.Win32
         public int MinimumBuffers;
         public int MaximumBuffers;
         public int MaximumFileSize;
-        public int LogFileMode;
+        public LogFileModeFlags LogFileMode;
         public int FlushTimer;
         public int EnableFlags;
         public int AgeLimit;
@@ -326,6 +395,47 @@ namespace NtApiDotNet.Win32
         public IntPtr LoggerThreadId;
         public int LogFileNameOffset;
         public int LoggerNameOffset;
+
+        public SafeHGlobalBuffer ToBuffer(string log_file, string logger_name)
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+
+            if (log_file != null)
+            {
+                writer.Write(Encoding.Unicode.GetBytes(log_file + "\0"));
+            }
+            else
+            {
+                stm.Position = 1024;
+            }
+
+            int name_offset = (int)stm.Position;
+
+            if (logger_name != null)
+            {
+                writer.Write(Encoding.Unicode.GetBytes(logger_name + "\0"));
+            }
+            else
+            {
+                stm.Position += 1024;
+            }
+
+            byte[] data = stm.ToArray();
+
+            int total_size = Marshal.SizeOf(typeof(EVENT_TRACE_PROPERTIES)) + data.Length;
+            Guid guid = Guid.NewGuid();
+
+            Wnode.BufferSize = total_size;
+            LoggerNameOffset = Marshal.SizeOf(typeof(EVENT_TRACE_PROPERTIES));
+            LogFileNameOffset = LoggerNameOffset + name_offset;
+
+            using (var buffer = this.ToBuffer(data.Length, true))
+            {
+                buffer.Data.WriteBytes(stm.ToArray());
+                return buffer.Detach();
+            }
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -372,6 +482,14 @@ namespace NtApiDotNet.Win32
         TraceMaxPmcCounterQuery
     }
 
+    internal enum EventTraceControl
+    {
+        Query = 0,
+        Stop = 1,
+        Update = 2,
+        Flush = 3
+    }
+
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     internal delegate bool EnumResTypeProc(IntPtr hModule, IntPtr lpszType, IntPtr lParam);
 
@@ -391,8 +509,6 @@ namespace NtApiDotNet.Win32
           ref EVENT_FILTER_DESCRIPTOR FilterData,
           IntPtr CallbackContext
         );
-
-    
 
     internal static class Win32NativeMethods
     {
@@ -930,14 +1046,22 @@ namespace NtApiDotNet.Win32
                 ref int pBufferSize
         );
 
-        [DllImport("advap32.dll", CharSet = CharSet.Unicode)]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern Win32Error StartTrace(
             out long SessionHandle,
-            out string SessionName,
+            string SessionName,
             SafeBuffer Properties // EVENT_TRACE_PROPERTIES
         );
 
-        [DllImport("advap32.dll", CharSet = CharSet.Unicode)]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error ControlTrace(
+          long TraceHandle,
+          string InstanceName,
+          SafeBuffer Properties, // EVENT_TRACE_PROPERTIES
+          EventTraceControl ControlCode
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern Win32Error EnableTraceEx2(
           long TraceHandle,
           ref Guid ProviderId,

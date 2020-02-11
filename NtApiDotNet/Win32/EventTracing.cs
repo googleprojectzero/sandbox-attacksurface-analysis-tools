@@ -76,6 +76,54 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Stop a trace by name.
+        /// </summary>
+        /// <param name="session_name">The name of the trace to stop.</param>
+        /// <returns>The Win32 error code.</returns>
+        public static Win32Error StopTrace(string session_name)
+        {
+            return Win32NativeMethods.ControlTrace(0, session_name,
+                SafeHGlobalBuffer.Null, EventTraceControl.Stop);
+        }
+
+        /// <summary>
+        /// Start an event trace log.
+        /// </summary>
+        /// <param name="logfile">The path to the log file.</param>
+        /// <param name="session_guid">Session GUID.</param>
+        /// <param name="session_name">The name of the logging session.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The event trace log.</returns>
+        public static NtResult<EventTraceLog> Start(string logfile, Guid session_guid, string session_name, bool throw_on_error)
+        {
+            EVENT_TRACE_PROPERTIES properties = new EVENT_TRACE_PROPERTIES();
+            properties.Wnode.Flags = WNodeFlags.TracedGuid;
+            properties.Wnode.ClientContext = WNodeClientContext.QPC;
+            properties.Wnode.Guid = session_guid;
+            properties.LogFileMode = LogFileModeFlags.Sequential;
+            properties.MaximumFileSize = 1;
+            
+            using (var buffer = properties.ToBuffer(logfile, session_name))
+            {
+                return Win32NativeMethods.StartTrace(out long handle, session_name, buffer).
+                    MapDosErrorToStatus().CreateResult(throw_on_error, () 
+                    => new EventTraceLog(handle, session_guid, session_name, buffer));
+            }
+        }
+
+        /// <summary>
+        /// Start an event trace log.
+        /// </summary>
+        /// <param name="logfile">The path to the log file.</param>
+        /// <param name="session_guid">Session GUID.</param>
+        /// <param name="session_name">The name of the logging session.</param>
+        /// <returns>The event trace log.</returns>
+        public static EventTraceLog Start(string logfile, Guid session_guid, string session_name)
+        {
+            return Start(logfile, session_guid, session_name, true).Result;
+        }
+
+        /// <summary>
         /// Register an event trace with a specific GUID.
         /// </summary>
         /// <param name="guid">The event trace GUID.</param>
