@@ -76,17 +76,6 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
-        /// Stop a trace by name.
-        /// </summary>
-        /// <param name="session_name">The name of the trace to stop.</param>
-        /// <returns>The Win32 error code.</returns>
-        public static Win32Error StopTrace(string session_name)
-        {
-            return Win32NativeMethods.ControlTrace(0, session_name,
-                SafeHGlobalBuffer.Null, EventTraceControl.Stop);
-        }
-
-        /// <summary>
         /// Start an event trace log.
         /// </summary>
         /// <param name="logfile">The path to the log file.</param>

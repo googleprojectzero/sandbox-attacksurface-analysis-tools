@@ -401,17 +401,6 @@ namespace NtApiDotNet.Win32
             MemoryStream stm = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(stm);
 
-            if (log_file != null)
-            {
-                writer.Write(Encoding.Unicode.GetBytes(log_file + "\0"));
-            }
-            else
-            {
-                stm.Position = 1024;
-            }
-
-            int name_offset = (int)stm.Position;
-
             if (logger_name != null)
             {
                 writer.Write(Encoding.Unicode.GetBytes(logger_name + "\0"));
@@ -421,14 +410,24 @@ namespace NtApiDotNet.Win32
                 stm.Position += 1024;
             }
 
+            int file_offset = (int)stm.Position;
+
+            if (log_file != null)
+            {
+                writer.Write(Encoding.Unicode.GetBytes(log_file + "\0"));
+            }
+            else
+            {
+                stm.Position = 1024;
+            }
+
+
             byte[] data = stm.ToArray();
 
             int total_size = Marshal.SizeOf(typeof(EVENT_TRACE_PROPERTIES)) + data.Length;
-            Guid guid = Guid.NewGuid();
-
             Wnode.BufferSize = total_size;
             LoggerNameOffset = Marshal.SizeOf(typeof(EVENT_TRACE_PROPERTIES));
-            LogFileNameOffset = LoggerNameOffset + name_offset;
+            LogFileNameOffset = LoggerNameOffset + file_offset;
 
             using (var buffer = this.ToBuffer(data.Length, true))
             {
