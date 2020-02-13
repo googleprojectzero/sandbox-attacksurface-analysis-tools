@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -326,6 +327,23 @@ namespace NtApiDotNet.Win32
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct ImageExportDirectory
+    {
+        public uint Characteristics;
+        public uint TimeDateStamp;
+        public ushort MajorVersion;
+        public ushort MinorVersion;
+        public int Name;
+        public int Base;
+        public int NumberOfFunctions;
+        public int NumberOfNames;
+        public int AddressOfFunctions;     // RVA from base of image
+        public int AddressOfNames;     // RVA from base of image
+        public int AddressOfNameOrdinals;  // RVA from base of image
+    }
+
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct ImageSectionHeader
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
@@ -343,6 +361,46 @@ namespace NtApiDotNet.Win32
         public string GetName()
         {
             return Encoding.UTF8.GetString(Name).TrimEnd('\0');
+        }
+    }
+
+    /// <summary>
+    /// Single DLL export extry.
+    /// </summary>
+    public class DllExport
+    {
+        /// <summary>
+        /// The name of the export. If an ordinal this is #ORD.
+        /// </summary>
+        public string Name { get; }
+        /// <summary>
+        /// The ordinal number.
+        /// </summary>
+        public int Ordinal { get; }
+        /// <summary>
+        /// Address of the exported entry. Can be 0 if a forwarded function.
+        /// </summary>
+        public long Address { get; }
+        /// <summary>
+        /// Name of the forwarder, if used.
+        /// </summary>
+        public string Forwarder { get; }
+
+        internal DllExport(string name, int ordinal, long address, string forwarder)
+        {
+            Name = name ?? $"#{ordinal}";
+            Ordinal = ordinal;
+            Address = address;
+            Forwarder = forwarder;
+        }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The name of the export.</returns>
+        public override string ToString()
+        {
+            return Name;
         }
     }
 
@@ -548,7 +606,7 @@ namespace NtApiDotNet.Win32
         /// <remarks>This will take a reference on the library, you should dispose the handle after use.</remarks>
         public static SafeLoadLibraryHandle GetModuleHandle(IntPtr address)
         {
-            if (Win32NativeMethods.GetModuleHandleEx(Win32NativeMethods.GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, 
+            if (Win32NativeMethods.GetModuleHandleEx(Win32NativeMethods.GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
                 address, out SafeLoadLibraryHandle ret))
             {
                 return ret;
@@ -596,11 +654,20 @@ namespace NtApiDotNet.Win32
             }
         }
 
+        const ushort IMAGE_DIRECTORY_ENTRY_EXPORT = 0;
         const ushort IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT = 13;
 
         private IntPtr RvaToVA(long rva)
         {
-            return new IntPtr(GetBasePointer().ToInt64() + rva);
+            if (MappedAsImage)
+            {
+                return new IntPtr(GetBasePointer().ToInt64() + rva);
+            }
+            else
+            {
+                return Win32NativeMethods.ImageRvaToVa(GetHeaderPointer(GetBasePointer()),
+                    GetBasePointer(), (int)rva, IntPtr.Zero);
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -703,6 +770,68 @@ namespace NtApiDotNet.Win32
             return new ReadOnlyDictionary<IntPtr, IntPtr>(_delayed_imports);
         }
 
+        private void ParseExports()
+        {
+            _exports = new List<DllExport>();
+            try
+            {
+                IntPtr exports = Win32NativeMethods.ImageDirectoryEntryToDataEx(handle, MappedAsImage,
+                    IMAGE_DIRECTORY_ENTRY_EXPORT, out int size, out IntPtr header_ptr);
+                if (exports == IntPtr.Zero)
+                {
+                    return;
+                }
+
+                SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(exports, size, false);
+                ImageExportDirectory export_directory = buffer.Read<ImageExportDirectory>(0);
+                if (export_directory.NumberOfFunctions == 0)
+                {
+                    return;
+                }
+                IntPtr funcs = RvaToVA(export_directory.AddressOfFunctions);
+                IntPtr names = RvaToVA(export_directory.AddressOfNames);
+                IntPtr name_ordinals = RvaToVA(export_directory.AddressOfNameOrdinals);
+
+                long export_base = buffer.DangerousGetHandle().ToInt64();
+                long export_top = export_base + buffer.Length;
+
+                int[] func_rvas = new int[export_directory.NumberOfFunctions];
+                Marshal.Copy(funcs, func_rvas, 0, func_rvas.Length);
+                IntPtr[] func_vas = func_rvas.Select(r => r != 0 ? RvaToVA(r) : IntPtr.Zero).ToArray();
+
+                int[] name_rvas = new int[export_directory.NumberOfNames];
+                Marshal.Copy(names, name_rvas, 0, name_rvas.Length);
+                IntPtr[] name_vas = name_rvas.Select(r => r != 0 ? RvaToVA(r) : IntPtr.Zero).ToArray();
+
+                short[] ordinals = new short[export_directory.NumberOfNames];
+                Marshal.Copy(name_ordinals, ordinals, 0, ordinals.Length);
+
+                Dictionary<int, string> ordinal_to_names = new Dictionary<int, string>();
+                for (int i = 0; i < name_vas.Length; ++i)
+                {
+                    string name = Marshal.PtrToStringAnsi(name_vas[i]);
+                    int ordinal = ordinals[i];
+                    ordinal_to_names[ordinal] = name;
+                }
+
+                for(int i = 0; i < func_vas.Length; ++i)
+                {
+                    string forwarder = string.Empty;
+                    long func_va = func_vas[i].ToInt64();
+                    if (func_va >= export_base && func_va < export_top)
+                    {
+                        forwarder = Marshal.PtrToStringAnsi(func_vas[i]);
+                        func_va = 0;
+                    }
+                    _exports.Add(new DllExport(ordinal_to_names.ContainsKey(i) ? ordinal_to_names[i] : null, 
+                        i + export_directory.Base, func_va, forwarder));
+                }
+            }
+            catch
+            {
+            }
+        }
+
         private IntPtr GetHeaderPointer(IntPtr base_ptr)
         {
             IntPtr header_ptr = Win32NativeMethods.ImageNtHeader(base_ptr);
@@ -747,6 +876,7 @@ namespace NtApiDotNet.Win32
         private int _image_entry_point;
         private bool _is_64bit;
         private DllCharacteristics _dll_characteristics;
+        private List<DllExport> _exports;
 
         private void SetupValues()
         {
@@ -771,12 +901,12 @@ namespace NtApiDotNet.Win32
 
             ImageNtHeaders header = (ImageNtHeaders)Marshal.PtrToStructure(header_ptr, typeof(ImageNtHeaders));
             var buffer = header_ptr + Marshal.SizeOf(header) + header.FileHeader.SizeOfOptionalHeader;
-            ImageSectionHeader[] section_headers = new ImageSectionHeader[header.FileHeader.NumberOfSections];
             int header_size = Marshal.SizeOf(typeof(ImageSectionHeader));
             for (int i = 0; i < header.FileHeader.NumberOfSections; ++i)
             {
                 ImageSectionHeader section = (ImageSectionHeader)Marshal.PtrToStructure(buffer + i * header_size, typeof(ImageSectionHeader));
-                _image_sections.Add(new ImageSection(section, MappedAsImage, base_ptr));
+                ImageSection sect = new ImageSection(section, MappedAsImage, base_ptr);
+                _image_sections.Add(sect);
             }
 
             IImageOptionalHeader optional_header = GetOptionalHeader(header_ptr);
@@ -847,6 +977,22 @@ namespace NtApiDotNet.Win32
             {
                 SetupValues();
                 return _dll_characteristics;
+            }
+        }
+
+        /// <summary>
+        /// Get exports from the DLL.
+        /// </summary>
+        public IEnumerable<DllExport> Exports
+        {
+            get
+            {
+                if (_exports == null)
+                {
+                    ParseExports();
+                }
+
+                return _exports.AsReadOnly();
             }
         }
 

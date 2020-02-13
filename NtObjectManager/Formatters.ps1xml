@@ -1369,22 +1369,18 @@
         <TableHeaders>
           <TableColumnHeader>
             <Label>Handle</Label>
-            <Width>8</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>ProcessId</Label>
-            <Width>9</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>ThreadId</Label>
-            <Width>8</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>ClassName</Label>
-            <Width>40</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -1402,6 +1398,43 @@
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>ClassName</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <View>
+      <Name>DllExport</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.Win32.DllExport</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Ordinal</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Address</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Ordinal</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>if ($_.Address -eq 0) { $_.Forwarder } else { "0x{0:X}" -f $_.Address }</ScriptBlock>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

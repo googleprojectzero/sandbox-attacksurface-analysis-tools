@@ -620,8 +620,19 @@ namespace NtApiDotNet.Win32
         internal static extern IntPtr ImageDirectoryEntryToData(IntPtr Base, bool MappedAsImage, ushort DirectoryEntry, out int Size);
 
         [DllImport("dbghelp.dll", SetLastError = true)]
+        internal static extern IntPtr ImageDirectoryEntryToDataEx(IntPtr Base, bool MappedAsImage, ushort DirectoryEntry, out int Size, out IntPtr FoundHeader);
+
+        [DllImport("dbghelp.dll", SetLastError = true)]
         internal static extern IntPtr ImageNtHeader(
             IntPtr Base
+        );
+
+        [DllImport("dbghelp.dll", SetLastError = true)]
+        internal static extern IntPtr ImageRvaToVa(
+          IntPtr NtHeaders,
+          IntPtr Base,
+          int Rva,
+          IntPtr LastRvaSection
         );
 
         internal const int GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS = 0x00000004;
