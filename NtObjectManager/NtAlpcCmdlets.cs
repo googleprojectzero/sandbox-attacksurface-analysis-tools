@@ -29,7 +29,7 @@ namespace NtObjectManager
     ///   <para>Connect to an ALPC object with an absolute path.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet("Connect", "NtAlpcClient", DefaultParameterSetName = "SidCheck")]
+    [Cmdlet(VerbsCommunications.Connect, "NtAlpcClient", DefaultParameterSetName = "SidCheck")]
     [OutputType(typeof(NtAlpcClient))]
     public class ConnectNtAlpcClient : NtObjectBaseCmdlet
     {
@@ -143,7 +143,7 @@ namespace NtObjectManager
     ///   <para>Reject a connection on an ALPC server port.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet("Connect", "NtAlpcServer")]
+    [Cmdlet(VerbsCommunications.Connect, "NtAlpcServer")]
     [OutputType(typeof(NtAlpcServer))]
     public class ConnectNtAlpcServer : NtObjectBaseNoPathCmdlet
     {
@@ -468,7 +468,7 @@ namespace NtObjectManager
     ///   <para>Send a message on a port from a byte array.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet("Send", "NtAlpcMessage", DefaultParameterSetName = "FromMsg")]
+    [Cmdlet(VerbsCommunications.Send, "NtAlpcMessage", DefaultParameterSetName = "FromMsg")]
     [OutputType(typeof(AlpcMessage))]
     public class SendNtAlpcMessage : PSCmdlet
     {
@@ -571,7 +571,7 @@ namespace NtObjectManager
     ///   <para>Receive a message of up to 80 bytes.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet("Receive", "NtAlpcMessage")]
+    [Cmdlet(VerbsCommunications.Receive, "NtAlpcMessage")]
     public class ReceiveNtAlpcMessage : PSCmdlet
     {
         /// <summary>

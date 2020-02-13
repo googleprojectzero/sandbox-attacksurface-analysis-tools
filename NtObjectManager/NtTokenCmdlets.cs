@@ -1115,7 +1115,7 @@ namespace NtObjectManager
     ///   <code>Test-NtToken -Token $token -PassThru</code>
     ///   <para>Impersonates the token and passes through the impersonated token.</para>
     /// </example>
-    [Cmdlet("Test", "NtToken")]
+    [Cmdlet(VerbsDiagnostic.Test, "NtToken")]
     public sealed class TestNtTokenImpersonation : PSCmdlet
     {
         /// <summary>

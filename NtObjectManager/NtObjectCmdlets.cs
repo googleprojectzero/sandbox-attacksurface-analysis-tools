@@ -499,7 +499,7 @@ namespace NtObjectManager
     ///   <para>Select Name and CommandLine from a list of processes and dispose of the list afterwards.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet("Use", "NtObject")]
+    [Cmdlet(VerbsOther.Use, "NtObject")]
     public sealed class UseNtObjectCmdlet : Cmdlet, IDisposable
     {
         /// <summary>

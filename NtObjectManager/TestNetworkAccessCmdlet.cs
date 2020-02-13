@@ -45,7 +45,7 @@ namespace NtObjectManager
     ///   <code>Test-NetworkAccess -HostName www.google.com -Port 80 -Token $token</code>
     ///   <para>Test network access for a specified token to www.google.com:80.</para>
     /// </example>
-    [Cmdlet("Test", "NetworkAccess", DefaultParameterSetName = "ForConnect")]
+    [Cmdlet(VerbsDiagnostic.Test, "NetworkAccess", DefaultParameterSetName = "ForConnect")]
     public class TestNetworkAccessCmdlet : PSCmdlet
     {
         private NtProcess GetProcess()

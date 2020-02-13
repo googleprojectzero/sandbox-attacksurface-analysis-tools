@@ -91,7 +91,7 @@ namespace NtObjectManager
     ///   <code>Compare-RpcServer -Server $old -CompareServer $new</code>
     ///   <para>Compare a list of old servers in $old with ones in $new.</para>
     /// </example>
-    [Cmdlet("Compare", "RpcServer")]
+    [Cmdlet(VerbsData.Compare, "RpcServer")]
     [OutputType(typeof(CompareRpcServerResult))]
     public class CompareRpcServerCmdlet : PSCmdlet
     {

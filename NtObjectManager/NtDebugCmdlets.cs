@@ -254,7 +254,7 @@ namespace NtObjectManager
     ///   <para>Continue a previous event with an explicit continue state for the event and wait indefinitely for a debug event to be returned.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet("Start", "NtDebugWait", DefaultParameterSetName = "time")]
+    [Cmdlet(VerbsLifecycle.Start, "NtDebugWait", DefaultParameterSetName = "time")]
     [OutputType(typeof(DebugEvent))]
     public sealed class StartNtDebugWait : GetNtWaitTimeout
     {

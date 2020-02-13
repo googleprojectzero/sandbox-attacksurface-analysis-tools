@@ -123,7 +123,7 @@ namespace NtObjectManager
     ///   <para>Get a list of events and wait 100 seconds for all events to be signalled.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet("Start", "NtWait")]
+    [Cmdlet(VerbsLifecycle.Start, "NtWait")]
     [OutputType(typeof(NtStatus))]
     public class StartNtWait : GetNtWaitTimeout
     {
