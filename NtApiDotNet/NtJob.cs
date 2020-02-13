@@ -239,8 +239,8 @@ namespace NtApiDotNet
         {
             if (flags.HasFlag(JobObjectLimitFlags.Application))
             {
-                return SetExtendedExtendedLimitInformation(i => {
-                    i.ExtendedLimitInformation.BasicLimitInformation.LimitFlags = flags;
+                return SetExtendedLimitInformationV2(i => {
+                    i.BasicLimitInformation.LimitFlags = flags;
                     return i;
                 }, throw_on_error);
             }
@@ -393,7 +393,7 @@ namespace NtApiDotNet
         /// <summary>
         /// The count of completions for the job.
         /// </summary>
-        public int CompletionCounter => Query<int>(JobObjectInformationClass.JobObjectCompletionCounter);
+        public long CompletionCounter => Query<long>(JobObjectInformationClass.JobObjectCompletionCounter);
 
         /// <summary>
         /// Get or set the Maximum Bandwith NetRate limitation.
@@ -454,6 +454,21 @@ namespace NtApiDotNet
             set => SetUiRestrictionFlags(value);
         }
 
+        /// <summary>
+        /// ID of container.
+        /// </summary>
+        public Guid ContainerId => Query<JobObjectContainerIdentifierV2>(JobObjectInformationClass.JobObjectContainerId).ContainerId;
+
+        /// <summary>
+        /// ID of container telemetry.
+        /// </summary>
+        public Guid ContainerTelemetryId => Query<JobObjectContainerIdentifierV2>(JobObjectInformationClass.JobObjectContainerId).ContainerTelemetryId;
+
+        /// <summary>
+        /// Job ID.
+        /// </summary>
+        public int JobId => Query<JobObjectContainerIdentifierV2>(JobObjectInformationClass.JobObjectContainerId).JobId;
+
         #endregion
 
         #region Private Members
@@ -510,7 +525,7 @@ namespace NtApiDotNet
             return SetLimitInformation(JobObjectInformationClass.JobObjectExtendedLimitInformation, set_limit, throw_on_error);
         }
 
-        private NtStatus SetExtendedExtendedLimitInformation(Func<JobObjectExtendedExtendedLimitInformation, JobObjectExtendedExtendedLimitInformation> set_limit, bool throw_on_error)
+        private NtStatus SetExtendedLimitInformationV2(Func<JobObjectExtendedLimitInformationV2, JobObjectExtendedLimitInformationV2> set_limit, bool throw_on_error)
         {
             return SetLimitInformation(JobObjectInformationClass.JobObjectExtendedLimitInformation, set_limit, throw_on_error);
         }

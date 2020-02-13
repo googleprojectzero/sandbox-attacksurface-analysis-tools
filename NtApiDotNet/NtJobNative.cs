@@ -197,11 +197,15 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct JobObjectExtendedExtendedLimitInformation
+    public struct JobObjectExtendedLimitInformationV2
     {
-        public JobObjectExtendedLimitInformation ExtendedLimitInformation;
-        public int Unknown1;
-        public int Unknown2;
+        public JobObjectBasicLimitInformation BasicLimitInformation;
+        public IoCounters IoInfo;
+        public IntPtr ProcessMemoryLimit;
+        public IntPtr JobMemoryLimit;
+        public IntPtr PeakProcessMemoryUsed;
+        public IntPtr PeakJobMemoryUsed;
+        public IntPtr JobTotalMemoryLimit;
     }
 
     [Flags]
@@ -241,6 +245,33 @@ namespace NtApiDotNet
         GlobalAtoms = 0x20,
         Desktop = 0x40,
         ExitWindows = 0x80
+    }
+
+    [Flags]
+    public enum JobObjectFreezeFlags
+    {
+        None = 0,
+        FreezeOperation = 1,
+        FilterOperation = 2,
+        SwapOperation = 4,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct JobObjectFreezeInformation
+    {
+        public JobObjectFreezeFlags Flags;
+        [MarshalAs(UnmanagedType.U1)] public bool Freeze;
+        [MarshalAs(UnmanagedType.U1)] public bool Swap;
+        public uint HighEdgeFilter;
+        public uint LowEdgeFilter;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct JobObjectContainerIdentifierV2
+    {
+        public Guid ContainerId;
+        public Guid ContainerTelemetryId;
+        public int JobId;
     }
 
     public static partial class NtSystemCalls
