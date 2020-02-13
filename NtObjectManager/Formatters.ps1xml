@@ -1412,11 +1412,11 @@
       <TableControl>
         <TableHeaders>
           <TableColumnHeader>
-            <Label>Name</Label>
+            <Label>Ordinal</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>Ordinal</Label>
+            <Label>Name</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
@@ -1428,10 +1428,10 @@
           <TableRowEntry>
             <TableColumnItems>
               <TableColumnItem>
-                <PropertyName>Name</PropertyName>
+                <PropertyName>Ordinal</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>Ordinal</PropertyName>
+                <PropertyName>Name</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
                 <ScriptBlock>if ($_.Address -eq 0) { $_.Forwarder } else { "0x{0:X}" -f $_.Address }</ScriptBlock>
