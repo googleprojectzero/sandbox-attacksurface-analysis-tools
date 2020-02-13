@@ -342,6 +342,33 @@ namespace NtApiDotNet.Win32
         public int AddressOfNameOrdinals;  // RVA from base of image
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ImageImportDescriptor
+    {
+        public int Characteristics;            // 0 for terminating null import descriptor
+        public int TimeDateStamp;                  // 0 if not bound,
+                                          // -1 if bound, and real date\time stamp
+                                          //     in IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT (new BIND)
+                                          // O.W. date/time stamp of DLL bound to (Old BIND)
+
+        public int ForwarderChain;                 // -1 if no forwarders
+        public int Name;
+        public int FirstThunk;                     // RVA to IAT (if bound this IAT has actual addresses)
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ImageDelayImportDescriptor
+    {
+        public uint Characteristics;
+        public int szName;
+        public int phmod;
+        public int pIAT;
+        public int pINT;
+        public int pBoundIAT;
+        public int pUnloadIAT;
+        public uint dwTimeStamp;
+    }
+
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct ImageSectionHeader
@@ -365,7 +392,7 @@ namespace NtApiDotNet.Win32
     }
 
     /// <summary>
-    /// Single DLL export extry.
+    /// Single DLL export entry.
     /// </summary>
     public class DllExport
     {
@@ -398,6 +425,76 @@ namespace NtApiDotNet.Win32
         /// Overridden ToString method.
         /// </summary>
         /// <returns>The name of the export.</returns>
+        public override string ToString()
+        {
+            return Name;
+        }
+    }
+
+    /// <summary>
+    /// Single DLL import.
+    /// </summary>
+    public class DllImport
+    {
+        /// <summary>
+        /// The name of the DLL importing from.
+        /// </summary>
+        public string DllName { get; }
+        /// <summary>
+        /// List of DLL imported functions.
+        /// </summary>
+        public IEnumerable<DllImportFunction> Functions { get; }
+        /// <summary>
+        /// Could of functions
+        /// </summary>
+        public int FunctionCount { get; }
+        /// <summary>
+        /// True of the imports are delay loaded.
+        /// </summary>
+        public bool DelayLoaded { get; }
+
+        internal DllImport(string dll_name, bool delay_loaded, List<DllImportFunction> funcs)
+        {
+            DllName = dll_name;
+            Functions = funcs.AsReadOnly();
+            FunctionCount = funcs.Count;
+            DelayLoaded = delay_loaded;
+        }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The DLL name and count.</returns>
+        public override string ToString()
+        {
+            return $"{DllName}: {FunctionCount} imports";
+        }
+    }
+
+    /// <summary>
+    /// Single DLL import function.
+    /// </summary>
+    public class DllImportFunction
+    {
+        /// <summary>
+        /// The name of the imported function. If an ordinal this is #ORD.
+        /// </summary>
+        public string Name { get; }
+        /// <summary>
+        /// Address of the imported function. Can be 0 if not a bound DLL.
+        /// </summary>
+        public long Address { get; }
+        
+        internal DllImportFunction(string name, long address)
+        {
+            Name = name;
+            Address = address;
+        }
+
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The name of the imported function.</returns>
         public override string ToString()
         {
             return Name;
@@ -632,7 +729,7 @@ namespace NtApiDotNet.Win32
         {
             if (!Win32NativeMethods.GetModuleHandleEx(
                 Win32NativeMethods.GET_MODULE_HANDLE_EX_FLAG_PIN,
-                name, out SafeLoadLibraryHandle ret))
+                name, out _))
             {
                 throw new SafeWin32Exception();
             }
@@ -648,13 +745,14 @@ namespace NtApiDotNet.Win32
             if (!Win32NativeMethods.GetModuleHandleEx(
                            Win32NativeMethods.GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS
                            | Win32NativeMethods.GET_MODULE_HANDLE_EX_FLAG_PIN,
-                            address, out SafeLoadLibraryHandle ret))
+                            address, out _))
             {
                 throw new SafeWin32Exception();
             }
         }
 
         const ushort IMAGE_DIRECTORY_ENTRY_EXPORT = 0;
+        const ushort IMAGE_DIRECTORY_ENTRY_IMPORT = 1;
         const ushort IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT = 13;
 
         private IntPtr RvaToVA(long rva)
@@ -670,20 +768,7 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        struct IMAGE_DELAY_IMPORT_DESCRIPTOR
-        {
-            public uint Characteristics;
-            public int szName;
-            public int phmod;
-            public int pIAT;
-            public int pINT;
-            public int pBoundIAT;
-            public int pUnloadIAT;
-            public uint dwTimeStamp;
-        }
-
-        private void ParseDelayedImport(Dictionary<IntPtr, IntPtr> imports, IMAGE_DELAY_IMPORT_DESCRIPTOR desc)
+        private void ParseDelayedImport(Dictionary<IntPtr, IntPtr> imports, ImageDelayImportDescriptor desc)
         {
             if (desc.pIAT == 0 || desc.pINT == 0)
             {
@@ -696,7 +781,7 @@ namespace NtApiDotNet.Win32
 
             try
             {
-                using (SafeLoadLibraryHandle lib = SafeLoadLibraryHandle.LoadLibrary(name))
+                using (SafeLoadLibraryHandle lib = LoadLibrary(name))
                 {
                     IntPtr import_name_rva = Marshal.ReadIntPtr(INT);
 
@@ -751,11 +836,11 @@ namespace NtApiDotNet.Win32
             }
 
             int i = 0;
-            int desc_size = Marshal.SizeOf(typeof(IMAGE_DELAY_IMPORT_DESCRIPTOR));
+            int desc_size = Marshal.SizeOf(typeof(ImageDelayImportDescriptor));
             // Should really only do up to sizeof image delay import desc
             while (i <= (size - desc_size))
             {
-                IMAGE_DELAY_IMPORT_DESCRIPTOR desc = (IMAGE_DELAY_IMPORT_DESCRIPTOR)Marshal.PtrToStructure(delayed_imports, typeof(IMAGE_DELAY_IMPORT_DESCRIPTOR));
+                ImageDelayImportDescriptor desc = (ImageDelayImportDescriptor)Marshal.PtrToStructure(delayed_imports, typeof(ImageDelayImportDescriptor));
                 if (desc.szName == 0)
                 {
                     break;
@@ -832,6 +917,82 @@ namespace NtApiDotNet.Win32
             }
         }
 
+        private string ReadImportName(long lookup)
+        {
+            if (lookup < 0)
+            {
+                return $"#{lookup & 0xFFFF}";
+            }
+            else
+            {
+                IntPtr lookup_va = RvaToVA(lookup & 0x7FFFFFFF);
+                return Marshal.PtrToStringAnsi(lookup_va + 2);
+            }
+        }
+
+        private DllImport ParseSingleImport(ImageImportDescriptor import_desc, bool is_64bit, bool delay_loaded)
+        {
+            string dll_name = Marshal.PtrToStringAnsi(RvaToVA(import_desc.Name));
+            List<DllImportFunction> funcs = new List<DllImportFunction>();
+            IntPtr lookup_table = RvaToVA(import_desc.Characteristics);
+            IntPtr iat_table = RvaToVA(import_desc.FirstThunk);
+            int ofs = 0;
+            while (true)
+            {
+                long lookup;
+                long iat_func;
+                if (is_64bit)
+                {
+                    lookup = Marshal.ReadInt64(lookup_table + ofs);
+                    iat_func = Marshal.ReadInt64(iat_table + ofs);
+                    ofs += 8;
+                }
+                else
+                {
+                    lookup = Marshal.ReadInt32(lookup_table + ofs);
+                    iat_func = Marshal.ReadInt32(iat_table + ofs);
+                    ofs += 4;
+                }
+                if (lookup == 0)
+                {
+                    break;
+                }
+
+                funcs.Add(new DllImportFunction(ReadImportName(lookup), lookup == iat_func ? 0 : iat_func));
+            }
+
+            return new DllImport(dll_name, delay_loaded, funcs);
+        }
+
+        private void ParseImports()
+        {
+            _imports = new List<DllImport>();
+            try
+            {
+                IntPtr imports = Win32NativeMethods.ImageDirectoryEntryToData(handle, MappedAsImage,
+                    IMAGE_DIRECTORY_ENTRY_IMPORT, out int size);
+                if (imports == IntPtr.Zero)
+                {
+                    return;
+                }
+
+                bool is_64bit = GetOptionalHeader(GetHeaderPointer(GetBasePointer())).GetMagic() == IMAGE_NT_OPTIONAL_HDR_MAGIC.HDR64;
+
+                SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(imports, size, false);
+                ulong ofs = 0;
+                ImageImportDescriptor import_desc = buffer.Read<ImageImportDescriptor>(ofs);
+                while (import_desc.Characteristics != 0)
+                {
+                    _imports.Add(ParseSingleImport(buffer, import_desc, is_64bit));
+                    ofs += (ulong)Marshal.SizeOf(typeof(ImageImportDescriptor));
+                    import_desc = buffer.Read<ImageImportDescriptor>(ofs);
+                }
+            }
+            catch
+            {
+            }
+        }
+
         private IntPtr GetHeaderPointer(IntPtr base_ptr)
         {
             IntPtr header_ptr = Win32NativeMethods.ImageNtHeader(base_ptr);
@@ -877,6 +1038,7 @@ namespace NtApiDotNet.Win32
         private bool _is_64bit;
         private DllCharacteristics _dll_characteristics;
         private List<DllExport> _exports;
+        private List<DllImport> _imports;
 
         private void SetupValues()
         {
@@ -993,6 +1155,22 @@ namespace NtApiDotNet.Win32
                 }
 
                 return _exports.AsReadOnly();
+            }
+        }
+
+        /// <summary>
+        /// Get imports from the DLL.
+        /// </summary>
+        public IEnumerable<DllImport> Imports
+        {
+            get
+            {
+                if (_imports == null)
+                {
+                    ParseImports();
+                }
+
+                return _imports.AsReadOnly();
             }
         }
 
