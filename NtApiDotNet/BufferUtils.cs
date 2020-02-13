@@ -170,6 +170,28 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Read a NUL terminated ANSI string for the byte offset.
+        /// </summary>
+        /// <param name="buffer">The buffer to read from.</param>
+        /// <param name="byte_offset">The byte offset to read from.</param>
+        /// <returns>The string read from the buffer without the NUL terminator</returns>
+        public static string ReadNulTerminatedAnsiString(SafeBuffer buffer, ulong byte_offset)
+        {
+            List<char> chars = new List<char>();
+            while (byte_offset < buffer.ByteLength)
+            {
+                char c = (char)buffer.Read<byte>(byte_offset);
+                if (c == 0)
+                {
+                    break;
+                }
+                chars.Add(c);
+                byte_offset += 2;
+            }
+            return new string(chars.ToArray());
+        }
+
+        /// <summary>
         /// Read a char array with length.
         /// </summary>
         /// <param name="buffer">The buffer to read from.</param>

@@ -111,6 +111,25 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Read a NUL terminated ANSI string for the byte offset.
+        /// </summary>
+        /// <param name="byte_offset">The byte offset to read from.</param>
+        /// <returns>The string read from the buffer without the NUL terminator</returns>
+        public string ReadNulTerminatedAnsiString(ulong byte_offset)
+        {
+            return BufferUtils.ReadNulTerminatedAnsiString(this, byte_offset);
+        }
+
+        /// <summary>
+        /// Read a NUL terminated ANSI string
+        /// </summary>
+        /// <returns>The string read from the buffer without the NUL terminator</returns>
+        public string ReadNulTerminatedAnsiString()
+        {
+            return ReadNulTerminatedAnsiString(0);
+        }
+
+        /// <summary>
         /// Read a unicode string from the buffer.
         /// </summary>
         /// <param name="byte_offset">The offset into the buffer to read.</param>
