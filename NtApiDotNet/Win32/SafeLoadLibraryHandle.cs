@@ -484,11 +484,16 @@ namespace NtApiDotNet.Win32
         /// Address of the imported function. Can be 0 if not a bound DLL.
         /// </summary>
         public long Address { get; }
+        /// <summary>
+        /// Ordinal of import, if imported by ordinal. -1 if not.
+        /// </summary>
+        public int Ordinal { get; }
         
-        internal DllImportFunction(string name, long address)
+        internal DllImportFunction(string name, long address, int ordinal)
         {
             Name = name;
             Address = address;
+            Ordinal = ordinal;
         }
 
         /// <summary>
@@ -917,25 +922,31 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private string ReadImportName(long lookup)
+        private DllImportFunction ReadImport(long lookup, long iat_func)
         {
+            string name;
+            int ordinal = -1;
+
             if (lookup < 0)
             {
-                return $"#{lookup & 0xFFFF}";
+                ordinal = (int)(lookup & 0xFFFF);
+                name = $"#{ordinal}";
             }
             else
             {
                 IntPtr lookup_va = RvaToVA(lookup & 0x7FFFFFFF);
-                return Marshal.PtrToStringAnsi(lookup_va + 2);
+                name = Marshal.PtrToStringAnsi(lookup_va + 2);
             }
+
+            return new DllImportFunction(name, lookup == iat_func ? 0 : iat_func, ordinal);
         }
 
-        private DllImport ParseSingleImport(ImageImportDescriptor import_desc, bool is_64bit, bool delay_loaded)
+        private DllImport ParseSingleImport(int name_rva, int lookup_rva, int iat_rva, bool is_64bit, bool delay_loaded)
         {
-            string dll_name = Marshal.PtrToStringAnsi(RvaToVA(import_desc.Name));
+            string dll_name = Marshal.PtrToStringAnsi(RvaToVA(name_rva));
             List<DllImportFunction> funcs = new List<DllImportFunction>();
-            IntPtr lookup_table = RvaToVA(import_desc.Characteristics);
-            IntPtr iat_table = RvaToVA(import_desc.FirstThunk);
+            IntPtr lookup_table = RvaToVA(lookup_rva);
+            IntPtr iat_table = RvaToVA(iat_rva);
             int ofs = 0;
             while (true)
             {
@@ -958,15 +969,14 @@ namespace NtApiDotNet.Win32
                     break;
                 }
 
-                funcs.Add(new DllImportFunction(ReadImportName(lookup), lookup == iat_func ? 0 : iat_func));
+                funcs.Add(ReadImport(lookup, iat_func));
             }
 
             return new DllImport(dll_name, delay_loaded, funcs);
         }
 
-        private void ParseImports()
+        private void ParseNormalImports(bool is_64bit)
         {
-            _imports = new List<DllImport>();
             try
             {
                 IntPtr imports = Win32NativeMethods.ImageDirectoryEntryToData(handle, MappedAsImage,
@@ -976,14 +986,12 @@ namespace NtApiDotNet.Win32
                     return;
                 }
 
-                bool is_64bit = GetOptionalHeader(GetHeaderPointer(GetBasePointer())).GetMagic() == IMAGE_NT_OPTIONAL_HDR_MAGIC.HDR64;
-
                 SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(imports, size, false);
                 ulong ofs = 0;
                 ImageImportDescriptor import_desc = buffer.Read<ImageImportDescriptor>(ofs);
                 while (import_desc.Characteristics != 0)
                 {
-                    _imports.Add(ParseSingleImport(buffer, import_desc, is_64bit));
+                    _imports.Add(ParseSingleImport(import_desc.Name, import_desc.Characteristics, import_desc.FirstThunk, is_64bit, false));
                     ofs += (ulong)Marshal.SizeOf(typeof(ImageImportDescriptor));
                     import_desc = buffer.Read<ImageImportDescriptor>(ofs);
                 }
@@ -991,6 +999,40 @@ namespace NtApiDotNet.Win32
             catch
             {
             }
+        }
+
+        private void ParseDelayImports(bool is_64bit)
+        {
+            try
+            {
+                IntPtr imports = Win32NativeMethods.ImageDirectoryEntryToData(handle, MappedAsImage, 
+                    IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT, out int size);
+                if (imports == IntPtr.Zero)
+                {
+                    return;
+                }
+
+                SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(imports, size, false);
+                ulong ofs = 0;
+                ImageDelayImportDescriptor import_desc = buffer.Read<ImageDelayImportDescriptor>(ofs);
+                while (import_desc.szName != 0)
+                {
+                    _imports.Add(ParseSingleImport(import_desc.szName, import_desc.pINT, import_desc.pIAT, is_64bit, true));
+                    ofs += (ulong)Marshal.SizeOf(typeof(ImageDelayImportDescriptor));
+                    import_desc = buffer.Read<ImageDelayImportDescriptor>(ofs);
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private void ParseImports()
+        {
+            _imports = new List<DllImport>();
+            bool is_64bit = GetOptionalHeader(GetHeaderPointer(GetBasePointer())).GetMagic() == IMAGE_NT_OPTIONAL_HDR_MAGIC.HDR64;
+            ParseNormalImports(is_64bit);
+            ParseDelayImports(is_64bit);
         }
 
         private IntPtr GetHeaderPointer(IntPtr base_ptr)

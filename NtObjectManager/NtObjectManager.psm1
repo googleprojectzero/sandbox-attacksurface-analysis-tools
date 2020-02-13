@@ -5846,7 +5846,7 @@ function Get-Win32Module {
 .SYNOPSIS
 Gets the exports from a loaded DLL.
 .DESCRIPTION
-This cmdlet gets the list of exports from a loader DLL.
+This cmdlet gets the list of exports from a loaded DLL.
 .PARAMETER Module
 Specify the DLL
 .INPUTS
@@ -5855,11 +5855,33 @@ None
 NtApiDotNet.Win32.DllExport[]
 #>
 function Get-Win32ModuleExport {
-    [CmdletBinding(DefaultParameterSetName="FromPath")]
+    [CmdletBinding()]
     Param(
         [Parameter(Position=0, Mandatory)]
         [NtApiDotNet.Win32.SafeLoadLibraryHandle]$Module
     )
 
     $Module.Exports | Write-Output
+}
+
+<#
+.SYNOPSIS
+Gets the imports from a loaded DLL.
+.DESCRIPTION
+This cmdlet gets the list of imports from a loaded DLL.
+.PARAMETER Module
+Specify the DLL
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.DllImport[]
+#>
+function Get-Win32ModuleImport {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.Win32.SafeLoadLibraryHandle]$Module
+    )
+
+    $Module.Imports | Write-Output
 }
