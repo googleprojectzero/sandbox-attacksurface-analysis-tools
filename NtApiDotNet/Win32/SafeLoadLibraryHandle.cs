@@ -186,7 +186,7 @@ namespace NtApiDotNet.Win32
             Name = header.GetName();
             int data_offset = mapped_as_image ? header.VirtualAddress : header.PointerToRawData;
             int data_size = mapped_as_image ? header.VirtualSize : header.SizeOfRawData;
-            Data = new SafeHGlobalBuffer(base_ptr + header.VirtualAddress, header.VirtualSize, false);
+            Data = new SafeHGlobalBuffer(base_ptr + data_offset, data_size, false);
             RelativeVirtualAddress = header.VirtualAddress;
         }
     }
