@@ -69,7 +69,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Format-NtToken', 'Remove-NtTokenPrivilege', 'Get-NtTokenPrivilege', 'Get-NtLocallyUniqueId', 'Get-NtTokenGroup',
           'Get-NtTokenSid', 'Set-NtTokenSid', 'Set-NtTokenGroup', 'Get-NtDesktopName', 'Get-NtWindowStationName',
           'Get-NtWindow', 'Out-HexDump', 'Get-NtTypeAccess', 'Get-NtAtom', 'Add-NtAtom', 'Remove-NtAtom',
-          'New-Win32Module', 'Get-Win32Module', 'Get-Win32ModuleExport', 'Get-Win32ModuleImport'
+          'Import-Win32Module', 'Get-Win32Module', 'Get-Win32ModuleExport', 'Get-Win32ModuleImport'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 

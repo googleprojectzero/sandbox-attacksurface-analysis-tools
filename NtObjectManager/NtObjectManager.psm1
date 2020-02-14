@@ -5800,7 +5800,7 @@ None
 .OUTPUTS
 NtApiDotNet.Win32.SafeLoadLibraryHandle
 #>
-function New-Win32Module {
+function Import-Win32Module {
     [CmdletBinding()]
     Param(
         [Parameter(Position=0, Mandatory)]
