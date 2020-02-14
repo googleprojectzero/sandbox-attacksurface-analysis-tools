@@ -12,7 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet;
 using NtApiDotNet.Win32;
+using System;
+using System.Linq;
 using System.Management.Automation;
 
 namespace NtObjectManager
@@ -159,6 +162,72 @@ namespace NtObjectManager
             string device_path = AddDosDeviceCmdlet.ConvertDevicePath(DeviceName);
 
             Win32Utils.DefineDosDevice(flags, device_path, string.IsNullOrEmpty(ExactMatchTargetPath) ? null : ExactMatchTargetPath);
+        }
+    }
+
+    /// <summary>
+    /// The result of an WIN32 error code lookup.
+    /// </summary>
+    public sealed class Win32ErrorResult
+    {
+        /// <summary>
+        /// The numeric value of the error code.
+        /// </summary>
+        public int ErrorCode { get; }
+        /// <summary>
+        /// The name of the error code if known.
+        /// </summary>
+        public string Name { get; }
+        /// <summary>
+        /// Corresponding message text.
+        /// </summary>
+        public string Message { get; }
+
+        internal Win32ErrorResult(Win32Error win32_error)
+        {
+            ErrorCode = (int)win32_error;
+            Message = NtObjectUtils.GetNtStatusMessage(win32_error.MapDosErrorToStatus());
+            Name = win32_error.ToString();
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Get known information about a WIN32 error code.</para>
+    /// <para type="description">This cmdlet looks up an WIN32 error code and if possible prints the
+    /// enumeration name and the message description.
+    /// </para>
+    /// </summary>
+    /// <example>
+    ///   <code>Get-Win32Error</code>
+    ///   <para>Gets all known WIN32 error codes defined in this library.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-Win32Error -Error 5</code>
+    ///   <para>Gets information about a specific WIN32 error code.</para>
+    /// </example>
+    [Cmdlet(VerbsCommon.Get, "Win32Error", DefaultParameterSetName = "All")]
+    public sealed class GetWin32ErrorCmdlet : PSCmdlet
+    {
+        /// <summary>
+        /// <para type="description">Specify a WIN32 error code to retrieve.</para>
+        /// </summary>
+        [Parameter(Position = 0, ParameterSetName = "FromError")]
+        public int Error { get; set; }
+
+        /// <summary>
+        /// Process record.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            if (ParameterSetName == "FromError")
+            {
+                WriteObject(new Win32ErrorResult((Win32Error)Error));
+            }
+            else
+            {
+                WriteObject(Enum.GetValues(typeof(Win32Error)).Cast<Win32Error>()
+                    .Distinct().Select(e => new Win32ErrorResult(e)), true);
+            }
         }
     }
 }

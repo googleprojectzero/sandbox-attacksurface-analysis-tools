@@ -516,7 +516,12 @@ namespace NtApiDotNet
             return FromHandle(new IntPtr(handle), owns_handle);
         }
 
-        internal static NtStatus MapDosErrorToStatus(this Win32Error dos_error)
+        /// <summary>
+        /// Map a DOS error to an NT status code.
+        /// </summary>
+        /// <param name="dos_error">The DOS error.</param>
+        /// <returns>The NT status code.</returns>
+        public static NtStatus MapDosErrorToStatus(this Win32Error dos_error)
         {
             return MapDosErrorToStatus((int)dos_error);
         }
@@ -552,7 +557,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="status">The status code.</param>
         /// <returns>The mapped DOS error.</returns>
-        public static Win32Error MapNtStatusToDosError(NtStatus status)
+        public static Win32Error MapNtStatusToDosError(this NtStatus status)
         {
             if (status.GetFacility() == NtStatusFacility.FACILITY_NTWIN32)
             {

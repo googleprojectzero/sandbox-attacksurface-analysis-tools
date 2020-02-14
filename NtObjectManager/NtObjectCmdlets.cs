@@ -637,27 +637,27 @@ namespace NtObjectManager
     ///   <code>Get-NtStatus -Status 0xc0000022</code>
     ///   <para>Gets information about a specific status code.</para>
     /// </example>
-    [Cmdlet(VerbsCommon.Get, "NtStatus")]
-    public sealed class GetNtStatusCmdlet : Cmdlet
+    [Cmdlet(VerbsCommon.Get, "NtStatus", DefaultParameterSetName = "All")]
+    public sealed class GetNtStatusCmdlet : PSCmdlet
     {
         /// <summary>
         /// <para type="description">Specify a NTSTATUS code to retrieve.</para>
         /// </summary>
-        [Parameter(Position = 0)]
-        public int? Status { get; set; }
+        [Parameter(Position = 0, ParameterSetName = "FromStatus")]
+        public int Status { get; set; }
 
         /// <summary>
         /// Process record.
         /// </summary>
         protected override void ProcessRecord()
         {
-            if (!Status.HasValue)
+            if (ParameterSetName == "FromStatus")
             {
-                WriteObject(Enum.GetValues(typeof(NtStatus)).Cast<NtStatus>().Distinct().Select(s => new NtStatusResult(s)), true);
+                WriteObject(new NtStatusResult(Status));
             }
             else
             {
-                WriteObject(new NtStatusResult(Status.Value));
+                WriteObject(Enum.GetValues(typeof(NtStatus)).Cast<NtStatus>().Distinct().Select(s => new NtStatusResult(s)), true);
             }
         }
     }
