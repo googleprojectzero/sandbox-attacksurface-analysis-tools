@@ -831,11 +831,11 @@ namespace NtApiDotNet.Win32
         {
             if (_delayed_imports != null)
             {
-                return _delayed_imports;
+                return new ReadOnlyDictionary<IntPtr, IntPtr>(_delayed_imports);
             }
             _delayed_imports = new Dictionary<IntPtr, IntPtr>();
             IntPtr delayed_imports = Win32NativeMethods.ImageDirectoryEntryToData(handle, true, IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT, out int size);
-            if (delayed_imports == null)
+            if (delayed_imports == IntPtr.Zero)
             {
                 return new ReadOnlyDictionary<IntPtr, IntPtr>(_delayed_imports);
             }
