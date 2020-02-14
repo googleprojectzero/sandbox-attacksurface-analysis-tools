@@ -5848,20 +5848,32 @@ Gets the exports from a loaded DLL.
 .DESCRIPTION
 This cmdlet gets the list of exports from a loaded DLL.
 .PARAMETER Module
-Specify the DLL
+Specify the DLL.
+.PARAMETER Path
+Specify the path to the DLL.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Win32.DllExport[]
 #>
 function Get-Win32ModuleExport {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromModule")]
     Param(
-        [Parameter(Position=0, Mandatory)]
-        [NtApiDotNet.Win32.SafeLoadLibraryHandle]$Module
+        [Parameter(Position=0, Mandatory, ParameterSetName="FromModule")]
+        [NtApiDotNet.Win32.SafeLoadLibraryHandle]$Module,
+        [Parameter(Position=0, Mandatory, ParameterSetName="FromPath")]
+        [string]$Path
     )
 
-    $Module.Exports | Write-Output
+    if ($PsCmdlet.ParameterSetName -eq "FromPath") {
+        Use-NtObject($lib = Import-Win32Module -Path $Path -Flags LoadLibraryAsDataFile) {
+            if ($lib -ne $null) {
+                Get-Win32ModuleExport -Module $lib
+            }
+        }
+    } else {
+        $Module.Exports | Write-Output
+    }
 }
 
 <#
@@ -5870,18 +5882,39 @@ Gets the imports from a loaded DLL.
 .DESCRIPTION
 This cmdlet gets the list of imports from a loaded DLL.
 .PARAMETER Module
-Specify the DLL
+Specify the DLL.
+.PARAMETER Path
+Specify the path to the DLL.
+.PARAMETER DllName
+Specify a name of a DLL to only show imports from.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Win32.DllImport[]
 #>
 function Get-Win32ModuleImport {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromModule")]
     Param(
-        [Parameter(Position=0, Mandatory)]
-        [NtApiDotNet.Win32.SafeLoadLibraryHandle]$Module
+        [Parameter(Position=0, Mandatory, ParameterSetName="FromModule")]
+        [NtApiDotNet.Win32.SafeLoadLibraryHandle]$Module,
+        [Parameter(Position=0, Mandatory, ParameterSetName="FromPath")]
+        [string]$Path,
+        [string]$DllName
     )
 
-    $Module.Imports | Write-Output
+    $imports = if ($PsCmdlet.ParameterSetName -eq "FromPath") {
+        Use-NtObject($lib = Import-Win32Module -Path $Path -Flags LoadLibraryAsDataFile) {
+            if ($lib -ne $null) {
+                Get-Win32ModuleImport -Module $lib
+            }
+        }
+    } else {
+        $Module.Imports
+    }
+
+    if ($DllName -ne "") {
+        $imports | Where-Object DllName -eq $DllName | Select-Object -ExpandProperty Functions | Write-Output
+    } else {
+        $imports | Write-Output
+    }
 }
