@@ -185,7 +185,9 @@ namespace NtApiDotNet
                     SystemThreadInformation[] thread_info = new SystemThreadInformation[process_entry.NumberOfThreads];
                     process_buffer.Data.ReadArray(0, thread_info, 0, thread_info.Length);
 
-                    yield return new NtProcessInformation(process_entry, thread_info.Select(t => new NtThreadInformation(process_entry.ImageName.ToString(), t)));
+                    yield return new NtProcessInformation(process_entry, thread_info
+                        .Select(t => new NtThreadInformation(process_entry.UniqueProcessId == IntPtr.Zero ? "Idle" 
+                                : process_entry.ImageName.ToString(), t)));
 
                     if (process_entry.NextEntryOffset == 0)
                     {

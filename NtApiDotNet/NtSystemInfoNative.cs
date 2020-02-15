@@ -917,8 +917,8 @@ namespace NtApiDotNet
 
         internal NtProcessInformation(SystemProcessInformation process_info, IEnumerable<NtThreadInformation> threads)
         {
-            ImageName = process_info.ImageName.ToString();
             ProcessId = process_info.UniqueProcessId.ToInt32();
+            ImageName = ProcessId == 0 ? "Idle" : process_info.ImageName.ToString();
             ParentProcessId = process_info.InheritedFromUniqueProcessId.ToInt32();
             SessionId = process_info.SessionId;
             Threads = threads.ToArray();
