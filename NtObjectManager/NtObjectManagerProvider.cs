@@ -41,6 +41,13 @@ namespace NtObjectManager
                 DirectoryRoot = root;
             }
 
+            public string FullPath => DirectoryRoot.FullPath;
+
+            public void Close()
+            {
+                DirectoryRoot.Close();
+            }
+
             public NtDirectory DirectoryRoot { get; }
         }
 
@@ -180,7 +187,7 @@ namespace NtObjectManager
                 return null;
             }
 
-            objmgr_drive.DirectoryRoot.Close();
+            objmgr_drive.Close();
 
             return objmgr_drive;
         }
@@ -330,7 +337,7 @@ namespace NtObjectManager
                 }
             }
 
-            return is_container || GetDrive().DirectoryRoot.DirectoryExists(path); 
+            return is_container || GetDrive().DirectoryRoot.DirectoryExists(path);
         }
 
         private string BuildDrivePath(string relative_path)
