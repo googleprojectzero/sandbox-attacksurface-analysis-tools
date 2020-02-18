@@ -117,9 +117,23 @@ namespace NtApiDotNet
         /// <returns>The opened object</returns>
         public static NtSymbolicLink Open(string path, NtObject root, SymbolicLinkAccessRights desired_access)
         {
+            return Open(path, root, desired_access, true).Result;
+        }
+
+        /// <summary>
+        /// Open a symbolic link object.
+        /// </summary>
+        /// <param name="path">The path to the object</param>
+        /// <param name="root">The root if path is relative</param>
+        /// <param name="desired_access">The desired access for the object</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened object</returns>
+        public static NtResult<NtSymbolicLink> Open(string path, NtObject root, 
+            SymbolicLinkAccessRights desired_access, bool throw_on_error)
+        {
             using (ObjectAttributes obja = new ObjectAttributes(path, AttributeFlags.CaseInsensitive, root))
             {
-                return Open(obja, desired_access);
+                return Open(obja, desired_access, throw_on_error);
             }
         }
 

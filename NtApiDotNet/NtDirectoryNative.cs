@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -28,7 +27,7 @@ namespace NtApiDotNet
 
     public sealed class ObjectDirectoryInformation
     {
-        private NtDirectory _root;
+        private readonly NtDirectory _root;
         private string _symlink_target;
 
         public string Name { get; }
@@ -47,21 +46,16 @@ namespace NtApiDotNet
             {
                 if (_symlink_target == null)
                 {
-                    if (!IsSymbolicLink)
+                    _symlink_target = string.Empty;
+                    if (IsSymbolicLink)
                     {
-                        _symlink_target = string.Empty;
-                    }
-
-                    try
-                    {
-                        using (NtSymbolicLink symlink = NtSymbolicLink.Open(Name, _root, SymbolicLinkAccessRights.Query))
+                        using (var symlink = NtSymbolicLink.Open(Name, _root, SymbolicLinkAccessRights.Query, false))
                         {
-                            _symlink_target = symlink.Target;
+                            if (symlink.IsSuccess)
+                            {
+                                _symlink_target = symlink.Result.Target;
+                            }
                         }
-                    }
-                    catch (NtException)
-                    {
-                        _symlink_target = string.Empty;
                     }
                 }
                 return _symlink_target;

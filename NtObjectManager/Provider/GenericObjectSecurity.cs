@@ -16,7 +16,7 @@ using NtApiDotNet;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 
-namespace NtObjectManager
+namespace NtObjectManager.Provider
 {
     /// <summary>
     /// Generic object security which takes an integer access mask.
@@ -30,6 +30,8 @@ namespace NtObjectManager
         {
         }
 
+        internal bool IsDirectory { get; }
+
         /// <summary>
         /// Constructor taking security descriptor from an object.
         /// </summary>
@@ -38,6 +40,7 @@ namespace NtObjectManager
         public GenericObjectSecurity(NtObject obj, AccessControlSections include_sections) 
             : base(false, ResourceType.KernelObject, obj.Handle, include_sections)
         {
+            IsDirectory = obj.IsContainer;
         }
 
         internal void PersistHandle(SafeHandle handle)

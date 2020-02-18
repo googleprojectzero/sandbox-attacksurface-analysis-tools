@@ -273,7 +273,7 @@ namespace NtObjectManager
             var current_path = SessionState.Path.CurrentLocation;
             if (current_path.Drive is ObjectManagerPSDriveInfo drive)
             {
-                string root_path = drive.FullPath;
+                string root_path = drive.DirectoryRoot.FullPath;
                 if (root_path == @"\")
                 {
                     root_path = string.Empty;

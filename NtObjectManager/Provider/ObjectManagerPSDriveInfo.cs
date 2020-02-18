@@ -22,16 +22,14 @@ namespace NtObjectManager.Provider
         public ObjectManagerPSDriveInfo(NtDirectory root, PSDriveInfo drive_info) 
             : base(drive_info)
         {
-            DirectoryRoot = root;
+            DirectoryRoot = new NtDirectoryContainer(root);
         }
 
-        public string FullPath => DirectoryRoot.FullPath;
+        public NtObjectContainer DirectoryRoot { get; }
 
         public void Close()
         {
-            DirectoryRoot.Close();
+            DirectoryRoot?.Dispose();
         }
-
-        public NtDirectory DirectoryRoot { get; }
     }
 }
