@@ -65,6 +65,7 @@
     <Compile Include="NtTransactionCmdlets.cs" />
     <Compile Include="NtTransactionManagerCmdlets.cs" />
     <Compile Include="NtWin32Cmdlets.cs" />
+    <Compile Include="Provider\ObjectManagerPSDriveInfo.cs" />
     <Compile Include="PSUtils.cs" />
     <Compile Include="RpcServerCmdlets.cs" />
     <Compile Include="RpcServerNameCmdlets.cs" />

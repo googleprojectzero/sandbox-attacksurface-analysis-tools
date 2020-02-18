@@ -33,24 +33,6 @@ namespace NtObjectManager.Provider
     {
         private static readonly Dictionary<string, NtDirectoryEntry> _item_cache = new Dictionary<string, NtDirectoryEntry>();
 
-        internal class ObjectManagerPSDriveInfo : PSDriveInfo
-        {
-            public ObjectManagerPSDriveInfo(NtDirectory root, PSDriveInfo drive_info) 
-                : base(drive_info)
-            {
-                DirectoryRoot = root;
-            }
-
-            public string FullPath => DirectoryRoot.FullPath;
-
-            public void Close()
-            {
-                DirectoryRoot.Close();
-            }
-
-            public NtDirectory DirectoryRoot { get; }
-        }
-
         private string GetDrivePath()
         {
             if (PSDriveInfo == null)
