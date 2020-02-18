@@ -23,7 +23,7 @@ using System.Management.Automation.Provider;
 using System.Security.AccessControl;
 using System.Text.RegularExpressions;
 
-namespace NtObjectManager
+namespace NtObjectManager.Provider
 {
     /// <summary>
     /// Object manager provider.

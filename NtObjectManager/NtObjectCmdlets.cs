@@ -14,6 +14,7 @@
 
 using NtApiDotNet;
 using NtApiDotNet.Win32;
+using NtObjectManager.Provider;
 using System;
 using System.Collections;
 using System.Collections.Generic;

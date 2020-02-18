@@ -97,7 +97,7 @@
     <Compile Include="NtTypesCmdlets.cs" />
     <Compile Include="NtSymbolicLinkCmdlet.cs" />
     <Compile Include="NtDirectoryEntry.cs" />
-    <Compile Include="NtObjectManagerProvider.cs" />
+    <Compile Include="Provider\NtObjectManagerProvider.cs" />
     <Compile Include="NtWaitCmdlets.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
