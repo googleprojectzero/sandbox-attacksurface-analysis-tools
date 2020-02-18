@@ -254,11 +254,19 @@ namespace NtApiDotNet
         ForceUnload = 1
     }
 
+    [Flags]
+    public enum KeyFlags
+    {
+        None = 0,
+        Volatile = 1,
+        Link = 2,
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct KeyFlagsInformation
     {
         public int Wow64Flags;
-        public int KeyFlags;
+        public KeyFlags KeyFlags;
         public KeyControlFlags ControlFlags;
     }
 
