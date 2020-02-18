@@ -13,11 +13,6 @@
 //  limitations under the License.
 
 using NtApiDotNet;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NtObjectManager.Provider
 {
@@ -29,28 +24,27 @@ namespace NtObjectManager.Provider
 
         public string FullPath { get; }
 
-        public string SymbolicLinkTarget { get; }
-
-        internal NtObjectContainerEntry(string full_path, 
-            string name, string typename, string symlink_target,
-            bool is_directory, bool is_symbolic_link)
+        internal NtObjectContainerEntry(string full_path,
+            string name, string typename, bool is_directory)
         {
             Name = name;
             NtTypeName = typename;
             FullPath = full_path;
-            SymbolicLinkTarget = symlink_target;
             IsDirectory = is_directory;
-            IsSymbolicLink = is_symbolic_link;
         }
 
         internal NtObjectContainerEntry(ObjectDirectoryInformation dir_info) 
-            : this(dir_info.FullPath, dir_info.Name, dir_info.NtTypeName, 
-                  dir_info.SymbolicLinkTarget, dir_info.IsDirectory, dir_info.IsSymbolicLink)
+            : this(dir_info.FullPath, dir_info.Name, dir_info.NtTypeName,
+                dir_info.IsDirectory)
+        {
+        }
+
+        internal NtObjectContainerEntry(NtKey key)
+            : this(key.FullPath, key.Name, key.NtTypeName,
+                true)
         {
         }
 
         public bool IsDirectory { get; }
-
-        public bool IsSymbolicLink { get; }
     }
 }

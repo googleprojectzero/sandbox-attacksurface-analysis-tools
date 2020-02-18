@@ -15,7 +15,7 @@
 using NtApiDotNet;
 using System;
 
-namespace NtObjectManager
+namespace NtObjectManager.Provider
 {
     /// <summary>
     /// A class representing a NT object manager directory entry.
@@ -25,14 +25,22 @@ namespace NtObjectManager
         private readonly NtObject _root;
         private SecurityDescriptor _sd;
         private string _symlink_target;
+        private bool? _is_symlink;
         private Enum _maximum_granted_access;
         private bool _data_populated;
 
-        private void PopulateData()
+        private protected virtual void PopulateKeyData(NtKey key)
+        {
+            _is_symlink = key.IsLink;
+            _symlink_target = key.GetSymbolicLinkTarget(false).GetResultOrDefault(string.Empty);
+        }
+
+        private protected void PopulateData()
         {
             if (!_data_populated)
             {
                 _data_populated = true;
+                _is_symlink = false;
                 if (NtObject.CanOpenType(TypeName))
                 {
                     try
@@ -49,9 +57,13 @@ namespace NtObjectManager
                                 _sd = obj.GetSecurityDescriptor(SecurityInformation.AllBasic, false).GetResultOrDefault();
                             }
 
-                            if (obj is NtSymbolicLink link && link.IsAccessGranted(SymbolicLinkAccessRights.Query))
+                            if (obj is NtSymbolicLink link)
                             {
                                 _symlink_target = link.GetTarget(false).GetResultOrDefault(string.Empty);
+                            }
+                            else if (obj is NtKey key)
+                            {
+                                PopulateKeyData(key);
                             }
 
                             _maximum_granted_access = obj.GrantedAccessMask.ToSpecificAccess(obj.NtType.AccessRightsType);
@@ -82,7 +94,17 @@ namespace NtObjectManager
         /// <summary>
         /// Indicates if this entry is a symbolic link.
         /// </summary>
-        public bool IsSymbolicLink { get; }
+        public bool IsSymbolicLink
+        {
+            get
+            {
+                if (!_is_symlink.HasValue)
+                {
+                    PopulateData();
+                }
+                return _is_symlink.Value;
+            }
+        }
 
         /// <summary>
         /// The relative path from the drive base to the entry.
@@ -133,8 +155,13 @@ namespace NtObjectManager
         /// <exception cref="System.ArgumentException">Thrown if invalid typename.</exception>
         public NtResult<NtObject> ToObject(bool throw_on_error)
         {
-            return NtObject.OpenWithType(TypeName, RelativePath, _root, 
-                AttributeFlags.CaseInsensitive, GenericAccessRights.MaximumAllowed, null, throw_on_error);
+            AttributeFlags flags = AttributeFlags.CaseInsensitive;
+            if (TypeName.Equals("key", StringComparison.OrdinalIgnoreCase))
+            {
+                flags |= AttributeFlags.OpenLink;
+            }
+            return NtObject.OpenWithType(TypeName, RelativePath, _root,
+                flags, GenericAccessRights.MaximumAllowed, null, throw_on_error);
         }
 
         /// <summary>
@@ -162,7 +189,7 @@ namespace NtObjectManager
                     IsDirectory = true;
                     break;
                 case "symboliclink":
-                    IsSymbolicLink = true;
+                    _is_symlink = true;
                     break;
             }
 

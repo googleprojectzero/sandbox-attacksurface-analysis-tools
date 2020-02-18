@@ -13,16 +13,28 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using System;
 using System.Management.Automation;
 
 namespace NtObjectManager.Provider
 {
     internal class ObjectManagerPSDriveInfo : PSDriveInfo
     {
-        public ObjectManagerPSDriveInfo(NtDirectory root, PSDriveInfo drive_info) 
+        public ObjectManagerPSDriveInfo(NtObject root, PSDriveInfo drive_info) 
             : base(drive_info)
         {
-            DirectoryRoot = new NtDirectoryContainer(root);
+            if (root is NtDirectory dir)
+            {
+                DirectoryRoot = new NtDirectoryContainer(dir);
+            }
+            else if (root is NtKey key)
+            {
+                DirectoryRoot = new NtKeyContainer(key);
+            }
+            else
+            {
+                throw new ArgumentException($"Invalid root object. {root.NtTypeName}");
+            }
         }
 
         public NtObjectContainer DirectoryRoot { get; }

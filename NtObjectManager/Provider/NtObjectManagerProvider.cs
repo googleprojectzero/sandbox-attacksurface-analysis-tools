@@ -55,6 +55,7 @@ namespace NtObjectManager.Provider
 
         private const string GLOBAL_ROOT = @"nt:";
         private const string NAMESPACE_ROOT = @"ntpriv:";
+        private const string KEY_ROOT = @"ntkey:";
 
         /// <summary>
         /// Overridden method to initialize default drives.
@@ -76,7 +77,11 @@ namespace NtObjectManager.Provider
 
             PSDriveInfo session = new PSDriveInfo("SessionNtObject", ProviderInfo, 
                 base_dir, "Current Session NT Objects", null);
-            Collection<PSDriveInfo> drives = new Collection<PSDriveInfo>() { drive, session };
+
+            PSDriveInfo registry = new PSDriveInfo("NtKey", ProviderInfo, 
+                KEY_ROOT, "Root NT Key Directory", null);
+
+            Collection<PSDriveInfo> drives = new Collection<PSDriveInfo>() { drive, session, registry };
             return drives;
         }
 
@@ -98,7 +103,9 @@ namespace NtObjectManager.Provider
                 return null;
             }
 
-            if (string.IsNullOrWhiteSpace(drive.Root) && (!drive.Root.StartsWith(GLOBAL_ROOT) || !drive.Root.StartsWith(NAMESPACE_ROOT)))
+            if (string.IsNullOrWhiteSpace(drive.Root) && (!drive.Root.StartsWith(GLOBAL_ROOT) 
+                || !drive.Root.StartsWith(NAMESPACE_ROOT) 
+                || !drive.Root.StartsWith(KEY_ROOT)))
             {
                 WriteError(new ErrorRecord(
                            new ArgumentNullException("drive.Root"),
@@ -122,13 +129,24 @@ namespace NtObjectManager.Provider
                         }
                     }
                 }
-                else
+                else if (drive.Root.StartsWith(GLOBAL_ROOT))
                 {
                     using (NtDirectory root = NtDirectory.Open(@"\"))
                     {
                         using (NtDirectory dir = NtDirectory.Open(drive.Root.Substring(GLOBAL_ROOT.Length), root, DirectoryAccessRights.MaximumAllowed))
                         {
                             ObjectManagerPSDriveInfo objmgr_drive = new ObjectManagerPSDriveInfo(dir.Duplicate(), drive);
+                            return objmgr_drive;
+                        }
+                    }
+                }
+                else
+                {
+                    using (NtKey root = NtKey.Open(@"\Registry", null, KeyAccessRights.MaximumAllowed))
+                    {
+                        using (NtKey key = NtKey.Open(drive.Root.Substring(KEY_ROOT.Length), root, KeyAccessRights.MaximumAllowed))
+                        {
+                            ObjectManagerPSDriveInfo objmgr_drive = new ObjectManagerPSDriveInfo(key.Duplicate(), drive);
                             return objmgr_drive;
                         }
                     }

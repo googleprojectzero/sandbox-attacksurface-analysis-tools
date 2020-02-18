@@ -11,20 +11,86 @@
   </SelectionSets>
   <ViewDefinitions>
     <View>
-      <Name>NtDirectoryEntryTable</Name>
+      <Name>NtKeyEntryTable</Name>
       <ViewSelectedBy>
-        <TypeName>NtObjectManager.NtDirectoryEntry</TypeName>
+        <TypeName>NtObjectManager.Provider.NtKeyEntry</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
           <TableColumnHeader>
             <Label>Name</Label>
-            <Width>40</Width>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Name</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <View>
+      <Name>NtKeyEntryList</Name>
+      <ViewSelectedBy>
+        <TypeName>NtObjectManager.Provider.NtKeyEntry</TypeName>
+      </ViewSelectedBy>
+      <ListControl>
+        <ListEntries>
+          <ListEntry>
+            <ListItems>
+              <ListItem>
+                <PropertyName>Name</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>TypeName</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>IsDirectory</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>IsSymbolicLink</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>RelativePath</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>SymbolicLinkTarget</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>MaximumGrantedAccess</PropertyName>
+              </ListItem>
+              <ListItem>
+                <ScriptBlock>$_.SecurityDescriptor.ToSddl()</ScriptBlock>
+                <Label>SecurityDescriptor</Label>
+              </ListItem>
+              <ListItem>
+                <PropertyName>ValueCount</PropertyName>
+              </ListItem>
+              <ListItem>
+                <PropertyName>Values</PropertyName>
+              </ListItem>
+            </ListItems>
+          </ListEntry>
+        </ListEntries>
+      </ListControl>
+    </View>
+    <View>
+      <Name>NtDirectoryEntryTable</Name>
+      <ViewSelectedBy>
+        <TypeName>NtObjectManager.Provider.NtDirectoryEntry</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>TypeName</Label>
-            <Width>30</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
@@ -45,7 +111,7 @@
     <View>
       <Name>NtDirectoryEntryList</Name>
       <ViewSelectedBy>
-        <TypeName>NtObjectManager.NtDirectoryEntry</TypeName>
+        <TypeName>NtObjectManager.Provider.NtDirectoryEntry</TypeName>
       </ViewSelectedBy>
       <ListControl>
         <ListEntries>

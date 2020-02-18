@@ -882,7 +882,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public NtStatus SetSymbolicLinkTarget(string target, bool throw_on_error)
         {
-            return SetValue("SymbolicLinkValue", RegistryValueType.Link, Encoding.Unicode.GetBytes(target), throw_on_error);
+            return SetValue(SymbolicLinkValueName, RegistryValueType.Link, Encoding.Unicode.GetBytes(target), throw_on_error);
         }
 
         /// <summary>
@@ -893,6 +893,27 @@ namespace NtApiDotNet
         public void SetSymbolicLinkTarget(string target)
         {
             SetSymbolicLinkTarget(target, true);
+        }
+
+        /// <summary>
+        /// Get the symbolic link target for this key.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The symbolic link target.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public NtResult<string> GetSymbolicLinkTarget(bool throw_on_error)
+        {
+            return QueryValue(SymbolicLinkValueName, throw_on_error).Map(v => v.ToString());
+        }
+
+        /// <summary>
+        /// Get the symbolic link target for this key.
+        /// </summary>
+        /// <returns>The symbolic link target.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public string GetSymbolicLinkTarget()
+        {
+            return GetSymbolicLinkTarget(true).Result;
         }
 
         /// <summary>
@@ -1464,6 +1485,9 @@ namespace NtApiDotNet
         #endregion
 
         #region Private Members
+
+        private const string SymbolicLinkValueName = "SymbolicLinkValue";
+
         private NtResult<NtKey> GetKeyForEnumeration(bool open_for_backup)
         {
             if (IsAccessGranted(KeyAccessRights.EnumerateSubKeys))
