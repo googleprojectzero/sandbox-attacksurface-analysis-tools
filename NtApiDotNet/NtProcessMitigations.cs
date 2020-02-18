@@ -267,13 +267,20 @@ namespace NtApiDotNet
             ProcessId = process.ProcessId;
             Name = process.Name;
             ImagePath = process.FullPath;
+            Win32ImagePath = process.Win32ImagePath;
             CommandLine = process.CommandLine;
         }
 
         public int ProcessId { get; }
         public string Name { get; }
         public string ImagePath { get; }
+        public string Win32ImagePath { get; }
         public string CommandLine { get; }
+        public bool IsRestricted { get; }
+        public bool IsAppContainer { get; }
+        public bool IsLowPrivilegeAppContainer { get; }
+        public TokenIntegrityLevel IntegrityLevel { get; }
+
         public bool DisallowWin32kSystemCalls { get; }
         public bool AuditDisallowWin32kSystemCalls { get; }
         public bool DepEnabled { get; }
@@ -307,10 +314,7 @@ namespace NtApiDotNet
         public bool AllowRemoteDowngrade { get; }
         public bool AuditProhibitDynamicCode { get; }
         public bool NoChildProcessCreation { get; }
-        public bool IsRestricted { get; }
-        public bool IsAppContainer { get; }
-        public bool IsLowPrivilegeAppContainer { get; }
-        public TokenIntegrityLevel IntegrityLevel { get; }
+
         public bool AuditNoChildProcessCreation { get; }
         public bool AllowSecureProcessCreation { get; }
         public bool EnableExportAddressFilter { get; }

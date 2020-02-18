@@ -1575,5 +1575,436 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>DllImport</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.NtProcessMitigations</TypeName>
+      </ViewSelectedBy>
+      <CustomControl>
+        <CustomEntries>
+          <CustomEntry>
+            <CustomItem>
+              <Text>&lt;PROCESS </Text>
+              <ExpressionBinding>
+                <ScriptBlock>$_.ProcessId</ScriptBlock>
+              </ExpressionBinding>
+              <Text> - </Text>
+              <ExpressionBinding>
+                <ScriptBlock>$_.Name</ScriptBlock>
+              </ExpressionBinding>
+              <Text>&gt;</Text>
+              <NewLine/>
+              <Frame>
+                <LeftIndent>2</LeftIndent>
+                <CustomItem>
+                  <Text>ImagePath: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.ImagePath</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>Win32ImagePath: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.Win32ImagePath</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>CommandLine: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.CommandLine</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>IsRestricted: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.IsRestricted</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>IsAppContainer: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.IsAppContainer</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>IsLowPrivilegeAppContainer: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.IsLowPrivilegeAppContainer</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>IntegrityLevel: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.IntegrityLevel</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </Frame>
+              <NewLine/>
+              <Text>[SYSTEM CALL DISABLE]</Text>
+              <NewLine/>
+              <Frame>
+                <LeftIndent>2</LeftIndent>
+                <CustomItem>
+                  <Text>DisallowWin32kSystemCalls: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.DisallowWin32kSystemCalls</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AuditDisallowWin32kSystemCalls: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.AuditDisallowWin32kSystemCalls</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </Frame>
+              <NewLine/>
+              <Text>[DEP]</Text>
+              <NewLine/>
+              <Frame>
+                <LeftIndent>2</LeftIndent>
+                <CustomItem>
+                  <Text>DepEnabled: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.DepEnabled</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>DisableAtlThunkEmulation: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.DisableAtlThunkEmulation</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>DepPermanent: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.DepPermanent</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </Frame>
+              <NewLine/>
+              <Text>[ASLR]</Text>
+              <NewLine/>
+              <Frame>
+                <LeftIndent>2</LeftIndent>
+                <CustomItem>
+                  <Text>EnableBottomUpRandomization: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.EnableBottomUpRandomization</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>EnableForceRelocateImages: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.EnableForceRelocateImages</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>EnableHighEntropy: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.EnableHighEntropy</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>DisallowStrippedImages: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.DisallowStrippedImages</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </Frame>
+              <NewLine/>
+              <Text>[STRICT HANDLE CHECK]</Text>
+              <NewLine/>
+              <Frame>
+                <LeftIndent>2</LeftIndent>
+                <CustomItem>
+                  <Text>RaiseExceptionOnInvalidHandleReference: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.RaiseExceptionOnInvalidHandleReference</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>HandleExceptionsPermanentlyEnabled: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.HandleExceptionsPermanentlyEnabled</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </Frame>
+              <NewLine/>
+              <Text>[FONT DISABLE]</Text>
+              <NewLine/>
+              <Frame>
+                <LeftIndent>2</LeftIndent>
+                <CustomItem>
+                  <Text>DisableNonSystemFonts: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.DisableNonSystemFonts</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AuditNonSystemFontLoading: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.AuditNonSystemFontLoading</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </Frame>
+              <NewLine/>
+              <Text>[DYNAMIC CODE]</Text>
+              <NewLine/>
+              <Frame>
+                <LeftIndent>2</LeftIndent>
+                <CustomItem>
+                  <Text>ProhibitDynamicCode: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.ProhibitDynamicCode</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AllowThreadOptOut: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.AllowThreadOptOut</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AllowRemoteDowngrade: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.AllowRemoteDowngrade</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AuditProhibitDynamicCode: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.AuditProhibitDynamicCode</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </Frame>
+              <NewLine/>
+              <Text>[EXTENSION POINTS]</Text>
+              <NewLine/>
+              <Frame>
+                <LeftIndent>2</LeftIndent>
+                <CustomItem>
+                  <Text>DisableExtensionPoints: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.DisableExtensionPoints</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </Frame>
+              <NewLine/>
+              <Text>[CONTROL FLOW GUARD]</Text>
+              <NewLine/>
+              <Frame>
+                <LeftIndent>2</LeftIndent>
+                <CustomItem>
+                  <Text>EnabledControlFlowGuard: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.EnabledControlFlowGuard</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>EnableExportSuppression: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.EnableExportSuppression</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>ControlFlowGuardStrictMode: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.ControlFlowGuardStrictMode</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </Frame>
+              <NewLine/>
+              <Text>[SIGNATURE]</Text>
+              <NewLine/>
+              <Frame>
+                <LeftIndent>2</LeftIndent>
+                <CustomItem>
+                  <Text>MicrosoftSignedOnly: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.MicrosoftSignedOnly</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>StoreSignedOnly: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.StoreSignedOnly</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>SignedMitigationOptIn: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.SignedMitigationOptIn</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AuditMicrosoftSignedOnly: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.AuditMicrosoftSignedOnly</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AuditStoreSignedOnly: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.AuditStoreSignedOnly</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </Frame>
+              <NewLine/>
+              <Text>[IMAGE LOAD]</Text>
+              <NewLine/>
+              <Frame>
+                <LeftIndent>2</LeftIndent>
+                <CustomItem>
+                  <Text>NoRemoteImages: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.NoRemoteImages</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>NoLowMandatoryLabelImages: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.NoLowMandatoryLabelImages</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>PreferSystem32Images: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.PreferSystem32Images</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AuditNoRemoteImages: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.AuditNoRemoteImages</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AuditNoLowMandatoryLabelImages: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.AuditNoLowMandatoryLabelImages</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </Frame>
+              <NewLine/>
+              <Text>[SYSTEM CALL FILTER]</Text>
+              <NewLine/>
+              <Frame>
+                <LeftIndent>2</LeftIndent>
+                <CustomItem>
+                  <Text>SystemCallFilterId: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.SystemCallFilterId</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </Frame>
+              <NewLine/>
+              <Text>[CHILD PROCESS]</Text>
+              <NewLine/>
+              <Frame>
+                <LeftIndent>2</LeftIndent>
+                <CustomItem>
+                  <Text>NoChildProcessCreation: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.NoChildProcessCreation</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AuditNoChildProcessCreation: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.AuditNoChildProcessCreation</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AllowSecureProcessCreation: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.AllowSecureProcessCreation</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </Frame>
+              <NewLine/>
+              <Text>[PAYLOAD RESTRICTIONS]</Text>
+              <NewLine/>
+              <Frame>
+                <LeftIndent>2</LeftIndent>
+                <CustomItem>
+                  <Text>EnableExportAddressFilter: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.EnableExportAddressFilter</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AuditExportAddressFilter: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.AuditExportAddressFilter</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>EnableExportAddressFilterPlus: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.EnableExportAddressFilterPlus</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AuditExportAddressFilterPlus: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.AuditExportAddressFilterPlus</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>EnableImportAddressFilter: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.EnableImportAddressFilter</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AuditImportAddressFilter: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.AuditImportAddressFilter</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>EnableRopStackPivot: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.EnableRopStackPivot</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AuditRopStackPivot: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.AuditRopStackPivot</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>EnableRopCallerCheck: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.EnableRopCallerCheck</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AuditRopCallerCheck: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.AuditRopCallerCheck</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>EnableRopSimExec: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.EnableRopSimExec</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>AuditRopSimExec: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.AuditRopSimExec</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </Frame>
+              <NewLine/>
+              <Text>[SIDE CHANNEL ISOLATION]</Text>
+              <NewLine/>
+              <Frame>
+                <LeftIndent>2</LeftIndent>
+                <CustomItem>
+                  <Text>SmtBranchTargetIsolation: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.SmtBranchTargetIsolation</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>IsolateSecurityDomain: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.IsolateSecurityDomain</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>DisablePageCombine: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.DisablePageCombine</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                  <Text>SpeculativeStoreBypassDisable: </Text>
+                  <ExpressionBinding>
+                    <ScriptBlock>$_.SpeculativeStoreBypassDisable</ScriptBlock>
+                  </ExpressionBinding>
+                  <NewLine/>
+                </CustomItem>
+              </Frame>
+            </CustomItem>
+          </CustomEntry>
+        </CustomEntries>
+      </CustomControl>
+    </View>
   </ViewDefinitions>
 </Configuration>
