@@ -109,6 +109,64 @@ namespace NtApiDotNet
             }
         }
 
+        private static IEnumerable<NtThreadInformation> ReadThreadInformation(SafeStructureInOutBuffer<SystemProcessInformation> process_buffer, string image_name, int thread_count)
+        {
+            SystemThreadInformation[] thread_info = new SystemThreadInformation[thread_count];
+            process_buffer.Data.ReadArray(0, thread_info, 0, thread_info.Length);
+
+            return thread_info.Select(t => new NtThreadInformation(image_name, t));
+        }
+
+        private static IEnumerable<NtThreadInformation> ReadExtendedThreadInformation(SafeStructureInOutBuffer<SystemProcessInformation> process_buffer, string image_name, int thread_count)
+        {
+            SystemExtendedThreadInformation[] thread_info = new SystemExtendedThreadInformation[thread_count];
+            process_buffer.Data.ReadArray(0, thread_info, 0, thread_info.Length);
+
+            return thread_info.Select(t => new NtThreadInformationExtended(image_name, t));
+        }
+
+        private static NtResult<List<NtProcessInformation>> QueryProcessInformation(SystemInformationClass info_class, bool throw_on_error)
+        {
+            List<NtProcessInformation> ret = new List<NtProcessInformation>();
+            using (var process_info = QueryBuffer<SystemProcessInformation>(info_class, default, throw_on_error))
+            {
+                if (!process_info.IsSuccess)
+                {
+                    return process_info.Cast<List<NtProcessInformation>>();
+                }
+
+                int offset = 0;
+                while (true)
+                {
+                    var process_buffer = process_info.Result.GetStructAtOffset<SystemProcessInformation>(offset);
+                    var process_entry = process_buffer.Result;
+                    string image_name = process_entry.UniqueProcessId == IntPtr.Zero ? "Idle"
+                                : process_entry.ImageName.ToString();
+
+                    IEnumerable<NtThreadInformation> thread_info;
+                    if (info_class == SystemInformationClass.SystemProcessInformation)
+                    {
+                        thread_info = ReadThreadInformation(process_buffer, image_name, process_entry.NumberOfThreads);
+                    }
+                    else
+                    {
+                        thread_info = ReadExtendedThreadInformation(process_buffer, image_name, process_entry.NumberOfThreads);
+                    }
+
+                    ret.Add(new NtProcessInformation(process_entry, thread_info, info_class == SystemInformationClass.SystemFullProcessInformation));
+
+                    if (process_entry.NextEntryOffset == 0)
+                    {
+                        break;
+                    }
+
+                    offset += process_entry.NextEntryOffset;
+                }
+            }
+
+            return ret.CreateResult();
+        }
+
         #endregion
 
         #region Static Methods
@@ -144,20 +202,49 @@ namespace NtApiDotNet
         /// Get a list of threads for a specific process.
         /// </summary>
         /// <param name="process_id">The process ID to list.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The list of thread information.</returns>
-        public static IEnumerable<NtThreadInformation> GetThreadInformation(int process_id)
+        public static NtResult<IEnumerable<NtThreadInformation>> GetThreadInformation(int process_id, bool throw_on_error)
         {
-            foreach (NtProcessInformation process in GetProcessInformation())
+            var procs = GetProcessInformation(throw_on_error);
+            if (!procs.IsSuccess)
+            {
+                return procs.Cast<IEnumerable<NtThreadInformation>>();
+            }
+
+            foreach (var process in procs.Result)
             {
                 if (process.ProcessId == process_id)
                 {
-                    foreach (NtThreadInformation thread in process.Threads)
-                    {
-                        yield return thread;
-                    }
-                    break;
+                    return process.Threads.CreateResult();
                 }
             }
+
+            return new NtThreadInformation[0].CreateResult<IEnumerable<NtThreadInformation>>();
+        }
+
+        /// <summary>
+        /// Get a list of threads for a specific process.
+        /// </summary>
+        /// <param name="process_id">The process ID to list.</param>
+        /// <returns>The list of thread information.</returns>
+        public static IEnumerable<NtThreadInformation> GetThreadInformation(int process_id)
+        {
+            return GetThreadInformation(process_id, true).Result;
+        }
+
+        /// <summary>
+        /// Get a list of all threads.
+        /// </summary>
+        /// <returns>The list of thread information.</returns>
+        public static NtResult<IEnumerable<NtThreadInformation>> GetThreadInformation(bool throw_on_error)
+        {
+            var procs = GetProcessInformation(throw_on_error);
+            if (!procs.IsSuccess)
+            {
+                return new NtThreadInformation[0].CreateResult<IEnumerable<NtThreadInformation>>();
+            }
+            return procs.Result.SelectMany(p => p.Threads).CreateResult();
         }
 
         /// <summary>
@@ -166,7 +253,65 @@ namespace NtApiDotNet
         /// <returns>The list of thread information.</returns>
         public static IEnumerable<NtThreadInformation> GetThreadInformation()
         {
-            return GetProcessInformation().SelectMany(p => p.Threads);
+            return GetThreadInformation(true).Result;
+        }
+
+        /// <summary>
+        /// Get a list of threads for a specific process.
+        /// </summary>
+        /// <param name="process_id">The process ID to list.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of thread information.</returns>
+        public static NtResult<IEnumerable<NtThreadInformationExtended>> GetThreadInformationExtended(int process_id, bool throw_on_error)
+        {
+            var procs = GetProcessInformationExtended(throw_on_error);
+            if (!procs.IsSuccess)
+            {
+                return procs.Cast<IEnumerable<NtThreadInformationExtended>>();
+            }
+
+            foreach (var process in procs.Result)
+            {
+                if (process.ProcessId == process_id)
+                {
+                    return process.Threads.Cast<NtThreadInformationExtended>().CreateResult();
+                }
+            }
+
+            return new NtThreadInformationExtended[0].CreateResult<IEnumerable<NtThreadInformationExtended>>();
+        }
+
+        /// <summary>
+        /// Get a list of threads for a specific process.
+        /// </summary>
+        /// <param name="process_id">The process ID to list.</param>
+        /// <returns>The list of thread information.</returns>
+        public static IEnumerable<NtThreadInformationExtended> GetThreadInformationExtended(int process_id)
+        {
+            return GetThreadInformationExtended(process_id, true).Result;
+        }
+
+        /// <summary>
+        /// Get a list of all threads.
+        /// </summary>
+        /// <returns>The list of thread information.</returns>
+        public static NtResult<IEnumerable<NtThreadInformationExtended>> GetThreadInformationExtended(bool throw_on_error)
+        {
+            var procs = GetProcessInformationExtended(throw_on_error);
+            if (!procs.IsSuccess)
+            {
+                return new NtThreadInformationExtended[0].CreateResult<IEnumerable<NtThreadInformationExtended>>();
+            }
+            return procs.Result.SelectMany(p => p.Threads).Cast<NtThreadInformationExtended>().CreateResult();
+        }
+
+        /// <summary>
+        /// Get a list of all threads.
+        /// </summary>
+        /// <returns>The list of thread information.</returns>
+        public static IEnumerable<NtThreadInformationExtended> GetThreadInformationExtended()
+        {
+            return GetThreadInformationExtended(true).Result;
         }
 
         /// <summary>
@@ -175,28 +320,55 @@ namespace NtApiDotNet
         /// <returns>The list of process information.</returns>
         public static IEnumerable<NtProcessInformation> GetProcessInformation()
         {
-            using (var process_info = QueryBuffer<SystemProcessInformation>(SystemInformationClass.SystemProcessInformation))
-            {
-                int offset = 0;
-                while (true)
-                {
-                    var process_buffer = process_info.GetStructAtOffset<SystemProcessInformation>(offset);
-                    var process_entry = process_buffer.Result;
-                    SystemThreadInformation[] thread_info = new SystemThreadInformation[process_entry.NumberOfThreads];
-                    process_buffer.Data.ReadArray(0, thread_info, 0, thread_info.Length);
+            return GetProcessInformation(true).Result;
+        }
 
-                    yield return new NtProcessInformation(process_entry, thread_info
-                        .Select(t => new NtThreadInformation(process_entry.UniqueProcessId == IntPtr.Zero ? "Idle" 
-                                : process_entry.ImageName.ToString(), t)));
+        /// <summary>
+        /// Get all process information for the system.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of process information.</returns>
+        public static NtResult<IEnumerable<NtProcessInformation>> GetProcessInformation(bool throw_on_error)
+        {
+            return QueryProcessInformation(SystemInformationClass.SystemProcessInformation, throw_on_error).Map<IEnumerable<NtProcessInformation>>(p => p.AsReadOnly());
+        }
 
-                    if (process_entry.NextEntryOffset == 0)
-                    {
-                        break;
-                    }
+        /// <summary>
+        /// Get all process information for the system.
+        /// </summary>
+        /// <returns>The list of process information.</returns>
+        public static IEnumerable<NtProcessInformation> GetProcessInformationExtended()
+        {
+            return GetProcessInformationExtended(true).Result;
+        }
 
-                    offset += process_entry.NextEntryOffset;
-                }
-            }
+        /// <summary>
+        /// Get all process information for the system.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of process information.</returns>
+        public static NtResult<IEnumerable<NtProcessInformation>> GetProcessInformationExtended(bool throw_on_error)
+        {
+            return QueryProcessInformation(SystemInformationClass.SystemExtendedProcessInformation, throw_on_error).Map<IEnumerable<NtProcessInformation>>(p => p.AsReadOnly());
+        }
+
+        /// <summary>
+        /// Get all process information for the system.
+        /// </summary>
+        /// <returns>The list of process information.</returns>
+        public static IEnumerable<NtProcessInformation> GetProcessInformationFull()
+        {
+            return GetProcessInformationFull(true).Result;
+        }
+
+        /// <summary>
+        /// Get all process information for the system.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of process information.</returns>
+        public static NtResult<IEnumerable<NtProcessInformation>> GetProcessInformationFull(bool throw_on_error)
+        {
+            return QueryProcessInformation(SystemInformationClass.SystemFullProcessInformation, throw_on_error).Map<IEnumerable<NtProcessInformation>>(p => p.AsReadOnly());
         }
 
         /// <summary>

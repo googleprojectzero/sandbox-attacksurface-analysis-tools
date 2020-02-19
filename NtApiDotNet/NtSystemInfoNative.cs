@@ -289,6 +289,19 @@ namespace NtApiDotNet
         public int WaitReason;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SystemExtendedThreadInformation
+    {
+        public SystemThreadInformation ThreadInfo;
+        public IntPtr StackBase;
+        public IntPtr StackLimit;
+        public IntPtr Win32StartAddress;
+        public IntPtr TebBase;
+        public IntPtr Reserved2;
+        public IntPtr Reserved3;
+        public IntPtr Reserved4;
+    }
+
     [StructLayout(LayoutKind.Sequential), DataStart("Threads")]
     public struct SystemProcessInformation
     {
@@ -878,6 +891,28 @@ namespace NtApiDotNet
         }
     }
 
+    public class NtThreadInformationExtended : NtThreadInformation
+    {
+        public long StackBase { get; }
+        public long StackLimit { get; }
+        public long Win32StartAddress { get; }
+        public long TebBase { get; }
+        
+        internal NtThreadInformationExtended(string name, SystemExtendedThreadInformation thread_info) 
+            : base(name, thread_info.ThreadInfo)
+        {
+            StackBase = thread_info.StackBase.ToInt64();
+            StackLimit = thread_info.StackLimit.ToInt64();
+            Win32StartAddress = thread_info.Win32StartAddress.ToInt64();
+            TebBase = thread_info.TebBase.ToInt64();
+        }
+
+        public override string ToString()
+        {
+            return ThreadId.ToString();
+        }
+    }
+
     public class NtProcessInformation
     {
         public int ProcessId { get; }
@@ -915,10 +950,20 @@ namespace NtApiDotNet
         public long WriteTransferCount { get; }
         public long OtherTransferCount { get; }
 
-        internal NtProcessInformation(SystemProcessInformation process_info, IEnumerable<NtThreadInformation> threads)
+        internal NtProcessInformation(SystemProcessInformation process_info, IEnumerable<NtThreadInformation> threads, bool full_information)
         {
             ProcessId = process_info.UniqueProcessId.ToInt32();
-            ImageName = ProcessId == 0 ? "Idle" : process_info.ImageName.ToString();
+            if (full_information)
+            {
+                ImagePath = process_info.ImageName.ToString();
+                ImageName = ProcessId == 0 ? "Idle" : Path.GetFileName(ImagePath);
+            }
+            else
+            {
+                ImagePath = NtSystemInfo.GetProcessIdImagePath(ProcessId, false).GetResultOrDefault(string.Empty);
+                ImageName = ProcessId == 0 ? "Idle" : process_info.ImageName.ToString();
+            }
+
             ParentProcessId = process_info.InheritedFromUniqueProcessId.ToInt32();
             SessionId = process_info.SessionId;
             Threads = threads.ToArray();
@@ -950,7 +995,6 @@ namespace NtApiDotNet
             ReadTransferCount = process_info.ReadTransferCount.QuadPart;
             WriteTransferCount = process_info.WriteTransferCount.QuadPart;
             OtherTransferCount = process_info.OtherTransferCount.QuadPart;
-            ImagePath = NtSystemInfo.GetProcessIdImagePath(ProcessId, false).GetResultOrDefault(string.Empty);
         }
 
         public override string ToString()

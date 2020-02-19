@@ -141,6 +141,22 @@ namespace NtObjectManager
             return NtThread.Current.Duplicate(access);
         }
 
+        private static IEnumerable<NtThreadInformation> QueryThreadInformation()
+        {
+            var ths = NtSystemInfo.GetThreadInformationExtended(false);
+            if (ths.IsSuccess)
+                return ths.Result;
+            return NtSystemInfo.GetThreadInformation();
+        }
+
+        private static IEnumerable<NtThreadInformation> QueryThreadInformation(int pid)
+        {
+            var ths = NtSystemInfo.GetThreadInformationExtended(pid, false);
+            if (ths.IsSuccess)
+                return ths.Result;
+            return NtSystemInfo.GetThreadInformation(pid);
+        }
+
         /// <summary>
         /// Overridden ProcessRecord method.
         /// </summary>
@@ -150,11 +166,11 @@ namespace NtObjectManager
             {
                 if (ProcessId != -1)
                 {
-                    WriteObject(NtSystemInfo.GetThreadInformation(ProcessId), true);
+                    WriteObject(QueryThreadInformation(ProcessId), true);
                 }
                 else
                 {
-                    WriteObject(NtSystemInfo.GetThreadInformation(), true);
+                    WriteObject(QueryThreadInformation(), true);
                 }
             }
             else if (Current)

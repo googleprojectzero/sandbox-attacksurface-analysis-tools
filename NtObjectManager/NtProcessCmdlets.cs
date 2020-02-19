@@ -284,6 +284,17 @@ namespace NtObjectManager
             WriteObject(NtProcess.Open(pid, Access));
         }
 
+        private IEnumerable<NtProcessInformation> QueryProcessInformation()
+        {
+            var procs = NtSystemInfo.GetProcessInformationFull(false);
+            if (procs.IsSuccess)
+                return procs.Result;
+            procs = NtSystemInfo.GetProcessInformationExtended(false);
+            if (procs.IsSuccess)
+                return procs.Result;
+            return NtSystemInfo.GetProcessInformation();
+        }
+
         /// <summary>
         /// Overridden ProcessRecord method.
         /// </summary>
@@ -292,7 +303,7 @@ namespace NtObjectManager
             switch (ParameterSetName)
             {
                 case "infoonly":
-                    WriteObject(NtSystemInfo.GetProcessInformation(), true);
+                    WriteObject(QueryProcessInformation(), true);
                     break;
                 case "all":
                     WriteObject(GetProcesses(), true);
@@ -302,7 +313,7 @@ namespace NtObjectManager
                     OpenProcess();
                     break;
                 case "pidinfo":
-                    WriteObject(NtSystemInfo.GetProcessInformation().Where(p => p.ProcessId == ProcessId), true);
+                    WriteObject(QueryProcessInformation().Where(p => p.ProcessId == ProcessId), true);
                     break;
                 case "service":
                     OpenServiceProcess();
