@@ -23,11 +23,37 @@ namespace NtObjectManager.Provider
     internal sealed class NtDirectoryContainer : NtObjectContainer
     {
         private readonly NtDirectory _dir;
+        private readonly NtKeyContainer _key;
+
+        private const string REGISTRY_ROOT = @"REGISTRY";
+        private const string REGISTRY_ROOT_DIR = @"REGISTRY\";
 
         public NtDirectoryContainer(NtDirectory dir) 
             : base(dir)
         {
             _dir = dir;
+            if (dir.FullPath == @"\")
+            {
+                _key = new NtKeyContainer();
+            }
+        }
+
+        private bool IsRegistryPath(string path)
+        {
+            if (_key != null)
+            {
+                return path.Equals(REGISTRY_ROOT, StringComparison.OrdinalIgnoreCase) || path.StartsWith(REGISTRY_ROOT_DIR, StringComparison.OrdinalIgnoreCase);
+            }
+            return false;
+        }
+
+        private string GetRegistryPath(string path)
+        {
+            if (path.Equals(REGISTRY_ROOT, StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+            return path.Substring(REGISTRY_ROOT_DIR.Length);
         }
 
         public override bool QueryAccessGranted => _dir.IsAccessGranted(DirectoryAccessRights.Query);
@@ -47,10 +73,23 @@ namespace NtObjectManager.Provider
             return _dir.Duplicate(DirectoryAccessRights.Query, throw_on_error).Map(Create);
         }
 
-        public override bool Exists(string path) => _dir.DirectoryExists(path);
+        public override bool Exists(string path)
+        {
+            if (IsRegistryPath(path))
+            {
+                return _key.Exists(GetRegistryPath(path));
+            }
+
+            return _dir.DirectoryExists(path);
+        }
 
         public override NtObjectContainerEntry GetEntry(string path)
         {
+            if (IsRegistryPath(path))
+            {
+                return _key.GetEntry(GetRegistryPath(path));
+            }
+
             var dir_info = _dir.GetDirectoryEntry(path);
             if (dir_info == null)
             {
@@ -67,6 +106,11 @@ namespace NtObjectManager.Provider
             }
             else
             {
+                if (IsRegistryPath(relative_path))
+                {
+                    return _key.GetSecurity(GetRegistryPath(relative_path), includeSections);
+                }
+
                 var dir_info = _dir.GetDirectoryEntry(relative_path);
                 if (dir_info == null)
                 {
@@ -111,12 +155,22 @@ namespace NtObjectManager.Provider
 
         public override NtResult<NtObjectContainer> Open(string relative_path, bool throw_on_error)
         {
+            if (IsRegistryPath(relative_path))
+            {
+                return _key.Open(GetRegistryPath(relative_path), throw_on_error);
+            }
+
             return NtDirectory.Open(relative_path, _dir, 
                 DirectoryAccessRights.MaximumAllowed, throw_on_error).Map(Create);
         }
 
         public override NtResult<NtObjectContainer> OpenForQuery(string relative_path, bool throw_on_error)
         {
+            if (IsRegistryPath(relative_path))
+            {
+                return _key.OpenForQuery(GetRegistryPath(relative_path), throw_on_error);
+            }
+
             return NtDirectory.Open(relative_path, _dir,
                 DirectoryAccessRights.Query, throw_on_error).Map(Create);
         }
@@ -128,6 +182,12 @@ namespace NtObjectManager.Provider
 
         public override void SetSecurity(string relative_path, GenericObjectSecurity obj_security)
         {
+            if (IsRegistryPath(relative_path))
+            {
+                _key.SetSecurity(GetRegistryPath(relative_path), obj_security);
+                return;
+            }
+
             var dir_info = _dir.GetDirectoryEntry(relative_path);
             if (dir_info == null)
             {
@@ -138,6 +198,12 @@ namespace NtObjectManager.Provider
             {
                 obj_security.PersistHandle(obj.Handle);
             }
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+            _key?.Dispose();
         }
     }
 }

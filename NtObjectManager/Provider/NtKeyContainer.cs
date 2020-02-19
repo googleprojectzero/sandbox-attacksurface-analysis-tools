@@ -32,6 +32,11 @@ namespace NtObjectManager.Provider
             }
         }
 
+        public NtKeyContainer() 
+            : this(NtKey.Open(@"\REGISTRY", null, KeyAccessRights.MaximumAllowed))
+        {
+        }
+
         public NtKeyContainer(NtKey key) 
             : base(key)
         {
@@ -57,6 +62,11 @@ namespace NtObjectManager.Provider
 
         public override bool Exists(string path)
         {
+            if (path.Length == 0)
+            {
+                return true;
+            }
+
             using (var key = Open(path, KeyAccessRights.MaximumAllowed, false))
             {
                 return key.IsSuccess;
@@ -65,6 +75,11 @@ namespace NtObjectManager.Provider
 
         public override NtObjectContainerEntry GetEntry(string path)
         {
+            if (path.Length == 0)
+            {
+                return new NtObjectContainerEntry(_key);
+            }
+
             using (var key = Open(path, KeyAccessRights.MaximumAllowed, false))
             {
                 if (!key.IsSuccess)
@@ -102,11 +117,21 @@ namespace NtObjectManager.Provider
 
         public override NtResult<NtObjectContainer> Open(string relative_path, bool throw_on_error)
         {
+            if (relative_path.Length == 0)
+            {
+                return _key.Duplicate(throw_on_error).Map(Create);
+            }
+
             return Open(relative_path, KeyAccessRights.MaximumAllowed, throw_on_error).Map(Create);
         }
 
         public override NtResult<NtObjectContainer> OpenForQuery(string relative_path, bool throw_on_error)
         {
+            if (relative_path.Length == 0)
+            {
+                return _key.Duplicate(throw_on_error).Map(Create);
+            }
+
             return Open(relative_path, KeyAccessRights.EnumerateSubKeys | KeyAccessRights.QueryValue,
                             throw_on_error).Map(Create);
         }

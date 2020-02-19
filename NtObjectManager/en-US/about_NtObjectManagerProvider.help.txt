@@ -12,7 +12,7 @@ LONG DESCRIPTION
 	and modify certain properties in the name space.
 
 	By default two new drives will be created, NtObject: which can be used to access the root namespace,
-	and SessionNtObject: which points to the current user session's BaseNamedObjects directory. It's
+	and NtObjectSession: which points to the current user session's BaseNamedObjects directory. It's
 	also possible to add other drives with different roots if needed. The root name for the drive provider
 	is nt:\path. 
 	
@@ -47,37 +47,37 @@ EXAMPLES
 	Get-ChildItem NtObject:\Dir | Where-Object IsSymbolicLink -eq $True | Select-Object Name,SymbolicLinkTarget
 
 	Example 4: Get an event object and Set it.
-	$event = Get-Item SessionNtObject:\Eventname
+	$event = Get-Item NtObjectSession:\Eventname
 	$event_obj = $event.ToObject()
 	$event_obj.Set()
 	$event_obj.Close()
 
 	Example 5: Create a new directory ABC in the user's base named objects.
-	$obj = New-Item SessionNtObject:\ABC -ItemType Directory
+	$obj = New-Item NtObjectSession:\ABC -ItemType Directory
 	# Do something with directory.
 	# ...
 	$obj.Close()
 
 	Example 6: Create a new symbolic link ABC in the user's base named objects pointer to \BaseNamedObjects
-	$obj = New-Item SessionNtObject:\ABC -ItemType Link -Value \BaseNamedObjects
+	$obj = New-Item NtObjectSession:\ABC -ItemType Link -Value \BaseNamedObjects
 	# Do something
 	# ...
 	$obj.Close()
 
 	Example 7: Create a new event ABC in the user's base named objects 
-	$obj = New-Item SessionNtObject:\ABC -ItemType Event
+	$obj = New-Item NtObjectSession:\ABC -ItemType Event
 	# Do something
 	# ...
 	$obj.Close()
 
 	Example 8: Create a new semaphore ABC in the user's base named objects with max count of 10
-	$obj = New-Item SessionNtObject:\ABC -ItemType Semaphore -Value 10
+	$obj = New-Item NtObjectSession:\ABC -ItemType Semaphore -Value 10
 	# Do something
 	# ...
 	$obj.Close()
 
 	Example 9: Create a new mutant ABC in the user's base named objects
-	$obj = New-Item SessionNtObject:\ABC -ItemType Mutant
+	$obj = New-Item NtObjectSession:\ABC -ItemType Mutant
 	# Do something
 	# ...
 	$obj.Close()

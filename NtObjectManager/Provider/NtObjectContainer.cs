@@ -63,7 +63,7 @@ namespace NtObjectManager.Provider
 
         public abstract NtObject NewItem(string relative_path, string item_type_name, object new_item_value);
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             _obj?.Dispose();
         }
