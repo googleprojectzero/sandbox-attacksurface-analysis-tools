@@ -551,11 +551,10 @@ namespace NtApiDotNet
 
                 status.ToNtException();
                 IntPtr current = buffer.DangerousGetHandle();
-                string name = string.Empty;
                 while (true)
                 {
                     OBJECT_DIRECTORY_INFORMATION dir_info = (OBJECT_DIRECTORY_INFORMATION)Marshal.PtrToStructure(current, typeof(OBJECT_DIRECTORY_INFORMATION));
-                    name = dir_info.Name.ToString();
+                    string name = dir_info.Name.ToString();
                     if (name.Length == 0)
                     {
                         break;

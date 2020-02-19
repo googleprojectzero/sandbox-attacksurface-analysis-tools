@@ -264,14 +264,14 @@ namespace NtObjectManager.Provider
             }
         }
 
-        private NtObjectContainer GetDirectory(string path)
+        private NtResult<NtObjectContainer> GetDirectory(string path, bool throw_on_error)
         {
             if (path.Length == 0)
             {
-                return GetDrive().DirectoryRoot.Duplicate(true).Result;
+                return GetDrive().DirectoryRoot.Duplicate(throw_on_error);
             }
 
-            return GetDrive().DirectoryRoot.Open(path, true).Result;
+            return GetDrive().DirectoryRoot.Open(path, throw_on_error);
         }
 
         private NtObjectContainerEntry GetEntry(NtObjectContainer dir, string path)
@@ -379,10 +379,13 @@ namespace NtObjectManager.Provider
         {
             try
             {
-                using (var dir = GetDirectory(relative_path))
+                using (var dir = GetDirectory(relative_path, false))
                 {
+                    if (!dir.IsSuccess)
+                        return;
+
                     Queue<string> dirs = new Queue<string>();
-                    foreach (var dir_info in dir.Query())
+                    foreach (var dir_info in dir.Result.Query())
                     {
                         string new_path = BuildRelativePath(relative_path, dir_info.Name);
                         WriteItemObject(GetDrive().DirectoryRoot.CreateEntry(new_path, recurse ? new_path : dir_info.Name, dir_info.NtTypeName), 
@@ -442,9 +445,11 @@ namespace NtObjectManager.Provider
 
             string relative_path = GetRelativePath(PSPathToNT(path));
 
-            using (var dir = GetDirectory(relative_path))
+            using (var dir = GetDirectory(relative_path, false))
             {
-                foreach (var dir_info in dir.Query())
+                if (!dir.IsSuccess)
+                    return;
+                foreach (var dir_info in dir.Result.Query())
                 {
                     WriteItemObject(dir_info.Name, NTPathToPS(BuildDrivePath(BuildRelativePath(relative_path, dir_info.Name))), dir_info.IsDirectory);
                 }

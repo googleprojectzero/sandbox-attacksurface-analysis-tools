@@ -177,6 +177,8 @@ namespace NtObjectManager.Provider
 
         public override IEnumerable<NtObjectContainerEntry> Query()
         {
+            if (!QueryAccessGranted)
+                return new NtObjectContainerEntry[0];
             return _dir.Query().Select(d => new NtObjectContainerEntry(d));
         }
 
