@@ -30,7 +30,9 @@ namespace NtApiDotNet
                 { "HKLM", @"\Registry\Machine" },
                 { "HKEY_LOCAL_MACHINE", @"\Registry\Machine" },
                 { "HKU", @"\Registry\User" },
-                { "HKEY_USERS", @"\Registry\User" }
+                { "HKEY_USERS", @"\Registry\User" },
+                { "HKEY_CURRENT_CONFIG", @"\Registry\Machine\System\CurrentControlSet\Hardware Profiles\Current" },
+                { "HKCC", @"\Registry\Machine\System\CurrentControlSet\Hardware Profiles\Current" },
             };
             using (var token = NtToken.OpenProcessToken(NtProcess.Current, TokenAccessRights.Query, false))
             {
