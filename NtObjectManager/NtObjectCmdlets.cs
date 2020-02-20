@@ -33,7 +33,8 @@ namespace NtObjectManager
         /// <para type="description">Object Attribute flags used during Open/Create calls.</para>
         /// </summary>
         [Parameter]
-        public AttributeFlags ObjectAttributes { get; set; }
+        [Alias("ObjectAttributes")]
+        public AttributeFlags AttributesFlags { get; set; }
 
         /// <summary>
         /// <para type="description">Set to provide an explicit security descriptor to a newly created object.</para>
@@ -68,7 +69,7 @@ namespace NtObjectManager
         /// </summary>
         protected NtObjectBaseNoPathCmdlet()
         {
-            ObjectAttributes = AttributeFlags.CaseInsensitive;
+            AttributesFlags = AttributeFlags.CaseInsensitive;
         }
 
         /// <summary>
@@ -106,7 +107,7 @@ namespace NtObjectManager
         /// </summary>
         protected override void ProcessRecord()
         {
-            WriteObject(CreateObject(null, ObjectAttributes, null, SecurityQualityOfService, SecurityDescriptor), true);
+            WriteObject(CreateObject(null, AttributesFlags, null, SecurityQualityOfService, SecurityDescriptor), true);
         }
 
         #region IDisposable Support
@@ -330,7 +331,7 @@ namespace NtObjectManager
                     }
                     builder.Append(@"\");
                 }
-                objects.Add((NtObject)CreateObject(ResolvePath(), ObjectAttributes, Root, SecurityQualityOfService, SecurityDescriptor));
+                objects.Add((NtObject)CreateObject(ResolvePath(), AttributesFlags, Root, SecurityQualityOfService, SecurityDescriptor));
                 finished = true;
             }
             finally
@@ -352,7 +353,7 @@ namespace NtObjectManager
             VerifyParameters();
             try
             {
-                WriteObject(CreateObject(ResolvePath(), ObjectAttributes, Root, SecurityQualityOfService, SecurityDescriptor), true);
+                WriteObject(CreateObject(ResolvePath(), AttributesFlags, Root, SecurityQualityOfService, SecurityDescriptor), true);
             }
             catch (NtException ex)
             {
@@ -484,7 +485,7 @@ namespace NtObjectManager
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
             string type_name = string.IsNullOrWhiteSpace(TypeName) ? null : TypeName;
-            return NtObject.OpenWithType(type_name, ResolvePath(), Root, ObjectAttributes, Access, SecurityQualityOfService);
+            return NtObject.OpenWithType(type_name, ResolvePath(), Root, AttributesFlags, Access, SecurityQualityOfService);
         }
     }
 
