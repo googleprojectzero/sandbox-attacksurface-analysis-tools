@@ -54,7 +54,7 @@ Specify a list process objects to use for their tokens.
 .INPUTS
 None
 .OUTPUTS
-NtObjectManager.AccessCheckResult
+NtObjectManager.Cmdlets.Accessible.AccessCheckResult
 .NOTES
 For best results run this function as an administrator with SeDebugPrivilege available.
 .EXAMPLE
@@ -1093,7 +1093,7 @@ function Get-NtFilePath {
             $p = Resolve-Path -LiteralPath $FullName
         }
     }
-    $p = [NtObjectManager.GetNtFileCmdlet]::ResolveWin32Path($PSCmdlet.SessionState, $p)
+    $p = [NtObjectManager.Cmdlets.Object.GetNtFileCmdlet]::ResolveWin32Path($PSCmdlet.SessionState, $p)
     Write-Output $p
   }
 }
@@ -1666,7 +1666,7 @@ function Show-NtSecurityDescriptor {
     [Parameter(ParameterSetName = "FromObject")]
     [switch]$ReadOnly,
     [Parameter(Position = 0, ParameterSetName = "FromAccessCheck", Mandatory = $true)]
-    [NtObjectManager.AccessCheckResult]$AccessCheckResult,
+    [NtObjectManager.Cmdlets.Accessible.AccessCheckResult]$AccessCheckResult,
     [Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true)]
     [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
     [Parameter(Position = 1, ParameterSetName = "FromSecurityDescriptor")]
@@ -1846,7 +1846,7 @@ function Format-NtSecurityDescriptor {
         [Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true, ValueFromPipeline)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Position = 0, ParameterSetName = "FromAccessCheck", Mandatory = $true, ValueFromPipeline)]
-        [NtObjectManager.AccessCheckResult]$AccessCheckResult,
+        [NtObjectManager.Cmdlets.Accessible.AccessCheckResult]$AccessCheckResult,
         [Parameter(Position = 0, ParameterSetName = "FromAcl", Mandatory = $true)]
         [AllowEmptyCollection()]
         [NtApiDotNet.Acl]$Acl,
@@ -5210,9 +5210,9 @@ function Start-AccessibleScheduledTask {
     [CmdletBinding()]
     Param(
         [parameter(Mandatory, Position = 0)]
-        [NtObjectManager.ScheduledTaskAccessCheckResult]$Task,
+        [NtObjectManager.Cmdlets.Accessible.ScheduledTaskAccessCheckResult]$Task,
         [string]$User,
-        [NtObjectManager.TaskRunFlags]$Flags = 0,
+        [NtObjectManager.Cmdlets.Accessible.TaskRunFlags]$Flags = 0,
         [int]$SessionId,
         [string[]]$Arguments
     )

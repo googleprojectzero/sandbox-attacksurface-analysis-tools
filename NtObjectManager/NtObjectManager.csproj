@@ -51,60 +51,60 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GetAccessibleEventTraceCmdlet.cs" />
-    <Compile Include="GetAccessibleScheduledTaskCmdlet.cs" />
-    <Compile Include="GetAccessibleTokenCmdlet.cs" />
-    <Compile Include="GetAccessibleWindowStation.cs" />
-    <Compile Include="GetAccessibleWnfCmdlet.cs" />
-    <Compile Include="NdrNameData.cs" />
-    <Compile Include="NtAlpcCmdlets.cs" />
-    <Compile Include="NtDebugCmdlets.cs" />
-    <Compile Include="NtEnlistmentCmdlets.cs" />
-    <Compile Include="NtPartitionCmdlets.cs" />
-    <Compile Include="NtResourceManagerCmdlets.cs" />
-    <Compile Include="NtTransactionCmdlets.cs" />
-    <Compile Include="NtTransactionManagerCmdlets.cs" />
-    <Compile Include="NtWin32Cmdlets.cs" />
+    <Compile Include="Cmdlets\Accessible\GetAccessibleEventTraceCmdlet.cs" />
+    <Compile Include="Cmdlets\Accessible\GetAccessibleScheduledTaskCmdlet.cs" />
+    <Compile Include="Cmdlets\Accessible\GetAccessibleTokenCmdlet.cs" />
+    <Compile Include="Cmdlets\Accessible\GetAccessibleWindowStation.cs" />
+    <Compile Include="Cmdlets\Accessible\GetAccessibleWnfCmdlet.cs" />
+    <Compile Include="Cmdlets\Rpc\NdrNameData.cs" />
+    <Compile Include="Cmdlets\Object\NtAlpcCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtDebugCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtEnlistmentCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtPartitionCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtResourceManagerCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtTransactionCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtTransactionManagerCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtWin32Cmdlets.cs" />
     <Compile Include="Provider\NtDirectoryContainer.cs" />
     <Compile Include="Provider\NtKeyContainer.cs" />
     <Compile Include="Provider\NtKeyEntry.cs" />
     <Compile Include="Provider\NtObjectContainer.cs" />
     <Compile Include="Provider\NtObjectContainerEntry.cs" />
     <Compile Include="Provider\ObjectManagerPSDriveInfo.cs" />
-    <Compile Include="PSUtils.cs" />
-    <Compile Include="RpcServerCmdlets.cs" />
-    <Compile Include="RpcServerNameCmdlets.cs" />
-    <Compile Include="TestNetworkAccessCmdlet.cs" />
-    <Compile Include="Win32Cmdlets.cs" />
-    <Compile Include="CommonAccessBaseCmdlet.cs" />
+    <Compile Include="Utils\PSUtils.cs" />
+    <Compile Include="Cmdlets\Rpc\RpcServerCmdlets.cs" />
+    <Compile Include="Cmdlets\Rpc\RpcServerNameCmdlets.cs" />
+    <Compile Include="Cmdlets\Accessible\TestNetworkAccessCmdlet.cs" />
+    <Compile Include="Cmdlets\Win32\Win32Cmdlets.cs" />
+    <Compile Include="Cmdlets\Accessible\CommonAccessBaseCmdlet.cs" />
     <Compile Include="Provider\GenericObjectSecurity.cs" />
-    <Compile Include="GetAccessibleDeviceCmdlet.cs" />
-    <Compile Include="GetAccessibleFileCmdlet.cs" />
-    <Compile Include="GetAccessibleHandle.cs" />
-    <Compile Include="GetAccessibleKeyCmdlet.cs" />
-    <Compile Include="GetAccessibleNamedPipeCmdlet.cs" />
-    <Compile Include="GetAccessibleObjectCmdlet.cs" />
-    <Compile Include="GetAccessibleProcessCmdlet.cs" />
-    <Compile Include="GetAccessibleServiceCmdlet.cs" />
-    <Compile Include="NtEventCmdlets.cs" />
-    <Compile Include="NtJobCmdlets.cs" />
-    <Compile Include="NtProcessCmdlets.cs" />
-    <Compile Include="NtSectionCmdlets.cs" />
-    <Compile Include="NtSecurityCmdlets.cs" />
-    <Compile Include="NtSemaphoreCmdlets.cs" />
-    <Compile Include="NtThreadCmdlets.cs" />
-    <Compile Include="NtTokenCmdlets.cs" />
-    <Compile Include="NtHandleCmdlets.cs" />
-    <Compile Include="NtDirectoryCmdlets.cs" />
-    <Compile Include="NtFileCmdlets.cs" />
-    <Compile Include="NtKeyCmdlets.cs" />
-    <Compile Include="NtMutantCmdlets.cs" />
-    <Compile Include="NtObjectCmdlets.cs" />
-    <Compile Include="NtTypesCmdlets.cs" />
-    <Compile Include="NtSymbolicLinkCmdlet.cs" />
+    <Compile Include="Cmdlets\Accessible\GetAccessibleDeviceCmdlet.cs" />
+    <Compile Include="Cmdlets\Accessible\GetAccessibleFileCmdlet.cs" />
+    <Compile Include="Cmdlets\Accessible\GetAccessibleHandle.cs" />
+    <Compile Include="Cmdlets\Accessible\GetAccessibleKeyCmdlet.cs" />
+    <Compile Include="Cmdlets\Accessible\GetAccessibleNamedPipeCmdlet.cs" />
+    <Compile Include="Cmdlets\Accessible\GetAccessibleObjectCmdlet.cs" />
+    <Compile Include="Cmdlets\Accessible\GetAccessibleProcessCmdlet.cs" />
+    <Compile Include="Cmdlets\Accessible\GetAccessibleServiceCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\NtEventCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtJobCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtProcessCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtSectionCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtSecurityCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtSemaphoreCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtThreadCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtTokenCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtHandleCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtDirectoryCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtFileCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtKeyCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtMutantCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtObjectCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtTypesCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtSymbolicLinkCmdlet.cs" />
     <Compile Include="Provider\NtDirectoryEntry.cs" />
     <Compile Include="Provider\NtObjectManagerProvider.cs" />
-    <Compile Include="NtWaitCmdlets.cs" />
+    <Compile Include="Cmdlets\Object\NtWaitCmdlets.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -140,7 +140,7 @@
       <VersionMinor>0</VersionMinor>
       <Lcid>0</Lcid>
       <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>False</Isolated>
+      <Isolated>True</Isolated>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </COMReference>
   </ItemGroup>
