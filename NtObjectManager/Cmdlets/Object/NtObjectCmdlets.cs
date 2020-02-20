@@ -231,19 +231,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <returns>The full NT path.</returns>
         protected virtual string GetWin32Path(string path)
         {
-            List<string> ret = new List<string>();
-            int session_id = NtProcess.Current.SessionId;
-            if (session_id != 0)
-            {
-                ret.Add("Sessions");
-                ret.Add(session_id.ToString());
-            }
-            ret.Add("BaseNamedObjects");
-            if (!string.IsNullOrEmpty(path))
-            {
-                ret.AddRange(Path.Split('\\'));
-            }
-            return $@"\{string.Join(@"\", ret)}";
+            return $@"{NtDirectory.GetBasedNamedObjects()}\{path}";
         }
 
         /// <summary>

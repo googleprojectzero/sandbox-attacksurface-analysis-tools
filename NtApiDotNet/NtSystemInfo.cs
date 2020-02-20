@@ -586,6 +586,19 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the address of an object in kernel memory from the handle table and initialize the Address property.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="objs">Any remaining objects.</param>
+        public static void ResolveObjectAddress(NtObject obj, params NtObject[] objs)
+        {
+            List<NtObject> list = new List<NtObject>();
+            list.Add(obj);
+            list.AddRange(objs);
+            ResolveObjectAddress(list);
+        }
+
+        /// <summary>
         /// Query whether a file is trusted for dynamic code.
         /// </summary>
         /// <param name="handle">The handle to a file to query.</param>
