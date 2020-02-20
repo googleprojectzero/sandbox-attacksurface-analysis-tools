@@ -1112,6 +1112,18 @@ namespace NtApiDotNet.Win32
             AccessMask dwDesiredAccess,
             SECURITY_ATTRIBUTES lpsa
         );
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        internal static extern SafeKernelObjectHandle CreateRemoteThreadEx(
+            SafeKernelObjectHandle hProcess,
+            [In] SECURITY_ATTRIBUTES lpThreadAttributes,
+            IntPtr dwStackSize,
+            IntPtr lpStartAddress,
+            IntPtr lpParameter,
+            CreateThreadFlags dwCreationFlags,
+            SafeBuffer lpAttributeList,
+            OptionalInt32 lpThreadId
+        );
     }
 #pragma warning restore 1591
 }

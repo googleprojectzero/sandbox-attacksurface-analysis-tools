@@ -193,6 +193,26 @@ namespace NtApiDotNet.Win32
         Audit = 2,
     }
 
+    /// <summary>
+    /// Flags for create thread.
+    /// </summary>
+    [Flags]
+    public enum CreateThreadFlags : uint
+    {
+        /// <summary>
+        /// No flags.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Create suspended.
+        /// </summary>
+        Suspended = 0x00000004,
+        /// <summary>
+        /// Stack size is a reservation.
+        /// </summary>
+        StackSizeParamIsAReservation = 0x00010000,
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     struct Win32kFilterAttribute
     {

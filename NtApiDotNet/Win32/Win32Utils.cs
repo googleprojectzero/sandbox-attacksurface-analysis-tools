@@ -53,7 +53,7 @@ namespace NtApiDotNet.Win32
         {
             Regex re = new Regex("([A-Z])");
 
-            foreach(uint mask in Enum.GetValues(enumType))
+            foreach (uint mask in Enum.GetValues(enumType))
             {
                 if (IsValidMask(mask, valid_mask))
                 {
@@ -95,7 +95,7 @@ namespace NtApiDotNet.Win32
         /// <param name="name">The name of the object to display.</param>
         /// <param name="sd">The security descriptor to display.</param>
         /// <param name="type">The NT type of the object.</param>
-        public static void EditSecurity(IntPtr hwnd, string name, SecurityDescriptor sd, NtType type) 
+        public static void EditSecurity(IntPtr hwnd, string name, SecurityDescriptor sd, NtType type)
         {
             EditSecurity(hwnd, name, sd, type.AccessRightsType, type.ValidAccess, type.GenericMapping);
         }
@@ -109,7 +109,7 @@ namespace NtApiDotNet.Win32
         /// <param name="access_type">An enumerated type for the access mask.</param>
         /// <param name="generic_mapping">Generic mapping for the access rights.</param>
         /// <param name="valid_access">Valid access mask for the access rights.</param>
-        public static void EditSecurity(IntPtr hwnd, string name, SecurityDescriptor sd, 
+        public static void EditSecurity(IntPtr hwnd, string name, SecurityDescriptor sd,
             Type access_type, AccessMask valid_access, GenericMapping generic_mapping)
         {
             Dictionary<uint, String> access = GetMaskDictionary(access_type, valid_access);
@@ -442,6 +442,101 @@ namespace NtApiDotNet.Win32
             if (handle.IsInvalid)
                 throw new SafeWin32Exception();
             return new NtWindowStation(handle);
+        }
+
+        /// <summary>
+        /// Create a remote thread.
+        /// </summary>
+        /// <param name="process">The process to create the thread in.</param>
+        /// <param name="security_descriptor">The thread security descriptor.</param>
+        /// <param name="inherit_handle">Whether the handle should be inherited.</param>
+        /// <param name="stack_size">The size of the stack. 0 for default.</param>
+        /// <param name="start_address">Start address for the thread.</param>
+        /// <param name="parameter">Parameter to pass to the thread.</param>
+        /// <param name="flags">The flags for the thread creation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The created thread.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtResult<NtThread> CreateRemoteThread(
+            NtProcess process,
+            SecurityDescriptor security_descriptor,
+            bool inherit_handle,
+            long stack_size,
+            long start_address,
+            long parameter,
+            CreateThreadFlags flags,
+            bool throw_on_error)
+        {
+            if (process == null)
+            {
+                throw new ArgumentNullException(nameof(process));
+            }
+
+            using (var resources = new DisposableList())
+            {
+                SECURITY_ATTRIBUTES sec_attr = null;
+                if (security_descriptor != null || inherit_handle)
+                {
+                    sec_attr = new SECURITY_ATTRIBUTES
+                    {
+                        bInheritHandle = inherit_handle,
+                        lpSecurityDescriptor = security_descriptor == null ? SafeHGlobalBuffer.Null :
+                        resources.AddResource(security_descriptor.ToSafeBuffer())
+                    };
+                }
+
+                var handle = Win32NativeMethods.CreateRemoteThreadEx(process.GetHandle(),
+                    sec_attr, new IntPtr(stack_size), new IntPtr(start_address),
+                    new IntPtr(parameter), flags, SafeHGlobalBuffer.Null, null);
+                if (handle.IsInvalid)
+                {
+                    return NtObjectUtils.CreateResultFromDosError<NtThread>(throw_on_error);
+                }
+                return new NtThread(handle).CreateResult();
+            }
+        }
+
+        /// <summary>
+        /// Create a remote thread.
+        /// </summary>
+        /// <param name="process">The process to create the thread in.</param>
+        /// <param name="security_descriptor">The thread security descriptor.</param>
+        /// <param name="inherit_handle">Whether the handle should be inherited.</param>
+        /// <param name="stack_size">The size of the stack. 0 for default.</param>
+        /// <param name="start_address">Start address for the thread.</param>
+        /// <param name="parameter">Parameter to pass to the thread.</param>
+        /// <param name="flags">The flags for the thread creation.</param>
+        /// <returns>The created thread.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtThread CreateRemoteThread(
+            NtProcess process,
+            SecurityDescriptor security_descriptor,
+            bool inherit_handle,
+            long stack_size,
+            long start_address,
+            long parameter,
+            CreateThreadFlags flags)
+        {
+            return CreateRemoteThread(process, security_descriptor, inherit_handle,
+                stack_size, start_address, parameter, flags, true).Result;
+        }
+
+        /// <summary>
+        /// Create a remote thread.
+        /// </summary>
+        /// <param name="process">The process to create the thread in.</param>
+        /// <param name="start_address">Start address for the thread.</param>
+        /// <param name="parameter">Parameter to pass to the thread.</param>
+        /// <param name="flags">The flags for the thread creation.</param>
+        /// <returns>The created thread.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtThread CreateRemoteThread(
+            NtProcess process,
+            long start_address,
+            long parameter,
+            CreateThreadFlags flags)
+        {
+            return CreateRemoteThread(process, null, false, 0, start_address, parameter, flags);
         }
     }
 }
