@@ -136,7 +136,7 @@ namespace NtApiDotNet
                     {
                         process_params = config.ProcessParametersCallback(process_params, dispose);
                     }
-                    if (!string.IsNullOrWhiteSpace(config.RedirectionDllName) 
+                    if (!string.IsNullOrWhiteSpace(config.RedirectionDllName)
                         && NtObjectUtils.SupportedVersion >= SupportedVersion.Windows10_19H1)
                     {
                         var str = dispose.AddResource(new UnicodeStringAllocated(config.RedirectionDllName));
@@ -1671,6 +1671,82 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Set thread intelligence logging flags.
+        /// </summary>
+        /// <param name="flags">The flags to set.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetProcessLogging(ProcessLoggingFlags flags, bool throw_on_error)
+        {
+            ProcessInformationClass info_class;
+            if ((flags & (ProcessLoggingFlags.ProcessSuspendResume | ProcessLoggingFlags.ThreadSuspendResume)) != 0)
+            {
+                info_class = ProcessInformationClass.ProcessEnableLogging;
+            }
+            else
+            {
+                info_class = ProcessInformationClass.ProcessEnableReadWriteVmLogging;
+            }
+
+            return Set(info_class, (int)flags, throw_on_error);
+        }
+
+        /// <summary>
+        /// Set thread intelligence logging flags.
+        /// </summary>
+        /// <param name="flags">The flags to set.</param>
+        public void SetProcessLogging(ProcessLoggingFlags flags)
+        {
+            SetProcessLogging(flags, true);
+        }
+
+        /// <summary>
+        /// Get the process security domain.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The security domain.</returns>
+        public NtResult<long> GetSecurityDomain(bool throw_on_error)
+        {
+            return Query(ProcessInformationClass.ProcessSecurityDomainInformation,
+                new ProcessSecurityDomainInformation(), throw_on_error).Map(r => r.SecurityDomain);
+        }
+
+        /// <summary>
+        /// Get the process security domain.
+        /// </summary>
+        /// <returns>The security domain.</returns>
+        public long GetSecurityDomain()
+        {
+            return GetSecurityDomain(true).Result;
+        }
+
+        /// <summary>
+        /// Combine two process' security domains.
+        /// </summary>
+        /// <param name="process">The process to combine with. Needs QueryLimitedInformation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        /// <remarks>The current process need SetLimitedInformation access.</remarks>
+        public NtStatus CombineSecurityDomain(NtProcess process, bool throw_on_error)
+        {
+            var info = new ProcessCombineSecurityDomainInformation()
+            {
+                ProcessHandle = process.Handle.DangerousGetHandle()
+            };
+            return Set(ProcessInformationClass.ProcessCombineSecurityDomainsInformation, info, throw_on_error);
+        }
+
+        /// <summary>
+        /// Combine two process' security domains.
+        /// </summary>
+        /// <param name="process">The process to combine with. Needs QueryLimitedInformation.</param>
+        /// <remarks>The current process need SetLimitedInformation access.</remarks>
+        public void CombineSecurityDomain(NtProcess process)
+        {
+            CombineSecurityDomain(process, true);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -2083,6 +2159,11 @@ namespace NtApiDotNet
             get => QueryToken(t => t.VirtualizationEnabled, false);
             set => Set(ProcessInformationClass.ProcessTokenVirtualizationEnabled, value ? 1 : 0);
         }
+
+        /// <summary>
+        /// Get the security domain of the process.
+        /// </summary>
+        public long SecurityDomain => GetSecurityDomain();
 
         #endregion
 

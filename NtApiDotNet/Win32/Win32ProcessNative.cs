@@ -585,6 +585,12 @@ namespace NtApiDotNet.Win32
         ModuleTamperingProtectionAlwaysOn = (0x00000001UL << 12),
         ModuleTamperingProtectionAlwaysOff = (0x00000002UL << 12),
         ModuleTamperingProtectionNoInherit = (0x00000003UL << 12),
+        RestrictBranchPredictionAlwaysOn = (0x00000001UL << 16),
+        RestrictBranchPredictionAlwaysOff  = (0x00000002UL << 16),
+        AllowDowngradeDynamicCodePolicyAlwaysOn = (0x00000001UL << 20),
+        AllowDowngradeDynamicCodePolicyAlwaysOff = (0x00000002UL << 20),
+        SpeculativeStoreBypassDisableAlwaysOn = (0x00000001UL << 24),
+        SpeculativeStoreBypassDisableAlwaysOff = (0x00000002UL << 24),
     }
 
     [Flags]

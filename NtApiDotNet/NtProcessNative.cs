@@ -182,7 +182,7 @@ namespace NtApiDotNet
             level = (byte)((int)type | (audit ? 0x8 : 0) | ((int)signer << 4));
         }
 
-        public PsProtection(PsProtectedType type, PsProtectedSigner signer) 
+        public PsProtection(PsProtectedType type, PsProtectedSigner signer)
             : this(type, signer, false)
         {
         }
@@ -400,97 +400,118 @@ namespace NtApiDotNet
         Spare = 0x80
     }
 
+    [Flags]
+    public enum ProcessLoggingFlags
+    {
+        ReadVm = 1,
+        WriteVm = 2,
+        ProcessSuspendResume = 4,
+        ThreadSuspendResume = 8,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ProcessSecurityDomainInformation
+    {
+        public long SecurityDomain;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ProcessCombineSecurityDomainInformation
+    {
+        public IntPtr ProcessHandle;
+    }
+
     public enum ProcessInformationClass
     {
-        ProcessBasicInformation, // 0, q: PROCESS_BASIC_INFORMATION, PROCESS_EXTENDED_BASIC_INFORMATION
-        ProcessQuotaLimits, // qs: QUOTA_LIMITS, QUOTA_LIMITS_EX
-        ProcessIoCounters, // q: IO_COUNTERS
-        ProcessVmCounters, // q: VM_COUNTERS, VM_COUNTERS_EX, VM_COUNTERS_EX2
-        ProcessTimes, // q: KERNEL_USER_TIMES
-        ProcessBasePriority, // s: KPRIORITY
-        ProcessRaisePriority, // s: ULONG
-        ProcessDebugPort, // q: HANDLE
-        ProcessExceptionPort, // s: HANDLE
-        ProcessAccessToken, // s: PROCESS_ACCESS_TOKEN
-        ProcessLdtInformation, // 10, qs: PROCESS_LDT_INFORMATION
-        ProcessLdtSize, // s: PROCESS_LDT_SIZE
-        ProcessDefaultHardErrorMode, // qs: ULONG
-        ProcessIoPortHandlers, // (kernel-mode only)
-        ProcessPooledUsageAndLimits, // q: POOLED_USAGE_AND_LIMITS
-        ProcessWorkingSetWatch, // q: PROCESS_WS_WATCH_INFORMATION[]; s: void
+        ProcessBasicInformation, 
+        ProcessQuotaLimits, 
+        ProcessIoCounters, 
+        ProcessVmCounters, 
+        ProcessTimes, 
+        ProcessBasePriority, 
+        ProcessRaisePriority, 
+        ProcessDebugPort, 
+        ProcessExceptionPort, 
+        ProcessAccessToken, 
+        ProcessLdtInformation, 
+        ProcessLdtSize, 
+        ProcessDefaultHardErrorMode, 
+        ProcessIoPortHandlers, 
+        ProcessPooledUsageAndLimits, 
+        ProcessWorkingSetWatch, 
         ProcessUserModeIOPL,
-        ProcessEnableAlignmentFaultFixup, // s: BOOLEAN
-        ProcessPriorityClass, // qs: PROCESS_PRIORITY_CLASS
+        ProcessEnableAlignmentFaultFixup, 
+        ProcessPriorityClass, 
         ProcessWx86Information,
-        ProcessHandleCount, // 20, q: ULONG, PROCESS_HANDLE_INFORMATION
-        ProcessAffinityMask, // s: KAFFINITY
-        ProcessPriorityBoost, // qs: ULONG
-        ProcessDeviceMap, // qs: PROCESS_DEVICEMAP_INFORMATION, PROCESS_DEVICEMAP_INFORMATION_EX
-        ProcessSessionInformation, // q: PROCESS_SESSION_INFORMATION
-        ProcessForegroundInformation, // s: PROCESS_FOREGROUND_BACKGROUND
-        ProcessWow64Information, // q: ULONG_PTR
-        ProcessImageFileName, // q: UNICODE_STRING
-        ProcessLUIDDeviceMapsEnabled, // q: ULONG
-        ProcessBreakOnTermination, // qs: ULONG
-        ProcessDebugObjectHandle, // 30, q: HANDLE
-        ProcessDebugFlags, // qs: ULONG
-        ProcessHandleTracing, // q: PROCESS_HANDLE_TRACING_QUERY; s: size 0 disables, otherwise enables
-        ProcessIoPriority, // qs: ULONG
-        ProcessExecuteFlags, // qs: ULONG
+        ProcessHandleCount, 
+        ProcessAffinityMask, 
+        ProcessPriorityBoost, 
+        ProcessDeviceMap, 
+        ProcessSessionInformation, 
+        ProcessForegroundInformation, 
+        ProcessWow64Information, 
+        ProcessImageFileName, 
+        ProcessLUIDDeviceMapsEnabled, 
+        ProcessBreakOnTermination, 
+        ProcessDebugObjectHandle, 
+        ProcessDebugFlags, 
+        ProcessHandleTracing, 
+        ProcessIoPriority, 
+        ProcessExecuteFlags, 
         ProcessResourceManagement,
-        ProcessCookie, // q: ULONG
-        ProcessImageInformation, // q: SECTION_IMAGE_INFORMATION
-        ProcessCycleTime, // q: PROCESS_CYCLE_TIME_INFORMATION // since VISTA
-        ProcessPagePriority, // q: ULONG
-        ProcessInstrumentationCallback, // 40
-        ProcessThreadStackAllocation, // s: PROCESS_STACK_ALLOCATION_INFORMATION, PROCESS_STACK_ALLOCATION_INFORMATION_EX
-        ProcessWorkingSetWatchEx, // q: PROCESS_WS_WATCH_INFORMATION_EX[]
-        ProcessImageFileNameWin32, // q: UNICODE_STRING
-        ProcessImageFileMapping, // q: HANDLE (input)
-        ProcessAffinityUpdateMode, // qs: PROCESS_AFFINITY_UPDATE_MODE
-        ProcessMemoryAllocationMode, // qs: PROCESS_MEMORY_ALLOCATION_MODE
-        ProcessGroupInformation, // q: USHORT[]
-        ProcessTokenVirtualizationEnabled, // s: ULONG
-        ProcessConsoleHostProcess, // q: ULONG_PTR
-        ProcessWindowInformation, // 50, q: PROCESS_WINDOW_INFORMATION
-        ProcessHandleInformation, // q: PROCESS_HANDLE_SNAPSHOT_INFORMATION // since WIN8
-        ProcessMitigationPolicy, // s: PROCESS_MITIGATION_POLICY_INFORMATION
+        ProcessCookie, 
+        ProcessImageInformation, 
+        ProcessCycleTime, 
+        ProcessPagePriority, 
+        ProcessInstrumentationCallback, 
+        ProcessThreadStackAllocation, 
+        ProcessWorkingSetWatchEx, 
+        ProcessImageFileNameWin32, 
+        ProcessImageFileMapping, 
+        ProcessAffinityUpdateMode, 
+        ProcessMemoryAllocationMode, 
+        ProcessGroupInformation, 
+        ProcessTokenVirtualizationEnabled, 
+        ProcessConsoleHostProcess, 
+        ProcessWindowInformation, 
+        ProcessHandleInformation, 
+        ProcessMitigationPolicy, 
         ProcessDynamicFunctionTableInformation,
         ProcessHandleCheckingMode,
-        ProcessKeepAliveCount, // q: PROCESS_KEEPALIVE_COUNT_INFORMATION
-        ProcessRevokeFileHandles, // s: PROCESS_REVOKE_FILE_HANDLES_INFORMATION
-        ProcessWorkingSetControl, // s: PROCESS_WORKING_SET_CONTROL
-        ProcessHandleTable, // since WINBLUE
+        ProcessKeepAliveCount, 
+        ProcessRevokeFileHandles, 
+        ProcessWorkingSetControl, 
+        ProcessHandleTable, 
         ProcessCheckStackExtentsMode,
-        ProcessCommandLineInformation, // 60, q: UNICODE_STRING
-        ProcessProtectionInformation, // q: PS_PROTECTION
-        ProcessMemoryExhaustion, // PROCESS_MEMORY_EXHAUSTION_INFO // since THRESHOLD
-        ProcessFaultInformation, // PROCESS_FAULT_INFORMATION
-        ProcessTelemetryIdInformation, // PROCESS_TELEMETRY_ID_INFORMATION
-        ProcessCommitReleaseInformation, // PROCESS_COMMIT_RELEASE_INFORMATION
+        ProcessCommandLineInformation, 
+        ProcessProtectionInformation, 
+        ProcessMemoryExhaustion, 
+        ProcessFaultInformation, 
+        ProcessTelemetryIdInformation, 
+        ProcessCommitReleaseInformation, 
         ProcessDefaultCpuSetsInformation,
         ProcessAllowedCpuSetsInformation,
         ProcessSubsystemProcess,
-        ProcessJobMemoryInformation, // PROCESS_JOB_MEMORY_INFO
-        ProcessInPrivate, // since THRESHOLD2 // 70
+        ProcessJobMemoryInformation, 
+        ProcessInPrivate, 
         ProcessRaiseUMExceptionOnInvalidHandleClose,
         ProcessIumChallengeResponse,
-        ProcessChildProcessInformation, // PROCESS_CHILD_PROCESS_INFORMATION
+        ProcessChildProcessInformation, 
         ProcessHighGraphicsPriorityInformation,
-        ProcessSubsystemInformation, // q: SUBSYSTEM_INFORMATION_TYPE // since REDSTONE2
-        ProcessEnergyValues, // PROCESS_ENERGY_VALUES, PROCESS_EXTENDED_ENERGY_VALUES
-        ProcessActivityThrottleState, // PROCESS_ACTIVITY_THROTTLE_STATE
-        ProcessActivityThrottlePolicy, // PROCESS_ACTIVITY_THROTTLE_POLICY
+        ProcessSubsystemInformation, 
+        ProcessEnergyValues, 
+        ProcessActivityThrottleState, 
+        ProcessActivityThrottlePolicy, 
         ProcessWin32kSyscallFilterInformation,
         ProcessDisableSystemAllowedCpuSets,
-        ProcessWakeInformation, // PROCESS_WAKE_INFORMATION
-        ProcessEnergyTrackingState, // PROCESS_ENERGY_TRACKING_STATE
-        ProcessManageWritesToExecutableMemory, // MANAGE_WRITES_TO_EXECUTABLE_MEMORY // since REDSTONE3
+        ProcessWakeInformation, 
+        ProcessEnergyTrackingState, 
+        ProcessManageWritesToExecutableMemory, 
         ProcessCaptureTrustletLiveDump,
         ProcessTelemetryCoverage,
         ProcessEnclaveInformation,
-        ProcessEnableReadWriteVmLogging, // PROCESS_READWRITEVM_LOGGING_INFORMATION
-        ProcessUptimeInformation, // PROCESS_UPTIME_INFORMATION
+        ProcessEnableReadWriteVmLogging, 
+        ProcessUptimeInformation, 
         ProcessImageSection,
         ProcessDebugAuthInformation,
         ProcessSystemResourceManagement,
