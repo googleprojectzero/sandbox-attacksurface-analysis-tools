@@ -5918,3 +5918,28 @@ function Get-Win32ModuleImport {
         $imports | Write-Output
     }
 }
+
+<#
+.SYNOPSIS
+Gets entries from an object directory.
+.DESCRIPTION
+This cmdlet gets the list entries in an object directory.
+.PARAMETER Directory
+Specify the directory.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.ObjectDirectoryInformation[]
+.EXAMPLE
+Get-NtDirectoryEntry $dir
+Get list of entries from $dir.
+#>
+function Get-NtDirectoryEntry {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.NtDirectory]$Directory
+    )
+
+    $Directory.Query() | Write-Output
+}
