@@ -69,10 +69,11 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Format-NtToken', 'Remove-NtTokenPrivilege', 'Get-NtTokenPrivilege', 'Get-NtLocallyUniqueId', 'Get-NtTokenGroup',
           'Get-NtTokenSid', 'Set-NtTokenSid', 'Set-NtTokenGroup', 'Get-NtDesktopName', 'Get-NtWindowStationName',
           'Get-NtWindow', 'Out-HexDump', 'Get-NtTypeAccess', 'Get-NtAtom', 'Add-NtAtom', 'Remove-NtAtom',
-          'Import-Win32Module', 'Get-Win32Module', 'Get-Win32ModuleExport', 'Get-Win32ModuleImport', 'Get-NtDirectoryEntry'
+          'Import-Win32Module', 'Get-Win32Module', 'Get-Win32ModuleExport', 'Get-Win32ModuleImport', 'Get-NtDirectoryEntry',
+          'Remove-NtKeyValue'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
+CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
                'Get-NtFileReparsePoint', 'Get-NtHandle', 'Get-NtKey', 'Get-NtMutant', 
                'Get-NtNamedPipeFile', 'Get-NtObject', 'Get-NtProcess', 
                'Get-NtSemaphore', 'Get-NtStatus', 'Get-NtSymbolicLink', 
@@ -85,7 +86,7 @@ CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile',
                'Get-AccessibleKey', 'Get-AccessibleProcess', 'Get-AccessibleFile',
                'Get-AccessibleObject', 'Get-NtAccessMask', 'Get-AccessibleDevice',
                'Get-AccessibleNamedPipe', 'Get-NtGrantedAccess', 'Get-NtJob', 'New-NtJob',
-               'Get-AccessibleService', 'Get-AccessibleHandle', 'Remove-NtKey', 'New-NtToken',
+               'Get-AccessibleService', 'Get-AccessibleHandle', 'Remove-NtKeyHive', 'New-NtToken',
                'Remove-NtFile', 'Get-NtDirectoryChild', 'Get-NtKeyChild', 'Add-DosDevice', 
                'Remove-DosDevice', 'Get-NtFileChild', 'Set-NtFileReparsePoint',
                'Get-NtPartition', 'New-NtPartition', 'Get-NtWaitTimeout', 'New-NtTransaction', 
@@ -104,7 +105,7 @@ CmdletsToExport = 'Add-NtKey', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile',
                'Test-NtToken', 'Get-AccessibleToken', 'Set-NtProcessJob', 
                'Get-AccessibleWnf', 'Get-AccessibleWindowStation', 'Get-NtProcessJob',
                'Get-NtWindowStation', 'Get-NtDesktop', 'New-NtWindowStation',
-               'New-NtDesktop', 'Get-Win32Error'
+               'New-NtDesktop', 'Get-Win32Error', 'Set-NtKeyValue', 'Remove-NtKey'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @()

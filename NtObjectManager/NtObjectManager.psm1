@@ -4312,7 +4312,7 @@ function Start-Win32ChildProcess {
 .SYNOPSIS
 Get the values from a registry key.
 .DESCRIPTION
-This cmdlet will get one more values from a registry key.
+This cmdlet will get one or more values from a registry key.
 .PARAMETER Key
 The base key to query the values from.
 .PARAMETER Name
@@ -4320,6 +4320,8 @@ The name of the value to query. If not specified then returns all values.
 .PARAMETER AsString
 Output the values as strings.
 .INPUTS
+None
+.OUTPUTS
 NtKeyValue
 .EXAMPLE
 Get-NtKeyValue $key
@@ -4357,6 +4359,38 @@ function Get-NtKeyValue {
         }
     } else {
         $values | Write-Output
+    }
+}
+
+<#
+.SYNOPSIS
+Remove a value from a registry key.
+.DESCRIPTION
+This cmdlet will remove one more values from a registry key.
+.PARAMETER Key
+The base key to remove the values from.
+.PARAMETER Name
+The names of the values to remove.
+.INPUTS
+None
+.EXAMPLE
+Remove-NtKeyValue -Key $key -Name ABC
+Removes the value ABC from the Key.
+.EXAMPLE
+Remove-NtKeyValue -Key $key -Name ABC, XYZ
+Removes the value ABC and XYZ from the Key.
+#>
+function Remove-NtKeyValue {
+    [CmdletBinding(DefaultParameterSetName="All")]
+    Param(
+        [parameter(Mandatory, Position=0)]
+        [NtApiDotNet.NtKey]$Key,
+        [parameter(Mandatory, Position=1)]
+        [string[]]$Name
+    )
+    foreach($n in $Name)
+    {
+        $Key.DeleteValue($n)
     }
 }
 

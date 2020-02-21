@@ -16,6 +16,7 @@ using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -557,9 +558,18 @@ namespace NtApiDotNet
         /// <summary>
         /// Delete the key
         /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        public NtStatus Delete(bool throw_on_error)
+        {
+            return NtSystemCalls.NtDeleteKey(Handle).ToNtException(throw_on_error);
+        }
+
+        /// <summary>
+        /// Delete the key
+        /// </summary>
         public void Delete()
         {
-            NtSystemCalls.NtDeleteKey(Handle).ToNtException();
+            Delete(true);
         }
 
         /// <summary>
@@ -586,7 +596,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public void SetValue(string value_name, RegistryValueType type, byte[] data)
         {
-            SetValue(value_name, type, data);
+            SetValue(value_name, type, data, true);
         }
 
         /// <summary>
@@ -679,6 +689,25 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Set a DWORD resistry value
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <param name="data">The value data</param>
+        /// <param name="big_endian">True to set the value of big endian.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <returns>The NT status code.</returns>
+        public NtStatus SetValue(string value_name, bool big_endian, uint data, bool throw_on_error)
+        {
+            byte[] ba = BitConverter.GetBytes(data);
+            if (big_endian)
+            {
+                ba = ba.Reverse().ToArray();
+            }
+            return SetValue(value_name, big_endian ? RegistryValueType.DwordBigEndian : RegistryValueType.Dword, ba, throw_on_error);
+        }
+
+        /// <summary>
         /// Set a QWORD resistry value
         /// </summary>
         /// <param name="value_name">The name of the value</param>
@@ -700,6 +729,18 @@ namespace NtApiDotNet
         public void SetValue(string value_name, uint data)
         {
             SetValue(value_name, data, true);
+        }
+
+        /// <summary>
+        /// Set a DWORD resistry value
+        /// </summary>
+        /// <param name="value_name">The name of the value</param>
+        /// <param name="data">The value data</param>
+        /// <param name="big_endian">True to set the value of big endian.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public void SetValue(string value_name, bool big_endian, uint data)
+        {
+            SetValue(value_name, big_endian, data, true);
         }
 
         /// <summary>

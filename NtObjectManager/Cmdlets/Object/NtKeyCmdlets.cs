@@ -15,6 +15,7 @@
 using NtApiDotNet;
 using System;
 using System.Management.Automation;
+using System.Text;
 
 namespace NtObjectManager.Cmdlets.Object
 {
@@ -133,19 +134,19 @@ namespace NtObjectManager.Cmdlets.Object
     /// <para type="description">This cmdlet loads a registry hive to somewhere in the registry namespace. If the hive file doesn't exist it will be created.</para>
     /// </summary>
     /// <example>
-    ///   <code>$token = Get-NtTokenPrimary&#x0A;$token.SetPrivilege("SeRestorePrivilege", $true)&#x0A;$obj = Add-NtKey \??\C:\Windows\Temp\test.hiv \Registry\Machine\ABC</code>
+    ///   <code>$token = Get-NtTokenPrimary&#x0A;$token.SetPrivilege("SeRestorePrivilege", $true)&#x0A;$obj = Add-NtKeyHive \??\C:\Windows\Temp\test.hiv \Registry\Machine\ABC</code>
     ///   <para>Load a hive to a new attachment point.</para>
     /// </example>
     /// <example>
-    ///   <code>$obj = Add-NtKey \??\C:\Windows\Temp\test.hiv \Registry\A\ABC -LoadFlags AppKey</code>
+    ///   <code>$obj = Add-NtKeyHive \??\C:\Windows\Temp\test.hiv \Registry\A\ABC -LoadFlags AppKey</code>
     ///   <para>Load a app hive to a new attachment point (can be done without privileges).</para>
     /// </example>
     /// <example>
-    ///   <code>$obj = Add-NtKey \??\C:\Windows\Temp\test.hiv \Registry\A\ABC -LoadFlags AppKey,ReadOnly</code>
+    ///   <code>$obj = Add-NtKeyHive \??\C:\Windows\Temp\test.hiv \Registry\A\ABC -LoadFlags AppKey,ReadOnly</code>
     ///   <para>Load a app hive to a new attachment point read-only.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.Add, "NtKey")]
+    [Cmdlet(VerbsCommon.Add, "NtKeyHive")]
     [OutputType(typeof(NtKey))]
     public sealed class AddNtKeyHiveCmdlet : NtObjectBaseCmdletWithAccess<KeyAccessRights>
     {
@@ -228,19 +229,104 @@ namespace NtObjectManager.Cmdlets.Object
     }
 
     /// <summary>
+    /// <para type="synopsis">Deletes a registry key.</para>
+    /// <para type="description">This cmdlet deletes a registry key.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>Remove-NtKey \Registry\Machine\SOFTWARE\ABC</code>
+    ///   <para>Deletes the \Registry\Machine\SOFTWARE\ABC key.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Remove-NtKey -Path ABC -Root $key</code>
+    ///   <para>Deletes the key ABC under root $key.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Remove-NtKey $key</code>
+    ///   <para>Deletes the existing key $key.</para>
+    /// </example>
+    [Cmdlet(VerbsCommon.Remove, "NtKey")]
+    public sealed class RemoveKeyCmdlet : PSCmdlet
+    {
+        /// <summary>
+        /// <para type="description">The NT object manager path for the key to delete.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromPath")]
+        public string Path { get; set; }
+
+        /// <summary>
+        /// <para type="description">The root object for the key to delete. Ignored if a Win32Path.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromPath")]
+        public NtObject Root { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the path is a Win32 path.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromPath")]
+        public SwitchParameter Win32Path { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a transaction to delete the key under.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromPath")]
+        public INtTransaction Transaction { get; set; }
+
+        /// <summary>
+        /// <para type="description">An existing key to delete.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromKey")]
+        public NtKey Key { get; set; }
+
+        private ObjectAttributes GetObjectAttributes()
+        {
+            if (Win32Path)
+            {
+                return new ObjectAttributes(NtKeyUtils.Win32KeyNameToNt(Path), AttributeFlags.CaseInsensitive);
+            }
+            else
+            {
+                return new ObjectAttributes(Path, AttributeFlags.CaseInsensitive, Root);
+            }
+        }
+
+        /// <summary>
+        /// Process record.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            switch (ParameterSetName)
+            {
+                case "FromKey":
+                    Key.Delete();
+                    break;
+                case "FromPath":
+                    using (var obja = GetObjectAttributes())
+                    {
+                        using (var key = NtKey.Open(obja, KeyAccessRights.Delete, 
+                            KeyCreateOptions.NonVolatile, Transaction))
+                        {
+                            key.Delete();
+                        }
+                    }
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
     /// <para type="synopsis">Unloads a registry hive.</para>
     /// <para type="description">This cmdlet unloads a registry hive in the registry namespace.</para>
     /// </summary>
     /// <example>
-    ///   <code>Remove-NtKey \Registry\Machine\ABC</code>
+    ///   <code>Remove-NtKeyHive \Registry\Machine\ABC</code>
     ///   <para>Unload the \Registry\Machine\ABC hive.</para>
     /// </example>
     /// <example>
     ///   <code>Remove-NtKey \Registry\Machine\ABC -Flags ForceUnload</code>
     ///   <para>Unload the \Registry\Machine\ABC hive, forcing the unload if necessary.</para>
     /// </example>
-    [Cmdlet(VerbsCommon.Remove, "NtKey")]
-    public sealed class RemoveKeyCmdlet : NtObjectBaseCmdlet
+    [Cmdlet(VerbsCommon.Remove, "NtKeyHive")]
+    public sealed class RemoveKeyHiveCmdlet : NtObjectBaseCmdlet
     {
         /// <summary>
         /// Determine if the cmdlet can create objects.
@@ -365,6 +451,134 @@ namespace NtObjectManager.Cmdlets.Object
         protected override bool VisitChildObjects(Func<NtKey, bool> visitor)
         {
             return Object.VisitAccessibleKeys(visitor, Access, OpenForBackup, Recurse, MaxDepth);
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Sets a registry key value.</para>
+    /// <para type="description">This cmdlet sets a registry key value on a specific key.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>Set-NtKeyValue -Key $key -String "Hello"</code>
+    ///   <para>Sets the default value to the string "Hello".</para>
+    /// </example>
+    /// <example>
+    ///   <code>Set-NtKeyValue -Key $key -Name ABC -MultiString "Hello","World!"</code>
+    ///   <para>Sets the value ABC to the multi-string "Hello" and "World!".</para>
+    /// </example>
+    /// <example>
+    ///   <code>Set-NtKeyValue -Key $key -Name ABC -ValueType Binary -Bytes @(1, 2, 3, 4)</code>
+    ///   <para>Sets the value ABC to the binary data value.</para>
+    /// </example>
+    [Cmdlet(VerbsCommon.Set, "NtKeyValue")]
+    public class SetNtKeyValueCmdlet : PSCmdlet
+    {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public SetNtKeyValueCmdlet()
+        {
+            // Default is binary type when using bytes.
+            ValueType = RegistryValueType.Binary;
+        }
+
+        /// <summary>
+        /// <para type="description">The key to set the value on.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 0)]
+        public NtKey Key { get; set; }
+
+        /// <summary>
+        /// <para type="description">The name of the value to set. If not specified it will set the default value.</para>
+        /// </summary>
+        [Parameter(Position = 1)]
+        public string Name { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the value as a string.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromString")]
+        public string String { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the value as an expanded string.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromExpandString")]
+        public string ExpandString { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the value as a string.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromMultiString")]
+        public string[] MultiString { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the value type when using bytes.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromBytes")]
+        public RegistryValueType ValueType { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the value as an array of bytes.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromBytes")]
+        public byte[] Bytes { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the value as a dword.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromDword")]
+        public uint Dword { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify whether to set the dword as big endian or little endian.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromDword")]
+        public SwitchParameter BigEndian { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the value as a qword.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromQword")]
+        public ulong Qword { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the value from an existing NtKeyValue. The name is ignored.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromValue")]
+        public NtKeyValue Value { get; set; }
+
+        /// <summary>
+        /// Overridden ProcessRecord method.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            switch (ParameterSetName)
+            {
+                case "FromString":
+                    Key.SetValue(Name, String);
+                    break;
+                case "FromExpandString":
+                    Key.SetValue(Name, RegistryValueType.ExpandString, String);
+                    break;
+                case "FromMultiString":
+                    Key.SetValue(Name, MultiString);
+                    break;
+                case "FromBytes":
+                    Key.SetValue(Name, ValueType, Bytes);
+                    break;
+                case "FromDword":
+                    Key.SetValue(Name, BigEndian, Dword);
+                    break;
+                case "FromQword":
+                    Key.SetValue(Name, Qword);
+                    break;
+                case "FromValue":
+                    Key.SetValue(Name, Value.Type, Value.Data);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid type specified");
+            }
         }
     }
 }
