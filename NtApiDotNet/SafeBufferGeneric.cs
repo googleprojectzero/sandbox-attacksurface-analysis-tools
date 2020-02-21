@@ -15,6 +15,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NtApiDotNet
 {
@@ -108,6 +109,27 @@ namespace NtApiDotNet
         public string ReadNulTerminatedUnicodeString()
         {
             return ReadNulTerminatedUnicodeString(0);
+        }
+
+        /// <summary>
+        /// Read a NUL terminated ANSI string for the byte offset.
+        /// </summary>
+        /// <param name="byte_offset">The byte offset to read from.</param>
+        /// <param name="encoding">Text encoding for the string.</param>
+        /// <returns>The string read from the buffer without the NUL terminator</returns>
+        public string ReadNulTerminatedAnsiString(ulong byte_offset, Encoding encoding)
+        {
+            return BufferUtils.ReadNulTerminatedAnsiString(this, byte_offset, encoding);
+        }
+
+        /// <summary>
+        /// Read a NUL terminated ANSI string
+        /// </summary>
+        /// <param name="encoding">Text encoding for the string.</param>
+        /// <returns>The string read from the buffer without the NUL terminator</returns>
+        public string ReadNulTerminatedAnsiString(Encoding encoding)
+        {
+            return ReadNulTerminatedAnsiString(0, encoding);
         }
 
         /// <summary>

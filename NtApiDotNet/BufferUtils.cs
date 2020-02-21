@@ -12,10 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.Text;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NtApiDotNet
 {
@@ -170,6 +172,30 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Read a NUL terminated byte string for the byte offset.
+        /// </summary>
+        /// <param name="buffer">The buffer to read from.</param>
+        /// <param name="byte_offset">The byte offset to read from.</param>
+        /// <param name="encoding">Text encoding for the string.</param>
+        /// <returns>The string read from the buffer without the NUL terminator</returns>
+        public static string ReadNulTerminatedAnsiString(SafeBuffer buffer, ulong byte_offset, Encoding encoding)
+        {
+            List<byte> chars = new List<byte>();
+            while (byte_offset < buffer.ByteLength)
+            {
+                byte b = buffer.Read<byte>(byte_offset);
+                if (b == 0)
+                {
+                    break;
+                }
+                chars.Add(b);
+                byte_offset++;
+            }
+
+            return encoding.GetString(chars.ToArray());
+        }
+
+        /// <summary>
         /// Read a NUL terminated ANSI string for the byte offset.
         /// </summary>
         /// <param name="buffer">The buffer to read from.</param>
@@ -177,18 +203,7 @@ namespace NtApiDotNet
         /// <returns>The string read from the buffer without the NUL terminator</returns>
         public static string ReadNulTerminatedAnsiString(SafeBuffer buffer, ulong byte_offset)
         {
-            List<char> chars = new List<char>();
-            while (byte_offset < buffer.ByteLength)
-            {
-                char c = (char)buffer.Read<byte>(byte_offset);
-                if (c == 0)
-                {
-                    break;
-                }
-                chars.Add(c);
-                byte_offset += 2;
-            }
-            return new string(chars.ToArray());
+            return ReadNulTerminatedAnsiString(buffer, byte_offset, BinaryEncoding.Instance);
         }
 
         /// <summary>
