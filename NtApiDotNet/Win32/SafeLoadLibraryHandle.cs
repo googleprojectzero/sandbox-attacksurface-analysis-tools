@@ -369,6 +369,18 @@ namespace NtApiDotNet.Win32
         public uint dwTimeStamp;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ImageDebugDirectory
+    {
+        public int Characteristics;
+        public int TimeDateStamp;
+        public short MajorVersion;
+        public short MinorVersion;
+        public int Type;
+        public int SizeOfData;
+        public int AddressOfRawData;
+        public int PointerToRawData;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct ImageSectionHeader
@@ -503,6 +515,71 @@ namespace NtApiDotNet.Win32
         public override string ToString()
         {
             return Name;
+        }
+    }
+
+    /// <summary>
+    /// CodeView debug data for an executable.
+    /// </summary>
+    public class DllDebugData
+    {
+        /// <summary>
+        /// The magic identifier.
+        /// </summary>
+        public uint Magic { get; }
+        /// <summary>
+        /// The unique identifier.
+        /// </summary>
+        public Guid Id { get; }
+        /// <summary>
+        /// Age of debug information.
+        /// </summary>
+        public int Age { get; }
+        /// <summary>
+        /// Path to PDB file.
+        /// </summary>
+        public string PdbPath { get; }
+        /// <summary>
+        /// Identifier path to use when looking up symbol file.
+        /// </summary>
+        public string IdentiferPath { get; }
+
+        /// <summary>
+        /// Get the symbol server path.
+        /// </summary>
+        /// <param name="symbol_url">The symbol URL, either a local path or a remote URL.</param>
+        /// <returns>The symbol server path.</returns>
+        public string GetSymbolPath(string symbol_url)
+        {
+            string filename = Path.GetFileName(PdbPath);
+            Uri uri = new Uri(symbol_url);
+            if (uri.IsFile)
+            {
+                return Path.Combine(uri.LocalPath, filename, IdentiferPath, filename);
+            }
+
+            string encoded_name = Uri.EscapeDataString(filename);
+
+            return new Uri(uri, string.Join("/", uri.AbsolutePath, encoded_name, IdentiferPath, encoded_name)).ToString();
+        }
+
+        private const uint CV_RSDS_MAGIC = 0x53445352;
+
+        internal DllDebugData(SafeHGlobalBuffer buffer) : this()
+        {
+            Magic = buffer.Read<uint>(0);
+            if (Magic == CV_RSDS_MAGIC)
+            {
+                Id = new Guid(buffer.ReadBytes(4, 16));
+                Age = buffer.Read<int>(20);
+                PdbPath = buffer.ReadNulTerminatedAnsiString(24, Encoding.UTF8);
+                IdentiferPath = $"{Id:N}{Age:X}".ToUpper();
+            }
+        }
+
+        internal DllDebugData()
+        {
+            PdbPath = string.Empty;
         }
     }
 
@@ -758,7 +835,9 @@ namespace NtApiDotNet.Win32
 
         const ushort IMAGE_DIRECTORY_ENTRY_EXPORT = 0;
         const ushort IMAGE_DIRECTORY_ENTRY_IMPORT = 1;
+        const ushort IMAGE_DIRECTORY_ENTRY_DEBUG = 6;
         const ushort IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT = 13;
+        const int IMAGE_DEBUG_TYPE_CODEVIEW = 2;
 
         private IntPtr RvaToVA(long rva)
         {
@@ -904,7 +983,7 @@ namespace NtApiDotNet.Win32
                     ordinal_to_names[ordinal] = name;
                 }
 
-                for(int i = 0; i < func_vas.Length; ++i)
+                for (int i = 0; i < func_vas.Length; ++i)
                 {
                     string forwarder = string.Empty;
                     long func_va = func_vas[i].ToInt64();
@@ -913,7 +992,7 @@ namespace NtApiDotNet.Win32
                         forwarder = Marshal.PtrToStringAnsi(func_vas[i]);
                         func_va = 0;
                     }
-                    _exports.Add(new DllExport(ordinal_to_names.ContainsKey(i) ? ordinal_to_names[i] : null, 
+                    _exports.Add(new DllExport(ordinal_to_names.ContainsKey(i) ? ordinal_to_names[i] : null,
                         i + export_directory.Base, func_va, forwarder));
                 }
             }
@@ -1005,7 +1084,7 @@ namespace NtApiDotNet.Win32
         {
             try
             {
-                IntPtr imports = Win32NativeMethods.ImageDirectoryEntryToData(handle, MappedAsImage, 
+                IntPtr imports = Win32NativeMethods.ImageDirectoryEntryToData(handle, MappedAsImage,
                     IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT, out int size);
                 if (imports == IntPtr.Zero)
                 {
@@ -1073,6 +1152,39 @@ namespace NtApiDotNet.Win32
             return null;
         }
 
+        private void ParseDebugData()
+        {
+            try
+            {
+                _debug_data = new DllDebugData();
+
+                IntPtr debug_data = Win32NativeMethods.ImageDirectoryEntryToData(handle, MappedAsImage,
+                    IMAGE_DIRECTORY_ENTRY_DEBUG, out int size);
+                if (debug_data == IntPtr.Zero)
+                {
+                    return;
+                }
+
+                SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(debug_data, size, false);
+                int count = size / Marshal.SizeOf(typeof(ImageDebugDirectory));
+
+                ImageDebugDirectory[] entries = new ImageDebugDirectory[count];
+                buffer.ReadArray(0, entries, 0, count);
+                foreach(var debug_dir in entries)
+                {
+                    if (debug_dir.Type == IMAGE_DEBUG_TYPE_CODEVIEW && debug_dir.AddressOfRawData != 0)
+                    {
+                        var codeview = new SafeHGlobalBuffer(RvaToVA(debug_dir.AddressOfRawData), debug_dir.SizeOfData, false);
+                        _debug_data = new DllDebugData(codeview);
+                        break;
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
         private bool _loaded_values;
         private List<ImageSection> _image_sections;
         private long _image_base_address;
@@ -1081,6 +1193,7 @@ namespace NtApiDotNet.Win32
         private DllCharacteristics _dll_characteristics;
         private List<DllExport> _exports;
         private List<DllImport> _imports;
+        private DllDebugData _debug_data;
 
         private void SetupValues()
         {
@@ -1213,6 +1326,21 @@ namespace NtApiDotNet.Win32
                 }
 
                 return _imports.AsReadOnly();
+            }
+        }
+
+        /// <summary>
+        /// Get CodeView Debug Data from DLL.
+        /// </summary>
+        public DllDebugData DebugData
+        {
+            get
+            {
+                if (_debug_data == null)
+                {
+                    ParseDebugData();
+                }
+                return _debug_data;
             }
         }
 
