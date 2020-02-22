@@ -294,6 +294,12 @@
     <Compile Include="Win32\RunningService.cs" />
     <Compile Include="Win32\SafeCoTaskMemHandle.cs" />
     <Compile Include="Win32\SafeLocalAllocBuffer.cs" />
+    <Compile Include="Win32\Security\ClientAuthenticationContext.cs" />
+    <Compile Include="Win32\Security\CredentialHandle.cs" />
+    <Compile Include="Win32\Security\SecurityNativeMethods.cs" />
+    <Compile Include="Win32\Security\AuthenticationPackage.cs" />
+    <Compile Include="Win32\Security\ServerAuthenticationContext.cs" />
+    <Compile Include="Win32\Security\UserCredentials.cs" />
     <Compile Include="Win32\SendInput.cs" />
     <Compile Include="Win32\ServiceInformation.cs" />
     <Compile Include="Win32\ServiceTriggerCustomData.cs" />
