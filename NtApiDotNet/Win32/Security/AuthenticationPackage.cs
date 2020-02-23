@@ -94,5 +94,23 @@ namespace NtApiDotNet.Win32.Security
         {
             return GetAuthenticationPackages().Select(p => p.Name);
         }
+
+        /// <summary>
+        /// Get an authentication package by name.
+        /// </summary>
+        /// <param name="package">The name of the package.</param>
+        /// <returns>The authentication package.</returns>
+        public static AuthenticationPackage FromName(string package)
+        {
+            SecurityNativeMethods.QuerySecurityPackageInfo(package, out IntPtr package_info).CheckResult();
+            try
+            {
+                return new AuthenticationPackage((SecPkgInfo)Marshal.PtrToStructure(package_info, typeof(SecPkgInfo)));
+            }
+            finally
+            {
+                SecurityNativeMethods.FreeContextBuffer(package_info);
+            }
+        }
     }
 }

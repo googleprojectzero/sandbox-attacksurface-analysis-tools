@@ -55,6 +55,43 @@ namespace NtApiDotNet
     }
 
     /// <summary>
+    /// This class allows a function to specify an optional uint16.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public class OptionalUInt16
+    {
+        /// <summary>
+        /// Optional value
+        /// </summary>
+        public ushort Value;
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="value">The value</param>
+        public OptionalUInt16(ushort value)
+        {
+            Value = value;
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public OptionalUInt16() : this(0)
+        {
+        }
+
+        /// <summary>
+        /// Implicit conversion
+        /// </summary>
+        /// <param name="value">The value</param>
+        public static implicit operator OptionalUInt16(ushort value)
+        {
+            return new OptionalUInt16(value);
+        }
+    }
+
+    /// <summary>
     /// This class allows a function to specify an optional int32.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]

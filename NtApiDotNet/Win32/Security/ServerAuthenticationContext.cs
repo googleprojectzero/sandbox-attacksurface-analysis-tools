@@ -52,6 +52,16 @@ namespace NtApiDotNet.Win32.Security
         }
 
         /// <summary>
+        /// Impersonate the security context.
+        /// </summary>
+        /// <returns>The disposable context to revert the impersonation.</returns>
+        public AuthenticationImpersonationContext Impersonate()
+        {
+            SecurityNativeMethods.ImpersonateSecurityContext(_context).CheckResult();
+            return new AuthenticationImpersonationContext(_context);
+        }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="creds">Credential handle.</param>

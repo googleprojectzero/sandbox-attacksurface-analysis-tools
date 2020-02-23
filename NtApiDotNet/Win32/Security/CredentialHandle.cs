@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Win32.Security
 {
@@ -24,7 +25,7 @@ namespace NtApiDotNet.Win32.Security
         /// <summary>
         /// Name of the authentication package used.
         /// </summary>
-        public string Name { get; }
+        public string PackageName { get; }
 
         /// <summary>
         /// Expiry of the credentials.
@@ -36,8 +37,39 @@ namespace NtApiDotNet.Win32.Security
         private CredentialHandle(SecHandle cred_handle, string name, LargeInteger expiry)
         {
             CredHandle = cred_handle;
-            Name = name;
+            PackageName = name;
             Expiry = expiry.QuadPart;
+        }
+
+        /// <summary>
+        /// Create a new credential handle.
+        /// </summary>
+        /// <param name="principal"></param>
+        /// <param name="package">The package name.</param>
+        /// <param name="auth_id">Optional authentication ID for the user.</param>
+        /// <param name="cred_use_flag">Credential user flags.</param>
+        /// <param name="auth_data">Optional auth data.</param>
+        /// <returns>The credential handle.</returns>
+        public static CredentialHandle Create(string principal, string package, Luid? auth_id,
+            SecPkgCredFlags cred_use_flag, SafeBuffer auth_data)
+        {
+            if (package == null)
+            {
+                throw new ArgumentNullException(nameof(package));
+            }
+
+            OptionalLuid luid = null;
+            if (auth_id.HasValue)
+            {
+                luid = new OptionalLuid() { luid = auth_id.Value };
+            }
+            SecHandle cred_handle = new SecHandle();
+            LargeInteger expiry = new LargeInteger();
+            SecurityNativeMethods.AcquireCredentialsHandle(principal, package, cred_use_flag,
+                luid, auth_data ?? SafeHGlobalBuffer.Null,
+                IntPtr.Zero, IntPtr.Zero, cred_handle, expiry)
+                .CheckResult();
+            return new CredentialHandle(cred_handle, package, expiry);
         }
 
         /// <summary>
@@ -50,20 +82,14 @@ namespace NtApiDotNet.Win32.Security
         /// <param name="credentials">Optional credentials.</param>
         /// <returns>The credential handle.</returns>
         public static CredentialHandle Create(string principal, string package, Luid? auth_id, 
-            SecPkgCredFlags cred_use_flag, UserCredentials credentials)
+            SecPkgCredFlags cred_use_flag, AuthenticationCredentials credentials)
         {
-            OptionalLuid luid = null;
-            if (auth_id.HasValue)
+            using (var list = new DisposableList())
             {
-                luid = new OptionalLuid() { luid = auth_id.Value };
+                var buffer = credentials.ToBuffer(list, package);
+                return Create(principal, package, auth_id, cred_use_flag, buffer);
             }
-            SecHandle cred_handle = new SecHandle();
-            LargeInteger expiry = new LargeInteger();
-            SecurityNativeMethods.AcquireCredentialsHandle(principal, package, cred_use_flag,
-                luid, credentials?.GetAuthIdentity(),
-                IntPtr.Zero, IntPtr.Zero, cred_handle, expiry)
-                .CheckResult();
-            return new CredentialHandle(cred_handle, package, expiry);
+
         }
 
         /// <summary>
@@ -75,7 +101,7 @@ namespace NtApiDotNet.Win32.Security
         /// <param name="credentials">Optional credentials.</param>
         /// <returns>The credential handle.</returns>
         public static CredentialHandle Create(string package, Luid? auth_id,
-            SecPkgCredFlags cred_use_flag, UserCredentials credentials)
+            SecPkgCredFlags cred_use_flag, AuthenticationCredentials credentials)
         {
             return Create(null, package, auth_id, cred_use_flag, credentials);
         }
@@ -88,7 +114,7 @@ namespace NtApiDotNet.Win32.Security
         /// <param name="credentials">Optional credentials.</param>
         /// <returns>The credential handle.</returns>
         public static CredentialHandle Create(string package, 
-            SecPkgCredFlags cred_use_flag, UserCredentials credentials)
+            SecPkgCredFlags cred_use_flag, AuthenticationCredentials credentials)
         {
             return Create(null, package, null, cred_use_flag, credentials);
         }
@@ -102,7 +128,7 @@ namespace NtApiDotNet.Win32.Security
         public static CredentialHandle Create(string package,
             SecPkgCredFlags cred_use_flag)
         {
-            return Create(null, package, null, cred_use_flag, null);
+            return Create(package, cred_use_flag, null);
         }
 
         /// <summary>

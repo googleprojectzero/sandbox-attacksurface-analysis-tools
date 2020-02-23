@@ -14,6 +14,8 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security;
+using System.Text;
 
 namespace NtApiDotNet.Win32.Security
 {
@@ -143,6 +145,57 @@ namespace NtApiDotNet.Win32.Security
         Unicode = 0x2,
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    struct SecureStringMarshal : IDisposable
+    {
+        public IntPtr Ptr;
+
+        public SecureStringMarshal(SecureString s)
+        {
+            Ptr = Marshal.SecureStringToBSTR(s);
+        }
+
+        public void Dispose()
+        {
+            if (Ptr != IntPtr.Zero)
+            {
+                Marshal.ZeroFreeBSTR(Ptr);
+            }
+        }
+    }
+
+    internal class SEC_WINNT_AUTH_IDENTITY
+    {
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string User;
+        public int UserLength;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string Domain;
+        public int DomainLength;
+        public SecureStringMarshal Password;
+        public int PasswordLength;
+        public SecWinNtAuthIdentityFlags Flags;
+
+        public SEC_WINNT_AUTH_IDENTITY()
+        {
+        }
+
+        public SEC_WINNT_AUTH_IDENTITY(string user, string domain, SecureString password, DisposableList list)
+        {
+            User = user;
+            UserLength = user?.Length ?? 0;
+            Domain = domain;
+            DomainLength = domain?.Length ?? 0;
+            if (password != null)
+            {
+                Password = list.AddResource(new SecureStringMarshal(password));
+                PasswordLength = password.Length;
+            }
+            Flags = SecWinNtAuthIdentityFlags.Unicode;
+        }
+    }
+
+
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal class SEC_WINNT_AUTH_IDENTITY_EX
     {
@@ -156,15 +209,18 @@ namespace NtApiDotNet.Win32.Security
         [MarshalAs(UnmanagedType.LPWStr)]
         public string Domain;
         public int DomainLength;
-        [MarshalAs(UnmanagedType.LPWStr)]
-        public string Password;
+        public SecureStringMarshal Password;
         public int PasswordLength;
         public SecWinNtAuthIdentityFlags Flags;
         [MarshalAs(UnmanagedType.LPWStr)]
         public string PackageList;
         public int PackageListLength;
 
-        public SEC_WINNT_AUTH_IDENTITY_EX(string user, string domain, string password)
+        public SEC_WINNT_AUTH_IDENTITY_EX()
+        {
+        }
+
+        public SEC_WINNT_AUTH_IDENTITY_EX(string user, string domain, SecureString password, DisposableList list)
         {
             Version = SEC_WINNT_AUTH_IDENTITY_VERSION;
             Length = Marshal.SizeOf(this);
@@ -172,8 +228,11 @@ namespace NtApiDotNet.Win32.Security
             UserLength = user?.Length ?? 0;
             Domain = domain;
             DomainLength = domain?.Length ?? 0;
-            Password = password;
-            PasswordLength = password?.Length ?? 0;
+            if (password != null)
+            {
+                Password = list.AddResource(new SecureStringMarshal(password));
+                PasswordLength = password.Length;
+            }
             Flags = SecWinNtAuthIdentityFlags.Unicode;
         }
     }
@@ -398,7 +457,7 @@ namespace NtApiDotNet.Win32.Security
             string pszPackage,
             SecPkgCredFlags fCredentialUse,
             OptionalLuid pvLogonId,
-            SEC_WINNT_AUTH_IDENTITY_EX pAuthData,
+            SafeBuffer pAuthData,
             IntPtr pGetKeyFn,
             IntPtr pvGetKeyArgument,
             [Out] SecHandle phCredential,
@@ -461,12 +520,48 @@ namespace NtApiDotNet.Win32.Security
             out IntPtr ppPackageInfo
         );
 
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode QuerySecurityPackageInfo(
+            string pPackageName,
+            out IntPtr ppPackageInfo
+        );
+
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode ImpersonateSecurityContext(
+          SecHandle phContext
+        );
+
+        [DllImport("Secur32.dll", CharSet = CharSet.Unicode)]
+        internal static extern SecStatusCode RevertSecurityContext(
+            SecHandle phContext
+        );
+
+        [DllImport("Ntdsapi.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error DsMakeSpn(
+            string ServiceClass,
+            string ServiceName,
+            string InstanceName,
+            ushort InstancePort,
+            string Referrer,
+            ref int pcSpnLength,
+            [In, Out] StringBuilder pszSpn
+        );
+
+        [DllImport("Ntdsapi.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error DsCrackSpn(
+            string pszSpn,
+            [In, Out] OptionalInt32 pcServiceClass,
+            [In, Out] StringBuilder ServiceClass,
+            [In, Out] OptionalInt32 pcServiceName,
+            [In, Out] StringBuilder ServiceName,
+            [In, Out] OptionalInt32 pcInstanceName,
+            [In, Out] StringBuilder InstanceName,
+            [In, Out] OptionalUInt16 pInstancePort
+        );
+
         public static SecStatusCode CheckResult(this SecStatusCode result)
         {
-            if (result < 0)
-            {
-                throw new NtException((NtStatus)(uint)result);
-            }
+            ((NtStatus)(uint)result).ToNtException();
             return result;
         }
     }
