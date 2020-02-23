@@ -2324,6 +2324,8 @@ The token to impersonate, if the token is a primary token it will be duplicated.
 The script block to execute during impersonation.
 .PARAMETER ImpersonationLevel
 When the token is duplicated specify the impersonation level to use.
+.PARAMETER Anonymous
+Impersonate the anonymous token and run the script.
 .OUTPUTS
 Result of the script block.
 .EXAMPLE
@@ -2332,23 +2334,38 @@ Open a file under impersonation.
 .EXAMPLE
 Invoke-NtToken -Token $token -ImpersonationLevel Identification -Script { Get-NtToken -Impersonation -OpenAsSelf }
 Open the impersontation token under identification level impersonation.
+.EXAMPLE
+Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -Anonymous
+Open a process while impersonating the anonymous token.
 #>
-function Invoke-NtToken{
+function Invoke-NtToken {
+    [CmdletBinding(DefaultParameterSetName="FromToken")]
     param(
-        [Parameter(Mandatory=$true, Position=0)]
+        [Parameter(Mandatory=$true, Position=0, ParameterSetName="FromToken")]
         [NtApiDotNet.NtToken]$Token,
-        [Parameter(Mandatory=$true, Position=1)]
+        [Parameter(Mandatory=$true, Position=1, ParameterSetName="FromToken")]
+        [Parameter(Mandatory=$true, Position=0, ParameterSetName="FromAnonymous")]
         [ScriptBlock]$Script,
-        [NtApiDotNet.SecurityImpersonationLevel]$ImpersonationLevel = "Impersonation"
+        [Parameter(Position=2, ParameterSetName="FromToken")]
+        [NtApiDotNet.SecurityImpersonationLevel]$ImpersonationLevel = "Impersonation",
+        [Parameter(Mandatory=$true, ParameterSetName="FromAnonymous")]
+        [switch]$Anonymous
     )
 
-    if ($Token.TokenType -eq "Impersonation" -and $Token.ImpersonationLevel -lt $ImpersonationLevel) {
-        Write-Error "Impersonation level can't be raised, specify an appropriate impersonation level"
-        return
-    }
+    if ($PSCmdlet.ParameterSetName -eq "FromToken") {
+        if ($Token.TokenType -eq "Impersonation" -and $Token.ImpersonationLevel -lt $ImpersonationLevel) {
+            Write-Error "Impersonation level can't be raised, specify an appropriate impersonation level"
+            return
+        }
 
-    $cb = [System.Func[Object]]{ & $Script }
-    $Token.RunUnderImpersonate($cb, $ImpersonationLevel)
+        $cb = [System.Func[Object]]{ & $Script }
+        $Token.RunUnderImpersonate($cb, $ImpersonationLevel)
+    } else {
+        $th = Get-NtThread -Current
+        Use-NtObject($imp = $th.ImpersonateAnonymousToken()) {
+            & $Script
+        }
+    }
 }
 
 <#
