@@ -34,23 +34,15 @@ namespace NtApiDotNet.Win32.Security
 
         internal SecHandle CredHandle { get; }
 
-        private CredentialHandle(SecHandle cred_handle, string name, LargeInteger expiry)
-        {
-            CredHandle = cred_handle;
-            PackageName = name;
-            Expiry = expiry.QuadPart;
-        }
-
         /// <summary>
-        /// Create a new credential handle.
+        /// Constructor.
         /// </summary>
-        /// <param name="principal"></param>
+        /// <param name="principal">User principal.</param>
         /// <param name="package">The package name.</param>
         /// <param name="auth_id">Optional authentication ID for the user.</param>
         /// <param name="cred_use_flag">Credential user flags.</param>
-        /// <param name="auth_data">Optional auth data.</param>
-        /// <returns>The credential handle.</returns>
-        public static CredentialHandle Create(string principal, string package, Luid? auth_id,
+        /// <param name="auth_data">Optional authentication data.</param>
+        public CredentialHandle(string principal, string package, Luid? auth_id,
             SecPkgCredFlags cred_use_flag, SafeBuffer auth_data)
         {
             if (package == null)
@@ -69,13 +61,15 @@ namespace NtApiDotNet.Win32.Security
                 luid, auth_data ?? SafeHGlobalBuffer.Null,
                 IntPtr.Zero, IntPtr.Zero, cred_handle, expiry)
                 .CheckResult();
-            return new CredentialHandle(cred_handle, package, expiry);
+            CredHandle = cred_handle;
+            PackageName = package;
+            Expiry = expiry.QuadPart;
         }
 
         /// <summary>
         /// Create a new credential handle.
         /// </summary>
-        /// <param name="principal"></param>
+        /// <param name="principal">User principal.</param>
         /// <param name="package">The package name.</param>
         /// <param name="auth_id">Optional authentication ID for the user.</param>
         /// <param name="cred_use_flag">Credential user flags.</param>
@@ -86,10 +80,9 @@ namespace NtApiDotNet.Win32.Security
         {
             using (var list = new DisposableList())
             {
-                var buffer = credentials.ToBuffer(list, package);
-                return Create(principal, package, auth_id, cred_use_flag, buffer);
+                var buffer = credentials?.ToBuffer(list, package);
+                return new CredentialHandle(principal, package, auth_id, cred_use_flag, buffer);
             }
-
         }
 
         /// <summary>

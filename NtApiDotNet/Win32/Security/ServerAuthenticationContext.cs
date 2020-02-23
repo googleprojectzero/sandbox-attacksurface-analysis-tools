@@ -42,6 +42,11 @@ namespace NtApiDotNet.Win32.Security
         public AcceptContextRetFlags Flags { get; private set; }
 
         /// <summary>
+        /// Expiry of the authentication.
+        /// </summary>
+        public long Expiry { get; private set; }
+
+        /// <summary>
         /// Get an access token for the authenticated user.
         /// </summary>
         /// <returns>The user's access token.</returns>
@@ -107,9 +112,11 @@ namespace NtApiDotNet.Win32.Security
                 SecBuffer in_sec_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, token));
                 SecBufferDesc in_buffer_desc = list.AddResource(new SecBufferDesc(in_sec_buffer));
 
+                LargeInteger expiry = new LargeInteger();
                 SecStatusCode result = SecurityNativeMethods.AcceptSecurityContext(_creds.CredHandle, new_context ? null : _context,
-                    in_buffer_desc, _req_flags, _data_rep, _context, out_buffer_desc, out AcceptContextRetFlags context_attr, null).CheckResult();
+                    in_buffer_desc, _req_flags, _data_rep, _context, out_buffer_desc, out AcceptContextRetFlags context_attr, expiry).CheckResult();
                 Flags = context_attr;
+                Expiry = expiry.QuadPart;
                 if (result == SecStatusCode.CompleteNeeded || result == SecStatusCode.CompleteAndContinue)
                 {
                     SecurityNativeMethods.CompleteAuthToken(_context, out_buffer_desc).CheckResult();

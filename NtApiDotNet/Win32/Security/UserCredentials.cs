@@ -32,49 +32,9 @@ namespace NtApiDotNet.Win32.Security
         /// </summary>
         public string Domain { get; set; }
         /// <summary>
-        /// The password.
-        /// </summary>
-        public string Password
-        {
-            get
-            {
-                if (SecurePassword == null)
-                {
-                    return null;
-                }
-
-                IntPtr ptr = Marshal.SecureStringToBSTR(SecurePassword);
-                try
-                {
-                    return Marshal.PtrToStringBSTR(ptr);
-                }
-                finally
-                {
-                    Marshal.ZeroFreeBSTR(ptr);
-                }
-            }
-            set
-            {
-                if (value == null)
-                {
-                    SecurePassword = null;
-                }
-                else
-                {
-                    var s = new SecureString();
-                    foreach (char c in value)
-                    {
-                        s.AppendChar(c);
-                    }
-                    SecurePassword = s;
-                }
-            }
-        }
-
-        /// <summary>
         /// The password as a secure string.
         /// </summary>
-        public SecureString SecurePassword { get; set; }
+        public SecureString Password { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -86,7 +46,28 @@ namespace NtApiDotNet.Win32.Security
         {
             UserName = username;
             Domain = domain;
-            SecurePassword = password;
+            Password = password;
+        }
+
+        /// <summary>
+        /// Set the password as in plain text.
+        /// </summary>
+        /// <param name="password">The password in plain text.</param>
+        public void SetPassword(string password)
+        {
+            if (password == null)
+            {
+                Password = null;
+            }
+            else
+            {
+                var s = new SecureString();
+                foreach (char c in password)
+                {
+                    s.AppendChar(c);
+                }
+                Password = s;
+            }
         }
 
         /// <summary>
@@ -99,7 +80,7 @@ namespace NtApiDotNet.Win32.Security
         {
             UserName = username;
             Domain = domain;
-            Password = password;
+            SetPassword(password);
         }
 
         /// <summary>
@@ -121,6 +102,13 @@ namespace NtApiDotNet.Win32.Security
         {
         }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public UserCredentials()
+        {
+        }
+
         internal override SafeBuffer ToBuffer(DisposableList list, string package)
         {
             if (package == null)
@@ -132,7 +120,7 @@ namespace NtApiDotNet.Win32.Security
                 case "ntlm":
                 case "negotiate":
                 case "kerberos":
-                    return new SafeStructureInOutBuffer<SEC_WINNT_AUTH_IDENTITY_EX>(new SEC_WINNT_AUTH_IDENTITY_EX(UserName, Domain, SecurePassword, list));
+                    return new SafeStructureInOutBuffer<SEC_WINNT_AUTH_IDENTITY>(new SEC_WINNT_AUTH_IDENTITY(UserName, Domain, Password, list));
                 default:
                     throw new ArgumentException($"Unknown credential type for package {package}");
             }

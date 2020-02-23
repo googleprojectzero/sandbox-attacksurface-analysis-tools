@@ -43,6 +43,11 @@ namespace NtApiDotNet.Win32.Security
         public InitializeContextRetFlags Flags { get; private set; }
 
         /// <summary>
+        /// Expiry of the authentication.
+        /// </summary>
+        public long Expiry { get; private set; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="creds">Credential handle.</param>
@@ -58,6 +63,17 @@ namespace NtApiDotNet.Win32.Security
             _target = target;
             _data_rep = data_rep;
             Continue(null);
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="creds">Credential handle.</param>
+        /// <param name="req_attributes">Request attribute flags.</param>
+        /// <param name="data_rep">Data representation.</param>
+        public ClientAuthenticationContext(CredentialHandle creds, InitializeContextReqFlags req_attributes, SecDataRep data_rep) 
+            : this(creds, req_attributes, null, data_rep)
+        {
         }
 
         /// <summary>
@@ -88,21 +104,23 @@ namespace NtApiDotNet.Win32.Security
                 SecBufferDesc out_buffer_desc = list.AddResource(new SecBufferDesc(out_sec_buffer));
 
                 InitializeContextRetFlags flags;
+                LargeInteger expiry = new LargeInteger();
                 if (token != null)
                 {
                     SecBuffer in_sec_buffer = list.AddResource(new SecBuffer(SecBufferType.Token, token));
                     SecBufferDesc in_buffer_desc = list.AddResource(new SecBufferDesc(in_sec_buffer));
                     result = SecurityNativeMethods.InitializeSecurityContext(_creds.CredHandle, _context, _target, _req_attributes, 0,
-                        _data_rep, in_buffer_desc, 0, _context, out_buffer_desc, out flags, null).CheckResult();
+                        _data_rep, in_buffer_desc, 0, _context, out_buffer_desc, out flags, expiry).CheckResult();
                     Flags = flags;
                 }
                 else
                 {
                     result = SecurityNativeMethods.InitializeSecurityContext(_creds.CredHandle, null, _target,
                         _req_attributes, 0, _data_rep, null, 0, _context,
-                        out_buffer_desc, out flags, null).CheckResult();
+                        out_buffer_desc, out flags, expiry).CheckResult();
                 }
 
+                Expiry = expiry.QuadPart;
                 Flags = flags;
                 if (result == SecStatusCode.CompleteNeeded || result == SecStatusCode.CompleteAndContinue)
                 {

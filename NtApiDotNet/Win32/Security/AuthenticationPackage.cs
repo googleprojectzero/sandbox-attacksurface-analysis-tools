@@ -63,7 +63,7 @@ namespace NtApiDotNet.Win32.Security
         /// Get authentication packages.
         /// </summary>
         /// <returns>The list of authentication packages.</returns>
-        public static IEnumerable<AuthenticationPackage> GetAuthenticationPackages()
+        public static IEnumerable<AuthenticationPackage> Get()
         {
             List<AuthenticationPackage> packages = new List<AuthenticationPackage>();
             if (SecurityNativeMethods.EnumerateSecurityPackages(out int count,
@@ -90,9 +90,9 @@ namespace NtApiDotNet.Win32.Security
         /// Get authentication package names.
         /// </summary>
         /// <returns>The list of authentication package names.</returns>
-        public static IEnumerable<string> GetAuthenticationPackageNames()
+        public static IEnumerable<string> GetNames()
         {
-            return GetAuthenticationPackages().Select(p => p.Name);
+            return Get().Select(p => p.Name);
         }
 
         /// <summary>
