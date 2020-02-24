@@ -82,9 +82,12 @@
             this.openTokenToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.refreshToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.showDeadProcessesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.showProcessSecurityToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.contextMenuStripThreads = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.toolStripMenuItemOpenThreadToken = new System.Windows.Forms.ToolStripMenuItem();
             this.openProcessTokenToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.showThreadSecurityToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.showProcessSecurityToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemRefreshThreads = new System.Windows.Forms.ToolStripMenuItem();
             this.contextMenuStripSessions = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.openSessionTokenToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -110,9 +113,7 @@
             this.contextMenuStripHandles = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.toolStripMenuItemHandlesOpenToken = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemHandlesRefresh = new System.Windows.Forms.ToolStripMenuItem();
-            this.showProcessSecurityToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.showThreadSecurityToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.showProcessSecurityToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.checkBoxUseUNCPath = new System.Windows.Forms.CheckBox();
             tabPageServices = new System.Windows.Forms.TabPage();
             groupBoxAnonymous = new System.Windows.Forms.GroupBox();
             groupBox2 = new System.Windows.Forms.GroupBox();
@@ -214,6 +215,7 @@
             // 
             // groupBox1
             // 
+            groupBox1.Controls.Add(this.checkBoxUseUNCPath);
             groupBox1.Controls.Add(this.btnPipeConnect);
             groupBox1.Controls.Add(this.btnStartServer);
             groupBox1.Controls.Add(this.txtPipeName);
@@ -577,6 +579,13 @@
             this.showDeadProcessesToolStripMenuItem.Text = "Show Dead Processes";
             this.showDeadProcessesToolStripMenuItem.Click += new System.EventHandler(this.showDeadProcessesToolStripMenuItem_Click);
             // 
+            // showProcessSecurityToolStripMenuItem
+            // 
+            this.showProcessSecurityToolStripMenuItem.Name = "showProcessSecurityToolStripMenuItem";
+            this.showProcessSecurityToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.showProcessSecurityToolStripMenuItem.Text = "Show Process Security";
+            this.showProcessSecurityToolStripMenuItem.Click += new System.EventHandler(this.showProcessSecurityToolStripMenuItem_Click);
+            // 
             // contextMenuStripThreads
             // 
             this.contextMenuStripThreads.ImageScalingSize = new System.Drawing.Size(20, 20);
@@ -587,7 +596,7 @@
             this.showProcessSecurityToolStripMenuItem1,
             this.toolStripMenuItemRefreshThreads});
             this.contextMenuStripThreads.Name = "contextMenuStripProcesses";
-            this.contextMenuStripThreads.Size = new System.Drawing.Size(192, 136);
+            this.contextMenuStripThreads.Size = new System.Drawing.Size(192, 114);
             // 
             // toolStripMenuItemOpenThreadToken
             // 
@@ -602,6 +611,20 @@
             this.openProcessTokenToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
             this.openProcessTokenToolStripMenuItem.Text = "Open Process Token";
             this.openProcessTokenToolStripMenuItem.Click += new System.EventHandler(this.openProcessTokenToolStripMenuItem_Click);
+            // 
+            // showThreadSecurityToolStripMenuItem
+            // 
+            this.showThreadSecurityToolStripMenuItem.Name = "showThreadSecurityToolStripMenuItem";
+            this.showThreadSecurityToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.showThreadSecurityToolStripMenuItem.Text = "Show Thread Security";
+            this.showThreadSecurityToolStripMenuItem.Click += new System.EventHandler(this.showThreadSecurityToolStripMenuItem_Click);
+            // 
+            // showProcessSecurityToolStripMenuItem1
+            // 
+            this.showProcessSecurityToolStripMenuItem1.Name = "showProcessSecurityToolStripMenuItem1";
+            this.showProcessSecurityToolStripMenuItem1.Size = new System.Drawing.Size(191, 22);
+            this.showProcessSecurityToolStripMenuItem1.Text = "Show Process Security";
+            this.showProcessSecurityToolStripMenuItem1.Click += new System.EventHandler(this.showProcessSecurityToolStripMenuItem1_Click);
             // 
             // toolStripMenuItemRefreshThreads
             // 
@@ -890,26 +913,17 @@
             this.toolStripMenuItemHandlesRefresh.Text = "Refresh";
             this.toolStripMenuItemHandlesRefresh.Click += new System.EventHandler(this.btnRefreshHandles_Click);
             // 
-            // showProcessSecurityToolStripMenuItem
+            // checkBoxUseUNCPath
             // 
-            this.showProcessSecurityToolStripMenuItem.Name = "showProcessSecurityToolStripMenuItem";
-            this.showProcessSecurityToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
-            this.showProcessSecurityToolStripMenuItem.Text = "Show Process Security";
-            this.showProcessSecurityToolStripMenuItem.Click += new System.EventHandler(this.showProcessSecurityToolStripMenuItem_Click);
-            // 
-            // showThreadSecurityToolStripMenuItem
-            // 
-            this.showThreadSecurityToolStripMenuItem.Name = "showThreadSecurityToolStripMenuItem";
-            this.showThreadSecurityToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
-            this.showThreadSecurityToolStripMenuItem.Text = "Show Thread Security";
-            this.showThreadSecurityToolStripMenuItem.Click += new System.EventHandler(this.showThreadSecurityToolStripMenuItem_Click);
-            // 
-            // showProcessSecurityToolStripMenuItem1
-            // 
-            this.showProcessSecurityToolStripMenuItem1.Name = "showProcessSecurityToolStripMenuItem1";
-            this.showProcessSecurityToolStripMenuItem1.Size = new System.Drawing.Size(191, 22);
-            this.showProcessSecurityToolStripMenuItem1.Text = "Show Process Security";
-            this.showProcessSecurityToolStripMenuItem1.Click += new System.EventHandler(this.showProcessSecurityToolStripMenuItem1_Click);
+            this.checkBoxUseUNCPath.AutoSize = true;
+            this.checkBoxUseUNCPath.Checked = true;
+            this.checkBoxUseUNCPath.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkBoxUseUNCPath.Location = new System.Drawing.Point(190, 66);
+            this.checkBoxUseUNCPath.Name = "checkBoxUseUNCPath";
+            this.checkBoxUseUNCPath.Size = new System.Drawing.Size(96, 17);
+            this.checkBoxUseUNCPath.TabIndex = 11;
+            this.checkBoxUseUNCPath.Text = "Use UNC Path";
+            this.checkBoxUseUNCPath.UseVisualStyleBackColor = true;
             // 
             // MainForm
             // 
@@ -1002,6 +1016,7 @@
         private System.Windows.Forms.ToolStripMenuItem showProcessSecurityToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem showThreadSecurityToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem showProcessSecurityToolStripMenuItem1;
+        private System.Windows.Forms.CheckBox checkBoxUseUNCPath;
     }
 }
 

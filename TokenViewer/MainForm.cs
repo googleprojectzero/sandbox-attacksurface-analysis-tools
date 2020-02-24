@@ -336,9 +336,15 @@ namespace TokenViewer
                         pipe.EndWaitForConnection, null);
 
                     NtToken token = null;
+                    bool use_unc = checkBoxUseUNCPath.Checked;
 
                     if (pipe.IsConnected)
                     {
+                        if (!use_unc)
+                        {
+                            byte[] buffer = new byte[1];
+                            int result = await pipe.ReadAsync(buffer, 0, 1);
+                        }
                         pipe.RunAsClient(() => token = NtToken.OpenThreadToken());
                         pipe.Disconnect();
                     }
@@ -359,13 +365,20 @@ namespace TokenViewer
             }
         }
 
-        private void btnPipeConnect_Click(object sender, EventArgs e)
+        private async void btnPipeConnect_Click(object sender, EventArgs e)
         {
             try
             {
-                using (NamedPipeClientStream pipe = new NamedPipeClientStream("localhost", txtPipeName.Text, PipeDirection.Out))
+                bool use_unc = checkBoxUseUNCPath.Checked;
+                using (NamedPipeClientStream pipe = new NamedPipeClientStream(use_unc ? "localhost" : ".", 
+                    txtPipeName.Text, PipeDirection.Out))
                 {
-                    pipe.Connect(1000);
+                    await pipe.ConnectAsync(1000);
+                    if (!use_unc)
+                    {
+                        byte[] buffer = new byte[1];
+                        await pipe.WriteAsync(buffer, 0, 1);
+                    }
                 }
             }
             catch (Exception ex)
