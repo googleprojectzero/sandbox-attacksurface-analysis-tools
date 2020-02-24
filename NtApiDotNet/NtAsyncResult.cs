@@ -131,7 +131,7 @@ namespace NtApiDotNet
 
             bool success;
 
-            using (NtWaitHandle wait_handle = _event != null ? _event.DuplicateAsWaitHandle() : _object.DuplicateAsWaitHandle())
+            using (NtWaitHandle wait_handle = _event?.DuplicateAsWaitHandle() ?? _object.DuplicateAsWaitHandle())
             {
                 success = await wait_handle.WaitAsync(Timeout.Infinite, token);
             }
