@@ -790,7 +790,7 @@
     <View>
       <Name>AccessCheckResult</Name>
       <ViewSelectedBy>
-        <TypeName>NtObjectManager.AccessCheckResult</TypeName>
+        <TypeName>NtObjectManager.Cmdlets.Accessible.AccessCheckResult</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
@@ -1112,9 +1112,9 @@
         </TableControl>
     </View>
     <View>
-        <Name>NtKeyValue</Name>
+        <Name>NtStatusResultTable</Name>
         <ViewSelectedBy>
-            <TypeName>NtObjectManager.NtStatusResult</TypeName>
+            <TypeName>NtObjectManager.Cmdlets.Object.NtStatusResult</TypeName>
         </ViewSelectedBy>
         <TableControl>
             <TableHeaders>
