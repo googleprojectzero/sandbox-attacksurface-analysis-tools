@@ -2044,7 +2044,7 @@
       </TableControl>
     </View>
     <View>
-      <Name>NtApiDotNet.Win32.Security.AuthenticationPackageTable</Name>
+      <Name>AuthenticationPackageTable</Name>
       <ViewSelectedBy>
         <TypeName>NtApiDotNet.Win32.Security.AuthenticationPackage</TypeName>
       </ViewSelectedBy>
@@ -2113,6 +2113,44 @@
               <TableColumnItem>
                 <PropertyName>EntryPointAddress</PropertyName>
                 <FormatString>X016</FormatString>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <View>
+      <Name>ProcessModuleTable</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.ProcessModule</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>ImageBase</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>ImageSize</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>ImageBase</PropertyName>
+                <FormatString>X016</FormatString>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>ImageSize</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

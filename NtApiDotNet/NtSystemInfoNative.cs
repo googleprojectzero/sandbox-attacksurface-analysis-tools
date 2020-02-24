@@ -603,6 +603,29 @@ namespace NtApiDotNet
         public uint ProcessorFeatureBits;
     }
 
+    [StructLayout(LayoutKind.Sequential), DataStart("Modules")]
+    public struct RtlProcessModules
+    {
+        public int NumberOfModules;
+        public RtlProcessModuleInformation Modules;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    public struct RtlProcessModuleInformation
+    {
+        public UIntPtr Section;
+        public UIntPtr MappedBase;
+        public UIntPtr ImageBase;
+        public int ImageSize;
+        public int Flags;
+        public ushort LoadOrderIndex;
+        public ushort InitOrderIndex;
+        public ushort LoadCount;
+        public ushort OffsetToFileName;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 256)]
+        public byte[] FullPathName;
+    }
+
     public enum SystemInformationClass
     {
         SystemBasicInformation = 0,

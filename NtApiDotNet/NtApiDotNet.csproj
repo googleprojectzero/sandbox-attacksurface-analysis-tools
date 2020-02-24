@@ -68,6 +68,7 @@
     <Compile Include="NtWindowNative.cs" />
     <Compile Include="NtWindowStationNative.cs" />
     <Compile Include="NtWnfWellKnownNames.cs" />
+    <Compile Include="ProcessModule.cs" />
     <Compile Include="SafeArrayBuffer.cs" />
     <Compile Include="SafeHandleListHandle.cs" />
     <Compile Include="SafeIoStatusBuffer.cs" />

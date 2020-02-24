@@ -1049,6 +1049,41 @@ namespace NtApiDotNet
             return NtSystemCalls.NtUnloadDriver(new UnicodeString(driver_service_name)).ToNtException(throw_on_error);
         }
 
+        /// <summary>
+        /// Get kernel modules.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of kernel modules.</returns>
+        public static NtResult<IEnumerable<ProcessModule>> GetKernelModules(bool throw_on_error)
+        {
+            using (var buffer = QueryBuffer<RtlProcessModules>(SystemInformationClass.SystemModuleInformation, default, throw_on_error))
+            {
+                if (!buffer.IsSuccess)
+                    return buffer.Cast<IEnumerable<ProcessModule>>();
+                var result = buffer.Result.Result;
+                ProcessModule[] modules = new ProcessModule[result.NumberOfModules];
+                int size = Marshal.SizeOf(typeof(RtlProcessModuleInformation));
+                IntPtr ptr = buffer.Result.Data.DangerousGetHandle();
+
+                for (int i = 0; i < modules.Length; ++i)
+                {
+                    modules[i] = new ProcessModule((RtlProcessModuleInformation)Marshal.PtrToStructure(ptr, typeof(RtlProcessModuleInformation)));
+                    ptr += size;
+                }
+
+                return modules.CreateResult<IEnumerable<ProcessModule>>();
+            }
+        }
+
+        /// <summary>
+        /// Get kernel modules.
+        /// </summary>
+        /// <returns>The list of kernel modules.</returns>
+        public static IEnumerable<ProcessModule> GetKernelModules()
+        {
+            return GetKernelModules(true).Result;
+        }
+
         #endregion
 
         #region Static Properties

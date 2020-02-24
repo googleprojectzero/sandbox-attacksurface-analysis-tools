@@ -6269,3 +6269,17 @@ function Get-AuthAccessToken {
 
     $Server.GetAccessToken() | Write-Output
 }
+
+<#
+.SYNOPSIS
+Get list of loaded kernel modules.
+.DESCRIPTION
+This cmdlet gets the list of loaded kernel modules.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.ProcessModule[]
+#>
+function Get-KernelModule {
+    [NtApiDotNet.NtSystemInfo]::GetKernelModules() | Write-Output
+}
