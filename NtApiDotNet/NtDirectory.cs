@@ -368,10 +368,10 @@ namespace NtApiDotNet
             Luid authid = token.AuthenticationId;
             if (authid.Equals(NtToken.LocalSystemAuthId))
             {
-                return NtDirectory.Open(@"\GLOBAL??");
+                return Open(@"\GLOBAL??");
             }
 
-            return NtDirectory.Open($@"\Sessions\0\DosDevices\{authid}");
+            return Open($@"\Sessions\0\DosDevices\{authid}");
         }
 
         /// <summary>

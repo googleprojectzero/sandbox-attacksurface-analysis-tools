@@ -2338,7 +2338,7 @@ namespace NtApiDotNet
 
         private NtResult<UserGroup[]> QueryGroupsInternal(TokenInformationClass info_class, bool throw_on_error)
         {
-            using (var groups = QueryBuffer<TokenGroups>(info_class, new TokenGroups(), throw_on_error))
+            using (var groups = QueryBuffer(info_class, new TokenGroups(), throw_on_error))
             {
                 return groups.Map(buffer =>
                 {
