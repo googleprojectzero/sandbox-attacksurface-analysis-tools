@@ -51,7 +51,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <summary>
         /// Token username
         /// </summary>
-        public Sid UserName => ProcessTokenInfo.UserName;
+        public Sid UserName => ProcessTokenInfo.User;
 
         /// <summary>
         /// Token integrity level
@@ -125,6 +125,18 @@ namespace NtObjectManager.Cmdlets.Accessible
         [Parameter]
         public SwitchParameter ShowDeadProcesses { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify to only look for processes in the current session.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter CurrentSession { get; set; }
+
+        private bool CheckSession(NtProcess p, int check_session_id)
+        {
+            var session_id = p.GetSessionId(false);
+            return session_id.IsSuccess && session_id.Result == check_session_id;
+        }
+
         private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
             if (!NtToken.EnableDebugPrivilege())
@@ -134,10 +146,16 @@ namespace NtObjectManager.Cmdlets.Accessible
 
             NtType type = NtType.GetTypeByType<NtToken>();
             AccessMask access_rights = type.MapGenericRights(AccessRights);
+            int current_session_id = NtProcess.Current.SessionId;
 
             using (var procs = NtProcess.GetProcesses(ProcessAccessRights.QueryInformation | ProcessAccessRights.ReadControl, false).ToDisposableList())
             {
-                foreach (var proc in procs.Where(p => ShowDeadProcesses || !p.IsDeleting))
+                IEnumerable<NtProcess> proc_enum = procs;
+                if (CurrentSession)
+                {
+                    proc_enum = proc_enum.Where(p => CheckSession(p, current_session_id));
+                }
+                foreach (var proc in proc_enum.Where(p => ShowDeadProcesses || !p.IsDeleting))
                 {
                     using (var result = NtToken.OpenProcessToken(proc, TokenAccessRights.ReadControl | TokenAccessRights.Query, false))
                     {

@@ -51,11 +51,15 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Cmdlets\Accessible\AccessCheckResult.cs" />
+    <Compile Include="Cmdlets\Accessible\CommonAccessBaseWithAccessCmdlet.cs" />
     <Compile Include="Cmdlets\Accessible\GetAccessibleEventTraceCmdlet.cs" />
     <Compile Include="Cmdlets\Accessible\GetAccessibleScheduledTaskCmdlet.cs" />
     <Compile Include="Cmdlets\Accessible\GetAccessibleTokenCmdlet.cs" />
     <Compile Include="Cmdlets\Accessible\GetAccessibleWindowStation.cs" />
     <Compile Include="Cmdlets\Accessible\GetAccessibleWnfCmdlet.cs" />
+    <Compile Include="Cmdlets\Accessible\TokenEntry.cs" />
+    <Compile Include="Cmdlets\Accessible\TokenInformation.cs" />
     <Compile Include="Cmdlets\Rpc\NdrNameData.cs" />
     <Compile Include="Cmdlets\Object\NtAlpcCmdlets.cs" />
     <Compile Include="Cmdlets\Object\NtDebugCmdlets.cs" />
