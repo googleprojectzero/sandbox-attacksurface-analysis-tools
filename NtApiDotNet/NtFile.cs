@@ -66,6 +66,8 @@ namespace NtApiDotNet
         private CancellationTokenSource _cts;
         private bool? _is_directory;
 
+        private const int ChangeNotificationBufferSize = 64 * 1024;
+
         private static FileDeviceType GetDeviceType(SafeKernelObjectHandle handle)
         {
             using (var buffer = new SafeStructureInOutBuffer<FileFsDeviceInformation>())
@@ -3336,7 +3338,7 @@ namespace NtApiDotNet
         {
             using (NtAsyncResult result = new NtAsyncResult(this))
             {
-                using (var buffer = new SafeHGlobalBuffer(4096))
+                using (var buffer = new SafeHGlobalBuffer(ChangeNotificationBufferSize))
                 {
                     return result.CompleteCall(NtSystemCalls.NtNotifyChangeDirectoryFile(
                         Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
@@ -3368,7 +3370,7 @@ namespace NtApiDotNet
         public async Task<NtResult<IEnumerable<DirectoryChangeNotification>>> GetChangeNotificationAsync(
             DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, CancellationToken token, bool throw_on_error)
         {
-            using (var buffer = new SafeHGlobalBuffer(4096))
+            using (var buffer = new SafeHGlobalBuffer(ChangeNotificationBufferSize))
             {
                 var status = await RunFileCallAsync(result => NtSystemCalls.NtNotifyChangeDirectoryFile(
                         Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
@@ -3430,7 +3432,7 @@ namespace NtApiDotNet
         {
             using (NtAsyncResult result = new NtAsyncResult(this))
             {
-                using (var buffer = new SafeHGlobalBuffer(8192))
+                using (var buffer = new SafeHGlobalBuffer(ChangeNotificationBufferSize))
                 {
                     return result.CompleteCall(NtSystemCalls.NtNotifyChangeDirectoryFileEx(
                         Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
@@ -3465,7 +3467,7 @@ namespace NtApiDotNet
         public async Task<NtResult<IEnumerable<DirectoryChangeNotificationExtended>>> GetChangeNotificationExAsync(
             DirectoryChangeNotifyFilter completion_filter, bool watch_subtree, CancellationToken token, bool throw_on_error)
         {
-            using (var buffer = new SafeHGlobalBuffer(8192))
+            using (var buffer = new SafeHGlobalBuffer(ChangeNotificationBufferSize))
             {
                 var status = await RunFileCallAsync(result => NtSystemCalls.NtNotifyChangeDirectoryFileEx(
                         Handle, result.EventHandle, IntPtr.Zero, IntPtr.Zero, result.IoStatusBuffer,
