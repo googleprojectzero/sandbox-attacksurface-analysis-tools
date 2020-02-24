@@ -588,6 +588,7 @@ namespace NtApiDotNet.Win32
     /// </summary>
     public class SafeLoadLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
+        #region Constructors
         /// <summary>
         /// Constructor
         /// </summary>
@@ -602,7 +603,9 @@ namespace NtApiDotNet.Win32
         internal SafeLoadLibraryHandle() : base(true)
         {
         }
+        #endregion
 
+        #region Protected Members
         /// <summary>
         /// Release handle.
         /// </summary>
@@ -610,6 +613,38 @@ namespace NtApiDotNet.Win32
         protected override bool ReleaseHandle()
         {
             return Win32NativeMethods.FreeLibrary(handle);
+        }
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Get the address of an exported function, throw if the function doesn't exist.
+        /// </summary>
+        /// <param name="name">The name of the exported function.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>Pointer to the exported function.</returns>
+        /// <exception cref="NtException">Thrown if the name doesn't exist.</exception>
+        public NtResult<IntPtr> GetProcAddress(string name, bool throw_on_error)
+        {
+            IntPtr func = Win32NativeMethods.GetProcAddress(handle, name);
+            if (func == IntPtr.Zero)
+                return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<IntPtr>(throw_on_error);
+            return func.CreateResult();
+        }
+
+        /// <summary>
+        /// Get the address of an exported function from an ordinal.
+        /// </summary>
+        /// <param name="ordinal">The ordinal of the exported function.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>Pointer to the exported function.</returns>
+        /// <exception cref="NtException">Thrown if the ordinal doesn't exist.</exception>
+        public NtResult<IntPtr> GetProcAddress(IntPtr ordinal, bool throw_on_error)
+        {
+            IntPtr func = Win32NativeMethods.GetProcAddress(handle, ordinal);
+            if (func == IntPtr.Zero)
+                return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<IntPtr>(throw_on_error);
+            return func.CreateResult();
         }
 
         /// <summary>
@@ -619,7 +654,7 @@ namespace NtApiDotNet.Win32
         /// <returns>Pointer to the exported function, or IntPtr.Zero if it can't be found.</returns>
         public IntPtr GetProcAddress(string name)
         {
-            return Win32NativeMethods.GetProcAddress(handle, name);
+            return GetProcAddress(name, false).GetResultOrDefault(IntPtr.Zero);
         }
 
         /// <summary>
@@ -629,7 +664,7 @@ namespace NtApiDotNet.Win32
         /// <returns>Pointer to the exported function, or IntPtr.Zero if it can't be found.</returns>
         public IntPtr GetProcAddress(IntPtr ordinal)
         {
-            return Win32NativeMethods.GetProcAddress(handle, ordinal);
+            return GetProcAddress(ordinal, false).GetResultOrDefault(IntPtr.Zero);
         }
 
         /// <summary>
@@ -669,6 +704,66 @@ namespace NtApiDotNet.Win32
         }
 
         /// <summary>
+        /// Pin the library into memory. This prevents FreeLibrary unloading the library until
+        /// the process exits.
+        /// </summary>
+        public void PinModule()
+        {
+            PinModule(DangerousGetHandle());
+        }
+
+        /// <summary>
+        /// Parse a library's delayed import information.
+        /// </summary>
+        /// <returns>A dictionary containing the location of import information keyed against the IAT address.</returns>
+        public IDictionary<IntPtr, IntPtr> ParseDelayedImports()
+        {
+            if (_delayed_imports != null)
+            {
+                return new ReadOnlyDictionary<IntPtr, IntPtr>(_delayed_imports);
+            }
+            _delayed_imports = new Dictionary<IntPtr, IntPtr>();
+            IntPtr delayed_imports = Win32NativeMethods.ImageDirectoryEntryToData(handle, true, IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT, out int size);
+            if (delayed_imports == IntPtr.Zero)
+            {
+                return new ReadOnlyDictionary<IntPtr, IntPtr>(_delayed_imports);
+            }
+
+            int i = 0;
+            int desc_size = Marshal.SizeOf(typeof(ImageDelayImportDescriptor));
+            // Should really only do up to sizeof image delay import desc
+            while (i <= (size - desc_size))
+            {
+                ImageDelayImportDescriptor desc = (ImageDelayImportDescriptor)Marshal.PtrToStructure(delayed_imports, typeof(ImageDelayImportDescriptor));
+                if (desc.szName == 0)
+                {
+                    break;
+                }
+
+                ParseDelayedImport(_delayed_imports, desc);
+
+                delayed_imports += desc_size;
+                size -= desc_size;
+            }
+
+            return new ReadOnlyDictionary<IntPtr, IntPtr>(_delayed_imports);
+        }
+
+        /// <summary>
+        /// Get the image sections from a loaded library.
+        /// </summary>
+        /// <returns>The list of image sections.</returns>
+        /// <exception cref="SafeWin32Exception">Thrown on error.</exception>
+        public IEnumerable<ImageSection> GetImageSections()
+        {
+            SetupValues();
+            return _image_sections.AsReadOnly();
+        }
+
+        #endregion
+
+        #region Public Properties
+        /// <summary>
         /// Get path to loaded module.
         /// </summary>
         public string FullPath
@@ -703,6 +798,115 @@ namespace NtApiDotNet.Win32
         /// Whether this library is mapped as a datafile.
         /// </summary>
         public bool MappedAsDataFile => (DangerousGetHandle().ToInt64() & 0xFFFF) == 1;
+
+        /// <summary>
+        /// Get current mapped image base.
+        /// </summary>
+        public long ImageBase => GetBasePointer().ToInt64();
+
+        /// <summary>
+        /// Get original image base address.
+        /// </summary>
+        public long OriginalImageBase
+        {
+            get
+            {
+                SetupValues();
+                return _image_base_address;
+            }
+        }
+
+        /// <summary>
+        /// Get image entry point RVA.
+        /// </summary>
+        public long EntryPoint
+        {
+            get
+            {
+                SetupValues();
+                return _image_entry_point;
+            }
+        }
+
+        /// <summary>
+        /// Get image entry point address as mapped.
+        /// </summary>
+        public long EntryPointAddress => RvaToVA(EntryPoint).ToInt64();
+
+        /// <summary>
+        /// Get whether the image is 64 bit or not.
+        /// </summary>
+        public bool Is64bit
+        {
+            get
+            {
+                SetupValues();
+                return _is_64bit;
+            }
+        }
+
+        /// <summary>
+        /// Get the image's DLL characteristics flags.
+        /// </summary>
+        public DllCharacteristics DllCharacteristics
+        {
+            get
+            {
+                SetupValues();
+                return _dll_characteristics;
+            }
+        }
+
+        /// <summary>
+        /// Get exports from the DLL.
+        /// </summary>
+        public IEnumerable<DllExport> Exports
+        {
+            get
+            {
+                if (_exports == null)
+                {
+                    ParseExports();
+                }
+
+                return _exports.AsReadOnly();
+            }
+        }
+
+        /// <summary>
+        /// Get imports from the DLL.
+        /// </summary>
+        public IEnumerable<DllImport> Imports
+        {
+            get
+            {
+                if (_imports == null)
+                {
+                    ParseImports();
+                }
+
+                return _imports.AsReadOnly();
+            }
+        }
+
+        /// <summary>
+        /// Get CodeView Debug Data from DLL.
+        /// </summary>
+        public DllDebugData DebugData
+        {
+            get
+            {
+                if (_debug_data == null)
+                {
+                    ParseDebugData();
+                }
+                return _debug_data;
+            }
+        }
+
+        #endregion
+
+        #region Static Methods
 
         /// <summary>
         /// Load a library into memory.
@@ -797,15 +1001,6 @@ namespace NtApiDotNet.Win32
         /// Pin the library into memory. This prevents FreeLibrary unloading the library until
         /// the process exits.
         /// </summary>
-        public void PinModule()
-        {
-            PinModule(DangerousGetHandle());
-        }
-
-        /// <summary>
-        /// Pin the library into memory. This prevents FreeLibrary unloading the library until
-        /// the process exits.
-        /// </summary>
         /// <param name="name">The name of the module to pin.</param>
         public static void PinModule(string name)
         {
@@ -833,11 +1028,25 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        const ushort IMAGE_DIRECTORY_ENTRY_EXPORT = 0;
-        const ushort IMAGE_DIRECTORY_ENTRY_IMPORT = 1;
-        const ushort IMAGE_DIRECTORY_ENTRY_DEBUG = 6;
-        const ushort IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT = 13;
-        const int IMAGE_DEBUG_TYPE_CODEVIEW = 2;
+        #endregion
+
+        #region Private Members
+
+        private const ushort IMAGE_DIRECTORY_ENTRY_EXPORT = 0;
+        private const ushort IMAGE_DIRECTORY_ENTRY_IMPORT = 1;
+        private const ushort IMAGE_DIRECTORY_ENTRY_DEBUG = 6;
+        private const ushort IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT = 13;
+        private const int IMAGE_DEBUG_TYPE_CODEVIEW = 2;
+        private Dictionary<IntPtr, IntPtr> _delayed_imports;
+        private bool _loaded_values;
+        private List<ImageSection> _image_sections;
+        private long _image_base_address;
+        private int _image_entry_point;
+        private bool _is_64bit;
+        private DllCharacteristics _dll_characteristics;
+        private List<DllExport> _exports;
+        private List<DllImport> _imports;
+        private DllDebugData _debug_data;
 
         private IntPtr RvaToVA(long rva)
         {
@@ -898,45 +1107,6 @@ namespace NtApiDotNet.Win32
             catch (Win32Exception)
             {
             }
-        }
-
-        private Dictionary<IntPtr, IntPtr> _delayed_imports;
-
-        /// <summary>
-        /// Parse a library's delayed import information.
-        /// </summary>
-        /// <returns>A dictionary containing the location of import information keyed against the IAT address.</returns>
-        public IDictionary<IntPtr, IntPtr> ParseDelayedImports()
-        {
-            if (_delayed_imports != null)
-            {
-                return new ReadOnlyDictionary<IntPtr, IntPtr>(_delayed_imports);
-            }
-            _delayed_imports = new Dictionary<IntPtr, IntPtr>();
-            IntPtr delayed_imports = Win32NativeMethods.ImageDirectoryEntryToData(handle, true, IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT, out int size);
-            if (delayed_imports == IntPtr.Zero)
-            {
-                return new ReadOnlyDictionary<IntPtr, IntPtr>(_delayed_imports);
-            }
-
-            int i = 0;
-            int desc_size = Marshal.SizeOf(typeof(ImageDelayImportDescriptor));
-            // Should really only do up to sizeof image delay import desc
-            while (i <= (size - desc_size))
-            {
-                ImageDelayImportDescriptor desc = (ImageDelayImportDescriptor)Marshal.PtrToStructure(delayed_imports, typeof(ImageDelayImportDescriptor));
-                if (desc.szName == 0)
-                {
-                    break;
-                }
-
-                ParseDelayedImport(_delayed_imports, desc);
-
-                delayed_imports += desc_size;
-                size -= desc_size;
-            }
-
-            return new ReadOnlyDictionary<IntPtr, IntPtr>(_delayed_imports);
         }
 
         private void ParseExports()
@@ -1185,16 +1355,6 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private bool _loaded_values;
-        private List<ImageSection> _image_sections;
-        private long _image_base_address;
-        private int _image_entry_point;
-        private bool _is_64bit;
-        private DllCharacteristics _dll_characteristics;
-        private List<DllExport> _exports;
-        private List<DllImport> _imports;
-        private DllDebugData _debug_data;
-
         private void SetupValues()
         {
             if (_loaded_values)
@@ -1237,116 +1397,13 @@ namespace NtApiDotNet.Win32
             _is_64bit = optional_header.GetMagic() == IMAGE_NT_OPTIONAL_HDR_MAGIC.HDR64;
             _dll_characteristics = optional_header.GetDllCharacteristics();
         }
+        #endregion
 
-        /// <summary>
-        /// Get the image sections from a loaded library.
-        /// </summary>
-        /// <returns>The list of image sections.</returns>
-        /// <exception cref="SafeWin32Exception">Thrown on error.</exception>
-        public IEnumerable<ImageSection> GetImageSections()
-        {
-            SetupValues();
-            return _image_sections.AsReadOnly();
-        }
-
-        /// <summary>
-        /// Get original image base address.
-        /// </summary>
-        public long OriginalImageBase
-        {
-            get
-            {
-                SetupValues();
-                return _image_base_address;
-            }
-        }
-
-        /// <summary>
-        /// Get image entry point RVA.
-        /// </summary>
-        public long EntryPoint
-        {
-            get
-            {
-                SetupValues();
-                return _image_entry_point;
-            }
-        }
-
-        /// <summary>
-        /// Get whether the image is 64 bit or not.
-        /// </summary>
-        public bool Is64bit
-        {
-            get
-            {
-                SetupValues();
-                return _is_64bit;
-            }
-        }
-
-        /// <summary>
-        /// Get the image's DLL characteristics flags.
-        /// </summary>
-        public DllCharacteristics DllCharacteristics
-        {
-            get
-            {
-                SetupValues();
-                return _dll_characteristics;
-            }
-        }
-
-        /// <summary>
-        /// Get exports from the DLL.
-        /// </summary>
-        public IEnumerable<DllExport> Exports
-        {
-            get
-            {
-                if (_exports == null)
-                {
-                    ParseExports();
-                }
-
-                return _exports.AsReadOnly();
-            }
-        }
-
-        /// <summary>
-        /// Get imports from the DLL.
-        /// </summary>
-        public IEnumerable<DllImport> Imports
-        {
-            get
-            {
-                if (_imports == null)
-                {
-                    ParseImports();
-                }
-
-                return _imports.AsReadOnly();
-            }
-        }
-
-        /// <summary>
-        /// Get CodeView Debug Data from DLL.
-        /// </summary>
-        public DllDebugData DebugData
-        {
-            get
-            {
-                if (_debug_data == null)
-                {
-                    ParseDebugData();
-                }
-                return _debug_data;
-            }
-        }
-
+        #region Static Properties
         /// <summary>
         /// NULL load library handle.
         /// </summary>
         public static SafeLoadLibraryHandle Null => new SafeLoadLibraryHandle(IntPtr.Zero, false);
+        #endregion
     }
 }
