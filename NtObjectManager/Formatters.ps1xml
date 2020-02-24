@@ -2080,5 +2080,44 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>SafeLoadLibraryHandleTable</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.Win32.SafeLoadLibraryHandle</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>ImageBase</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>EntryPoint</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>ImageBase</PropertyName>
+                <FormatString>X016</FormatString>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>EntryPointAddress</PropertyName>
+                <FormatString>X016</FormatString>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>

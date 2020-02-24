@@ -5897,15 +5897,17 @@ function Get-Win32Module {
 .SYNOPSIS
 Gets the exports from a loaded DLL.
 .DESCRIPTION
-This cmdlet gets the list of exports from a loaded DLL.
+This cmdlet gets the list of exports from a loaded DLL or a single exported function.
 .PARAMETER Module
 Specify the DLL.
 .PARAMETER Path
 Specify the path to the DLL.
+.PARAMETER ProcAddress
+Specify the name of the function to query.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.Win32.DllExport[]
+NtApiDotNet.Win32.DllExport[] or int64.
 #>
 function Get-Win32ModuleExport {
     [CmdletBinding(DefaultParameterSetName="FromModule")]
@@ -5913,17 +5915,22 @@ function Get-Win32ModuleExport {
         [Parameter(Position=0, Mandatory, ParameterSetName="FromModule")]
         [NtApiDotNet.Win32.SafeLoadLibraryHandle]$Module,
         [Parameter(Position=0, Mandatory, ParameterSetName="FromPath")]
-        [string]$Path
+        [string]$Path,
+        [string]$ProcAddress = ""
     )
 
     if ($PsCmdlet.ParameterSetName -eq "FromPath") {
         Use-NtObject($lib = Import-Win32Module -Path $Path -Flags LoadLibraryAsDataFile) {
             if ($lib -ne $null) {
-                Get-Win32ModuleExport -Module $lib
+                Get-Win32ModuleExport -Module $lib -ProcAddress $ProcAddress
             }
         }
     } else {
-        $Module.Exports | Write-Output
+        if ($ProcAddress -eq "") {
+            $Module.Exports | Write-Output
+        } else {
+            $Module.GetProcAddress($ProcAddress, $true).Result.ToInt64() | Write-Output
+        }
     }
 }
 
