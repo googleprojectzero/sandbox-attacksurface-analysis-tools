@@ -1747,6 +1747,17 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get the session ID for the process.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The session ID.</returns>
+        public NtResult<int> GetSessionId(bool throw_on_error)
+        {
+            return Query<ProcessSessionInformation>(ProcessInformationClass.ProcessSessionInformation, 
+                default, throw_on_error).Map(s => s.SessionId);
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -1776,7 +1787,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the process' session ID
         /// </summary>
-        public int SessionId => Query<ProcessSessionInformation>(ProcessInformationClass.ProcessSessionInformation).SessionId;
+        public int SessionId => GetSessionId(true).Result;
 
         /// <summary>
         /// Get the process' ID
