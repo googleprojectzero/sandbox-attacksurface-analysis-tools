@@ -82,6 +82,16 @@ namespace NtApiDotNet
         public string GrantedGenericAccessString => NtType?.AccessMaskToString(GrantedAccess, true) ?? $"0x{GrantedAccess:X08}";
 
         /// <summary>
+        /// Whether the handle is inheritable.
+        /// </summary>
+        public bool Inherit => Attributes.HasFlag(AttributeFlags.Inherit);
+
+        /// <summary>
+        /// Whether the handle is protected from close.
+        /// </summary>
+        public bool ProtectFromClose => Attributes.HasFlag(AttributeFlags.ProtectClose);
+
+        /// <summary>
         /// The name of the object (needs to have set query access in constructor)
         /// </summary>
         public string Name
