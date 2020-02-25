@@ -1108,7 +1108,7 @@ The DOS path to convert to NT.
 .INPUTS
 string[] List of paths to convert.
 .OUTPUTS
-
+NtApiDotNet.RtlPathType
 .EXAMPLE
 Get-NtFilePathType c:\Windows
 Get the path type for c:\windows.
