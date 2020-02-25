@@ -558,7 +558,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Return access as specific access type based on the NtType object.</para>
         /// </summary>
-        [Parameter]
+        [Parameter, ArgumentCompleter(typeof(NtTypeArgumentCompleter))]
         public NtType ToTypeAccess { get; set; }
         /// <summary>
         /// <para type="description">Specify that any generic rights should be mapped to type specific rights.</para>
@@ -669,7 +669,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify the NT type for the access check.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "sd"), Parameter(Mandatory = true, ParameterSetName = "sddl")]
+        [Parameter(ParameterSetName = "sd"), Parameter(Mandatory = true, ParameterSetName = "sddl"), ArgumentCompleter(typeof(NtTypeArgumentCompleter))]
         public NtType Type { get; set; }
 
         /// <summary>
@@ -869,6 +869,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify a default NT type for the security descriptor.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromToken"), Parameter(ParameterSetName = "FromSddl"), Parameter(ParameterSetName = "FromBytes"), Parameter(ParameterSetName = "FromKey")]
+        [ArgumentCompleter(typeof(NtTypeArgumentCompleter))]
         public NtType Type { get; set; }
 
         /// <summary>
