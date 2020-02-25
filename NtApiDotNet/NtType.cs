@@ -257,6 +257,16 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Get defined query information classes for a type.
+        /// </summary>
+        public IEnumerable<Enum> QueryInformationClass => _type_factory.GetQueryInfoClass();
+
+        /// <summary>
+        /// Get defined set information classes for a type.
+        /// </summary>
+        public IEnumerable<Enum> SetInformationClass => _type_factory.GetQueryInfoClass();
+
         #endregion
 
         #region Public Methods
@@ -790,6 +800,8 @@ namespace NtApiDotNet
         private static readonly Dictionary<string, NtType> _types = LoadTypes();
         private readonly NtTypeFactory _type_factory;
         private IEnumerable<AccessMaskEntry> _access_rights;
+        private List<Enum> _query_information_class = null;
+        private List<Enum> _set_information_class = null;
 
         private static Dictionary<string, NtType> LoadTypes()
         {
@@ -855,6 +867,16 @@ namespace NtApiDotNet
                 }
             }
             return valid_access;
+        }
+
+        private void LoadInformationClasses()
+        {
+            _query_information_class = new List<Enum>();
+            _set_information_class = new List<Enum>();
+
+            Type generic_type = typeof(NtObjectWithDuplicateAndInfo<,,,>);
+            if (!generic_type.IsAssignableFrom(ObjectType))
+                return;
         }
 
         #endregion

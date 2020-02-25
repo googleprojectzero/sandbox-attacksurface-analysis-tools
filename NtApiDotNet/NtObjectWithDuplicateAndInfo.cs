@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -30,6 +32,45 @@ namespace NtApiDotNet
         internal NtObjectWithDuplicateAndInfo(SafeKernelObjectHandle handle) : base(handle)
         {
         }
+
+        new internal class NtTypeFactoryImplBase : NtObjectWithDuplicate<O, A>.NtTypeFactoryImplBase
+        {
+            protected NtTypeFactoryImplBase(Type container_access_rights_type, bool can_open, MandatoryLabelPolicy default_policy)
+                : base(container_access_rights_type, can_open, default_policy)
+            {
+            }
+
+            protected NtTypeFactoryImplBase(Type container_access_rights_type, bool can_open)
+                : base(container_access_rights_type, can_open)
+            {
+            }
+
+            protected NtTypeFactoryImplBase(bool can_open, MandatoryLabelPolicy default_policy)
+                : base(can_open, default_policy)
+            {
+            }
+
+            protected NtTypeFactoryImplBase(bool can_open)
+                : base(can_open)
+            {
+            }
+
+            protected NtTypeFactoryImplBase()
+                : base(false)
+            {
+            }
+
+            public override IEnumerable<Enum> GetQueryInfoClass()
+            {
+                return Enum.GetValues(typeof(Q)).Cast<Enum>();
+            }
+
+            public override IEnumerable<Enum> GetSetInfoClass()
+            {
+                return Enum.GetValues(typeof(S)).Cast<Enum>();
+            }
+        }
+
         #endregion
 
         #region Public Methods
@@ -448,6 +489,19 @@ namespace NtApiDotNet
 
             curr_size = 1 << bits;
             return Math.Max(curr_size, size);
+        }
+
+        #endregion
+
+        #region Internal Members
+        internal static List<Enum> GetQueryInfoClasses()
+        {
+            return Enum.GetValues(typeof(Q)).Cast<Enum>().ToList();
+        }
+
+        internal static List<Enum> GetSetInfoClasses()
+        {
+            return Enum.GetValues(typeof(S)).Cast<Enum>().ToList();
         }
 
         #endregion

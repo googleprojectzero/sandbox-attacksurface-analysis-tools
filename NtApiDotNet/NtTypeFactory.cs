@@ -38,6 +38,14 @@ namespace NtApiDotNet
         public Type ContainerAccessRightsType { get; }
         public bool CanOpen { get; }
         public MandatoryLabelPolicy DefaultMandatoryPolicy { get; }
+        public virtual IEnumerable<Enum> GetQueryInfoClass()
+        {
+            return new Enum[0];
+        }
+        public virtual IEnumerable<Enum> GetSetInfoClass()
+        {
+            return new Enum[0];
+        }
 
         public virtual NtObject FromHandle(SafeKernelObjectHandle handle)
         {

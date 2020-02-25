@@ -810,8 +810,7 @@ namespace NtApiDotNet
         FileLinkInformationEx,
         FileLinkInformationExBypassAccessCheck,
         FileStorageReserveIdInformation,
-        FileCaseSensitiveInformationForceAccessCheck,
-        FileMaximumInformation
+        FileCaseSensitiveInformationForceAccessCheck
     }
 
     public enum FsInformationClass
