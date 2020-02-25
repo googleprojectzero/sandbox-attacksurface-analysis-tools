@@ -130,6 +130,10 @@ namespace NtObjectManager.Cmdlets.Object
         public static string ResolveWin32Path(SessionState state, string path)
         {
             var path_type = NtFileUtils.GetDosPathType(path);
+            if (path_type == RtlPathType.Rooted && path.StartsWith(@"\??"))
+            {
+                path_type = RtlPathType.LocalDevice;
+            }
             switch (path_type)
             {
                 case RtlPathType.Relative:
