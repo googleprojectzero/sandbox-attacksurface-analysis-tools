@@ -705,6 +705,12 @@ namespace NtObjectManager.Cmdlets.Object
         public GenericAccessRights? DesiredAccess { get; set; }
 
         /// <summary>
+        /// <para type="description">The desired access for the duplication as an access mask.</para>
+        /// </summary>
+        [Parameter]
+        public AccessMask? DesiredAccessMask { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify the no rights upgrade flags.</para>
         /// </summary>
         [Parameter]
@@ -757,18 +763,31 @@ namespace NtObjectManager.Cmdlets.Object
             return options;
         }
 
+        private GenericAccessRights GetDesiredAccess()
+        {
+            if (DesiredAccess.HasValue)
+            {
+                return DesiredAccess.Value;
+            }
+            if (DesiredAccessMask.HasValue)
+            {
+                return DesiredAccessMask.Value.ToGenericAccess();
+            }
+            return GenericAccessRights.None;
+        }
+
         private NtObject GetObject()
         {
             if (ParameterSetName == "FromHandle")
             {
-                using (var obj = NtGeneric.DuplicateFrom(SourceProcess, SourceHandle, DesiredAccess ?? 0, ObjectAttributes ?? 0, GetOptions()))
+                using (var obj = NtGeneric.DuplicateFrom(SourceProcess, SourceHandle, GetDesiredAccess(), ObjectAttributes ?? 0, GetOptions()))
                 {
                     return obj.ToTypedObject();
                 }
             }
             else
             {
-                return Object.DuplicateObject(DesiredAccess ?? 0, ObjectAttributes ?? 0, GetOptions());
+                return Object.DuplicateObject(GetDesiredAccess(), ObjectAttributes ?? 0, GetOptions());
             }
         }
 
@@ -788,7 +807,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         protected override void ProcessRecord()
         {
-            if (DestinationProcess.SameObject(NtProcess.Current))
+            if (DestinationProcess.ProcessId == NtProcess.Current.ProcessId)
             {
                 WriteObject(GetObject());
             }
