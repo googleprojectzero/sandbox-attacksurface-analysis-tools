@@ -5207,6 +5207,9 @@ Close handle 0x1234 in another process.
 .EXAMPLE
 Close-NtObject -Handle 0x1234 -ProcessId 684
 Close handle 0x1234 in process with ID 684.
+.EXAMPLE
+Close-NtObject -Handle 0x1234
+Close handle 0x1234 in process the current process.
 #>
 function Close-NtObject {
     [CmdletBinding(DefaultParameterSetName="FromProcess")]
@@ -5219,7 +5222,10 @@ function Close-NtObject {
         [int]$ProcessId,
         [parameter(Mandatory, Position = 1, ParameterSetName="FromProcess")]
         [parameter(Mandatory, Position = 1, ParameterSetName="FromProcessId")]
-        [IntPtr]$Handle
+        [parameter(Mandatory, Position = 1, ParameterSetName="FromCurrentProcess")]
+        [IntPtr]$Handle,
+        [parameter(Mandatory, ParameterSetName="FromCurrentProcess")]
+        [switch]$CurrentProcess
     )
 
     PROCESS {
@@ -5227,6 +5233,7 @@ function Close-NtObject {
             "FromObject" { $Object.Close() }
             "FromProcess" { [NtApiDotNet.NtObject]::CloseHandle($Process, $Handle) }
             "FromProcessId" { [NtApiDotNet.NtObject]::CloseHandle($ProcessId, $Handle) }
+            "FromCurrentProcess" { [NtApiDotNet.NtObject]::CloseHandle($Handle) }
         }
     }
 }
