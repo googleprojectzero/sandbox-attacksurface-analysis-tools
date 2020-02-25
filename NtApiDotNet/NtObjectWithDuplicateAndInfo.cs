@@ -19,6 +19,29 @@ using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
+#pragma warning disable 1591
+    /// <summary>
+    /// Interface to generically query an object.
+    /// </summary>
+    public interface INtObjectQueryInformation
+    {
+        NtResult<T> Query<T>(Enum info_class, T default_value, bool throw_on_error) where T : new();
+        NtResult<SafeStructureInOutBuffer<T>> QueryBuffer<T>(Enum info_class, T default_value, bool throw_on_error) where T : new();
+        NtResult<SafeHGlobalBuffer> QueryRawBuffer(Enum info_class, byte[] init_buffer, bool throw_on_error);
+        NtResult<byte[]> QueryRawBytes(Enum info_class, byte[] init_buffer, bool throw_on_error);
+    }
+
+    /// <summary>
+    /// Interface to generically set an object.
+    /// </summary>
+    public interface INtObjectSetInformation
+    {
+        NtStatus Set<T>(Enum info_class, T value, bool throw_on_error) where T : struct;
+        NtStatus SetBuffer(Enum info_class, SafeBuffer buffer, bool throw_on_error);
+        NtStatus SetBytes(Enum info_class, byte[] value, bool throw_on_error);
+    }
+#pragma warning restore 1591
+
     /// <summary>
     /// A derived class to add some useful functions such as Duplicate as well as generic Query and Set information methods.
     /// </summary>
@@ -26,7 +49,7 @@ namespace NtApiDotNet
     /// <typeparam name="A">An enum which represents the access mask values for the type</typeparam>
     /// <typeparam name="Q">An enum which represents the information class for query.</typeparam>
     /// <typeparam name="S">An enum which represents the information class for set.</typeparam>
-    public abstract class NtObjectWithDuplicateAndInfo<O, A, Q, S> : NtObjectWithDuplicate<O, A> where O : NtObject where A : Enum where Q : Enum where S : Enum
+    public abstract class NtObjectWithDuplicateAndInfo<O, A, Q, S> : NtObjectWithDuplicate<O, A>, INtObjectQueryInformation, INtObjectSetInformation where O : NtObject where A : Enum where Q : Enum where S : Enum
     {
         #region Constructors
         internal NtObjectWithDuplicateAndInfo(SafeKernelObjectHandle handle) : base(handle)
@@ -493,15 +516,42 @@ namespace NtApiDotNet
 
         #endregion
 
-        #region Internal Members
-        internal static List<Enum> GetQueryInfoClasses()
+        #region INtObjectQueryInformation Implementation
+        NtResult<T> INtObjectQueryInformation.Query<T>(Enum info_class, T default_value, bool throw_on_error)
         {
-            return Enum.GetValues(typeof(Q)).Cast<Enum>().ToList();
+            return Query((Q)info_class, default_value, throw_on_error);
         }
 
-        internal static List<Enum> GetSetInfoClasses()
+        NtResult<SafeStructureInOutBuffer<T>> INtObjectQueryInformation.QueryBuffer<T>(Enum info_class, T default_value, bool throw_on_error)
         {
-            return Enum.GetValues(typeof(S)).Cast<Enum>().ToList();
+            return QueryBuffer((Q)info_class, default_value, throw_on_error);
+        }
+
+        NtResult<SafeHGlobalBuffer> INtObjectQueryInformation.QueryRawBuffer(Enum info_class, byte[] init_buffer, bool throw_on_error)
+        {
+            return QueryRawBuffer((Q)info_class, init_buffer, throw_on_error);
+        }
+
+        NtResult<byte[]> INtObjectQueryInformation.QueryRawBytes(Enum info_class, byte[] init_buffer, bool throw_on_error)
+        {
+            return QueryRawBytes((Q)info_class, init_buffer, throw_on_error);
+        }
+        #endregion
+
+        #region INtObjectSetInformation Implementation
+        NtStatus INtObjectSetInformation.Set<T>(Enum info_class, T value, bool throw_on_error)
+        {
+            return Set((S)info_class, value, throw_on_error);
+        }
+
+        NtStatus INtObjectSetInformation.SetBuffer(Enum info_class, SafeBuffer buffer, bool throw_on_error)
+        {
+            return SetBuffer((S)info_class, buffer, throw_on_error);
+        }
+
+        NtStatus INtObjectSetInformation.SetBytes(Enum info_class, byte[] value, bool throw_on_error)
+        {
+            return SetBytes((S)info_class, value, throw_on_error);
         }
 
         #endregion
