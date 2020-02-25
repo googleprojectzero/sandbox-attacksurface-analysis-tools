@@ -38,7 +38,13 @@ namespace NtApiDotNet
                 if (!IsAccessGranted(ProcessAccessRights.QueryLimitedInformation)
                     && !IsAccessGranted(ProcessAccessRights.QueryInformation))
                 {
-                    _extended_info = new ProcessExtendedBasicInformation();
+                    // If we don't have query try and duplicate.
+                    using (var dup_process = Duplicate(ProcessAccessRights.QueryLimitedInformation, false))
+                    {
+                        if (dup_process.IsSuccess)
+                            return dup_process.Result.GetExtendedBasicInfo(false);
+                        _extended_info = new ProcessExtendedBasicInformation();
+                    }
                 }
                 else
                 {
