@@ -499,12 +499,38 @@ namespace NtApiDotNet
         /// <returns>The accessible process, or null if one couldn't be opened.</returns>
         public NtProcess GetNextProcess(ProcessAccessRights desired_access)
         {
-            NtStatus status = NtSystemCalls.NtGetNextProcess(Handle, desired_access, AttributeFlags.None, 0, out SafeKernelObjectHandle new_handle);
+            NtStatus status = NtSystemCalls.NtGetNextProcess(Handle, desired_access, AttributeFlags.None, 
+                GetNextProcessFlags.None, out SafeKernelObjectHandle new_handle);
             if (status == NtStatus.STATUS_SUCCESS)
             {
                 return new NtProcess(new_handle);
             }
             return null;
+        }
+
+        /// <summary>
+        /// Get previous accessible process (used in combination with GetFirstProcess)
+        /// </summary>
+        /// <param name="desired_access">The access required for the process.</param>
+        /// <returns>The accessible process, or null if one couldn't be opened.</returns>
+        public NtProcess GetPreviousProcess(ProcessAccessRights desired_access)
+        {
+            NtStatus status = NtSystemCalls.NtGetNextProcess(Handle, desired_access, AttributeFlags.None,
+                GetNextProcessFlags.PreviousProcess, out SafeKernelObjectHandle new_handle);
+            if (status == NtStatus.STATUS_SUCCESS)
+            {
+                return new NtProcess(new_handle);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Get previous accessible process (used in combination with GetFirstProcess)
+        /// </summary>
+        /// <returns>The accessible process, or null if one couldn't be opened.</returns>
+        public NtProcess GetPreviousProcess()
+        {
+            return GetPreviousProcess(ProcessAccessRights.MaximumAllowed);
         }
 
         /// <summary>

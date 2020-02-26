@@ -643,6 +643,13 @@ namespace NtApiDotNet
         Normalize = 1,
     }
 
+    [Flags]
+    public enum GetNextProcessFlags
+    {
+        None = 0,
+        PreviousProcess = 1,
+    }
+
     public static partial class NtSystemCalls
     {
         [DllImport("ntdll.dll")]
@@ -666,7 +673,7 @@ namespace NtApiDotNet
           SafeKernelObjectHandle ProcessHandle,
           ProcessAccessRights DesiredAccess,
           AttributeFlags HandleAttributes,
-          int Flags,
+          GetNextProcessFlags Flags,
           out SafeKernelObjectHandle NewProcessHandle
         );
 

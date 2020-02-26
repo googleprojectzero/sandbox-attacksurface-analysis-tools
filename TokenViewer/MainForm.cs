@@ -139,7 +139,6 @@ namespace TokenViewer
             {
                 List<NtProcess> processes = list.Where(p => !p.IsDeleting || showDeadProcesses).ToList();
                 processes.Sort((a, b) => a.ProcessId - b.ProcessId);
-                System.Diagnostics.Debug.WriteLine(processes.Count.ToString());
                 using (var tokens = new DisposableList<NtToken>(processes.Select(p => GetToken(p))))
                 {
                     List<ListViewItem> threads = new List<ListViewItem>();
