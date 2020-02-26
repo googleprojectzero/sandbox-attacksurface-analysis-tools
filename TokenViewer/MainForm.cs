@@ -27,19 +27,16 @@ namespace TokenViewer
 {
     public partial class MainForm : Form
     {
-        private DisposableList<ProcessTokenEntry> _process_tokens;
-
         private static void ResizeColumns(ListView view)
         {
             view.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
             view.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
-        private ListViewItem CreateProcessNode(ProcessTokenEntry entry)
+        private ListViewItem CreateProcessNode(NtProcess process, NtToken token)
         {
-            ListViewItem item = new ListViewItem(entry.ProcessId.ToString());
-            NtToken token = entry.ProcessToken;
-            item.SubItems.Add(entry.Name); 
+            ListViewItem item = new ListViewItem(process.ProcessId.ToString());
+            item.SubItems.Add(process.Name); 
             item.SubItems.Add(token.User.ToString());
             item.SubItems.Add(token.IntegrityLevel.ToString());
             string restricted = token.Restricted.ToString();
@@ -49,8 +46,8 @@ namespace TokenViewer
             }
             item.SubItems.Add(restricted);
             item.SubItems.Add(token.AppContainer.ToString());
-            item.SubItems.Add(entry.CommandLine);
-            item.Tag = entry;
+            item.SubItems.Add(process.CommandLine);
+            item.Tag = new ProcessTokenEntry(process, token);
             return item;
         }
 
@@ -110,9 +107,9 @@ namespace TokenViewer
         private void RefreshProcessList(string filter, bool hideUnrestricted, bool showDeadProcesses)
         {
             listViewProcesses.BeginUpdate();
+            listViewThreads.BeginUpdate();
             bool filter_name = !string.IsNullOrWhiteSpace(filter);
-            _process_tokens?.Dispose();
-            _process_tokens = new DisposableList<ProcessTokenEntry>();
+            ClearList(listViewProcesses);
             ClearList(listViewThreads);
 
             using (var list = new DisposableList<NtProcess>(NtProcess.GetProcesses(ProcessAccessRights.MaximumAllowed)))
@@ -124,6 +121,7 @@ namespace TokenViewer
                 using (var tokens = new DisposableList<NtToken>(processes.Select(p => GetToken(p))))
                 {
                     List<ListViewItem> threads = new List<ListViewItem>();
+                    List<ListViewItem> procs = new List<ListViewItem>();
 
                     Debug.Assert(processes.Count == tokens.Count);
                     for (int i = 0; i < processes.Count; ++i)
@@ -158,16 +156,17 @@ namespace TokenViewer
                             }
                         }
 
-                        _process_tokens.Add(new ProcessTokenEntry(p, t));
+                        procs.Add(CreateProcessNode(p, t));
                         threads.AddRange(CreateThreads(p, t));
                     }
 
-                    listViewProcesses.VirtualListSize = _process_tokens.Count;
+                    listViewProcesses.Items.AddRange(procs.ToArray());
                     listViewThreads.Items.AddRange(threads.ToArray());
                     ResizeColumns(listViewProcesses);
                     ResizeColumns(listViewThreads);
                 }
             }
+            listViewThreads.EndUpdate();
             listViewProcesses.EndUpdate();
         }
 
@@ -255,11 +254,10 @@ namespace TokenViewer
 
         private void openTokenToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (listViewProcesses.SelectedIndices.Count > 0)
+            foreach (ListViewItem item in listViewProcesses.SelectedItems)
             {
-                foreach (int index in listViewProcesses.SelectedIndices)
+                if (item.Tag is ProcessTokenEntry entry)
                 {
-                    var entry = _process_tokens[index];
                     TokenForm.OpenForm(entry, $"{entry.Name}:{entry.ProcessId}", true, false);
                 }
             }
@@ -579,9 +577,12 @@ namespace TokenViewer
 
         private void showProcessSecurityToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (listViewProcesses.SelectedIndices.Count > 0)
+            if (listViewProcesses.SelectedItems.Count > 0)
             {
-                ShowProcessSecurity(_process_tokens[listViewProcesses.SelectedIndices[0]]);
+                if (listViewProcesses.SelectedItems[0].Tag is ProcessTokenEntry entry)
+                {
+                    ShowProcessSecurity(entry);
+                }
             }
         }
 
@@ -613,14 +614,6 @@ namespace TokenViewer
                     }
                 }
             }
-        }
-
-        private void listViewProcesses_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
-        {
-            if (_process_tokens.Count < e.ItemIndex)
-                return;
-
-            e.Item = CreateProcessNode(_process_tokens[e.ItemIndex]);
         }
 
         private void txtFilter_KeyPress(object sender, KeyPressEventArgs e)

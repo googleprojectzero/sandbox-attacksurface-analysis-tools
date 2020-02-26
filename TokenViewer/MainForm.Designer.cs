@@ -794,9 +794,7 @@
             this.listViewProcesses.TabIndex = 6;
             this.listViewProcesses.UseCompatibleStateImageBehavior = false;
             this.listViewProcesses.View = System.Windows.Forms.View.Details;
-            this.listViewProcesses.VirtualMode = true;
             this.listViewProcesses.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.listView_ColumnClick);
-            this.listViewProcesses.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.listViewProcesses_RetrieveVirtualItem);
             this.listViewProcesses.DoubleClick += new System.EventHandler(this.openTokenToolStripMenuItem_Click);
             // 
             // columnHeaderProcessCommandLine
