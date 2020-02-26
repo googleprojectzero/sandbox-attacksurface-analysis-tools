@@ -65,27 +65,36 @@ namespace TokenViewer
             return item;
         }
 
-        private IEnumerable<ListViewItem> CreateThreads(NtProcess query_process, NtToken process_token)
+        private IEnumerable<ListViewItem> CreateThreads(NtProcess process, NtToken process_token)
         {
             List<ListViewItem> ret = new List<ListViewItem>();
 
-            using (var threads = new DisposableList<NtThread>(query_process.GetThreads(ThreadAccessRights.MaximumAllowed)))
+            using (var dup_process = process.Duplicate(ProcessAccessRights.QueryInformation, false))
             {
-                foreach (NtThread thread in threads.Where(t => t.IsAccessGranted(ThreadAccessRights.QueryLimitedInformation)))
+                if (!dup_process.IsSuccess)
                 {
-                    using (var result = NtToken.OpenThreadToken(thread, true, TokenAccessRights.MaximumAllowed, false))
+                    return ret;
+                }
+
+                var query_process = dup_process.Result;
+                using (var threads = new DisposableList<NtThread>(query_process.GetThreads(ThreadAccessRights.MaximumAllowed)))
+                {
+                    foreach (NtThread thread in threads.Where(t => t.IsAccessGranted(ThreadAccessRights.QueryLimitedInformation)))
                     {
-                        if (!result.IsSuccess)
-                            continue;
-                        var token = result.Result;
-                        ListViewItem item = new ListViewItem($"{query_process.ProcessId} - {query_process.Name}");
-                        item.SubItems.Add(thread.ThreadId.ToString());
-                        item.SubItems.Add(token.User.ToString());
-                        item.SubItems.Add(token.ImpersonationLevel.ToString());
-                        item.Tag = new ThreadTokenEntry(query_process, process_token, 
-                            thread.ThreadId, thread.Description, token, 
-                            thread.GetSecurityDescriptor(SecurityInformation.AllBasic, false).GetResultOrDefault());
-                        ret.Add(item);
+                        using (var result = NtToken.OpenThreadToken(thread, true, TokenAccessRights.MaximumAllowed, false))
+                        {
+                            if (!result.IsSuccess)
+                                continue;
+                            var token = result.Result;
+                            ListViewItem item = new ListViewItem($"{query_process.ProcessId} - {query_process.Name}");
+                            item.SubItems.Add(thread.ThreadId.ToString());
+                            item.SubItems.Add(token.User.ToString());
+                            item.SubItems.Add(token.ImpersonationLevel.ToString());
+                            item.Tag = new ThreadTokenEntry(query_process, process_token,
+                                thread.ThreadId, thread.Description, token,
+                                thread.GetSecurityDescriptor(SecurityInformation.AllBasic, false).GetResultOrDefault());
+                            ret.Add(item);
+                        }
                     }
                 }
             }
@@ -103,7 +112,7 @@ namespace TokenViewer
 
         private static bool IsRestrictedToken(NtToken token)
         {
-            return token.IsSandbox;
+            return token.IsSandbox || token.Restricted;
         }
 
         private void ClearList(ListView view)
@@ -126,12 +135,11 @@ namespace TokenViewer
             ClearList(listViewProcesses);
             ClearList(listViewThreads);
 
-            using (var list = new DisposableList<NtProcess>(NtProcess.GetProcesses(ProcessAccessRights.MaximumAllowed)))
+            using (var list = new DisposableList<NtProcess>(NtProcess.GetProcesses(ProcessAccessRights.QueryLimitedInformation)))
             {
-                List<NtProcess> processes = list.Where(p => !p.IsDeleting || showDeadProcesses)
-                    .Where(p => p.IsAccessGranted(ProcessAccessRights.QueryLimitedInformation)).ToList();
+                List<NtProcess> processes = list.Where(p => !p.IsDeleting || showDeadProcesses).ToList();
                 processes.Sort((a, b) => a.ProcessId - b.ProcessId);
-
+                System.Diagnostics.Debug.WriteLine(processes.Count.ToString());
                 using (var tokens = new DisposableList<NtToken>(processes.Select(p => GetToken(p))))
                 {
                     List<ListViewItem> threads = new List<ListViewItem>();
@@ -211,22 +219,33 @@ namespace TokenViewer
 
         private static string GetSandboxName(NtToken token)
         {
-            if (!token.IsSandbox)
+            if (!token.IsSandbox && !token.Restricted)
             {
                 return "Unsandboxed";
             }
 
             List<string> restrictions = new List<string>();
-            if (token.Restricted)
-            {
-                restrictions.Add(token.WriteRestricted ? "Write Restricted" : "Restricted");
-            }
             if (token.AppContainer)
             {
-                restrictions.Add(token.LowPrivilegeAppContainer ? "Low Privilege App Container" : "App Container");
+                restrictions.Add(token.LowPrivilegeAppContainer ? "App Container (Low Privilege)" : "App Container");
+            }
+
+            if (token.Restricted)
+            {
+                restrictions.Add(token.WriteRestricted ? "Restricted (Write)" : "Restricted");
             }
             restrictions.Add(token.IntegrityLevel.ToString());
             return string.Join(" - ", restrictions);
+        }
+
+        private static string GetSecurityDescriptor(SecurityDescriptor sd)
+        {
+            return sd?.ToSddl() ?? "Unknown";
+        }
+
+        private static string GetSecurityDescriptor(NtObject obj)
+        {
+            return GetSecurityDescriptor(obj.GetSecurityDescriptor(SecurityInformation.AllBasic, false).GetResultOrDefault());
         }
 
         public MainForm()
@@ -242,6 +261,20 @@ namespace TokenViewer
             AddGrouping("Integrity Level", p => p.ProcessToken.IntegrityLevel.ToString());
             AddGrouping("User", p => p.ProcessToken.User.Name);
             AddGrouping("Elevation Type", p => p.ProcessToken.ElevationType.ToString());
+            AddGrouping("Authentication ID", p => p.ProcessToken.AuthenticationId.ToString());
+            AddGrouping("Origin ID", p => p.ProcessToken.Origin.ToString());
+            AddGrouping("Flags", p => p.ProcessToken.Flags.ToString());
+            AddGrouping("Package Name", p =>
+            {
+                if (!p.ProcessToken.AppContainer)
+                    return "None";
+                if (!string.IsNullOrWhiteSpace(p.ProcessToken.PackageFullName))
+                    return p.ProcessToken.PackageFullName;
+                return p.ProcessToken.AppContainerSid.Name;
+            });
+            AddGrouping("Security Descriptor", p => GetSecurityDescriptor(p.ProcessToken));
+            AddGrouping("Process Security Descriptor", p => GetSecurityDescriptor(p.ProcessSecurity));
+            AddGrouping("Trust Level", p => p.ProcessToken.TrustLevel?.Name ?? "Untrusted");
             RefreshProcessList(null, false, false);
 
             using (NtToken token = NtProcess.Current.OpenToken())
@@ -618,9 +651,12 @@ namespace TokenViewer
 
         private void ShowProcessSecurity(ProcessTokenEntry process)
         {
-            var viewer = new SecurityDescriptorViewerForm($"{process.Name}:{process.ProcessId}",
-                process.ProcessSecurity, NtType.GetTypeByType<NtProcess>(), false);
-            viewer.ShowDialog(this);
+            if (process.ProcessSecurity != null)
+            {
+                var viewer = new SecurityDescriptorViewerForm($"{process.Name}:{process.ProcessId}",
+                    process.ProcessSecurity, NtType.GetTypeByType<NtProcess>(), false);
+                viewer.ShowDialog(this);
+            }
         }
 
         private void showProcessSecurityToolStripMenuItem_Click(object sender, EventArgs e)
@@ -680,7 +716,7 @@ namespace TokenViewer
         private static void GroupListItems(ListView listView, TokenGrouping grouping)
         {
             listView.BeginUpdate();
-            Dictionary<string, int> groups = new Dictionary<string, int>();
+            Dictionary<string, List<ListViewItem>> groups = new Dictionary<string, List<ListViewItem>>();
             listView.Groups.Clear();
             foreach (ListViewItem item in listView.Items)
             {
@@ -694,11 +730,17 @@ namespace TokenViewer
                     string group_name = grouping.MapToGroup(entry);
                     if (!groups.ContainsKey(group_name))
                     {
-                        int index = listView.Groups.Add(new ListViewGroup(group_name, HorizontalAlignment.Left));
-                        groups.Add(group_name, index);
+                        groups.Add(group_name, new List<ListViewItem>());
                     }
-                    item.Group = listView.Groups[groups[group_name]];
+                    groups[group_name].Add(item);
                 }
+            }
+
+            foreach (var pair in groups.OrderBy(p => p.Key))
+            {
+                var group = new ListViewGroup(pair.Key, HorizontalAlignment.Left);
+                listView.Groups.Add(group);
+                group.Items.AddRange(pair.Value.ToArray());
             }
             listView.EndUpdate();
         }
@@ -718,6 +760,29 @@ namespace TokenViewer
             else
             {
                 GroupListItems(listViewProcesses, _process_grouping);
+            }
+        }
+
+        private void contextMenuStripProcesses_Opening(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (listViewProcesses.SelectedItems.Count > 0)
+            {
+                if (listViewProcesses.SelectedItems[0].Tag is ProcessTokenEntry process)
+                {
+                    showProcessSecurityToolStripMenuItem.Enabled = process.ProcessSecurity != null;
+                }
+            }
+        }
+
+        private void contextMenuStripThreads_Opening(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (listViewThreads.SelectedItems.Count > 0)
+            {
+                if (listViewThreads.SelectedItems[0].Tag is ThreadTokenEntry thread)
+                {
+                    showProcessSecurityToolStripMenuItem1.Enabled = thread.ProcessSecurity != null;
+                    showThreadSecurityToolStripMenuItem.Enabled = thread.ThreadSecurity != null;
+                }
             }
         }
     }

@@ -27,6 +27,16 @@ namespace TokenViewer
         public NtToken ProcessToken { get; private set; }
         public SecurityDescriptor ProcessSecurity { get; }
 
+        private static SecurityDescriptor GetSecurityDescriptor(NtProcess process)
+        {
+            using (var sd_proc = process.Duplicate(ProcessAccessRights.ReadControl, false))
+            {
+                if (!sd_proc.IsSuccess)
+                    return null;
+                return sd_proc.Result.GetSecurityDescriptor(SecurityInformation.AllBasic, false).GetResultOrDefault();
+            }
+        }
+
         public ProcessTokenEntry(int process_id, string name, string image_path, 
             string command_line, int session_id, NtToken process_token, SecurityDescriptor process_security)
         {
@@ -42,7 +52,7 @@ namespace TokenViewer
         public ProcessTokenEntry(NtProcess process, NtToken process_token)
             : this(process.ProcessId, process.Name, process.Win32ImagePath, 
                   process.CommandLine, process.SessionId, process_token, 
-                  process.GetSecurityDescriptor(SecurityInformation.AllBasic, false).GetResultOrDefault())
+                  GetSecurityDescriptor(process))
         {
         }
 
