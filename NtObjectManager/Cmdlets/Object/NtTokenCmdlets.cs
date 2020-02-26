@@ -778,6 +778,10 @@ namespace NtObjectManager.Cmdlets.Object
             }
             else
             {
+                if (IntegrityLevel.HasValue)
+                {
+                    WriteWarning("Must specify Duplicate with IntegrityLevel.");
+                }
                 token = GetToken(Access);
             }
             WriteObject(token);
