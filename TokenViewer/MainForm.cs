@@ -27,16 +27,19 @@ namespace TokenViewer
 {
     public partial class MainForm : Form
     {
+        private DisposableList<ProcessTokenEntry> _process_tokens;
+
         private static void ResizeColumns(ListView view)
         {
             view.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
             view.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
 
-        private ListViewItem CreateProcessNode(NtProcess process, NtToken token)
+        private ListViewItem CreateProcessNode(ProcessTokenEntry entry)
         {
-            ListViewItem item = new ListViewItem(process.ProcessId.ToString());
-            item.SubItems.Add(process.Name);
+            ListViewItem item = new ListViewItem(entry.ProcessId.ToString());
+            NtToken token = entry.ProcessToken;
+            item.SubItems.Add(entry.Name); 
             item.SubItems.Add(token.User.ToString());
             item.SubItems.Add(token.IntegrityLevel.ToString());
             string restricted = token.Restricted.ToString();
@@ -46,7 +49,8 @@ namespace TokenViewer
             }
             item.SubItems.Add(restricted);
             item.SubItems.Add(token.AppContainer.ToString());
-            item.Tag = new ProcessTokenEntry(process, token);
+            item.SubItems.Add(entry.CommandLine);
+            item.Tag = entry;
             return item;
         }
 
@@ -105,8 +109,10 @@ namespace TokenViewer
 
         private void RefreshProcessList(string filter, bool hideUnrestricted, bool showDeadProcesses)
         {
+            listViewProcesses.BeginUpdate();
             bool filter_name = !string.IsNullOrWhiteSpace(filter);
-            ClearList(listViewProcesses);
+            _process_tokens?.Dispose();
+            _process_tokens = new DisposableList<ProcessTokenEntry>();
             ClearList(listViewThreads);
 
             using (var list = new DisposableList<NtProcess>(NtProcess.GetProcesses(ProcessAccessRights.MaximumAllowed)))
@@ -117,7 +123,6 @@ namespace TokenViewer
 
                 using (var tokens = new DisposableList<NtToken>(processes.Select(p => GetToken(p))))
                 {
-                    List<ListViewItem> procs = new List<ListViewItem>();
                     List<ListViewItem> threads = new List<ListViewItem>();
 
                     Debug.Assert(processes.Count == tokens.Count);
@@ -133,7 +138,13 @@ namespace TokenViewer
 
                         if (filter_name)
                         {
-                            if (!p.FullPath.ToLower().Contains(filter.ToLower()))
+                            string command_line = p.CommandLine;
+                            if (string.IsNullOrWhiteSpace(command_line))
+                            {
+                                command_line = p.Name;
+                            }
+
+                            if (!command_line.ToLower().Contains(filter.ToLower()))
                             {
                                 continue;
                             }
@@ -147,16 +158,17 @@ namespace TokenViewer
                             }
                         }
 
-                        procs.Add(CreateProcessNode(p, t));
+                        _process_tokens.Add(new ProcessTokenEntry(p, t));
                         threads.AddRange(CreateThreads(p, t));
                     }
 
-                    listViewProcesses.Items.AddRange(procs.ToArray());
+                    listViewProcesses.VirtualListSize = _process_tokens.Count;
                     listViewThreads.Items.AddRange(threads.ToArray());
                     ResizeColumns(listViewProcesses);
                     ResizeColumns(listViewThreads);
                 }
             }
+            listViewProcesses.EndUpdate();
         }
 
         private void RefreshSessionList()
@@ -243,14 +255,12 @@ namespace TokenViewer
 
         private void openTokenToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (listViewProcesses.SelectedItems.Count > 0)
+            if (listViewProcesses.SelectedIndices.Count > 0)
             {
-                foreach (ListViewItem item in listViewProcesses.SelectedItems)
+                foreach (int index in listViewProcesses.SelectedIndices)
                 {
-                    if (item.Tag is ProcessTokenEntry process)
-                    {
-                        TokenForm.OpenForm(process, $"{item.SubItems[1].Text}:{item.SubItems[0].Text}", true, false);
-                    }
+                    var entry = _process_tokens[index];
+                    TokenForm.OpenForm(entry, $"{entry.Name}:{entry.ProcessId}", true, false);
                 }
             }
         }
@@ -443,7 +453,7 @@ namespace TokenViewer
                 {
                     if (thread.ProcessToken != null)
                     {
-                        TokenForm.OpenForm((ProcessTokenEntry)thread, $"{thread.Name}:{thread.ProcessId}", true, false);
+                        TokenForm.OpenForm(thread, $"{thread.Name}:{thread.ProcessId}", true, false);
                     }
                 }
             }
@@ -569,15 +579,9 @@ namespace TokenViewer
 
         private void showProcessSecurityToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (listViewProcesses.SelectedItems.Count > 0)
+            if (listViewProcesses.SelectedIndices.Count > 0)
             {
-                if (listViewProcesses.SelectedItems[0].Tag is ProcessTokenEntry process)
-                {
-                    if (process.ProcessSecurity != null)
-                    {
-                        ShowProcessSecurity(process);
-                    }
-                }
+                ShowProcessSecurity(_process_tokens[listViewProcesses.SelectedIndices[0]]);
             }
         }
 
@@ -609,6 +613,27 @@ namespace TokenViewer
                     }
                 }
             }
+        }
+
+        private void listViewProcesses_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
+        {
+            if (_process_tokens.Count < e.ItemIndex)
+                return;
+
+            e.Item = CreateProcessNode(_process_tokens[e.ItemIndex]);
+        }
+
+        private void txtFilter_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == '\r')
+            {
+                btnFilter_Click(sender, e);
+            }
+        }
+
+        private void checkBoxUnrestricted_CheckedChanged(object sender, EventArgs e)
+        {
+            RefreshProcessList(txtFilter.Text, checkBoxUnrestricted.Checked, showDeadProcessesToolStripMenuItem.Checked);
         }
     }
 }

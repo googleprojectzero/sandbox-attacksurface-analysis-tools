@@ -44,10 +44,6 @@
             System.Windows.Forms.Label label4;
             System.Windows.Forms.ColumnHeader columnHeaderProcessId;
             System.Windows.Forms.ColumnHeader columnHeaderProcessName;
-            System.Windows.Forms.ColumnHeader columnHeaderProcessUser;
-            System.Windows.Forms.ColumnHeader columnHeaderProcessIL;
-            System.Windows.Forms.ColumnHeader columnHeaderProcessRestricted;
-            System.Windows.Forms.ColumnHeader columnHeaderProcessAC;
             System.Windows.Forms.ColumnHeader columnHeaderHandleProcessId;
             System.Windows.Forms.ColumnHeader columnHeaderHandleProcessName;
             System.Windows.Forms.ColumnHeader columnHeaderHandleUser;
@@ -60,6 +56,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.btnCreateAnonymous = new System.Windows.Forms.Button();
             this.btnClipboardToken = new System.Windows.Forms.Button();
+            this.checkBoxUseUNCPath = new System.Windows.Forms.CheckBox();
             this.btnPipeConnect = new System.Windows.Forms.Button();
             this.btnStartServer = new System.Windows.Forms.Button();
             this.txtPipeName = new System.Windows.Forms.TextBox();
@@ -78,6 +75,10 @@
             this.txtS4URealm = new System.Windows.Forms.TextBox();
             this.txtS4UUserName = new System.Windows.Forms.TextBox();
             this.labelUsername = new System.Windows.Forms.Label();
+            this.columnHeaderProcessUser = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeaderProcessIL = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeaderProcessRestricted = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeaderProcessAC = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.contextMenuStripProcesses = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.openTokenToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.refreshToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -102,6 +103,7 @@
             this.columnHeaderImpLevel = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.tabPageProcesses = new System.Windows.Forms.TabPage();
             this.listViewProcesses = new System.Windows.Forms.ListView();
+            this.columnHeaderProcessCommandLine = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.txtFilter = new System.Windows.Forms.TextBox();
             this.btnFilter = new System.Windows.Forms.Button();
             this.checkBoxUnrestricted = new System.Windows.Forms.CheckBox();
@@ -113,7 +115,6 @@
             this.contextMenuStripHandles = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.toolStripMenuItemHandlesOpenToken = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemHandlesRefresh = new System.Windows.Forms.ToolStripMenuItem();
-            this.checkBoxUseUNCPath = new System.Windows.Forms.CheckBox();
             tabPageServices = new System.Windows.Forms.TabPage();
             groupBoxAnonymous = new System.Windows.Forms.GroupBox();
             groupBox2 = new System.Windows.Forms.GroupBox();
@@ -129,10 +130,6 @@
             label4 = new System.Windows.Forms.Label();
             columnHeaderProcessId = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeaderProcessName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            columnHeaderProcessUser = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            columnHeaderProcessIL = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            columnHeaderProcessRestricted = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            columnHeaderProcessAC = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeaderHandleProcessId = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeaderHandleProcessName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeaderHandleUser = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -226,6 +223,18 @@
             groupBox1.TabIndex = 1;
             groupBox1.TabStop = false;
             groupBox1.Text = "Named Pipe";
+            // 
+            // checkBoxUseUNCPath
+            // 
+            this.checkBoxUseUNCPath.AutoSize = true;
+            this.checkBoxUseUNCPath.Checked = true;
+            this.checkBoxUseUNCPath.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkBoxUseUNCPath.Location = new System.Drawing.Point(190, 66);
+            this.checkBoxUseUNCPath.Name = "checkBoxUseUNCPath";
+            this.checkBoxUseUNCPath.Size = new System.Drawing.Size(96, 17);
+            this.checkBoxUseUNCPath.TabIndex = 11;
+            this.checkBoxUseUNCPath.Text = "Use UNC Path";
+            this.checkBoxUseUNCPath.UseVisualStyleBackColor = true;
             // 
             // btnPipeConnect
             // 
@@ -482,9 +491,9 @@
             label4.AutoSize = true;
             label4.Location = new System.Drawing.Point(109, 12);
             label4.Name = "label4";
-            label4.Size = new System.Drawing.Size(63, 13);
+            label4.Size = new System.Drawing.Size(56, 13);
             label4.TabIndex = 3;
-            label4.Text = "Name Filter:";
+            label4.Text = "Text Filter:";
             // 
             // columnHeaderProcessId
             // 
@@ -493,22 +502,6 @@
             // columnHeaderProcessName
             // 
             columnHeaderProcessName.Text = "Name";
-            // 
-            // columnHeaderProcessUser
-            // 
-            columnHeaderProcessUser.Text = "User";
-            // 
-            // columnHeaderProcessIL
-            // 
-            columnHeaderProcessIL.Text = "Integrity Level";
-            // 
-            // columnHeaderProcessRestricted
-            // 
-            columnHeaderProcessRestricted.Text = "Restricted";
-            // 
-            // columnHeaderProcessAC
-            // 
-            columnHeaderProcessAC.Text = "App Container";
             // 
             // columnHeaderHandleProcessId
             // 
@@ -545,6 +538,22 @@
             // columnHeaderHandleImpLevel
             // 
             columnHeaderHandleImpLevel.Text = "Impersonation Level";
+            // 
+            // columnHeaderProcessUser
+            // 
+            this.columnHeaderProcessUser.Text = "User";
+            // 
+            // columnHeaderProcessIL
+            // 
+            this.columnHeaderProcessIL.Text = "Integrity Level";
+            // 
+            // columnHeaderProcessRestricted
+            // 
+            this.columnHeaderProcessRestricted.Text = "Restricted";
+            // 
+            // columnHeaderProcessAC
+            // 
+            this.columnHeaderProcessAC.Text = "App Container";
             // 
             // contextMenuStripProcesses
             // 
@@ -770,10 +779,11 @@
             this.listViewProcesses.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             columnHeaderProcessId,
             columnHeaderProcessName,
-            columnHeaderProcessUser,
-            columnHeaderProcessIL,
-            columnHeaderProcessRestricted,
-            columnHeaderProcessAC});
+            this.columnHeaderProcessUser,
+            this.columnHeaderProcessIL,
+            this.columnHeaderProcessRestricted,
+            this.columnHeaderProcessAC,
+            this.columnHeaderProcessCommandLine});
             this.listViewProcesses.ContextMenuStrip = this.contextMenuStripProcesses;
             this.listViewProcesses.FullRowSelect = true;
             this.listViewProcesses.HideSelection = false;
@@ -784,19 +794,26 @@
             this.listViewProcesses.TabIndex = 6;
             this.listViewProcesses.UseCompatibleStateImageBehavior = false;
             this.listViewProcesses.View = System.Windows.Forms.View.Details;
+            this.listViewProcesses.VirtualMode = true;
             this.listViewProcesses.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.listView_ColumnClick);
+            this.listViewProcesses.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.listViewProcesses_RetrieveVirtualItem);
             this.listViewProcesses.DoubleClick += new System.EventHandler(this.openTokenToolStripMenuItem_Click);
+            // 
+            // columnHeaderProcessCommandLine
+            // 
+            this.columnHeaderProcessCommandLine.Text = "Command Line";
             // 
             // txtFilter
             // 
-            this.txtFilter.Location = new System.Drawing.Point(178, 8);
+            this.txtFilter.Location = new System.Drawing.Point(171, 8);
             this.txtFilter.Name = "txtFilter";
             this.txtFilter.Size = new System.Drawing.Size(140, 20);
             this.txtFilter.TabIndex = 4;
+            this.txtFilter.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.txtFilter_KeyPress);
             // 
             // btnFilter
             // 
-            this.btnFilter.Location = new System.Drawing.Point(438, 5);
+            this.btnFilter.Location = new System.Drawing.Point(317, 7);
             this.btnFilter.Name = "btnFilter";
             this.btnFilter.Size = new System.Drawing.Size(75, 23);
             this.btnFilter.TabIndex = 5;
@@ -807,12 +824,13 @@
             // checkBoxUnrestricted
             // 
             this.checkBoxUnrestricted.AutoSize = true;
-            this.checkBoxUnrestricted.Location = new System.Drawing.Point(324, 8);
+            this.checkBoxUnrestricted.Location = new System.Drawing.Point(398, 10);
             this.checkBoxUnrestricted.Name = "checkBoxUnrestricted";
-            this.checkBoxUnrestricted.Size = new System.Drawing.Size(108, 17);
+            this.checkBoxUnrestricted.Size = new System.Drawing.Size(122, 17);
             this.checkBoxUnrestricted.TabIndex = 2;
-            this.checkBoxUnrestricted.Text = "Hide Unrestricted";
+            this.checkBoxUnrestricted.Text = "Show Sandbox Only";
             this.checkBoxUnrestricted.UseVisualStyleBackColor = true;
+            this.checkBoxUnrestricted.CheckedChanged += new System.EventHandler(this.checkBoxUnrestricted_CheckedChanged);
             // 
             // btnCurrentProcess
             // 
@@ -913,18 +931,6 @@
             this.toolStripMenuItemHandlesRefresh.Text = "Refresh";
             this.toolStripMenuItemHandlesRefresh.Click += new System.EventHandler(this.btnRefreshHandles_Click);
             // 
-            // checkBoxUseUNCPath
-            // 
-            this.checkBoxUseUNCPath.AutoSize = true;
-            this.checkBoxUseUNCPath.Checked = true;
-            this.checkBoxUseUNCPath.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkBoxUseUNCPath.Location = new System.Drawing.Point(190, 66);
-            this.checkBoxUseUNCPath.Name = "checkBoxUseUNCPath";
-            this.checkBoxUseUNCPath.Size = new System.Drawing.Size(96, 17);
-            this.checkBoxUseUNCPath.TabIndex = 11;
-            this.checkBoxUseUNCPath.Text = "Use UNC Path";
-            this.checkBoxUseUNCPath.UseVisualStyleBackColor = true;
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1017,6 +1023,11 @@
         private System.Windows.Forms.ToolStripMenuItem showThreadSecurityToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem showProcessSecurityToolStripMenuItem1;
         private System.Windows.Forms.CheckBox checkBoxUseUNCPath;
+        private System.Windows.Forms.ColumnHeader columnHeaderProcessUser;
+        private System.Windows.Forms.ColumnHeader columnHeaderProcessIL;
+        private System.Windows.Forms.ColumnHeader columnHeaderProcessRestricted;
+        private System.Windows.Forms.ColumnHeader columnHeaderProcessAC;
+        private System.Windows.Forms.ColumnHeader columnHeaderProcessCommandLine;
     }
 }
 
