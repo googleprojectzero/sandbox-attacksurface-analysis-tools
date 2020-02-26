@@ -27,6 +27,20 @@ namespace TokenViewer
 {
     public partial class MainForm : Form
     {
+        private class TokenGrouping
+        {
+            public string Name { get; }
+            public Func<ProcessTokenEntry, string> MapToGroup { get; }
+
+            public TokenGrouping(string name, Func<ProcessTokenEntry, string> map_to_group)
+            {
+                Name = name;
+                MapToGroup = map_to_group;
+            }
+        }
+
+        private TokenGrouping _process_grouping;
+
         private static void ResizeColumns(ListView view)
         {
             view.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
@@ -89,7 +103,7 @@ namespace TokenViewer
 
         private static bool IsRestrictedToken(NtToken token)
         {
-            return token.Restricted || token.AppContainer || token.IntegrityLevel < TokenIntegrityLevel.Medium;
+            return token.IsSandbox;
         }
 
         private void ClearList(ListView view)
@@ -162,6 +176,7 @@ namespace TokenViewer
 
                     listViewProcesses.Items.AddRange(procs.ToArray());
                     listViewThreads.Items.AddRange(threads.ToArray());
+                    GroupListItems(listViewProcesses, _process_grouping);
                     ResizeColumns(listViewProcesses);
                     ResizeColumns(listViewThreads);
                 }
@@ -186,14 +201,47 @@ namespace TokenViewer
             }
         }
 
+        private void AddGrouping(string name, Func<ProcessTokenEntry, string> map_to_group)
+        {
+            TokenGrouping grouping = new TokenGrouping(name, map_to_group);
+            var item = groupByToolStripMenuItem.DropDownItems.Add(name);
+            item.Tag = grouping;
+            item.Click += groupItemsToolStripMenuItem_Click;
+        }
+
+        private static string GetSandboxName(NtToken token)
+        {
+            if (!token.IsSandbox)
+            {
+                return "Unsandboxed";
+            }
+
+            List<string> restrictions = new List<string>();
+            if (token.Restricted)
+            {
+                restrictions.Add(token.WriteRestricted ? "Write Restricted" : "Restricted");
+            }
+            if (token.AppContainer)
+            {
+                restrictions.Add(token.LowPrivilegeAppContainer ? "Low Privilege App Container" : "App Container");
+            }
+            restrictions.Add(token.IntegrityLevel.ToString());
+            return string.Join(" - ", restrictions);
+        }
+
         public MainForm()
         {
             InitializeComponent();
-
             listViewProcesses.ListViewItemSorter = new ListItemComparer(0);
             listViewThreads.ListViewItemSorter = new ListItemComparer(0);
             listViewSessions.ListViewItemSorter = new ListItemComparer(0);
             listViewHandles.ListViewItemSorter = new ListItemComparer(0);
+            AddGrouping("Name", p => p.Name);
+            AddGrouping("Session ID", p => $"Session {p.SessionId}");
+            AddGrouping("Sandbox", p => GetSandboxName(p.ProcessToken));
+            AddGrouping("Integrity Level", p => p.ProcessToken.IntegrityLevel.ToString());
+            AddGrouping("User", p => p.ProcessToken.User.Name);
+            AddGrouping("Elevation Type", p => p.ProcessToken.ElevationType.ToString());
             RefreshProcessList(null, false, false);
 
             using (NtToken token = NtProcess.Current.OpenToken())
@@ -627,6 +675,50 @@ namespace TokenViewer
         private void checkBoxUnrestricted_CheckedChanged(object sender, EventArgs e)
         {
             RefreshProcessList(txtFilter.Text, checkBoxUnrestricted.Checked, showDeadProcessesToolStripMenuItem.Checked);
+        }
+
+        private static void GroupListItems(ListView listView, TokenGrouping grouping)
+        {
+            listView.BeginUpdate();
+            Dictionary<string, int> groups = new Dictionary<string, int>();
+            listView.Groups.Clear();
+            foreach (ListViewItem item in listView.Items)
+            {
+                if (grouping == null)
+                {
+                    item.Group = null;
+                    continue;
+                }
+                if (item.Tag is ProcessTokenEntry entry)
+                {
+                    string group_name = grouping.MapToGroup(entry);
+                    if (!groups.ContainsKey(group_name))
+                    {
+                        int index = listView.Groups.Add(new ListViewGroup(group_name, HorizontalAlignment.Left));
+                        groups.Add(group_name, index);
+                    }
+                    item.Group = listView.Groups[groups[group_name]];
+                }
+            }
+            listView.EndUpdate();
+        }
+
+        private void groupItemsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (sender is ToolStripMenuItem tool_strip)
+            {
+                foreach (var item in tool_strip.GetCurrentParent().Items.OfType<ToolStripMenuItem>())
+                {
+                    item.Checked = false;
+                }
+                tool_strip.Checked = true;
+                _process_grouping = tool_strip.Tag as TokenGrouping;
+                GroupListItems(listViewProcesses, _process_grouping);
+            }
+            else
+            {
+                GroupListItems(listViewProcesses, _process_grouping);
+            }
         }
     }
 }

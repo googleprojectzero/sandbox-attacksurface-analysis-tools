@@ -84,6 +84,8 @@
             this.refreshToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.showDeadProcessesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.showProcessSecurityToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.groupByToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.groupByNoneToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.contextMenuStripThreads = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.toolStripMenuItemOpenThreadToken = new System.Windows.Forms.ToolStripMenuItem();
             this.openProcessTokenToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -562,9 +564,10 @@
             this.openTokenToolStripMenuItem,
             this.refreshToolStripMenuItem,
             this.showDeadProcessesToolStripMenuItem,
-            this.showProcessSecurityToolStripMenuItem});
+            this.showProcessSecurityToolStripMenuItem,
+            this.groupByToolStripMenuItem});
             this.contextMenuStripProcesses.Name = "contextMenuStripProcesses";
-            this.contextMenuStripProcesses.Size = new System.Drawing.Size(192, 92);
+            this.contextMenuStripProcesses.Size = new System.Drawing.Size(192, 136);
             // 
             // openTokenToolStripMenuItem
             // 
@@ -594,6 +597,23 @@
             this.showProcessSecurityToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
             this.showProcessSecurityToolStripMenuItem.Text = "Show Process Security";
             this.showProcessSecurityToolStripMenuItem.Click += new System.EventHandler(this.showProcessSecurityToolStripMenuItem_Click);
+            // 
+            // groupByToolStripMenuItem
+            // 
+            this.groupByToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.groupByNoneToolStripMenuItem});
+            this.groupByToolStripMenuItem.Name = "groupByToolStripMenuItem";
+            this.groupByToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.groupByToolStripMenuItem.Text = "Group By";
+            // 
+            // groupByNoneToolStripMenuItem
+            // 
+            this.groupByNoneToolStripMenuItem.Checked = true;
+            this.groupByNoneToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.groupByNoneToolStripMenuItem.Name = "groupByNoneToolStripMenuItem";
+            this.groupByNoneToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.groupByNoneToolStripMenuItem.Text = "None";
+            this.groupByNoneToolStripMenuItem.Click += new System.EventHandler(this.groupItemsToolStripMenuItem_Click);
             // 
             // contextMenuStripThreads
             // 
@@ -1026,6 +1046,8 @@
         private System.Windows.Forms.ColumnHeader columnHeaderProcessRestricted;
         private System.Windows.Forms.ColumnHeader columnHeaderProcessAC;
         private System.Windows.Forms.ColumnHeader columnHeaderProcessCommandLine;
+        private System.Windows.Forms.ToolStripMenuItem groupByToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem groupByNoneToolStripMenuItem;
     }
 }
 
