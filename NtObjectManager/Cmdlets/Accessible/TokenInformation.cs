@@ -54,6 +54,16 @@ namespace NtObjectManager.Cmdlets.Accessible
         public Luid TokenId { get; }
 
         /// <summary>
+        /// Get the authentication ID.
+        /// </summary>
+        public Luid AuthenticationId { get; }
+
+        /// <summary>
+        /// Get the origin authentication ID.
+        /// </summary>
+        public Luid Origin { get; }
+
+        /// <summary>
         /// Elevated token
         /// </summary>
         public bool Elevated { get; }
@@ -77,6 +87,11 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// App container SID (if an AppContainer)
         /// </summary>
         public Sid AppContainerSid { get; }
+
+        /// <summary>
+        /// Get the elevation type.
+        /// </summary>
+        public TokenElevationType ElevationType { get; }
 
         /// <summary>
         /// Low privilege AC
@@ -104,6 +119,31 @@ namespace NtObjectManager.Cmdlets.Accessible
         public IEnumerable<UserGroup> Capabilities { get; }
 
         /// <summary>
+        /// Whether the token is considered sandboxed.
+        /// </summary>
+        public bool Sandbox { get; }
+
+        /// <summary>
+        /// Get whether the token can be used for child processes.
+        /// </summary>
+        public bool NoChildProcess { get; }
+
+        /// <summary>
+        /// Get the token flags.
+        /// </summary>
+        public TokenFlags Flags { get; }
+
+        /// <summary>
+        /// Get the UI access flag.
+        /// </summary>
+        public bool UIAccess { get; }
+
+        /// <summary>
+        /// Get the token mandatory policy.
+        /// </summary>
+        public TokenMandatoryPolicy MandatoryPolicy { get; }
+
+        /// <summary>
         /// Additonal information of where the token was sourced from
         /// </summary>
         public Dictionary<string, object> SourceData { get; }
@@ -117,7 +157,8 @@ namespace NtObjectManager.Cmdlets.Accessible
             return $"User: {User}";
         }
 
-        internal TokenInformation(NtToken token) : this(token, null)
+        internal TokenInformation(NtToken token) 
+            : this(token, null)
         {
         }
 
@@ -125,6 +166,9 @@ namespace NtObjectManager.Cmdlets.Accessible
         {
             SourceData = new Dictionary<string, object>();
             TokenId = token.Id;
+            AuthenticationId = token.AuthenticationId;
+            Origin = token.Origin;
+            Flags = token.Flags;
             User = token.User.Sid;
             IntegrityLevel = token.IntegrityLevel;
             TokenType = token.TokenType;
@@ -132,6 +176,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             AppContainer = token.AppContainer;
             AppContainerSid = token.AppContainerSid;
             Elevated = token.Elevated;
+            ElevationType = token.ElevationType;
             Restricted = token.Restricted;
             WriteRestricted = token.WriteRestricted;
             LowPrivilegeAppContainer = token.LowPrivilegeAppContainer;
@@ -139,12 +184,16 @@ namespace NtObjectManager.Cmdlets.Accessible
             Groups = token.Groups.ToList().AsReadOnly();
             RestrictedSids = token.RestrictedSids.ToList().AsReadOnly();
             Capabilities = token.Capabilities.ToList().AsReadOnly();
+            Sandbox = token.IsSandbox;
+            NoChildProcess = token.NoChildProcess;
+            UIAccess = token.UIAccess;
+            MandatoryPolicy = token.MandatoryPolicy;
 
             if (process != null)
             {
                 SourceData["ProcessId"] = process.ProcessId;
                 SourceData["Name"] = process.Name;
-                SourceData["ImagePath"] = process.GetImageFilePath(false);
+                SourceData["ImagePath"] = process.GetImageFilePath(false, false).GetResultOrDefault(string.Empty);
                 SourceData["CommandLine"] = process.CommandLine;
             }
         }

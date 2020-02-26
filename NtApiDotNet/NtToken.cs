@@ -1054,7 +1054,7 @@ namespace NtApiDotNet
         public Luid Id => GetTokenStats().TokenId;
 
         /// <summary>
-        /// Get the Toen's modified Id.
+        /// Get the Token's modified Id.
         /// </summary>
         public Luid ModifiedId => GetTokenStats().ModifiedId;
 

@@ -48,6 +48,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// Gets the information for the process token, not the token used to check access.
         /// </summary>
         public TokenInformation ProcessTokenInfo { get; }
+
         /// <summary>
         /// Token username
         /// </summary>
@@ -79,9 +80,24 @@ namespace NtObjectManager.Cmdlets.Accessible
         public bool AppContainer =>  ProcessTokenInfo.AppContainer;
 
         /// <summary>
+        /// Is the token sandboxed.
+        /// </summary>
+        public bool Sandbox => ProcessTokenInfo.Sandbox;
+
+        /// <summary>
+        /// Get whether the token can be used for child processes.
+        /// </summary>
+        public bool NoChildProcess => ProcessTokenInfo.NoChildProcess;
+
+        /// <summary>
         /// The session ID of the token.
         /// </summary>
         public int SessionId => ProcessTokenInfo.SessionId;
+
+        /// <summary>
+        /// Get the authentication ID.
+        /// </summary>
+        public Luid AuthenticationId => ProcessTokenInfo.TokenId;
 
         internal TokenAccessCheckResult(NtToken token, string process_name, string image_path, int process_id,
             string command_line, AccessMask granted_access, SecurityDescriptor sd, 
