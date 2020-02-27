@@ -60,17 +60,20 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="process">The process to query.</param>
         /// <param name="base_address">The base address.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The memory information for the region.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public static MemoryInformation QueryMemoryInformation(SafeKernelObjectHandle process, long base_address)
+        public static NtResult<MemoryInformation> QueryMemoryInformation(SafeKernelObjectHandle process, long base_address, bool throw_on_error)
         {
             MemoryBasicInformation basic_info = new MemoryBasicInformation();
             string mapped_image_path = string.Empty;
             using (var buffer = new SafeStructureInOutBuffer<MemoryBasicInformation>())
             {
-                NtSystemCalls.NtQueryVirtualMemory(process,
+                NtStatus status = NtSystemCalls.NtQueryVirtualMemory(process,
                     new IntPtr(base_address), MemoryInformationClass.MemoryBasicInformation,
-                    buffer, buffer.LengthIntPtr, out IntPtr ret_length).ToNtException();
+                    buffer, buffer.LengthIntPtr, out IntPtr ret_length);
+                if (!status.IsSuccess())
+                    return status.CreateResultFromError<MemoryInformation>(throw_on_error);
                 basic_info = buffer.Result;
             }
 
@@ -83,7 +86,19 @@ namespace NtApiDotNet
                 }
             }
 
-            return new MemoryInformation(basic_info, mapped_image_path);
+            return new MemoryInformation(basic_info, mapped_image_path).CreateResult();
+        }
+
+        /// <summary>
+        /// Query memory information for a process.
+        /// </summary>
+        /// <param name="process">The process to query.</param>
+        /// <param name="base_address">The base address.</param>
+        /// <returns>The memory information for the region.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static MemoryInformation QueryMemoryInformation(SafeKernelObjectHandle process, long base_address)
+        {
+            return QueryMemoryInformation(process, base_address, true).Result;
         }
 
         /// <summary>
@@ -94,21 +109,16 @@ namespace NtApiDotNet
         public static IEnumerable<MemoryInformation> QueryMemoryInformation(SafeKernelObjectHandle process)
         {
             List<MemoryInformation> ret = new List<MemoryInformation>();
-            try
+            long base_address = 0;
+            do
             {
-                long base_address = 0;
-
-                do
-                {
-                    MemoryInformation mem_info = QueryMemoryInformation(process, base_address);
-                    ret.Add(mem_info);
-                    base_address = mem_info.BaseAddress + mem_info.RegionSize;
-                }
-                while (base_address < long.MaxValue);
+                var mem_info = QueryMemoryInformation(process, base_address, false);
+                if (!mem_info.IsSuccess)
+                    break;
+                ret.Add(mem_info.Result);
+                base_address = mem_info.Result.BaseAddress + mem_info.Result.RegionSize;
             }
-            catch (NtException)
-            {
-            }
+            while (base_address < long.MaxValue);
             return ret;
         }
 

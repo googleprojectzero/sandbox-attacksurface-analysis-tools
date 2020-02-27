@@ -1042,6 +1042,29 @@ namespace NtApiDotNet
         {
             return NtVirtualMemory.QueryMemoryInformation(Handle, base_address);
         }
+        /// <summary>
+        /// Query all memory information regions in process memory.
+        /// </summary>
+        /// <returns>The list of memory regions.</returns>
+        /// <param name="include_free_regions">True to include free regions of memory.</param>
+        /// <param name="type">Specify memory types to filter on.</param>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public IEnumerable<MemoryInformation> QueryAllMemoryInformation(bool include_free_regions, MemoryType type)
+        {
+            IEnumerable<MemoryInformation> mem_infos = NtVirtualMemory.QueryMemoryInformation(Handle);
+            if (!include_free_regions)
+            {
+                mem_infos = mem_infos.Where(m => m.State != MemoryState.Free);
+            }
+
+            if (type != MemoryType.All)
+            {
+                mem_infos = mem_infos.Where(m => (m.Type & type) != MemoryType.None);
+            }
+
+            return mem_infos;
+        }
+
 
         /// <summary>
         /// Query all memory information regions in process memory.
@@ -1051,12 +1074,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown on error.</exception>
         public IEnumerable<MemoryInformation> QueryAllMemoryInformation(bool include_free_regions)
         {
-            IEnumerable<MemoryInformation> mem_infos = NtVirtualMemory.QueryMemoryInformation(Handle);
-            if (!include_free_regions)
-            {
-                return mem_infos.Where(m => m.State != MemoryState.Free);
-            }
-            return mem_infos;
+            return QueryAllMemoryInformation(include_free_regions, MemoryType.All);
         }
 
         /// <summary>

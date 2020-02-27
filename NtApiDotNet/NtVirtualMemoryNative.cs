@@ -143,7 +143,8 @@ namespace NtApiDotNet
         None = 0,
         Private = 0x20000,
         Mapped = 0x40000,
-        Image = 0x1000000
+        Image = 0x1000000,
+        All = Private | Mapped | Image
     }
 
     public enum MemoryInformationClass

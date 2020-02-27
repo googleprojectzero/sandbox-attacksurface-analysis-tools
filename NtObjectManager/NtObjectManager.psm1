@@ -2766,44 +2766,60 @@ The address to get information about.
 The process to query for memory information, defaults to current process.
 .PARAMETER All
 Show all memory regions.
+.PARAMETER Name
+Show only memory regions for the named mapped file.
 .PARAMETER IncludeFree
 When showing all memory regions specify to include free regions as well.
 .OUTPUTS
 NtApiDotNet.MemoryInformation
 .EXAMPLE
 Get-NtVirtualMemory $addr
-Get the memory information for the specified address.
+Get the memory information for the specified address for the current process.
 .EXAMPLE
 Get-NtVirtualMemory $addr -Process $process
 Get the memory information for the specified address in another process.
 .EXAMPLE
-Get-NtVirtualMemory -All
-Get all memory information.
+Get-NtVirtualMemory
+Get all memory information for the current process.
 .EXAMPLE
-Get-NtVirtualMemory -All -Process $process
+Get-NtVirtualMemory -Process $process
 Get all memory information in another process.
 .EXAMPLE
-Get-NtVirtualMemory -All -Process $process -IncludeFree
+Get-NtVirtualMemory -Process $process -IncludeFree
 Get all memory information in another process including free regions.
+.EXAMPLE
+Get-NtVirtualMemory -Type Mapped
+Get all mapped memory information for the current process.
+.EXAMPLE
+Get-NtVirtualMemory -Name file.exe
+Get all mapped memory information where the mapped name is file.exe.
 #>
 function Get-NtVirtualMemory
 {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="All")]
     param (
         [parameter(Mandatory, Position=0, ParameterSetName = "FromAddress")]
         [int64]$Address,
         [NtApiDotNet.NtProcess]$Process = [NtApiDotnet.NtProcess]::Current,
-        [parameter(Mandatory, ParameterSetName = "All")]
+        [parameter(ParameterSetName = "All")]
         [switch]$All,
         [parameter(ParameterSetName = "All")]
-        [switch]$IncludeFree
+        [switch]$IncludeFree,
+        [parameter(ParameterSetName = "All")]
+        [NtApiDotNet.MemoryType]$Type = "All",
+        [parameter(ParameterSetName = "All")]
+        [string]$Name
     )
     switch ($PsCmdlet.ParameterSetName) {
     "FromAddress" {
-      $Process.QueryMemoryInformation($Address)
+      $Process.QueryMemoryInformation($Address) | Write-Output
     }
     "All" {
-      $Process.QueryAllMemoryInformation($IncludeFree)
+        if ($Name -ne "") {
+            $Process.QueryAllMemoryInformation($IncludeFree, $Type) | Where-Object MappedImageName -eq $Name | Write-Output
+        } else {
+            $Process.QueryAllMemoryInformation($IncludeFree, $Type) | Write-Output
+        }
     }
   }
 }
@@ -3367,6 +3383,38 @@ function Format-NdrRpcServerInterface {
 .SYNOPSIS
 Get a mapped view of a section.
 .DESCRIPTION
+Call Add-NtSection instead.
+#>
+function Get-NtMappedSection {
+    Param(
+        [parameter(Mandatory, Position=0)]
+        [NtApiDotNet.NtSection]$Section,
+        [parameter(Mandatory, Position=1)]
+        [NtApiDotNet.MemoryAllocationProtect]$Protection,
+        [NtApiDotNet.NtProcess]$Process,
+        [IntPtr]$ViewSize=0,
+        [IntPtr]$BaseAddress=0, 
+        [IntPtr]$ZeroBits=0,
+        [IntPtr]$CommitSize=0,
+        [NtApiDotNet.LargeInteger]$SectionOffset,
+        [NtApiDotNet.SectionInherit]$SectionInherit=[NtApiDotNet.SectionInherit]::ViewUnmap,
+        [NtApiDotNet.AllocationType]$AllocationType="None"
+    )
+
+    Write-Warning "This command has been superceded by Add-NtSection"
+    if ($Process -eq $null) {
+        $Process = Get-NtProcess -Current
+    }
+
+    $Section.Map($Process, $Protection, $ViewSize, $BaseAddress, `
+            $ZeroBits, $CommitSize, $SectionOffset, `
+            $SectionInherit, $AllocationType)
+}
+
+<#
+.SYNOPSIS
+Get a mapped view of a section.
+.DESCRIPTION
 This cmdlet calls the Map method on a section to map it into memory.
 .PARAMETER Section
 The section object to map.
@@ -3391,16 +3439,16 @@ The allocation type for the mapping.
 .OUTPUTS
 NtApiDotNet.NtMappedSection - The mapped section.
 .EXAMPLE
-Get-NtMappedSection -Section $sect -Protection ReadWrite
+Add-NtSection -Section $sect -Protection ReadWrite
 Map the section as Read/Write.
 .EXAMPLE
-Get-NtMappedSection -Section $sect -Protection ReadWrite -ViewSize 4096
+Add-NtSection -Section $sect -Protection ReadWrite -ViewSize 4096
 Map the first 4096 bytes of the section as Read/Write.
 .EXAMPLE
-Get-NtMappedSection -Section $sect -Protection ReadWrite -SectionOffset (64*1024)
+Add-NtSection -Section $sect -Protection ReadWrite -SectionOffset (64*1024)
 Map the section starting from offset 64k.
 #>
-function Get-NtMappedSection {
+function Add-NtSection {
     Param(
         [parameter(Mandatory, Position=0)]
         [NtApiDotNet.NtSection]$Section,
@@ -3422,7 +3470,57 @@ function Get-NtMappedSection {
 
     $Section.Map($Process, $Protection, $ViewSize, $BaseAddress, `
             $ZeroBits, $CommitSize, $SectionOffset, `
-            $SectionInherit, $AllocationType)
+            $SectionInherit, $AllocationType) | Write-Output
+}
+
+<#
+.SYNOPSIS
+Unmap a view of a section.
+.DESCRIPTION
+This cmdlet unmaps a section from virtual memory.
+.PARAMETER Mapping
+The mapping to unmap.
+.PARAMETER Address
+The address to unmap.
+.PARAMETER Process
+Optional process to unmap from. Default is the current process.
+.PARAMETER Flags
+Optional flags for unmapping.
+.OUTPUTS
+None
+.EXAMPLE
+Remove-NtSection -Mapping $map
+Unmap an existing section created with Add-NtSection.
+.EXAMPLE
+Remove-NtSection -Address $addr
+Unmap an address
+.EXAMPLE
+Remove-NtSection -Address $addr -Process $p 
+Unmap an address in a specified process.
+#>
+function Remove-NtSection {
+    [CmdletBinding(DefaultParameterSetName="FromMapping")]
+    Param(
+        [parameter(Mandatory, Position=0, ParameterSetName="FromMapping")]
+        [NtApiDotNet.NtMappedSection]$Mapping,
+        [parameter(Mandatory, Position=0, ParameterSetName="FromAddress")]
+        [int64]$Address,
+        [parameter(Position=1, ParameterSetName="FromAddress")]
+        [NtApiDotNet.NtProcess]$Process,
+        [parameter(ParameterSetName="FromAddress")]
+        [NtApiDotNet.MemUnmapFlags]$Flags = 0
+    )
+
+    switch($PsCmdlet.ParameterSetName) {
+        "FromMapping" { $Mapping.Dispose() }
+        "FromAddress" { 
+            if ($Process -eq $null) {
+                $Process = Get-NtProcess -Current
+            }
+
+            $Process.Unmap($Address, $Flags)
+        }
+    }
 }
 
 <#

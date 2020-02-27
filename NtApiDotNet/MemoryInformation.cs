@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System.IO;
+
 namespace NtApiDotNet
 {
     /// <summary>
@@ -58,6 +60,11 @@ namespace NtApiDotNet
         /// The mapped image path, if an image.
         /// </summary>
         public string MappedImagePath { get; }
+
+        /// <summary>
+        /// The mapped image path name, if an image.
+        /// </summary>
+        public string Name => Path.GetFileName(MappedImagePath);
 
         internal MemoryInformation(MemoryBasicInformation basic_info, string mapped_image_path)
         {
