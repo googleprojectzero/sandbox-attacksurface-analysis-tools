@@ -260,12 +260,34 @@ namespace NtApiDotNet
         /// <summary>
         /// Get defined query information classes for a type.
         /// </summary>
-        public IEnumerable<Enum> QueryInformationClass => _type_factory.GetQueryInfoClass();
+        public IReadOnlyDictionary<string, int> QueryInformationClass
+        {
+            get
+            {
+                if (_query_info_class == null)
+                {
+                    _query_info_class = BuildInfoClassDict(_type_factory.GetQueryInfoClass());
+                }
+
+                return _query_info_class;
+            }
+        }
 
         /// <summary>
         /// Get defined set information classes for a type.
         /// </summary>
-        public IEnumerable<Enum> SetInformationClass => _type_factory.GetQueryInfoClass();
+        public IReadOnlyDictionary<string, int> SetInformationClass
+        {
+            get
+            {
+                if (_set_info_class == null)
+                {
+                    _set_info_class = BuildInfoClassDict(_type_factory.GetSetInfoClass());
+                }
+
+                return _set_info_class;
+            }
+        }
 
         #endregion
 
@@ -800,8 +822,18 @@ namespace NtApiDotNet
         private static readonly Dictionary<string, NtType> _types = LoadTypes();
         private readonly NtTypeFactory _type_factory;
         private IEnumerable<AccessMaskEntry> _access_rights;
-        private List<Enum> _query_information_class = null;
-        private List<Enum> _set_information_class = null;
+        private Dictionary<string, int> _set_info_class;
+        private Dictionary<string, int> _query_info_class;
+
+        private Dictionary<string, int> BuildInfoClassDict(IEnumerable<Enum> values)
+        {
+            var dict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var value in values)
+            {
+                dict[value.ToString()] = (int)(object)value;
+            }
+            return dict;
+        }
 
         private static Dictionary<string, NtType> LoadTypes()
         {
@@ -868,17 +900,6 @@ namespace NtApiDotNet
             }
             return valid_access;
         }
-
-        private void LoadInformationClasses()
-        {
-            _query_information_class = new List<Enum>();
-            _set_information_class = new List<Enum>();
-
-            Type generic_type = typeof(NtObjectWithDuplicateAndInfo<,,,>);
-            if (!generic_type.IsAssignableFrom(ObjectType))
-                return;
-        }
-
         #endregion
     }
 }

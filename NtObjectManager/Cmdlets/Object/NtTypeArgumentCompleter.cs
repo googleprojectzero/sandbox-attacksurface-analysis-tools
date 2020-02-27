@@ -23,10 +23,6 @@ namespace NtObjectManager.Cmdlets.Object
 {
     internal class NtTypeArgumentCompleter : IArgumentCompleter
     {
-        public NtTypeArgumentCompleter()
-        {
-        }
-
         private static string MapString(string s)
         {
             if (s.Contains(" "))

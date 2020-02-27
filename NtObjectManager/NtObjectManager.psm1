@@ -4464,103 +4464,6 @@ function Start-NtFileOplock {
 
 <#
 .SYNOPSIS
-Get a specified information for an object.
-.DESCRIPTION
-This cmdlet requests specified information through the QueryInformation system call for an object type. It can return the data as a
-buffer or a byte array.
-.PARAMETER InformationClass
-Specify the information class to query.
-.PARAMETER Object
-Specify the object to query.
-.PARAMETER AsBuffer
-Specify to return the information as an allocated buffer.
-.PARAMETER InitBuffer
-Specify a buffer to initialize the query.
-.PARAMETER QueryLength
-Specify the length of the query buffer if it needs to be fixed.
-.INPUTS
-None
-.OUTPUTS
-byte[] or SafeBuffer
-.EXAMPLE
-Get-NtObjectInformation $p 1
-Query information class #1 on object $p as a byte array.
-.EXAMPLE
-Get-NtObjectInformation $p 1 -AsBuffer
-Query information class #1 on object $p as a buffer.
-.EXAMPLE
-Get-NtObjectInformation $p 1 -QueryLength 1000
-Query information class #1 on object $p as a byte array with an initial size of 1000.
-#>
-function Get-NtObjectInformation {
-  Param(
-    [parameter(Mandatory, Position = 0)]
-    [NtApiDotNet.NtObject]$Object,
-    [parameter(Mandatory, Position = 1)]
-    [int]$InformationClass,
-    [switch]$AsBuffer,
-    [byte[]]$InitBuffer,
-    [int]$QueryLength
-    )
-  if ($null -eq $InitBuffer -and $QueryLength -gt 0) {
-    $InitBuffer = New-Object byte[] $QueryLength
-  }
-  if ($AsBuffer) {
-    $Object.QueryRawBuffer($InformationClass, $InitBuffer)
-  } else {
-    $Object.QueryRawBytes($InformationClass, $InitBuffer)
-  }
-}
-
-<#
-.SYNOPSIS
-Set a specified information class for an object.
-.DESCRIPTION
-This cmdlet sets specified information through the SetInformation system call for an object type.
-.PARAMETER InformationClass
-Specify the information class to set.
-.PARAMETER Object
-Specify the object to set.
-.PARAMETER Buffer
-Specify information as a buffer.
-.PARAMETER Bytes
-Specify information as bytes.
-.INPUTS
-None
-.OUTPUTS
-None
-.EXAMPLE
-Set-NtObjectInformation $p 1 [byte[]]@(0, 1, 2, 3)
-Set information class #1 on object $p as a byte array.
-.EXAMPLE
-Set-NtObjectInformation $p 1 $buffer
-Set information class #1 on object $p as a buffer.
-#>
-function Set-NtObjectInformation {
-  [CmdletBinding(DefaultParameterSetName="FromBytes")]
-  Param(
-    [parameter(Mandatory, Position = 0)]
-    [NtApiDotNet.NtObject]$Object,
-    [parameter(Mandatory, Position = 1)]
-    [int]$InformationClass,
-    [parameter(Mandatory, Position = 2, ParameterSetName="FromBytes")]
-    [byte[]]$Bytes,
-    [parameter(Mandatory, Position = 2, ParameterSetName="FromBuffer")]
-    [System.Runtime.InteropServices.SafeBuffer]$Buffer
-    )
-
-    switch($PsCmdlet.ParameterSetName) {
-        "FromBytes" {
-            $Object.SetBytes($InformationClass, $Bytes)
-        }
-        "FromBuffer" {
-            $Object.SetBuffer($InformationClass, $Buffer)
-        }
-    }
-}
-
-<#
-.SYNOPSIS
 Get a specified mitigation policy value for a process.
 .DESCRIPTION
 This cmdlet queries for a specific mitigation policy value from a process. The result is an enumeration or a raw value depending on the request.
@@ -6289,4 +6192,41 @@ NtApiDotNet.ProcessModule[]
 #>
 function Get-KernelModule {
     [NtApiDotNet.NtSystemInfo]::GetKernelModules() | Write-Output
+}
+
+<#
+.SYNOPSIS
+Gets the information classes for a type.
+.DESCRIPTION
+This cmdlet gets the list of information classes for a type. You can get the query and set information classes.
+.PARAMETER Type
+The NT type to get information classes for.
+.PARAMETER Object
+The object to get information classes for.
+.PARAMETER Set
+Specify to get the set information classes which might differ.
+.INPUTS
+None
+.OUTPUTS
+KeyPair<string, int>[]
+#>
+function Get-NtObjectInformationClass {
+    [CmdletBinding(DefaultParameterSetName="FromType")]
+    Param(
+        [Parameter(Position=0, Mandatory, ParameterSetName="FromType")]
+        [NtApiDotNet.NtType]$Type,
+        [Parameter(Position=0, Mandatory, ParameterSetName="FromObject")]
+        [NtApiDotNet.NtObject]$Object,
+        [switch]$Set
+    )
+
+    if ($PSCmdlet.ParameterSetName -eq "FromObject") {
+        $Type = $Object.NtType
+    }
+
+    if ($Set) {
+        $Type.SetInformationClass | Write-Output
+    } else {
+        $Type.QueryInformationClass | Write-Output
+    }
 }

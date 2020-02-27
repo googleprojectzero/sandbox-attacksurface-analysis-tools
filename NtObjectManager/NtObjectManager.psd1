@@ -61,7 +61,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Format-NdrRpcServerInterface', 'Get-NtMappedSection', 'Get-NtWnf', 'Get-NtCachedSigningLevel', 'Add-NtSecurityDescriptorDaclAce',
           'Get-NtFilePathType', 'New-NtType', 'Get-NtAlpcServer', 'Get-RpcEndpoint', 'Get-RpcServer', 'Set-GlobalSymbolResolver',
           'Get-RunningService', 'Copy-NtToken', 'Get-RpcAlpcServer', 'Get-NtObjectFromHandle', 'Start-Win32ChildProcess', 'Get-NtKeyValue',
-          'Start-NtFileOplock', 'Format-RpcServer', 'Get-NtObjectInformation', 'Set-NtObjectInformation', 'Get-NtProcessMitigationPolicy',
+          'Start-NtFileOplock', 'Format-RpcServer', 'Get-NtProcessMitigationPolicy',
           'Set-NtProcessMitigationPolicy', 'Format-NtSecurityDescriptor', 'Get-AppContainerProfile', 'New-AppContainerProfile',
           'Get-RpcClient', 'Format-RpcClient', 'Set-RpcServer', 'Connect-RpcClient', 'New-RpcContextHandle', 'Format-RpcComplexType',
           'Get-Win32File', 'Close-NtObject', 'Start-AccessibleScheduledTask', 'Get-NtEaBuffer', 'Set-NtEaBuffer',
@@ -71,7 +71,8 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-NtWindow', 'Out-HexDump', 'Get-NtTypeAccess', 'Get-NtAtom', 'Add-NtAtom', 'Remove-NtAtom',
           'Import-Win32Module', 'Get-Win32Module', 'Get-Win32ModuleExport', 'Get-Win32ModuleImport', 'Get-NtDirectoryEntry',
           'Remove-NtKeyValue', 'Read-AuthCredential', 'Get-AuthPackage', 'Get-AuthCredentialHandle', 'Get-AuthServer',
-          'Get-AuthClient', 'Update-AuthServer', 'Update-AuthClient', 'Get-AuthAccessToken', 'Get-KernelModule'
+          'Get-AuthClient', 'Update-AuthServer', 'Update-AuthClient', 'Get-AuthAccessToken', 'Get-KernelModule',
+          'Get-NtObjectInformationClass'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
@@ -106,7 +107,8 @@ CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile
                'Test-NtToken', 'Get-AccessibleToken', 'Set-NtProcessJob', 
                'Get-AccessibleWnf', 'Get-AccessibleWindowStation', 'Get-NtProcessJob',
                'Get-NtWindowStation', 'Get-NtDesktop', 'New-NtWindowStation',
-               'New-NtDesktop', 'Get-Win32Error', 'Set-NtKeyValue', 'Remove-NtKey'
+               'New-NtDesktop', 'Get-Win32Error', 'Set-NtKeyValue', 'Remove-NtKey',
+               'Get-NtObjectInformation', 'Set-NtObjectInformation'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @()

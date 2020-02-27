@@ -25,10 +25,7 @@ namespace NtApiDotNet
     /// </summary>
     public interface INtObjectQueryInformation
     {
-        NtResult<T> Query<T>(Enum info_class, T default_value, bool throw_on_error) where T : new();
-        NtResult<SafeStructureInOutBuffer<T>> QueryBuffer<T>(Enum info_class, T default_value, bool throw_on_error) where T : new();
-        NtResult<SafeHGlobalBuffer> QueryRawBuffer(Enum info_class, byte[] init_buffer, bool throw_on_error);
-        NtResult<byte[]> QueryRawBytes(Enum info_class, byte[] init_buffer, bool throw_on_error);
+        NtResult<SafeHGlobalBuffer> QueryBuffer(int info_class, byte[] init_buffer, bool throw_on_error);
     }
 
     /// <summary>
@@ -36,9 +33,7 @@ namespace NtApiDotNet
     /// </summary>
     public interface INtObjectSetInformation
     {
-        NtStatus Set<T>(Enum info_class, T value, bool throw_on_error) where T : struct;
-        NtStatus SetBuffer(Enum info_class, SafeBuffer buffer, bool throw_on_error);
-        NtStatus SetBytes(Enum info_class, byte[] value, bool throw_on_error);
+        NtStatus SetBuffer(int info_class, SafeBuffer buffer, bool throw_on_error);
     }
 #pragma warning restore 1591
 
@@ -517,41 +512,16 @@ namespace NtApiDotNet
         #endregion
 
         #region INtObjectQueryInformation Implementation
-        NtResult<T> INtObjectQueryInformation.Query<T>(Enum info_class, T default_value, bool throw_on_error)
+        NtResult<SafeHGlobalBuffer> INtObjectQueryInformation.QueryBuffer(int info_class, byte[] init_buffer, bool throw_on_error)
         {
-            return Query((Q)info_class, default_value, throw_on_error);
-        }
-
-        NtResult<SafeStructureInOutBuffer<T>> INtObjectQueryInformation.QueryBuffer<T>(Enum info_class, T default_value, bool throw_on_error)
-        {
-            return QueryBuffer((Q)info_class, default_value, throw_on_error);
-        }
-
-        NtResult<SafeHGlobalBuffer> INtObjectQueryInformation.QueryRawBuffer(Enum info_class, byte[] init_buffer, bool throw_on_error)
-        {
-            return QueryRawBuffer((Q)info_class, init_buffer, throw_on_error);
-        }
-
-        NtResult<byte[]> INtObjectQueryInformation.QueryRawBytes(Enum info_class, byte[] init_buffer, bool throw_on_error)
-        {
-            return QueryRawBytes((Q)info_class, init_buffer, throw_on_error);
+            return QueryRawBuffer((Q)Enum.ToObject(typeof(Q), info_class), init_buffer, throw_on_error);
         }
         #endregion
 
         #region INtObjectSetInformation Implementation
-        NtStatus INtObjectSetInformation.Set<T>(Enum info_class, T value, bool throw_on_error)
+        NtStatus INtObjectSetInformation.SetBuffer(int info_class, SafeBuffer buffer, bool throw_on_error)
         {
-            return Set((S)info_class, value, throw_on_error);
-        }
-
-        NtStatus INtObjectSetInformation.SetBuffer(Enum info_class, SafeBuffer buffer, bool throw_on_error)
-        {
-            return SetBuffer((S)info_class, buffer, throw_on_error);
-        }
-
-        NtStatus INtObjectSetInformation.SetBytes(Enum info_class, byte[] value, bool throw_on_error)
-        {
-            return SetBytes((S)info_class, value, throw_on_error);
+            return SetBuffer((S)Enum.ToObject(typeof(S), info_class), buffer, throw_on_error);
         }
 
         #endregion

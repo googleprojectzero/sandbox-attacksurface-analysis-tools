@@ -28,26 +28,6 @@ namespace NtApiDotNet
     /// </summary>
     public static class NtObjectUtils
     {
-        internal static byte[] StructToBytes<T>(T value)
-        {
-            int length = Marshal.SizeOf(typeof(T));
-            byte[] ret = new byte[length];
-            IntPtr buffer = Marshal.AllocHGlobal(length);
-            try
-            {
-                Marshal.StructureToPtr(value, buffer, false);
-                Marshal.Copy(buffer, ret, 0, ret.Length);
-            }
-            finally
-            {
-                if (buffer != IntPtr.Zero)
-                {
-                    Marshal.FreeHGlobal(buffer);
-                }
-            }
-            return ret;
-        }
-
         /// <summary>
         /// Convert the safe handle to an array of bytes.
         /// </summary>
