@@ -620,7 +620,7 @@ namespace NtApiDotNet
         public static extern void RtlFreeSid(IntPtr sid);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlConvertSidToUnicodeString(ref UnicodeStringOut UnicodeString, IntPtr Sid, bool AllocateString);
+        public static extern NtStatus RtlConvertSidToUnicodeString(ref UnicodeStringOut UnicodeString, IntPtr Sid, [MarshalAs(UnmanagedType.U1)] bool AllocateString);
 
         [DllImport("ntdll.dll")]
         [return: MarshalAs(UnmanagedType.U1)]
@@ -633,34 +633,41 @@ namespace NtApiDotNet
         public static extern NtStatus RtlCreateSecurityDescriptor(SafeBuffer SecurityDescriptor, uint Revision);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlGetDaclSecurityDescriptor(SafeBuffer SecurityDescriptor, out bool DaclPresent, out IntPtr Dacl, out bool DaclDefaulted);
+        public static extern NtStatus RtlGetDaclSecurityDescriptor(SafeBuffer SecurityDescriptor, out bool DaclPresent, out IntPtr Dacl, [MarshalAs(UnmanagedType.U1)] out bool DaclDefaulted);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlGetGroupSecurityDescriptor(SafeBuffer SecurityDescriptor, out IntPtr Group, out bool GroupDefaulted);
+        public static extern NtStatus RtlGetGroupSecurityDescriptor(SafeBuffer SecurityDescriptor, out IntPtr Group, [MarshalAs(UnmanagedType.U1)] out bool GroupDefaulted);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlGetOwnerSecurityDescriptor(SafeBuffer SecurityDescriptor, out IntPtr Owner, out bool OwnerDefaulted);
+        public static extern NtStatus RtlGetOwnerSecurityDescriptor(SafeBuffer SecurityDescriptor, out IntPtr Owner, [MarshalAs(UnmanagedType.U1)] out bool OwnerDefaulted);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlGetSaclSecurityDescriptor(SafeBuffer SecurityDescriptor, out bool SaclPresent, out IntPtr Sacl, out bool SaclDefaulted);
+        public static extern NtStatus RtlGetSaclSecurityDescriptor(SafeBuffer SecurityDescriptor, [MarshalAs(UnmanagedType.U1)] out bool SaclPresent, 
+            out IntPtr Sacl, [MarshalAs(UnmanagedType.U1)] out bool SaclDefaulted);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlGetSecurityDescriptorRMControl(SafeBuffer SecurityDescriptor, out byte RmControl);
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool RtlGetSecurityDescriptorRMControl(SafeBuffer SecurityDescriptor, out byte RmControl);
+
+        [DllImport("ntdll.dll")]
+        public static extern void RtlSetSecurityDescriptorRMControl(SafeBuffer SecurityDescriptor, ref byte RmControl);
 
         [DllImport("ntdll.dll")]
         public static extern int RtlLengthSecurityDescriptor(SafeBuffer SecurityDescriptor);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlSetDaclSecurityDescriptor(SafeBuffer SecurityDescriptor, bool DaclPresent, IntPtr Dacl, bool DaclDefaulted);
+        public static extern NtStatus RtlSetDaclSecurityDescriptor(SafeBuffer SecurityDescriptor, [MarshalAs(UnmanagedType.U1)] bool DaclPresent, IntPtr Dacl, 
+            [MarshalAs(UnmanagedType.U1)] bool DaclDefaulted);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlSetSaclSecurityDescriptor(SafeBuffer SecurityDescriptor, bool SaclPresent, IntPtr Sacl, bool SaclDefaulted);
+        public static extern NtStatus RtlSetSaclSecurityDescriptor(SafeBuffer SecurityDescriptor, [MarshalAs(UnmanagedType.U1)] bool SaclPresent, IntPtr Sacl, 
+            [MarshalAs(UnmanagedType.U1)] bool SaclDefaulted);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlSetGroupSecurityDescriptor(SafeBuffer SecurityDescriptor, IntPtr Group, bool GroupDefaulted);
+        public static extern NtStatus RtlSetGroupSecurityDescriptor(SafeBuffer SecurityDescriptor, IntPtr Group, [MarshalAs(UnmanagedType.U1)] bool GroupDefaulted);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlSetOwnerSecurityDescriptor(SafeBuffer SecurityDescriptor, IntPtr Owner, bool OwnerDefaulted);
+        public static extern NtStatus RtlSetOwnerSecurityDescriptor(SafeBuffer SecurityDescriptor, IntPtr Owner, [MarshalAs(UnmanagedType.U1)] bool OwnerDefaulted);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus RtlSetControlSecurityDescriptor(SafeBuffer SecurityDescriptor, SecurityDescriptorControl Control, SecurityDescriptorControl ControlMask);
@@ -698,7 +705,7 @@ namespace NtApiDotNet
         public static extern NtStatus RtlNewSecurityObject(SafeBuffer ParentDescriptor,
                      SafeBuffer CreatorDescriptor,
                      out SafeSecurityObjectBuffer NewDescriptor,
-                     bool IsDirectoryObject,
+                     [MarshalAs(UnmanagedType.U1)] bool IsDirectoryObject,
                      SafeKernelObjectHandle Token,
                      ref GenericMapping GenericMapping);
 
@@ -712,7 +719,7 @@ namespace NtApiDotNet
             UnicodeString CapabilityName, SafeBuffer CapabilityGroupSid, SafeBuffer CapabilitySid);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlCheckSandboxedToken(SafeKernelObjectHandle token, out bool is_sandboxed);
+        public static extern NtStatus RtlCheckSandboxedToken(SafeKernelObjectHandle token, [MarshalAs(UnmanagedType.U1)] out bool is_sandboxed);
 
         [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
         public static extern NtStatus RtlQueryPackageClaims(

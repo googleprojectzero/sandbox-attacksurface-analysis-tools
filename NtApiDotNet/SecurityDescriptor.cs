@@ -142,8 +142,12 @@ namespace NtApiDotNet
             }
             Revision = header.Revision;
             Control = header.Control & ~SecurityDescriptorControl.SelfRelative;
+            if (header.Control.HasFlag(SecurityDescriptorControl.RmControlValid))
+            {
+                RmControl = header.Sbz1;
+            }
 
-            ISecurityDescriptor sd = null;
+            ISecurityDescriptor sd;
             if (header.HasFlag(SecurityDescriptorControl.SelfRelative))
             {
                 sd = process.ReadMemory<SecurityDescriptorRelative>(address);
@@ -220,6 +224,10 @@ namespace NtApiDotNet
             {
                 return status;
             }
+            if (NtRtl.RtlGetSecurityDescriptorRMControl(buffer, out byte rm_control))
+            {
+                RmControl = rm_control;
+            }
             Control = control;
             Revision = revision;
 
@@ -264,6 +272,12 @@ namespace NtApiDotNet
                 if (!status.IsSuccess())
                 {
                     return status.CreateResultFromError<SafeHGlobalBuffer>(throw_on_error);
+                }
+
+                if (RmControl.HasValue)
+                {
+                    byte rm_control = RmControl.Value;
+                    NtRtl.RtlSetSecurityDescriptorRMControl(sd_buffer, ref rm_control);
                 }
 
                 int current_ofs = 0;
@@ -387,6 +401,10 @@ namespace NtApiDotNet
         /// Revision value
         /// </summary>
         public uint Revision { get; set; }
+        /// <summary>
+        /// The resource manager control flags.
+        /// </summary>
+        public byte? RmControl { get; set; }
         /// <summary>
         /// Get or set an associated NT type for this security descriptor.
         /// </summary>
