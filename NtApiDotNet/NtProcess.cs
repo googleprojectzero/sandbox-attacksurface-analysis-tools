@@ -615,6 +615,15 @@ namespace NtApiDotNet
         /// Terminate the process
         /// </summary>
         /// <param name="exitcode">The exit code for the termination</param>
+        public void Terminate(int exitcode)
+        {
+            Terminate((NtStatus)exitcode);
+        }
+
+        /// <summary>
+        /// Terminate the process
+        /// </summary>
+        /// <param name="exitcode">The exit code for the termination</param>
         public void Terminate(NtStatus exitcode)
         {
             Terminate(exitcode, true);

@@ -5432,6 +5432,10 @@ Stop a process.
 This cmdlet stops/kills a process with an optional status code.
 .PARAMETER Process
 The process to stop.
+.PARAMETER ExitCode
+The NTSTATUS exit code.
+.PARAMETER ExitCodeInt
+The exit code as an integer.
 .INPUTS
 NtApiDotNet.NtProcess
 .OUTPUTS
@@ -5439,19 +5443,21 @@ None
 #>
 function Stop-NtProcess
 {
-    [CmdletBinding(DefaultParameterSetName = "FromProcess")]
+    [CmdletBinding(DefaultParameterSetName = "FromStatus")]
     Param(
-        [Parameter(Mandatory=$true, Position=0, ParameterSetName="FromProcess", ValueFromPipeline)]
+        [Parameter(Mandatory=$true, Position=0, ValueFromPipeline)]
         [NtApiDotNet.NtProcess[]]$Process,
-        [NtApiDotNet.NtStatus]$ExitCode = 0
+        [Parameter(Position = 1, ParameterSetName="FromStatus")]
+        [NtApiDotNet.NtStatus]$ExitStatus = 0,
+        [Parameter(Position = 1, ParameterSetName="FromInt")]
+        [int]$ExitCode = 0
     )
 
     PROCESS {
-        switch($PsCmdlet.ParameterSetName) {
-            "FromProcess" {
-                foreach($p in $Process) {
-                    $p.Terminate($ExitCode)
-                }
+        foreach($p in $Process) {
+            switch($PsCmdlet.ParameterSetName) {
+                "FromStatus" {  $p.Terminate($ExitStatus) }
+                "FromInt" { $p.Terminate($ExitCode) }
             }
         }
     }
