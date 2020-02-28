@@ -741,7 +741,7 @@ namespace NtObjectManager.Cmdlets.Object
         private DuplicateObjectOptions GetOptions()
         {
             DuplicateObjectOptions options = DuplicateObjectOptions.None;
-            if (!DesiredAccess.HasValue)
+            if (!DesiredAccess.HasValue && !DesiredAccessMask.HasValue)
             {
                 options |= DuplicateObjectOptions.SameAccess;
             }
@@ -800,7 +800,7 @@ namespace NtObjectManager.Cmdlets.Object
                 handle = Object.Handle.DangerousGetHandle();
             }
 
-            return NtObject.DuplicateHandle(SourceProcess, handle, DestinationProcess, DesiredAccess ?? 0, ObjectAttributes ?? 0, GetOptions());
+            return NtObject.DuplicateHandle(SourceProcess, handle, DestinationProcess, GetDesiredAccess(), ObjectAttributes ?? 0, GetOptions());
         }
 
         /// <summary>
