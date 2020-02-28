@@ -698,12 +698,13 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Check if this object is exactly the same as another.
+        /// Check if this object is exactly the same as another using NtCompareObject.
         /// </summary>
         /// <param name="obj">The object to compare against.</param>
         /// <returns>True if this is the same object.</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public bool SameObject(NtObject obj)
+        /// <remarks>This is only supported on Windows 10 and above. For one which works on everything use SameObject.</remarks>
+        public bool CompareObject(NtObject obj)
         {
             NtStatus status = NtSystemCalls.NtCompareObjects(Handle, obj.Handle);
             if (status == NtStatus.STATUS_NOT_SAME_OBJECT)
@@ -712,6 +713,26 @@ namespace NtApiDotNet
             }
             status.ToNtException();
             return true;
+        }
+
+        /// <summary>
+        /// Check if this object is exactly the same as another.
+        /// </summary>
+        /// <param name="obj">The object to compare against.</param>
+        /// <returns>True if this is the same object.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        /// <remarks>This function can be slow to run and unreliable. Use CompareObject is Windows 10 or above.</remarks>
+        public bool SameObject(NtObject obj)
+        {
+            if (NtObjectUtils.SupportedVersion >= SupportedVersion.Windows10)
+            {
+                return CompareObject(obj);
+            }
+            else
+            {
+                NtSystemInfo.ResolveObjectAddress(this, obj);
+                return Address == obj.Address;
+            }
         }
 
         /// <summary>
@@ -900,6 +921,11 @@ namespace NtApiDotNet
         /// Returns whether this object is a container.
         /// </summary>
         public virtual bool IsContainer => false;
+
+        /// <summary>
+        /// Returns whether this object is closed.
+        /// </summary>
+        public bool IsClosed => Handle.IsClosed;
 
         #endregion
 
