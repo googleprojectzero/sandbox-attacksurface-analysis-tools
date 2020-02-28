@@ -6334,3 +6334,29 @@ function Get-NtObjectInformationClass {
         $Type.QueryInformationClass | Write-Output
     }
 }
+
+<#
+.SYNOPSIS
+Compares two object handles to see if they're the same underlying object.
+.DESCRIPTION
+This cmdlet compares two handles to see if they're the same underlying object.
+On Window 10 this is a supported operation, for downlevel queries the address for
+the objects and compares that instead.
+.PARAMETER Left
+The left hand object to compare.
+.PARAMETER Right
+The right hand object to compare.
+.INPUTS
+None
+.OUTPUTS
+bool
+#>
+function Compare-NtObject {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.NtObject]$Left,
+        [Parameter(Position=1, Mandatory)]
+        [NtApiDotNet.NtObject]$Right
+    )
+    $Left.SameObject($Right) | Write-Output
+}
