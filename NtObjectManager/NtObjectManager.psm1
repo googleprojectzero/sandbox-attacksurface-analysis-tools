@@ -1920,6 +1920,9 @@ function Format-NtSecurityDescriptor {
             Write-Output "Path: $n"
             Write-Output "Type: $($t.Name)"
             Write-Output "Control: $($sd.Control)"
+            if ($sd.RmControl -ne $null) {
+                Write-Output $("RmControl: 0x{0:X02}" -f $sd.RmControl)
+            }
             Write-Output ""
 
             if ($sd.Owner -ne $null -and (($SecurityInformation -band "Owner") -ne 0)) {
