@@ -969,6 +969,72 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Do a privilege check on a token.
+        /// </summary>
+        /// <param name="privileges">The list of privileges to check.</param>
+        /// <param name="all_necessary">True to require all necessary privileges.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The privilege check result.</returns>
+        public NtResult<PrivilegeCheckResult> PrivilegeCheck(IEnumerable<TokenPrivilege> privileges, bool all_necessary, bool throw_on_error)
+        {
+            return NtSecurity.PrivilegeCheck(Handle, privileges, all_necessary, throw_on_error);
+        }
+
+        /// <summary>
+        /// Do a privilege check on a token.
+        /// </summary>
+        /// <param name="privileges">The list of privileges to check.</param>
+        /// <param name="all_necessary">True to require all necessary privileges.</param>
+        /// <returns>The privilege check result.</returns>
+        public PrivilegeCheckResult PrivilegeCheck(IEnumerable<TokenPrivilege> privileges, bool all_necessary)
+        {
+            return PrivilegeCheck(privileges, all_necessary, true).Result;
+        }
+
+        /// <summary>
+        /// Do a privilege check on a token.
+        /// </summary>
+        /// <param name="privileges">The list of privileges to check.</param>
+        /// <param name="all_necessary">True to require all necessary privileges.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The privilege check result.</returns>
+        public NtResult<PrivilegeCheckResult> PrivilegeCheck(IEnumerable<TokenPrivilegeValue> privileges, bool all_necessary, bool throw_on_error)
+        {
+            return PrivilegeCheck(privileges.Select(v => new TokenPrivilege(v, PrivilegeAttributes.Disabled)), all_necessary, throw_on_error);
+        }
+
+        /// <summary>
+        /// Do a privilege check on a token.
+        /// </summary>
+        /// <param name="privileges">The list of privileges to check.</param>
+        /// <param name="all_necessary">True to require all necessary privileges.</param>
+        /// <returns>The privilege check result.</returns>
+        public PrivilegeCheckResult PrivilegeCheck(IEnumerable<TokenPrivilegeValue> privileges, bool all_necessary)
+        {
+            return PrivilegeCheck(privileges, all_necessary, true).Result;
+        }
+
+        /// <summary>
+        /// Do a privilege check for a single privilege.
+        /// </summary>
+        /// <param name="privilege">The privilege to check.</param>
+        /// <returns>True if the privilege is enabled.</returns>
+        public bool SinglePrivilegeCheck(TokenPrivilege privilege)
+        {
+            return PrivilegeCheck(new TokenPrivilege[] { privilege }, true).AllPrivilegesHeld;
+        }
+
+        /// <summary>
+        /// Do a privilege check for a single privilege.
+        /// </summary>
+        /// <param name="privilege">The privilege to check.</param>
+        /// <returns>True if the privilege is enabled.</returns>
+        public bool SinglePrivilegeCheck(TokenPrivilegeValue privilege)
+        {
+            return PrivilegeCheck(new TokenPrivilegeValue[] { privilege }, true).AllPrivilegesHeld;
+        }
+
+        /// <summary>
         /// Method to query information for this object type.
         /// </summary>
         /// <param name="info_class">The information class.</param>
@@ -1462,7 +1528,7 @@ namespace NtApiDotNet
                     int count = buffer.Result.PrivilegeCount;
                     LuidAndAttributes[] attrs = new LuidAndAttributes[count];
                     buffer.Data.ReadArray(0, attrs, 0, count);
-                    return attrs.Select(a => new TokenPrivilege(a.Luid, (PrivilegeAttributes)a.Attributes)).ToArray();
+                    return attrs.Select(a => new TokenPrivilege(a.Luid, a.Attributes)).ToArray();
                 }
             }
         }

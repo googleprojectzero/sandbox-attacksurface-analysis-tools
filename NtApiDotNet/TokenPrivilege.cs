@@ -99,7 +99,15 @@ namespace NtApiDotNet
         /// </summary>
         public bool Enabled
         {
-            get { return (Attributes & PrivilegeAttributes.Enabled) == PrivilegeAttributes.Enabled; }
+            get { return Attributes.HasFlag(PrivilegeAttributes.Enabled); }
+        }
+
+        /// <summary>
+        /// Get whether privilege is enabled
+        /// </summary>
+        public bool UsedForAccess
+        {
+            get { return Attributes.HasFlag(PrivilegeAttributes.UsedForAccess); }
         }
 
         /// <summary>

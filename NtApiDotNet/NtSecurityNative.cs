@@ -15,7 +15,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -255,21 +254,6 @@ namespace NtApiDotNet
         }
     }
 
-    [Flags]
-    public enum PrivilegeSetControlFlags
-    {
-        None = 0,
-        AllNecessary = 1,
-    }
-
-    [StructLayout(LayoutKind.Sequential), DataStart("Privilege")]
-    public struct PrivilegeSet
-    {
-        public int PrivilegeCount;
-        public PrivilegeSetControlFlags Control;
-        public LuidAndAttributes Privilege;
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     public class CachedSigningLevelInformation
     {
@@ -301,56 +285,6 @@ namespace NtApiDotNet
         WindowsProtectedProcessLight = 13,
         WindowsTCB = 14,
         Custom6 = 15
-    }
-
-    public class SafePrivilegeSetBuffer : SafeStructureInOutBuffer<PrivilegeSet>
-    {
-        private SafePrivilegeSetBuffer(bool owns_handle) 
-            : base(IntPtr.Zero, 0, owns_handle)
-        {
-        }
-
-        private SafePrivilegeSetBuffer(PrivilegeSet privilege_set, int count)
-            : base(privilege_set, count * Marshal.SizeOf(typeof(LuidAndAttributes)),
-                  true)
-        {
-        }
-
-        private SafePrivilegeSetBuffer(IEnumerable<TokenPrivilege> privileges,
-            PrivilegeSetControlFlags control, int count) : this(new PrivilegeSet() { Control = control, PrivilegeCount = count },
-                count)
-        {
-            if (count <= 0)
-            {
-                throw new ArgumentException("Privilege count must be greater than 0", nameof(count));
-            }
-            var luids = privileges.Select(p => new LuidAndAttributes() { Luid = p.Luid, Attributes = p.Attributes }).ToArray();
-            Data.WriteArray(0, luids, 0, luids.Length);
-        }
-
-        public SafePrivilegeSetBuffer(int total_size) 
-            : base(total_size, false)
-        {
-        }
-
-        public SafePrivilegeSetBuffer(IEnumerable<TokenPrivilege> privileges, 
-            PrivilegeSetControlFlags control) : this(privileges, control, privileges.Count())
-        {
-        }
-
-        public SafePrivilegeSetBuffer() : this(new PrivilegeSet(), 1)
-        {
-        }
-
-        public static new SafePrivilegeSetBuffer Null => new SafePrivilegeSetBuffer(false);
-
-        public IEnumerable<TokenPrivilege> GetPrivileges()
-        {
-            var result = Result;
-            LuidAndAttributes[] luids = new LuidAndAttributes[result.PrivilegeCount];
-            Data.ReadArray(0, luids, 0, luids.Length);
-            return luids.Select(l => new TokenPrivilege(l.Luid, l.Attributes)).ToArray();
-        }
     }
 
     /// <summary>
@@ -819,6 +753,12 @@ namespace NtApiDotNet
             ref int BufferLength,
             out AccessMask GrantedAccess,
             out NtStatus AccessStatus);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtPrivilegeCheck(
+            SafeKernelObjectHandle ClientToken,
+            SafePrivilegeSetBuffer RequiredPrivileges,
+            [MarshalAs(UnmanagedType.U1)] out bool Result);
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtSetCachedSigningLevel(

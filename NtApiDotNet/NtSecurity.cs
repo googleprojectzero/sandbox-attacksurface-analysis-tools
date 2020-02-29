@@ -1063,6 +1063,23 @@ namespace NtApiDotNet
             return NtSystemCalls.NtSetSecurityObject(handle, security_information, security_desc).ToNtException(throw_on_error);
         }
 
+        /// <summary>
+        /// Do a privilege check on a token.
+        /// </summary>
+        /// <param name="handle">A handle to a token object.</param>
+        /// <param name="privileges">The list of privileges to check.</param>
+        /// <param name="all_necessary">True to require all necessary privileges.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The privilege check result.</returns>
+        public static NtResult<PrivilegeCheckResult> PrivilegeCheck(SafeKernelObjectHandle handle, IEnumerable<TokenPrivilege> privileges, bool all_necessary, bool throw_on_error)
+        {
+            using (var privs = new SafePrivilegeSetBuffer(privileges,
+                all_necessary ? PrivilegeSetControlFlags.AllNecessary : PrivilegeSetControlFlags.None))
+            {
+                return NtSystemCalls.NtPrivilegeCheck(handle, privs, out bool result).CreateResult(throw_on_error, () => new PrivilegeCheckResult(privs, result));
+            }
+        }
+
         #endregion
 
         #region Private Members

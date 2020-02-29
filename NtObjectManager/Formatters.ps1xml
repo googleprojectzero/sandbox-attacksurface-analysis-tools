@@ -2288,5 +2288,35 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>PrivilegeCheckResultTable</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.PrivilegeCheckResult</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>EnabledPrivileges</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>AllPrivilegesHeld</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>EnabledPrivileges</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>AllPrivilegesHeld</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>

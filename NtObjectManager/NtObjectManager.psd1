@@ -108,7 +108,7 @@ CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile
                'Get-AccessibleWnf', 'Get-AccessibleWindowStation', 'Get-NtProcessJob',
                'Get-NtWindowStation', 'Get-NtDesktop', 'New-NtWindowStation',
                'New-NtDesktop', 'Get-Win32Error', 'Set-NtKeyValue', 'Remove-NtKey',
-               'Get-NtObjectInformation', 'Set-NtObjectInformation'
+               'Get-NtObjectInformation', 'Set-NtObjectInformation', 'Test-NtTokenPrivilege'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @()

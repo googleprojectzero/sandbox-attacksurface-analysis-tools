@@ -68,10 +68,12 @@
     <Compile Include="NtWindowNative.cs" />
     <Compile Include="NtWindowStationNative.cs" />
     <Compile Include="NtWnfWellKnownNames.cs" />
+    <Compile Include="PrivilegeCheckResult.cs" />
     <Compile Include="ProcessModule.cs" />
     <Compile Include="SafeArrayBuffer.cs" />
     <Compile Include="SafeHandleListHandle.cs" />
     <Compile Include="SafeIoStatusBuffer.cs" />
+    <Compile Include="SafePrivilegeSetBuffer.cs" />
     <Compile Include="SafeProcessParametersBuffer.cs" />
     <Compile Include="SafeStringBuffer.cs" />
     <Compile Include="SidIdentifierAuthority.cs" />
