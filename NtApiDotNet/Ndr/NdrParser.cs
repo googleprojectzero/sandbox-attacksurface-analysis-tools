@@ -19,6 +19,7 @@
 
 using NtApiDotNet.Utilities.Memory;
 using NtApiDotNet.Win32;
+using NtApiDotNet.Win32.Debugger;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

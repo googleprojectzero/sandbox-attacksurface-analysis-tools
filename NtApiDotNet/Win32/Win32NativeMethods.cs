@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Ndr;
+using NtApiDotNet.Win32.Debugger;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -1124,6 +1125,32 @@ namespace NtApiDotNet.Win32
             SafeBuffer lpAttributeList,
             OptionalInt32 lpThreadId
         );
+
+        [DllImport("Psapi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool EnumProcessModulesEx(
+              SafeKernelObjectHandle hProcess,
+              [Out] IntPtr[] lphModule,
+              int cb,
+              out int lpcbNeeded,
+              EnumProcessModulesFilter dwFilterFlag
+            );
+
+        [DllImport("Psapi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern int GetModuleFileNameEx(
+              SafeKernelObjectHandle hProcess,
+              IntPtr hModule,
+              StringBuilder lpFilename,
+              int nSize
+            );
+
+        [DllImport("Psapi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern bool GetModuleInformation(
+          SafeKernelObjectHandle hProcess,
+          IntPtr hModule,
+          out MODULEINFO lpmodinfo,
+          int cb
+        );
+
     }
 #pragma warning restore 1591
 }
