@@ -670,17 +670,18 @@ namespace NtApiDotNet.Win32
         /// <summary>
         /// Get a delegate which points to an unmanaged function.
         /// </summary>
-        /// <typeparam name="TDelegate">The delegate type. The name of the delegate is used to lookup the name of the function.</typeparam>
+        /// <typeparam name="TDelegate">The delegate type.</typeparam>
+        /// <param name="name">The name of the function to lookup.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The delegate.</returns>
-        public TDelegate GetFunctionPointer<TDelegate>(bool throw_on_error) where TDelegate : Delegate
+        public TDelegate GetFunctionPointer<TDelegate>(string name, bool throw_on_error) where TDelegate : Delegate
         {
             if (typeof(TDelegate).GetCustomAttribute<UnmanagedFunctionPointerAttribute>() == null)
             {
                 throw new ArgumentException("Invalid delegate type, must have an UnmanagedFunctionPointerAttribute annotation");
             }
 
-            IntPtr proc = GetProcAddress(typeof(TDelegate).Name);
+            IntPtr proc = GetProcAddress(name);
             if (proc == IntPtr.Zero)
             {
                 if (throw_on_error)
@@ -691,6 +692,28 @@ namespace NtApiDotNet.Win32
             }
 
             return (TDelegate)Marshal.GetDelegateForFunctionPointer(proc, typeof(TDelegate));
+        }
+
+        /// <summary>
+        /// Get a delegate which points to an unmanaged function.
+        /// </summary>
+        /// <typeparam name="TDelegate">The delegate type. The name of the delegate is used to lookup the name of the function.</typeparam>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The delegate.</returns>
+        public TDelegate GetFunctionPointer<TDelegate>(bool throw_on_error) where TDelegate : Delegate
+        {
+            return GetFunctionPointer<TDelegate>(typeof(TDelegate).Name, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get a delegate which points to an unmanaged function.
+        /// </summary>
+        /// <typeparam name="TDelegate">The delegate type.</typeparam>
+        /// <param name="name">The name of the function to lookup.</param>
+        /// <returns>The delegate.</returns>
+        public TDelegate GetFunctionPointer<TDelegate>(string name) where TDelegate : Delegate
+        {
+            return GetFunctionPointer<TDelegate>(name, true);
         }
 
         /// <summary>
