@@ -88,5 +88,14 @@ namespace NtApiDotNet.Win32
             ImageSize = image_size;
             _type_resolver = type_resolver;
         }
+
+        /// <summary>
+        /// Returns the name of the module.
+        /// </summary>
+        /// <returns>The name of the module.</returns>
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }
