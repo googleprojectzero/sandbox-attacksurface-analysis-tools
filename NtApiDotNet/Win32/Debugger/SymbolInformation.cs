@@ -15,79 +15,6 @@
 namespace NtApiDotNet.Win32.Debugger
 {
     /// <summary>
-    /// Enumeration for symbol type information.
-    /// </summary>
-    public enum SymbolInformationType
-    {
-        /// <summary>
-        /// None.
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// UDT.
-        /// </summary>
-        UserDefinedType,
-        /// <summary>
-        /// Enumerated type.
-        /// </summary>
-        EnumeratedType,
-        /// <summary>
-        /// Undefined.
-        /// </summary>
-        UndefinedType,
-    }
-
-    /// <summary>
-    /// Symbol information for a data value.
-    /// </summary>
-    public class DataSymbolInformation : SymbolInformation
-    {
-        /// <summary>
-        /// Address of the symbol.
-        /// </summary>
-        public long Address { get; }
-
-        internal DataSymbolInformation(SYMBOL_INFO symbol_info, SymbolLoadedModule module, string name) 
-            : base(symbol_info, module, name)
-        {
-            Address = symbol_info.Address;
-        }
-    }
-
-    /// <summary>
-    /// Symbol information for a type.
-    /// </summary>
-    public class TypeInformation : SymbolInformation
-    {
-        internal TypeInformation(SYMBOL_INFO symbol_info, SymbolLoadedModule module, string name)
-            : base(symbol_info, module, name)
-        {
-        }
-    }
-
-    /// <summary>
-    /// Symbol information for an enumerated type.
-    /// </summary>
-    public class EnumTypeInformation : TypeInformation
-    {
-        internal EnumTypeInformation(SYMBOL_INFO symbol_info, SymbolLoadedModule module, string name)
-            : base(symbol_info, module, name)
-        {
-        }
-    }
-
-    /// <summary>
-    /// Symbol information for an enumerated type.
-    /// </summary>
-    public class UserDefinedTypeInformation : TypeInformation
-    {
-        internal UserDefinedTypeInformation(SYMBOL_INFO symbol_info, SymbolLoadedModule module, string name)
-            : base(symbol_info, module, name)
-        {
-        }
-    }
-
-    /// <summary>
     /// Class to represent a symbol information.
     /// </summary>
     public class SymbolInformation
@@ -95,11 +22,11 @@ namespace NtApiDotNet.Win32.Debugger
         /// <summary>
         /// The name of the symbol.
         /// </summary>
-        public string Name { get; }
+        public virtual string Name { get; }
         /// <summary>
         /// Size of the symbol.
         /// </summary>
-        public int Size { get; }
+        public long Size { get; }
         /// <summary>
         /// Get the loaded module for the symbol.
         /// </summary>
@@ -113,26 +40,28 @@ namespace NtApiDotNet.Win32.Debugger
         /// </summary>
         internal int TypeIndex { get; }
 
-        private static SymbolInformationType MapType(SYMBOL_INFO symbol_info)
+        private static SymbolInformationType MapType(SymTagEnum tag)
         {
-            switch (symbol_info.Tag)
+            switch (tag)
             {
                 case SymTagEnum.SymTagUDT:
                     return SymbolInformationType.UserDefinedType;
                 case SymTagEnum.SymTagEnum:
                     return SymbolInformationType.EnumeratedType;
+                case SymTagEnum.SymTagBaseType:
+                    return SymbolInformationType.BaseType;
                 default:
                     return SymbolInformationType.UndefinedType;
             }
         }
 
-        internal SymbolInformation(SYMBOL_INFO symbol_info, SymbolLoadedModule module, string name)
+        internal SymbolInformation(SymTagEnum tag, long size, int type_index, SymbolLoadedModule module, string name)
         {
             Name = name;
-            Size = symbol_info.Size;
+            Size = size;
             Module = module;
-            TypeIndex = symbol_info.TypeIndex;
-            Type = MapType(symbol_info);
+            TypeIndex = type_index;
+            Type = MapType(tag);
         }
     }
 }

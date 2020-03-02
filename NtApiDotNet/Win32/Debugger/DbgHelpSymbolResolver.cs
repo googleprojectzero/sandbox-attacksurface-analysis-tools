@@ -137,6 +137,50 @@ namespace NtApiDotNet.Win32.Debugger
             SafeBuffer pInfo
         );
 
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
+        delegate bool SymGetTypeInfoDword(
+            SafeKernelObjectHandle hProcess,
+            long BaseOfDll,
+            int TypeId,
+            IMAGEHLP_SYMBOL_TYPE_INFO GetType,
+            out int pInfo
+        );
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
+        delegate bool SymGetTypeInfoLong(
+            SafeKernelObjectHandle hProcess,
+            long BaseOfDll,
+            int TypeId,
+            IMAGEHLP_SYMBOL_TYPE_INFO GetType,
+            out long pInfo
+        );
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
+        delegate bool SymGetTypeInfoPtr(
+            SafeKernelObjectHandle hProcess,
+            long BaseOfDll,
+            int TypeId,
+            IMAGEHLP_SYMBOL_TYPE_INFO GetType,
+            out IntPtr pInfo
+        );
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
+        delegate bool SymGetTypeInfoVar(
+            SafeKernelObjectHandle hProcess,
+            long BaseOfDll,
+            int TypeId,
+            IMAGEHLP_SYMBOL_TYPE_INFO GetType,
+            [MarshalAs(UnmanagedType.Struct)] out object pInfo
+        );
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = true)]
+        delegate bool SymFromIndexW(
+            SafeKernelObjectHandle hProcess,
+            long BaseOfDll,
+            int Index,
+            SafeBuffer Symbol
+        );
+
         private SafeLoadLibraryHandle _dbghelp_lib;
         private SymInitializeW _sym_init;
         private SymCleanup _sym_cleanup;
@@ -150,10 +194,21 @@ namespace NtApiDotNet.Win32.Debugger
         private SymEnumTypesW _sym_enum_types;
         private SymGetTypeFromNameW _sym_get_type_from_name;
         private SymEnumTypesByNameW _sym_enum_types_by_name;
+        private SymGetTypeInfo _sym_get_type_info;
+        private SymGetTypeInfoDword _sym_get_type_info_dword;
+        private SymGetTypeInfoPtr _sym_get_type_info_ptr;
+        private SymGetTypeInfoVar _sym_get_type_info_var;
+        private SymGetTypeInfoLong _sym_get_type_info_long;
+        private SymFromIndexW _sym_from_index;
 
         private void GetFunc<T>(ref T f) where T : Delegate
         {
             f = _dbghelp_lib.GetFunctionPointer<T>();
+        }
+
+        private void GetFunc<T>(ref T f, string name) where T : Delegate
+        {
+            f = _dbghelp_lib.GetFunctionPointer<T>(name);
         }
 
         static SafeStructureInOutBuffer<SYMBOL_INFO> AllocateSymInfo()
@@ -182,6 +237,12 @@ namespace NtApiDotNet.Win32.Debugger
             GetFunc(ref _sym_enum_types);
             GetFunc(ref _sym_get_type_from_name);
             GetFunc(ref _sym_enum_types_by_name);
+            GetFunc(ref _sym_get_type_info);
+            GetFunc(ref _sym_get_type_info_dword, "SymGetTypeInfo");
+            GetFunc(ref _sym_get_type_info_ptr, "SymGetTypeInfo");
+            GetFunc(ref _sym_get_type_info_var, "SymGetTypeInfo");
+            GetFunc(ref _sym_get_type_info_long, "SymGetTypeInfo");
+            GetFunc(ref _sym_from_index);
 
             _sym_set_options(SymOptions.INCLUDE_32BIT_MODULES | SymOptions.UNDNAME | SymOptions.DEFERRED_LOADS);
 
@@ -403,26 +464,241 @@ namespace NtApiDotNet.Win32.Debugger
             return new SafeStructureInOutBuffer<SYMBOL_INFO>(symbol_info, total_size, false);
         }
 
-        private EnumTypeInformation CreateEnumType(SYMBOL_INFO symbol_info, SymbolLoadedModule module, string name)
+        private SymTagEnum? GetSymbolTag(long module_base, int type_index)
         {
-            return new EnumTypeInformation(symbol_info, module, name);
+            var tag = GetSymbolDword(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_SYMTAG, module_base, type_index);
+            if (tag.HasValue)
+                return (SymTagEnum)tag.Value;
+            return null;
         }
 
-        private TypeInformation CreateType(SYMBOL_INFO symbol_info, SymbolLoadedModule module, string name)
+        private bool CheckTypeTag(long module_base, int type_index, SymTagEnum tag)
         {
-            switch (symbol_info.Tag)
+            var tag_check = GetSymbolTag(module_base, type_index);
+            if (!tag_check.HasValue)
             {
-                case SymTagEnum.SymTagUDT:
-                    return new UserDefinedTypeInformation(symbol_info, module, name);
-                case SymTagEnum.SymTagEnum:
-                    return CreateEnumType(symbol_info, module, name);
-                default:
-                    return new TypeInformation(symbol_info, module, name);
+                return false;
+            }
+            return tag_check.Value == tag;
+        }
+
+        private int? GetSymbolDword(IMAGEHLP_SYMBOL_TYPE_INFO ti, long module_base, int type_index)
+        {
+            if (!_sym_get_type_info_dword(Handle, module_base,
+                type_index, ti, out int result))
+            {
+                return null;
+            }
+            return result;
+        }
+
+        private long? GetSymbolLong(IMAGEHLP_SYMBOL_TYPE_INFO ti, long module_base, int type_index)
+        {
+            if (!_sym_get_type_info_long(Handle, module_base,
+                type_index, ti, out long result))
+            {
+                return null;
+            }
+            return result;
+        }
+
+        private int GetChildCount(long module_base, int type_index)
+        {
+            if (!_sym_get_type_info_dword(Handle, module_base,
+                type_index, IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_CHILDRENCOUNT, out int count))
+            {
+                return 0;
+            }
+            return count;
+        }
+
+        private int[] GetChildIds(long module_base, int type_index)
+        {
+            int count = GetChildCount(module_base, type_index);
+            if (count == 0)
+                return new int[0];
+
+            TI_FINDCHILDREN_PARAMS children = new TI_FINDCHILDREN_PARAMS() { Count = count };
+            using (var buffer = new SafeStructureInOutBuffer<TI_FINDCHILDREN_PARAMS>(children, count * 4, true))
+            {
+                if (!_sym_get_type_info(Handle, module_base,
+                   type_index, IMAGEHLP_SYMBOL_TYPE_INFO.TI_FINDCHILDREN, buffer))
+                {
+                    return new int[0];
+                }
+                int[] ret = new int[count];
+                buffer.Data.ReadArray(0, ret, 0, count);
+                return ret;
             }
         }
 
-        private bool EnumTypes(Dictionary<long, SymbolLoadedModule> modules, 
-            List<TypeInformation> symbols, IntPtr symbol_info, int symbol_size, IntPtr context)
+        private string GetSymbolName(long module_base, int type_index)
+        {
+            IntPtr ptr = IntPtr.Zero;
+            try
+            {
+                if (!_sym_get_type_info_ptr(Handle, module_base, type_index, IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_SYMNAME, out ptr))
+                {
+                    return string.Empty;
+                }
+                return Marshal.PtrToStringUni(ptr);
+            }
+            finally
+            {
+                if (ptr != IntPtr.Zero)
+                {
+                    Win32NativeMethods.LocalFree(ptr);
+                }
+            }
+        }
+
+        private long GetSymbolLength(long module_base, int type_index)
+        {
+            return GetSymbolLong(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_LENGTH, module_base, type_index) ?? 0;
+        }
+
+        private SafeStructureInOutBuffer<SYMBOL_INFO> GetSymbolFromIndex(long module_base, int index)
+        {
+            using (var symbol = AllocateSymInfo())
+            {
+                if (!_sym_from_index(Handle, module_base, index, symbol))
+                {
+                    return SafeStructureInOutBuffer<SYMBOL_INFO>.Null;
+                }
+                return symbol.Detach();
+            }
+        }
+
+        private EnumTypeInformation CreateEnumType(TypeInformationCache type_cache, long module_base, int type_index, SymbolLoadedModule module, string name)
+        {
+            int[] child_ids = GetChildIds(module_base, type_index);
+            long length = GetSymbolLong(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_LENGTH, module_base, type_index) ?? 0;
+            List<EnumTypeInformationValue> values = new List<EnumTypeInformationValue>();
+            foreach (var id in child_ids)
+            {
+                if (CheckTypeTag(module_base, id, SymTagEnum.SymTagData))
+                {
+                    long enum_value = 0;
+                    if (_sym_get_type_info_var(Handle, module_base, id, 
+                        IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_VALUE, out object value))
+                    {
+                        enum_value = Convert.ToInt64(value);
+                    }
+
+                    values.Add(new EnumTypeInformationValue(GetSymbolName(module_base, id), enum_value));
+                }
+            }
+            return new EnumTypeInformation(length, type_index, 
+                module, name, values.AsReadOnly());
+        }
+
+        private UserDefinedTypeInformation CreateUserDefinedType(TypeInformationCache type_cache, long module_base, int type_index, SymbolLoadedModule module, string name)
+        {
+            int[] child_ids = GetChildIds(module_base, type_index);
+            List<UserDefinedTypeMember> members = new List<UserDefinedTypeMember>();
+            long length = GetSymbolLong(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_LENGTH, module_base, type_index) ?? 0;
+            foreach (var id in child_ids)
+            {
+                if (!CheckTypeTag(module_base, id, SymTagEnum.SymTagData))
+                {
+                    continue;
+                }
+                string member_name = GetSymbolName(module_base, id);
+                int offset = GetSymbolDword(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_OFFSET, module_base, id) ?? 0;
+                int? member_type = GetSymbolDword(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_TYPE, module_base, id);
+
+                var bit_position = GetSymbolDword(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_BITPOSITION, module_base, id);
+                var bit_length = GetSymbolLength(module_base, id);
+
+                TypeInformation member_type_value = new TypeInformation(SymTagEnum.SymTagNull, 0, 0, module, member_name);
+                if (member_type.HasValue)
+                {
+                    var tag = GetSymbolTag(module_base, member_type.Value);
+                    member_type_value = CreateType(type_cache, tag ?? SymTagEnum.SymTagNull, module_base, member_type.Value,
+                        GetSymbolLong(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_LENGTH, module_base, member_type.Value) ?? 0
+                        , module, GetSymbolName(module_base, member_type.Value));
+                }
+                members.Add(new UserDefinedTypeMember(member_type_value, member_name, offset, bit_position, bit_length));
+            }
+
+            UdtKind kind = (UdtKind)(GetSymbolDword(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_UDTKIND, module_base, type_index) ?? 0);
+            return new UserDefinedTypeInformation(length, type_index, module, name, kind == UdtKind.UdtUnion, members.AsReadOnly());
+        }
+
+        private BaseTypeInformation CreateBaseType(TypeInformationCache type_cache, long module_base, int index, SymbolLoadedModule module)
+        {
+            var base_type = GetSymbolDword(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_BASETYPE, module_base, index) ?? 0;
+            var length = GetSymbolLong(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_LENGTH, module_base, index) ?? 0;
+            return new BaseTypeInformation(length, index, module, (BasicType)base_type);
+        }
+
+        private PointerTypeInformation CreatePointerType(TypeInformationCache type_cache, long module_base, int index, SymbolLoadedModule module)
+        {
+            var length = GetSymbolLong(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_LENGTH, module_base, index) ?? 0;
+            var type_id = GetSymbolDword(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_TYPEID, module_base, index);
+            var is_reference = GetSymbolDword(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_IS_REFERENCE, module_base, index) ?? 0;
+            PointerTypeInformation pointer;
+            if (type_id.HasValue)
+            {
+                pointer = new PointerTypeInformation(length, index, module,
+                        null, is_reference != 0);
+                type_cache.AddEntry(module_base, index, pointer);
+                type_cache.AddFixedup(module_base, type_id.Value, pointer);
+                pointer.PointerType = CreateType(type_cache, module_base, type_id.Value, module);
+            }
+            else
+            {
+                return new PointerTypeInformation(length, index, module,
+                        new BaseTypeInformation(0, 0, module, BasicType.Void), is_reference != 0); 
+            }
+            type_cache.AddEntry(module_base, index, pointer);
+            return pointer;
+        }
+
+        private TypeInformation CreateType(TypeInformationCache type_cache,
+            long module_base, int index, SymbolLoadedModule module)
+        {
+            var tag = GetSymbolTag(module_base, index) ?? SymTagEnum.SymTagNull;
+            string name = GetSymbolName(module_base, index);
+            long length = GetSymbolLength(module_base, index);
+            return CreateType(type_cache, tag, module_base, index, length, module, name);
+        }
+
+        private TypeInformation CreateType(TypeInformationCache type_cache, SymTagEnum tag, 
+            long module_base, int index, long size, SymbolLoadedModule module, string name)
+        {
+            if (type_cache.HasEntry(module_base, index))
+            {
+                return type_cache.GetEntry(module_base, index);
+            }
+
+            TypeInformation ret;
+            switch (tag)
+            {
+                case SymTagEnum.SymTagUDT:
+                    ret = CreateUserDefinedType(type_cache, module_base, index, module, name);
+                    break;
+                case SymTagEnum.SymTagEnum:
+                    ret = CreateEnumType(type_cache, module_base, index, module, name);
+                    break;
+                case SymTagEnum.SymTagBaseType:
+                    ret = CreateBaseType(type_cache, module_base, index, module);
+                    break;
+                case SymTagEnum.SymTagPointerType:
+                    ret = CreatePointerType(type_cache, module_base, index, module);
+                    break;
+                default:
+                    System.Diagnostics.Debug.WriteLine(tag.ToString());
+                    ret = new TypeInformation(tag, size, index, module, name);
+                    break;
+            }
+
+            type_cache.AddEntry(module_base, index, ret);
+            return ret;
+        }
+
+        private bool EnumTypes(TypeInformationCache type_cache, Dictionary<long, SymbolLoadedModule> modules, 
+            List<TypeInformation> symbols, IntPtr symbol_info)
         {
             var sym_info = MapSymbolInfo(symbol_info);
             SymbolLoadedModule loaded_module;
@@ -437,7 +713,7 @@ namespace NtApiDotNet.Win32.Debugger
                 modules.Add(result.ModBase, loaded_module);
             }
 
-            symbols.Add(CreateType(sym_info.Result, loaded_module, GetNameFromSymbolInfo(sym_info)));
+            symbols.Add(CreateType(type_cache, result.Tag, result.ModBase, result.TypeIndex, result.Size, loaded_module, GetNameFromSymbolInfo(sym_info)));
             return true;
         }
 
@@ -448,9 +724,11 @@ namespace NtApiDotNet.Win32.Debugger
 
         public IEnumerable<TypeInformation> QueryTypes(IntPtr base_address)
         {
+            TypeInformationCache type_cache = new TypeInformationCache();
             Dictionary<long, SymbolLoadedModule> modules = GetLoadedModules().ToDictionary(m => m.BaseAddress.ToInt64());
             List<TypeInformation> symbols = new List<TypeInformation>();
-            _sym_enum_types(Handle, base_address.ToInt64(), (s, z, c) => EnumTypes(modules, symbols, s, z, c), IntPtr.Zero);
+            _sym_enum_types(Handle, base_address.ToInt64(), (s, z, c) => EnumTypes(type_cache, modules, symbols, s), IntPtr.Zero);
+            type_cache.FixupPointerTypes();
             return symbols;
         }
 
@@ -471,7 +749,10 @@ namespace NtApiDotNet.Win32.Debugger
                     {
                         loaded_module = new SymbolLoadedModule(string.Empty, new IntPtr(result.ModBase), 0, this);
                     }
-                    return CreateType(result, loaded_module, GetNameFromSymbolInfo(sym_info));
+                    TypeInformationCache type_cache = new TypeInformationCache();
+                    var ret = CreateType(type_cache, result.Tag, result.ModBase, result.TypeIndex, result.Size, loaded_module, GetNameFromSymbolInfo(sym_info));
+                    type_cache.FixupPointerTypes();
+                    return ret;
                 }
                 else
                 {
@@ -484,7 +765,9 @@ namespace NtApiDotNet.Win32.Debugger
         {
             Dictionary<long, SymbolLoadedModule> modules = GetLoadedModules().ToDictionary(m => m.BaseAddress.ToInt64());
             List<TypeInformation> symbols = new List<TypeInformation>();
-            _sym_enum_types_by_name(Handle, base_address.ToInt64(), mask, (s, z, c) => EnumTypes(modules, symbols, s, z, c), IntPtr.Zero);
+            TypeInformationCache type_cache = new TypeInformationCache();
+            _sym_enum_types_by_name(Handle, base_address.ToInt64(), mask, (s, z, c) => EnumTypes(type_cache, modules, symbols, s), IntPtr.Zero);
+            type_cache.FixupPointerTypes();
             return symbols;
         }
 
