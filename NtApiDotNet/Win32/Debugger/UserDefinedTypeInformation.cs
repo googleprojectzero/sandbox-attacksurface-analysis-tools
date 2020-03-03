@@ -19,7 +19,7 @@ namespace NtApiDotNet.Win32.Debugger
     /// <summary>
     /// Represents a member of a UDT.
     /// </summary>
-    public sealed class UserDefinedTypeMember
+    public class UserDefinedTypeMember
     {
         /// <summary>
         /// The type of the member.
@@ -37,25 +37,34 @@ namespace NtApiDotNet.Win32.Debugger
         /// The size of the member.
         /// </summary>
         public long Size => Type.Size;
-        /// <summary>
-        /// If a bit field then this is the bit start position.
-        /// </summary>
-        public int? BitPosition { get; }
-        /// <summary>
-        /// If a bit field this is the bit length.
-        /// </summary>
-        public int? BitLength { get; }
 
-        internal UserDefinedTypeMember(TypeInformation type, string name, int offset, int? bit_position, long? bit_length)
+        internal UserDefinedTypeMember(TypeInformation type, string name, int offset)
         {
             Type = type;
             Name = name;
             Offset = offset;
+        }
+    }
+
+    /// <summary>
+    /// Represents a bit field member of a UDT.
+    /// </summary>
+    public class UserDefinedTypeBitFieldMember : UserDefinedTypeMember
+    {
+        /// <summary>
+        /// If a bit field then this is the bit start position.
+        /// </summary>
+        public int BitPosition { get; }
+        /// <summary>
+        /// If a bit field this is the bit length.
+        /// </summary>
+        public int BitLength { get; }
+
+        internal UserDefinedTypeBitFieldMember(TypeInformation type, string name, int offset, int bit_position, long bit_length) 
+            : base(type, name, offset)
+        {
             BitPosition = bit_position;
-            if (bit_position.HasValue)
-            {
-                BitLength = (int)bit_length.Value;
-            }
+            BitLength = (int)bit_length;
         }
     }
 

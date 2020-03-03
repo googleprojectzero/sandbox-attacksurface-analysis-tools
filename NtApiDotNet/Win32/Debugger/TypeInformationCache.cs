@@ -19,8 +19,8 @@ namespace NtApiDotNet.Win32.Debugger
 {
     internal class TypeInformationCache
     {
-        private Dictionary<Tuple<long, int>, TypeInformation> _cache;
-        private Dictionary<Tuple<long, int>, PointerTypeInformation> _pointer_fixup;
+        private readonly Dictionary<Tuple<long, int>, TypeInformation> _cache;
+        private readonly Dictionary<Tuple<long, int>, PointerTypeInformation> _pointer_fixup;
 
         public bool HasEntry(long module_base, int index)
         {

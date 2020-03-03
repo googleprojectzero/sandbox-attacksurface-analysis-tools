@@ -181,25 +181,25 @@ namespace NtApiDotNet.Win32.Debugger
             SafeBuffer Symbol
         );
 
-        private SafeLoadLibraryHandle _dbghelp_lib;
-        private SymInitializeW _sym_init;
-        private SymCleanup _sym_cleanup;
-        private SymFromNameW _sym_from_name;
-        private SymSetOptions _sym_set_options;
-        private SymEnumerateModulesW64 _sym_enum_modules;
-        private SymFromAddrW _sym_from_addr;
-        private SymGetModuleInfoW64 _sym_get_module_info;
-        private SymLoadModule64 _sym_load_module;
-        private SymRefreshModuleList _sym_refresh_module_list;
-        private SymEnumTypesW _sym_enum_types;
-        private SymGetTypeFromNameW _sym_get_type_from_name;
-        private SymEnumTypesByNameW _sym_enum_types_by_name;
-        private SymGetTypeInfo _sym_get_type_info;
-        private SymGetTypeInfoDword _sym_get_type_info_dword;
-        private SymGetTypeInfoPtr _sym_get_type_info_ptr;
-        private SymGetTypeInfoVar _sym_get_type_info_var;
-        private SymGetTypeInfoLong _sym_get_type_info_long;
-        private SymFromIndexW _sym_from_index;
+        private readonly SafeLoadLibraryHandle _dbghelp_lib;
+        private readonly SymInitializeW _sym_init;
+        private readonly SymCleanup _sym_cleanup;
+        private readonly SymFromNameW _sym_from_name;
+        private readonly SymSetOptions _sym_set_options;
+        private readonly SymEnumerateModulesW64 _sym_enum_modules;
+        private readonly SymFromAddrW _sym_from_addr;
+        private readonly SymGetModuleInfoW64 _sym_get_module_info;
+        private readonly SymLoadModule64 _sym_load_module;
+        private readonly SymRefreshModuleList _sym_refresh_module_list;
+        private readonly SymEnumTypesW _sym_enum_types;
+        private readonly SymGetTypeFromNameW _sym_get_type_from_name;
+        private readonly SymEnumTypesByNameW _sym_enum_types_by_name;
+        private readonly SymGetTypeInfo _sym_get_type_info;
+        private readonly SymGetTypeInfoDword _sym_get_type_info_dword;
+        private readonly SymGetTypeInfoPtr _sym_get_type_info_ptr;
+        private readonly SymGetTypeInfoVar _sym_get_type_info_var;
+        private readonly SymGetTypeInfoLong _sym_get_type_info_long;
+        private readonly SymFromIndexW _sym_from_index;
 
         private void GetFunc<T>(ref T f) where T : Delegate
         {
@@ -557,18 +557,6 @@ namespace NtApiDotNet.Win32.Debugger
             return GetSymbolLong(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_LENGTH, module_base, type_index) ?? 0;
         }
 
-        private SafeStructureInOutBuffer<SYMBOL_INFO> GetSymbolFromIndex(long module_base, int index)
-        {
-            using (var symbol = AllocateSymInfo())
-            {
-                if (!_sym_from_index(Handle, module_base, index, symbol))
-                {
-                    return SafeStructureInOutBuffer<SYMBOL_INFO>.Null;
-                }
-                return symbol.Detach();
-            }
-        }
-
         private EnumTypeInformation CreateEnumType(TypeInformationCache type_cache, long module_base, int type_index, SymbolLoadedModule module, string name)
         {
             int[] child_ids = GetChildIds(module_base, type_index);
@@ -618,7 +606,15 @@ namespace NtApiDotNet.Win32.Debugger
                         GetSymbolLong(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_LENGTH, module_base, member_type.Value) ?? 0
                         , module, GetSymbolName(module_base, member_type.Value));
                 }
-                members.Add(new UserDefinedTypeMember(member_type_value, member_name, offset, bit_position, bit_length));
+
+                if (bit_position.HasValue)
+                {
+                    members.Add(new UserDefinedTypeBitFieldMember(member_type_value, member_name, offset, bit_position.Value, bit_length));
+                }
+                else
+                {
+                    members.Add(new UserDefinedTypeMember(member_type_value, member_name, offset));
+                }
             }
 
             UdtKind kind = (UdtKind)(GetSymbolDword(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_UDTKIND, module_base, type_index) ?? 0);
@@ -655,6 +651,32 @@ namespace NtApiDotNet.Win32.Debugger
             return pointer;
         }
 
+        private int? GetArrayElementType(long module_base, int index)
+        {
+            int? type_index = GetSymbolDword(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_TYPEID, module_base, index);
+            if (!type_index.HasValue)
+                return null;
+            while (CheckTypeTag(module_base, type_index.Value, SymTagEnum.SymTagArrayType))
+            {
+                type_index = GetSymbolDword(IMAGEHLP_SYMBOL_TYPE_INFO.TI_GET_TYPEID, module_base, type_index.Value);
+                if (!type_index.HasValue)
+                    return null;
+            }
+            return type_index.Value;
+        }
+
+        private ArrayTypeInformation CreateArrayType(TypeInformationCache type_cache, long module_base, int index, SymbolLoadedModule module)
+        {
+            int? array_type_index = GetArrayElementType(module_base, index);
+            if (!array_type_index.HasValue)
+            {
+                return new ArrayTypeInformation(index, module, new BaseTypeInformation(1, 0, module, BasicType.Char));
+            }
+
+            TypeInformation array_type = CreateType(type_cache, module_base, array_type_index.Value, module);
+            return new ArrayTypeInformation(index, module, array_type);
+        }
+
         private TypeInformation CreateType(TypeInformationCache type_cache,
             long module_base, int index, SymbolLoadedModule module)
         {
@@ -686,6 +708,9 @@ namespace NtApiDotNet.Win32.Debugger
                     break;
                 case SymTagEnum.SymTagPointerType:
                     ret = CreatePointerType(type_cache, module_base, index, module);
+                    break;
+                case SymTagEnum.SymTagArrayType:
+                    ret = CreateArrayType(type_cache, module_base, index, module);
                     break;
                 default:
                     System.Diagnostics.Debug.WriteLine(tag.ToString());
