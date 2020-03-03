@@ -252,6 +252,19 @@ namespace TokenViewer
             return string.Join(" - ", token.ElevationType, token.Elevated ? "Elevated" : "Not Elevated");
         }
 
+        private static string GetChromeSandboxType(ProcessTokenEntry entry)
+        {
+            string[] args = Win32Utils.ParseCommandLine(entry.CommandLine);
+            foreach (var s in args)
+            {
+                if (s.StartsWith("--type="))
+                {
+                    return $"Sandbox: {s.Substring(7)}";
+                }
+            }
+            return "Unknown";
+        }
+
         public MainForm()
         {
             InitializeComponent();
@@ -280,6 +293,7 @@ namespace TokenViewer
             AddGrouping("Process Security Descriptor", p => GetSecurityDescriptor(p.ProcessSecurity));
             AddGrouping("Trust Level", p => p.ProcessToken.TrustLevel?.Name ?? "Untrusted");
             AddGrouping("No Child Process", p => p.ProcessToken.NoChildProcess ? "No Child Process" : "Unrestricted");
+            AddGrouping("Chrome Sandbox Type", p => GetChromeSandboxType(p));
             RefreshProcessList(null, false, false);
 
             using (NtToken token = NtProcess.Current.OpenToken())
