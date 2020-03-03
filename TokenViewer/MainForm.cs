@@ -274,6 +274,7 @@ namespace TokenViewer
             AddGrouping("Security Descriptor", p => GetSecurityDescriptor(p.ProcessToken));
             AddGrouping("Process Security Descriptor", p => GetSecurityDescriptor(p.ProcessSecurity));
             AddGrouping("Trust Level", p => p.ProcessToken.TrustLevel?.Name ?? "Untrusted");
+            AddGrouping("No Child Process", p => p.ProcessToken.NoChildProcess ? "No Child Process" : "Unrestricted");
             RefreshProcessList(null, false, false);
 
             using (NtToken token = NtProcess.Current.OpenToken())
