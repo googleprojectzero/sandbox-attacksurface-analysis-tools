@@ -374,6 +374,18 @@ namespace NtApiDotNet
             AddAce(AceType.Allowed, mask, flags, NtSecurity.SidFromSddl(sid));
         }
 
+        private void SetControlFlag(bool enable, SecurityDescriptorControl flags)
+        {
+            if (enable)
+            {
+                Control |= flags;
+            }
+            else
+            {
+                Control &= ~flags;
+            }
+        }
+
         #endregion
 
         #region Public Properties
@@ -477,17 +489,25 @@ namespace NtApiDotNet
         public bool DaclProtected
         {
             get => Control.HasFlag(SecurityDescriptorControl.DaclProtected);
-            set
-            {
-                if (value)
-                {
-                    Control |= SecurityDescriptorControl.DaclProtected;
-                }
-                else
-                {
-                    Control &= ~SecurityDescriptorControl.DaclProtected;
-                }
-            }
+            set => SetControlFlag(value, SecurityDescriptorControl.DaclProtected);
+        }
+
+        /// <summary>
+        /// Get or set the DACL auto-inherited flag.
+        /// </summary>
+        public bool DaclAutoInherited
+        {
+            get => Control.HasFlag(SecurityDescriptorControl.DaclAutoInherited);
+            set => SetControlFlag(value, SecurityDescriptorControl.DaclAutoInherited);
+        }
+
+        /// <summary>
+        /// Get or set the DACL auto-inherited required flag.
+        /// </summary>
+        public bool DaclAutoInheritReq
+        {
+            get => Control.HasFlag(SecurityDescriptorControl.DaclAutoInheritReq);
+            set => SetControlFlag(value, SecurityDescriptorControl.DaclAutoInheritReq);
         }
 
         /// <summary>
@@ -496,17 +516,43 @@ namespace NtApiDotNet
         public bool SaclProtected
         {
             get => Control.HasFlag(SecurityDescriptorControl.SaclProtected);
-            set
-            {
-                if (value)
-                {
-                    Control |= SecurityDescriptorControl.SaclProtected;
-                }
-                else
-                {
-                    Control &= ~SecurityDescriptorControl.SaclProtected;
-                }
-            }
+            set => SetControlFlag(value, SecurityDescriptorControl.SaclProtected);
+        }
+
+        /// <summary>
+        /// Get or set the SACL auto-inherited flag.
+        /// </summary>
+        public bool SaclAutoInherited
+        {
+            get => Control.HasFlag(SecurityDescriptorControl.SaclAutoInherited);
+            set => SetControlFlag(value, SecurityDescriptorControl.SaclAutoInherited);
+        }
+
+        /// <summary>
+        /// Get or set the SACL auto-inherited required flag.
+        /// </summary>
+        public bool SaclAutoInheritReq
+        {
+            get => Control.HasFlag(SecurityDescriptorControl.SaclAutoInheritReq);
+            set => SetControlFlag(value, SecurityDescriptorControl.SaclAutoInheritReq);
+        }
+
+        /// <summary>
+        /// Get or set the server security flag.
+        /// </summary>
+        public bool ServerSecurity
+        {
+            get => Control.HasFlag(SecurityDescriptorControl.ServerSecurity);
+            set => SetControlFlag(value, SecurityDescriptorControl.ServerSecurity);
+        }
+
+        /// <summary>
+        /// Get or set the DACL untrusted flag.
+        /// </summary>
+        public bool DaclUntrusted
+        {
+            get => Control.HasFlag(SecurityDescriptorControl.DaclUntrusted);
+            set => SetControlFlag(value, SecurityDescriptorControl.DaclUntrusted);
         }
 
         /// <summary>
