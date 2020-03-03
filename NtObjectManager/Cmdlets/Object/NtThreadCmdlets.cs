@@ -60,7 +60,7 @@ namespace NtObjectManager.Cmdlets.Object
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsCommon.Get, "NtThread", DefaultParameterSetName = "all")]
     [OutputType(typeof(NtThread))]
-    public class GetNtThreadCmdlet : Cmdlet
+    public class GetNtThreadCmdlet : PSCmdlet
     {
         /// <summary>
         /// <para type="description">Specify a thread ID to open.</para>
@@ -73,6 +73,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify a process ID to enumerate only its threads.</para>
         /// </summary>
         [Parameter(ParameterSetName = "pid", Mandatory = true), Parameter(ParameterSetName = "infoonly")]
+        [Parameter(ParameterSetName = "tid")]
         [Alias(new string[] { "pid" })]
         public int ProcessId { get; set; }
 
@@ -163,46 +164,59 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         protected override void ProcessRecord()
         {
-            if (InfoOnly)
+            switch (ParameterSetName)
             {
-                if (ProcessId != -1)
-                {
-                    WriteObject(QueryThreadInformation(ProcessId), true);
-                }
-                else
-                {
-                    WriteObject(QueryThreadInformation(), true);
-                }
-            }
-            else if (Current)
-            {
-                WriteObject(GetCurrentThread(Access, PseudoHandle));
-            }
-            else if (ThreadId == -1 && ProcessId == -1)
-            {
-                IEnumerable<NtThread> threads = NtThread.GetThreads(Access, FromSystem);
-                if (FilterScript == null)
-                {
-                    WriteObject(threads, true);
-                }
-                else
-                {
-                    using (var ths = new DisposableList<NtThread>(threads))
+                case "infoonly":
                     {
-                        WriteObject(ths.Where(t => ArbitraryFilter(t, FilterScript)).Select(t => t.Duplicate()).ToArray(), true);
+                        if (ProcessId != -1)
+                        {
+                            WriteObject(QueryThreadInformation(ProcessId), true);
+                        }
+                        else
+                        {
+                            WriteObject(QueryThreadInformation(), true);
+                        }
                     }
-                }
-            }
-            else if (ProcessId != -1)
-            {
-                using (NtProcess process = NtProcess.Open(ProcessId, ProcessAccessRights.MaximumAllowed))
-                {
-                    WriteObject(process.GetThreads(), true);
-                }
-            }
-            else
-            {
-                WriteObject(NtThread.Open(ThreadId, Access));
+                    break;
+                case "current":
+                    WriteObject(GetCurrentThread(Access, PseudoHandle));
+                    break;
+                case "all":
+                    {
+                        IEnumerable<NtThread> threads = NtThread.GetThreads(Access, FromSystem);
+                        if (FilterScript == null)
+                        {
+                            WriteObject(threads, true);
+                        }
+                        else
+                        {
+                            using (var ths = new DisposableList<NtThread>(threads))
+                            {
+                                WriteObject(ths.Where(t => ArbitraryFilter(t, FilterScript)).Select(t => t.Duplicate()).ToArray(), true);
+                            }
+                        }
+                    }
+                    break;
+                case "pid":
+                    {
+                        using (NtProcess process = NtProcess.Open(ProcessId, ProcessAccessRights.MaximumAllowed))
+                        {
+                            WriteObject(process.GetThreads(), true);
+                        }
+                    }
+                    break;
+                case "tid":
+                    {
+                        if (ProcessId != -1)
+                        {
+                            WriteObject(NtThread.Open(ProcessId, ThreadId, Access));
+                        }
+                        else
+                        {
+                            WriteObject(NtThread.Open(ThreadId, Access));
+                        }
+                    }
+                    break;
             }
         }
     }

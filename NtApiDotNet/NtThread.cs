@@ -217,14 +217,40 @@ namespace NtApiDotNet
         /// <summary>
         /// Open a thread
         /// </summary>
+        /// <param name="process_id">The process ID containing the thread.</param>
+        /// <param name="thread_id">The thread ID to open</param>
+        /// <param name="desired_access">The desired access for the handle</param>
+        /// <param name="throw_on_error">True to throw an exception on error.</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtResult<NtThread> Open(int process_id, int thread_id, ThreadAccessRights desired_access, bool throw_on_error)
+        {
+            return NtSystemCalls.NtOpenThread(out SafeKernelObjectHandle handle, desired_access, new ObjectAttributes(),
+                new ClientId() { UniqueProcess = new IntPtr(process_id), UniqueThread = new IntPtr(thread_id) })
+                .CreateResult(throw_on_error, () => new NtThread(handle) { _tid = thread_id });
+        }
+
+        /// <summary>
+        /// Open a thread
+        /// </summary>
         /// <param name="thread_id">The thread ID to open</param>
         /// <param name="desired_access">The desired access for the handle</param>
         /// <param name="throw_on_error">True to throw an exception on error.</param>
         /// <returns>The NT status code and object result.</returns>
         public static NtResult<NtThread> Open(int thread_id, ThreadAccessRights desired_access, bool throw_on_error)
         {
-            return NtSystemCalls.NtOpenThread(out SafeKernelObjectHandle handle, desired_access, new ObjectAttributes(),
-                new ClientId() { UniqueThread = new IntPtr(thread_id) }).CreateResult(throw_on_error, () => new NtThread(handle) { _tid = thread_id });
+            return Open(0, thread_id, desired_access, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open a thread
+        /// </summary>
+        /// <param name="process_id">The process ID containing the thread.</param>
+        /// <param name="thread_id">The thread ID to open</param>
+        /// <param name="desired_access">The desired access for the handle</param>
+        /// <returns>The NT status code and object result.</returns>
+        public static NtThread Open(int process_id, int thread_id, ThreadAccessRights desired_access)
+        {
+            return Open(process_id, thread_id, desired_access, true).Result;
         }
 
         /// <summary>
@@ -235,7 +261,7 @@ namespace NtApiDotNet
         /// <returns>The opened object</returns>
         public static NtThread Open(int thread_id, ThreadAccessRights desired_access)
         {
-            return Open(thread_id, desired_access, true).Result;
+            return Open(0, thread_id, desired_access);
         }
 
         /// <summary>
