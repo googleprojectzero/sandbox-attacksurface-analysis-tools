@@ -247,6 +247,11 @@ namespace TokenViewer
             return GetSecurityDescriptor(obj.GetSecurityDescriptor(SecurityInformation.AllBasic, false).GetResultOrDefault());
         }
 
+        private static string GetElevationTypeName(NtToken token)
+        {
+            return string.Join(" - ", token.ElevationType, token.Elevated ? "Elevated" : "Not Elevated");
+        }
+
         public MainForm()
         {
             InitializeComponent();
@@ -259,7 +264,7 @@ namespace TokenViewer
             AddGrouping("Sandbox", p => GetSandboxName(p.ProcessToken));
             AddGrouping("Integrity Level", p => p.ProcessToken.IntegrityLevel.ToString());
             AddGrouping("User", p => p.ProcessToken.User.Name);
-            AddGrouping("Elevation Type", p => p.ProcessToken.ElevationType.ToString());
+            AddGrouping("Elevation Type", p => GetElevationTypeName(p.ProcessToken));
             AddGrouping("Authentication ID", p => p.ProcessToken.AuthenticationId.ToString());
             AddGrouping("Origin ID", p => p.ProcessToken.Origin.ToString());
             AddGrouping("Flags", p => p.ProcessToken.Flags.ToString());
