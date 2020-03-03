@@ -1735,15 +1735,16 @@ function Format-NtAce {
 
     PROCESS {
         $mask = $ace.Mask
-        if ($MapGeneric) {
-            $mask = $Type.MapGenericRights($mask)
-        }
-
         $access_name = "Access"
         $mask_str = if ($ace.Type -eq "MandatoryLabel") {
             $mask.ToMandatoryLabelPolicy().ToString()
             $access_name = "Policy"
+        } elseif ($ace.IsInheritOnly) {
+            $mask.ToGenericAccess().ToString()
         } else {
+            if ($MapGeneric) {
+                $mask = $Type.MapGenericRights($mask)
+            }
             $Type.AccessMaskToString($mask, $MapGeneric)
         }
 
@@ -1940,11 +1941,19 @@ function Format-NtSecurityDescriptor {
                 Write-Output ""
             }
             if ($sd.DaclPresent -and (($SecurityInformation -band "Dacl") -ne 0)) {
-                Write-Output "<DACL>"
+                if ($sd.Dacl.Defaulted) {
+                    Write-Output "<DACL> (Defaulted)"
+                } else {
+                    Write-Output "<DACL>"
+                }
                 Format-NtAcl $sd.Dacl $t -MapGeneric:$MapGeneric
             }
             if ($sd.SaclPresent -and (($SecurityInformation -band "Sacl") -ne 0)) {
-                Write-Output "<SACL>"
+                if ($sd.Sacl.Defaulted) {
+                    Write-Output "<SACL> (Defaulted)"
+                } else {
+                    Write-Output "<SACL>"
+                }
                 Format-NtAcl $sd.Sacl $t -MapGeneric:$MapGeneric -AuditOnly
             }
             $label = $sd.GetMandatoryLabel()

@@ -22,6 +22,7 @@ namespace NtApiDotNet
     /// </summary>
     public class Ace
     {
+        #region Private Members
         private static bool IsObjectAceType(AceType type)
         {
             switch (type)
@@ -36,17 +37,6 @@ namespace NtApiDotNet
                     return true;
             }
             return false;
-        }
-
-        /// <summary>
-        /// Check if the ACE is an Object ACE
-        /// </summary>
-        public bool IsObjectAce
-        {
-            get
-            {
-                return IsObjectAceType(Type);
-            }
         }
 
         private static bool IsCallbackAceType(AceType type)
@@ -64,6 +54,19 @@ namespace NtApiDotNet
                     return true;
             }
             return false;
+        }
+        #endregion
+
+        #region Public Properties
+        /// <summary>
+        /// Check if the ACE is an Object ACE
+        /// </summary>
+        public bool IsObjectAce
+        {
+            get
+            {
+                return IsObjectAceType(Type);
+            }
         }
 
         /// <summary>
@@ -124,12 +127,147 @@ namespace NtApiDotNet
         /// <summary>
         /// Check if ACE is a critical ACE.
         /// </summary>
-        public bool IsCriticalAce => (Flags & AceFlags.Critical) != 0;
+        public bool IsCriticalAce => Flags.HasFlag(AceFlags.Critical);
+
+        /// <summary>
+        /// Check if ACE is inherit only.
+        /// </summary>
+        public bool IsInheritOnly => Flags.HasFlag(AceFlags.InheritOnly);
+
+        /// <summary>
+        /// Check if ACE is inherited by objects.
+        /// </summary>
+        public bool IsObjectInherit => Flags.HasFlag(AceFlags.ObjectInherit);
+
+        /// <summary>
+        /// Check if ACE is inherited by objects.
+        /// </summary>
+        public bool IsContainerInherit => Flags.HasFlag(AceFlags.ContainerInherit);
+
+        /// <summary>
+        /// Get ACE type
+        /// </summary>
+        [Obsolete("Use Type property")]
+        public AceType AceType { get { return Type; } set { Type = value; } }
+
+        /// <summary>
+        /// Get ACE flags
+        /// </summary>
+        [Obsolete("Use Flags property")]
+        public AceFlags AceFlags { get { return Flags; } set { Flags = value; } }
+
+        /// <summary>
+        /// Get ACE type
+        /// </summary>
+        public AceType Type { get; set; }
+
+        /// <summary>
+        /// Get ACE flags
+        /// </summary>
+        public AceFlags Flags { get; set; }
+
+        /// <summary>
+        /// Get ACE access mask
+        /// </summary>
+        public AccessMask Mask { get; set; }
+
+        /// <summary>
+        /// Get ACE Security Identifier
+        /// </summary>
+        public Sid Sid { get; set; }
+
+        /// <summary>
+        /// Get the client SID in a compound ACE.
+        /// </summary>
+        public Sid ServerSid { get; set; }
+
+        /// <summary>
+        /// Get optional Object Type
+        /// </summary>
+        public Guid? ObjectType { get; set; }
+
+        /// <summary>
+        /// Get optional Inherited Object Type
+        /// </summary>
+        public Guid? InheritedObjectType { get; set; }
+
+        /// <summary>
+        /// Optional application data.
+        /// </summary>
+        public byte[] ApplicationData { get; set; }
+
+        /// <summary>
+        /// Get conditional check if a conditional ace.
+        /// </summary>
+        public string Condition
+        {
+            get
+            {
+                if (IsConditionalAce)
+                {
+                    return NtSecurity.ConditionalAceToString(ApplicationData);
+                }
+                return string.Empty;
+            }
+
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    ApplicationData = new byte[0];
+                    switch (Type)
+                    {
+                        case AceType.AllowedCallback:
+                            Type = AceType.Allowed;
+                            break;
+                        case AceType.DeniedCallback:
+                            Type = AceType.Denied;
+                            break;
+                    }
+                }
+                else
+                {
+                    ApplicationData = NtSecurity.StringToConditionalAce(value);
+                    switch (Type)
+                    {
+                        case AceType.Allowed:
+                            Type = AceType.AllowedCallback;
+                            break;
+                        case AceType.Denied:
+                            Type = AceType.DeniedCallback;
+                            break;
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+        #region Constructors
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="type">ACE type</param>
+        /// <param name="flags">ACE flags</param>
+        /// <param name="mask">ACE access mask</param>
+        /// <param name="sid">ACE sid</param>
+        public Ace(AceType type, AceFlags flags, AccessMask mask, Sid sid)
+        {
+            Type = type;
+            Flags = flags;
+            Mask = mask;
+            Sid = sid;
+            ApplicationData = new byte[0];
+        }
 
         internal Ace(AceType type)
         {
             Type = type;
         }
+        #endregion
+
+        #region Internal Members
 
         internal static Ace CreateAceFromReader(BinaryReader reader)
         {
@@ -235,103 +373,9 @@ namespace NtApiDotNet
             writer.Write(ApplicationData ?? new byte[0]);
         }
 
-        /// <summary>
-        /// Get ACE type
-        /// </summary>
-        [Obsolete("Use Type property")]
-        public AceType AceType { get { return Type; } set { Type = value; } }
+        #endregion
 
-        /// <summary>
-        /// Get ACE flags
-        /// </summary>
-        [Obsolete("Use Flags property")]
-        public AceFlags AceFlags { get { return Flags; } set { Flags = value; } }
-
-        /// <summary>
-        /// Get ACE type
-        /// </summary>
-        public AceType Type { get; set; }
-
-        /// <summary>
-        /// Get ACE flags
-        /// </summary>
-        public AceFlags Flags { get; set; }
-
-        /// <summary>
-        /// Get ACE access mask
-        /// </summary>
-        public AccessMask Mask { get; set; }
-
-        /// <summary>
-        /// Get ACE Security Identifier
-        /// </summary>
-        public Sid Sid { get; set; }
-
-        /// <summary>
-        /// Get the client SID in a compound ACE.
-        /// </summary>
-        public Sid ServerSid { get; set; }
-
-        /// <summary>
-        /// Get optional Object Type
-        /// </summary>
-        public Guid? ObjectType { get; set; }
-
-        /// <summary>
-        /// Get optional Inherited Object Type
-        /// </summary>
-        public Guid? InheritedObjectType { get; set; }
-
-        /// <summary>
-        /// Optional application data.
-        /// </summary>
-        public byte[] ApplicationData { get; set; }
-
-        /// <summary>
-        /// Get conditional check if a conditional ace.
-        /// </summary>
-        public string Condition
-        {
-            get
-            {
-                if (IsConditionalAce)
-                {
-                    return NtSecurity.ConditionalAceToString(ApplicationData);
-                }
-                return string.Empty;
-            }
-
-            set
-            {
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    ApplicationData = new byte[0];
-                    switch (Type)
-                    {
-                        case AceType.AllowedCallback:
-                            Type = AceType.Allowed;
-                            break;
-                        case AceType.DeniedCallback:
-                            Type = AceType.Denied;
-                            break;
-                    }
-                }
-                else
-                {
-                    ApplicationData = NtSecurity.StringToConditionalAce(value);
-                    switch (Type)
-                    {
-                        case AceType.Allowed:
-                            Type = AceType.AllowedCallback;
-                            break;
-                        case AceType.Denied:
-                            Type = AceType.DeniedCallback;
-                            break;
-                    }
-                }
-            }
-        }
-
+        #region Public Methods
         /// <summary>
         /// Convert ACE to a string
         /// </summary>
@@ -388,7 +432,9 @@ namespace NtApiDotNet
         {
             return Type.GetHashCode() ^ Flags.GetHashCode() ^ Mask.GetHashCode() ^ Sid.GetHashCode() ^ ObjectType.GetHashCode() ^ InheritedObjectType.GetHashCode();
         }
+        #endregion
 
+        #region Static Methods
         /// <summary>
         /// Equality operator
         /// </summary>
@@ -425,21 +471,6 @@ namespace NtApiDotNet
         {
             return !(a == b);
         }
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="type">ACE type</param>
-        /// <param name="flags">ACE flags</param>
-        /// <param name="mask">ACE access mask</param>
-        /// <param name="sid">ACE sid</param>
-        public Ace(AceType type, AceFlags flags, AccessMask mask, Sid sid)
-        {
-            Type = type;
-            Flags = flags;
-            Mask = mask;
-            Sid = sid;
-            ApplicationData = new byte[0];
-        }
+        #endregion
     }
 }
