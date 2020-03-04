@@ -1730,7 +1730,8 @@ function Format-NtAce {
         [NtApiDotNet.Ace]$Ace,
         [Parameter(Position = 1, Mandatory = $true)]
         [NtApiDotNet.NtType]$Type,
-        [switch]$MapGeneric
+        [switch]$MapGeneric,
+        [switch]$Summary
     )
 
     PROCESS {
@@ -1748,52 +1749,76 @@ function Format-NtAce {
             $Type.AccessMaskToString($mask, $MapGeneric)
         }
 
-        Write-Output " - Type  : $($ace.Type)"
-        Write-Output " - Name  : $($ace.Sid.Name)"
-        Write-Output " - SID   : $($ace.Sid)"
-        if ($ace.Type -eq "AllowedCompound") {
-            Write-Output " - ServerName: $($ace.ServerSid.Name)"
-            Write-Output " - ServerSID : $($ace.ServerSid)"
-        }
-        Write-Output " - Mask  : 0x$($mask.ToString("X08"))"
-        Write-Output " - $($access_name): $mask_str"
-        Write-Output " - Flags : $($ace.Flags)"
-        if ($ace.IsConditionalAce) {
-            Write-Output " - Condition: $($ace.Condition)"
-        }
-        if ($ace.IsObjectAce) {
-            if ($ace.ObjectType -ne $null) {
-                Write-Output " - ObjectType  : $($ace.ObjectType)"
+        if ($Summary) {
+            Write-Output "$($ace.Sid.Name): ($($ace.Type))($($ace.Flags))($mask_str)"
+        } else {
+            Write-Output " - Type  : $($ace.Type)"
+            Write-Output " - Name  : $($ace.Sid.Name)"
+            Write-Output " - SID   : $($ace.Sid)"
+            if ($ace.Type -eq "AllowedCompound") {
+                Write-Output " - ServerName: $($ace.ServerSid.Name)"
+                if(!$Summary) {
+                    Write-Output " - ServerSID : $($ace.ServerSid)"
+                }
             }
-            if ($ace.InheritedObjectType -ne $null) {
-                Write-Output " - InheritedObjectType  : $($ace.InheritedObjectType)"
+            Write-Output " - Mask  : 0x$($mask.ToString("X08"))"
+            Write-Output " - $($access_name): $mask_str"
+            Write-Output " - Flags : $($ace.Flags)"
+            if ($ace.IsConditionalAce) {
+                Write-Output " - Condition: $($ace.Condition)"
             }
+            if ($ace.IsObjectAce) {
+                if ($ace.ObjectType -ne $null) {
+                    Write-Output " - ObjectType  : $($ace.ObjectType)"
+                }
+                if ($ace.InheritedObjectType -ne $null) {
+                    Write-Output " - InheritedObjectType  : $($ace.InheritedObjectType)"
+                }
+            }
+            Write-Output ""
         }
-        Write-Output ""
     }
 }
 
 function Format-NtAcl {
     Param(
-        [Parameter(Position = 0, Mandatory = $true)]
+        [Parameter(Position = 0, Mandatory)]
         [AllowEmptyCollection()]
         [NtApiDotNet.Acl]$Acl,
-        [Parameter(Position = 1, Mandatory = $true)]
+        [Parameter(Position = 1, Mandatory)]
         [NtApiDotNet.NtType]$Type,
+        [Parameter(Position = 2, Mandatory)]
+        [string]$Name,
         [Parameter(Mandatory = $true)]
         [switch]$MapGeneric,
-        [switch]$AuditOnly
+        [switch]$AuditOnly,
+        [switch]$Summary
     )
 
+    if ($Acl.Defaulted) {
+        $Name = "$Name (Defaulted)"
+    }
+
     if ($Acl.NullAcl) {
-        Write-Output " - <NULL ACL>"
-    } elseif ($Acl.Count -eq 0) {
-        Write-Output " - <EMPTY ACL>"
-    } else {
-        if ($AuditOnly) {
-            $Acl | ? IsAuditAce | Format-NtAce -Type $Type -MapGeneric:$MapGeneric
+        if ($Summary) {
+            Write-Output "$Name - <NULL>"
         } else {
-            $Acl | Format-NtAce -Type $Type -MapGeneric:$MapGeneric
+            Write-Output $Name
+            Write-Output " - <NULL ACL>"
+        }
+    } elseif ($Acl.Count -eq 0) {
+        if ($Summary) {
+            Write-Output "$Name - <EMPTY>"
+        } else {
+            Write-Output $Name
+            Write-Output " - <EMPTY ACL>"
+        }
+    } else {
+        Write-Output $Name
+        if ($AuditOnly) {
+            $Acl | ? IsAuditAce | Format-NtAce -Type $Type -MapGeneric:$MapGeneric -Summary:$Summary
+        } else {
+            $Acl | Format-NtAce -Type $Type -MapGeneric:$MapGeneric -Summary:$Summary
         }
     }
 }
@@ -1821,6 +1846,8 @@ Specify to format the security descriptor as SDDL.
 Specify a ACL to format.
 .PARAMETER AuditOnly
 Specify the ACL is a SACL otherwise a DACL.
+.PARAMETER Summary
+Specify to only print a shortened format removing redundant information.
 .OUTPUTS
 None
 .EXAMPLE
@@ -1860,7 +1887,8 @@ function Format-NtSecurityDescriptor {
         [string]$Path,
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
         [switch]$MapGeneric,
-        [switch]$ToSddl
+        [switch]$ToSddl,
+        [switch]$Summary
     )
 
     PROCESS {
@@ -1918,53 +1946,61 @@ function Format-NtSecurityDescriptor {
                 $t = New-NtType Generic
             }
 
-            Write-Output "Path: $n"
-            Write-Output "Type: $($t.Name)"
-            Write-Output "Control: $($sd.Control)"
-            if ($sd.RmControl -ne $null) {
-                Write-Output $("RmControl: 0x{0:X02}" -f $sd.RmControl)
+            if (!$Summary) {
+                Write-Output "Path: $n"
+                Write-Output "Type: $($t.Name)"
+                Write-Output "Control: $($sd.Control)"
+                if ($sd.RmControl -ne $null) {
+                    Write-Output $("RmControl: 0x{0:X02}" -f $sd.RmControl)
+                }
+                Write-Output ""
             }
-            Write-Output ""
 
             if ($sd.Owner -ne $null -and (($SecurityInformation -band "Owner") -ne 0)) {
-                Write-Output "<Owner>"
-                Write-Output " - Name     : $($sd.Owner.Sid.Name)"
-                Write-Output " - Sid      : $($sd.Owner.Sid)"
-                Write-Output " - Defaulted: $($sd.Owner.Defaulted)"
-                Write-Output ""
+                $title = if ($sd.Owner.Defaulted) {
+                    "<Owner> (Defaulted)"
+                } else {
+                    "<Owner>"
+                }
+                if ($Summary) {
+                    Write-Output "$title : $($sd.Owner.Sid.Name)"
+                } else {
+                    Write-Output $title
+                    Write-Output " - Name     : $($sd.Owner.Sid.Name)"
+                    Write-Output " - Sid      : $($sd.Owner.Sid)"
+                    Write-Output ""
+                }
             }
             if ($sd.Group -ne $null -and (($SecurityInformation -band "Group") -ne 0)) {
-                Write-Output "<Group>"
-                Write-Output " - Name     : $($sd.Group.Sid.Name)"
-                Write-Output " - Sid      : $($sd.Group.Sid)"
-                Write-Output " - Defaulted: $($sd.Group.Defaulted)"
-                Write-Output ""
+                $title = if ($sd.Group.Defaulted) {
+                    "<Group> (Defaulted)"
+                } else {
+                    "<Group>"
+                }
+                if ($Summary) {
+                    Write-Output "$title : $($sd.Group.Sid.Name)"
+                } else {
+                    Write-Output $title
+                    Write-Output " - Name     : $($sd.Group.Sid.Name)"
+                    Write-Output " - Sid      : $($sd.Group.Sid)"
+                    Write-Output ""
+                }
             }
             if ($sd.DaclPresent -and (($SecurityInformation -band "Dacl") -ne 0)) {
-                if ($sd.Dacl.Defaulted) {
-                    Write-Output "<DACL> (Defaulted)"
-                } else {
-                    Write-Output "<DACL>"
-                }
-                Format-NtAcl $sd.Dacl $t -MapGeneric:$MapGeneric
+                Format-NtAcl $sd.Dacl $t "<DACL>" -MapGeneric:$MapGeneric -Summary:$Summary
             }
             if ($sd.SaclPresent -and (($SecurityInformation -band "Sacl") -ne 0)) {
-                if ($sd.Sacl.Defaulted) {
-                    Write-Output "<SACL> (Defaulted)"
-                } else {
-                    Write-Output "<SACL>"
-                }
-                Format-NtAcl $sd.Sacl $t -MapGeneric:$MapGeneric -AuditOnly
+                Format-NtAcl $sd.Sacl $t "<SACL>" -MapGeneric:$MapGeneric -AuditOnly -Summary:$Summary
             }
             $label = $sd.GetMandatoryLabel()
             if ($label -ne $null -and (($SecurityInformation -band "Label") -ne 0)) {
                 Write-Output "<Mandatory Label>" 
-                Format-NtAce -Ace $label -Type $t
+                Format-NtAce -Ace $label -Type $t -Summary:$Summary
             }
             $trust = $sd.ProcessTrustLabel
             if ($trust -ne $null -and (($SecurityInformation -band "ProcessTrustLabel") -ne 0)) {
                 Write-Output "<Process Trust Label>"
-                Format-NtAce -Ace $trust -Type $t
+                Format-NtAce -Ace $trust -Type $t -Summary:$Summary
             }
         } catch {
             Write-Error $_
