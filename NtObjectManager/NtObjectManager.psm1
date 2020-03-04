@@ -5734,24 +5734,69 @@ Outputs a hex dump for a byte array.
 This cmdlet converts a byte array to a hex dump.
 .PARAMETER Bytes
 The bytes to convert.
+.PARAMETER ShowHeader
+Display a header for the hex dump.
+.PARAMETER ShowAddress
+Display the address for the hex dump.
+.PARAMETER ShowAscii
+Display the ASCII dump along with the hex.
+.PARAMETER HideRepeating
+Hide repeating 16 byte patterns.
+.PARAMETER Buffer
+Show the contents of a safe buffer.
+.PARAMETER Offset
+Specify start offset into the safe buffer.
+.PARAMETER Length
+Specify length of safe buffer.
+.PARAMETER BaseAddress
+Specify base address for the display when ShowAddress is enabled.
 .INPUTS
 byte[]
 .OUTPUTS
 String
 #>
 function Out-HexDump {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="FromBytes")]
     Param(
-        [Parameter(Mandatory, Position=0, ValueFromPipeline)]
-        [byte[]]$Bytes
+        [Parameter(Mandatory, Position=0, ValueFromPipeline, ParameterSetName="FromBytes")]
+        [byte[]]$Bytes,
+        [Parameter(Mandatory, Position=0, ParameterSetName="FromBuffer")]
+        [System.Runtime.InteropServices.SafeBuffer]$Buffer,
+        [Parameter(ParameterSetName="FromBuffer")]
+        [int64]$Offset = 0,
+        [Parameter(ParameterSetName="FromBuffer")]
+        [int64]$Length = 0,
+        [Parameter(ParameterSetName="FromBytes")]
+        [int64]$BaseAddress = 0,
+        [switch]$ShowHeader,
+        [switch]$ShowAddress,
+        [switch]$ShowAscii,
+        [switch]$ShowAll,
+        [switch]$HideRepeating
     )
 
     BEGIN {
-        $builder = [NtApiDotNet.Utilities.Text.HexDumpBuilder]::new();
+        if ($ShowAll) {
+            $ShowHeader = $true
+            $ShowAscii = $true
+            $ShowAddress = $true
+        }
+        switch($PsCmdlet.ParameterSetName) {
+            "FromBytes" {
+                $builder = [NtApiDotNet.Utilities.Text.HexDumpBuilder]::new($ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating, $BaseAddress);
+            }
+            "FromBuffer" {
+                $builder = [NtApiDotNet.Utilities.Text.HexDumpBuilder]::new($Buffer, $Offset, $Length, $ShowHeader, $ShowAddress, $ShowAscii, $HideRepeating);
+            }
+        }
     }
 
     PROCESS {
-        $builder.Append($Bytes)
+        switch($PsCmdlet.ParameterSetName) {
+            "FromBytes" {
+                $builder.Append($Bytes)
+            }
+        }
     }
 
     END {
@@ -6342,7 +6387,7 @@ None
 .OUTPUTS
 NtApiDotNet.ProcessModule[]
 #>
-function Get-KernelModule {
+function Get-NtKernelModule {
     [NtApiDotNet.NtSystemInfo]::GetKernelModules() | Write-Output
 }
 
