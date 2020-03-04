@@ -188,7 +188,7 @@ namespace NtApiDotNet
         /// <returns>The message description, or an empty string if not found.</returns>
         public static string GetNtStatusMessage(NtStatus status)
         {
-            SafeLoadLibraryHandle module = SafeLoadLibraryHandle.Null;
+            SafeLoadLibraryHandle module;
             uint message_id = (uint)status;
             NtStatusFacility facility = status.GetFacility();
             if (facility == NtStatusFacility.FACILITY_NTWIN32 ||
@@ -312,8 +312,7 @@ namespace NtApiDotNet
                 }
 
                 names.Add(Enum.GetName(t, mask));
-
-                remaining = remaining & ~mask;
+                remaining &= ~mask;
             }
 
             if (remaining != 0)

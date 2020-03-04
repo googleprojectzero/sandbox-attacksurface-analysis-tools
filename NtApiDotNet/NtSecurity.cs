@@ -1094,6 +1094,8 @@ namespace NtApiDotNet
             { new Sid(SecurityAuthority.Nt, 86, 1544737700, 199408000, 2549878335, 3519669259, 381336952), "WMI_LOCAL_SERVICE" },
             // "S-1-5-86-615999462-62705297-2911207457-59056572-3668589837"
             { new Sid(SecurityAuthority.Nt, 86, 615999462, 62705297, 2911207457, 59056572, 3668589837), "WMI_NETWORK_SERVICE" },
+            // "S-1-5-96-0"
+            { new Sid(SecurityAuthority.Nt, 96, 0), @"Font Driver Host\Font Driver Host Group" },
         };
 
         private static string UpperCaseString(string name)
@@ -1104,6 +1106,28 @@ namespace NtApiDotNet
                 result[0] = char.ToUpper(result[0]);
             }
             return result.ToString();
+        }
+
+        private static bool IsDwmSid(Sid sid)
+        {
+            Sid base_sid = new Sid(SecurityAuthority.Nt, 90, 0);
+            if (!sid.StartsWith(base_sid))
+            {
+                return false;
+            }
+            return sid.SubAuthorities.Count
+                == base_sid.SubAuthorities.Count + 1;
+        }
+
+        private static bool IsUmdfSid(Sid sid)
+        {
+            Sid base_sid = new Sid(SecurityAuthority.Nt, 96, 0);
+            if (!sid.StartsWith(base_sid))
+            {
+                return false;
+            }
+            return sid.SubAuthorities.Count
+                == base_sid.SubAuthorities.Count + 1;
         }
 
         private static string MakeFakeCapabilityName(string name, bool group)
@@ -1194,6 +1218,14 @@ namespace NtApiDotNet
             else if (_known_sids.ContainsKey(sid))
             {
                 return new SidName(_known_sids[sid], SidNameSource.WellKnown);
+            }
+            else if (IsDwmSid(sid))
+            {
+                return new SidName($@"Window Manager\DWM-{sid.SubAuthorities.Last()}", SidNameSource.WellKnown);
+            }
+            else if (IsUmdfSid(sid))
+            {
+                return new SidName($@"Font Driver Host\UMFD-{sid.SubAuthorities.Last()}", SidNameSource.WellKnown);
             }
 
             return new SidName(sid.ToString(), SidNameSource.Sddl);

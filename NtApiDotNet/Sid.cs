@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
@@ -58,7 +59,7 @@ namespace NtApiDotNet
         /// <summary>
         /// List of the SIDs sub authorities.
         /// </summary>
-        public List<uint> SubAuthorities { get; private set; }
+        public IReadOnlyList<uint> SubAuthorities { get; private set; }
 
         private void InitializeFromPointer(IntPtr sid)
         {
@@ -68,11 +69,12 @@ namespace NtApiDotNet
             IntPtr authority = NtRtl.RtlIdentifierAuthoritySid(sid);
             Authority = (SidIdentifierAuthority)Marshal.PtrToStructure(authority, typeof(SidIdentifierAuthority));
             int sub_authority_count = Marshal.ReadByte(NtRtl.RtlSubAuthorityCountSid(sid));
-            SubAuthorities = new List<uint>();
+            List<uint> sub_auth = new List<uint>();
             for (int i = 0; i < sub_authority_count; ++i)
             {
-                SubAuthorities.Add((uint)Marshal.ReadInt32(NtRtl.RtlSubAuthoritySid(sid, i), 0));
+                sub_auth.Add((uint)Marshal.ReadInt32(NtRtl.RtlSubAuthoritySid(sid, i), 0));
             }
+            SubAuthorities = sub_auth.AsReadOnly();
         }
 
         /// <summary>
@@ -261,7 +263,7 @@ namespace NtApiDotNet
                 return false;
             }
 
-            for (int i = 0; i < this.SubAuthorities.Count; ++i)
+            for (int i = 0; i < SubAuthorities.Count; ++i)
             {
                 if (SubAuthorities[i] != sid.SubAuthorities[i])
                 {
@@ -397,6 +399,25 @@ namespace NtApiDotNet
         public bool DominatesForTrust(Sid sid)
         {
             return DominatesForTrust(sid, true).Result;
+        }
+
+        /// <summary>
+        /// Checks if the SID starts with the specified SID.
+        /// </summary>
+        /// <param name="sid">The specified SID to check against.</param>
+        /// <returns>True if the current SID starts with the specified SID.</returns>
+        public bool StartsWith(Sid sid)
+        {
+            if (!Authority.Equals(sid.Authority))
+                return false;
+            if (sid.SubAuthorities.Count > SubAuthorities.Count)
+                return false;
+            for (int i = 0; i < sid.SubAuthorities.Count; i++)
+            {
+                if (sid.SubAuthorities[i] != SubAuthorities[i])
+                    return false;
+            }
+            return true;
         }
     }
 }
