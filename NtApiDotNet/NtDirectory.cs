@@ -26,6 +26,12 @@ namespace NtApiDotNet
     public class NtDirectory : NtObjectWithDuplicate<NtDirectory, DirectoryAccessRights>
     {
         #region Constructors
+
+        internal NtDirectory(SafeKernelObjectHandle handle) 
+            : this(handle, false)
+        {
+        }
+
         internal NtDirectory(SafeKernelObjectHandle handle, bool private_namespace) : base(handle)
         {
             _private_namespace = private_namespace;

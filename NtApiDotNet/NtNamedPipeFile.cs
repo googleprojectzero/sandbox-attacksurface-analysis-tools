@@ -14,7 +14,6 @@
 
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -53,6 +52,11 @@ namespace NtApiDotNet
                 => Query(FileInformationClass.FilePipeInformation, new FilePipeInformation(), false));
             _pipe_local_information = new Lazy<NtResult<FilePipeLocalInformation>>(()
                 => Query(FileInformationClass.FilePipeLocalInformation, new FilePipeLocalInformation(), false));
+        }
+
+        internal NtNamedPipeFileBase(SafeKernelObjectHandle handle)
+            : base(handle)
+        {
         }
         #endregion
 
@@ -362,6 +366,11 @@ namespace NtApiDotNet
         {
         }
 
+        internal NtNamedPipeFile(SafeKernelObjectHandle handle)
+            : base(handle)
+        {
+        }
+
         /// <summary>
         /// Listen for a new connection to this named pipe server.
         /// </summary>
@@ -470,6 +479,11 @@ namespace NtApiDotNet
     {
         internal NtNamedPipeFileClient(SafeKernelObjectHandle handle, IoStatus io_status)
             : base(handle, io_status)
+        {
+        }
+
+        internal NtNamedPipeFileClient(SafeKernelObjectHandle handle)
+            : base(handle)
         {
         }
 
