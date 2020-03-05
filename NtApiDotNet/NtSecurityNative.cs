@@ -636,7 +636,8 @@ namespace NtApiDotNet
         public static extern NtStatus RtlDeleteSecurityObject(ref IntPtr ObjectDescriptor);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlNewSecurityObject(SafeBuffer ParentDescriptor,
+        public static extern NtStatus RtlNewSecurityObject(
+                     SafeBuffer ParentDescriptor,
                      SafeBuffer CreatorDescriptor,
                      out SafeSecurityObjectBuffer NewDescriptor,
                      [MarshalAs(UnmanagedType.U1)] bool IsDirectoryObject,

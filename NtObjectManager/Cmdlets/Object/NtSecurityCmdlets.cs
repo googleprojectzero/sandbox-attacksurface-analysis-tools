@@ -913,7 +913,7 @@ namespace NtObjectManager.Cmdlets.Object
                 WriteWarning("Must specify Type for MapType to work correctly.");
             }
 
-            SecurityDescriptor sd = null;
+            SecurityDescriptor sd;
             switch (ParameterSetName)
             {
                 case "FromToken":

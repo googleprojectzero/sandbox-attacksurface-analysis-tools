@@ -852,5 +852,15 @@ namespace NtApiDotNet
 
             return original[0];
         }
+
+        internal static bool HasFlagSet<T>(this T value, T bit) where T : Enum
+        {
+            return (((IConvertible)value).ToInt64(null) & ((IConvertible)bit).ToInt64(null)) != 0;
+        }
+
+        internal static bool HasFlagAllSet<T>(this T value, T bit) where T : Enum
+        {
+            return value.HasFlag(bit);
+        }
     }
 }

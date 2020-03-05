@@ -1080,6 +1080,67 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Get the access mask for querying a specific security information class.
+        /// </summary>
+        /// <param name="SecurityInformation">The information class.</param>
+        /// <returns>The access mask for the information.</returns>
+        public static AccessMask QuerySecurityAccessMask(SecurityInformation SecurityInformation)
+        {
+            AccessMask mask = 0;
+            if (SecurityInformation.HasFlagSet(SecurityInformation.Backup))
+                mask |= GenericAccessRights.ReadControl | GenericAccessRights.AccessSystemSecurity;
+            if (SecurityInformation.HasFlagSet(SecurityInformation.Dacl |
+                SecurityInformation.Owner | SecurityInformation.Group | SecurityInformation.Label))
+            {
+                mask |= GenericAccessRights.ReadControl;
+            }
+            if (SecurityInformation.HasFlagSet(SecurityInformation.Attribute))
+                mask |= GenericAccessRights.ReadControl;
+            if (SecurityInformation.HasFlagSet(SecurityInformation.Scope))
+                mask |= GenericAccessRights.ReadControl;
+            if (SecurityInformation.HasFlagSet(SecurityInformation.ProcessTrustLabel))
+                mask |= GenericAccessRights.ReadControl;
+            if (SecurityInformation.HasFlagSet(SecurityInformation.AccessFilter))
+                mask |= GenericAccessRights.ReadControl;
+            if (SecurityInformation.HasFlag(SecurityInformation.Sacl))
+                mask |= GenericAccessRights.AccessSystemSecurity;
+            return mask;
+        }
+
+        /// <summary>
+        /// Get the access mask for setting a specific security information class.
+        /// </summary>
+        /// <param name="SecurityInformation">The information class.</param>
+        /// <returns>The access mask for the information.</returns>
+        public static AccessMask SetSecurityAccessMask(SecurityInformation SecurityInformation)
+        {
+            AccessMask mask = 0;
+            if (SecurityInformation.HasFlagSet(SecurityInformation.Backup))
+                mask |= GenericAccessRights.WriteDac | GenericAccessRights.WriteOwner | GenericAccessRights.AccessSystemSecurity;
+            if (SecurityInformation.HasFlagSet(SecurityInformation.Label | SecurityInformation.Owner | SecurityInformation.Group))
+                mask |= GenericAccessRights.WriteOwner;
+            if (SecurityInformation.HasFlagSet(SecurityInformation.Dacl))
+                mask |= GenericAccessRights.WriteDac;
+            if (SecurityInformation.HasFlagSet(SecurityInformation.Attribute))
+                mask |= GenericAccessRights.WriteDac;
+            if (SecurityInformation.HasFlagSet(SecurityInformation.Scope))
+                mask |= GenericAccessRights.AccessSystemSecurity;
+            if (SecurityInformation.HasFlagSet(SecurityInformation.ProcessTrustLabel))
+                mask |= GenericAccessRights.WriteDac;
+            if (SecurityInformation.HasFlagSet(SecurityInformation.AccessFilter))
+                mask |= GenericAccessRights.WriteDac;
+            if (SecurityInformation.HasFlagSet(SecurityInformation.Sacl))
+                mask |= GenericAccessRights.AccessSystemSecurity;
+            if (SecurityInformation.HasFlagSet(SecurityInformation.Sacl | SecurityInformation.Label | SecurityInformation.Attribute 
+                | SecurityInformation.Scope | SecurityInformation.ProcessTrustLabel | SecurityInformation.AccessFilter))
+            {
+                if (SecurityInformation.HasFlagSet(SecurityInformation.ProtectedSacl | SecurityInformation.UnprotectedSacl))
+                    mask |= GenericAccessRights.AccessSystemSecurity;
+            }
+            return mask;
+        }
+
         #endregion
 
         #region Private Members
