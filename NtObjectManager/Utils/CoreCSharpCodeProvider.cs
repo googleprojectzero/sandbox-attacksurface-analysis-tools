@@ -1,0 +1,109 @@
+﻿//  Copyright 2020 Google Inc. All Rights Reserved.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//  http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
+using Microsoft.CSharp;
+using System;
+using System.CodeDom;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Text;
+
+namespace NtObjectManager.Utils
+{
+    /// <summary>
+    /// Simple class to implement the C# compiler on Core using the in-built .NET Framework.
+    /// </summary>
+    /// /// <remarks>This class only implements enough functionality to get RpcClientBuilder working. You need .NET 4 installed.</remarks>
+    public class CoreCSharpCodeProvider : CSharpCodeProvider
+    {
+        private static string GetCompilerPath()
+        {
+            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Microsoft.NET", "Framework", "v4.0.30319", "csc.exe");
+            if (!File.Exists(path))
+                throw new NotSupportedException("No available C# compiler");
+            return path;
+        }
+
+        private readonly Lazy<string> _compiler_path = new Lazy<string>(GetCompilerPath);
+
+        private string GetCommandLine(CompilerParameters options, string output_file)
+        {
+            StringBuilder args = new StringBuilder();
+            args.Append("/t:library ");
+            args.Append("/utf8output ");
+            foreach (var assembly in options.ReferencedAssemblies)
+            {
+                args.Append($"/R: \"{assembly}\" ");
+            }
+
+            args.Append($"/out: \"{output_file}\"");
+            if (options.IncludeDebugInformation)
+            {
+                args.Append("/D:DEBUG /debug+ /optimize- ");
+            }
+            else
+            {
+                args.Append("/debug- /optimize+ ");
+            }
+            return args.ToString();
+        }
+
+        /// <summary>
+        /// Compile an assembly from DOM.
+        /// </summary>
+        /// <param name="options">Compiler options.</param>
+        /// <param name="compilationUnits">Compilation units to compile.</param>
+        /// <returns>The compiler results.</returns>
+        public override CompilerResults CompileAssemblyFromDom(CompilerParameters options, params CodeCompileUnit[] compilationUnits)
+        {
+            string compiler_path = _compiler_path.Value;
+            CompilerResults results = new CompilerResults(options.TempFiles);
+            List<string> files = new List<string>();
+            for(int i = 0; i < compilationUnits.Length; ++i)
+            {
+                string temp_file = options.TempFiles.AddExtension(i + ".cs");
+                using (StreamWriter writer = new StreamWriter(temp_file))
+                {
+                    GenerateCodeFromCompileUnit(compilationUnits[i], writer, new CodeGeneratorOptions());
+                }
+            }
+
+            string output_file = options.TempFiles.AddExtension(".dll");
+            try
+            {
+                ProcessStartInfo start_info = new ProcessStartInfo(compiler_path, GetCommandLine(options, output_file));
+                using (var proc = Process.Start(start_info))
+                {
+                    proc.WaitForExit(10000);
+                    if (proc.ExitCode != 0)
+                    {
+                        results.Errors.Add(new CompilerError());
+                        return results;
+                    }
+
+                    results.PathToAssembly = output_file;
+                    results.CompiledAssembly = Assembly.Load(File.ReadAllBytes(output_file));
+                }
+            }
+            catch
+            {
+                results.Errors.Add(new CompilerError());
+            }
+            return results;
+        }
+    }
+}

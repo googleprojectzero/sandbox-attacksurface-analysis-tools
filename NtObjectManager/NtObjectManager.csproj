@@ -77,6 +77,9 @@
     <Compile Include="Provider\NtObjectContainer.cs" />
     <Compile Include="Provider\NtObjectContainerEntry.cs" />
     <Compile Include="Provider\ObjectManagerPSDriveInfo.cs" />
+    <Compile Include="Utils\CoreCSharpCodeProvider.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Utils\PSUtils.cs" />
     <Compile Include="Cmdlets\Rpc\RpcServerCmdlets.cs" />
     <Compile Include="Cmdlets\Rpc\RpcServerNameCmdlets.cs" />

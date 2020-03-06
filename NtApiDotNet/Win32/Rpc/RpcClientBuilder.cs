@@ -1057,26 +1057,26 @@ namespace NtApiDotNet.Win32.Rpc
         private Assembly Compile(CodeCompileUnit unit, CodeDomProvider provider, bool enable_debugging)
         {
             CompilerParameters compile_params = new CompilerParameters();
-            TempFileCollection temp_files = new TempFileCollection(Path.GetTempPath());
-
-            enable_debugging = enable_debugging || HasFlag(RpcClientBuilderFlags.InsertBreakpoints);
-
-            compile_params.GenerateExecutable = false;
-            compile_params.GenerateInMemory = true;
-            compile_params.IncludeDebugInformation = enable_debugging;
-            compile_params.TempFiles = temp_files;
-            temp_files.KeepFiles = enable_debugging;
-            compile_params.ReferencedAssemblies.Add(typeof(RpcClientBuilder).Assembly.Location);
-            CompilerResults results = provider.CompileAssemblyFromDom(compile_params, unit);
-            if (results.Errors.HasErrors)
+            using (TempFileCollection temp_files = new TempFileCollection(Path.GetTempPath()))
             {
-                foreach (CompilerError e in results.Errors)
+                enable_debugging = enable_debugging || HasFlag(RpcClientBuilderFlags.InsertBreakpoints);
+                compile_params.GenerateExecutable = false;
+                compile_params.GenerateInMemory = true;
+                compile_params.IncludeDebugInformation = enable_debugging;
+                compile_params.TempFiles = temp_files;
+                temp_files.KeepFiles = enable_debugging;
+                compile_params.ReferencedAssemblies.Add(typeof(RpcClientBuilder).Assembly.Location);
+                CompilerResults results = provider.CompileAssemblyFromDom(compile_params, unit);
+                if (results.Errors.HasErrors)
                 {
-                    System.Diagnostics.Debug.WriteLine(e.ToString());
+                    foreach (CompilerError e in results.Errors)
+                    {
+                        System.Diagnostics.Debug.WriteLine(e.ToString());
+                    }
+                    throw new InvalidOperationException("Internal error compiling RPC source code");
                 }
-                throw new InvalidOperationException("Internal error compiling RPC source code");
+                return results.CompiledAssembly;
             }
-            return results.CompiledAssembly;
         }
 
         #endregion
