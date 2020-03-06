@@ -2635,17 +2635,20 @@ function Get-NtSecurityDescriptor
                 [NtApiDotNet.SecurityDescriptor]::new($Process, [IntPtr]::new($Address))
             }
             "FromPath" {
-                Use-NtObject($obj = Get-NtObject -Path $Path -TypeName $TypeName -Access ReadControl) {
+                $mask = Get-NtAccessMask -SecurityInformation $SecurityInformation -ToGenericAccess
+                Use-NtObject($obj = Get-NtObject -Path $Path -TypeName $TypeName -Access $mask) {
                     $obj.GetSecurityDescriptor($SecurityInformation)
                 }
             }
             "FromPid" {
-                Use-NtObject($obj = Get-NtProcess -ProcessId $ProcessId -Access ReadControl) {
+                $mask = Get-NtAccessMask -SecurityInformation $SecurityInformation -ToSpecificAccess Process
+                Use-NtObject($obj = Get-NtProcess -ProcessId $ProcessId -Access $mask) {
                     $obj.GetSecurityDescriptor($SecurityInformation)
                 }
             }
             "FromTid" {
-                Use-NtObject($obj = Get-NtThread -ThreadId $ThreadId -Access ReadControl) {
+                $mask = Get-NtAccessMask -SecurityInformation $SecurityInformation -ToSpecificAccess Thread
+                Use-NtObject($obj = Get-NtThread -ThreadId $ThreadId -Access $mask) {
                     $obj.GetSecurityDescriptor($SecurityInformation)
                 }
             }
@@ -6556,4 +6559,43 @@ function Set-NtSecurityDescriptorGroup {
         [switch]$Defaulted
     )
     $SecurityDescriptor.Group = [NtApiDotNet.SecurityDescriptorSid]::new($Group, $Defaulted)
+}
+
+<#
+.SYNOPSIS
+Sets the integrity level for a security descriptor.
+.DESCRIPTION
+This cmdlet sets the integrity level for a security descriptor with a specified policy and flags.
+.PARAMETER SecurityDescriptor
+The security descriptor to modify.
+.PARAMETER Group
+The group SID to set.
+.PARAMETER Defaulted
+Specify whether the group is defaulted.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Set-NtSecurityDescriptorIntegrityLevel {
+    [CmdletBinding(DefaultParameterSetName="FromLevel")]
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [Parameter(Position=1, Mandatory, ParameterSetName="FromSid")]
+        [NtApiDotNet.Sid]$Sid,
+        [Parameter(Position=1, Mandatory, ParameterSetName="FromLevel")]
+        [NtApiDotNet.TokenIntegrityLevel]$IntegrityLevel,
+        [NtApiDotNet.AceFlags]$Flags = 0,
+        [NtApiDotNet.MandatoryLabelPolicy]$Policy = "NoWriteUp"
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromSid" {
+            $SecurityDescriptor.AddMandatoryLabel($Sid, $Flags, $Policy)
+        }
+        "FromLevel" {
+            $SecurityDescriptor.AddMandatoryLabel($IntegrityLevel, $Flags, $Policy)
+        }
+    }
 }

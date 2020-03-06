@@ -541,6 +541,16 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter(ParameterSetName = "FromAce", Mandatory = true, ValueFromPipeline = true, Position = 0)]
         public Ace AccessControlEntry { get; set; }
         /// <summary>
+        /// <para type="description">Specify a security information to get the access mask.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromSecurityInformation", Mandatory = true)]
+        public SecurityInformation SecurityInformation { get; set; }
+        /// <summary>
+        /// <para type="description">Specify a to get the set security mask rather than the query.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromSecurityInformation")]
+        public SwitchParameter SetSecurity { get; set; }
+        /// <summary>
         /// <para type="description">Return access as GenericAccess.</para>
         /// </summary>
         [Parameter]
@@ -579,12 +589,21 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         protected override void ProcessRecord()
         {
-            AccessMask mask = 0;
-
+            AccessMask mask;
             switch (ParameterSetName)
             {
                 case "FromAce":
                     mask = AccessControlEntry.Mask;
+                    break;
+                case "FromSecurityInformation":
+                    if (SetSecurity)
+                    {
+                        mask = NtSecurity.SetSecurityAccessMask(SecurityInformation);
+                    }
+                    else
+                    {
+                        mask = NtSecurity.QuerySecurityAccessMask(SecurityInformation);
+                    }
                     break;
                 default:
                     mask = AccessMask;
