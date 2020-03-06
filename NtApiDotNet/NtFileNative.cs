@@ -365,7 +365,7 @@ namespace NtApiDotNet
         public static extern RtlPathType RtlDetermineDosPathNameType_U(string Path);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlDefaultNpAcl(out IntPtr NamedPipeAcl);
+        public static extern NtStatus RtlDefaultNpAcl(out SafeProcessHeapBuffer NamedPipeAcl);
     }
 
     public enum FileDisposition

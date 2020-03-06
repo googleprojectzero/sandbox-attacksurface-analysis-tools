@@ -456,18 +456,10 @@ namespace NtApiDotNet
         /// <returns>The default named pipe ACL.</returns>
         public static Acl GetDefaultNamedPipeAcl()
         {
-            IntPtr acl = IntPtr.Zero;
-            try
+            NtRtl.RtlDefaultNpAcl(out SafeProcessHeapBuffer acl).ToNtException();
+            using (acl)
             {
-                NtRtl.RtlDefaultNpAcl(out acl).ToNtException();
-                return new Acl(acl, false);
-            }
-            finally
-            {
-                if (acl != IntPtr.Zero)
-                {
-                    NtHeap.Current.Free(HeapAllocFlags.None, acl.ToInt64());
-                }
+                return new Acl(acl.DangerousGetHandle(), false);
             }
         }
     }
