@@ -1,4 +1,4 @@
-﻿//  Copyright 2019 Google Inc. All Rights Reserved.
+﻿//  Copyright 2020 Google Inc. All Rights Reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -15,21 +15,24 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
-using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace NtApiDotNet
 {
     /// <summary>
-    /// A safe handle to an allocated global buffer.
+    /// Class which is allocated from the process heap.
     /// </summary>
-    public class SafeHGlobalBuffer : SafeBufferGeneric
+    public class SafeProcessHeapBuffer : SafeBufferGeneric
     {
+        internal SafeProcessHeapBuffer() 
+            : base(IntPtr.Zero, 0, true)
+        {
+        }
+
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="length">Size of the buffer to allocate.</param>
-        public SafeHGlobalBuffer(int length)
+        public SafeProcessHeapBuffer(int length)
           : this(length, length)
         {
         }
@@ -37,10 +40,20 @@ namespace NtApiDotNet
         /// <summary>
         /// Constructor
         /// </summary>
+        /// <param name="data">Initialization data for the buffer.</param>
+        public SafeProcessHeapBuffer(byte[] data)
+            : this(data.Length)
+        {
+            WriteArray(0, data, 0, data.Length);
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
         /// <param name="allocation_length">The length of data to allocate.</param>
         /// <param name="total_length">The total length to reflect in the Length property.</param>
-        protected SafeHGlobalBuffer(int allocation_length, int total_length)
-            : this(Marshal.AllocHGlobal(allocation_length), total_length, true)
+        protected SafeProcessHeapBuffer(int allocation_length, int total_length)
+            : this(new IntPtr(NtHeap.Current.Allocate(HeapAllocFlags.None, allocation_length)), total_length, true)
         {
         }
 
@@ -50,52 +63,15 @@ namespace NtApiDotNet
         /// <param name="length">Size of the buffer.</param>
         /// <param name="buffer">An existing pointer to an existing HGLOBAL allocated buffer.</param>
         /// <param name="owns_handle">Specify whether safe handle owns the buffer.</param>
-        public SafeHGlobalBuffer(IntPtr buffer, int length, bool owns_handle)
+        public SafeProcessHeapBuffer(IntPtr buffer, int length, bool owns_handle)
           : base(buffer, length, owns_handle)
         {
         }
 
         /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="data">Initialization data for the buffer.</param>
-        public SafeHGlobalBuffer(byte[] data) : this(data.Length)
-        {
-            Marshal.Copy(data, 0, handle, data.Length);
-        }
-
-        /// <summary>
         /// Get a buffer which represents NULL.
         /// </summary>
-        public static SafeHGlobalBuffer Null { get { return new SafeHGlobalBuffer(IntPtr.Zero, 0, false); } }
-
-        /// <summary>
-        /// Resize the SafeBuffer.
-        /// </summary>
-        /// <param name="new_length"></param>
-        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.None)]
-        public virtual void Resize(int new_length)
-        {
-            IntPtr free_handle = IntPtr.Zero;
-            RuntimeHelpers.PrepareConstrainedRegions();
-            try
-            {
-                byte[] old_data = new byte[Length];
-                Marshal.Copy(handle, old_data, 0, Length);
-                free_handle = Marshal.AllocHGlobal(new_length);
-                Marshal.Copy(old_data, 0, free_handle, Math.Min(new_length, Length));
-                free_handle = Interlocked.Exchange(ref handle, free_handle);
-                LongLength = new_length;
-                Initialize((ulong)new_length);
-            }
-            finally
-            {
-                if (free_handle != IntPtr.Zero)
-                {
-                    Marshal.FreeHGlobal(free_handle);
-                }
-            }
-        }
+        public static SafeProcessHeapBuffer Null { get { return new SafeProcessHeapBuffer(IntPtr.Zero, 0, false); } }
 
         /// <summary>
         /// Overridden ReleaseHandle method.
@@ -105,8 +81,7 @@ namespace NtApiDotNet
         {
             if (!IsInvalid)
             {
-                Marshal.FreeHGlobal(handle);
-                handle = IntPtr.Zero;
+                return NtHeap.Current.Free(HeapAllocFlags.None, handle.ToInt64(), false).IsSuccess();
             }
             return true;
         }
@@ -117,7 +92,7 @@ namespace NtApiDotNet
         /// <returns>The detached buffer.</returns>
         /// <remarks>The original buffer will become invalid after this call.</remarks>
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
-        public SafeHGlobalBuffer Detach()
+        public SafeProcessHeapBuffer Detach()
         {
             return Detach(Length);
         }
@@ -129,7 +104,7 @@ namespace NtApiDotNet
         /// <returns>The detached buffer.</returns>
         /// <remarks>The original buffer will become invalid after this call.</remarks>
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
-        public SafeHGlobalBuffer Detach(int length)
+        public SafeProcessHeapBuffer Detach(int length)
         {
             if (length > Length)
             {
@@ -141,7 +116,7 @@ namespace NtApiDotNet
             {
                 IntPtr handle = DangerousGetHandle();
                 SetHandleAsInvalid();
-                return new SafeHGlobalBuffer(handle, length, true);
+                return new SafeProcessHeapBuffer(handle, length, true);
             }
             finally
             {

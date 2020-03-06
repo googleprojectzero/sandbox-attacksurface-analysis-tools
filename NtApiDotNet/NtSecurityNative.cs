@@ -515,6 +515,25 @@ namespace NtApiDotNet
         }
     }
 
+    [Flags]
+    public enum SecurityAutoInheritFlags
+    {
+        None = 0,
+        DaclAutoInherit = 0x1,
+        SaclAutoInherit = 0x2,
+        DefaultDescriptorForObject = 0x4,
+        AvoidPrivilegeCheck = 0x8,
+        AvoidOwnerCheck = 0x10,
+        DefaultOwnerFromParent = 0x20,
+        DefaultGroupFromParent = 0x40,
+        MaclNoWriteUp = 0x100,
+        MaclNoReadUp = 0x200,
+        MaclNoExecuteUp = 0x400,
+        AiUseExtraParams = 0x800,
+        AvoidOwnerRestriction = 0x1000,
+        ForceUserMode = 0x2000,
+    }
+
     public static partial class NtRtl
     {
         public const uint SecurityDescriptorRevision = 1;
@@ -639,10 +658,52 @@ namespace NtApiDotNet
         public static extern NtStatus RtlNewSecurityObject(
                      SafeBuffer ParentDescriptor,
                      SafeBuffer CreatorDescriptor,
-                     out SafeSecurityObjectBuffer NewDescriptor,
+                     out SafeProcessHeapBuffer NewDescriptor,
                      [MarshalAs(UnmanagedType.U1)] bool IsDirectoryObject,
                      SafeKernelObjectHandle Token,
                      ref GenericMapping GenericMapping);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlNewSecurityObjectEx(
+             SafeBuffer ParentDescriptor,
+             SafeBuffer CreatorDescriptor,
+             out SafeProcessHeapBuffer NewDescriptor,
+             OptionalGuid ObjectType,
+             [MarshalAs(UnmanagedType.U1)] bool IsDirectoryObject,
+             SecurityAutoInheritFlags AutoInheritFlags,
+             SafeKernelObjectHandle Token,
+             ref GenericMapping GenericMapping);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlNewSecurityObjectWithMultipleInheritance(
+             SafeBuffer ParentDescriptor,
+             SafeBuffer CreatorDescriptor,
+             out SafeProcessHeapBuffer NewDescriptor,
+             [MarshalAs(UnmanagedType.LPArray), Out] Guid[] ObjectTypes,
+             int GuidCount,
+             [MarshalAs(UnmanagedType.U1)] bool IsDirectoryObject,
+             SecurityAutoInheritFlags AutoInheritFlags,
+             SafeKernelObjectHandle Token,
+             ref GenericMapping GenericMapping);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlSetSecurityObject(
+          SecurityInformation SecurityInformation,
+          SafeBuffer ModificationDescriptor,
+          ref IntPtr ObjectsSecurityDescriptor, // SafeBuffer.
+          ref GenericMapping GenericMapping,
+          SafeKernelObjectHandle Token
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlSetSecurityObjectEx(
+          SecurityInformation SecurityInformation,
+          SafeBuffer ModificationDescriptor,
+          ref IntPtr ObjectsSecurityDescriptor, // SafeBuffer.
+          SecurityAutoInheritFlags AutoInheritFlags,
+          ref GenericMapping GenericMapping,
+          SafeKernelObjectHandle Token
+        );
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus RtlCreateServiceSid([In] UnicodeString pServiceName,

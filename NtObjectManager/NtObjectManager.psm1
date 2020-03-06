@@ -6453,3 +6453,107 @@ function Compare-NtObject {
     )
     $Left.SameObject($Right) | Write-Output
 }
+
+<#
+.SYNOPSIS
+Edits an existing security descriptor.
+.DESCRIPTION
+This cmdlet edits an existing security descriptor based on 
+a new security descriptor and additional information. Returns the 
+updated security descriptor but leaves the original alonge.
+.PARAMETER SecurityDescriptor
+The security descriptor to edit.
+.PARAMETER NewSecurityDescriptor
+The security to update with.
+.PARAMETER SecurityInformation
+Specify the parts of the security descriptor to edit.
+.PARAMETER Token
+Specify optional token used to edit the security descriptor.
+.PARAMETER Flags
+Specify optional auto inherit flags.
+.PARAMETER Type
+Specify the NT type to use for the update. Defaults to using the 
+type from $SecurityDescriptor.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.SecurityDescriptor
+#>
+function Edit-NtSecurityDescriptor {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [Parameter(Position=1, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$NewSecurityDescriptor,
+        [Parameter(Position=2, Mandatory)]
+        [NtApiDotNet.SecurityInformation]$SecurityInformation,
+        [NtApiDotNet.NtToken]$Token,
+        [NtApiDotNet.SecurityAutoInheritFlags]$Flags = 0,
+        [NtApiDotNet.NtType]$Type
+    )
+
+    if ($Type -eq $null) {
+        $Type = $SecurityDescriptor.NtType
+        if ($Type -eq $null) {
+            Write-Warning "Original type not available, defaulting to File."
+            $Type = Get-NtType "File"
+        }
+    }
+
+    $SecurityDescriptor.Modify($NewSecurityDescriptor, $SecurityInformation, `
+        $Flags, $Token, $Type.GenericMapping) | Write-Output
+}
+
+<#
+.SYNOPSIS
+Sets the owner for a security descriptor.
+.DESCRIPTION
+This cmdlet sets the owner of a security descriptor.
+.PARAMETER SecurityDescriptor
+The security descriptor to modify.
+.PARAMETER Owner
+The owner SID to set.
+.PARAMETER Defaulted
+Specify whether the owner is defaulted.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Set-NtSecurityDescriptorOwner {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [Parameter(Position=1, Mandatory)]
+        [NtApiDotNet.Sid]$Owner,
+        [switch]$Defaulted
+    )
+    $SecurityDescriptor.Owner = [NtApiDotNet.SecurityDescriptorSid]::new($Owner, $Defaulted)
+}
+
+<#
+.SYNOPSIS
+Sets the group for a security descriptor.
+.DESCRIPTION
+This cmdlet sets the group of a security descriptor.
+.PARAMETER SecurityDescriptor
+The security descriptor to modify.
+.PARAMETER Group
+The group SID to set.
+.PARAMETER Defaulted
+Specify whether the group is defaulted.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Set-NtSecurityDescriptorGroup {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [Parameter(Position=1, Mandatory)]
+        [NtApiDotNet.Sid]$Group,
+        [switch]$Defaulted
+    )
+    $SecurityDescriptor.Group = [NtApiDotNet.SecurityDescriptorSid]::new($Group, $Defaulted)
+}

@@ -74,6 +74,7 @@
     <Compile Include="SafeHandleListHandle.cs" />
     <Compile Include="SafeIoStatusBuffer.cs" />
     <Compile Include="SafePrivilegeSetBuffer.cs" />
+    <Compile Include="SafeProcessHeapBuffer.cs" />
     <Compile Include="SafeProcessParametersBuffer.cs" />
     <Compile Include="SafeStringBuffer.cs" />
     <Compile Include="SidIdentifierAuthority.cs" />
@@ -246,7 +247,6 @@
     <Compile Include="SafeAlpcPortSectionHandle.cs" />
     <Compile Include="SafeAlpcSecurityContextHandle.cs" />
     <Compile Include="SafeBufferGeneric.cs" />
-    <Compile Include="SafeSecurityObjectBuffer.cs" />
     <Compile Include="SafeHGlobalBuffer.cs" />
     <Compile Include="SafeSidBufferHandle.cs" />
     <Compile Include="NtSecurity.cs" />
