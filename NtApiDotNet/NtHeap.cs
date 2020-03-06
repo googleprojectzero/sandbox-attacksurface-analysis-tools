@@ -44,6 +44,7 @@ namespace NtApiDotNet
     /// </summary>
     public class NtHeap
     {
+        private static readonly Lazy<NtHeap> _process_heap = new Lazy<NtHeap>(() => new NtHeap(NtProcess.Current.GetPeb().GetProcessHeap()));
         private readonly IntPtr _heap_handle;
 
         private NtHeap(IntPtr heap_handle)
@@ -56,15 +57,42 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="flags">Heap flags.</param>
         /// <param name="size">Size of the allocation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The allocated memory address.</returns>
-        public long Allocate(HeapAllocFlags flags, long size)
+        public NtResult<long> Allocate(HeapAllocFlags flags, long size, bool throw_on_error)
         {
             long address = NtRtl.RtlAllocateHeap(_heap_handle, flags, new IntPtr(size)).ToInt64();
             if (address == 0)
             {
-                throw new NtException(NtObjectUtils.MapDosErrorToStatus());
+                return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<long>(throw_on_error);
             }
-            return address;
+            return address.CreateResult();
+        }
+
+        /// <summary>
+        /// Allocate a buffer from the heap.
+        /// </summary>
+        /// <param name="flags">Heap flags.</param>
+        /// <param name="size">Size of the allocation.</param>
+        /// <returns>The allocated memory address.</returns>
+        public long Allocate(HeapAllocFlags flags, long size)
+        {
+            return Allocate(flags, size, true).Result;
+        }
+
+        /// <summary>
+        /// Free a buffer from the heap.
+        /// </summary>
+        /// <param name="flags">Heap flags.</param>
+        /// <param name="address">Address of the allocation.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        public NtStatus Free(HeapAllocFlags flags, long address, bool throw_on_error)
+        {
+            if (!NtRtl.RtlFreeHeap(_heap_handle, flags, new IntPtr(address)))
+            {
+                return NtObjectUtils.MapDosErrorToStatus().ToNtException(throw_on_error);
+            }
+            return NtStatus.STATUS_SUCCESS;
         }
 
         /// <summary>
@@ -74,21 +102,12 @@ namespace NtApiDotNet
         /// <param name="address">Address of the allocation.</param>
         public void Free(HeapAllocFlags flags, long address)
         {
-            if (!NtRtl.RtlFreeHeap(_heap_handle, flags, new IntPtr(address)))
-            {
-                throw new NtException(NtObjectUtils.MapDosErrorToStatus());
-            }
+            Free(flags, address, true);
         }
 
         /// <summary>
         /// Get the current process heap.
         /// </summary>
-        public static NtHeap Current
-        {
-            get
-            {
-                return new NtHeap(NtProcess.Current.GetPeb().GetProcessHeap());
-            }
-        }
+        public static NtHeap Current => _process_heap.Value;
     }
 }
