@@ -40,17 +40,17 @@ namespace NtObjectManager.Utils
 
         private readonly Lazy<string> _compiler_path = new Lazy<string>(GetCompilerPath);
 
-        private string GetCommandLine(CompilerParameters options, string output_file)
+        private string GetCommandLine(CompilerParameters options, List<string> source_files, string output_file)
         {
             StringBuilder args = new StringBuilder();
             args.Append("/t:library ");
             args.Append("/utf8output ");
             foreach (var assembly in options.ReferencedAssemblies)
             {
-                args.Append($"/R: \"{assembly}\" ");
+                args.Append($"/R:\"{assembly}\" ");
             }
 
-            args.Append($"/out: \"{output_file}\"");
+            args.Append($"/out:\"{output_file}\" ");
             if (options.IncludeDebugInformation)
             {
                 args.Append("/D:DEBUG /debug+ /optimize- ");
@@ -59,6 +59,9 @@ namespace NtObjectManager.Utils
             {
                 args.Append("/debug- /optimize+ ");
             }
+
+            source_files.ForEach(f => args.Append($"\"{f}\""));
+
             return args.ToString();
         }
 
@@ -76,16 +79,19 @@ namespace NtObjectManager.Utils
             for(int i = 0; i < compilationUnits.Length; ++i)
             {
                 string temp_file = options.TempFiles.AddExtension(i + ".cs");
+                files.Add(temp_file);
                 using (StreamWriter writer = new StreamWriter(temp_file))
                 {
                     GenerateCodeFromCompileUnit(compilationUnits[i], writer, new CodeGeneratorOptions());
                 }
             }
 
-            string output_file = options.TempFiles.AddExtension(".dll");
+            string output_file = options.TempFiles.AddExtension("out.dll");
             try
             {
-                ProcessStartInfo start_info = new ProcessStartInfo(compiler_path, GetCommandLine(options, output_file));
+                ProcessStartInfo start_info = new ProcessStartInfo(compiler_path, GetCommandLine(options, files, output_file));
+                start_info.UseShellExecute = false;
+                start_info.CreateNoWindow = true;
                 using (var proc = Process.Start(start_info))
                 {
                     proc.WaitForExit(10000);
@@ -99,8 +105,9 @@ namespace NtObjectManager.Utils
                     results.CompiledAssembly = Assembly.Load(File.ReadAllBytes(output_file));
                 }
             }
-            catch
+            catch(Exception ex)
             {
+                Console.WriteLine(ex);
                 results.Errors.Add(new CompilerError());
             }
             return results;

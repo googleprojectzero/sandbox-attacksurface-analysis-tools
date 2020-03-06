@@ -4932,6 +4932,15 @@ function Get-RpcClient {
         [switch]$EnableDebugging
     )
 
+    BEGIN {
+        if (Get-IsPSCore) {
+            if ($Provider -ne $null) {
+                Write-Warning "PowerShell Core doesn't support arbitrary providers. Using in-built C#."
+            }
+            $Provider = New-Object NtObjectManager.Utils.CoreCSharpCodeProvider
+        }
+    }
+
     PROCESS {
         if ($PSCmdlet.ParameterSetName -eq "FromServer") {
             $args = [NtApiDotNet.Win32.Rpc.RpcClientBuilderArguments]::new();
