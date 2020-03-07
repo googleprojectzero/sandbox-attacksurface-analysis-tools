@@ -48,48 +48,6 @@ namespace NtApiDotNet
     }
 
     /// <summary>
-    /// A security descriptor SID which maintains defaulted state.
-    /// </summary>
-    public sealed class SecurityDescriptorSid
-    {
-        #region Public Properties
-        /// <summary>
-        /// The SID.
-        /// </summary>
-        public Sid Sid { get; set; }
-
-        /// <summary>
-        /// Indicates whether the SID was defaulted or not.
-        /// </summary>
-        public bool Defaulted { get; set; }
-        #endregion
-
-        #region Constructors
-        /// <summary>
-        /// Constructor from existing SID.
-        /// </summary>
-        /// <param name="sid">The SID.</param>
-        /// <param name="defaulted">Whether the SID was defaulted or not.</param>
-        public SecurityDescriptorSid(Sid sid, bool defaulted)
-        {
-            Sid = sid;
-            Defaulted = defaulted;
-        }
-        #endregion
-
-        #region Public Methods
-        /// <summary>
-        /// Convert to a string.
-        /// </summary>
-        /// <returns>The string form of the SID</returns>
-        public override string ToString()
-        {
-            return $"{Sid} - Defaulted: {Defaulted}";
-        }
-        #endregion
-    }
-
-    /// <summary>
     /// Security descriptor.
     /// </summary>
     public sealed class SecurityDescriptor
@@ -142,6 +100,7 @@ namespace NtApiDotNet
             }
             Revision = header.Revision;
             Control = header.Control & ~SecurityDescriptorControl.SelfRelative;
+            SelfRelative = header.HasFlag(SecurityDescriptorControl.SelfRelative);
             if (header.Control.HasFlag(SecurityDescriptorControl.RmControlValid))
             {
                 RmControl = header.Sbz1;
@@ -228,7 +187,8 @@ namespace NtApiDotNet
             {
                 RmControl = rm_control;
             }
-            Control = control;
+            Control = control & ~SecurityDescriptorControl.SelfRelative;
+            SelfRelative = control.HasFlagSet(SecurityDescriptorControl.SelfRelative);
             Revision = revision;
 
             return NtStatus.STATUS_SUCCESS;
@@ -458,12 +418,9 @@ namespace NtApiDotNet
         /// </summary>
         public Ace MandatoryLabel
         {
-            get
-            {
-                return GetMandatoryLabel()
+            get => GetMandatoryLabel()
                     ?? new MandatoryLabelAce(AceFlags.None, MandatoryLabelPolicy.NoWriteUp,
                         TokenIntegrityLevel.Medium);
-            }
 
             set
             {
@@ -490,23 +447,14 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the process trust label.
         /// </summary>
-        public Ace ProcessTrustLabel
-        {
-            get
-            {
-                return FindSaclAce(AceType.ProcessTrustLabel);
-            }
-        }
+        public Ace ProcessTrustLabel => FindSaclAce(AceType.ProcessTrustLabel);
 
         /// <summary>
         /// Get or set the integrity level
         /// </summary>
         public TokenIntegrityLevel IntegrityLevel
         {
-            get
-            {
-                return NtSecurity.GetIntegrityLevel(MandatoryLabel.Sid);
-            }
+            get => NtSecurity.GetIntegrityLevel(MandatoryLabel.Sid);
             set
             {
                 Ace label = MandatoryLabel;
@@ -607,6 +555,11 @@ namespace NtApiDotNet
         /// </summary>
         public int SaclAceCount => Sacl?.Count ?? 0;
 
+        /// <summary>
+        /// Indicates if the security descriptor was constructor from a self relative format.
+        /// </summary>
+        public bool SelfRelative { get; private set; }
+
         #endregion
 
         #region Public Methods
@@ -619,16 +572,26 @@ namespace NtApiDotNet
             return FindSaclAce(AceType.MandatoryLabel);
         }
 
-        /// <summary>
+        // <summary>
         /// Convert security descriptor to a byte array
         /// </summary>
         /// <returns>The binary security descriptor</returns>
-        public byte[] ToByteArray()
+        public byte[] ToArray()
         {
             using (var sd_buffer = CreateRelativeSecurityDescriptor(true))
             {
                 return sd_buffer.Result.ToArray();
             }
+        }
+
+        /// <summary>
+        /// Convert security descriptor to a byte array
+        /// </summary>
+        /// <returns>The binary security descriptor</returns>
+        [Obsolete("Use ToArray")]
+        public byte[] ToByteArray()
+        {
+            return ToArray();
         }
 
         /// <summary>
@@ -888,7 +851,7 @@ namespace NtApiDotNet
 
             using (var list = new DisposableList())
             {
-                var object_sd = list.AddResource(new SafeProcessHeapBuffer(ToByteArray()));
+                var object_sd = list.AddResource(new SafeProcessHeapBuffer(ToArray()));
                 var modify_sd = list.AddResource(security_descriptor.ToSafeBuffer());
 
                 IntPtr ptr = object_sd.DangerousGetHandle();
