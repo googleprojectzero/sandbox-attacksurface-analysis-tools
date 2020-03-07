@@ -594,25 +594,20 @@ namespace NtApiDotNet
         /// <returns>The security descriptor</returns>
         public NtResult<SecurityDescriptor> GetSecurityDescriptor(SecurityInformation security_information, bool throw_on_error)
         {
-            return GetSecurityDescriptorBytes(security_information, throw_on_error).Map(sd => new SecurityDescriptor(sd, NtType));
+            return GetSecurityDescriptorBytes(security_information, throw_on_error)
+                .Map(sd => new SecurityDescriptor(sd, NtType));
         }
 
         /// <summary>
         /// Get the security descriptor as an SDDL string
         /// </summary>
         /// <returns>The security descriptor as an SDDL string</returns>
-        public string GetSddl()
-        {
-            return SecurityDescriptor.ToSddl();
-        }
+        public string GetSddl() => SecurityDescriptor.ToSddl();
 
         /// <summary>
         /// Make the object a temporary object
         /// </summary>
-        public void MakeTemporary()
-        {
-            NtSystemCalls.NtMakeTemporaryObject(Handle).ToNtException();
-        }
+        public void MakeTemporary() => NtSystemCalls.NtMakeTemporaryObject(Handle).ToNtException();
 
         /// <summary>
         /// Make the object a permanent object
@@ -751,44 +746,23 @@ namespace NtApiDotNet
         /// <summary>
         /// Get full path to the object
         /// </summary>
-        public virtual string FullPath
-        {
-            get
-            {
-                return GetName(Handle);
-            }
-        }
+        public virtual string FullPath => GetName(Handle);
 
         /// <summary>
         /// Get the granted access as an unsigned integer
         /// </summary>
-        public AccessMask GrantedAccessMask
-        {
-            get
-            {
-                return _basic_information.DesiredAccess;
-            }
-        }
+        public AccessMask GrantedAccessMask => _basic_information.DesiredAccess;
 
         /// <summary>
         /// Get the security descriptor, with Dacl, Owner, Group and Label
         /// </summary>
-        public SecurityDescriptor SecurityDescriptor
-        {
-            get
-            {
-                return GetSecurityDescriptor(SecurityInformation.AllBasic);
-            }
-        }
+        public SecurityDescriptor SecurityDescriptor => GetSecurityDescriptor(SecurityInformation.AllBasic);
 
         /// <summary>
         /// Get the security descriptor as an SDDL string
         /// </summary>
         /// <returns>The security descriptor as an SDDL string</returns>
-        public string Sddl
-        {
-            get { return GetSddl(); }
-        }
+        public string Sddl => GetSddl();
 
         /// <summary>
         /// The low-level handle to the object.
@@ -799,36 +773,18 @@ namespace NtApiDotNet
         /// Get the NT type name for this object.
         /// </summary>
         /// <returns>The NT type name.</returns>
-        public string NtTypeName
-        {
-            get
-            {
-                return Handle.NtTypeName;
-            }
-        }
+        public string NtTypeName => Handle.NtTypeName;
 
         /// <summary>
         /// Get the NtType for this object.
         /// </summary>
         /// <returns>The NtType for the type name</returns>
-        public NtType NtType
-        {
-            get
-            {
-                return NtType.GetTypeByName(NtTypeName, true);
-            }
-        }
+        public NtType NtType => NtType.GetTypeByName(NtTypeName, true);
 
         /// <summary>
         /// Get the name of the object
         /// </summary>
-        public string Name
-        {
-            get
-            {
-                return NtObjectUtils.GetFileName(FullPath);
-            }
-        }
+        public string Name => NtObjectUtils.GetFileName(FullPath);
 
         /// <summary>
         /// Indicates if the handle can be used for synchronization.
@@ -838,61 +794,30 @@ namespace NtApiDotNet
         /// <summary>
         /// Get object creation time.
         /// </summary>
-        public DateTime CreationTime
-        {
-            get
-            {
-                return DateTime.FromFileTime(_basic_information.CreationTime.QuadPart);
-            }
-        }
+        public DateTime CreationTime => DateTime.FromFileTime(_basic_information.CreationTime.QuadPart);
 
         /// <summary>
         /// Get the attribute flags for the object.
         /// </summary>
-        public AttributeFlags AttributesFlags
-        {
-            get
-            {
-                return _basic_information.Attributes;
-            }
-        }
+        public AttributeFlags AttributesFlags => _basic_information.Attributes;
 
         /// <summary>
         /// Get number of handles for this object.
         /// </summary>
-        public int HandleReferenceCount
-        {
-            get
-            {
-                return QueryBasicInformation(Handle).HandleCount;
-            }
-        }
+        public int HandleReferenceCount => QueryBasicInformation(Handle).HandleCount;
 
         /// <summary>
         /// Get reference count for this object.
         /// </summary>
-        public int PointerReferenceCount
-        {
-            get
-            {
-                return QueryBasicInformation(Handle).ReferenceCount;
-            }
-        }
-        
+        public int PointerReferenceCount => QueryBasicInformation(Handle).ReferenceCount;
+
         /// <summary>
         /// Get or set whether the handle is inheritable.
         /// </summary>
         public bool Inherit
         {
-            get
-            {
-                return Handle.Inherit;
-            }
-
-            set
-            {
-                Handle.Inherit = value;
-            }
+            get => Handle.Inherit;
+            set => Handle.Inherit = value;
         }
 
         /// <summary>
@@ -900,15 +825,8 @@ namespace NtApiDotNet
         /// </summary>
         public bool ProtectFromClose
         {
-            get
-            {
-                return Handle.ProtectFromClose;
-            }
-
-            set
-            {
-                Handle.ProtectFromClose = value;
-            }
+            get => Handle.ProtectFromClose;
+            set => Handle.ProtectFromClose = value;
         }
 
         /// <summary>
