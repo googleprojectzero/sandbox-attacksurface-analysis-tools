@@ -25,6 +25,7 @@ namespace NtApiDotNet
     public enum SecurityDescriptorControl : ushort
     {
 #pragma warning disable 1591
+        None = 0,
         OwnerDefaulted = 0x0001,
         GroupDefaulted = 0x0002,
         DaclPresent = 0x0004,
@@ -70,7 +71,7 @@ namespace NtApiDotNet
             return new SecurityDescriptorSid(sid, defaulted);
         }
 
-        private static Acl ReadAcl(NtProcess process, long address, bool defaulted)
+        private static Acl ReadAcl(NtProcess process, long address, SecurityDescriptorControl control, bool dacl)
         {
             if (address == 0)
             {
@@ -88,7 +89,9 @@ namespace NtApiDotNet
                 throw new NtException(NtStatus.STATUS_INVALID_ACL);
             }
 
-            return new Acl(process.ReadMemory(address, header.AclSize, true), defaulted);
+            bool acl_defaulted = control.HasFlagSet(dacl ? SecurityDescriptorControl.DaclDefaulted : SecurityDescriptorControl.SaclDefaulted);
+
+            return UpdateAclFlags(new Acl(process.ReadMemory(address, header.AclSize, true), acl_defaulted), control, dacl);
         }
 
         private void ParseSecurityDescriptor(NtProcess process, long address)
@@ -99,7 +102,6 @@ namespace NtApiDotNet
                 throw new NtException(NtStatus.STATUS_INVALID_SECURITY_DESCR);
             }
             Revision = header.Revision;
-            Control = header.Control & ~SecurityDescriptorControl.SelfRelative;
             SelfRelative = header.HasFlag(SecurityDescriptorControl.SelfRelative);
             if (header.Control.HasFlag(SecurityDescriptorControl.RmControlValid))
             {
@@ -124,11 +126,11 @@ namespace NtApiDotNet
             Group = ReadSid(process, sd.GetGroup(address), header.HasFlag(SecurityDescriptorControl.GroupDefaulted));
             if (header.HasFlag(SecurityDescriptorControl.DaclPresent))
             {
-                Dacl = ReadAcl(process, sd.GetDacl(address), header.HasFlag(SecurityDescriptorControl.DaclDefaulted));
+                Dacl = ReadAcl(process, sd.GetDacl(address), header.Control, true);
             }
             if (header.HasFlag(SecurityDescriptorControl.SaclPresent))
             {
-                Sacl = ReadAcl(process, sd.GetSacl(address), header.HasFlag(SecurityDescriptorControl.SaclDefaulted));
+                Sacl = ReadAcl(process, sd.GetSacl(address), header.Control, false);
             }
         }
 
@@ -155,7 +157,18 @@ namespace NtApiDotNet
             return null;
         }
 
-        private static Acl QueryAcl(SafeBuffer buffer, QueryAclFunc func)
+        private static Acl UpdateAclFlags(Acl acl, SecurityDescriptorControl control, bool dacl)
+        {
+            acl.Protected = control.HasFlagSet(dacl ?
+                    SecurityDescriptorControl.DaclProtected : SecurityDescriptorControl.SaclProtected);
+            acl.AutoInherited = control.HasFlagSet(dacl ?
+                    SecurityDescriptorControl.DaclAutoInherited : SecurityDescriptorControl.SaclAutoInherited);
+            acl.AutoInheritReq = control.HasFlagSet(dacl ?
+                    SecurityDescriptorControl.DaclAutoInheritReq : SecurityDescriptorControl.SaclAutoInheritReq);
+            return acl;
+        }
+
+        private static Acl QueryAcl(SafeBuffer buffer, QueryAclFunc func, SecurityDescriptorControl control, bool dacl)
         {
             func(buffer, out bool acl_present, out IntPtr acl, out bool acl_defaulted).ToNtException();
             if (!acl_present)
@@ -163,7 +176,75 @@ namespace NtApiDotNet
                 return null;
             }
 
-            return new Acl(acl, acl_defaulted);
+            return UpdateAclFlags(new Acl(acl, acl_defaulted), control, dacl);
+        }
+
+        private SecurityDescriptorControl ComputeControl()
+        {
+            SecurityDescriptorControl control = 0;
+            if (Owner?.Defaulted ?? false)
+            {
+                control |= SecurityDescriptorControl.OwnerDefaulted;
+            }
+            if (Group?.Defaulted ?? false)
+            {
+                control |= SecurityDescriptorControl.GroupDefaulted;
+            }
+            if (Dacl != null)
+            {
+                control |= SecurityDescriptorControl.DaclPresent;
+                if (Dacl.Defaulted)
+                {
+                    control |= SecurityDescriptorControl.DaclDefaulted;
+                }
+                if (Dacl.Protected)
+                {
+                    control |= SecurityDescriptorControl.DaclProtected;
+                }
+                if (Dacl.AutoInherited)
+                {
+                    control |= SecurityDescriptorControl.DaclAutoInherited;
+                }
+                if (Dacl.AutoInheritReq)
+                {
+                    control |= SecurityDescriptorControl.DaclAutoInheritReq;
+                }
+            }
+            if (Sacl != null)
+            {
+                control |= SecurityDescriptorControl.SaclPresent;
+                if (Sacl.Defaulted)
+                {
+                    control |= SecurityDescriptorControl.SaclDefaulted;
+                }
+                if (Sacl.Protected)
+                {
+                    control |= SecurityDescriptorControl.SaclProtected;
+                }
+                if (Sacl.AutoInherited)
+                {
+                    control |= SecurityDescriptorControl.SaclAutoInherited;
+                }
+                if (Sacl.AutoInheritReq)
+                {
+                    control |= SecurityDescriptorControl.SaclAutoInheritReq;
+                }
+            }
+
+            if (ServerSecurity)
+            {
+                control |= SecurityDescriptorControl.ServerSecurity;
+            }
+            if (DaclUntrusted)
+            {
+                control |= SecurityDescriptorControl.DaclUntrusted;
+            }
+            if (RmControl.HasValue)
+            {
+                control |= SecurityDescriptorControl.RmControlValid;
+            }
+
+            return control;
         }
 
         private NtStatus ParseSecurityDescriptor(SafeBuffer buffer)
@@ -173,21 +254,23 @@ namespace NtApiDotNet
                 return NtStatus.STATUS_INVALID_SECURITY_DESCR;
             }
 
-            Owner = QuerySid(buffer, NtRtl.RtlGetOwnerSecurityDescriptor);
-            Group = QuerySid(buffer, NtRtl.RtlGetGroupSecurityDescriptor);
-            Dacl = QueryAcl(buffer, NtRtl.RtlGetDaclSecurityDescriptor);
-            Sacl = QueryAcl(buffer, NtRtl.RtlGetSaclSecurityDescriptor);
             NtStatus status = NtRtl.RtlGetControlSecurityDescriptor(buffer,
                 out SecurityDescriptorControl control, out uint revision);
             if (!status.IsSuccess())
             {
                 return status;
             }
+
+            Owner = QuerySid(buffer, NtRtl.RtlGetOwnerSecurityDescriptor);
+            Group = QuerySid(buffer, NtRtl.RtlGetGroupSecurityDescriptor);
+            Dacl = QueryAcl(buffer, NtRtl.RtlGetDaclSecurityDescriptor, control, true);
+            Sacl = QueryAcl(buffer, NtRtl.RtlGetSaclSecurityDescriptor, control, false);
+
             if (NtRtl.RtlGetSecurityDescriptorRMControl(buffer, out byte rm_control))
             {
                 RmControl = rm_control;
             }
-            Control = control & ~SecurityDescriptorControl.SelfRelative;
+
             SelfRelative = control.HasFlagSet(SecurityDescriptorControl.SelfRelative);
             Revision = revision;
 
@@ -227,7 +310,7 @@ namespace NtApiDotNet
                     return status.CreateResultFromError<SafeHGlobalBuffer>(throw_on_error);
                 }
 
-                SecurityDescriptorControl control = Control & SecurityDescriptorControl.ValidControlSetMask;
+                SecurityDescriptorControl control = ComputeControl() & SecurityDescriptorControl.ValidControlSetMask;
                 status = NtRtl.RtlSetControlSecurityDescriptor(sd_buffer, control, control);
                 if (!status.IsSuccess())
                 {
@@ -334,19 +417,6 @@ namespace NtApiDotNet
             AddAce(AceType.Allowed, mask, flags, NtSecurity.SidFromSddl(sid));
         }
 
-        private void SetControlFlag(bool enable, SecurityDescriptorControl flags)
-        {
-            if (enable)
-            {
-                Control |= flags;
-            }
-            else
-            {
-                Control &= ~flags;
-            }
-        }
-
-        /// <returns></returns>
         private static NtResult<SafeProcessHeapBuffer> CreateBuffer(
             SecurityDescriptor parent,
             SecurityDescriptor creator,
@@ -398,9 +468,9 @@ namespace NtApiDotNet
         /// </summary>
         public SecurityDescriptorSid Group { get; set; }
         /// <summary>
-        /// Control flags
+        /// Control flags. This is computed based on the current state of the SD.
         /// </summary>
-        public SecurityDescriptorControl Control { get; set; }
+        public SecurityDescriptorControl Control => ComputeControl();
         /// <summary>
         /// Revision value
         /// </summary>
@@ -464,76 +534,14 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get or set the DACL protected flag.
-        /// </summary>
-        public bool DaclProtected
-        {
-            get => Control.HasFlag(SecurityDescriptorControl.DaclProtected);
-            set => SetControlFlag(value, SecurityDescriptorControl.DaclProtected);
-        }
-
-        /// <summary>
-        /// Get or set the DACL auto-inherited flag.
-        /// </summary>
-        public bool DaclAutoInherited
-        {
-            get => Control.HasFlag(SecurityDescriptorControl.DaclAutoInherited);
-            set => SetControlFlag(value, SecurityDescriptorControl.DaclAutoInherited);
-        }
-
-        /// <summary>
-        /// Get or set the DACL auto-inherited required flag.
-        /// </summary>
-        public bool DaclAutoInheritReq
-        {
-            get => Control.HasFlag(SecurityDescriptorControl.DaclAutoInheritReq);
-            set => SetControlFlag(value, SecurityDescriptorControl.DaclAutoInheritReq);
-        }
-
-        /// <summary>
-        /// Get or set the SACL protected flag.
-        /// </summary>
-        public bool SaclProtected
-        {
-            get => Control.HasFlag(SecurityDescriptorControl.SaclProtected);
-            set => SetControlFlag(value, SecurityDescriptorControl.SaclProtected);
-        }
-
-        /// <summary>
-        /// Get or set the SACL auto-inherited flag.
-        /// </summary>
-        public bool SaclAutoInherited
-        {
-            get => Control.HasFlag(SecurityDescriptorControl.SaclAutoInherited);
-            set => SetControlFlag(value, SecurityDescriptorControl.SaclAutoInherited);
-        }
-
-        /// <summary>
-        /// Get or set the SACL auto-inherited required flag.
-        /// </summary>
-        public bool SaclAutoInheritReq
-        {
-            get => Control.HasFlag(SecurityDescriptorControl.SaclAutoInheritReq);
-            set => SetControlFlag(value, SecurityDescriptorControl.SaclAutoInheritReq);
-        }
-
-        /// <summary>
         /// Get or set the server security flag.
         /// </summary>
-        public bool ServerSecurity
-        {
-            get => Control.HasFlag(SecurityDescriptorControl.ServerSecurity);
-            set => SetControlFlag(value, SecurityDescriptorControl.ServerSecurity);
-        }
+        public bool ServerSecurity { get; set; }
 
         /// <summary>
         /// Get or set the DACL untrusted flag.
         /// </summary>
-        public bool DaclUntrusted
-        {
-            get => Control.HasFlag(SecurityDescriptorControl.DaclUntrusted);
-            set => SetControlFlag(value, SecurityDescriptorControl.DaclUntrusted);
-        }
+        public bool DaclUntrusted { get; set; }
 
         /// <summary>
         /// Get whether the DACL is present.
@@ -556,7 +564,7 @@ namespace NtApiDotNet
         public int SaclAceCount => Sacl?.Count ?? 0;
 
         /// <summary>
-        /// Indicates if the security descriptor was constructor from a self relative format.
+        /// Indicates if the security descriptor was constructed from a self relative format.
         /// </summary>
         public bool SelfRelative { get; private set; }
 
@@ -572,7 +580,7 @@ namespace NtApiDotNet
             return FindSaclAce(AceType.MandatoryLabel);
         }
 
-        // <summary>
+        /// <summary>
         /// Convert security descriptor to a byte array
         /// </summary>
         /// <returns>The binary security descriptor</returns>

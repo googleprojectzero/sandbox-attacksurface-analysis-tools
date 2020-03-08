@@ -321,6 +321,21 @@ namespace NtApiDotNet
         public bool NullAcl { get; set; }
 
         /// <summary>
+        /// Get or set the protected flag.
+        /// </summary>
+        public bool Protected { get; set; }
+
+        /// <summary>
+        /// Get or set the auto-inherited flag.
+        /// </summary>
+        public bool AutoInherited { get; set; }
+
+        /// <summary>
+        /// Get or set the auto-inherited required flag.
+        /// </summary>
+        public bool AutoInheritReq { get; set; }
+
+        /// <summary>
         /// Get or set the ACL revision
         /// </summary>
         public AclRevision Revision { get; set; }

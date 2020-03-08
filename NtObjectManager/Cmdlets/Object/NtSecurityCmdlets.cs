@@ -920,9 +920,9 @@ namespace NtObjectManager.Cmdlets.Object
         public NtKeyValue KeyValue { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify additional control flags to apply to the SD.</para>
+        /// <para type="description">Specify additional control flags to apply to the SD. Not all the flags are accepted.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "FromSddl"), Parameter(ParameterSetName = "FromToken")]
+        [Parameter(ParameterSetName = "FromSddl")]
         public SecurityDescriptorControl Control { get; set; }
 
         /// <summary>
@@ -1005,9 +1005,67 @@ namespace NtObjectManager.Cmdlets.Object
             {
                 sd.MapGenericAccess();
             }
-            sd.Control |= Control;
 
+            UpdateSecurityDescriptorControl(sd, Control);
             WriteObject(sd);
+        }
+
+        private static void UpdateSecurityDescriptorControl(SecurityDescriptor sd, SecurityDescriptorControl control)
+        {
+            if (control.HasFlag(SecurityDescriptorControl.OwnerDefaulted) && sd.Owner != null)
+            {
+                sd.Owner.Defaulted = true;
+            }
+            if (control.HasFlag(SecurityDescriptorControl.GroupDefaulted) && sd.Group != null)
+            {
+                sd.Group.Defaulted = true;
+            }
+            if (sd.Dacl != null)
+            {
+                if (control.HasFlag(SecurityDescriptorControl.DaclDefaulted))
+                {
+                    sd.Dacl.Defaulted = true;
+                }
+                if (control.HasFlag(SecurityDescriptorControl.DaclProtected))
+                {
+                    sd.Dacl.Protected = true;
+                }
+                if (control.HasFlag(SecurityDescriptorControl.DaclAutoInherited))
+                {
+                    sd.Dacl.AutoInherited = true;
+                }
+                if (control.HasFlag(SecurityDescriptorControl.DaclAutoInheritReq))
+                {
+                    sd.Dacl.AutoInheritReq = true;
+                }
+            }
+            if (sd.Sacl != null)
+            {
+                if (control.HasFlag(SecurityDescriptorControl.SaclDefaulted))
+                {
+                    sd.Sacl.Defaulted = true;
+                }
+                if (control.HasFlag(SecurityDescriptorControl.SaclProtected))
+                {
+                    sd.Sacl.Protected = true;
+                }
+                if (control.HasFlag(SecurityDescriptorControl.SaclAutoInherited))
+                {
+                    sd.Sacl.AutoInherited = true;
+                }
+                if (control.HasFlag(SecurityDescriptorControl.SaclAutoInheritReq))
+                {
+                    sd.Sacl.AutoInheritReq = true;
+                }
+            }
+            if (control.HasFlag(SecurityDescriptorControl.ServerSecurity))
+            {
+                sd.ServerSecurity = true;
+            }
+            if (control.HasFlag(SecurityDescriptorControl.DaclUntrusted))
+            {
+                sd.DaclUntrusted = true;
+            }
         }
     }
 }
