@@ -1795,8 +1795,25 @@ function Format-NtAcl {
         [switch]$Summary
     )
 
+    $flags = @()
     if ($Acl.Defaulted) {
-        $Name = "$Name (Defaulted)"
+        $flags += @("Defaulted")
+    }
+
+    if ($Acl.Protected) {
+        $flags += @("Protected")
+    }
+
+    if ($Acl.AutoInherited) {
+        $flags += @("Auto Inherited")
+    }
+
+    if ($Acl.AutoInheritReq) {
+        $flags += @("Auto Inherit Required")
+    }
+
+    if ($flags.Count -gt 0) {
+        $Name = "$Name ($([string]::Join(", ", $flags)))"
     }
 
     if ($Acl.NullAcl) {
@@ -1966,8 +1983,8 @@ function Format-NtSecurityDescriptor {
                     Write-Output "$title : $($sd.Owner.Sid.Name)"
                 } else {
                     Write-Output $title
-                    Write-Output " - Name     : $($sd.Owner.Sid.Name)"
-                    Write-Output " - Sid      : $($sd.Owner.Sid)"
+                    Write-Output " - Name  : $($sd.Owner.Sid.Name)"
+                    Write-Output " - Sid   : $($sd.Owner.Sid)"
                     Write-Output ""
                 }
             }
@@ -1981,8 +1998,8 @@ function Format-NtSecurityDescriptor {
                     Write-Output "$title : $($sd.Group.Sid.Name)"
                 } else {
                     Write-Output $title
-                    Write-Output " - Name     : $($sd.Group.Sid.Name)"
-                    Write-Output " - Sid      : $($sd.Group.Sid)"
+                    Write-Output " - Name  : $($sd.Group.Sid.Name)"
+                    Write-Output " - Sid   : $($sd.Group.Sid)"
                     Write-Output ""
                 }
             }
