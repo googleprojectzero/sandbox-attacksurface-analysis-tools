@@ -160,7 +160,7 @@ namespace NtApiDotNet.Win32
             Dictionary<uint, string> names, GenericMapping generic_mapping) 
             : this(obj_name, names, generic_mapping, true)
         {
-            _sd = sd.ToByteArray();
+            _sd = sd.ToArray();
         }
 
         public void GetAccessRights(ref Guid pguidObjectType, SiObjectInfoFlags dwFlags, out IntPtr ppAccess, out uint pcAccesses, out uint piDefaultAccess)
