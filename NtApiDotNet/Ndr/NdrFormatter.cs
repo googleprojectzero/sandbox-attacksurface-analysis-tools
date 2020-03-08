@@ -319,7 +319,7 @@ namespace NtApiDotNet.Ndr
                 builder.AppendLine(this.FormatProcedure(proc));
             }
             builder.PopIndent();
-            builder.AppendLine("}").AppendLine();
+            builder.AppendLine("};").AppendLine();
             return builder.ToString();
         }
     }
