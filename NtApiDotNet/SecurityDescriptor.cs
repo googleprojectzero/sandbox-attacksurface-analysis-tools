@@ -606,6 +606,20 @@ namespace NtApiDotNet
         /// Convert security descriptor to SDDL string
         /// </summary>
         /// <param name="security_information">The parts of the security descriptor to return</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SDDL string</returns>
+        public NtResult<string> ToSddl(SecurityInformation security_information, bool throw_on_error)
+        {
+            using (var buffer = ToSafeBuffer(true))
+            {
+                return NtSecurity.SecurityDescriptorToSddl(buffer, security_information, throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Convert security descriptor to SDDL string
+        /// </summary>
+        /// <param name="security_information">The parts of the security descriptor to return</param>
         /// <returns>The SDDL string</returns>
         public string ToSddl(SecurityInformation security_information)
         {
@@ -618,10 +632,20 @@ namespace NtApiDotNet
         /// <summary>
         /// Convert security descriptor to SDDL string
         /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The SDDL string</returns>
+        public NtResult<string> ToSddl(bool throw_on_error)
+        {
+            return ToSddl(SecurityInformation.AllBasic, throw_on_error);
+        }
+
+        /// <summary>
+        /// Convert security descriptor to SDDL string
+        /// </summary>
         /// <returns>The SDDL string</returns>
         public string ToSddl()
         {
-            return ToSddl(SecurityInformation.AllBasic);
+            return ToSddl(true).Result;
         }
 
         /// <summary>
@@ -906,7 +930,7 @@ namespace NtApiDotNet
         /// <returns>The security descriptor as an SDDL string.</returns>
         public override string ToString()
         {
-            return ToSddl();
+            return ToSddl(false).GetResultOrDefault(string.Empty);
         }
 
         #endregion
