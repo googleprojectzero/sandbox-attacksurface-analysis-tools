@@ -505,12 +505,6 @@ namespace NtApiDotNet
         /// <return>The NT status result and security descriptor.</return>
         public NtResult<byte[]> GetSecurityDescriptorBytes(SecurityInformation security_information, bool throw_on_error)
         {
-            // Just do a check here, no point checking if ReadControl not available.
-            if (!IsAccessMaskGranted(GenericAccessRights.ReadControl))
-            {
-                return NtStatus.STATUS_ACCESS_DENIED.CreateResultFromError<byte[]>(throw_on_error);
-            }
-
             using (var buffer = NtSecurity.GetSecurityDescriptor(Handle, security_information, throw_on_error))
             {
                 return buffer.Map(b => b.ToArray());
@@ -594,8 +588,13 @@ namespace NtApiDotNet
         /// <returns>The security descriptor</returns>
         public NtResult<SecurityDescriptor> GetSecurityDescriptor(SecurityInformation security_information, bool throw_on_error)
         {
-            return GetSecurityDescriptorBytes(security_information, throw_on_error)
-                .Map(sd => new SecurityDescriptor(sd, NtType));
+            using (var buffer = NtSecurity.GetSecurityDescriptor(Handle, security_information, throw_on_error))
+            {
+                if (!buffer.IsSuccess)
+                    return buffer.Cast<SecurityDescriptor>();
+
+                return SecurityDescriptor.Parse(buffer.Result, NtType, throw_on_error);
+            }
         }
 
         /// <summary>
@@ -607,15 +606,26 @@ namespace NtApiDotNet
         /// <summary>
         /// Make the object a temporary object
         /// </summary>
-        public void MakeTemporary() => NtSystemCalls.NtMakeTemporaryObject(Handle).ToNtException();
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus MakeTemporary(bool throw_on_error) => NtSystemCalls.NtMakeTemporaryObject(Handle).ToNtException(throw_on_error);
+
+        /// <summary>
+        /// Make the object a temporary object
+        /// </summary>
+        public void MakeTemporary() => MakeTemporary(true);
 
         /// <summary>
         /// Make the object a permanent object
         /// </summary>
-        public void MakePermanent()
-        {
-            NtSystemCalls.NtMakePermanentObject(Handle).ToNtException();
-        }
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus MakePermanent(bool throw_on_error) => NtSystemCalls.NtMakePermanentObject(Handle).ToNtException(throw_on_error);
+
+        /// <summary>
+        /// Make the object a permanent object
+        /// </summary>
+        public void MakePermanent() => MakePermanent(true);
 
         /// <summary>
         /// Wait on the object to become signalled
