@@ -107,7 +107,7 @@ namespace NtObjectManager.Utils
             }
             catch(Exception ex)
             {
-                System.Diagnostics.Debugger.WriteLine(ex.ToString());
+                System.Diagnostics.Debug.WriteLine(ex.ToString());
                 results.Errors.Add(new CompilerError());
             }
             return results;
