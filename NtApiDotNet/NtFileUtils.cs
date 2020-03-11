@@ -16,7 +16,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace NtApiDotNet
 {
@@ -135,7 +134,31 @@ namespace NtApiDotNet
         /// <returns>The string format of the file id.</returns>
         public static string FileIdToString(long fileid)
         {
-            return Encoding.Unicode.GetString(BitConverter.GetBytes(fileid));
+            byte[] ba = BitConverter.GetBytes(fileid);
+            char[] cs = new char[4];
+            for (int i = 0; i < cs.Length; ++i)
+            {
+                cs[i] = (char)(ba[i * 2] | (ba[i * 2 + 1] << 8));
+            }
+            return new string(cs);
+        }
+
+        /// <summary>
+        /// Convert a string to a file ID.
+        /// </summary>
+        /// <param name="fileid">The file ID as a string (must be 4 characters).</param>
+        /// <returns>The file ID as a long.</returns>
+        public static long StringToFileId(string fileid)
+        {
+            if (fileid.Length != 4)
+            {
+                throw new ArgumentException("File ID must be 4 characters long");
+            }
+
+            char[] cs = fileid.ToCharArray();
+            long[] ba = new long[1];
+            Buffer.BlockCopy(cs, 0, ba, 0, 8);
+            return ba[0];
         }
 
         /// <summary>

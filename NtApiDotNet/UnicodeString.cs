@@ -105,7 +105,7 @@ namespace NtApiDotNet
                 return string.Empty;
             }
 
-            return new string(process.ReadMemoryArray<char>(Buffer.ToInt64(), 
+            return new string(process.ReadMemoryArray<char>(Buffer.ToInt64(),
                 Length / 2));
         }
     }

@@ -79,6 +79,7 @@
     <Compile Include="SafeStringBuffer.cs" />
     <Compile Include="SecurityDescriptorSid.cs" />
     <Compile Include="SidIdentifierAuthority.cs" />
+    <Compile Include="UnicodeStringBytesSafeBuffer.cs" />
     <Compile Include="Utilities\Memory\CrossBitnessProcessMemoryReader.cs" />
     <Compile Include="Utilities\Memory\CrossBitnessTypeAttribute.cs" />
     <Compile Include="Utilities\Memory\CurrentProcessMemoryReader.cs" />

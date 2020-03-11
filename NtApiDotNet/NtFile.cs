@@ -853,7 +853,23 @@ namespace NtApiDotNet
         public static NtResult<NtFile> OpenFileById(NtFile volume, string id,
             FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options, bool throw_on_error)
         {
-            using (ObjectAttributes obja = new ObjectAttributes(id, AttributeFlags.CaseInsensitive, volume, null, null))
+            return OpenFileById(volume, NtFileUtils.StringToFileId(id), desired_access, share_access, open_options, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open a file by its object ID
+        /// </summary>
+        /// <param name="volume">A handle to the volume on which the file resides.</param>
+        /// <param name="id">The object ID as a binary string</param>
+        /// <param name="desired_access">The desired access for the file</param>
+        /// <param name="share_access">File share access</param>
+        /// <param name="open_options">Open options.</param>
+        /// <param name="throw_on_error">True to throw on error</param>
+        /// <returns>The opened file object</returns>
+        public static NtResult<NtFile> OpenFileById(NtFile volume, long id,
+            FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options, bool throw_on_error)
+        {
+            using (ObjectAttributes obja = new ObjectAttributes(id, AttributeFlags.CaseInsensitive, volume.GetHandle(), null, null))
             {
                 IoStatus iostatus = new IoStatus();
                 return NtSystemCalls.NtOpenFile(out SafeKernelObjectHandle handle, desired_access, obja,
@@ -873,6 +889,22 @@ namespace NtApiDotNet
         /// <returns>The opened file object</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
         public static NtFile OpenFileById(NtFile volume, string id,
+            FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options)
+        {
+            return OpenFileById(volume, id, desired_access, share_access, open_options, true).Result;
+        }
+
+        /// <summary>
+        /// Open a file by its object ID
+        /// </summary>
+        /// <param name="volume">A handle to the volume on which the file resides.</param>
+        /// <param name="id">The object ID as a binary string</param>
+        /// <param name="desired_access">The desired access for the file</param>
+        /// <param name="share_access">File share access</param>
+        /// <param name="open_options">Open options.</param>
+        /// <returns>The opened file object</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public static NtFile OpenFileById(NtFile volume, long id,
             FileAccessRights desired_access, FileShareMode share_access, FileOpenOptions open_options)
         {
             return OpenFileById(volume, id, desired_access, share_access, open_options, true).Result;
@@ -3062,7 +3094,7 @@ namespace NtApiDotNet
                         var entry = entry_buffer.Result;
                         string parent_path = string.Empty;
 
-                        using (var parent = OpenFileById(this, NtFileUtils.FileIdToString(entry.ParentFileId),
+                        using (var parent = OpenFileById(this, entry.ParentFileId,
                             FileAccessRights.ReadAttributes, FileShareMode.None, FileOpenOptions.None, false))
                         {
                             if (parent.IsSuccess)
@@ -3555,12 +3587,19 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>The object ID as a string</returns>
         /// <exception cref="NtException">Thrown on error.</exception>
-        public string FileId
+        public string FileId => NtFileUtils.FileIdToString(FileIdValue);
+
+        /// <summary>
+        /// Get object ID for current file as a number.
+        /// </summary>
+        /// <returns>The object ID as a number.</returns>
+        /// <exception cref="NtException">Thrown on error.</exception>
+        public long FileIdValue
         {
             get
             {
                 var internal_info = Query<FileInternalInformation>(FileInformationClass.FileInternalInformation);
-                return NtFileUtils.FileIdToString(internal_info.IndexNumber.QuadPart);
+                return internal_info.IndexNumber.QuadPart;
             }
         }
 
