@@ -47,7 +47,7 @@ namespace NtObjectManager.Cmdlets.Accessible
 
         public TokenEntry(NtToken token, NtToken imp_token, NtProcess process)
         {
-            Information = new TokenInformation(token, process);
+            Information = process == null ? new TokenInformation(token, null) : new ProcessTokenInformation(token, process);
             Token = DuplicateToken(imp_token);
         }
 

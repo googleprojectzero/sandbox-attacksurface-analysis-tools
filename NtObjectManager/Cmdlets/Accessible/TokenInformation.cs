@@ -21,7 +21,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     /// <summary>
     /// Information about a token.
     /// </summary>
-    public sealed class TokenInformation
+    public class TokenInformation
     {
         /// <summary>
         /// Token user.
@@ -151,7 +151,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <summary>
         /// Overridden ToString.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The information as a string.</returns>
         public override string ToString()
         {
             return $"User: {User}";
@@ -195,6 +195,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                 SourceData["Name"] = process.Name;
                 SourceData["ImagePath"] = process.GetImageFilePath(false, false).GetResultOrDefault(string.Empty);
                 SourceData["CommandLine"] = process.CommandLine;
+                SourceData["NativeImagePath"] = process.GetImageFilePath(true, false).GetResultOrDefault(string.Empty);
             }
         }
     }

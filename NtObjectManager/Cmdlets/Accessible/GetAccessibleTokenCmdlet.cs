@@ -97,11 +97,12 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <summary>
         /// Get the authentication ID.
         /// </summary>
-        public Luid AuthenticationId => ProcessTokenInfo.TokenId;
+        public Luid AuthenticationId => ProcessTokenInfo.AuthenticationId;
 
         internal TokenAccessCheckResult(NtToken token, string process_name, string image_path, int process_id,
             string command_line, AccessMask granted_access, SecurityDescriptor sd, 
-            TokenInformation token_info) : base(token.ToString(), token.NtType.Name, granted_access, token.NtType.GenericMapping, sd,
+            TokenInformation token_info) 
+            : base($"{process_name}:{process_id}", token.NtType.Name, granted_access, token.NtType.GenericMapping, sd,
                 token.NtType.AccessRightsType, false, token_info)
         {
             ProcessName = process_name;
@@ -202,7 +203,8 @@ namespace NtObjectManager.Cmdlets.Accessible
                                 AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
                                 if (IsAccessGranted(granted_access, access_rights))
                                 {
-                                    WriteObject(new TokenAccessCheckResult(primary_token, process_name, image_path, process_id, process_cmdline,
+                                    WriteObject(new TokenAccessCheckResult(primary_token, process_name, 
+                                        image_path, process_id, process_cmdline,
                                         granted_access, sd, token.Information));
                                 }
                             }
