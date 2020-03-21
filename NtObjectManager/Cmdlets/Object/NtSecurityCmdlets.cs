@@ -546,7 +546,7 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter(ParameterSetName = "FromSecurityInformation", Mandatory = true)]
         public SecurityInformation SecurityInformation { get; set; }
         /// <summary>
-        /// <para type="description">Specify a to get the set security mask rather than the query.</para>
+        /// <para type="description">Specify to get the set security mask rather than the query.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromSecurityInformation")]
         public SwitchParameter SetSecurity { get; set; }

@@ -118,7 +118,8 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify a executable name to filter the list on.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "all")]
+        [Parameter(ParameterSetName = "all", Position = 0)]
+        [Parameter(Mandatory = true, ParameterSetName = "nameinfo", Position = 0)]
         public string Name { get; set; }
 
         /// <summary>
@@ -142,13 +143,17 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify access rights for each process opened.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "current"), Parameter(ParameterSetName = "all"), Parameter(ParameterSetName = "service"), Parameter(ParameterSetName = "pid")]
+        [Parameter(ParameterSetName = "current"), 
+            Parameter(ParameterSetName = "all"), 
+            Parameter(ParameterSetName = "service"), 
+            Parameter(ParameterSetName = "pid")]
         public ProcessAccessRights Access { get; set; }
 
         /// <summary>
         /// <para type="description">Open current process.</para>
         /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "current")]
+        [Parameter(Mandatory = true, 
+            ParameterSetName = "current")]
         public SwitchParameter Current { get; set; }
 
         /// <summary>
@@ -161,7 +166,8 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Only get process information, do not open the objects.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "infoonly"), 
-            Parameter(Mandatory = true, ParameterSetName = "pidinfo")]
+            Parameter(Mandatory = true, ParameterSetName = "pidinfo"),
+            Parameter(Mandatory = true, ParameterSetName = "nameinfo")]
         public SwitchParameter InfoOnly { get; set; }
 
         /// <summary>
@@ -315,6 +321,9 @@ namespace NtObjectManager.Cmdlets.Object
                     break;
                 case "pidinfo":
                     WriteObject(QueryProcessInformation().Where(p => p.ProcessId == ProcessId), true);
+                    break;
+                case "nameinfo":
+                    WriteObject(QueryProcessInformation().Where(p => p.ImageName.Equals(Name, StringComparison.CurrentCultureIgnoreCase)), true);
                     break;
                 case "service":
                     OpenServiceProcess();
