@@ -37,6 +37,7 @@ namespace NtApiDotNet.Forms
         private AccessMask _valid_access;
         private bool _is_container;
         private Type _current_access_type;
+        private bool _generic_access_mask;
         private bool _read_only_checks;
 
         /// <summary>
@@ -123,6 +124,10 @@ namespace NtApiDotNet.Forms
                 {
                     access = ace.Mask.ToMandatoryLabelPolicy().ToString();
                 }
+                else if (ace.Flags.HasFlagSet(AceFlags.InheritOnly))
+                {
+                    access = ace.Mask.ToSpecificAccess(access_type).ToString();
+                }
                 else
                 {
                     AccessMask mapped_mask = mapping.MapMask(ace.Mask);
@@ -205,6 +210,7 @@ namespace NtApiDotNet.Forms
             Type access_type = _access_type;
             AccessMask valid_access = _valid_access;
             AccessMask mapped_mask = _mapping.MapMask(ace.Mask) & _valid_access;
+            bool generic_access_mask = false;
 
             if (ace.Type == AceType.MandatoryLabel)
             {
@@ -212,11 +218,24 @@ namespace NtApiDotNet.Forms
                 access_type = typeof(MandatoryLabelPolicy);
                 valid_access = 0x7;
             }
-
-            if (access_type != _current_access_type)
+            else if (ace.Flags.HasFlagSet(AceFlags.InheritOnly))
             {
+                mapped_mask = ace.Mask;
+                generic_access_mask = true;
+                valid_access = valid_access 
+                    | GenericAccessRights.GenericRead 
+                    | GenericAccessRights.GenericWrite 
+                    | GenericAccessRights.GenericExecute 
+                    | GenericAccessRights.GenericAll;
+            }
+
+            if (access_type != _current_access_type || generic_access_mask != _generic_access_mask)
+            {
+                _generic_access_mask = generic_access_mask;
                 _current_access_type = access_type;
-                ListViewItem[] items = Win32Utils.GetMaskDictionary(access_type, valid_access).Select(pair =>
+                var masks = Win32Utils.GetMaskDictionary(access_type, valid_access);
+                var ordered = generic_access_mask ? masks.OrderByDescending(p => p.Key) : masks.OrderBy(p => p.Key);
+                ListViewItem[] items = ordered.Select(pair =>
                     {
                         ListViewItem item = new ListViewItem(pair.Value);
                         item.SubItems.Add($"0x{pair.Key:X08}");

@@ -45,7 +45,7 @@ namespace ViewSecurityDescriptor
                         bool read_only = args.Length > 1 ? args[1].Equals("--readonly") : false;
                         using (var obj = NtGeneric.FromHandle(handle))
                         {
-                            Application.Run(new SecurityDescriptorViewerForm(obj, read_only));
+                            Application.Run(new SecurityDescriptorViewerForm(obj.ToTypedObject(), read_only));
                         }
                     }
                     else

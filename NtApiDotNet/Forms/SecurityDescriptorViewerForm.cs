@@ -80,6 +80,10 @@ namespace NtApiDotNet.Forms
             {
                 btnEditPermissions.Enabled = true;
             }
+            else
+            {
+                tableLayoutPanel.RowStyles.RemoveAt(1);
+            }
             _obj = obj;
         }
 
