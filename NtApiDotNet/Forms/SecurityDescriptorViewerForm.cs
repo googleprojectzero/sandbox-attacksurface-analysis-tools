@@ -22,7 +22,7 @@ namespace NtApiDotNet.Forms
     /// </summary>
     public partial class SecurityDescriptorViewerForm : Form
     {
-        private NtObject _obj;
+        private readonly NtObject _obj;
 
         private static SecurityDescriptor GetSecurityDescriptor(NtObject obj)
         {

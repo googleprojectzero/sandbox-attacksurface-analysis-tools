@@ -2626,6 +2626,9 @@ function Get-NtSecurityDescriptor
         [parameter(Mandatory, Position=0, ValueFromPipeline, ParameterSetName = "FromObject")]
         [NtApiDotNet.NtObject]$Object,
         [parameter(Position=1, ParameterSetName = "FromObject")]
+        [parameter(Position=1, ParameterSetName = "FromPath")]
+        [parameter(ParameterSetName = "FromPid")]
+        [parameter(ParameterSetName = "FromTid")]
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
         [parameter(Mandatory, ParameterSetName = "FromProcess")]
         [NtApiDotNet.NtProcess]$Process,

@@ -22,10 +22,6 @@ namespace ViewSecurityDescriptor
 {
     static class Program
     {
-        private static void RunForm(Form form)
-        {
-        }
-
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -62,8 +58,7 @@ namespace ViewSecurityDescriptor
             }
             catch (Exception ex)
             {
-                //MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                MessageBox.Show(ex.ToString(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
