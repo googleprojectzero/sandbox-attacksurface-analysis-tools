@@ -678,14 +678,14 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify the object to duplicate in the current process.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromObject")]
-        public NtObject Object { get; set; }
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromObject", ValueFromPipeline = true)]
+        public NtObject[] Object { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the object to duplicate as a handle.</para>
         /// </summary>
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromHandle")]
-        public IntPtr SourceHandle { get; set; }
+        public IntPtr[] SourceHandle { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the process to duplicate from.</para>
@@ -777,30 +777,29 @@ namespace NtObjectManager.Cmdlets.Object
             return GenericAccessRights.None;
         }
 
-        private NtObject GetObject()
+        private object GetObject(IntPtr handle)
         {
-            if (ParameterSetName == "FromHandle")
+            using (var dup_obj = NtGeneric.DuplicateFrom(SourceProcess, handle, 
+                GetDesiredAccess(), ObjectAttributes ?? 0, GetOptions()))
             {
-                using (var obj = NtGeneric.DuplicateFrom(SourceProcess, SourceHandle, GetDesiredAccess(), ObjectAttributes ?? 0, GetOptions()))
-                {
-                    return obj.ToTypedObject();
-                }
-            }
-            else
-            {
-                return Object.DuplicateObject(GetDesiredAccess(), ObjectAttributes ?? 0, GetOptions());
+                return dup_obj.ToTypedObject();
             }
         }
 
-        private IntPtr GetHandle()
+        private object GetHandle(IntPtr handle)
         {
-            IntPtr handle = SourceHandle;
-            if (ParameterSetName == "FromObject")
-            {
-                handle = Object.Handle.DangerousGetHandle();
-            }
+            return NtObject.DuplicateHandle(SourceProcess, handle, DestinationProcess, 
+                GetDesiredAccess(), ObjectAttributes ?? 0, GetOptions());
+        }
 
-            return NtObject.DuplicateHandle(SourceProcess, handle, DestinationProcess, GetDesiredAccess(), ObjectAttributes ?? 0, GetOptions());
+        private object GetObject(NtObject obj)
+        {
+            return obj.DuplicateObject(GetDesiredAccess(), ObjectAttributes ?? 0, GetOptions());
+        }
+
+        private object GetHandle(NtObject obj)
+        {
+            return GetHandle(obj.Handle.DangerousGetHandle());
         }
 
         /// <summary>
@@ -808,13 +807,39 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         protected override void ProcessRecord()
         {
-            if (DestinationProcess.ProcessId == NtProcess.Current.ProcessId)
+            if (ParameterSetName == "FromObject")
             {
-                WriteObject(GetObject());
+                Func<NtObject, object> func;
+                if (DestinationProcess.ProcessId == NtProcess.Current.ProcessId)
+                {
+                    func = GetObject;
+                }
+                else
+                {
+                    func = GetHandle;
+                }
+
+                foreach (var obj in Object)
+                {
+                    WriteObject(func(obj));
+                }
             }
             else
             {
-                WriteObject(GetHandle());
+                Func<IntPtr, object> func;
+                if (DestinationProcess.ProcessId == NtProcess.Current.ProcessId)
+                {
+                    func = GetObject;
+                }
+                else
+                {
+                    func = GetHandle;
+                }
+
+                foreach (var handle in SourceHandle)
+                {
+                    WriteObject(func(handle));
+                }
             }
         }
     }
