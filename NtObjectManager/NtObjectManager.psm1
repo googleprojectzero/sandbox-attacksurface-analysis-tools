@@ -643,13 +643,14 @@ function Get-NtProcessMitigations
 {
   [CmdletBinding(DefaultParameterSetName="All")]
   Param(
-    [parameter(ParameterSetName="FromName")]
+    [parameter(ParameterSetName="FromName", Position = 0, Mandatory)]
     [string]$Name,
-    [parameter(ParameterSetName="FromProcessId")]
-    [int[]]$ProcessId
+    [parameter(ParameterSetName="FromProcessId", Position = 0, Mandatory)]
+    [int[]]$ProcessId,
+    [parameter(ParameterSetName="FromProcess")]
+    [NtApiDotNet.NtProcess[]]$Process
   )
     Set-NtTokenPrivilege SeDebugPrivilege | Out-Null
-
     $ps = switch($PSCmdlet.ParameterSetName) {
         "All" {
             Get-NtProcess -Access QueryInformation
@@ -661,6 +662,9 @@ function Get-NtProcessMitigations
             foreach($id in $ProcessId) {
                 Get-NtProcess -ProcessId $id
             }
+        }
+        "FromProcess" {
+            Copy-NtObject -Object $Process
         }
     }
     Use-NtObject($ps) {
