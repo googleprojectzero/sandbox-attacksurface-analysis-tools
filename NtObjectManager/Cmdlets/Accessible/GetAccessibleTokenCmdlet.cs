@@ -27,27 +27,27 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <summary>
         /// Process image path.
         /// </summary>
-        public string ProcessName { get; }
-        
+        public string ProcessName => ProcessTokenInfo.ProcessName;
+
         /// <summary>
         /// Process image path.
         /// </summary>
-        public string ProcessImagePath { get; }
-        
+        public string ProcessImagePath => ProcessTokenInfo.ProcessImagePath;
+
         /// <summary>
         /// Process ID of the process.
         /// </summary>
-        public int ProcessId { get; }
+        public int ProcessId => ProcessTokenInfo.ProcessId;
 
         /// <summary>
         /// Command line of the process.
         /// </summary>
-        public string ProcessCommandLine { get; }
+        public string ProcessCommandLine => ProcessTokenInfo.ProcessCommandLine;
 
         /// <summary>
         /// Gets the information for the process token, not the token used to check access.
         /// </summary>
-        public TokenInformation ProcessTokenInfo { get; }
+        public ProcessTokenInformation ProcessTokenInfo { get; }
 
         /// <summary>
         /// Token username
@@ -99,17 +99,12 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// </summary>
         public Luid AuthenticationId => ProcessTokenInfo.AuthenticationId;
 
-        internal TokenAccessCheckResult(NtToken token, string process_name, string image_path, int process_id,
-            string command_line, AccessMask granted_access, SecurityDescriptor sd, 
+        internal TokenAccessCheckResult(NtToken token, NtProcess process, AccessMask granted_access, SecurityDescriptor sd, 
             TokenInformation token_info) 
-            : base($"{process_name}:{process_id}", token.NtType.Name, granted_access, token.NtType.GenericMapping, sd,
+            : base($"{process.Name}:{process.ProcessId}", token.NtType.Name, granted_access, token.NtType.GenericMapping, sd,
                 token.NtType.AccessRightsType, false, token_info)
         {
-            ProcessName = process_name;
-            ProcessImagePath = image_path;
-            ProcessId = process_id;
-            ProcessCommandLine = command_line;
-            ProcessTokenInfo = new TokenInformation(token);
+            ProcessTokenInfo = new ProcessTokenInformation(token, process);
         }
     }
 
@@ -203,8 +198,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                                 AccessMask granted_access = NtSecurity.GetMaximumAccess(sd, token.Token, type.GenericMapping);
                                 if (IsAccessGranted(granted_access, access_rights))
                                 {
-                                    WriteObject(new TokenAccessCheckResult(primary_token, process_name, 
-                                        image_path, process_id, process_cmdline,
+                                    WriteObject(new TokenAccessCheckResult(primary_token, proc,
                                         granted_access, sd, token.Information));
                                 }
                             }
