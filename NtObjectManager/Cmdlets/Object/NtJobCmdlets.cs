@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using System;
+using System.Collections.Generic;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Object
@@ -216,7 +218,7 @@ namespace NtObjectManager.Cmdlets.Object
     public sealed class GetNtProcessJobCmdlet : PSCmdlet
     {
         /// <summary>
-        /// <para type="description">Specify the list of processes to assign.</para>
+        /// <para type="description">Specify the process to query.</para>
         /// </summary>
         [Parameter(Mandatory = true, Position = 0)]
         public NtProcess Process { get; set; }
@@ -227,6 +229,187 @@ namespace NtObjectManager.Cmdlets.Object
         protected override void ProcessRecord()
         {
             WriteObject(Process.GetAccessibleJobObjects(), true);
+        }
+    }
+
+    /// <summary>
+    /// <para type="description">Flags for formatting a job.</para>
+    /// </summary>
+    [Flags]
+    public enum JobFormatFilter
+    {
+        /// <summary>
+        /// Basic information.
+        /// </summary>
+        BasicInfo = 1,
+        /// <summary>
+        /// Basic limits.
+        /// </summary>
+        BasicLimits = 2,
+        /// <summary>
+        /// List of processes.
+        /// </summary>
+        ProcessList = 4,
+        /// <summary>
+        /// UI Limits.
+        /// </summary>
+        UILimits = 8,
+        /// <summary>
+        /// Display all formats.
+        /// </summary>
+        All = BasicLimits | ProcessList | BasicInfo | UILimits
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Formats Job information.</para>
+    /// <para type="description">This cmdlet formats the Job information. Can either take a list of jobs or 
+    /// a process.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>Format-NtJob -Job $job</code>
+    ///   <para>Formats a job.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Format-NtJob -Process $process</code>
+    ///   <para>Formats all accessible jobs for a process.</para>
+    /// </example>
+    /// <para type="link">about_ManagingNtObjectLifetime</para>
+    [Cmdlet(VerbsCommon.Format, "NtJob")]
+    [OutputType(typeof(string))]
+    public sealed class FormatNtJobCmdlet : PSCmdlet
+    {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public FormatNtJobCmdlet()
+        {
+            Filter = JobFormatFilter.All;
+        }
+
+        /// <summary>
+        /// <para type="description">Specify the process to format job information.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromProcess")]
+        public NtProcess Process { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the process to format job information.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromJob")]
+        public NtJob[] Job { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify what parts of the job to format.</para>
+        /// </summary>
+        [Parameter]
+        public JobFormatFilter Filter { get; set; }
+
+        private void FormatJobBasicLimits(NtJob job)
+        {
+            WriteObject("[Basic Limits]");
+            WriteObject($"Limit Flags: {job.LimitFlags}");
+            if (job.LimitFlags.HasFlag(JobObjectLimitFlags.ActiveProcess))
+            {
+                WriteObject($"Active Process Limit: {job.ActiveProcessLimit}");
+            }
+            if (job.LimitFlags.HasFlag(JobObjectLimitFlags.ProcessMemory))
+            {
+                WriteObject($"Process Memory Limit: {job.ProcessMemory}");
+            }
+            WriteObject(string.Empty);
+        }
+
+        private void FormatProcess(int pid)
+        {
+            using (var proc = NtProcess.Open(pid, ProcessAccessRights.QueryLimitedInformation, false))
+            {
+                if (!proc.IsSuccess)
+                {
+                    WriteObject($"{pid}: UNKNOWN");
+                }
+                else
+                {
+                    WriteObject($"{pid}: {proc.Result.Name}");
+                }
+            }
+        }
+
+        private void FormatProcessList(NtJob job)
+        {
+            var pids = job.GetProcessIdList(false);
+            if (pids.IsSuccess)
+            {
+                WriteObject("[Process List]");
+                foreach (var pid in pids.Result)
+                {
+                    FormatProcess(pid);
+                }
+                WriteObject(string.Empty);
+            }
+        }
+
+        private void FormatBasicInfo(NtJob job)
+        {
+            WriteObject("[Basic Information]");
+            WriteObject($"Handle: {job.Handle}");
+            if (job.FullPath.Length > 0)
+            {
+                WriteObject($"Path: {job.FullPath}");
+            }
+            WriteObject(string.Empty);
+        }
+
+        private void FormatUILimits(NtJob job)
+        {
+            WriteObject("[UI Limits]");
+            WriteObject($"Limit Flags: {job.UiRestrictionFlags}");
+            WriteObject(string.Empty);
+        }
+
+        private void FormatJob(NtJob job)
+        {
+            if (Filter.HasFlag(JobFormatFilter.BasicInfo))
+            {
+                FormatBasicInfo(job);
+            }
+            if (Filter.HasFlag(JobFormatFilter.BasicLimits))
+            {
+                FormatJobBasicLimits(job);
+            }
+            if (Filter.HasFlag(JobFormatFilter.ProcessList))
+            {
+                FormatProcessList(job);
+            }
+            if (Filter.HasFlag(JobFormatFilter.UILimits))
+            {
+                FormatUILimits(job);
+            }
+        }
+
+        private void FormatJobs(IEnumerable<NtJob> jobs)
+        {
+            foreach (var job in jobs)
+            {
+                FormatJob(job);
+            }
+        }
+
+        /// <summary>
+        /// Overridden ProcessRecord method.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            if (ParameterSetName == "FromProcess")
+            {
+                using (var jobs = Process.GetAccessibleJobObjects().ToDisposableList())
+                {
+                    FormatJobs(jobs);
+                }
+            }
+            else
+            {
+                FormatJobs(Job);
+            }
         }
     }
 }
