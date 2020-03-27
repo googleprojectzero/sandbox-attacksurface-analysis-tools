@@ -103,5 +103,46 @@ namespace NtObjectManager.Utils
                     throw new ArgumentException("Unknown text encoding", nameof(encoding));
             }
         }
+
+        internal static void AddDynamicParameter(this RuntimeDefinedParameterDictionary dict, string name, Type type, bool mandatory, int? position = null)
+        {
+            Collection<Attribute> attrs = new Collection<Attribute>();
+            ParameterAttribute attr = new ParameterAttribute
+            {
+                Mandatory = mandatory
+            };
+            if (position.HasValue)
+            {
+                attr.Position = position.Value;
+            }
+            attrs.Add(attr);
+            dict.Add(name, new RuntimeDefinedParameter(name, type, attrs));
+        }
+
+        internal static bool GetValue<T>(this RuntimeDefinedParameterDictionary dict, string name, out T value) where T : class
+        {
+            value = default;
+            if (!dict.ContainsKey(name))
+                return false;
+            if (dict[name].Value is T result)
+            {
+                value = result;
+                return true;
+            }
+            return false;
+        }
+
+        internal static bool GetValue<T>(this RuntimeDefinedParameterDictionary dict, string name, out T? value) where T : struct
+        {
+            value = default;
+            if (!dict.ContainsKey(name))
+                return false;
+            if (dict[name].Value is T result)
+            {
+                value = result;
+                return true;
+            }
+            return false;
+        }
     }
 }

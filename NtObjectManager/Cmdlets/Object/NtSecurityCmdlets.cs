@@ -14,6 +14,7 @@
 
 using NtApiDotNet;
 using NtApiDotNet.Win32;
+using NtObjectManager.Utils;
 using System;
 using System.Management.Automation;
 
@@ -1066,6 +1067,193 @@ namespace NtObjectManager.Cmdlets.Object
             {
                 sd.DaclUntrusted = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Adds an ACE to a security descriptor.</para>
+    /// <para type="description">This cmdlet adds an ACE to the specified security descriptor. It will
+    /// automatically select the DACL or SACL depending on the ACE type requested. It also supports
+    /// specifying a Condition for callback ACEs and Object GUIDs for Object ACEs. The Access property
+    /// changes behavior depending on the NtType property of the Security Descriptor.
+    /// </para>
+    /// </summary>
+    /// <example>
+    ///   <code>Add-NtSecurityDescriptorAce $sd -Sid "WD" -Access GenericAll</code>
+    ///   <para>Add Allowed ACE to DACL with Generic All access for the Everyone group.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Add-NtSecurityDescriptorAce $sd -Sid "WD" -Access GenericAll -Type Audit</code>
+    ///   <para>Add Audit ACE to SACL with Generic All access for the Everyone group.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Add-NtSecurityDescriptorAce $sd -Sid "WD" -Access GenericAll -Flags ObjectInherit, InheritOnly</code>
+    ///   <para>Add Allowed ACE to DACL with Generic All access for the Everyone group with Object Inherity and InheritOnly flags.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Add-NtSecurityDescriptorAce $sd -Sid "WD" -Access GenericAll -Type Denied</code>
+    ///   <para>Add Denied ACE to DACL with Generic All access for the Everyone group.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Add-NtSecurityDescriptorAce $sd -Sid "WD" -Access GenericAll -Type AllowedCallback -Condition 'APPID://PATH Contains "*"'</code>
+    ///   <para>Add Allowed ACE to DACL with a condition.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Add-NtSecurityDescriptorAce $sd -Sid "WD" -Access GenericAll -Type AllowedObject -ObjectType "{AD39A509-02C7-4E9A-912A-A51168C10A4C}"</code>
+    ///   <para>Add Allowed Object ACE to DACL with an object type.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Add-NtSecurityDescriptorAce $sd -Sid "WD" -ServerSid "BA" -Access GenericAll -Type AllowedCompound</code>
+    ///   <para>Add Allowed Compound ACE to DACL with with Administrators SID as the Server SID.</para>
+    /// </example>
+    [Cmdlet(VerbsCommon.Add, "NtSecurityDescriptorAce", DefaultParameterSetName = "FromSid")]
+    [OutputType(typeof(Ace))]
+    public sealed class AddNtSecurityDescriptorAceCmdlet : PSCmdlet, IDynamicParameters
+    {
+        private RuntimeDefinedParameterDictionary _dict;
+
+        /// <summary>
+        /// <para type="description">Specify to create the security descriptor with a NULL DACL.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true)]
+        [SecurityDescriptor]
+        public SecurityDescriptor SecurityDescriptor { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to add ACE with SID.</para>
+        /// </summary>
+        [Parameter(Position = 1, Mandatory = true, ParameterSetName = "FromSid")]
+        public Sid Sid { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to add ACE from a user/group name.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromName")]
+        public string Name { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to add ACE a known SID.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromKnownSid")]
+        public KnownSidValue KnownSid { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the type of ACE.</para>
+        /// </summary>
+        [Parameter]
+        public AceType Type { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the ACE flags.</para>
+        /// </summary>
+        [Parameter]
+        public AceFlags Flags { get; set; }
+
+        /// <summary>
+        /// <para type="description">Return the ACE added from the operation.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter PassThru { get; set; }
+
+        private Sid GetSid()
+        {
+            switch (ParameterSetName)
+            {
+                case "FromSid":
+                    return Sid;
+                case "FromKnownSid":
+                    return KnownSids.GetKnownSid(KnownSid);
+                case "FromName":
+                    return NtSecurity.LookupAccountName(Name);
+                default:
+                    throw new InvalidOperationException("Unknown parameter set");
+            }
+        }
+
+        /// <summary>
+        /// Process Record.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            if (!_dict.GetValue("Access", out Enum access))
+            {
+                throw new ArgumentException("Invalid access value.");
+            }
+
+            _dict.GetValue("Condition", out string condition);
+            _dict.GetValue("ObjectType", out Guid? object_type);
+            _dict.GetValue("InheritedObjectType", out Guid? inherited_object_type);
+            _dict.GetValue("ServerSid", out Sid server_sid);
+
+            Acl acl;
+
+            if (NtSecurity.IsSystemAceType(Type))
+            {
+                if (SecurityDescriptor.Sacl == null)
+                {
+                    SecurityDescriptor.Sacl = new Acl();
+                }
+                acl = SecurityDescriptor.Sacl;
+            }
+            else
+            {
+                if (SecurityDescriptor.Dacl == null)
+                {
+                    SecurityDescriptor.Dacl = new Acl();
+                }
+                acl = SecurityDescriptor.Dacl;
+            }
+
+            Ace ace = new Ace(Type, Flags, access, GetSid());
+            if (NtSecurity.IsCallbackAceType(Type) && !string.IsNullOrWhiteSpace(condition))
+            {
+                ace.Condition = condition;
+            }
+            if (NtSecurity.IsObjectAceType(Type))
+            {
+                ace.ObjectType = object_type;
+                ace.InheritedObjectType = inherited_object_type;
+            }
+            if (Type == AceType.AllowedCompound)
+            {
+                ace.ServerSid = server_sid;
+            }
+
+            acl.Add(ace);
+            if (PassThru)
+            {
+                WriteObject(ace);
+            }
+        }
+
+        object IDynamicParameters.GetDynamicParameters()
+        {
+            Type access_type = SecurityDescriptor?.NtType?.AccessRightsType ?? typeof(GenericAccessRights);
+            if (Type == AceType.MandatoryLabel)
+            {
+                access_type = typeof(MandatoryLabelPolicy);
+            }
+
+            _dict = new RuntimeDefinedParameterDictionary();
+            _dict.AddDynamicParameter("Access", access_type, true, 2);
+
+            if (NtSecurity.IsCallbackAceType(Type))
+            {
+                _dict.AddDynamicParameter("Condition", typeof(string), false);
+            }
+
+            if (NtSecurity.IsObjectAceType(Type))
+            {
+                _dict.AddDynamicParameter("ObjectType", typeof(Guid?), false);
+                _dict.AddDynamicParameter("InheritedObjectType", typeof(Guid?), false);
+            }
+
+            if (Type == AceType.AllowedCompound)
+            {
+                _dict.AddDynamicParameter("ServerSid", typeof(Sid), true);
+            }
+
+            return _dict;
         }
     }
 }

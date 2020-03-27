@@ -63,6 +63,7 @@
     <Compile Include="Cmdlets\Accessible\TokenInformation.cs" />
     <Compile Include="Cmdlets\Object\InfoClassCompleter.cs" />
     <Compile Include="Cmdlets\Object\NtTypeArgumentCompleter.cs" />
+    <Compile Include="Cmdlets\Object\SecurityDescriptorAttribute.cs" />
     <Compile Include="Cmdlets\Rpc\NdrNameData.cs" />
     <Compile Include="Cmdlets\Object\NtAlpcCmdlets.cs" />
     <Compile Include="Cmdlets\Object\NtDebugCmdlets.cs" />

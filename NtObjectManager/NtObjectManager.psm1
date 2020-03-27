@@ -3717,6 +3717,8 @@ The type of the ACE.
 The flags for the ACE.
 .PARAMETER Condition
 The condition string for the ACE.
+.PARAMETER PassThru
+Pass through the created ACE.
 .INPUTS
 None
 .OUTPUTS
@@ -3743,7 +3745,8 @@ function Add-NtSecurityDescriptorDaclAce {
         [NtApiDotNet.GenericAccessRights]$GenericAccess = 0,
         [NtApiDotNet.AceType]$Type = "Allowed",
         [NtApiDotNet.AceFlags]$Flags = "None",
-        [string]$Condition
+        [string]$Condition,
+        [switch]$PassThru
     )
 
     switch($PSCmdlet.ParameterSetName) {
@@ -3766,6 +3769,9 @@ function Add-NtSecurityDescriptorDaclAce {
             $ace.Condition = $Condition
         }
         $SecurityDescriptor.AddAce($ace)
+        if ($PassThru) {
+            Write-Output $ace
+        }
     }
 }
 
