@@ -584,22 +584,12 @@ namespace NtApiDotNet
         /// Convert security descriptor to a byte array
         /// </summary>
         /// <returns>The binary security descriptor</returns>
-        public byte[] ToArray()
+        public byte[] ToByteArray()
         {
             using (var sd_buffer = CreateRelativeSecurityDescriptor(true))
             {
                 return sd_buffer.Result.ToArray();
             }
-        }
-
-        /// <summary>
-        /// Convert security descriptor to a byte array
-        /// </summary>
-        /// <returns>The binary security descriptor</returns>
-        [Obsolete("Use ToArray")]
-        public byte[] ToByteArray()
-        {
-            return ToArray();
         }
 
         /// <summary>
@@ -883,7 +873,7 @@ namespace NtApiDotNet
 
             using (var list = new DisposableList())
             {
-                var object_sd = list.AddResource(new SafeProcessHeapBuffer(ToArray()));
+                var object_sd = list.AddResource(new SafeProcessHeapBuffer(ToByteArray()));
                 var modify_sd = list.AddResource(security_descriptor.ToSafeBuffer());
 
                 IntPtr ptr = object_sd.DangerousGetHandle();

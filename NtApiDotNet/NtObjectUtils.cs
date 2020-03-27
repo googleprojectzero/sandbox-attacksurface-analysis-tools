@@ -862,5 +862,28 @@ namespace NtApiDotNet
         {
             return value.HasFlag(bit);
         }
+
+        internal static bool EqualByteArray(byte[] a, byte[] b)
+        {
+            if (a == b)
+                return true;
+            if (a == null || b == null)
+                return false;
+            if (a.Length != b.Length)
+                return false;
+            for (int i = 0; i < a.Length; ++i)
+            {
+                if (a[i] != b[i])
+                    return false;
+            }
+            return true;
+        }
+
+        internal static int GetHashCodeByteArray(byte[] a)
+        {
+            if (a == null)
+                return 0;
+            return a.Aggregate((v, c) => (byte)(v ^ c));
+        }
     }
 }

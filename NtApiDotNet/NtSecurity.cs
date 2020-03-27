@@ -1141,6 +1141,86 @@ namespace NtApiDotNet
             return mask;
         }
 
+        /// <summary>
+        /// Get whether an ACE type is an object ACE type.
+        /// </summary>
+        /// <param name="type">The ACE type.</param>
+        /// <returns>True if a object ACE type.</returns>
+        public static bool IsObjectAceType(AceType type)
+        {
+            switch (type)
+            {
+                case AceType.AlarmCallbackObject:
+                case AceType.AllowedCallbackObject:
+                case AceType.AllowedObject:
+                case AceType.AuditCallbackObject:
+                case AceType.AuditObject:
+                case AceType.DeniedCallbackObject:
+                case AceType.DeniedObject:
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Get whether an ACE type is an audit ACE type.
+        /// </summary>
+        /// <param name="type">The ACE type.</param>
+        /// <returns>True if an audit ACE type.</returns>
+        public static bool IsAuditAceType(AceType type)
+        {
+            switch (type)
+            {
+                case AceType.Alarm:
+                case AceType.AlarmCallback:
+                case AceType.AlarmCallbackObject:
+                case AceType.AlarmObject:
+                case AceType.Audit:
+                case AceType.AuditCallback:
+                case AceType.AuditCallbackObject:
+                case AceType.AuditObject:
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Get whether an ACE type is used int the SACL.
+        /// </summary>
+        /// <param name="type">The ACE type.</param>
+        /// <returns>True if a system ACE type.</returns>
+        public static bool IsSystemAceType(AceType type)
+        {
+            return IsAuditAceType(type) ||
+                type == AceType.MandatoryLabel ||
+                type == AceType.ProcessTrustLabel ||
+                type == AceType.ResourceAttribute ||
+                type == AceType.ScopedPolicyId ||
+                type == AceType.AccessFilter;
+        }
+
+        /// <summary>
+        /// Get whether an ACE type is a callback type.
+        /// </summary>
+        /// <param name="type">The ACE type.</param>
+        /// <returns>True if a callback type.</returns>
+        public static bool IsCallbackAceType(AceType type)
+        {
+            switch (type)
+            {
+                case AceType.AlarmCallbackObject:
+                case AceType.AllowedCallbackObject:
+                case AceType.AuditCallbackObject:
+                case AceType.DeniedCallbackObject:
+                case AceType.AlarmCallback:
+                case AceType.AllowedCallback:
+                case AceType.AuditCallback:
+                case AceType.DeniedCallback:
+                    return true;
+            }
+            return false;
+        }
+
         #endregion
 
         #region Private Members

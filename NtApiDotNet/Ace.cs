@@ -22,63 +22,16 @@ namespace NtApiDotNet
     /// </summary>
     public class Ace
     {
-        #region Private Members
-        private static bool IsObjectAceType(AceType type)
-        {
-            switch (type)
-            {
-                case AceType.AlarmCallbackObject:
-                case AceType.AllowedCallbackObject:
-                case AceType.AllowedObject:
-                case AceType.AuditCallbackObject:
-                case AceType.AuditObject:
-                case AceType.DeniedCallbackObject:
-                case AceType.DeniedObject:
-                    return true;
-            }
-            return false;
-        }
-
-        private static bool IsCallbackAceType(AceType type)
-        {
-            switch (type)
-            {
-                case AceType.AlarmCallbackObject:
-                case AceType.AllowedCallbackObject:
-                case AceType.AuditCallbackObject:
-                case AceType.DeniedCallbackObject:
-                case AceType.AlarmCallback:
-                case AceType.AllowedCallback:
-                case AceType.AuditCallback:
-                case AceType.DeniedCallback:
-                    return true;
-            }
-            return false;
-        }
-        #endregion
-
         #region Public Properties
         /// <summary>
         /// Check if the ACE is an Object ACE
         /// </summary>
-        public bool IsObjectAce
-        {
-            get
-            {
-                return IsObjectAceType(Type);
-            }
-        }
+        public bool IsObjectAce => NtSecurity.IsObjectAceType(Type);
 
         /// <summary>
         /// Check if the ACE is a callback ACE
         /// </summary>
-        public bool IsCallbackAce
-        {
-            get
-            {
-                return IsCallbackAceType(Type);
-            }
-        }
+        public bool IsCallbackAce => NtSecurity.IsCallbackAceType(Type);
 
         /// <summary>
         /// Check if ACE is a conditional ACE
@@ -104,25 +57,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Check if ACE is an audit ACE.
         /// </summary>
-        public bool IsAuditAce
-        {
-            get
-            {
-                switch (Type)
-                {
-                    case AceType.Alarm:
-                    case AceType.AlarmCallback:
-                    case AceType.AlarmCallbackObject:
-                    case AceType.AlarmObject:
-                    case AceType.Audit:
-                    case AceType.AuditCallback:
-                    case AceType.AuditCallbackObject:
-                    case AceType.AuditObject:
-                        return true;
-                }
-                return false;
-            }
-        }
+        public bool IsAuditAce => NtSecurity.IsAuditAceType(Type);
 
         /// <summary>
         /// Check if ACE is a critical ACE.
@@ -143,18 +78,6 @@ namespace NtApiDotNet
         /// Check if ACE is inherited by objects.
         /// </summary>
         public bool IsContainerInherit => Flags.HasFlag(AceFlags.ContainerInherit);
-
-        /// <summary>
-        /// Get ACE type
-        /// </summary>
-        [Obsolete("Use Type property")]
-        public AceType AceType { get { return Type; } set { Type = value; } }
-
-        /// <summary>
-        /// Get ACE flags
-        /// </summary>
-        [Obsolete("Use Flags property")]
-        public AceFlags AceFlags { get { return Flags; } set { Flags = value; } }
 
         /// <summary>
         /// Get ACE type
@@ -421,7 +344,8 @@ namespace NtApiDotNet
             }
 
             return ace.Type == Type && ace.Flags == Flags && ace.Sid == Sid && ace.Mask == Mask
-                && ace.ObjectType == ObjectType && ace.InheritedObjectType == InheritedObjectType;
+                && ace.ObjectType == ObjectType && ace.InheritedObjectType == InheritedObjectType
+                && ace.ServerSid == ServerSid && NtObjectUtils.EqualByteArray(ApplicationData, ace.ApplicationData);
         }
 
         /// <summary>
@@ -430,7 +354,9 @@ namespace NtApiDotNet
         /// <returns>The hash code</returns>
         public override int GetHashCode()
         {
-            return Type.GetHashCode() ^ Flags.GetHashCode() ^ Mask.GetHashCode() ^ Sid.GetHashCode() ^ ObjectType.GetHashCode() ^ InheritedObjectType.GetHashCode();
+            return Type.GetHashCode() ^ Flags.GetHashCode() ^ Mask.GetHashCode()
+                ^ Sid.GetHashCode() ^ ObjectType.GetHashCode() ^ InheritedObjectType.GetHashCode()
+                ^ ServerSid?.GetHashCode() ?? 0 ^ NtObjectUtils.GetHashCodeByteArray(ApplicationData);
         }
         #endregion
 

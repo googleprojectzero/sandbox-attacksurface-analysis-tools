@@ -115,10 +115,17 @@ namespace NtApiDotNet
                 using (var writer = new BinaryWriter(ace_stm))
                 {
                     revision = Revision;
-                    if (revision != AclRevision.Revision || revision != AclRevision.RevisionDS)
+                    switch (revision)
                     {
-                        revision = AclRevision.Revision;
+                        case AclRevision.Revision:
+                        case AclRevision.RevisionCompound:
+                        case AclRevision.RevisionDS:
+                            break;
+                        default:
+                            revision = AclRevision.Revision;
+                            break;
                     }
+
                     foreach (Ace ace in this)
                     {
                         ace.Serialize(writer);
