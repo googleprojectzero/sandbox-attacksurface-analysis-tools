@@ -3696,9 +3696,9 @@ function Get-NtCachedSigningLevel {
 
 <#
 .SYNOPSIS
-Adds an ACE to a security descriptor DACL.
+Adds an ACE to a security descriptor DACL. 
 .DESCRIPTION
-This cmdlet adds a new ACE to a security descriptor DACL.
+This cmdlet adds a new ACE to a security descriptor DACL. This cmdlet is deprecated.
 .PARAMETER SecurityDescriptor
 The security descriptor to add the ACE to.
 .PARAMETER Sid
@@ -3748,6 +3748,8 @@ function Add-NtSecurityDescriptorDaclAce {
         [string]$Condition,
         [switch]$PassThru
     )
+
+    Write-Warning "Use Add-NtSecurityDescriptorAce instead of this."
 
     switch($PSCmdlet.ParameterSetName) {
         "FromSid" {
