@@ -100,6 +100,11 @@ namespace NtApiDotNet
         public Sid Sid { get; set; }
 
         /// <summary>
+        /// The type of compound ACE. When serialized always set to Impersonate.
+        /// </summary>
+        public CompoundAceType CompoundAceType { get; private set; }
+
+        /// <summary>
         /// Get the client SID in a compound ACE.
         /// </summary>
         public Sid ServerSid { get; set; }
@@ -224,8 +229,10 @@ namespace NtApiDotNet
 
             if (type == AceType.AllowedCompound)
             {
-                // Read out revision, or flags.
-                reader.ReadInt32();
+                // Read out compound ace type.
+                ace.CompoundAceType = (CompoundAceType)reader.ReadUInt16();
+                // Reserved.
+                reader.ReadInt16();
                 ace.ServerSid = new Sid(reader);
             }
             ace.Sid = new Sid(reader);
@@ -242,7 +249,7 @@ namespace NtApiDotNet
             {
                 MemoryStream stm = new MemoryStream();
                 BinaryWriter sidwriter = new BinaryWriter(stm);
-                sidwriter.Write(1);
+                sidwriter.Write((int)CompoundAceType.Impersonation);
                 sidwriter.Write(ServerSid.ToArray());
                 sidwriter.Write(sid_data);
                 sid_data = stm.ToArray();

@@ -904,6 +904,12 @@ namespace NtApiDotNet
         FailedAccess = 0x80,
     }
 
+    public enum CompoundAceType
+    {
+        None = 0,
+        Impersonation = 1,
+    }
+
     [Flags]
     public enum MandatoryLabelPolicy : uint
     {
