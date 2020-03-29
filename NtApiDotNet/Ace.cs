@@ -55,6 +55,11 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Check if ACE is a resource attribute ACE.
+        /// </summary>
+        public bool IsResourceAttributeAce => Type == AceType.ResourceAttribute;
+
+        /// <summary>
         /// Check if ACE is an audit ACE.
         /// </summary>
         public bool IsAuditAce => NtSecurity.IsAuditAceType(Type);
@@ -169,6 +174,26 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Get or set resource attribute.
+        /// </summary>
+        public ClaimSecurityAttribute ResourceAttribute
+        {
+            get
+            {
+                if (!IsResourceAttributeAce || ApplicationData == null || ApplicationData.Length == 0)
+                    return null;
+                return new ClaimSecurityAttribute(ApplicationData);
+            }
+
+            set
+            {
+                if (!IsResourceAttributeAce)
+                    throw new ArgumentException("Only supported for Resource Attribute ACEs.");
+                ApplicationData = value.ToBuilder().MarshalAttribute();
+            }
+        }
+
         #endregion
 
         #region Constructors
@@ -236,7 +261,6 @@ namespace NtApiDotNet
                 ace.ServerSid = new Sid(reader);
             }
             ace.Sid = new Sid(reader);
-
             int bytes_used = (int)(reader.BaseStream.Position - current_position);
             ace.ApplicationData = reader.ReadAllBytes(ace_size - bytes_used);
             return ace;

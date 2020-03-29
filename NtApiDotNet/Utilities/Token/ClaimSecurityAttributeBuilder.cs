@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -52,7 +53,10 @@ namespace NtApiDotNet.Token
 
             void ICollection<object>.CopyTo(object[] array, int arrayIndex)
             {
-                CopyTo(array.Cast<T>().ToArray(), arrayIndex);
+                for (int i = 0; i < Count; ++i)
+                {
+                    array[arrayIndex + i] = this[i];
+                }
             }
 
             IEnumerator<object> IEnumerable<object>.GetEnumerator()
@@ -224,6 +228,15 @@ namespace NtApiDotNet.Token
             }
         }
 
+        /// <summary>
+        /// Convert build to a claim attribute.
+        /// </summary>
+        /// <returns></returns>
+        public ClaimSecurityAttribute ToAttribute()
+        {
+            return new ClaimSecurityAttribute(Name, ValueType, Flags, Values);
+        }
+
         private int GetValueSize()
         {
             switch (ValueType)
@@ -316,6 +329,93 @@ namespace NtApiDotNet.Token
                 Name = CreateString(Name, list),
                 Flags = Flags
             };
+        }
+
+        private static void Align(BinaryWriter writer)
+        {
+            int remaining = (int)writer.BaseStream.Length % 4;
+            if (remaining != 0)
+            {
+                writer.Write(new byte[4 - remaining]);
+            }
+        }
+
+        private static int WriteString(BinaryWriter writer, string str)
+        {
+            int offset = (int)writer.BaseStream.Position;
+            writer.Write((str + "\0").ToCharArray());
+            Align(writer);
+            return offset;
+        }
+
+        private static int WriteOctet(BinaryWriter writer, byte[] data)
+        {
+            int offset = (int)writer.BaseStream.Position;
+            writer.Write(data.Length);
+            writer.Write(data);
+            Align(writer);
+            return offset;
+        }
+
+        private static int WriteValue<T>(BinaryWriter writer, Action<T> func, T value)
+        {
+            int offset = (int)writer.BaseStream.Position;
+            func(value);
+            Align(writer);
+            return offset;
+        }
+
+        internal Tuple<int[], byte[]> MarshalValues()
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm, Encoding.Unicode);
+            IEnumerable<int> offsets;
+            WriteString(writer, Name);
+            switch (ValueType)
+            {
+                case ClaimSecurityValueType.Int64:
+                    offsets = Values.Cast<long>().Select(v => WriteValue(writer, writer.Write, v));
+                    break;
+                case ClaimSecurityValueType.UInt64:
+                    offsets = Values.Cast<ulong>().Select(v => WriteValue(writer, writer.Write, v));
+                    break;
+                case ClaimSecurityValueType.Boolean:
+                    offsets = Values.Cast<bool>().Select(v => WriteValue(writer, writer.Write, v ? 1L : 0L));
+                    break;
+                case ClaimSecurityValueType.String:
+                    offsets = Values.Cast<string>().Select(v => WriteString(writer, v));
+                    break;
+                case ClaimSecurityValueType.OctetString:
+                    offsets = Values.Cast<byte[]>().Select(v => WriteOctet(writer, v));
+                    break;
+                case ClaimSecurityValueType.Sid:
+                    offsets = Values.Cast<Sid>().Select(v => WriteOctet(writer, v.ToArray()));
+                    break;
+                default:
+                    throw new ArgumentException($"Unsupported claim type {ValueType}.");
+            }
+            return Tuple.Create(offsets.ToArray(), stm.ToArray());
+        }
+
+        internal byte[] MarshalAttribute()
+        {
+            MemoryStream stm = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm);
+            var values = MarshalValues();
+
+            int header_size = 16 + Values.Count * 4;
+            // Name offset.
+            writer.Write(header_size);
+            writer.Write((ushort)ValueType);
+            writer.Write((ushort)0);
+            writer.Write((int)Flags);
+            writer.Write(Values.Count);
+            foreach (int offset in values.Item1)
+            {
+                writer.Write(offset + header_size);
+            }
+            writer.Write(values.Item2);
+            return stm.ToArray();
         }
     }
 }

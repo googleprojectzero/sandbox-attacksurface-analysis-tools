@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using NtApiDotNet.Token;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -818,82 +817,5 @@ namespace NtApiDotNet
         public uint PrivilegeCount;
         public Luid ModifiedId;
     }
-
-    public sealed class ClaimSecurityAttribute
-    {
-        private static T[] ReadTyped<T>(IntPtr buffer, int count) where T : struct
-        {
-            int type_size = Marshal.SizeOf(typeof(T));
-            List<T> res = new List<T>();
-            while (count > 0)
-            {
-                res.Add((T)Marshal.PtrToStructure(buffer, typeof(T)));
-                buffer += type_size;
-                count--;
-            }
-            return res.ToArray();
-        }
-
-        private IEnumerable<object> ReadValues(IntPtr buffer, int count, ClaimSecurityValueType type)
-        {
-            if (buffer == IntPtr.Zero || count == 0)
-            {
-                return new object[0];
-            }
-
-            switch (type)
-            {
-                case ClaimSecurityValueType.Int64:
-                    return ReadTyped<long>(buffer, count).Cast<object>();
-                case ClaimSecurityValueType.UInt64:
-                    return ReadTyped<ulong>(buffer, count).Cast<object>();
-                case ClaimSecurityValueType.OctetString:
-                    return ReadTyped<ClaimSecurityAttributeOctetStringValue>(buffer, count).Select(v => v.ToArray()).Cast<object>();
-                case ClaimSecurityValueType.Sid:
-                    return ReadTyped<ClaimSecurityAttributeOctetStringValue>(buffer, count).Select(v => v.ToSid()).Cast<object>();
-                case ClaimSecurityValueType.Boolean:
-                    return ReadTyped<long>(buffer, count).Select(v => v != 0).Cast<object>();
-                case ClaimSecurityValueType.String:
-                    return ReadTyped<UnicodeStringOut>(buffer, count).Select(n => n.ToString());
-                case ClaimSecurityValueType.Fqbn:
-                    return ReadTyped<ClaimSecurityAttributeFqbnValue>(buffer, count).Select(v => new ClaimSecurityAttributeFqbn(v)).Cast<object>();
-                default:
-                    return new object[0];
-            }
-        }
-
-        public string Name { get; }
-        public ClaimSecurityValueType ValueType { get; }
-        public ClaimSecurityFlags Flags { get; }
-        public IEnumerable<object> Values { get; }
-        public int ValueCount { get; }
-
-        public ClaimSecurityAttributeBuilder ToBuilder()
-        {
-            return ClaimSecurityAttributeBuilder.Create(this);
-        }
-
-        internal ClaimSecurityAttribute(IntPtr ptr)
-        {
-            ClaimSecurityAttributeV1 v1 = (ClaimSecurityAttributeV1)Marshal.PtrToStructure(ptr, typeof(ClaimSecurityAttributeV1));
-            Name = v1.Name.ToString();
-            ValueType = v1.ValueType;
-            Flags = v1.Flags;
-            var values = ReadValues(v1.Values, v1.ValueCount, v1.ValueType).ToArray();
-            Values = values;
-            ValueCount = values.Length;
-        }
-
-        internal ClaimSecurityAttribute(string name, ClaimSecurityValueType value_type, ClaimSecurityFlags flags, IEnumerable<object> values)
-        {
-            Name = name;
-            ValueType = value_type;
-            Flags = flags;
-            var array = values.ToArray();
-            Values = array;
-            ValueCount = array.Length;
-        }
-    }
-
 #pragma warning restore 1591
 }
