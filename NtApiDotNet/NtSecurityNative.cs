@@ -901,7 +901,7 @@ namespace NtApiDotNet
         Inherited = 0x10,
         Critical = 0x20,
         SuccessfulAccess = 0x40,
-        FailedAccess = 0x80,
+        FailedAccess = 0x80
     }
 
     public enum CompoundAceType

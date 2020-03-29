@@ -904,7 +904,7 @@ namespace NtObjectManager.Cmdlets.Object
     /// <para type="description">This cmdlet adds or replaces security attributes on an NT token. It needs SeTcbPrivilege to succeed.</para>
     /// </summary>
     /// <example>
-    ///   <code>Add-NtTokenSecurityAttribute -Token $token -Name "TEST://ME" -String "ABC"</code>
+    ///   <code>Add-NtTokenSecurityAttribute -Token $token -Name "TEST://ME" -StringValue "ABC"</code>
     ///   <para>Adds the security attribute TEST://ME with the string value "ABC".</para>
     /// </example>
     [Cmdlet(VerbsCommon.Add, "NtTokenSecurityAttribute")]

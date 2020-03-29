@@ -27,6 +27,78 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class ClaimSecurityAttribute
     {
+        #region Public Properties
+        /// <summary>
+        /// The name of the attribute.
+        /// </summary>
+        public string Name { get; }
+        /// <summary>
+        /// The type of values.
+        /// </summary>
+        public ClaimSecurityValueType ValueType { get; }
+        /// <summary>
+        /// The attribute flags.
+        /// </summary>
+        public ClaimSecurityFlags Flags { get; }
+        /// <summary>
+        /// The list of values.
+        /// </summary>
+        public IEnumerable<object> Values { get; }
+        /// <summary>
+        /// The count of values.
+        /// </summary>
+        public int ValueCount { get; }
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Convert the attribute to a builder to modify it.
+        /// </summary>
+        /// <returns>The builder object.</returns>
+        public ClaimSecurityAttributeBuilder ToBuilder()
+        {
+            return ClaimSecurityAttributeBuilder.Create(this);
+        }
+        #endregion
+
+        #region Constructors
+        internal ClaimSecurityAttribute(IntPtr ptr)
+        {
+            ClaimSecurityAttributeV1 v1 = (ClaimSecurityAttributeV1)Marshal.PtrToStructure(ptr, typeof(ClaimSecurityAttributeV1));
+            Name = v1.Name.ToString();
+            ValueType = v1.ValueType;
+            Flags = v1.Flags;
+            var values = ReadValues(v1.Values, v1.ValueCount, v1.ValueType).ToArray();
+            Values = values;
+            ValueCount = values.Length;
+        }
+
+        internal ClaimSecurityAttribute(string name, ClaimSecurityValueType value_type, ClaimSecurityFlags flags, IEnumerable<object> values)
+        {
+            Name = name;
+            ValueType = value_type;
+            Flags = flags;
+            var array = values.ToArray();
+            Values = array;
+            ValueCount = array.Length;
+        }
+
+        internal ClaimSecurityAttribute(byte[] data)
+        {
+            BinaryReader reader = new BinaryReader(new MemoryStream(data));
+            Name = ReadString(data, reader.ReadInt32());
+            ValueType = (ClaimSecurityValueType)reader.ReadUInt16();
+            // Reserved.
+            reader.ReadInt16();
+            Flags = (ClaimSecurityFlags)reader.ReadInt32();
+            int count = reader.ReadInt32();
+            var values = ReadValues(data, reader, count, ValueType).ToArray();
+            Values = values;
+            ValueCount = values.Length;
+        }
+        #endregion
+
+        #region Private Members
         private static T[] ReadTyped<T>(IntPtr buffer, int count) where T : struct
         {
             int type_size = Marshal.SizeOf(typeof(T));
@@ -66,57 +138,6 @@ namespace NtApiDotNet
                 default:
                     return new object[0];
             }
-        }
-
-        /// <summary>
-        /// The name of the attribute.
-        /// </summary>
-        public string Name { get; }
-        /// <summary>
-        /// The type of values.
-        /// </summary>
-        public ClaimSecurityValueType ValueType { get; }
-        /// <summary>
-        /// The attribute flags.
-        /// </summary>
-        public ClaimSecurityFlags Flags { get; }
-        /// <summary>
-        /// The list of values.
-        /// </summary>
-        public IEnumerable<object> Values { get; }
-        /// <summary>
-        /// The count of values.
-        /// </summary>
-        public int ValueCount { get; }
-
-        /// <summary>
-        /// Convert the attribute to a builder to modify it.
-        /// </summary>
-        /// <returns>The builder.</returns>
-        public ClaimSecurityAttributeBuilder ToBuilder()
-        {
-            return ClaimSecurityAttributeBuilder.Create(this);
-        }
-
-        internal ClaimSecurityAttribute(IntPtr ptr)
-        {
-            ClaimSecurityAttributeV1 v1 = (ClaimSecurityAttributeV1)Marshal.PtrToStructure(ptr, typeof(ClaimSecurityAttributeV1));
-            Name = v1.Name.ToString();
-            ValueType = v1.ValueType;
-            Flags = v1.Flags;
-            var values = ReadValues(v1.Values, v1.ValueCount, v1.ValueType).ToArray();
-            Values = values;
-            ValueCount = values.Length;
-        }
-
-        internal ClaimSecurityAttribute(string name, ClaimSecurityValueType value_type, ClaimSecurityFlags flags, IEnumerable<object> values)
-        {
-            Name = name;
-            ValueType = value_type;
-            Flags = flags;
-            var array = values.ToArray();
-            Values = array;
-            ValueCount = array.Length;
         }
 
         private static string ReadString(byte[] data, int offset)
@@ -174,20 +195,6 @@ namespace NtApiDotNet
             }
         }
 
-        internal ClaimSecurityAttribute(byte[] data)
-        {
-            BinaryReader reader = new BinaryReader(new MemoryStream(data));
-            Name = ReadString(data, reader.ReadInt32());
-            ValueType = (ClaimSecurityValueType)reader.ReadUInt16();
-            // Reserved.
-            reader.ReadInt16();
-            Flags = (ClaimSecurityFlags)reader.ReadInt32();
-            int count = reader.ReadInt32();
-            var values = ReadValues(data, reader, count, ValueType).ToArray();
-            Values = values;
-            ValueCount = values.Length;
-        }
+        #endregion
     }
-
-#pragma warning restore 1591
 }

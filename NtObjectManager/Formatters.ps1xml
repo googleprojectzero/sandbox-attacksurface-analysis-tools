@@ -2318,5 +2318,49 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>ClaimSecurityAttributeTable</Name>
+      <ViewSelectedBy>
+        <TypeName>NtApiDotNet.ClaimSecurityAttribute</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>Name</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Flags</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>ValueType</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Values</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Flags</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>ValueType</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>Values</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>

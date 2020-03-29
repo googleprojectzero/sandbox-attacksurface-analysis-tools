@@ -1150,6 +1150,7 @@ namespace NtApiDotNet
         {
             switch (type)
             {
+                case AceType.AlarmObject:
                 case AceType.AlarmCallbackObject:
                 case AceType.AllowedCallbackObject:
                 case AceType.AllowedObject:
@@ -1227,8 +1228,8 @@ namespace NtApiDotNet
 
         private static Dictionary<Sid, string> _known_capabilities = null;
         private static Dictionary<Sid, string> _device_capabilities;
-        private static Regex ConditionalAceRegex = new Regex(@"^D:\(XA;;;;;WD;\((.+)\)\)$");
-        private static ConcurrentDictionary<Sid, SidName> _cached_names = new ConcurrentDictionary<Sid, SidName>();
+        private static readonly Regex ConditionalAceRegex = new Regex(@"^D:\(XA;;;;;WD;\((.+)\)\)$");
+        private static readonly ConcurrentDictionary<Sid, SidName> _cached_names = new ConcurrentDictionary<Sid, SidName>();
         private static readonly Dictionary<Sid, string> _known_sids = new Dictionary<Sid, string>()
         {
             // S-1-5-86-1544737700-199408000-2549878335-3519669259-381336952

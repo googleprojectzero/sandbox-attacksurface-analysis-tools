@@ -156,6 +156,15 @@ namespace NtApiDotNet
                         case AceType.DeniedCallback:
                             Type = AceType.Denied;
                             break;
+                        case AceType.Alarm:
+                            Type = AceType.AlarmCallback;
+                            break;
+                        case AceType.Audit:
+                            Type = AceType.AuditCallback;
+                            break;
+                        case AceType.AlarmObject:
+                            Type = AceType.AlarmCallbackObject;
+                            break;
                     }
                 }
                 else

@@ -6640,3 +6640,28 @@ function Set-NtSecurityDescriptorIntegrityLevel {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Gets the application data for an ACE condition string expression.
+.DESCRIPTION
+This cmdlet gets the data for an ACE string expression. It parses the condition string expression and returns the bytes.
+.PARAMETER Condition
+The condition string expression.
+.INPUTS
+None
+.OUTPUTS
+byte[]
+.EXAMPLE
+Get-NtAceConditionData -Condition 'WIN://TokenId == "TEST"'
+Gets the data for the condition expression 'WIN://TokenId == "TEST"'
+#>
+function Get-NtAceConditionData {
+    [CmdletBinding(DefaultParameterSetName="FromLevel")]
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [string]$Condition
+    )
+
+    [NtApiDotNet.NtSecurity]::StringToConditionalAce($Condition)
+}
