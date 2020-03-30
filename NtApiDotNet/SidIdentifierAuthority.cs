@@ -19,6 +19,27 @@ using System.Runtime.InteropServices;
 namespace NtApiDotNet
 {
     /// <summary>
+    /// Predefined security authorities
+    /// </summary>
+    public enum SecurityAuthority : byte
+    {
+#pragma warning disable 1591
+        Null = 0,
+        World = 1,
+        Local = 2,
+        Creator = 3,
+        NonUnique = 4,
+        Nt = 5,
+        ResourceManager = 9,
+        Package = 15,
+        Label = 16,
+        ScopedPolicyId = 17,
+        Authentication = 18,
+        ProcessTrust = 19,
+#pragma warning restore 1591
+    }
+
+    /// <summary>
     /// Represents an identifier authority for a SID.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
