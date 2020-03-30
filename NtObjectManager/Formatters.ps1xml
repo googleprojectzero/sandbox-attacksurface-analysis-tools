@@ -216,22 +216,18 @@
         <TableHeaders>
           <TableColumnHeader>
             <Label>Type</Label>
-            <Width>10</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>User</Label>
-            <Width>30</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>Flags</Label>
-            <Width>20</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>Mask</Label>
-            <Width>10</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>
