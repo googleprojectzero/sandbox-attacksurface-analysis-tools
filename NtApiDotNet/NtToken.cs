@@ -50,6 +50,29 @@ namespace NtApiDotNet
     }
 
     /// <summary>
+    /// Specify type of security attributes to query.
+    /// </summary>
+    public enum SecurityAttributeType
+    {
+        /// <summary>
+        /// Token security attributes.
+        /// </summary>
+        Token,
+        /// <summary>
+        /// User security attributes.
+        /// </summary>
+        User,
+        /// <summary>
+        /// Restricted user security attributes.
+        /// </summary>
+        RestrictedUser,
+        /// <summary>
+        /// Device security attributes.
+        /// </summary>
+        Device
+    }
+
+    /// <summary>
     /// Data from the TSA://ProcUnique security attribute.
     /// </summary>
     public struct ProcessUniqueAttribute
@@ -662,17 +685,32 @@ namespace NtApiDotNet
         /// <summary>
         /// Get a security attribute by name.
         /// </summary>
+        /// <param name="type">Specify the type of security attributes to query.</param>
         /// <param name="name">The name of the security attribute, such as WIN://PKG</param>
-        /// <param name="type">The expected type of the security attribute. If None return ignore type check.</param>
+        /// <param name="value_type">The expected type of the security attribute. If None return ignore type check.</param>
         /// <returns>The security attribute or null if not found.</returns>
-        public ClaimSecurityAttribute GetSecurityAttributeByName(string name, ClaimSecurityValueType type)
+        public ClaimSecurityAttribute GetSecurityAttributeByName(SecurityAttributeType type, string name, ClaimSecurityValueType value_type)
         {
-            IEnumerable<ClaimSecurityAttribute> ret = SecurityAttributes.Where(a => a.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-            if (type != ClaimSecurityValueType.None)
+            var result = GetSecurityAttributes(type, false);
+            if (!result.IsSuccess)
+                return null;
+            IEnumerable<ClaimSecurityAttribute> ret = result.Result.Where(a => a.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (value_type != ClaimSecurityValueType.None)
             {
-                ret = ret.Where(a => a.ValueType == type);
+                ret = ret.Where(a => a.ValueType == value_type);
             }
             return ret.FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Get a security attribute by name.
+        /// </summary>
+        /// <param name="name">The name of the security attribute, such as WIN://PKG</param>
+        /// <param name="value_type">The expected type of the security attribute. If None return ignore type check.</param>
+        /// <returns>The security attribute or null if not found.</returns>
+        public ClaimSecurityAttribute GetSecurityAttributeByName(string name, ClaimSecurityValueType value_type)
+        {
+            return GetSecurityAttributeByName(SecurityAttributeType.Token, name, value_type);
         }
 
         /// <summary>
@@ -688,16 +726,15 @@ namespace NtApiDotNet
         /// <summary>
         /// Get token's security attributes
         /// </summary>
+        /// <param name="type">Specify the type of security attributes to query.</param>
         /// <param name="throw_on_error">Throw on error.</param>
         /// <returns>The security attributes.</returns>
-        public NtResult<ClaimSecurityAttribute[]> GetSecurityAttributes(bool throw_on_error)
+        public NtResult<ClaimSecurityAttribute[]> GetSecurityAttributes(SecurityAttributeType type, bool throw_on_error)
         {
-            using (var buf = QueryBuffer(TokenInformationClass.TokenSecurityAttributes, new ClaimSecurityAttributesInformation(), throw_on_error))
+            using (var buf = QueryBuffer(GetSecurityAttributeClass(type), new ClaimSecurityAttributesInformation(), throw_on_error))
             {
                 if (!buf.IsSuccess)
-                {
                     return buf.Cast<ClaimSecurityAttribute[]>();
-                }
                 ClaimSecurityAttributesInformation r = buf.Result.Result;
                 List<ClaimSecurityAttribute> attributes = new List<ClaimSecurityAttribute>();
                 if (r.AttributeCount > 0)
@@ -713,6 +750,26 @@ namespace NtApiDotNet
                 }
                 return new NtResult<ClaimSecurityAttribute[]>(NtStatus.STATUS_SUCCESS, attributes.ToArray());
             }
+        }
+
+        /// <summary>
+        /// Get token's security attributes.
+        /// </summary>
+        /// <param name="throw_on_error">Throw on error.</param>
+        /// <returns>The security attributes.</returns>
+        public NtResult<ClaimSecurityAttribute[]> GetSecurityAttributes(bool throw_on_error)
+        {
+            return GetSecurityAttributes(SecurityAttributeType.Token, throw_on_error);
+        }
+
+        /// <summary>
+        /// Get token's security attributes
+        /// </summary>
+        /// <param name="type">Specify the type of security attributes to query.</param>
+        /// <returns>The security attributes.</returns>
+        public ClaimSecurityAttribute[] GetSecurityAttributes(SecurityAttributeType type)
+        {
+            return GetSecurityAttributes(type, true).Result;
         }
 
         /// <summary>
@@ -732,7 +789,8 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">Throw on error.</param>
         /// <remarks>The array of attributes aand operations must be the same size. You need SeTcbPrivilege to call this API.</remarks>
         /// <returns>The NT Status code.</returns>
-        public NtStatus SetSecurityAttributes(IEnumerable<ClaimSecurityAttributeBuilder> attributes, IEnumerable<TokenSecurityAttributeOperation> operations, bool throw_on_error)
+        public NtStatus SetSecurityAttributes(IEnumerable<ClaimSecurityAttributeBuilder> attributes, 
+            IEnumerable<TokenSecurityAttributeOperation> operations, bool throw_on_error)
         {
             return SetSecurityAttributes(attributes.ToArray(), operations.ToArray(), throw_on_error);
         }
@@ -2583,6 +2641,23 @@ namespace NtApiDotNet
             }
 
             return _policy_lookup_table[8 * ((int)policy_type - 1) + offset.Value];
+        }
+
+        private TokenInformationClass GetSecurityAttributeClass(SecurityAttributeType type)
+        {
+            switch (type)
+            {
+                case SecurityAttributeType.Token:
+                    return TokenInformationClass.TokenSecurityAttributes;
+                case SecurityAttributeType.User:
+                    return TokenInformationClass.TokenUserClaimAttributes;
+                case SecurityAttributeType.RestrictedUser:
+                    return TokenInformationClass.TokenRestrictedDeviceClaimAttributes;
+                case SecurityAttributeType.Device:
+                    return TokenInformationClass.TokenDeviceClaimAttributes;
+                default:
+                    throw new ArgumentException("Invalid attributes type.");
+            }
         }
 
         #endregion
