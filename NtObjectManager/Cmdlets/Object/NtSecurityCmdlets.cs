@@ -1208,7 +1208,7 @@ namespace NtObjectManager.Cmdlets.Object
             }
 
             Ace ace = new Ace(Type, Flags, access, GetSid());
-            if (NtSecurity.IsCallbackAceType(Type) && !string.IsNullOrWhiteSpace(condition))
+            if ((NtSecurity.IsCallbackAceType(Type) || Type == AceType.AccessFilter) && !string.IsNullOrWhiteSpace(condition))
             {
                 ace.Condition = condition;
             }
@@ -1244,7 +1244,7 @@ namespace NtObjectManager.Cmdlets.Object
             _dict = new RuntimeDefinedParameterDictionary();
             _dict.AddDynamicParameter("Access", access_type, true, 2);
 
-            if (NtSecurity.IsCallbackAceType(Type))
+            if (NtSecurity.IsCallbackAceType(Type) || Type == AceType.AccessFilter)
             {
                 _dict.AddDynamicParameter("Condition", typeof(string), false);
             }

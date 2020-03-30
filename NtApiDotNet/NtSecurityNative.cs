@@ -856,14 +856,6 @@ namespace NtApiDotNet
             SigningLevel CurrentLevel, SigningLevel CheckLevel);
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    public struct AceHeader
-    {
-        public AceType AceType;
-        public AceFlags AceFlags;
-        public ushort AceSize;
-    }
-
     public enum AceType : byte
     {
         Allowed = 0x0,
@@ -890,8 +882,12 @@ namespace NtApiDotNet
         AccessFilter = 0x15,
     }
 
+    /// <summary>
+    /// ACE Flags. Note that the value isn't completely the same as
+    /// the real flags.
+    /// </summary>
     [Flags]
-    public enum AceFlags : byte
+    public enum AceFlags
     {
         None = 0,
         ObjectInherit = 0x1,
@@ -899,9 +895,13 @@ namespace NtApiDotNet
         NoPropagateInherit = 0x4,
         InheritOnly = 0x8,
         Inherited = 0x10,
+        // Used only for Allow ACEs.
         Critical = 0x20,
+        // Used only for Audit/Alarm ACEs.
         SuccessfulAccess = 0x40,
-        FailedAccess = 0x80
+        FailedAccess = 0x80,
+        // Used only for AccessFilter ACE.
+        TrustProtected = 0x100,
     }
 
     public enum CompoundAceType
@@ -926,7 +926,6 @@ namespace NtApiDotNet
         ObjectTypePresent = 0x1,
         InheritedObjectTypePresent = 0x2,
     }
-
 
     public enum AclRevision
     {

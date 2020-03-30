@@ -156,14 +156,23 @@ namespace NtApiDotNet
                         case AceType.DeniedCallback:
                             Type = AceType.Denied;
                             break;
-                        case AceType.Alarm:
-                            Type = AceType.AlarmCallback;
+                        case AceType.AllowedCallbackObject:
+                            Type = AceType.AllowedObject;
                             break;
-                        case AceType.Audit:
-                            Type = AceType.AuditCallback;
+                        case AceType.DeniedCallbackObject:
+                            Type = AceType.DeniedObject;
                             break;
-                        case AceType.AlarmObject:
-                            Type = AceType.AlarmCallbackObject;
+                        case AceType.AlarmCallback:
+                            Type = AceType.Alarm;
+                            break;
+                        case AceType.AuditCallback:
+                            Type = AceType.Audit;
+                            break;
+                        case AceType.AlarmCallbackObject:
+                            Type = AceType.AlarmObject;
+                            break;
+                        case AceType.AuditCallbackObject:
+                            Type = AceType.AuditObject;
                             break;
                     }
                 }
@@ -177,6 +186,24 @@ namespace NtApiDotNet
                             break;
                         case AceType.Denied:
                             Type = AceType.DeniedCallback;
+                            break;
+                        case AceType.Alarm:
+                            Type = AceType.AlarmCallback;
+                            break;
+                        case AceType.Audit:
+                            Type = AceType.AuditCallback;
+                            break;
+                        case AceType.AllowedObject:
+                            Type = AceType.AllowedCallbackObject;
+                            break;
+                        case AceType.DeniedObject:
+                            Type = AceType.DeniedCallbackObject;
+                            break;
+                        case AceType.AlarmObject:
+                            Type = AceType.AlarmCallbackObject;
+                            break;
+                        case AceType.AuditObject:
+                            Type = AceType.AuditCallbackObject;
                             break;
                     }
                 }
@@ -245,7 +272,7 @@ namespace NtApiDotNet
                     ace = new Ace(type);
                     break;
             }
-            ace.Flags = (AceFlags)reader.ReadByte();
+            ace.Flags = MapToFlags(type, reader.ReadByte());
             int ace_size = reader.ReadUInt16();
             ace.Mask = reader.ReadUInt32();
             if (ace.IsObjectAce)
@@ -317,7 +344,7 @@ namespace NtApiDotNet
             }
 
             writer.Write((byte)Type);
-            writer.Write((byte)Flags);
+            writer.Write(MapFromFlags(Type, Flags));
             writer.Write((ushort)total_length);
             writer.Write(Mask.Access);
             if (IsObjectAce)
@@ -437,6 +464,30 @@ namespace NtApiDotNet
         {
             return !(a == b);
         }
+        #endregion
+
+        #region Private Members
+        private static AceFlags MapToFlags(AceType type, byte flags)
+        {
+            AceFlags ret = (AceFlags)flags;
+            if (type == AceType.AccessFilter && ret.HasFlagSet(AceFlags.SuccessfulAccess))
+            {
+                ret &= ~AceFlags.SuccessfulAccess;
+                ret |= AceFlags.TrustProtected;
+            }
+            return ret;
+        }
+
+        private static byte MapFromFlags(AceType type, AceFlags flags)
+        {
+            byte ret = (byte)flags;
+            if (type == AceType.AccessFilter && flags.HasFlagSet(AceFlags.TrustProtected))
+            {
+                ret |= 0x40;
+            }
+            return ret;
+        }
+
         #endregion
     }
 }
