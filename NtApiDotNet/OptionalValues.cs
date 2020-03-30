@@ -392,7 +392,7 @@ namespace NtApiDotNet
         /// Implicit conversion
         /// </summary>
         /// <param name="value">The value.</param>
-        public static implicit operator OptionalTokenDefaultDacl(TokenGroups value)
+        public static implicit operator OptionalTokenDefaultDacl(TokenDefaultDacl value)
         {
             return new OptionalTokenDefaultDacl(value);
         }

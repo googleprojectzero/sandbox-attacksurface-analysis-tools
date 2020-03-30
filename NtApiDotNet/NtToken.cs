@@ -1473,6 +1473,21 @@ namespace NtApiDotNet
         public ClaimSecurityAttribute[] SecurityAttributes => GetSecurityAttributes();
 
         /// <summary>
+        /// Get token's device claims.
+        /// </summary>
+        public ClaimSecurityAttribute[] DeviceClaims => GetSecurityAttributes(SecurityAttributeType.Device);
+
+        /// <summary>
+        /// Get token's user claims.
+        /// </summary>
+        public ClaimSecurityAttribute[] UserClaims => GetSecurityAttributes(SecurityAttributeType.User);
+
+        /// <summary>
+        /// Get token's restricted user claims.
+        /// </summary>
+        public ClaimSecurityAttribute[] RestrictedUserClaims => GetSecurityAttributes(SecurityAttributeType.RestrictedUser);
+
+        /// <summary>
         /// Get whether a token is an AppContainer token
         /// </summary>
         public bool AppContainer
@@ -2523,26 +2538,15 @@ namespace NtApiDotNet
 
             using (var list = new DisposableList())
             {
-                var attrs = list.AddResource(attributes.Select(a => a.MarshalAttribute(list)).ToArray().ToBuffer());
                 var ops = list.AddResource(operations.Select(o => (int)o).ToArray().ToBuffer());
-                using (var attr_info = new ClaimSecurityAttributesInformation
+                var attr_info = list.AddResource(ClaimSecurityAttributeBuilder.ToSafeBuffer(list, attributes));
+                TokenSecurityAttributesAndOperationInformation info = new TokenSecurityAttributesAndOperationInformation()
                 {
-                    Version = 1,
-                    AttributeCount = attributes.Length,
-                    pAttributeV1 = attrs.DangerousGetHandle()
-                }.ToBuffer())
-                {
-                    TokenSecurityAttributesAndOperationInformation info = new TokenSecurityAttributesAndOperationInformation()
-                    {
-                        Attributes = attr_info.DangerousGetHandle(),
-                        Operations = ops.DangerousGetHandle()
-                    };
-
-                    using (var buffer = info.ToBuffer())
-                    {
-                        return SetInformation(TokenInformationClass.TokenSecurityAttributes, buffer).ToNtException(throw_on_error);
-                    }
-                }
+                    Attributes = attr_info.DangerousGetHandle(),
+                    Operations = ops.DangerousGetHandle()
+                };
+                var buffer = list.AddResource(info.ToBuffer());
+                return SetInformation(TokenInformationClass.TokenSecurityAttributes, buffer).ToNtException(throw_on_error);
             }
         }
 
