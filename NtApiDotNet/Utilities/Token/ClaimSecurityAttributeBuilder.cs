@@ -410,6 +410,18 @@ namespace NtApiDotNet.Token
             writer.Write(values.Item2);
             return stm.ToArray();
         }
+
+        internal static SafeBuffer ToSafeBuffer(DisposableList list, ClaimSecurityAttributeBuilder[] attributes)
+        {
+            var attrs = list.AddResource(attributes.Select(a => a.MarshalAttribute(list)).ToArray().ToBuffer());
+            return new ClaimSecurityAttributesInformation
+            {
+                Version = 1,
+                AttributeCount = attributes.Length,
+                pAttributeV1 = attrs.DangerousGetHandle()
+            }.ToBuffer();
+        }
+
         #endregion
     }
 }
