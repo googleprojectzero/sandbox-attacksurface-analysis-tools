@@ -194,7 +194,8 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify the relative identifiers.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "sid")]
-        public uint[] RelativeIdentifiers { get; set; }
+        [Alias("RelativeIdentifiers", "rid")]
+        public uint[] RelativeIdentifier { get; set; }
 
         /// <summary>
         /// <para type="description">Get a new logon session SID.</para>
@@ -293,7 +294,7 @@ namespace NtObjectManager.Cmdlets.Object
                                     : NtSecurity.GetCapabilitySid(CapabilityName);
                     break;
                 case "sid":
-                    sid = new Sid(SecurityAuthority, RelativeIdentifiers);
+                    sid = new Sid(SecurityAuthority, RelativeIdentifier);
                     break;
                 case "logon":
                     sid = NtSecurity.GetLogonSessionSid();
