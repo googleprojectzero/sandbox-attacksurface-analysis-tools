@@ -666,10 +666,10 @@ namespace NtApiDotNet
             [In] SafeBuffer UserAttributes,
             [In] SafeBuffer DeviceAttributes,
             [In] SafeTokenGroupsBuffer DeviceGroups,
-            [In] ref TokenMandatoryPolicy TokenMandatoryPolicy,
-            [In] ref TokenOwner TokenOwner,
+            [In] OptionalTokenMandatoryPolicy TokenMandatoryPolicy,
+            [In] OptionalTokenOwner TokenOwner,
             [In] ref TokenPrimaryGroup TokenPrimaryGroup,
-            [In] ref TokenDefaultDacl TokenDefaultDacl,
+            [In] OptionalTokenDefaultDacl TokenDefaultDacl,
             [In] TokenSource TokenSource);
 
         [DllImport("ntdll.dll")]

@@ -249,4 +249,152 @@ namespace NtApiDotNet
             return new OptionalPointer(value);
         }
     }
+
+    /// <summary>
+    /// Optional value.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public class OptionalTokenMandatoryPolicy
+    {
+        /// <summary>
+        /// Optional value.
+        /// </summary>
+        public TokenMandatoryPolicy Value;
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="value">The value</param>
+        public OptionalTokenMandatoryPolicy(TokenMandatoryPolicy value)
+        {
+            Value = value;
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public OptionalTokenMandatoryPolicy() : this(default)
+        {
+        }
+
+        /// <summary>
+        /// Implicit conversion
+        /// </summary>
+        /// <param name="value">The value.</param>
+        public static implicit operator OptionalTokenMandatoryPolicy(TokenMandatoryPolicy value)
+        {
+            return new OptionalTokenMandatoryPolicy(value);
+        }
+    }
+
+    /// <summary>
+    /// Optional value.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public class OptionalTokenOwner
+    {
+        /// <summary>
+        /// Optional value.
+        /// </summary>
+        public TokenOwner Value;
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="value">The value</param>
+        public OptionalTokenOwner(TokenOwner value)
+        {
+            Value = value;
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public OptionalTokenOwner() : this(default)
+        {
+        }
+
+        /// <summary>
+        /// Implicit conversion
+        /// </summary>
+        /// <param name="value">The value.</param>
+        public static implicit operator OptionalTokenOwner(TokenOwner value)
+        {
+            return new OptionalTokenOwner(value);
+        }
+    }
+
+    /// <summary>
+    /// Optional value.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public class OptionalTokenGroups
+    {
+        /// <summary>
+        /// Optional value.
+        /// </summary>
+        public TokenGroups Value;
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="value">The value</param>
+        public OptionalTokenGroups(TokenGroups value)
+        {
+            Value = value;
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public OptionalTokenGroups() : this(default)
+        {
+        }
+
+        /// <summary>
+        /// Implicit conversion
+        /// </summary>
+        /// <param name="value">The value.</param>
+        public static implicit operator OptionalTokenGroups(TokenGroups value)
+        {
+            return new OptionalTokenGroups(value);
+        }
+    }
+
+    /// <summary>
+    /// Optional value.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public class OptionalTokenDefaultDacl
+    {
+        /// <summary>
+        /// Optional value.
+        /// </summary>
+        public TokenDefaultDacl Value;
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="value">The value</param>
+        public OptionalTokenDefaultDacl(TokenDefaultDacl value)
+        {
+            Value = value;
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public OptionalTokenDefaultDacl() : this(default)
+        {
+        }
+
+        /// <summary>
+        /// Implicit conversion
+        /// </summary>
+        /// <param name="value">The value.</param>
+        public static implicit operator OptionalTokenDefaultDacl(TokenGroups value)
+        {
+            return new OptionalTokenDefaultDacl(value);
+        }
+    }
 }
