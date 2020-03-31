@@ -387,6 +387,19 @@ namespace NtApiDotNet
         /// <summary>
         /// Convert an enumerable access rights to a string
         /// </summary>
+        /// <param name="container">True to use the container access type.</param>
+        /// <param name="granted_access">The granted access mask.</param>
+        /// <param name="map_to_generic">True to try and convert to generic rights where possible.</param>
+        /// <returns>The string format of the access rights</returns>
+        public string AccessMaskToString(bool container, AccessMask granted_access, bool map_to_generic)
+        {
+            return NtObjectUtils.GrantedAccessAsString(granted_access, GenericMapping, 
+                container ? ContainerAccessRightsType : AccessRightsType, map_to_generic);
+        }
+
+        /// <summary>
+        /// Convert an enumerable access rights to a string
+        /// </summary>
         /// <param name="granted_access">The granted access mask.</param>
         /// <param name="map_to_generic">True to try and convert to generic rights where possible.</param>
         /// <returns>The string format of the access rights</returns>

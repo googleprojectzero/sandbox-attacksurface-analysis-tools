@@ -593,7 +593,7 @@ namespace NtApiDotNet
                 if (!buffer.IsSuccess)
                     return buffer.Cast<SecurityDescriptor>();
 
-                return SecurityDescriptor.Parse(buffer.Result, NtType, throw_on_error);
+                return SecurityDescriptor.Parse(buffer.Result, NtType, IsContainer, throw_on_error);
             }
         }
 

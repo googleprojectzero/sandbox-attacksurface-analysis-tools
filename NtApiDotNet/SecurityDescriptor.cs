@@ -14,7 +14,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.InteropServices;
 
@@ -604,6 +603,11 @@ namespace NtApiDotNet
         /// </summary>
         public bool IsSaclCanonical => Sacl?.IsCanonical(false) ?? true;
 
+        /// <summary>
+        /// Indicates if the SD came from a container.
+        /// </summary>
+        public bool Container { get; set; }
+
         #endregion
 
         #region Public Methods
@@ -1164,11 +1168,23 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="buffer">Safe buffer to security descriptor.</param>
         /// <param name="type">The NT type for the security descriptor.</param>
+        /// <param name="container">True if the security descriptor is from a container.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        public static NtResult<SecurityDescriptor> Parse(SafeBuffer buffer, NtType type, bool container, bool throw_on_error)
+        {
+            SecurityDescriptor sd = new SecurityDescriptor(type) { Container = container };
+            return sd.ParseSecurityDescriptor(buffer).CreateResult(throw_on_error, () => sd);
+        }
+
+        /// <summary>
+        /// Parse a security descriptor.
+        /// </summary>
+        /// <param name="buffer">Safe buffer to security descriptor.</param>
+        /// <param name="type">The NT type for the security descriptor.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         public static NtResult<SecurityDescriptor> Parse(SafeBuffer buffer, NtType type, bool throw_on_error)
         {
-            SecurityDescriptor sd = new SecurityDescriptor(type);
-            return sd.ParseSecurityDescriptor(buffer).CreateResult(throw_on_error, () => sd);
+            return Parse(buffer, type, false, throw_on_error);
         }
 
         /// <summary>

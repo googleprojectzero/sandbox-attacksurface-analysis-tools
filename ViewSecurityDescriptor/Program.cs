@@ -35,7 +35,7 @@ namespace ViewSecurityDescriptor
             {
                 if (args.Length == 0)
                 {
-                    MessageBox.Show("Usage: ViewSecurityDescriptor.exe (handle [--readonly]|Name SDDL NtType)", "Usage", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    MessageBox.Show("Usage: ViewSecurityDescriptor.exe (handle [--readonly]|Name (SDDL|-B64) NtType [Container])", "Usage", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 }
                 else
                 {
@@ -51,8 +51,23 @@ namespace ViewSecurityDescriptor
                     else
                     {
                         NtType type = ServiceUtils.GetServiceNtType(args[2]) ?? new NtType(args[2]);
-                        SecurityDescriptor sd = new SecurityDescriptor(args[1], type);
-                        Application.Run(new SecurityDescriptorViewerForm(args[0], sd));
+                        SecurityDescriptor sd;
+                        if (args[1].StartsWith("-"))
+                        {
+                            sd = new SecurityDescriptor(Convert.FromBase64String(args[1].Substring(1)));
+                        }
+                        else
+                        {
+                            sd = new SecurityDescriptor(args[1]);
+                        }
+
+                        bool container = false;
+                        if (args.Length > 3)
+                        {
+                            container = bool.Parse(args[3]);
+                        }
+
+                        Application.Run(new SecurityDescriptorViewerForm(args[0], sd, type, container));
                     }
                 }
             }

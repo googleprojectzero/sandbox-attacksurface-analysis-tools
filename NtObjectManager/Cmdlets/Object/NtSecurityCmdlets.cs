@@ -893,9 +893,20 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter(ParameterSetName = "FromToken"), 
             Parameter(ParameterSetName = "FromSddl"), 
             Parameter(ParameterSetName = "FromBytes"), 
-            Parameter(ParameterSetName = "FromKey")]
+            Parameter(ParameterSetName = "FromKey"),
+            Parameter(ParameterSetName = "EmptySd")]
         [ArgumentCompleter(typeof(NtTypeArgumentCompleter))]
         public NtType Type { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the security descriptor is for a container.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromToken"),
+            Parameter(ParameterSetName = "FromSddl"),
+            Parameter(ParameterSetName = "FromBytes"),
+            Parameter(ParameterSetName = "FromKey"),
+            Parameter(ParameterSetName = "EmptySd")]
+        public SwitchParameter Container { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a byte array containing the security descriptor.</para>
@@ -1004,6 +1015,7 @@ namespace NtObjectManager.Cmdlets.Object
             }
 
             sd.NtType = Type;
+            sd.Container = Container;
             if (MapType)
             {
                 sd.MapGenericAccess();

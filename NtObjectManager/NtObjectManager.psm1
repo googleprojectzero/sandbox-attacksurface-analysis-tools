@@ -1650,6 +1650,8 @@ Optional name to display with the security descriptor.
 Optionally wait for the user to close the UI.
 .PARAMETER ReadOnly
 Optionally force the viewer to be read-only when passing an object with WriteDac access.
+.PARAMETER Container
+Specify the SD is a container.
 .OUTPUTS
 None
 .EXAMPLE
@@ -1677,6 +1679,8 @@ function Show-NtSecurityDescriptor {
     [NtApiDotNet.NtType]$Type,
     [Parameter(ParameterSetName = "FromSecurityDescriptor")]
     [string]$Name = "Object",
+    [Parameter(ParameterSetName = "FromSecurityDescriptor")]
+    [switch]$Container,
     [switch]$Wait
     )
 
@@ -1714,7 +1718,12 @@ function Show-NtSecurityDescriptor {
             Write-Warning "Defaulting NT type to File. This might give incorrect results."
             $Type = Get-NtType File
         }
-        Start-Process -FilePath "$PSScriptRoot\ViewSecurityDescriptor.exe" -ArgumentList @("`"$Name`"", "`"$($SecurityDescriptor.ToSddl())`"","`"$($Type.Name)`"") -Wait:$Wait
+        if (-not $Container) {
+            $Container = $SecurityDescriptor.Container
+        }
+
+        $sd = [Convert]::ToBase64String($SecurityDescriptor.ToByteArray())
+        Start-Process -FilePath "$PSScriptRoot\ViewSecurityDescriptor.exe" -ArgumentList @("`"$Name`"", "-$sd","`"$($Type.Name)`"", "$Container") -Wait:$Wait
     }
     "FromAccessCheck" {
         if ($AccessCheckResult.SecurityDescriptor -eq "") {
@@ -1735,7 +1744,8 @@ function Format-NtAce {
         [Parameter(Position = 1, Mandatory = $true)]
         [NtApiDotNet.NtType]$Type,
         [switch]$MapGeneric,
-        [switch]$Summary
+        [switch]$Summary,
+        [switch]$Container
     )
 
     PROCESS {
@@ -1750,7 +1760,7 @@ function Format-NtAce {
             if ($MapGeneric) {
                 $mask = $Type.MapGenericRights($mask)
             }
-            $Type.AccessMaskToString($mask, $MapGeneric)
+            $Type.AccessMaskToString($Container, $mask, $MapGeneric)
         }
 
         if ($Summary) {
@@ -1806,7 +1816,8 @@ function Format-NtAcl {
         [Parameter(Mandatory = $true)]
         [switch]$MapGeneric,
         [switch]$AuditOnly,
-        [switch]$Summary
+        [switch]$Summary,
+        [switch]$Container
     )
 
     $flags = @()
@@ -1847,9 +1858,9 @@ function Format-NtAcl {
     } else {
         Write-Output $Name
         if ($AuditOnly) {
-            $Acl | ? IsAuditAce | Format-NtAce -Type $Type -MapGeneric:$MapGeneric -Summary:$Summary
+            $Acl | ? IsAuditAce | Format-NtAce -Type $Type -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container
         } else {
-            $Acl | Format-NtAce -Type $Type -MapGeneric:$MapGeneric -Summary:$Summary
+            $Acl | Format-NtAce -Type $Type -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container
         }
     }
 }
@@ -1920,6 +1931,7 @@ function Format-NtSecurityDescriptor {
         [Parameter(Position = 1, ParameterSetName = "FromSecurityDescriptor")]
         [Parameter(Position = 1, ParameterSetName = "FromAcl")]
         [NtApiDotNet.NtType]$Type,
+        [switch]$Container,
         [Parameter(Position = 0, ParameterSetName = "FromPath", Mandatory = $true, ValueFromPipeline)]
         [string]$Path,
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
@@ -1930,7 +1942,7 @@ function Format-NtSecurityDescriptor {
 
     PROCESS {
         try {
-            $sd, $t,$n = switch($PsCmdlet.ParameterSetName) {
+            $sd,$t,$n = switch($PsCmdlet.ParameterSetName) {
                 "FromObject" {
                     if (!$Object.IsAccessMaskGranted([NtApiDotNet.GenericAccessRights]::ReadControl)) {
                         Write-Error "Object doesn't have Read Control access."
@@ -1939,10 +1951,7 @@ function Format-NtSecurityDescriptor {
                     ($Object.GetSecurityDescriptor($SecurityInformation), $Object.NtType, $Object.FullPath)
                 }
                 "FromPath" {
-                    $access = "ReadControl"
-                    if (($SecurityInformation -band "Sacl") -ne 0) {
-                        $access += ", AccessSystemSecurity"
-                    }
+                    $access = Get-NtAccessMask -SecurityInformation $SecurityInformation -ToGenericAccess
                     Use-NtObject($obj = Get-NtObject -Path $Path -Access $access) {
                         ($obj.GetSecurityDescriptor($SecurityInformation), $obj.NtType, $obj.FullPath)
                     }
@@ -1981,6 +1990,10 @@ function Format-NtSecurityDescriptor {
             if ($t -eq $null) {
                 Write-Warning "No type specified, formatting might be incorrect." 
                 $t = New-NtType Generic
+            }
+
+            if (-not $Container) {
+                $Container = $sd.Container
             }
 
             if (!$Summary) {
@@ -2024,27 +2037,27 @@ function Format-NtSecurityDescriptor {
                 }
             }
             if ($sd.DaclPresent -and (($SecurityInformation -band "Dacl") -ne 0)) {
-                Format-NtAcl $sd.Dacl $t "<DACL>" -MapGeneric:$MapGeneric -Summary:$Summary
+                Format-NtAcl $sd.Dacl $t "<DACL>" -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container
             }
             if ($sd.SaclPresent -and (($SecurityInformation -band "Sacl") -ne 0)) {
-                Format-NtAcl $sd.Sacl $t "<SACL>" -MapGeneric:$MapGeneric -AuditOnly -Summary:$Summary
+                Format-NtAcl $sd.Sacl $t "<SACL>" -MapGeneric:$MapGeneric -AuditOnly -Summary:$Summary -Container:$Container
             }
             $label = $sd.GetMandatoryLabel()
             if ($label -ne $null -and (($SecurityInformation -band "Label") -ne 0)) {
                 Write-Output "<Mandatory Label>" 
-                Format-NtAce -Ace $label -Type $t -Summary:$Summary
+                Format-NtAce -Ace $label -Type $t -Summary:$Summary -Container:$Container
             }
             $trust = $sd.ProcessTrustLabel
             if ($trust -ne $null -and (($SecurityInformation -band "ProcessTrustLabel") -ne 0)) {
                 Write-Output "<Process Trust Label>"
-                Format-NtAce -Ace $trust -Type $t -Summary:$Summary
+                Format-NtAce -Ace $trust -Type $t -Summary:$Summary -Container:$Container
             }
             if (($SecurityInformation -band "Attribute") -ne 0) {
                 $attrs = $sd.ResourceAttributes
                 if ($attrs.Count -gt 0) {
                     Write-Output "<Resource Attributes>"
                     foreach($attr in $attrs) {
-                        Format-NtAce -Ace $attr -Type $t -Summary:$Summary
+                        Format-NtAce -Ace $attr -Type $t -Summary:$Summary -Container:$Container
                     }
                 }
             }
@@ -2053,7 +2066,7 @@ function Format-NtSecurityDescriptor {
                 if ($filters.Count -gt 0) {
                     Write-Output "<Access Filters>"
                     foreach($filter in $filters) {
-                        Format-NtAce -Ace $filter -Type $t -Summary:$Summary
+                        Format-NtAce -Ace $filter -Type $t -Summary:$Summary -Container:$Container
                     }
                 }
             }
@@ -2062,7 +2075,7 @@ function Format-NtSecurityDescriptor {
                 if ($scopes.Count -gt 0) {
                     Write-Output "<Scoped Policy IDs>"
                     foreach($scope in $scopes) {
-                        Format-NtAce -Ace $scope -Type $t -Summary:$Summary
+                        Format-NtAce -Ace $scope -Type $t -Summary:$Summary -Container:$Container
                     }
                 }
             }
