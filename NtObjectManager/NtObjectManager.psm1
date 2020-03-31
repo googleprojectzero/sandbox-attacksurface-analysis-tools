@@ -1813,7 +1813,7 @@ function Format-NtAcl {
     }
 
     if ($Acl.AutoInheritReq) {
-        $flags += @("Auto Inherit Required")
+        $flags += @("Auto Inherit Requested")
     }
 
     if ($flags.Count -gt 0) {
@@ -1915,7 +1915,6 @@ function Format-NtSecurityDescriptor {
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
         [switch]$MapGeneric,
         [switch]$ToSddl,
-        [switch]$ToBytes,
         [switch]$Summary
     )
 

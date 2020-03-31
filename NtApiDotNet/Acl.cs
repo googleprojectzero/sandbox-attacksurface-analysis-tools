@@ -254,11 +254,12 @@ namespace NtApiDotNet
         /// <summary>
         /// Gets an indication if this ACL is canonical.
         /// </summary>
-        /// <remarks>Canonical basically means that deny ACEs are before allow ACEs.</remarks>
+        /// <remarks>Canonical means that deny ACEs are before allow ACEs.</remarks>
+        /// <param name="dacl">True to canonicalize a DACL, otherwise a SACL.</param>
         /// <returns>True if the ACL is canonical.</returns>
-        public bool IsCanonical()
+        public bool IsCanonical(bool dacl)
         {
-            Acl acl = Canonicalize();
+            Acl acl = Canonicalize(dacl);
             if (acl.Count != Count)
             {
                 return false;
@@ -266,7 +267,7 @@ namespace NtApiDotNet
 
             for (int i = 0; i < acl.Count; ++i)
             {
-                if (this[i] != acl[i])
+                if (!ReferenceEquals(this[i], acl[i]))
                 {
                     return false;
                 }
@@ -275,45 +276,67 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Gets an indication if this DACL is canonical.
+        /// </summary>
+        /// <remarks>Canonical basically means that deny ACEs are before allow ACEs.</remarks>
+        /// <returns>True if the ACL is canonical.</returns>
+        [Obsolete("Use IsCanonical with flag")]
+        public bool IsCanonical()
+        {
+            return IsCanonical(true);
+        }
+
+        /// <summary>
+        /// Canonicalize the ACL.
+        /// </summary>
+        /// <param name="dacl">True to canonicalize a DACL, otherwise a SACL.</param>
+        /// <returns>The canonical ACL.</returns>
+        public Acl Canonicalize(bool dacl)
+        {
+            var aces = dacl ? this.Select(GetDaclCanonicalLevel) : this.Select(GetSaclCanonicalLevel);
+            return new Acl(aces.OrderBy(t => t.Item1).Select(t => t.Item2));
+        }
+
+        /// <summary>
         /// Canonicalize the ACL (for use on DACLs only).
         /// </summary>
-        /// <remarks>This isn't a general purpose algorithm, for example it doesn't worry much about object ordering.
-        /// Also it can be lossy, if it doesn't understand an ACE type it will drop it.</remarks>
         /// <returns>The canonical ACL.</returns>
+        [Obsolete("Use Canonicalize with flag")]
         public Acl Canonicalize()
         {
-            List<Ace> access_denied = new List<Ace>();
-            List<Ace> access_allowed = new List<Ace>();
-            List<Ace> inherited = new List<Ace>();
-
-            foreach (Ace ace in this)
-            {
-                if ((ace.Flags & AceFlags.Inherited) == AceFlags.Inherited)
-                {
-                    inherited.Add(ace);
-                }
-                else
-                {
-                    switch (ace.Type)
-                    {
-                        case AceType.Allowed:
-                        case AceType.AllowedObject:
-                            access_allowed.Add(ace);
-                            break;
-                        case AceType.Denied:
-                        case AceType.DeniedObject:
-                            access_denied.Add(ace);
-                            break;
-                    }
-                }
-            }
-
-            Acl ret = new Acl();
-            ret.AddRange(access_denied);
-            ret.AddRange(access_allowed);
-            ret.AddRange(inherited);
-            return ret;
+            return Canonicalize(true);
         }
+
+        /// <summary>
+        /// Find the first ACE with a specified type.
+        /// </summary>
+        /// <param name="type">The type to find.</param>
+        /// <returns>The found ace. Returns null if not found.</returns>
+        public Ace FindAce(AceType type)
+        {
+            return Find(a => a.Type == type);
+        }
+
+        /// <summary>
+        /// Find the all ACE with a specified type.
+        /// </summary>
+        /// <param name="type">The type to find.</param>
+        /// <returns>The found aces.</returns>
+        public IEnumerable<Ace> FindAllAce(AceType type)
+        {
+            return FindAll(a => a.Type == type);
+        }
+
+        /// <summary>
+        /// Find the last ACE with a specified type.
+        /// </summary>
+        /// <param name="type">The type to find.</param>
+        /// <returns>The found ace. Returns null if not found.</returns>
+        public Ace FindLastAce(AceType type)
+        {
+            return FindLast(a => a.Type == type);
+        }
+
         #endregion
 
         #region Public Properties
@@ -399,6 +422,83 @@ namespace NtApiDotNet
 
             Defaulted = defaulted;
         }
+
+        private const int ACE_LEVEL_0 = 0;
+        private const int ACE_LEVEL_1 = 0x10000;
+        private const int ACE_LEVEL_2 = 0x20000;
+        private const int ACE_LEVEL_3 = 0x30000;
+        private const int ACE_LEVEL_4 = 0x40000;
+        private const int ACE_LEVEL_INHERITED = 0x50000;
+
+        private Tuple<int, Ace> GetSaclCanonicalLevel(Ace ace, int index)
+        {
+            int level;
+            if (ace.Flags.HasFlagSet(AceFlags.Inherited))
+            {
+                level = ACE_LEVEL_INHERITED;
+            }
+            else
+            {
+                switch (ace.Type)
+                {
+                    case AceType.Audit:
+                    case AceType.AuditCallback:
+                    case AceType.Alarm:
+                    case AceType.AlarmCallback:
+                        level = ACE_LEVEL_0;
+                        break;
+                    case AceType.AuditObject:
+                    case AceType.AuditCallbackObject:
+                    case AceType.AlarmObject:
+                    case AceType.AlarmCallbackObject:
+                        level = ACE_LEVEL_1;
+                        break;
+                    default:
+                        level = ACE_LEVEL_2;
+                        break;
+                }
+            }
+
+            return Tuple.Create(level + index, ace);
+        }
+
+        private Tuple<int, Ace> GetDaclCanonicalLevel(Ace ace, int index)
+        {
+            int level;
+            if (ace.Flags.HasFlagSet(AceFlags.Inherited))
+            {
+                level = ACE_LEVEL_INHERITED;
+            }
+            else
+            {
+                switch (ace.Type)
+                {
+                    case AceType.Allowed:
+                    case AceType.AllowedCallback:
+                    case AceType.AllowedCompound:
+                        level = ACE_LEVEL_2;
+                        break;
+                    case AceType.AllowedObject:
+                    case AceType.AllowedCallbackObject:
+                        level = ACE_LEVEL_3;
+                        break;
+                    case AceType.Denied:
+                    case AceType.DeniedCallback:
+                        level = ACE_LEVEL_0;
+                        break;
+                    case AceType.DeniedObject:
+                    case AceType.DeniedCallbackObject:
+                        level = ACE_LEVEL_1;
+                        break;
+                    default:
+                        level = ACE_LEVEL_4;
+                        break;
+                }
+            }
+
+            return Tuple.Create(level + index, ace);
+        }
+
         #endregion
     }
 }

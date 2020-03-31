@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
@@ -138,7 +139,16 @@ namespace NtApiDotNet
         {
             if (Sacl != null && !Sacl.NullAcl)
             {
-                return Sacl.Where(ace => ace.Type == type).FirstOrDefault();
+                return Sacl.FindAce(type);
+            }
+            return null;
+        }
+
+        private IEnumerable<Ace> FindAllSaclAce(AceType type)
+        {
+            if (Sacl != null && !Sacl.NullAcl)
+            {
+                return Sacl.FindAllAce(type);
             }
             return null;
         }
@@ -520,6 +530,21 @@ namespace NtApiDotNet
         public Ace ProcessTrustLabel => FindSaclAce(AceType.ProcessTrustLabel);
 
         /// <summary>
+        /// Get the access filter.
+        /// </summary>
+        public Ace AccessFilter => FindSaclAce(AceType.AccessFilter);
+
+        /// <summary>
+        /// Get the scoped policy ID.
+        /// </summary>
+        public Ace ScopedPolicyId => FindSaclAce(AceType.ScopedPolicyId);
+
+        /// <summary>
+        /// Get list of resource attributes.
+        /// </summary>
+        public IEnumerable<ClaimSecurityAttribute> ResourceAttributes => FindAllSaclAce(AceType.ResourceAttribute).Select(a => a.ResourceAttribute);
+
+        /// <summary>
         /// Get or set the integrity level
         /// </summary>
         public TokenIntegrityLevel IntegrityLevel
@@ -567,6 +592,16 @@ namespace NtApiDotNet
         /// Indicates if the security descriptor was constructed from a self relative format.
         /// </summary>
         public bool SelfRelative { get; private set; }
+
+        /// <summary>
+        /// Indicates if the SD's DACL is canonical.
+        /// </summary>
+        public bool IsDaclCanonical => Dacl?.IsCanonical(true) ?? true;
+
+        /// <summary>
+        /// Indicates if the SD's SACL is canonical.
+        /// </summary>
+        public bool IsSaclCanonical => Sacl?.IsCanonical(false) ?? true;
 
         #endregion
 
@@ -912,6 +947,26 @@ namespace NtApiDotNet
         {
             return Modify(security_descriptor, security_information, 
                 flags, token, generic_mapping, true).Result;
+        }
+
+        /// <summary>
+        /// Canonicalize the DACL if it exists.
+        /// </summary>
+        public void CanonicalizeDacl()
+        {
+            if (Dacl == null || Dacl.NullAcl)
+                return;
+            Dacl = Dacl.Canonicalize(true);
+        }
+
+        /// <summary>
+        /// Canonicalize the SACL if it exists.
+        /// </summary>
+        public void CanonicalizeSacl()
+        {
+            if (Sacl == null || Sacl.NullAcl)
+                return;
+            Sacl = Sacl.Canonicalize(false);
         }
 
         /// <summary>
