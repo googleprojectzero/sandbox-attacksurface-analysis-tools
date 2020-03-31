@@ -6633,6 +6633,26 @@ function Set-NtSecurityDescriptorOwner {
 
 <#
 .SYNOPSIS
+Removes the owner for a security descriptor.
+.DESCRIPTION
+This cmdlet removes the owner of a security descriptor.
+.PARAMETER SecurityDescriptor
+The security descriptor to modify.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Remove-NtSecurityDescriptorOwner {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+    )
+    $SecurityDescriptor.Owner = $null
+}
+
+<#
+.SYNOPSIS
 Sets the group for a security descriptor.
 .DESCRIPTION
 This cmdlet sets the group of a security descriptor.
@@ -6656,6 +6676,26 @@ function Set-NtSecurityDescriptorGroup {
         [switch]$Defaulted
     )
     $SecurityDescriptor.Group = [NtApiDotNet.SecurityDescriptorSid]::new($Group, $Defaulted)
+}
+
+<#
+.SYNOPSIS
+Removes the group for a security descriptor.
+.DESCRIPTION
+This cmdlet removes the group of a security descriptor.
+.PARAMETER SecurityDescriptor
+The security descriptor to modify.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Remove-NtSecurityDescriptorGroup {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+    )
+    $SecurityDescriptor.Group = $null
 }
 
 <#

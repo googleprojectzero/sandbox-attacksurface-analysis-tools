@@ -881,7 +881,7 @@ namespace NtApiDotNet
 
         internal static int GetHashCodeByteArray(byte[] a)
         {
-            if (a == null)
+            if (a == null || a.Length == 0)
                 return 0;
             return a.Aggregate((v, c) => (byte)(v ^ c));
         }

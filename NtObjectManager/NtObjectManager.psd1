@@ -74,7 +74,8 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-AuthClient', 'Update-AuthServer', 'Update-AuthClient', 'Get-AuthAccessToken', 'Get-NtKernelModule',
           'Get-NtObjectInformationClass', 'Add-NtSection', 'Remove-NtSection', 'Compare-NtObject', 'Edit-NtSecurityDescriptor',
           'Set-NtSecurityDescriptorOwner', 'Set-NtSecurityDescriptorGroup', 'Set-NtSecurityDescriptorIntegrityLevel',
-          'Get-NtAceConditionData', 'ConvertFrom-NtSecurityDescriptor'
+          'Get-NtAceConditionData', 'ConvertFrom-NtSecurityDescriptor', 'Remove-NtSecurityDescriptorOwner',
+          'Remove-NtSecurityDescriptorGroup'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
@@ -111,7 +112,8 @@ CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile
                'Get-NtWindowStation', 'Get-NtDesktop', 'New-NtWindowStation',
                'New-NtDesktop', 'Get-Win32Error', 'Set-NtKeyValue', 'Remove-NtKey',
                'Get-NtObjectInformation', 'Set-NtObjectInformation', 'Test-NtTokenPrivilege',
-               'Format-NtJob', 'Add-NtSecurityDescriptorAce', 'New-NtSecurityAttribute'
+               'Format-NtJob', 'Add-NtSecurityDescriptorAce', 'New-NtSecurityAttribute',
+               'Remove-NtSecurityDescriptorAce'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @()
