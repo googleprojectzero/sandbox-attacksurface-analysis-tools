@@ -337,6 +337,22 @@ namespace NtApiDotNet
             return FindLast(a => a.Type == type);
         }
 
+        /// <summary>
+        /// Clone the ACL. Also clones all ACEs.
+        /// </summary>
+        /// <returns>The cloned ACL.</returns>
+        public Acl Clone()
+        {
+            Acl ret = new Acl(this.Select(a => a.Clone()));
+            ret.Defaulted = Defaulted;
+            ret.NullAcl = NullAcl;
+            ret.Protected = Protected;
+            ret.AutoInherited = AutoInherited;
+            ret.AutoInheritReq = AutoInheritReq;
+            ret.Revision = Revision;
+            return ret;
+        }
+
         #endregion
 
         #region Public Properties

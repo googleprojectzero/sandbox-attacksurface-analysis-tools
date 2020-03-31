@@ -871,6 +871,38 @@ namespace NtObjectManager.Cmdlets.Object
         public SwitchParameter NullDacl { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify to create the security descriptor with a NULL SACL.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "EmptySd")]
+        public SwitchParameter NullSacl { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify thr owner for the new SD.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "EmptySd")]
+        public Sid Owner { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the group for the new SD.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "EmptySd")]
+        public Sid Group { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the DACL for the new SD. The ACL will be cloned.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "EmptySd")]
+        [AllowEmptyCollection]
+        public Acl Dacl { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the the SACL for the new SD. The ACL will be cloned.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "EmptySd")]
+        [AllowEmptyCollection]
+        public Acl Sacl { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify to create the security descriptor from an SDDL representation.</para>
         /// </summary>
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromSddl")]
@@ -937,7 +969,8 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify additional control flags to apply to the SD. Not all the flags are accepted.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "FromSddl")]
+        [Parameter(ParameterSetName = "FromSddl"),
+         Parameter(ParameterSetName = "EmptySd")]
         public SecurityDescriptorControl Control { get; set; }
 
         /// <summary>
@@ -1007,11 +1040,7 @@ namespace NtObjectManager.Cmdlets.Object
                     sd = new SecurityDescriptor(KeyValue.Data);
                     break;
                 default:
-                    sd = new SecurityDescriptor
-                    {
-                        Dacl = new Acl()
-                    };
-                    sd.Dacl.NullAcl = NullDacl;
+                    sd = CreateNewSecurityDescriptor();
                     break;
             }
 
@@ -1022,66 +1051,19 @@ namespace NtObjectManager.Cmdlets.Object
                 sd.MapGenericAccess();
             }
 
-            UpdateSecurityDescriptorControl(sd, Control);
+            sd.Control |= Control;
             WriteObject(sd);
         }
 
-        private static void UpdateSecurityDescriptorControl(SecurityDescriptor sd, SecurityDescriptorControl control)
+        private SecurityDescriptor CreateNewSecurityDescriptor()
         {
-            if (control.HasFlag(SecurityDescriptorControl.OwnerDefaulted) && sd.Owner != null)
+            return new SecurityDescriptor
             {
-                sd.Owner.Defaulted = true;
-            }
-            if (control.HasFlag(SecurityDescriptorControl.GroupDefaulted) && sd.Group != null)
-            {
-                sd.Group.Defaulted = true;
-            }
-            if (sd.Dacl != null)
-            {
-                if (control.HasFlag(SecurityDescriptorControl.DaclDefaulted))
-                {
-                    sd.Dacl.Defaulted = true;
-                }
-                if (control.HasFlag(SecurityDescriptorControl.DaclProtected))
-                {
-                    sd.Dacl.Protected = true;
-                }
-                if (control.HasFlag(SecurityDescriptorControl.DaclAutoInherited))
-                {
-                    sd.Dacl.AutoInherited = true;
-                }
-                if (control.HasFlag(SecurityDescriptorControl.DaclAutoInheritReq))
-                {
-                    sd.Dacl.AutoInheritReq = true;
-                }
-            }
-            if (sd.Sacl != null)
-            {
-                if (control.HasFlag(SecurityDescriptorControl.SaclDefaulted))
-                {
-                    sd.Sacl.Defaulted = true;
-                }
-                if (control.HasFlag(SecurityDescriptorControl.SaclProtected))
-                {
-                    sd.Sacl.Protected = true;
-                }
-                if (control.HasFlag(SecurityDescriptorControl.SaclAutoInherited))
-                {
-                    sd.Sacl.AutoInherited = true;
-                }
-                if (control.HasFlag(SecurityDescriptorControl.SaclAutoInheritReq))
-                {
-                    sd.Sacl.AutoInheritReq = true;
-                }
-            }
-            if (control.HasFlag(SecurityDescriptorControl.ServerSecurity))
-            {
-                sd.ServerSecurity = true;
-            }
-            if (control.HasFlag(SecurityDescriptorControl.DaclUntrusted))
-            {
-                sd.DaclUntrusted = true;
-            }
+                Dacl = Dacl?.Clone() ?? new Acl() { NullAcl = NullDacl },
+                Sacl = Sacl?.Clone() ?? (NullSacl ? new Acl() { NullAcl = NullSacl } : null),
+                Owner = Owner != null ? new SecurityDescriptorSid(Owner, false) : null,
+                Group = Group != null ? new SecurityDescriptorSid(Group, false) : null
+            };
         }
     }
 

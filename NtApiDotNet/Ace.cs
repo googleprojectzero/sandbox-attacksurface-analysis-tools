@@ -393,6 +393,20 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Clone this ACE.
+        /// </summary>
+        /// <returns>The cloned ACE.</returns>
+        public Ace Clone()
+        {
+            Ace ace = (Ace)this.MemberwiseClone();
+            if (ace.ApplicationData != null)
+            {
+                ace.ApplicationData = (byte[])ace.ApplicationData.Clone();
+            }
+            return ace;
+        }
+
+        /// <summary>
         /// Compare ACE to another object.
         /// </summary>
         /// <param name="obj">The other object.</param>

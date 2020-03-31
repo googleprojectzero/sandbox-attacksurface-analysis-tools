@@ -1363,7 +1363,7 @@
       </TableControl>
     </View>
     <View>
-      <Name>SecurityDescriptor</Name>
+      <Name>SecurityDescriptorTable</Name>
       <ViewSelectedBy>
         <TypeName>NtApiDotNet.SecurityDescriptor</TypeName>
       </ViewSelectedBy>
@@ -1371,22 +1371,18 @@
         <TableHeaders>
           <TableColumnHeader>
             <Label>Owner</Label>
-            <Width>30</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>DACL ACE Count</Label>
-            <Width>14</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>SACL ACE Count</Label>
-            <Width>14</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
           <TableColumnHeader>
             <Label>Integrity Level</Label>
-            <Width>15</Width>
             <Alignment>left</Alignment>
           </TableColumnHeader>
         </TableHeaders>

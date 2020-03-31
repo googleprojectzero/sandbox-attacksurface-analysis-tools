@@ -458,6 +458,36 @@ namespace NtApiDotNet
             }
         }
 
+        private void UpdateControl(SecurityDescriptorControl control)
+        {
+            if (Owner != null)
+            {
+                Owner.Defaulted = control.HasFlag(SecurityDescriptorControl.OwnerDefaulted);
+            }
+
+            if (Group != null)
+            {
+                Group.Defaulted = control.HasFlag(SecurityDescriptorControl.GroupDefaulted);
+            }
+
+            if (Dacl != null)
+            {
+                Dacl.Defaulted = control.HasFlag(SecurityDescriptorControl.DaclDefaulted);
+                Dacl.Protected = control.HasFlag(SecurityDescriptorControl.DaclProtected);
+                Dacl.AutoInherited = control.HasFlag(SecurityDescriptorControl.DaclAutoInherited);
+                Dacl.AutoInheritReq = control.HasFlag(SecurityDescriptorControl.DaclAutoInheritReq);
+            }
+            if (Sacl != null)
+            {
+                Sacl.Defaulted = control.HasFlag(SecurityDescriptorControl.SaclDefaulted);
+                Sacl.Protected = control.HasFlag(SecurityDescriptorControl.SaclProtected);
+                Sacl.AutoInherited = control.HasFlag(SecurityDescriptorControl.SaclAutoInherited);
+                Sacl.AutoInheritReq = control.HasFlag(SecurityDescriptorControl.SaclAutoInheritReq);
+            }
+            ServerSecurity = control.HasFlag(SecurityDescriptorControl.ServerSecurity);
+            DaclUntrusted = control.HasFlag(SecurityDescriptorControl.DaclUntrusted);
+        }
+
         #endregion
 
         #region Public Properties
@@ -478,9 +508,14 @@ namespace NtApiDotNet
         /// </summary>
         public SecurityDescriptorSid Group { get; set; }
         /// <summary>
-        /// Control flags. This is computed based on the current state of the SD.
+        /// Get or set Control flags. This is computed based on the current state of the SD.
         /// </summary>
-        public SecurityDescriptorControl Control => ComputeControl();
+        public SecurityDescriptorControl Control
+        {
+            get => ComputeControl();
+            set => UpdateControl(value);
+        }
+
         /// <summary>
         /// Revision value
         /// </summary>
