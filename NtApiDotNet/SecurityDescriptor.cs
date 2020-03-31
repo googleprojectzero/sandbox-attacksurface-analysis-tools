@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.InteropServices;
 
@@ -148,9 +149,9 @@ namespace NtApiDotNet
         {
             if (Sacl != null && !Sacl.NullAcl)
             {
-                return Sacl.FindAllAce(type);
+                return Sacl.FindAllAce(type).ToList().AsReadOnly();
             }
-            return null;
+            return new Ace[0];
         }
 
         private delegate NtStatus QuerySidFunc(SafeBuffer SecurityDescriptor, out IntPtr sid, out bool defaulted);
@@ -530,19 +531,19 @@ namespace NtApiDotNet
         public Ace ProcessTrustLabel => FindSaclAce(AceType.ProcessTrustLabel);
 
         /// <summary>
-        /// Get the access filter.
+        /// Get list of access filters.
         /// </summary>
-        public Ace AccessFilter => FindSaclAce(AceType.AccessFilter);
-
-        /// <summary>
-        /// Get the scoped policy ID.
-        /// </summary>
-        public Ace ScopedPolicyId => FindSaclAce(AceType.ScopedPolicyId);
+        public IEnumerable<Ace> AccessFilters => FindAllSaclAce(AceType.AccessFilter);
 
         /// <summary>
         /// Get list of resource attributes.
         /// </summary>
-        public IEnumerable<ClaimSecurityAttribute> ResourceAttributes => FindAllSaclAce(AceType.ResourceAttribute).Select(a => a.ResourceAttribute);
+        public IEnumerable<Ace> ResourceAttributes => FindAllSaclAce(AceType.ResourceAttribute);
+
+        /// <summary>
+        /// Get list of scoped policy IDs.
+        /// </summary>
+        public IEnumerable<Ace> ScopedPolicyIds => FindAllSaclAce(AceType.ScopedPolicyId);
 
         /// <summary>
         /// Get or set the integrity level

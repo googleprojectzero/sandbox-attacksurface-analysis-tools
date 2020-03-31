@@ -1235,15 +1235,8 @@ namespace NtObjectManager.Cmdlets.Object
 
         object IDynamicParameters.GetDynamicParameters()
         {
-            Type access_type = SecurityDescriptor?.NtType?.AccessRightsType ?? typeof(GenericAccessRights);
-            if (Type == AceType.MandatoryLabel)
-            {
-                access_type = typeof(MandatoryLabelPolicy);
-            }
-
+            bool access_mandatory = true;
             _dict = new RuntimeDefinedParameterDictionary();
-            _dict.AddDynamicParameter("Access", access_type, true, 2);
-
             if (NtSecurity.IsCallbackAceType(Type) || Type == AceType.AccessFilter)
             {
                 _dict.AddDynamicParameter("Condition", typeof(string), false);
@@ -1263,7 +1256,15 @@ namespace NtObjectManager.Cmdlets.Object
             if (Type == AceType.ResourceAttribute)
             {
                 _dict.AddDynamicParameter("SecurityAttribute", typeof(ClaimSecurityAttribute), true);
+                access_mandatory = false;
             }
+
+            Type access_type = SecurityDescriptor?.NtType?.AccessRightsType ?? typeof(GenericAccessRights);
+            if (Type == AceType.MandatoryLabel)
+            {
+                access_type = typeof(MandatoryLabelPolicy);
+            }
+            _dict.AddDynamicParameter("Access", access_type, access_mandatory, 2);
 
             return _dict;
         }

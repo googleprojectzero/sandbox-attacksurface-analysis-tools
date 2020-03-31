@@ -1754,7 +1754,14 @@ function Format-NtAce {
         }
 
         if ($Summary) {
-            Write-Output "$($ace.Sid.Name): ($($ace.Type))($($ace.Flags))($mask_str)"
+            $cond = ""
+            if ($ace.IsConditionalAce) {
+                $cond = "($($ace.Condition))"
+            }
+            if ($ace.IsResourceAttributeAce) {
+                $cond = "($($ace.ResourceAttribute.ToSddl()))"
+            }
+            Write-Output "$($ace.Sid.Name): ($($ace.Type))($($ace.Flags))($mask_str)$cond"
         } else {
             Write-Output " - Type  : $($ace.Type)"
             Write-Output " - Name  : $($ace.Sid.Name)"
@@ -1770,6 +1777,9 @@ function Format-NtAce {
             Write-Output " - Flags : $($ace.Flags)"
             if ($ace.IsConditionalAce) {
                 Write-Output " - Condition: $($ace.Condition)"
+            }
+            if ($ace.IsResourceAttributeAce) {
+                 Write-Output " - Attribute: $($ace.ResourceAttribute.ToSddl())"
             }
             if ($ace.IsObjectAce) {
                 if ($ace.ObjectType -ne $null) {
@@ -2028,6 +2038,33 @@ function Format-NtSecurityDescriptor {
             if ($trust -ne $null -and (($SecurityInformation -band "ProcessTrustLabel") -ne 0)) {
                 Write-Output "<Process Trust Label>"
                 Format-NtAce -Ace $trust -Type $t -Summary:$Summary
+            }
+            if (($SecurityInformation -band "Attribute") -ne 0) {
+                $attrs = $sd.ResourceAttributes
+                if ($attrs.Count -gt 0) {
+                    Write-Output "<Resource Attributes>"
+                    foreach($attr in $attrs) {
+                        Format-NtAce -Ace $attr -Type $t -Summary:$Summary
+                    }
+                }
+            }
+            if (($SecurityInformation -band "AccessFilter") -ne 0) {
+                $filters = $sd.AccessFilters
+                if ($filters.Count -gt 0) {
+                    Write-Output "<Access Filters>"
+                    foreach($filter in $filters) {
+                        Format-NtAce -Ace $filter -Type $t -Summary:$Summary
+                    }
+                }
+            }
+            if (($SecurityInformation -band "Scope") -ne 0) {
+                $scopes = $sd.ScopedPolicyIDs
+                if ($scopes.Count -gt 0) {
+                    Write-Output "<Scoped Policy IDs>"
+                    foreach($scope in $scopes) {
+                        Format-NtAce -Ace $scope -Type $t -Summary:$Summary
+                    }
+                }
             }
         } catch {
             Write-Error $_

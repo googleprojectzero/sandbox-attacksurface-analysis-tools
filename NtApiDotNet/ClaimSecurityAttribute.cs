@@ -19,6 +19,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace NtApiDotNet
 {
@@ -59,6 +60,31 @@ namespace NtApiDotNet
         {
             return ClaimSecurityAttributeBuilder.Create(this);
         }
+
+        /// <summary>
+        /// Convert the security attribute to an SDDL string.
+        /// </summary>
+        /// <returns>The security attribute as an SDDL string.</returns>
+        public string ToSddl()
+        {
+            SecurityDescriptor sd = new SecurityDescriptor
+            {
+                Sacl = new Acl
+                {
+                    NullAcl = false
+                }
+            };
+            sd.Sacl.Add(new Ace(AceType.ResourceAttribute, AceFlags.None, 0, KnownSids.World) { ResourceAttribute = this });
+            string sddl = sd.ToSddl(SecurityInformation.Attribute);
+            var matches = ResourceAttributeRegex.Match(sddl);
+
+            if (!matches.Success || matches.Groups.Count != 2)
+            {
+                throw new ArgumentException("Invalid resource attribute data.");
+            }
+            return matches.Groups[1].Value;
+        }
+
         #endregion
 
         #region Constructors
@@ -99,6 +125,9 @@ namespace NtApiDotNet
         #endregion
 
         #region Private Members
+
+        private static readonly Regex ResourceAttributeRegex = new Regex(@"^S:\(RA;;;;;WD;\((.+)\)\)$");
+
         private static T[] ReadTyped<T>(IntPtr buffer, int count) where T : struct
         {
             int type_size = Marshal.SizeOf(typeof(T));
