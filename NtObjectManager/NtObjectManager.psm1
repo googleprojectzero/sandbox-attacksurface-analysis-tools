@@ -1886,6 +1886,12 @@ Format the security descriptor assuming it's a File type.
 .EXAMPLE
 Format-NtSecurityDescriptor -Path \BaseNamedObjects
 Format the security descriptor for an object from a path.
+.EXAMPLE
+Format-NtSecurityDescriptor -Object $obj -ToSddl
+Format the security descriptor of an object as SDDL.
+.EXAMPLE
+Format-NtSecurityDescriptor -Object $obj -ToSddl -SecurityInformation Dacl, Label
+Format the security descriptor of an object as SDDL with only DACL and Label.
 #>
 function Format-NtSecurityDescriptor {
     [CmdletBinding(DefaultParameterSetName = "FromObject")]
@@ -1909,6 +1915,7 @@ function Format-NtSecurityDescriptor {
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
         [switch]$MapGeneric,
         [switch]$ToSddl,
+        [switch]$ToBytes,
         [switch]$Summary
     )
 
@@ -6664,4 +6671,29 @@ function Get-NtAceConditionData {
     )
 
     [NtApiDotNet.NtSecurity]::StringToConditionalAce($Condition)
+}
+
+<#
+.SYNOPSIS
+Converts a security descriptor to a self-relative byte array.
+.DESCRIPTION
+This cmdlet converts a security descriptor to a self-relative byte array.
+.PARAMETER SecurityDescriptor
+The security descriptor to convert.
+.INPUTS
+None
+.OUTPUTS
+byte[]
+.EXAMPLE
+ConvertFrom-NtSecurityDescriptor -SecurityDescriptor "O:SYG:SYD:(A;;GA;;;WD)"
+Converts security descriptor to byte array.
+#>
+function ConvertFrom-NtSecurityDescriptor {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+    )
+
+    $SecurityDescriptor.ToByteArray() | Write-Output -NoEnumerate
 }
