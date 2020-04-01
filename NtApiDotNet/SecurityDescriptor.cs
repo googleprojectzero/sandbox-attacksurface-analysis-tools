@@ -644,6 +644,11 @@ namespace NtApiDotNet
         public bool Container { get; set; }
 
         /// <summary>
+        /// Indicates the SD has audit ACEs present.
+        /// </summary>
+        public bool HasAuditAce => Sacl?.Find(a => a.IsAuditAce) != null;
+
+        /// <summary>
         /// Get the access rights enum type for this SD based on the NT Type property.
         /// </summary>
         public Type AccessRightsType
