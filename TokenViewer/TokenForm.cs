@@ -125,26 +125,29 @@ namespace TokenViewer
             return value.ToString();
         }
 
-        private void UpdateSecurityAttributes()
+        private void UpdateSecurityAttributes(TreeView treeView, SecurityAttributeType type)
         {
-            try
+            var attrs = _token.GetSecurityAttributes(type, false);
+            if (!attrs.IsSuccess)
             {
-                ClaimSecurityAttribute[] attrs = _token.SecurityAttributes;
-                foreach (ClaimSecurityAttribute attr in attrs)
-                {
-                    TreeNode node = new TreeNode(attr.Name);
-                    node.Nodes.Add($"Flags: {attr.Flags}");
-                    node.Nodes.Add($"Type: {attr.ValueType}");
-                    int value_index = 0;
-                    foreach (object value in attr.Values)
-                    {
-                        node.Nodes.Add($"Value {value_index++}: {FormatAttributeValue(value)}");
-                    }
-                    treeViewSecurityAttributes.Nodes.Add(node);
-                }
+                return;
             }
-            catch (NtException)
+            treeView.Nodes.Clear();
+            foreach (ClaimSecurityAttribute attr in attrs.Result)
             {
+                TreeNode node = new TreeNode(attr.Name);
+                node.Nodes.Add($"Flags: {attr.Flags}");
+                node.Nodes.Add($"Type: {attr.ValueType}");
+                int value_index = 0;
+                foreach (object value in attr.Values)
+                {
+                    node.Nodes.Add($"Value {value_index++}: {FormatAttributeValue(value)}");
+                }
+                treeView.Nodes.Add(node);
+            }
+            foreach (TreeNode node in treeView.Nodes)
+            {
+                node.Expand();
             }
         }
 
@@ -316,7 +319,9 @@ namespace TokenViewer
             txtTrustLevel.Text = trust_level != null ? trust_level.Name : "N/A";
             UpdateTokenFlags();
             UpdatePrivileges();
-            UpdateSecurityAttributes();
+            UpdateSecurityAttributes(treeViewLocalSecurityAttributes, SecurityAttributeType.Local);
+            UpdateSecurityAttributes(treeViewUserClaimSecurityAttributes, SecurityAttributeType.User);
+            UpdateSecurityAttributes(treeViewDeviceClaimSecurityAttributes, SecurityAttributeType.Device);
 
             if (_token.IsAccessGranted(TokenAccessRights.ReadControl))
             {

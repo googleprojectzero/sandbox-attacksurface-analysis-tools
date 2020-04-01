@@ -133,8 +133,7 @@
             this.btnToggleVirtualizationEnabled = new System.Windows.Forms.Button();
             this.txtHandleAccess = new System.Windows.Forms.TextBox();
             this.btnToggleUIAccess = new System.Windows.Forms.Button();
-            this.treeViewSecurityAttributes = new System.Windows.Forms.TreeView();
-            this.llbSecurityAttributes = new System.Windows.Forms.Label();
+            this.treeViewLocalSecurityAttributes = new System.Windows.Forms.TreeView();
             this.txtMandatoryILPolicy = new System.Windows.Forms.TextBox();
             this.txtVirtualizationEnabled = new System.Windows.Forms.TextBox();
             this.txtVirtualizationAllowed = new System.Windows.Forms.TextBox();
@@ -150,6 +149,9 @@
             this.txtFilePath = new System.Windows.Forms.TextBox();
             this.btnEditPermissions = new System.Windows.Forms.Button();
             this.securityDescriptorViewerControl = new NtApiDotNet.Forms.SecurityDescriptorViewerControl();
+            this.txtProcessCommandLine = new System.Windows.Forms.TextBox();
+            this.txtProcessId = new System.Windows.Forms.TextBox();
+            this.txtProcessImagePath = new System.Windows.Forms.TextBox();
             this.tabControlMain = new System.Windows.Forms.TabControl();
             this.tabPagePrivs = new System.Windows.Forms.TabPage();
             this.listViewPrivs = new System.Windows.Forms.ListView();
@@ -175,15 +177,19 @@
             this.txtPackageName = new System.Windows.Forms.TextBox();
             this.tabPageMisc = new System.Windows.Forms.TabPage();
             this.tabPageOperations = new System.Windows.Forms.TabPage();
-            this.tabPageSecurity = new System.Windows.Forms.TabPage();
-            this.toolTip = new System.Windows.Forms.ToolTip(this.components);
             this.tabPageTokenSource = new System.Windows.Forms.TabPage();
-            this.txtProcessId = new System.Windows.Forms.TextBox();
-            this.txtProcessImagePath = new System.Windows.Forms.TextBox();
-            this.txtProcessCommandLine = new System.Windows.Forms.TextBox();
             this.groupThread = new System.Windows.Forms.GroupBox();
             this.txtThreadId = new System.Windows.Forms.TextBox();
             this.txtThreadName = new System.Windows.Forms.TextBox();
+            this.tabPageSecurity = new System.Windows.Forms.TabPage();
+            this.toolTip = new System.Windows.Forms.ToolTip(this.components);
+            this.tabControlSecurityAttributes = new System.Windows.Forms.TabControl();
+            this.tabPageLocalSecurityAttributes = new System.Windows.Forms.TabPage();
+            this.tabPageUserClaimSecurityAttributes = new System.Windows.Forms.TabPage();
+            this.llbSecurityAttributes = new System.Windows.Forms.Label();
+            this.tabPageDeviceClaimSecurityAttributes = new System.Windows.Forms.TabPage();
+            this.treeViewUserClaimSecurityAttributes = new System.Windows.Forms.TreeView();
+            this.treeViewDeviceClaimSecurityAttributes = new System.Windows.Forms.TreeView();
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
@@ -253,6 +259,7 @@
             groupBoxSafer.SuspendLayout();
             groupBox4.SuspendLayout();
             tableLayoutPanelSecurity.SuspendLayout();
+            groupProcess.SuspendLayout();
             this.tabControlMain.SuspendLayout();
             this.tabPagePrivs.SuspendLayout();
             this.contextMenuStripPrivileges.SuspendLayout();
@@ -261,10 +268,13 @@
             this.tabPageAppContainer.SuspendLayout();
             this.tabPageMisc.SuspendLayout();
             this.tabPageOperations.SuspendLayout();
-            this.tabPageSecurity.SuspendLayout();
             this.tabPageTokenSource.SuspendLayout();
-            groupProcess.SuspendLayout();
             this.groupThread.SuspendLayout();
+            this.tabPageSecurity.SuspendLayout();
+            this.tabControlSecurityAttributes.SuspendLayout();
+            this.tabPageLocalSecurityAttributes.SuspendLayout();
+            this.tabPageUserClaimSecurityAttributes.SuspendLayout();
+            this.tabPageDeviceClaimSecurityAttributes.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabPageMain
@@ -976,6 +986,7 @@
             groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            groupBox2.Controls.Add(this.tabControlSecurityAttributes);
             groupBox2.Controls.Add(label29);
             groupBox2.Controls.Add(this.txtTokenFlags);
             groupBox2.Controls.Add(label28);
@@ -984,7 +995,6 @@
             groupBox2.Controls.Add(label26);
             groupBox2.Controls.Add(this.txtHandleAccess);
             groupBox2.Controls.Add(this.btnToggleUIAccess);
-            groupBox2.Controls.Add(this.treeViewSecurityAttributes);
             groupBox2.Controls.Add(this.llbSecurityAttributes);
             groupBox2.Controls.Add(label22);
             groupBox2.Controls.Add(this.txtMandatoryILPolicy);
@@ -1080,24 +1090,13 @@
             this.btnToggleUIAccess.UseVisualStyleBackColor = true;
             this.btnToggleUIAccess.Click += new System.EventHandler(this.btnToggleUIAccess_Click);
             // 
-            // treeViewSecurityAttributes
+            // treeViewLocalSecurityAttributes
             // 
-            this.treeViewSecurityAttributes.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.treeViewSecurityAttributes.Location = new System.Drawing.Point(9, 248);
-            this.treeViewSecurityAttributes.Name = "treeViewSecurityAttributes";
-            this.treeViewSecurityAttributes.Size = new System.Drawing.Size(436, 178);
-            this.treeViewSecurityAttributes.TabIndex = 17;
-            // 
-            // llbSecurityAttributes
-            // 
-            this.llbSecurityAttributes.AutoSize = true;
-            this.llbSecurityAttributes.Location = new System.Drawing.Point(6, 232);
-            this.llbSecurityAttributes.Name = "llbSecurityAttributes";
-            this.llbSecurityAttributes.Size = new System.Drawing.Size(95, 13);
-            this.llbSecurityAttributes.TabIndex = 16;
-            this.llbSecurityAttributes.Text = "Security Attributes:";
+            this.treeViewLocalSecurityAttributes.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.treeViewLocalSecurityAttributes.Location = new System.Drawing.Point(3, 3);
+            this.treeViewLocalSecurityAttributes.Name = "treeViewLocalSecurityAttributes";
+            this.treeViewLocalSecurityAttributes.Size = new System.Drawing.Size(422, 159);
+            this.treeViewLocalSecurityAttributes.TabIndex = 17;
             // 
             // label22
             // 
@@ -1370,6 +1369,96 @@
             this.securityDescriptorViewerControl.Size = new System.Drawing.Size(459, 420);
             this.securityDescriptorViewerControl.TabIndex = 0;
             // 
+            // lblProcessId
+            // 
+            lblProcessId.AutoSize = true;
+            lblProcessId.Location = new System.Drawing.Point(7, 23);
+            lblProcessId.Name = "lblProcessId";
+            lblProcessId.Size = new System.Drawing.Size(62, 13);
+            lblProcessId.TabIndex = 0;
+            lblProcessId.Text = "Process ID:";
+            // 
+            // lblImagePath
+            // 
+            lblImagePath.AutoSize = true;
+            lblImagePath.Location = new System.Drawing.Point(7, 49);
+            lblImagePath.Name = "lblImagePath";
+            lblImagePath.Size = new System.Drawing.Size(64, 13);
+            lblImagePath.TabIndex = 2;
+            lblImagePath.Text = "Image Path:";
+            // 
+            // lblCommandLine
+            // 
+            lblCommandLine.AutoSize = true;
+            lblCommandLine.Location = new System.Drawing.Point(7, 75);
+            lblCommandLine.Name = "lblCommandLine";
+            lblCommandLine.Size = new System.Drawing.Size(80, 13);
+            lblCommandLine.TabIndex = 4;
+            lblCommandLine.Text = "Command Line:";
+            // 
+            // groupProcess
+            // 
+            groupProcess.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            groupProcess.Controls.Add(this.txtProcessCommandLine);
+            groupProcess.Controls.Add(lblProcessId);
+            groupProcess.Controls.Add(lblCommandLine);
+            groupProcess.Controls.Add(this.txtProcessId);
+            groupProcess.Controls.Add(this.txtProcessImagePath);
+            groupProcess.Controls.Add(lblImagePath);
+            groupProcess.Location = new System.Drawing.Point(11, 6);
+            groupProcess.Name = "groupProcess";
+            groupProcess.Size = new System.Drawing.Size(448, 106);
+            groupProcess.TabIndex = 6;
+            groupProcess.TabStop = false;
+            groupProcess.Text = "Process Information";
+            // 
+            // txtProcessCommandLine
+            // 
+            this.txtProcessCommandLine.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtProcessCommandLine.Location = new System.Drawing.Point(93, 72);
+            this.txtProcessCommandLine.Name = "txtProcessCommandLine";
+            this.txtProcessCommandLine.ReadOnly = true;
+            this.txtProcessCommandLine.Size = new System.Drawing.Size(349, 20);
+            this.txtProcessCommandLine.TabIndex = 5;
+            // 
+            // txtProcessId
+            // 
+            this.txtProcessId.Location = new System.Drawing.Point(93, 20);
+            this.txtProcessId.Name = "txtProcessId";
+            this.txtProcessId.ReadOnly = true;
+            this.txtProcessId.Size = new System.Drawing.Size(100, 20);
+            this.txtProcessId.TabIndex = 1;
+            // 
+            // txtProcessImagePath
+            // 
+            this.txtProcessImagePath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtProcessImagePath.Location = new System.Drawing.Point(93, 46);
+            this.txtProcessImagePath.Name = "txtProcessImagePath";
+            this.txtProcessImagePath.ReadOnly = true;
+            this.txtProcessImagePath.Size = new System.Drawing.Size(349, 20);
+            this.txtProcessImagePath.TabIndex = 3;
+            // 
+            // lblThreadId
+            // 
+            lblThreadId.AutoSize = true;
+            lblThreadId.Location = new System.Drawing.Point(7, 23);
+            lblThreadId.Name = "lblThreadId";
+            lblThreadId.Size = new System.Drawing.Size(58, 13);
+            lblThreadId.TabIndex = 0;
+            lblThreadId.Text = "Thread ID:";
+            // 
+            // lblThreadName
+            // 
+            lblThreadName.AutoSize = true;
+            lblThreadName.Location = new System.Drawing.Point(7, 49);
+            lblThreadName.Name = "lblThreadName";
+            lblThreadName.Size = new System.Drawing.Size(75, 13);
+            lblThreadName.TabIndex = 2;
+            lblThreadName.Text = "Thread Name:";
+            // 
             // tabControlMain
             // 
             this.tabControlMain.Controls.Add(tabPageMain);
@@ -1622,18 +1711,6 @@
             this.tabPageOperations.Text = "Operations";
             this.tabPageOperations.UseVisualStyleBackColor = true;
             // 
-            // tabPageSecurity
-            // 
-            this.tabPageSecurity.Controls.Add(tableLayoutPanelSecurity);
-            this.tabPageSecurity.Location = new System.Drawing.Point(4, 22);
-            this.tabPageSecurity.Margin = new System.Windows.Forms.Padding(2);
-            this.tabPageSecurity.Name = "tabPageSecurity";
-            this.tabPageSecurity.Padding = new System.Windows.Forms.Padding(2);
-            this.tabPageSecurity.Size = new System.Drawing.Size(467, 457);
-            this.tabPageSecurity.TabIndex = 8;
-            this.tabPageSecurity.Text = "Security";
-            this.tabPageSecurity.UseVisualStyleBackColor = true;
-            // 
             // tabPageTokenSource
             // 
             this.tabPageTokenSource.Controls.Add(this.groupThread);
@@ -1645,78 +1722,6 @@
             this.tabPageTokenSource.TabIndex = 9;
             this.tabPageTokenSource.Text = "Token Source";
             this.tabPageTokenSource.UseVisualStyleBackColor = true;
-            // 
-            // lblProcessId
-            // 
-            lblProcessId.AutoSize = true;
-            lblProcessId.Location = new System.Drawing.Point(7, 23);
-            lblProcessId.Name = "lblProcessId";
-            lblProcessId.Size = new System.Drawing.Size(62, 13);
-            lblProcessId.TabIndex = 0;
-            lblProcessId.Text = "Process ID:";
-            // 
-            // txtProcessId
-            // 
-            this.txtProcessId.Location = new System.Drawing.Point(93, 20);
-            this.txtProcessId.Name = "txtProcessId";
-            this.txtProcessId.ReadOnly = true;
-            this.txtProcessId.Size = new System.Drawing.Size(100, 20);
-            this.txtProcessId.TabIndex = 1;
-            // 
-            // txtProcessImagePath
-            // 
-            this.txtProcessImagePath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtProcessImagePath.Location = new System.Drawing.Point(93, 46);
-            this.txtProcessImagePath.Name = "txtProcessImagePath";
-            this.txtProcessImagePath.ReadOnly = true;
-            this.txtProcessImagePath.Size = new System.Drawing.Size(349, 20);
-            this.txtProcessImagePath.TabIndex = 3;
-            // 
-            // lblImagePath
-            // 
-            lblImagePath.AutoSize = true;
-            lblImagePath.Location = new System.Drawing.Point(7, 49);
-            lblImagePath.Name = "lblImagePath";
-            lblImagePath.Size = new System.Drawing.Size(64, 13);
-            lblImagePath.TabIndex = 2;
-            lblImagePath.Text = "Image Path:";
-            // 
-            // txtProcessCommandLine
-            // 
-            this.txtProcessCommandLine.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtProcessCommandLine.Location = new System.Drawing.Point(93, 72);
-            this.txtProcessCommandLine.Name = "txtProcessCommandLine";
-            this.txtProcessCommandLine.ReadOnly = true;
-            this.txtProcessCommandLine.Size = new System.Drawing.Size(349, 20);
-            this.txtProcessCommandLine.TabIndex = 5;
-            // 
-            // lblCommandLine
-            // 
-            lblCommandLine.AutoSize = true;
-            lblCommandLine.Location = new System.Drawing.Point(7, 75);
-            lblCommandLine.Name = "lblCommandLine";
-            lblCommandLine.Size = new System.Drawing.Size(80, 13);
-            lblCommandLine.TabIndex = 4;
-            lblCommandLine.Text = "Command Line:";
-            // 
-            // groupProcess
-            // 
-            groupProcess.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            groupProcess.Controls.Add(this.txtProcessCommandLine);
-            groupProcess.Controls.Add(lblProcessId);
-            groupProcess.Controls.Add(lblCommandLine);
-            groupProcess.Controls.Add(this.txtProcessId);
-            groupProcess.Controls.Add(this.txtProcessImagePath);
-            groupProcess.Controls.Add(lblImagePath);
-            groupProcess.Location = new System.Drawing.Point(11, 6);
-            groupProcess.Name = "groupProcess";
-            groupProcess.Size = new System.Drawing.Size(448, 106);
-            groupProcess.TabIndex = 6;
-            groupProcess.TabStop = false;
-            groupProcess.Text = "Process Information";
             // 
             // groupThread
             // 
@@ -1731,15 +1736,6 @@
             this.groupThread.TabIndex = 7;
             this.groupThread.TabStop = false;
             this.groupThread.Text = "Thread Information";
-            // 
-            // lblThreadId
-            // 
-            lblThreadId.AutoSize = true;
-            lblThreadId.Location = new System.Drawing.Point(7, 23);
-            lblThreadId.Name = "lblThreadId";
-            lblThreadId.Size = new System.Drawing.Size(58, 13);
-            lblThreadId.TabIndex = 0;
-            lblThreadId.Text = "Thread ID:";
             // 
             // txtThreadId
             // 
@@ -1759,14 +1755,86 @@
             this.txtThreadName.Size = new System.Drawing.Size(349, 20);
             this.txtThreadName.TabIndex = 3;
             // 
-            // lblThreadName
+            // tabPageSecurity
             // 
-            lblThreadName.AutoSize = true;
-            lblThreadName.Location = new System.Drawing.Point(7, 49);
-            lblThreadName.Name = "lblThreadName";
-            lblThreadName.Size = new System.Drawing.Size(75, 13);
-            lblThreadName.TabIndex = 2;
-            lblThreadName.Text = "Thread Name:";
+            this.tabPageSecurity.Controls.Add(tableLayoutPanelSecurity);
+            this.tabPageSecurity.Location = new System.Drawing.Point(4, 22);
+            this.tabPageSecurity.Margin = new System.Windows.Forms.Padding(2);
+            this.tabPageSecurity.Name = "tabPageSecurity";
+            this.tabPageSecurity.Padding = new System.Windows.Forms.Padding(2);
+            this.tabPageSecurity.Size = new System.Drawing.Size(467, 457);
+            this.tabPageSecurity.TabIndex = 8;
+            this.tabPageSecurity.Text = "Security";
+            this.tabPageSecurity.UseVisualStyleBackColor = true;
+            // 
+            // tabControlSecurityAttributes
+            // 
+            this.tabControlSecurityAttributes.Controls.Add(this.tabPageLocalSecurityAttributes);
+            this.tabControlSecurityAttributes.Controls.Add(this.tabPageUserClaimSecurityAttributes);
+            this.tabControlSecurityAttributes.Controls.Add(this.tabPageDeviceClaimSecurityAttributes);
+            this.tabControlSecurityAttributes.Location = new System.Drawing.Point(9, 248);
+            this.tabControlSecurityAttributes.Name = "tabControlSecurityAttributes";
+            this.tabControlSecurityAttributes.SelectedIndex = 0;
+            this.tabControlSecurityAttributes.Size = new System.Drawing.Size(436, 191);
+            this.tabControlSecurityAttributes.TabIndex = 26;
+            // 
+            // tabPageLocalSecurityAttributes
+            // 
+            this.tabPageLocalSecurityAttributes.Controls.Add(this.treeViewLocalSecurityAttributes);
+            this.tabPageLocalSecurityAttributes.Location = new System.Drawing.Point(4, 22);
+            this.tabPageLocalSecurityAttributes.Name = "tabPageLocalSecurityAttributes";
+            this.tabPageLocalSecurityAttributes.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPageLocalSecurityAttributes.Size = new System.Drawing.Size(428, 165);
+            this.tabPageLocalSecurityAttributes.TabIndex = 0;
+            this.tabPageLocalSecurityAttributes.Text = "Local";
+            this.tabPageLocalSecurityAttributes.UseVisualStyleBackColor = true;
+            // 
+            // tabPageUserClaimSecurityAttributes
+            // 
+            this.tabPageUserClaimSecurityAttributes.Controls.Add(this.treeViewUserClaimSecurityAttributes);
+            this.tabPageUserClaimSecurityAttributes.Location = new System.Drawing.Point(4, 22);
+            this.tabPageUserClaimSecurityAttributes.Name = "tabPageUserClaimSecurityAttributes";
+            this.tabPageUserClaimSecurityAttributes.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPageUserClaimSecurityAttributes.Size = new System.Drawing.Size(428, 165);
+            this.tabPageUserClaimSecurityAttributes.TabIndex = 1;
+            this.tabPageUserClaimSecurityAttributes.Text = "User Claim";
+            this.tabPageUserClaimSecurityAttributes.UseVisualStyleBackColor = true;
+            // 
+            // llbSecurityAttributes
+            // 
+            this.llbSecurityAttributes.AutoSize = true;
+            this.llbSecurityAttributes.Location = new System.Drawing.Point(6, 232);
+            this.llbSecurityAttributes.Name = "llbSecurityAttributes";
+            this.llbSecurityAttributes.Size = new System.Drawing.Size(95, 13);
+            this.llbSecurityAttributes.TabIndex = 16;
+            this.llbSecurityAttributes.Text = "Security Attributes:";
+            // 
+            // tabPageDeviceClaimSecurityAttributes
+            // 
+            this.tabPageDeviceClaimSecurityAttributes.Controls.Add(this.treeViewDeviceClaimSecurityAttributes);
+            this.tabPageDeviceClaimSecurityAttributes.Location = new System.Drawing.Point(4, 22);
+            this.tabPageDeviceClaimSecurityAttributes.Name = "tabPageDeviceClaimSecurityAttributes";
+            this.tabPageDeviceClaimSecurityAttributes.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPageDeviceClaimSecurityAttributes.Size = new System.Drawing.Size(428, 165);
+            this.tabPageDeviceClaimSecurityAttributes.TabIndex = 2;
+            this.tabPageDeviceClaimSecurityAttributes.Text = "Device Claim";
+            this.tabPageDeviceClaimSecurityAttributes.UseVisualStyleBackColor = true;
+            // 
+            // treeViewUserClaimSecurityAttributes
+            // 
+            this.treeViewUserClaimSecurityAttributes.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.treeViewUserClaimSecurityAttributes.Location = new System.Drawing.Point(3, 3);
+            this.treeViewUserClaimSecurityAttributes.Name = "treeViewUserClaimSecurityAttributes";
+            this.treeViewUserClaimSecurityAttributes.Size = new System.Drawing.Size(422, 159);
+            this.treeViewUserClaimSecurityAttributes.TabIndex = 18;
+            // 
+            // treeViewDeviceClaimSecurityAttributes
+            // 
+            this.treeViewDeviceClaimSecurityAttributes.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.treeViewDeviceClaimSecurityAttributes.Location = new System.Drawing.Point(3, 3);
+            this.treeViewDeviceClaimSecurityAttributes.Name = "treeViewDeviceClaimSecurityAttributes";
+            this.treeViewDeviceClaimSecurityAttributes.Size = new System.Drawing.Size(422, 159);
+            this.treeViewDeviceClaimSecurityAttributes.TabIndex = 18;
             // 
             // TokenForm
             // 
@@ -1800,6 +1868,8 @@
             groupBox4.ResumeLayout(false);
             groupBox4.PerformLayout();
             tableLayoutPanelSecurity.ResumeLayout(false);
+            groupProcess.ResumeLayout(false);
+            groupProcess.PerformLayout();
             this.tabControlMain.ResumeLayout(false);
             this.tabPagePrivs.ResumeLayout(false);
             this.contextMenuStripPrivileges.ResumeLayout(false);
@@ -1809,12 +1879,14 @@
             this.tabPageAppContainer.PerformLayout();
             this.tabPageMisc.ResumeLayout(false);
             this.tabPageOperations.ResumeLayout(false);
-            this.tabPageSecurity.ResumeLayout(false);
             this.tabPageTokenSource.ResumeLayout(false);
-            groupProcess.ResumeLayout(false);
-            groupProcess.PerformLayout();
             this.groupThread.ResumeLayout(false);
             this.groupThread.PerformLayout();
+            this.tabPageSecurity.ResumeLayout(false);
+            this.tabControlSecurityAttributes.ResumeLayout(false);
+            this.tabPageLocalSecurityAttributes.ResumeLayout(false);
+            this.tabPageUserClaimSecurityAttributes.ResumeLayout(false);
+            this.tabPageDeviceClaimSecurityAttributes.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -1889,8 +1961,7 @@
         private System.Windows.Forms.ToolTip toolTip;
         private System.Windows.Forms.CheckBox checkBoxUseWmi;
         private System.Windows.Forms.ToolStripMenuItem removePrivilegeToolStripMenuItem;
-        private System.Windows.Forms.Label llbSecurityAttributes;
-        private System.Windows.Forms.TreeView treeViewSecurityAttributes;
+        private System.Windows.Forms.TreeView treeViewLocalSecurityAttributes;
         private System.Windows.Forms.Button btnToggleUIAccess;
         private System.Windows.Forms.TextBox txtHandleAccess;
         private System.Windows.Forms.Button btnToggleVirtualizationEnabled;
@@ -1919,5 +1990,12 @@
         private System.Windows.Forms.GroupBox groupThread;
         private System.Windows.Forms.TextBox txtThreadId;
         private System.Windows.Forms.TextBox txtThreadName;
+        private System.Windows.Forms.TabControl tabControlSecurityAttributes;
+        private System.Windows.Forms.TabPage tabPageLocalSecurityAttributes;
+        private System.Windows.Forms.TabPage tabPageUserClaimSecurityAttributes;
+        private System.Windows.Forms.Label llbSecurityAttributes;
+        private System.Windows.Forms.TreeView treeViewUserClaimSecurityAttributes;
+        private System.Windows.Forms.TabPage tabPageDeviceClaimSecurityAttributes;
+        private System.Windows.Forms.TreeView treeViewDeviceClaimSecurityAttributes;
     }
 }
