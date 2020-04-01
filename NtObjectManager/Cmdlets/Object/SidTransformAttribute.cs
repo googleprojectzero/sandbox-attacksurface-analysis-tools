@@ -1,4 +1,4 @@
-﻿//  Copyright 2016 Google Inc. All Rights Reserved.
+﻿//  Copyright 2020 Google Inc. All Rights Reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Object
 {
-    class SecurityDescriptorAttribute : ArgumentTransformationAttribute
+    class SidTransformAttribute : ArgumentTransformationAttribute
     {
         public override object Transform(EngineIntrinsics engineIntrinsics, object inputData)
         {
@@ -30,22 +30,22 @@ namespace NtObjectManager.Cmdlets.Object
 
             if (inputData is string s)
             {
-                var result = SecurityDescriptor.Parse(s, false);
+                var result = Sid.Parse(s, false);
                 if (result.IsSuccess)
                 {
                     return result.Result;
-                }   
+                }
             }
 
             if (inputData is PSObject obj)
             {
-                if (obj.BaseObject is SecurityDescriptor sd)
+                if (obj.BaseObject is Sid sd)
                 {
                     return sd;
                 }
             }
 
-            return new SecurityDescriptor();
+            return new Sid(SecurityAuthority.Null, 0);
         }
     }
 }

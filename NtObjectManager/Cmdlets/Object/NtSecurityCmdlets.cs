@@ -1113,13 +1113,14 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify to create the security descriptor with a NULL DACL.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
-        [SecurityDescriptor]
+        [SecurityDescriptorTransform]
         public SecurityDescriptor SecurityDescriptor { get; set; }
 
         /// <summary>
         /// <para type="description">Specify to add ACE with SID.</para>
         /// </summary>
         [Parameter(Position = 1, Mandatory = true, ParameterSetName = "FromSid")]
+        [SidTransform]
         public Sid Sid { get; set; }
 
         /// <summary>
@@ -1254,7 +1255,7 @@ namespace NtObjectManager.Cmdlets.Object
                 access_mandatory = false;
             }
 
-            Type access_type = SecurityDescriptor?.NtType?.AccessRightsType ?? typeof(GenericAccessRights);
+            Type access_type = SecurityDescriptor?.AccessRightsType ?? typeof(GenericAccessRights);
             if (Type == AceType.MandatoryLabel)
             {
                 access_type = typeof(MandatoryLabelPolicy);
@@ -1352,7 +1353,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify to create the security descriptor with a NULL DACL.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
-        [SecurityDescriptor]
+        [SecurityDescriptorTransform]
         public SecurityDescriptor SecurityDescriptor { get; set; }
 
         /// <summary>
