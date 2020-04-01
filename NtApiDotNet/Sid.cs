@@ -25,21 +25,7 @@ namespace NtApiDotNet
     /// </summary>
     public sealed class Sid
     {
-        /// <summary>
-        /// Maximum size of a SID buffer.
-        /// </summary>
-        public const int MaximumSidSize = 256;
-
-        /// <summary>
-        /// The SIDs authority.
-        /// </summary>
-        public SidIdentifierAuthority Authority { get; private set; }
-
-        /// <summary>
-        /// List of the SIDs sub authorities.
-        /// </summary>
-        public IReadOnlyList<uint> SubAuthorities { get; private set; }
-
+        #region Private Members
         private void InitializeFromPointer(IntPtr sid)
         {
             if (!NtRtl.RtlValidSid(sid))
@@ -55,7 +41,31 @@ namespace NtApiDotNet
             }
             SubAuthorities = sub_auth.AsReadOnly();
         }
+        #endregion
 
+        #region Public Properties
+        /// <summary>
+        /// Maximum size of a SID buffer.
+        /// </summary>
+        public const int MaximumSidSize = 256;
+
+        /// <summary>
+        /// The SIDs authority.
+        /// </summary>
+        public SidIdentifierAuthority Authority { get; private set; }
+
+        /// <summary>
+        /// List of the SIDs sub authorities.
+        /// </summary>
+        public IReadOnlyList<uint> SubAuthorities { get; private set; }
+
+        /// <summary>
+        /// Get the account name of the SID or the SDDL form is no corresponding name.
+        /// </summary>
+        public string Name => NtSecurity.GetNameForSid(this).Name;
+        #endregion
+
+        #region Constructors
         /// <summary>
         /// Constructor for authority and sub authorities.
         /// </summary>
@@ -163,7 +173,9 @@ namespace NtApiDotNet
             SubAuthorities = subauth;
             Authority = new SidIdentifierAuthority(authority);
         }
+        #endregion
 
+        #region Public Methods
         /// <summary>
         /// Convert the SID to a safe buffer.
         /// </summary>
@@ -326,17 +338,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Get the account name of the SID or the SDDL form is no corresponding name.
-        /// </summary>
-        public string Name
-        {
-            get
-            {
-                return NtSecurity.GetNameForSid(this).Name;
-            }
-        }
-
-        /// <summary>
         /// Does this SID dominate another.
         /// </summary>
         /// <param name="sid">The other SID.</param>
@@ -353,10 +354,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="sid">The other SID.</param>
         /// <returns>True if the sid dominates.</returns>
-        public bool Dominates(Sid sid)
-        {
-            return Dominates(sid, true).Result;
-        }
+        public bool Dominates(Sid sid) => Dominates(sid, true).Result;
 
         /// <summary>
         /// Does this SID dominate another for trust.
@@ -375,10 +373,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="sid">The other SID.</param>
         /// <returns>True if the sid dominates.</returns>
-        public bool DominatesForTrust(Sid sid)
-        {
-            return DominatesForTrust(sid, true).Result;
-        }
+        public bool DominatesForTrust(Sid sid) => DominatesForTrust(sid, true).Result;
 
         /// <summary>
         /// Checks if the SID starts with the specified SID.
@@ -398,5 +393,31 @@ namespace NtApiDotNet
             }
             return true;
         }
+        #endregion
+
+        #region Static Methods
+        /// <summary>
+        /// Convert an SDDL SID string to a Sid
+        /// </summary>
+        /// <param name="sddl">The SDDL SID string</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The converted Sid</returns>
+        /// <exception cref="NtException">Thrown if cannot convert from a SDDL string.</exception>
+        public static NtResult<Sid> Parse(string sddl, bool throw_on_error)
+        {
+            return NtSecurity.SidFromSddl(sddl, throw_on_error);
+        }
+
+        /// <summary>
+        /// Convert an SDDL SID string to a Sid
+        /// </summary>
+        /// <param name="sddl">The SDDL SID string</param>
+        /// <returns>The converted Sid</returns>
+        /// <exception cref="NtException">Thrown if cannot convert from a SDDL string.</exception>
+        public static Sid Parse(string sddl)
+        {
+            return Parse(sddl, true).Result;
+        }
+        #endregion
     }
 }
