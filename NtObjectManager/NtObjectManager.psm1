@@ -6807,3 +6807,35 @@ function ConvertFrom-NtSecurityDescriptor {
 
     $SecurityDescriptor.ToByteArray() | Write-Output -NoEnumerate
 }
+
+<#
+.SYNOPSIS
+Creates a new UserGroup object from SID and Attributes.
+.DESCRIPTION
+This cmdlet creates a new UserGroup object from SID and Attributes.
+.PARAMETER Sid
+List of SIDs to use to create object.
+.PARAMETER Attribute
+Common attributes for the new object.
+.INPUTS
+NtApiDotNet.Sid[]
+.OUTPUTS
+NtApiDotNet.UserGroup[]
+.EXAMPLE
+New-NtUserGroup -Sid "WD" -Attribute Enabled
+Creates a new UserGroup with the World SID and the Enabled Flag.
+#>
+function New-NtUserGroup {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position=0, Mandatory, ValueFromPipeline)]
+        [NtApiDotNet.Sid[]]$Sid,
+        [NtApiDotNet.GroupAttributes]$Attribute = 0
+    )
+
+    PROCESS {
+        foreach($s in $Sid) {
+            New-Object NtApiDotNet.UserGroup -ArgumentList $s, $Attribute
+        }
+    }
+}
