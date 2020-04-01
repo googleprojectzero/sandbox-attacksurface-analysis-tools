@@ -643,6 +643,22 @@ namespace NtApiDotNet
         /// </summary>
         public bool Container { get; set; }
 
+        /// <summary>
+        /// Get the access rights enum type for this SD based on the NT Type property.
+        /// </summary>
+        public Type AccessRightsType
+        {
+            get
+            {
+                if (NtType == null)
+                {
+                    return typeof(GenericAccessRights);
+                }
+
+                return Container ? NtType.ContainerAccessRightsType : NtType.AccessRightsType;
+            }
+        }
+
         #endregion
 
         #region Public Methods
