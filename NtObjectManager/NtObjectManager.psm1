@@ -1890,7 +1890,9 @@ function Format-NtAcl {
 .SYNOPSIS
 Formats an object's security descriptor as text.
 .DESCRIPTION
-This cmdlet formats the security descriptor to text for display in the console or piped to a file.
+This cmdlet formats the security descriptor to text for display in the console or piped to a file. Note that 
+by default the SACL won't be disabled even if you pass in a SD object with the SACL present. In those cases
+change the SecurityInformation parameter to add Sacl or use ShowAll.
 .PARAMETER Object
 Specify an object to use for the security descriptor.
 .PARAMETER SecurityDescriptor
@@ -1911,6 +1913,8 @@ Specify a ACL to format.
 Specify the ACL is a SACL otherwise a DACL.
 .PARAMETER Summary
 Specify to only print a shortened format removing redundant information.
+.PARAMETER ShowAll
+Specify to format all SD information including the SACL.
 .OUTPUTS
 None
 .EXAMPLE
@@ -1958,7 +1962,8 @@ function Format-NtSecurityDescriptor {
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
         [switch]$MapGeneric,
         [switch]$ToSddl,
-        [switch]$Summary
+        [switch]$Summary,
+        [switch]$ShowAll
     )
 
     PROCESS {
@@ -1982,7 +1987,7 @@ function Format-NtSecurityDescriptor {
                     if ($sd_type -eq $null) {
                         $sd_type = $Type
                     }
-                    ($SecurityDescriptor, $sd_type, "UNKNOWN")
+                    ($SecurityDescriptor, $sd_type, "")
                 }
                 "FromAcl" {
                     $fake_sd = New-NtSecurityDescriptor
@@ -1993,18 +1998,23 @@ function Format-NtSecurityDescriptor {
                         $fake_sd.Dacl = $Acl
                         $SecurityInformation = "Dacl"
                     }
-                    ($fake_sd, $Type, "UNKNOWN")
+                    ($fake_sd, $Type, "")
                 }
                 "FromAccessCheck" {
-                    $Check_sd = New-NtSecurityDescriptor $AccessCheckResult.SecurityDescriptor
+                    $check_sd = New-NtSecurityDescriptor -Sddl $AccessCheckResult.SecurityDescriptor
                     $Type = Get-NtType $AccessCheckResult.TypeName
                     $Name = $AccessCheckResult.Name
-                    ($Check_sd, $Type, $Name)
+                    ($check_sd, $Type, $Name)
                 }
             }
 
+            $si = $SecurityInformation
+            if ($ShowAll) {
+                $si = [NtApiDotNet.SecurityInformation]::All
+            }
+
             if ($ToSddl) {
-               $sd.ToSddl($SecurityInformation) | Write-Output
+               $sd.ToSddl($si) | Write-Output
                return
             }
 
@@ -2018,7 +2028,9 @@ function Format-NtSecurityDescriptor {
             }
 
             if (!$Summary) {
-                Write-Output "Path: $n"
+                if ($n -ne "") {
+                    Write-Output "Path: $n"
+                }
                 Write-Output "Type: $($t.Name)"
                 Write-Output "Control: $($sd.Control)"
                 if ($sd.RmControl -ne $null) {
@@ -2027,7 +2039,7 @@ function Format-NtSecurityDescriptor {
                 Write-Output ""
             }
 
-            if ($sd.Owner -ne $null -and (($SecurityInformation -band "Owner") -ne 0)) {
+            if ($sd.Owner -ne $null -and (($si -band "Owner") -ne 0)) {
                 $title = if ($sd.Owner.Defaulted) {
                     "<Owner> (Defaulted)"
                 } else {
@@ -2042,7 +2054,7 @@ function Format-NtSecurityDescriptor {
                     Write-Output ""
                 }
             }
-            if ($sd.Group -ne $null -and (($SecurityInformation -band "Group") -ne 0)) {
+            if ($sd.Group -ne $null -and (($si -band "Group") -ne 0)) {
                 $title = if ($sd.Group.Defaulted) {
                     "<Group> (Defaulted)"
                 } else {
@@ -2057,23 +2069,23 @@ function Format-NtSecurityDescriptor {
                     Write-Output ""
                 }
             }
-            if ($sd.DaclPresent -and (($SecurityInformation -band "Dacl") -ne 0)) {
+            if ($sd.DaclPresent -and (($si -band "Dacl") -ne 0)) {
                 Format-NtAcl $sd.Dacl $t "<DACL>" -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container
             }
-            if ($sd.SaclPresent -and (($SecurityInformation -band "Sacl") -ne 0)) {
+            if ($sd.HasAuditAce -and (($si -band "Sacl") -ne 0)) {
                 Format-NtAcl $sd.Sacl $t "<SACL>" -MapGeneric:$MapGeneric -AuditOnly -Summary:$Summary -Container:$Container
             }
             $label = $sd.GetMandatoryLabel()
-            if ($label -ne $null -and (($SecurityInformation -band "Label") -ne 0)) {
+            if ($label -ne $null -and (($si -band "Label") -ne 0)) {
                 Write-Output "<Mandatory Label>" 
                 Format-NtAce -Ace $label -Type $t -Summary:$Summary -Container:$Container
             }
             $trust = $sd.ProcessTrustLabel
-            if ($trust -ne $null -and (($SecurityInformation -band "ProcessTrustLabel") -ne 0)) {
+            if ($trust -ne $null -and (($si -band "ProcessTrustLabel") -ne 0)) {
                 Write-Output "<Process Trust Label>"
                 Format-NtAce -Ace $trust -Type $t -Summary:$Summary -Container:$Container
             }
-            if (($SecurityInformation -band "Attribute") -ne 0) {
+            if (($si -band "Attribute") -ne 0) {
                 $attrs = $sd.ResourceAttributes
                 if ($attrs.Count -gt 0) {
                     Write-Output "<Resource Attributes>"
@@ -2082,7 +2094,7 @@ function Format-NtSecurityDescriptor {
                     }
                 }
             }
-            if (($SecurityInformation -band "AccessFilter") -ne 0) {
+            if (($si -band "AccessFilter") -ne 0) {
                 $filters = $sd.AccessFilters
                 if ($filters.Count -gt 0) {
                     Write-Output "<Access Filters>"
@@ -2091,7 +2103,7 @@ function Format-NtSecurityDescriptor {
                     }
                 }
             }
-            if (($SecurityInformation -band "Scope") -ne 0) {
+            if (($si -band "Scope") -ne 0) {
                 $scopes = $sd.ScopedPolicyIDs
                 if ($scopes.Count -gt 0) {
                     Write-Output "<Scoped Policy IDs>"
