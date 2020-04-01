@@ -1459,6 +1459,10 @@ Show privilege information.
 Show integrity information.
 .PARAMETER SecurityAttributes
 Show token security attributes.
+.PARAMETER UserClaims
+Show token user claim attributes.
+.PARAMETER DeviceClaims
+Show token device claim attributes.
 .PARAMETER TrustLevel
 Show token trust level.
 .PARAMETER Information
@@ -1485,6 +1489,8 @@ function Format-NtToken {
     [switch]$User,
     [switch]$Integrity,
     [switch]$SecurityAttributes,
+    [switch]$UserClaims,
+    [switch]$DeviceClaims,
     [switch]$TrustLevel,
     [switch]$Information
   )
@@ -1495,13 +1501,16 @@ function Format-NtToken {
     $Privilege = $true
     $Integrity = $true
     $SecurityAttributes = $true
+    $DeviceClaims = $true
+    $UserClaims = $true
     $TrustLevel = $true
     $Information = $true
   }
 
   if (!$User -and !$Group -and !$Privilege `
     -and !$Integrity -and !$TrustLevel `
-    -and !$SecurityAttributes -and !$Information) {
+    -and !$SecurityAttributes -and !$Information `
+    -and !$UserClaims -and !$DeviceClaims) {
     $token.User.ToString()
     return
   }
@@ -1565,6 +1574,18 @@ function Format-NtToken {
     "SECURITY ATTRIBUTES"
     "-------------------"
     $token.SecurityAttributes | Format-Table
+  }
+
+  if ($UserClaims -and $Token.UserClaimAttributes.Length -gt 0) {
+    "USER CLAIM ATTRIBUTES"
+    "-------------------"
+    $token.UserClaimAttributes | Format-Table
+  }
+
+  if ($DeviceClaims -and $Token.DeviceClaimAttributes.Length -gt 0) {
+    "DEVICE CLAIM ATTRIBUTES"
+    "-------------------"
+    $token.DeviceClaimAttributes | Format-Table
   }
 
   if ($Information) {
