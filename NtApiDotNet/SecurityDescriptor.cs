@@ -649,6 +649,11 @@ namespace NtApiDotNet
         public bool HasAuditAce => Sacl?.Find(a => a.IsAuditAce) != null;
 
         /// <summary>
+        /// Indicates the SD has a mandatory label ACE present.
+        /// </summary>
+        public bool HasMandatoryLabelAce => GetMandatoryLabel() != null;
+
+        /// <summary>
         /// Get the access rights enum type for this SD based on the NT Type property.
         /// </summary>
         public Type AccessRightsType
