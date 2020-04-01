@@ -69,7 +69,11 @@ namespace NtApiDotNet
         /// <summary>
         /// Device security attributes.
         /// </summary>
-        Device
+        Device,
+        /// <summary>
+        /// Restricted device secuity attributes.
+        /// </summary>
+        RestrictedDevice
     }
 
     /// <summary>
@@ -1488,6 +1492,11 @@ namespace NtApiDotNet
         public ClaimSecurityAttribute[] RestrictedUserClaims => GetSecurityAttributes(SecurityAttributeType.RestrictedUser);
 
         /// <summary>
+        /// Get token's restricted user claims.
+        /// </summary>
+        public ClaimSecurityAttribute[] RestrictedDeviceClaims => GetSecurityAttributes(SecurityAttributeType.RestrictedDevice);
+
+        /// <summary>
         /// Get whether a token is an AppContainer token
         /// </summary>
         public bool AppContainer
@@ -2656,9 +2665,11 @@ namespace NtApiDotNet
                 case SecurityAttributeType.User:
                     return TokenInformationClass.TokenUserClaimAttributes;
                 case SecurityAttributeType.RestrictedUser:
-                    return TokenInformationClass.TokenRestrictedDeviceClaimAttributes;
+                    return TokenInformationClass.TokenRestrictedUserClaimAttributes;
                 case SecurityAttributeType.Device:
                     return TokenInformationClass.TokenDeviceClaimAttributes;
+                case SecurityAttributeType.RestrictedDevice:
+                    return TokenInformationClass.TokenRestrictedDeviceClaimAttributes;
                 default:
                     throw new ArgumentException("Invalid attributes type.");
             }
