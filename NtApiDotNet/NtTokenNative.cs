@@ -425,10 +425,17 @@ namespace NtApiDotNet
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct ClaimSecurityAttributeFqbnValue
+    public struct SecurityAttributeFqbnValue
     {
         public ulong Version;
         public UnicodeStringOut Name;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ClaimSecurityAttributeFqbnValue
+    {
+        public ulong Version;
+        public IntPtr Name;
     }
 
     public class ClaimSecurityAttributeFqbn
@@ -442,10 +449,16 @@ namespace NtApiDotNet
             Name = name;
         }
 
-        internal ClaimSecurityAttributeFqbn(ClaimSecurityAttributeFqbnValue value)
+        internal ClaimSecurityAttributeFqbn(SecurityAttributeFqbnValue value)
         {
             Version = NtObjectUtils.UnpackVersion(value.Version);
             Name = value.Name.ToString();
+        }
+
+        internal ClaimSecurityAttributeFqbn(ClaimSecurityAttributeFqbnValue value)
+        {
+            Version = NtObjectUtils.UnpackVersion(value.Version);
+            Name = Marshal.PtrToStringUni(value.Name);
         }
 
         internal ClaimSecurityAttributeFqbn Clone()
@@ -459,8 +472,17 @@ namespace NtApiDotNet
         }
     }
 
+    internal interface ISecurityAttributeV1
+    {
+        string GetName();
+        ClaimSecurityValueType GetValueType();
+        ClaimSecurityFlags GetFlags();
+        int GetValueCount();
+        IntPtr GetValues();
+    }
+
     [StructLayout(LayoutKind.Sequential)]
-    public struct ClaimSecurityAttributeV1
+    public struct SecurityAttributeV1 : ISecurityAttributeV1
     {
         public UnicodeStringOut Name;
         public ClaimSecurityValueType ValueType;
@@ -468,10 +490,77 @@ namespace NtApiDotNet
         public ClaimSecurityFlags Flags;
         public int ValueCount;
         public IntPtr Values;
+
+        ClaimSecurityFlags ISecurityAttributeV1.GetFlags()
+        {
+            return Flags;
+        }
+
+        string ISecurityAttributeV1.GetName()
+        {
+            return Name.ToString();
+        }
+
+        int ISecurityAttributeV1.GetValueCount()
+        {
+            return ValueCount;
+        }
+
+        IntPtr ISecurityAttributeV1.GetValues()
+        {
+            return Values;
+        }
+
+        ClaimSecurityValueType ISecurityAttributeV1.GetValueType()
+        {
+            return ValueType;
+        }
         //union {
         //PLONG64 pInt64;
         //PDWORD64 pUint64;
         //UNICODE_STRING* ppString;
+        //PCLAIM_SECURITY_ATTRIBUTE_FQBN_VALUE pFqbn;
+        //PCLAIM_SECURITY_ATTRIBUTE_OCTET_STRING_VALUE pOctetString;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ClaimSecurityAttributeV1 : ISecurityAttributeV1
+    {
+        public IntPtr Name;
+        public ClaimSecurityValueType ValueType;
+        public ushort Reserved;
+        public ClaimSecurityFlags Flags;
+        public int ValueCount;
+        public IntPtr Values;
+
+        ClaimSecurityFlags ISecurityAttributeV1.GetFlags()
+        {
+            return Flags;
+        }
+
+        string ISecurityAttributeV1.GetName()
+        {
+            return Marshal.PtrToStringUni(Name);
+        }
+
+        int ISecurityAttributeV1.GetValueCount()
+        {
+            return ValueCount;
+        }
+
+        IntPtr ISecurityAttributeV1.GetValues()
+        {
+            return Values;
+        }
+
+        ClaimSecurityValueType ISecurityAttributeV1.GetValueType()
+        {
+            return ValueType;
+        }
+        //union {
+        //PLONG64 pInt64;
+        //PDWORD64 pUint64;
+        //LPWSTR* ppString;
         //PCLAIM_SECURITY_ATTRIBUTE_FQBN_VALUE pFqbn;
         //PCLAIM_SECURITY_ATTRIBUTE_OCTET_STRING_VALUE pOctetString;
     }
@@ -637,6 +726,7 @@ namespace NtApiDotNet
             SafeTokenGroupsBuffer RestrictedSids, out SafeKernelObjectHandle NewTokenHandle);
 
         [DllImport("ntdll.dll")]
+        [Obsolete("Use version with optional parameters")]
         public static extern NtStatus NtCreateToken(
             out SafeKernelObjectHandle TokenHandle,
             TokenAccessRights DesiredAccess,
@@ -650,6 +740,22 @@ namespace NtApiDotNet
             [In] ref TokenOwner TokenOwner,
             [In] ref TokenPrimaryGroup TokenPrimaryGroup,
             [In] ref TokenDefaultDacl TokenDefaultDacl,
+            [In] TokenSource TokenSource);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtCreateToken(
+            out SafeKernelObjectHandle TokenHandle,
+            TokenAccessRights DesiredAccess,
+            [In] ObjectAttributes ObjectAttributes,
+            TokenType TokenType,
+            [In] ref Luid AuthenticationId,
+            [In] ref LargeIntegerStruct ExpirationTime,
+            [In] ref TokenUser TokenUser,
+            [In] SafeTokenGroupsBuffer TokenGroups,
+            [In] SafeTokenPrivilegesBuffer TokenPrivileges,
+            [In] OptionalTokenOwner TokenOwner,
+            [In] ref TokenPrimaryGroup TokenPrimaryGroup,
+            [In] OptionalTokenDefaultDacl TokenDefaultDacl,
             [In] TokenSource TokenSource);
 
         [DllImport("ntdll.dll")]

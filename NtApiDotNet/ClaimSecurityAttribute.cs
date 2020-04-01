@@ -88,13 +88,22 @@ namespace NtApiDotNet
         #endregion
 
         #region Constructors
-        internal ClaimSecurityAttribute(IntPtr ptr)
+        internal ClaimSecurityAttribute(IntPtr ptr, bool native)
         {
-            ClaimSecurityAttributeV1 v1 = (ClaimSecurityAttributeV1)Marshal.PtrToStructure(ptr, typeof(ClaimSecurityAttributeV1));
-            Name = v1.Name.ToString();
-            ValueType = v1.ValueType;
-            Flags = v1.Flags;
-            var values = ReadValues(v1.Values, v1.ValueCount, v1.ValueType).ToArray();
+            ISecurityAttributeV1 sec_attr;
+            if (native)
+            {
+                sec_attr = (SecurityAttributeV1)Marshal.PtrToStructure(ptr, typeof(SecurityAttributeV1));
+            }
+            else
+            {
+                sec_attr = (ClaimSecurityAttributeV1)Marshal.PtrToStructure(ptr, typeof(ClaimSecurityAttributeV1));
+            }
+
+            Name = sec_attr.GetName();
+            ValueType = sec_attr.GetValueType();
+            Flags = sec_attr.GetFlags();
+            var values = ReadValues(sec_attr.GetValues(), sec_attr.GetValueCount(), ValueType, native).ToArray();
             Values = values;
             ValueCount = values.Length;
         }
@@ -141,7 +150,7 @@ namespace NtApiDotNet
             return res.ToArray();
         }
 
-        private IEnumerable<object> ReadValues(IntPtr buffer, int count, ClaimSecurityValueType type)
+        private IEnumerable<object> ReadValues(IntPtr buffer, int count, ClaimSecurityValueType type, bool native)
         {
             if (buffer == IntPtr.Zero || count == 0)
             {
@@ -161,9 +170,23 @@ namespace NtApiDotNet
                 case ClaimSecurityValueType.Boolean:
                     return ReadTyped<long>(buffer, count).Select(v => v != 0).Cast<object>();
                 case ClaimSecurityValueType.String:
-                    return ReadTyped<UnicodeStringOut>(buffer, count).Select(n => n.ToString());
+                    if (native)
+                    {
+                        return ReadTyped<UnicodeStringOut>(buffer, count).Select(n => n.ToString());
+                    }
+                    else
+                    {
+                        return ReadTyped<IntPtr>(buffer, count).Select(n => Marshal.PtrToStringUni(n));
+                    }
                 case ClaimSecurityValueType.Fqbn:
-                    return ReadTyped<ClaimSecurityAttributeFqbnValue>(buffer, count).Select(v => new ClaimSecurityAttributeFqbn(v)).Cast<object>();
+                    if (native)
+                    {
+                        return ReadTyped<SecurityAttributeFqbnValue>(buffer, count).Select(v => new ClaimSecurityAttributeFqbn(v)).Cast<object>();
+                    }
+                    else
+                    {
+                        return ReadTyped<ClaimSecurityAttributeFqbnValue>(buffer, count).Select(v => new ClaimSecurityAttributeFqbn(v)).Cast<object>();
+                    }
                 default:
                     return new object[0];
             }

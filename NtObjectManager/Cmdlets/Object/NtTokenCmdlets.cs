@@ -801,7 +801,7 @@ namespace NtObjectManager.Cmdlets.Object
     ///   <para>Create a new LocalSystem token with two groups and two privileges.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
-    [Cmdlet(VerbsCommon.New, "NtToken")]
+    [Cmdlet(VerbsCommon.New, "NtToken", DefaultParameterSetName = "FromGroup")]
     [OutputType(typeof(NtToken))]
     public sealed class NewNtTokenCmdlet : NtObjectBaseCmdletWithAccess<TokenAccessRights>
     {
@@ -814,14 +814,22 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify a list of groups.</para>
         /// </summary>
-        [Parameter]
-        public Sid[] Groups { get; set; }
+        [Parameter(ParameterSetName = "FromGroup")]
+        [Alias("Groups")]
+        public Sid[] Group { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a list of groups. To add an Integrity Level specify an IL group.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromUserGroup")]
+        public UserGroup[] UserGroup { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a list of groups.</para>
         /// </summary>
         [Parameter]
-        public TokenPrivilegeValue[] Privileges { get; set; }
+        [Alias("Privileges")]
+        public TokenPrivilegeValue[] Privilege { get; set; }
 
         /// <summary>
         /// <para type="description">Specify an authentication ID.</para>
@@ -850,8 +858,32 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify the token's integrity level.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "FromGroup")]
         public TokenIntegrityLevel IntegrityLevel { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a list of device groups.</para>
+        /// </summary>
+        [Parameter]
+        public UserGroup[] DeviceGroup { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a list of device attributes.</para>
+        /// </summary>
+        [Parameter]
+        public ClaimSecurityAttribute[] DeviceAttribute { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a list of user attributes.</para>
+        /// </summary>
+        [Parameter]
+        public ClaimSecurityAttribute[] UserAttribute { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify token mandatory policy.</para>
+        /// </summary>
+        [Parameter]
+        public TokenMandatoryPolicy? MandatoryPolicy { get; set; }
 
         /// <summary>
         /// Determine if the cmdlet can create objects.
@@ -864,7 +896,12 @@ namespace NtObjectManager.Cmdlets.Object
 
         private IEnumerable<UserGroup> GetGroups()
         {
-            List<UserGroup> groups = Groups.Select(g => new UserGroup(g, GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Mandatory)).ToList();
+            if (ParameterSetName == "FromUserGroup")
+            {
+                return UserGroup;
+            }
+
+            List<UserGroup> groups = Group.Select(g => new UserGroup(g, GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Mandatory)).ToList();
             groups.Add(new UserGroup(NtSecurity.GetIntegritySid(IntegrityLevel), GroupAttributes.Integrity | GroupAttributes.IntegrityEnabled));
             return groups;
         }
@@ -877,8 +914,8 @@ namespace NtObjectManager.Cmdlets.Object
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
             return NtToken.Create(Access, obj_attributes, TokenType, AuthenticationId, ExpirationTime.ToFileTimeUtc(), new UserGroup(User, GroupAttributes.Owner),
-                GetGroups(), Privileges.Select(p => new TokenPrivilege(p, PrivilegeAttributes.EnabledByDefault | PrivilegeAttributes.Enabled)),
-                User, User, DefaultAcl, "NT.NET");
+                GetGroups(), Privilege.Select(p => new TokenPrivilege(p, PrivilegeAttributes.EnabledByDefault | PrivilegeAttributes.Enabled)), UserAttribute,
+                DeviceAttribute, DeviceGroup, MandatoryPolicy, User, User, DefaultAcl, "NT.NET");
         }
 
         /// <summary>
@@ -889,8 +926,8 @@ namespace NtObjectManager.Cmdlets.Object
             AuthenticationId = NtToken.LocalSystemAuthId;
             TokenType = TokenType.Primary;
             ExpirationTime = DateTime.Now.AddYears(10);
-            Groups = new Sid[0];
-            Privileges = new TokenPrivilegeValue[0];
+            Group = new Sid[0];
+            Privilege = new TokenPrivilegeValue[0];
             DefaultAcl = new Acl();
             DefaultAcl.AddAccessAllowedAce(GenericAccessRights.GenericAll, AceFlags.None, "SY");
             DefaultAcl.AddAccessAllowedAce(GenericAccessRights.GenericAll, AceFlags.None, "BA");

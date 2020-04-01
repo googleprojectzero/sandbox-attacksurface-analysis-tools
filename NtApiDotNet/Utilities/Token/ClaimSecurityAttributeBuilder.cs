@@ -71,7 +71,7 @@ namespace NtApiDotNet.Token
             return new ClaimSecurityAttributeBuilder(name, flags, value_type, new WrapperList<T>(values));
         }
 
-        private int GetValueSize()
+        private int GetValueSize(bool native)
         {
             switch (ValueType)
             {
@@ -80,18 +80,32 @@ namespace NtApiDotNet.Token
                 case ClaimSecurityValueType.UInt64:
                     return Values.Count * sizeof(long);
                 case ClaimSecurityValueType.String:
-                    return Values.Count * Marshal.SizeOf(typeof(UnicodeStringOut));
+                    if (native)
+                    {
+                        return Values.Count * Marshal.SizeOf(typeof(UnicodeStringOut));
+                    }
+                    else
+                    {
+                        return Values.Count * IntPtr.Size;
+                    }
                 case ClaimSecurityValueType.OctetString:
                 case ClaimSecurityValueType.Sid:
                     return Values.Count * Marshal.SizeOf(typeof(ClaimSecurityAttributeOctetStringValue));
                 case ClaimSecurityValueType.Fqbn:
-                    return Values.Count * Marshal.SizeOf(typeof(ClaimSecurityAttributeFqbnValue));
+                    if (native)
+                    {
+                        return Values.Count * Marshal.SizeOf(typeof(SecurityAttributeFqbnValue));
+                    }
+                    else
+                    {
+                        return Values.Count * Marshal.SizeOf(typeof(ClaimSecurityAttributeFqbnValue));
+                    }
                 default:
                     throw new ArgumentException($"Unknown attribute value type {ValueType}");
             }
         }
 
-        private static UnicodeStringOut CreateString(string value, DisposableList list)
+        private static UnicodeStringOut CreateUnicodeString(string value, DisposableList list)
         {
             byte[] bytes = Encoding.Unicode.GetBytes(value + "\0");
             return new UnicodeStringOut
@@ -102,12 +116,27 @@ namespace NtApiDotNet.Token
             };
         }
 
+        private static IntPtr CreateString(string value, DisposableList list)
+        {
+            byte[] bytes = Encoding.Unicode.GetBytes(value + "\0");
+            return list.AddResource(new SafeHGlobalBuffer(bytes)).DangerousGetHandle();
+        }
+
         private static ClaimSecurityAttributeOctetStringValue CreateOctetString(byte[] value, DisposableList list)
         {
             return new ClaimSecurityAttributeOctetStringValue
             {
                 ValueLength = value.Length,
                 pValue = list.AddResource(new SafeHGlobalBuffer(value)).DangerousGetHandle()
+            };
+        }
+
+        private static SecurityAttributeFqbnValue CreateNativeFqbnValue(ClaimSecurityAttributeFqbn value, DisposableList list)
+        {
+            return new SecurityAttributeFqbnValue
+            {
+                Version = NtObjectUtils.PackVersion(value.Version),
+                Name = CreateUnicodeString(value.Name, list)
             };
         }
 
@@ -120,9 +149,9 @@ namespace NtApiDotNet.Token
             };
         }
 
-        private SafeHGlobalBuffer MarshalValues(DisposableList list)
+        private SafeHGlobalBuffer MarshalValues(DisposableList list, bool native)
         {
-            using (var buffer = new SafeHGlobalBuffer(GetValueSize()))
+            using (var buffer = new SafeHGlobalBuffer(GetValueSize(native)))
             {
                 switch (ValueType)
                 {
@@ -136,7 +165,14 @@ namespace NtApiDotNet.Token
                         buffer.WriteArray(0, Values.Cast<bool>().Select(b => b ? 1L : 0L).ToArray(), 0, Values.Count);
                         break;
                     case ClaimSecurityValueType.String:
-                        buffer.WriteArray(0, Values.Cast<string>().Select(s => CreateString(s, list)).ToArray(), 0, Values.Count);
+                        if (native)
+                        {
+                            buffer.WriteArray(0, Values.Cast<string>().Select(s => CreateUnicodeString(s, list)).ToArray(), 0, Values.Count);
+                        }
+                        else
+                        {
+                            buffer.WriteArray(0, Values.Cast<string>().Select(s => CreateString(s, list)).ToArray(), 0, Values.Count);
+                        }
                         break;
                     case ClaimSecurityValueType.OctetString:
                         buffer.WriteArray(0, Values.Cast<byte[]>().Select(ba => CreateOctetString(ba, list)).ToArray(), 0, Values.Count);
@@ -145,7 +181,14 @@ namespace NtApiDotNet.Token
                         buffer.WriteArray(0, Values.Cast<Sid>().Select(s => CreateOctetString(s.ToArray(), list)).ToArray(), 0, Values.Count);
                         break;
                     case ClaimSecurityValueType.Fqbn:
-                        buffer.WriteArray(0, Values.Cast<ClaimSecurityAttributeFqbn>().Select(v => CreateFqbnValue(v, list)).ToArray(), 0, Values.Count);
+                        if (native)
+                        {
+                            buffer.WriteArray(0, Values.Cast<ClaimSecurityAttributeFqbn>().Select(v => CreateNativeFqbnValue(v, list)).ToArray(), 0, Values.Count);
+                        }
+                        else
+                        {
+                            buffer.WriteArray(0, Values.Cast<ClaimSecurityAttributeFqbn>().Select(v => CreateFqbnValue(v, list)).ToArray(), 0, Values.Count);
+                        }
                         break;
                 }
 
@@ -378,12 +421,24 @@ namespace NtApiDotNet.Token
         #endregion
 
         #region Internal Members
+        internal SecurityAttributeV1 MarshalNativeAttribute(DisposableList list)
+        {
+            return new SecurityAttributeV1
+            {
+                ValueType = ValueType,
+                Values = list.AddResource(MarshalValues(list, true)).DangerousGetHandle(),
+                ValueCount = Values.Count,
+                Name = CreateUnicodeString(Name, list),
+                Flags = Flags
+            };
+        }
+
         internal ClaimSecurityAttributeV1 MarshalAttribute(DisposableList list)
         {
             return new ClaimSecurityAttributeV1
             {
                 ValueType = ValueType,
-                Values = list.AddResource(MarshalValues(list)).DangerousGetHandle(),
+                Values = list.AddResource(MarshalValues(list, true)).DangerousGetHandle(),
                 ValueCount = Values.Count,
                 Name = CreateString(Name, list),
                 Flags = Flags
@@ -411,9 +466,18 @@ namespace NtApiDotNet.Token
             return stm.ToArray();
         }
 
-        internal static SafeBuffer ToSafeBuffer(DisposableList list, ClaimSecurityAttributeBuilder[] attributes)
+        internal static SafeBuffer ToSafeBuffer(DisposableList list, ClaimSecurityAttributeBuilder[] attributes, bool native)
         {
-            var attrs = list.AddResource(attributes.Select(a => a.MarshalAttribute(list)).ToArray().ToBuffer());
+            SafeBuffer attrs;
+            if (native)
+            {
+                attrs = list.AddResource(attributes.Select(a => a.MarshalNativeAttribute(list)).ToArray().ToBuffer());
+            }
+            else
+            {
+                attrs = list.AddResource(attributes.Select(a => a.MarshalAttribute(list)).ToArray().ToBuffer());
+            }
+
             return new ClaimSecurityAttributesInformation
             {
                 Version = 1,

@@ -735,10 +735,13 @@ namespace NtApiDotNet
         /// <returns>The security attributes.</returns>
         public NtResult<ClaimSecurityAttribute[]> GetSecurityAttributes(SecurityAttributeType type, bool throw_on_error)
         {
+            var info_class = GetSecurityAttributeClass(type);
             using (var buf = QueryBuffer(GetSecurityAttributeClass(type), new ClaimSecurityAttributesInformation(), throw_on_error))
             {
                 if (!buf.IsSuccess)
                     return buf.Cast<ClaimSecurityAttribute[]>();
+                bool native = info_class == TokenInformationClass.TokenSecurityAttributes;
+                int struct_size = native ? Marshal.SizeOf(typeof(SecurityAttributeV1)) : Marshal.SizeOf(typeof(ClaimSecurityAttributeV1));
                 ClaimSecurityAttributesInformation r = buf.Result.Result;
                 List<ClaimSecurityAttribute> attributes = new List<ClaimSecurityAttribute>();
                 if (r.AttributeCount > 0)
@@ -747,9 +750,9 @@ namespace NtApiDotNet
                     IntPtr buffer = r.pAttributeV1;
                     while (count > 0)
                     {
-                        attributes.Add(new ClaimSecurityAttribute(buffer));
+                        attributes.Add(new ClaimSecurityAttribute(buffer, info_class == TokenInformationClass.TokenSecurityAttributes));
                         count--;
-                        buffer += Marshal.SizeOf(typeof(ClaimSecurityAttributeV1));
+                        buffer += struct_size;
                     }
                 }
                 return new NtResult<ClaimSecurityAttribute[]>(NtStatus.STATUS_SUCCESS, attributes.ToArray());
@@ -1479,22 +1482,24 @@ namespace NtApiDotNet
         /// <summary>
         /// Get token's device claims.
         /// </summary>
-        public ClaimSecurityAttribute[] DeviceClaims => GetSecurityAttributes(SecurityAttributeType.Device);
+        public ClaimSecurityAttribute[] DeviceClaimAttributes => GetSecurityAttributes(SecurityAttributeType.Device);
 
         /// <summary>
         /// Get token's user claims.
         /// </summary>
-        public ClaimSecurityAttribute[] UserClaims => GetSecurityAttributes(SecurityAttributeType.User);
+        public ClaimSecurityAttribute[] UserClaimAttributes => GetSecurityAttributes(SecurityAttributeType.User);
 
         /// <summary>
         /// Get token's restricted user claims.
         /// </summary>
-        public ClaimSecurityAttribute[] RestrictedUserClaims => GetSecurityAttributes(SecurityAttributeType.RestrictedUser);
+        /// <remarks>Unsupported, at least on Windows 10.</remarks>
+        public ClaimSecurityAttribute[] RestrictedUserClaimAttributes => GetSecurityAttributes(SecurityAttributeType.RestrictedUser);
 
         /// <summary>
         /// Get token's restricted user claims.
         /// </summary>
-        public ClaimSecurityAttribute[] RestrictedDeviceClaims => GetSecurityAttributes(SecurityAttributeType.RestrictedDevice);
+        /// <remarks>Unsupported, at least on Windows 10.</remarks>
+        public ClaimSecurityAttribute[] RestrictedDeviceClaimAttributes => GetSecurityAttributes(SecurityAttributeType.RestrictedDevice);
 
         /// <summary>
         /// Get whether a token is an AppContainer token
@@ -2241,63 +2246,121 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="desired_access">The desired access for the token.</param>
         /// <param name="object_attributes">Object attributes, used to pass SecurityDescriptor or SQOS for impersonation token.</param>
-        /// <param name="token_type">The type of token.</param>
+        /// <param name="type">The type of token.</param>
         /// <param name="authentication_id">The authentication ID for the token.</param>
         /// <param name="expiration_time">The expiration time for the token.</param>
-        /// <param name="token_user">The user for the token.</param>
-        /// <param name="token_groups">The groups for the token.</param>
-        /// <param name="token_privileges">The privileges for the token.</param>
-        /// <param name="token_owner">The owner of the token.</param>
-        /// <param name="token_primary_group">The primary group for the token.</param>
-        /// <param name="token_default_dacl">The default dacl for the token.</param>
-        /// <param name="token_source">The source for the token.</param>
+        /// <param name="user">The user for the token.</param>
+        /// <param name="groups">The groups for the token.</param>
+        /// <param name="privileges">The privileges for the token.</param>
+        /// <param name="owner">The owner of the token.</param>
+        /// <param name="primary_group">The primary group for the token.</param>
+        /// <param name="default_dacl">The default dacl for the token.</param>
+        /// <param name="source">The source for the token.</param>
+        /// <param name="device_attributes">Optional device attributes.</param>
+        /// <param name="device_groups">Optional device groups.</param>
+        /// <param name="mandatory_policy">Optional mandatory policy.</param>
+        /// <param name="user_attributes">Optional user attributes.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The token object.</returns>
         public static NtResult<NtToken> Create(
                     TokenAccessRights desired_access,
                     ObjectAttributes object_attributes,
-                    TokenType token_type,
+                    TokenType type,
                     Luid authentication_id,
                     long expiration_time,
-                    UserGroup token_user,
-                    IEnumerable<UserGroup> token_groups,
-                    IEnumerable<TokenPrivilege> token_privileges,
-                    Sid token_owner,
-                    Sid token_primary_group,
-                    Acl token_default_dacl,
-                    string token_source,
+                    UserGroup user,
+                    IEnumerable<UserGroup> groups,
+                    IEnumerable<TokenPrivilege> privileges,
+                    IEnumerable<ClaimSecurityAttribute> user_attributes,
+                    IEnumerable<ClaimSecurityAttribute> device_attributes,
+                    IEnumerable<UserGroup> device_groups,
+                    TokenMandatoryPolicy? mandatory_policy,
+                    Sid owner,
+                    Sid primary_group,
+                    Acl default_dacl,
+                    string source,
                     bool throw_on_error)
         {
             using (var list = new DisposableList())
             {
-                TokenUser user = new TokenUser();
-                SafeSidBufferHandle user_buffer = list.AddResource(token_user.Sid.ToSafeBuffer());
-                user.User.Sid = user_buffer.DangerousGetHandle();
-                user.User.Attributes = token_user.Attributes;
-                var groups = list.AddResource(BuildGroups(token_groups));
+                TokenUser user_struct = new TokenUser();
+                user_struct.User.Sid = list.AddResource(user.Sid.ToSafeBuffer()).DangerousGetHandle();
+                user_struct.User.Attributes = user.Attributes;
+                var groups_buffer = list.AddResource(BuildGroups(groups));
                 TokenPrivilegesBuilder builder = new TokenPrivilegesBuilder();
-                builder.AddPrivilegeRange(token_privileges);
-                var privileges = list.AddResource(builder.ToBuffer());
+                builder.AddPrivilegeRange(privileges);
+                var privileges_buffer = list.AddResource(builder.ToBuffer());
 
-                TokenPrimaryGroup primary_group = new TokenPrimaryGroup
+                TokenPrimaryGroup primary_group_struct = new TokenPrimaryGroup
                 {
-                    PrimaryGroup = list.AddResource(token_primary_group.ToSafeBuffer()).DangerousGetHandle()
+                    PrimaryGroup = list.AddResource(primary_group.ToSafeBuffer()).DangerousGetHandle()
                 };
 
-                TokenOwner owner = new TokenOwner()
+                OptionalTokenOwner owner_opt = null;
+                if (owner != null)
                 {
-                    Owner = list.AddResource(token_owner.ToSafeBuffer()).DangerousGetHandle()
-                };
+                    owner_opt = new TokenOwner()
+                    {
+                        Owner = list.AddResource(owner.ToSafeBuffer()).DangerousGetHandle()
+                    };
+                }
 
-                TokenDefaultDacl dacl = new TokenDefaultDacl()
+                OptionalTokenDefaultDacl dacl_opt = null;
+                if (default_dacl != null)
                 {
-                    DefaultDacl = list.AddResource(token_default_dacl.ToSafeBuffer()).DangerousGetHandle()
-                };
+                    dacl_opt = new TokenDefaultDacl()
+                    {
+                        DefaultDacl = list.AddResource(default_dacl.ToSafeBuffer()).DangerousGetHandle()
+                    };
+                }
 
-                return NtSystemCalls.NtCreateToken(out SafeKernelObjectHandle handle, desired_access, object_attributes,
-                    token_type, ref authentication_id, new LargeInteger(expiration_time),
-                    ref user, groups, privileges, ref owner, ref primary_group, ref dacl,
-                    new TokenSource(token_source)).CreateResult(throw_on_error, () => new NtToken(handle));
+                var expire_time_struct = new LargeIntegerStruct() { QuadPart = expiration_time };
+                SafeBuffer user_attributes_buffer = SafeHGlobalBuffer.Null;
+                bool extended = mandatory_policy.HasValue;
+                if (user_attributes != null && user_attributes.Any())
+                {
+                    user_attributes_buffer = list.AddResource(
+                        ClaimSecurityAttributeBuilder.ToSafeBuffer(
+                            list, user_attributes.Select(a => a.ToBuilder()).ToArray(), true));
+                    extended = true;
+                }
+
+                SafeBuffer device_attributes_buffer = SafeHGlobalBuffer.Null;
+                if (device_attributes != null && device_attributes.Any())
+                {
+                    device_attributes_buffer = list.AddResource(
+                        ClaimSecurityAttributeBuilder.ToSafeBuffer(
+                            list, device_attributes.Select(a => a.ToBuilder()).ToArray(), true));
+                    extended = true;
+                }
+
+                SafeTokenGroupsBuffer device_groups_buffer = SafeTokenGroupsBuffer.Null;
+                if (device_groups != null && device_groups.Any())
+                {
+                    device_groups_buffer = list.AddResource(BuildGroups(device_groups));
+                    extended = true;
+                }
+
+                if (extended)
+                {
+                    OptionalTokenMandatoryPolicy mandatory_policy_opt = null;
+                    if (mandatory_policy.HasValue)
+                    {
+                        mandatory_policy_opt = mandatory_policy.Value;
+                    }
+
+                    return NtSystemCalls.NtCreateTokenEx(out SafeKernelObjectHandle handle, desired_access, object_attributes,
+                        type, ref authentication_id, ref expire_time_struct,
+                        ref user_struct, groups_buffer, privileges_buffer, user_attributes_buffer, device_attributes_buffer, device_groups_buffer, mandatory_policy_opt, 
+                        owner_opt, ref primary_group_struct, dacl_opt, new TokenSource(source)).CreateResult(throw_on_error, () => new NtToken(handle));
+                }
+                else
+                {
+                    return NtSystemCalls.NtCreateToken(out SafeKernelObjectHandle handle, desired_access, object_attributes,
+                        type, ref authentication_id, ref expire_time_struct,
+                        ref user_struct, groups_buffer, privileges_buffer, owner_opt, ref primary_group_struct, dacl_opt,
+                        new TokenSource(source)).CreateResult(throw_on_error, () => new NtToken(handle));
+                }
             }
         }
 
@@ -2306,63 +2369,144 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="desired_access">The desired access for the token.</param>
         /// <param name="object_attributes">Object attributes, used to pass SecurityDescriptor or SQOS for impersonation token.</param>
-        /// <param name="token_type">The type of token.</param>
+        /// <param name="type">The type of token.</param>
         /// <param name="authentication_id">The authentication ID for the token.</param>
         /// <param name="expiration_time">The expiration time for the token.</param>
-        /// <param name="token_user">The user for the token.</param>
-        /// <param name="token_groups">The groups for the token.</param>
-        /// <param name="token_privileges">The privileges for the token.</param>
-        /// <param name="token_owner">The owner of the token.</param>
-        /// <param name="token_primary_group">The primary group for the token.</param>
-        /// <param name="token_default_dacl">The default dacl for the token.</param>
-        /// <param name="token_source">The source for the token.</param>
+        /// <param name="user">The user for the token.</param>
+        /// <param name="groups">The groups for the token.</param>
+        /// <param name="privileges">The privileges for the token.</param>
+        /// <param name="owner">The owner of the token.</param>
+        /// <param name="primary_group">The primary group for the token.</param>
+        /// <param name="default_dacl">The default dacl for the token.</param>
+        /// <param name="source">The source for the token.</param>
+        /// <param name="device_attributes">Optional device attributes.</param>
+        /// <param name="device_groups">Optional device groups.</param>
+        /// <param name="mandatory_policy">Optional mandatory policy.</param>
+        /// <param name="user_attributes">Optional user attributes.</param>
         /// <returns>The token object.</returns>
         public static NtToken Create(
                     TokenAccessRights desired_access,
                     ObjectAttributes object_attributes,
-                    TokenType token_type,
+                    TokenType type,
                     Luid authentication_id,
                     long expiration_time,
-                    UserGroup token_user,
-                    IEnumerable<UserGroup> token_groups,
-                    IEnumerable<TokenPrivilege> token_privileges,
-                    Sid token_owner,
-                    Sid token_primary_group,
-                    Acl token_default_dacl,
-                    string token_source)
+                    UserGroup user,
+                    IEnumerable<UserGroup> groups,
+                    IEnumerable<TokenPrivilege> privileges,
+                    IEnumerable<ClaimSecurityAttribute> user_attributes,
+                    IEnumerable<ClaimSecurityAttribute> device_attributes,
+                    IEnumerable<UserGroup> device_groups,
+                    TokenMandatoryPolicy? mandatory_policy,
+                    Sid owner,
+                    Sid primary_group,
+                    Acl default_dacl,
+                    string source)
         {
-            return Create(desired_access, object_attributes, token_type, authentication_id, expiration_time, token_user,
-                token_groups, token_privileges, token_owner, token_primary_group, token_default_dacl, token_source, true).Result;
+            return Create(desired_access, object_attributes, type, authentication_id,
+                expiration_time, user, groups, privileges, user_attributes,
+                device_attributes, device_groups, mandatory_policy,
+                owner, primary_group, default_dacl, source, true).Result;
         }
 
         /// <summary>
         /// Create a token. Needs SeCreateTokenPrivilege.
         /// </summary>
-        /// <param name="token_user">The user for the token.</param>
-        /// <param name="token_groups">The groups for the token.</param>
-        /// <param name="token_privileges">The privileges for the token.</param>
+        /// <param name="desired_access">The desired access for the token.</param>
+        /// <param name="object_attributes">Object attributes, used to pass SecurityDescriptor or SQOS for impersonation token.</param>
+        /// <param name="type">The type of token.</param>
+        /// <param name="authentication_id">The authentication ID for the token.</param>
+        /// <param name="expiration_time">The expiration time for the token.</param>
+        /// <param name="user">The user for the token.</param>
+        /// <param name="groups">The groups for the token.</param>
+        /// <param name="privileges">The privileges for the token.</param>
+        /// <param name="owner">The owner of the token.</param>
+        /// <param name="primary_group">The primary group for the token.</param>
+        /// <param name="default_dacl">The default dacl for the token.</param>
+        /// <param name="source">The source for the token.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The token object.</returns>
-        public static NtToken Create(Sid token_user,
-                    IEnumerable<Sid> token_groups,
-                    IEnumerable<TokenPrivilegeValue> token_privileges)
+        public static NtResult<NtToken> Create(
+                    TokenAccessRights desired_access,
+                    ObjectAttributes object_attributes,
+                    TokenType type,
+                    Luid authentication_id,
+                    long expiration_time,
+                    UserGroup user,
+                    IEnumerable<UserGroup> groups,
+                    IEnumerable<TokenPrivilege> privileges,
+                    Sid owner,
+                    Sid primary_group,
+                    Acl default_dacl,
+                    string source,
+                    bool throw_on_error)
+        {
+            return Create(desired_access, object_attributes, type, authentication_id,
+                expiration_time, user, groups, privileges, null, null, null, null,
+                owner, primary_group, default_dacl, source, throw_on_error);
+        }
+
+        /// <summary>
+        /// Create a token. Needs SeCreateTokenPrivilege.
+        /// </summary>
+        /// <param name="desired_access">The desired access for the token.</param>
+        /// <param name="object_attributes">Object attributes, used to pass SecurityDescriptor or SQOS for impersonation token.</param>
+        /// <param name="type">The type of token.</param>
+        /// <param name="authentication_id">The authentication ID for the token.</param>
+        /// <param name="expiration_time">The expiration time for the token.</param>
+        /// <param name="user">The user for the token.</param>
+        /// <param name="groups">The groups for the token.</param>
+        /// <param name="privileges">The privileges for the token.</param>
+        /// <param name="owner">The owner of the token.</param>
+        /// <param name="primary_group">The primary group for the token.</param>
+        /// <param name="default_dacl">The default dacl for the token.</param>
+        /// <param name="source">The source for the token.</param>
+        /// <returns>The token object.</returns>
+        public static NtToken Create(
+                    TokenAccessRights desired_access,
+                    ObjectAttributes object_attributes,
+                    TokenType type,
+                    Luid authentication_id,
+                    long expiration_time,
+                    UserGroup user,
+                    IEnumerable<UserGroup> groups,
+                    IEnumerable<TokenPrivilege> privileges,
+                    Sid owner,
+                    Sid primary_group,
+                    Acl default_dacl,
+                    string source)
+        {
+            return Create(desired_access, object_attributes, type, authentication_id, expiration_time, user,
+                groups, privileges, owner, primary_group, default_dacl, source, true).Result;
+        }
+
+        /// <summary>
+        /// Create a token. Needs SeCreateTokenPrivilege.
+        /// </summary>
+        /// <param name="user">The user for the token.</param>
+        /// <param name="groups">The groups for the token.</param>
+        /// <param name="privileges">The privileges for the token.</param>
+        /// <returns>The token object.</returns>
+        public static NtToken Create(Sid user,
+                    IEnumerable<Sid> groups,
+                    IEnumerable<TokenPrivilegeValue> privileges)
         {
             Acl default_dacl = new Acl();
-            default_dacl.AddAccessAllowedAce(GenericAccessRights.GenericAll, AceFlags.None, token_user);
+            default_dacl.AddAccessAllowedAce(GenericAccessRights.GenericAll, AceFlags.None, user);
             return Create(TokenAccessRights.GenericAll, null, TokenType.Primary, new Luid(999, 0),
-                DateTime.Now.AddYears(10).ToFileTimeUtc(), new UserGroup(token_user, GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Owner),
-                token_groups.Select(s => new UserGroup(s, GroupAttributes.Enabled | GroupAttributes.EnabledByDefault)),
-                token_privileges.Select(p => new TokenPrivilege(p, PrivilegeAttributes.Enabled | PrivilegeAttributes.EnabledByDefault)),
-                token_user, token_user, default_dacl, "NT.NET");
+                DateTime.Now.AddYears(10).ToFileTimeUtc(), new UserGroup(user, GroupAttributes.Enabled | GroupAttributes.EnabledByDefault | GroupAttributes.Owner),
+                groups.Select(s => new UserGroup(s, GroupAttributes.Enabled | GroupAttributes.EnabledByDefault)),
+                privileges.Select(p => new TokenPrivilege(p, PrivilegeAttributes.Enabled | PrivilegeAttributes.EnabledByDefault)),
+                user, user, default_dacl, "NT.NET");
         }
 
         /// <summary>
         /// Create a token. Needs SeCreateTokenPrivilege.
         /// </summary>
-        /// <param name="token_user">The user for the token.</param>
+        /// <param name="user">The user for the token.</param>
         /// <returns>The token object.</returns>
-        public static NtToken Create(Sid token_user)
+        public static NtToken Create(Sid user)
         {
-            return Create(token_user, new Sid[] { new Sid("WD") }, new TokenPrivilegeValue[] { TokenPrivilegeValue.SeDebugPrivilege });
+            return Create(user, new Sid[] { new Sid("WD") }, new TokenPrivilegeValue[] { TokenPrivilegeValue.SeDebugPrivilege });
         }
 
         /// <summary>
@@ -2548,7 +2692,7 @@ namespace NtApiDotNet
             using (var list = new DisposableList())
             {
                 var ops = list.AddResource(operations.Select(o => (int)o).ToArray().ToBuffer());
-                var attr_info = list.AddResource(ClaimSecurityAttributeBuilder.ToSafeBuffer(list, attributes));
+                var attr_info = list.AddResource(ClaimSecurityAttributeBuilder.ToSafeBuffer(list, attributes, true));
                 TokenSecurityAttributesAndOperationInformation info = new TokenSecurityAttributesAndOperationInformation()
                 {
                     Attributes = attr_info.DangerousGetHandle(),
