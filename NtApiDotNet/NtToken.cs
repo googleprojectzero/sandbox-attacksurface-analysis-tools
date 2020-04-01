@@ -55,9 +55,9 @@ namespace NtApiDotNet
     public enum SecurityAttributeType
     {
         /// <summary>
-        /// Token security attributes.
+        /// Local security attributes.
         /// </summary>
-        Token,
+        Local,
         /// <summary>
         /// User security attributes.
         /// </summary>
@@ -714,7 +714,7 @@ namespace NtApiDotNet
         /// <returns>The security attribute or null if not found.</returns>
         public ClaimSecurityAttribute GetSecurityAttributeByName(string name, ClaimSecurityValueType value_type)
         {
-            return GetSecurityAttributeByName(SecurityAttributeType.Token, name, value_type);
+            return GetSecurityAttributeByName(SecurityAttributeType.Local, name, value_type);
         }
 
         /// <summary>
@@ -766,7 +766,7 @@ namespace NtApiDotNet
         /// <returns>The security attributes.</returns>
         public NtResult<ClaimSecurityAttribute[]> GetSecurityAttributes(bool throw_on_error)
         {
-            return GetSecurityAttributes(SecurityAttributeType.Token, throw_on_error);
+            return GetSecurityAttributes(SecurityAttributeType.Local, throw_on_error);
         }
 
         /// <summary>
@@ -2804,7 +2804,7 @@ namespace NtApiDotNet
         {
             switch (type)
             {
-                case SecurityAttributeType.Token:
+                case SecurityAttributeType.Local:
                     return TokenInformationClass.TokenSecurityAttributes;
                 case SecurityAttributeType.User:
                     return TokenInformationClass.TokenUserClaimAttributes;
