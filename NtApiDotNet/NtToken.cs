@@ -71,9 +71,13 @@ namespace NtApiDotNet
         /// </summary>
         Device,
         /// <summary>
-        /// Restricted device secuity attributes.
+        /// Restricted device security attributes.
         /// </summary>
-        RestrictedDevice
+        RestrictedDevice,
+        /// <summary>
+        /// Singleton device security attributes.
+        /// </summary>
+        Singleton,
     }
 
     /// <summary>
@@ -736,11 +740,11 @@ namespace NtApiDotNet
         public NtResult<ClaimSecurityAttribute[]> GetSecurityAttributes(SecurityAttributeType type, bool throw_on_error)
         {
             var info_class = GetSecurityAttributeClass(type);
-            using (var buf = QueryBuffer(GetSecurityAttributeClass(type), new ClaimSecurityAttributesInformation(), throw_on_error))
+            using (var buf = QueryBuffer(info_class, new ClaimSecurityAttributesInformation(), throw_on_error))
             {
                 if (!buf.IsSuccess)
                     return buf.Cast<ClaimSecurityAttribute[]>();
-                bool native = info_class == TokenInformationClass.TokenSecurityAttributes;
+                bool native = GetSecurityAttributeNative(type);
                 int struct_size = native ? Marshal.SizeOf(typeof(SecurityAttributeV1)) : Marshal.SizeOf(typeof(ClaimSecurityAttributeV1));
                 ClaimSecurityAttributesInformation r = buf.Result.Result;
                 List<ClaimSecurityAttribute> attributes = new List<ClaimSecurityAttribute>();
@@ -2786,7 +2790,18 @@ namespace NtApiDotNet
             return _policy_lookup_table[8 * ((int)policy_type - 1) + offset.Value];
         }
 
-        private TokenInformationClass GetSecurityAttributeClass(SecurityAttributeType type)
+        private static bool GetSecurityAttributeNative(SecurityAttributeType type)
+        {
+            switch (type)
+            {
+                case SecurityAttributeType.Local:
+                case SecurityAttributeType.Singleton:
+                    return true;
+            }
+            return false;
+        }
+
+        private static TokenInformationClass GetSecurityAttributeClass(SecurityAttributeType type)
         {
             switch (type)
             {
@@ -2800,6 +2815,8 @@ namespace NtApiDotNet
                     return TokenInformationClass.TokenDeviceClaimAttributes;
                 case SecurityAttributeType.RestrictedDevice:
                     return TokenInformationClass.TokenRestrictedDeviceClaimAttributes;
+                case SecurityAttributeType.Singleton:
+                    return TokenInformationClass.TokenSingletonAttributes;
                 default:
                     throw new ArgumentException("Invalid attributes type.");
             }
