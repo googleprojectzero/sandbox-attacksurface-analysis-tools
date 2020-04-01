@@ -1244,10 +1244,7 @@ namespace NtApiDotNet
                     return new Acl(dacl_buf.Result.DefaultDacl, false);
                 }
             }
-            set
-            {
-                SetDefaultDacl(value);
-            }
+            set => SetDefaultDacl(value);
         }
 
         /// <summary>
@@ -1315,15 +1312,8 @@ namespace NtApiDotNet
         /// </summary>
         public Luid Origin
         {
-            get
-            {
-                return Query<Luid>(TokenInformationClass.TokenOrigin);
-            }
-
-            set
-            {
-                SetOrigin(value);
-            }
+            get => Query<Luid>(TokenInformationClass.TokenOrigin);
+            set => SetOrigin(value);
         }
 
         /// <summary>
@@ -1513,11 +1503,7 @@ namespace NtApiDotNet
                     return false;
                 }
 
-                using (var appcontainer
-                    = QueryBuffer<uint>(TokenInformationClass.TokenIsAppContainer))
-                {
-                    return appcontainer.Result != 0;
-                }
+                return Query<uint>(TokenInformationClass.TokenIsAppContainer) != 0;
             }
         }
 
