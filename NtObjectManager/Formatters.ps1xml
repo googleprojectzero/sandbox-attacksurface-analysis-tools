@@ -1390,16 +1390,16 @@
           <TableRowEntry>
             <TableColumnItems>
               <TableColumnItem>
-                <ScriptBlock>$_.Owner.Sid.Name</ScriptBlock>
+                <ScriptBlock>if ($_.Owner -ne $null) { $_.Owner.Sid.Name } else { "NONE" }</ScriptBlock>
               </TableColumnItem>
               <TableColumnItem>
-                <ScriptBlock>if (-not $_.DaclPresent) { "NO DACL" } elseif ($_.Dacl.NullAcl) { "NULL DACL" } else { $_.DaclAceCount }</ScriptBlock>
+                <ScriptBlock>if (-not $_.DaclPresent) { "NONE" } elseif ($_.Dacl.NullAcl) { "NULL DACL" } else { $_.DaclAceCount }</ScriptBlock>
               </TableColumnItem>
               <TableColumnItem>
-                <ScriptBlock>if (-not $_.SaclPresent) { "NO SACL" } elseif ($_.Sacl.NullAcl) { "NULL SACL" } else { $_.SaclAceCount }</ScriptBlock>
+                <ScriptBlock>if (-not $_.SaclPresent) { "NONE" } elseif ($_.Sacl.NullAcl) { "NULL SACL" } else { $_.SaclAceCount }</ScriptBlock>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>IntegrityLevel</PropertyName>
+                <ScriptBlock>if (-not $_.HasMandatoryLabelAce) { "NONE" } else { $_.IntegrityLevel }</ScriptBlock>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
