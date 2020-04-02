@@ -1479,6 +1479,10 @@ Show token device claim attributes.
 Show token trust level.
 .PARAMETER Information
 Show token information such as type, impersonation level and ID.
+.PARAMETER Owner
+Show token owner.
+.PARAMETER PrimaryGroup
+Show token primary group.
 .OUTPUTS
 Text data
 .EXAMPLE
@@ -1492,19 +1496,34 @@ Format-NtToken -Token $token -User -Group
 Print the user and groups of the token.
 #>
 function Format-NtToken {
+    [CmdletBinding(DefaultParameterSetName="Basic")]
     Param(
-    [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
-    [NtApiDotNet.NtToken]$Token,
-    [switch]$All,
-    [switch]$Group,
-    [switch]$Privilege,
-    [switch]$User,
-    [switch]$Integrity,
-    [switch]$SecurityAttributes,
-    [switch]$UserClaims,
-    [switch]$DeviceClaims,
-    [switch]$TrustLevel,
-    [switch]$Information
+        [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
+        [NtApiDotNet.NtToken]$Token,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$All,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$Group,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$Privilege,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$User,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$Integrity,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$SecurityAttributes,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$UserClaims,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$DeviceClaims,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$TrustLevel,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$Information,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$Owner,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$PrimaryGroup
   )
 
   if ($All) {
@@ -1517,12 +1536,11 @@ function Format-NtToken {
     $UserClaims = $true
     $TrustLevel = $true
     $Information = $true
+    $Owner = $true
+    $PrimaryGroup = $true
   }
 
-  if (!$User -and !$Group -and !$Privilege `
-    -and !$Integrity -and !$TrustLevel `
-    -and !$SecurityAttributes -and !$Information `
-    -and !$UserClaims -and !$DeviceClaims) {
+  if ($PSCmdlet.ParameterSetName -eq "Basic") {
     $token.User.ToString()
     return
   }
@@ -1531,6 +1549,18 @@ function Format-NtToken {
     "USER INFORMATION"
     "----------------"
     Format-ObjectTable $token.User.Sid | Write-Output
+  }
+
+  if ($Owner) {
+    "OWNER INFORMATION"
+    "---------------- "
+    Format-ObjectTable $token.Owner | Write-Output
+  }
+
+  if ($PrimaryGroup) {
+    "PRIMARY GROUP INFORMATION"
+    "-------------------------"
+    Format-ObjectTable $token.PrimaryGroup | Write-Output
   }
 
   if ($Group) {
@@ -1630,8 +1660,18 @@ Show privilege information.
 Show integrity information.
 .PARAMETER SecurityAttributes
 Show token security attributes.
+.PARAMETER UserClaims
+Show token user claim attributes.
+.PARAMETER DeviceClaims
+Show token device claim attributes.
 .PARAMETER TrustLevel
 Show token trust level.
+.PARAMETER Information
+Show token information such as type, impersonation level and ID.
+.PARAMETER Owner
+Show token owner.
+.PARAMETER PrimaryGroup
+Show token primary group.
 .OUTPUTS
 Text data
 .EXAMPLE
@@ -1645,20 +1685,55 @@ Show-NtTokenEffective -User -Group
 Show the user and groups of the current token.
 #>
 function Show-NtTokenEffective {
+    [CmdletBinding(DefaultParameterSetName="Basic")]
     Param(
-    [switch]$All,
-    [switch]$Group,
-    [switch]$Privilege,
-    [switch]$User,
-    [switch]$Integrity,
-    [switch]$SecurityAttributes,
-    [switch]$TrustLevel
+        [parameter(ParameterSetName="Complex")]
+        [switch]$All,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$Group,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$Privilege,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$User,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$Integrity,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$SecurityAttributes,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$UserClaims,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$DeviceClaims,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$TrustLevel,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$Information,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$Owner,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$PrimaryGroup
     )
 
   Use-NtObject($token = Get-NtToken -Effective) {
-    Format-NtToken -Token $token -All:$All -Group:$Group -Privilege:$Privilege `
-        -User:$User -Integrity:$Integrity -SecurityAttributes:$SecurityAttributes `
-        -TrustLevel:$TrustLevel
+    if ($PsCmdlet.ParameterSetName -eq "Basic") {
+        Format-NtToken -Token $token
+    } else {
+        $args = @{
+            All = $All
+            Group = $Group
+            Privilege = $Privilege
+            User = $User
+            Integrity = $Integrity
+            SecurityAttributes = $SecurityAttributes
+            UserClaims = $UserClaims
+            DeviceClaims = $DeviceClaims
+            TrustLevel = $TrustLevel
+            Information = $Information
+            Owner = $Owner
+            PrimaryGroup = $PrimaryGroup
+            Token = $token
+        }
+        Format-NtToken @args
+    }
   }
 }
 
