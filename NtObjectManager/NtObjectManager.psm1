@@ -1430,7 +1430,7 @@ function Get-ExecutableManifest
 {
     [CmdletBinding()]
     param (
-        [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
+        [parameter(Mandatory, Position=0, ValueFromPipeline)]
         [string]$Path
     )
     PROCESS {
@@ -1438,6 +1438,18 @@ function Get-ExecutableManifest
         $manifest = [NtApiDotNet.Win32.ExecutableManifest]::GetManifests($fullpath)
         Write-Output $manifest
     }
+}
+
+function Format-ObjectTable {
+    Param(
+        [parameter(Mandatory, Position = 0)]
+        $InputObject,
+        [switch]$HideTableHeaders
+    )
+
+    $output = $InputObject | Format-Table -HideTableHeaders:$HideTableHeaders | Out-String
+    $output -Split "`r`n" | ? {-not [string]::IsNullOrWhiteSpace($_)} | Write-Output
+    Write-Output ""
 }
 
 <#
@@ -1518,20 +1530,20 @@ function Format-NtToken {
   if ($User) {
     "USER INFORMATION"
     "----------------"
-    $token.User | Format-Table
+    Format-ObjectTable $token.User.Sid | Write-Output
   }
 
   if ($Group) {
     if ($Token.GroupCount -gt 0) {
         "GROUP SID INFORMATION"
         "-----------------"
-        $token.Groups | Format-Table
+        Format-ObjectTable $token.Groups | Write-Output
     }
 
     if ($token.AppContainer -and $token.Capabilities.Length -gt 0) {
       "CAPABILITY SID INFORMATION"
       "----------------------"
-      $token.Capabilities | Format-Table
+      Format-ObjectTable $token.Capabilities | Write-Output
     }
 
     if ($token.Restricted -and $token.RestrictedSids.Length -gt 0) {
@@ -1542,50 +1554,47 @@ function Format-NtToken {
         "RESTRICTED SID INFORMATION"
         "--------------------------"
       }
-      $token.RestrictedSids | Format-Table
+      Format-ObjectTable $token.RestrictedSids | Write-Output
     }
   }
 
   if ($Privilege -and $Token.Privileges.Length -gt 0) {
     "PRIVILEGE INFORMATION"
     "---------------------"
-    $token.Privileges | Format-Table
+    Format-ObjectTable $token.Privileges | Write-Output
   }
 
   if ($Integrity) {
     "INTEGRITY LEVEL"
     "---------------"
-    $token.IntegrityLevel | Format-Table
-    ""
+    Format-ObjectTable $token.IntegrityLevel | Write-Output
   }
 
   if ($TrustLevel) {
-    "TRUST LEVEL"
-    "-----------"
     $trust_level = $token.TrustLevel
-    if ($trust_level -eq $null) {
-      $trust_level = Get-NtSid "S-1-19-0-0"
+    if ($trust_level -ne $null) {
+        "TRUST LEVEL"
+        "-----------"
+        Format-ObjectTable $trust_level | Write-Output
     }
-    $trust_level | Write-Output
-    ""
   }
 
   if ($SecurityAttributes -and $Token.SecurityAttributes.Length -gt 0) {
     "SECURITY ATTRIBUTES"
     "-------------------"
-    $token.SecurityAttributes | Format-Table
+    Format-ObjectTable $token.SecurityAttributes | Write-Output
   }
 
   if ($UserClaims -and $Token.UserClaimAttributes.Length -gt 0) {
     "USER CLAIM ATTRIBUTES"
     "-------------------"
-    $token.UserClaimAttributes | Format-Table
+    Format-ObjectTable $token.UserClaimAttributes | Write-Output
   }
 
   if ($DeviceClaims -and $Token.DeviceClaimAttributes.Length -gt 0) {
     "DEVICE CLAIM ATTRIBUTES"
     "-------------------"
-    $token.DeviceClaimAttributes | Format-Table
+    Format-ObjectTable $token.DeviceClaimAttributes | Write-Output
   }
 
   if ($Information) {
