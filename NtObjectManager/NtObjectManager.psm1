@@ -1914,7 +1914,9 @@ Specify the ACL is a SACL otherwise a DACL.
 .PARAMETER Summary
 Specify to only print a shortened format removing redundant information.
 .PARAMETER ShowAll
-Specify to format all SD information including the SACL.
+Specify to format all security descriptor information including the SACL.
+.PARAMETER NoHeader
+Specify to not print the security descriptor header.
 .OUTPUTS
 None
 .EXAMPLE
@@ -1963,7 +1965,8 @@ function Format-NtSecurityDescriptor {
         [switch]$MapGeneric,
         [switch]$ToSddl,
         [switch]$Summary,
-        [switch]$ShowAll
+        [switch]$ShowAll,
+        [switch]$NoHeader
     )
 
     PROCESS {
@@ -2027,7 +2030,7 @@ function Format-NtSecurityDescriptor {
                 $Container = $sd.Container
             }
 
-            if (!$Summary) {
+            if (!$Summary -and !$NoHeader) {
                 if ($n -ne "") {
                     Write-Output "Path: $n"
                 }
@@ -6646,22 +6649,45 @@ This cmdlet sets the owner of a security descriptor.
 The security descriptor to modify.
 .PARAMETER Owner
 The owner SID to set.
+.PARAMETER Name
+The name of the group to set.
+.PARAMETER KnownSid
+The well known SID to set.
 .PARAMETER Defaulted
 Specify whether the owner is defaulted.
+.PARAMETER 
 .INPUTS
 None
 .OUTPUTS
 None
 #>
 function Set-NtSecurityDescriptorOwner {
+    [CmdletBinding(DefaultParameterSetName="FromSid")]
     Param(
         [Parameter(Position=0, Mandatory)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
-        [Parameter(Position=1, Mandatory)]
+        [Parameter(Position=1, Mandatory, ParameterSetName="FromSid")]
         [NtApiDotNet.Sid]$Owner,
+        [Parameter(Mandatory, ParameterSetName = "FromName")]
+        [string]$Name,
+        [Parameter(Mandatory, ParameterSetName = "FromKnownSid")]
+        [NtApiDotNet.KnownSidValue]$KnownSid,
         [switch]$Defaulted
     )
-    $SecurityDescriptor.Owner = [NtApiDotNet.SecurityDescriptorSid]::new($Owner, $Defaulted)
+
+    $sid = switch($PsCmdlet.ParameterSetName) {
+        "FromSid" {
+            $Owner
+        }
+        "FromName" {
+            Get-NtSid -Name $Name
+        }
+        "FromKnownSid" {
+            Get-NtSid -KnownSid $KnownSid
+        }
+    }
+
+    $SecurityDescriptor.Owner = [NtApiDotNet.SecurityDescriptorSid]::new($sid, $Defaulted)
 }
 
 <#
@@ -6693,6 +6719,10 @@ This cmdlet sets the group of a security descriptor.
 The security descriptor to modify.
 .PARAMETER Group
 The group SID to set.
+.PARAMETER Name
+The name of the group to set.
+.PARAMETER KnownSid
+The well known SID to set.
 .PARAMETER Defaulted
 Specify whether the group is defaulted.
 .INPUTS
@@ -6701,14 +6731,32 @@ None
 None
 #>
 function Set-NtSecurityDescriptorGroup {
+    [CmdletBinding(DefaultParameterSetName="FromSid")]
     Param(
         [Parameter(Position=0, Mandatory)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
-        [Parameter(Position=1, Mandatory)]
+        [Parameter(Position=1, Mandatory, ParameterSetName="FromSid")]
         [NtApiDotNet.Sid]$Group,
+        [Parameter(Mandatory, ParameterSetName = "FromName")]
+        [string]$Name,
+        [Parameter(Mandatory, ParameterSetName = "FromKnownSid")]
+        [NtApiDotNet.KnownSidValue]$KnownSid,
         [switch]$Defaulted
     )
-    $SecurityDescriptor.Group = [NtApiDotNet.SecurityDescriptorSid]::new($Group, $Defaulted)
+
+    $sid = switch($PsCmdlet.ParameterSetName) {
+        "FromSid" {
+            $Group
+        }
+        "FromName" {
+            Get-NtSid -Name $Name
+        }
+        "FromKnownSid" {
+            Get-NtSid -KnownSid $KnownSid
+        }
+    }
+
+    $SecurityDescriptor.Group = [NtApiDotNet.SecurityDescriptorSid]::new($sid, $Defaulted)
 }
 
 <#
