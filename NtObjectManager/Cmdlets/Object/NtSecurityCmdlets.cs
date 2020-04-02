@@ -909,6 +909,12 @@ namespace NtObjectManager.Cmdlets.Object
         public string Sddl { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify to create the security descriptor from an base64 string.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromBase64")]
+        public string Base64 { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify to create the security descriptor from the default DACL of a token object.</para>
         /// </summary>
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromToken")]
@@ -924,7 +930,8 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify a default NT type for the security descriptor.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromToken"), 
-            Parameter(ParameterSetName = "FromSddl"), 
+            Parameter(ParameterSetName = "FromSddl"),
+            Parameter(ParameterSetName = "FromBase64"),
             Parameter(ParameterSetName = "FromBytes"), 
             Parameter(ParameterSetName = "FromKey"),
             Parameter(ParameterSetName = "EmptySd")]
@@ -936,6 +943,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         [Parameter(ParameterSetName = "FromToken"),
             Parameter(ParameterSetName = "FromSddl"),
+            Parameter(ParameterSetName = "FromBase64"),
             Parameter(ParameterSetName = "FromBytes"),
             Parameter(ParameterSetName = "FromKey"),
             Parameter(ParameterSetName = "EmptySd")]
@@ -1038,6 +1046,9 @@ namespace NtObjectManager.Cmdlets.Object
                     break;
                 case "FromKeyValue":
                     sd = new SecurityDescriptor(KeyValue.Data);
+                    break;
+                case "FromBase64":
+                    sd = SecurityDescriptor.ParseBase64(Base64);
                     break;
                 default:
                     sd = CreateNewSecurityDescriptor();

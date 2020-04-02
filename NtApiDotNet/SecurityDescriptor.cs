@@ -740,6 +740,25 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Converts the security to a base64 string.
+        /// </summary>
+        /// <param name="insert_line_breaks">True to insert line breaks in the base64.</param>
+        /// <returns>The relative SD as a base64 string.</returns>
+        public string ToBase64(bool insert_line_breaks)
+        {
+            return Convert.ToBase64String(ToByteArray(), insert_line_breaks ? Base64FormattingOptions.InsertLineBreaks : 0);
+        }
+
+        /// <summary>
+        /// Converts the security to a base64 string.
+        /// </summary>
+        /// <returns>The relative SD as a base64 string.</returns>
+        public string ToBase64()
+        {
+            return ToBase64(false);
+        }
+
+        /// <summary>
         /// Convert security descriptor to a safe buffer.
         /// </summary>
         /// <param name="absolute">True to return an absolute security descriptor, false for self-relative.</param>
@@ -1219,6 +1238,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="ptr">Native pointer to security descriptor.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The parsed Security Descriptor.</returns>
         public static NtResult<SecurityDescriptor> Parse(IntPtr ptr, bool throw_on_error)
         {
             return Parse(new SafeHGlobalBuffer(ptr, 0, false), throw_on_error);
@@ -1231,6 +1251,7 @@ namespace NtApiDotNet
         /// <param name="type">The NT type for the security descriptor.</param>
         /// <param name="container">True if the security descriptor is from a container.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The parsed Security Descriptor.</returns>
         public static NtResult<SecurityDescriptor> Parse(SafeBuffer buffer, NtType type, bool container, bool throw_on_error)
         {
             SecurityDescriptor sd = new SecurityDescriptor(type) { Container = container };
@@ -1243,6 +1264,7 @@ namespace NtApiDotNet
         /// <param name="buffer">Safe buffer to security descriptor.</param>
         /// <param name="type">The NT type for the security descriptor.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The parsed Security Descriptor.</returns>
         public static NtResult<SecurityDescriptor> Parse(SafeBuffer buffer, NtType type, bool throw_on_error)
         {
             return Parse(buffer, type, false, throw_on_error);
@@ -1253,6 +1275,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="buffer">Safe buffer to security descriptor.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The parsed Security Descriptor.</returns>
         public static NtResult<SecurityDescriptor> Parse(SafeBuffer buffer, bool throw_on_error)
         {
             return Parse(buffer, null, throw_on_error);
@@ -1262,13 +1285,26 @@ namespace NtApiDotNet
         /// Parse a security descriptor.
         /// </summary>
         /// <param name="security_descriptor">Binary form of security descriptor</param>
+        /// <param name="type">The NT type for the security descriptor.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
-        public static NtResult<SecurityDescriptor> Parse(byte[] security_descriptor, bool throw_on_error)
+        /// <returns>The parsed Security Descriptor.</returns>
+        public static NtResult<SecurityDescriptor> Parse(byte[] security_descriptor, NtType type, bool throw_on_error)
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(security_descriptor))
             {
-                return Parse(buffer, throw_on_error);
+                return Parse(buffer, type, throw_on_error);
             }
+        }
+
+        /// <summary>
+        /// Parse a security descriptor.
+        /// </summary>
+        /// <param name="security_descriptor">Binary form of security descriptor</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The parsed Security Descriptor.</returns>
+        public static NtResult<SecurityDescriptor> Parse(byte[] security_descriptor, bool throw_on_error)
+        {
+            return Parse(security_descriptor, null, throw_on_error);
         }
 
         /// <summary>
@@ -1276,10 +1312,52 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="sddl">The SDDL form of the security descriptor.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The parsed Security Descriptor.</returns>
         public static NtResult<SecurityDescriptor> Parse(string sddl, bool throw_on_error)
         {
             return NtSecurity.SddlToSecurityDescriptor(sddl, throw_on_error).Map(ba => new SecurityDescriptor(ba));
         }
+
+        /// <summary>
+        /// Parse a security descriptor from a base64 string
+        /// </summary>
+        /// <param name="base64">The base64 string.</param>
+        /// <param name="type">The NT type for the security descriptor.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The parsed Security Descriptor.</returns>
+        public static NtResult<SecurityDescriptor> ParseBase64(string base64, NtType type, bool throw_on_error)
+        {
+            try
+            {
+                return Parse(Convert.FromBase64String(base64), type, throw_on_error);
+            }
+            catch (FormatException)
+            {
+                return NtStatus.STATUS_INVALID_SECURITY_DESCR.CreateResultFromError<SecurityDescriptor>(throw_on_error);
+            }
+        }
+
+        /// <summary>
+        /// Parse a security descriptor from a base64 string
+        /// </summary>
+        /// <param name="base64">The base64 string.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The parsed Security Descriptor.</returns>
+        public static NtResult<SecurityDescriptor> ParseBase64(string base64, bool throw_on_error)
+        {
+            return ParseBase64(base64, null, throw_on_error);
+        }
+
+        /// <summary>
+        /// Parse a security descriptor from a base64 string
+        /// </summary>
+        /// <param name="base64">The base64 string.</param>
+        /// <returns>The parsed Security Descriptor.</returns>
+        public static SecurityDescriptor ParseBase64(string base64)
+        {
+            return ParseBase64(base64, true).Result;
+        }
+
 
         /// <summary>
         /// Create a new security descriptor from a parent.

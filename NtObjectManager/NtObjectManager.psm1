@@ -6797,11 +6797,13 @@ function Get-NtAceConditionData {
 
 <#
 .SYNOPSIS
-Converts a security descriptor to a self-relative byte array.
+Converts a security descriptor to a self-relative byte array or base64 string.
 .DESCRIPTION
-This cmdlet converts a security descriptor to a self-relative byte array.
+This cmdlet converts a security descriptor to a self-relative byte array or a base64 string.
 .PARAMETER SecurityDescriptor
 The security descriptor to convert.
+.PARAMETER Base64
+Converts the self-relative SD to base64 string.
 .INPUTS
 None
 .OUTPUTS
@@ -6809,15 +6811,30 @@ byte[]
 .EXAMPLE
 ConvertFrom-NtSecurityDescriptor -SecurityDescriptor "O:SYG:SYD:(A;;GA;;;WD)"
 Converts security descriptor to byte array.
+.EXAMPLE
+ConvertFrom-NtSecurityDescriptor -SecurityDescriptor "O:SYG:SYD:(A;;GA;;;WD)" -ToBase64
+Converts security descriptor to a base64 string.
+.EXAMPLE
+ConvertFrom-NtSecurityDescriptor -SecurityDescriptor "O:SYG:SYD:(A;;GA;;;WD)" -ToBase64 -InsertLineBreaks
+Converts security descriptor to a base64 string with line breaks.
 #>
 function ConvertFrom-NtSecurityDescriptor {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="ToBytes")]
     Param(
-        [Parameter(Position=0, Mandatory)]
-        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+        [Parameter(Position=0, Mandatory, ValueFromPipeline)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [Parameter(Mandatory, ParameterSetName="ToBase64")]
+        [switch]$Base64,
+        [switch]$InsertLineBreaks
     )
 
-    $SecurityDescriptor.ToByteArray() | Write-Output -NoEnumerate
+    PROCESS {
+        if ($Base64) {
+            $SecurityDescriptor.ToBase64($InsertLineBreaks) | Write-Output
+        } else {
+            $SecurityDescriptor.ToByteArray() | Write-Output -NoEnumerate
+        }
+    }
 }
 
 <#
