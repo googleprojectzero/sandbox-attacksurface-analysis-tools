@@ -1924,7 +1924,7 @@ Specify the ACL is a SACL otherwise a DACL.
 Specify to only print a shortened format removing redundant information.
 .PARAMETER ShowAll
 Specify to format all security descriptor information including the SACL.
-.PARAMETER NoHeader
+.PARAMETER HideHeader
 Specify to not print the security descriptor header.
 .OUTPUTS
 None
@@ -1975,7 +1975,7 @@ function Format-NtSecurityDescriptor {
         [switch]$ToSddl,
         [switch]$Summary,
         [switch]$ShowAll,
-        [switch]$NoHeader
+        [switch]$HideHeader
     )
 
     PROCESS {
@@ -2039,7 +2039,7 @@ function Format-NtSecurityDescriptor {
                 $Container = $sd.Container
             }
 
-            if (!$Summary -and !$NoHeader) {
+            if (!$Summary -and !$HideHeader) {
                 if ($n -ne "") {
                     Write-Output "Path: $n"
                 }
