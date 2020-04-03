@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using System;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Accessible
@@ -21,7 +22,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     /// Base class for accessible checks with an access parameter.
     /// </summary>
     /// <typeparam name="A">The type of access rights to check against.</typeparam>
-    public abstract class CommonAccessBaseWithAccessCmdlet<A> : CommonAccessBaseCmdlet
+    public abstract class CommonAccessBaseWithAccessCmdlet<A> : CommonAccessBaseCmdlet where A : Enum
     {
         /// <summary>
         /// <para type="description">Access rights to check for in an object's access.</para>
@@ -60,6 +61,48 @@ namespace NtObjectManager.Cmdlets.Accessible
             }
 
             return granted_access.IsAllAccessGranted(access_rights);
+        }
+
+        private protected SecurityInformation GetMaximumSecurityInformation(A granted_access)
+        {
+            SecurityInformation sec_info = SecurityInformation.AllBasic;
+            AccessMask mask = granted_access;
+            if (mask.IsAccessGranted(GenericAccessRights.ReadControl))
+            {
+                sec_info = SecurityInformation.AllNoSacl;
+            }
+            if (mask.IsAccessGranted(GenericAccessRights.AccessSystemSecurity))
+            {
+                sec_info |= SecurityInformation.Sacl;
+            }
+            return sec_info;
+        }
+
+        private protected SecurityInformation GetMaximumSecurityInformation(NtObject obj)
+        {
+            return GetMaximumSecurityInformation(obj.GrantedAccessMask.ToSpecificAccess<A>());
+        }
+
+        private protected NtResult<SecurityDescriptor> GetSecurityDescriptor(NtObject obj)
+        {
+            SecurityInformation sec_info = GetMaximumSecurityInformation(obj);
+            return obj.GetSecurityDescriptor(sec_info, false);
+        }
+
+        private protected NtResult<SecurityDescriptor> GetSecurityDescriptorReOpen<O, X>(NtObjectWithDuplicate<O, X> obj) where O : NtObject where X : Enum
+        {
+            AccessMask desired_access = GenericAccessRights.ReadControl;
+            if (HasSecurityPrivilege())
+            {
+                desired_access |= GenericAccessRights.AccessSystemSecurity;
+            }
+
+            using (var o = obj.ReOpen(desired_access.ToSpecificAccess<X>(), false))
+            {
+                if (o.IsSuccess)
+                    return GetSecurityDescriptor(o.Result);
+            }
+            return GetSecurityDescriptor(obj);
         }
     }
 }
