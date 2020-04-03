@@ -271,74 +271,6 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Convert an access rights type to a string.
-        /// </summary>
-        /// <param name="t">The enumeration type for the string conversion</param>
-        /// <param name="access">The access mask to convert</param>
-        /// <returns>The string version of the access</returns>
-        internal static string AccessRightsToString(Type t, AccessMask access)
-        {
-            List<string> names = new List<string>();
-            uint remaining = access.Access;
-
-            // If the valid is explicitly defined return it.
-            if (Enum.IsDefined(t, remaining))
-            {
-                return Enum.GetName(t, remaining);
-            }
-
-            for (int i = 0; i < 32; ++i)
-            {
-                uint mask = 1U << i;
-
-                if (mask > remaining)
-                {
-                    break;
-                }
-
-                if (mask == (uint)GenericAccessRights.MaximumAllowed)
-                {
-                    continue;
-                }
-
-                if ((remaining & mask) == 0)
-                {
-                    continue;
-                }
-
-                if (!Enum.IsDefined(t, mask))
-                {
-                    continue;
-                }
-
-                names.Add(Enum.GetName(t, mask));
-                remaining &= ~mask;
-            }
-
-            if (remaining != 0)
-            {
-                names.Add($"0x{remaining:X}");
-            }
-
-            if (names.Count == 0)
-            {
-                names.Add("None");
-            }
-
-            return string.Join("|", names);
-        }
-
-        /// <summary>
-        /// Convert an enumerable access rights to a string
-        /// </summary>
-        /// <param name="access">The access rights</param>
-        /// <returns>The string format of the access rights</returns>
-        internal static string AccessRightsToString(Enum access)
-        {
-            return AccessRightsToString(access.GetType(), access);
-        }
-
-        /// <summary>
         /// Convert an enumerable access rights to a string
         /// </summary>
         /// <param name="granted_access">The granted access mask.</param>
@@ -346,6 +278,7 @@ namespace NtApiDotNet
         /// <param name="enum_type">Enum type to convert to string.</param>
         /// <param name="map_to_generic">True to try and convert to generic rights where possible.</param>
         /// <returns>The string format of the access rights</returns>
+        [Obsolete("Use NtSecurity.AccessMaskToString")]
         public static string GrantedAccessAsString(AccessMask granted_access, GenericMapping generic_mapping, Type enum_type, bool map_to_generic)
         {
             if (granted_access == 0)
@@ -363,7 +296,7 @@ namespace NtApiDotNet
                 return "Full Access";
             }
 
-            return AccessRightsToString(enum_type, mapped_access);
+            return NtSecurity.AccessMaskToString(mapped_access, enum_type);
         }
 
         /// <summary>

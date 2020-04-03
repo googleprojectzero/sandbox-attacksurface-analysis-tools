@@ -1222,6 +1222,103 @@ namespace NtApiDotNet
             return false;
         }
 
+        /// <summary>
+        /// Convert an access rights type to a string.
+        /// </summary>
+        /// <param name="access">The access mask to convert</param>
+        /// <param name="enum_type">The enumeration type for the string conversion</param>
+        /// <returns>The string version of the access</returns>
+        public static string AccessMaskToString(AccessMask access, Type enum_type)
+        {
+            if (!enum_type.IsEnum)
+                throw new ArgumentException("Type must be an enum", nameof(enum_type));
+
+            if (access.IsEmpty)
+                return "None";
+
+            List<string> names = new List<string>();
+            uint remaining = access.Access;
+
+            // If the valid is explicitly defined return it.
+            if (Enum.IsDefined(enum_type, remaining))
+            {
+                return Enum.GetName(enum_type, remaining);
+            }
+
+            for (int i = 0; i < 32; ++i)
+            {
+                uint mask = 1U << i;
+
+                if (mask > remaining)
+                {
+                    break;
+                }
+
+                if (mask == (uint)GenericAccessRights.MaximumAllowed)
+                {
+                    continue;
+                }
+
+                if ((remaining & mask) == 0)
+                {
+                    continue;
+                }
+
+                if (!Enum.IsDefined(enum_type, mask))
+                {
+                    continue;
+                }
+
+                names.Add(Enum.GetName(enum_type, mask));
+                remaining &= ~mask;
+            }
+
+            if (remaining != 0)
+            {
+                names.Add($"0x{remaining:X}");
+            }
+
+            if (names.Count == 0)
+            {
+                names.Add("None");
+            }
+
+            return string.Join("|", names);
+        }
+
+        /// <summary>
+        /// Convert an access rights type to a string.
+        /// </summary>
+        /// <param name="access">The access mask to convert</param>
+        /// <returns>The string version of the access</returns>
+        public static string AccessMaskToString(Enum access)
+        {
+            return AccessMaskToString(access, access.GetType());
+        }
+
+        /// <summary>
+        /// Convert an enumerable access rights to a string
+        /// </summary>
+        /// <param name="access">The access mask.</param>
+        /// <param name="enum_type">Enum type to convert to string.</param>
+        /// <param name="generic_mapping">Generic mapping for object type.</param>
+        /// <param name="map_to_generic">True to try and convert to generic rights where possible.</param>
+        /// <returns>The string format of the access rights. Will return Full Access if not a generic access and has all rights and None if no access.</returns>
+        public static string AccessMaskToString(AccessMask access, Type enum_type, GenericMapping generic_mapping, bool map_to_generic)
+        {
+            if (map_to_generic)
+            {
+                // Map mask then unmap back to Generic Rights.
+                access = generic_mapping.UnmapMask(generic_mapping.MapMask(access));
+            }
+            else if(!access.HasGenericAccess && generic_mapping.HasAll(access))
+            {
+                return "Full Access";
+            }
+
+            return AccessMaskToString(access, enum_type);
+        }
+
         #endregion
 
         #region Private Members

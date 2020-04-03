@@ -822,7 +822,7 @@ namespace NtObjectManager.Cmdlets.Object
 
                 if (ConvertToString)
                 {
-                    string access_string = NtObjectUtils.GrantedAccessAsString(mask, type.GenericMapping, type.AccessRightsType, false);
+                    string access_string = NtSecurity.AccessMaskToString(mask, type.AccessRightsType, type.GenericMapping, false);
                     WriteObject(access_string);
                 }
                 else

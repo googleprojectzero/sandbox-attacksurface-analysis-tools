@@ -1857,14 +1857,9 @@ function Format-NtAce {
         $mask = $ace.Mask
         $access_name = "Access"
         $mask_str = if ($ace.Type -eq "MandatoryLabel") {
-            $mask.ToMandatoryLabelPolicy().ToString()
+            [NtApiDotNet.NtSecurity]::AccessMaskToString($mask.ToMandatoryLabelPolicy())
             $access_name = "Policy"
-        } elseif ($ace.IsInheritOnly) {
-            $mask.ToGenericAccess().ToString()
         } else {
-            if ($MapGeneric) {
-                $mask = $Type.MapGenericRights($mask)
-            }
             $Type.AccessMaskToString($Container, $mask, $MapGeneric)
         }
 

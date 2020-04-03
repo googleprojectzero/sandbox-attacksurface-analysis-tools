@@ -121,8 +121,8 @@ namespace NtObjectManager.Cmdlets.Accessible
                 || granted_access.IsAccessGranted(GenericAccessRights.Delete);
             IsExecute = generic_mapping.HasExecute(granted_access);
             IsAll = generic_mapping.HasAll(granted_access);
-            GrantedAccessString = NtObjectUtils.GrantedAccessAsString(granted_access, generic_mapping, enum_type, false);
-            GrantedGenericAccessString = NtObjectUtils.GrantedAccessAsString(granted_access, generic_mapping, enum_type, true);
+            GrantedAccessString = NtSecurity.AccessMaskToString(granted_access, enum_type, generic_mapping, false);
+            GrantedGenericAccessString = NtSecurity.AccessMaskToString(granted_access, enum_type, generic_mapping, true);
             TokenId = token_info.TokenId.ToInt64();
             IsDirectory = is_directory;
         }

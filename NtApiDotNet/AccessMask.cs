@@ -107,38 +107,31 @@ namespace NtApiDotNet
         /// <summary>
         /// Get whether this access mask is empty (i.e. it's 0)
         /// </summary>
-        public bool IsEmpty
-        {
-            get { return Access == 0; }
-        }
+        public bool IsEmpty => Access == 0;
 
         /// <summary>
-        /// Get whether this access mask has not access rights, i.e. not empty.
+        /// Get whether this access mask has no access rights, i.e. not empty.
         /// </summary>
-        public bool HasAccess
-        {
-            get { return !IsEmpty; }
-        }
+        public bool HasAccess => !IsEmpty;
+
+        /// <summary>
+        /// Get whether this access mask has generic access rights.
+        /// </summary>
+        public bool HasGenericAccess => (Access & 0xF0000000) != 0;
 
         /// <summary>
         /// Get whether the current access mask is granted specific permissions.
         /// </summary>
         /// <param name="mask">The access mask to check</param>
         /// <returns>True one or more access granted.</returns>
-        public bool IsAccessGranted(AccessMask mask)
-        {
-            return (Access & mask.Access) != 0;
-        }
+        public bool IsAccessGranted(AccessMask mask) => (Access & mask.Access) != 0;
 
         /// <summary>
         /// Get whether the current access mask is granted all specific permissions.
         /// </summary>
         /// <param name="mask">The access mask to check</param>
         /// <returns>True access all is granted.</returns>
-        public bool IsAllAccessGranted(AccessMask mask)
-        {
-            return (Access & mask.Access) == mask.Access;
-        }
+        public bool IsAllAccessGranted(AccessMask mask) => (Access & mask.Access) == mask.Access;
 
         /// <summary>
         /// Bitwise AND operator.

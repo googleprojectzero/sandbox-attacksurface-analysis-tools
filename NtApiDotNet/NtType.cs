@@ -393,8 +393,8 @@ namespace NtApiDotNet
         /// <returns>The string format of the access rights</returns>
         public string AccessMaskToString(bool container, AccessMask granted_access, bool map_to_generic)
         {
-            return NtObjectUtils.GrantedAccessAsString(granted_access, GenericMapping, 
-                container ? ContainerAccessRightsType : AccessRightsType, map_to_generic);
+            return NtSecurity.AccessMaskToString(granted_access, container ? ContainerAccessRightsType : AccessRightsType,
+                GenericMapping, map_to_generic);
         }
 
         /// <summary>
@@ -405,7 +405,7 @@ namespace NtApiDotNet
         /// <returns>The string format of the access rights</returns>
         public string AccessMaskToString(AccessMask granted_access, bool map_to_generic)
         {
-            return NtObjectUtils.GrantedAccessAsString(granted_access, GenericMapping, AccessRightsType, map_to_generic);
+            return NtSecurity.AccessMaskToString(granted_access, AccessRightsType, GenericMapping, map_to_generic);
         }
 
         /// <summary>
@@ -539,11 +539,11 @@ namespace NtApiDotNet
             Name = name;
             ValidAccess = CalculateValidAccess(access_rights_type) | CalculateValidAccess(container_access_rights_type);
             GenericMapping = generic_mapping;
-            GenericRead = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericRead, GenericMapping, access_rights_type, false);
-            GenericWrite = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericWrite, GenericMapping, access_rights_type, false);
-            GenericExecute = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericExecute, GenericMapping, access_rights_type, false);
-            GenericAll = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericAll, GenericMapping, access_rights_type, false);
-            DefaultMandatoryAccess = NtObjectUtils.GrantedAccessAsString(GetDefaultMandatoryAccess(), generic_mapping, access_rights_type, false);
+            GenericRead = NtSecurity.AccessMaskToString(GenericMapping.GenericRead, access_rights_type);
+            GenericWrite = NtSecurity.AccessMaskToString(GenericMapping.GenericWrite, access_rights_type);
+            GenericExecute = NtSecurity.AccessMaskToString(GenericMapping.GenericExecute, access_rights_type);
+            GenericAll = NtSecurity.AccessMaskToString(GenericMapping.GenericAll, access_rights_type);
+            DefaultMandatoryAccess = NtSecurity.AccessMaskToString(GetDefaultMandatoryAccess(), access_rights_type);
         }
 
         internal NtType(int id, string name)
@@ -590,11 +590,11 @@ namespace NtApiDotNet
             NonPagedPoolUsage = info.NonPagedPoolUsage;
             _type_factory = type_factory;
 
-            GenericRead = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericRead, GenericMapping, _type_factory.AccessRightsType, false);
-            GenericWrite = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericWrite, GenericMapping, _type_factory.AccessRightsType, false);
-            GenericExecute = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericExecute, GenericMapping, _type_factory.AccessRightsType, false);
-            GenericAll = NtObjectUtils.GrantedAccessAsString(GenericMapping.GenericAll, GenericMapping, _type_factory.AccessRightsType, false);
-            DefaultMandatoryAccess = NtObjectUtils.GrantedAccessAsString(GetDefaultMandatoryAccess(), GenericMapping, _type_factory.AccessRightsType, false);
+            GenericRead = NtSecurity.AccessMaskToString(GenericMapping.GenericRead, _type_factory.AccessRightsType);
+            GenericWrite = NtSecurity.AccessMaskToString(GenericMapping.GenericWrite, _type_factory.AccessRightsType);
+            GenericExecute = NtSecurity.AccessMaskToString(GenericMapping.GenericExecute, _type_factory.AccessRightsType);
+            GenericAll = NtSecurity.AccessMaskToString(GenericMapping.GenericAll, _type_factory.AccessRightsType);
+            DefaultMandatoryAccess = NtSecurity.AccessMaskToString(GetDefaultMandatoryAccess(), _type_factory.AccessRightsType);
         }
 
         internal NtType(string name, NtType existing_type)
