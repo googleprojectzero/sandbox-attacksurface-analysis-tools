@@ -6771,6 +6771,187 @@ function Set-NtSecurityDescriptorOwner {
 
 <#
 .SYNOPSIS
+Creates a new ACL object.
+.DESCRIPTION
+This cmdlet creates a new ACL object.
+.PARAMETER Ace
+List of ACEs to create the ACL from.
+.PARAMETER Defaulted
+Specify whether the ACL is defaulted.
+.PARAMETER NullAcl
+Specify whether the ACL is NULL.
+.PARAMETER AutoInheritReq
+Specify to set the Auto Inherit Requested flag.
+.PARAMETER AutoInherited
+Specify to set the Auto Inherited flag.
+.PARAMETER Protected
+Specify to set the Protected flag.
+.PARAMETER Defaulted
+Specify to set the Defaulted flag.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Acl
+#>
+function New-NtAcl {
+    [CmdletBinding(DefaultParameterSetName="FromAce")]
+    Param(
+        [Parameter(Mandatory, ParameterSetName = "NullAcl")]
+        [switch]$NullAcl,
+        [Parameter(ParameterSetName = "FromAce")]
+        [NtApiDotNet.Ace[]]$Ace,
+        [switch]$AutoInheritReq,
+        [switch]$AutoInherited,
+        [switch]$Protected,
+        [switch]$Defaulted
+    )
+
+    $acl = New-Object NtApiDotNet.Acl
+    $acl.AutoInherited = $AutoInherited
+    $acl.AutoInheritReq = $AutoInheritReq
+    $acl.Protected = $Protected
+    $acl.Defaulted = $Defaulted
+    switch($PsCmdlet.ParameterSetName) {
+        "FromAce" {
+            if ($Ace -ne $null) {
+                $acl.AddRange($Ace)
+            }
+        }
+        "NullAcl" {
+            $acl.NullAcl = $true
+        }
+    }
+
+    Write-Output $acl -NoEnumerate
+}
+
+<#
+.SYNOPSIS
+Sets the DACL for a security descriptor.
+.DESCRIPTION
+This cmdlet sets the DACL of a security descriptor. It'll replace any existing DACL assigned.
+.PARAMETER SecurityDescriptor
+The security descriptor to modify.
+.PARAMETER Ace
+List of ACEs to create the ACL from.
+.PARAMETER Defaulted
+Specify whether the ACL is defaulted.
+.PARAMETER NullAcl
+Specify whether the ACL is NULL.
+.PARAMETER AutoInheritReq
+Specify to set the Auto Inherit Requested flag.
+.PARAMETER AutoInherited
+Specify to set the Auto Inherited flag.
+.PARAMETER Protected
+Specify to set the Protected flag.
+.PARAMETER Defaulted
+Specify to set the Defaulted flag.
+.PARAMETER PassThru
+Specify to return the new ACL.
+.PARAMETER 
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Set-NtSecurityDescriptorDacl {
+    [CmdletBinding(DefaultParameterSetName="FromAce")]
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [Parameter(Mandatory, ParameterSetName = "NullAcl")]
+        [switch]$NullAcl,
+        [Parameter(ParameterSetName = "FromAce")]
+        [NtApiDotNet.Ace[]]$Ace,
+        [switch]$AutoInheritReq,
+        [switch]$AutoInherited,
+        [switch]$Protected,
+        [switch]$Defaulted,
+        [switch]$PassThru
+    )
+
+    $args = @{
+        AutoInheritReq = $AutoInheritReq
+        AutoInherited = $AutoInherited
+        Protected = $Protected
+        Defaulted = $Defaulted
+    }
+
+    $SecurityDescriptor.Dacl = if ($PSCmdlet.ParameterSetName -eq "NullAcl") {
+        New-NtAcl @args -NullAcl
+    } else {
+        New-NtAcl @args -Ace $Ace
+    }
+
+    if ($PassThru) {
+        Write-Output $SecurityDescriptor.Dacl -NoEnumerate
+    }
+}
+
+<#
+.SYNOPSIS
+Sets the SACL for a security descriptor.
+.DESCRIPTION
+This cmdlet sets the SACL of a security descriptor. It'll replace any existing SACL assigned.
+.PARAMETER SecurityDescriptor
+The security descriptor to modify.
+.PARAMETER Ace
+List of ACEs to create the ACL from.
+.PARAMETER Defaulted
+Specify whether the ACL is defaulted.
+.PARAMETER NullAcl
+Specify whether the ACL is NULL.
+.PARAMETER AutoInheritReq
+Specify to set the Auto Inherit Requested flag.
+.PARAMETER AutoInherited
+Specify to set the Auto Inherited flag.
+.PARAMETER Protected
+Specify to set the Protected flag.
+.PARAMETER Defaulted
+Specify to set the Defaulted flag.
+.PARAMETER PassThru
+Specify to return the new ACL.
+.PARAMETER 
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Set-NtSecurityDescriptorSacl {
+    [CmdletBinding(DefaultParameterSetName="FromAce")]
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [Parameter(Mandatory, ParameterSetName = "NullAcl")]
+        [switch]$NullAcl,
+        [Parameter(ParameterSetName = "FromAce")]
+        [NtApiDotNet.Ace[]]$Ace,
+        [switch]$AutoInheritReq,
+        [switch]$AutoInherited,
+        [switch]$Protected,
+        [switch]$Defaulted,
+        [switch]$PassThru
+    )
+
+    $args = @{
+        AutoInheritReq = $AutoInheritReq
+        AutoInherited = $AutoInherited
+        Protected = $Protected
+        Defaulted = $Defaulted
+    }
+
+    $SecurityDescriptor.Sacl = if ($PSCmdlet.ParameterSetName -eq "NullAcl") {
+        New-NtAcl @args -NullAcl
+    } else {
+        New-NtAcl @args -Ace $Ace
+    }
+    if ($PassThru) {
+        Write-Output $SecurityDescriptor.Sacl -NoEnumerate
+    }
+}
+
+<#
+.SYNOPSIS
 Removes the owner for a security descriptor.
 .DESCRIPTION
 This cmdlet removes the owner of a security descriptor.
