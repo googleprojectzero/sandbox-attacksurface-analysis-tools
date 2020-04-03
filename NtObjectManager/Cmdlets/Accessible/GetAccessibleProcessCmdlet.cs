@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using NtApiDotNet;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
@@ -23,7 +22,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     /// <summary>
     /// <para type="description">Access check result for a process.</para>
     /// </summary>
-    public class ProcessAccessCheckResult : AccessCheckResult
+    public class ProcessAccessCheckResult : CommonAccessCheckResult
     {
         /// <summary>
         /// Process image path.

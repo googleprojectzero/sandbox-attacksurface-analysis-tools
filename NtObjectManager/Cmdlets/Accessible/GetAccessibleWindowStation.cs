@@ -50,7 +50,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     ///   <para>Get all Window Stations which can be accessed by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleWindowStation")]
-    [OutputType(typeof(AccessCheckResult))]
+    [OutputType(typeof(CommonAccessCheckResult))]
     public class GetAccessibleWindowStation : CommonAccessBaseWithAccessCmdlet<WindowStationAccessRights>
     {
         /// <summary>

@@ -54,7 +54,7 @@ Specify a list process objects to use for their tokens.
 .INPUTS
 None
 .OUTPUTS
-NtObjectManager.Cmdlets.Accessible.AccessCheckResult
+NtObjectManager.Cmdlets.Accessible.CommonAccessCheckResult
 .NOTES
 For best results run this function as an administrator with SeDebugPrivilege available.
 .EXAMPLE
@@ -1777,7 +1777,7 @@ function Show-NtSecurityDescriptor {
     [Parameter(ParameterSetName = "FromObject")]
     [switch]$ReadOnly,
     [Parameter(Position = 0, ParameterSetName = "FromAccessCheck", Mandatory = $true)]
-    [NtObjectManager.Cmdlets.Accessible.AccessCheckResult]$AccessCheckResult,
+    [NtObjectManager.Cmdlets.Accessible.CommonAccessCheckResult]$AccessCheckResult,
     [Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true)]
     [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
     [Parameter(Position = 1, ParameterSetName = "FromSecurityDescriptor")]
@@ -1831,11 +1831,12 @@ function Show-NtSecurityDescriptor {
         Start-Process -FilePath "$PSScriptRoot\ViewSecurityDescriptor.exe" -ArgumentList @("`"$Name`"", "-$sd","`"$($Type.Name)`"", "$Container") -Wait:$Wait
     }
     "FromAccessCheck" {
-        if ($AccessCheckResult.SecurityDescriptor -eq "") {
+        if ($AccessCheckResult.SecurityDescriptorBase64 -eq "") {
             return
         }
 
-        Show-NtSecurityDescriptor -SecurityDescriptor $AccessCheckResult.SecurityDescriptor `
+        $sd = New-NtSecurityDescriptor -Base64 $AccessCheckResult.SecurityDescriptorBase64
+        Show-NtSecurityDescriptor -SecurityDescriptor $sd `
                 -Type $AccessCheckResult.TypeName -Name $AccessCheckResult.Name
     }
   }
@@ -2028,7 +2029,7 @@ function Format-NtSecurityDescriptor {
         [Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true, ValueFromPipeline)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Position = 0, ParameterSetName = "FromAccessCheck", Mandatory = $true, ValueFromPipeline)]
-        [NtObjectManager.Cmdlets.Accessible.AccessCheckResult]$AccessCheckResult,
+        [NtObjectManager.Cmdlets.Accessible.CommonAccessCheckResult]$AccessCheckResult,
         [Parameter(Position = 0, ParameterSetName = "FromAcl", Mandatory = $true)]
         [AllowEmptyCollection()]
         [NtApiDotNet.Acl]$Acl,
@@ -2083,7 +2084,10 @@ function Format-NtSecurityDescriptor {
                     ($fake_sd, $Type, "")
                 }
                 "FromAccessCheck" {
-                    $check_sd = New-NtSecurityDescriptor -Sddl $AccessCheckResult.SecurityDescriptor
+                    if ($AccessCheckResult.SecurityDescriptorBase64 -eq "") {
+                        return
+                    }
+                    $check_sd = New-NtSecurityDescriptor -Base64 $AccessCheckResult.SecurityDescriptorBase64
                     $Type = Get-NtType $AccessCheckResult.TypeName
                     $Name = $AccessCheckResult.Name
                     ($check_sd, $Type, $Name)

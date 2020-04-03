@@ -21,7 +21,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     /// <summary>
     /// <para type="description">Access check result for a WNF notification.</para>
     /// </summary>
-    public class WnfAccessCheckResult : AccessCheckResult
+    public class WnfAccessCheckResult : CommonAccessCheckResult
     {
         /// <summary>
         /// Get the state name for this WNF entry.
@@ -71,7 +71,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     ///   <para>Get all WNF notifications which can be accessed by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleWnf", DefaultParameterSetName = "All")]
-    [OutputType(typeof(AccessCheckResult))]
+    [OutputType(typeof(CommonAccessCheckResult))]
     public class GetAccessibleWnfCmdlet : CommonAccessBaseWithAccessCmdlet<WnfAccessRights>
     {
         private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)

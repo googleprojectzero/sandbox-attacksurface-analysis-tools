@@ -44,7 +44,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     /// <summary>
     /// <para type="description">Access check result for a service.</para>
     /// </summary>
-    public class ServiceAccessCheckResult : AccessCheckResult
+    public class ServiceAccessCheckResult : CommonAccessCheckResult
     {
         /// <summary>
         /// Service triggers for service.
@@ -119,7 +119,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     ///   <para>Get all services which can be written by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleService", DefaultParameterSetName = "All")]
-    [OutputType(typeof(AccessCheckResult))]
+    [OutputType(typeof(CommonAccessCheckResult))]
     public class GetAccessibleServiceCmdlet : CommonAccessBaseWithAccessCmdlet<ServiceAccessRights>
     {
         private class InternalGetAccessibleFileCmdlet : GetAccessibleFileCmdlet

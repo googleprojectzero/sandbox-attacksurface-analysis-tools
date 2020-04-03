@@ -42,7 +42,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     ///   <para>Get all named pipes with can be written to by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleNamedPipe")]
-    [OutputType(typeof(AccessCheckResult))]
+    [OutputType(typeof(CommonAccessCheckResult))]
     public class GetAccessibleNamedPipeCmdlet : CommonAccessBaseWithAccessCmdlet<FileAccessRights>
     {
         private static NtType _file_type = NtType.GetTypeByType<NtFile>();

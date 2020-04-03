@@ -35,7 +35,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     /// <summary>
     /// <para type="description">Access check result for a handle.</para>
     /// </summary>
-    public class HandleAccessCheckResult : AccessCheckResult
+    public class HandleAccessCheckResult : CommonAccessCheckResult
     {
         /// <summary>
         /// Specifies the maximum access that can be accessed if the resource was reopened.

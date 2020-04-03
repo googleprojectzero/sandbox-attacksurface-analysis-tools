@@ -20,7 +20,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     /// <summary>
     ///<para type="description">General Access check result.</para>
     /// </summary>
-    public class AccessCheckResult
+    public class CommonAccessCheckResult
     {
         /// <summary>
         /// The name of the object which was accessed (depends on the type).
@@ -102,7 +102,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// </summary>
         public long TokenId { get; }
 
-        internal AccessCheckResult(string name, string type_name, AccessMask granted_access,
+        internal CommonAccessCheckResult(string name, string type_name, AccessMask granted_access,
             GenericMapping generic_mapping, SecurityDescriptor sd, 
             Type enum_type, bool is_directory, TokenInformation token_info)
         {

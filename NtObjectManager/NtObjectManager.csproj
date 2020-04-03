@@ -51,7 +51,7 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Cmdlets\Accessible\AccessCheckResult.cs" />
+    <Compile Include="Cmdlets\Accessible\CommonAccessCheckResult.cs" />
     <Compile Include="Cmdlets\Accessible\CommonAccessBaseWithAccessCmdlet.cs" />
     <Compile Include="Cmdlets\Accessible\GetAccessibleEventTraceCmdlet.cs" />
     <Compile Include="Cmdlets\Accessible\GetAccessibleScheduledTaskCmdlet.cs" />

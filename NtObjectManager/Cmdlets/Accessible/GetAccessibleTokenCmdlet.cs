@@ -22,7 +22,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     /// <summary>
     /// <para type="description">Access check result for a token.</para>
     /// </summary>
-    public class TokenAccessCheckResult : AccessCheckResult
+    public class TokenAccessCheckResult : CommonAccessCheckResult
     {
         /// <summary>
         /// Process image path.

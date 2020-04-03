@@ -807,7 +807,7 @@
     <View>
       <Name>AccessCheckResult</Name>
       <ViewSelectedBy>
-        <TypeName>NtObjectManager.Cmdlets.Accessible.AccessCheckResult</TypeName>
+        <TypeName>NtObjectManager.Cmdlets.Accessible.CommonAccessCheckResult</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>

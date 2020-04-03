@@ -22,7 +22,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     /// <summary>
     /// <para type="description">Access check result for a device.</para>
     /// </summary>
-    public class DeviceAccessCheckResult : AccessCheckResult
+    public class DeviceAccessCheckResult : CommonAccessCheckResult
     {
         /// <summary>
         /// Indicates this was a namespace open
@@ -115,7 +115,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     ///   <para>Get all devices which can be written to in \Device by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleDevice")]
-    [OutputType(typeof(AccessCheckResult))]
+    [OutputType(typeof(CommonAccessCheckResult))]
     public class GetAccessibleDeviceCmdlet : CommonAccessBaseWithAccessCmdlet<FileAccessRights>
     {
         private static NtType _file_type = NtType.GetTypeByType<NtFile>();

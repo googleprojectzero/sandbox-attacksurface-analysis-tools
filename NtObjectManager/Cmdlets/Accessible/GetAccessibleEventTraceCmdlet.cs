@@ -24,7 +24,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     /// <summary>
     /// <para type="description">Access check result for an event trace.</para>
     /// </summary>
-    public class EventTraceAccessCheckResult : AccessCheckResult
+    public class EventTraceAccessCheckResult : CommonAccessCheckResult
     {
         /// <summary>
         /// The ID of the event trace provider.
@@ -63,7 +63,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     ///   <para>Get all ETW providers which can be accessed by a low integrity copy of current token.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "AccessibleEventTrace", DefaultParameterSetName = "All")]
-    [OutputType(typeof(AccessCheckResult))]
+    [OutputType(typeof(CommonAccessCheckResult))]
     public class GetAccessibleEventTraceCmdlet : CommonAccessBaseWithAccessCmdlet<TraceAccessRights>
     {
         /// <summary>

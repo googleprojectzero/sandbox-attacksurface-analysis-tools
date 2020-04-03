@@ -184,7 +184,7 @@ namespace NtObjectManager.Cmdlets.Accessible
     /// <summary>
     /// <para type="description">Access check result for a scheduled task.</para>
     /// </summary>
-    public class ScheduledTaskAccessCheckResult : AccessCheckResult
+    public class ScheduledTaskAccessCheckResult : CommonAccessCheckResult
     {
         /// <summary>
         /// Whether the task is enabled.
@@ -495,11 +495,11 @@ namespace NtObjectManager.Cmdlets.Accessible
                 Path = folder.Path;
             }
 
-            public AccessCheckResult CreateResult(AccessMask granted_access, TokenInformation token_info)
+            public CommonAccessCheckResult CreateResult(AccessMask granted_access, TokenInformation token_info)
             {
                 if (Folder)
                 {
-                    return new AccessCheckResult(Path, "Scheduled Task", granted_access, _file_type.GenericMapping,
+                    return new CommonAccessCheckResult(Path, "Scheduled Task", granted_access, _file_type.GenericMapping,
                         new SecurityDescriptor(SecurityDescriptor), typeof(FileDirectoryAccessRights), true, token_info);
                 }
                 else
