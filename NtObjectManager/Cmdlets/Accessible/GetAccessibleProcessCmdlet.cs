@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
@@ -300,7 +301,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         private void DoAccessCheck(IEnumerable<TokenEntry> tokens,
             ProcessDetails proc_details, NtThread thread, AccessMask access_rights)
         {
-            var sd = thread.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
+            var sd = GetSecurityDescriptorReOpen(thread);
             if (sd.IsSuccess)
             {
                 foreach (TokenEntry token in tokens)
@@ -313,7 +314,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                 // Try and open process when under impersonation.
                 foreach (TokenEntry token in tokens)
                 {
-                    using (var new_thread = token.Token.RunUnderImpersonate(() => NtThread.Open(thread.ThreadId, ThreadAccessRights.MaximumAllowed, false)))
+                    using (var new_thread = token.Token.RunUnderImpersonate(() => ReOpen(thread)))
                     {
                         if (new_thread.IsSuccess && IsAccessGranted(new_thread.Result.GrantedAccessMask, access_rights))
                         {
@@ -334,7 +335,7 @@ namespace NtObjectManager.Cmdlets.Accessible
 
                 if (CheckProcess())
                 {
-                    var sd = process.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
+                    var sd = GetSecurityDescriptorReOpen(process);
                     if (sd.IsSuccess)
                     {
                         foreach (TokenEntry token in tokens)
@@ -347,7 +348,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                         // Try and open process when under impersonation.
                         foreach (TokenEntry token in tokens)
                         {
-                            using (var new_process = token.Token.RunUnderImpersonate(() => NtProcess.Open(process.ProcessId, ProcessAccessRights.MaximumAllowed, false)))
+                            using (var new_process = token.Token.RunUnderImpersonate(() => ReOpen(process)))
                             {
                                 if (new_process.IsSuccess && IsAccessGranted(new_process.Result.GrantedAccessMask, access_rights))
                                 {
@@ -361,11 +362,17 @@ namespace NtObjectManager.Cmdlets.Accessible
 
                 if (CheckThread())
                 {
-                    using (var threads = process.GetThreads(ThreadAccessRights.MaximumAllowed).ToDisposableList())
+                    using (var new_process = process.ReOpen(ProcessAccessRights.QueryInformation, false))
                     {
-                        foreach (var thread in threads)
+                        if (new_process.IsSuccess)
                         {
-                            DoAccessCheck(tokens, proc_details, thread, thread_access_rights);
+                            using (var threads = new_process.Result.GetThreads(ThreadAccessRights.QueryLimitedInformation).ToDisposableList())
+                            {
+                                foreach (var thread in threads)
+                                {
+                                    DoAccessCheck(tokens, proc_details, thread, thread_access_rights);
+                                }
+                            }
                         }
                     }
                 }
@@ -376,7 +383,6 @@ namespace NtObjectManager.Cmdlets.Accessible
         {
             AccessMask access_rights = _process_type.MapGenericRights(AccessRights);
             AccessMask thread_access_rights = _thread_type.MapGenericRights(ThreadAccessRights);
-            
             if (!NtToken.EnableDebugPrivilege())
             {
                 WriteWarning("Current process doesn't have SeDebugPrivilege, results may be inaccurate");
@@ -384,14 +390,14 @@ namespace NtObjectManager.Cmdlets.Accessible
 
             if (CheckProcess())
             {
-                using (var procs = NtProcess.GetProcesses(ProcessAccessRights.MaximumAllowed, false).ToDisposableList())
+                using (var procs = NtProcess.GetProcesses(ProcessAccessRights.QueryLimitedInformation, false).ToDisposableList())
                 {
                     DoAccessCheck(tokens, procs.Where(p => ShowDeadProcesses || !p.IsDeleting), access_rights, thread_access_rights);
                 }
             }
             else
             {
-                using (var threads = NtThread.GetThreads(ThreadAccessRights.MaximumAllowed, true).ToDisposableList())
+                using (var threads = NtThread.GetThreads(ThreadAccessRights.QueryLimitedInformation, true).ToDisposableList())
                 {
                     foreach (var thread in threads)
                     {
@@ -399,6 +405,40 @@ namespace NtObjectManager.Cmdlets.Accessible
                     }
                 }
             }
+        }
+
+        private protected NtResult<O> ReOpen<O, X>(NtObjectWithDuplicate<O, X> obj) where O : NtObject where X : Enum
+        {
+            AccessMask mask = GenericAccessRights.MaximumAllowed;
+            using (var o = obj.ReOpen(mask.ToSpecificAccess<X>(), false))
+            {
+                if (o.IsSuccess)
+                    return o.Map(x => (O)x.DuplicateObject());
+            }
+
+            AccessMask granted_mask = 0;
+            AccessMask valid_access = obj.NtType.ValidAccess;
+            uint test_mask = 1;
+            while (test_mask < 0x00200000)
+            {
+                if (valid_access.IsAccessGranted(test_mask))
+                {
+                    mask = test_mask;
+                    using (var o = obj.ReOpen(mask.ToSpecificAccess<X>(), false))
+                    {
+                        if (o.IsSuccess)
+                            granted_mask |= test_mask;
+                    }
+                }
+
+                test_mask <<= 1;
+            }
+
+            if (granted_mask.IsEmpty)
+            {
+                return NtResult<O>.CreateResultFromError(NtStatus.STATUS_ACCESS_DENIED, false);
+            }
+            return obj.ReOpen(granted_mask.ToSpecificAccess<X>(), false);
         }
     }
 }
