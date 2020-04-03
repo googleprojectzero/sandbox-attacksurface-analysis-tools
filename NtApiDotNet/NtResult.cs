@@ -111,6 +111,17 @@ namespace NtApiDotNet
             using (_result as IDisposable) { }
         }
 
+        /// <summary>
+        /// Create a result from an error.
+        /// </summary>
+        /// <param name="status">The error status code.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The result.</returns>
+        public static NtResult<T> CreateResultFromError(NtStatus status, bool throw_on_error)
+        {
+            return status.CreateResultFromError<T>(throw_on_error);
+        }
+
         internal NtResult(NtStatus status, T result)
         {
             Status = status;

@@ -493,6 +493,18 @@ namespace NtApiDotNet
         #region Public Methods
 
         /// <summary>
+        /// Reopen object with different access rights.
+        /// </summary>
+        /// <param name="desired_access">The desired access.</param>
+        /// <param name="attributes">Additional attributes for open.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The reopened object.</returns>
+        public override NtResult<NtProcess> ReOpen(ProcessAccessRights desired_access, AttributeFlags attributes, bool throw_on_error)
+        {
+            return Open(ProcessId, desired_access, throw_on_error);
+        }
+
+        /// <summary>
         /// Get next accessible process (used in combination with GetFirstProcess)
         /// </summary>
         /// <param name="desired_access">The access required for the process.</param>

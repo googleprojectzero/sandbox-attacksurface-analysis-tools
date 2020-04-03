@@ -41,7 +41,8 @@ namespace NtApiDotNet
         UnprotectedDacl = 0x20000000,
         UnprotectedSacl = 0x10000000,
         AllBasic = Dacl | Owner | Group | Label | ProcessTrustLabel,
-        All = AllBasic | Sacl | Attribute | Scope | AccessFilter
+        AllNoSacl = AllBasic | Attribute | Scope | AccessFilter,
+        All = AllNoSacl | Sacl
     }
 
     [StructLayout(LayoutKind.Sequential)]

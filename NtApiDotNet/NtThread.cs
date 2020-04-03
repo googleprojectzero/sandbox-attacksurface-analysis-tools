@@ -474,6 +474,18 @@ namespace NtApiDotNet
         #region Public Methods
 
         /// <summary>
+        /// Reopen object with different access rights.
+        /// </summary>
+        /// <param name="desired_access">The desired access.</param>
+        /// <param name="attributes">Additional attributes for open.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The reopened object.</returns>
+        public override NtResult<NtThread> ReOpen(ThreadAccessRights desired_access, AttributeFlags attributes, bool throw_on_error)
+        {
+            return Open(ThreadId, desired_access, throw_on_error);
+        }
+
+        /// <summary>
         /// Resume the thread.
         /// </summary>
         /// <param name="throw_on_error">True to throw on error.</param>

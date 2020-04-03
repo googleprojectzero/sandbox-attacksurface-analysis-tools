@@ -88,12 +88,12 @@ namespace NtApiDotNet
         /// <param name="desired_access">The desired access.</param>
         /// <param name="attributes">Additional attributes for open.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns></returns>
+        /// <returns>The reopened object.</returns>
         public virtual NtResult<O> ReOpen(A desired_access, AttributeFlags attributes, bool throw_on_error)
         {
             if (!NtType.CanOpen)
             {
-                throw new ArgumentException("Can't re-open this type");
+                return NtStatus.STATUS_OBJECT_PATH_NOT_FOUND.CreateResultFromError<O>(throw_on_error);
             }
 
             using (var obj_attr = new ObjectAttributes(string.Empty, attributes, this))
@@ -107,8 +107,8 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="desired_access">The desired access.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns></returns>
-        public virtual NtResult<O> ReOpen(A desired_access, bool throw_on_error)
+        /// <returns>The reopened object.</returns>
+        public NtResult<O> ReOpen(A desired_access, bool throw_on_error)
         {
             return ReOpen(desired_access, AttributeFlags.CaseInsensitive, throw_on_error);
         }
@@ -117,7 +117,7 @@ namespace NtApiDotNet
         /// Reopen object with different access rights.
         /// </summary>
         /// <param name="desired_access">The desired access.</param>
-        /// <returns></returns>
+        /// <returns>The reopened object.</returns>
         public O ReOpen(A desired_access)
         {
             return ReOpen(desired_access, true).Result;
@@ -218,13 +218,7 @@ namespace NtApiDotNet
         /// Get granted access for handle.
         /// </summary>
         /// <returns>Granted access</returns>
-        public A GrantedAccess
-        {
-            get
-            {
-                return GrantedAccessMask.ToSpecificAccess<A>();
-            }
-        }
+        public A GrantedAccess => GrantedAccessMask.ToSpecificAccess<A>();
 
         /// <summary>
         /// Get the maximum permission access for this object based on a token
@@ -555,7 +549,7 @@ namespace NtApiDotNet
         public static NtResult<IntPtr> DuplicateTo(NtProcess src_process, IntPtr handle, NtProcess dst_process,
             A access, DuplicateObjectOptions options, bool throw_on_error)
         {
-            return NtObject.DuplicateHandle(src_process, handle,
+            return DuplicateHandle(src_process, handle,
                 dst_process, ToGenericAccess(access), AttributeFlags.None,
                 options, throw_on_error);
         }
