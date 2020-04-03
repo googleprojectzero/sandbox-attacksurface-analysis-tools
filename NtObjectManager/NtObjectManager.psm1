@@ -1948,6 +1948,7 @@ function Format-NtAcl {
         } else {
             Write-Output $Name
             Write-Output " - <NULL ACL>"
+            Write-Output ""
         }
     } elseif ($Acl.Count -eq 0) {
         if ($Summary) {
@@ -1955,6 +1956,7 @@ function Format-NtAcl {
         } else {
             Write-Output $Name
             Write-Output " - <EMPTY ACL>"
+            Write-Output ""
         }
     } else {
         Write-Output $Name
