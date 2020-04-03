@@ -60,6 +60,11 @@ namespace NtApiDotNet
         public bool IsResourceAttributeAce => Type == AceType.ResourceAttribute;
 
         /// <summary>
+        /// Check if ACE is a mandatory label ACE.
+        /// </summary>
+        public bool IsMandatoryLabel => Type == AceType.MandatoryLabel;
+
+        /// <summary>
         /// Check if ACE is an audit ACE.
         /// </summary>
         public bool IsAuditAce => NtSecurity.IsAuditAceType(Type);

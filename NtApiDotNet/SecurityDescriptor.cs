@@ -488,6 +488,19 @@ namespace NtApiDotNet
             DaclUntrusted = control.HasFlag(SecurityDescriptorControl.DaclUntrusted);
         }
 
+        private static void MapAcl(Acl acl, GenericMapping generic_mapping)
+        {
+            if (acl == null)
+                return;
+            foreach (Ace ace in acl)
+            {
+                if (!ace.IsInheritOnly && !ace.IsMandatoryLabel)
+                {
+                    ace.Mask = generic_mapping.MapMask(ace.Mask);
+                }
+            }
+        }
+
         #endregion
 
         #region Public Properties
@@ -954,18 +967,8 @@ namespace NtApiDotNet
         /// <param name="generic_mapping">The generic mapping.</param>
         public void MapGenericAccess(GenericMapping generic_mapping)
         {
-            if (Dacl != null)
-            {
-                foreach (Ace ace in Dacl)
-                {
-                    ace.Mask = generic_mapping.MapMask(ace.Mask);
-                }
-            }
-
-            if (ProcessTrustLabel != null)
-            {
-                ProcessTrustLabel.Mask = generic_mapping.MapMask(ProcessTrustLabel.Mask);
-            }
+            MapAcl(Dacl, generic_mapping);
+            MapAcl(Sacl, generic_mapping);
         }
 
         /// <summary>
