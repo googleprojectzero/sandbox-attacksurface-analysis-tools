@@ -917,7 +917,8 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify to create the security descriptor from the default DACL of a token object.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromToken")]
+        [Parameter(Position = 0, ParameterSetName = "FromToken")]
+        [AllowNull]
         public NtToken Token { get; set; }
 
         /// <summary>
@@ -929,7 +930,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify a default NT type for the security descriptor.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "FromToken"), 
+        [Parameter(ParameterSetName = "FromToken"),
             Parameter(ParameterSetName = "FromSddl"),
             Parameter(ParameterSetName = "FromBase64"),
             Parameter(ParameterSetName = "FromBytes"), 
@@ -1012,6 +1013,12 @@ namespace NtObjectManager.Cmdlets.Object
         public SecurityDescriptor Creator { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify to use the current Token for a new security descriptor.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromToken")]
+        public SwitchParameter EffectiveToken { get; set; }
+
+        /// <summary>
         /// Overridden ProcessRecord method.
         /// </summary>
         protected override void ProcessRecord()
@@ -1032,7 +1039,15 @@ namespace NtObjectManager.Cmdlets.Object
                             WriteWarning("Security descriptor type not specified, defaulting to File.");
                             Type = NtType.GetTypeByType<NtFile>();
                         }
-                        sd = SecurityDescriptor.Create(Parent, Creator, IsDirectory, AutoInherit, Token, Type.GenericMapping);
+
+                        using (var list = new DisposableList())
+                        {
+                            if (EffectiveToken)
+                            {
+                                Token = list.AddResource(NtToken.OpenEffectiveToken());
+                            }
+                            sd = SecurityDescriptor.Create(Parent, Creator, IsDirectory, AutoInherit, Token, Type.GenericMapping);
+                        }
                     }
                     break;
                 case "FromSddl":
