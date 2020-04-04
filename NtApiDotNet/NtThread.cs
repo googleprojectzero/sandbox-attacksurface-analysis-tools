@@ -168,7 +168,7 @@ namespace NtApiDotNet
             long maximum_stack_size,
             IEnumerable<ProcessAttribute> attribute_list)
         {
-            return Create(object_attributes, desired_acccess, process, start_routine, argument, create_flags, 
+            return Create(object_attributes, desired_acccess, process, start_routine, argument, create_flags,
                 zero_bits, stack_size, maximum_stack_size, attribute_list, true).Result;
         }
 
@@ -402,7 +402,7 @@ namespace NtApiDotNet
         /// <returns>The status code from the set.</returns>
         public static NtStatus SetWorkOnBehalfThread(WorkOnBehalfTicket ticket, bool throw_on_error)
         {
-            return Current.Set(ThreadInformationClass.ThreadWorkOnBehalfTicket, new RtlWorkOnBehalfTicket() { WorkOnBehalfTicket  = ticket.Ticket }, throw_on_error);
+            return Current.Set(ThreadInformationClass.ThreadWorkOnBehalfTicket, new RtlWorkOnBehalfTicket() { WorkOnBehalfTicket = ticket.Ticket }, throw_on_error);
         }
 
         /// <summary>
@@ -672,7 +672,7 @@ namespace NtApiDotNet
         /// <param name="security_quality_of_service">The impersonation security quality of service.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The imperonsation context. Dispose to revert to self.</returns>
-        public NtResult<ThreadImpersonationContext> ImpersonateThread(NtThread thread, 
+        public NtResult<ThreadImpersonationContext> ImpersonateThread(NtThread thread,
             SecurityQualityOfService security_quality_of_service, bool throw_on_error)
         {
             return NtSystemCalls.NtImpersonateThread(Handle, thread.Handle, security_quality_of_service)
@@ -689,7 +689,7 @@ namespace NtApiDotNet
         public NtResult<ThreadImpersonationContext> ImpersonateThread(NtThread thread,
             SecurityImpersonationLevel impersonation_level, bool throw_on_error)
         {
-            return ImpersonateThread(thread, new SecurityQualityOfService(impersonation_level, 
+            return ImpersonateThread(thread, new SecurityQualityOfService(impersonation_level,
                 SecurityContextTrackingMode.Static, false), throw_on_error);
         }
 
@@ -772,7 +772,7 @@ namespace NtApiDotNet
         /// <remarks>This is only for APCs in the current process. You also must ensure the delegate is
         /// valid at all times as this method doesn't take a reference to the delegate to prevent it being
         /// garbage collected.</remarks>
-        public NtStatus QueueUserApc(ApcCallback apc_routine, IntPtr normal_context, 
+        public NtStatus QueueUserApc(ApcCallback apc_routine, IntPtr normal_context,
             IntPtr system_argument1, IntPtr system_argument2, bool throw_on_error)
         {
             return QueueUserApc(Marshal.GetFunctionPointerForDelegate(apc_routine),
@@ -1151,6 +1151,27 @@ namespace NtApiDotNet
         /// Get thread exit status.
         /// </summary>
         public NtStatus ExitNtStatus => QueryBasicInformation().ExitStatus;
+
+        /// <summary>
+        /// Returns true if impersonating.
+        /// </summary>
+        public bool IsImpersonating
+        {
+            get
+            {
+                if (!GrantedAccess.HasFlagSet(ThreadAccessRights.QueryLimitedInformation))
+                {
+                    return false;
+                }
+
+                // This might be possible to read from the TEB IsImpersonating flag but not clear if it's
+                // ever officially documented.
+                using (var token = NtToken.OpenThreadToken(this, true, TokenAccessRights.Query, false))
+                {
+                    return token.Status != NtStatus.STATUS_NO_TOKEN;
+                }
+            }
+        }
 
         #endregion
     }
