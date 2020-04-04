@@ -54,7 +54,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'New-NtEaBuffer', 'New-NtSectionImage', 'New-Win32ProcessConfig', 'Get-NtTokenFromProcess', 'Get-ExecutableManifest',
           'New-NtProcess', 'New-NtProcessConfig', 'Get-NtFilePath', 'Show-NtTokenEffective', 'Show-NtSecurityDescriptor', 'Get-NtIoControlCode',
           'Import-NtObject', 'Export-NtObject', 'Get-ExecutionAlias', 'Set-ExecutionAlias', 'Set-ExecutionAlias', 'Show-NtToken', 'Show-NtSection',
-          'Resolve-NtObjectAddress', 'Invoke-NtToken', 'Get-NtSecurityDescriptor',
+          'Resolve-NtObjectAddress', 'Get-NtSecurityDescriptor',
           'Set-NtSecurityDescriptor', 'Add-NtVirtualMemory', 'Get-NtVirtualMemory', 'Remove-NtVirtualMemory', 'Set-NtVirtualMemory',
           'Read-NtVirtualMemory', 'Write-NtVirtualMemory', 'Get-EmbeddedAuthenticodeSignature', 'Get-NtSidName', 'New-SymbolResolver', 
           'New-NdrParser', 'Format-NdrComplexType', 'Format-NdrProcedure', 'Format-NdrComProxy', 'Get-NdrComProxy', 'Get-NdrRpcServerInterface',
@@ -114,7 +114,7 @@ CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile
                'New-NtDesktop', 'Get-Win32Error', 'Set-NtKeyValue', 'Remove-NtKey',
                'Get-NtObjectInformation', 'Set-NtObjectInformation', 'Test-NtTokenPrivilege',
                'Format-NtJob', 'Add-NtSecurityDescriptorAce', 'New-NtSecurityAttribute',
-               'Remove-NtSecurityDescriptorAce'
+               'Remove-NtSecurityDescriptorAce', 'Invoke-NtToken'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @()

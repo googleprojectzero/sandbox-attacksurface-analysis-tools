@@ -21,6 +21,7 @@ using NtApiDotNet.Win32;
 using System.Security;
 using System.Runtime.InteropServices;
 using NtApiDotNet.Token;
+using NtObjectManager.Utils;
 
 namespace NtObjectManager.Cmdlets.Object
 {
@@ -1288,6 +1289,86 @@ namespace NtObjectManager.Cmdlets.Object
                     WriteObject(result);
                 else
                     WriteObject(result.AllPrivilegesHeld);
+            }
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Invokes a script block while impersonating a token.</para>
+    /// <para type="description">This cmdlet invokes a script block while impersonating a token. Optionally can impersonate the anonymous token directly.</para>
+    /// </summary>
+    /// <example>
+    ///   <code>Invoke-NtToken -Token $token -Script { Get-NtFile \Path\To\File }</code>
+    ///   <para>Open a file under impersonation.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Invoke-NtToken -Token $token -ImpersonationLevel Identification -Script { Get-NtToken -Impersonation -OpenAsSelf }</code>
+    ///   <para>Open the impersontation token under identification level impersonation.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Invoke-NtToken -Script { Get-NtProcess -ProcessId 1234 } -Anonymous</code>
+    ///   <para>Open a process while impersonating the anonymous token.</para>
+    /// </example>
+    [Cmdlet(VerbsLifecycle.Invoke, "NtToken", DefaultParameterSetName = "FromToken")]
+    [OutputType(typeof(object))]
+    public sealed class InvokeNtTokenCmdlet : PSCmdlet
+    {
+        /// <summary>
+        /// <para type="description">Specify the token to impersonate.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromToken", Position = 0, Mandatory = true)]
+        public NtToken Token { get; set; }
+
+        /// <summary>
+        /// <para type="description">The script block to execute during impersonation.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromToken")]
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromAnonymous")]
+        public ScriptBlock Script { get; set; }
+
+        /// <summary>
+        /// <para type="description">When the token is duplicated specify the impersonation level to use.</para>
+        /// </summary>
+        [Parameter(Position = 2, ParameterSetName = "FromToken")]
+        public SecurityImpersonationLevel ImpersonationLevel { get; set; }
+
+        /// <summary>
+        /// <para type="description">Impersonate the anonymous token and run the script.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromAnonymous")]
+        public SwitchParameter Anonymous { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify an object to pass to the script.</para>
+        /// </summary>
+        [Parameter(ValueFromPipeline = true)]
+        public object InputObject { get; set; }
+
+        /// <summary>
+        /// Overridden ProcessRecord method.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            object obj = null;
+            if (ParameterSetName == "FromToken")
+            {
+                if (Token.TokenType == TokenType.Impersonation && Token.ImpersonationLevel < ImpersonationLevel)
+                {
+                    throw new ArgumentException("Impersonation level can't be raised, specify an appropriate impersonation level");
+                }
+
+                obj = Token.RunUnderImpersonate(() => PSUtils.InvokeWithArg(Script, InputObject), ImpersonationLevel);
+            }
+            else
+            {
+                using (var imp = NtThread.Current.ImpersonateAnonymousToken())
+                {
+                    obj = PSUtils.InvokeWithArg(Script, InputObject);
+                }
+            }
+            if (obj != null)
+            {
+                WriteObject(obj, true);
             }
         }
     }
