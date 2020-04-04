@@ -1030,7 +1030,20 @@ namespace NtApiDotNet
         /// might just indicate that the caller doesn't have permission to open the token, not that it's not impersonating.</remarks>
         public bool Impersonating
         {
-            get { try { using (var token = OpenToken()) { return token != null; } } catch { return false; } }
+            get
+            {
+                if (!GrantedAccess.HasFlagSet(ThreadAccessRights.QueryLimitedInformation))
+                {
+                    return false;
+                }
+
+                // This might be possible to read from the TEB IsImpersonating flag but not clear if it's
+                // ever officially documented.
+                using (var token = NtToken.OpenThreadToken(this, true, TokenAccessRights.Query, false))
+                {
+                    return token.Status != NtStatus.STATUS_NO_TOKEN;
+                }
+            }
         }
 
         /// <summary>
@@ -1151,28 +1164,6 @@ namespace NtApiDotNet
         /// Get thread exit status.
         /// </summary>
         public NtStatus ExitNtStatus => QueryBasicInformation().ExitStatus;
-
-        /// <summary>
-        /// Returns true if impersonating.
-        /// </summary>
-        public bool IsImpersonating
-        {
-            get
-            {
-                if (!GrantedAccess.HasFlagSet(ThreadAccessRights.QueryLimitedInformation))
-                {
-                    return false;
-                }
-
-                // This might be possible to read from the TEB IsImpersonating flag but not clear if it's
-                // ever officially documented.
-                using (var token = NtToken.OpenThreadToken(this, true, TokenAccessRights.Query, false))
-                {
-                    return token.Status != NtStatus.STATUS_NO_TOKEN;
-                }
-            }
-        }
-
         #endregion
     }
 }
