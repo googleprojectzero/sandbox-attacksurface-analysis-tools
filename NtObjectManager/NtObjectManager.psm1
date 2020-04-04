@@ -167,13 +167,13 @@ Get SeBackupPrivilege and SeRestorePrivilege status on an explicit token object.
 function Get-NtTokenPrivilege
 {
   Param(
-    [Parameter(Position=0)]
+    [Parameter(Position=0, ValueFromPipeline)]
     [NtApiDotNet.NtToken]$Token,
     [NtApiDotNet.TokenPrivilegeValue[]]$Privileges
   )
   if ($null -eq $Token) {
     $Token = Get-NtToken -Primary -Access Query
-  } else {
+  } elseif (!$Token.IsPseudoToken) {
     $Token = $Token.Duplicate()
   }
 
@@ -223,7 +223,7 @@ Get groups that are enabled.
 function Get-NtTokenGroup {
   [CmdletBinding(DefaultParameterSetName="Normal")]
   Param(
-    [Parameter(Position = 0)]
+    [Parameter(Position = 0, ValueFromPipeline)]
     [NtApiDotNet.NtToken]$Token,
     [Parameter(Mandatory, ParameterSetName = "Restricted")]
     [switch]$Restricted,
@@ -233,7 +233,7 @@ function Get-NtTokenGroup {
   )
   if ($null -eq $Token) {
     $Token = Get-NtToken -Primary -Access Query
-  } else {
+  } elseif (!$Token.IsPseudoToken) {
     $Token = $Token.Duplicate()
   }
 
@@ -335,7 +335,7 @@ Get the default owner SID.
 function Get-NtTokenSid {
   [CmdletBinding(DefaultParameterSetName="User")]
   Param(
-    [Parameter(Position = 0)]
+    [Parameter(Position = 0, ValueFromPipeline)]
     [NtApiDotNet.NtToken]$Token,
     [Parameter(Mandatory, ParameterSetName="Owner")]
     [switch]$Owner,
@@ -354,7 +354,7 @@ function Get-NtTokenSid {
   )
   if ($null -eq $Token) {
     $Token = Get-NtToken -Primary -Access Query
-  } else {
+  } elseif (!$Token.IsPseudoToken) {
     $Token = $Token.Duplicate()
   }
 
@@ -438,7 +438,7 @@ function Set-NtTokenSid {
 
 <#
 .SYNOPSIS
-Get a token's default owner of group.
+Get a token's default owner or group.
 .DESCRIPTION
 This cmdlet will get the default owner or group for a token.
 .PARAMETER Group
@@ -467,7 +467,7 @@ function Get-NtTokenOwner {
   )
   if ($null -eq $Token) {
     $Token = Get-NtToken -Primary -Access Query
-  } else {
+  } elseif (!$Token.IsPseudoToken) {
     $Token = $Token.Duplicate()
   }
 
