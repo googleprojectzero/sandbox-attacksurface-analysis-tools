@@ -1483,25 +1483,37 @@ Show token information such as type, impersonation level and ID.
 Show token owner.
 .PARAMETER PrimaryGroup
 Show token primary group.
+.PARAMETER DefaultDacl
+Show token default DACL.
+.PARAMETER Basic
+Show basic token information, User, Group, Privilege and Integrity.
 .OUTPUTS
 Text data
 .EXAMPLE
 Format-NtToken -Token $token
 Print the user name of the token.
 .EXAMPLE
+Format-NtToken -Token $token -Basic
+Print basic details for the token.
+.EXAMPLE
 Format-NtToken -Token $token -All
 Print all details for the token.
 .EXAMPLE
 Format-NtToken -Token $token -User -Group
 Print the user and groups of the token.
+.EXAMPLE
+Format-NtToken -Token $token -DefaultDacl
+Print the default DACL of the token.
 #>
 function Format-NtToken {
-    [CmdletBinding(DefaultParameterSetName="Basic")]
+    [CmdletBinding(DefaultParameterSetName="UserOnly")]
     Param(
         [parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
         [NtApiDotNet.NtToken]$Token,
         [parameter(ParameterSetName="Complex")]
         [switch]$All,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$Basic,
         [parameter(ParameterSetName="Complex")]
         [switch]$Group,
         [parameter(ParameterSetName="Complex")]
@@ -1523,7 +1535,9 @@ function Format-NtToken {
         [parameter(ParameterSetName="Complex")]
         [switch]$Owner,
         [parameter(ParameterSetName="Complex")]
-        [switch]$PrimaryGroup
+        [switch]$PrimaryGroup,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$DefaultDacl
   )
 
   if ($All) {
@@ -1538,9 +1552,15 @@ function Format-NtToken {
     $Information = $true
     $Owner = $true
     $PrimaryGroup = $true
+    $DefaultDacl = $true
+  } elseif ($Basic) {
+    $Group = $true
+    $User = $true
+    $Privilege = $true
+    $Integrity = $true
   }
 
-  if ($PSCmdlet.ParameterSetName -eq "Basic") {
+  if ($PSCmdlet.ParameterSetName -eq "UserOnly") {
     $token.User.ToString()
     return
   }
@@ -1627,6 +1647,11 @@ function Format-NtToken {
     Format-ObjectTable $token.DeviceClaimAttributes | Write-Output
   }
 
+  if ($DefaultDacl -and $Token.DefaultDacl -ne $null) {
+    "DEFAULT DACL"
+    Format-NtAcl -Acl $Token.DefaultDacl -Type "Directory" -Name "------------" | Write-Output
+  }
+
   if ($Information) {
     "TOKEN INFORMATION"
     "-----------------"
@@ -1672,6 +1697,10 @@ Show token information such as type, impersonation level and ID.
 Show token owner.
 .PARAMETER PrimaryGroup
 Show token primary group.
+.PARAMETER DefaultDacl
+Show token default DACL.
+.PARAMETER Basic
+Show basic token information, User, Group, Privilege and Integrity.
 .OUTPUTS
 Text data
 .EXAMPLE
@@ -1679,16 +1708,21 @@ Show-NtTokenEffective
 Show only the user name of the current token.
 .EXAMPLE
 Show-NtTokenEffective -All
-Show the user, groups, privileges and integrity of the current token.
+Show all details for the current token.
+.EXAMPLE
+Show-NtTokenEffective -Basic
+Show basic details for the current token.
 .EXAMPLE
 Show-NtTokenEffective -User -Group
 Show the user and groups of the current token.
 #>
 function Show-NtTokenEffective {
-    [CmdletBinding(DefaultParameterSetName="Basic")]
+    [CmdletBinding(DefaultParameterSetName="UserOnly")]
     Param(
         [parameter(ParameterSetName="Complex")]
         [switch]$All,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$Basic,
         [parameter(ParameterSetName="Complex")]
         [switch]$Group,
         [parameter(ParameterSetName="Complex")]
@@ -1710,15 +1744,18 @@ function Show-NtTokenEffective {
         [parameter(ParameterSetName="Complex")]
         [switch]$Owner,
         [parameter(ParameterSetName="Complex")]
-        [switch]$PrimaryGroup
+        [switch]$PrimaryGroup,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$DefaultDacl
     )
 
   Use-NtObject($token = Get-NtToken -Effective) {
-    if ($PsCmdlet.ParameterSetName -eq "Basic") {
+    if ($PsCmdlet.ParameterSetName -eq "UserOnly") {
         Format-NtToken -Token $token
     } else {
         $args = @{
             All = $All
+            Basic = $Basic
             Group = $Group
             Privilege = $Privilege
             User = $User
@@ -1731,6 +1768,7 @@ function Show-NtTokenEffective {
             Owner = $Owner
             PrimaryGroup = $PrimaryGroup
             Token = $token
+            DefaultDacl = $DefaultDacl
         }
         Format-NtToken @args
     }
@@ -1914,7 +1952,6 @@ function Format-NtAcl {
         [NtApiDotNet.NtType]$Type,
         [Parameter(Position = 2, Mandatory)]
         [string]$Name,
-        [Parameter(Mandatory = $true)]
         [switch]$MapGeneric,
         [switch]$AuditOnly,
         [switch]$Summary,
@@ -2125,6 +2162,12 @@ function Format-NtSecurityDescriptor {
                     Write-Output $("RmControl: 0x{0:X02}" -f $sd.RmControl)
                 }
                 Write-Output ""
+            }
+
+            if ($sd.Owner -eq $null -and $sd.Group -eq $null `
+                -and $sd.Dacl -eq $null -and $sd.Sacl -eq $null) {
+                Write-Output "<NO SECURITY INFORMATION>"
+                return
             }
 
             if ($sd.Owner -ne $null -and (($si -band "Owner") -ne 0)) {
