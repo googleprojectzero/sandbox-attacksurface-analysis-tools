@@ -30,12 +30,14 @@ namespace NtApiDotNet
     public static class NtSecurity
     {
         #region Static Methods
+
         /// <summary>
         /// Looks up the account name of a SID. 
         /// </summary>
         /// <param name="sid">The SID to lookup</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The name, or null if the lookup failed</returns>
-        public static string LookupAccountSid(Sid sid)
+        public static NtResult<string> LookupAccountSid(Sid sid, bool throw_on_error)
         {
             using (SafeSidBufferHandle sid_buffer = sid.ToSafeBuffer())
             {
@@ -43,21 +45,31 @@ namespace NtApiDotNet
                 int length = name.Capacity;
                 StringBuilder domain = new StringBuilder(1024);
                 int domain_length = domain.Capacity;
-                if (!Win32NativeMethods.LookupAccountSid(null, sid_buffer, name, 
+                if (!Win32NativeMethods.LookupAccountSid(null, sid_buffer, name,
                     ref length, domain, ref domain_length, out SidNameUse name_use))
                 {
-                    return null;
+                    return NtObjectUtils.CreateResultFromDosError<string>(throw_on_error);
                 }
 
                 if (domain_length == 0)
                 {
-                    return name.ToString();
+                    return name.ToString().CreateResult();
                 }
                 else
                 {
-                    return $@"{domain}\{name}";
+                    return $@"{domain}\{name}".CreateResult();
                 }
             }
+        }
+
+        /// <summary>
+        /// Looks up the account name of a SID. 
+        /// </summary>
+        /// <param name="sid">The SID to lookup</param>
+        /// <returns>The name, or null if the lookup failed</returns>
+        public static string LookupAccountSid(Sid sid)
+        {
+            return LookupAccountSid(sid, false).GetResultOrDefault();
         }
 
         /// <summary>
@@ -970,7 +982,12 @@ namespace NtApiDotNet
             {
                 return GetNameForSidInternal(sid);
             }
-            return _cached_names.GetOrAdd(sid, s => GetNameForSidInternal(sid));
+            return _cached_names.AddOrUpdate(sid, s => GetNameForSidInternal(s), (s, v) => {
+                if (v.LookupDenied)
+                    return GetNameForSidInternal(s);
+                else
+                    return v;
+            });
         }
 
         /// <summary>
@@ -1399,12 +1416,20 @@ namespace NtApiDotNet
 
         private static SidName GetNameForSidInternal(Sid sid)
         {
-            string name = LookupAccountSid(sid);
-            if (name != null)
+            bool lookup_denied = false;
+            var account_name = LookupAccountSid(sid, false);
+            if (account_name.IsSuccess)
             {
-                return new SidName(name, SidNameSource.Account);
+                return new SidName(account_name.Result, SidNameSource.Account);
             }
 
+            if (account_name.Status.MapNtStatusToDosError() == Win32Error.ERROR_ACCESS_DENIED)
+            {
+                // Only handle the case where the thread is impersonating.
+                lookup_denied = NtThread.Current.Impersonating;
+            }
+
+            string name;
             if (IsCapabilitySid(sid))
             {
                 // See if there's a known SID with this name.
@@ -1467,7 +1492,8 @@ namespace NtApiDotNet
                 return new SidName($@"Font Driver Host\UMFD-{sid.SubAuthorities.Last()}", SidNameSource.WellKnown);
             }
 
-            return new SidName(sid.ToString(), SidNameSource.Sddl);
+            // If lookup was denied then try and requery next time.
+            return new SidName(sid.ToString(), SidNameSource.Sddl, lookup_denied);
         }
 
         private static Dictionary<Sid, string> GetKnownCapabilitySids()
