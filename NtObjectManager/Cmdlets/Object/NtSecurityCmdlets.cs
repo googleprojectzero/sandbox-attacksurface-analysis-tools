@@ -989,12 +989,6 @@ namespace NtObjectManager.Cmdlets.Object
         public Guid[] ObjectTypes { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify new security descriptor is a directory.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromToken")]
-        public SwitchParameter IsDirectory { get; set; }
-
-        /// <summary>
         /// <para type="description">Specify auto-inherit flags for new security descriptor.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromToken")]
@@ -1046,7 +1040,7 @@ namespace NtObjectManager.Cmdlets.Object
                             {
                                 Token = list.AddResource(NtToken.OpenEffectiveToken());
                             }
-                            sd = SecurityDescriptor.Create(Parent, Creator, IsDirectory, AutoInherit, Token, Type.GenericMapping);
+                            sd = SecurityDescriptor.Create(Parent, Creator, Container, AutoInherit, Token, Type.GenericMapping);
                         }
                     }
                     break;
