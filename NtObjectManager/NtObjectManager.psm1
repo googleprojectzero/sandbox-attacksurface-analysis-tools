@@ -6823,7 +6823,7 @@ function Set-NtSecurityDescriptorOwner {
 Test if the security descriptor's ACLs are canonical.
 .DESCRIPTION
 This cmdlet tests if the security descriptor's ACLs are canonical. You can specify either
-the DACL, SACL or both.
+the DACL, SACL. The default is to check both ACLs.
 .PARAMETER SecurityDescriptor
 The security descriptor to test.
 .PARAMETER Dacl
@@ -6843,8 +6843,9 @@ function Test-NtSecurityDescriptor {
         [Parameter(Mandatory, ParameterSetName="DaclOnly")]
         [switch]$DaclCanonical,
         [Parameter(Mandatory, ParameterSetName="SaclOnly")]
-        [switch]$Sacl
+        [switch]$SaclCanonical
     )
+
     $obj = switch($PSCmdlet.ParameterSetName) {
         "DaclOnly" { $SecurityDescriptor.IsDaclCanonical }
         "SaclOnly" { $SecurityDescriptor.IsSaclCanonical }
