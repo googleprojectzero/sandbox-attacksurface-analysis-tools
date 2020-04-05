@@ -1438,7 +1438,7 @@ namespace NtApiDotNet
                 {
                     return buffer.Cast<SecurityDescriptor>();
                 }
-                return Parse(buffer.Result, throw_on_error);
+                return Parse(buffer.Result, null, is_directory, throw_on_error);
             }
         }
 
