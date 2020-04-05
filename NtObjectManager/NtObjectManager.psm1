@@ -83,12 +83,18 @@ Set the state of a token's privileges.
 .DESCRIPTION
 This cmdlet will set the state of a token's privileges. This is commonly used to enable debug/backup privileges to perform privileged actions.
 If no token is specified then the current process token is used.
-.PARAMETER Privileges
+.PARAMETER Privilege
 A list of privileges to set their state.
 .PARAMETER Token
 Optional token object to use to set privileges. Must be accesible for AdjustPrivileges right.
-.PARAMETER Attributes
+.PARAMETER Attribute
 Specify the actual attributes to set. Defaults to Enabled.
+.PARAMETER All
+Set attributes for all privileges in the token.
+.PARAMETER PassThru
+Passthrough the updated privilege results.
+.PARAMETER Disable
+Disable the specified privileges.
 .INPUTS
 None
 .OUTPUTS
@@ -105,16 +111,20 @@ Enable SeBackupPrivilege and SeRestorePrivilege on an explicit token object.
 #>
 function Set-NtTokenPrivilege
 {
-  [CmdletBinding(DefaultParameterSetName="FromAttributes")]
+  [CmdletBinding(DefaultParameterSetName="FromPrivilege")]
   Param(
-    [Parameter(Mandatory=$true, Position=0)]
-    [NtApiDotNet.TokenPrivilegeValue[]]$Privileges,
     [NtApiDotNet.NtToken]$Token,
-    [Parameter(ParameterSetName="FromAttributes")]
-    [NtApiDotNet.PrivilegeAttributes]$Attributes = "Enabled",
-    [Parameter(ParameterSetName="FromDisable")]
-    [switch]$Disable
-    )
+    [Parameter(Mandatory, Position=0, ParameterSetName="FromPrivilege")]
+    [alias("Privileges")]
+    [NtApiDotNet.TokenPrivilegeValue[]]$Privilege,
+    [alias("Attributes")]
+    [NtApiDotNet.PrivilegeAttributes]$Attribute = "Enabled",
+    [switch]$Disable,
+    [Parameter(Mandatory, ParameterSetName="FromAllAttributes")]
+    [switch]$All,
+    [switch]$PassThru
+  )
+
   if ($null -eq $Token) {
     $Token = Get-NtToken -Primary
   } else {
@@ -122,19 +132,25 @@ function Set-NtTokenPrivilege
   }
 
   if ($Disable) {
-    $Attributes = 0
+    $Attribute = "Disabled"
+  }
+
+  if ($All) {
+    $Privilege = $Token.Privileges.Value
   }
 
   Use-NtObject($Token) {
     $result = @()
-    foreach($priv in $Privileges) {
-      if ($Token.SetPrivilege($priv, $Attributes)) {
+    foreach($priv in $Privilege) {
+      if ($Token.SetPrivilege($priv, $Attribute)) {
         $result += @($Token.GetPrivilege($priv))
       } else {
         Write-Warning "Couldn't set privilege $priv"
       }
     }
-    return $result
+    if ($PassThru) {
+        $result | Write-Output
+    }
   }
 }
 
@@ -504,7 +520,8 @@ function Remove-NtTokenPrivilege
 {
   Param(
     [Parameter(Mandatory=$true, Position=0)]
-    [NtApiDotNet.TokenPrivilegeValue[]]$Privileges,
+    [alias("Privilege")]
+    [NtApiDotNet.TokenPrivilegeValue[]]$Privilege,
     [NtApiDotNet.NtToken]$Token
     )
   if ($null -eq $Token) {
@@ -515,7 +532,7 @@ function Remove-NtTokenPrivilege
 
   Use-NtObject($Token) {
     $result = @()
-    foreach($priv in $Privileges) {
+    foreach($priv in $Privilege) {
       if (!$Token.RemovePrivilege($priv)) {
         Write-Warning "Can't remove $priv from token."
       }

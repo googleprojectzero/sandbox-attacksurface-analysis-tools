@@ -860,45 +860,45 @@ namespace NtObjectManager.Cmdlets.Object
     ///   <code>$sd = New-NtSecurityDescriptor -Key $key -ValueName SD</code>
     ///   <para>Create a new security descriptor with the contents from the key $Key and value "SD".</para>
     /// </example>
-    [Cmdlet(VerbsCommon.New, "NtSecurityDescriptor", DefaultParameterSetName = "EmptySd")]
+    [Cmdlet(VerbsCommon.New, "NtSecurityDescriptor", DefaultParameterSetName = "NewSd")]
     [OutputType(typeof(SecurityDescriptor))]
     public sealed class NewNtSecurityDescriptorCmdlet : PSCmdlet
     {
         /// <summary>
         /// <para type="description">Specify to create the security descriptor with a NULL DACL.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "EmptySd")]
+        [Parameter(ParameterSetName = "NewSd")]
         public SwitchParameter NullDacl { get; set; }
 
         /// <summary>
         /// <para type="description">Specify to create the security descriptor with a NULL SACL.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "EmptySd")]
+        [Parameter(ParameterSetName = "NewSd")]
         public SwitchParameter NullSacl { get; set; }
 
         /// <summary>
         /// <para type="description">Specify thr owner for the new SD.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "EmptySd")]
+        [Parameter(ParameterSetName = "NewSd")]
         public Sid Owner { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the group for the new SD.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "EmptySd")]
+        [Parameter(ParameterSetName = "NewSd")]
         public Sid Group { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the DACL for the new SD. The ACL will be cloned.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "EmptySd")]
+        [Parameter(ParameterSetName = "NewSd")]
         [AllowEmptyCollection]
         public Acl Dacl { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the the SACL for the new SD. The ACL will be cloned.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "EmptySd")]
+        [Parameter(ParameterSetName = "NewSd")]
         [AllowEmptyCollection]
         public Acl Sacl { get; set; }
 
@@ -935,7 +935,7 @@ namespace NtObjectManager.Cmdlets.Object
             Parameter(ParameterSetName = "FromBase64"),
             Parameter(ParameterSetName = "FromBytes"), 
             Parameter(ParameterSetName = "FromKey"),
-            Parameter(ParameterSetName = "EmptySd")]
+            Parameter(ParameterSetName = "NewSd")]
         [ArgumentCompleter(typeof(NtTypeArgumentCompleter))]
         public NtType Type { get; set; }
 
@@ -947,7 +947,7 @@ namespace NtObjectManager.Cmdlets.Object
             Parameter(ParameterSetName = "FromBase64"),
             Parameter(ParameterSetName = "FromBytes"),
             Parameter(ParameterSetName = "FromKey"),
-            Parameter(ParameterSetName = "EmptySd")]
+            Parameter(ParameterSetName = "NewSd")]
         public SwitchParameter Container { get; set; }
 
         /// <summary>
@@ -979,7 +979,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify additional control flags to apply to the SD. Not all the flags are accepted.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromSddl"),
-         Parameter(ParameterSetName = "EmptySd")]
+         Parameter(ParameterSetName = "NewSd")]
         public SecurityDescriptorControl Control { get; set; }
 
         /// <summary>
@@ -1085,7 +1085,7 @@ namespace NtObjectManager.Cmdlets.Object
         {
             return new SecurityDescriptor
             {
-                Dacl = Dacl?.Clone() ?? new Acl() { NullAcl = NullDacl },
+                Dacl = Dacl?.Clone() ?? (NullDacl ? new Acl() { NullAcl = NullDacl } : null),
                 Sacl = Sacl?.Clone() ?? (NullSacl ? new Acl() { NullAcl = NullSacl } : null),
                 Owner = Owner != null ? new SecurityDescriptorSid(Owner, false) : null,
                 Group = Group != null ? new SecurityDescriptorSid(Group, false) : null
