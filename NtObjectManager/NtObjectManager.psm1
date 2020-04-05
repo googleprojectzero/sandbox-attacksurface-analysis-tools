@@ -6858,6 +6858,250 @@ function Test-NtSecurityDescriptor {
 
 <#
 .SYNOPSIS
+Get the owner from a security descriptor.
+.DESCRIPTION
+This cmdlet gets the Owner field from a security descriptor.
+.PARAMETER SecurityDescriptor
+The security descriptor to query.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.SecurityDescriptorSid
+#>
+function Get-NtSecurityDescriptorOwner {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+    )
+    $SecurityDescriptor.Owner | Write-Output
+}
+
+<#
+.SYNOPSIS
+Get the group from a security descriptor.
+.DESCRIPTION
+This cmdlet gets the Group field from a security descriptor.
+.PARAMETER SecurityDescriptor
+The security descriptor to query.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.SecurityDescriptorSid
+#>
+function Get-NtSecurityDescriptorGroup {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+    )
+    $SecurityDescriptor.Group | Write-Output
+}
+
+<#
+.SYNOPSIS
+Get the DACL from a security descriptor.
+.DESCRIPTION
+This cmdlet gets the Dacl field from a security descriptor.
+.PARAMETER SecurityDescriptor
+The security descriptor to query.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Acl
+#>
+function Get-NtSecurityDescriptorDacl {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+    )
+    Write-Output $SecurityDescriptor.Dacl -NoEnumerate
+}
+
+<#
+.SYNOPSIS
+Get the SACL from a security descriptor.
+.DESCRIPTION
+This cmdlet gets the Sacl field from a security descriptor.
+.PARAMETER SecurityDescriptor
+The security descriptor to query.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Acl
+#>
+function Get-NtSecurityDescriptorSacl {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+    )
+    Write-Output $SecurityDescriptor.Sacl -NoEnumerate
+}
+
+<#
+.SYNOPSIS
+Get the Control from a security descriptor.
+.DESCRIPTION
+This cmdlet gets the Control field from a security descriptor.
+.PARAMETER SecurityDescriptor
+The security descriptor to query.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.SecurityDescriptorControl
+#>
+function Get-NtSecurityDescriptorControl {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+    )
+    Write-Output $SecurityDescriptor.Control
+}
+
+<#
+.SYNOPSIS
+Get the Integrity Level from a security descriptor.
+.DESCRIPTION
+This cmdlet gets the Integrity Level field from a security descriptor.
+.PARAMETER SecurityDescriptor
+The security descriptor to query.
+.PARAMETER Sid
+Get the Integrity Level as a SID.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Sid or NtApiDotNet.TokenIntegrityLevel
+#>
+function Get-NtSecurityDescriptorIntegrityLevel {
+    [CmdletBinding(DefaultParameterSetName="ToIL")]
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [Parameter(ParameterSetName="ToSid")]
+        [switch]$AsSid,
+        [Parameter(ParameterSetName="ToAce")]
+        [switch]$AsAce
+    )
+
+    if (!$SecurityDescriptor.HasMandatoryLabelAce) {
+        return
+    }
+
+    switch($PSCmdlet.ParameterSetName) {
+        "ToIL" {
+            $SecurityDescriptor.IntegrityLevel
+        }
+        "ToSid" {
+            $SecurityDescriptor.MandatoryLabel.Sid
+        }
+        "ToAce" {
+            $SecurityDescriptor.MandatoryLabel
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Sets Control flags for a security descriptor.
+.DESCRIPTION
+This cmdlet sets Control flags for a security descriptor. Note that you can't 
+remove the DaclPresent or SaclPresent. For that use Remove-NtSecurityDescriptorDacl 
+or Remove-NtSecurityDescriptorSacl. 
+.PARAMETER SecurityDescriptor
+The security descriptor to modify.
+.PARAMETER Control
+The control flags to set.
+.PARAMETER PassThru
+Pass through the final control flags.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Set-NtSecurityDescriptorControl {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [Parameter(Position=1, Mandatory)]
+        [NtApiDotNet.SecurityDescriptorControl]$Control,
+        [switch]$PassThru
+    )
+    $SecurityDescriptor.Control = $Control
+    if ($PassThru) {
+        $SecurityDescriptor.Control | Write-Output
+    }
+}
+
+<#
+.SYNOPSIS
+Adds Control flags for a security descriptor.
+.DESCRIPTION
+This cmdlet adds Control flags for a security descriptor. Note that you can't 
+remove the DaclPresent or SaclPresent. For that use Remove-NtSecurityDescriptorDacl 
+or Remove-NtSecurityDescriptorSacl. 
+.PARAMETER SecurityDescriptor
+The security descriptor to modify.
+.PARAMETER Control
+The control flags to add.
+.PARAMETER PassThru
+Pass through the final control flags.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Add-NtSecurityDescriptorControl {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [Parameter(Position=1, Mandatory)]
+        [NtApiDotNet.SecurityDescriptorControl]$Control,
+        [switch]$PassThru
+    )
+
+    $curr_flags = $SecurityDescriptor.Control
+    $new_flags = [int]$curr_flags -bor $Control
+    $SecurityDescriptor.Control = $new_flags
+    if ($PassThru) {
+        $SecurityDescriptor.Control | Write-Output
+    }
+}
+
+<#
+.SYNOPSIS
+Removes Control flags for a security descriptor.
+.DESCRIPTION
+This cmdlet removes Control flags for a security descriptor. Note that you can't 
+remove the DaclPresent or SaclPresent. For that use Remove-NtSecurityDescriptorDacl 
+or Remove-NtSecurityDescriptorSacl. 
+.PARAMETER SecurityDescriptor
+The security descriptor to modify.
+.PARAMETER Control
+The control flags to remove.
+.PARAMETER PassThru
+Pass through the final control flags.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Remove-NtSecurityDescriptorControl {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [Parameter(Position=1, Mandatory)]
+        [NtApiDotNet.SecurityDescriptorControl]$Control,
+        [switch]$PassThru
+    )
+
+    $curr_flags = $SecurityDescriptor.Control
+    $new_flags = [int]$curr_flags -band -bnot $Control
+    $SecurityDescriptor.Control = $new_flags
+    if ($PassThru) {
+        $SecurityDescriptor.Control | Write-Output
+    }
+}
+
+<#
+.SYNOPSIS
 Creates a new ACL object.
 .DESCRIPTION
 This cmdlet creates a new ACL object.
@@ -6935,7 +7179,8 @@ Specify to set the Protected flag.
 Specify to set the Defaulted flag.
 .PARAMETER PassThru
 Specify to return the new ACL.
-.PARAMETER 
+.PARAMETER Remove
+Specify to remove the ACL.
 .INPUTS
 None
 .OUTPUTS
@@ -6950,10 +7195,20 @@ function Set-NtSecurityDescriptorDacl {
         [switch]$NullAcl,
         [Parameter(ParameterSetName = "FromAce")]
         [NtApiDotNet.Ace[]]$Ace,
+        [Parameter(ParameterSetName = "NullAcl")]
+        [Parameter(ParameterSetName = "FromAce")]
         [switch]$AutoInheritReq,
+        [Parameter(ParameterSetName = "NullAcl")]
+        [Parameter(ParameterSetName = "FromAce")]
         [switch]$AutoInherited,
+        [Parameter(ParameterSetName = "NullAcl")]
+        [Parameter(ParameterSetName = "FromAce")]
         [switch]$Protected,
+        [Parameter(ParameterSetName = "NullAcl")]
+        [Parameter(ParameterSetName = "FromAce")]
         [switch]$Defaulted,
+        [Parameter(ParameterSetName = "NullAcl")]
+        [Parameter(ParameterSetName = "FromAce")]
         [switch]$PassThru
     )
 
@@ -6998,6 +7253,8 @@ Specify to set the Protected flag.
 Specify to set the Defaulted flag.
 .PARAMETER PassThru
 Specify to return the new ACL.
+.PARAMETER Remove
+Specify to remove the ACL.
 .PARAMETER 
 .INPUTS
 None
@@ -7013,10 +7270,20 @@ function Set-NtSecurityDescriptorSacl {
         [switch]$NullAcl,
         [Parameter(ParameterSetName = "FromAce")]
         [NtApiDotNet.Ace[]]$Ace,
+        [Parameter(ParameterSetName = "NullAcl")]
+        [Parameter(ParameterSetName = "FromAce")]
         [switch]$AutoInheritReq,
+        [Parameter(ParameterSetName = "NullAcl")]
+        [Parameter(ParameterSetName = "FromAce")]
         [switch]$AutoInherited,
+        [Parameter(ParameterSetName = "NullAcl")]
+        [Parameter(ParameterSetName = "FromAce")]
         [switch]$Protected,
+        [Parameter(ParameterSetName = "NullAcl")]
+        [Parameter(ParameterSetName = "FromAce")]
         [switch]$Defaulted,
+        [Parameter(ParameterSetName = "NullAcl")]
+        [Parameter(ParameterSetName = "FromAce")]
         [switch]$PassThru
     )
 
@@ -7035,6 +7302,46 @@ function Set-NtSecurityDescriptorSacl {
     if ($PassThru) {
         Write-Output $SecurityDescriptor.Sacl -NoEnumerate
     }
+}
+
+<#
+.SYNOPSIS
+Removes the DACL for a security descriptor.
+.DESCRIPTION
+This cmdlet removes the DACL of a security descriptor.
+.PARAMETER SecurityDescriptor
+The security descriptor to modify.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Remove-NtSecurityDescriptorDacl {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+    )
+    $SecurityDescriptor.Dacl = $null
+}
+
+<#
+.SYNOPSIS
+Removes the SACL for a security descriptor.
+.DESCRIPTION
+This cmdlet removes the SACL of a security descriptor.
+.PARAMETER SecurityDescriptor
+The security descriptor to modify.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Remove-NtSecurityDescriptorSacl {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+    )
+    $SecurityDescriptor.Sacl = $null
 }
 
 <#
@@ -7128,15 +7435,39 @@ function Remove-NtSecurityDescriptorGroup {
 
 <#
 .SYNOPSIS
+Removes the integrity level for a security descriptor.
+.DESCRIPTION
+This cmdlet removes the integrity level of a security descriptor.
+.PARAMETER SecurityDescriptor
+The security descriptor to modify.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Remove-NtSecurityDescriptorIntegrityLevel {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+    )
+    $SecurityDescriptor.RemoveMandatoryLabel()
+}
+
+<#
+.SYNOPSIS
 Sets the integrity level for a security descriptor.
 .DESCRIPTION
 This cmdlet sets the integrity level for a security descriptor with a specified policy and flags.
 .PARAMETER SecurityDescriptor
 The security descriptor to modify.
-.PARAMETER Group
-The group SID to set.
-.PARAMETER Defaulted
-Specify whether the group is defaulted.
+.PARAMETER IntegrityLevel
+Specify the integrity level.
+.PARAMETER Sid
+Specify the integrity level as a SID.
+.PARAMETER Flags
+Specify the ACE flags.
+.PARAMETER Policy
+Specify the ACE flags.
 .INPUTS
 None
 .OUTPUTS
@@ -7151,7 +7482,11 @@ function Set-NtSecurityDescriptorIntegrityLevel {
         [NtApiDotNet.Sid]$Sid,
         [Parameter(Position=1, Mandatory, ParameterSetName="FromLevel")]
         [NtApiDotNet.TokenIntegrityLevel]$IntegrityLevel,
+        [Parameter(ParameterSetName="FromLevel")]
+        [Parameter(ParameterSetName="FromSid")]
         [NtApiDotNet.AceFlags]$Flags = 0,
+        [Parameter(ParameterSetName="FromLevel")]
+        [Parameter(ParameterSetName="FromSid")]
         [NtApiDotNet.MandatoryLabelPolicy]$Policy = "NoWriteUp"
     )
 
