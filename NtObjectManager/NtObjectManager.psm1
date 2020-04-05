@@ -6665,11 +6665,31 @@ function Compare-NtObject {
 
 <#
 .SYNOPSIS
+Copies an security descriptor to a new one.
+.DESCRIPTION
+This cmdlet copies the details from a security descriptor into a new object so
+that it can be modified without affecting the other.
+.PARAMETER SecurityDescriptor
+The security descriptor to copy.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.SecurityDescriptor
+#>
+function Copy-NtSecurityDescriptor {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+    )
+    $SecurityDescriptor.Clone() | Write-Output
+}
+
+<#
+.SYNOPSIS
 Edits an existing security descriptor.
 .DESCRIPTION
-This cmdlet edits an existing security descriptor based on 
-a new security descriptor and additional information. Returns the 
-updated security descriptor but leaves the original alonge.
+This cmdlet edits an existing security descriptor in-place. This can be based on 
+a new security descriptor and additional information.
 .PARAMETER SecurityDescriptor
 The security descriptor to edit.
 .PARAMETER NewSecurityDescriptor
@@ -6683,34 +6703,69 @@ Specify optional auto inherit flags.
 .PARAMETER Type
 Specify the NT type to use for the update. Defaults to using the 
 type from $SecurityDescriptor.
+.PARAMETER MapGeneric
+Map generic access rights to specific access rights.
+.PARAMETER Clone
+Return a clone of the SD rather than modifying in place.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.SecurityDescriptor
+NtApiDotNet.SecurityDescriptor if Clone specified.
 #>
 function Edit-NtSecurityDescriptor {
     Param(
         [Parameter(Position=0, Mandatory)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
-        [Parameter(Position=1, Mandatory)]
+        [Parameter(Position=1, Mandatory, ParameterSetName = "ModifySd")]
         [NtApiDotNet.SecurityDescriptor]$NewSecurityDescriptor,
-        [Parameter(Position=2, Mandatory)]
+        [Parameter(Position=2, Mandatory, ParameterSetName = "ModifySd")]
         [NtApiDotNet.SecurityInformation]$SecurityInformation,
+        [Parameter(ParameterSetName = "ModifySd")]
         [NtApiDotNet.NtToken]$Token,
+        [Parameter(ParameterSetName = "ModifySd")]
         [NtApiDotNet.SecurityAutoInheritFlags]$Flags = 0,
-        [NtApiDotNet.NtType]$Type
+        [Parameter(ParameterSetName = "ModifySd")]
+        [NtApiDotNet.NtType]$Type,
+        [Parameter(ParameterSetName = "CanonicalizeSd")]
+        [switch]$CanonicalizeDacl,
+        [Parameter(ParameterSetName = "CanonicalizeSd")]
+        [switch]$CanonicalizeSacl,
+        [Parameter(ParameterSetName = "MapGenericSd")]
+        [switch]$MapGeneric,
+        [switch]$Clone
     )
 
-    if ($Type -eq $null) {
-        $Type = $SecurityDescriptor.NtType
+    if ($Clone) {
+        $SecurityDescriptor = Copy-NtSecurityDescriptor $SecurityDescriptor
+    }
+
+    if ($PSCmdlet.ParameterSetName -ne "CanonicalizeSd") {
         if ($Type -eq $null) {
-            Write-Warning "Original type not available, defaulting to File."
-            $Type = Get-NtType "File"
+            $Type = $SecurityDescriptor.NtType
+            if ($Type -eq $null) {
+                Write-Warning "Original type not available, defaulting to File."
+                $Type = Get-NtType "File"
+            }
         }
     }
 
-    $SecurityDescriptor.Modify($NewSecurityDescriptor, $SecurityInformation, `
-        $Flags, $Token, $Type.GenericMapping) | Write-Output
+    if ($PsCmdlet.ParameterSetName -eq "ModifySd") {
+        $SecurityDescriptor.Modify($NewSecurityDescriptor, $SecurityInformation, `
+            $Flags, $Token, $Type.GenericMapping)
+    } elseif($PsCmdlet.ParameterSetName -eq "CanonicalizeSd") {
+        if ($CanonicalizeDacl) {
+            $SecurityDescriptor.CanonicalizeDacl()
+        }
+        if ($CanonicalizeSacl) {
+            $SecurityDescriptor.CanonicalizeSacl()
+        }
+    } elseif($PsCmdlet.ParameterSetName -eq "MapGenericSd") {
+        $SecurityDescriptor.MapGenericAccess($Type)
+    }
+
+    if ($Clone) {
+        $SecurityDescriptor | Write-Output
+    }
 }
 
 <#
@@ -6761,6 +6816,43 @@ function Set-NtSecurityDescriptorOwner {
     }
 
     $SecurityDescriptor.Owner = [NtApiDotNet.SecurityDescriptorSid]::new($sid, $Defaulted)
+}
+
+<#
+.SYNOPSIS
+Test if the security descriptor's ACLs are canonical.
+.DESCRIPTION
+This cmdlet tests if the security descriptor's ACLs are canonical. You can specify either
+the DACL, SACL or both.
+.PARAMETER SecurityDescriptor
+The security descriptor to test.
+.PARAMETER Dacl
+Test the DACL.
+.PARAMETER Sacl
+Test the SACL.
+.INPUTS
+None
+.OUTPUTS
+Boolean or PSObject.
+#>
+function Test-NtSecurityDescriptor {
+    [CmdletBinding(DefaultParameterSetName="Both")]
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [Parameter(Mandatory, ParameterSetName="DaclOnly")]
+        [switch]$DaclCanonical,
+        [Parameter(Mandatory, ParameterSetName="SaclOnly")]
+        [switch]$Sacl
+    )
+    $obj = switch($PSCmdlet.ParameterSetName) {
+        "DaclOnly" { $SecurityDescriptor.IsDaclCanonical }
+        "SaclOnly" { $SecurityDescriptor.IsSaclCanonical }
+        "Both" {
+            $SecurityDescriptor | Select-Object IsDaclCanonical, IsSaclCanonical
+        }
+    }
+    Write-Output $obj
 }
 
 <#
