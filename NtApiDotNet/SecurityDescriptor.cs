@@ -567,16 +567,17 @@ namespace NtApiDotNet
         /// </summary>
         public Ace MandatoryLabel
         {
+            // TODO: Remove this fallback at some point.
             get => GetMandatoryLabel()
                     ?? new MandatoryLabelAce(AceFlags.None, MandatoryLabelPolicy.NoWriteUp,
                         TokenIntegrityLevel.Medium);
 
             set
             {
-                Ace label = GetMandatoryLabel();
-                if (label != null)
+                RemoveMandatoryLabel();
+                if (value == null)
                 {
-                    Sacl.Remove(label);
+                    return;
                 }
 
                 if (Sacl == null)
@@ -961,6 +962,18 @@ namespace NtApiDotNet
         public void AddMandatoryLabel(Sid label, AceFlags flags, MandatoryLabelPolicy policy)
         {
             MandatoryLabel = new Ace(AceType.MandatoryLabel, flags, policy, label);
+        }
+
+        /// <summary>
+        /// Removes the mandatory label if it exists.
+        /// </summary>
+        public void RemoveMandatoryLabel()
+        {
+            Ace label = GetMandatoryLabel();
+            if (label != null)
+            {
+                Sacl.Remove(label);
+            }
         }
 
         /// <summary>
