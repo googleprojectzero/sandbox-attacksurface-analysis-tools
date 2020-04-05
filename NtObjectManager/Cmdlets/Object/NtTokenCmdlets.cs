@@ -1345,6 +1345,14 @@ namespace NtObjectManager.Cmdlets.Object
         public object InputObject { get; set; }
 
         /// <summary>
+        /// Constructor.
+        /// </summary>
+        public InvokeNtTokenCmdlet()
+        {
+            ImpersonationLevel = SecurityImpersonationLevel.Impersonation;
+        }
+
+        /// <summary>
         /// Overridden ProcessRecord method.
         /// </summary>
         protected override void ProcessRecord()
