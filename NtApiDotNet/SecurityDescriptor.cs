@@ -501,6 +501,28 @@ namespace NtApiDotNet
             }
         }
 
+        private void MoveFrom(SecurityDescriptor sd, bool clone)
+        {
+            if (clone)
+            {
+                Dacl = sd.Dacl?.Clone();
+                Sacl = sd.Sacl?.Clone();
+                Owner = sd.Owner?.Clone();
+                Group = sd.Group?.Clone();
+            }
+            else
+            {
+                Dacl = sd.Dacl;
+                Sacl = sd.Sacl;
+                Owner = sd.Owner;
+                Group = sd.Group;
+            }
+            Control = sd.Control;
+            Revision = sd.Revision;
+            RmControl = sd.RmControl;
+            NtType = sd.NtType;
+        }
+
         #endregion
 
         #region Public Properties
@@ -528,7 +550,6 @@ namespace NtApiDotNet
             get => ComputeControl();
             set => UpdateControl(value);
         }
-
         /// <summary>
         /// Revision value
         /// </summary>
@@ -980,8 +1001,8 @@ namespace NtApiDotNet
         /// <param name="token">Optional token for the security descriptor.</param>
         /// <param name="generic_mapping">Generic mapping.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
-        /// <returns>The updated security descriptor.</returns>
-        public NtResult<SecurityDescriptor> Modify(
+        /// <returns>The NT status code.</returns>
+        public NtStatus Modify(
             SecurityDescriptor security_descriptor,
             SecurityInformation security_information,
             SecurityAutoInheritFlags flags,
@@ -1002,9 +1023,13 @@ namespace NtApiDotNet
                 IntPtr ptr = object_sd.DangerousGetHandle();
                 try
                 {
-                    return NtRtl.RtlSetSecurityObjectEx(security_information,
-                        modify_sd, ref ptr, flags, ref generic_mapping, token.GetHandle()).CreateResult(throw_on_error, 
-                        () => new SecurityDescriptor(ptr) { NtType = NtType });
+                    NtStatus status = NtRtl.RtlSetSecurityObjectEx(security_information,
+                        modify_sd, ref ptr, flags, ref generic_mapping, token.GetHandle());
+                    if (status.IsSuccess())
+                    {
+                        MoveFrom(new SecurityDescriptor(ptr) { NtType = NtType }, false);
+                    }
+                    return status.ToNtException(throw_on_error);
                 }
                 finally
                 {
@@ -1025,16 +1050,15 @@ namespace NtApiDotNet
         /// <param name="flags">Auto inherit flags.</param>
         /// <param name="token">Optional token for the security descriptor.</param>
         /// <param name="generic_mapping">Generic mapping.</param>
-        /// <returns>The updated security descriptor.</returns>
-        public SecurityDescriptor Modify(
+        public void Modify(
             SecurityDescriptor security_descriptor,
             SecurityInformation security_information,
             SecurityAutoInheritFlags flags,
             NtToken token,
             GenericMapping generic_mapping)
         {
-            return Modify(security_descriptor, security_information, 
-                flags, token, generic_mapping, true).Result;
+            Modify(security_descriptor, security_information, 
+                flags, token, generic_mapping, true);
         }
 
         /// <summary>
@@ -1055,6 +1079,17 @@ namespace NtApiDotNet
             if (Sacl == null || Sacl.NullAcl)
                 return;
             Sacl = Sacl.Canonicalize(false);
+        }
+
+        /// <summary>
+        /// Clone the security descriptor.
+        /// </summary>
+        /// <returns>The cloned security descriptor.</returns>
+        public SecurityDescriptor Clone()
+        {
+            SecurityDescriptor ret = new SecurityDescriptor();
+            ret.MoveFrom(this, true);
+            return ret;
         }
 
         /// <summary>
@@ -1231,7 +1266,6 @@ namespace NtApiDotNet
             }
             NtType = type;
         }
-
         #endregion
 
         #region Static Methods

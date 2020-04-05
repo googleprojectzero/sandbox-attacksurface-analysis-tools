@@ -53,6 +53,16 @@ namespace NtApiDotNet
         {
             return $"{Sid} - Defaulted: {Defaulted}";
         }
+
+        /// <summary>
+        /// Clone the security descriptor SID.
+        /// </summary>
+        /// <returns>The cloned SID.</returns>
+        public SecurityDescriptorSid Clone()
+        {
+            return new SecurityDescriptorSid(Sid, Defaulted);
+        }
+
         #endregion
     }
 }
