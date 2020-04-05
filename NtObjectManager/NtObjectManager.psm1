@@ -6665,7 +6665,7 @@ function Compare-NtObject {
 
 <#
 .SYNOPSIS
-Copies an security descriptor to a new one.
+Copies a security descriptor to a new one.
 .DESCRIPTION
 This cmdlet copies the details from a security descriptor into a new object so
 that it can be modified without affecting the other.
@@ -6678,7 +6678,7 @@ NtApiDotNet.SecurityDescriptor
 #>
 function Copy-NtSecurityDescriptor {
     Param(
-        [Parameter(Position=0, Mandatory)]
+        [Parameter(Position=0, Mandatory, ValueFromPipeline)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
     )
     $SecurityDescriptor.Clone() | Write-Output
@@ -6705,16 +6705,25 @@ Specify the NT type to use for the update. Defaults to using the
 type from $SecurityDescriptor.
 .PARAMETER MapGeneric
 Map generic access rights to specific access rights.
-.PARAMETER Clone
-Return a clone of the SD rather than modifying in place.
+.PARAMETER PassThru
+Passthrough the security descriptor.
 .INPUTS
 None
 .OUTPUTS
-NtApiDotNet.SecurityDescriptor if Clone specified.
+NtApiDotNet.SecurityDescriptor
+.EXAMPLE 
+Edit-NtSecurityDescriptor $sd -CanonicalizeDacl
+Canonicalize the security descriptor's DACL.
+.EXAMPLE 
+Edit-NtSecurityDescriptor $sd -MapGenericAccess
+Map the security descriptor's generic access to type specific access.
+.EXAMPLE 
+Copy-NtSecurityDescriptor $sd | Edit-NtSecurityDescriptor -MapGenericAccess -PassThru
+Make a copy of a security descriptor and edit the copy.
 #>
 function Edit-NtSecurityDescriptor {
     Param(
-        [Parameter(Position=0, Mandatory)]
+        [Parameter(Position=0, Mandatory, ValueFromPipeline)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
         [Parameter(Position=1, Mandatory, ParameterSetName = "ModifySd")]
         [NtApiDotNet.SecurityDescriptor]$NewSecurityDescriptor,
@@ -6732,12 +6741,8 @@ function Edit-NtSecurityDescriptor {
         [switch]$CanonicalizeSacl,
         [Parameter(ParameterSetName = "MapGenericSd")]
         [switch]$MapGeneric,
-        [switch]$Clone
+        [switch]$PassThru
     )
-
-    if ($Clone) {
-        $SecurityDescriptor = Copy-NtSecurityDescriptor $SecurityDescriptor
-    }
 
     if ($PSCmdlet.ParameterSetName -ne "CanonicalizeSd") {
         if ($Type -eq $null) {
@@ -6763,7 +6768,7 @@ function Edit-NtSecurityDescriptor {
         $SecurityDescriptor.MapGenericAccess($Type)
     }
 
-    if ($Clone) {
+    if ($PassThru) {
         $SecurityDescriptor | Write-Output
     }
 }
