@@ -43,6 +43,11 @@ namespace NtApiDotNet
         public Luid Luid { get; }
 
         /// <summary>
+        /// Get the token privilege value enum.
+        /// </summary>
+        public TokenPrivilegeValue Value => (TokenPrivilegeValue)Luid.LowPart;
+
+        /// <summary>
         /// Get the name of the privilege
         /// </summary>
         /// <returns>The privilege name</returns>
