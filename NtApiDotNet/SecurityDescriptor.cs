@@ -666,12 +666,32 @@ namespace NtApiDotNet
         /// <summary>
         /// Indicates if the SD's DACL is canonical.
         /// </summary>
-        public bool IsDaclCanonical => Dacl?.IsCanonical(true) ?? true;
+        public bool DaclCanonical => Dacl?.IsCanonical(true) ?? true;
 
         /// <summary>
         /// Indicates if the SD's SACL is canonical.
         /// </summary>
-        public bool IsSaclCanonical => Sacl?.IsCanonical(false) ?? true;
+        public bool SaclCanonical => Sacl?.IsCanonical(false) ?? true;
+
+        /// <summary>
+        /// Indicates if the SD's DACL is defaulted.
+        /// </summary>
+        public bool DaclDefaulted => Dacl?.Defaulted ?? false;
+
+        /// <summary>
+        /// Indicates if the SD's SACL is defaulted.
+        /// </summary>
+        public bool SaclDefaulted => Sacl?.Defaulted ?? false;
+
+        /// <summary>
+        /// Indicates if the SD's DACL is auto-inherited.
+        /// </summary>
+        public bool DaclAutoInherited => Dacl?.AutoInherited ?? false;
+
+        /// <summary>
+        /// Indicates if the SD's SACL is auto-inherited.
+        /// </summary>
+        public bool SaclAutoInherited => Sacl?.AutoInherited ?? false;
 
         /// <summary>
         /// Indicates if the SD came from a container.
