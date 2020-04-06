@@ -159,7 +159,7 @@ function Set-NtTokenPrivilege
 Get the state of a token's privileges.
 .DESCRIPTION
 This cmdlet will get the state of a token's privileges.
-.PARAMETER Privileges
+.PARAMETER Privilege
 A list of privileges to get their state.
 .PARAMETER Token
 Optional token object to use to get privileges. Must be accesible for Query right.
@@ -174,10 +174,10 @@ Get all privileges on the current process token.
 Get-NtTokenPrivilege -Token $token
 Get all privileges on an explicit  token.
 .EXAMPLE
-Get-NtTokenPrivilege -Privileges SeDebugPrivilege 
+Get-NtTokenPrivilege -Privilege SeDebugPrivilege 
 Get state of SeDebugPrivilege on the current process token
 .EXAMPLE
-Get-NtTokenPrivilege -Privileges SeBackupPrivilege, SeRestorePrivilege -Token $token
+Get-NtTokenPrivilege -Privilege SeBackupPrivilege, SeRestorePrivilege -Token $token
 Get SeBackupPrivilege and SeRestorePrivilege status on an explicit token object.
 #>
 function Get-NtTokenPrivilege
@@ -185,7 +185,8 @@ function Get-NtTokenPrivilege
   Param(
     [Parameter(Position=0, ValueFromPipeline)]
     [NtApiDotNet.NtToken]$Token,
-    [NtApiDotNet.TokenPrivilegeValue[]]$Privileges
+    [alias("Privileges")]
+    [NtApiDotNet.TokenPrivilegeValue[]]$Privilege
   )
   if ($null -eq $Token) {
     $Token = Get-NtToken -Primary -Access Query
@@ -194,8 +195,8 @@ function Get-NtTokenPrivilege
   }
 
   Use-NtObject($Token) {
-    if ($Privileges -ne $null -and $Privileges.Count -gt 0) {
-        foreach($priv in $Privileges) {
+    if ($Privilege -ne $null -and $Privilege.Count -gt 0) {
+        foreach($priv in $Privilege) {
             $val = $Token.GetPrivilege($priv)
             if ($val -ne $null) {
                 $val | Write-Output
