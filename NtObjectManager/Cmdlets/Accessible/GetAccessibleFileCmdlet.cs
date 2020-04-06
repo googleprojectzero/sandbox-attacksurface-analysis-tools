@@ -83,12 +83,12 @@ namespace NtObjectManager.Cmdlets.Accessible
         [Parameter]
         public FileCheckMode CheckMode { get; set; }
 
-        private static NtResult<NtFile> OpenFile(string name, NtFile root, FileOpenOptions options)
+        private NtResult<NtFile> OpenFile(string name, NtFile root, FileOpenOptions options)
         {
             using (ObjectAttributes obja = new ObjectAttributes(name,
                 AttributeFlags.CaseInsensitive, root))
             {
-                var result = NtFile.Open(obja, FileAccessRights.Synchronize | FileAccessRights.ReadAttributes | FileAccessRights.ReadControl,
+                var result = NtFile.Open(obja, GetMaximumAccess(FileAccessRights.Synchronize | FileAccessRights.ReadAttributes | FileAccessRights.ReadControl),
                     FileShareMode.Read | FileShareMode.Delete, options | FileOpenOptions.SynchronousIoNonAlert, false);
                 if (result.IsSuccess || result.Status != NtStatus.STATUS_ACCESS_DENIED)
                 {
@@ -169,8 +169,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                 }
             }
             AccessMask desired_access = directory ? dir_access_rights : access_rights;
-
-            var result = file.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
+            var result = GetSecurityDescriptor(file);
             if (result.IsSuccess)
             {
                 foreach (var token in tokens)
@@ -180,7 +179,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             }
             else
             {
-                // If we can't read security descriptor then try opening the key.
+                // If we can't read security descriptor then try opening under impersonation.
                 foreach (var token in tokens)
                 {
                     CheckAccessUnderImpersonation(token, desired_access, file);
@@ -196,8 +195,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                 return;
             }
 
-            var parent_sd = file.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
-
+            var parent_sd = GetSecurityDescriptor(file);
             if (Recurse)
             {
                 using (var result = file.ReOpen(FileAccessRights.Synchronize | FileAccessRights.ReadData | FileAccessRights.ReadAttributes, 

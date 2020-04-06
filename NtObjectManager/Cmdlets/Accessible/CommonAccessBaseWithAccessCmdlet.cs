@@ -104,5 +104,17 @@ namespace NtObjectManager.Cmdlets.Accessible
             }
             return GetSecurityDescriptor(obj);
         }
+
+        private protected A GetMaximumAccess(A access)
+        {
+            if (!HasSecurityPrivilege())
+            {
+                return access;
+            }
+
+            AccessMask mask = access;
+            mask |= GenericAccessRights.AccessSystemSecurity;
+            return mask.ToSpecificAccess<A>();
+        }
     }
 }
