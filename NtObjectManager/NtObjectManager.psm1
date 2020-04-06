@@ -6843,38 +6843,65 @@ function Set-NtSecurityDescriptorOwner {
 
 <#
 .SYNOPSIS
-Test if the security descriptor's ACLs are canonical.
+Test various properties of the security descriptor..
 .DESCRIPTION
-This cmdlet tests if the security descriptor's ACLs are canonical. You can specify either
-the DACL, SACL. The default is to check both ACLs.
+This cmdlet tests various properties of the security descriptor. The default is
+to check if the DACL is present.
 .PARAMETER SecurityDescriptor
 The security descriptor to test.
-.PARAMETER Dacl
-Test the DACL.
-.PARAMETER Sacl
-Test the SACL.
+.PARAMETER DaclPresent
+Test if the DACL is present.
+.PARAMETER SaclPresent
+Test if the SACL is present.
+.PARAMETER DaclCanonical
+Test if the DACL is canonical.
+.PARAMETER SaclCanonical
+Test if the SACL is canonical.
+.PARAMETER DaclDefaulted
+Test if the DACL is defaulted.
+.PARAMETER DaclAutoInherited
+Test if the DACL is auto-inherited.
+.PARAMETER SaclDefaulted
+Test if the DACL is defaulted.
+.PARAMETER SaclAutoInherited
+Test if the DACL is auto-inherited.
 .INPUTS
 None
 .OUTPUTS
 Boolean or PSObject.
 #>
 function Test-NtSecurityDescriptor {
-    [CmdletBinding(DefaultParameterSetName="Both")]
+    [CmdletBinding(DefaultParameterSetName="DaclPresent")]
     Param(
         [Parameter(Position=0, Mandatory)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
-        [Parameter(Mandatory, ParameterSetName="DaclOnly")]
+        [Parameter(ParameterSetName="DaclPresent")]
+        [switch]$DaclPresent,
+        [Parameter(Mandatory, ParameterSetName="SaclPresent")]
+        [switch]$SaclPresent,
+        [Parameter(Mandatory, ParameterSetName="DaclCanonical")]
         [switch]$DaclCanonical,
-        [Parameter(Mandatory, ParameterSetName="SaclOnly")]
-        [switch]$SaclCanonical
+        [Parameter(Mandatory, ParameterSetName="SaclCanonical")]
+        [switch]$SaclCanonical,
+        [Parameter(Mandatory, ParameterSetName="DaclDefaulted")]
+        [switch]$DaclDefaulted,
+        [Parameter(Mandatory, ParameterSetName="DaclAutoInherited")]
+        [switch]$DaclAutoInherited,
+        [Parameter(Mandatory, ParameterSetName="SaclDefaulted")]
+        [switch]$SaclDefaulted,
+        [Parameter(Mandatory, ParameterSetName="SaclAutoInherited")]
+        [switch]$SaclAutoInherited
     )
 
     $obj = switch($PSCmdlet.ParameterSetName) {
-        "DaclOnly" { $SecurityDescriptor.IsDaclCanonical }
-        "SaclOnly" { $SecurityDescriptor.IsSaclCanonical }
-        "Both" {
-            $SecurityDescriptor | Select-Object IsDaclCanonical, IsSaclCanonical
-        }
+        "DaclPresent" { $SecurityDescriptor.DaclPresent }
+        "SaclPresent" { $SecurityDescriptor.SaclPresent }
+        "DaclCanonical" { $SecurityDescriptor.DaclCanonical }
+        "SaclCanonical" { $SecurityDescriptor.SaclCanonical }
+        "DaclDefaulted" { $SecurityDescriptor.DaclDefaulted }
+        "SaclDefaulted" { $SecurityDescriptor.SaclDefaulted }
+        "DaclAutoInherited" { $SecurityDescriptor.DaclAutoInherited }
+        "SaclAutoInherited" { $SecurityDescriptor.SaclAutoInherited }
     }
     Write-Output $obj
 }
