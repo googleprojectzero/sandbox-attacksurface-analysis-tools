@@ -294,7 +294,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                 {
                     if (result.IsSuccess)
                     {
-                        FindDevicesInDirectory(result.Result, devices, MaxDepth.HasValue ? MaxDepth.Value : int.MaxValue);
+                        FindDevicesInDirectory(result.Result, devices, MaxDepth ?? int.MaxValue);
                     }
                     else
                     {
