@@ -1173,6 +1173,12 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter]
         public SwitchParameter PassThru { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify a raw access mask.</para>
+        /// </summary>
+        [Parameter]
+        public AccessMask? RawAccess { get; set; }
+
         private Sid GetSid()
         {
             switch (ParameterSetName)
@@ -1195,7 +1201,14 @@ namespace NtObjectManager.Cmdlets.Object
         {
             if (!_dict.GetValue("Access", out Enum access))
             {
-                throw new ArgumentException("Invalid access value.");
+                if (!RawAccess.HasValue)
+                {
+                    throw new ArgumentException("Invalid access value.");
+                }
+                else
+                {
+                    access = GenericAccessRights.None;
+                }
             }
 
             _dict.GetValue("Condition", out string condition);
@@ -1223,7 +1236,13 @@ namespace NtObjectManager.Cmdlets.Object
                 acl = SecurityDescriptor.Dacl;
             }
 
-            Ace ace = new Ace(Type, Flags, access, GetSid());
+            AccessMask mask = access;
+            if (RawAccess.HasValue)
+            {
+                mask |= RawAccess.Value;
+            }
+
+            Ace ace = new Ace(Type, Flags, mask, GetSid());
             if ((NtSecurity.IsCallbackAceType(Type) || Type == AceType.AccessFilter) && !string.IsNullOrWhiteSpace(condition))
             {
                 ace.Condition = condition;
@@ -1251,7 +1270,7 @@ namespace NtObjectManager.Cmdlets.Object
 
         object IDynamicParameters.GetDynamicParameters()
         {
-            bool access_mandatory = true;
+            bool access_mandatory = !RawAccess.HasValue;
             _dict = new RuntimeDefinedParameterDictionary();
             if (NtSecurity.IsCallbackAceType(Type) || Type == AceType.AccessFilter)
             {
