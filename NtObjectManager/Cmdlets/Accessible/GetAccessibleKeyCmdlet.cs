@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using NtApiDotNet;
-using System;
 using System.Collections.Generic;
 using System.Management.Automation;
 
@@ -53,9 +52,8 @@ namespace NtObjectManager.Cmdlets.Accessible
     [OutputType(typeof(CommonAccessCheckResult))]
     public class GetAccessibleKeyCmdlet : GetAccessiblePathCmdlet<KeyAccessRights>
     {
-        private static NtResult<NtKey> OpenKey(string name, NtObject root, bool open_link, bool open_for_backup)
+        private NtResult<NtKey> OpenKey(string name, NtObject root, bool open_link, bool open_for_backup)
         {
-        
             AttributeFlags flags = AttributeFlags.CaseInsensitive;
             if (open_link)
             {
@@ -65,7 +63,8 @@ namespace NtObjectManager.Cmdlets.Accessible
             using (ObjectAttributes obja = new ObjectAttributes(name,
                 flags, root))
             {
-                return NtKey.Open(obja, KeyAccessRights.MaximumAllowed, open_for_backup ? KeyCreateOptions.BackupRestore : KeyCreateOptions.NonVolatile, false);
+                return NtKey.Open(obja, GetMaximumAccess(KeyAccessRights.MaximumAllowed),
+                    open_for_backup ? KeyCreateOptions.BackupRestore : KeyCreateOptions.NonVolatile, false);
             }
         }
 
@@ -98,12 +97,12 @@ namespace NtObjectManager.Cmdlets.Accessible
 
         private void DumpKey(IEnumerable<TokenEntry> tokens, AccessMask access_rights, bool open_for_backup, NtKey key, int current_depth)
         {
-            if (key.IsAccessGranted(KeyAccessRights.ReadControl))
+            var sd = GetSecurityDescriptor(key);
+            if (sd.IsSuccess)
             {
-                SecurityDescriptor sd = key.SecurityDescriptor;
                 foreach (var token in tokens)
                 {
-                    CheckAccess(token, key, access_rights, sd);
+                    CheckAccess(token, key, access_rights, sd.Result);
                 }
             }
             else
@@ -120,7 +119,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                 return;
             }
 
-            // Can never recure predefined key handles so just ignore them.
+            // Can never recurse predefined key handles so just ignore them.
             if (Recurse && key.IsAccessGranted(KeyAccessRights.EnumerateSubKeys) && !key.PredefinedHandle)
             {
                 foreach (string subkey in key.QueryKeys())
