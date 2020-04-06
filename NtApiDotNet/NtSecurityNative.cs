@@ -692,7 +692,7 @@ namespace NtApiDotNet
              SafeBuffer ParentDescriptor,
              SafeBuffer CreatorDescriptor,
              out SafeProcessHeapBuffer NewDescriptor,
-             [MarshalAs(UnmanagedType.LPArray), Out] Guid[] ObjectTypes,
+             SafeBuffer ObjectTypes, // GUID**
              int GuidCount,
              [MarshalAs(UnmanagedType.U1)] bool IsDirectoryObject,
              SecurityAutoInheritFlags AutoInheritFlags,
