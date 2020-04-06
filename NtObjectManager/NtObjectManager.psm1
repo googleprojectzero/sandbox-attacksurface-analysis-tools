@@ -1928,6 +1928,14 @@ function Format-NtAce {
             if ($ace.IsResourceAttributeAce) {
                 $cond = "($($ace.ResourceAttribute.ToSddl()))"
             }
+            if ($ace.IsObjectAce) {
+                if ($ace.ObjectType -ne $null) {
+                    $cond += "(OBJ:$($ace.ObjectType))"
+                }
+                if ($ace.InheritedObjectType -ne $null) {
+                    $cond += "(IOBJ:$($ace.InheritedObjectType))"
+                }
+            }
             Write-Output "$($ace.Sid.Name): ($($ace.Type))($($ace.Flags))($mask_str)$cond"
         } else {
             Write-Output " - Type  : $($ace.Type)"
