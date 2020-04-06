@@ -986,7 +986,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify optional object types for the new security descriptor.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromToken")]
-        public Guid[] ObjectTypes { get; set; }
+        public Guid[] ObjectType { get; set; }
 
         /// <summary>
         /// <para type="description">Specify auto-inherit flags for new security descriptor.</para>
@@ -1040,7 +1040,8 @@ namespace NtObjectManager.Cmdlets.Object
                             {
                                 Token = list.AddResource(NtToken.OpenEffectiveToken());
                             }
-                            sd = SecurityDescriptor.Create(Parent, Creator, Container, AutoInherit, Token, Type.GenericMapping);
+                            sd = SecurityDescriptor.Create(Parent, Creator, ObjectType, 
+                                Container, AutoInherit, Token, Type.GenericMapping);
                         }
                     }
                     break;
