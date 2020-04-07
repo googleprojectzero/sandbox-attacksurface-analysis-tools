@@ -98,10 +98,10 @@ namespace NtApiDotNet.Forms
             AddAclTab(tabPageSACL, aclViewerControlSacl, security_descriptor.Sacl, access_type, mapping, valid_access, is_container);
             SetSidLabel(lblOwnerValue, security_descriptor.Owner);
             SetSidLabel(lblGroupValue, security_descriptor.Group);
-            if (security_descriptor.Sacl != null && !security_descriptor.Sacl.NullAcl 
-                && security_descriptor.Sacl.Where(a => a.Type == AceType.MandatoryLabel).Count() > 0)
+            Ace label = security_descriptor.GetMandatoryLabel();
+            if (label != null)
             {
-                lblIntegrityValue.Text = security_descriptor.IntegrityLevel.ToString();
+                lblIntegrityValue.Text = $"{security_descriptor.IntegrityLevel} ({label.Mask.ToMandatoryLabelPolicy()})";
             }
             else
             {
