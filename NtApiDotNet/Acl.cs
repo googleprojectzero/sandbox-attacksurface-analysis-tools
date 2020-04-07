@@ -259,7 +259,8 @@ namespace NtApiDotNet
         /// <returns>True if the ACL is canonical.</returns>
         public bool IsCanonical(bool dacl)
         {
-            Acl acl = Canonicalize(dacl);
+            Acl acl = Clone();
+            acl.Canonicalize(dacl);
             if (acl.Count != Count)
             {
                 return false;
@@ -290,11 +291,12 @@ namespace NtApiDotNet
         /// Canonicalize the ACL.
         /// </summary>
         /// <param name="dacl">True to canonicalize a DACL, otherwise a SACL.</param>
-        /// <returns>The canonical ACL.</returns>
-        public Acl Canonicalize(bool dacl)
+        public void Canonicalize(bool dacl)
         {
             var aces = dacl ? this.Select(GetDaclCanonicalLevel) : this.Select(GetSaclCanonicalLevel);
-            return new Acl(aces.OrderBy(t => t.Item1).Select(t => t.Item2));
+            Ace[] ace_array = aces.OrderBy(t => t.Item1).Select(t => t.Item2).ToArray();
+            Clear();
+            AddRange(ace_array);
         }
 
         /// <summary>
@@ -304,7 +306,9 @@ namespace NtApiDotNet
         [Obsolete("Use Canonicalize with flag")]
         public Acl Canonicalize()
         {
-            return Canonicalize(true);
+            Acl acl = Clone();
+            acl.Canonicalize(true);
+            return acl;
         }
 
         /// <summary>

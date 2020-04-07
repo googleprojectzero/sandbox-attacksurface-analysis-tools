@@ -1112,7 +1112,7 @@ namespace NtApiDotNet
         {
             if (Dacl == null || Dacl.NullAcl)
                 return;
-            Dacl = Dacl.Canonicalize(true);
+            Dacl.Canonicalize(true);
         }
 
         /// <summary>
@@ -1122,7 +1122,7 @@ namespace NtApiDotNet
         {
             if (Sacl == null || Sacl.NullAcl)
                 return;
-            Sacl = Sacl.Canonicalize(false);
+            Sacl.Canonicalize(false);
         }
 
         /// <summary>
