@@ -101,7 +101,7 @@ namespace NtApiDotNet.Forms
 
             if (flags.Count > 0)
             {
-                lblFlags.Text = $"Flags: ({string.Join(", ", flags)})";
+                lblFlags.Text = $"Flags: {string.Join(", ", flags)}";
             }
             else
             {
