@@ -331,6 +331,7 @@
     <Compile Include="Win32\Security\ClientAuthenticationContext.cs" />
     <Compile Include="Win32\Security\CredentialHandle.cs" />
     <Compile Include="Win32\Security\AuthenticationCredentials.cs" />
+    <Compile Include="Win32\Security\Win32Security.cs" />
     <Compile Include="Win32\Security\SecurityNativeMethods.cs" />
     <Compile Include="Win32\Security\AuthenticationPackage.cs" />
     <Compile Include="Win32\Security\ServerAuthenticationContext.cs" />

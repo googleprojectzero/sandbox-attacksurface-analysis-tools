@@ -14,6 +14,7 @@
 
 using NtApiDotNet.Ndr;
 using NtApiDotNet.Win32.Debugger;
+using NtApiDotNet.Win32.Security;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -1151,6 +1152,28 @@ namespace NtApiDotNet.Win32
           int cb
         );
 
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error SetSecurityInfo(
+            SafeHandle handle,
+            SeObjectType ObjectType,
+            SecurityInformation SecurityInfo,
+            byte[] psidOwner,
+            byte[] psidGroup,
+            byte[] pDacl,
+            byte[] pSacl
+        );
+
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error SetNamedSecurityInfo(
+            string pObjectName,
+            SeObjectType ObjectType,
+            SecurityInformation SecurityInfo,
+            byte[] psidOwner,
+            byte[] psidGroup,
+            byte[] pDacl,
+            byte[] pSacl
+        );
     }
 #pragma warning restore 1591
 }

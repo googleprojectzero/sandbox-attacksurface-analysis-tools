@@ -7656,3 +7656,55 @@ function New-NtUserGroup {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Sets a security descriptor using the Win32 APIs.
+.DESCRIPTION
+This cmdlet sets the security descriptor on an object using the Win32 SetSecurityInfo APIs.
+.PARAMETER Name
+The name of the object.
+.PARAMETER Object
+Handle to an object.
+.PARAMETER Handle
+Handle to an object.
+.PARAMETER Type
+The type of object.
+.PARAMETER SecurityDescriptor
+The security descriptor to set.
+.PARAMETER SecurityInformation
+Specify the security information to set.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Set-Win32SecurityDescriptor {
+    [CmdletBinding(DefaultParameterSetName="FromName")]
+    Param(
+        [Parameter(Position=0, Mandatory, ParameterSetName="FromName")]
+        [string]$Name,
+        [Parameter(Position=0, Mandatory, ParameterSetName="FromObject")]
+        [NtApiDotNet.NtObject]$Object,
+        [Parameter(Position=0, Mandatory, ParameterSetName="FromHandle")]
+        [System.Runtime.InteropServices.SafeHandle]$Handle,
+        [Parameter(Position=1, Mandatory)]
+        [NtApiDotNet.Win32.Security.SeObjectType]$Type,
+        [Parameter(Position=2, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [Parameter(Position=3, Mandatory)]
+        [NtApiDotNet.SecurityInformation]$SecurityInformation
+    )
+
+    switch($PSCmdlet.ParameterSetName) {
+        "FromName" {
+            [NtApiDotNet.Win32.Security.Win32Security]::SetSecurityInfo($Name, $Type, $SecurityInformation, $SecurityDescriptor)
+        }
+        "FromObject" {
+            [NtApiDotNet.Win32.Security.Win32Security]::SetSecurityInfo($Object, $Type, $SecurityInformation, $SecurityDescriptor)
+        }
+        "FromHandle" {
+            [NtApiDotNet.Win32.Security.Win32Security]::SetSecurityInfo($Handle, $Type, $SecurityInformation, $SecurityDescriptor)
+        }
+    }
+}
