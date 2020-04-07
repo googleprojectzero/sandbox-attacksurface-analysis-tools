@@ -18,7 +18,6 @@
 // project.
 
 using System;
-using System.Linq;
 using System.Windows.Forms;
 
 namespace NtApiDotNet.Forms
@@ -36,15 +35,7 @@ namespace NtApiDotNet.Forms
             }
             else
             {
-                if (acl.NullAcl)
-                {
-                    tab_page.Controls.Remove(control);
-                    tab_page.Controls.Add(new Label() { Text = "NULL ACL", Dock = DockStyle.Fill });
-                }
-                else
-                {
-                    control.SetAcl(acl, access_type, mapping, valid_access, is_container);
-                }
+                control.SetAcl(acl, access_type, mapping, valid_access, is_container);
             }
         }
 
@@ -56,6 +47,10 @@ namespace NtApiDotNet.Forms
             }
             else
             {
+                if (sid.Defaulted)
+                {
+                    label.Text = $"{sid.Sid.Name} (Defaulted)";
+                }
                 label.Text = sid.Sid.Name;
             }
         }
@@ -101,7 +96,7 @@ namespace NtApiDotNet.Forms
             Ace label = security_descriptor.GetMandatoryLabel();
             if (label != null)
             {
-                lblIntegrityValue.Text = $"{security_descriptor.IntegrityLevel} ({label.Mask.ToMandatoryLabelPolicy()})";
+                lblIntegrityValue.Text = $"{NtSecurity.GetIntegrityLevel(label.Sid)} ({label.Mask.ToMandatoryLabelPolicy()})";
             }
             else
             {

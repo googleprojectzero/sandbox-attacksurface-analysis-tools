@@ -32,11 +32,10 @@
             System.Windows.Forms.ColumnHeader columnHeaderType;
             System.Windows.Forms.ColumnHeader columnHeaderAccount;
             System.Windows.Forms.ColumnHeader columnHeaderAccess;
-            System.Windows.Forms.GroupBox groupBoxAclEntries;
             System.Windows.Forms.ColumnHeader columnHeaderFlags;
-            System.Windows.Forms.GroupBox groupBoxAccess;
             System.Windows.Forms.ColumnHeader columnHeaderName;
             System.Windows.Forms.ColumnHeader columnHeaderAccessMask;
+            this.groupBoxAclEntries = new System.Windows.Forms.GroupBox();
             this.listViewAcl = new System.Windows.Forms.ListView();
             this.columnHeaderCondition = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeaderObject = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -46,19 +45,19 @@
             this.copyAccountToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.copyConditionToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.copyACESDDLToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.groupBoxAccess = new System.Windows.Forms.GroupBox();
             this.listViewAccess = new System.Windows.Forms.ListView();
             this.tableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
+            this.lblFlags = new System.Windows.Forms.Label();
             columnHeaderType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeaderAccount = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeaderAccess = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            groupBoxAclEntries = new System.Windows.Forms.GroupBox();
             columnHeaderFlags = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            groupBoxAccess = new System.Windows.Forms.GroupBox();
             columnHeaderName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             columnHeaderAccessMask = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            groupBoxAclEntries.SuspendLayout();
+            this.groupBoxAclEntries.SuspendLayout();
             this.contextMenuStripAcl.SuspendLayout();
-            groupBoxAccess.SuspendLayout();
+            this.groupBoxAccess.SuspendLayout();
             this.tableLayoutPanel.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -76,18 +75,18 @@
             // 
             // groupBoxAclEntries
             // 
-            groupBoxAclEntries.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.groupBoxAclEntries.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            groupBoxAclEntries.Controls.Add(this.listViewAcl);
-            groupBoxAclEntries.Location = new System.Drawing.Point(2, 2);
-            groupBoxAclEntries.Margin = new System.Windows.Forms.Padding(2);
-            groupBoxAclEntries.Name = "groupBoxAclEntries";
-            groupBoxAclEntries.Padding = new System.Windows.Forms.Padding(2);
-            groupBoxAclEntries.Size = new System.Drawing.Size(342, 201);
-            groupBoxAclEntries.TabIndex = 1;
-            groupBoxAclEntries.TabStop = false;
-            groupBoxAclEntries.Text = "ACL Entries";
+            this.groupBoxAclEntries.Controls.Add(this.listViewAcl);
+            this.groupBoxAclEntries.Location = new System.Drawing.Point(2, 15);
+            this.groupBoxAclEntries.Margin = new System.Windows.Forms.Padding(2);
+            this.groupBoxAclEntries.Name = "groupBoxAclEntries";
+            this.groupBoxAclEntries.Padding = new System.Windows.Forms.Padding(2);
+            this.groupBoxAclEntries.Size = new System.Drawing.Size(342, 195);
+            this.groupBoxAclEntries.TabIndex = 1;
+            this.groupBoxAclEntries.TabStop = false;
+            this.groupBoxAclEntries.Text = "ACL Entries";
             // 
             // listViewAcl
             // 
@@ -110,7 +109,7 @@
             this.listViewAcl.Margin = new System.Windows.Forms.Padding(2);
             this.listViewAcl.MultiSelect = false;
             this.listViewAcl.Name = "listViewAcl";
-            this.listViewAcl.Size = new System.Drawing.Size(334, 180);
+            this.listViewAcl.Size = new System.Drawing.Size(334, 174);
             this.listViewAcl.TabIndex = 0;
             this.listViewAcl.UseCompatibleStateImageBehavior = false;
             this.listViewAcl.View = System.Windows.Forms.View.Details;
@@ -174,18 +173,18 @@
             // 
             // groupBoxAccess
             // 
-            groupBoxAccess.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.groupBoxAccess.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            groupBoxAccess.Controls.Add(this.listViewAccess);
-            groupBoxAccess.Location = new System.Drawing.Point(2, 207);
-            groupBoxAccess.Margin = new System.Windows.Forms.Padding(2);
-            groupBoxAccess.Name = "groupBoxAccess";
-            groupBoxAccess.Padding = new System.Windows.Forms.Padding(2);
-            groupBoxAccess.Size = new System.Drawing.Size(342, 202);
-            groupBoxAccess.TabIndex = 2;
-            groupBoxAccess.TabStop = false;
-            groupBoxAccess.Text = "Specific Access";
+            this.groupBoxAccess.Controls.Add(this.listViewAccess);
+            this.groupBoxAccess.Location = new System.Drawing.Point(2, 214);
+            this.groupBoxAccess.Margin = new System.Windows.Forms.Padding(2);
+            this.groupBoxAccess.Name = "groupBoxAccess";
+            this.groupBoxAccess.Padding = new System.Windows.Forms.Padding(2);
+            this.groupBoxAccess.Size = new System.Drawing.Size(342, 195);
+            this.groupBoxAccess.TabIndex = 2;
+            this.groupBoxAccess.TabStop = false;
+            this.groupBoxAccess.Text = "Specific Access";
             // 
             // listViewAccess
             // 
@@ -203,7 +202,7 @@
             this.listViewAccess.Margin = new System.Windows.Forms.Padding(2);
             this.listViewAccess.MultiSelect = false;
             this.listViewAccess.Name = "listViewAccess";
-            this.listViewAccess.Size = new System.Drawing.Size(334, 181);
+            this.listViewAccess.Size = new System.Drawing.Size(334, 174);
             this.listViewAccess.TabIndex = 0;
             this.listViewAccess.UseCompatibleStateImageBehavior = false;
             this.listViewAccess.View = System.Windows.Forms.View.Details;
@@ -221,17 +220,28 @@
             // 
             this.tableLayoutPanel.ColumnCount = 1;
             this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel.Controls.Add(groupBoxAclEntries, 0, 0);
-            this.tableLayoutPanel.Controls.Add(groupBoxAccess, 0, 1);
+            this.tableLayoutPanel.Controls.Add(this.groupBoxAclEntries, 0, 1);
+            this.tableLayoutPanel.Controls.Add(this.groupBoxAccess, 0, 2);
+            this.tableLayoutPanel.Controls.Add(this.lblFlags, 0, 0);
             this.tableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel.Margin = new System.Windows.Forms.Padding(2);
             this.tableLayoutPanel.Name = "tableLayoutPanel";
-            this.tableLayoutPanel.RowCount = 2;
+            this.tableLayoutPanel.RowCount = 3;
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel.Size = new System.Drawing.Size(346, 411);
             this.tableLayoutPanel.TabIndex = 1;
+            // 
+            // lblFlags
+            // 
+            this.lblFlags.AutoSize = true;
+            this.lblFlags.Location = new System.Drawing.Point(3, 0);
+            this.lblFlags.Name = "lblFlags";
+            this.lblFlags.Size = new System.Drawing.Size(38, 13);
+            this.lblFlags.TabIndex = 3;
+            this.lblFlags.Text = "Flags: ";
             // 
             // AclViewerControl
             // 
@@ -241,10 +251,11 @@
             this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "AclViewerControl";
             this.Size = new System.Drawing.Size(346, 411);
-            groupBoxAclEntries.ResumeLayout(false);
+            this.groupBoxAclEntries.ResumeLayout(false);
             this.contextMenuStripAcl.ResumeLayout(false);
-            groupBoxAccess.ResumeLayout(false);
+            this.groupBoxAccess.ResumeLayout(false);
             this.tableLayoutPanel.ResumeLayout(false);
+            this.tableLayoutPanel.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -262,5 +273,8 @@
         private System.Windows.Forms.ToolStripMenuItem copyACESDDLToolStripMenuItem;
         private System.Windows.Forms.ColumnHeader columnHeaderObject;
         private System.Windows.Forms.ColumnHeader columnHeaderInheritedObject;
+        private System.Windows.Forms.Label lblFlags;
+        private System.Windows.Forms.GroupBox groupBoxAclEntries;
+        private System.Windows.Forms.GroupBox groupBoxAccess;
     }
 }

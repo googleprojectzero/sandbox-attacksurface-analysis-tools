@@ -19,6 +19,7 @@
 
 using NtApiDotNet.Win32;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -79,6 +80,48 @@ namespace NtApiDotNet.Forms
             bool has_conditional_ace = false;
             bool has_inherited_object_ace = false;
             bool has_object_ace = false;
+
+            List<string> flags = new List<string>();
+            if (acl.Defaulted)
+            {
+                flags.Add("Defaulted");
+            }
+            if (acl.Protected)
+            {
+                flags.Add("Protected");
+            }
+            if (acl.AutoInherited)
+            {
+                flags.Add("AutoInherited");
+            }
+            if (acl.AutoInheritReq)
+            {
+                flags.Add("AutoInheritReq");
+            }
+
+            if (flags.Count > 0)
+            {
+                lblFlags.Text = $"Flags: ({string.Join(", ", flags)})";
+            }
+            else
+            {
+                lblFlags.Text = "Flags: None";
+            }
+
+            if (acl.NullAcl)
+            {
+                lblFlags.Text += Environment.NewLine + "NULL ACL";
+                listViewAcl.Visible = false;
+                listViewAccess.Visible = false;
+                groupBoxAclEntries.Visible = false;
+                groupBoxAccess.Visible = false;
+                return;
+            }
+
+            listViewAcl.Visible = true;
+            listViewAccess.Visible = true;
+            groupBoxAclEntries.Visible = true;
+            groupBoxAccess.Visible = true;
 
             foreach (var ace in acl)
             {
