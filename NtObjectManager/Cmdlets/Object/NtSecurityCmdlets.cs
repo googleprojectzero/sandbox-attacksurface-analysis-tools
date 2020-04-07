@@ -871,10 +871,22 @@ namespace NtObjectManager.Cmdlets.Object
         public SwitchParameter NullDacl { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify to create the security descriptor with an empty DACL.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "NewSd")]
+        public SwitchParameter EmptyDacl { get; set; }
+
+        /// <summary>
         /// <para type="description">Specify to create the security descriptor with a NULL SACL.</para>
         /// </summary>
         [Parameter(ParameterSetName = "NewSd")]
         public SwitchParameter NullSacl { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to create the security descriptor with an empty SACL.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "NewSd")]
+        public SwitchParameter EmptySacl { get; set; }
 
         /// <summary>
         /// <para type="description">Specify thr owner for the new SD.</para>
@@ -1076,12 +1088,21 @@ namespace NtObjectManager.Cmdlets.Object
             WriteObject(sd);
         }
 
+        private static Acl CreateAcl(bool empty_acl, bool null_acl)
+        {
+            if (!empty_acl && !null_acl)
+            {
+                return null;
+            }
+            return new Acl() { NullAcl = null_acl };
+        }
+
         private SecurityDescriptor CreateNewSecurityDescriptor()
         {
             return new SecurityDescriptor
             {
-                Dacl = Dacl?.Clone() ?? (NullDacl ? new Acl() { NullAcl = NullDacl } : null),
-                Sacl = Sacl?.Clone() ?? (NullSacl ? new Acl() { NullAcl = NullSacl } : null),
+                Dacl = Dacl?.Clone() ?? CreateAcl(EmptyDacl, NullDacl),
+                Sacl = Sacl?.Clone() ?? CreateAcl(EmptySacl, NullSacl),
                 Owner = Owner != null ? new SecurityDescriptorSid(Owner, false) : null,
                 Group = Group != null ? new SecurityDescriptorSid(Group, false) : null
             };
