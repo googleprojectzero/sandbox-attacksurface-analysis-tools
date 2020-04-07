@@ -489,6 +489,10 @@ namespace NtApiDotNet.Win32
     public class DllImportFunction
     {
         /// <summary>
+        /// The name of the DLL importing from.
+        /// </summary>
+        public string DllName { get; }
+        /// <summary>
         /// The name of the imported function. If an ordinal this is #ORD.
         /// </summary>
         public string Name { get; }
@@ -501,8 +505,10 @@ namespace NtApiDotNet.Win32
         /// </summary>
         public int Ordinal { get; }
         
-        internal DllImportFunction(string name, long address, int ordinal)
+        internal DllImportFunction(string dll_name, 
+            string name, long address, int ordinal)
         {
+            DllName = dll_name;
             Name = name;
             Address = address;
             Ordinal = ordinal;
@@ -1194,7 +1200,7 @@ namespace NtApiDotNet.Win32
             }
         }
 
-        private DllImportFunction ReadImport(long lookup, long iat_func)
+        private DllImportFunction ReadImport(string dll_name, long lookup, long iat_func)
         {
             string name;
             int ordinal = -1;
@@ -1210,7 +1216,7 @@ namespace NtApiDotNet.Win32
                 name = Marshal.PtrToStringAnsi(lookup_va + 2);
             }
 
-            return new DllImportFunction(name, lookup == iat_func ? 0 : iat_func, ordinal);
+            return new DllImportFunction(dll_name, name, lookup == iat_func ? 0 : iat_func, ordinal);
         }
 
         private DllImport ParseSingleImport(int name_rva, int lookup_rva, int iat_rva, bool is_64bit, bool delay_loaded)
@@ -1241,7 +1247,7 @@ namespace NtApiDotNet.Win32
                     break;
                 }
 
-                funcs.Add(ReadImport(lookup, iat_func));
+                funcs.Add(ReadImport(dll_name, lookup, iat_func));
             }
 
             return new DllImport(dll_name, delay_loaded, funcs);
