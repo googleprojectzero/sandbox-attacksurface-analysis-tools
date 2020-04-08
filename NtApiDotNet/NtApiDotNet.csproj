@@ -91,6 +91,7 @@
     <Compile Include="Utilities\Memory\ProcessMemoryReader.cs" />
     <Compile Include="Utilities\Memory\ProcessMemoryStream.cs" />
     <Compile Include="Utilities\Memory\SafeBufferWrapper.cs" />
+    <Compile Include="Utilities\SafeBuffers\GuidArraySafeBuffer.cs" />
     <Compile Include="Utilities\Text\HexDumpBuilder.cs" />
     <Compile Include="Utilities\Text\StringUtils.cs" />
     <Compile Include="Utilities\Token\ClaimSecurityAttributeBuilder.cs" />

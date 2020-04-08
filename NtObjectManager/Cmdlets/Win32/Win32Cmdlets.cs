@@ -14,9 +14,11 @@
 
 using NtApiDotNet;
 using NtApiDotNet.Win32;
+using NtApiDotNet.Win32.Security;
 using System;
 using System.Linq;
 using System.Management.Automation;
+using System.Runtime.InteropServices;
 
 namespace NtObjectManager.Cmdlets.Win32
 {
@@ -227,6 +229,314 @@ namespace NtObjectManager.Cmdlets.Win32
             {
                 WriteObject(Enum.GetValues(typeof(Win32Error)).Cast<Win32Error>()
                     .Distinct().Select(e => new Win32ErrorResult(e)), true);
+            }
+        }
+    }
+
+    /// <summary>
+    /// <para type="description">Result object for setting a security descriptor.</para>
+    /// </summary>
+    public class Win32SetSecurityDescriptorResult
+    {
+        /// <summary>
+        /// The name of the resource which was set.
+        /// </summary>
+        public string Name { get; }
+        /// <summary>
+        /// The error during the operation.
+        /// </summary>
+        public Win32Error Error { get; }
+        /// <summary>
+        /// Whether security was set.
+        /// </summary>
+        public bool SecuritySet { get; }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="name">The name of the resource which was set.</param>
+        /// <param name="error">The error during the operation.</param>
+        /// <param name="security_set">Whether security was set.</param>
+        internal Win32SetSecurityDescriptorResult(string name, Win32Error error, bool security_set)
+        {
+            Name = name;
+            Error = error;
+            SecuritySet = security_set;
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Sets a security descriptor using the Win32 APIs.</para>
+    /// <para type="description">This cmdlet sets the security descriptor on an object using the Win32 SetSecurityInfo APIs.
+    /// </para>
+    /// </summary>
+    /// <example>
+    ///   <code>Set-Win32SecurityDescriptor "c:\test" File $sd Dacl</code>
+    ///   <para>Set the DACL of the file path c:\test.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Set-Win32SecurityDescriptor -Object $obj Kernel $sd Dacl</code>
+    ///   <para>Set the DACL of a kernel object.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Set-Win32SecurityDescriptor -Handle $handle Kernel $sd Dacl</code>
+    ///   <para>Set the DACL of a kernel object handle.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Set-Win32SecurityDescriptor "c:\test" File $sd Dacl -ShowProgress</code>
+    ///   <para>Set the DACL of the file path c:\test and show progress</para>
+    /// </example>
+    /// <example>
+    ///   <code>Set-Win32SecurityDescriptor "c:\test" File $sd Dacl -ShowProgress</code>
+    ///   <para>Set the DACL of the file path c:\test and show progress</para>
+    /// </example>
+    [Cmdlet(VerbsCommon.Set, "Win32SecurityDescriptor", DefaultParameterSetName = "FromName")]
+    [OutputType(typeof(Win32SetSecurityDescriptorResult))]
+    public sealed class SetWin32SecurityDescriptor : PSCmdlet
+    {
+        /// <summary>
+        /// <para type="description">The name of the object.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromName")]
+        public string Name { get; set; }
+
+        /// <summary>
+        /// <para type="description">Handle to an object.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromObject")]
+        public NtObject Object { get; set; }
+
+        /// <summary>
+        /// <para type="description">Handle to an object.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromHandle")]
+        public SafeHandle Handle { get; set; }
+
+        /// <summary>
+        /// <para type="description">The type of object represented by Name/Object/Handle</para>
+        /// </summary>
+        [Parameter(Position = 1, Mandatory = true)]
+        public SeObjectType Type { get; set; }
+
+        /// <summary>
+        /// <para type="description">The security descriptor to set.</para>
+        /// </summary>
+        [Parameter(Position = 2, Mandatory = true)]
+        public SecurityDescriptor SecurityDescriptor { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the security information to set.</para>
+        /// </summary>
+        [Parameter(Position = 3, Mandatory = true)]
+        public SecurityInformation SecurityInformation { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to show the progress when setting security.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromName")]
+        public SwitchParameter ShowProgress { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to pass through results of the security setting operation.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromName")]
+        public SwitchParameter PassThru { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to the tree operation to perform.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromName")]
+        public TreeSecInfo Action { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to only show progress/pass through when an error occurs.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromName")]
+        public SwitchParameter ErrorOnly { get; set; }
+
+        private ProgressInvokeSetting ProgressFunction(
+            string object_name, Win32Error status, ProgressInvokeSetting invoke_setting, bool security_set)
+        {
+            if (Stopping)
+            {
+                return ProgressInvokeSetting.CancelOperation;
+            }
+
+            if (ErrorOnly && status == Win32Error.SUCCESS)
+            {
+                return invoke_setting;
+            }
+
+            if (ShowProgress)
+            {
+                ProgressRecord progress = new ProgressRecord(0, "Changing Security", object_name);
+                WriteProgress(progress);
+            }
+
+            if (PassThru)
+            {
+                WriteObject(new Win32SetSecurityDescriptorResult(object_name, status, security_set));
+            }
+
+            return invoke_setting;
+        }
+
+        private void SetNamedSecurityInfo()
+        {
+            bool do_callback = ShowProgress || PassThru;
+
+            if (do_callback || Action != TreeSecInfo.Set)
+            {
+                TreeProgressFunction fn = ProgressFunction;
+                NtStatus status = Win32Security.SetSecurityInfo(Name, Type, SecurityInformation, SecurityDescriptor, Action, do_callback ? fn : null, 
+                    ShowProgress ? ProgressInvokeSetting.PrePostError : ProgressInvokeSetting.EveryObject, !PassThru);
+                if (!PassThru)
+                {
+                    status.ToNtException();
+                }
+            }
+            else
+            {
+                Win32Security.SetSecurityInfo(Name, Type, SecurityInformation, SecurityDescriptor);
+            }
+        }
+
+        /// <summary>
+        /// Process Record.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            switch (ParameterSetName)
+            {
+                case "FromName":
+                    SetNamedSecurityInfo();
+                    break;
+                case "FromObject":
+                    Win32Security.SetSecurityInfo(Object, Type, SecurityInformation, SecurityDescriptor);
+                    break;
+                case "FromHandle":
+                    Win32Security.SetSecurityInfo(Handle, Type, SecurityInformation, SecurityDescriptor);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public SetWin32SecurityDescriptor()
+        {
+            Action = TreeSecInfo.Set;
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Resets a security descriptor using the Win32 APIs.</para>
+    /// <para type="description">This cmdlet resets the security descriptor on an object using the Win32 SetSecurityInfo APIs.
+    /// </para>
+    /// </summary>
+    /// <example>
+    ///   <code>Reset-Win32SecurityDescriptor "c:\test" File $sd Dacl</code>
+    ///   <para>Reset the DACL of the file path c:\test.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Reset-Win32SecurityDescriptor "c:\test" File $sd Dacl -KeepExplicit</code>
+    ///   <para>Reset the DACL of the file path c:\test keeping explicit ACEs.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Reset-Win32SecurityDescriptor "c:\test" File $sd Dacl -ShowProgress</code>
+    ///   <para>Reset the DACL of the file path c:\test and show progress</para>
+    /// </example>
+    [Cmdlet(VerbsCommon.Reset, "Win32SecurityDescriptor")]
+    [OutputType(typeof(Win32SetSecurityDescriptorResult))]
+    public sealed class ResetWin32SecurityDescriptor : PSCmdlet
+    {
+        /// <summary>
+        /// <para type="description">The name of the object.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true)]
+        public string Name { get; set; }
+
+        /// <summary>
+        /// <para type="description">The type of object represented by Name/Object/Handle</para>
+        /// </summary>
+        [Parameter(Position = 1, Mandatory = true)]
+        public SeObjectType Type { get; set; }
+
+        /// <summary>
+        /// <para type="description">The security descriptor to set.</para>
+        /// </summary>
+        [Parameter(Position = 2, Mandatory = true)]
+        public SecurityDescriptor SecurityDescriptor { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the security information to set.</para>
+        /// </summary>
+        [Parameter(Position = 3, Mandatory = true)]
+        public SecurityInformation SecurityInformation { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to show the progress when setting security.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter ShowProgress { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to keep explicit ACEs.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter KeepExplicit { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to pass through results of the security setting operation.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter PassThru { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to only show progress/pass through when an error occurs.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter ErrorOnly { get; set; }
+
+        private ProgressInvokeSetting ProgressFunction(
+            string object_name, Win32Error status, ProgressInvokeSetting invoke_setting, bool security_set)
+        {
+            if (Stopping)
+            {
+                return ProgressInvokeSetting.CancelOperation;
+            }
+
+            if (ErrorOnly && status == Win32Error.SUCCESS)
+            {
+                return invoke_setting;
+            }
+
+            if (ShowProgress)
+            {
+                ProgressRecord progress = new ProgressRecord(0, "Resetting Security", object_name);
+                WriteProgress(progress);
+            }
+
+            if (PassThru)
+            {
+                WriteObject(new Win32SetSecurityDescriptorResult(object_name, status, security_set));
+            }
+
+            return invoke_setting;
+        }
+
+        /// <summary>
+        /// Process Record.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            bool do_callback = ShowProgress || PassThru;
+            TreeProgressFunction fn = ProgressFunction;
+            NtStatus status = Win32Security.ResetSecurityInfo(Name, Type, SecurityInformation, SecurityDescriptor, do_callback ? fn : null,
+                ShowProgress ? ProgressInvokeSetting.PrePostError : ProgressInvokeSetting.EveryObject, KeepExplicit, !PassThru);
+            if (!PassThru)
+            {
+                status.ToNtException();
             }
         }
     }

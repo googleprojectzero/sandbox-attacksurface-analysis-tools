@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Ndr;
+using NtApiDotNet.Utilities.SafeBuffers;
 using NtApiDotNet.Win32.Debugger;
 using NtApiDotNet.Win32.Security;
 using System;
@@ -510,6 +511,16 @@ namespace NtApiDotNet.Win32
           ref EVENT_FILTER_DESCRIPTOR FilterData,
           IntPtr CallbackContext
         );
+
+    [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+    internal delegate void TreeSetNamedSecurityProgress(string pObjectName, Win32Error Status, 
+        ref ProgressInvokeSetting pInvokeSetting, IntPtr Args, [MarshalAs(UnmanagedType.Bool)] bool SecuritySet);
+
+    internal struct INHERITED_FROM
+    {
+        public int GenerationGap;
+        public IntPtr AncestorName;
+    }
 
     internal static class Win32NativeMethods
     {
@@ -1173,6 +1184,57 @@ namespace NtApiDotNet.Win32
             byte[] psidGroup,
             byte[] pDacl,
             byte[] pSacl
+        );
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error TreeSetNamedSecurityInfo(
+            string pObjectName,
+            SeObjectType ObjectType,
+            SecurityInformation SecurityInfo,
+            byte[] psidOwner,
+            byte[] psidGroup,
+            byte[] pDacl,
+            byte[] pSacl,
+            TreeSecInfo dwAction,
+            TreeSetNamedSecurityProgress fnProgress,
+            ProgressInvokeSetting ProgressInvokeSetting,
+            IntPtr Args
+        );
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error TreeResetNamedSecurityInfo(
+            string pObjectName,
+            SeObjectType ObjectType,
+            SecurityInformation SecurityInfo,
+            byte[] psidOwner,
+            byte[] psidGroup,
+            byte[] pDacl,
+            byte[] pSacl,
+            [MarshalAs(UnmanagedType.Bool)] bool KeepExplicit,
+            TreeSetNamedSecurityProgress fnProgress,
+            ProgressInvokeSetting ProgressInvokeSetting,
+            IntPtr Args
+        );
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error GetInheritanceSource(
+            string pObjectName,
+            SeObjectType ObjectType,
+            SecurityInformation SecurityInfo,
+            bool Container,
+            GuidArraySafeBuffer pObjectClassGuids,
+            int GuidCount,
+            byte[] pAcl,
+            IntPtr pfnArray, // PFN_OBJECT_MGR_FUNCTS
+            ref GenericMapping pGenericMapping,
+            INHERITED_FROM[] pInheritArray
+        );
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error FreeInheritedFromArray(
+          INHERITED_FROM[] pInheritArray,
+          ushort AceCnt,
+          IntPtr pfnArray // PFN_OBJECT_MGR_FUNCTS
         );
     }
 #pragma warning restore 1591
