@@ -15,6 +15,7 @@
 using NtApiDotNet;
 using NtApiDotNet.Forms;
 using NtApiDotNet.Win32;
+using NtApiDotNet.Win32.DirectoryService;
 using System;
 using System.Windows.Forms;
 
@@ -50,7 +51,15 @@ namespace ViewSecurityDescriptor
                     }
                     else
                     {
-                        NtType type = ServiceUtils.GetServiceNtType(args[2]) ?? new NtType(args[2]);
+                        NtType type = null;
+                        if (args[2].Equals("DirectoryService", StringComparison.OrdinalIgnoreCase))
+                        {
+                            type = DirectoryServiceUtils.NtType;
+                        }
+                        else
+                        {
+                            type = ServiceUtils.GetServiceNtType(args[2]) ?? new NtType(args[2]);
+                        }
                         SecurityDescriptor sd;
                         if (args[1].StartsWith("-"))
                         {

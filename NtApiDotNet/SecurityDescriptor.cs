@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.SafeBuffers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -454,9 +455,10 @@ namespace NtApiDotNet
                 var creator_buffer = list.AddResource(creator?.ToSafeBuffer() ?? SafeProcessHeapBuffer.Null);
                 if (object_types?.Length > 0)
                 {
+                    var guids = list.AddResource(new SafeGuidArrayBuffer(object_types));
                     return NtRtl.RtlNewSecurityObjectWithMultipleInheritance(
                         parent_buffer, creator_buffer, out SafeProcessHeapBuffer new_descriptor,
-                        BuildObjectTypeList(list, object_types), object_types.Length, is_directory, flags, token.GetHandle(),
+                        guids, guids.Count, is_directory, flags, token.GetHandle(),
                         ref generic_mapping).CreateResult(throw_on_error, () => new_descriptor);
                 }
                 else

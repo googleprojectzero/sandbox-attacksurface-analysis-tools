@@ -516,6 +516,7 @@ namespace NtApiDotNet.Win32
     internal delegate void TreeSetNamedSecurityProgress(string pObjectName, Win32Error Status, 
         ref ProgressInvokeSetting pInvokeSetting, IntPtr Args, [MarshalAs(UnmanagedType.Bool)] bool SecuritySet);
 
+    [StructLayout(LayoutKind.Sequential)]
     internal struct INHERITED_FROM
     {
         public int GenerationGap;
@@ -1222,12 +1223,12 @@ namespace NtApiDotNet.Win32
             SeObjectType ObjectType,
             SecurityInformation SecurityInfo,
             bool Container,
-            GuidArraySafeBuffer pObjectClassGuids,
+            SafeGuidArrayBuffer pObjectClassGuids,
             int GuidCount,
             byte[] pAcl,
             IntPtr pfnArray, // PFN_OBJECT_MGR_FUNCTS
             ref GenericMapping pGenericMapping,
-            INHERITED_FROM[] pInheritArray
+            [Out] INHERITED_FROM[] pInheritArray
         );
 
         [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
@@ -1235,6 +1236,30 @@ namespace NtApiDotNet.Win32
           INHERITED_FROM[] pInheritArray,
           ushort AceCnt,
           IntPtr pfnArray // PFN_OBJECT_MGR_FUNCTS
+        );
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error GetNamedSecurityInfo(
+            string pObjectName,
+            SeObjectType ObjectType,
+            SecurityInformation SecurityInfo,
+            OptionalPointer ppsidOwner,
+            OptionalPointer ppsidGroup,
+            OptionalPointer ppDacl,
+            OptionalPointer ppSacl,
+            out SafeLocalAllocBuffer ppSecurityDescriptor
+        );
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern Win32Error GetSecurityInfo(
+            SafeHandle handle,
+            SeObjectType ObjectType,
+            SecurityInformation SecurityInfo,
+            OptionalPointer ppsidOwner,
+            OptionalPointer ppsidGroup,
+            OptionalPointer ppDacl,
+            OptionalPointer ppSacl,
+            out SafeLocalAllocBuffer ppSecurityDescriptor
         );
     }
 #pragma warning restore 1591

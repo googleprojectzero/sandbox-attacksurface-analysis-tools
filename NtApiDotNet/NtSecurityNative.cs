@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Utilities.SafeBuffers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -692,7 +693,7 @@ namespace NtApiDotNet
              SafeBuffer ParentDescriptor,
              SafeBuffer CreatorDescriptor,
              out SafeProcessHeapBuffer NewDescriptor,
-             SafeBuffer ObjectTypes, // GUID**
+             SafeGuidArrayBuffer ObjectTypes, // GUID**
              int GuidCount,
              [MarshalAs(UnmanagedType.U1)] bool IsDirectoryObject,
              SecurityAutoInheritFlags AutoInheritFlags,

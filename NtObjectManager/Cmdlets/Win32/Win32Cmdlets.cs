@@ -16,6 +16,7 @@ using NtApiDotNet;
 using NtApiDotNet.Win32;
 using NtApiDotNet.Win32.Security;
 using System;
+using System.IO;
 using System.Linq;
 using System.Management.Automation;
 using System.Runtime.InteropServices;
@@ -271,25 +272,26 @@ namespace NtObjectManager.Cmdlets.Win32
     /// </para>
     /// </summary>
     /// <example>
-    ///   <code>Set-Win32SecurityDescriptor "c:\test" File $sd Dacl</code>
+    ///   <code>Set-Win32SecurityDescriptor "c:\test" $sd Dacl</code>
     ///   <para>Set the DACL of the file path c:\test.</para>
     /// </example>
     /// <example>
-    ///   <code>Set-Win32SecurityDescriptor -Object $obj Kernel $sd Dacl</code>
+    ///   <code>Set-Win32SecurityDescriptor -Object $obj -Type Kernel $sd Dacl</code>
     ///   <para>Set the DACL of a kernel object.</para>
     /// </example>
     /// <example>
-    ///   <code>Set-Win32SecurityDescriptor -Handle $handle Kernel $sd Dacl</code>
+    ///   <code>Set-Win32SecurityDescriptor -Handle -Type Kernel $handle $sd Dacl</code>
     ///   <para>Set the DACL of a kernel object handle.</para>
     /// </example>
     /// <example>
-    ///   <code>Set-Win32SecurityDescriptor "c:\test" File $sd Dacl -ShowProgress</code>
+    ///   <code>Set-Win32SecurityDescriptor "c:\test" $sd Dacl -ShowProgress</code>
     ///   <para>Set the DACL of the file path c:\test and show progress</para>
     /// </example>
     /// <example>
-    ///   <code>Set-Win32SecurityDescriptor "c:\test" File $sd Dacl -ShowProgress</code>
+    ///   <code>Set-Win32SecurityDescriptor "c:\test"  $sd Dacl -ShowProgress</code>
     ///   <para>Set the DACL of the file path c:\test and show progress</para>
     /// </example>
+    
     [Cmdlet(VerbsCommon.Set, "Win32SecurityDescriptor", DefaultParameterSetName = "FromName")]
     [OutputType(typeof(Win32SetSecurityDescriptorResult))]
     public sealed class SetWin32SecurityDescriptor : PSCmdlet
@@ -313,21 +315,21 @@ namespace NtObjectManager.Cmdlets.Win32
         public SafeHandle Handle { get; set; }
 
         /// <summary>
-        /// <para type="description">The type of object represented by Name/Object/Handle</para>
+        /// <para type="description">The type of object represented by Name/Object/Handle. Default is File.</para>
         /// </summary>
-        [Parameter(Position = 1, Mandatory = true)]
+        [Parameter]
         public SeObjectType Type { get; set; }
 
         /// <summary>
         /// <para type="description">The security descriptor to set.</para>
         /// </summary>
-        [Parameter(Position = 2, Mandatory = true)]
+        [Parameter(Position = 1, Mandatory = true)]
         public SecurityDescriptor SecurityDescriptor { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the security information to set.</para>
         /// </summary>
-        [Parameter(Position = 3, Mandatory = true)]
+        [Parameter(Position = 2, Mandatory = true)]
         public SecurityInformation SecurityInformation { get; set; }
 
         /// <summary>
@@ -426,6 +428,7 @@ namespace NtObjectManager.Cmdlets.Win32
         public SetWin32SecurityDescriptor()
         {
             Action = TreeSecInfo.Set;
+            Type = SeObjectType.File;
         }
     }
 
@@ -435,15 +438,15 @@ namespace NtObjectManager.Cmdlets.Win32
     /// </para>
     /// </summary>
     /// <example>
-    ///   <code>Reset-Win32SecurityDescriptor "c:\test" File $sd Dacl</code>
+    ///   <code>Reset-Win32SecurityDescriptor "c:\test" $sd Dacl</code>
     ///   <para>Reset the DACL of the file path c:\test.</para>
     /// </example>
     /// <example>
-    ///   <code>Reset-Win32SecurityDescriptor "c:\test" File $sd Dacl -KeepExplicit</code>
+    ///   <code>Reset-Win32SecurityDescriptor "c:\test" $sd Dacl -KeepExplicit</code>
     ///   <para>Reset the DACL of the file path c:\test keeping explicit ACEs.</para>
     /// </example>
     /// <example>
-    ///   <code>Reset-Win32SecurityDescriptor "c:\test" File $sd Dacl -ShowProgress</code>
+    ///   <code>Reset-Win32SecurityDescriptor "c:\test" $sd Dacl -ShowProgress</code>
     ///   <para>Reset the DACL of the file path c:\test and show progress</para>
     /// </example>
     [Cmdlet(VerbsCommon.Reset, "Win32SecurityDescriptor")]
@@ -457,22 +460,22 @@ namespace NtObjectManager.Cmdlets.Win32
         public string Name { get; set; }
 
         /// <summary>
-        /// <para type="description">The type of object represented by Name/Object/Handle</para>
-        /// </summary>
-        [Parameter(Position = 1, Mandatory = true)]
-        public SeObjectType Type { get; set; }
-
-        /// <summary>
         /// <para type="description">The security descriptor to set.</para>
         /// </summary>
-        [Parameter(Position = 2, Mandatory = true)]
+        [Parameter(Position = 1, Mandatory = true)]
         public SecurityDescriptor SecurityDescriptor { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the security information to set.</para>
         /// </summary>
-        [Parameter(Position = 3, Mandatory = true)]
+        [Parameter(Position = 2, Mandatory = true)]
         public SecurityInformation SecurityInformation { get; set; }
+
+        /// <summary>
+        /// <para type="description">The type of object represented by Name. Default to File.</para>
+        /// </summary>
+        [Parameter]
+        public SeObjectType Type { get; set; }
 
         /// <summary>
         /// <para type="description">Specify to show the progress when setting security.</para>
@@ -538,6 +541,198 @@ namespace NtObjectManager.Cmdlets.Win32
             {
                 status.ToNtException();
             }
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public ResetWin32SecurityDescriptor()
+        {
+            Type = SeObjectType.File;
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Search for inherited ACLs for the security descriptor.</para>
+    /// <para type="description">This cmdlet searches for the ancestors of an inherited security resource.
+    /// </para>
+    /// </summary>
+    /// <example>
+    ///   <code>Search-Win32SecurityDescriptor "c:\test"</code>
+    ///   <para>Search for the inheritance ancestors of c:\test.</para>
+    /// </example>
+    [Cmdlet(VerbsCommon.Search, "Win32SecurityDescriptor")]
+    [OutputType(typeof(SecurityDescriptorInheritanceSource))]
+    public sealed class SearchWin32SecurityDescriptor : PSCmdlet
+    {
+        /// <summary>
+        /// <para type="description">The name of the object.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true)]
+        public string Name { get; set; }
+
+        /// <summary>
+        /// <para type="description">The security descriptor to check for inheritance.</para>
+        /// </summary>
+        [Parameter]
+        public SecurityDescriptor SecurityDescriptor { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the GenericMapping for the check.</para>
+        /// </summary>
+        [Parameter]
+        public GenericMapping? GenericMapping { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to check the SACL. Default is the DACL.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter Sacl { get; set; }
+
+        /// <summary>
+        /// <para type="description">The type of object represented by Name. Default is File.</para>
+        /// </summary>
+        [Parameter]
+        public SeObjectType Type { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify list of object types.</para>
+        /// </summary>
+        [Parameter]
+        public Guid[] ObjectType { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to query the full security descriptor for the ancestors.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter QuerySecurity { get; set; }
+
+        private GenericMapping GetGenericMapping()
+        {
+            if (GenericMapping.HasValue)
+            {
+                return GenericMapping.Value;
+            }
+
+            return Win32Security.GetNativeType(Type)?.GenericMapping 
+                ?? throw new ArgumentException("Must specify a Generic Mapping for the type");
+        }
+
+        /// <summary>
+        /// Process Record.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            if (SecurityDescriptor == null)
+            {
+                SecurityDescriptor = Win32Security.GetSecurityInfo(Name, Type, 
+                    Sacl ? SecurityInformation.All : SecurityInformation.AllNoSacl);
+            }
+
+            WriteObject(Win32Security.GetInheritanceSource(Name, Type, IsContainer(), ObjectType,
+                SecurityDescriptor, Sacl, GetGenericMapping(), QuerySecurity), true);
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public SearchWin32SecurityDescriptor()
+        {
+            Type = SeObjectType.File;
+        }
+
+        private bool IsContainer()
+        {
+            if (Type == SeObjectType.File)
+            {
+                return Directory.Exists(Name);
+            }
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Sets a security descriptor using the Win32 APIs.</para>
+    /// <para type="description">This cmdlet sets the security descriptor on an object using the Win32 SetSecurityInfo APIs.
+    /// </para>
+    /// </summary>
+    /// <example>
+    ///   <code>Get-Win32SecurityDescriptor "c:\test"</code>
+    ///   <para>Set the security descriptor for file path c:\test.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-Win32SecurityDescriptor -Object $obj -Type Kernel Dacl</code>
+    ///   <para>Get the DACL of a kernel object.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-Win32SecurityDescriptor -Handle -Type Kernel $handle Dacl</code>
+    ///   <para>Get the DACL of a kernel object handle.</para>
+    /// </example>
+    [Cmdlet(VerbsCommon.Get, "Win32SecurityDescriptor", DefaultParameterSetName = "FromName")]
+    [OutputType(typeof(SecurityDescriptor))]
+    public sealed class GetWin32SecurityDescriptor : PSCmdlet
+    {
+        /// <summary>
+        /// <para type="description">The name of the object.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromName")]
+        public string Name { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the security information to set.</para>
+        /// </summary>
+        [Parameter(Position = 1)]
+        public SecurityInformation SecurityInformation { get; set; }
+
+        /// <summary>
+        /// <para type="description">Handle to an object.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromObject")]
+        public NtObject Object { get; set; }
+
+        /// <summary>
+        /// <para type="description">Handle to an object.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromHandle")]
+        public SafeHandle Handle { get; set; }
+
+        /// <summary>
+        /// <para type="description">The type of object represented by Name/Object/Handle. Default is File.</para>
+        /// </summary>
+        [Parameter]
+        public SeObjectType Type { get; set; }
+
+        /// <summary>
+        /// Process Record.
+        /// </summary>
+        protected override void ProcessRecord()
+        {
+            SecurityDescriptor sd = null;
+            switch (ParameterSetName)
+            {
+                case "FromName":
+                    sd = Win32Security.GetSecurityInfo(Name, Type, SecurityInformation);
+                    break;
+                case "FromObject":
+                    sd = Win32Security.GetSecurityInfo(Object.Handle, Type, SecurityInformation);
+                    break;
+                case "FromHandle":
+                    sd = Win32Security.GetSecurityInfo(Handle, Type, SecurityInformation);
+                    break;
+            }
+            if (sd != null)
+            {
+                WriteObject(sd);
+            }
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public GetWin32SecurityDescriptor()
+        {
+            Type = SeObjectType.File;
+            SecurityInformation = SecurityInformation.AllBasic;
         }
     }
 }
