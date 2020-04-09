@@ -722,6 +722,16 @@ namespace NtApiDotNet
         public bool HasMandatoryLabelAce => GetMandatoryLabel() != null;
 
         /// <summary>
+        /// Indicates the SD has a NULL DACL.
+        /// </summary>
+        public bool NullDacl => Dacl?.NullAcl ?? false;
+
+        /// <summary>
+        /// Indicates the SD has a NULL SACL.
+        /// </summary>
+        public bool NullSacl => Sacl?.NullAcl ?? false;
+
+        /// <summary>
         /// Get the access rights enum type for this SD based on the NT Type property.
         /// </summary>
         public Type AccessRightsType
