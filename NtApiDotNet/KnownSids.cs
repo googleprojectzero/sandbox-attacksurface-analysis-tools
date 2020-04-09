@@ -48,6 +48,16 @@ namespace NtApiDotNet
         CreatorGroup,
 
         /// <summary>
+        /// CREATOR OWNER SERVER SID
+        /// </summary>
+        CreatorOwnerServer,
+
+        /// <summary>
+        /// CREATOR OWNER SERVER SID
+        /// </summary>
+        CreatorGroupServer,
+
+        /// <summary>
         /// Service SID
         /// </summary>
         Service,
@@ -254,6 +264,16 @@ namespace NtApiDotNet
         public static Sid CreatorGroup { get { return GetKnownSid(KnownSidValue.CreatorGroup); } }
 
         /// <summary>
+        /// CREATOR OWNER SERVER SID
+        /// </summary>
+        public static Sid CreatorOwnerServer { get { return GetKnownSid(KnownSidValue.CreatorOwnerServer); } }
+
+        /// <summary>
+        /// CREATOR OWNER SERVER SID
+        /// </summary>
+        public static Sid CreatorGroupServer { get { return GetKnownSid(KnownSidValue.CreatorGroupServer); } }
+
+        /// <summary>
         /// Service SID
         /// </summary>
         public static Sid Service { get { return GetKnownSid(KnownSidValue.Service); } }
@@ -446,6 +466,8 @@ namespace NtApiDotNet
                 case KnownSidValue.Local: return new Sid(SecurityAuthority.Local, 0);
                 case KnownSidValue.CreatorOwner: return new Sid(SecurityAuthority.Creator, 0);
                 case KnownSidValue.CreatorGroup: return new Sid(SecurityAuthority.Creator, 1);
+                case KnownSidValue.CreatorOwnerServer: return new Sid(SecurityAuthority.Creator, 2);
+                case KnownSidValue.CreatorGroupServer: return new Sid(SecurityAuthority.Creator, 3);
                 case KnownSidValue.OwnerRights: return new Sid(SecurityAuthority.Creator, 4);
                 case KnownSidValue.Dialup: return new Sid(SecurityAuthority.Nt, 1);
                 case KnownSidValue.Network: return new Sid(SecurityAuthority.Nt, 2);
