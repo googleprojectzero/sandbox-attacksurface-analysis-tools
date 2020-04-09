@@ -74,6 +74,14 @@
     <Compile Include="Cmdlets\Object\NtTransactionCmdlets.cs" />
     <Compile Include="Cmdlets\Object\NtTransactionManagerCmdlets.cs" />
     <Compile Include="Cmdlets\Object\NtWin32Cmdlets.cs" />
+    <Compile Include="Cmdlets\Win32\GetWin32ErrorCmdlet.cs" />
+    <Compile Include="Cmdlets\Win32\GetWin32SecurityDescriptor.cs" />
+    <Compile Include="Cmdlets\Win32\RemoveDosDeviceCmdlet.cs" />
+    <Compile Include="Cmdlets\Win32\ResetWin32SecurityDescriptor.cs" />
+    <Compile Include="Cmdlets\Win32\SearchWin32SecurityDescriptor.cs" />
+    <Compile Include="Cmdlets\Win32\SetWin32SecurityDescriptor.cs" />
+    <Compile Include="Cmdlets\Win32\Win32ErrorResult.cs" />
+    <Compile Include="Cmdlets\Win32\Win32SetSecurityDescriptorResult.cs" />
     <Compile Include="Provider\NtDirectoryContainer.cs" />
     <Compile Include="Provider\NtKeyContainer.cs" />
     <Compile Include="Provider\NtKeyEntry.cs" />
@@ -87,7 +95,7 @@
     <Compile Include="Cmdlets\Rpc\RpcServerCmdlets.cs" />
     <Compile Include="Cmdlets\Rpc\RpcServerNameCmdlets.cs" />
     <Compile Include="Cmdlets\Accessible\TestNetworkAccessCmdlet.cs" />
-    <Compile Include="Cmdlets\Win32\Win32Cmdlets.cs" />
+    <Compile Include="Cmdlets\Win32\AddDosDeviceCmdlet.cs" />
     <Compile Include="Cmdlets\Accessible\CommonAccessBaseCmdlet.cs" />
     <Compile Include="Provider\GenericObjectSecurity.cs" />
     <Compile Include="Cmdlets\Accessible\GetAccessibleDeviceCmdlet.cs" />
