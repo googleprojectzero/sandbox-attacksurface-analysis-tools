@@ -2093,13 +2093,13 @@ Format the security descriptor of an object as SDDL with only DACL and Label.
 function Format-NtSecurityDescriptor {
     [CmdletBinding(DefaultParameterSetName = "FromObject")]
     Param(
-        [Parameter(Position = 0, ParameterSetName = "FromObject", Mandatory = $true, ValueFromPipeline)]
+        [Parameter(Position = 0, ParameterSetName = "FromObject", Mandatory, ValueFromPipeline)]
         [NtApiDotNet.NtObject]$Object,
-        [Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory = $true, ValueFromPipeline)]
+        [Parameter(Position = 0, ParameterSetName = "FromSecurityDescriptor", Mandatory, ValueFromPipeline)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
-        [Parameter(Position = 0, ParameterSetName = "FromAccessCheck", Mandatory = $true, ValueFromPipeline)]
+        [Parameter(Position = 0, ParameterSetName = "FromAccessCheck", Mandatory, ValueFromPipeline)]
         [NtObjectManager.Cmdlets.Accessible.CommonAccessCheckResult]$AccessCheckResult,
-        [Parameter(Position = 0, ParameterSetName = "FromAcl", Mandatory = $true)]
+        [Parameter(Position = 0, ParameterSetName = "FromAcl", Mandatory)]
         [AllowEmptyCollection()]
         [NtApiDotNet.Acl]$Acl,
         [Parameter(ParameterSetName = "FromAcl")]
@@ -2108,7 +2108,7 @@ function Format-NtSecurityDescriptor {
         [Parameter(Position = 1, ParameterSetName = "FromAcl")]
         [NtApiDotNet.NtType]$Type,
         [switch]$Container,
-        [Parameter(Position = 0, ParameterSetName = "FromPath", Mandatory = $true, ValueFromPipeline)]
+        [Parameter(Position = 0, ParameterSetName = "FromPath", Mandatory, ValueFromPipeline)]
         [string]$Path,
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
         [switch]$MapGeneric,
@@ -2116,8 +2116,8 @@ function Format-NtSecurityDescriptor {
         [switch]$Summary,
         [switch]$ShowAll,
         [switch]$HideHeader,
-        [Parameter(Position = 1, ParameterSetName = "FromSecurityDescriptor")]
-        [Parameter(Position = 1, ParameterSetName = "FromAcl")]
+        [Parameter(ParameterSetName = "FromSecurityDescriptor")]
+        [Parameter(ParameterSetName = "FromAcl")]
         [string]$DisplayPath = ""
     )
 
@@ -6722,7 +6722,8 @@ function Copy-NtSecurityDescriptor {
 Edits an existing security descriptor.
 .DESCRIPTION
 This cmdlet edits an existing security descriptor in-place. This can be based on 
-a new security descriptor and additional information.
+a new security descriptor and additional information. If PassThru is specified
+the the SD is not editing in place, a clone of the SD will be returned.
 .PARAMETER SecurityDescriptor
 The security descriptor to edit.
 .PARAMETER NewSecurityDescriptor
@@ -6767,15 +6768,28 @@ function Edit-NtSecurityDescriptor {
         [Parameter(ParameterSetName = "ModifySd")]
         [NtApiDotNet.SecurityAutoInheritFlags]$Flags = 0,
         [Parameter(ParameterSetName = "ModifySd")]
+        [Parameter(ParameterSetName = "ToAutoInherit")]
+        [Parameter(Mandatory, ParameterSetName = "MapGenericSd")]
         [NtApiDotNet.NtType]$Type,
         [Parameter(ParameterSetName = "CanonicalizeSd")]
         [switch]$CanonicalizeDacl,
         [Parameter(ParameterSetName = "CanonicalizeSd")]
         [switch]$CanonicalizeSacl,
-        [Parameter(ParameterSetName = "MapGenericSd")]
+        [Parameter(Mandatory, ParameterSetName = "MapGenericSd")]
         [switch]$MapGeneric,
+        [Parameter(Mandatory, ParameterSetName = "ToAutoInherit")]
+        [switch]$ConvertToAutoInherit,
+        [Parameter(ParameterSetName = "ToAutoInherit")]
+        [switch]$Container,
+        [Parameter(ParameterSetName = "ToAutoInherit")]
+        [NtApiDotNet.SecurityDescriptor]$Parent,
+        [Nullable[Guid]]$ObjectType = $null,
         [switch]$PassThru
     )
+
+    if ($PassThru) {
+        $SecurityDescriptor = Copy-NtSecurityDescriptor $SecurityDescriptor
+    }
 
     if ($PSCmdlet.ParameterSetName -ne "CanonicalizeSd") {
         if ($Type -eq $null) {
@@ -6799,6 +6813,9 @@ function Edit-NtSecurityDescriptor {
         }
     } elseif($PsCmdlet.ParameterSetName -eq "MapGenericSd") {
         $SecurityDescriptor.MapGenericAccess($Type)
+    } elseif ($PsCmdlet.ParameterSetName -eq "ToAutoInherit") {
+        $SecurityDescriptor.ConvertToAutoInherit($Parent, 
+            $ObjectType, $Container, $Type.GenericMapping)
     }
 
     if ($PassThru) {

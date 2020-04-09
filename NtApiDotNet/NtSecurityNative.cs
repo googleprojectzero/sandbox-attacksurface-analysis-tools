@@ -720,6 +720,15 @@ namespace NtApiDotNet
         );
 
         [DllImport("ntdll.dll")]
+        public static extern NtStatus RtlConvertToAutoInheritSecurityObject(
+            SafeBuffer ParentDescriptor,
+            SafeBuffer CurrentSecurityDescriptor,
+            out SafeProcessHeapBuffer NewSecurityDescriptor,
+            OptionalGuid ObjectType,
+            bool IsDirectoryObject,
+             ref GenericMapping GenericMapping);
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus RtlCreateServiceSid([In] UnicodeString pServiceName,
             SafeBuffer pServiceSid, [In, Out] ref int cbServiceSid);
 

@@ -1118,6 +1118,59 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Converts the SD to an Auto-Inherit security descriptor.
+        /// </summary>
+        /// <param name="parent_descriptor">The parent security descriptor.</param>
+        /// <param name="object_type">Optional object type GUID.</param>
+        /// <param name="is_directory">True if a directory.</param>
+        /// <param name="generic_mapping">Generic mapping for the object.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The NT status code.</returns>
+        public NtStatus ConvertToAutoInherit(
+                SecurityDescriptor parent_descriptor,
+                Guid? object_type,
+                bool is_directory,
+                GenericMapping generic_mapping,
+                bool throw_on_error)
+        {
+            using (var list = new DisposableList())
+            {
+                var parent = list.AddResource(parent_descriptor?.ToSafeBuffer() ?? SafeHGlobalBuffer.Null);
+                var current = list.AddResource(ToSafeBuffer());
+                var guid = object_type.HasValue ? new OptionalGuid(object_type.Value) : null;
+                NtStatus status = NtRtl.RtlConvertToAutoInheritSecurityObject(parent, current, out SafeProcessHeapBuffer new_sd,
+                    guid, is_directory, ref generic_mapping).ToNtException(throw_on_error);
+                using (new_sd)
+                {
+                    if (!status.IsSuccess())
+                        return status;
+                    var sd = Parse(new_sd, NtType, Container, throw_on_error);
+                    if (!sd.IsSuccess)
+                        return sd.Status;
+                    MoveFrom(sd.Result, false);
+                    return NtStatus.STATUS_SUCCESS;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Converts the SD to an Auto-Inherit security descriptor.
+        /// </summary>
+        /// <param name="parent_descriptor">The parent security descriptor.</param>
+        /// <param name="object_type">Optional object type GUID.</param>
+        /// <param name="is_directory">True if a directory.</param>
+        /// <param name="generic_mapping">Generic mapping for the object.</param>
+        public void ConvertToAutoInherit(
+                SecurityDescriptor parent_descriptor,
+                Guid? object_type,
+                bool is_directory,
+                GenericMapping generic_mapping)
+        {
+            ConvertToAutoInherit(parent_descriptor, 
+                object_type, is_directory, generic_mapping, true);
+        }
+
+        /// <summary>
         /// Canonicalize the DACL if it exists.
         /// </summary>
         public void CanonicalizeDacl()
