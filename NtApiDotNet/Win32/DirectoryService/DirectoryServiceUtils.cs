@@ -20,9 +20,9 @@ namespace NtApiDotNet.Win32.DirectoryService
     public static class DirectoryServiceUtils
     {
         /// <summary>
-        /// Get the generic mapping for a service.
+        /// Get the generic mapping for directory services.
         /// </summary>
-        /// <returns>The service generic mapping.</returns>
+        /// <returns>The directory services generic mapping.</returns>
         public static GenericMapping GenericMapping
         {
             get
