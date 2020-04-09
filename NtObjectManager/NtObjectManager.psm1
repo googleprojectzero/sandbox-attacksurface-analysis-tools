@@ -1922,6 +1922,9 @@ function Format-NtAce {
 
         if ($Summary) {
             $cond = ""
+            if ($ace.IsCompoundAce) {
+                $cond += "(Server:$($ace.ServerSID.Name))"
+            }
             if ($ace.IsConditionalAce) {
                 $cond = "($($ace.Condition))"
             }
@@ -1936,16 +1939,15 @@ function Format-NtAce {
                     $cond += "(IOBJ:$($ace.InheritedObjectType))"
                 }
             }
+
             Write-Output "$($ace.Sid.Name): ($($ace.Type))($($ace.Flags))($mask_str)$cond"
         } else {
             Write-Output " - Type  : $($ace.Type)"
             Write-Output " - Name  : $($ace.Sid.Name)"
             Write-Output " - SID   : $($ace.Sid)"
-            if ($ace.Type -eq "AllowedCompound") {
+            if ($ace.IsCompoundAce) {
                 Write-Output " - ServerName: $($ace.ServerSid.Name)"
-                if(!$Summary) {
-                    Write-Output " - ServerSID : $($ace.ServerSid)"
-                }
+                Write-Output " - ServerSID : $($ace.ServerSid)"
             }
             Write-Output " - Mask  : 0x$($mask.ToString("X08"))"
             Write-Output " - $($access_name): $mask_str"

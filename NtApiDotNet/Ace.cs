@@ -65,6 +65,11 @@ namespace NtApiDotNet
         public bool IsMandatoryLabel => Type == AceType.MandatoryLabel;
 
         /// <summary>
+        /// Check if ACE is a compound ACE.
+        /// </summary>
+        public bool IsCompoundAce => Type == AceType.AllowedCompound;
+
+        /// <summary>
         /// Check if ACE is an audit ACE.
         /// </summary>
         public bool IsAuditAce => NtSecurity.IsAuditAceType(Type);
