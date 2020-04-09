@@ -80,7 +80,7 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-NtSecurityDescriptorOwner', 'Get-NtSecurityDescriptorGroup', 'Get-NtSecurityDescriptorDacl',
           'Get-NtSecurityDescriptorSacl', 'Set-NtSecurityDescriptorControl', 'Get-NtSecurityDescriptorControl',
           'Remove-NtSecurityDescriptorDacl', 'Remove-NtSecurityDescriptorSacl', 'Remove-NtSecurityDescriptorIntegrityLevel',
-          'Add-NtSecurityDescriptorControl', 'Remove-NtSecurityDescriptorControl'
+          'Add-NtSecurityDescriptorControl', 'Remove-NtSecurityDescriptorControl', 'Format-Win32SecurityDescriptor'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
