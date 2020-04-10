@@ -628,7 +628,7 @@ namespace NtApiDotNet
         public void MakePermanent() => MakePermanent(true);
 
         /// <summary>
-        /// Wait on the object to become signalled
+        /// Wait on the object to become signaled
         /// </summary>
         /// <param name="alertable">True to make the wait alertable</param>
         /// <param name="timeout">The time out</param>
@@ -640,7 +640,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Wait on the object to become signalled
+        /// Wait on the object to become signaled
         /// </summary>
         /// <param name="timeout">The time out</param>
         /// <returns>The success status of the wait, such as STATUS_SUCCESS or STATUS_TIMEOUT</returns>
@@ -651,7 +651,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Wait on the object to become signalled
+        /// Wait on the object to become signaled
         /// </summary>
         /// <param name="alertable">True to make the wait alertable</param>
         /// <param name="timeout_sec">The time out in seconds</param>
@@ -663,7 +663,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Wait on the object to become signalled
+        /// Wait on the object to become signaled
         /// </summary>
         /// <param name="timeout_sec">The time out in seconds</param>
         /// <returns>The success status of the wait, such as STATUS_SUCCESS or STATUS_TIMEOUT</returns>
@@ -674,7 +674,7 @@ namespace NtApiDotNet
         }
 
         /// <summary>
-        /// Wait on the object to become signalled for an infinite time.
+        /// Wait on the object to become signaled for an infinite time.
         /// </summary>
         /// <returns>The success status of the wait, such as STATUS_SUCCESS or STATUS_TIMEOUT</returns>
         /// <exception cref="NtException">Thrown on error</exception>

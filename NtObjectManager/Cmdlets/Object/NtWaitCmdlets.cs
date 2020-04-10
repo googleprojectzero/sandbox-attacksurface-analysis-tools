@@ -108,19 +108,19 @@ namespace NtObjectManager.Cmdlets.Object
     /// </summary>
     /// <example>
     ///   <code>$ev = Get-NtEvent \BaseNamedObjects\ABC&#x0A;Start-NtWait $ev -Second 10</code>
-    ///   <para>Get an event and wait for 10 seconds for it to be signalled.</para>
+    ///   <para>Get an event and wait for 10 seconds for it to be signaled.</para>
     /// </example>
     /// <example>
     ///   <code>$ev = Get-NtEvent \BaseNamedObjects\ABC&#x0A;$ev | Start-NtWait -Infinite</code>
-    ///   <para>Get an event and wait indefinitely for it to be signalled.</para>
+    ///   <para>Get an event and wait indefinitely for it to be signaled.</para>
     /// </example>
     /// <example>
     ///   <code>$ev = Get-NtEvent \BaseNamedObjects\ABC&#x0A;$ev | Start-NtWait -Infinite -Alertable</code>
-    ///   <para>Get an event and wait indefinitely for it to be signalled or alerted.</para>
+    ///   <para>Get an event and wait indefinitely for it to be signaled or alerted.</para>
     /// </example>
     /// <example>
     ///   <code>$evs = @($ev1, $ev2)$&#x0A;Start-NtWait $evs -WaitAll -Second 100</code>
-    ///   <para>Get a list of events and wait 100 seconds for all events to be signalled.</para>
+    ///   <para>Get a list of events and wait 100 seconds for all events to be signaled.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
     [Cmdlet(VerbsLifecycle.Start, "NtWait")]
@@ -141,7 +141,7 @@ namespace NtObjectManager.Cmdlets.Object
         public SwitchParameter Alertable { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify a multiple object wait should exit only when all objects becomes signalled.</para>
+        /// <para type="description">Specify a multiple object wait should exit only when all objects becomes signaled.</para>
         /// </summary>
         [Parameter]
         public SwitchParameter WaitAll { get; set; }
