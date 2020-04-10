@@ -2054,6 +2054,8 @@ Specify what parts of the security descriptor to format.
 Specify to map access masks back to generic access rights for the object type.
 .PARAMETER ToSddl
 Specify to format the security descriptor as SDDL.
+.PARAMETER Container
+Specify to display the access mask from Container Access Rights.
 .PARAMETER Acl
 Specify a ACL to format.
 .PARAMETER AuditOnly
@@ -7700,19 +7702,23 @@ Specify to only print a shortened format removing redundant information.
 Specify to format all security descriptor information including the SACL.
 .PARAMETER HideHeader
 Specify to not print the security descriptor header.
+.PARAMETER ToSddl
+Specify to format the security descriptor as SDDL.
+.PARAMETER Container
+Specify to display the access mask from Container Access Rights.
 .OUTPUTS
 None
 .EXAMPLE
 Format-Win32SecurityDescriptor -Name "c:\windows".
 Format the security descriptor for the c:\windows folder..
 .EXAMPLE
-Format-NtSecurityDescriptor -Name "c:\windows" -ToSddl
+Format-Win32SecurityDescriptor -Name "c:\windows" -ToSddl
 Format the security descriptor of an object as SDDL.
 .EXAMPLE
-Format-NtSecurityDescriptor -Name "c:\windows" -ToSddl -SecurityInformation Dacl, Label
+Format-Win32SecurityDescriptor -Name "c:\windows" -ToSddl -SecurityInformation Dacl, Label
 Format the security descriptor of an object as SDDL with only DACL and Label.
 .EXAMPLE
-Format-NtSecurityDescriptor -Name "Machine\Software" -Type RegistryKey
+Format-Win32SecurityDescriptor -Name "Machine\Software" -Type RegistryKey
 Format the security descriptor of a registry key.
 #>
 function Format-Win32SecurityDescriptor {
