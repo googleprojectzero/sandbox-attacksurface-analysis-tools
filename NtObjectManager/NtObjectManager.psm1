@@ -6769,7 +6769,7 @@ function Edit-NtSecurityDescriptor {
         [NtApiDotNet.SecurityAutoInheritFlags]$Flags = 0,
         [Parameter(ParameterSetName = "ModifySd")]
         [Parameter(ParameterSetName = "ToAutoInherit")]
-        [Parameter(Mandatory, ParameterSetName = "MapGenericSd")]
+        [Parameter(ParameterSetName = "MapGenericSd")]
         [NtApiDotNet.NtType]$Type,
         [Parameter(ParameterSetName = "CanonicalizeSd")]
         [switch]$CanonicalizeDacl,
