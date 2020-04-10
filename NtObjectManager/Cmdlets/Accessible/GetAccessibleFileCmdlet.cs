@@ -75,7 +75,8 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <para type="description">Specify a set of directory access rights which a directory must at least be accessible for to count as an access.</para>
         /// </summary>
         [Parameter]
-        public FileDirectoryAccessRights DirectoryAccessRights { get; set; }
+        [Alias("DirectoryAccessRights")]
+        public FileDirectoryAccessRights DirectoryAccess { get; set; }
 
         /// <summary>
         /// <para type="description">Limit access check to specific types of files.</para>
@@ -271,8 +272,8 @@ namespace NtObjectManager.Cmdlets.Accessible
         {
             FileOpenOptions options = FileOpenOptions.OpenReparsePoint | (_open_for_backup ? FileOpenOptions.OpenForBackupIntent : FileOpenOptions.None);
             NtType type = NtType.GetTypeByType<NtFile>();
-            AccessMask access_rights = type.MapGenericRights(AccessRights);
-            AccessMask dir_access_rights = type.MapGenericRights(DirectoryAccessRights);
+            AccessMask access_rights = type.MapGenericRights(Access);
+            AccessMask dir_access_rights = type.MapGenericRights(DirectoryAccess);
             using (var result = OpenFile(path, null, options))
             {
                 NtFile file = result.GetResultOrThrow();

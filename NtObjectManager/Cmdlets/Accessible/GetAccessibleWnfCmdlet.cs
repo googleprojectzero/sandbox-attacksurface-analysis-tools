@@ -77,7 +77,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
             GenericMapping generic_mapping = NtWnf.GenericMapping;
-            AccessMask access_rights = generic_mapping.MapMask(AccessRights);
+            AccessMask access_rights = generic_mapping.MapMask(Access);
             var entries = NtWnf.GetRegisteredNotifications();
 
             foreach (var entry in entries)

@@ -302,7 +302,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                 }
 
                 GenericMapping service_mapping = ServiceUtils.GetServiceGenericMapping();
-                AccessMask access_rights = service_mapping.MapMask(AccessRights);
+                AccessMask access_rights = service_mapping.MapMask(Access);
 
                 foreach (var service in services.Where(s => s?.SecurityDescriptor != null))
                 {

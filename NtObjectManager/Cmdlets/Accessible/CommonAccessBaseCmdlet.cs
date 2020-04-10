@@ -29,31 +29,36 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <para type="description">Specify a list of process IDs to open for their tokens.</para>
         /// </summary>
         [Parameter]
-        public int[] ProcessIds { get; set; }
+        [Alias("ProcessIds")]
+        public int[] ProcessId { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a list of process names to open for their tokens.</para>
         /// </summary>
         [Parameter]
-        public string[] ProcessNames { get; set; }
+        [Alias("ProcessNames")]
+        public string[] ProcessName { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a list of command lines to filter on find for the process tokens.</para>
         /// </summary>
         [Parameter]
-        public string[] ProcessCommandLines { get; set; }
+        [Alias("ProcessCommandLines")]
+        public string[] ProcessCommandLine { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a list token objects.</para>
         /// </summary>
         [Parameter]
-        public NtToken[] Tokens { get; set; }
+        [Alias("Tokens")]
+        public NtToken[] Token { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a list of process objects to get tokens from.</para>
         /// </summary>
         [Parameter]
-        public NtProcess[] Processes { get; set; }
+        [Alias("Processes")]
+        public NtProcess[] Process { get; set; }
 
         private protected abstract void RunAccessCheck(IEnumerable<TokenEntry> tokens);
 
@@ -236,29 +241,29 @@ namespace NtObjectManager.Cmdlets.Accessible
                 bool explicit_tokens = false;
                 NtToken.EnableDebugPrivilege();
 
-                if (Tokens != null)
+                if (Token != null)
                 {
-                    foreach (NtToken token in Tokens)
+                    foreach (NtToken token in Token)
                     {
                         AddTokenEntry(tokens, new TokenEntry(token));
                     }
                     explicit_tokens = true;
                 }
 
-                if (ProcessIds != null)
+                if (ProcessId != null)
                 {
-                    GetTokensFromPids(tokens, ProcessIds);
+                    GetTokensFromPids(tokens, ProcessId);
                     explicit_tokens = true;
                 }
 
-                if (GetTokensFromArguments(tokens, ProcessNames, ProcessCommandLines))
+                if (GetTokensFromArguments(tokens, ProcessName, ProcessCommandLine))
                 {
                     explicit_tokens = true;
                 }
 
-                if (Processes != null)
+                if (Process != null)
                 {
-                    foreach (NtProcess process in Processes)
+                    foreach (NtProcess process in Process)
                     {
                         AddTokenEntryFromProcess(tokens, process);
                     }

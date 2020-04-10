@@ -174,7 +174,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             using (var result = OpenKey(path, null, false, _open_for_backup))
             {
                 NtKey key = result.GetResultOrThrow();
-                DumpKey(tokens, result.Result.NtType.MapGenericRights(AccessRights), _open_for_backup, key, GetMaxDepth());
+                DumpKey(tokens, result.Result.NtType.MapGenericRights(Access), _open_for_backup, key, GetMaxDepth());
             }
         }
     }

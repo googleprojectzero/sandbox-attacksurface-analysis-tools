@@ -152,7 +152,8 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <para type="description">Specify specific access rights for threads.</para>
         /// </summary>
         [Parameter]
-        public ThreadAccessRights ThreadAccessRights { get; set; }
+        [Alias("ThreadAccessRights")]
+        public ThreadAccessRights ThreadAccess { get; set; }
 
         /// <summary>
         /// <para type="description">Specify that dead processes should be shown.</para>
@@ -381,8 +382,8 @@ namespace NtObjectManager.Cmdlets.Accessible
 
         private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
-            AccessMask access_rights = _process_type.MapGenericRights(AccessRights);
-            AccessMask thread_access_rights = _thread_type.MapGenericRights(ThreadAccessRights);
+            AccessMask access_rights = _process_type.MapGenericRights(Access);
+            AccessMask thread_access_rights = _thread_type.MapGenericRights(ThreadAccess);
             if (!NtToken.EnableDebugPrivilege())
             {
                 WriteWarning("Current process doesn't have SeDebugPrivilege, results may be inaccurate");

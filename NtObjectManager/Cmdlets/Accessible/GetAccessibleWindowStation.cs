@@ -63,12 +63,13 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <para type="description">Specify desktop access rights when checking Desktops.</para>
         /// </summary>
         [Parameter]
-        public DesktopAccessRights DesktopAccessRights { get; set; }
+        [Alias("DesktopAccessRights")]
+        public DesktopAccessRights DesktopAccess { get; set; }
 
         private void RunAccessCheckDesktop(IEnumerable<TokenEntry> tokens, NtWindowStation winsta)
         {
             NtType desktop_type = NtType.GetTypeByType<NtDesktop>();
-            AccessMask desktop_access_rights = desktop_type.GenericMapping.MapMask(DesktopAccessRights);
+            AccessMask desktop_access_rights = desktop_type.GenericMapping.MapMask(DesktopAccess);
             using (var desktops = winsta.GetAccessibleDesktops().ToDisposableList())
             {
                 foreach (var desktop in desktops)
@@ -95,7 +96,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         {
             NtType winsta_type = NtType.GetTypeByType<NtWindowStation>();
             
-            AccessMask winsta_access_rights = winsta_type.GenericMapping.MapMask(AccessRights);
+            AccessMask winsta_access_rights = winsta_type.GenericMapping.MapMask(Access);
             bool check_winsta = CheckMode == WindowStationCheckMode.WindowStationOnly || CheckMode == WindowStationCheckMode.WindowStationAndDesktop;
             bool check_desktop = CheckMode == WindowStationCheckMode.DesktopOnly || CheckMode == WindowStationCheckMode.WindowStationAndDesktop;
 

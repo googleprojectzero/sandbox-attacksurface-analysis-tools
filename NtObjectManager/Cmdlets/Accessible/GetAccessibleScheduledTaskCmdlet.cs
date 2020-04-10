@@ -357,7 +357,8 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <para type="description">Specify a set of directory access rights which a folder must at least be accessible for to count as an access.</para>
         /// </summary>
         [Parameter]
-        public FileDirectoryAccessRights DirectoryAccessRights { get; set; }
+        [Alias("DirectoryAccessRights")]
+        public FileDirectoryAccessRights DirectoryAccess { get; set; }
 
         /// <summary>
         /// <para type="description">Shortcut to specify that we're querying for executable tasks.</para>
@@ -391,7 +392,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                 AccessMask requested_access;
                 if (entry.Folder)
                 {
-                    requested_access = Writable ? FileDirectoryAccessRights.AddSubDirectory : DirectoryAccessRights;
+                    requested_access = Writable ? FileDirectoryAccessRights.AddSubDirectory : DirectoryAccess;
                 }
                 else
                 {
@@ -403,7 +404,7 @@ namespace NtObjectManager.Cmdlets.Accessible
 
                     if (requested_access.IsEmpty)
                     {
-                        requested_access = AccessRights;
+                        requested_access = Access;
                     }
                 }
 

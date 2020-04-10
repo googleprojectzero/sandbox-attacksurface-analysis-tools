@@ -297,7 +297,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             {
                 if (result.IsSuccess)
                 {
-                    DumpDirectory(tokens, GetTypeFilter(), AccessRights, result.Result, GetMaxDepth());
+                    DumpDirectory(tokens, GetTypeFilter(), Access, result.Result, GetMaxDepth());
                 }
             }
         }
@@ -324,7 +324,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                     {
                         if (CheckUnnamed || !string.IsNullOrEmpty(obj.Result.FullPath))
                         {
-                            DumpObject(tokens, type_filter, AccessRights, obj.Result, 
+                            DumpObject(tokens, type_filter, Access, obj.Result, 
                                 obj.Result.NtTypeName.Equals("Directory", StringComparison.OrdinalIgnoreCase));
                         }
                     }

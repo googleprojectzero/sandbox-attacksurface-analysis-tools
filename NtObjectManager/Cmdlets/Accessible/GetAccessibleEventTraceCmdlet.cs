@@ -81,7 +81,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
             NtType type = NtType.GetTypeByType<NtEtwRegistration>();
-            AccessMask access_rights = type.GenericMapping.MapMask(AccessRights);
+            AccessMask access_rights = type.GenericMapping.MapMask(Access);
             var providers = EventTracing.GetProviders();
 
             if (ProviderId != null && ProviderId.Length > 0)

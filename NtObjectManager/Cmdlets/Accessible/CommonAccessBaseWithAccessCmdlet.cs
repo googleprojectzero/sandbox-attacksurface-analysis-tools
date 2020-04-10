@@ -28,7 +28,8 @@ namespace NtObjectManager.Cmdlets.Accessible
         /// <para type="description">Access rights to check for in an object's access.</para>
         /// </summary>
         [Parameter]
-        public A AccessRights { get; set; }
+        [Alias("AccessRights")]
+        public A Access { get; set; }
 
         /// <summary>
         /// <para type="description">If AccessRights specified require that only part of the access rights

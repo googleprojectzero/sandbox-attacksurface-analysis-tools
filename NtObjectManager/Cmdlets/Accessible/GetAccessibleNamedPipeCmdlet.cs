@@ -150,7 +150,7 @@ namespace NtObjectManager.Cmdlets.Accessible
         private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
         {
             NtType type = NtType.GetTypeByType<NtFile>();
-            AccessMask access_rights = type.MapGenericRights(AccessRights);
+            AccessMask access_rights = type.MapGenericRights(Access);
             using (var result = OpenFile("", 
                 FileAccessRights.ReadData, false))
             {

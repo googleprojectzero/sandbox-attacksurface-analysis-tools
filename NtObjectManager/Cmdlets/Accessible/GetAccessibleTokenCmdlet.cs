@@ -157,7 +157,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             }
 
             NtType type = NtType.GetTypeByType<NtToken>();
-            AccessMask access_rights = type.MapGenericRights(AccessRights);
+            AccessMask access_rights = type.MapGenericRights(Access);
             int current_session_id = NtProcess.Current.SessionId;
 
             using (var procs = NtProcess.GetProcesses(ProcessAccessRights.QueryInformation | ProcessAccessRights.ReadControl, false).ToDisposableList())

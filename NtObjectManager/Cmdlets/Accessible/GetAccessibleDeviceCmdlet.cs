@@ -306,7 +306,7 @@ namespace NtObjectManager.Cmdlets.Accessible
 
             if (devices.Count > 0)
             {
-                AccessMask access_rights = _file_type.MapGenericRights(AccessRights);
+                AccessMask access_rights = _file_type.MapGenericRights(Access);
                 EaBuffer ea_buffer = CheckEaBuffer ? (EaBuffer ?? CreateDummyEaBuffer()) : null;
                 List<string> namespace_paths = new List<string>(NamespacePath ?? new[] { "XYZ" });
 
