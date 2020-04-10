@@ -40,29 +40,29 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify a wait time in seconds.</para>
         /// </summary>
         [Parameter(ParameterSetName = "time")]
-        [Alias(new string[] { "s" })]
-        public int Seconds { get; set; }
+        [Alias("s", "Seconds")]
+        public int Second { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a wait time in milliseconds.</para>
         /// </summary>
         [Parameter(ParameterSetName = "time")]
-        [Alias(new string[] { "ms" })]
-        public long MilliSeconds { get; set; }
+        [Alias("ms", "MilliSeconds")]
+        public long MilliSecond { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a wait time in minutes.</para>
         /// </summary>
         [Parameter(ParameterSetName = "time")]
-        [Alias(new string[] { "m" })]
-        public int Minutes { get; set; }
+        [Alias("m", "Minutes")]
+        public int Minute { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a wait time in hours.</para>
         /// </summary>
         [Parameter(ParameterSetName = "time")]
-        [Alias(new string[] { "h" })]
-        public int Hours { get; set; }
+        [Alias("h", "Hours")]
+        public int Hour { get; set; }
 
         /// <summary>
         /// <para type="description">Specify an infinite wait time.</para>
@@ -81,7 +81,7 @@ namespace NtObjectManager.Cmdlets.Object
                 return NtWaitTimeout.Infinite;
             }
 
-            long total_timeout = MilliSeconds + ((((Hours * 60L) + Minutes) * 60L) + Seconds) * 1000L;
+            long total_timeout = MilliSecond + ((((Hour * 60L) + Minute) * 60L) + Second) * 1000L;
             if (total_timeout < 0)
             {
                 throw new ArgumentException("Total timeout can't be negative.");
@@ -100,14 +100,14 @@ namespace NtObjectManager.Cmdlets.Object
     }
 
     /// <summary>
-    /// <para type="synopsis">Wait on one or more NT objects to become signalled.</para>
-    /// <para type="description">This cmdlet allows you to issue a wait on one or more NT objects until they become signalled.
+    /// <para type="synopsis">Wait on one or more NT objects to become signaled.</para>
+    /// <para type="description">This cmdlet allows you to issue a wait on one or more NT objects until they become signaled.
     /// This is used for example to acquire a Mutant, decrement a Semaphore or wait for a Process to exit. The timeout
     /// value is a combination of all the allowed time parameters, e.g. if you specify 1 second and 1000 milliseconds it will
-    /// actually wait 2 seconds in total. Specifying -Infinite overrides the time parameters and will wait indefinitely.</para>
+    /// wait 2 seconds in total. Specifying -Infinite overrides the time parameters and will wait indefinitely.</para>
     /// </summary>
     /// <example>
-    ///   <code>$ev = Get-NtEvent \BaseNamedObjects\ABC&#x0A;Start-NtWait $ev -Seconds 10</code>
+    ///   <code>$ev = Get-NtEvent \BaseNamedObjects\ABC&#x0A;Start-NtWait $ev -Second 10</code>
     ///   <para>Get an event and wait for 10 seconds for it to be signalled.</para>
     /// </example>
     /// <example>
@@ -119,7 +119,7 @@ namespace NtObjectManager.Cmdlets.Object
     ///   <para>Get an event and wait indefinitely for it to be signalled or alerted.</para>
     /// </example>
     /// <example>
-    ///   <code>$evs = @($ev1, $ev2)$&#x0A;Start-NtWait $evs -WaitAll -Seconds 100</code>
+    ///   <code>$evs = @($ev1, $ev2)$&#x0A;Start-NtWait $evs -WaitAll -Second 100</code>
     ///   <para>Get a list of events and wait 100 seconds for all events to be signalled.</para>
     /// </example>
     /// <para type="link">about_ManagingNtObjectLifetime</para>
@@ -131,7 +131,8 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify a list of objects to wait on.</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = true, ValueFromPipeline = true)]
-        public NtObject[] Objects { get; set; }
+        [Alias("Objects")]
+        public NtObject[] Object { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the wait should be alertable.</para>
@@ -150,20 +151,20 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         protected override void ProcessRecord()
         {
-            if (Objects == null || Objects.Length == 0)
+            if (Object == null || Object.Length == 0)
             {
                 throw new ArgumentException("Must specify at least one object to wait on.");
             }
 
             NtWaitTimeout timeout = GetTimeout();
 
-            if (Objects.Length == 1)
+            if (Object.Length == 1)
             {
-                WriteObject(Objects[0].Wait(Alertable, timeout));
+                WriteObject(Object[0].Wait(Alertable, timeout));
             }
             else
             {
-                WriteObject(NtWait.Wait(Objects, Alertable, WaitAll, timeout));
+                WriteObject(NtWait.Wait(Object, Alertable, WaitAll, timeout));
             }
         }
     }
