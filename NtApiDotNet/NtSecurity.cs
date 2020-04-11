@@ -412,6 +412,25 @@ namespace NtApiDotNet
 
         /// <summary>
         /// Do an access check between a security descriptor and a token to determine the allowed access.
+        /// This function returns a list of results rather than a single entry. It should only be used
+        /// with object types.
+        /// </summary>
+        /// <param name="sd">The security descriptor</param>
+        /// <param name="token">The access token.</param>
+        /// <param name="desired_access">The set of access rights to check against</param>
+        /// <param name="principal">An optional principal SID used to replace the SELF SID in a security descriptor.</param>
+        /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
+        /// <param name="object_types">List of object types to check against.</param>
+        /// <returns>The list of access check results.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
+        public static AccessCheckResult[] AccessCheckWithResultList(SecurityDescriptor sd, NtToken token,
+            AccessMask desired_access, Sid principal, GenericMapping generic_mapping, IEnumerable<ObjectTypeEntry> object_types)
+        {
+            return AccessCheckWithResultList(sd, token, desired_access, principal, generic_mapping, object_types, true).Result;
+        }
+
+        /// <summary>
+        /// Do an access check between a security descriptor and a token to determine the allowed access.
         /// </summary>
         /// <param name="sd">The security descriptor</param>
         /// <param name="token">The access token.</param>
