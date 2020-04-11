@@ -334,6 +334,84 @@ namespace NtApiDotNet
 
         /// <summary>
         /// Do an access check between a security descriptor and a token to determine the allowed access.
+        /// This function returns a list of results rather than a single entry. It should only be used
+        /// with object types.
+        /// </summary>
+        /// <param name="sd">The security descriptor</param>
+        /// <param name="token">The access token.</param>
+        /// <param name="desired_access">The set of access rights to check against</param>
+        /// <param name="principal">An optional principal SID used to replace the SELF SID in a security descriptor.</param>
+        /// <param name="generic_mapping">The type specific generic mapping (get from corresponding NtType entry).</param>
+        /// <param name="object_types">List of object types to check against.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of access check results.</returns>
+        /// <exception cref="NtException">Thrown if an error occurred in the access check.</exception>
+        public static NtResult<AccessCheckResult[]> AccessCheckWithResultList(SecurityDescriptor sd, NtToken token,
+            AccessMask desired_access, Sid principal, GenericMapping generic_mapping, IEnumerable<ObjectTypeEntry> object_types,
+            bool throw_on_error)
+        {
+            if (sd == null)
+            {
+                throw new ArgumentNullException(nameof(sd));
+            }
+
+            if (token == null)
+            {
+                throw new ArgumentNullException(nameof(token));
+            }
+
+            if (object_types == null)
+            {
+                throw new ArgumentNullException(nameof(object_types));
+            }
+
+            if (!object_types.Any())
+            {
+                throw new ArgumentException("Must specify at least one object type.");
+            }
+
+            if (desired_access.IsEmpty)
+            {
+                return object_types.Select((o, i) => new AccessCheckResult(NtStatus.STATUS_ACCESS_DENIED,
+                            0, null, generic_mapping, o.ObjectType)).ToArray().CreateResult();
+            }
+
+            using (var list = new DisposableList())
+            {
+                var sd_buffer = list.AddResource(sd.ToSafeBuffer());
+                var imp_token = list.AddResource(DuplicateForAccessCheck(token, throw_on_error));
+                if (!imp_token.IsSuccess)
+                {
+                    return imp_token.Cast<AccessCheckResult[]>();
+                }
+                var self_sid = list.AddResource(principal?.ToSafeBuffer() ?? SafeSidBufferHandle.Null);
+                var privs = list.AddResource(new SafePrivilegeSetBuffer());
+                var object_type_list = ConvertObjectTypes(object_types, list);
+                int repeat_count = 1;
+
+                while (true)
+                {
+                    int buffer_length = privs.Length;
+                    AccessMask[] granted_access_list = new AccessMask[object_type_list.Length];
+                    NtStatus[] status_list = new NtStatus[object_type_list.Length];
+                    NtStatus status = NtSystemCalls.NtAccessCheckByTypeResultList(sd_buffer, self_sid, imp_token.Result.Handle, desired_access,
+                        object_type_list, object_type_list?.Length ?? 0, ref generic_mapping, privs,
+                        ref buffer_length, granted_access_list, status_list);
+                    if (repeat_count == 0 || status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+                    {
+                        return status.CreateResult(throw_on_error, ()
+                            => object_types.Select((o, i) => new AccessCheckResult(status_list[i],
+                            granted_access_list[i], privs, generic_mapping, o.ObjectType)).ToArray());
+                    }
+
+                    repeat_count--;
+                    privs = list.AddResource(new SafePrivilegeSetBuffer(buffer_length));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Do an access check between a security descriptor and a token to determine the allowed access.
         /// </summary>
         /// <param name="sd">The security descriptor</param>
         /// <param name="token">The access token.</param>
@@ -1738,7 +1816,7 @@ namespace NtApiDotNet
         {
             if (object_types == null)
                 return Guid.Empty;
-            return object_types.Select(e => e.ObjectType).FirstOrDefault();
+            return object_types.FirstOrDefault()?.ObjectType ?? Guid.Empty;
         }
 
         #endregion

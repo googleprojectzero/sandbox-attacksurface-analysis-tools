@@ -840,6 +840,20 @@ namespace NtApiDotNet
             out NtStatus AccessStatus);
 
         [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAccessCheckByTypeResultList(
+            SafeBuffer SecurityDescriptor,
+            SafeHandle PrincipalSelfSid,
+            SafeKernelObjectHandle ClientToken,
+            AccessMask DesiredAccess,
+            [In] ObjectTypeList[] ObjectTypeList,
+            int ObjectTypeListLength,
+            ref GenericMapping GenericMapping,
+            SafePrivilegeSetBuffer RequiredPrivilegesBuffer,
+            ref int BufferLength,
+            [Out] AccessMask[] GrantedAccessList,
+            [Out] NtStatus[] AccessStatusList);
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus NtPrivilegeCheck(
             SafeKernelObjectHandle ClientToken,
             SafePrivilegeSetBuffer RequiredPrivileges,
