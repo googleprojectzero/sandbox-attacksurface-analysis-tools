@@ -2533,6 +2533,34 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Do a single privilege check on the effective token.
+        /// </summary>
+        /// <param name="privilege">The privilege to check.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True if the privilege is enabled.</returns>
+        public static NtResult<bool> EffectivePrivilegeCheck(TokenPrivilegeValue privilege, bool throw_on_error)
+        {
+            using (var token = OpenEffectiveToken(throw_on_error))
+            {
+                if (!token.IsSuccess)
+                {
+                    return token.Cast<bool>();
+                }
+                return token.Result.SinglePrivilegeCheck(privilege).CreateResult();
+            }
+        }
+
+        /// <summary>
+        /// Do a single privilege check on the effective token.
+        /// </summary>
+        /// <param name="privilege">The privilege to check.</param>
+        /// <returns>True if the privilege is enabled.</returns>
+        public static bool EffectivePrivilegeCheck(TokenPrivilegeValue privilege)
+        {
+            return EffectivePrivilegeCheck(privilege, false).GetResultOrDefault(false);
+        }
+
         #endregion
 
         #region Static Properties
