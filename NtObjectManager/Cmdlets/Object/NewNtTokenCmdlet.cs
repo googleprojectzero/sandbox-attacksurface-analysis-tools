@@ -57,11 +57,17 @@ namespace NtObjectManager.Cmdlets.Object
         public UserGroup[] UserGroup { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify a list of groups.</para>
+        /// <para type="description">Specify a list of privileges.</para>
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "FromGroup")]
         [Alias("Privileges")]
         public TokenPrivilegeValue[] Privilege { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify a list of privileges with full details of the flags.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromUserGroup")]
+        public TokenPrivilege[] UserPrivilege { get; set; }
 
         /// <summary>
         /// <para type="description">Specify an authentication ID.</para>
@@ -138,6 +144,15 @@ namespace NtObjectManager.Cmdlets.Object
             return groups;
         }
 
+        private IEnumerable<TokenPrivilege> GetPrivileges()
+        {
+            if (ParameterSetName == "FromUserGroup")
+            {
+                return UserPrivilege;
+            }
+            return Privilege.Select(p => new TokenPrivilege(p, PrivilegeAttributes.EnabledByDefault | PrivilegeAttributes.Enabled));
+        }
+
         /// <summary>
         /// Method to create an object from a set of object attributes.
         /// </summary>
@@ -145,8 +160,12 @@ namespace NtObjectManager.Cmdlets.Object
         /// <returns>The newly created object.</returns>
         protected override object CreateObject(ObjectAttributes obj_attributes)
         {
+            if (!NtToken.EffectivePrivilegeCheck(TokenPrivilegeValue.SeCreateTokenPrivilege))
+            {
+                WriteWarning("SeCreateTokenPrivilege is not enabled.");
+            }
             return NtToken.Create(Access, obj_attributes, TokenType, AuthenticationId, ExpirationTime.ToFileTimeUtc(), new UserGroup(User, GroupAttributes.Owner),
-                GetGroups(), Privilege.Select(p => new TokenPrivilege(p, PrivilegeAttributes.EnabledByDefault | PrivilegeAttributes.Enabled)), UserAttribute,
+                GetGroups(), GetPrivileges(), UserAttribute,
                 DeviceAttribute, DeviceGroup, MandatoryPolicy, User, User, DefaultAcl, "NT.NET");
         }
 
@@ -160,6 +179,8 @@ namespace NtObjectManager.Cmdlets.Object
             ExpirationTime = DateTime.Now.AddYears(10);
             Group = new Sid[0];
             Privilege = new TokenPrivilegeValue[0];
+            UserPrivilege = new TokenPrivilege[0];
+            UserGroup = new UserGroup[0];
             DefaultAcl = new Acl();
             DefaultAcl.AddAccessAllowedAce(GenericAccessRights.GenericAll, AceFlags.None, "SY");
             DefaultAcl.AddAccessAllowedAce(GenericAccessRights.GenericAll, AceFlags.None, "BA");
