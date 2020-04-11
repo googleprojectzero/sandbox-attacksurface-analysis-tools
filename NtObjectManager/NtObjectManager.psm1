@@ -7740,3 +7740,74 @@ function Format-Win32SecurityDescriptor {
         -Container:$Container -ToSddl:$ToSddl -Summary:$Summary -ShowAll:$ShowAll -HideHeader:$HideHeader `
         -DisplayPath $Name
 }
+
+<#
+.SYNOPSIS
+Creates a new Object Type Tree object.
+.DESCRIPTION
+This cmdlet creates a new Object Type Tree object from a GUID. You can then use Add-NtObjectTypeTree to
+add more branches to the tree.
+.PARAMETER ObjectType
+Specify the Object Type GUID.
+.PARAMETER Nodes
+Specify a list of tree objects to add a children.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Utilities.Security.ObjectTypeTree
+.EXAMPLE
+$tree = New-NtObjectTypeTree "bf967a86-0de6-11d0-a285-00aa003049e2"
+Creates a new Object Type tree with the root type as 'bf967a86-0de6-11d0-a285-00aa003049e2'.
+.EXAMPLE
+$tree = New-NtObjectTypeTree "bf967a86-0de6-11d0-a285-00aa003049e2" -Nodes $children
+Creates a new Object Type tree with the root type as 'bf967a86-0de6-11d0-a285-00aa003049e2' with a list of children.
+#>
+function New-NtObjectTypeTree {
+    [CmdletBinding(DefaultParameterSetName = "FromName")]
+    Param(
+        [Parameter(Position = 0, Mandatory)]
+        [guid]$ObjectType,
+        [NtApiDotNet.Utilities.Security.ObjectTypeTree[]]$Nodes
+    )
+
+    $tree = New-Object NtApiDotNet.Utilities.Security.ObjectTypeTree -ArgumentList $ObjectType
+    if ($Nodes -ne $null -and $Nodes.Count -gt 0) {
+        $tree.Nodes.AddRange($Nodes)
+    }
+    Write-Output $tree
+}
+
+<#
+.SYNOPSIS
+Creates a new Object Type Tree object.
+.DESCRIPTION
+This cmdlet creates a new Object Type Tree object from a GUID. You can then use Add-NtObjectTypeTree to
+add more branches to the tree.
+.PARAMETER ObjectType
+Specify the Object Type GUID to add.
+.PARAMETER Tree
+Specify the root tree to add to.
+.PARAMETER PassThru
+Specify to return the added tree.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Utilities.Security.ObjectTypeTree
+.EXAMPLE
+Add-NtObjectTypeTree $tree "bf967a86-0de6-11d0-a285-00aa003049e2"
+Adds a new Object Type tree with the root type as 'bf967a86-0de6-11d0-a285-00aa003049e2'.
+#>
+function Add-NtObjectTypeTree {
+    [CmdletBinding(DefaultParameterSetName = "FromName")]
+    Param(
+        [Parameter(Position = 0, Mandatory)]
+        [NtApiDotNet.Utilities.Security.ObjectTypeTree]$Tree,
+        [Parameter(Position = 1, Mandatory)]
+        [guid]$ObjectType,
+        [switch]$PassThru
+    )
+    $result = $Tree.AddObjectType($ObjectType)
+    if ($PassThru) {
+        Write-Output $result
+    }
+}

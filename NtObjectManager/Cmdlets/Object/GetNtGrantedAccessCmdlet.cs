@@ -13,8 +13,10 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtApiDotNet.Utilities.Security;
 using NtObjectManager.Utils;
 using System;
+using System.Linq;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Object
@@ -103,7 +105,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify object types for access check..</para>
         /// </summary>
         [Parameter]
-        public ObjectTypeEntry[] ObjectType { get; set; }
+        public ObjectTypeTree ObjectType { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -168,8 +170,21 @@ namespace NtObjectManager.Cmdlets.Object
                 NtType type = GetNtType();
                 if (type == null)
                     throw new ArgumentException("Must specify a type.");
+
+                var object_types = ObjectType?.ToArray();
+                // If we have multiple object types and pass result is true then
+                // we don't support any another output format.
+                if (object_types?.Length > 1 && PassResult)
+                {
+                    var result_list = NtSecurity.AccessCheckWithResultList(GetSecurityDescriptor(),
+                        token, AccessMask, Principal, type.GenericMapping, object_types);
+                    WriteObject(result_list.Select(r => r.ToSpecificAccess(type.AccessRightsType)), true);
+                    return;
+                }
+
                 var result = NtSecurity.AccessCheck(GetSecurityDescriptor(), 
-                    token, AccessMask, Principal, type.GenericMapping, ObjectType).ToSpecificAccess(type.AccessRightsType);
+                    token, AccessMask, Principal, type.GenericMapping, object_types)
+                    .ToSpecificAccess(type.AccessRightsType);
                 if (PassResult)
                 {
                     WriteObject(result);

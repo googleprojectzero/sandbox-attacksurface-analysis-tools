@@ -519,6 +519,15 @@ namespace NtApiDotNet
         {
         }
 
+        /// <summary>
+        /// Overridden ToString method.
+        /// </summary>
+        /// <returns>The object formatted.</returns>
+        public override string ToString()
+        {
+            return $"{ObjectType} - Level {Level}";
+        }
+
         internal ObjectTypeList ToStruct(DisposableList resources)
         {
             return new ObjectTypeList()
