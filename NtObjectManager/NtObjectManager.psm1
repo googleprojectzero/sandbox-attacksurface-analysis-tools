@@ -1547,6 +1547,8 @@ function Format-NtToken {
         [parameter(ParameterSetName="Complex")]
         [switch]$DeviceClaims,
         [parameter(ParameterSetName="Complex")]
+        [switch]$DeviceGroup,
+        [parameter(ParameterSetName="Complex")]
         [switch]$TrustLevel,
         [parameter(ParameterSetName="Complex")]
         [switch]$Information,
@@ -1571,6 +1573,7 @@ function Format-NtToken {
     $Owner = $true
     $PrimaryGroup = $true
     $DefaultDacl = $true
+    $DeviceGroup = $true
   } elseif ($Basic) {
     $Group = $true
     $User = $true
@@ -1663,6 +1666,12 @@ function Format-NtToken {
     "DEVICE CLAIM ATTRIBUTES"
     "-------------------"
     Format-ObjectTable $token.DeviceClaimAttributes | Write-Output
+  }
+
+  if ($DeviceGroup -and $Token.DeviceGroups.Length -gt 0) {
+    "DEVICE GROUP SID INFORMATION"
+    "----------------------------"
+    Format-ObjectTable $token.DeviceGroups | Write-Output
   }
 
   if ($DefaultDacl -and $Token.DefaultDacl -ne $null) {
