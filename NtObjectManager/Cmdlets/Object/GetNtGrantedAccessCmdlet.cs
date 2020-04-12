@@ -63,7 +63,13 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify an access mask to check against. If not specified will request maximum access.</para>
         /// </summary>
         [Parameter]
-        public AccessMask AccessMask { get; set; }
+        public AccessMask? AccessMask { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the generic access mask to check against.</para>
+        /// </summary>
+        [Parameter]
+        public GenericAccessRights? GenericAccess { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a kernel object to get security descriptor from.</para>
@@ -107,12 +113,17 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter]
         public ObjectTypeTree ObjectType { get; set; }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public GetNtGrantedAccessCmdlet()
+        private AccessMask GetDesiredAccess()
         {
-            AccessMask = GenericAccessRights.MaximumAllowed;
+            if (GenericAccess.HasValue)
+            {
+                return GenericAccess;
+            }
+            if (AccessMask.HasValue)
+            {
+                return AccessMask.Value;
+            }
+            return GenericAccessRights.MaximumAllowed;
         }
 
         private SecurityDescriptor GetSecurityDescriptor()
@@ -177,13 +188,13 @@ namespace NtObjectManager.Cmdlets.Object
                 if (object_types?.Length > 1 && PassResult)
                 {
                     var result_list = NtSecurity.AccessCheckWithResultList(GetSecurityDescriptor(),
-                        token, AccessMask, Principal, type.GenericMapping, object_types);
+                        token, GetDesiredAccess(), Principal, type.GenericMapping, object_types);
                     WriteObject(result_list.Select(r => r.ToSpecificAccess(type.AccessRightsType)), true);
                     return;
                 }
 
                 var result = NtSecurity.AccessCheck(GetSecurityDescriptor(), 
-                    token, AccessMask, Principal, type.GenericMapping, object_types)
+                    token, GetDesiredAccess(), Principal, type.GenericMapping, object_types)
                     .ToSpecificAccess(type.AccessRightsType);
                 if (PassResult)
                 {
