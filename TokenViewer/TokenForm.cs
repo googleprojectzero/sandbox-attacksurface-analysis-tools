@@ -125,12 +125,12 @@ namespace TokenViewer
             return value.ToString();
         }
 
-        private void UpdateSecurityAttributes(TreeView treeView, SecurityAttributeType type)
+        private void UpdateSecurityAttributes(TabPage tab_page, TreeView treeView, SecurityAttributeType type)
         {
             var attrs = _token.GetSecurityAttributes(type, false);
-            if (!attrs.IsSuccess)
+            if (!attrs.IsSuccess || attrs.Result.Length == 0)
             {
-                return;
+                tabControlSecurityAttributes.TabPages.Remove(tab_page);
             }
             treeView.Nodes.Clear();
             foreach (ClaimSecurityAttribute attr in attrs.Result)
@@ -319,9 +319,9 @@ namespace TokenViewer
             txtTrustLevel.Text = trust_level != null ? trust_level.Name : "N/A";
             UpdateTokenFlags();
             UpdatePrivileges();
-            UpdateSecurityAttributes(treeViewLocalSecurityAttributes, SecurityAttributeType.Local);
-            UpdateSecurityAttributes(treeViewUserClaimSecurityAttributes, SecurityAttributeType.User);
-            UpdateSecurityAttributes(treeViewDeviceClaimSecurityAttributes, SecurityAttributeType.Device);
+            UpdateSecurityAttributes(tabPageLocalSecurityAttributes, treeViewLocalSecurityAttributes, SecurityAttributeType.Local);
+            UpdateSecurityAttributes(tabPageUserClaimSecurityAttributes, treeViewUserClaimSecurityAttributes, SecurityAttributeType.User);
+            UpdateSecurityAttributes(tabPageDeviceClaimSecurityAttributes, treeViewDeviceClaimSecurityAttributes, SecurityAttributeType.Device);
 
             if (_token.IsAccessGranted(TokenAccessRights.ReadControl))
             {
