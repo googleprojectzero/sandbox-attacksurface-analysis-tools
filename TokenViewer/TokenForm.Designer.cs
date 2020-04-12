@@ -141,7 +141,7 @@
             this.btnToggleVirtualizationEnabled = new System.Windows.Forms.Button();
             this.txtHandleAccess = new System.Windows.Forms.TextBox();
             this.btnToggleUIAccess = new System.Windows.Forms.Button();
-            this.llbSecurityAttributes = new System.Windows.Forms.Label();
+            this.lblSecurityAttributes = new System.Windows.Forms.Label();
             this.txtMandatoryILPolicy = new System.Windows.Forms.TextBox();
             this.txtVirtualizationEnabled = new System.Windows.Forms.TextBox();
             this.txtVirtualizationAllowed = new System.Windows.Forms.TextBox();
@@ -192,6 +192,10 @@
             this.tabPageSecurity = new System.Windows.Forms.TabPage();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.tabPageDeviceGroup = new System.Windows.Forms.TabPage();
+            this.listViewDeviceGroup = new System.Windows.Forms.ListView();
+            this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
@@ -280,6 +284,7 @@
             this.tabPageSecurity.SuspendLayout();
             tableLayoutPanelDefaultDacl.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
+            this.tabPageDeviceGroup.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabPageMain
@@ -998,7 +1003,7 @@
             groupBoxMisc.Controls.Add(label26);
             groupBoxMisc.Controls.Add(this.txtHandleAccess);
             groupBoxMisc.Controls.Add(this.btnToggleUIAccess);
-            groupBoxMisc.Controls.Add(this.llbSecurityAttributes);
+            groupBoxMisc.Controls.Add(this.lblSecurityAttributes);
             groupBoxMisc.Controls.Add(label22);
             groupBoxMisc.Controls.Add(this.txtMandatoryILPolicy);
             groupBoxMisc.Controls.Add(label20);
@@ -1022,6 +1027,7 @@
             this.tabControlSecurityAttributes.Controls.Add(this.tabPageLocalSecurityAttributes);
             this.tabControlSecurityAttributes.Controls.Add(this.tabPageUserClaimSecurityAttributes);
             this.tabControlSecurityAttributes.Controls.Add(this.tabPageDeviceClaimSecurityAttributes);
+            this.tabControlSecurityAttributes.Controls.Add(this.tabPageDeviceGroup);
             this.tabControlSecurityAttributes.Location = new System.Drawing.Point(9, 248);
             this.tabControlSecurityAttributes.Name = "tabControlSecurityAttributes";
             this.tabControlSecurityAttributes.SelectedIndex = 0;
@@ -1162,14 +1168,14 @@
             this.btnToggleUIAccess.UseVisualStyleBackColor = true;
             this.btnToggleUIAccess.Click += new System.EventHandler(this.btnToggleUIAccess_Click);
             // 
-            // llbSecurityAttributes
+            // lblSecurityAttributes
             // 
-            this.llbSecurityAttributes.AutoSize = true;
-            this.llbSecurityAttributes.Location = new System.Drawing.Point(6, 232);
-            this.llbSecurityAttributes.Name = "llbSecurityAttributes";
-            this.llbSecurityAttributes.Size = new System.Drawing.Size(95, 13);
-            this.llbSecurityAttributes.TabIndex = 16;
-            this.llbSecurityAttributes.Text = "Security Attributes:";
+            this.lblSecurityAttributes.AutoSize = true;
+            this.lblSecurityAttributes.Location = new System.Drawing.Point(6, 232);
+            this.lblSecurityAttributes.Name = "lblSecurityAttributes";
+            this.lblSecurityAttributes.Size = new System.Drawing.Size(95, 13);
+            this.lblSecurityAttributes.TabIndex = 16;
+            this.lblSecurityAttributes.Text = "Security Attributes:";
             // 
             // label22
             // 
@@ -1883,6 +1889,43 @@
             this.tableLayoutPanel1.Size = new System.Drawing.Size(461, 451);
             this.tableLayoutPanel1.TabIndex = 15;
             // 
+            // tabPageDeviceGroup
+            // 
+            this.tabPageDeviceGroup.Controls.Add(this.listViewDeviceGroup);
+            this.tabPageDeviceGroup.Location = new System.Drawing.Point(4, 22);
+            this.tabPageDeviceGroup.Name = "tabPageDeviceGroup";
+            this.tabPageDeviceGroup.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPageDeviceGroup.Size = new System.Drawing.Size(428, 165);
+            this.tabPageDeviceGroup.TabIndex = 3;
+            this.tabPageDeviceGroup.Text = "Device Group";
+            this.tabPageDeviceGroup.UseVisualStyleBackColor = true;
+            // 
+            // listViewDeviceGroup
+            // 
+            this.listViewDeviceGroup.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.columnHeader7,
+            this.columnHeader8});
+            this.listViewDeviceGroup.ContextMenuStrip = this.contextMenuStripDefaultGroups;
+            this.listViewDeviceGroup.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.listViewDeviceGroup.FullRowSelect = true;
+            this.listViewDeviceGroup.HideSelection = false;
+            this.listViewDeviceGroup.Location = new System.Drawing.Point(3, 3);
+            this.listViewDeviceGroup.Name = "listViewDeviceGroup";
+            this.listViewDeviceGroup.Size = new System.Drawing.Size(422, 159);
+            this.listViewDeviceGroup.TabIndex = 2;
+            this.listViewDeviceGroup.UseCompatibleStateImageBehavior = false;
+            this.listViewDeviceGroup.View = System.Windows.Forms.View.Details;
+            // 
+            // columnHeader7
+            // 
+            this.columnHeader7.Text = "Name";
+            this.columnHeader7.Width = 210;
+            // 
+            // columnHeader8
+            // 
+            this.columnHeader8.Text = "Flags";
+            this.columnHeader8.Width = 194;
+            // 
             // TokenForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1936,6 +1979,7 @@
             tableLayoutPanelDefaultDacl.PerformLayout();
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel1.PerformLayout();
+            this.tabPageDeviceGroup.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -2042,10 +2086,14 @@
         private System.Windows.Forms.TabControl tabControlSecurityAttributes;
         private System.Windows.Forms.TabPage tabPageLocalSecurityAttributes;
         private System.Windows.Forms.TabPage tabPageUserClaimSecurityAttributes;
-        private System.Windows.Forms.Label llbSecurityAttributes;
+        private System.Windows.Forms.Label lblSecurityAttributes;
         private System.Windows.Forms.TreeView treeViewUserClaimSecurityAttributes;
         private System.Windows.Forms.TabPage tabPageDeviceClaimSecurityAttributes;
         private System.Windows.Forms.TreeView treeViewDeviceClaimSecurityAttributes;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
+        private System.Windows.Forms.TabPage tabPageDeviceGroup;
+        private System.Windows.Forms.ListView listViewDeviceGroup;
+        private System.Windows.Forms.ColumnHeader columnHeader7;
+        private System.Windows.Forms.ColumnHeader columnHeader8;
     }
 }

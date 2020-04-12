@@ -32,28 +32,30 @@ namespace TokenViewer
     {
         private NtToken _token;
 
-        private static void PopulateGroupList(ListView listView, IEnumerable<UserGroup> groups)
+        private static void PopulateGroupList(ListView listView, IEnumerable<UserGroup> groups, bool filter_il)
         {
             foreach (UserGroup group in groups)
             {
                 GroupAttributes flags = group.Attributes & ~(GroupAttributes.EnabledByDefault);
 
-                if ((flags & GroupAttributes.Integrity) == GroupAttributes.None)
+                if (filter_il && flags.HasFlag(GroupAttributes.Integrity))
                 {
-                    ListViewItem item = new ListViewItem(group.ToString());
-                    item.SubItems.Add(flags.ToString());
-
-                    if ((flags & GroupAttributes.Enabled) == GroupAttributes.Enabled)
-                    {
-                        item.BackColor = Color.LightGreen;
-                    }
-                    else if ((flags & GroupAttributes.UseForDenyOnly) == GroupAttributes.UseForDenyOnly)
-                    {
-                        item.BackColor = Color.LightSalmon;
-                    }
-                    item.Tag = group;
-                    listView.Items.Add(item);
+                    continue;
                 }
+
+                ListViewItem item = new ListViewItem(group.ToString());
+                item.SubItems.Add(flags.ToString());
+
+                if ((flags & GroupAttributes.Enabled) == GroupAttributes.Enabled)
+                {
+                    item.BackColor = Color.LightGreen;
+                }
+                else if ((flags & GroupAttributes.UseForDenyOnly) == GroupAttributes.UseForDenyOnly)
+                {
+                    item.BackColor = Color.LightSalmon;
+                }
+                item.Tag = group;
+                listView.Items.Add(item);
             }
             listView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
             listView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
@@ -66,7 +68,7 @@ namespace TokenViewer
             groups.Add(_token.User);
             groups.AddRange(_token.Groups);
 
-            PopulateGroupList(listViewGroups, groups);
+            PopulateGroupList(listViewGroups, groups, true);
         }
 
         private void UpdatePrivileges()
@@ -255,7 +257,7 @@ namespace TokenViewer
 
             if (_token.Restricted)
             {
-                PopulateGroupList(listViewRestrictedSids, _token.RestrictedSids);
+                PopulateGroupList(listViewRestrictedSids, _token.RestrictedSids, false);
                 if (_token.WriteRestricted)
                 {
                     tabPageRestricted.Text = "Write Restricted SIDs";
@@ -268,7 +270,7 @@ namespace TokenViewer
 
             if (_token.AppContainer)
             {
-                PopulateGroupList(listViewCapabilities, _token.Capabilities);
+                PopulateGroupList(listViewCapabilities, _token.Capabilities, false);
                 txtACNumber.Text = _token.AppContainerNumber.ToString();
                 txtPackageName.Text = _token.AppContainerSid.Name;
                 txtPackageSid.Text = _token.AppContainerSid.ToString();
@@ -322,6 +324,18 @@ namespace TokenViewer
             UpdateSecurityAttributes(tabPageLocalSecurityAttributes, treeViewLocalSecurityAttributes, SecurityAttributeType.Local);
             UpdateSecurityAttributes(tabPageUserClaimSecurityAttributes, treeViewUserClaimSecurityAttributes, SecurityAttributeType.User);
             UpdateSecurityAttributes(tabPageDeviceClaimSecurityAttributes, treeViewDeviceClaimSecurityAttributes, SecurityAttributeType.Device);
+            if (_token.DeviceGroups.Length > 0)
+            {
+                PopulateGroupList(listViewDeviceGroup, _token.DeviceGroups, false);
+            }
+            else
+            {
+                tabControlSecurityAttributes.TabPages.Remove(tabPageDeviceGroup);
+            }
+            if (tabControlSecurityAttributes.TabCount == 0)
+            {
+                lblSecurityAttributes.Visible = false;
+            }
 
             if (_token.IsAccessGranted(TokenAccessRights.ReadControl))
             {
