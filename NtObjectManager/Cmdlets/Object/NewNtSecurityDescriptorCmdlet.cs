@@ -122,8 +122,11 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify mapping the generic accesses based on the NT Type.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "FromSddl"), Parameter(ParameterSetName = "FromBytes"), Parameter(ParameterSetName = "FromKey")]
-        public SwitchParameter MapType { get; set; }
+        [Parameter(ParameterSetName = "FromSddl"), 
+         Parameter(ParameterSetName = "FromBytes"), 
+         Parameter(ParameterSetName = "FromKey")]
+        [Alias("MapType")]
+        public SwitchParameter MapGeneric { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a default NT type for the security descriptor.</para>
@@ -215,9 +218,9 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         protected override void ProcessRecord()
         {
-            if (MapType && Type == null)
+            if (MapGeneric && Type == null)
             {
-                WriteWarning("Must specify Type for MapType to work correctly.");
+                WriteWarning("Must specify Type for MapGeneric to work correctly.");
             }
 
             SecurityDescriptor sd;
@@ -265,7 +268,7 @@ namespace NtObjectManager.Cmdlets.Object
 
             sd.NtType = Type;
             sd.Container = Container;
-            if (MapType)
+            if (MapGeneric)
             {
                 sd.MapGenericAccess();
             }
