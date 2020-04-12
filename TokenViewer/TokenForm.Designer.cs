@@ -61,7 +61,7 @@
             System.Windows.Forms.Label label14;
             System.Windows.Forms.GroupBox groupBox1;
             System.Windows.Forms.Label label16;
-            System.Windows.Forms.GroupBox groupBox2;
+            System.Windows.Forms.GroupBox groupBoxMisc;
             System.Windows.Forms.Label label29;
             System.Windows.Forms.Label label28;
             System.Windows.Forms.Label label26;
@@ -85,6 +85,7 @@
             System.Windows.Forms.GroupBox groupProcess;
             System.Windows.Forms.Label lblThreadId;
             System.Windows.Forms.Label lblThreadName;
+            System.Windows.Forms.TableLayoutPanel tableLayoutPanelDefaultDacl;
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TokenForm));
             this.groupBoxSource = new System.Windows.Forms.GroupBox();
             this.txtSourceId = new System.Windows.Forms.TextBox();
@@ -128,12 +129,19 @@
             this.checkBoxMakeInteractive = new System.Windows.Forms.CheckBox();
             this.btnCreateProcess = new System.Windows.Forms.Button();
             this.txtCommandLine = new System.Windows.Forms.TextBox();
+            this.tabControlSecurityAttributes = new System.Windows.Forms.TabControl();
+            this.tabPageLocalSecurityAttributes = new System.Windows.Forms.TabPage();
+            this.treeViewLocalSecurityAttributes = new System.Windows.Forms.TreeView();
+            this.tabPageUserClaimSecurityAttributes = new System.Windows.Forms.TabPage();
+            this.treeViewUserClaimSecurityAttributes = new System.Windows.Forms.TreeView();
+            this.tabPageDeviceClaimSecurityAttributes = new System.Windows.Forms.TabPage();
+            this.treeViewDeviceClaimSecurityAttributes = new System.Windows.Forms.TreeView();
             this.txtTokenFlags = new System.Windows.Forms.TextBox();
             this.txtTrustLevel = new System.Windows.Forms.TextBox();
             this.btnToggleVirtualizationEnabled = new System.Windows.Forms.Button();
             this.txtHandleAccess = new System.Windows.Forms.TextBox();
             this.btnToggleUIAccess = new System.Windows.Forms.Button();
-            this.treeViewLocalSecurityAttributes = new System.Windows.Forms.TreeView();
+            this.llbSecurityAttributes = new System.Windows.Forms.Label();
             this.txtMandatoryILPolicy = new System.Windows.Forms.TextBox();
             this.txtVirtualizationEnabled = new System.Windows.Forms.TextBox();
             this.txtVirtualizationAllowed = new System.Windows.Forms.TextBox();
@@ -183,13 +191,7 @@
             this.txtThreadName = new System.Windows.Forms.TextBox();
             this.tabPageSecurity = new System.Windows.Forms.TabPage();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.tabControlSecurityAttributes = new System.Windows.Forms.TabControl();
-            this.tabPageLocalSecurityAttributes = new System.Windows.Forms.TabPage();
-            this.tabPageUserClaimSecurityAttributes = new System.Windows.Forms.TabPage();
-            this.llbSecurityAttributes = new System.Windows.Forms.Label();
-            this.tabPageDeviceClaimSecurityAttributes = new System.Windows.Forms.TabPage();
-            this.treeViewUserClaimSecurityAttributes = new System.Windows.Forms.TreeView();
-            this.treeViewDeviceClaimSecurityAttributes = new System.Windows.Forms.TreeView();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             tabPageMain = new System.Windows.Forms.TabPage();
             label7 = new System.Windows.Forms.Label();
             label6 = new System.Windows.Forms.Label();
@@ -222,7 +224,7 @@
             label14 = new System.Windows.Forms.Label();
             groupBox1 = new System.Windows.Forms.GroupBox();
             label16 = new System.Windows.Forms.Label();
-            groupBox2 = new System.Windows.Forms.GroupBox();
+            groupBoxMisc = new System.Windows.Forms.GroupBox();
             label29 = new System.Windows.Forms.Label();
             label28 = new System.Windows.Forms.Label();
             label26 = new System.Windows.Forms.Label();
@@ -246,6 +248,7 @@
             groupProcess = new System.Windows.Forms.GroupBox();
             lblThreadId = new System.Windows.Forms.Label();
             lblThreadName = new System.Windows.Forms.Label();
+            tableLayoutPanelDefaultDacl = new System.Windows.Forms.TableLayoutPanel();
             tabPageMain.SuspendLayout();
             this.groupBoxSource.SuspendLayout();
             groupBoxToken.SuspendLayout();
@@ -255,7 +258,11 @@
             this.contextMenuStripDefaultDacl.SuspendLayout();
             groupBoxDuplicate.SuspendLayout();
             groupBox1.SuspendLayout();
-            groupBox2.SuspendLayout();
+            groupBoxMisc.SuspendLayout();
+            this.tabControlSecurityAttributes.SuspendLayout();
+            this.tabPageLocalSecurityAttributes.SuspendLayout();
+            this.tabPageUserClaimSecurityAttributes.SuspendLayout();
+            this.tabPageDeviceClaimSecurityAttributes.SuspendLayout();
             groupBoxSafer.SuspendLayout();
             groupBox4.SuspendLayout();
             tableLayoutPanelSecurity.SuspendLayout();
@@ -271,10 +278,8 @@
             this.tabPageTokenSource.SuspendLayout();
             this.groupThread.SuspendLayout();
             this.tabPageSecurity.SuspendLayout();
-            this.tabControlSecurityAttributes.SuspendLayout();
-            this.tabPageLocalSecurityAttributes.SuspendLayout();
-            this.tabPageUserClaimSecurityAttributes.SuspendLayout();
-            this.tabPageDeviceClaimSecurityAttributes.SuspendLayout();
+            tableLayoutPanelDefaultDacl.SuspendLayout();
+            this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabPageMain
@@ -681,11 +686,7 @@
             // 
             // tabPageDefaultDacl
             // 
-            tabPageDefaultDacl.Controls.Add(this.listViewDefDacl);
-            tabPageDefaultDacl.Controls.Add(label10);
-            tabPageDefaultDacl.Controls.Add(this.txtPrimaryGroup);
-            tabPageDefaultDacl.Controls.Add(label9);
-            tabPageDefaultDacl.Controls.Add(this.txtOwner);
+            tabPageDefaultDacl.Controls.Add(tableLayoutPanelDefaultDacl);
             tabPageDefaultDacl.Location = new System.Drawing.Point(4, 22);
             tabPageDefaultDacl.Name = "tabPageDefaultDacl";
             tabPageDefaultDacl.Padding = new System.Windows.Forms.Padding(3);
@@ -704,12 +705,13 @@
             columnHeaderAccess,
             columnHeaderDaclFlags,
             columnHeaderDaclType});
+            tableLayoutPanelDefaultDacl.SetColumnSpan(this.listViewDefDacl, 2);
             this.listViewDefDacl.ContextMenuStrip = this.contextMenuStripDefaultDacl;
             this.listViewDefDacl.FullRowSelect = true;
             this.listViewDefDacl.HideSelection = false;
-            this.listViewDefDacl.Location = new System.Drawing.Point(3, 69);
+            this.listViewDefDacl.Location = new System.Drawing.Point(3, 55);
             this.listViewDefDacl.Name = "listViewDefDacl";
-            this.listViewDefDacl.Size = new System.Drawing.Size(461, 382);
+            this.listViewDefDacl.Size = new System.Drawing.Size(455, 393);
             this.listViewDefDacl.TabIndex = 10;
             this.listViewDefDacl.UseCompatibleStateImageBehavior = false;
             this.listViewDefDacl.View = System.Windows.Forms.View.Details;
@@ -767,8 +769,9 @@
             // 
             // label10
             // 
+            label10.Anchor = System.Windows.Forms.AnchorStyles.Left;
             label10.AutoSize = true;
-            label10.Location = new System.Drawing.Point(22, 40);
+            label10.Location = new System.Drawing.Point(3, 32);
             label10.Name = "label10";
             label10.Size = new System.Drawing.Size(76, 13);
             label10.TabIndex = 8;
@@ -776,16 +779,18 @@
             // 
             // txtPrimaryGroup
             // 
-            this.txtPrimaryGroup.Location = new System.Drawing.Point(131, 40);
+            this.txtPrimaryGroup.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.txtPrimaryGroup.Location = new System.Drawing.Point(87, 29);
             this.txtPrimaryGroup.Name = "txtPrimaryGroup";
             this.txtPrimaryGroup.ReadOnly = true;
-            this.txtPrimaryGroup.Size = new System.Drawing.Size(267, 20);
+            this.txtPrimaryGroup.Size = new System.Drawing.Size(371, 20);
             this.txtPrimaryGroup.TabIndex = 9;
             // 
             // label9
             // 
+            label9.Anchor = System.Windows.Forms.AnchorStyles.Left;
             label9.AutoSize = true;
-            label9.Location = new System.Drawing.Point(22, 14);
+            label9.Location = new System.Drawing.Point(3, 6);
             label9.Name = "label9";
             label9.Size = new System.Drawing.Size(78, 13);
             label9.TabIndex = 6;
@@ -793,16 +798,17 @@
             // 
             // txtOwner
             // 
-            this.txtOwner.Location = new System.Drawing.Point(131, 14);
+            this.txtOwner.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.txtOwner.Location = new System.Drawing.Point(87, 3);
             this.txtOwner.Name = "txtOwner";
             this.txtOwner.ReadOnly = true;
-            this.txtOwner.Size = new System.Drawing.Size(267, 20);
+            this.txtOwner.Size = new System.Drawing.Size(371, 20);
             this.txtOwner.TabIndex = 7;
             // 
             // label11
             // 
             label11.AutoSize = true;
-            label11.Location = new System.Drawing.Point(22, 14);
+            label11.Location = new System.Drawing.Point(3, 0);
             label11.Name = "label11";
             label11.Size = new System.Drawing.Size(84, 13);
             label11.TabIndex = 8;
@@ -811,7 +817,7 @@
             // label12
             // 
             label12.AutoSize = true;
-            label12.Location = new System.Drawing.Point(22, 67);
+            label12.Location = new System.Drawing.Point(3, 52);
             label12.Name = "label12";
             label12.Size = new System.Drawing.Size(117, 13);
             label12.TabIndex = 11;
@@ -981,37 +987,103 @@
             label16.TabIndex = 0;
             label16.Text = "Command Line:";
             // 
-            // groupBox2
+            // groupBoxMisc
             // 
-            groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            groupBox2.Controls.Add(this.tabControlSecurityAttributes);
-            groupBox2.Controls.Add(label29);
-            groupBox2.Controls.Add(this.txtTokenFlags);
-            groupBox2.Controls.Add(label28);
-            groupBox2.Controls.Add(this.txtTrustLevel);
-            groupBox2.Controls.Add(this.btnToggleVirtualizationEnabled);
-            groupBox2.Controls.Add(label26);
-            groupBox2.Controls.Add(this.txtHandleAccess);
-            groupBox2.Controls.Add(this.btnToggleUIAccess);
-            groupBox2.Controls.Add(this.llbSecurityAttributes);
-            groupBox2.Controls.Add(label22);
-            groupBox2.Controls.Add(this.txtMandatoryILPolicy);
-            groupBox2.Controls.Add(label20);
-            groupBox2.Controls.Add(this.txtVirtualizationEnabled);
-            groupBox2.Controls.Add(label19);
-            groupBox2.Controls.Add(this.txtVirtualizationAllowed);
-            groupBox2.Controls.Add(label18);
-            groupBox2.Controls.Add(this.txtSandboxInert);
-            groupBox2.Controls.Add(label17);
-            groupBox2.Controls.Add(this.txtUIAccess);
-            groupBox2.Location = new System.Drawing.Point(8, 6);
-            groupBox2.Name = "groupBox2";
-            groupBox2.Size = new System.Drawing.Size(451, 445);
-            groupBox2.TabIndex = 0;
-            groupBox2.TabStop = false;
-            groupBox2.Text = "Additional Properties";
+            groupBoxMisc.Controls.Add(this.tabControlSecurityAttributes);
+            groupBoxMisc.Controls.Add(label29);
+            groupBoxMisc.Controls.Add(this.txtTokenFlags);
+            groupBoxMisc.Controls.Add(label28);
+            groupBoxMisc.Controls.Add(this.txtTrustLevel);
+            groupBoxMisc.Controls.Add(this.btnToggleVirtualizationEnabled);
+            groupBoxMisc.Controls.Add(label26);
+            groupBoxMisc.Controls.Add(this.txtHandleAccess);
+            groupBoxMisc.Controls.Add(this.btnToggleUIAccess);
+            groupBoxMisc.Controls.Add(this.llbSecurityAttributes);
+            groupBoxMisc.Controls.Add(label22);
+            groupBoxMisc.Controls.Add(this.txtMandatoryILPolicy);
+            groupBoxMisc.Controls.Add(label20);
+            groupBoxMisc.Controls.Add(this.txtVirtualizationEnabled);
+            groupBoxMisc.Controls.Add(label19);
+            groupBoxMisc.Controls.Add(this.txtVirtualizationAllowed);
+            groupBoxMisc.Controls.Add(label18);
+            groupBoxMisc.Controls.Add(this.txtSandboxInert);
+            groupBoxMisc.Controls.Add(label17);
+            groupBoxMisc.Controls.Add(this.txtUIAccess);
+            groupBoxMisc.Dock = System.Windows.Forms.DockStyle.Fill;
+            groupBoxMisc.Location = new System.Drawing.Point(3, 3);
+            groupBoxMisc.Name = "groupBoxMisc";
+            groupBoxMisc.Size = new System.Drawing.Size(461, 451);
+            groupBoxMisc.TabIndex = 0;
+            groupBoxMisc.TabStop = false;
+            groupBoxMisc.Text = "Additional Properties";
+            // 
+            // tabControlSecurityAttributes
+            // 
+            this.tabControlSecurityAttributes.Controls.Add(this.tabPageLocalSecurityAttributes);
+            this.tabControlSecurityAttributes.Controls.Add(this.tabPageUserClaimSecurityAttributes);
+            this.tabControlSecurityAttributes.Controls.Add(this.tabPageDeviceClaimSecurityAttributes);
+            this.tabControlSecurityAttributes.Location = new System.Drawing.Point(9, 248);
+            this.tabControlSecurityAttributes.Name = "tabControlSecurityAttributes";
+            this.tabControlSecurityAttributes.SelectedIndex = 0;
+            this.tabControlSecurityAttributes.Size = new System.Drawing.Size(436, 191);
+            this.tabControlSecurityAttributes.TabIndex = 26;
+            // 
+            // tabPageLocalSecurityAttributes
+            // 
+            this.tabPageLocalSecurityAttributes.Controls.Add(this.treeViewLocalSecurityAttributes);
+            this.tabPageLocalSecurityAttributes.Location = new System.Drawing.Point(4, 22);
+            this.tabPageLocalSecurityAttributes.Name = "tabPageLocalSecurityAttributes";
+            this.tabPageLocalSecurityAttributes.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPageLocalSecurityAttributes.Size = new System.Drawing.Size(428, 165);
+            this.tabPageLocalSecurityAttributes.TabIndex = 0;
+            this.tabPageLocalSecurityAttributes.Text = "Local";
+            this.tabPageLocalSecurityAttributes.UseVisualStyleBackColor = true;
+            // 
+            // treeViewLocalSecurityAttributes
+            // 
+            this.treeViewLocalSecurityAttributes.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.treeViewLocalSecurityAttributes.Location = new System.Drawing.Point(3, 3);
+            this.treeViewLocalSecurityAttributes.Name = "treeViewLocalSecurityAttributes";
+            this.treeViewLocalSecurityAttributes.Size = new System.Drawing.Size(422, 159);
+            this.treeViewLocalSecurityAttributes.TabIndex = 17;
+            // 
+            // tabPageUserClaimSecurityAttributes
+            // 
+            this.tabPageUserClaimSecurityAttributes.Controls.Add(this.treeViewUserClaimSecurityAttributes);
+            this.tabPageUserClaimSecurityAttributes.Location = new System.Drawing.Point(4, 22);
+            this.tabPageUserClaimSecurityAttributes.Name = "tabPageUserClaimSecurityAttributes";
+            this.tabPageUserClaimSecurityAttributes.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPageUserClaimSecurityAttributes.Size = new System.Drawing.Size(428, 165);
+            this.tabPageUserClaimSecurityAttributes.TabIndex = 1;
+            this.tabPageUserClaimSecurityAttributes.Text = "User Claim";
+            this.tabPageUserClaimSecurityAttributes.UseVisualStyleBackColor = true;
+            // 
+            // treeViewUserClaimSecurityAttributes
+            // 
+            this.treeViewUserClaimSecurityAttributes.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.treeViewUserClaimSecurityAttributes.Location = new System.Drawing.Point(3, 3);
+            this.treeViewUserClaimSecurityAttributes.Name = "treeViewUserClaimSecurityAttributes";
+            this.treeViewUserClaimSecurityAttributes.Size = new System.Drawing.Size(422, 159);
+            this.treeViewUserClaimSecurityAttributes.TabIndex = 18;
+            // 
+            // tabPageDeviceClaimSecurityAttributes
+            // 
+            this.tabPageDeviceClaimSecurityAttributes.Controls.Add(this.treeViewDeviceClaimSecurityAttributes);
+            this.tabPageDeviceClaimSecurityAttributes.Location = new System.Drawing.Point(4, 22);
+            this.tabPageDeviceClaimSecurityAttributes.Name = "tabPageDeviceClaimSecurityAttributes";
+            this.tabPageDeviceClaimSecurityAttributes.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPageDeviceClaimSecurityAttributes.Size = new System.Drawing.Size(428, 165);
+            this.tabPageDeviceClaimSecurityAttributes.TabIndex = 2;
+            this.tabPageDeviceClaimSecurityAttributes.Text = "Device Claim";
+            this.tabPageDeviceClaimSecurityAttributes.UseVisualStyleBackColor = true;
+            // 
+            // treeViewDeviceClaimSecurityAttributes
+            // 
+            this.treeViewDeviceClaimSecurityAttributes.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.treeViewDeviceClaimSecurityAttributes.Location = new System.Drawing.Point(3, 3);
+            this.treeViewDeviceClaimSecurityAttributes.Name = "treeViewDeviceClaimSecurityAttributes";
+            this.treeViewDeviceClaimSecurityAttributes.Size = new System.Drawing.Size(422, 159);
+            this.treeViewDeviceClaimSecurityAttributes.TabIndex = 18;
             // 
             // label29
             // 
@@ -1029,7 +1101,7 @@
             this.txtTokenFlags.Location = new System.Drawing.Point(121, 200);
             this.txtTokenFlags.Name = "txtTokenFlags";
             this.txtTokenFlags.ReadOnly = true;
-            this.txtTokenFlags.Size = new System.Drawing.Size(324, 20);
+            this.txtTokenFlags.Size = new System.Drawing.Size(334, 20);
             this.txtTokenFlags.TabIndex = 25;
             // 
             // label28
@@ -1048,7 +1120,7 @@
             this.txtTrustLevel.Location = new System.Drawing.Point(121, 173);
             this.txtTrustLevel.Name = "txtTrustLevel";
             this.txtTrustLevel.ReadOnly = true;
-            this.txtTrustLevel.Size = new System.Drawing.Size(324, 20);
+            this.txtTrustLevel.Size = new System.Drawing.Size(334, 20);
             this.txtTrustLevel.TabIndex = 23;
             // 
             // btnToggleVirtualizationEnabled
@@ -1077,7 +1149,7 @@
             this.txtHandleAccess.Location = new System.Drawing.Point(121, 147);
             this.txtHandleAccess.Name = "txtHandleAccess";
             this.txtHandleAccess.ReadOnly = true;
-            this.txtHandleAccess.Size = new System.Drawing.Size(324, 20);
+            this.txtHandleAccess.Size = new System.Drawing.Size(334, 20);
             this.txtHandleAccess.TabIndex = 20;
             // 
             // btnToggleUIAccess
@@ -1090,13 +1162,14 @@
             this.btnToggleUIAccess.UseVisualStyleBackColor = true;
             this.btnToggleUIAccess.Click += new System.EventHandler(this.btnToggleUIAccess_Click);
             // 
-            // treeViewLocalSecurityAttributes
+            // llbSecurityAttributes
             // 
-            this.treeViewLocalSecurityAttributes.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.treeViewLocalSecurityAttributes.Location = new System.Drawing.Point(3, 3);
-            this.treeViewLocalSecurityAttributes.Name = "treeViewLocalSecurityAttributes";
-            this.treeViewLocalSecurityAttributes.Size = new System.Drawing.Size(422, 159);
-            this.treeViewLocalSecurityAttributes.TabIndex = 17;
+            this.llbSecurityAttributes.AutoSize = true;
+            this.llbSecurityAttributes.Location = new System.Drawing.Point(6, 232);
+            this.llbSecurityAttributes.Name = "llbSecurityAttributes";
+            this.llbSecurityAttributes.Size = new System.Drawing.Size(95, 13);
+            this.llbSecurityAttributes.TabIndex = 16;
+            this.llbSecurityAttributes.Text = "Security Attributes:";
             // 
             // label22
             // 
@@ -1328,7 +1401,7 @@
             // label27
             // 
             label27.AutoSize = true;
-            label27.Location = new System.Drawing.Point(22, 42);
+            label27.Location = new System.Drawing.Point(3, 26);
             label27.Name = "label27";
             label27.Size = new System.Drawing.Size(74, 13);
             label27.TabIndex = 13;
@@ -1398,17 +1471,16 @@
             // 
             // groupProcess
             // 
-            groupProcess.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             groupProcess.Controls.Add(this.txtProcessCommandLine);
             groupProcess.Controls.Add(lblProcessId);
             groupProcess.Controls.Add(lblCommandLine);
             groupProcess.Controls.Add(this.txtProcessId);
             groupProcess.Controls.Add(this.txtProcessImagePath);
             groupProcess.Controls.Add(lblImagePath);
-            groupProcess.Location = new System.Drawing.Point(11, 6);
+            groupProcess.Dock = System.Windows.Forms.DockStyle.Fill;
+            groupProcess.Location = new System.Drawing.Point(3, 3);
             groupProcess.Name = "groupProcess";
-            groupProcess.Size = new System.Drawing.Size(448, 106);
+            groupProcess.Size = new System.Drawing.Size(461, 451);
             groupProcess.TabIndex = 6;
             groupProcess.TabStop = false;
             groupProcess.Text = "Process Information";
@@ -1420,7 +1492,7 @@
             this.txtProcessCommandLine.Location = new System.Drawing.Point(93, 72);
             this.txtProcessCommandLine.Name = "txtProcessCommandLine";
             this.txtProcessCommandLine.ReadOnly = true;
-            this.txtProcessCommandLine.Size = new System.Drawing.Size(349, 20);
+            this.txtProcessCommandLine.Size = new System.Drawing.Size(362, 20);
             this.txtProcessCommandLine.TabIndex = 5;
             // 
             // txtProcessId
@@ -1438,7 +1510,7 @@
             this.txtProcessImagePath.Location = new System.Drawing.Point(93, 46);
             this.txtProcessImagePath.Name = "txtProcessImagePath";
             this.txtProcessImagePath.ReadOnly = true;
-            this.txtProcessImagePath.Size = new System.Drawing.Size(349, 20);
+            this.txtProcessImagePath.Size = new System.Drawing.Size(362, 20);
             this.txtProcessImagePath.TabIndex = 3;
             // 
             // lblThreadId
@@ -1618,13 +1690,7 @@
             // 
             // tabPageAppContainer
             // 
-            this.tabPageAppContainer.Controls.Add(label27);
-            this.tabPageAppContainer.Controls.Add(this.txtPackageSid);
-            this.tabPageAppContainer.Controls.Add(label12);
-            this.tabPageAppContainer.Controls.Add(this.txtACNumber);
-            this.tabPageAppContainer.Controls.Add(this.listViewCapabilities);
-            this.tabPageAppContainer.Controls.Add(label11);
-            this.tabPageAppContainer.Controls.Add(this.txtPackageName);
+            this.tabPageAppContainer.Controls.Add(this.tableLayoutPanel1);
             this.tabPageAppContainer.Location = new System.Drawing.Point(4, 22);
             this.tabPageAppContainer.Name = "tabPageAppContainer";
             this.tabPageAppContainer.Padding = new System.Windows.Forms.Padding(3);
@@ -1635,15 +1701,18 @@
             // 
             // txtPackageSid
             // 
-            this.txtPackageSid.Location = new System.Drawing.Point(142, 42);
+            this.tableLayoutPanel1.SetColumnSpan(this.txtPackageSid, 2);
+            this.txtPackageSid.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.txtPackageSid.Location = new System.Drawing.Point(126, 29);
             this.txtPackageSid.Name = "txtPackageSid";
             this.txtPackageSid.ReadOnly = true;
-            this.txtPackageSid.Size = new System.Drawing.Size(256, 20);
+            this.txtPackageSid.Size = new System.Drawing.Size(332, 20);
             this.txtPackageSid.TabIndex = 14;
             // 
             // txtACNumber
             // 
-            this.txtACNumber.Location = new System.Drawing.Point(142, 67);
+            this.txtACNumber.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.txtACNumber.Location = new System.Drawing.Point(126, 55);
             this.txtACNumber.Name = "txtACNumber";
             this.txtACNumber.ReadOnly = true;
             this.txtACNumber.Size = new System.Drawing.Size(84, 20);
@@ -1657,12 +1726,13 @@
             this.listViewCapabilities.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeader3,
             this.columnHeader4});
+            this.tableLayoutPanel1.SetColumnSpan(this.listViewCapabilities, 3);
             this.listViewCapabilities.ContextMenuStrip = this.contextMenuStripDefaultGroups;
             this.listViewCapabilities.FullRowSelect = true;
             this.listViewCapabilities.HideSelection = false;
-            this.listViewCapabilities.Location = new System.Drawing.Point(3, 91);
+            this.listViewCapabilities.Location = new System.Drawing.Point(3, 81);
             this.listViewCapabilities.Name = "listViewCapabilities";
-            this.listViewCapabilities.Size = new System.Drawing.Size(461, 359);
+            this.listViewCapabilities.Size = new System.Drawing.Size(455, 367);
             this.listViewCapabilities.TabIndex = 10;
             this.listViewCapabilities.UseCompatibleStateImageBehavior = false;
             this.listViewCapabilities.View = System.Windows.Forms.View.Details;
@@ -1680,15 +1750,17 @@
             // 
             // txtPackageName
             // 
-            this.txtPackageName.Location = new System.Drawing.Point(142, 14);
+            this.tableLayoutPanel1.SetColumnSpan(this.txtPackageName, 2);
+            this.txtPackageName.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.txtPackageName.Location = new System.Drawing.Point(126, 3);
             this.txtPackageName.Name = "txtPackageName";
             this.txtPackageName.ReadOnly = true;
-            this.txtPackageName.Size = new System.Drawing.Size(256, 20);
+            this.txtPackageName.Size = new System.Drawing.Size(332, 20);
             this.txtPackageName.TabIndex = 9;
             // 
             // tabPageMisc
             // 
-            this.tabPageMisc.Controls.Add(groupBox2);
+            this.tabPageMisc.Controls.Add(groupBoxMisc);
             this.tabPageMisc.Location = new System.Drawing.Point(4, 22);
             this.tabPageMisc.Name = "tabPageMisc";
             this.tabPageMisc.Padding = new System.Windows.Forms.Padding(3);
@@ -1730,9 +1802,9 @@
             this.groupThread.Controls.Add(this.txtThreadId);
             this.groupThread.Controls.Add(this.txtThreadName);
             this.groupThread.Controls.Add(lblThreadName);
-            this.groupThread.Location = new System.Drawing.Point(11, 118);
+            this.groupThread.Location = new System.Drawing.Point(11, -264);
             this.groupThread.Name = "groupThread";
-            this.groupThread.Size = new System.Drawing.Size(448, 79);
+            this.groupThread.Size = new System.Drawing.Size(0, 79);
             this.groupThread.TabIndex = 7;
             this.groupThread.TabStop = false;
             this.groupThread.Text = "Thread Information";
@@ -1752,7 +1824,7 @@
             this.txtThreadName.Location = new System.Drawing.Point(93, 46);
             this.txtThreadName.Name = "txtThreadName";
             this.txtThreadName.ReadOnly = true;
-            this.txtThreadName.Size = new System.Drawing.Size(349, 20);
+            this.txtThreadName.Size = new System.Drawing.Size(0, 20);
             this.txtThreadName.TabIndex = 3;
             // 
             // tabPageSecurity
@@ -1767,74 +1839,49 @@
             this.tabPageSecurity.Text = "Security";
             this.tabPageSecurity.UseVisualStyleBackColor = true;
             // 
-            // tabControlSecurityAttributes
+            // tableLayoutPanelDefaultDacl
             // 
-            this.tabControlSecurityAttributes.Controls.Add(this.tabPageLocalSecurityAttributes);
-            this.tabControlSecurityAttributes.Controls.Add(this.tabPageUserClaimSecurityAttributes);
-            this.tabControlSecurityAttributes.Controls.Add(this.tabPageDeviceClaimSecurityAttributes);
-            this.tabControlSecurityAttributes.Location = new System.Drawing.Point(9, 248);
-            this.tabControlSecurityAttributes.Name = "tabControlSecurityAttributes";
-            this.tabControlSecurityAttributes.SelectedIndex = 0;
-            this.tabControlSecurityAttributes.Size = new System.Drawing.Size(436, 191);
-            this.tabControlSecurityAttributes.TabIndex = 26;
+            tableLayoutPanelDefaultDacl.ColumnCount = 2;
+            tableLayoutPanelDefaultDacl.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            tableLayoutPanelDefaultDacl.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            tableLayoutPanelDefaultDacl.Controls.Add(label9, 0, 0);
+            tableLayoutPanelDefaultDacl.Controls.Add(this.listViewDefDacl, 0, 2);
+            tableLayoutPanelDefaultDacl.Controls.Add(this.txtOwner, 1, 0);
+            tableLayoutPanelDefaultDacl.Controls.Add(this.txtPrimaryGroup, 1, 1);
+            tableLayoutPanelDefaultDacl.Controls.Add(label10, 0, 1);
+            tableLayoutPanelDefaultDacl.Dock = System.Windows.Forms.DockStyle.Fill;
+            tableLayoutPanelDefaultDacl.Location = new System.Drawing.Point(3, 3);
+            tableLayoutPanelDefaultDacl.Name = "tableLayoutPanelDefaultDacl";
+            tableLayoutPanelDefaultDacl.RowCount = 3;
+            tableLayoutPanelDefaultDacl.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            tableLayoutPanelDefaultDacl.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            tableLayoutPanelDefaultDacl.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            tableLayoutPanelDefaultDacl.Size = new System.Drawing.Size(461, 451);
+            tableLayoutPanelDefaultDacl.TabIndex = 11;
             // 
-            // tabPageLocalSecurityAttributes
+            // tableLayoutPanel1
             // 
-            this.tabPageLocalSecurityAttributes.Controls.Add(this.treeViewLocalSecurityAttributes);
-            this.tabPageLocalSecurityAttributes.Location = new System.Drawing.Point(4, 22);
-            this.tabPageLocalSecurityAttributes.Name = "tabPageLocalSecurityAttributes";
-            this.tabPageLocalSecurityAttributes.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageLocalSecurityAttributes.Size = new System.Drawing.Size(428, 165);
-            this.tabPageLocalSecurityAttributes.TabIndex = 0;
-            this.tabPageLocalSecurityAttributes.Text = "Local";
-            this.tabPageLocalSecurityAttributes.UseVisualStyleBackColor = true;
-            // 
-            // tabPageUserClaimSecurityAttributes
-            // 
-            this.tabPageUserClaimSecurityAttributes.Controls.Add(this.treeViewUserClaimSecurityAttributes);
-            this.tabPageUserClaimSecurityAttributes.Location = new System.Drawing.Point(4, 22);
-            this.tabPageUserClaimSecurityAttributes.Name = "tabPageUserClaimSecurityAttributes";
-            this.tabPageUserClaimSecurityAttributes.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageUserClaimSecurityAttributes.Size = new System.Drawing.Size(428, 165);
-            this.tabPageUserClaimSecurityAttributes.TabIndex = 1;
-            this.tabPageUserClaimSecurityAttributes.Text = "User Claim";
-            this.tabPageUserClaimSecurityAttributes.UseVisualStyleBackColor = true;
-            // 
-            // llbSecurityAttributes
-            // 
-            this.llbSecurityAttributes.AutoSize = true;
-            this.llbSecurityAttributes.Location = new System.Drawing.Point(6, 232);
-            this.llbSecurityAttributes.Name = "llbSecurityAttributes";
-            this.llbSecurityAttributes.Size = new System.Drawing.Size(95, 13);
-            this.llbSecurityAttributes.TabIndex = 16;
-            this.llbSecurityAttributes.Text = "Security Attributes:";
-            // 
-            // tabPageDeviceClaimSecurityAttributes
-            // 
-            this.tabPageDeviceClaimSecurityAttributes.Controls.Add(this.treeViewDeviceClaimSecurityAttributes);
-            this.tabPageDeviceClaimSecurityAttributes.Location = new System.Drawing.Point(4, 22);
-            this.tabPageDeviceClaimSecurityAttributes.Name = "tabPageDeviceClaimSecurityAttributes";
-            this.tabPageDeviceClaimSecurityAttributes.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageDeviceClaimSecurityAttributes.Size = new System.Drawing.Size(428, 165);
-            this.tabPageDeviceClaimSecurityAttributes.TabIndex = 2;
-            this.tabPageDeviceClaimSecurityAttributes.Text = "Device Claim";
-            this.tabPageDeviceClaimSecurityAttributes.UseVisualStyleBackColor = true;
-            // 
-            // treeViewUserClaimSecurityAttributes
-            // 
-            this.treeViewUserClaimSecurityAttributes.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.treeViewUserClaimSecurityAttributes.Location = new System.Drawing.Point(3, 3);
-            this.treeViewUserClaimSecurityAttributes.Name = "treeViewUserClaimSecurityAttributes";
-            this.treeViewUserClaimSecurityAttributes.Size = new System.Drawing.Size(422, 159);
-            this.treeViewUserClaimSecurityAttributes.TabIndex = 18;
-            // 
-            // treeViewDeviceClaimSecurityAttributes
-            // 
-            this.treeViewDeviceClaimSecurityAttributes.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.treeViewDeviceClaimSecurityAttributes.Location = new System.Drawing.Point(3, 3);
-            this.treeViewDeviceClaimSecurityAttributes.Name = "treeViewDeviceClaimSecurityAttributes";
-            this.treeViewDeviceClaimSecurityAttributes.Size = new System.Drawing.Size(422, 159);
-            this.treeViewDeviceClaimSecurityAttributes.TabIndex = 18;
+            this.tableLayoutPanel1.ColumnCount = 3;
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel1.Controls.Add(label11, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.listViewCapabilities, 0, 3);
+            this.tableLayoutPanel1.Controls.Add(this.txtACNumber, 1, 2);
+            this.tableLayoutPanel1.Controls.Add(label12, 0, 2);
+            this.tableLayoutPanel1.Controls.Add(this.txtPackageSid, 1, 1);
+            this.tableLayoutPanel1.Controls.Add(label27, 0, 1);
+            this.tableLayoutPanel1.Controls.Add(this.txtPackageName, 1, 0);
+            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
+            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+            this.tableLayoutPanel1.RowCount = 4;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(461, 451);
+            this.tableLayoutPanel1.TabIndex = 15;
             // 
             // TokenForm
             // 
@@ -1855,14 +1902,17 @@
             tabPageGroups.ResumeLayout(false);
             this.contextMenuStripGroups.ResumeLayout(false);
             tabPageDefaultDacl.ResumeLayout(false);
-            tabPageDefaultDacl.PerformLayout();
             this.contextMenuStripDefaultDacl.ResumeLayout(false);
             groupBoxDuplicate.ResumeLayout(false);
             groupBoxDuplicate.PerformLayout();
             groupBox1.ResumeLayout(false);
             groupBox1.PerformLayout();
-            groupBox2.ResumeLayout(false);
-            groupBox2.PerformLayout();
+            groupBoxMisc.ResumeLayout(false);
+            groupBoxMisc.PerformLayout();
+            this.tabControlSecurityAttributes.ResumeLayout(false);
+            this.tabPageLocalSecurityAttributes.ResumeLayout(false);
+            this.tabPageUserClaimSecurityAttributes.ResumeLayout(false);
+            this.tabPageDeviceClaimSecurityAttributes.ResumeLayout(false);
             groupBoxSafer.ResumeLayout(false);
             groupBoxSafer.PerformLayout();
             groupBox4.ResumeLayout(false);
@@ -1876,17 +1926,16 @@
             this.tabPageRestricted.ResumeLayout(false);
             this.contextMenuStripDefaultGroups.ResumeLayout(false);
             this.tabPageAppContainer.ResumeLayout(false);
-            this.tabPageAppContainer.PerformLayout();
             this.tabPageMisc.ResumeLayout(false);
             this.tabPageOperations.ResumeLayout(false);
             this.tabPageTokenSource.ResumeLayout(false);
             this.groupThread.ResumeLayout(false);
             this.groupThread.PerformLayout();
             this.tabPageSecurity.ResumeLayout(false);
-            this.tabControlSecurityAttributes.ResumeLayout(false);
-            this.tabPageLocalSecurityAttributes.ResumeLayout(false);
-            this.tabPageUserClaimSecurityAttributes.ResumeLayout(false);
-            this.tabPageDeviceClaimSecurityAttributes.ResumeLayout(false);
+            tableLayoutPanelDefaultDacl.ResumeLayout(false);
+            tableLayoutPanelDefaultDacl.PerformLayout();
+            this.tableLayoutPanel1.ResumeLayout(false);
+            this.tableLayoutPanel1.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -1997,5 +2046,6 @@
         private System.Windows.Forms.TreeView treeViewUserClaimSecurityAttributes;
         private System.Windows.Forms.TabPage tabPageDeviceClaimSecurityAttributes;
         private System.Windows.Forms.TreeView treeViewDeviceClaimSecurityAttributes;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
     }
 }
