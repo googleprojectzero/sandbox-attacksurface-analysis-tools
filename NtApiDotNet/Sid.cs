@@ -322,19 +322,11 @@ namespace NtApiDotNet
         /// <returns>The SDDL format string (e.g. S-1-1-0)</returns>
         public override string ToString()
         {
-            using (SafeSidBufferHandle sid = ToSafeBuffer())
+            if (SubAuthorities.Count == 0)
             {
-                UnicodeStringOut str = new UnicodeStringOut();
-                NtRtl.RtlConvertSidToUnicodeString(ref str, sid.DangerousGetHandle(), true).ToNtException();
-                try
-                {
-                    return str.ToString();
-                }
-                finally
-                {
-                    NtRtl.RtlFreeUnicodeString(ref str);
-                }
+                return $"S-1-{Authority.ToInt64()}";
             }
+            return $"S-1-{Authority.ToInt64()}-{string.Join("-", SubAuthorities)}";
         }
 
         /// <summary>
