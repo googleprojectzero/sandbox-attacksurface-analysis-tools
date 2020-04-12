@@ -1503,6 +1503,8 @@ Show token owner.
 Show token primary group.
 .PARAMETER DefaultDacl
 Show token default DACL.
+.PARAMETER FullDefaultDacl
+Show the default DACL in full rather than a summary.
 .PARAMETER Basic
 Show basic token information, User, Group, Privilege and Integrity.
 .OUTPUTS
@@ -1522,6 +1524,9 @@ Print the user and groups of the token.
 .EXAMPLE
 Format-NtToken -Token $token -DefaultDacl
 Print the default DACL of the token.
+.EXAMPLE
+Format-NtToken -Token $token -FullDefaultDacl
+Print the default DACL of the token in full.
 #>
 function Format-NtToken {
     [CmdletBinding(DefaultParameterSetName="UserOnly")]
@@ -1557,7 +1562,9 @@ function Format-NtToken {
         [parameter(ParameterSetName="Complex")]
         [switch]$PrimaryGroup,
         [parameter(ParameterSetName="Complex")]
-        [switch]$DefaultDacl
+        [switch]$DefaultDacl,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$FullDefaultDacl
   )
 
   if ($All) {
@@ -1612,6 +1619,9 @@ function Format-NtToken {
     }
 
     if ($token.AppContainer -and $token.Capabilities.Length -gt 0) {
+      "APPCONTAINER INFORMATION"
+      "------------------------"
+      Format-ObjectTable $token.AppContainerSid | Write-Output
       "CAPABILITY SID INFORMATION"
       "----------------------"
       Format-ObjectTable $token.Capabilities | Write-Output
@@ -1674,9 +1684,13 @@ function Format-NtToken {
     Format-ObjectTable $token.DeviceGroups | Write-Output
   }
 
-  if ($DefaultDacl -and $Token.DefaultDacl -ne $null) {
+  if (($DefaultDacl -or $FullDefaultDacl) -and $Token.DefaultDacl -ne $null) {
+    $summary = !$FullDefaultDacl
     "DEFAULT DACL"
-    Format-NtAcl -Acl $Token.DefaultDacl -Type "Directory" -Name "------------" | Write-Output
+    Format-NtAcl -Acl $Token.DefaultDacl -Type "Directory" -Name "------------" -Summary:$summary | Write-Output
+    if ($summary) {
+        Write-Output ""
+    }
   }
 
   if ($Information) {
@@ -1726,6 +1740,8 @@ Show token owner.
 Show token primary group.
 .PARAMETER DefaultDacl
 Show token default DACL.
+.PARAMETER FullDefaultDacl
+Show the default DACL in full rather than a summary.
 .PARAMETER Basic
 Show basic token information, User, Group, Privilege and Integrity.
 .OUTPUTS
@@ -1773,7 +1789,9 @@ function Show-NtTokenEffective {
         [parameter(ParameterSetName="Complex")]
         [switch]$PrimaryGroup,
         [parameter(ParameterSetName="Complex")]
-        [switch]$DefaultDacl
+        [switch]$DefaultDacl,
+        [parameter(ParameterSetName="Complex")]
+        [switch]$FullDefaultDacl
     )
 
   Use-NtObject($token = Get-NtToken -Effective) {
@@ -1796,6 +1814,7 @@ function Show-NtTokenEffective {
             PrimaryGroup = $PrimaryGroup
             Token = $token
             DefaultDacl = $DefaultDacl
+            FullDefaultDacl = $FullDefaultDacl
         }
         Format-NtToken @args
     }
