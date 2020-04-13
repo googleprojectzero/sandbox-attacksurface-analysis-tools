@@ -138,6 +138,7 @@
     <Compile Include="Cmdlets\Object\SetNtProcessJobCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SpecificAccessType.cs" />
     <Compile Include="Cmdlets\Object\StartNtDebugWaitCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\CompareNtSidCmdlet.cs" />
     <Compile Include="Cmdlets\Object\TestNtTokenImpersonationCmdlet.cs" />
     <Compile Include="Cmdlets\Object\TestNtTokenPrivilegeCmdlet.cs" />
     <Compile Include="Cmdlets\Object\UseNtObjectCmdlet.cs" />
