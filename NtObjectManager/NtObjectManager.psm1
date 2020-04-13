@@ -101,10 +101,10 @@ None
 List of TokenPrivilege values indicating the new state of all privileges successfully modified.
 .EXAMPLE
 Set-NtTokenPrivilege SeDebugPrivilege
-Enable SeDebugPrivilege on the current process token
+Enable SeDebugPrivilege on the current effective token
 .EXAMPLE
 Set-NtTokenPrivilege SeDebugPrivilege -Attributes Disabled
-Disable SeDebugPrivilege on the current process token
+Disable SeDebugPrivilege on the current effective token
 .EXAMPLE
 Set-NtTokenPrivilege SeBackupPrivilege, SeRestorePrivilege -Token $token
 Enable SeBackupPrivilege and SeRestorePrivilege on an explicit token object.
@@ -126,7 +126,7 @@ function Set-NtTokenPrivilege
   )
 
   if ($null -eq $Token) {
-    $Token = Get-NtToken -Primary
+    $Token = Get-NtToken -Effective
   } else {
     $Token = $Token.Duplicate()
   }
@@ -169,7 +169,7 @@ None
 List of TokenPrivilege values indicating the state of all privileges requested.
 .EXAMPLE
 Get-NtTokenPrivilege
-Get all privileges on the current process token.
+Get all privileges on the current Effective token.
 .EXAMPLE
 Get-NtTokenPrivilege -Token $token
 Get all privileges on an explicit  token.
@@ -189,7 +189,7 @@ function Get-NtTokenPrivilege
     [NtApiDotNet.TokenPrivilegeValue[]]$Privilege
   )
   if ($null -eq $Token) {
-    $Token = Get-NtToken -Primary -Access Query
+    $Token = Get-NtToken -Effective -Access Query
   } elseif (!$Token.IsPseudoToken) {
     $Token = $Token.Duplicate()
   }
@@ -229,7 +229,7 @@ None
 List of UserGroup values indicating the state of all groups.
 .EXAMPLE
 Get-NtTokenGroup
-Get all groups on the current process token
+Get all groups on the effective process token
 .EXAMPLE
 Get-NtTokenGroup -Token $token
 Get groups on an explicit token object.
@@ -249,7 +249,7 @@ function Get-NtTokenGroup {
     [NtApiDotNet.GroupAttributes]$Attributes = 0
   )
   if ($null -eq $Token) {
-    $Token = Get-NtToken -Primary -Access Query
+    $Token = Get-NtToken -Effective -Access Query
   } elseif (!$Token.IsPseudoToken) {
     $Token = $Token.Duplicate()
   }
@@ -303,7 +303,7 @@ function Set-NtTokenGroup {
     [NtApiDotNet.GroupAttributes]$Attributes
   )
   if ($null -eq $Token) {
-    $Token = Get-NtToken -Primary -Access AdjustGroups
+    $Token = Get-NtToken -Effective -Access AdjustGroups
   } else {
     $Token = $Token.Duplicate()
   }
@@ -338,7 +338,7 @@ None
 NtApiDotNet.Sid
 .EXAMPLE
 Get-NtTokenSid
-Get user SID on the current process token
+Get user SID on the current effective token
 .EXAMPLE
 Get-NtTokenSid -Token $token
 Get user SID on an explicit token object.
@@ -370,7 +370,7 @@ function Get-NtTokenSid {
     [switch]$ToName
   )
   if ($null -eq $Token) {
-    $Token = Get-NtToken -Primary -Access Query
+    $Token = Get-NtToken -Effective -Access Query
   } elseif (!$Token.IsPseudoToken) {
     $Token = $Token.Duplicate()
   }
@@ -417,7 +417,7 @@ None
 None
 .EXAMPLE
 Set-NtTokenSid -Owner -Sid "S-1-2-3-4"
-Set default owner on the current process token
+Set default owner on the current effective token
 .EXAMPLE
 Set-NtTokenOwner -Owner -Token $token -Sid "S-1-2-3-4"
 Set default owner on an explicit token object.
@@ -440,7 +440,7 @@ function Set-NtTokenSid {
     [switch]$Integrity
   )
   if ($null -eq $Token) {
-    $Token = Get-NtToken -Primary -Access AdjustDefault
+    $Token = Get-NtToken -Effective -Access AdjustDefault
   } else {
     $Token = $Token.Duplicate()
   }
@@ -465,10 +465,10 @@ Optional token object to use to get group. Must be accesible for Query right.
 .INPUTS
 None
 .OUTPUTS
-List of TokenPrivilege values indicating the state of all privileges requested.
+UserGroup for the owner.
 .EXAMPLE
 Get-NtTokenOwner
-Get default owner on the current process token
+Get default owner on the current effective token
 .EXAMPLE
 Get-NtTokenOwner -Token $token
 Get default owner on an explicit token object.
@@ -477,13 +477,13 @@ Get-NtTokenOwner -Group
 Get the default group.
 #>
 function Get-NtTokenOwner {
-  [CmdletBinding(DefaultParameterSetName="Normal")]
+  [CmdletBinding()]
   Param(
     [NtApiDotNet.NtToken]$Token,
     [switch]$Group
   )
   if ($null -eq $Token) {
-    $Token = Get-NtToken -Primary -Access Query
+    $Token = Get-NtToken -Effective -Access Query
   } elseif (!$Token.IsPseudoToken) {
     $Token = $Token.Duplicate()
   }
@@ -494,6 +494,42 @@ function Get-NtTokenOwner {
     } else {
         $Token.Owner | Write-Output
     }
+  }
+}
+
+<#
+.SYNOPSIS
+Get a token's mandatory policy.
+.DESCRIPTION
+This cmdlet will get the token's mandatory policy.
+.PARAMETER Group
+Specify to get the default group rather than default owner.
+.PARAMETER Token
+Optional token object to use to get group. Must be accesible for Query right.
+.INPUTS
+None
+.OUTPUTS
+The Token Mandatory Policy
+.EXAMPLE
+Get-NtTokenMandatoryPolicy
+Get the mandatory policy for the current effective token.
+.EXAMPLE
+Get-NtTokenMandatoryPolicy -Token $token
+Get default owner on an explicit token object.
+#>
+function Get-NtTokenMandatoryPolicy {
+  [CmdletBinding()]
+  Param(
+    [NtApiDotNet.NtToken]$Token
+  )
+  if ($null -eq $Token) {
+    $Token = Get-NtToken -Effective -Access Query
+  } elseif (!$Token.IsPseudoToken) {
+    $Token = $Token.Duplicate()
+  }
+
+  Use-NtObject($Token) {
+    $Token.MandatoryPolicy
   }
 }
 
@@ -512,7 +548,7 @@ None
 List of TokenPrivilege values indicating the new state of all privileges successfully modified.
 .EXAMPLE
 Remove-NtTokenPrivilege SeDebugPrivilege
-Remove SeDebugPrivilege from the current process token
+Remove SeDebugPrivilege from the current effective token
 .EXAMPLE
 Remove-NtTokenPrivilege SeBackupPrivilege, SeRestorePrivilege -Token $token
 Remove SeBackupPrivilege and SeRestorePrivilege from an explicit token object.
@@ -526,7 +562,7 @@ function Remove-NtTokenPrivilege
     [NtApiDotNet.NtToken]$Token
     )
   if ($null -eq $Token) {
-    $Token = Get-NtToken -Primary
+    $Token = Get-NtToken -Effective
   } else {
     $Token = $Token.Duplicate()
   }
@@ -593,7 +629,7 @@ function Set-NtTokenIntegrityLevel
   }
 
   if ($Token -eq $null) {
-    $Token = Get-NtToken -Primary
+    $Token = Get-NtToken -Effective
   } else {
     $Token = $Token.Duplicate()
   }
@@ -4595,7 +4631,7 @@ function Copy-NtToken {
     }
 
     if ($null -eq $Token) {
-        $Token = Get-NtToken -Primary
+        $Token = Get-NtToken -Effective
     } else {
         $Token = $Token.Duplicate()
     }
