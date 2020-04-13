@@ -45,13 +45,13 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify the token to test.</para>
         /// </summary>
-        [Parameter(Position = 0, Mandatory = true)]
+        [Parameter(Position = 1)]
         public NtToken Token { get; set; }
 
         /// <summary>
         /// <para type="description">Specify the SID to test.</para>
         /// </summary>
-        [Parameter(Position = 1, Mandatory = true)]
+        [Parameter(Position = 0, Mandatory = true)]
         public Sid Sid { get; set; }
 
         /// <summary>
@@ -80,26 +80,34 @@ namespace NtObjectManager.Cmdlets.Object
             WriteObject(CheckGroups(Sid, GetGroups(), DenyOnly, Restricted));
         }
 
+        private NtToken GetToken()
+        {
+            return Token?.Duplicate() ?? NtToken.OpenEffectiveToken();
+        }
+
         private IEnumerable<UserGroup> GetGroups()
         {
-            if (Restricted)
+            using (var token = GetToken())
             {
-                return Token.RestrictedSids;
-            }
-            else if (Capability)
-            {
-                return Token.Capabilities;
-            }
+                if (Restricted)
+                {
+                    return token.RestrictedSids;
+                }
+                else if (Capability)
+                {
+                    return token.Capabilities;
+                }
 
-            List<UserGroup> groups = new List<UserGroup>(Token.Groups);
-            UserGroup user = Token.User;
-            if (!user.DenyOnly)
-            {
-                user = new UserGroup(user.Sid, GroupAttributes.Enabled);
-            }
-            groups.Insert(0, user);
+                List<UserGroup> groups = new List<UserGroup>(token.Groups);
+                UserGroup user = token.User;
+                if (!user.DenyOnly)
+                {
+                    user = new UserGroup(user.Sid, GroupAttributes.Enabled);
+                }
+                groups.Insert(0, user);
 
-            return groups;
+                return groups;
+            }
         }
 
         private static bool CheckGroups(Sid sid, IEnumerable<UserGroup> groups, bool deny_only, bool restricted)
