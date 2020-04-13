@@ -14,6 +14,7 @@
 
 using NtApiDotNet;
 using NtObjectManager.Utils;
+using System;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Object
@@ -237,6 +238,11 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         [Parameter]
         public SwitchParameter MapGenericRights { get; set; }
+        /// <summary>
+        /// <para type="description">When specifying a Mandatory Label Policy specify GenericMapping to get the mandatory access.</para>
+        /// </summary>
+        [Parameter]
+        public GenericMapping? GenericMapping { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -293,6 +299,11 @@ namespace NtObjectManager.Cmdlets.Object
                     mask |= MapGeneric(SpecificAccessType.Enlistment, EnlistmentAccess);
                     mask |= (uint)ManadatoryLabelPolicy;
                     break;
+            }
+
+            if (GenericMapping.HasValue)
+            {
+                mask = GenericMapping.Value.GetAllowedMandatoryAccess(mask.ToMandatoryLabelPolicy());
             }
 
             if (ToGenericAccess)
