@@ -22,18 +22,18 @@ namespace NtObjectManager.Cmdlets.Object
     /// <para type="description">This cmdlet impersonates an NT Token and checks if the impersonation level matches.</para>
     /// </summary>
     /// <example>
-    ///   <code>Test-NtToken -Token $token</code>
+    ///   <code>Test-NtTokenImpersonation -Token $token</code>
     ///   <para>Checks if the token can be impersonated at impersonation level.</para>
     /// </example>
     /// <example>
-    ///   <code>Test-NtToken -Token $token -ImpersonationLevel Identification</code>
+    ///   <code>Test-NtTokenImpersonation -Token $token -ImpersonationLevel Identification</code>
     ///   <para>Checks if the token can be impersonated at identification level.</para>
     /// </example>
     /// <example>
-    ///   <code>Test-NtToken -Token $token -PassThru</code>
+    ///   <code>Test-NtTokenImpersonation -Token $token -PassThru</code>
     ///   <para>Impersonates the token and passes through the impersonated token.</para>
     /// </example>
-    [Cmdlet(VerbsDiagnostic.Test, "NtToken")]
+    [Cmdlet(VerbsDiagnostic.Test, "NtTokenImpersonation")]
     public sealed class TestNtTokenImpersonationCmdlet : PSCmdlet
     {
         /// <summary>

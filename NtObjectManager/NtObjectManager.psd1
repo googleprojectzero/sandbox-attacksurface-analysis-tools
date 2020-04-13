@@ -113,7 +113,7 @@ CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile
                'Set-NtFileHardlink', 'Test-NetworkAccess', 'Get-AccessibleScheduledTask',
                'Compare-RpcServer', 'Select-RpcServer', 'Add-NtTokenSecurityAttribute',
                'Remove-NtTokenSecurityAttribute', 'Get-AccessibleEventTrace',
-               'Test-NtToken', 'Get-AccessibleToken', 'Set-NtProcessJob', 
+               'Test-NtTokenImpersonation', 'Get-AccessibleToken', 'Set-NtProcessJob', 
                'Get-AccessibleWnf', 'Get-AccessibleWindowStation', 'Get-NtProcessJob',
                'Get-NtWindowStation', 'Get-NtDesktop', 'New-NtWindowStation',
                'New-NtDesktop', 'Get-Win32Error', 'Set-NtKeyValue', 'Remove-NtKey',
