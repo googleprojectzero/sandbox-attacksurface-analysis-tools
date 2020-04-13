@@ -15,6 +15,7 @@
 using NtApiDotNet;
 using NtApiDotNet.Win32;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
 
@@ -101,7 +102,11 @@ namespace NtObjectManager.Cmdlets.Object
     ///   <para>Gets all known NTSTATUS codes defined in this library.</para>
     /// </example>
     /// <example>
-    ///   <code>Get-NtStatus -Status 0xc0000022</code>
+    ///   <code>Get-NtStatus -Status 0xC0000022</code>
+    ///   <para>Gets information about a specific status code.</para>
+    /// </example>
+    /// <example>
+    ///   <code>Get-NtStatus -Name "STATUS_ACCESS_DENIED"</code>
     ///   <para>Gets information about a specific status code.</para>
     /// </example>
     [Cmdlet(VerbsCommon.Get, "NtStatus", DefaultParameterSetName = "All")]
@@ -110,8 +115,20 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify a NTSTATUS code to retrieve.</para>
         /// </summary>
-        [Parameter(Position = 0, ParameterSetName = "FromStatus")]
+        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromStatus")]
         public int Status { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify the name of a Status Code to retrieve.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromName")]
+        public string Name { get; set; }
+
+        /// <summary>
+        /// <para type="description">Pass the NtStatus enumeration rather than the status information.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter PassStatus { get; set; }
 
         /// <summary>
         /// Process record.
@@ -120,12 +137,44 @@ namespace NtObjectManager.Cmdlets.Object
         {
             if (ParameterSetName == "FromStatus")
             {
-                WriteObject(new NtStatusResult(Status));
+                if (PassStatus)
+                {
+                    WriteObject(NtObjectUtils.ConvertIntToNtStatus(Status));
+                }
+                else
+                {
+                    WriteObject(new NtStatusResult(Status));
+                }
+            }
+            else if (ParameterSetName == "FromName")
+            {
+                var status = GetAllStatus().Where(s => s.ToString().Equals(Name, StringComparison.OrdinalIgnoreCase)).First();
+                if (PassStatus)
+                {
+                    WriteObject(status);
+                }
+                else
+                {
+                    WriteObject(new NtStatusResult(status));
+                }
             }
             else
             {
-                WriteObject(Enum.GetValues(typeof(NtStatus)).Cast<NtStatus>().Distinct().Select(s => new NtStatusResult(s)), true);
+                var status = GetAllStatus();
+                if (PassStatus)
+                {
+                    WriteObject(status, true);
+                }
+                else
+                {
+                    WriteObject(GetAllStatus().Select(s => new NtStatusResult(s)), true);
+                }
             }
+        }
+
+        private static IEnumerable<NtStatus> GetAllStatus()
+        {
+            return Enum.GetValues(typeof(NtStatus)).Cast<NtStatus>().Distinct();
         }
     }
 }
