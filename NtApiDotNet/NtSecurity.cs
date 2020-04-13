@@ -311,6 +311,11 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown if cannot convert from a SDDL string.</exception>
         public static NtResult<Sid> SidFromSddl(string sddl, bool throw_on_error)
         {
+            var result = ParseSidString(sddl);
+            if (result.IsSuccess)
+                return result;
+
+            // If our managed parser fails try the Win32 API.
             if (!Win32NativeMethods.ConvertStringSidToSid(sddl, out SafeLocalAllocBuffer buffer))
             {
                 return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<Sid>(throw_on_error);
@@ -1836,6 +1841,37 @@ namespace NtApiDotNet
             if (object_types == null)
                 return Guid.Empty;
             return object_types.FirstOrDefault()?.ObjectType ?? Guid.Empty;
+        }
+
+        private static NtResult<Sid> ParseSidString(string sddl)
+        {
+            if (!sddl.StartsWith("S-1-", StringComparison.OrdinalIgnoreCase))
+            {
+                return NtStatus.STATUS_INVALID_SID.CreateResultFromError<Sid>(false);
+            }
+
+            string[] parts = sddl.Substring(4).Split('-');
+            if (parts.Length == 0)
+            {
+                return NtStatus.STATUS_INVALID_SID.CreateResultFromError<Sid>(false);
+            }
+
+            if (!long.TryParse(parts[0], out long auth_value))
+            {
+                return NtStatus.STATUS_INVALID_SID.CreateResultFromError<Sid>(false);
+            }
+
+            var authority = new SidIdentifierAuthority(auth_value);
+            uint[] sub_authority = new uint[parts.Length - 1];
+            for (int i = 1; i < parts.Length; ++i)
+            {
+                if (!uint.TryParse(parts[i], out uint result))
+                {
+                    return NtStatus.STATUS_INVALID_SID.CreateResultFromError<Sid>(false);
+                }
+                sub_authority[i - 1] = result;
+            }
+            return new Sid(authority, sub_authority).CreateResult();
         }
 
         #endregion

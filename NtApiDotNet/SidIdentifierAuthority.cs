@@ -92,6 +92,15 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Construct from an Int64.
+        /// </summary>
+        /// <param name="authority">The authority as an Int64.</param>
+        public SidIdentifierAuthority(long authority)
+        {
+            _value = BitConverter.GetBytes(authority).Take(6).Reverse().ToArray();
+        }
+
+        /// <summary>
         /// Compares authority to another.
         /// </summary>
         /// <param name="obj">The other authority to compare against.</param>
