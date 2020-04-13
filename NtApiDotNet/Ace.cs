@@ -40,7 +40,7 @@ namespace NtApiDotNet
         {
             get
             {
-                if (!IsCallbackAce && Type != AceType.AccessFilter)
+                if (!IsCallbackAce && !IsAccessFilterAce)
                 {
                     return false;
                 }
@@ -73,6 +73,16 @@ namespace NtApiDotNet
         /// Check if ACE is an audit ACE.
         /// </summary>
         public bool IsAuditAce => NtSecurity.IsAuditAceType(Type);
+
+        /// <summary>
+        /// Check if ACE is an access filter ACE.
+        /// </summary>
+        public bool IsAccessFilterAce => Type == AceType.AccessFilter;
+
+        /// <summary>
+        /// Check if ACE is a process trust label ACE.
+        /// </summary>
+        public bool IsProcessTrustLabelAce => Type == AceType.ProcessTrustLabel;
 
         /// <summary>
         /// Check if ACE is a critical ACE.
