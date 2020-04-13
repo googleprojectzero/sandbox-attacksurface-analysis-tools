@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using System;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Object
@@ -37,6 +38,10 @@ namespace NtObjectManager.Cmdlets.Object
     ///   <code>Test-NtAceCondition -ConditionData $ba</code>
     ///   <para>Checks the expression as a byte array matches the effective token.</para>
     /// </example>
+    /// <example>
+    ///   <code>Test-NtAceCondition -Ace $ace</code>
+    ///   <para>Checks the expression from a conditional ACE matches the effective token.</para>
+    /// </example>
     [Cmdlet(VerbsDiagnostic.Test, "NtAceCondition")]
     public class TestNtAceCondition : PSCmdlet
     {
@@ -58,6 +63,12 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromData")]
         public byte[] ConditionData { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify a conditional ACE. Note that only the conditional expression is used, not the Sid or Mask.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromAce")]
+        public Ace Ace { get; set; }
+
         private NtToken GetToken()
         {
             return Token?.Duplicate() ?? NtToken.OpenEffectiveToken();
@@ -77,6 +88,11 @@ namespace NtObjectManager.Cmdlets.Object
                         break;
                     case "FromData":
                         WriteObject(NtSecurity.EvaluateConditionAce(token, ConditionData));
+                        break;
+                    case "FromAce":
+                        if (!Ace.IsConditionalAce)
+                            throw new ArgumentException("Must specify a conditional ACE.");
+                        WriteObject(NtSecurity.EvaluateConditionAce(token, Ace.ApplicationData));
                         break;
                 }
             }

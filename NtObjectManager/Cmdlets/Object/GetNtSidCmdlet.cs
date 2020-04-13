@@ -93,6 +93,13 @@ namespace NtObjectManager.Cmdlets.Object
         public string Sddl { get; set; }
 
         /// <summary>
+        /// <para type="description">Specify a SID from an ACE.</para>
+        /// </summary>
+        [Parameter(Position = 0, Mandatory = true, ParameterSetName = "ace")]
+        [Alias("Ace")]
+        public Ace AccessControlEntry { get; set; }
+
+        /// <summary>
         /// <para type="description">Lookup a SID using an NT account name.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "name")]
@@ -299,6 +306,9 @@ namespace NtObjectManager.Cmdlets.Object
                     break;
                 case "trust":
                     sid = new Sid(SecurityAuthority.ProcessTrust, (uint)TrustType, (uint)TrustLevel);
+                    break;
+                case "ace":
+                    sid = AccessControlEntry.Sid;
                     break;
                 default:
                     throw new ArgumentException("No SID type specified");

@@ -200,6 +200,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify an ACE to extract the mask to map.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromAce", Mandatory = true, ValueFromPipeline = true, Position = 0)]
+        [Alias("Ace")]
         public Ace AccessControlEntry { get; set; }
         /// <summary>
         /// <para type="description">Specify a security information to get the access mask.</para>
