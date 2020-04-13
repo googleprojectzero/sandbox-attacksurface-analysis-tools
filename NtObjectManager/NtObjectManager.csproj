@@ -202,7 +202,7 @@
     <Compile Include="Cmdlets\Object\SetNtKeyValueCmdlet.cs" />
     <Compile Include="Cmdlets\Object\NewNtMutantCmdlet.cs" />
     <Compile Include="Cmdlets\Object\SetNtObjectInformationCmdlet.cs" />
-    <Compile Include="Cmdlets\Object\GetNtTypesCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\GetNtTypeCmdlet.cs" />
     <Compile Include="Cmdlets\Object\NewNtSymbolicLinkCmdlet.cs" />
     <Compile Include="Provider\NtDirectoryEntry.cs" />
     <Compile Include="Provider\NtObjectManagerProvider.cs" />
