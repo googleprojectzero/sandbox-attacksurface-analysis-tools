@@ -74,14 +74,14 @@ FunctionsToExport = 'Get-AccessibleAlpcPort', 'Set-NtTokenPrivilege',
           'Get-AuthClient', 'Update-AuthServer', 'Update-AuthClient', 'Get-AuthAccessToken', 'Get-NtKernelModule',
           'Get-NtObjectInformationClass', 'Add-NtSection', 'Remove-NtSection', 'Compare-NtObject', 'Edit-NtSecurityDescriptor',
           'Set-NtSecurityDescriptorOwner', 'Set-NtSecurityDescriptorGroup', 'Set-NtSecurityDescriptorIntegrityLevel',
-          'Get-NtAceConditionData', 'ConvertFrom-NtSecurityDescriptor', 'Remove-NtSecurityDescriptorOwner',
+          'ConvertFrom-NtAceCondition', 'ConvertFrom-NtSecurityDescriptor', 'Remove-NtSecurityDescriptorOwner',
           'Remove-NtSecurityDescriptorGroup', 'New-NtUserGroup', 'New-NtAcl', 'Set-NtSecurityDescriptorDacl',
           'Set-NtSecurityDescriptorSacl', 'Copy-NtSecurityDescriptor', 'Test-NtSecurityDescriptor',
           'Get-NtSecurityDescriptorOwner', 'Get-NtSecurityDescriptorGroup', 'Get-NtSecurityDescriptorDacl',
           'Get-NtSecurityDescriptorSacl', 'Set-NtSecurityDescriptorControl', 'Get-NtSecurityDescriptorControl',
           'Remove-NtSecurityDescriptorDacl', 'Remove-NtSecurityDescriptorSacl', 'Remove-NtSecurityDescriptorIntegrityLevel',
           'Add-NtSecurityDescriptorControl', 'Remove-NtSecurityDescriptorControl', 'Format-Win32SecurityDescriptor',
-          'New-NtObjectTypeTree', 'Add-NtObjectTypeTree'
+          'New-NtObjectTypeTree', 'Add-NtObjectTypeTree', 'ConvertTo-NtAceCondition'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile', 
@@ -121,7 +121,7 @@ CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile
                'Format-NtJob', 'Add-NtSecurityDescriptorAce', 'New-NtSecurityAttribute',
                'Remove-NtSecurityDescriptorAce', 'Invoke-NtToken', 'Set-Win32SecurityDescriptor',
                'Reset-Win32SecurityDescriptor', 'Search-Win32SecurityDescriptor',
-               'Get-Win32SecurityDescriptor', 'Compare-NtSid'
+               'Get-Win32SecurityDescriptor', 'Compare-NtSid', 'Test-NtAceCondition'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @()

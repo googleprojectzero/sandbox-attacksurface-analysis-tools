@@ -958,6 +958,69 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Evaluate a condition ACE expression.
+        /// </summary>
+        /// <param name="token">The Token to check against.</param>
+        /// <param name="condition_sddl">The conditional expression in SDDL format.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True if the conditional expression was a success.</returns>
+        public static NtResult<bool> EvaluateConditionAce(NtToken token, string condition_sddl, bool throw_on_error)
+        {
+            var sd = SecurityDescriptor.Parse($"O:S-1-0-0G:S-1-0-0D:(XA;;1;;;{token.User.Sid};({condition_sddl}))S:(ML;;NW;;;S-1-16-0)", throw_on_error);
+            if (!sd.IsSuccess)
+            {
+                return sd.Cast<bool>();
+            }
+            return EvaluateConditionAce(token, sd.Result, throw_on_error);
+        }
+
+        /// <summary>
+        /// Evaluate a condition ACE expression.
+        /// </summary>
+        /// <param name="token">The Token to check against.</param>
+        /// <param name="condition_sddl">The conditional expression in SDDL format.</param>
+        /// <returns>True if the conditional expression was a success.</returns>
+        public static bool EvaluateConditionAce(NtToken token, string condition_sddl)
+        {
+            return EvaluateConditionAce(token, condition_sddl, true).Result;
+        }
+
+        /// <summary>
+        /// Evaluate a condition ACE expression.
+        /// </summary>
+        /// <param name="token">The Token to check against.</param>
+        /// <param name="condition_data">The conditional expression in binary format.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True if the conditional expression was a success.</returns>
+        public static NtResult<bool> EvaluateConditionAce(NtToken token, byte[] condition_data, bool throw_on_error)
+        {
+            SecurityDescriptor sd = new SecurityDescriptor
+            {
+                Owner = new SecurityDescriptorSid(new Sid("S-1-0-0"), false),
+                Group = new SecurityDescriptorSid(new Sid("S-1-0-0"), false),
+                Dacl = new Acl
+                {
+                    NullAcl = false
+                }
+            };
+            sd.Dacl.Add(new Ace(AceType.AllowedCallback, 
+                AceFlags.None, 1, token.User.Sid) { ApplicationData = condition_data });
+            sd.AddMandatoryLabel(TokenIntegrityLevel.Untrusted);
+            return EvaluateConditionAce(token, sd, throw_on_error);
+        }
+
+        /// <summary>
+        /// Evaluate a condition ACE expression.
+        /// </summary>
+        /// <param name="token">The Token to check against.</param>
+        /// <param name="condition_data">The conditional expression in binary format.</param>
+        /// <returns>True if the conditional expression was a success.</returns>
+        public static bool EvaluateConditionAce(NtToken token, byte[] condition_data)
+        {
+            return EvaluateConditionAce(token, condition_data, true).Result;
+        }
+
+        /// <summary>
         /// Get the cached signing level for a file.
         /// </summary>
         /// <param name="handle">The handle to the file to query.</param>
@@ -1872,6 +1935,19 @@ namespace NtApiDotNet
                 sub_authority[i - 1] = result;
             }
             return new Sid(authority, sub_authority).CreateResult();
+        }
+
+        private static NtResult<bool> EvaluateConditionAce(NtToken token, SecurityDescriptor sd, bool throw_on_error)
+        {
+            if (token == null)
+                throw new ArgumentNullException(nameof(token));
+            GenericMapping mapping = new GenericMapping() {
+                GenericRead = 0,
+                GenericWrite = 0,
+                GenericExecute = 1,
+                GenericAll = 1
+            };
+            return AccessCheck(sd, token, 1, null, mapping, throw_on_error).Map(r => r.IsSuccess && r.GrantedAccess == 1);
         }
 
         #endregion
