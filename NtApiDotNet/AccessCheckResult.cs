@@ -64,9 +64,9 @@ namespace NtApiDotNet
         /// Get access check result as a specific access.
         /// </summary>
         /// <returns>The specific access.</returns>
-        public AccessCheckResult<Enum> ToSpecificAccess(Type specific_access_type)
+        public AccessCheckResultGeneric ToSpecificAccess(Type specific_access_type)
         {
-            return new AccessCheckResult<Enum>(Status, GrantedAccess, GenericGrantedAccess, PrivilegesRequired,
+            return new AccessCheckResultGeneric(Status, GrantedAccess, GenericGrantedAccess, PrivilegesRequired,
                 GrantedAccess.ToSpecificAccess(specific_access_type),
                 GenericGrantedAccess.ToSpecificAccess(specific_access_type), 
                 ObjectType);
@@ -129,6 +129,25 @@ namespace NtApiDotNet
             : base(status, granted_access, generic_granted_access, privilege_required,
                   granted_access.ToGenericAccess(), generic_granted_access.ToGenericAccess(),
                   object_type)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Result of an access check with generic Enum access types.
+    /// </summary>
+    public class AccessCheckResultGeneric : AccessCheckResult<Enum>
+    {
+        internal AccessCheckResultGeneric(NtStatus status,
+            AccessMask granted_access,
+            AccessMask generic_granted_access,
+            IEnumerable<TokenPrivilege> privilege_required,
+            Enum specific_granted_access,
+            Enum specific_generic_granted_access,
+            Guid object_type) : base(status, granted_access,
+                generic_granted_access, privilege_required,
+                specific_granted_access, specific_generic_granted_access,
+                object_type)
         {
         }
     }
