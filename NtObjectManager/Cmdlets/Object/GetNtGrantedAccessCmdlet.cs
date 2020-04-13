@@ -115,9 +115,10 @@ namespace NtObjectManager.Cmdlets.Object
 
         private AccessMask GetDesiredAccess()
         {
+            NtType type = GetNtType();
             if (GenericAccess.HasValue)
             {
-                return GenericAccess;
+                return type.MapGenericRights(GenericAccess);
             }
             if (AccessMask.HasValue)
             {
@@ -144,14 +145,18 @@ namespace NtObjectManager.Cmdlets.Object
 
         private NtType GetNtType()
         {
+            NtType type;
             if (Type != null)
             {
-                return Type;
+                type = Type;
             }
             else
             {
-                return GetSecurityDescriptor().NtType;
+                type = GetSecurityDescriptor()?.NtType;
             }
+            if (type == null)
+                throw new ArgumentException("Must specify a type.");
+            return type;
         }
 
         private NtToken GetToken()
@@ -179,9 +184,6 @@ namespace NtObjectManager.Cmdlets.Object
             using (NtToken token = GetToken())
             {
                 NtType type = GetNtType();
-                if (type == null)
-                    throw new ArgumentException("Must specify a type.");
-
                 var object_types = ObjectType?.ToArray();
                 // If we have multiple object types and pass result is true then
                 // we don't support any another output format.
