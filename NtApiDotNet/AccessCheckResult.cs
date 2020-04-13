@@ -52,6 +52,10 @@ namespace NtApiDotNet
         /// </summary>
         public Guid ObjectType { get; }
         /// <summary>
+        /// Whether the access check was a success.
+        /// </summary>
+        public bool IsSuccess => Status.IsSuccess();
+        /// <summary>
         /// Get access check result as a specific access.
         /// </summary>
         /// <returns>The specific access results.</returns>
