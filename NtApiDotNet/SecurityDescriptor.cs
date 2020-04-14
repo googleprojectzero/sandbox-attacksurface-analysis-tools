@@ -753,10 +753,20 @@ namespace NtApiDotNet
         /// <summary>
         /// Get the mandatory label. Returns null if it doesn't exist.
         /// </summary>
+        /// <param name="include_inherit_only">True to include InheritOnly ACEs in the search.</param>
+        /// <returns>The valid mandatory ACE for this security descriptor. Or null if it doesn't exist.</returns>
+        public Ace GetMandatoryLabel(bool include_inherit_only)
+        {
+            return FindSaclAce(AceType.MandatoryLabel, include_inherit_only);
+        }
+
+        /// <summary>
+        /// Get the mandatory label. Returns null if it doesn't exist.
+        /// </summary>
         /// <returns>The valid mandatory ACE for this security descriptor. Or null if it doesn't exist.</returns>
         public Ace GetMandatoryLabel()
         {
-            return FindSaclAce(AceType.MandatoryLabel, false);
+            return GetMandatoryLabel(false);
         }
 
         /// <summary>
