@@ -24,7 +24,7 @@ namespace NtObjectManager.Cmdlets.Object
     /// <para type="description">This cmdlet will create a SID object based on one
     /// of many mechanisms. For example it can parse the SDDL representation of the
     /// SID, or it can look up the account name. It can also create a SID based on
-    /// a service name or integerity level.
+    /// a service name or integrity level.
     /// </para>
     /// </summary>
     /// <example>
@@ -305,7 +305,7 @@ namespace NtObjectManager.Cmdlets.Object
                     sid = NtSecurity.GetLogonSessionSid();
                     break;
                 case "trust":
-                    sid = new Sid(SecurityAuthority.ProcessTrust, (uint)TrustType, (uint)TrustLevel);
+                    sid = NtSecurity.GetTrustLevelSid(TrustType, TrustLevel);
                     break;
                 case "ace":
                     sid = AccessControlEntry.Sid;
