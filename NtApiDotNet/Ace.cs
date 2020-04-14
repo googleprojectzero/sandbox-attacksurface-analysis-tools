@@ -336,11 +336,19 @@ namespace NtApiDotNet
             }
 
             int total_length = 4 + 4 + sid_data.Length;
-
             if (ApplicationData != null)
             {
                 total_length += ApplicationData.Length;
             }
+
+            // Add a round up to 4 byte alignment.
+            int padding = 4 - (total_length % 4);
+            if (padding == 4)
+            {
+                padding = 0;
+            }
+
+            total_length += padding;
 
             ObjectAceFlags flags = ObjectAceFlags.None;
             if (IsObjectAce)
@@ -381,6 +389,10 @@ namespace NtApiDotNet
             }
             writer.Write(sid_data);
             writer.Write(ApplicationData ?? new byte[0]);
+            if (padding != 0)
+            {
+                writer.Write(new byte[padding]);
+            }
         }
 
         #endregion
