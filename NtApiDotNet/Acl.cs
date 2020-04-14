@@ -315,20 +315,46 @@ namespace NtApiDotNet
         /// Find the first ACE with a specified type.
         /// </summary>
         /// <param name="type">The type to find.</param>
+        /// <param name="include_inherit_only">True to include inherit only ACEs.</param>
+        /// <returns>The found ace. Returns null if not found.</returns>
+        public Ace FindAce(AceType type, bool include_inherit_only)
+        {
+            if (include_inherit_only)
+                return Find(a => a.Type == type);
+            return Find(a => a.Type == type && !a.IsInheritOnly);
+        }
+
+        /// <summary>
+        /// Find the first ACE with a specified type. Includes InheritOnly ACEs.
+        /// </summary>
+        /// <param name="type">The type to find.</param>
         /// <returns>The found ace. Returns null if not found.</returns>
         public Ace FindAce(AceType type)
         {
-            return Find(a => a.Type == type);
+            return FindAce(type, true);
         }
 
         /// <summary>
         /// Find the all ACE with a specified type.
         /// </summary>
         /// <param name="type">The type to find.</param>
+        /// <param name="include_inherit_only">True to include inherit only ACEs.</param>
+        /// <returns>The found aces.</returns>
+        public IEnumerable<Ace> FindAllAce(AceType type, bool include_inherit_only)
+        {
+            if (include_inherit_only)
+                return FindAll(a => a.Type == type);
+            return FindAll(a => a.Type == type && !a.IsInheritOnly);
+        }
+
+        /// <summary>
+        /// Find the all ACE with a specified type. Includes InheritOnly ACEs.
+        /// </summary>
+        /// <param name="type">The type to find.</param>
         /// <returns>The found aces.</returns>
         public IEnumerable<Ace> FindAllAce(AceType type)
         {
-            return FindAll(a => a.Type == type);
+            return FindAllAce(type, true);
         }
 
         /// <summary>
