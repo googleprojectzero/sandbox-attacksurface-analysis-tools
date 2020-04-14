@@ -1501,6 +1501,17 @@ namespace NtApiDotNet
             return AccessMaskToString(access, enum_type);
         }
 
+        /// <summary>
+        /// Get a Process Trust Level SID.
+        /// </summary>
+        /// <param name="type">The Trust Type.</param>
+        /// <param name="level">The Trust Level.</param>
+        /// <returns>The Process Trust Level SID.</returns>
+        public static Sid GetTrustLevelSid(ProcessTrustType type, ProcessTrustLevel level)
+        {
+            return new Sid(SecurityAuthority.ProcessTrust, (uint)type, (uint)level);
+        }
+
         #endregion
 
         #region Private Members
