@@ -139,6 +139,7 @@
     <Compile Include="Cmdlets\Object\SpecificAccessType.cs" />
     <Compile Include="Cmdlets\Object\StartNtDebugWaitCmdlet.cs" />
     <Compile Include="Cmdlets\Object\CompareNtSidCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\TestNtAccessMask.cs" />
     <Compile Include="Cmdlets\Object\TestNtAceCondition.cs" />
     <Compile Include="Cmdlets\Object\TestNtTokenGroup.cs" />
     <Compile Include="Cmdlets\Object\TestNtTokenImpersonationCmdlet.cs" />

@@ -122,7 +122,7 @@ CmdletsToExport = 'Add-NtKeyHive', 'Get-NtDirectory', 'Get-NtEvent', 'Get-NtFile
                'Remove-NtSecurityDescriptorAce', 'Invoke-NtToken', 'Set-Win32SecurityDescriptor',
                'Reset-Win32SecurityDescriptor', 'Search-Win32SecurityDescriptor',
                'Get-Win32SecurityDescriptor', 'Compare-NtSid', 'Test-NtAceCondition',
-               'Test-NtTokenGroup'
+               'Test-NtTokenGroup', 'Test-NtAccessMask'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @()
