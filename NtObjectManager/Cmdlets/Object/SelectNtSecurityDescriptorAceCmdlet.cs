@@ -21,7 +21,7 @@ using System.Management.Automation;
 namespace NtObjectManager.Cmdlets.Object
 {
     /// <summary>
-    /// ACL type for ACE selection.
+    /// <para type="description">ACL type for ACE selection.</para>
     /// </summary>
     [Flags]
     public enum SecurityDescriptorAclType
