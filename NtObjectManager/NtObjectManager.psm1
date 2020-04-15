@@ -2302,7 +2302,7 @@ function Format-NtSecurityDescriptor {
             if ($sd.DaclPresent -and (($si -band "Dacl") -ne 0)) {
                 Format-NtAcl $sd.Dacl $t "<DACL>" -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container
             }
-            if (($sd.HasAuditAce -or $sd.NullSacl) -and (($si -band "Sacl") -ne 0)) {
+            if (($sd.HasAuditAce -or $sd.SaclNull) -and (($si -band "Sacl") -ne 0)) {
                 Format-NtAcl $sd.Sacl $t "<SACL>" -MapGeneric:$MapGeneric -AuditOnly -Summary:$Summary -Container:$Container
             }
             $label = $sd.GetMandatoryLabel()
