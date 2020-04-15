@@ -514,7 +514,7 @@ namespace NtApiDotNet
             Level = level;
         }
 
-        public ObjectTypeEntry(Guid object_type) 
+        public ObjectTypeEntry(Guid object_type)
             : this(object_type, 0)
         {
         }
@@ -555,6 +555,19 @@ namespace NtApiDotNet
         AiUseExtraParams = 0x800,
         AvoidOwnerRestriction = 0x1000,
         ForceUserMode = 0x2000,
+    }
+
+    public enum AuditEventType
+    {
+        AuditEventObjectAccess,
+        AuditEventDirectoryServiceAccess
+    }
+
+    [Flags]
+    public enum AuditAccessCheckFlags
+    {
+        None = 0,
+        AllowNoPrivilege = 1,
     }
 
     public static partial class NtRtl
@@ -618,7 +631,7 @@ namespace NtApiDotNet
         public static extern NtStatus RtlGetOwnerSecurityDescriptor(SafeBuffer SecurityDescriptor, out IntPtr Owner, [MarshalAs(UnmanagedType.U1)] out bool OwnerDefaulted);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlGetSaclSecurityDescriptor(SafeBuffer SecurityDescriptor, [MarshalAs(UnmanagedType.U1)] out bool SaclPresent, 
+        public static extern NtStatus RtlGetSaclSecurityDescriptor(SafeBuffer SecurityDescriptor, [MarshalAs(UnmanagedType.U1)] out bool SaclPresent,
             out IntPtr Sacl, [MarshalAs(UnmanagedType.U1)] out bool SaclDefaulted);
 
         [DllImport("ntdll.dll")]
@@ -632,11 +645,11 @@ namespace NtApiDotNet
         public static extern int RtlLengthSecurityDescriptor(SafeBuffer SecurityDescriptor);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlSetDaclSecurityDescriptor(SafeBuffer SecurityDescriptor, [MarshalAs(UnmanagedType.U1)] bool DaclPresent, IntPtr Dacl, 
+        public static extern NtStatus RtlSetDaclSecurityDescriptor(SafeBuffer SecurityDescriptor, [MarshalAs(UnmanagedType.U1)] bool DaclPresent, IntPtr Dacl,
             [MarshalAs(UnmanagedType.U1)] bool DaclDefaulted);
 
         [DllImport("ntdll.dll")]
-        public static extern NtStatus RtlSetSaclSecurityDescriptor(SafeBuffer SecurityDescriptor, [MarshalAs(UnmanagedType.U1)] bool SaclPresent, IntPtr Sacl, 
+        public static extern NtStatus RtlSetSaclSecurityDescriptor(SafeBuffer SecurityDescriptor, [MarshalAs(UnmanagedType.U1)] bool SaclPresent, IntPtr Sacl,
             [MarshalAs(UnmanagedType.U1)] bool SaclDefaulted);
 
         [DllImport("ntdll.dll")]
@@ -861,6 +874,121 @@ namespace NtApiDotNet
             ref int BufferLength,
             [Out] AccessMask[] GrantedAccessList,
             [Out] NtStatus[] AccessStatusList);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAccessCheckAndAuditAlarm(
+            UnicodeString SubsystemName,
+            IntPtr HandleId,
+            UnicodeString ObjectTypeName,
+            UnicodeString ObjectName,
+            SafeBuffer SecurityDescriptor,
+            AccessMask DesiredAccess,
+            ref GenericMapping GenericMapping,
+            bool ObjectCreation,
+            out AccessMask GrantedAccess,
+            out NtStatus AccessStatus,
+            out bool GenerateOnClose);
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAccessCheckByTypeAndAuditAlarm(
+            UnicodeString SubsystemName,
+            IntPtr HandleId,
+            UnicodeString ObjectTypeName,
+            UnicodeString ObjectName,
+            SafeBuffer SecurityDescriptor,
+            SafeHandle PrincipalSelfSid,
+            AccessMask DesiredAccess,
+            AuditEventType AuditType,
+            AuditAccessCheckFlags Flags,
+            [In] ObjectTypeList[] ObjectTypeList,
+            int ObjectTypeListLength,
+            ref GenericMapping GenericMapping,
+            bool ObjectCreation,
+            out AccessMask GrantedAccess,
+            out NtStatus AccessStatus,
+            out bool GenerateOnClose
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAccessCheckByTypeResultListAndAuditAlarm(
+            UnicodeString SubsystemName,
+            IntPtr HandleId,
+            UnicodeString ObjectTypeName,
+            UnicodeString ObjectName,
+            SafeBuffer SecurityDescriptor,
+            SafeHandle PrincipalSelfSid,
+            AccessMask DesiredAccess,
+            AuditEventType AuditType,
+            AuditAccessCheckFlags Flags,
+            [In] ObjectTypeList[] ObjectTypeList,
+            int ObjectTypeListLength,
+            ref GenericMapping GenericMapping,
+            bool ObjectCreation,
+            [Out] AccessMask[] GrantedAccessList,
+            [Out] NtStatus[] AccessStatusList,
+            out bool GenerateOnClose
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtAccessCheckByTypeResultListAndAuditAlarmByHandle(
+            UnicodeString SubsystemName,
+            IntPtr HandleId,
+            SafeKernelObjectHandle ClientToken,
+            UnicodeString ObjectTypeName,
+            UnicodeString ObjectName,
+            SafeBuffer SecurityDescriptor,
+            SafeHandle PrincipalSelfSid,
+            AccessMask DesiredAccess,
+            AuditEventType AuditType,
+            AuditAccessCheckFlags Flags,
+            [In] ObjectTypeList[] ObjectTypeList,
+            int ObjectTypeListLength,
+            ref GenericMapping GenericMapping,
+            bool ObjectCreation,
+            [Out] AccessMask[] GrantedAccessList,
+            [Out] NtStatus[] AccessStatusList,
+            out bool GenerateOnClose
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtOpenObjectAuditAlarm(
+            UnicodeString SubsystemName,
+            IntPtr HandleId,
+            UnicodeString ObjectTypeName,
+            UnicodeString ObjectName,
+            SafeBuffer SecurityDescriptor,
+            SafeKernelObjectHandle ClientToken,
+            AccessMask DesiredAccess,
+            AccessMask GrantedAccess,
+            SafePrivilegeSetBuffer Privileges,
+            bool ObjectCreation,
+            bool AccessGranted,
+            out bool GenerateOnClose
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtCloseObjectAuditAlarm(
+            UnicodeString SubsystemName,
+            IntPtr HandleId,
+            bool GenerateOnClose
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtDeleteObjectAuditAlarm(
+            UnicodeString SubsystemName,
+            IntPtr HandleId,
+            bool GenerateOnClose
+        );
+
+        [DllImport("ntdll.dll")]
+        public static extern NtStatus NtPrivilegeObjectAuditAlarm(
+            UnicodeString SubsystemName,
+            IntPtr HandleId,
+            SafeKernelObjectHandle ClientToken,
+            AccessMask DesiredAccess,
+            SafePrivilegeSetBuffer Privileges,
+            bool AccessGranted
+        );
 
         [DllImport("ntdll.dll")]
         public static extern NtStatus NtPrivilegeCheck(
