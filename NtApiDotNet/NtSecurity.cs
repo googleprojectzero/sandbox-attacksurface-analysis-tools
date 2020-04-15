@@ -926,8 +926,9 @@ namespace NtApiDotNet
         /// Converts conditional ACE data to an SDDL string
         /// </summary>
         /// <param name="conditional_data">The conditional application data.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The conditional ACE string.</returns>
-        public static string ConditionalAceToString(byte[] conditional_data)
+        public static NtResult<string> ConditionalAceToString(byte[] conditional_data, bool throw_on_error)
         {
             SecurityDescriptor sd = new SecurityDescriptor
             {
@@ -937,13 +938,27 @@ namespace NtApiDotNet
                 }
             };
             sd.Dacl.Add(new Ace(AceType.AllowedCallback, AceFlags.None, 0, KnownSids.World) { ApplicationData = conditional_data });
-            var matches = ConditionalAceRegex.Match(sd.ToSddl());
+            var sddl = sd.ToSddl(throw_on_error);
+            if (!sddl.IsSuccess)
+                return sddl.Cast<string>();
+            var matches = ConditionalAceRegex.Match(sddl.Result);
 
             if (!matches.Success || matches.Groups.Count != 2)
             {
-                throw new ArgumentException("Invalid condition data");
+                return NtStatus.STATUS_INVALID_ACE_CONDITION.CreateResultFromError<string>(throw_on_error);
+
             }
-            return matches.Groups[1].Value;
+            return matches.Groups[1].Value.CreateResult();
+        }
+
+        /// <summary>
+        /// Converts conditional ACE data to an SDDL string
+        /// </summary>
+        /// <param name="conditional_data">The conditional application data.</param>
+        /// <returns>The conditional ACE string.</returns>
+        public static string ConditionalAceToString(byte[] conditional_data)
+        {
+            return ConditionalAceToString(conditional_data, true).Result;
         }
 
         /// <summary>
