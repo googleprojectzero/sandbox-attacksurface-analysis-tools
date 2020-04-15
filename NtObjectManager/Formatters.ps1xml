@@ -2480,6 +2480,10 @@
             <Label>Granted Access</Label>
             <Alignment>left</Alignment>
           </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Privileges</Label>
+            <Alignment>left</Alignment>
+          </TableColumnHeader>
         </TableHeaders>
         <TableRowEntries>
           <TableRowEntry>
@@ -2489,6 +2493,10 @@
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>SpecificGenericGrantedAccess</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <!--<PropertyName>PrivilegesRequired</PropertyName>-->
+                <ScriptBlock>if ($_.PrivilegesRequired.Count -gt 0) { $_.PrivilegesRequired } else { "NONE" }</ScriptBlock>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

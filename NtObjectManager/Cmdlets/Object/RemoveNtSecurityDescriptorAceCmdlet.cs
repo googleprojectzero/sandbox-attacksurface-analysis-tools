@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 using NtApiDotNet;
-using NtObjectManager.Utils;
 using System;
 using System.Collections.Generic;
 using System.Management.Automation;
@@ -21,31 +20,8 @@ using System.Management.Automation;
 namespace NtObjectManager.Cmdlets.Object
 {
     /// <summary>
-    /// ACL type for ACE removal.
-    /// </summary>
-    [Flags]
-    public enum RemoveAclType
-    {
-        /// <summary>
-        /// Only remove from the DACL.
-        /// </summary>
-        Dacl = 1,
-        /// <summary>
-        /// Only remove from the SACL.
-        /// </summary>
-        Sacl = 2,
-        /// <summary>
-        /// Remove from both ACL and SACL.
-        /// </summary>
-        Both = Dacl | Sacl,
-    }
-
-    /// <summary>
-    /// <para type="synopsis">Adds an ACE to a security descriptor.</para>
-    /// <para type="description">This cmdlet adds an ACE to the specified security descriptor. It will
-    /// automatically select the DACL or SACL depending on the ACE type requested. It also supports
-    /// specifying a Condition for callback ACEs and Object GUIDs for Object ACEs. The Access property
-    /// changes behavior depending on the NtType property of the Security Descriptor.
+    /// <para type="synopsis">Removes ACEs from a security descriptor.</para>
+    /// <para type="description">This cmdlet removes ACEs from a security descriptor.
     /// </para>
     /// </summary>
     /// <example>
@@ -90,67 +66,9 @@ namespace NtObjectManager.Cmdlets.Object
     /// </example>
     [Cmdlet(VerbsCommon.Remove, "NtSecurityDescriptorAce", DefaultParameterSetName = "FromSid", SupportsShouldProcess = true)]
     [OutputType(typeof(Ace))]
-    public sealed class RemoveNtSecurityDescriptorAceCmdlet : PSCmdlet
+    public sealed class RemoveNtSecurityDescriptorAceCmdlet : SelectNtSecurityDescriptorAceCmdlet
     {
-        #region Constructors
-        /// <summary>
-        /// Constuctor.
-        /// </summary>
-        public RemoveNtSecurityDescriptorAceCmdlet()
-        {
-            AclType = RemoveAclType.Both;
-        }
-        #endregion
-
         #region Public Properties
-        /// <summary>
-        /// <para type="description">Specify to create the security descriptor with a NULL DACL.</para>
-        /// </summary>
-        [Parameter(Position = 0, Mandatory = true)]
-        [SecurityDescriptorTransform]
-        public SecurityDescriptor SecurityDescriptor { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify to add ACE with SID.</para>
-        /// </summary>
-        [Parameter(Position = 1, ParameterSetName = "FromSid")]
-        public Sid Sid { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the type of ACE.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromSid")]
-        public AceType? Type { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the ACE flags.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromSid")]
-        public AceFlags? Flags { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the ACE flags must all match. The default is to select on a partial match.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromSid")]
-        public SwitchParameter AllFlags { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the access.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromSid")]
-        public AccessMask? Access { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify a filter to select what to remove.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "FromFilter", Position = 1)]
-        public ScriptBlock Filter { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify what ACLs to remove the ACEs from.</para>
-        /// </summary>
-        public RemoveAclType AclType { get; set; }
-
         /// <summary>
         /// <para type="description">Specify list of ACEs to remove.</para>
         /// </summary>
@@ -172,17 +90,13 @@ namespace NtObjectManager.Cmdlets.Object
         protected override void ProcessRecord()
         {
             IEnumerable<Ace> aces = new Ace[0];
-            switch (ParameterSetName)
+            if (ParameterSetName == "FromAce")
             {
-                case "FromSid":
-                    aces = FilterFromSid();
-                    break;
-                case "FromFilter":
-                    aces = FilterFromFilter();
-                    break;
-                case "FromAce":
-                    aces = FilterFromAce();
-                    break;
+                aces = FilterFromAce();
+            }
+            else
+            {
+                aces = SelectAces(RemoveAces);
             }
 
             if (PassThru)
@@ -193,107 +107,29 @@ namespace NtObjectManager.Cmdlets.Object
         #endregion
 
         #region Private Members
-        private bool ProcessAce(List<Ace> removed, Ace ace, bool dacl, Func<Ace, bool> filter)
+
+        private void RemoveAces(Acl acl, Predicate<Ace> predicate)
         {
-            if (!filter(ace))
+            if (First)
             {
-                return false;
-            }
-
-            if (!ShouldProcess($"Type:{ace.Type} Sid:{ace.Sid} Mask:{ace.Mask:X08} in {(dacl ? "DACL" : "SACL")}"))
-            {
-                return false;
-            }
-
-            removed.Add(ace);
-
-            return true;
-        }
-
-        private static bool HasAcl(Acl acl)
-        {
-            return acl != null && !acl.NullAcl;
-        }
-
-        private void FilterWithFilter(List<Ace> removed, Acl acl, bool dacl, Func<Ace, bool> filter)
-        {
-            if (!HasAcl(acl))
-            {
-                return;
-            }
-
-            acl.RemoveAll(a => ProcessAce(removed, a, dacl, filter));
-        }
-
-        private IEnumerable<Ace> FilterWithFilter(Func<Ace, bool> filter)
-        {
-            List<Ace> removed = new List<Ace>();
-            if (AclType.HasFlag(RemoveAclType.Dacl))
-            {
-                FilterWithFilter(removed, SecurityDescriptor.Dacl, true, filter);
-            }
-            if (AclType.HasFlag(RemoveAclType.Sacl))
-            {
-                FilterWithFilter(removed, SecurityDescriptor.Sacl, false, filter);
-            }
-            return removed;
-        }
-
-        private IEnumerable<Ace> FilterFromFilter()
-        {
-            return FilterWithFilter(a => Filter.InvokeWithArg(false, a));
-        }
-
-        private bool CheckSid(Ace ace)
-        {
-            if (Sid != null && ace.Sid != Sid)
-            {
-                return false;
-            }
-            if (Type.HasValue && ace.Type != Type)
-            {
-                return false;
-            }
-            if (Access.HasValue && ace.Mask != Access)
-            {
-                return false;
-            }
-            if (Flags.HasValue)
-            {
-                if (AllFlags)
+                foreach (var ace in acl)
                 {
-                    if (ace.Flags != Flags)
+                    if (predicate(ace))
                     {
-                        return false;
+                        return;
                     }
                 }
-                else
-                {
-                    if ((ace.Flags & Flags) != Flags)
-                    {
-                        return false;
-                    }
-                }
-
             }
-            return true;
-        }
-
-        private IEnumerable<Ace> FilterFromSid()
-        {
-            if (Sid == null && !Type.HasValue && !Access.HasValue && !Flags.HasValue)
+            else
             {
-                WriteWarning("No filter parameters specified. Not removing any ACEs.");
-                return new Ace[0];
+                acl.RemoveAll(predicate);
             }
-
-            return FilterWithFilter(CheckSid);
         }
 
         private IEnumerable<Ace> FilterFromAce()
         {
             HashSet<Ace> aces = new HashSet<Ace>(Ace);
-            return FilterWithFilter(a => aces.Contains(a));
+            return FilterWithFilter(a => aces.Contains(a), RemoveAces);
         }
 
         #endregion

@@ -40,7 +40,7 @@ namespace NtObjectManager.Cmdlets.Object
     ///   <para>Checks if SID is present in the normal Groups.</para>
     /// </example>
     [Cmdlet(VerbsDiagnostic.Test, "NtTokenGroup", DefaultParameterSetName = "FromGroup")]
-    public class TestNtTokenGroup : PSCmdlet
+    public class TestNtTokenGroupCmdlet : PSCmdlet
     {
         /// <summary>
         /// <para type="description">Specify the token to test.</para>

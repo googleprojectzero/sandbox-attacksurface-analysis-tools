@@ -6988,7 +6988,11 @@ function Test-NtSecurityDescriptor {
         [Parameter(Mandatory, ParameterSetName="SaclDefaulted")]
         [switch]$SaclDefaulted,
         [Parameter(Mandatory, ParameterSetName="SaclAutoInherited")]
-        [switch]$SaclAutoInherited
+        [switch]$SaclAutoInherited,
+        [Parameter(ParameterSetName="DaclNull")]
+        [switch]$DaclNull,
+        [Parameter(Mandatory, ParameterSetName="SaclNull")]
+        [switch]$SaclNull
     )
 
     $obj = switch($PSCmdlet.ParameterSetName) {
@@ -7000,6 +7004,8 @@ function Test-NtSecurityDescriptor {
         "SaclDefaulted" { $SecurityDescriptor.SaclDefaulted }
         "DaclAutoInherited" { $SecurityDescriptor.DaclAutoInherited }
         "SaclAutoInherited" { $SecurityDescriptor.SaclAutoInherited }
+        "DaclNull" { $SecurityDescriptor.DaclNull }
+        "SaclNull" { $SecurityDescriptor.SaclNull }
     }
     Write-Output $obj
 }
@@ -7490,6 +7496,55 @@ function Remove-NtSecurityDescriptorSacl {
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
     )
     $SecurityDescriptor.Sacl = $null
+}
+
+<#
+.SYNOPSIS
+Clears the DACL for a security descriptor.
+.DESCRIPTION
+This cmdlet clears the DACL of a security descriptor and unsets NullAcl. If no DACL
+is present then nothing modification is performed.
+.PARAMETER SecurityDescriptor
+The security descriptor to modify.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Clear-NtSecurityDescriptorDacl {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+    )
+
+    if ($SecurityDescriptor.DaclPresent) {
+        $SecurityDescriptor.Dacl.Clear()
+        $SecurityDescriptor.Dacl.NullAcl = $false
+    }
+}
+
+<#
+.SYNOPSIS
+Clears the SACL for a security descriptor.
+.DESCRIPTION
+This cmdlet clears the SACL of a security descriptor and unsets NullAcl. If no SACL
+is present then nothing modification is performed.
+.PARAMETER SecurityDescriptor
+The security descriptor to modify.
+.INPUTS
+None
+.OUTPUTS
+None
+#>
+function Clear-NtSecurityDescriptorSacl {
+    Param(
+        [Parameter(Position=0, Mandatory)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor
+    )
+    if ($SecurityDescriptor.SaclPresent) {
+        $SecurityDescriptor.Sacl.Clear()
+        $SecurityDescriptor.Sacl.NullAcl = $false
+    }
 }
 
 <#

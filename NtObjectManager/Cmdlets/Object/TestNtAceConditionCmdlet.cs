@@ -43,7 +43,7 @@ namespace NtObjectManager.Cmdlets.Object
     ///   <para>Checks the expression from a conditional ACE matches the effective token.</para>
     /// </example>
     [Cmdlet(VerbsDiagnostic.Test, "NtAceCondition")]
-    public class TestNtAceCondition : PSCmdlet
+    public class TestNtAceConditionCmdlet : PSCmdlet
     {
         /// <summary>
         /// <para type="description">Specify the token to test.</para>

@@ -39,7 +39,7 @@ namespace NtObjectManager.Cmdlets.Object
     ///   <para>Checks if an access mask is empty.</para>
     /// </example>
     [Cmdlet(VerbsDiagnostic.Test, "NtAccessMask", DefaultParameterSetName = "AccessCompare")]
-    public class TestNtAccessMask : PSCmdlet
+    public class TestNtAccessMaskCmdlet : PSCmdlet
     {
         /// <summary>
         /// <para type="description">The access mask to test.</para>
@@ -54,7 +54,7 @@ namespace NtObjectManager.Cmdlets.Object
         public GenericAccessRights AccessCompare { get; set; }
 
         /// <summary>
-        /// <para type="description">The generic access mask to compare to.</para>
+        /// <para type="description">The raw access mask to compare to.</para>
         /// </summary>
         [Parameter(Position = 1, Mandatory = true, ParameterSetName = "RawAccessCompare")]
         public AccessMask RawAccessCompare { get; set; }

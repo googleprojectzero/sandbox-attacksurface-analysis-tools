@@ -60,7 +60,7 @@ namespace NtObjectManager.Cmdlets.Object
         public NtType Type { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify an access mask to check against. If not specified will request maximum access.</para>
+        /// <para type="description">Specify an access mask to check against. Overrides GenericAccess.</para>
         /// </summary>
         [Parameter]
         public AccessMask? AccessMask { get; set; }
@@ -69,7 +69,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify the generic access mask to check against.</para>
         /// </summary>
         [Parameter]
-        public GenericAccessRights? GenericAccess { get; set; }
+        public GenericAccessRights GenericAccess { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a kernel object to get security descriptor from.</para>
@@ -113,18 +113,22 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter]
         public ObjectTypeTree ObjectType { get; set; }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public GetNtGrantedAccessCmdlet()
+        {
+            GenericAccess = GenericAccessRights.MaximumAllowed;
+        }
+
         private AccessMask GetDesiredAccess()
         {
             NtType type = GetNtType();
-            if (GenericAccess.HasValue)
-            {
-                return type.MapGenericRights(GenericAccess);
-            }
             if (AccessMask.HasValue)
             {
-                return AccessMask.Value;
+                return type.MapGenericRights(AccessMask.Value);
             }
-            return GenericAccessRights.MaximumAllowed;
+            return type.MapGenericRights(GenericAccess);
         }
 
         private SecurityDescriptor GetSecurityDescriptor()
