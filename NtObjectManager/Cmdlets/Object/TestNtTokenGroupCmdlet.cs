@@ -14,6 +14,7 @@
 
 using NtApiDotNet;
 using System.Collections.Generic;
+using System.Linq;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Object
@@ -77,7 +78,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         protected override void ProcessRecord()
         {
-            WriteObject(CheckGroups(Sid, GetGroups(), DenyOnly, Restricted));
+            WriteObject(CheckGroups(Sid, GetGroups(), DenyOnly));
         }
 
         private NtToken GetToken()
@@ -87,37 +88,48 @@ namespace NtObjectManager.Cmdlets.Object
 
         private IEnumerable<UserGroup> GetGroups()
         {
+            List<UserGroup> groups = new List<UserGroup>();
             using (var token = GetToken())
             {
                 if (Restricted)
                 {
-                    return token.RestrictedSids;
+                    return token.RestrictedSids.Select(r => new UserGroup(r.Sid, GroupAttributes.Enabled));
                 }
                 else if (Capability)
                 {
-                    return token.Capabilities;
+                    if (token.AppContainer)
+                    {
+                        groups.Add(new UserGroup(token.AppContainerSid, GroupAttributes.Enabled));
+                        if (!token.LowPrivilegeAppContainer)
+                        {
+                            groups.Add(new UserGroup(KnownSids.AllApplicationPackages, GroupAttributes.Enabled));
+                        }
+                        groups.Add(new UserGroup(KnownSids.AllRestrictedApplicationPackages, GroupAttributes.Enabled));
+                    }
+                    groups.AddRange(token.Capabilities);
                 }
-
-                List<UserGroup> groups = new List<UserGroup>(token.Groups);
-                UserGroup user = token.User;
-                if (!user.DenyOnly)
+                else
                 {
-                    user = new UserGroup(user.Sid, GroupAttributes.Enabled);
+                    UserGroup user = token.User;
+                    if (!user.DenyOnly)
+                    {
+                        user = new UserGroup(user.Sid, GroupAttributes.Enabled);
+                    }
+                    groups.Add(user);
+                    groups.AddRange(token.Groups);
                 }
-                groups.Insert(0, user);
 
                 return groups;
             }
         }
 
-        private static bool CheckGroups(Sid sid, IEnumerable<UserGroup> groups, bool deny_only, bool restricted)
+        private static bool CheckGroups(Sid sid, IEnumerable<UserGroup> groups, bool deny_only)
         {
             foreach (var group in groups)
             {
                 if (group.Sid != sid)
                     continue;
-
-                if (restricted || group.Enabled)
+                if (group.Enabled)
                     return true;
                 if (deny_only && group.DenyOnly)
                     return true;
