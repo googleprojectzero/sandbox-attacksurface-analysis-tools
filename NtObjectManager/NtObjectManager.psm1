@@ -7955,3 +7955,20 @@ function Add-NtObjectTypeTree {
         Write-Output $result
     }
 }
+
+<#
+.SYNOPSIS
+Gets the Central Access Policy from the Registry.
+.DESCRIPTION
+This cmdlet gets the Central Access Policy from the Registry.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Security.Policy.CentralAccessPolic
+.EXAMPLE
+Get-CentralAccessPolicy 
+Gets the Central Access Policy from the Registry.
+#>
+function Get-CentralAccessPolicy {
+    [NtApiDotNet.Security.Policy.CentralAccessPolicy]::ParseFromRegistry() | Write-Output
+}

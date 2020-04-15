@@ -81,6 +81,8 @@
     <Compile Include="SafeTokenGroupsBuffer.cs" />
     <Compile Include="SafeTokenPrivilegesBuffer.cs" />
     <Compile Include="SecurityDescriptorSid.cs" />
+    <Compile Include="Security\Policy\CentralAccessPolicy.cs" />
+    <Compile Include="Security\Policy\CentralAccessRule.cs" />
     <Compile Include="SidIdentifierAuthority.cs" />
     <Compile Include="TokenGroupsBuilder.cs" />
     <Compile Include="TokenPrivilegesBuilder.cs" />
