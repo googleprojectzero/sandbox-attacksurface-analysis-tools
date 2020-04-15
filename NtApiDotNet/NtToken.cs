@@ -800,7 +800,7 @@ namespace NtApiDotNet
         /// <param name="throw_on_error">Throw on error.</param>
         /// <remarks>The array of attributes aand operations must be the same size. You need SeTcbPrivilege to call this API.</remarks>
         /// <returns>The NT Status code.</returns>
-        public NtStatus SetSecurityAttributes(IEnumerable<ClaimSecurityAttributeBuilder> attributes, 
+        public NtStatus SetSecurityAttributes(IEnumerable<ClaimSecurityAttributeBuilder> attributes,
             IEnumerable<TokenSecurityAttributeOperation> operations, bool throw_on_error)
         {
             return SetSecurityAttributes(attributes.ToArray(), operations.ToArray(), throw_on_error);
@@ -921,6 +921,7 @@ namespace NtApiDotNet
         {
             SetIntegrityLevelSid(NtSecurity.GetIntegritySid(level));
         }
+
         /// <summary>
         /// Get the state of a privilege.
         /// </summary>
@@ -929,15 +930,30 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown if can't query privileges</exception>
         public TokenPrivilege GetPrivilege(TokenPrivilegeValue privilege)
         {
+            return GetPrivilege(privilege, true).Result;
+        }
+
+        /// <summary>
+        /// Get the state of a privilege.
+        /// </summary>
+        /// <param name="privilege">The privilege to get the state of.</param>
+        /// <returns>The privilege, or null if it can't be found</returns>
+        /// <param name="throw_on_error">True to throw on error</param>
+        /// <exception cref="NtException">Thrown if can't query privileges</exception>
+        public NtResult<TokenPrivilege> GetPrivilege(TokenPrivilegeValue privilege, bool throw_on_error)
+        {
             Luid priv_value = new Luid((uint)privilege, 0);
-            foreach (TokenPrivilege priv in Privileges)
+            var privs = GetPrivileges(throw_on_error);
+            if (!privs.IsSuccess)
+                return privs.Cast<TokenPrivilege>();
+            foreach (TokenPrivilege priv in privs.Result)
             {
                 if (priv.Luid.Equals(priv_value))
                 {
-                    return priv;
+                    return priv.CreateResult();
                 }
             }
-            return null;
+            return new NtResult<TokenPrivilege>();
         }
 
         /// <summary>
@@ -1046,6 +1062,18 @@ namespace NtApiDotNet
         /// <returns>The privilege check result.</returns>
         public NtResult<PrivilegeCheckResult> PrivilegeCheck(IEnumerable<TokenPrivilege> privileges, bool all_necessary, bool throw_on_error)
         {
+            // Pseudo tokens can't use the privilege check API even though it can use the 
+            if (IsPseudoToken)
+            {
+                using (var token = PseudoToHandle(TokenAccessRights.Query, throw_on_error))
+                {
+                    if (!token.IsSuccess)
+                        return token.Cast<PrivilegeCheckResult>();
+                    if (token.Result == null)
+                        return NtStatus.STATUS_NO_TOKEN.CreateResultFromError<PrivilegeCheckResult>(throw_on_error);
+                    return token.Result.PrivilegeCheck(privileges, all_necessary, throw_on_error);
+                }
+            }
             return NtSecurity.PrivilegeCheck(Handle, privileges, all_necessary, throw_on_error);
         }
 
@@ -1101,6 +1129,25 @@ namespace NtApiDotNet
         public bool SinglePrivilegeCheck(TokenPrivilegeValue privilege)
         {
             return PrivilegeCheck(new TokenPrivilegeValue[] { privilege }, true).AllPrivilegesHeld;
+        }
+
+        /// <summary>
+        /// Get token privileges.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of privileges.</returns>
+        public NtResult<TokenPrivilege[]> GetPrivileges(bool throw_on_error)
+        {
+            using (var result = QueryBuffer(TokenInformationClass.TokenPrivileges, new TokenPrivileges(), throw_on_error))
+            {
+                if (!result.IsSuccess)
+                    return result.Cast<TokenPrivilege[]>();
+                var buffer = result.Result;
+                int count = buffer.Result.PrivilegeCount;
+                LuidAndAttributes[] attrs = new LuidAndAttributes[count];
+                buffer.Data.ReadArray(0, attrs, 0, count);
+                return attrs.Select(a => new TokenPrivilege(a.Luid, a.Attributes)).ToArray().CreateResult();
+            }
         }
 
         /// <summary>
@@ -1596,19 +1643,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <returns>The list of privileges</returns>
         /// <exception cref="NtException">Thrown if can't query privileges</exception>
-        public TokenPrivilege[] Privileges
-        {
-            get
-            {
-                using (var buffer = QueryBuffer<TokenPrivileges>(TokenInformationClass.TokenPrivileges))
-                {
-                    int count = buffer.Result.PrivilegeCount;
-                    LuidAndAttributes[] attrs = new LuidAndAttributes[count];
-                    buffer.Data.ReadArray(0, attrs, 0, count);
-                    return attrs.Select(a => new TokenPrivilege(a.Luid, a.Attributes)).ToArray();
-                }
-            }
-        }
+        public TokenPrivilege[] Privileges => GetPrivileges(true).Result;
 
         /// <summary>
         /// Get full path to token
@@ -2173,12 +2208,14 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="thread">The thread to open the token for</param>
         /// <param name="duplicate">True to duplicate the token before returning</param>
+        /// <param name="desired_access">Desired access for token.</param>
+        /// <param name="open_as_self">Open token as self.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>The opened token</returns>
         /// <exception cref="NtException">Thrown if cannot open token</exception>
-        public static NtResult<NtToken> OpenEffectiveToken(NtThread thread, bool duplicate, bool throw_on_error)
+        public static NtResult<NtToken> OpenEffectiveToken(NtThread thread, bool open_as_self, bool duplicate, TokenAccessRights desired_access, bool throw_on_error)
         {
-            var token = OpenThreadToken(thread, true, duplicate, TokenAccessRights.MaximumAllowed, throw_on_error);
+            var token = OpenThreadToken(thread, open_as_self, duplicate, desired_access, throw_on_error);
             if (!token.IsSuccess || token.Result != null)
                 return token;
 
@@ -2186,7 +2223,20 @@ namespace NtApiDotNet
             if (!pid.IsSuccess)
                 return pid.Cast<NtToken>();
 
-            return OpenProcessToken(pid.Result, duplicate, TokenAccessRights.MaximumAllowed, throw_on_error);
+            return OpenProcessToken(pid.Result, duplicate, desired_access, throw_on_error);
+        }
+
+        /// <summary>
+        /// Open the effective token, thread if available or process
+        /// </summary>
+        /// <param name="thread">The thread to open the token for</param>
+        /// <param name="duplicate">True to duplicate the token before returning</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The opened token</returns>
+        /// <exception cref="NtException">Thrown if cannot open token</exception>
+        public static NtResult<NtToken> OpenEffectiveToken(NtThread thread, bool duplicate, bool throw_on_error)
+        {
+            return OpenEffectiveToken(thread, true, duplicate, TokenAccessRights.MaximumAllowed, throw_on_error);
         }
 
         /// <summary>
@@ -2620,6 +2670,26 @@ namespace NtApiDotNet
         private TokenStatistics _token_stats;
         private TokenSource _source;
         private Sid _app_container_sid;
+
+        private NtResult<NtToken> PseudoToHandle(TokenAccessRights desired_access, bool throw_on_error)
+        {
+            if (!IsPseudoToken)
+            {
+                return NtStatus.STATUS_INVALID_TOKEN.CreateResultFromError<NtToken>(throw_on_error);
+            }
+
+            switch (Handle.DangerousGetHandle().ToInt32())
+            {
+                case -4:
+                    return OpenProcessToken(NtProcess.Current, desired_access, throw_on_error);
+                case -5:
+                    return OpenThreadToken(NtThread.Current, true, false, desired_access, throw_on_error);
+                case -6:
+                    return OpenEffectiveToken(NtThread.Current, true, false, desired_access, throw_on_error);
+                default:
+                    throw new ArgumentException("Invalid pseudo handle.");
+            }
+        }
 
         private NtResult<bool> SetPrivileges(TokenPrivilegesBuilder tp, bool throw_on_error)
         {

@@ -71,6 +71,8 @@ namespace NtObjectManager.Cmdlets.Object
         {
             if (Token != null)
             {
+                if (Token.IsPseudoToken)
+                    return Token;
                 return Token.Duplicate(TokenAccessRights.Query);
             }
             return NtToken.OpenEffectiveToken();
