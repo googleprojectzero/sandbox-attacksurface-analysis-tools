@@ -991,6 +991,15 @@ namespace NtApiDotNet
         );
 
         [DllImport("ntdll.dll")]
+        public static extern NtStatus NtPrivilegedServiceAuditAlarm(
+            UnicodeString SubsystemName,
+            UnicodeString ServiceName,
+            SafeKernelObjectHandle ClientToken,
+            SafePrivilegeSetBuffer Privileges,
+            bool AccessGranted
+        );
+
+        [DllImport("ntdll.dll")]
         public static extern NtStatus NtPrivilegeCheck(
             SafeKernelObjectHandle ClientToken,
             SafePrivilegeSetBuffer RequiredPrivileges,
