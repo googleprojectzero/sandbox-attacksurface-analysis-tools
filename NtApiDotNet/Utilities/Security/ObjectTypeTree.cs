@@ -40,10 +40,21 @@ namespace NtApiDotNet.Utilities.Security
         /// <summary>
         /// Contructor.
         /// </summary>
+        /// <param name="object_type">The object type GUID.</param>
         public ObjectTypeTree(Guid object_type) : this()
         {
             ObjectType = object_type;
         }
+
+        /// <summary>
+        /// Contructor.
+        /// </summary>
+        /// <param name="object_type">The object type GUID as a string.</param>
+        public ObjectTypeTree(string object_type) 
+            : this(Guid.Parse(object_type))
+        {
+        }
+
         #endregion
 
         #region Public Properties
