@@ -119,6 +119,11 @@ namespace NtObjectManager.Cmdlets.Accessible
         public IEnumerable<UserGroup> Capabilities { get; }
 
         /// <summary>
+        /// Get privileges.
+        /// </summary>
+        public IEnumerable<TokenPrivilege> Privileges { get; }
+
+        /// <summary>
         /// Whether the token is considered sandboxed.
         /// </summary>
         public bool Sandbox { get; }
@@ -184,6 +189,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             Groups = token.Groups.ToList().AsReadOnly();
             RestrictedSids = token.RestrictedSids.ToList().AsReadOnly();
             Capabilities = token.Capabilities.ToList().AsReadOnly();
+            Privileges = token.Privileges.ToList().AsReadOnly();
             Sandbox = token.IsSandbox;
             NoChildProcess = token.NoChildProcess;
             UIAccess = token.UIAccess;
