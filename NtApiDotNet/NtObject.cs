@@ -868,7 +868,10 @@ namespace NtApiDotNet
         {
             if (!disposedValue)
             {
-                Handle.Close();
+                if (!Handle.PseudoHandle)
+                {
+                    Handle.Close();
+                }
                 disposedValue = true;
             }
         }

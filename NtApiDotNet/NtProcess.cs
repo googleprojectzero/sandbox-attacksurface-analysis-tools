@@ -2255,7 +2255,7 @@ namespace NtApiDotNet
         /// Get the current process.
         /// </summary>
         /// <remarks>This only uses the pseudo handle, for the process. If you need a proper handle use OpenCurrent.</remarks>
-        public static NtProcess Current => new NtProcess(new SafeKernelObjectHandle(new IntPtr(-1), false));
+        public static NtProcess Current => new NtProcess(new SafeKernelObjectHandle(-1));
 
         #endregion
     }

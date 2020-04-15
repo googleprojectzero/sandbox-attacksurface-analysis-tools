@@ -441,7 +441,7 @@ namespace NtApiDotNet
         /// </summary>
         /// <remarks>This only uses the pseudo handle, for the thread. You can't use it in different threads. If you need to do that use OpenCurrent.</remarks>
         /// <see cref="OpenCurrent"/>
-        public static NtThread Current { get { return new NtThread(new SafeKernelObjectHandle(new IntPtr(-2), false)); } }
+        public static NtThread Current { get { return new NtThread(new SafeKernelObjectHandle(-2)); } }
 
 
         /// <summary>

@@ -20,14 +20,19 @@ namespace NtApiDotNet
     /// <summary>
     /// Safe handle which represents a kernel handle.
     /// </summary>
-    public sealed class SafeKernelObjectHandle
-          : SafeHandle
+    public class SafeKernelObjectHandle : SafeHandle
     {
         private string _type_name;
 
         private SafeKernelObjectHandle()
             : base(IntPtr.Zero, true)
         {
+        }
+
+        internal SafeKernelObjectHandle(int pseudo_handle)
+            : this(new IntPtr(pseudo_handle), false)
+        {
+            PseudoHandle = true;
         }
 
         /// <summary>
@@ -47,6 +52,8 @@ namespace NtApiDotNet
         /// <returns>True if successfully released the handle.</returns>
         protected override bool ReleaseHandle()
         {
+            if (PseudoHandle)
+                return false;
             if (NtSystemCalls.NtClose(handle).IsSuccess())
             {
                 handle = IntPtr.Zero;
@@ -55,16 +62,12 @@ namespace NtApiDotNet
             return false;
         }
 
+        internal bool PseudoHandle { get; }
+
         /// <summary>
         /// Overridden IsInvalid method.
         /// </summary>
-        public override bool IsInvalid
-        {
-            get
-            {
-                return handle.ToInt64() <= 0;
-            }
-        }
+        public override bool IsInvalid => handle.ToInt64() <= 0;
 
         /// <summary>
         /// Get a handle which represents NULL.

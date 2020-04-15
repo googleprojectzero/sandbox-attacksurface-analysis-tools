@@ -1691,7 +1691,7 @@ namespace NtApiDotNet
         /// <summary>
         /// Returns true if this is a pseudo token.
         /// </summary>
-        public bool IsPseudoToken { get; private set; }
+        public bool IsPseudoToken => Handle.PseudoHandle;
 
         /// <summary>
         /// Get whether this token is a sandboxed token.
@@ -2750,10 +2750,7 @@ namespace NtApiDotNet
 
         private static NtToken GetPseudoToken(int handle)
         {
-            return new NtToken(new SafeKernelObjectHandle(new IntPtr(handle), false))
-            {
-                IsPseudoToken = true
-            };
+            return new NtToken(new SafeKernelObjectHandle(handle));
         }
 
         private void SetIntegrityLevelSid(Sid sid)
