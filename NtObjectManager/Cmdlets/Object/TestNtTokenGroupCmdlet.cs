@@ -83,6 +83,8 @@ namespace NtObjectManager.Cmdlets.Object
 
         private NtToken GetToken()
         {
+            if (Token?.IsPseudoToken ?? false)
+                return Token;
             return Token?.Duplicate() ?? NtToken.OpenEffectiveToken();
         }
 
