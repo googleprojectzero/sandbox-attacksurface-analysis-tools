@@ -26,10 +26,15 @@ namespace NtApiDotNet
     public sealed class Sid
     {
         #region Private Members
-        private void InitializeFromPointer(IntPtr sid)
+
+        private Sid()
+        {
+        }
+
+        private NtStatus InitializeFromPointer(IntPtr sid)
         {
             if (!NtRtl.RtlValidSid(sid))
-                throw new NtException(NtStatus.STATUS_INVALID_SID);
+                return NtStatus.STATUS_INVALID_SID;
 
             IntPtr authority = NtRtl.RtlIdentifierAuthoritySid(sid);
             Authority = (SidIdentifierAuthority)Marshal.PtrToStructure(authority, typeof(SidIdentifierAuthority));
@@ -40,7 +45,9 @@ namespace NtApiDotNet
                 sub_auth.Add((uint)Marshal.ReadInt32(NtRtl.RtlSubAuthoritySid(sid, i), 0));
             }
             SubAuthorities = sub_auth.AsReadOnly();
+            return NtStatus.STATUS_SUCCESS;
         }
+
         #endregion
 
         #region Public Properties
@@ -94,7 +101,7 @@ namespace NtApiDotNet
         /// <exception cref="NtException">Thrown if the buffer is not valid.</exception>
         public Sid(IntPtr sid)
         {
-            InitializeFromPointer(sid);
+            InitializeFromPointer(sid).ToNtException();
         }
 
         /// <summary>
@@ -126,7 +133,7 @@ namespace NtApiDotNet
         {
             using (SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(sid))
             {
-                InitializeFromPointer(buffer.DangerousGetHandle());
+                InitializeFromPointer(buffer.DangerousGetHandle()).ToNtException();
             }
         }
 
@@ -410,6 +417,22 @@ namespace NtApiDotNet
         {
             return Parse(sddl, true).Result;
         }
+
+        /// <summary>
+        /// Parse a byte array.
+        /// </summary>
+        /// <param name="sid">The byte array to parse.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The parsed SID.</returns>
+        public static NtResult<Sid> Parse(byte[] sid, bool throw_on_error)
+        {
+            using (var buffer = sid.ToBuffer())
+            {
+                Sid ret = new Sid();
+                return ret.InitializeFromPointer(buffer.DangerousGetHandle()).CreateResult(throw_on_error, () => ret);
+            }
+        }
+
         #endregion
     }
 }
