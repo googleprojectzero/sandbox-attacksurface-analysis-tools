@@ -724,12 +724,12 @@ namespace NtApiDotNet
         /// <summary>
         /// Indicates the SD has a NULL DACL.
         /// </summary>
-        public bool NullDacl => Dacl?.NullAcl ?? false;
+        public bool DaclNull => Dacl?.NullAcl ?? false;
 
         /// <summary>
         /// Indicates the SD has a NULL SACL.
         /// </summary>
-        public bool NullSacl => Sacl?.NullAcl ?? false;
+        public bool SaclNull => Sacl?.NullAcl ?? false;
 
         /// <summary>
         /// Get the access rights enum type for this SD based on the NT Type property.
