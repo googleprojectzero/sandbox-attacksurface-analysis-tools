@@ -433,6 +433,18 @@ namespace NtApiDotNet
             }
         }
 
+        /// <summary>
+        /// Parse a byte array.
+        /// </summary>
+        /// <param name="sid">The pointer to parse.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The parsed SID.</returns>
+        public static NtResult<Sid> Parse(IntPtr sid, bool throw_on_error)
+        {
+            Sid ret = new Sid();
+            return ret.InitializeFromPointer(sid).CreateResult(throw_on_error, () => ret);
+        }
+
         #endregion
     }
 }
