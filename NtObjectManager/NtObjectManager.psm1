@@ -7918,48 +7918,52 @@ function Format-Win32SecurityDescriptor {
 .SYNOPSIS
 Creates a new Object Type Tree object.
 .DESCRIPTION
-This cmdlet creates a new Object Type Tree object from a GUID. You can then use Add-NtObjectTypeTree to
+This cmdlet creates a new Object Type Tree object from a GUID. You can then use Add-ObjectTypeTree to
 add more branches to the tree.
 .PARAMETER ObjectType
 Specify the Object Type GUID.
 .PARAMETER Nodes
 Specify a list of tree objects to add a children.
+.PARAMETER Name
+Optional name of the object type.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Utilities.Security.ObjectTypeTree
 .EXAMPLE
-$tree = New-NtObjectTypeTree "bf967a86-0de6-11d0-a285-00aa003049e2"
+$tree = New-ObjectTypeTree "bf967a86-0de6-11d0-a285-00aa003049e2"
 Creates a new Object Type tree with the root type as 'bf967a86-0de6-11d0-a285-00aa003049e2'.
 .EXAMPLE
-$tree = New-NtObjectTypeTree "bf967a86-0de6-11d0-a285-00aa003049e2" -Nodes $children
+$tree = New-ObjectTypeTree "bf967a86-0de6-11d0-a285-00aa003049e2" -Nodes $children
 Creates a new Object Type tree with the root type as 'bf967a86-0de6-11d0-a285-00aa003049e2' with a list of children.
 #>
-function New-NtObjectTypeTree {
-    [CmdletBinding(DefaultParameterSetName = "FromName")]
+function New-ObjectTypeTree {
     Param(
         [Parameter(Position = 0, Mandatory)]
         [guid]$ObjectType,
-        [NtApiDotNet.Utilities.Security.ObjectTypeTree[]]$Nodes
+        [NtApiDotNet.Utilities.Security.ObjectTypeTree[]]$Nodes,
+        [string]$Name = ""
     )
 
     $tree = New-Object NtApiDotNet.Utilities.Security.ObjectTypeTree -ArgumentList $ObjectType
-    if ($null -ne $Nodes -and $Nodes.Count -gt 0) {
-        $tree.Nodes.AddRange($Nodes)
+    if ($null -ne $Nodes) {
+        $tree.AddNodeRange($Nodes)
     }
+    $tree.Name = $Name
     Write-Output $tree
 }
 
 <#
 .SYNOPSIS
-Creates a new Object Type Tree object.
+Adds a new Object Type Tree node to an existing tree.
 .DESCRIPTION
-This cmdlet creates a new Object Type Tree object from a GUID. You can then use Add-NtObjectTypeTree to
-add more branches to the tree.
+This cmdlet adds a new Object Type Tree object from a GUID to and existing tree.
 .PARAMETER ObjectType
 Specify the Object Type GUID to add.
 .PARAMETER Tree
 Specify the root tree to add to.
+.PARAMETER Name
+Optional name of the object type.
 .PARAMETER PassThru
 Specify to return the added tree.
 .INPUTS
@@ -7967,22 +7971,134 @@ None
 .OUTPUTS
 NtApiDotNet.Utilities.Security.ObjectTypeTree
 .EXAMPLE
-Add-NtObjectTypeTree $tree "bf967a86-0de6-11d0-a285-00aa003049e2"
+Add-ObjectTypeTree $tree "bf967a86-0de6-11d0-a285-00aa003049e2"
+Adds a new Object Type tree with the root type as 'bf967a86-0de6-11d0-a285-00aa003049e2'.
+.EXAMPLE
+Add-ObjectTypeTree $tree "bf967a86-0de6-11d0-a285-00aa003049e2" -Name "Property A"
 Adds a new Object Type tree with the root type as 'bf967a86-0de6-11d0-a285-00aa003049e2'.
 #>
-function Add-NtObjectTypeTree {
-    [CmdletBinding(DefaultParameterSetName = "FromName")]
+function Add-ObjectTypeTree {
     Param(
         [Parameter(Position = 0, Mandatory)]
         [NtApiDotNet.Utilities.Security.ObjectTypeTree]$Tree,
         [Parameter(Position = 1, Mandatory)]
         [guid]$ObjectType,
+        [string]$Name = "",
         [switch]$PassThru
     )
-    $result = $Tree.AddObjectType($ObjectType)
+    $result = $Tree.AddNode($ObjectType)
+    $result.Name = $Name
     if ($PassThru) {
         Write-Output $result
     }
+}
+
+<#
+.SYNOPSIS
+Removes an Object Type Tree node.
+.DESCRIPTION
+This cmdlet removes a tree node.
+.PARAMETER Tree
+Specify the tree node to remove.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Remove-ObjectTypeTree $tree
+Removes the tree node $tree from its parent.
+#>
+function Remove-ObjectTypeTree {
+    Param(
+        [Parameter(Position = 0, Mandatory)]
+        [NtApiDotNet.Utilities.Security.ObjectTypeTree]$Tree
+    )
+    $Tree.Remove()
+}
+
+<#
+.SYNOPSIS
+Sets an Object Type Tree's Remaining Access.
+.DESCRIPTION
+This cmdlet sets a Object Type Tree's remaining access as well as all its children.
+.PARAMETER Tree
+Specify tree node to set.
+.PARAMETER Access
+Specify the access to set.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Set-ObjectTypeTreeAccess $tree 0xFF
+Sets the Remaning Access for this tree and all children to 0xFF.
+#>
+function Set-ObjectTypeTreeAccess {
+    Param(
+        [Parameter(Position = 0, Mandatory)]
+        [NtApiDotNet.Utilities.Security.ObjectTypeTree]$Tree,
+        [Parameter(Position = 1, Mandatory)]
+        [NtApiDotNet.AccessMask]$Access
+    )
+    $Tree.SetRemainingAccess($Access)
+}
+
+<#
+.SYNOPSIS
+Revokes an Object Type Tree's Remaining Access.
+.DESCRIPTION
+This cmdlet revokes a Object Type Tree's remaining access as well as all its children.
+.PARAMETER Tree
+Specify tree node to revoke.
+.PARAMETER Access
+Specify the access to revoke.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Revoke-ObjectTypeTreeAccess $tree 0xFF
+Revokes the Remaining Access of 0xFF for this tree and all children.
+#>
+function Revoke-ObjectTypeTreeAccess {
+    Param(
+        [Parameter(Position = 0, Mandatory)]
+        [NtApiDotNet.Utilities.Security.ObjectTypeTree]$Tree,
+        [Parameter(Position = 1, Mandatory)]
+        [NtApiDotNet.AccessMask]$Access
+    )
+    $Tree.RemoveRemainingAccess($Access)
+}
+
+<#
+.SYNOPSIS
+Selects out an Object Type Tree node based on the object type.
+.DESCRIPTION
+This cmdlet selects out an Object Type Tree node based on the object type. Returns $null
+if the Object Type can't be found.
+.PARAMETER ObjectType
+Specify the Object Type GUID to select
+.PARAMETER Tree
+Specify the tree to check.
+.PARAMETER PassThru
+Specify to return the added tree.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Utilities.Security.ObjectTypeTree
+.EXAMPLE
+Select-ObjectTypeTree $tree "bf967a86-0de6-11d0-a285-00aa003049e2"
+Selects an Object Type tree with the type of 'bf967a86-0de6-11d0-a285-00aa003049e2'.
+#>
+function Select-ObjectTypeTree {
+    Param(
+        [Parameter(Position = 0, Mandatory)]
+        [NtApiDotNet.Utilities.Security.ObjectTypeTree]$Tree,
+        [Parameter(Position = 1, Mandatory)]
+        [guid]$ObjectType
+    )
+    
+    $Tree.Find($ObjectType) | Write-Output
 }
 
 <#

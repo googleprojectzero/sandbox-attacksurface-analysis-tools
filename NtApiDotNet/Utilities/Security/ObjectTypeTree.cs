@@ -30,7 +30,7 @@ namespace NtApiDotNet.Utilities.Security
         public ObjectTypeTree(IEnumerable<ObjectTypeEntry> entries) : this()
         {
             var queue = new Queue<ObjectTypeEntry>(entries);
-            BuildFromList(queue, 0);
+            BuildFromList(null, queue, 0);
             if (queue.Count > 0)
             {
                 throw new ArgumentException("Couldn't construct tree from entries.");
@@ -64,9 +64,25 @@ namespace NtApiDotNet.Utilities.Security
         public IReadOnlyList<ObjectTypeTree> Nodes => _nodes.AsReadOnly();
 
         /// <summary>
+        /// The parent of this tree.
+        /// </summary>
+        public ObjectTypeTree Parent { get; private set; }
+
+        /// <summary>
         /// The Object Type GUID.
         /// </summary>
         public Guid ObjectType { get; private set; }
+
+        /// <summary>
+        /// Optional access mask for use in access checking.
+        /// </summary>
+        public AccessMask RemainingAccess { get; set; }
+
+        /// <summary>
+        /// Optional label for this tree entry.
+        /// </summary>
+        public string Name { get; set; }
+
         #endregion
 
         #region Public Methods
@@ -75,13 +91,64 @@ namespace NtApiDotNet.Utilities.Security
         /// </summary>
         /// <param name="object_type">The object type.</param>
         /// <returns>The added tree object.</returns>
-        public ObjectTypeTree AddObjectType(Guid object_type)
+        public ObjectTypeTree AddNode(Guid object_type)
         {
             ObjectTypeTree ret = new ObjectTypeTree(object_type);
-            _nodes.Add(ret);
+            AddNode(ret);
             return ret;
         }
-        #endregion
+
+        /// <summary>
+        /// Add an existing node to the tree.
+        /// </summary>
+        /// <param name="node">The node to add.</param>
+        public void AddNode(ObjectTypeTree node)
+        {
+            node.Parent = this;
+            _nodes.Add(node);
+        }
+
+        /// <summary>
+        /// Add an existing list of nodes to the tree.
+        /// </summary>
+        /// <param name="nodes">The nodes to add.</param>
+        public void AddNodeRange(IEnumerable<ObjectTypeTree> nodes)
+        {
+            foreach (var node in nodes)
+            {
+                AddNode(node);
+            }
+        }
+
+        /// <summary>
+        /// Removes all object types from the tree.
+        /// </summary>
+        /// <param name="object_type">The object type.</param>
+        /// <returns>The removed tree object.</returns>
+        public void RemoveAllNodes(Guid object_type)
+        {
+            _nodes.RemoveAll(t => t.ObjectType == object_type);
+        }
+
+        /// <summary>
+        /// Removes all object types from the tree.
+        /// </summary>
+        /// <param name="object_type">The object type.</param>
+        /// <returns>The removed tree object.</returns>
+        public void RemoveNode(ObjectTypeTree object_type)
+        {
+            _nodes.Remove(object_type);
+        }
+
+        /// <summary>
+        /// Remove the current tree entry from the parent.
+        /// </summary>
+        public void Remove()
+        {
+            if (Parent == null)
+                return;
+            Parent._nodes.Remove(this);
+        }
 
         /// <summary>
         /// Convert the tree to an array.
@@ -95,6 +162,68 @@ namespace NtApiDotNet.Utilities.Security
         }
 
         /// <summary>
+        /// Clone the object type tree.
+        /// </summary>
+        /// <returns>The cloned tree.</returns>
+        public ObjectTypeTree Clone()
+        {
+            return new ObjectTypeTree(ToArray());
+        }
+
+        /// <summary>
+        /// Set the access mask of this tree node and all children.
+        /// </summary>
+        /// <param name="mask">The mask to set.</param>
+        public void SetRemainingAccess(AccessMask mask)
+        {
+            RemainingAccess = mask;
+            foreach (var node in _nodes)
+            {
+                node.SetRemainingAccess(mask);
+            }
+        }
+
+        /// <summary>
+        /// Remove access mask from this tree node and children and propgate that up the tree.
+        /// </summary>
+        /// <param name="mask">The mask to remove.</param>
+        public void RemoveRemainingAccess(AccessMask mask)
+        {
+            RemainingAccess &= ~mask;
+            foreach (var node in _nodes)
+            {
+                node.RemoveRemainingAccess(mask);
+            }
+
+            var current = this;
+            while (current.Parent != null)
+            {
+                current.Parent.RemainingAccess |= current.RemainingAccess;
+                current = current.Parent;
+            }
+        }
+
+        /// <summary>
+        /// Find an object type tree entry based on a GUID.
+        /// </summary>
+        /// <param name="object_type">The object type GUID.</param>
+        /// <returns>The first entry found, null if doesn't exist.</returns>
+        public ObjectTypeTree Find(Guid object_type)
+        {
+            if (ObjectType == object_type)
+                return this;
+
+            foreach (var node in _nodes)
+            {
+                var ret = node.Find(object_type);
+                if (ret != null)
+                    return ret;
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Overridden ToString method.
         /// </summary>
         /// <returns>The object formatted.</returns>
@@ -102,6 +231,7 @@ namespace NtApiDotNet.Utilities.Security
         {
             return $"{ObjectType} - Child Count {Nodes.Count}";
         }
+        #endregion
 
         #region Private Members
 
@@ -114,14 +244,14 @@ namespace NtApiDotNet.Utilities.Security
 
         private void PopulateList(List<ObjectTypeEntry> entries, int level)
         {
-            entries.Add(new ObjectTypeEntry(ObjectType, level));
+            entries.Add(new ObjectTypeEntry(ObjectType, level) { Name = Name ?? string.Empty });
             foreach (var node in Nodes)
             {
                 node.PopulateList(entries, level + 1);
             }
         }
 
-        private void BuildFromList(Queue<ObjectTypeEntry> entries, int level)
+        private void BuildFromList(ObjectTypeTree parent, Queue<ObjectTypeEntry> entries, int level)
         {
             if (entries.Count == 0)
             {
@@ -135,6 +265,8 @@ namespace NtApiDotNet.Utilities.Security
             }
 
             ObjectType = first.ObjectType;
+            Name = first.Name ?? string.Empty;
+            Parent = parent;
             while(entries.Count > 0)
             {
                 var next = entries.Peek();
@@ -144,7 +276,7 @@ namespace NtApiDotNet.Utilities.Security
                 }
                
                 var entry = new ObjectTypeTree();
-                entry.BuildFromList(entries, level + 1);
+                entry.BuildFromList(this, entries, level + 1);
                 _nodes.Add(entry);
             }
         }

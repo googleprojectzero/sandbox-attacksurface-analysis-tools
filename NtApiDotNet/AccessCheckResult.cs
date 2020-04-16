@@ -52,6 +52,11 @@ namespace NtApiDotNet
         /// </summary>
         public Guid ObjectType { get; }
         /// <summary>
+        /// Optional name for the object type.
+        /// </summary>
+        public string Name { get; private set; }
+
+        /// <summary>
         /// Whether the access check was a success.
         /// </summary>
         public bool IsSuccess => Status.IsSuccess();
@@ -62,7 +67,8 @@ namespace NtApiDotNet
         public AccessCheckResult<U> ToSpecificAccess<U>() where U : Enum
         {
             return new AccessCheckResult<U>(Status, GrantedAccess, GenericGrantedAccess, PrivilegesRequired, 
-                GrantedAccess.ToSpecificAccess<U>(), GenericGrantedAccess.ToSpecificAccess<U>(), ObjectType);
+                GrantedAccess.ToSpecificAccess<U>(), GenericGrantedAccess.ToSpecificAccess<U>(), 
+                ObjectType, Name);
         }
         /// <summary>
         /// Get access check result as a specific access.
@@ -73,19 +79,19 @@ namespace NtApiDotNet
             return new AccessCheckResultGeneric(Status, GrantedAccess, GenericGrantedAccess, PrivilegesRequired,
                 GrantedAccess.ToSpecificAccess(specific_access_type),
                 GenericGrantedAccess.ToSpecificAccess(specific_access_type), 
-                ObjectType);
+                ObjectType, Name);
         }
 
         internal AccessCheckResult(NtStatus status,
             AccessMask granted_access,
             AccessMask generic_granted_access,
             IEnumerable<TokenPrivilege> privilege_required,
-            Guid object_type) 
+            ObjectTypeEntry object_type) 
             : this(status, granted_access, 
                   generic_granted_access, privilege_required,
                   granted_access.ToSpecificAccess<T>(),
                   generic_granted_access.ToSpecificAccess<T>(),
-                  object_type)
+                  object_type.ObjectType, object_type.Name)
         {
         }
 
@@ -95,7 +101,8 @@ namespace NtApiDotNet
             IEnumerable<TokenPrivilege> privilege_required,
             T specific_granted_access,
             T specific_generic_granted_access,
-            Guid object_type)
+            Guid object_type,
+            string object_type_name)
         {
             Status = status;
             GrantedAccess = granted_access;
@@ -104,6 +111,7 @@ namespace NtApiDotNet
             SpecificGrantedAccess = specific_granted_access;
             SpecificGenericGrantedAccess = specific_generic_granted_access;
             ObjectType = object_type;
+            Name = object_type_name ?? string.Empty;
         }
     }
 
@@ -116,11 +124,11 @@ namespace NtApiDotNet
             AccessMask granted_access,
             SafePrivilegeSetBuffer privilege_set,
             GenericMapping generic_mapping,
-            Guid object_type)
+            ObjectTypeEntry object_type)
             : this(status, granted_access,
                   generic_mapping.UnmapMask(granted_access),
                   privilege_set?.GetPrivileges() ?? new TokenPrivilege[0],
-                  object_type)
+                  object_type.ObjectType, object_type.Name)
         {
         }
 
@@ -129,10 +137,11 @@ namespace NtApiDotNet
             AccessMask granted_access,
             AccessMask generic_granted_access,
             IEnumerable<TokenPrivilege> privilege_required,
-            Guid object_type)
+            Guid object_type,
+            string object_type_name)
             : base(status, granted_access, generic_granted_access, privilege_required,
                   granted_access.ToGenericAccess(), generic_granted_access.ToGenericAccess(),
-                  object_type)
+                  object_type, object_type_name)
         {
         }
     }
@@ -148,10 +157,11 @@ namespace NtApiDotNet
             IEnumerable<TokenPrivilege> privilege_required,
             Enum specific_granted_access,
             Enum specific_generic_granted_access,
-            Guid object_type) : base(status, granted_access,
+            Guid object_type,
+            string object_type_name) : base(status, granted_access,
                 generic_granted_access, privilege_required,
                 specific_granted_access, specific_generic_granted_access,
-                object_type)
+                object_type, object_type_name)
         {
         }
     }

@@ -379,7 +379,7 @@ namespace NtApiDotNet
             if (desired_access.IsEmpty)
             {
                 return object_types.Select((o, i) => new AccessCheckResult(NtStatus.STATUS_ACCESS_DENIED,
-                            0, null, generic_mapping, o.ObjectType)).ToArray().CreateResult();
+                            0, null, generic_mapping, o)).ToArray().CreateResult();
             }
 
             using (var list = new DisposableList())
@@ -407,7 +407,7 @@ namespace NtApiDotNet
                     {
                         return status.CreateResult(throw_on_error, ()
                             => object_types.Select((o, i) => new AccessCheckResult(status_list[i],
-                            granted_access_list[i], privs, generic_mapping, o.ObjectType)).ToArray());
+                            granted_access_list[i], privs, generic_mapping, o)).ToArray());
                     }
 
                     repeat_count--;
@@ -1926,11 +1926,11 @@ namespace NtApiDotNet
             }
         }
 
-        private static Guid GetDefaultObjectType(this IEnumerable<ObjectTypeEntry> object_types)
+        private static ObjectTypeEntry GetDefaultObjectType(this IEnumerable<ObjectTypeEntry> object_types)
         {
             if (object_types == null)
-                return Guid.Empty;
-            return object_types.FirstOrDefault()?.ObjectType ?? Guid.Empty;
+                return new ObjectTypeEntry();
+            return object_types.FirstOrDefault() ?? new ObjectTypeEntry();
         }
 
         private static NtResult<Sid> ParseSidString(string sddl)

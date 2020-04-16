@@ -503,6 +503,7 @@ namespace NtApiDotNet
     {
         public int Level { get; set; }
         public Guid ObjectType { get; set; }
+        public string Name { get; set; }
 
         public ObjectTypeEntry()
         {
