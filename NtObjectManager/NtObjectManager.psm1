@@ -195,10 +195,10 @@ function Get-NtTokenPrivilege
   }
 
   Use-NtObject($Token) {
-    if ($Privilege -ne $null -and $Privilege.Count -gt 0) {
+    if ($null -ne $Privilege -and $Privilege.Count -gt 0) {
         foreach($priv in $Privilege) {
             $val = $Token.GetPrivilege($priv)
-            if ($val -ne $null) {
+            if ($null -ne $val) {
                 $val | Write-Output
             } else {
                 Write-Warning "Couldn't get privilege $priv"
@@ -726,6 +726,7 @@ function Get-NtProcessMitigations
             try {
                 Write-Output $p.Mitigations
             } catch {
+                Write-Error $_
             }
         }
     }
@@ -976,7 +977,7 @@ function New-Win32ProcessConfig
     }
     $config.ExtendedFlags = $ExtendedFlags
     $config.ChildProcessMitigations = $ChildProcessMitigations
-    if ($JobList -ne $null) {
+    if ($null -ne $JobList) {
         $config.JobList.AddRange($JobList)
     }
     return $config
@@ -1424,38 +1425,34 @@ function Get-NtTokenFromProcess
     Param(
     [Parameter(Position = 0, ParameterSetName = "FromProcess", Mandatory = $true)]
     [ValidateScript({$_ -ge 0})]
-    [int]$ProcessId = -1,
+    [int]$ProcessId,
     [Parameter(ParameterSetName = "FromThread", Mandatory = $true)]
     [ValidateScript({$_ -ge 0})]
-    [int]$ThreadId = -1,
+    [int]$ThreadId,
     [NtApiDotNet.TokenAccessRights]$Access = "MaximumAllowed"
     )
 
-    Set-NtTokenPrivilege SeDebugPrivilege | Out-Null
-  $t = $null
+    Set-NtTokenPrivilege SeDebugPrivilege
+    $t = $null
 
-  try
-  {
-    if (-1 -ne $ProcessId)
-    {
-      $t = Use-NtObject($p = Get-NtProcess -ProcessId $ProcessId) {
-        $p.GetFirstThread("DirectImpersonation")
-      }
-    }
-    else
-    {
-      $t = Get-NtThread -ThreadId $ThreadId -Access DirectImpersonation
-    }
+    try {
+        if ($PsCmdlet.ParameterSetName -eq "FromProcess") {
+            $t = Use-NtObject($p = Get-NtProcess -ProcessId $ProcessId) {
+                $p.GetFirstThread("DirectImpersonation")
+            }
+        }
+        else {
+            $t = Get-NtThread -ThreadId $ThreadId -Access DirectImpersonation
+        }
 
-    $current = Get-NtThread -Current -PseudoHandle
-    Use-NtObject($t, $current.ImpersonateThread($t)) {
-      Get-NtToken -Impersonation -Thread $current -Access $Access
+        $current = Get-NtThread -Current -PseudoHandle
+        Use-NtObject($t, $current.ImpersonateThread($t)) {
+            Get-NtToken -Impersonation -Thread $current -Access $Access
+        }
     }
-  }
-  catch
-  {
-    Write-Error $_
-  }
+    catch {
+        Write-Error $_
+    }
 }
 
 <#
@@ -1544,7 +1541,7 @@ Show the default DACL in full rather than a summary.
 .PARAMETER Basic
 Show basic token information, User, Group, Privilege and Integrity.
 .OUTPUTS
-Text data
+System.String
 .EXAMPLE
 Format-NtToken -Token $token
 Print the user name of the token.
@@ -1720,7 +1717,7 @@ function Format-NtToken {
     Format-ObjectTable $token.DeviceGroups | Write-Output
   }
 
-  if (($DefaultDacl -or $FullDefaultDacl) -and $Token.DefaultDacl -ne $null) {
+  if (($DefaultDacl -or $FullDefaultDacl) -and ($null -ne $Token.DefaultDacl)) {
     $summary = !$FullDefaultDacl
     "DEFAULT DACL"
     Format-NtAcl -Acl $Token.DefaultDacl -Type "Directory" -Name "------------" -Summary:$summary | Write-Output
@@ -1939,7 +1936,7 @@ function Show-NtSecurityDescriptor {
             $Type = $SecurityDescriptor.NtType
         }
 
-        if ($Type -eq $null) {
+        if ($null -eq $Type) {
             Write-Warning "Defaulting NT type to File. This might give incorrect results."
             $Type = Get-NtType File
         }
@@ -1996,10 +1993,10 @@ function Format-NtAce {
                 $cond = "($($ace.ResourceAttribute.ToSddl()))"
             }
             if ($ace.IsObjectAce) {
-                if ($ace.ObjectType -ne $null) {
+                if ($null -ne $ace.ObjectType) {
                     $cond += "(OBJ:$($ace.ObjectType))"
                 }
-                if ($ace.InheritedObjectType -ne $null) {
+                if ($null -ne $ace.InheritedObjectType) {
                     $cond += "(IOBJ:$($ace.InheritedObjectType))"
                 }
             }
@@ -2023,10 +2020,10 @@ function Format-NtAce {
                  Write-Output " - Attribute: $($ace.ResourceAttribute.ToSddl())"
             }
             if ($ace.IsObjectAce) {
-                if ($ace.ObjectType -ne $null) {
+                if ($null -ne $ace.ObjectType) {
                     Write-Output " - ObjectType: $($ace.ObjectType)"
                 }
-                if ($ace.InheritedObjectType -ne $null) {
+                if ($null -ne $ace.InheritedObjectType) {
                     Write-Output " - InheritedObjectType: $($ace.InheritedObjectType)"
                 }
             }
@@ -2242,7 +2239,7 @@ function Format-NtSecurityDescriptor {
                return
             }
 
-            if ($t -eq $null) {
+            if ($null -eq $t) {
                 Write-Warning "No type specified, formatting might be incorrect."
                 $t = New-NtType Generic
             }
@@ -2257,19 +2254,19 @@ function Format-NtSecurityDescriptor {
                 }
                 Write-Output "Type: $($t.Name)"
                 Write-Output "Control: $($sd.Control)"
-                if ($sd.RmControl -ne $null) {
+                if ($null -ne $sd.RmControl) {
                     Write-Output $("RmControl: 0x{0:X02}" -f $sd.RmControl)
                 }
                 Write-Output ""
             }
 
-            if ($sd.Owner -eq $null -and $sd.Group -eq $null `
-                -and $sd.Dacl -eq $null -and $sd.Sacl -eq $null) {
+            if ($null -eq $sd.Owner -and $null -eq $sd.Group `
+                -and $null -eq $sd.Dacl -and $null -eq $sd.Sacl) {
                 Write-Output "<NO SECURITY INFORMATION>"
                 return
             }
 
-            if ($sd.Owner -ne $null -and (($si -band "Owner") -ne 0)) {
+            if ($null -ne $sd.Owner -and (($si -band "Owner") -ne 0)) {
                 $title = if ($sd.Owner.Defaulted) {
                     "<Owner> (Defaulted)"
                 } else {
@@ -2284,7 +2281,7 @@ function Format-NtSecurityDescriptor {
                     Write-Output ""
                 }
             }
-            if ($sd.Group -ne $null -and (($si -band "Group") -ne 0)) {
+            if ($null -ne $sd.Group -and (($si -band "Group") -ne 0)) {
                 $title = if ($sd.Group.Defaulted) {
                     "<Group> (Defaulted)"
                 } else {
@@ -2300,18 +2297,18 @@ function Format-NtSecurityDescriptor {
                 }
             }
             if ($sd.DaclPresent -and (($si -band "Dacl") -ne 0)) {
-                Format-NtAcl $sd.Dacl $t "<DACL>" -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container
+                Format-NtAcl -Acl $sd.Dacl -Type $t -Name "<DACL>" -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container
             }
             if (($sd.HasAuditAce -or $sd.SaclNull) -and (($si -band "Sacl") -ne 0)) {
-                Format-NtAcl $sd.Sacl $t "<SACL>" -MapGeneric:$MapGeneric -AuditOnly -Summary:$Summary -Container:$Container
+                Format-NtAcl -Acl $sd.Sacl -Type $t -Name "<SACL>" -MapGeneric:$MapGeneric -AuditOnly -Summary:$Summary -Container:$Container
             }
             $label = $sd.GetMandatoryLabel()
-            if ($label -ne $null -and (($si -band "Label") -ne 0)) {
+            if ($null -ne $label -and (($si -band "Label") -ne 0)) {
                 Write-Output "<Mandatory Label>"
                 Format-NtAce -Ace $label -Type $t -Summary:$Summary -Container:$Container
             }
             $trust = $sd.ProcessTrustLabel
-            if ($trust -ne $null -and (($si -band "ProcessTrustLabel") -ne 0)) {
+            if ($null -ne $trust -and (($si -band "ProcessTrustLabel") -ne 0)) {
                 Write-Output "<Process Trust Label>"
                 Format-NtAce -Ace $trust -Type $t -Summary:$Summary -Container:$Container
             }
@@ -2369,6 +2366,7 @@ Specify to try and lookup a known name for the IO control code. If no name found
 Specify to return all known IO control codes with names.
 .OUTPUTS
 NtApiDotNet.NtIoControlCode
+System.String
 .EXAMPLE
 Get-NtIoControlCode 0x110028
 Get the IO control code structure for a control code.
@@ -3291,6 +3289,7 @@ function Get-EmbeddedAuthenticodeSignature {
             $path = Resolve-Path $FullName
             $content_type = [System.Security.Cryptography.X509Certificates.X509Certificate2]::GetCertContentType($Path)
         } catch {
+            Write-Error $_
         }
 
         if ($content_type -ne "Authenticode") {
@@ -3347,7 +3346,7 @@ The SID to lookup the name for.
 .PARAMETER BypassCache
 Specify to bypass the name cache for this lookup.
 .OUTPUTS
-NtApiDotNet.SidName - The looked up SID name.
+NtApiDotNet.SidName
 .EXAMPLE
 Get-NtSidName "S-1-1-0"
 Lookup the name for the SID S-1-1-0.
@@ -3408,7 +3407,7 @@ function New-SymbolResolver {
       $SymbolPath = $Script:GlobalSymbolPath
     }
   }
-  if ($Process -eq $null) {
+  if ($null -eq $Process) {
     $Process = Get-NtProcess -Current
   }
   [NtApiDotNet.Win32.SymbolResolver]::Create($Process, $DbgHelpPath, $SymbolPath)
@@ -3449,14 +3448,14 @@ function Convert-HashTableToIidNames {
         [NtApiDotNet.Ndr.NdrComProxyDefinition[]]$Proxy
     )
     $dict = [System.Collections.Generic.Dictionary[Guid, string]]::new()
-    if ($IidToName -ne $null) {
+    if ($null -ne $IidToName) {
         foreach($pair in $IidToName.GetEnumerator()) {
             $guid = [Guid]::new($pair.Key)
             $dict.Add($guid, $pair.Value)
         }
     }
 
-    if ($Proxy -ne $null) {
+    if ($null -ne $Proxy) {
         foreach($p in $Proxy) {
             $dict.Add($p.Iid, $p.Name)
         }
@@ -3636,7 +3635,7 @@ function Format-NdrComProxy {
 
     BEGIN {
         $dict = Convert-HashTableToIidNames($IidToName)
-        $formatter = if ($DemangleComName -eq $null) {
+        $formatter = if ($null -eq $DemangleComName) {
             [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create($dict)
         } else {
             [NtApiDotNet.Ndr.DefaultNdrFormatter]::Create($dict, [Func[string, string]]$DemangleComName)
@@ -3741,7 +3740,7 @@ function Get-NtMappedSection {
     )
 
     Write-Warning "This command has been superceded by Add-NtSection"
-    if ($Process -eq $null) {
+    if ($null -eq $Process) {
         $Process = Get-NtProcess -Current
     }
 
@@ -3803,7 +3802,7 @@ function Add-NtSection {
         [NtApiDotNet.AllocationType]$AllocationType="None"
     )
 
-    if ($Process -eq $null) {
+    if ($null -eq $Process) {
         $Process = Get-NtProcess -Current
     }
 
@@ -3853,7 +3852,7 @@ function Remove-NtSection {
     switch($PsCmdlet.ParameterSetName) {
         "FromMapping" { $Mapping.Dispose() }
         "FromAddress" {
-            if ($Process -eq $null) {
+            if ($null -eq $Process) {
                 $Process = Get-NtProcess -Current
             }
 
@@ -3960,7 +3959,7 @@ function Get-NtCachedSigningLevel {
 
 <#
 .SYNOPSIS
-Adds an ACE to a security descriptor DACL. 
+Adds an ACE to a security descriptor DACL.
 .DESCRIPTION
 This cmdlet adds a new ACE to a security descriptor DACL. This cmdlet is deprecated.
 .PARAMETER SecurityDescriptor
@@ -4109,11 +4108,15 @@ function Get-NtAlpcServer {
        [string]$Path,
        [parameter(Mandatory, Position=0, ParameterSetName = "FromProcessId")]
        [alias("pid")]
-       [int]$ProcessId = -1
+       [int]$ProcessId
     )
 
     if (![NtApiDotNet.NtToken]::EnableDebugPrivilege()) {
         Write-Warning "Can't enable debug privilege, results might be incomplete"
+    }
+
+    if ($PSCmdlet.ParameterSetName -ne "FromProcessId") {
+        $ProcessId = -1
     }
     $hs = Get-NtHandle -ObjectTypes "ALPC Port" -ProcessId $ProcessId | Where-Object Name -ne ""
 
@@ -5230,7 +5233,7 @@ function Get-RpcClient {
 
     BEGIN {
         if (Get-IsPSCore) {
-            if ($Provider -ne $null) {
+            if ($null -ne $Provider) {
                 Write-Warning "PowerShell Core doesn't support arbitrary providers. Using in-built C#."
             }
             $Provider = New-Object NtObjectManager.Utils.CoreCSharpCodeProvider
@@ -5324,6 +5327,7 @@ function Connect-RpcClient {
                         Write-Progress -Activity "Finding ALPC Endpoint" -CurrentOperation "$name"
                         $Client.Connect("ncalrpc", $name, $SecurityQualityOfService)
                     } catch {
+                        Write-Information $_
                     }
                 }
             }
@@ -5399,7 +5403,7 @@ function Format-RpcClient {
         $args.Flags = $Flags
 
         foreach($s in $Server) {
-            $src = if ($Provider -eq $null) {
+            $src = if ($null -eq $Provider) {
                 [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource($s, $args)
             } else {
                 [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource($s, $args, $Provider, $Options)
@@ -5465,7 +5469,7 @@ function Format-RpcComplexType {
             "FromTypes" { $ComplexType }
             "FromServer" { $Server.ComplexTypes }
         }
-        if ($Provider -eq $null) {
+        if ($null -eq $Provider) {
             [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource([NtApiDotNet.Ndr.NdrComplexTypeReference[]]$types, $EncoderName, $DecoderName, $NamespaceName) | Write-Output
         } else {
             [NtApiDotNet.Win32.Rpc.RpcClientBuilder]::BuildSource([NtApiDotNet.Ndr.NdrComplexTypeReference[]]$types, $EncoderName, $DecoderName, $NamespaceName, $Provider, $Options) | Write-Output
@@ -6247,7 +6251,7 @@ function Remove-NtAtom {
         "FromName" { Get-NtATom -Name $Name }
     }
 
-    if ($obj -ne $null) {
+    if ($null -ne $obj) {
         $obj.Delete()
     }
 }
@@ -6336,7 +6340,7 @@ function Get-Win32ModuleExport {
 
     if ($PsCmdlet.ParameterSetName -eq "FromPath") {
         Use-NtObject($lib = Import-Win32Module -Path $Path -Flags LoadLibraryAsDataFile) {
-            if ($lib -ne $null) {
+            if ($null -ne $lib) {
                 Get-Win32ModuleExport -Module $lib -ProcAddress $ProcAddress
             }
         }
@@ -6377,7 +6381,7 @@ function Get-Win32ModuleImport {
 
     $imports = if ($PsCmdlet.ParameterSetName -eq "FromPath") {
         Use-NtObject($lib = Import-Win32Module -Path $Path -Flags LoadLibraryAsDataFile) {
-            if ($lib -ne $null) {
+            if ($null -ne $lib) {
                 Get-Win32ModuleImport -Module $lib
             }
         }
@@ -6858,9 +6862,9 @@ function Edit-NtSecurityDescriptor {
     }
 
     if ($PSCmdlet.ParameterSetName -ne "CanonicalizeSd") {
-        if ($Type -eq $null) {
+        if ($null -eq $Type) {
             $Type = $SecurityDescriptor.NtType
-            if ($Type -eq $null) {
+            if ($null -eq $Type) {
                 Write-Warning "Original type not available, defaulting to File."
                 $Type = Get-NtType "File"
             }
@@ -7298,7 +7302,7 @@ function New-NtAcl {
     $acl.Defaulted = $Defaulted
     switch($PsCmdlet.ParameterSetName) {
         "FromAce" {
-            if ($Ace -ne $null) {
+            if ($null -ne $Ace) {
                 $acl.AddRange($Ace)
             }
         }
@@ -7915,7 +7919,7 @@ function New-NtObjectTypeTree {
     )
 
     $tree = New-Object NtApiDotNet.Utilities.Security.ObjectTypeTree -ArgumentList $ObjectType
-    if ($Nodes -ne $null -and $Nodes.Count -gt 0) {
+    if ($null -ne $Nodes -and $Nodes.Count -gt 0) {
         $tree.Nodes.AddRange($Nodes)
     }
     Write-Output $tree
