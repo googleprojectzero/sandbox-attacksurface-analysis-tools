@@ -174,7 +174,7 @@ Get all privileges on the current Effective token.
 Get-NtTokenPrivilege -Token $token
 Get all privileges on an explicit  token.
 .EXAMPLE
-Get-NtTokenPrivilege -Privilege SeDebugPrivilege 
+Get-NtTokenPrivilege -Privilege SeDebugPrivilege
 Get state of SeDebugPrivilege on the current process token
 .EXAMPLE
 Get-NtTokenPrivilege -Privilege SeBackupPrivilege, SeRestorePrivilege -Token $token
@@ -264,7 +264,7 @@ function Get-NtTokenGroup {
     }
 
     if ($Attributes -ne 0) {
-        $groups = $groups | ? {($_.Attributes -band $Attributes) -eq $Attributes}
+        $groups = $groups | Where-Object {($_.Attributes -band $Attributes) -eq $Attributes}
     }
 
     $groups | Write-Output
@@ -297,9 +297,9 @@ function Set-NtTokenGroup {
   [CmdletBinding(DefaultParameterSetName="Normal")]
   Param(
     [NtApiDotNet.NtToken]$Token,
-    [Parameter(Mandatory, Position = 0)] 
+    [Parameter(Mandatory, Position = 0)]
     [NtApiDotNet.Sid[]]$Sid,
-    [Parameter(Mandatory, Position = 1)] 
+    [Parameter(Mandatory, Position = 1)]
     [NtApiDotNet.GroupAttributes]$Attributes
   )
   if ($null -eq $Token) {
@@ -582,7 +582,7 @@ function Remove-NtTokenPrivilege
 .SYNOPSIS
 Set the integrity level of a token.
 .DESCRIPTION
-This cmdlet will set the integrity level of a token. If you want to raise the level you must have SeTcbPrivilege otherwise you can only lower it. 
+This cmdlet will set the integrity level of a token. If you want to raise the level you must have SeTcbPrivilege otherwise you can only lower it.
 If no token is specified then the current process token is used.
 .PARAMETER IntegrityLevel
 Specify the integrity level.
@@ -604,7 +604,7 @@ Set a specific token's integrity level to low.
 Set-NtTokenIntegrityLevel Low -Adjustment -16
 Set the current token's integrity level to low minus 16.
 .EXAMPLE
-Set-NtTokenIntegrityLevel -IntegrityLevelRaw 0x800 
+Set-NtTokenIntegrityLevel -IntegrityLevelRaw 0x800
 Set the current token's integrity level to 0x800.
 #>
 function Set-NtTokenIntegrityLevel
@@ -1502,7 +1502,7 @@ function Format-ObjectTable {
     )
 
     $output = $InputObject | Format-Table -HideTableHeaders:$HideTableHeaders | Out-String
-    $output -Split "`r`n" | ? {-not [string]::IsNullOrWhiteSpace($_)} | Write-Output
+    $output -Split "`r`n" | Where-Object {-not [string]::IsNullOrWhiteSpace($_)} | Write-Output
     Write-Output ""
 }
 
@@ -2090,7 +2090,7 @@ function Format-NtAcl {
     } else {
         Write-Output $Name
         if ($AuditOnly) {
-            $Acl | ? IsAuditAce | Format-NtAce -Type $Type -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container
+            $Acl | Where-Object IsAuditAce | Format-NtAce -Type $Type -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container
         } else {
             $Acl | Format-NtAce -Type $Type -MapGeneric:$MapGeneric -Summary:$Summary -Container:$Container
         }
@@ -2101,7 +2101,7 @@ function Format-NtAcl {
 .SYNOPSIS
 Formats an object's security descriptor as text.
 .DESCRIPTION
-This cmdlet formats the security descriptor to text for display in the console or piped to a file. Note that 
+This cmdlet formats the security descriptor to text for display in the console or piped to a file. Note that
 by default the SACL won't be disabled even if you pass in a SD object with the SACL present. In those cases
 change the SecurityInformation parameter to add Sacl or use ShowAll.
 .PARAMETER Object
@@ -2243,7 +2243,7 @@ function Format-NtSecurityDescriptor {
             }
 
             if ($t -eq $null) {
-                Write-Warning "No type specified, formatting might be incorrect." 
+                Write-Warning "No type specified, formatting might be incorrect."
                 $t = New-NtType Generic
             }
 
@@ -2307,7 +2307,7 @@ function Format-NtSecurityDescriptor {
             }
             $label = $sd.GetMandatoryLabel()
             if ($label -ne $null -and (($si -band "Label") -ne 0)) {
-                Write-Output "<Mandatory Label>" 
+                Write-Output "<Mandatory Label>"
                 Format-NtAce -Ace $label -Type $t -Summary:$Summary -Container:$Container
             }
             $trust = $sd.ProcessTrustLabel
@@ -2577,7 +2577,7 @@ function Start-NtTokenViewer {
         }
         $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\TokenViewer.exe" -InheritHandles
         $config.InheritHandleList.Add($dup_handle.Handle.DangerousGetHandle())
-        Use-NtObject($p = New-Win32Process -Config $config) {}
+        Use-NtObject(New-Win32Process -Config $config) {}
     }
 }
 
@@ -2669,7 +2669,7 @@ function Show-NtToken {
             if ($MaxTokens -gt 0) {
               $result = $ps | Select-Object -First $MaxTokens
             }
-            $ps | Show-NtToken
+            $result | Show-NtToken
           }
         }
         "FromCommandLine" {
@@ -2678,13 +2678,13 @@ function Show-NtToken {
             if ($MaxTokens -gt 0) {
               $result = $ps | Select-Object -First $MaxTokens
             }
-            $ps | Show-NtToken
+            $result | Show-NtToken
           }
         }
         "FromPid" {
           $cmdline = [string]::Format("TokenViewer --pid={0}", $ProcessId)
           $config = New-Win32ProcessConfig $cmdline -ApplicationName "$PSScriptRoot\TokenViewer.exe" -InheritHandles
-          Use-NtObject($p = New-Win32Process -Config $config) {
+          Use-NtObject(New-Win32Process -Config $config) {
           }
         }
         "FromToken" {
@@ -2800,15 +2800,15 @@ function Show-NtSection {
                 }
             }
         }
-    } 
+    }
 }
 
 <#
 .SYNOPSIS
 Resolve the address of a list of objects.
 .DESCRIPTION
-This cmdlet resolves the kernel address for a list of objects. This is an expensive operation so it's designed to
-be 
+This cmdlet resolves the kernel address for a list of objects. This is an expensive operation so it's designed to be
+called with a list.
 .PARAMETER Objects
 The list of objects to resolve.
 .PARAMETER PassThru
@@ -2989,7 +2989,7 @@ function Set-NtSecurityDescriptor
         [NtApiDotNet.SecurityInformation]$SecurityInformation,
         [parameter(ParameterSetName = "ToPath")]
         [string]$TypeName
-        
+
     )
     PROCESS {
         switch($PsCmdlet.ParameterSetName) {
@@ -3031,7 +3031,7 @@ The protection for the memory region. Defaults to ReadWrite.
 .OUTPUTS
 int64
 .EXAMPLE
-$addr = Add-NtVirtualMemory 0x10000 
+$addr = Add-NtVirtualMemory 0x10000
 Allocate a block 0x10000 in size.
 .EXAMPLE
 $addr = Add-NtVirtualMemory 0x10000 -Process $process
@@ -3296,7 +3296,7 @@ function Get-EmbeddedAuthenticodeSignature {
         if ($content_type -ne "Authenticode") {
             return
         }
-        
+
         $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($Path)
         $ppl = $false
         $pp = $false
@@ -3379,7 +3379,7 @@ The process to create the symbol resolver on. If not specified then the current 
 Specify path to a dbghelp DLL to use for symbol resolving. This should be ideally the dbghelp from debugging tool for Windows
 which will allow symbol servers however you can use the system version if you just want to pull symbols locally.
 .PARAMETER SymbolPath
-Specify path for the symbols. If not specified it will first use the _NT_SYMBOL_PATH environment variable then use the 
+Specify path for the symbols. If not specified it will first use the _NT_SYMBOL_PATH environment variable then use the
 default of 'srv*https://msdl.microsoft.com/download/symbols'
 .OUTPUTS
 NtApiDotNet.Win32.ISymbolResolver - The symbol resolver. Dispose after use.
@@ -3732,7 +3732,7 @@ function Get-NtMappedSection {
         [NtApiDotNet.MemoryAllocationProtect]$Protection,
         [NtApiDotNet.NtProcess]$Process,
         [IntPtr]$ViewSize=0,
-        [IntPtr]$BaseAddress=0, 
+        [IntPtr]$BaseAddress=0,
         [IntPtr]$ZeroBits=0,
         [IntPtr]$CommitSize=0,
         [NtApiDotNet.LargeInteger]$SectionOffset,
@@ -3795,7 +3795,7 @@ function Add-NtSection {
         [NtApiDotNet.MemoryAllocationProtect]$Protection,
         [NtApiDotNet.NtProcess]$Process,
         [IntPtr]$ViewSize=0,
-        [IntPtr]$BaseAddress=0, 
+        [IntPtr]$BaseAddress=0,
         [IntPtr]$ZeroBits=0,
         [IntPtr]$CommitSize=0,
         [NtApiDotNet.LargeInteger]$SectionOffset,
@@ -3834,7 +3834,7 @@ Unmap an existing section created with Add-NtSection.
 Remove-NtSection -Address $addr
 Unmap an address
 .EXAMPLE
-Remove-NtSection -Address $addr -Process $p 
+Remove-NtSection -Address $addr -Process $p
 Unmap an address in a specified process.
 #>
 function Remove-NtSection {
@@ -3852,7 +3852,7 @@ function Remove-NtSection {
 
     switch($PsCmdlet.ParameterSetName) {
         "FromMapping" { $Mapping.Dispose() }
-        "FromAddress" { 
+        "FromAddress" {
             if ($Process -eq $null) {
                 $Process = Get-NtProcess -Current
             }
@@ -3879,7 +3879,7 @@ NtApiDotNet.NtWnf
 Get-NtWnf
 Get all registered WNF entries.
 .EXAMPLE
-Get-NtWnf 0x12345678 
+Get-NtWnf 0x12345678
 Get a WNF entry from a state name.
 .EXAMPLE
 Get-NtWnf 0x12345678 -DontCheckExists
@@ -3903,7 +3903,7 @@ function Get-NtWnf {
         "All" {
             [NtApiDotNet.NtWnf]::GetRegisteredNotifications()
         }
-        "StateName" { 
+        "StateName" {
             [NtApiDotNet.NtWnf]::Open($StateName, -not $DontCheckExists)
         }
         "Name" {
@@ -4019,7 +4019,7 @@ function Add-NtSecurityDescriptorDaclAce {
         "FromSid" {
             # Do nothing.
         }
-        "FromName" { 
+        "FromName" {
             $Sid = Get-NtSid -Name $Name
         }
         "FromKnownSid" {
@@ -4057,7 +4057,7 @@ The value of GenericExecute for the GENERIC_MAPPING.
 .PARAMETER GenericAll
 The value of GenericAll for the GENERIC_MAPPING.
 .PARAMETER AccessRightsType
-The enumerated type 
+The enumerated type.
 .INPUTS
 None
 .OUTPUTS
@@ -4082,7 +4082,7 @@ function New-NtType {
 Gets an ALPC server port.
 .DESCRIPTION
 This cmdlet gets an ALPC server port by name. As you can't directly open the server end of the port this function goes through
-all handles and tries to extract the port from the hosting process. This might require elevated privileges, especially debug 
+all handles and tries to extract the port from the hosting process. This might require elevated privileges, especially debug
 privilege, to work correctly.
 .PARAMETER Path
 The path to the ALPC server port to get.
@@ -4115,7 +4115,7 @@ function Get-NtAlpcServer {
     if (![NtApiDotNet.NtToken]::EnableDebugPrivilege()) {
         Write-Warning "Can't enable debug privilege, results might be incomplete"
     }
-    $hs = Get-NtHandle -ObjectTypes "ALPC Port" -ProcessId $ProcessId | ? Name -ne ""
+    $hs = Get-NtHandle -ObjectTypes "ALPC Port" -ProcessId $ProcessId | Where-Object Name -ne ""
 
     switch($PSCmdlet.ParameterSetName) {
         "All" {
@@ -4242,7 +4242,7 @@ The path to the DLL.
 Specify path to a dbghelp DLL to use for symbol resolving. This should be ideally the dbghelp from debugging tool for Windows
 which will allow symbol servers however you can use the system version if you just want to pull symbols locally.
 .PARAMETER SymbolPath
-Specify path for the symbols. If not specified it will first use the _NT_SYMBOL_PATH environment variable then use the 
+Specify path for the symbols. If not specified it will first use the _NT_SYMBOL_PATH environment variable then use the
 default of 'srv*https://msdl.microsoft.com/download/symbols'
 .PARAMETER AsText
 Return the results as text rather than objects.
@@ -4580,7 +4580,7 @@ function Get-RunningService {
 .SYNOPSIS
 Duplicates a token to a new token.
 .DESCRIPTION
-This cmdlet duplicates a token to another with specified 
+This cmdlet duplicates a token to another with specified
 .PARAMETER Token
 Specify the token to duplicate. If not specified will use the current process token.
 .PARAMETER ImpersonationLevel
@@ -4701,7 +4701,7 @@ function Test-ProcessToken {
             }
         }
 
-        $groups = $token.Groups | ? Enabled
+        $groups = $token.Groups | Where-Object Enabled
         foreach($group in $RequiredGroup) {
             if ($group -notin $groups.Sid) {
                 return $false
@@ -5106,7 +5106,7 @@ function Get-AppContainerProfile {
     PROCESS {
         switch($PSCmdlet.ParameterSetName) {
             "All" {
-                Get-AppxPackage | Select @{Name="Name"; Expression = {"$($_.Name)_$($_.PublisherId)"}} | Get-AppContainerProfile
+                Get-AppxPackage | Select-Object @{Name="Name"; Expression = {"$($_.Name)_$($_.PublisherId)"}} | Get-AppContainerProfile
             }
             "FromName" {
                 [NtApiDotNet.Win32.AppContainerProfile]::Open($Name) | Write-Output
@@ -5178,7 +5178,7 @@ Get a RPC client object based on a parsed RPC server.
 .DESCRIPTION
 This cmdlet creates a new RPC client from a parsed RPC server. The client object contains methods
 to call RPC methods. The client starts off disconnected. You need to pass the client to Connect-RpcClient to
-connect to the server. If you specify an interface ID and version then a generic client will be created which 
+connect to the server. If you specify an interface ID and version then a generic client will be created which
 allows simple calls to be made without requiring the NDR data.
 .PARAMETER Server
 Specify the RPC server to base the client on.
@@ -5483,7 +5483,7 @@ None
 .OUTPUTS
 NtApiDotNet.Ndr.NdrContextHandle
 .EXAMPLE
-New-RpcContextHandle 
+New-RpcContextHandle
 Creates a new RPC context handle.
 #>
 function New-RpcContextHandle {
@@ -5959,7 +5959,7 @@ function Get-NtWindowStationName {
 .SYNOPSIS
 Gets the names of the Desktops from the specified Window Station.
 .DESCRIPTION
-This cmdlet queries the names of the Desktops from the specified Window Station. 
+This cmdlet queries the names of the Desktops from the specified Window Station.
 By default will use the current process Window Station.
 .PARAMETER WindowStation
 The Window Station to query.
@@ -6150,7 +6150,7 @@ function Get-NtTypeAccess {
 
     $access = switch($PSCmdlet.ParameterSetName) {
         "All" { $Type.AccessRights }
-        "Read" { $Type.ReadAccessRights } 
+        "Read" { $Type.ReadAccessRights }
         "Write" { $Type.WriteAccessRights }
         "Execute" { $Type.ExecuteAccessRights }
         "Mandatory" { $Type.MandatoryAccessRights }
@@ -6787,7 +6787,7 @@ function Copy-NtSecurityDescriptor {
 .SYNOPSIS
 Edits an existing security descriptor.
 .DESCRIPTION
-This cmdlet edits an existing security descriptor in-place. This can be based on 
+This cmdlet edits an existing security descriptor in-place. This can be based on
 a new security descriptor and additional information. If PassThru is specified
 the the SD is not editing in place, a clone of the SD will be returned.
 .PARAMETER SecurityDescriptor
@@ -6801,7 +6801,7 @@ Specify optional token used to edit the security descriptor.
 .PARAMETER Flags
 Specify optional auto inherit flags.
 .PARAMETER Type
-Specify the NT type to use for the update. Defaults to using the 
+Specify the NT type to use for the update. Defaults to using the
 type from $SecurityDescriptor.
 .PARAMETER MapGeneric
 Map generic access rights to specific access rights.
@@ -6811,13 +6811,13 @@ Passthrough the security descriptor.
 None
 .OUTPUTS
 NtApiDotNet.SecurityDescriptor
-.EXAMPLE 
+.EXAMPLE
 Edit-NtSecurityDescriptor $sd -CanonicalizeDacl
 Canonicalize the security descriptor's DACL.
-.EXAMPLE 
+.EXAMPLE
 Edit-NtSecurityDescriptor $sd -MapGenericAccess
 Map the security descriptor's generic access to type specific access.
-.EXAMPLE 
+.EXAMPLE
 Copy-NtSecurityDescriptor $sd | Edit-NtSecurityDescriptor -MapGenericAccess -PassThru
 Make a copy of a security descriptor and edit the copy.
 #>
@@ -6880,7 +6880,7 @@ function Edit-NtSecurityDescriptor {
     } elseif($PsCmdlet.ParameterSetName -eq "MapGenericSd") {
         $SecurityDescriptor.MapGenericAccess($Type)
     } elseif ($PsCmdlet.ParameterSetName -eq "ToAutoInherit") {
-        $SecurityDescriptor.ConvertToAutoInherit($Parent, 
+        $SecurityDescriptor.ConvertToAutoInherit($Parent,
             $ObjectType, $Container, $Type.GenericMapping)
     }
 
@@ -6904,7 +6904,7 @@ The name of the group to set.
 The well known SID to set.
 .PARAMETER Defaulted
 Specify whether the owner is defaulted.
-.PARAMETER 
+.PARAMETER
 .INPUTS
 None
 .OUTPUTS
@@ -7156,9 +7156,9 @@ function Get-NtSecurityDescriptorIntegrityLevel {
 .SYNOPSIS
 Sets Control flags for a security descriptor.
 .DESCRIPTION
-This cmdlet sets Control flags for a security descriptor. Note that you can't 
-remove the DaclPresent or SaclPresent. For that use Remove-NtSecurityDescriptorDacl 
-or Remove-NtSecurityDescriptorSacl. 
+This cmdlet sets Control flags for a security descriptor. Note that you can't
+remove the DaclPresent or SaclPresent. For that use Remove-NtSecurityDescriptorDacl
+or Remove-NtSecurityDescriptorSacl.
 .PARAMETER SecurityDescriptor
 The security descriptor to modify.
 .PARAMETER Control
@@ -7188,9 +7188,9 @@ function Set-NtSecurityDescriptorControl {
 .SYNOPSIS
 Adds Control flags for a security descriptor.
 .DESCRIPTION
-This cmdlet adds Control flags for a security descriptor. Note that you can't 
-remove the DaclPresent or SaclPresent. For that use Remove-NtSecurityDescriptorDacl 
-or Remove-NtSecurityDescriptorSacl. 
+This cmdlet adds Control flags for a security descriptor. Note that you can't
+remove the DaclPresent or SaclPresent. For that use Remove-NtSecurityDescriptorDacl
+or Remove-NtSecurityDescriptorSacl.
 .PARAMETER SecurityDescriptor
 The security descriptor to modify.
 .PARAMETER Control
@@ -7223,9 +7223,9 @@ function Add-NtSecurityDescriptorControl {
 .SYNOPSIS
 Removes Control flags for a security descriptor.
 .DESCRIPTION
-This cmdlet removes Control flags for a security descriptor. Note that you can't 
-remove the DaclPresent or SaclPresent. For that use Remove-NtSecurityDescriptorDacl 
-or Remove-NtSecurityDescriptorSacl. 
+This cmdlet removes Control flags for a security descriptor. Note that you can't
+remove the DaclPresent or SaclPresent. For that use Remove-NtSecurityDescriptorDacl
+or Remove-NtSecurityDescriptorSacl.
 .PARAMETER SecurityDescriptor
 The security descriptor to modify.
 .PARAMETER Control
@@ -7409,7 +7409,7 @@ Specify to set the Defaulted flag.
 Specify to return the new ACL.
 .PARAMETER Remove
 Specify to remove the ACL.
-.PARAMETER 
+.PARAMETER
 .INPUTS
 None
 .OUTPUTS
@@ -7968,7 +7968,7 @@ None
 .OUTPUTS
 NtApiDotNet.Security.Policy.CentralAccessPolic
 .EXAMPLE
-Get-CentralAccessPolicy 
+Get-CentralAccessPolicy
 Gets the Central Access Policy from the Registry.
 .EXAMPLE
 Get-CentralAccessPolicy -FromLsa
