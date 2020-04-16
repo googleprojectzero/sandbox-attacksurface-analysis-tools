@@ -54,7 +54,7 @@ namespace NtApiDotNet.Security.Policy
         /// </summary>
         public SecurityDescriptor StagedSecurityDescriptor { get; }
 
-        private CentralAccessRule(string name, string description, SecurityDescriptor sd,
+        internal CentralAccessRule(string name, string description, SecurityDescriptor sd,
             SecurityDescriptor staged_sd, string applies_to, string change_id, uint flags)
         {
             Name = name;

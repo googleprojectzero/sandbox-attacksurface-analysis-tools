@@ -15,6 +15,7 @@
 using NtApiDotNet.Ndr;
 using NtApiDotNet.Utilities.SafeBuffers;
 using NtApiDotNet.Win32.Debugger;
+using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security;
 using System;
 using System.IO;
@@ -424,7 +425,6 @@ namespace NtApiDotNet.Win32
                 stm.Position = 1024;
             }
 
-
             byte[] data = stm.ToArray();
 
             int total_size = Marshal.SizeOf(typeof(EVENT_TRACE_PROPERTIES)) + data.Length;
@@ -521,6 +521,33 @@ namespace NtApiDotNet.Win32
     {
         public int GenerationGap;
         public IntPtr AncestorName;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct CENTRAL_ACCESS_POLICY
+    {
+        public IntPtr CAPID;
+        public UnicodeStringOut Name;
+        public UnicodeStringOut Description;
+        public UnicodeStringOut ChangeId;
+        public uint Flags;
+        public int CAPECount;
+        public IntPtr CAPEs; // PCENTRAL_ACCESS_POLICY_ENTRY
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct CENTRAL_ACCESS_POLICY_ENTRY
+    {
+        public UnicodeStringOut Name;
+        public UnicodeStringOut Description;
+        public UnicodeStringOut ChangeId;
+        public int LengthAppliesTo;
+        public IntPtr AppliesTo;
+        public int LengthSD;
+        public IntPtr SD;
+        public int LengthStagedSD;
+        public IntPtr StagedSD;
+        public uint Flags;
     }
 
     internal static class Win32NativeMethods
@@ -1260,6 +1287,26 @@ namespace NtApiDotNet.Win32
             OptionalPointer ppDacl,
             OptionalPointer ppSacl,
             out SafeLocalAllocBuffer ppSecurityDescriptor
+        );
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaFreeMemory(
+            IntPtr Buffer
+        );
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaGetAppliedCAPIDs(
+          UnicodeString SystemName,
+          out SafeLsaMemoryBuffer CAPIDs,
+          out int CAPIDCount
+        );
+
+        [DllImport("Advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern NtStatus LsaQueryCAPs(
+          IntPtr CAPIDs,
+          int CAPIDCount,
+          out SafeLsaMemoryBuffer CAPs,
+          out uint CAPCount
         );
     }
 #pragma warning restore 1591

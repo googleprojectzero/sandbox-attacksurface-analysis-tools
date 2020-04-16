@@ -1,4 +1,4 @@
-﻿//  Copyright 2019 Google Inc. All Rights Reserved.
+﻿//  Copyright 2020 Google Inc. All Rights Reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -13,24 +13,18 @@
 //  limitations under the License.
 
 using System;
-using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32
+namespace NtApiDotNet.Win32.SafeHandles
 {
-    internal sealed class SafeLocalAllocBuffer : SafeBuffer
+    internal class SafeLsaMemoryBuffer : SafeBufferGeneric
     {
         protected override bool ReleaseHandle()
         {
-            return Win32NativeMethods.LocalFree(handle) == IntPtr.Zero;
+            return Win32NativeMethods.LsaFreeMemory(handle).IsSuccess();
         }
 
-        public SafeLocalAllocBuffer(IntPtr handle, bool owns_handle) 
-            : base(owns_handle)
-        {
-            SetHandle(handle);
-        }
-
-        public SafeLocalAllocBuffer() : base(true)
+        public SafeLsaMemoryBuffer()
+            : base(IntPtr.Zero, 0, true)
         {
         }
 

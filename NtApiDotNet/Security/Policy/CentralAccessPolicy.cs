@@ -12,8 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Win32;
+using NtApiDotNet.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace NtApiDotNet.Security.Policy
 {
@@ -213,6 +216,84 @@ namespace NtApiDotNet.Security.Policy
         public static CentralAccessPolicy[] ParseFromRegistry()
         {
             return ParseFromRegistry(true).Result;
+        }
+
+        /// <summary>
+        /// Parse the policy from the Local Security Authority.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of Central Access Policies.</returns>
+        public static NtResult<CentralAccessPolicy[]> ParseFromLsa(bool throw_on_error)
+        {
+            NtStatus status = Win32NativeMethods.LsaGetAppliedCAPIDs(null, out SafeLsaMemoryBuffer capids, out int capid_count);
+            if (!status.IsSuccess())
+                return status.CreateResultFromError<CentralAccessPolicy[]>(throw_on_error);
+            List<CentralAccessPolicy> ret = new List<CentralAccessPolicy>();
+            using (capids)
+            {
+                status = Win32NativeMethods.LsaQueryCAPs(capids.DangerousGetHandle(), capid_count, out SafeLsaMemoryBuffer caps, out uint cap_count);
+                if (!status.IsSuccess())
+                    return status.CreateResultFromError<CentralAccessPolicy[]>(throw_on_error);
+                caps.Initialize<CENTRAL_ACCESS_POLICY>(cap_count);
+                CENTRAL_ACCESS_POLICY[] policies = new CENTRAL_ACCESS_POLICY[cap_count];
+                caps.ReadArray(0, policies, 0, policies.Length);
+                foreach (var policy in policies)
+                {
+                    SafeHGlobalBuffer buffer = new SafeHGlobalBuffer(policy.CAPEs, policy.CAPECount * IntPtr.Size, false);
+                    IntPtr[] rule_entries = new IntPtr[policy.CAPECount];
+                    buffer.ReadArray(0, rule_entries, 0, policy.CAPECount);
+                    List<CentralAccessRule> rules = new List<CentralAccessRule>();
+                    foreach (var ptr in rule_entries)
+                    {
+                        var entry = new SafeStructureInOutBuffer<CENTRAL_ACCESS_POLICY_ENTRY>(ptr, Marshal.SizeOf(typeof(CENTRAL_ACCESS_POLICY_ENTRY)), false);
+                        var r = entry.Result;
+                        SecurityDescriptor sd = null;
+                        SecurityDescriptor staged_sd = null;
+                        string applies_to = string.Empty;
+                        if (r.LengthSD > 0)
+                        {
+                            var result = SecurityDescriptor.Parse(r.SD, throw_on_error);
+                            if (!result.IsSuccess)
+                                return result.Cast<CentralAccessPolicy[]>();
+                            sd = result.Result;
+                        }
+                        if (r.LengthStagedSD > 0)
+                        {
+                            var result = SecurityDescriptor.Parse(r.StagedSD, throw_on_error);
+                            if (!result.IsSuccess)
+                                return result.Cast<CentralAccessPolicy[]>();
+                            staged_sd = result.Result;
+                        }
+                        if (r.LengthAppliesTo > 0)
+                        {
+                            byte[] condition = new byte[r.LengthAppliesTo];
+                            Marshal.Copy(r.AppliesTo, condition, 0, r.LengthAppliesTo);
+                            var result = NtSecurity.ConditionalAceToString(condition, throw_on_error);
+                            if (!result.IsSuccess)
+                                return result.Cast<CentralAccessPolicy[]>();
+                            applies_to = result.Result;
+                        }
+
+                        rules.Add(new CentralAccessRule(r.Name.ToString(), r.Description.ToString(),
+                            sd, staged_sd, applies_to, r.ChangeId.ToString(), r.Flags));
+                    }
+                    var capid = Sid.Parse(policy.CAPID, throw_on_error);
+                    if (!capid.IsSuccess)
+                        return capid.Cast<CentralAccessPolicy[]>();
+                    ret.Add(new CentralAccessPolicy(capid.Result, policy.Flags, policy.Name.ToString(), 
+                        policy.Description.ToString(), policy.ChangeId.ToString(), rules));
+                }
+            }
+            return ret.ToArray().CreateResult();
+        }
+
+        /// <summary>
+        /// Parse the policy from the Local Security Authority.
+        /// </summary>
+        /// <returns>The list of Central Access Policies.</returns>
+        public static CentralAccessPolicy[] ParseFromLsa()
+        {
+            return ParseFromLsa(true).Result;
         }
     }
 }

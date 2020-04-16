@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet.Win32;
+using NtApiDotNet.Win32.SafeHandles;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

@@ -15,7 +15,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace NtApiDotNet.Win32
+namespace NtApiDotNet.Win32.SafeHandles
 {
     internal sealed class SafeCoTaskMemHandle : SafeHandle
     {
@@ -30,7 +30,7 @@ namespace NtApiDotNet.Win32
             SetHandle(handle);
         }
 
-        public SafeCoTaskMemHandle() 
+        public SafeCoTaskMemHandle()
             : base(IntPtr.Zero, true)
         {
         }
