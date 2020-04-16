@@ -61,7 +61,7 @@ namespace NtApiDotNet.Utilities.Security
         /// <summary>
         /// List of child nodes in the tree.
         /// </summary>
-        public IList<ObjectTypeTree> Nodes { get; }
+        public IReadOnlyList<ObjectTypeTree> Nodes => _nodes.AsReadOnly();
 
         /// <summary>
         /// The Object Type GUID.
@@ -78,7 +78,7 @@ namespace NtApiDotNet.Utilities.Security
         public ObjectTypeTree AddObjectType(Guid object_type)
         {
             ObjectTypeTree ret = new ObjectTypeTree(object_type);
-            Nodes.Add(ret);
+            _nodes.Add(ret);
             return ret;
         }
         #endregion
@@ -104,12 +104,12 @@ namespace NtApiDotNet.Utilities.Security
         }
 
         #region Private Members
-        /// <summary>
-        /// Contructor.
-        /// </summary>
+
+        private List<ObjectTypeTree> _nodes;
+
         private ObjectTypeTree()
         {
-            Nodes = new List<ObjectTypeTree>();
+            _nodes = new List<ObjectTypeTree>();
         }
 
         private void PopulateList(List<ObjectTypeEntry> entries, int level)
@@ -145,7 +145,7 @@ namespace NtApiDotNet.Utilities.Security
                
                 var entry = new ObjectTypeTree();
                 entry.BuildFromList(entries, level + 1);
-                Nodes.Add(entry);
+                _nodes.Add(entry);
             }
         }
 
