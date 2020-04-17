@@ -71,6 +71,7 @@ namespace NtObjectManager.Cmdlets.Object
         /// <para type="description">Specify to also check DenyOnly SIDs.</para>
         /// </summary>
         [Parameter(ParameterSetName = "FromGroup")]
+        [Parameter(ParameterSetName = "FromRestricted")]
         public SwitchParameter DenyOnly { get; set; }
 
         /// <summary>
