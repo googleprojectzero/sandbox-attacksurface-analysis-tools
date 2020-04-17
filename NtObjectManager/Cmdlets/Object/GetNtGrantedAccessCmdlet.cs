@@ -16,6 +16,7 @@ using NtApiDotNet;
 using NtApiDotNet.Utilities.Security;
 using NtObjectManager.Utils;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
 
@@ -108,7 +109,13 @@ namespace NtObjectManager.Cmdlets.Object
         public SwitchParameter PassResult { get; set; }
 
         /// <summary>
-        /// <para type="description">Specify object types for access check..</para>
+        /// <para type="description">Specify to return the access check results as a list. Can only be used with Object Types.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter ResultList { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify object types for access check.</para>
         /// </summary>
         [Parameter]
         public ObjectTypeTree ObjectType { get; set; }
@@ -189,39 +196,35 @@ namespace NtObjectManager.Cmdlets.Object
             {
                 NtType type = GetNtType();
                 var object_types = ObjectType?.ToArray();
+                var results = new List<AccessCheckResultGeneric>();
                 // If we have multiple object types and pass result is true then
                 // we don't support any another output format.
-                if (object_types?.Length > 1 && PassResult)
+                if (ResultList)
                 {
-                    var result_list = NtSecurity.AccessCheckWithResultList(GetSecurityDescriptor(),
-                        token, GetDesiredAccess(), Principal, type.GenericMapping, object_types);
-                    WriteObject(result_list.Select(r => r.ToSpecificAccess(type.AccessRightsType)), true);
-                    return;
-                }
-
-                var result = NtSecurity.AccessCheck(GetSecurityDescriptor(), 
-                    token, GetDesiredAccess(), Principal, type.GenericMapping, object_types)
-                    .ToSpecificAccess(type.AccessRightsType);
-                if (PassResult)
-                {
-                    WriteObject(result);
-                    return;
-                }
-
-                var mask = result.SpecificGrantedAccess;
-                if (MapToGeneric)
-                {
-                    mask = result.SpecificGenericGrantedAccess;
-                }
-
-                if (ConvertToString)
-                {
-                    string access_string = NtSecurity.AccessMaskToString(mask, type.AccessRightsType, type.GenericMapping, false);
-                    WriteObject(access_string);
+                    results.AddRange(NtSecurity.AccessCheckWithResultList(GetSecurityDescriptor(),
+                    token, GetDesiredAccess(), Principal, type.GenericMapping, object_types).Select(r => r.ToSpecificAccess(type.AccessRightsType)));
                 }
                 else
                 {
-                    WriteObject(mask);
+                    results.Add(NtSecurity.AccessCheck(GetSecurityDescriptor(),
+                    token, GetDesiredAccess(), Principal, type.GenericMapping, object_types).ToSpecificAccess(type.AccessRightsType));
+                }
+
+
+                if (PassResult)
+                {
+                    WriteObject(results, true);
+                    return;
+                }
+
+                var masks = results.Select(r =>  MapToGeneric ? r.SpecificGenericGrantedAccess : r.SpecificGrantedAccess);
+                if (ConvertToString)
+                {
+                    WriteObject(masks.Select(m => NtSecurity.AccessMaskToString(m, type.AccessRightsType, type.GenericMapping, false)), true);
+                }
+                else
+                {
+                    WriteObject(masks, true);
                 }
             }
         }
