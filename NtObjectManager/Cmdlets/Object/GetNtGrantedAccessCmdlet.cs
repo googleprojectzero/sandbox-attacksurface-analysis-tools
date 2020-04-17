@@ -39,13 +39,16 @@ namespace NtObjectManager.Cmdlets.Object
     ///   <code>Get-NtGrantedAccess -Object $obj</code>
     ///   <para>Get the maximum access for a security descriptor for an object.</para>
     /// </example>
-    [Cmdlet(VerbsCommon.Get, "NtGrantedAccess")]
-    public class GetNtGrantedAccessCmdlet : Cmdlet
+    [Cmdlet(VerbsCommon.Get, "NtGrantedAccess", DefaultParameterSetName = "sd")]
+    public class GetNtGrantedAccessCmdlet : PSCmdlet, IDynamicParameters
     {
+        private RuntimeDefinedParameterDictionary _dict;
+
         /// <summary>
         /// <para type="description">Specify a security descriptor.</para>
         /// </summary>
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "sd")]
+        [SecurityDescriptorTransform]
         public SecurityDescriptor SecurityDescriptor { get; set; }
 
         /// <summary>
@@ -57,20 +60,16 @@ namespace NtObjectManager.Cmdlets.Object
         /// <summary>
         /// <para type="description">Specify the NT type for the access check.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "sd"), Parameter(Mandatory = true, ParameterSetName = "sddl"), ArgumentCompleter(typeof(NtTypeArgumentCompleter))]
+        [Parameter(ParameterSetName = "sd"), 
+            Parameter(Mandatory = true, ParameterSetName = "sddl"), 
+            ArgumentCompleter(typeof(NtTypeArgumentCompleter))]
         public NtType Type { get; set; }
 
         /// <summary>
         /// <para type="description">Specify an access mask to check against. Overrides GenericAccess.</para>
         /// </summary>
         [Parameter]
-        public AccessMask? AccessMask { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify the generic access mask to check against.</para>
-        /// </summary>
-        [Parameter]
-        public GenericAccessRights GenericAccess { get; set; }
+        public AccessMask? RawAccess { get; set; }
 
         /// <summary>
         /// <para type="description">Specify a kernel object to get security descriptor from.</para>
@@ -120,22 +119,20 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter]
         public ObjectTypeTree ObjectType { get; set; }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public GetNtGrantedAccessCmdlet()
-        {
-            GenericAccess = GenericAccessRights.MaximumAllowed;
-        }
-
         private AccessMask GetDesiredAccess()
         {
             NtType type = GetNtType();
-            if (AccessMask.HasValue)
+            if (RawAccess.HasValue)
             {
-                return type.MapGenericRights(AccessMask.Value);
+                return type.MapGenericRights(RawAccess.Value);
             }
-            return type.MapGenericRights(GenericAccess);
+
+            if (!_dict.GetValue("Access", out Enum access))
+            {
+                return GenericAccessRights.MaximumAllowed;
+            }
+
+            return type.MapGenericRights(access);
         }
 
         private SecurityDescriptor GetSecurityDescriptor()
@@ -150,7 +147,7 @@ namespace NtObjectManager.Cmdlets.Object
             }
             else
             {
-                return Object.SecurityDescriptor;
+                return Object?.GetSecurityDescriptor(SecurityInformation.AllNoSacl);
             }
         }
 
@@ -165,8 +162,7 @@ namespace NtObjectManager.Cmdlets.Object
             {
                 type = GetSecurityDescriptor()?.NtType;
             }
-            if (type == null)
-                throw new ArgumentException("Must specify a type.");
+            
             return type;
         }
 
@@ -195,10 +191,10 @@ namespace NtObjectManager.Cmdlets.Object
             using (NtToken token = GetToken())
             {
                 NtType type = GetNtType();
+                if (type == null)
+                    throw new ArgumentException("Must specify a Type.");
                 var object_types = ObjectType?.ToArray();
                 var results = new List<AccessCheckResultGeneric>();
-                // If we have multiple object types and pass result is true then
-                // we don't support any another output format.
                 if (ResultList)
                 {
                     results.AddRange(NtSecurity.AccessCheckWithResultList(GetSecurityDescriptor(),
@@ -209,7 +205,6 @@ namespace NtObjectManager.Cmdlets.Object
                     results.Add(NtSecurity.AccessCheck(GetSecurityDescriptor(),
                     token, GetDesiredAccess(), Principal, type.GenericMapping, object_types).ToSpecificAccess(type.AccessRightsType));
                 }
-
 
                 if (PassResult)
                 {
@@ -227,6 +222,15 @@ namespace NtObjectManager.Cmdlets.Object
                     WriteObject(masks, true);
                 }
             }
+        }
+
+        object IDynamicParameters.GetDynamicParameters()
+        {
+            _dict = new RuntimeDefinedParameterDictionary();
+            Type access_type = GetNtType()?.AccessRightsType ?? typeof(GenericAccessRights);
+            _dict.AddDynamicParameter("Access", access_type, false);
+
+            return _dict;
         }
     }
 }
