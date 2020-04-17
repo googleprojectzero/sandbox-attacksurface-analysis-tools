@@ -2175,6 +2175,8 @@ function Format-NtSecurityDescriptor {
         [switch]$Container,
         [Parameter(Position = 0, ParameterSetName = "FromPath", Mandatory, ValueFromPipeline)]
         [string]$Path,
+        [parameter(ParameterSetName = "FromPath")]
+        [NtApiDotNet.NtObject]$Root,
         [NtApiDotNet.SecurityInformation]$SecurityInformation = "AllBasic",
         [switch]$MapGeneric,
         [switch]$ToSddl,
@@ -2198,7 +2200,7 @@ function Format-NtSecurityDescriptor {
                 }
                 "FromPath" {
                     $access = Get-NtAccessMask -SecurityInformation $SecurityInformation -ToGenericAccess
-                    Use-NtObject($obj = Get-NtObject -Path $Path -Access $access) {
+                    Use-NtObject($obj = Get-NtObject -Path $Path -Root $Root -Access $access) {
                         ($obj.GetSecurityDescriptor($SecurityInformation), $obj.NtType, $obj.FullPath)
                     }
                 }
@@ -2863,6 +2865,8 @@ Specify the address in the process to read the security descriptor.
 Specify an object path to get the security descriptor from.
 .PARAMETER TypeName
 Specify the type name of the object at Path. Needed if the module cannot automatically determine the NT type to open.
+.PARAMETER Root
+Specify a root object for Path.
 .INPUTS
 NtApiDotNet.NtObject[]
 .OUTPUTS
@@ -2908,6 +2912,8 @@ function Get-NtSecurityDescriptor {
         [string]$Path,
         [parameter(ParameterSetName = "FromPath")]
         [string]$TypeName,
+        [parameter(ParameterSetName = "FromPath")]
+        [NtApiDotNet.NtObject]$Root,
         [parameter(Mandatory, ParameterSetName = "FromPid")]
         [alias("pid")]
         [int]$ProcessId,
@@ -2926,7 +2932,7 @@ function Get-NtSecurityDescriptor {
             }
             "FromPath" {
                 $mask = Get-NtAccessMask -SecurityInformation $SecurityInformation -ToGenericAccess
-                Use-NtObject($obj = Get-NtObject -Path $Path -TypeName $TypeName -Access $mask) {
+                Use-NtObject($obj = Get-NtObject -Path $Path -Root $Root -TypeName $TypeName -Access $mask) {
                     $obj.GetSecurityDescriptor($SecurityInformation)
                 }
             }
@@ -2963,6 +2969,8 @@ The object to set the security descriptor to.
 The security information to set obj the object.
 .PARAMETER Path
 Specify an object path to set the security descriptor to.
+.PARAMETER Root
+Specify a root object for Path.
 .PARAMETER TypeName
 Specify the type name of the object at Path. Needed if the module cannot automatically determine the NT type to open.
 .PARAMETER SecurityDescriptor
@@ -2985,6 +2993,8 @@ function Set-NtSecurityDescriptor {
         [NtApiDotNet.NtObject]$Object,
         [parameter(Mandatory, Position = 0, ParameterSetName = "ToPath")]
         [string]$Path,
+        [parameter(ParameterSetName = "ToPath")]
+        [NtApiDotNet.NtObject]$Root,
         [parameter(Mandatory, Position = 1)]
         [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
         [parameter(Mandatory, Position = 2)]
@@ -3007,7 +3017,7 @@ function Set-NtSecurityDescriptor {
                     $access = $access -bor "AccessSystemSecurity"
                 }
 
-                Use-NtObject($obj = Get-NtObject -Path $Path -TypeName $TypeName -Access $access) {
+                Use-NtObject($obj = Get-NtObject -Path $Path -Root $Root -TypeName $TypeName -Access $access) {
                     $obj.SetSecurityDescriptor($SecurityDescriptor, $SecurityInformation)
                 }
             }
@@ -8131,3 +8141,51 @@ function Get-CentralAccessPolicy {
     }
 }
 
+<#
+.SYNOPSIS
+Test if an object can be opened.
+.DESCRIPTION
+This cmdlet tests if an object exists by opening it. This might give false negatives
+if the reason for not opening it was unrelated to it not existing.
+.PARAMETER Path
+Specify an object path to get the security descriptor from.
+.PARAMETER TypeName
+Specify the type name of the object at Path. Needed if the module cannot automatically determine the NT type to open.
+.PARAMETER Root
+Specify a root object for Path.
+.INPUTS
+None
+.OUTPUTS
+Boolean
+.EXAMPLE
+Test-NtObject \BaseNamedObjects\ABC
+Test if \BaseNamedObjects\ABC can be opened.
+.EXAMPLE
+Test-NtObject ABC -Root $dir
+Test if ABC can be opened relative to $dir.
+.EXAMPLE
+Test-NtObject \BaseNamedObjects\ABC -TypeName Mutant.
+Test if \BaseNamedObjects\ABC can be opened with a File type.
+#>
+function Test-NtObject {
+    [CmdletBinding(DefaultParameterSetName = "FromPath")]
+    param (
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromPath")]
+        [string]$Path,
+        [parameter(ParameterSetName = "FromPath")]
+        [string]$TypeName,
+        [parameter(ParameterSetName = "FromPath")]
+        [NtApiDotNet.NtObject]$Root
+    )
+    switch ($PsCmdlet.ParameterSetName) {
+        "FromPath" {
+            try {
+                Use-NtObject($obj = Get-NtObject -Path $Path -Root $Root -TypeName $TypeName) { }
+                return $true
+            } 
+            catch {
+                return $false
+            }
+        }
+    }
+}
