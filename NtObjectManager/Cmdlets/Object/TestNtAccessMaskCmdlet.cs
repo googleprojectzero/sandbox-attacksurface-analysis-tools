@@ -72,6 +72,12 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter(Mandatory = true, ParameterSetName = "AccessEmpty")]
         public SwitchParameter Empty { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify the GenericMapping to check if Access Mask would be Write Restricted.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "WriteRestricted")]
+        public GenericMapping WriteRestricted { get; set; }
+
         private AccessMask GetAccessMask()
         {
             if (ParameterSetName == "RawAccessCompare")
@@ -89,6 +95,12 @@ namespace NtObjectManager.Cmdlets.Object
             if (Empty)
             {
                 WriteObject(AccessMask.IsEmpty);
+            }
+            else if (ParameterSetName == "WriteRestricted")
+            {
+                GenericMapping std_map = NtSecurity.StandardAccessMapping;
+                WriteObject((std_map.GenericWrite & ~(std_map.GenericRead | std_map.GenericExecute)
+                    | WriteRestricted.GenericWrite & ~(WriteRestricted.GenericRead | WriteRestricted.GenericExecute)).IsEmpty);
             }
             else if (All)
             {

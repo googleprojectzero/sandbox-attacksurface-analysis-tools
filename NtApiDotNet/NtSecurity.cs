@@ -1530,6 +1530,19 @@ namespace NtApiDotNet
 
         #endregion
 
+        #region Static Properties
+        /// <summary>
+        /// Get GenericMapping for standard access rights.
+        /// </summary>
+        public static GenericMapping StandardAccessMapping => new GenericMapping()
+                                                                    {
+                                                                        GenericRead = 0x20000,
+                                                                        GenericWrite = 0x10D0000,
+                                                                        GenericExecute = 0x100000,
+                                                                        GenericAll = 0x11F0000,
+                                                                    };
+        #endregion
+
         #region Private Members
 
         private static Dictionary<Sid, string> _known_capabilities = null;
