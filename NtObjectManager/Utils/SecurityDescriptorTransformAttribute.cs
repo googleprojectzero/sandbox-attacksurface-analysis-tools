@@ -23,8 +23,12 @@ namespace NtObjectManager.Utils
         {
         }
 
-        protected override object DefaultValue()
+        protected override object DefaultValue(object obj)
         {
+            if (obj is SecurityDescriptor sd)
+            {
+                return sd;
+            }
             return new SecurityDescriptor();
         }
 

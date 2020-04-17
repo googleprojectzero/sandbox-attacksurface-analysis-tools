@@ -21,7 +21,7 @@ namespace NtObjectManager.Utils
     abstract class BaseTransformAttribute : ArgumentTransformationAttribute
     {
         protected abstract NtResult<object> Parse(string value, bool throw_on_error);
-        protected abstract object DefaultValue();
+        protected abstract object DefaultValue(object obj);
         private Type _type;
 
         protected BaseTransformAttribute(Type type)
@@ -55,7 +55,7 @@ namespace NtObjectManager.Utils
                 }
             }
 
-            return DefaultValue();
+            return DefaultValue(inputData);
         }
     }
 }
