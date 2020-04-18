@@ -185,7 +185,7 @@ namespace NtApiDotNet
         VirtualizeEnabled = 0x400,
         IsFiltered = 0x800,
         UiAccess = 0x1000,
-        NoLow = 0x2000,
+        NotLow = 0x2000,
         LowBox = 0x4000,
         HasOwnClaimAttributes = 0x8000,
         PrivateNamespace = 0x10000,
