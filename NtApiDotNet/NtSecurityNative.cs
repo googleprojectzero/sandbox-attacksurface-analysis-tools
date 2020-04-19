@@ -300,7 +300,8 @@ namespace NtApiDotNet
         Capability,
         Package,
         ProcessTrust,
-        WellKnown
+        WellKnown,
+        ScopedPolicyId
     }
 
     /// <summary>

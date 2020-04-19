@@ -85,6 +85,15 @@ namespace NtApiDotNet
             return matches.Groups[1].Value;
         }
 
+        /// <summary>
+        /// Converts the attribute to a Resource Attribute ACE.
+        /// </summary>
+        /// <returns>The resource attribute ACE.</returns>
+        public Ace ToAce()
+        {
+            return new Ace(AceType.ResourceAttribute, 0, 0, KnownSids.World) { ResourceAttribute = this };
+        }
+
         #endregion
 
         #region Constructors

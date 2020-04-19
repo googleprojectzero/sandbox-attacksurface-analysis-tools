@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using NtApiDotNet.Security.Policy;
 using NtApiDotNet.Win32;
 using NtApiDotNet.Win32.SafeHandles;
 using System;
@@ -941,6 +942,16 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Checks if a SID is a Scoped Policy ID SID.
+        /// </summary>
+        /// <param name="sid">The SID to check.</param>
+        /// <returns>True if a Scoped Policy ID SID.</returns>
+        public static bool IsScopedPolicySid(Sid sid)
+        {
+            return sid.Authority.IsAuthority(SecurityAuthority.ScopedPolicyId);
+        }
+
+        /// <summary>
         /// Converts conditional ACE data to an SDDL string
         /// </summary>
         /// <param name="conditional_data">The conditional application data.</param>
@@ -995,17 +1006,50 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="token">The Token to check against.</param>
         /// <param name="condition_sddl">The conditional expression in SDDL format.</param>
+        /// <param name="resource_attributes">Specify resource attributes to add to the check.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>True if the conditional expression was a success.</returns>
-        public static NtResult<bool> EvaluateConditionAce(NtToken token, string condition_sddl, bool throw_on_error)
+        public static NtResult<bool> EvaluateConditionAce(NtToken token, string condition_sddl, IEnumerable<ClaimSecurityAttribute> resource_attributes, bool throw_on_error)
         {
             var sd = SecurityDescriptor.Parse($"O:S-1-0-0G:S-1-0-0D:(XA;;1;;;{token.User.Sid};({condition_sddl}))S:(ML;;NW;;;S-1-16-0)", throw_on_error);
             if (!sd.IsSuccess)
             {
                 return sd.Cast<bool>();
             }
+
+            if (resource_attributes?.Any() ?? false)
+            {
+                sd.Result.Sacl.AddRange(resource_attributes.Select(r => r.ToAce()));
+            }
+
             return EvaluateConditionAce(token, sd.Result, throw_on_error);
         }
+
+        /// <summary>
+        /// Evaluate a condition ACE expression.
+        /// </summary>
+        /// <param name="token">The Token to check against.</param>
+        /// <param name="condition_sddl">The conditional expression in SDDL format.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True if the conditional expression was a success.</returns>
+        public static NtResult<bool> EvaluateConditionAce(NtToken token, string condition_sddl, bool throw_on_error)
+        {
+            return EvaluateConditionAce(token, condition_sddl, new ClaimSecurityAttribute[0], throw_on_error);
+        }
+
+        /// <summary>
+        /// Evaluate a condition ACE expression.
+        /// </summary>
+        /// <param name="token">The Token to check against.</param>
+        /// <param name="condition_sddl">The conditional expression in SDDL format.</param>
+        /// <param name="resource_attributes">Specify resource attributes to add to the check.</param>
+        /// <returns>True if the conditional expression was a success.</returns>
+        public static bool EvaluateConditionAce(NtToken token, string condition_sddl, 
+            IEnumerable<ClaimSecurityAttribute> resource_attributes)
+        {
+            return EvaluateConditionAce(token, condition_sddl, resource_attributes, true).Result;
+        }
+
 
         /// <summary>
         /// Evaluate a condition ACE expression.
@@ -1023,9 +1067,11 @@ namespace NtApiDotNet
         /// </summary>
         /// <param name="token">The Token to check against.</param>
         /// <param name="condition_data">The conditional expression in binary format.</param>
+        /// <param name="resource_attributes">Specify resource attributes to add to the check.</param>
         /// <param name="throw_on_error">True to throw on error.</param>
         /// <returns>True if the conditional expression was a success.</returns>
-        public static NtResult<bool> EvaluateConditionAce(NtToken token, byte[] condition_data, bool throw_on_error)
+        public static NtResult<bool> EvaluateConditionAce(NtToken token, byte[] condition_data, 
+            IEnumerable<ClaimSecurityAttribute> resource_attributes, bool throw_on_error)
         {
             SecurityDescriptor sd = new SecurityDescriptor
             {
@@ -1036,10 +1082,40 @@ namespace NtApiDotNet
                     NullAcl = false
                 }
             };
-            sd.Dacl.Add(new Ace(AceType.AllowedCallback, 
-                AceFlags.None, 1, token.User.Sid) { ApplicationData = condition_data });
+            sd.Dacl.Add(new Ace(AceType.AllowedCallback,
+                AceFlags.None, 1, token.User.Sid)
+            { ApplicationData = condition_data });
             sd.AddMandatoryLabel(TokenIntegrityLevel.Untrusted);
+            if (resource_attributes?.Any() ?? false)
+            {
+                sd.Sacl.AddRange(resource_attributes
+                    .Select(r => r.ToAce()));
+            }
             return EvaluateConditionAce(token, sd, throw_on_error);
+        }
+
+        /// <summary>
+        /// Evaluate a condition ACE expression.
+        /// </summary>
+        /// <param name="token">The Token to check against.</param>
+        /// <param name="condition_data">The conditional expression in binary format.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>True if the conditional expression was a success.</returns>
+        public static NtResult<bool> EvaluateConditionAce(NtToken token, byte[] condition_data, bool throw_on_error)
+        {
+            return EvaluateConditionAce(token, condition_data, new ClaimSecurityAttribute[0], throw_on_error);
+        }
+
+        /// <summary>
+        /// Evaluate a condition ACE expression.
+        /// </summary>
+        /// <param name="token">The Token to check against.</param>
+        /// <param name="condition_data">The conditional expression in binary format.</param>
+        /// <param name="resource_attributes">Specify resource attributes to add to the check.</param>
+        /// <returns>True if the conditional expression was a success.</returns>
+        public static bool EvaluateConditionAce(NtToken token, byte[] condition_data, IEnumerable<ClaimSecurityAttribute> resource_attributes)
+        {
+            return EvaluateConditionAce(token, condition_data, resource_attributes, true).Result;
         }
 
         /// <summary>
@@ -1757,6 +1833,20 @@ namespace NtApiDotNet
             else if (IsUmdfSid(sid))
             {
                 return new SidName($@"Font Driver Host\UMFD-{sid.SubAuthorities.Last()}", SidNameSource.WellKnown);
+            }
+            else if (IsScopedPolicySid(sid))
+            {
+                var caps = CentralAccessPolicy.ParseFromRegistry(false);
+                if (caps.IsSuccess)
+                {
+                    foreach (var cap in caps.Result)
+                    {
+                        if (cap.CapId == sid)
+                        {
+                            return new SidName($@"CAP\{cap.Name}", SidNameSource.ScopedPolicyId);
+                        }
+                    }
+                }
             }
 
             // If lookup was denied then try and request next time.

@@ -69,8 +69,16 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter(Position = 0, Mandatory = true, ParameterSetName = "FromAce")]
         public Ace Ace { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify a list of resource attributes.</para>
+        /// </summary>
+        [Parameter]
+        public ClaimSecurityAttribute[] ResourceAttribute { get; set; }
+
         private NtToken GetToken()
         {
+            if (Token?.IsPseudoToken ?? false)
+                return Token;
             return Token?.Duplicate() ?? NtToken.OpenEffectiveToken();
         }
 
@@ -81,18 +89,19 @@ namespace NtObjectManager.Cmdlets.Object
         {
             using (var token = GetToken())
             {
+                var attributes = ResourceAttribute ?? new ClaimSecurityAttribute[0];
                 switch (ParameterSetName)
                 {
                     case "FromSddl":
-                        WriteObject(NtSecurity.EvaluateConditionAce(token, Condition));
+                        WriteObject(NtSecurity.EvaluateConditionAce(token, Condition, attributes));
                         break;
                     case "FromData":
-                        WriteObject(NtSecurity.EvaluateConditionAce(token, ConditionData));
+                        WriteObject(NtSecurity.EvaluateConditionAce(token, ConditionData, attributes));
                         break;
                     case "FromAce":
                         if (!Ace.IsConditionalAce)
                             throw new ArgumentException("Must specify a conditional ACE.");
-                        WriteObject(NtSecurity.EvaluateConditionAce(token, Ace.ApplicationData));
+                        WriteObject(NtSecurity.EvaluateConditionAce(token, Ace.ApplicationData, attributes));
                         break;
                 }
             }
