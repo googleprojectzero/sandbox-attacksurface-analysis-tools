@@ -247,6 +247,11 @@ namespace NtObjectManager.Cmdlets.Object
                 access_mandatory = false;
             }
 
+            if (Type == AceType.ScopedPolicyId)
+            {
+                access_mandatory = false;
+            }
+
             Type access_type = SecurityDescriptor?.AccessRightsType ?? typeof(GenericAccessRights);
             if (Type == AceType.MandatoryLabel)
             {
