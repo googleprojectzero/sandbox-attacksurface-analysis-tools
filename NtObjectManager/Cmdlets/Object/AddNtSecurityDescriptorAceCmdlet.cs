@@ -143,7 +143,7 @@ namespace NtObjectManager.Cmdlets.Object
         {
             if (!_dict.GetValue("Access", out Enum access))
             {
-                if (!RawAccess.HasValue)
+                if (!RawAccess.HasValue && RequiresAccess(Type))
                 {
                     throw new ArgumentException("Invalid access value.");
                 }
@@ -244,12 +244,6 @@ namespace NtObjectManager.Cmdlets.Object
             if (Type == AceType.ResourceAttribute)
             {
                 _dict.AddDynamicParameter("SecurityAttribute", typeof(ClaimSecurityAttribute), true);
-                access_mandatory = false;
-            }
-
-            if (Type == AceType.ScopedPolicyId)
-            {
-                access_mandatory = false;
             }
 
             Type access_type = SecurityDescriptor?.AccessRightsType ?? typeof(GenericAccessRights);
@@ -257,9 +251,20 @@ namespace NtObjectManager.Cmdlets.Object
             {
                 access_type = typeof(MandatoryLabelPolicy);
             }
-            _dict.AddDynamicParameter("Access", access_type, access_mandatory, 2);
+            _dict.AddDynamicParameter("Access", access_type, !RawAccess.HasValue && RequiresAccess(Type), 2);
 
             return _dict;
+        }
+
+        private static bool RequiresAccess(AceType type)
+        {
+            switch (type)
+            {
+                case AceType.ScopedPolicyId:
+                case AceType.ResourceAttribute:
+                    return false;
+            }
+            return true;
         }
     }
 }
