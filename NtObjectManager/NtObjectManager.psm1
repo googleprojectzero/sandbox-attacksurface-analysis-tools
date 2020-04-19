@@ -657,6 +657,43 @@ function Set-NtTokenIntegrityLevel {
 
 <#
 .SYNOPSIS
+Get the integrity level of a token.
+.DESCRIPTION
+This cmdlet will gets the integrity level of a token.
+.PARAMETER Token
+Optional token object to use to get integrity level. Must be accesible for Query right.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.TokenIntegrityLevel
+.EXAMPLE
+Get-NtTokenIntegrityLevel
+Get the current token's integrity level.
+.EXAMPLE
+Get-NtTokenIntegrityLevel -Token $Token
+Get a specific token's integrity level.
+#>
+function Get-NtTokenIntegrityLevel {
+    [CmdletBinding(DefaultParameterSetName = "FromIL")]
+    Param(
+        [Parameter(Position = 0)]
+        [NtApiDotNet.NtToken]$Token
+    )
+
+    if ($null -eq $Token) {
+        $Token = Get-NtToken -Effective
+    }
+    else {
+        $Token = $Token.Duplicate()
+    }
+
+    Use-NtObject($Token) {
+        $Token.IntegrityLevel | Write-Output
+    }
+}
+
+<#
+.SYNOPSIS
 Create a kernel crash dump.
 .DESCRIPTION
 This cmdlet will use the NtSystemDebugControl API to create a system kernel crash dump with specified options.
