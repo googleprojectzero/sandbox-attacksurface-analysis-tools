@@ -23,6 +23,17 @@ namespace NtApiDotNet
     public class Ace
     {
         #region Public Properties
+
+        /// <summary>
+        /// Check if the ACE is an allowed ACE.
+        /// </summary>
+        public bool IsAllowedAce => NtSecurity.IsAllowedAceType(Type);
+
+        /// <summary>
+        /// Check if the ACE is a denied ACE.
+        /// </summary>
+        public bool IsDeniedAce => NtSecurity.IsDeniedAceType(Type);
+
         /// <summary>
         /// Check if the ACE is an Object ACE
         /// </summary>

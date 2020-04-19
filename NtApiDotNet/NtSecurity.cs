@@ -1340,10 +1340,47 @@ namespace NtApiDotNet
         }
 
         /// <summary>
+        /// Get whether an ACE type is an allowed ACE type.
+        /// </summary>
+        /// <param name="type">The ACE type.</param>
+        /// <returns>True if an allowed ACE type.</returns>
+        public static bool IsAllowedAceType(AceType type)
+        {
+            switch (type)
+            {
+                case AceType.Allowed:
+                case AceType.AllowedCallback:
+                case AceType.AllowedCallbackObject:
+                case AceType.AllowedCompound:
+                case AceType.AllowedObject:
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Get whether an ACE type is a denied ACE type.
+        /// </summary>
+        /// <param name="type">The ACE type.</param>
+        /// <returns>True if a denied ACE type.</returns>
+        public static bool IsDeniedAceType(AceType type)
+        {
+            switch (type)
+            {
+                case AceType.Denied:
+                case AceType.DeniedCallback:
+                case AceType.DeniedCallbackObject:
+                case AceType.DeniedObject:
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Get whether an ACE type is an object ACE type.
         /// </summary>
         /// <param name="type">The ACE type.</param>
-        /// <returns>True if a object ACE type.</returns>
+        /// <returns>True if an object ACE type.</returns>
         public static bool IsObjectAceType(AceType type)
         {
             switch (type)
