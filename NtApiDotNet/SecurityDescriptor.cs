@@ -623,9 +623,9 @@ namespace NtApiDotNet
         public IEnumerable<Ace> ResourceAttributes => FindAllSaclAce(AceType.ResourceAttribute, false);
 
         /// <summary>
-        /// Get list of scoped policy IDs.
+        /// Get the scoped policy ID.
         /// </summary>
-        public IEnumerable<Ace> ScopedPolicyIds => FindAllSaclAce(AceType.ScopedPolicyId, false);
+        public Ace ScopedPolicyId => FindSaclAce(AceType.ScopedPolicyId, false);
 
         /// <summary>
         /// Get or set the integrity level
