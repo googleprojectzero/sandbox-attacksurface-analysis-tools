@@ -50,13 +50,27 @@ namespace NtObjectManager.Cmdlets.Object
         /// </summary>
         [Parameter(Mandatory = true, Position = 1, ParameterSetName = "FromToken")]
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromAnonymous")]
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "FromCurrent")]
         public ScriptBlock Script { get; set; }
+
+        /// <summary>
+        /// <para type="description">Specify to impersonate the current Token.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "FromCurrent")]
+        public SwitchParameter Current { get; set; }
 
         /// <summary>
         /// <para type="description">When the token is duplicated specify the impersonation level to use.</para>
         /// </summary>
         [Parameter(Position = 2, ParameterSetName = "FromToken")]
+        [Parameter(ParameterSetName = "FromCurrent")]
         public SecurityImpersonationLevel ImpersonationLevel { get; set; }
+
+        /// <summary>
+        /// <para type="description">When the token is duplicated specify an Integrity Level to use.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "FromCurrent")]
+        public TokenIntegrityLevel? IntegrityLevel { get; set; }
 
         /// <summary>
         /// <para type="description">Impersonate the anonymous token and run the script.</para>
@@ -78,6 +92,21 @@ namespace NtObjectManager.Cmdlets.Object
             ImpersonationLevel = SecurityImpersonationLevel.Impersonation;
         }
 
+        private NtToken GetCurrentToken()
+        {
+            using (var token = NtToken.OpenProcessToken())
+            {
+                using (var new_token = token.DuplicateToken(ImpersonationLevel))
+                {
+                    if (IntegrityLevel.HasValue)
+                    {
+                        new_token.SetIntegrityLevel(IntegrityLevel.Value);
+                    }
+                    return new_token.Duplicate();
+                }
+            }
+        }
+
         /// <summary>
         /// Overridden ProcessRecord method.
         /// </summary>
@@ -92,6 +121,13 @@ namespace NtObjectManager.Cmdlets.Object
                 }
 
                 obj = Token.RunUnderImpersonate(() => PSUtils.InvokeWithArg(Script, InputObject), ImpersonationLevel);
+            }
+            else if (ParameterSetName == "FromCurrent")
+            {
+                using (var token = GetCurrentToken())
+                {
+                    obj = token.RunUnderImpersonate(() => PSUtils.InvokeWithArg(Script, InputObject), ImpersonationLevel);
+                }
             }
             else
             {
