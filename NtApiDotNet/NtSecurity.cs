@@ -845,16 +845,46 @@ namespace NtApiDotNet
         /// Get a capability sid by name.
         /// </summary>
         /// <param name="capability_name">The name of the capability.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The capability SID.</returns>
+        public static NtResult<Sid> GetCapabilitySid(string capability_name, bool throw_on_error)
+        {
+            using (SafeHGlobalBuffer cap_sid = new SafeHGlobalBuffer(Sid.MaximumSidSize),
+                cap_group_sid = new SafeHGlobalBuffer(Sid.MaximumSidSize))
+            {
+                return NtRtl.RtlDeriveCapabilitySidsFromName(
+                    new UnicodeString(capability_name),
+                    cap_group_sid, cap_sid)
+                    .CreateResult(throw_on_error, () 
+                    => CacheSidName(new Sid(cap_sid), capability_name, SidNameSource.Capability));
+            }
+        }
+
+        /// <summary>
+        /// Get a capability sid by name.
+        /// </summary>
+        /// <param name="capability_name">The name of the capability.</param>
         /// <returns>The capability SID.</returns>
         public static Sid GetCapabilitySid(string capability_name)
         {
-            using (SafeHGlobalBuffer cap_sid = new SafeHGlobalBuffer(Sid.MaximumSidSize), 
+            return GetCapabilitySid(capability_name, true).Result;
+        }
+
+        /// <summary>
+        /// Get a capability group sid by name.
+        /// </summary>
+        /// <param name="capability_name">The name of the capability.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The capability SID.</returns>
+        public static NtResult<Sid> GetCapabilityGroupSid(string capability_name, bool throw_on_error)
+        {
+            using (SafeHGlobalBuffer cap_sid = new SafeHGlobalBuffer(Sid.MaximumSidSize),
                 cap_group_sid = new SafeHGlobalBuffer(Sid.MaximumSidSize))
             {
-                NtRtl.RtlDeriveCapabilitySidsFromName(
+                return NtRtl.RtlDeriveCapabilitySidsFromName(
                     new UnicodeString(capability_name),
-                    cap_group_sid, cap_sid).ToNtException();
-                return new Sid(cap_sid);
+                    cap_group_sid, cap_sid).CreateResult(throw_on_error, 
+                    () => CacheSidName(new Sid(cap_group_sid), capability_name, SidNameSource.Capability));
             }
         }
 
@@ -865,14 +895,7 @@ namespace NtApiDotNet
         /// <returns>The capability SID.</returns>
         public static Sid GetCapabilityGroupSid(string capability_name)
         {
-            using (SafeHGlobalBuffer cap_sid = new SafeHGlobalBuffer(Sid.MaximumSidSize),
-                cap_group_sid = new SafeHGlobalBuffer(Sid.MaximumSidSize))
-            {
-                NtRtl.RtlDeriveCapabilitySidsFromName(
-                    new UnicodeString(capability_name),
-                    cap_group_sid, cap_sid).ToNtException();
-                return new Sid(cap_group_sid);
-            }
+            return GetCapabilityGroupSid(capability_name, true).Result;
         }
 
         /// <summary>
@@ -1575,9 +1598,10 @@ namespace NtApiDotNet
         #endregion
 
         #region Internal Members
-        internal static void CacheSidName(Sid sid, string name, SidNameSource source)
+        internal static Sid CacheSidName(Sid sid, string name, SidNameSource source)
         {
             _cached_names.TryAdd(sid, new SidName(name, source));
+            return sid;
         }
         #endregion
 
