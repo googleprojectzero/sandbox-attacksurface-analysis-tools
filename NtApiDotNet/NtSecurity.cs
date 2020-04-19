@@ -153,28 +153,22 @@ namespace NtApiDotNet
             }
 
             string ret = null;
-            try
+            using (var key = NtKey.GetCurrentUserKey(false))
             {
-                using (NtKey key = NtKey.GetCurrentUserKey())
+                if (key.IsSuccess)
                 {
-                    ret = ReadMoniker(key, sid);
+                    ret = ReadMoniker(key.Result, sid);
                 }
             }
-            catch (NtException)
-            {
-            }
-
+            
             if (ret == null)
             {
-                try
+                using (var key = NtKey.GetMachineKey(false))
                 {
-                    using (NtKey key = NtKey.GetMachineKey())
+                    if (key.IsSuccess)
                     {
-                        ret = ReadMoniker(key, sid);
+                        ret = ReadMoniker(key.Result, sid);
                     }
-                }
-                catch (NtException)
-                {
                 }
             }
 
@@ -1580,6 +1574,13 @@ namespace NtApiDotNet
                                                                     };
         #endregion
 
+        #region Internal Members
+        internal static void CacheSidName(Sid sid, string name, SidNameSource source)
+        {
+            _cached_names.TryAdd(sid, new SidName(name, source));
+        }
+        #endregion
+
         #region Private Members
 
         private static Dictionary<Sid, string> _known_capabilities = null;
@@ -1734,7 +1735,7 @@ namespace NtApiDotNet
                 return new SidName($@"Font Driver Host\UMFD-{sid.SubAuthorities.Last()}", SidNameSource.WellKnown);
             }
 
-            // If lookup was denied then try and requery next time.
+            // If lookup was denied then try and request next time.
             return new SidName(sid.ToString(), SidNameSource.Sddl, lookup_denied);
         }
 

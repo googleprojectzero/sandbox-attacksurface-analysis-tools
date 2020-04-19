@@ -312,6 +312,7 @@ namespace NtApiDotNet
         /// The name of the SID.
         /// </summary>
         public string Name { get; }
+
         /// <summary>
         /// The source of name.
         /// </summary>

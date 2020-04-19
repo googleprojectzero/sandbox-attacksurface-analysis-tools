@@ -193,7 +193,9 @@ namespace NtApiDotNet.Win32
             {
                 using (sid)
                 {
-                    return new Sid(sid).CreateResult();
+                    Sid result = new Sid(sid);
+                    NtSecurity.CacheSidName(result, name, SidNameSource.Package);
+                    return result.CreateResult();
                 }
             }
 
@@ -207,15 +209,32 @@ namespace NtApiDotNet.Win32
         /// <returns>The derived Sid</returns>
         public static Sid DerivePackageSidFromName(string name)
         {
-            int hr = Win32NativeMethods.DeriveAppContainerSidFromAppContainerName(name, out SafeSidBufferHandle sid);
-            if (hr != 0)
-            {
-                Marshal.ThrowExceptionForHR(hr);
-            }
+            return DerivePackageSidFromName(name, true).Result;
+        }
 
-            using (sid)
+        /// <summary>
+        /// Derive a restricted package sid from an existing pacakge sid.
+        /// </summary>
+        /// <param name="package_sid">The base package sid.</param>
+        /// <param name="restricted_name">The restricted name for the sid.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The derived Sid.</returns>
+        public static NtResult<Sid> DeriveRestrictedPackageSidFromSid(Sid package_sid, string restricted_name, bool throw_on_error)
+        {
+            using (var sid_buf = package_sid.ToSafeBuffer())
             {
-                return new Sid(sid);
+                int hr = Win32NativeMethods.DeriveRestrictedAppContainerSidFromAppContainerSidAndRestrictedName(sid_buf,
+                    restricted_name, out SafeSidBufferHandle sid);
+                if (hr == 0)
+                {
+                    using (sid)
+                    {
+                        Sid result = new Sid(sid);
+                        NtSecurity.CacheSidName(result, $"{package_sid.Name}/{restricted_name}", SidNameSource.Package);
+                        return result.CreateResult();
+                    }
+                }
+                return ((NtStatus)hr).CreateResultFromError<Sid>(throw_on_error);
             }
         }
 
@@ -227,23 +246,11 @@ namespace NtApiDotNet.Win32
         /// <returns>The derived Sid.</returns>
         public static Sid DeriveRestrictedPackageSidFromSid(Sid package_sid, string restricted_name)
         {
-            using (var sid_buf = package_sid.ToSafeBuffer())
-            {
-                int hr = Win32NativeMethods.DeriveRestrictedAppContainerSidFromAppContainerSidAndRestrictedName(sid_buf, restricted_name, out SafeSidBufferHandle sid);
-                if (hr != 0)
-                {
-                    Marshal.ThrowExceptionForHR(hr);
-                }
-
-                using (sid)
-                {
-                    return new Sid(sid);
-                }
-            }
+            return DeriveRestrictedPackageSidFromSid(package_sid, restricted_name, true).Result;
         }
 
         /// <summary>
-        /// Derive a restricted package sid from an existing pacakge sid.
+        /// Derive a restricted package sid from an existing package sid.
         /// </summary>
         /// <param name="base_name">The base package name.</param>
         /// <param name="restricted_name">The restricted name for the sid.</param>
