@@ -108,8 +108,8 @@ namespace NtObjectManager.Cmdlets.Object
                             groups.Add(new UserGroup(KnownSids.AllApplicationPackages, GroupAttributes.Enabled));
                         }
                         groups.Add(new UserGroup(KnownSids.AllRestrictedApplicationPackages, GroupAttributes.Enabled));
+                        groups.AddRange(token.Capabilities);
                     }
-                    groups.AddRange(token.Capabilities);
                 }
                 else
                 {
