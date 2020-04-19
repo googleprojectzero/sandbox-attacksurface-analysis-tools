@@ -1437,15 +1437,12 @@ namespace NtApiDotNet
         /// <summary>
         /// Get whether token is write restricted.
         /// </summary>
-        public bool WriteRestricted
-        {
-            get
-            {
-                if (!Restricted)
-                    return false;
-                return (Flags & TokenFlags.WriteRestricted) != 0;
-            }
-        }
+        public bool WriteRestricted => Restricted && Flags.HasFlagSet(TokenFlags.WriteRestricted);
+
+        /// <summary>
+        /// Get whether token is not low.
+        /// </summary>
+        public bool NotLow => Flags.HasFlagSet(TokenFlags.NotLow);
 
         /// <summary>
         /// Token access flags.
