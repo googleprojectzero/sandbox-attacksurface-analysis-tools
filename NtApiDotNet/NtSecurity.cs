@@ -351,64 +351,8 @@ namespace NtApiDotNet
             AccessMask desired_access, Sid principal, GenericMapping generic_mapping, IEnumerable<ObjectTypeEntry> object_types,
             bool throw_on_error)
         {
-            if (sd == null)
-            {
-                throw new ArgumentNullException(nameof(sd));
-            }
-
-            if (token == null)
-            {
-                throw new ArgumentNullException(nameof(token));
-            }
-
-            if (object_types == null)
-            {
-                throw new ArgumentNullException(nameof(object_types));
-            }
-
-            if (!object_types.Any())
-            {
-                throw new ArgumentException("Must specify at least one object type.");
-            }
-
-            if (desired_access.IsEmpty)
-            {
-                return object_types.Select((o, i) => new AccessCheckResult(NtStatus.STATUS_ACCESS_DENIED,
-                            0, null, generic_mapping, o)).ToArray().CreateResult();
-            }
-
-            using (var list = new DisposableList())
-            {
-                var sd_buffer = list.AddResource(sd.ToSafeBuffer());
-                var imp_token = list.AddResource(DuplicateForAccessCheck(token, throw_on_error));
-                if (!imp_token.IsSuccess)
-                {
-                    return imp_token.Cast<AccessCheckResult[]>();
-                }
-                var self_sid = list.AddResource(principal?.ToSafeBuffer() ?? SafeSidBufferHandle.Null);
-                var privs = list.AddResource(new SafePrivilegeSetBuffer());
-                var object_type_list = ConvertObjectTypes(object_types, list);
-                int repeat_count = 1;
-
-                while (true)
-                {
-                    int buffer_length = privs.Length;
-                    AccessMask[] granted_access_list = new AccessMask[object_type_list.Length];
-                    NtStatus[] status_list = new NtStatus[object_type_list.Length];
-                    NtStatus status = NtSystemCalls.NtAccessCheckByTypeResultList(sd_buffer, self_sid, imp_token.Result.Handle, desired_access,
-                        object_type_list, object_type_list?.Length ?? 0, ref generic_mapping, privs,
-                        ref buffer_length, granted_access_list, status_list);
-                    if (repeat_count == 0 || status != NtStatus.STATUS_BUFFER_TOO_SMALL)
-                    {
-                        return status.CreateResult(throw_on_error, ()
-                            => object_types.Select((o, i) => new AccessCheckResult(status_list[i],
-                            granted_access_list[i], privs, generic_mapping, o)).ToArray());
-                    }
-
-                    repeat_count--;
-                    privs = list.AddResource(new SafePrivilegeSetBuffer(buffer_length));
-                }
-            }
+            return AccessCheckWithResultList(sd, token, desired_access, principal, generic_mapping, object_types,
+                AccessCheckWithResultListNonAudit, throw_on_error);
         }
 
         /// <summary>
@@ -446,52 +390,8 @@ namespace NtApiDotNet
             AccessMask desired_access, Sid principal, GenericMapping generic_mapping, IEnumerable<ObjectTypeEntry> object_types,
             bool throw_on_error)
         {
-            if (sd == null)
-            {
-                throw new ArgumentNullException("sd");
-            }
-
-            if (token == null)
-            {
-                throw new ArgumentNullException("token");
-            }
-
-            if (desired_access.IsEmpty)
-            {
-                return new AccessCheckResult(NtStatus.STATUS_ACCESS_DENIED, 0, null, 
-                    generic_mapping, object_types.GetDefaultObjectType()).CreateResult();
-            }
-
-            using (var list = new DisposableList())
-            {
-                var sd_buffer = list.AddResource(sd.ToSafeBuffer());
-                var imp_token = list.AddResource(DuplicateForAccessCheck(token, throw_on_error));
-                if (!imp_token.IsSuccess)
-                {
-                    return imp_token.Cast<AccessCheckResult>();
-                }
-                var self_sid = list.AddResource(principal?.ToSafeBuffer() ?? SafeSidBufferHandle.Null);
-                var privs = list.AddResource(new SafePrivilegeSetBuffer());
-                var object_type_list = ConvertObjectTypes(object_types, list);
-                int repeat_count = 1;
-
-                while (true)
-                {
-                    int buffer_length = privs.Length;
-                    NtStatus status = NtSystemCalls.NtAccessCheckByType(sd_buffer, self_sid, imp_token.Result.Handle, desired_access,
-                        object_type_list, object_type_list?.Length ?? 0, ref generic_mapping, privs,
-                        ref buffer_length, out AccessMask granted_access, out NtStatus result_status);
-                    if (repeat_count == 0 || status != NtStatus.STATUS_BUFFER_TOO_SMALL)
-                    {
-                        return status.CreateResult(throw_on_error, () 
-                            => new AccessCheckResult(result_status, granted_access, 
-                            privs, generic_mapping, object_types.GetDefaultObjectType()));
-                    }
-
-                    repeat_count--;
-                    privs = list.AddResource(new SafePrivilegeSetBuffer(buffer_length));
-                }
-            }
+            return AccessCheckByType(sd, token, desired_access, principal, 
+                generic_mapping, object_types, AccessCheckByTypeNonAudit, throw_on_error);
         }
 
         /// <summary>
@@ -2140,6 +2040,189 @@ namespace NtApiDotNet
                 GenericAll = 1
             };
             return AccessCheck(sd, token, 1, null, mapping, throw_on_error).Map(r => r.IsSuccess && r.GrantedAccess == 1);
+        }
+
+        private delegate NtStatus AccessCheckByTypeCallback(
+            SafeBuffer SecurityDescriptor,
+            SafeHandle PrincipalSelfSid,
+            SafeKernelObjectHandle ClientToken,
+            AccessMask DesiredAccess,
+            [In] ObjectTypeList[] ObjectTypeList,
+            int ObjectTypeListLength,
+            ref GenericMapping GenericMapping,
+            SafePrivilegeSetBuffer RequiredPrivilegesBuffer,
+            ref int BufferLength,
+            out AccessMask GrantedAccess,
+            out NtStatus AccessStatus,
+            out bool GenerateOnClose);
+
+        private delegate NtStatus AccessCheckWithResultListCallback(
+            SafeBuffer SecurityDescriptor,
+            SafeHandle PrincipalSelfSid,
+            SafeKernelObjectHandle ClientToken,
+            AccessMask DesiredAccess,
+            ObjectTypeList[] ObjectTypeList,
+            int ObjectTypeListLength,
+            ref GenericMapping GenericMapping,
+            SafePrivilegeSetBuffer RequiredPrivilegesBuffer,
+            ref int BufferLength,
+            AccessMask[] GrantedAccessList,
+            NtStatus[] AccessStatusList,
+            out bool GenerateOnClose);
+
+        private static NtStatus AccessCheckWithResultListNonAudit(
+            SafeBuffer security_descriptor,
+            SafeHandle self_sid,
+            SafeKernelObjectHandle client_token,
+            AccessMask desired_access,
+            ObjectTypeList[] object_type_list,
+            int object_type_list_length,
+            ref GenericMapping generic_mapping,
+            SafePrivilegeSetBuffer required_privileges,
+            ref int buffer_length,
+            AccessMask[] granted_access_list,
+            NtStatus[] access_status_list,
+            out bool generate_on_close)
+        {
+            generate_on_close = false;
+            return NtSystemCalls.NtAccessCheckByTypeResultList(security_descriptor, self_sid, client_token, desired_access, object_type_list, object_type_list_length,
+                ref generic_mapping, required_privileges, ref buffer_length, granted_access_list, access_status_list);
+        }
+
+        private static NtStatus AccessCheckByTypeNonAudit(
+            SafeBuffer security_descriptor,
+            SafeHandle self_sid,
+            SafeKernelObjectHandle client_token,
+            AccessMask desired_access,
+            [In] ObjectTypeList[] object_type_list,
+            int object_type_list_length,
+            ref GenericMapping generic_mapping,
+            SafePrivilegeSetBuffer required_privileges,
+            ref int buffer_length,
+            out AccessMask granted_access,
+            out NtStatus access_status,
+            out bool generate_on_close)
+        {
+            generate_on_close = false;
+            return NtSystemCalls.NtAccessCheckByType(security_descriptor, self_sid, client_token, desired_access, object_type_list, object_type_list_length,
+                ref generic_mapping, required_privileges, ref buffer_length, out granted_access, out access_status);
+        }
+
+        private static NtResult<AccessCheckResult> AccessCheckByType(SecurityDescriptor sd, NtToken token,
+            AccessMask desired_access, Sid principal, GenericMapping generic_mapping, IEnumerable<ObjectTypeEntry> object_types,
+            AccessCheckByTypeCallback callback, bool throw_on_error)
+        {
+            if (sd == null)
+            {
+                throw new ArgumentNullException("sd");
+            }
+
+            if (token == null)
+            {
+                throw new ArgumentNullException("token");
+            }
+
+            if (desired_access.IsEmpty)
+            {
+                return new AccessCheckResult(NtStatus.STATUS_ACCESS_DENIED, 0, null,
+                    generic_mapping, object_types.GetDefaultObjectType(), false).CreateResult();
+            }
+
+            using (var list = new DisposableList())
+            {
+                var sd_buffer = list.AddResource(sd.ToSafeBuffer());
+                var imp_token = list.AddResource(DuplicateForAccessCheck(token, throw_on_error));
+                if (!imp_token.IsSuccess)
+                {
+                    return imp_token.Cast<AccessCheckResult>();
+                }
+                var self_sid = list.AddResource(principal?.ToSafeBuffer() ?? SafeSidBufferHandle.Null);
+                var privs = list.AddResource(new SafePrivilegeSetBuffer());
+                var object_type_list = ConvertObjectTypes(object_types, list);
+                int repeat_count = 1;
+
+                while (true)
+                {
+                    int buffer_length = privs.Length;
+                    NtStatus status = callback(sd_buffer, self_sid, imp_token.Result.Handle, desired_access,
+                        object_type_list, object_type_list?.Length ?? 0, ref generic_mapping, privs,
+                        ref buffer_length, out AccessMask granted_access, out NtStatus result_status, 
+                        out bool generate_on_error);
+                    if (repeat_count == 0 || status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+                    {
+                        return status.CreateResult(throw_on_error, ()
+                            => new AccessCheckResult(result_status, granted_access,
+                            privs, generic_mapping, object_types.GetDefaultObjectType(), generate_on_error));
+                    }
+
+                    repeat_count--;
+                    privs = list.AddResource(new SafePrivilegeSetBuffer(buffer_length));
+                }
+            }
+        }
+
+        private static NtResult<AccessCheckResult[]> AccessCheckWithResultList(SecurityDescriptor sd, NtToken token,
+            AccessMask desired_access, Sid principal, GenericMapping generic_mapping, IEnumerable<ObjectTypeEntry> object_types,
+            AccessCheckWithResultListCallback callback, bool throw_on_error)
+        {
+            if (sd == null)
+            {
+                throw new ArgumentNullException(nameof(sd));
+            }
+
+            if (token == null)
+            {
+                throw new ArgumentNullException(nameof(token));
+            }
+
+            if (object_types == null)
+            {
+                throw new ArgumentNullException(nameof(object_types));
+            }
+
+            if (!object_types.Any())
+            {
+                throw new ArgumentException("Must specify at least one object type.");
+            }
+
+            if (desired_access.IsEmpty)
+            {
+                return object_types.Select((o, i) => new AccessCheckResult(NtStatus.STATUS_ACCESS_DENIED,
+                            0, null, generic_mapping, o, false)).ToArray().CreateResult();
+            }
+
+            using (var list = new DisposableList())
+            {
+                var sd_buffer = list.AddResource(sd.ToSafeBuffer());
+                var imp_token = list.AddResource(DuplicateForAccessCheck(token, throw_on_error));
+                if (!imp_token.IsSuccess)
+                {
+                    return imp_token.Cast<AccessCheckResult[]>();
+                }
+                var self_sid = list.AddResource(principal?.ToSafeBuffer() ?? SafeSidBufferHandle.Null);
+                var privs = list.AddResource(new SafePrivilegeSetBuffer());
+                var object_type_list = ConvertObjectTypes(object_types, list);
+                int repeat_count = 1;
+
+                while (true)
+                {
+                    int buffer_length = privs.Length;
+                    AccessMask[] granted_access_list = new AccessMask[object_type_list.Length];
+                    NtStatus[] status_list = new NtStatus[object_type_list.Length];
+                    NtStatus status = callback(sd_buffer, self_sid, imp_token.Result.Handle, desired_access,
+                        object_type_list, object_type_list?.Length ?? 0, ref generic_mapping, privs,
+                        ref buffer_length, granted_access_list, status_list, out bool generate_on_close);
+                    if (repeat_count == 0 || status != NtStatus.STATUS_BUFFER_TOO_SMALL)
+                    {
+                        return status.CreateResult(throw_on_error, ()
+                            => object_types.Select((o, i) => new AccessCheckResult(status_list[i],
+                            granted_access_list[i], privs, generic_mapping, o, generate_on_close)).ToArray());
+                    }
+
+                    repeat_count--;
+                    privs = list.AddResource(new SafePrivilegeSetBuffer(buffer_length));
+                }
+            }
         }
 
         #endregion
