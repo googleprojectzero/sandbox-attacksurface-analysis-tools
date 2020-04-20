@@ -251,6 +251,8 @@ function Get-NtTokenGroup {
         [switch]$Restricted,
         [Parameter(Mandatory, ParameterSetName = "Capabilities")]
         [switch]$Capabilities,
+        [Parameter(Mandatory, ParameterSetName = "Device")]
+        [switch]$Device,
         [NtApiDotNet.GroupAttributes]$Attributes = 0
     )
     if ($null -eq $Token) {
@@ -266,6 +268,9 @@ function Get-NtTokenGroup {
         }
         elseif ($Capabilities) {
             $Token.Capabilities
+        }
+        elseif ($Device) {
+            $Token.DeviceGroups
         }
         else {
             $Token.Groups
@@ -8162,7 +8167,7 @@ Gets the Central Access Policy from the LSA.
 function Get-CentralAccessPolicy {
     Param(
         [Parameter(Position=0)]
-        [NtApiDotNet.Sid]$CapId
+        [NtApiDotNet.Sid]$CapId,
         [switch]$FromLsa
     )
     $policy = if ($FromLsa) {
@@ -8174,7 +8179,7 @@ function Get-CentralAccessPolicy {
     if ($null -eq $CapId) {
         $policy | Write-Output
     } else {
-        $policy | Select-Object CapId -eq $CapId -First 1 | Write-Output
+        $policy | Where-Object CapId -eq $CapId | Select-Object -First 1 | Write-Output
     }
 }
 
