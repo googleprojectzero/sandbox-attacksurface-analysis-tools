@@ -249,7 +249,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                             }
                             else
                             {
-                                WriteWarning($@"Can't open {dir.FullPath}\{entry.Name} with type {entry.NtTypeName}");
+                                WriteVerbose($@"Can't open {dir.FullPath}\{entry.Name} with type {entry.NtTypeName}");
                             }
                         }
                     }
@@ -370,7 +370,7 @@ namespace NtObjectManager.Cmdlets.Accessible
 
             if (type_filter.Count == 0)
             {
-                WriteWarning("Checking handle access without any type filtering can hang. Perhaps specify the types using -TypeFilter.");
+                WriteWarning("Checking handle access without any type filtering can hang. Specify the types using -TypeFilter.");
             }
 
             HashSet<ulong> checked_objects = new HashSet<ulong>();

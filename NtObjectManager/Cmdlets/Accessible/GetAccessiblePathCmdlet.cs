@@ -114,7 +114,7 @@ namespace NtObjectManager.Cmdlets.Accessible
             {
                 if (!path.StartsWith(@"\"))
                 {
-                    WriteWarning($"Path '{path}' doesn't start with \\. Perhaps you want to specify -Win32Path instead?");
+                    WriteWarning($"Path '{path}' doesn't start with \\. Specify -Win32Path instead?");
                 }
 
                 try
