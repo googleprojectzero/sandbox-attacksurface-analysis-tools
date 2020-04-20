@@ -169,6 +169,12 @@ namespace NtObjectManager.Cmdlets.Accessible
                     return;
                 }
             }
+
+            if (!IncludePath(file.Name))
+            {
+                return;
+            }
+
             AccessMask desired_access = directory ? dir_access_rights : access_rights;
             var result = GetSecurityDescriptor(file);
             if (result.IsSuccess)
@@ -204,7 +210,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                 {
                     if (result.Status.IsSuccess())
                     {
-                        foreach (var entry in result.Result.QueryDirectoryInfo())
+                        foreach (var entry in result.Result.QueryDirectoryInfo(Filter, FileTypeMask.All))
                         {
                             if (CheckMode == FileCheckMode.DirectoriesOnly && !entry.IsDirectory)
                             {

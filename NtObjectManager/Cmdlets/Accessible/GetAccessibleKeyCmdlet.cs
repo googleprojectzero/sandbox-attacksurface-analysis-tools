@@ -97,20 +97,23 @@ namespace NtObjectManager.Cmdlets.Accessible
 
         private void DumpKey(IEnumerable<TokenEntry> tokens, AccessMask access_rights, bool open_for_backup, NtKey key, int current_depth)
         {
-            var sd = GetSecurityDescriptor(key);
-            if (sd.IsSuccess)
+            if (IncludePath(key.Name))
             {
-                foreach (var token in tokens)
+                var sd = GetSecurityDescriptor(key);
+                if (sd.IsSuccess)
                 {
-                    CheckAccess(token, key, access_rights, sd.Result);
+                    foreach (var token in tokens)
+                    {
+                        CheckAccess(token, key, access_rights, sd.Result);
+                    }
                 }
-            }
-            else
-            {
-                // If we can't read security descriptor then try opening the key.
-                foreach (var token in tokens)
+                else
                 {
-                    CheckAccessUnderImpersonation(token, access_rights, key);
+                    // If we can't read security descriptor then try opening the key.
+                    foreach (var token in tokens)
+                    {
+                        CheckAccessUnderImpersonation(token, access_rights, key);
+                    }
                 }
             }
 
@@ -124,6 +127,10 @@ namespace NtObjectManager.Cmdlets.Accessible
             {
                 foreach (string subkey in key.QueryKeys())
                 {
+                    if (FilterPath(subkey))
+                    {
+                        continue;
+                    }
                     using (var result = OpenKey(subkey, key, true, open_for_backup))
                     {
                         if (result.IsSuccess)

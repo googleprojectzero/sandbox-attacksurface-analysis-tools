@@ -15,7 +15,6 @@
 using NtApiDotNet;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Management.Automation;
 
 namespace NtObjectManager.Cmdlets.Accessible
@@ -337,91 +336,5 @@ namespace NtObjectManager.Cmdlets.Accessible
         private bool? _has_security_privilege;
         private static readonly Lazy<bool> _has_impersonate_privilege = new Lazy<bool>(CheckImpersonatePrivilege);
         private static readonly Lazy<NtToken> _system_token = new Lazy<NtToken>(FindSystemToken);
-    }
-
-    /// <summary>
-    /// Base class for path based accessible checks.
-    /// </summary>
-    public abstract class GetAccessiblePathCmdlet<A> : CommonAccessBaseWithAccessCmdlet<A> where A : Enum
-    {
-        /// <summary>
-        /// <para type="description">Specify a list of native paths to check.</para>
-        /// </summary>
-        [Parameter(Position = 0, ParameterSetName = "path", ValueFromPipeline = true)]
-        public string[] Path { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify a list of paths in a Win32 format.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "path")]
-        public string[] Win32Path { get; set; }
-
-        /// <summary>
-        /// <para type="description">When generating the results format path in Win32 format.</para>
-        /// </summary>
-        [Parameter]
-        public SwitchParameter FormatWin32Path { get; set; }
-
-        /// <summary>
-        /// <para type="description">Specify whether to recursively check the path for access.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "path")]
-        public SwitchParameter Recurse { get; set; }
-
-        /// <summary>
-        /// <para type="description">When recursing specify maximum depth.</para>
-        /// </summary>
-        [Parameter(ParameterSetName = "path")]
-        public int? MaxDepth { get; set; }
-
-        /// <summary>
-        /// Convert a Win32 path to a native path.
-        /// </summary>
-        /// <param name="win32_path">The Win32 path to convert.</param>
-        /// <returns>The converted native path.</returns>
-        protected abstract string ConvertWin32Path(string win32_path);
-
-        /// <summary>
-        /// Run an access check with a path.
-        /// </summary>
-        /// <param name="tokens">The list of tokens.</param>
-        /// <param name="path">The path to check.</param>
-        private protected abstract void RunAccessCheckPath(IEnumerable<TokenEntry> tokens, string path);
-
-        private protected override void RunAccessCheck(IEnumerable<TokenEntry> tokens)
-        {
-            List<string> paths = new List<string>();
-            if (Path != null)
-            {
-                paths.AddRange(Path);
-            }
-
-            if (Win32Path != null)
-            {
-                paths.AddRange(Win32Path.Select(p => ConvertWin32Path(p)));
-            }
-
-            foreach (string path in paths)
-            {
-                if (!path.StartsWith(@"\"))
-                {
-                    WriteWarning($"Path '{path}' doesn't start with \\. Perhaps you want to specify -Win32Path instead?");
-                }
-
-                try
-                {
-                    RunAccessCheckPath(tokens, path);
-                }
-                catch (NtException ex)
-                {
-                    WriteError(new ErrorRecord(ex, "NtException", ErrorCategory.DeviceError, this));
-                }
-            }
-        }
-
-        private protected int GetMaxDepth()
-        {
-            return MaxDepth ?? int.MaxValue;
-        }
     }
 }

@@ -156,8 +156,13 @@ namespace NtObjectManager.Cmdlets.Accessible
                 return;
             }
 
+            if (!IncludePath(obj.Name))
+            {
+                return;
+            }
+
             AccessMask desired_access = type.MapGenericRights(access_rights);
-            var result = obj.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
+            var result = GetSecurityDescriptor(obj);
             if (!result.IsSuccess && !obj.IsAccessMaskGranted(GenericAccessRights.ReadControl))
             {
                 // Try and duplicate handle to see if we can just ask for ReadControl.
@@ -165,7 +170,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                 {
                     if (dup_obj.IsSuccess)
                     {
-                        result = dup_obj.Result.GetSecurityDescriptor(SecurityInformation.AllBasic, false);
+                        result = GetSecurityDescriptor(dup_obj.Result);
                     }
                 }
             }
@@ -203,6 +208,11 @@ namespace NtObjectManager.Cmdlets.Accessible
             {
                 foreach (var entry in dir.Query())
                 {
+                    if (FilterPath(entry.Name))
+                    {
+                        continue;
+                    }
+
                     if (entry.IsDirectory)
                     {
                         using (var new_dir = OpenDirectory(entry.Name, dir))
@@ -225,7 +235,7 @@ namespace NtObjectManager.Cmdlets.Accessible
                         {
                             if (type.CanOpen)
                             {
-                                using (var result = OpenObject(entry, dir, GenericAccessRights.MaximumAllowed))
+                                using (var result = OpenObject(entry, dir, GetMaximumAccess(GenericAccessRights.MaximumAllowed)))
                                 {
                                     if (result.IsSuccess)
                                     {
@@ -256,19 +266,19 @@ namespace NtObjectManager.Cmdlets.Accessible
             }
         }
 
-        private static NtResult<NtDirectory> OpenDirectory(string path, NtObject root)
+        private NtResult<NtDirectory> OpenDirectory(string path, NtObject root)
         {
             using (ObjectAttributes obja = new ObjectAttributes(path,
                 AttributeFlags.CaseInsensitive, root))
             {
-                var result = NtDirectory.Open(obja, DirectoryAccessRights.Query | DirectoryAccessRights.ReadControl, false);
+                var result = NtDirectory.Open(obja, GetMaximumAccessGeneric(DirectoryAccessRights.Query | DirectoryAccessRights.ReadControl), false);
                 if (result.IsSuccess || result.Status != NtStatus.STATUS_ACCESS_DENIED)
                 {
                     return result;
                 }
 
                 // Try again with just Query, if we can't even do this we give up.
-                return NtDirectory.Open(obja, DirectoryAccessRights.Query, false);
+                return NtDirectory.Open(obja, GetMaximumAccessGeneric(DirectoryAccessRights.Query), false);
             }
         }
 
@@ -298,6 +308,16 @@ namespace NtObjectManager.Cmdlets.Accessible
                 if (result.IsSuccess)
                 {
                     DumpDirectory(tokens, GetTypeFilter(), Access, result.Result, GetMaxDepth());
+                }
+                else
+                {
+                    using (var obj = NtObject.OpenWithType(null, path, null, AttributeFlags.CaseInsensitive, GetMaximumAccess(GenericAccessRights.MaximumAllowed), null, false))
+                    {
+                        if (obj.IsSuccess)
+                        {
+                            DumpObject(tokens, GetTypeFilter(), Access, obj.Result, false);
+                        }
+                    }
                 }
             }
         }

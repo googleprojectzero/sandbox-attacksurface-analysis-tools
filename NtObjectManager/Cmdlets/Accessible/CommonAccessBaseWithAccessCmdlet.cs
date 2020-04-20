@@ -117,5 +117,17 @@ namespace NtObjectManager.Cmdlets.Accessible
             mask |= GenericAccessRights.AccessSystemSecurity;
             return mask.ToSpecificAccess<A>();
         }
+
+        private protected T GetMaximumAccessGeneric<T>(T access) where T : Enum
+        {
+            if (!HasSecurityPrivilege())
+            {
+                return access;
+            }
+
+            AccessMask mask = access;
+            mask |= GenericAccessRights.AccessSystemSecurity;
+            return mask.ToSpecificAccess<T>();
+        }
     }
 }
