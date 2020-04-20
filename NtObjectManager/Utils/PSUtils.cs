@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Management.Automation;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace NtObjectManager.Utils
 {
@@ -143,6 +144,17 @@ namespace NtObjectManager.Utils
                 return true;
             }
             return false;
+        }
+
+        internal static Regex GlobToRegex(string glob, bool case_sensitive)
+        {
+            string escaped = Regex.Escape(glob);
+            return new Regex("^" + escaped.Replace("\\*", ".*").Replace("\\?", ".") + "$", !case_sensitive ? RegexOptions.IgnoreCase : RegexOptions.None);
+        }
+
+        internal static bool HasGlobChars(string s)
+        {
+            return s.Contains("*") || s.Contains("?");
         }
     }
 }

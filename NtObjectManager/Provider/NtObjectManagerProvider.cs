@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 using NtApiDotNet;
+using NtObjectManager.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -489,17 +490,6 @@ namespace NtObjectManager.Provider
             }
         }
 
-        static Regex GlobToRegex(string glob, bool case_sensitive)
-        {
-            string escaped = Regex.Escape(glob);
-            return new Regex("^" + escaped.Replace("\\*", ".*").Replace("\\?", ".") + "$", !case_sensitive ? RegexOptions.IgnoreCase : RegexOptions.None);
-        }
-
-        static bool HasGlobChars(string s)
-        {
-            return s.Contains('*') || s.Contains('?');
-        }
-         
         private void AddMatches(NtObjectContainer root, string base_path, IEnumerable<string> remaining, List<string> matches)
         {
             string current_entry = remaining.First();
@@ -520,9 +510,9 @@ namespace NtObjectManager.Provider
                 }
 
                 // If we didn't find an explicit match then see if it's a glob.
-                if (matching_entries.Count == 0 && HasGlobChars(current_entry))
+                if (matching_entries.Count == 0 && PSUtils.HasGlobChars(current_entry))
                 {
-                    Regex globber = GlobToRegex(current_entry, false);
+                    Regex globber = PSUtils.GlobToRegex(current_entry, false);
                     foreach (var dir_info in dir_infos)
                     {
                         if (globber.IsMatch(dir_info.Name))
