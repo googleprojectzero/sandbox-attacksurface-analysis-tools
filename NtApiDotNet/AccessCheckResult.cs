@@ -59,7 +59,7 @@ namespace NtApiDotNet
         /// When a result from an Audit Access Check indicates whether the
         /// an audit needs to be generated on close.
         /// </summary>
-        public bool GenerateOnClose { get; }
+        public bool GenerateOnClose { get; internal set; }
 
         /// <summary>
         /// Whether the access check was a success.

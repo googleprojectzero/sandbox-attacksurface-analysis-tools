@@ -119,6 +119,12 @@ namespace NtObjectManager.Cmdlets.Object
         [Parameter]
         public ObjectTypeTree ObjectType { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify to enable auditing for this access check.</para>
+        /// </summary>
+        [Parameter]
+        public SwitchParameter Audit { get; set; }
+
         private AccessMask GetDesiredAccess()
         {
             NtType type = GetNtType();
@@ -168,17 +174,18 @@ namespace NtObjectManager.Cmdlets.Object
 
         private NtToken GetToken()
         {
+            TokenAccessRights access_rights = Audit ? TokenAccessRights.Impersonate : 0;
             if (Token != null)
             {
                 return Token.DuplicateToken(TokenType.Impersonation, 
-                    SecurityImpersonationLevel.Identification, TokenAccessRights.Query);
+                    SecurityImpersonationLevel.Identification, access_rights | TokenAccessRights.Query);
             }
             else
             {
                 using (NtToken token = NtToken.OpenEffectiveToken())
                 {
                     return token.DuplicateToken(TokenType.Impersonation, 
-                        SecurityImpersonationLevel.Identification, TokenAccessRights.Query);
+                        SecurityImpersonationLevel.Identification, access_rights | TokenAccessRights.Query);
                 }
             }
         }
@@ -194,16 +201,14 @@ namespace NtObjectManager.Cmdlets.Object
                 if (type == null)
                     throw new ArgumentException("Must specify a Type.");
                 var object_types = ObjectType?.ToArray();
-                var results = new List<AccessCheckResultGeneric>();
-                if (ResultList)
+                IEnumerable<AccessCheckResultGeneric> results;
+                if (Audit)
                 {
-                    results.AddRange(NtSecurity.AccessCheckWithResultList(GetSecurityDescriptor(),
-                    token, GetDesiredAccess(), Principal, type.GenericMapping, object_types).Select(r => r.ToSpecificAccess(type.AccessRightsType)));
+                    results = RunAuditCheck(token, type, object_types).Select(r => r.ToSpecificAccess(type.AccessRightsType));
                 }
                 else
                 {
-                    results.Add(NtSecurity.AccessCheck(GetSecurityDescriptor(),
-                    token, GetDesiredAccess(), Principal, type.GenericMapping, object_types).ToSpecificAccess(type.AccessRightsType));
+                    results = RunCheck(token, type, object_types).Select(r => r.ToSpecificAccess(type.AccessRightsType));
                 }
 
                 if (PassResult)
@@ -224,11 +229,72 @@ namespace NtObjectManager.Cmdlets.Object
             }
         }
 
+        private IEnumerable<AccessCheckResult> RunAuditCheck(NtToken token, NtType type, ObjectTypeEntry[] object_types)
+        {
+            _dict.GetValue("SubsystemName", out string subsystem_name);
+            _dict.GetValue("HandleId", out IntPtr? handle_id);
+            _dict.GetValue("ObjectTypeName", out string object_type_name);
+            _dict.GetValue("ObjectName", out string object_name);
+            _dict.GetValue("ObjectCreation", out SwitchParameter? object_creation);
+            _dict.GetValue("AuditType", out AuditEventType? event_type);
+            _dict.GetValue("AuditFlags", out AuditAccessCheckFlags? flags);
+
+            var results = new List<AccessCheckResult>();
+            if (ResultList)
+            {
+                results.AddRange(NtSecurity.AccessCheckWithResultListAudit(
+                    subsystem_name, handle_id ?? IntPtr.Zero, object_type_name, 
+                    object_name, object_creation ?? new SwitchParameter(),
+                    event_type ?? AuditEventType.AuditEventObjectAccess,
+                    flags ?? AuditAccessCheckFlags.None,
+                    GetSecurityDescriptor(),
+                    token, GetDesiredAccess(), Principal, type.GenericMapping, object_types));
+            }
+            else
+            {
+                results.Add(NtSecurity.AccessCheckAudit(
+                    subsystem_name, handle_id ?? IntPtr.Zero, object_type_name,
+                    object_name, object_creation ?? new SwitchParameter(),
+                    event_type ?? AuditEventType.AuditEventObjectAccess,
+                    flags ?? AuditAccessCheckFlags.None,
+                    GetSecurityDescriptor(), token, GetDesiredAccess(), 
+                    Principal, type.GenericMapping, object_types));
+            }
+            return results;
+        }
+
+        private IEnumerable<AccessCheckResult> RunCheck(NtToken token, NtType type, ObjectTypeEntry[] object_types)
+        {
+            var results = new List<AccessCheckResult>();
+            if (ResultList)
+            {
+                results.AddRange(NtSecurity.AccessCheckWithResultList(GetSecurityDescriptor(),
+                    token, GetDesiredAccess(), Principal, type.GenericMapping, object_types));
+            }
+            else
+            {
+                results.Add(NtSecurity.AccessCheck(GetSecurityDescriptor(),
+                    token, GetDesiredAccess(), Principal, type.GenericMapping, object_types));
+            }
+            return results;
+        }
+
         object IDynamicParameters.GetDynamicParameters()
         {
             _dict = new RuntimeDefinedParameterDictionary();
             Type access_type = GetNtType()?.AccessRightsType ?? typeof(GenericAccessRights);
             _dict.AddDynamicParameter("Access", access_type, false);
+
+            if (Audit)
+            {
+                _dict.AddDynamicParameter("SubsystemName", typeof(string), true);
+                _dict.AddDynamicParameter("HandleId", typeof(IntPtr), false);
+                _dict.AddDynamicParameter("ObjectTypeName", typeof(string), true);
+                _dict.AddDynamicParameter("ObjectName", typeof(string), true);
+                _dict.AddDynamicParameter("ObjectCreation", typeof(SwitchParameter), false);
+                _dict.AddDynamicParameter("AuditType", typeof(AuditEventType), false);
+                _dict.AddDynamicParameter("AuditFlags", typeof(AuditAccessCheckFlags), false);
+            }
 
             return _dict;
         }
