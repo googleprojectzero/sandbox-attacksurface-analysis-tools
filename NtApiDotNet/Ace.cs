@@ -14,6 +14,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace NtApiDotNet
 {
@@ -288,6 +289,18 @@ namespace NtApiDotNet
         #endregion
 
         #region Internal Members
+
+        internal static Ace Parse(IntPtr ace_ptr)
+        {
+            AceHeader header = (AceHeader)Marshal.PtrToStructure(ace_ptr, typeof(AceHeader));
+            using (var buffer = new SafeHGlobalBuffer(ace_ptr, header.AceSize, false))
+            {
+                using (var reader = new BinaryReader(new UnmanagedMemoryStream(buffer, 0, header.AceSize)))
+                {
+                    return CreateAceFromReader(reader);
+                }
+            }
+        }
 
         internal static Ace CreateAceFromReader(BinaryReader reader)
         {

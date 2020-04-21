@@ -1284,6 +1284,14 @@ namespace NtApiDotNet
         public ushort Sbz2;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct AceHeader
+    {
+        public AceType AceType;
+        public byte AceFlags;
+        public ushort AceSize;
+    }
+
     public enum ProcessTrustType : uint
     {
         None = 0,
