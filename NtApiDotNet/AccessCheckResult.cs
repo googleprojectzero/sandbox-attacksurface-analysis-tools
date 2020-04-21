@@ -139,7 +139,7 @@ namespace NtApiDotNet
             : this(status, granted_access,
                   generic_mapping.UnmapMask(granted_access),
                   privilege_set?.GetPrivileges() ?? new TokenPrivilege[0],
-                  object_type.ObjectType, object_type.Name, generate_on_close)
+                  object_type?.ObjectType ?? Guid.Empty, object_type?.Name, generate_on_close)
         {
         }
 

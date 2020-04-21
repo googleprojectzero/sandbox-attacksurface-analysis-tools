@@ -17,6 +17,7 @@ using NtApiDotNet.Utilities.SafeBuffers;
 using NtApiDotNet.Win32.Debugger;
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security;
+using NtApiDotNet.Win32.Security.AuthZ;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -548,6 +549,60 @@ namespace NtApiDotNet.Win32
         public int LengthStagedSD;
         public IntPtr StagedSD;
         public uint Flags;
+    }
+
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal delegate bool AuthzAccessCheckCallback(
+        IntPtr hAuthzClientContext,
+        IntPtr pAce,
+        IntPtr pArgs,
+        [MarshalAs(UnmanagedType.Bool)] out bool pbAceApplicable);
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct AUTHZ_ACCESS_REPLY
+    {
+        public int ResultListLength;
+        public IntPtr GrantedAccessMask; // PACCESS_MASK.
+        public IntPtr SaclEvaluationResults; // PDWORD
+        public IntPtr Error; // PDWORD
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct AUTHZ_ACCESS_REQUEST
+    {
+        public AccessMask DesiredAccess;
+        public IntPtr PrincipalSelfSid;
+        public IntPtr ObjectTypeList;
+        public int ObjectTypeListLength;
+        public IntPtr OptionalArguments;
+    }
+
+    internal enum AUTHZ_CONTEXT_INFORMATION_CLASS
+    {
+        AuthzContextInfoUserSid = 1,
+        AuthzContextInfoGroupsSids,
+        AuthzContextInfoRestrictedSids,
+        AuthzContextInfoPrivileges,
+        AuthzContextInfoExpirationTime,
+        AuthzContextInfoServerContext,
+        AuthzContextInfoIdentifier,
+        AuthzContextInfoSource,
+        AuthzContextInfoAll,
+        AuthzContextInfoAuthenticationId,
+        AuthzContextInfoSecurityAttributes,
+        AuthzContextInfoDeviceSids,
+        AuthzContextInfoUserClaims,
+        AuthzContextInfoDeviceClaims,
+        AuthzContextInfoAppContainerSid,
+        AuthzContextInfoCapabilitySids
+    }
+
+    [Flags]
+    internal enum AuthZAccessCheckFlags
+    {
+        None = 0,
+        NoDeepCopySD = 1,
     }
 
     internal static class Win32NativeMethods
@@ -1308,6 +1363,96 @@ namespace NtApiDotNet.Win32
           out SafeLsaMemoryBuffer CAPs,
           out uint CAPCount
         );
+
+        [DllImport("authz.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool AuthzInitializeResourceManager(
+          AuthZResourceManagerInitializeFlags Flags,
+          AuthzAccessCheckCallback pfnDynamicAccessCheck,
+          IntPtr pfnComputeDynamicGroups,
+          IntPtr pfnFreeDynamicGroups,
+          string szResourceManagerName,
+          out SafeAuthZResourceManagerHandle phAuthzResourceManager
+        );
+
+        [DllImport("authz.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool AuthzFreeResourceManager(
+            IntPtr hAuthzResourceManager
+        );
+
+        [DllImport("authz.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool AuthzInitializeContextFromSid(
+          AuthZContextInitializeSidFlags Flags,
+          SafeSidBufferHandle UserSid,
+          SafeAuthZResourceManagerHandle hAuthzResourceManager,
+          LargeInteger pExpirationTime,
+          Luid Identifier,
+          IntPtr DynamicGroupArgs,
+          out SafeAuthZClientContextHandle phAuthzClientContext
+        );
+
+        [DllImport("authz.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool AuthzInitializeContextFromToken(
+            int Flags,
+            SafeKernelObjectHandle TokenHandle,
+            SafeAuthZResourceManagerHandle hAuthzResourceManager,
+            LargeInteger pExpirationTime,
+            Luid Identifier,
+            IntPtr DynamicGroupArgs,
+            out SafeAuthZClientContextHandle phAuthzClientContext
+        );
+
+        [DllImport("authz.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool AuthzInitializeContextFromAuthzContext(
+            int Flags,
+            SafeAuthZClientContextHandle hAuthzClientContext,
+            LargeInteger pExpirationTime,
+            Luid Identifier,
+            IntPtr DynamicGroupArgs,
+            out SafeAuthZClientContextHandle phNewAuthzClientContext
+        );
+
+        [DllImport("authz.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool AuthzFreeContext(
+            IntPtr hAuthzClientContext
+        );
+
+        [DllImport("authz.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool AuthzAccessCheck(
+            AuthZAccessCheckFlags Flags,
+            SafeAuthZClientContextHandle hAuthzClientContext,
+            ref AUTHZ_ACCESS_REQUEST pRequest,
+            IntPtr hAuditEvent,
+            SafeBuffer pSecurityDescriptor,
+            IntPtr[] OptionalSecurityDescriptorArray,
+            int OptionalSecurityDescriptorCount,
+            ref AUTHZ_ACCESS_REPLY pReply,
+            IntPtr phAccessCheckResults
+        );
+
+        [DllImport("authz.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool AuthzSetAppContainerInformation(
+          SafeAuthZClientContextHandle hAuthzClientContext,
+          SafeSidBufferHandle pAppContainerSid,
+          int CapabilityCount,
+          SafeBuffer pCapabilitySids
+        );
+
+        [DllImport("authz.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool AuthzModifySids(
+                SafeAuthZClientContextHandle hAuthzClientContext,
+                AUTHZ_CONTEXT_INFORMATION_CLASS SidClass,
+                AuthZSidOperation[] pSidOperations,
+                SafeTokenGroupsBuffer pSids
+            );
     }
 #pragma warning restore 1591
 }

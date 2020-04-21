@@ -150,6 +150,9 @@
     <Compile Include="Cmdlets\Object\TestNtTokenPrivilegeCmdlet.cs" />
     <Compile Include="Cmdlets\Object\UseNtObjectCmdlet.cs" />
     <Compile Include="Cmdlets\Object\WriteNtAuditCmdlet.cs" />
+    <Compile Include="Cmdlets\Win32\GetAuthZGrantedAccess.cs" />
+    <Compile Include="Cmdlets\Win32\NewAuthZContextCmdlet.cs" />
+    <Compile Include="Cmdlets\Win32\NewAuthZResourceManagerCmdlet.cs" />
     <Compile Include="Utils\BaseTransformAttribute.cs" />
     <Compile Include="Utils\InfoClassCompleter.cs" />
     <Compile Include="Utils\NtTypeArgumentCompleter.cs" />

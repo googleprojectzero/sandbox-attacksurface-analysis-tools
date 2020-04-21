@@ -2073,6 +2073,15 @@ namespace NtApiDotNet
             _cached_names.TryAdd(sid, new SidName(name, source));
             return sid;
         }
+
+        internal static ObjectTypeList[] ConvertObjectTypes(IEnumerable<ObjectTypeEntry> object_types, DisposableList list)
+        {
+            if (object_types == null || !object_types.Any())
+                return null;
+
+            return object_types.Select(o => o.ToStruct(list)).ToArray();
+        }
+
         #endregion
 
         #region Private Members
@@ -2397,14 +2406,6 @@ namespace NtApiDotNet
                 // If we've got query access rights already just create a shallow clone.
                 return token.ShallowClone().CreateResult();
             }
-        }
-
-        private static ObjectTypeList[] ConvertObjectTypes(IEnumerable<ObjectTypeEntry> object_types, DisposableList list)
-        {
-            if (object_types == null || !object_types.Any())
-                return null;
-
-            return object_types.Select(o => o.ToStruct(list)).ToArray();
         }
 
         private static CachedSigningLevelEaBuffer ReadCachedSigningLevelVersion1(BinaryReader reader)
