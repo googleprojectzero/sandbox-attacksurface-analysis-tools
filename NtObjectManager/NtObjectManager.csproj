@@ -149,6 +149,7 @@
     <Compile Include="Cmdlets\Object\TestNtTokenImpersonationCmdlet.cs" />
     <Compile Include="Cmdlets\Object\TestNtTokenPrivilegeCmdlet.cs" />
     <Compile Include="Cmdlets\Object\UseNtObjectCmdlet.cs" />
+    <Compile Include="Cmdlets\Object\WriteNtAuditCmdlet.cs" />
     <Compile Include="Utils\BaseTransformAttribute.cs" />
     <Compile Include="Utils\InfoClassCompleter.cs" />
     <Compile Include="Utils\NtTypeArgumentCompleter.cs" />
