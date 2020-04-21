@@ -17,6 +17,7 @@ using NtApiDotNet.Utilities.SafeBuffers;
 using NtApiDotNet.Win32.Debugger;
 using NtApiDotNet.Win32.SafeHandles;
 using NtApiDotNet.Win32.Security;
+using NtApiDotNet.Win32.Security.Audit;
 using NtApiDotNet.Win32.Security.AuthZ;
 using System;
 using System.IO;
@@ -603,6 +604,25 @@ namespace NtApiDotNet.Win32
     {
         None = 0,
         NoDeepCopySD = 1,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct AUDIT_POLICY_INFORMATION
+    {
+        public Guid AuditSubCategoryGuid;
+        public int AuditingInformation;
+        public Guid AuditCategoryGuid;
+    }
+
+    [Flags]
+    internal enum AuditPerUserPolicyFlags
+    {
+        Unchanged = 0,
+        SuccessInclude = 1,
+        SuccessExclude = 2,
+        FailureInclude = 4,
+        FailureExclude = 8,
+        None = 0x10
     }
 
     internal static class Win32NativeMethods
@@ -1453,6 +1473,89 @@ namespace NtApiDotNet.Win32
                 AuthZSidOperation[] pSidOperations,
                 SafeTokenGroupsBuffer pSids
             );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern void AuditFree(IntPtr Buffer);
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        internal static extern bool AuditEnumerateCategories(
+              out SafeAuditBuffer ppAuditCategoriesArray,
+              out uint pdwCountReturned
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        internal static extern bool AuditEnumerateSubCategories(
+          OptionalGuid pAuditCategoryGuid,
+          bool bRetrieveAllSubCategories,
+          out SafeAuditBuffer ppAuditSubCategoriesArray,
+          out uint pdwCountReturned
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        internal static extern bool AuditLookupCategoryName(
+            ref Guid pAuditCategoryGuid,
+            out SafeAuditBuffer ppszCategoryName
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        internal static extern bool AuditLookupSubCategoryName(
+            ref Guid pAuditCategoryGuid,
+            out SafeAuditBuffer ppszCategoryName
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        internal static extern bool AuditQuerySystemPolicy(
+          Guid[] pSubCategoryGuids,
+          int dwPolicyCount,
+          out SafeAuditBuffer ppAuditPolicy
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        internal static extern bool AuditSetSystemPolicy(
+            AUDIT_POLICY_INFORMATION[] pAuditPolicy,
+            int dwPolicyCount
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        internal static extern bool AuditQuerySecurity(
+            SecurityInformation SecurityInformation,
+            out SafeAuditBuffer ppSecurityDescriptor
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        internal static extern bool AuditSetSecurity(
+            SecurityInformation SecurityInformation,
+            SafeBuffer pSecurityDescriptor
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        internal static extern bool AuditQueryGlobalSacl(
+          string ObjectTypeName,
+          out SafeAuditBuffer Acl
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        internal static extern bool AuditSetGlobalSacl(
+          string ObjectTypeName,
+          SafeBuffer Acl
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        internal static extern bool AuditLookupCategoryGuidFromCategoryId(
+          AuditPolicyEventType AuditCategoryId,
+          out Guid pAuditCategoryGuid
+        );
     }
 #pragma warning restore 1591
 }

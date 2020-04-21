@@ -8231,3 +8231,222 @@ function Test-NtObject {
         }
     }
 }
+
+<#
+.SYNOPSIS
+Get the advanced audit policy information.
+.DESCRIPTION
+This cmdlet gets advanced audit policy information.
+.PARAMETER Category
+Specify the category type.
+.PARAMETER CategoryGuid
+Specify the category type GUID.
+.PARAMETER ExpandCategory
+Specify to expand the subcategories from the category.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Audit.AuditCategory
+NtApiDotNet.Win32.Security.Audit.AuditSubCategory
+.EXAMPLE
+Get-NtAuditPolicy
+Get all audit policy categories.
+.EXAMPLE
+Get-NtAuditPolicy -Category ObjectAccess
+Get the ObjectAccess audit policy category
+.EXAMPLE
+Get-NtAuditPolicy -Category ObjectAccess -Expand
+Get the ObjectAccess audit policy category and return the SubCategory policies.
+#>
+function Get-NtAuditPolicy {
+    [CmdletBinding(DefaultParameterSetName = "All")]
+    param (
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromCategory")]
+        [NtApiDotNet.Win32.Security.Audit.AuditPolicyEventType[]]$Category,
+        [parameter(Mandatory, ParameterSetName = "FromCategoryGuid")]
+        [Guid[]]$CategoryGuid,
+        [parameter(Mandatory, ParameterSetName = "FromSubCategoryName")]
+        [string[]]$SubCategoryName,
+        [parameter(Mandatory, ParameterSetName = "FromSubCategoryGuid")]
+        [guid[]]$SubCategoryGuid,
+        [parameter(ParameterSetName = "All")]
+        [parameter(ParameterSetName = "FromCategory")]
+        [parameter(ParameterSetName = "FromCategoryGuid")]
+        [switch]$ExpandCategory
+    )
+
+    $cats = switch ($PSCmdlet.ParameterSetName) {
+        "All" {
+            [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetCategories()
+        }
+        "FromCategory" {
+            $ret = @()
+            foreach($cat in $Category) {
+                $ret += [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetCategory($cat)
+            }
+            $ret
+        }
+        "FromCategoryGuid" {
+            $ret = @()
+            foreach($cat in $CategoryGuid) {
+                $ret += [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetCategory($cat)
+            }
+            $ret
+        }
+        "FromSubCategoryName" {
+            Get-NtAuditPolicy -ExpandCategory | Where-Object Name -in $SubCategoryName
+        }
+        "FromSubCategoryGuid" {
+            Get-NtAuditPolicy -ExpandCategory | Where-Object Id -in $SubCategoryGuid
+        }
+    }
+    if ($ExpandCategory) {
+        $cats | Select-Object -ExpandProperty SubCategories | Write-Output
+    } else {
+        $cats | Write-Output
+    }
+}
+
+<#
+.SYNOPSIS
+Set the advanced audit policy information.
+.DESCRIPTION
+This cmdlet sets advanced audit policy information.
+.PARAMETER Category
+Specify the category type.
+.PARAMETER CategoryGuid
+Specify the category type GUID.
+.PARAMETER Policy
+Specify the policy to set.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.Win32.Security.Audit.AuditSubCategory
+.EXAMPLE
+Set-NtAuditPolicy -Category 
+Get all audit policy categories.
+.EXAMPLE
+Get-NtAuditPolicy -Category ObjectAccess
+Get the ObjectAccess audit policy category
+.EXAMPLE
+Get-NtAuditPolicy -Category ObjectAccess -Expand
+Get the ObjectAccess audit policy category and return the SubCategory policies.
+#>
+function Set-NtAuditPolicy {
+    [CmdletBinding(DefaultParameterSetName = "FromCategory", SupportsShouldProcess)]
+    param (
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromCategory")]
+        [NtApiDotNet.Win32.Security.Audit.AuditPolicyEventType[]]$Category,
+        [parameter(Mandatory, ParameterSetName = "FromCategoryGuid")]
+        [Guid[]]$CategoryGuid,
+        [parameter(Mandatory, ParameterSetName = "FromSubCategoryName")]
+        [string[]]$SubCategoryName,
+        [parameter(Mandatory, ParameterSetName = "FromSubCategoryGuid")]
+        [guid[]]$SubCategoryGuid,
+        [parameter(Mandatory, Position = 1)]
+        [NtApiDotNet.Win32.Security.Audit.AuditPolicyFlags]$Policy,
+        [switch]$PassThru
+    )
+
+    if (!(Test-NtTokenPrivilege SeSecurityPrivilege)) {
+        Write-Warning "SeSecurityPrivilege not enabled. Might not change Audit settings."
+    }
+
+    $cats = switch($PSCmdlet.ParameterSetName) {
+        "FromCategory" {
+            Get-NtAuditPolicy -Category $Category -ExpandCategory
+        }
+        "FromCategoryGuid" {
+            Get-NtAuditPolicy -CategoryGuid $CategoryGuid -ExpandCategory
+        }
+        "FromSubCategoryName" {
+            Get-NtAuditPolicy -SubCategoryName $SubCategoryName
+        }
+        "FromSubCategoryGuid" {
+            Get-NtAuditPolicy -SubCategoryGuid $SubCategoryGuid
+        }
+    }
+
+    foreach($cat in $cats) {
+        if ($PSCmdlet.ShouldProcess($cat.Name, "Set $Policy")) {
+            $cat.SetPolicy($Policy)
+            if ($PassThru) {
+                Write-Output $cat
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Get advanced audit policy security descriptor information.
+.DESCRIPTION
+This cmdlet gets advanced audit policy security descriptor information.
+.PARAMETER GlobalSacl
+Specify the type of object to query the global SACL.
+.INPUTS
+None
+.OUTPUTS
+NtApiDotNet.SecurityDescriptor
+.EXAMPLE
+Get-NtAuditSecurity
+Get the Audit security descriptor.
+.EXAMPLE
+Get-NtAuditSecurity -GlobalSacl File
+Get the File global SACL.
+#>
+function Get-NtAuditSecurity {
+    [CmdletBinding(DefaultParameterSetName = "FromSecurityDescriptor")]
+    param (
+        [parameter(Mandatory, Position = 0, ParameterSetName = "FromGlobalSacl")]
+        [NtApiDotNet.Win32.Security.Audit.AuditGlobalSaclType]$GlobalSacl
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "FromSecurityDescriptor" {
+            [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::QuerySecurity() | Write-Output
+        }
+        "FromGlobalSacl" {
+            [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::QueryGlobalSacl($GlobalSacl) | Write-Output
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Set advanced audit policy security descriptor information.
+.DESCRIPTION
+This cmdlet sets advanced audit policy security descriptor information.
+.PARAMETER GlobalSacl
+Specify the type of object to set the global SACL.
+.INPUTS
+None
+.OUTPUTS
+None
+.EXAMPLE
+Set-NtAuditSecurity -SecurityDescriptor $sd
+Set the Audit security descriptor.
+.EXAMPLE
+Set-NtAuditSecurity -SecurityDescriptor $sd -GlobalSacl File
+Set the File global SACL.
+#>
+function Set-NtAuditSecurity {
+    [CmdletBinding(DefaultParameterSetName = "FromSecurityDescriptor", SupportsShouldProcess)]
+    param (
+        [parameter(Mandatory, Position = 0)]
+        [NtApiDotNet.SecurityDescriptor]$SecurityDescriptor,
+        [parameter(Mandatory, Position = 1, ParameterSetName = "FromGlobalSacl")]
+        [NtApiDotNet.Win32.Security.Audit.AuditGlobalSaclType]$GlobalSacl
+    )
+    switch($PSCmdlet.ParameterSetName) {
+        "FromSecurityDescriptor" {
+            if ($PSCmdlet.ShouldProcess("$SecurityDescriptor", "Set Audit SD")) {
+                [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::SetSecurity($SecurityDescriptor)
+            }
+        }
+        "FromGlobalSacl" {
+            if ($PSCmdlet.ShouldProcess("$SecurityDescriptor", "Set $GlobalSacl SACL")) {
+                [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::SetGlobalSacl($GlobalSacl, $SecurityDescriptor)
+            }
+        }
+    }
+}

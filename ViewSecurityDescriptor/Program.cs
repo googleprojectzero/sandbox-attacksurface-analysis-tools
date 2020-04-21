@@ -16,6 +16,7 @@ using NtApiDotNet;
 using NtApiDotNet.Forms;
 using NtApiDotNet.Win32;
 using NtApiDotNet.Win32.DirectoryService;
+using NtApiDotNet.Win32.Security.Audit;
 using System;
 using System.Windows.Forms;
 
@@ -55,6 +56,10 @@ namespace ViewSecurityDescriptor
                         if (args[2].Equals("DirectoryService", StringComparison.OrdinalIgnoreCase))
                         {
                             type = DirectoryServiceUtils.NtType;
+                        }
+                        else if (args[2].Equals("Audit", StringComparison.OrdinalIgnoreCase))
+                        {
+                            type = AuditSecurityUtils.NtType;
                         }
                         else
                         {
