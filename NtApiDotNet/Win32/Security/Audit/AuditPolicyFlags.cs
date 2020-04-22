@@ -39,4 +39,36 @@ namespace NtApiDotNet.Win32.Security.Audit
         /// </summary>
         None = 4,
     }
+
+    /// <summary>
+    /// Per user policy flags.
+    /// </summary>
+    [Flags]
+    public enum AuditPerUserPolicyFlags
+    {
+        /// <summary>
+        /// Set unchanged.
+        /// </summary>
+        Unchanged = 0,
+        /// <summary>
+        /// Audit on success included.
+        /// </summary>
+        SuccessInclude = 1,
+        /// <summary>
+        /// Audit on success excluded.
+        /// </summary>
+        SuccessExclude = 2,
+        /// <summary>
+        /// Audit on failure included.
+        /// </summary>
+        FailureInclude = 4,
+        /// <summary>
+        /// Audit on failure excluded.
+        /// </summary>
+        FailureExclude = 8,
+        /// <summary>
+        /// Audit nothing.
+        /// </summary>
+        None = 0x10
+    }
 }

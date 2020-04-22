@@ -16,6 +16,8 @@ using NtApiDotNet.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Messaging;
 
 namespace NtApiDotNet.Win32.Security.Audit
 {
@@ -183,7 +185,7 @@ namespace NtApiDotNet.Win32.Security.Audit
         /// <returns>The list of categories.</returns>
         public static NtResult<IReadOnlyList<AuditCategory>> GetCategories(bool throw_on_error)
         {
-            return AuditCategory.GetCategories(throw_on_error).Map(a => a.ToList().AsReadOnly()).Cast<IReadOnlyList<AuditCategory>>();
+            return GetCategoriesInternal(throw_on_error).Map(a => a.ToList().AsReadOnly()).Cast<IReadOnlyList<AuditCategory>>();
         }
 
         /// <summary>
@@ -202,7 +204,7 @@ namespace NtApiDotNet.Win32.Security.Audit
         /// <returns>The audit category.</returns>
         public static AuditCategory GetCategory(AuditPolicyEventType type)
         {
-            return AuditCategory.GetCategory(type, true).Result;
+            return GetCategoryInternal(type, true).Result;
         }
 
         /// <summary>
@@ -212,7 +214,170 @@ namespace NtApiDotNet.Win32.Security.Audit
         /// <returns>The audit category.</returns>
         public static AuditCategory GetCategory(Guid category)
         {
-            return AuditCategory.GetCategory(category, true).Result;
+            return GetCategoryInternal(category, true).Result;
         }
+
+        /// <summary>
+        /// Get all per-user categories for denied users.
+        /// </summary>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of per-user categories.</returns>
+        public static NtResult<IReadOnlyList<AuditPerUserCategory>> GetPerUserCategories(bool throw_on_error)
+        {
+            var sids = GetValidUsers(throw_on_error);
+            if (!sids.IsSuccess)
+                return sids.Cast<IReadOnlyList<AuditPerUserCategory>>();
+            List<AuditPerUserCategory> ret = new List<AuditPerUserCategory>();
+            foreach (var sid in sids.Result)
+            {
+                var cats = GetPerUserCategories(sid, throw_on_error);
+                if (!cats.IsSuccess)
+                    return cats.Cast<IReadOnlyList<AuditPerUserCategory>>();
+                ret.AddRange(cats.Result);
+            }
+            return ret.AsReadOnly().CreateResult<IReadOnlyList<AuditPerUserCategory>>();
+        }
+
+        /// <summary>
+        /// Get all per-user categories for denied users.
+        /// </summary>
+        /// <returns>The list of per-user categories.</returns>
+        public static IReadOnlyList<AuditPerUserCategory> GetPerUserCategories()
+        {
+            return GetPerUserCategories(true).Result;
+        }
+
+        /// <summary>
+        /// Get list of per-user Audit Policy categories.
+        /// </summary>
+        /// <param name="user">The user SID to query.</param>
+        /// <param name="throw_on_error">True to throw on error.</param>
+        /// <returns>The list of categories.</returns>
+        public static NtResult<IReadOnlyList<AuditPerUserCategory>> GetPerUserCategories(Sid user, bool throw_on_error)
+        {
+            return GetPerUserCategoriesInternal(user, throw_on_error)
+                .Map(a => a.ToList().AsReadOnly()).Cast<IReadOnlyList<AuditPerUserCategory>>();
+        }
+
+        /// <summary>
+        /// Get list of per-user Audit Policy categories.
+        /// </summary>
+        /// <param name="user">The user SID to query.</param>
+        /// <returns>The list of categories.</returns>
+        public static IReadOnlyList<AuditPerUserCategory> GetPerUserCategories(Sid user)
+        {
+            return GetPerUserCategories(user, true).Result;
+        }
+
+        /// <summary>
+        /// Get a single per-user category.
+        /// </summary>
+        /// <param name="user">The user SID to query.</param>
+        /// <param name="type">The category type.</param>
+        /// <returns>The audit category.</returns>
+        public static AuditPerUserCategory GetPerUserCategory(Sid user, AuditPolicyEventType type)
+        {
+            return GetPerUserCategoryInternal(user, type, true).Result;
+        }
+
+        /// <summary>
+        /// Get a single per-user category.
+        /// </summary>
+        /// <param name="user">The user SID to query.</param>
+        /// <param name="category">The category GUID.</param>
+        /// <returns>The audit category.</returns>
+        public static AuditPerUserCategory GetPerUserCategory(Sid user, Guid category)
+        {
+            return GetPerUserCategoryInternal(user, category, true).Result;
+        }
+
+        #region Private Members
+        private static NtResult<string> LookupCategoryName(Guid category, bool throw_on_error)
+        {
+            return Win32NativeMethods.AuditLookupCategoryName(ref category,
+                out SafeAuditBuffer buffer).CreateWin32Result(throw_on_error, () => {
+                    using (buffer)
+                    {
+                        return Marshal.PtrToStringUni(buffer.DangerousGetHandle());
+                    }
+                });
+        }
+
+        private static Z[] GetCategories<Z>(SafeAuditBuffer buffer, uint count, Func<Guid, string, Z> create)
+        {
+            using (buffer)
+            {
+                List<Z> categories = new List<Z>();
+                buffer.Initialize<Guid>(count);
+                Guid[] cats = new Guid[count];
+                buffer.ReadArray(0, cats, 0, (int)count);
+
+                foreach (Guid cat in cats)
+                {
+                    var name = LookupCategoryName(cat, false).GetResultOrDefault(cat.ToString());
+                    categories.Add(create(cat, name));
+                }
+                return categories.ToArray();
+            }
+        }
+
+        private static NtResult<AuditCategory[]> GetCategoriesInternal(bool throw_on_error)
+        {
+            return Win32NativeMethods.AuditEnumerateCategories(out SafeAuditBuffer buffer,
+                out uint count).CreateWin32Result(throw_on_error, ()
+                => GetCategories(buffer, count, (i, n) => new AuditCategory(i, n)));
+        }
+
+        private static NtResult<AuditCategory> GetCategoryInternal(Guid category, bool throw_on_error)
+        {
+            return LookupCategoryName(category, throw_on_error).Map(s => new AuditCategory(category, s));
+        }
+
+        private static NtResult<AuditCategory> GetCategoryInternal(AuditPolicyEventType type, bool throw_on_error)
+        {
+            if (!Win32NativeMethods.AuditLookupCategoryGuidFromCategoryId(type, out Guid category))
+                return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<AuditCategory>(throw_on_error);
+            return GetCategoryInternal(category, throw_on_error);
+        }
+
+        private static NtResult<AuditPerUserCategory[]> GetPerUserCategoriesInternal(Sid user, bool throw_on_error)
+        {
+            return Win32NativeMethods.AuditEnumerateCategories(out SafeAuditBuffer buffer,
+                out uint count).CreateWin32Result(throw_on_error, () => GetCategories(buffer, count,
+                (i, n) => new AuditPerUserCategory(i, n, user)));
+        }
+
+        private static NtResult<AuditPerUserCategory> GetPerUserCategoryInternal(Sid user, Guid category, bool throw_on_error)
+        {
+            return LookupCategoryName(category, throw_on_error).Map(s => new AuditPerUserCategory(category, s, user));
+        }
+
+        private static NtResult<AuditPerUserCategory> GetPerUserCategoryInternal(Sid user, AuditPolicyEventType type, bool throw_on_error)
+        {
+            if (!Win32NativeMethods.AuditLookupCategoryGuidFromCategoryId(type, out Guid category))
+                return NtObjectUtils.MapDosErrorToStatus().CreateResultFromError<AuditPerUserCategory>(throw_on_error);
+            return GetPerUserCategoryInternal(user, category, throw_on_error);
+        }
+
+        private static NtResult<List<Sid>> GetValidUsers(bool throw_on_error)
+        {
+            if (!Win32NativeMethods.AuditEnumeratePerUserPolicy(out SafeAuditBuffer buffer))
+            {
+                return NtObjectUtils.CreateResultFromDosError<List<Sid>>(throw_on_error);
+            }
+            using (buffer)
+            {
+                List<Sid> sids = new List<Sid>();
+                buffer.Initialize<POLICY_AUDIT_SID_ARRAY>(1);
+                var sid_array = buffer.Read<POLICY_AUDIT_SID_ARRAY>(0);
+                for (int i = 0; i < sid_array.UsersCount; ++i)
+                {
+                    sids.Add(new Sid(Marshal.ReadIntPtr(buffer.DangerousGetHandle(), i * IntPtr.Size)));
+                }
+                return sids.CreateResult();
+            }
+        }
+
+        #endregion
     }
 }

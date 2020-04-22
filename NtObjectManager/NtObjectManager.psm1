@@ -8243,11 +8243,17 @@ Specify the category type.
 Specify the category type GUID.
 .PARAMETER ExpandCategory
 Specify to expand the subcategories from the category.
+.PARAMETER User
+Specify the user for a per-user Audit Policies.
+.PARAMETER AllUser
+Specify to get all users for all per-user Audit Policies.
 .INPUTS
 None
 .OUTPUTS
 NtApiDotNet.Win32.Security.Audit.AuditCategory
 NtApiDotNet.Win32.Security.Audit.AuditSubCategory
+NtApiDotNet.Win32.Security.Audit.AuditPerUserCategory
+NtApiDotNet.Win32.Security.Audit.AuditPerUserSubCategory
 .EXAMPLE
 Get-NtAuditPolicy
 Get all audit policy categories.
@@ -8257,6 +8263,12 @@ Get the ObjectAccess audit policy category
 .EXAMPLE
 Get-NtAuditPolicy -Category ObjectAccess -Expand
 Get the ObjectAccess audit policy category and return the SubCategory policies.
+.EXAMPLE
+Get-NtAuditPolicy -User $sid
+Get all per-user audit policy categories for the user represented by a SID.
+.EXAMPLE
+Get-NtAuditPolicy -AllUser
+Get all per-user audit policy categories for all users.
 #>
 function Get-NtAuditPolicy {
     [CmdletBinding(DefaultParameterSetName = "All")]
@@ -8272,32 +8284,51 @@ function Get-NtAuditPolicy {
         [parameter(ParameterSetName = "All")]
         [parameter(ParameterSetName = "FromCategory")]
         [parameter(ParameterSetName = "FromCategoryGuid")]
-        [switch]$ExpandCategory
+        [switch]$ExpandCategory,
+        [parameter(ParameterSetName = "All")]
+        [switch]$AllUser,
+        [NtApiDotNet.Sid]$User
     )
 
     $cats = switch ($PSCmdlet.ParameterSetName) {
         "All" {
-            [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetCategories()
+            if ($null -ne $User) {
+                [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetPerUserCategories($User)
+            }
+            elseif ($AllUser) {
+                [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetPerUserCategories()
+            }
+            else {
+                [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetCategories()
+            }
         }
         "FromCategory" {
             $ret = @()
             foreach($cat in $Category) {
-                $ret += [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetCategory($cat)
+                if ($null -ne $User) {
+                    $ret += [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetPerUserCategory($User, $cat)
+                } else {
+                    $ret += [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetCategory($cat)
+                }
             }
             $ret
         }
         "FromCategoryGuid" {
             $ret = @()
             foreach($cat in $CategoryGuid) {
-                $ret += [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetCategory($cat)
+                if ($null -ne $User) {
+                    $ret += [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetPerUserCategory($User, $cat)
+                } else {
+                    $ret += [NtApiDotNet.Win32.Security.Audit.AuditSecurityUtils]::GetCategory($cat)
+                }
             }
             $ret
         }
         "FromSubCategoryName" {
-            Get-NtAuditPolicy -ExpandCategory | Where-Object Name -in $SubCategoryName
+            Get-NtAuditPolicy -ExpandCategory -User $User | Where-Object Name -in $SubCategoryName
         }
         "FromSubCategoryGuid" {
-            Get-NtAuditPolicy -ExpandCategory | Where-Object Id -in $SubCategoryGuid
+            Get-NtAuditPolicy -ExpandCategory -User $User | Where-Object Id -in $SubCategoryGuid
         }
     }
     if ($ExpandCategory) {
@@ -8318,6 +8349,8 @@ Specify the category type.
 Specify the category type GUID.
 .PARAMETER Policy
 Specify the policy to set.
+.PARAMETER PassThru
+Specify to pass through the category objects.
 .INPUTS
 None
 .OUTPUTS
@@ -8347,7 +8380,6 @@ function Set-NtAuditPolicy {
         [NtApiDotNet.Win32.Security.Audit.AuditPolicyFlags]$Policy,
         [switch]$PassThru
     )
-
     if (!(Test-NtTokenPrivilege SeSecurityPrivilege)) {
         Write-Warning "SeSecurityPrivilege not enabled. Might not change Audit settings."
     }

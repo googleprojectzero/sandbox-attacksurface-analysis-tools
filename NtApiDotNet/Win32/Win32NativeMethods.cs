@@ -614,15 +614,11 @@ namespace NtApiDotNet.Win32
         public Guid AuditCategoryGuid;
     }
 
-    [Flags]
-    internal enum AuditPerUserPolicyFlags
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct POLICY_AUDIT_SID_ARRAY
     {
-        Unchanged = 0,
-        SuccessInclude = 1,
-        SuccessExclude = 2,
-        FailureInclude = 4,
-        FailureExclude = 8,
-        None = 0x10
+        public int UsersCount;
+        public IntPtr UserSidArray;
     }
 
     internal static class Win32NativeMethods
@@ -1555,6 +1551,29 @@ namespace NtApiDotNet.Win32
         internal static extern bool AuditLookupCategoryGuidFromCategoryId(
           AuditPolicyEventType AuditCategoryId,
           out Guid pAuditCategoryGuid
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        internal static extern bool AuditEnumeratePerUserPolicy(
+            out SafeAuditBuffer ppAuditSidArray
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        internal static extern bool AuditQueryPerUserPolicy(
+            SafeSidBufferHandle pSid,
+            Guid[] pSubCategoryGuids,
+            int dwPolicyCount,
+            out SafeAuditBuffer ppAuditPolicy
+        );
+
+        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        internal static extern bool AuditSetPerUserPolicy(
+            SafeSidBufferHandle pSid,
+            AUDIT_POLICY_INFORMATION[] pAuditPolicy,
+            int dwPolicyCount
         );
     }
 #pragma warning restore 1591
